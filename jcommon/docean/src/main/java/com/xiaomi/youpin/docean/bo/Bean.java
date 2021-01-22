@@ -30,6 +30,8 @@ public class Bean implements Comparable<Bean> {
 
     private String name;
 
+    private String alias;
+
     private Class<?> clazz;
 
     private Object obj;

@@ -52,4 +52,12 @@ public class Safe {
         }
     }
 
+    public static void runAndLog(ExRunnable runnable) {
+        try {
+            runnable.run();
+        } catch (Throwable ex) {
+            log.error(ex.getMessage(), ex);
+        }
+    }
+
 }

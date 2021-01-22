@@ -16,6 +16,7 @@
 
 package com.xiaomi.youpin.docean;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.xiaomi.youpin.docean.anno.Component;
 import com.xiaomi.youpin.docean.anno.Configuration;
@@ -36,6 +37,7 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -146,6 +148,7 @@ public class Ioc {
     }
 
     public Ioc init(String... scanPackages) {
+        Stopwatch sw = Stopwatch.createStarted();
         Set<String> classNameSet = getClassNameSet(scanPackages);
         Set<? extends Class<?>> classSet = classNameSet.stream().map(Ioc::classForName).filter(it -> Optional.ofNullable(it).isPresent()).collect(Collectors.toSet());
         //init plugin
@@ -158,6 +161,9 @@ public class Ioc {
         this.beans.values().stream().forEach(it -> initIoc(it));
         //call init method
         this.beans.values().stream().forEach(Ioc::callInit);
+        Plugin.ins().after(this);
+        Plugin.ins().start(this);
+        log.info("Docean init use time:{}", sw.elapsed(TimeUnit.MILLISECONDS));
         return this;
     }
 
@@ -197,10 +203,21 @@ public class Ioc {
     }
 
     public Ioc putBean(String name, Object obj) {
+        return putBean(name, name, obj);
+    }
+
+    public Ioc putBean(String name, String alias, Object obj) {
         Bean bean = new Bean();
         bean.setObj(obj);
+        bean.setAlias(alias);
         bean.setClazz(obj.getClass());
+        bean.setName(obj.getClass().getName());
         beans.put(name, bean);
+        return this;
+    }
+
+    public Ioc remove(String name) {
+        beans.remove(name);
         return this;
     }
 
@@ -240,6 +257,7 @@ public class Ioc {
      */
     public void destory() {
         log.info("ioc destory");
+        Plugin.ins().destory(this);
         this.beans.values().stream().sorted(Bean::compareTo).forEach(b -> {
             if (Optional.ofNullable(b.getObj()).isPresent()) {
                 ReflectUtils.invokeMethod(b.getObj(), b.getObj().getClass(), Cons.DESTORY, new Object[]{});

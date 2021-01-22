@@ -25,6 +25,7 @@ import net.sf.cglib.reflect.FastClass;
 import net.sf.cglib.reflect.FastMethod;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -68,9 +69,14 @@ public abstract class ReflectUtils {
 
     public static Object invokeMethod(Object obj, Class clazz, String methodName, Object[] params) {
         try {
-            Optional<Method> optional = getMethod(clazz, methodName);
+            Optional<Method> optional = getMethod(clazz, methodName, params.length);
             if (optional.isPresent()) {
                 optional.get().setAccessible(true);
+                //没有可以匹配上的方法
+                if (optional.get().getParameterCount() != params.length) {
+                    return null;
+                }
+
                 if (params.length == 0) {
                     return optional.get().invoke(obj);
                 }
@@ -78,7 +84,7 @@ public abstract class ReflectUtils {
             }
 
         } catch (Throwable ex) {
-            log.error(ex.getMessage());
+            log.error("invokeMethod error:{} class:{} method:{}", ex.getMessage(), clazz.getName(), methodName);
         }
         return null;
     }
@@ -152,6 +158,18 @@ public abstract class ReflectUtils {
         return Arrays.stream(clazz.getMethods()).filter(it -> it.getName().equals(methodName)).findAny();
     }
 
+    /**
+     * 查找方法 通过 方法名和参数数量
+     *
+     * @param clazz
+     * @param methodName
+     * @param paramNum
+     * @return
+     */
+    public static Optional<Method> getMethod(Class clazz, String methodName, int paramNum) {
+        return Arrays.stream(clazz.getMethods()).filter(it -> it.getName().equals(methodName) && it.getParameterCount() == paramNum).findAny();
+    }
+
     public static Object[] getMethodParams(Object obj, String methodName, JsonElement params) {
         Method method = getMethod(obj.getClass(), methodName).get();
         return getMethodParams(method, params);
@@ -201,10 +219,18 @@ public abstract class ReflectUtils {
 
     public static Object getInstance(Class clazz) {
         try {
-            return clazz.newInstance();
+            if (clazz.isInterface()) {
+                return null;
+            }
+            Constructor constructor = clazz.getConstructor();
+            if (null != constructor) {
+                return clazz.newInstance();
+            }
         } catch (InstantiationException e) {
             log.error(e.getMessage());
         } catch (IllegalAccessException e) {
+            log.error(e.getMessage());
+        } catch (NoSuchMethodException e) {
             log.error(e.getMessage());
         }
         return null;

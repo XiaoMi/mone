@@ -29,6 +29,7 @@ public class DemoVo {
 
     private String id;
     private String name;
+    private int age;
 
     private long t = System.currentTimeMillis();
 

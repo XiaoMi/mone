@@ -14,24 +14,30 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.youpin.docean.anno;
+package com.xiaomi.youpin.docean.common;
 
-import java.lang.annotation.*;
+import com.google.common.collect.Maps;
+import net.sf.cglib.beans.BeanMap;
+
+import java.util.Map;
 
 /**
  * @author goodjava@qq.com
- * @date 2020/6/20
+ * @date 1/19/21
  */
-@Target({ElementType.TYPE})
-@Retention(RetentionPolicy.RUNTIME)
-@Documented
-public @interface Component {
+public abstract class BeanUtils {
 
-    String name() default "";
+    public static <T> Map<String, Object> beanToMap(T bean) {
+        Map<String, Object> map = Maps.newHashMap();
+        map.putAll(BeanMap.create(bean));
+        return map;
+    }
 
-    String desc() default "";
+    public static <T> T mapToBean(Map<String, Object> map, T bean) {
+        BeanMap beanMap = BeanMap.create(bean);
+        beanMap.putAll(map);
+        return bean;
+    }
 
-    int type() default 2;
 
-    int order() default 0;
 }

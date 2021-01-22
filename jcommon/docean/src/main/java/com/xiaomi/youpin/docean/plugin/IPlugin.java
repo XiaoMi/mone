@@ -28,10 +28,18 @@ import java.util.*;
  */
 public interface IPlugin {
 
+    default void init() {
+
+    }
+
     default void init(Set<? extends Class<?>> classSet, Ioc ioc) {
 
     }
 
+    /**
+     * 销毁操作
+     * @param ioc
+     */
     default void destory(Ioc ioc) {
 
     }
@@ -74,5 +82,19 @@ public interface IPlugin {
 
     default boolean disable(Ioc ioc) {
         return false;
+    }
+
+
+    default boolean after(Ioc ioc) {
+        return true;
+    }
+
+    /**
+     * plugin 启动操作(可以理解为依赖注入都完成后,想要完成的操作都可以放到这里)
+     * @param ioc
+     * @return
+     */
+    default boolean start(Ioc ioc) {
+        return true;
     }
 }

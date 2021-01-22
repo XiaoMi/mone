@@ -19,10 +19,7 @@ package com.xiaomi.youpin.docean.mvc;
 import com.xiaomi.youpin.docean.mvc.session.HttpSessionManager;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.DefaultFullHttpResponse;
-import io.netty.handler.codec.http.FullHttpResponse;
-import io.netty.handler.codec.http.HttpResponseStatus;
-import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import lombok.Getter;
 import lombok.Setter;
@@ -43,9 +40,8 @@ public class MvcResponse {
             ctx.writeAndFlush(frame);
         } else {
             FullHttpResponse response = HttpResponseUtils.create(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, Unpooled.wrappedBuffer(message.getBytes())));
-
+            response.headers().set(HttpHeaderNames.CONTENT_LENGTH, message.getBytes().length);
             HttpSessionManager.setSessionId(context,HttpSessionManager.isHasSessionId(context.getHeaders()),response);
-
             ctx.writeAndFlush(response);
         }
     }

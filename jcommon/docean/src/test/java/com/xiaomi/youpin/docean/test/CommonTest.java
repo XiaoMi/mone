@@ -22,6 +22,7 @@ import com.xiaomi.youpin.docean.anno.Component;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.bo.Bean;
 import com.xiaomi.youpin.docean.common.ReflectUtils;
+import com.xiaomi.youpin.docean.test.demo.DemoVo;
 import net.sf.cglib.beans.BeanGenerator;
 import net.sf.cglib.beans.BeanMap;
 import net.sf.cglib.proxy.Mixin;
@@ -43,6 +44,23 @@ import java.util.stream.Collectors;
  * @date 2020/6/22
  */
 public class CommonTest {
+
+
+    @Test
+    public void testCglib() {
+        DemoVo demoVo = new DemoVo();
+        demoVo.setName("zzy");
+        BeanMap bm = BeanMap.create(demoVo);
+        System.out.println(bm);
+
+
+        DemoVo demoVo1 = new DemoVo();
+        BeanMap bm2 = BeanMap.create(demoVo1);
+        bm2.put("name", "zzy");
+        bm2.put("age", 22);
+
+        System.out.println(demoVo1.getName() + ":" + demoVo1.getAge());
+    }
 
 
     @Test

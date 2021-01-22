@@ -44,4 +44,6 @@ public class MvcContext {
 
     private String sessionId = "";
 
+    private String method;
+
 }

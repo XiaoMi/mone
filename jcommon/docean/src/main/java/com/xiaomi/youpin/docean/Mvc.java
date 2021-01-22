@@ -149,6 +149,7 @@ public class Mvc {
             JsonElement args = mo.getObj();
             Object[] params = ReflectUtils.getMethodParams(method.getMethod(), args);
             setMvcContext(context, params);
+
             Object data = ReflectUtils.invokeFastMethod(method.getObj(), method.getMethod(), params);
 
 
@@ -165,7 +166,12 @@ public class Mvc {
                     return;
                 }
             }
-
+            //直接返回构造的结果
+            if (data instanceof FullHttpResponse) {
+                FullHttpResponse res = (FullHttpResponse) data;
+                response.getCtx().writeAndFlush( HttpResponseUtils.create(res));
+                return;
+            }
 
 
             result.setData(data);

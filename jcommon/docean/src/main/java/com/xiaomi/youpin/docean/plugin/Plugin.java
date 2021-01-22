@@ -51,6 +51,19 @@ public class Plugin {
                 .filter(it -> !it.disable(ioc))
                 .peek(ins -> ins.init(classSet, ioc))
                 .collect(Collectors.toList());
+
+        this.plugins.stream().forEach(p -> ioc.putBean(p));
+    }
+
+
+    public void after(Ioc ioc) {
+        this.plugins.stream().forEach(p -> {
+            p.after(ioc);
+        });
+    }
+
+    public void start(Ioc ioc) {
+        this.plugins.stream().forEach(p -> p.start(ioc));
     }
 
     public void destory(Ioc ioc) {
