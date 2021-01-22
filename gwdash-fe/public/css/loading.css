@@ -1,0 +1,141 @@
+/*
+ *  Copyright 2020 Xiaomi
+ *
+ *      Licensed under the Apache License, Version 2.0 (the "License");
+ *      you may not use this file except in compliance with the License.
+ *      You may obtain a copy of the License at
+ *
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *      Unless required by applicable law or agreed to in writing, software
+ *      distributed under the License is distributed on an "AS IS" BASIS,
+ *      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *      See the License for the specific language governing permissions and
+ *      limitations under the License.
+ */
+
+html, body, #app {
+  height: 100%;
+  margin: 0px;
+  padding: 0px;
+}
+.d2-app-loading-group {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.15) 0%, rgba(0,0,0,0.15) 100%), radial-gradient(at top center, rgba(255,255,255,0.40) 0%, rgba(0,0,0,0.40) 120%) #989898;
+  background-blend-mode: multiply,multiply;
+}
+.d2-app-loading-title {
+  color: #FFF;
+  font-weight: bold;
+  font-size: 14px;
+  margin-top: 40px;
+  margin-bottom: 10px;
+  letter-spacing: 0.2em;
+}
+.d2-app-loading-sub-title {
+  color: #FFF;
+  font-size: 10px;
+  margin-bottom: 10px;
+}
+.d2-app-loading-sub-info {
+  color: #FFF;
+  font-size: 10px;
+  opacity: .8;
+  margin-bottom: 4px;
+}
+.d2-app-loading-btn {
+  text-decoration: none;
+  display: inline-block;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  background: #fff;
+  border: 1px solid #dcdfe6;
+  border-color: #dcdfe6;
+  color: #606266;
+  -webkit-appearance: none;
+  text-align: center;
+  box-sizing: border-box;
+  outline: none;
+  margin: 0;
+  transition: .1s;
+  font-weight: 500;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  padding: 12px 20px;
+  font-size: 14px;
+  border-radius: 4px;
+  /* 圆角 */
+  padding: 7px 15px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+.d2-app-loading-grid {
+  width: 30px;
+  height: 30px;
+}
+.d2-app-loading-grid .d2-app-loading {
+  width: 10px;
+  height: 10px;
+  background-color: #FFF;
+  float: left;
+  -webkit-animation: d2-app-loading-grid-scale-delay 1.3s infinite ease-in-out;
+          animation: d2-app-loading-grid-scale-delay 1.3s infinite ease-in-out;
+}
+.d2-app-loading-grid .d2-app-loading1 {
+  border-top-left-radius: 4px;
+  -webkit-animation-delay: 0.2s;
+          animation-delay: 0.2s; }
+.d2-app-loading-grid .d2-app-loading2 {
+  -webkit-animation-delay: 0.3s;
+          animation-delay: 0.3s; }
+.d2-app-loading-grid .d2-app-loading3 {
+  border-top-right-radius: 4px;
+  -webkit-animation-delay: 0.4s;
+          animation-delay: 0.4s; }
+.d2-app-loading-grid .d2-app-loading4 {
+  -webkit-animation-delay: 0.1s;
+          animation-delay: 0.1s; }
+.d2-app-loading-grid .d2-app-loading5 {
+  -webkit-animation-delay: 0.2s;
+          animation-delay: 0.2s; }
+.d2-app-loading-grid .d2-app-loading6 {
+  -webkit-animation-delay: 0.3s;
+          animation-delay: 0.3s; }
+.d2-app-loading-grid .d2-app-loading7 {
+  border-bottom-left-radius: 4px;
+  -webkit-animation-delay: 0s;
+          animation-delay: 0s; }
+.d2-app-loading-grid .d2-app-loading8 {
+  -webkit-animation-delay: 0.1s;
+          animation-delay: 0.1s; }
+.d2-app-loading-grid .d2-app-loading9 {
+  border-bottom-right-radius: 4px;
+  -webkit-animation-delay: 0.2s;
+          animation-delay: 0.2s; }
+
+@-webkit-keyframes d2-app-loading-grid-scale-delay {
+  0%, 70%, 100% {
+    -webkit-transform: scale3D(1, 1, 1);
+            transform: scale3D(1, 1, 1);
+  } 35% {
+    -webkit-transform: scale3D(0, 0, 1);
+            transform: scale3D(0, 0, 1);
+  }
+}
+
+@keyframes d2-app-loading-grid-scale-delay {
+  0%, 70%, 100% {
+    -webkit-transform: scale3D(1, 1, 1);
+            transform: scale3D(1, 1, 1);
+  } 35% {
+    -webkit-transform: scale3D(0, 0, 1);
+            transform: scale3D(0, 0, 1);
+  }
+}

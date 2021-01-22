@@ -1,0 +1,33 @@
+target/
+log/
+*/target/
+*/src/main/resources/static/*
+!*/src/main/resources/static/index.html
+!*/src/main/resources/static/404.html
+!*/src/main/resources/static/403.html
+!.mvn/wrapper/maven-wrapper.jar
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+
+### NetBeans ###
+/nbproject/private/
+/build/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+gwdash-server/src/main/resources/application-local.properties

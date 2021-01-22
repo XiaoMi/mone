@@ -1,0 +1,2 @@
+*.jar filter=lfs diff=lfs merge=lfs -text
+.git/objects/94/7c4dc2e02fb91d82626f92051edcb55beceaa3 filter=lfs diff=lfs merge=lfs -text

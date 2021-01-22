@@ -1,0 +1,31 @@
+package ${package};
+
+import com.xiaomi.youpin.gateway.common.FilterOrder;
+import com.xiaomi.youpin.gateway.filter.CustomRequestFilter;
+import com.xiaomi.youpin.gateway.common.HttpResponseUtils;
+import com.xiaomi.youpin.gateway.filter.FilterContext;
+import com.xiaomi.youpin.gateway.filter.Invoker;
+import com.youpin.xiaomi.tesla.bo.ApiInfo;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.FullHttpResponse;
+
+/**
+ * @author ${author}
+ */
+@FilterOrder(${filterOrder})
+public class ${project} extends CustomRequestFilter {
+
+    @Override
+    public FullHttpResponse execute(FilterContext context, Invoker invoker, ApiInfo apiInfo, FullHttpRequest request)  {
+
+        //打印设置的参数
+        //log.info("params:{}", this.getFilterParams(apiInfo));
+        if (1 != 2) {
+            return HttpResponseUtils.create("demo filter");
+        } else {
+            return next(context, invoker, apiInfo, request);
+        }
+    }
+}
+
+

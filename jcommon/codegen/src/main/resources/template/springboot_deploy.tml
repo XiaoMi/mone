@@ -1,0 +1,60 @@
+class base {
+#默认配置，必须，不可修改。
+    $basedir = "$<path>"
+    $user = "$< user >"
+    $mod_ver = "$< version >"
+    $pkg_dir = "$< pkg_dir >"
+    $mod_name = "$< name >"
+    $tag = "$< tag >"
+
+    $prog_name = "${project}"
+    $prog_logdir = "xxxx/log/\${prog_name}/"
+    $mod_proc_log = "\${prog_logdir}/\${prog_name}.log"
+    $mod_run_log = "\${basedir}/run.log"
+
+    $to_email = ""
+    $mod_start = "/opt/soft/openjdk1.8.0_202/bin/java -Xms2g -Xmx2g -XX:MaxDirectMemorySize=500M -XX:+UseG1GC -XX:MaxGCPauseMillis=20 \
+      -XX:+PrintReferenceGC -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintHeapAtGC -verbose:gc \
+      -Xloggc:xxxx/log/${project}/gc.log -jar \${basedir}/${project}-server-${version}.jar -r"
+
+
+    $run_dir = "\${basedir}"
+    $run_env= {"JAVA_HOME" => "/opt/soft/openjdk1.8.0_202", "CLASSPATH" => ".:/opt/soft/openjdk1.8.0_202/jre/lib:/opt/soft/openjdk1.8.0_202/lib:/opt/soft/openjdk1.8.0_202/lib/tools.jar:/opt/soft/openjdk1.8.0_202/lib/dt.jar", "JAVA_OPTS" => ""}
+    }
+class preview inherits base {
+}
+
+class production-sd inherits base {
+}
+
+class production-lg inherits base {
+}
+
+class production-hh inherits base {
+}
+
+class c3 inherits base {
+}
+
+class c4 inherits base {
+}
+
+class aws-sgp inherits base {
+}
+
+class aws-de inherits base {
+}
+
+class aws-mb inherits base {
+}
+
+class ali-sgp inherits base {
+}
+
+class staging inherits base {
+}
+
+class onebox inherits base {
+}
+
+class config inherits $<env> {}

@@ -1,0 +1,17 @@
+/*
+ *  Copyright 2020 Xiaomi
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
+{ "list": ["code:", 9, [{ "code": 4, "{\"code\":\"006\"}}": "{\"code\":\"007\"}}" }, 5, "code:", "{[[{\"code\":\"0010\"]]]}}", "{{\"code\":\"0010\"]]]}}"], { "$ref": "$.list[2][0]" }, "{\"code\":\"003\"}}}}}", "{\"code\":\"003\"}}]]]]}}}", "{[[\"code\":\"003\"}}}}}"], "map": { "code": { "$ref": "$.list[2][0]" } }, "set": [{ "$ref": "$.list[2][0]" }, 5, "code:", "{[[{\"code\":\"0010\"]]]}}", "{{\"code\":\"0010\"]]]}}"], "str": "ff", "code": 666, "t": { "code": 11, "list": ["code:", 9, { "$ref": "$.set" }, { "$ref": "$.list[2][0]" }, "{\"code\":\"003\"}}}}}", "{\"code\":\"003\"}}]]]]}}}", "{[[\"code\":\"003\"}}}}}"], "map": { "$ref": "$.map" }, "set": [{ "$ref": "$.list[2][0]" }, 5, "code:", "{[[{\"code\":\"0010\"]]]}}", "{{\"code\":\"0010\"]]]}}"], "str": "dd", "t": { "code": 8, "list": ["code:", 9, { "$ref": "$.t.set" }, { "$ref": "$.list[2][0]" }, "{\"code\":\"003\"}}}}}", "{\"code\":\"003\"}}]]]]}}}", "{[[\"code\":\"003\"}}}}}"], "map": { "$ref": "$.map" }, "set": [{ "$ref": "$.list[2][0]" }, 5, "code:", "{[[{\"code\":\"0010\"]]]}}", "{{\"code\":\"0010\"]]]}}"], "str": "\"\"[{\"code\":\"001\"]]{\"code\":\"002\"}\"" } } }

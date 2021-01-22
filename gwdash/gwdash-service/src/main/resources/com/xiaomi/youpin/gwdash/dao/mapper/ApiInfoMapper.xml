@@ -1,0 +1,860 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~  Copyright 2020 Xiaomi
+  ~
+  ~    Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaomi.youpin.gwdash.dao.mapper.ApiInfoMapper">
+  <resultMap id="BaseResultMap" type="com.xiaomi.youpin.gwdash.dao.model.ApiInfo">
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="name" jdbcType="VARCHAR" property="name" />
+    <result column="description" jdbcType="VARCHAR" property="description" />
+    <result column="url" jdbcType="VARCHAR" property="url" />
+    <result column="http_method" jdbcType="VARCHAR" property="httpMethod" />
+    <result column="path" jdbcType="VARCHAR" property="path" />
+    <result column="route_type" jdbcType="TINYINT" property="routeType" />
+    <result column="group_id" jdbcType="INTEGER" property="groupId" />
+    <result column="service_name" jdbcType="VARCHAR" property="serviceName" />
+    <result column="method_name" jdbcType="VARCHAR" property="methodName" />
+    <result column="service_group" jdbcType="VARCHAR" property="serviceGroup" />
+    <result column="service_version" jdbcType="VARCHAR" property="serviceVersion" />
+    <result column="status" jdbcType="INTEGER" property="status" />
+    <result column="creator" jdbcType="VARCHAR" property="creator" />
+    <result column="updater" jdbcType="VARCHAR" property="updater" />
+    <result column="content_type" jdbcType="VARCHAR" property="contentType" />
+    <result column="flag" jdbcType="INTEGER" property="flag" />
+    <result column="invoke_limit" jdbcType="INTEGER" property="invokeLimit" />
+    <result column="qps_limit" jdbcType="INTEGER" property="qpsLimit" />
+    <result column="timeout" jdbcType="INTEGER" property="timeout" />
+    <result column="cache_expire" jdbcType="INTEGER" property="cacheExpire" />
+    <result column="token" jdbcType="VARCHAR" property="token" />
+    <result column="ctime" jdbcType="BIGINT" property="ctime" />
+    <result column="utime" jdbcType="BIGINT" property="utime" />
+    <result column="plugin_name" jdbcType="VARCHAR" property="pluginName" />
+    <result column="ds_ids" jdbcType="VARCHAR" property="dsIds" />
+    <result column="ip_anti_brush_limit" jdbcType="INTEGER" property="ipAntiBrushLimit" />
+    <result column="uid_anti_brush_limit" jdbcType="INTEGER" property="uidAntiBrushLimit" />
+    <result column="priority" jdbcType="INTEGER" property="priority" />
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.youpin.gwdash.dao.model.ApiInfo">
+    <result column="param_template" jdbcType="LONGVARCHAR" property="paramTemplate" />
+    <result column="filter_params" jdbcType="LONGVARCHAR" property="filterParams" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    id, name, description, url, http_method, path, route_type, group_id, service_name, 
+    method_name, service_group, service_version, status, creator, updater, content_type, 
+    flag, invoke_limit, qps_limit, timeout, cache_expire, token, ctime, utime, plugin_name, 
+    ds_ids, ip_anti_brush_limit, uid_anti_brush_limit, priority
+  </sql>
+  <sql id="Blob_Column_List">
+    param_template, filter_params
+  </sql>
+  <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.youpin.gwdash.dao.model.ApiInfoExample" resultMap="ResultMapWithBLOBs">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from api_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+    <if test="limit != null and limit >= 0">
+      limit #{offset} , #{limit}
+    </if>
+  </select>
+  <select id="selectByExample" parameterType="com.xiaomi.youpin.gwdash.dao.model.ApiInfoExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from api_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+    <if test="limit != null and limit >= 0">
+      limit #{offset} , #{limit}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="ResultMapWithBLOBs">
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from api_info
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from api_info
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.xiaomi.youpin.gwdash.dao.model.ApiInfoExample">
+    delete from api_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.xiaomi.youpin.gwdash.dao.model.ApiInfo">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Long">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into api_info (name, description, url, 
+      http_method, path, route_type, 
+      group_id, service_name, method_name, 
+      service_group, service_version, status, 
+      creator, updater, content_type, 
+      flag, invoke_limit, qps_limit, 
+      timeout, cache_expire, token, 
+      ctime, utime, plugin_name, 
+      ds_ids, ip_anti_brush_limit, uid_anti_brush_limit, 
+      priority, param_template, filter_params
+      )
+    values (#{name,jdbcType=VARCHAR}, #{description,jdbcType=VARCHAR}, #{url,jdbcType=VARCHAR}, 
+      #{httpMethod,jdbcType=VARCHAR}, #{path,jdbcType=VARCHAR}, #{routeType,jdbcType=TINYINT}, 
+      #{groupId,jdbcType=INTEGER}, #{serviceName,jdbcType=VARCHAR}, #{methodName,jdbcType=VARCHAR}, 
+      #{serviceGroup,jdbcType=VARCHAR}, #{serviceVersion,jdbcType=VARCHAR}, #{status,jdbcType=INTEGER}, 
+      #{creator,jdbcType=VARCHAR}, #{updater,jdbcType=VARCHAR}, #{contentType,jdbcType=VARCHAR}, 
+      #{flag,jdbcType=INTEGER}, #{invokeLimit,jdbcType=INTEGER}, #{qpsLimit,jdbcType=INTEGER}, 
+      #{timeout,jdbcType=INTEGER}, #{cacheExpire,jdbcType=INTEGER}, #{token,jdbcType=VARCHAR}, 
+      #{ctime,jdbcType=BIGINT}, #{utime,jdbcType=BIGINT}, #{pluginName,jdbcType=VARCHAR}, 
+      #{dsIds,jdbcType=VARCHAR}, #{ipAntiBrushLimit,jdbcType=INTEGER}, #{uidAntiBrushLimit,jdbcType=INTEGER}, 
+      #{priority,jdbcType=INTEGER}, #{paramTemplate,jdbcType=LONGVARCHAR}, #{filterParams,jdbcType=LONGVARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.xiaomi.youpin.gwdash.dao.model.ApiInfo">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Long">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into api_info
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="name != null">
+        name,
+      </if>
+      <if test="description != null">
+        description,
+      </if>
+      <if test="url != null">
+        url,
+      </if>
+      <if test="httpMethod != null">
+        http_method,
+      </if>
+      <if test="path != null">
+        path,
+      </if>
+      <if test="routeType != null">
+        route_type,
+      </if>
+      <if test="groupId != null">
+        group_id,
+      </if>
+      <if test="serviceName != null">
+        service_name,
+      </if>
+      <if test="methodName != null">
+        method_name,
+      </if>
+      <if test="serviceGroup != null">
+        service_group,
+      </if>
+      <if test="serviceVersion != null">
+        service_version,
+      </if>
+      <if test="status != null">
+        status,
+      </if>
+      <if test="creator != null">
+        creator,
+      </if>
+      <if test="updater != null">
+        updater,
+      </if>
+      <if test="contentType != null">
+        content_type,
+      </if>
+      <if test="flag != null">
+        flag,
+      </if>
+      <if test="invokeLimit != null">
+        invoke_limit,
+      </if>
+      <if test="qpsLimit != null">
+        qps_limit,
+      </if>
+      <if test="timeout != null">
+        timeout,
+      </if>
+      <if test="cacheExpire != null">
+        cache_expire,
+      </if>
+      <if test="token != null">
+        token,
+      </if>
+      <if test="ctime != null">
+        ctime,
+      </if>
+      <if test="utime != null">
+        utime,
+      </if>
+      <if test="pluginName != null">
+        plugin_name,
+      </if>
+      <if test="dsIds != null">
+        ds_ids,
+      </if>
+      <if test="ipAntiBrushLimit != null">
+        ip_anti_brush_limit,
+      </if>
+      <if test="uidAntiBrushLimit != null">
+        uid_anti_brush_limit,
+      </if>
+      <if test="priority != null">
+        priority,
+      </if>
+      <if test="paramTemplate != null">
+        param_template,
+      </if>
+      <if test="filterParams != null">
+        filter_params,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="name != null">
+        #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="description != null">
+        #{description,jdbcType=VARCHAR},
+      </if>
+      <if test="url != null">
+        #{url,jdbcType=VARCHAR},
+      </if>
+      <if test="httpMethod != null">
+        #{httpMethod,jdbcType=VARCHAR},
+      </if>
+      <if test="path != null">
+        #{path,jdbcType=VARCHAR},
+      </if>
+      <if test="routeType != null">
+        #{routeType,jdbcType=TINYINT},
+      </if>
+      <if test="groupId != null">
+        #{groupId,jdbcType=INTEGER},
+      </if>
+      <if test="serviceName != null">
+        #{serviceName,jdbcType=VARCHAR},
+      </if>
+      <if test="methodName != null">
+        #{methodName,jdbcType=VARCHAR},
+      </if>
+      <if test="serviceGroup != null">
+        #{serviceGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="serviceVersion != null">
+        #{serviceVersion,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="creator != null">
+        #{creator,jdbcType=VARCHAR},
+      </if>
+      <if test="updater != null">
+        #{updater,jdbcType=VARCHAR},
+      </if>
+      <if test="contentType != null">
+        #{contentType,jdbcType=VARCHAR},
+      </if>
+      <if test="flag != null">
+        #{flag,jdbcType=INTEGER},
+      </if>
+      <if test="invokeLimit != null">
+        #{invokeLimit,jdbcType=INTEGER},
+      </if>
+      <if test="qpsLimit != null">
+        #{qpsLimit,jdbcType=INTEGER},
+      </if>
+      <if test="timeout != null">
+        #{timeout,jdbcType=INTEGER},
+      </if>
+      <if test="cacheExpire != null">
+        #{cacheExpire,jdbcType=INTEGER},
+      </if>
+      <if test="token != null">
+        #{token,jdbcType=VARCHAR},
+      </if>
+      <if test="ctime != null">
+        #{ctime,jdbcType=BIGINT},
+      </if>
+      <if test="utime != null">
+        #{utime,jdbcType=BIGINT},
+      </if>
+      <if test="pluginName != null">
+        #{pluginName,jdbcType=VARCHAR},
+      </if>
+      <if test="dsIds != null">
+        #{dsIds,jdbcType=VARCHAR},
+      </if>
+      <if test="ipAntiBrushLimit != null">
+        #{ipAntiBrushLimit,jdbcType=INTEGER},
+      </if>
+      <if test="uidAntiBrushLimit != null">
+        #{uidAntiBrushLimit,jdbcType=INTEGER},
+      </if>
+      <if test="priority != null">
+        #{priority,jdbcType=INTEGER},
+      </if>
+      <if test="paramTemplate != null">
+        #{paramTemplate,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="filterParams != null">
+        #{filterParams,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.xiaomi.youpin.gwdash.dao.model.ApiInfoExample" resultType="java.lang.Long">
+    select count(*) from api_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update api_info
+    <set>
+      <if test="record.id != null">
+        id = #{record.id,jdbcType=BIGINT},
+      </if>
+      <if test="record.name != null">
+        name = #{record.name,jdbcType=VARCHAR},
+      </if>
+      <if test="record.description != null">
+        description = #{record.description,jdbcType=VARCHAR},
+      </if>
+      <if test="record.url != null">
+        url = #{record.url,jdbcType=VARCHAR},
+      </if>
+      <if test="record.httpMethod != null">
+        http_method = #{record.httpMethod,jdbcType=VARCHAR},
+      </if>
+      <if test="record.path != null">
+        path = #{record.path,jdbcType=VARCHAR},
+      </if>
+      <if test="record.routeType != null">
+        route_type = #{record.routeType,jdbcType=TINYINT},
+      </if>
+      <if test="record.groupId != null">
+        group_id = #{record.groupId,jdbcType=INTEGER},
+      </if>
+      <if test="record.serviceName != null">
+        service_name = #{record.serviceName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.methodName != null">
+        method_name = #{record.methodName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.serviceGroup != null">
+        service_group = #{record.serviceGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="record.serviceVersion != null">
+        service_version = #{record.serviceVersion,jdbcType=VARCHAR},
+      </if>
+      <if test="record.status != null">
+        status = #{record.status,jdbcType=INTEGER},
+      </if>
+      <if test="record.creator != null">
+        creator = #{record.creator,jdbcType=VARCHAR},
+      </if>
+      <if test="record.updater != null">
+        updater = #{record.updater,jdbcType=VARCHAR},
+      </if>
+      <if test="record.contentType != null">
+        content_type = #{record.contentType,jdbcType=VARCHAR},
+      </if>
+      <if test="record.flag != null">
+        flag = #{record.flag,jdbcType=INTEGER},
+      </if>
+      <if test="record.invokeLimit != null">
+        invoke_limit = #{record.invokeLimit,jdbcType=INTEGER},
+      </if>
+      <if test="record.qpsLimit != null">
+        qps_limit = #{record.qpsLimit,jdbcType=INTEGER},
+      </if>
+      <if test="record.timeout != null">
+        timeout = #{record.timeout,jdbcType=INTEGER},
+      </if>
+      <if test="record.cacheExpire != null">
+        cache_expire = #{record.cacheExpire,jdbcType=INTEGER},
+      </if>
+      <if test="record.token != null">
+        token = #{record.token,jdbcType=VARCHAR},
+      </if>
+      <if test="record.ctime != null">
+        ctime = #{record.ctime,jdbcType=BIGINT},
+      </if>
+      <if test="record.utime != null">
+        utime = #{record.utime,jdbcType=BIGINT},
+      </if>
+      <if test="record.pluginName != null">
+        plugin_name = #{record.pluginName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.dsIds != null">
+        ds_ids = #{record.dsIds,jdbcType=VARCHAR},
+      </if>
+      <if test="record.ipAntiBrushLimit != null">
+        ip_anti_brush_limit = #{record.ipAntiBrushLimit,jdbcType=INTEGER},
+      </if>
+      <if test="record.uidAntiBrushLimit != null">
+        uid_anti_brush_limit = #{record.uidAntiBrushLimit,jdbcType=INTEGER},
+      </if>
+      <if test="record.priority != null">
+        priority = #{record.priority,jdbcType=INTEGER},
+      </if>
+      <if test="record.paramTemplate != null">
+        param_template = #{record.paramTemplate,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.filterParams != null">
+        filter_params = #{record.filterParams,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExampleWithBLOBs" parameterType="map">
+    update api_info
+    set id = #{record.id,jdbcType=BIGINT},
+      name = #{record.name,jdbcType=VARCHAR},
+      description = #{record.description,jdbcType=VARCHAR},
+      url = #{record.url,jdbcType=VARCHAR},
+      http_method = #{record.httpMethod,jdbcType=VARCHAR},
+      path = #{record.path,jdbcType=VARCHAR},
+      route_type = #{record.routeType,jdbcType=TINYINT},
+      group_id = #{record.groupId,jdbcType=INTEGER},
+      service_name = #{record.serviceName,jdbcType=VARCHAR},
+      method_name = #{record.methodName,jdbcType=VARCHAR},
+      service_group = #{record.serviceGroup,jdbcType=VARCHAR},
+      service_version = #{record.serviceVersion,jdbcType=VARCHAR},
+      status = #{record.status,jdbcType=INTEGER},
+      creator = #{record.creator,jdbcType=VARCHAR},
+      updater = #{record.updater,jdbcType=VARCHAR},
+      content_type = #{record.contentType,jdbcType=VARCHAR},
+      flag = #{record.flag,jdbcType=INTEGER},
+      invoke_limit = #{record.invokeLimit,jdbcType=INTEGER},
+      qps_limit = #{record.qpsLimit,jdbcType=INTEGER},
+      timeout = #{record.timeout,jdbcType=INTEGER},
+      cache_expire = #{record.cacheExpire,jdbcType=INTEGER},
+      token = #{record.token,jdbcType=VARCHAR},
+      ctime = #{record.ctime,jdbcType=BIGINT},
+      utime = #{record.utime,jdbcType=BIGINT},
+      plugin_name = #{record.pluginName,jdbcType=VARCHAR},
+      ds_ids = #{record.dsIds,jdbcType=VARCHAR},
+      ip_anti_brush_limit = #{record.ipAntiBrushLimit,jdbcType=INTEGER},
+      uid_anti_brush_limit = #{record.uidAntiBrushLimit,jdbcType=INTEGER},
+      priority = #{record.priority,jdbcType=INTEGER},
+      param_template = #{record.paramTemplate,jdbcType=LONGVARCHAR},
+      filter_params = #{record.filterParams,jdbcType=LONGVARCHAR}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update api_info
+    set id = #{record.id,jdbcType=BIGINT},
+      name = #{record.name,jdbcType=VARCHAR},
+      description = #{record.description,jdbcType=VARCHAR},
+      url = #{record.url,jdbcType=VARCHAR},
+      http_method = #{record.httpMethod,jdbcType=VARCHAR},
+      path = #{record.path,jdbcType=VARCHAR},
+      route_type = #{record.routeType,jdbcType=TINYINT},
+      group_id = #{record.groupId,jdbcType=INTEGER},
+      service_name = #{record.serviceName,jdbcType=VARCHAR},
+      method_name = #{record.methodName,jdbcType=VARCHAR},
+      service_group = #{record.serviceGroup,jdbcType=VARCHAR},
+      service_version = #{record.serviceVersion,jdbcType=VARCHAR},
+      status = #{record.status,jdbcType=INTEGER},
+      creator = #{record.creator,jdbcType=VARCHAR},
+      updater = #{record.updater,jdbcType=VARCHAR},
+      content_type = #{record.contentType,jdbcType=VARCHAR},
+      flag = #{record.flag,jdbcType=INTEGER},
+      invoke_limit = #{record.invokeLimit,jdbcType=INTEGER},
+      qps_limit = #{record.qpsLimit,jdbcType=INTEGER},
+      timeout = #{record.timeout,jdbcType=INTEGER},
+      cache_expire = #{record.cacheExpire,jdbcType=INTEGER},
+      token = #{record.token,jdbcType=VARCHAR},
+      ctime = #{record.ctime,jdbcType=BIGINT},
+      utime = #{record.utime,jdbcType=BIGINT},
+      plugin_name = #{record.pluginName,jdbcType=VARCHAR},
+      ds_ids = #{record.dsIds,jdbcType=VARCHAR},
+      ip_anti_brush_limit = #{record.ipAntiBrushLimit,jdbcType=INTEGER},
+      uid_anti_brush_limit = #{record.uidAntiBrushLimit,jdbcType=INTEGER},
+      priority = #{record.priority,jdbcType=INTEGER}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.youpin.gwdash.dao.model.ApiInfo">
+    update api_info
+    <set>
+      <if test="name != null">
+        name = #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="description != null">
+        description = #{description,jdbcType=VARCHAR},
+      </if>
+      <if test="url != null">
+        url = #{url,jdbcType=VARCHAR},
+      </if>
+      <if test="httpMethod != null">
+        http_method = #{httpMethod,jdbcType=VARCHAR},
+      </if>
+      <if test="path != null">
+        path = #{path,jdbcType=VARCHAR},
+      </if>
+      <if test="routeType != null">
+        route_type = #{routeType,jdbcType=TINYINT},
+      </if>
+      <if test="groupId != null">
+        group_id = #{groupId,jdbcType=INTEGER},
+      </if>
+      <if test="serviceName != null">
+        service_name = #{serviceName,jdbcType=VARCHAR},
+      </if>
+      <if test="methodName != null">
+        method_name = #{methodName,jdbcType=VARCHAR},
+      </if>
+      <if test="serviceGroup != null">
+        service_group = #{serviceGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="serviceVersion != null">
+        service_version = #{serviceVersion,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="creator != null">
+        creator = #{creator,jdbcType=VARCHAR},
+      </if>
+      <if test="updater != null">
+        updater = #{updater,jdbcType=VARCHAR},
+      </if>
+      <if test="contentType != null">
+        content_type = #{contentType,jdbcType=VARCHAR},
+      </if>
+      <if test="flag != null">
+        flag = #{flag,jdbcType=INTEGER},
+      </if>
+      <if test="invokeLimit != null">
+        invoke_limit = #{invokeLimit,jdbcType=INTEGER},
+      </if>
+      <if test="qpsLimit != null">
+        qps_limit = #{qpsLimit,jdbcType=INTEGER},
+      </if>
+      <if test="timeout != null">
+        timeout = #{timeout,jdbcType=INTEGER},
+      </if>
+      <if test="cacheExpire != null">
+        cache_expire = #{cacheExpire,jdbcType=INTEGER},
+      </if>
+      <if test="token != null">
+        token = #{token,jdbcType=VARCHAR},
+      </if>
+      <if test="ctime != null">
+        ctime = #{ctime,jdbcType=BIGINT},
+      </if>
+      <if test="utime != null">
+        utime = #{utime,jdbcType=BIGINT},
+      </if>
+      <if test="pluginName != null">
+        plugin_name = #{pluginName,jdbcType=VARCHAR},
+      </if>
+      <if test="dsIds != null">
+        ds_ids = #{dsIds,jdbcType=VARCHAR},
+      </if>
+      <if test="ipAntiBrushLimit != null">
+        ip_anti_brush_limit = #{ipAntiBrushLimit,jdbcType=INTEGER},
+      </if>
+      <if test="uidAntiBrushLimit != null">
+        uid_anti_brush_limit = #{uidAntiBrushLimit,jdbcType=INTEGER},
+      </if>
+      <if test="priority != null">
+        priority = #{priority,jdbcType=INTEGER},
+      </if>
+      <if test="paramTemplate != null">
+        param_template = #{paramTemplate,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="filterParams != null">
+        filter_params = #{filterParams,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.youpin.gwdash.dao.model.ApiInfo">
+    update api_info
+    set name = #{name,jdbcType=VARCHAR},
+      description = #{description,jdbcType=VARCHAR},
+      url = #{url,jdbcType=VARCHAR},
+      http_method = #{httpMethod,jdbcType=VARCHAR},
+      path = #{path,jdbcType=VARCHAR},
+      route_type = #{routeType,jdbcType=TINYINT},
+      group_id = #{groupId,jdbcType=INTEGER},
+      service_name = #{serviceName,jdbcType=VARCHAR},
+      method_name = #{methodName,jdbcType=VARCHAR},
+      service_group = #{serviceGroup,jdbcType=VARCHAR},
+      service_version = #{serviceVersion,jdbcType=VARCHAR},
+      status = #{status,jdbcType=INTEGER},
+      creator = #{creator,jdbcType=VARCHAR},
+      updater = #{updater,jdbcType=VARCHAR},
+      content_type = #{contentType,jdbcType=VARCHAR},
+      flag = #{flag,jdbcType=INTEGER},
+      invoke_limit = #{invokeLimit,jdbcType=INTEGER},
+      qps_limit = #{qpsLimit,jdbcType=INTEGER},
+      timeout = #{timeout,jdbcType=INTEGER},
+      cache_expire = #{cacheExpire,jdbcType=INTEGER},
+      token = #{token,jdbcType=VARCHAR},
+      ctime = #{ctime,jdbcType=BIGINT},
+      utime = #{utime,jdbcType=BIGINT},
+      plugin_name = #{pluginName,jdbcType=VARCHAR},
+      ds_ids = #{dsIds,jdbcType=VARCHAR},
+      ip_anti_brush_limit = #{ipAntiBrushLimit,jdbcType=INTEGER},
+      uid_anti_brush_limit = #{uidAntiBrushLimit,jdbcType=INTEGER},
+      priority = #{priority,jdbcType=INTEGER},
+      param_template = #{paramTemplate,jdbcType=LONGVARCHAR},
+      filter_params = #{filterParams,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.youpin.gwdash.dao.model.ApiInfo">
+    update api_info
+    set name = #{name,jdbcType=VARCHAR},
+      description = #{description,jdbcType=VARCHAR},
+      url = #{url,jdbcType=VARCHAR},
+      http_method = #{httpMethod,jdbcType=VARCHAR},
+      path = #{path,jdbcType=VARCHAR},
+      route_type = #{routeType,jdbcType=TINYINT},
+      group_id = #{groupId,jdbcType=INTEGER},
+      service_name = #{serviceName,jdbcType=VARCHAR},
+      method_name = #{methodName,jdbcType=VARCHAR},
+      service_group = #{serviceGroup,jdbcType=VARCHAR},
+      service_version = #{serviceVersion,jdbcType=VARCHAR},
+      status = #{status,jdbcType=INTEGER},
+      creator = #{creator,jdbcType=VARCHAR},
+      updater = #{updater,jdbcType=VARCHAR},
+      content_type = #{contentType,jdbcType=VARCHAR},
+      flag = #{flag,jdbcType=INTEGER},
+      invoke_limit = #{invokeLimit,jdbcType=INTEGER},
+      qps_limit = #{qpsLimit,jdbcType=INTEGER},
+      timeout = #{timeout,jdbcType=INTEGER},
+      cache_expire = #{cacheExpire,jdbcType=INTEGER},
+      token = #{token,jdbcType=VARCHAR},
+      ctime = #{ctime,jdbcType=BIGINT},
+      utime = #{utime,jdbcType=BIGINT},
+      plugin_name = #{pluginName,jdbcType=VARCHAR},
+      ds_ids = #{dsIds,jdbcType=VARCHAR},
+      ip_anti_brush_limit = #{ipAntiBrushLimit,jdbcType=INTEGER},
+      uid_anti_brush_limit = #{uidAntiBrushLimit,jdbcType=INTEGER},
+      priority = #{priority,jdbcType=INTEGER}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    insert into api_info
+    (name, description, url, http_method, path, route_type, group_id, service_name, method_name, 
+      service_group, service_version, status, creator, updater, content_type, flag, invoke_limit, 
+      qps_limit, timeout, cache_expire, token, ctime, utime, plugin_name, ds_ids, ip_anti_brush_limit, 
+      uid_anti_brush_limit, priority, param_template, filter_params)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.name,jdbcType=VARCHAR}, #{item.description,jdbcType=VARCHAR}, #{item.url,jdbcType=VARCHAR}, 
+        #{item.httpMethod,jdbcType=VARCHAR}, #{item.path,jdbcType=VARCHAR}, #{item.routeType,jdbcType=TINYINT}, 
+        #{item.groupId,jdbcType=INTEGER}, #{item.serviceName,jdbcType=VARCHAR}, #{item.methodName,jdbcType=VARCHAR}, 
+        #{item.serviceGroup,jdbcType=VARCHAR}, #{item.serviceVersion,jdbcType=VARCHAR}, 
+        #{item.status,jdbcType=INTEGER}, #{item.creator,jdbcType=VARCHAR}, #{item.updater,jdbcType=VARCHAR}, 
+        #{item.contentType,jdbcType=VARCHAR}, #{item.flag,jdbcType=INTEGER}, #{item.invokeLimit,jdbcType=INTEGER}, 
+        #{item.qpsLimit,jdbcType=INTEGER}, #{item.timeout,jdbcType=INTEGER}, #{item.cacheExpire,jdbcType=INTEGER}, 
+        #{item.token,jdbcType=VARCHAR}, #{item.ctime,jdbcType=BIGINT}, #{item.utime,jdbcType=BIGINT}, 
+        #{item.pluginName,jdbcType=VARCHAR}, #{item.dsIds,jdbcType=VARCHAR}, #{item.ipAntiBrushLimit,jdbcType=INTEGER}, 
+        #{item.uidAntiBrushLimit,jdbcType=INTEGER}, #{item.priority,jdbcType=INTEGER}, 
+        #{item.paramTemplate,jdbcType=LONGVARCHAR}, #{item.filterParams,jdbcType=LONGVARCHAR}
+        )
+    </foreach>
+  </insert>
+  <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
+    insert into api_info (
+    <foreach collection="selective" item="column" separator=",">
+      ${column.escapedColumnName}
+    </foreach>
+    )
+    values
+    <foreach collection="list" item="item" separator=",">
+      (
+      <foreach collection="selective" item="column" separator=",">
+        <if test="'name'.toString() == column.value">
+          #{item.name,jdbcType=VARCHAR}
+        </if>
+        <if test="'description'.toString() == column.value">
+          #{item.description,jdbcType=VARCHAR}
+        </if>
+        <if test="'url'.toString() == column.value">
+          #{item.url,jdbcType=VARCHAR}
+        </if>
+        <if test="'http_method'.toString() == column.value">
+          #{item.httpMethod,jdbcType=VARCHAR}
+        </if>
+        <if test="'path'.toString() == column.value">
+          #{item.path,jdbcType=VARCHAR}
+        </if>
+        <if test="'route_type'.toString() == column.value">
+          #{item.routeType,jdbcType=TINYINT}
+        </if>
+        <if test="'group_id'.toString() == column.value">
+          #{item.groupId,jdbcType=INTEGER}
+        </if>
+        <if test="'service_name'.toString() == column.value">
+          #{item.serviceName,jdbcType=VARCHAR}
+        </if>
+        <if test="'method_name'.toString() == column.value">
+          #{item.methodName,jdbcType=VARCHAR}
+        </if>
+        <if test="'service_group'.toString() == column.value">
+          #{item.serviceGroup,jdbcType=VARCHAR}
+        </if>
+        <if test="'service_version'.toString() == column.value">
+          #{item.serviceVersion,jdbcType=VARCHAR}
+        </if>
+        <if test="'status'.toString() == column.value">
+          #{item.status,jdbcType=INTEGER}
+        </if>
+        <if test="'creator'.toString() == column.value">
+          #{item.creator,jdbcType=VARCHAR}
+        </if>
+        <if test="'updater'.toString() == column.value">
+          #{item.updater,jdbcType=VARCHAR}
+        </if>
+        <if test="'content_type'.toString() == column.value">
+          #{item.contentType,jdbcType=VARCHAR}
+        </if>
+        <if test="'flag'.toString() == column.value">
+          #{item.flag,jdbcType=INTEGER}
+        </if>
+        <if test="'invoke_limit'.toString() == column.value">
+          #{item.invokeLimit,jdbcType=INTEGER}
+        </if>
+        <if test="'qps_limit'.toString() == column.value">
+          #{item.qpsLimit,jdbcType=INTEGER}
+        </if>
+        <if test="'timeout'.toString() == column.value">
+          #{item.timeout,jdbcType=INTEGER}
+        </if>
+        <if test="'cache_expire'.toString() == column.value">
+          #{item.cacheExpire,jdbcType=INTEGER}
+        </if>
+        <if test="'token'.toString() == column.value">
+          #{item.token,jdbcType=VARCHAR}
+        </if>
+        <if test="'ctime'.toString() == column.value">
+          #{item.ctime,jdbcType=BIGINT}
+        </if>
+        <if test="'utime'.toString() == column.value">
+          #{item.utime,jdbcType=BIGINT}
+        </if>
+        <if test="'plugin_name'.toString() == column.value">
+          #{item.pluginName,jdbcType=VARCHAR}
+        </if>
+        <if test="'ds_ids'.toString() == column.value">
+          #{item.dsIds,jdbcType=VARCHAR}
+        </if>
+        <if test="'ip_anti_brush_limit'.toString() == column.value">
+          #{item.ipAntiBrushLimit,jdbcType=INTEGER}
+        </if>
+        <if test="'uid_anti_brush_limit'.toString() == column.value">
+          #{item.uidAntiBrushLimit,jdbcType=INTEGER}
+        </if>
+        <if test="'priority'.toString() == column.value">
+          #{item.priority,jdbcType=INTEGER}
+        </if>
+        <if test="'param_template'.toString() == column.value">
+          #{item.paramTemplate,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'filter_params'.toString() == column.value">
+          #{item.filterParams,jdbcType=LONGVARCHAR}
+        </if>
+      </foreach>
+      )
+    </foreach>
+  </insert>
+</mapper>

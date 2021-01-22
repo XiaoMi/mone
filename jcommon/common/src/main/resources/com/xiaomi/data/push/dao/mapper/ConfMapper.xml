@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~  Copyright 2020 Xiaomi
+  ~
+  ~    Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xiaomi.data.push.dao.mapper.ConfMapper" >
+  <resultMap id="BaseResultMap" type="com.xiaomi.data.push.dao.model.Conf" >
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="conf_key" property="confKey" jdbcType="VARCHAR" />
+    <result column="ctime" property="ctime" jdbcType="BIGINT" />
+    <result column="utime" property="utime" jdbcType="BIGINT" />
+    <result column="version" property="version" jdbcType="INTEGER" />
+    <result column="status" property="status" jdbcType="INTEGER" />
+  </resultMap>
+  <resultMap id="ResultMapWithBLOBs" type="com.xiaomi.data.push.dao.model.Conf" extends="BaseResultMap" >
+    <result column="conf_value" property="confValue" jdbcType="LONGVARCHAR" />
+  </resultMap>
+  <sql id="Example_Where_Clause" >
+    <where >
+      <foreach collection="oredCriteria" item="criteria" separator="or" >
+        <if test="criteria.valid" >
+          <trim prefix="(" suffix=")" prefixOverrides="and" >
+            <foreach collection="criteria.criteria" item="criterion" >
+              <choose >
+                <when test="criterion.noValue" >
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue" >
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue" >
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue" >
+                  and ${criterion.condition}
+                  <foreach collection="criterion.value" item="listItem" open="(" close=")" separator="," >
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause" >
+    <where >
+      <foreach collection="example.oredCriteria" item="criteria" separator="or" >
+        <if test="criteria.valid" >
+          <trim prefix="(" suffix=")" prefixOverrides="and" >
+            <foreach collection="criteria.criteria" item="criterion" >
+              <choose >
+                <when test="criterion.noValue" >
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue" >
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue" >
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue" >
+                  and ${criterion.condition}
+                  <foreach collection="criterion.value" item="listItem" open="(" close=")" separator="," >
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List" >
+    id, conf_key, ctime, utime, version, status
+  </sql>
+  <sql id="Blob_Column_List" >
+    conf_value
+  </sql>
+  <select id="selectByExampleWithBLOBs" resultMap="ResultMapWithBLOBs" parameterType="com.xiaomi.data.push.dao.model.ConfExample" >
+    select
+    <if test="distinct" >
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from conf
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null" >
+      order by ${orderByClause}
+    </if>
+    <if test="limit != null and limit >= 0" >
+      limit #{offset} , #{limit}
+    </if>
+  </select>
+  <select id="selectByExample" resultMap="BaseResultMap" parameterType="com.xiaomi.data.push.dao.model.ConfExample" >
+    select
+    <if test="distinct" >
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from conf
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null" >
+      order by ${orderByClause}
+    </if>
+    <if test="limit != null and limit >= 0" >
+      limit #{offset} , #{limit}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" resultMap="ResultMapWithBLOBs" parameterType="java.lang.Integer" >
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from conf
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from conf
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.xiaomi.data.push.dao.model.ConfExample" >
+    delete from conf
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.xiaomi.data.push.dao.model.Conf" >
+    <selectKey resultType="java.lang.Integer" keyProperty="id" order="AFTER" >
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into conf (conf_key, ctime, utime, 
+      version, status, conf_value
+      )
+    values (#{confKey,jdbcType=VARCHAR}, #{ctime,jdbcType=BIGINT}, #{utime,jdbcType=BIGINT}, 
+      #{version,jdbcType=INTEGER}, #{status,jdbcType=INTEGER}, #{confValue,jdbcType=LONGVARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.xiaomi.data.push.dao.model.Conf" >
+    <selectKey resultType="java.lang.Integer" keyProperty="id" order="AFTER" >
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into conf
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="confKey != null" >
+        conf_key,
+      </if>
+      <if test="ctime != null" >
+        ctime,
+      </if>
+      <if test="utime != null" >
+        utime,
+      </if>
+      <if test="version != null" >
+        version,
+      </if>
+      <if test="status != null" >
+        status,
+      </if>
+      <if test="confValue != null" >
+        conf_value,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="confKey != null" >
+        #{confKey,jdbcType=VARCHAR},
+      </if>
+      <if test="ctime != null" >
+        #{ctime,jdbcType=BIGINT},
+      </if>
+      <if test="utime != null" >
+        #{utime,jdbcType=BIGINT},
+      </if>
+      <if test="version != null" >
+        #{version,jdbcType=INTEGER},
+      </if>
+      <if test="status != null" >
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="confValue != null" >
+        #{confValue,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.xiaomi.data.push.dao.model.ConfExample" resultType="java.lang.Integer" >
+    select count(*) from conf
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map" >
+    update conf
+    <set >
+      <if test="record.id != null" >
+        id = #{record.id,jdbcType=INTEGER},
+      </if>
+      <if test="record.confKey != null" >
+        conf_key = #{record.confKey,jdbcType=VARCHAR},
+      </if>
+      <if test="record.ctime != null" >
+        ctime = #{record.ctime,jdbcType=BIGINT},
+      </if>
+      <if test="record.utime != null" >
+        utime = #{record.utime,jdbcType=BIGINT},
+      </if>
+      <if test="record.version != null" >
+        version = #{record.version,jdbcType=INTEGER},
+      </if>
+      <if test="record.status != null" >
+        status = #{record.status,jdbcType=INTEGER},
+      </if>
+      <if test="record.confValue != null" >
+        conf_value = #{record.confValue,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    <if test="_parameter != null" >
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExampleWithBLOBs" parameterType="map" >
+    update conf
+    set id = #{record.id,jdbcType=INTEGER},
+      conf_key = #{record.confKey,jdbcType=VARCHAR},
+      ctime = #{record.ctime,jdbcType=BIGINT},
+      utime = #{record.utime,jdbcType=BIGINT},
+      version = #{record.version,jdbcType=INTEGER},
+      status = #{record.status,jdbcType=INTEGER},
+      conf_value = #{record.confValue,jdbcType=LONGVARCHAR}
+    <if test="_parameter != null" >
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map" >
+    update conf
+    set id = #{record.id,jdbcType=INTEGER},
+      conf_key = #{record.confKey,jdbcType=VARCHAR},
+      ctime = #{record.ctime,jdbcType=BIGINT},
+      utime = #{record.utime,jdbcType=BIGINT},
+      version = #{record.version,jdbcType=INTEGER},
+      status = #{record.status,jdbcType=INTEGER}
+    <if test="_parameter != null" >
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.data.push.dao.model.Conf" >
+    update conf
+    <set >
+      <if test="confKey != null" >
+        conf_key = #{confKey,jdbcType=VARCHAR},
+      </if>
+      <if test="ctime != null" >
+        ctime = #{ctime,jdbcType=BIGINT},
+      </if>
+      <if test="utime != null" >
+        utime = #{utime,jdbcType=BIGINT},
+      </if>
+      <if test="version != null" >
+        version = #{version,jdbcType=INTEGER},
+      </if>
+      <if test="status != null" >
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="confValue != null" >
+        conf_value = #{confValue,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.data.push.dao.model.Conf" >
+    update conf
+    set conf_key = #{confKey,jdbcType=VARCHAR},
+      ctime = #{ctime,jdbcType=BIGINT},
+      utime = #{utime,jdbcType=BIGINT},
+      version = #{version,jdbcType=INTEGER},
+      status = #{status,jdbcType=INTEGER},
+      conf_value = #{confValue,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.data.push.dao.model.Conf" >
+    update conf
+    set conf_key = #{confKey,jdbcType=VARCHAR},
+      ctime = #{ctime,jdbcType=BIGINT},
+      utime = #{utime,jdbcType=BIGINT},
+      version = #{version,jdbcType=INTEGER},
+      status = #{status,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+</mapper>
