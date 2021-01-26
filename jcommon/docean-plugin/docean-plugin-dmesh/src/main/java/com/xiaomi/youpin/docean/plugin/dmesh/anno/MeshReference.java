@@ -47,4 +47,10 @@ public @interface MeshReference {
      */
     boolean mesh() default true;
 
+    /**
+     * 是否是远程调用
+     * @return
+     */
+    boolean remote() default false;
+
 }

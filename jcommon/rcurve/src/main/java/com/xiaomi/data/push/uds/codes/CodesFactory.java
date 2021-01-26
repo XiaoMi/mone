@@ -14,29 +14,30 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.youpin.docean.plugin.dmesh.interceptor;
+package com.xiaomi.data.push.uds.codes;
 
-import com.xiaomi.data.push.uds.po.UdsCommand;
-import com.xiaomi.youpin.docean.Ioc;
-import com.xiaomi.youpin.docean.plugin.config.Config;
-import com.xiaomi.youpin.docean.plugin.dmesh.anno.MeshMsService;
-import lombok.extern.slf4j.Slf4j;
+import com.xiaomi.data.push.common.UdsException;
 
 /**
- * @author dingpei@xiaomi.com
  * @author goodjava@qq.com
- * @date 1/11/21
+ * @date 1/22/21
  */
-@Slf4j
-public class CallNacosInterceptor extends AbstractInterceptor {
+public class CodesFactory {
 
+    private static GsonCodes gsonCodes = new GsonCodes();
 
-    public CallNacosInterceptor(Ioc ioc, Config config, MeshMsService reference) {
-        super(ioc, config, reference);
-    }
+    private static HessianCodes hessianCodes = new HessianCodes();
 
-    @Override
-    public void intercept0(UdsCommand req) {
+    public static ICodes getCodes(byte id) {
+        if (id == gsonCodes.type()) {
+            return gsonCodes;
+        }
+
+        if (id == hessianCodes.type()) {
+            return hessianCodes;
+        }
+
+        throw new UdsException("type error");
     }
 
 }

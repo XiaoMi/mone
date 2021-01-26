@@ -29,6 +29,20 @@
 
     <dependencies>
 
+
+        <dependency>
+            <groupId>com.caucho</groupId>
+            <artifactId>hessian</artifactId>
+            <version>4.0.65</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>easy</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
@@ -37,8 +51,8 @@
 
         <dependency>
             <groupId>org.msgpack</groupId>
-            <artifactId>jackson-dataformat-msgpack</artifactId>
-            <version>0.8.18</version>
+            <artifactId>msgpack</artifactId>
+            <version>0.6.12</version>
         </dependency>
 
         <dependency>

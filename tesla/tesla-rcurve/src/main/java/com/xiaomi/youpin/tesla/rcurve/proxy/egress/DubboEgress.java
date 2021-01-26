@@ -1,4 +1,4 @@
-package com.xiaomi.youpin.tesla.rcurve.proxy.processor;
+package com.xiaomi.youpin.tesla.rcurve.proxy.egress;
 
 import com.google.gson.Gson;
 import com.xiaomi.data.push.common.Send;
@@ -25,10 +25,11 @@ import javax.annotation.Resource;
 
 /**
  * @author goodjava@qq.com
+ * 往外调用dubbo服务(egress)
  */
 @Slf4j
 @Component
-public class DubboCallProcessor implements UdsProcessor {
+public class DubboEgress implements UdsProcessor {
 
 
     @Resource
@@ -47,28 +48,18 @@ public class DubboCallProcessor implements UdsProcessor {
     }
 
 
-
     @Override
     public void processRequest(UdsCommand udsCommand) {
-        UdsCommand udsRes = UdsCommand.createResponse(udsCommand.getId());
+        UdsCommand udsRes = UdsCommand.createResponse(udsCommand);
         String serviceName = udsCommand.getServiceName();
         String methodName = udsCommand.getMethodName();
 
-        boolean mesh = udsCommand.getAtt("mesh","true").equals("true");
+        boolean mesh = udsCommand.getAtt("mesh", "true").equals("true");
+
 
         if (!mesh) {
-            DubboRequest dubboRequest = new DubboRequest();
-            dubboRequest.setGroup(udsCommand.getAtt("group",""));
-            dubboRequest.setVersion(udsCommand.getAtt("version", ""));
-            dubboRequest.setTimeout(Integer.valueOf(udsCommand.getAtt("timeout", "1000")));
-            dubboRequest.setMethodName(udsCommand.getMethodName());
-            dubboRequest.setServiceName(udsCommand.getServiceName());
-            dubboRequest.setParameterTypes(udsCommand.getParamTypes());
-            dubboRequest.setArgs(udsCommand.getParams());
-            Object res = dubboCall.call(dubboRequest);
-            udsRes.setCode(0);
-            udsRes.setData(new Gson().toJson(res));
-            Send.send(UdsServerContext.ins().channel(udsCommand.getApp()), udsRes);
+            //非mesh 标准调用(标准的泛化调用)
+            standardCall(udsCommand, udsRes);
             return;
         }
 
@@ -105,7 +96,7 @@ public class DubboCallProcessor implements UdsProcessor {
 //            reference.setGeneric(Constants.GENERIC_SERIALIZATION_YOUPIN_JSON);
 
             //超时设置
-            reference.setTimeout((int)udsCommand.getTimeout());
+            reference.setTimeout((int) udsCommand.getTimeout());
 
             ReferenceConfigCache cache = ReferenceConfigCache.getCache();
             genericService = cache.get(reference);
@@ -149,5 +140,33 @@ public class DubboCallProcessor implements UdsProcessor {
         }
         Send.send(UdsServerContext.ins().channel(udsCommand.getApp()), udsRes);
         return;
+    }
+
+    /**
+     * 标准的调用(泛化调用)
+     *
+     * @param udsCommand
+     * @param udsRes
+     */
+    private void standardCall(UdsCommand udsCommand, UdsCommand udsRes) {
+        try {
+            DubboRequest dubboRequest = new DubboRequest();
+            dubboRequest.setGroup(udsCommand.getAtt("group", ""));
+            dubboRequest.setVersion(udsCommand.getAtt("version", ""));
+            dubboRequest.setTimeout(Integer.valueOf(udsCommand.getAtt("timeout", "1000")));
+            dubboRequest.setMethodName(udsCommand.getMethodName());
+            dubboRequest.setServiceName(udsCommand.getServiceName());
+            dubboRequest.setParameterTypes(udsCommand.getParamTypes());
+            dubboRequest.setArgs(udsCommand.getParams());
+            Object res = dubboCall.call(dubboRequest);
+            udsRes.setCode(0);
+            udsRes.setData(res);
+            Send.send(UdsServerContext.ins().channel(udsCommand.getApp()), udsRes);
+        } catch (Throwable ex) {
+            String message = "egress dubbo error:" + udsCommand.getApp() + ":" + ex.getMessage();
+            log.error(message, ex);
+            UdsCommand res = UdsCommand.createErrorResponse(udsCommand.getId(), message);
+            Send.sendResponse(udsCommand.getChannel(), res);
+        }
     }
 }

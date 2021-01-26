@@ -27,14 +27,11 @@ public class UdsEvent {
 
     private String app;
 
-    private String data;
+    private Object data;
 
-
-    public UdsEvent(String app, String data) {
+    public UdsEvent(String app, Object data) {
         this.app = app;
         this.data = data;
     }
 
-    public UdsEvent() {
-    }
 }

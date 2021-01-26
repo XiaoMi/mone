@@ -30,7 +30,7 @@ import java.util.List;
  */
 @Slf4j
 @Component
-public class RocketMqEntry implements UdsProcessor {
+public class RocketMqEgress implements UdsProcessor {
 
     private Gson gson = new Gson();
 
@@ -87,7 +87,7 @@ public class RocketMqEntry implements UdsProcessor {
 
     @Override
     public void processRequest(UdsCommand req) {
-        UdsCommand res = UdsCommand.createResponse(req.getId());
+        UdsCommand res = UdsCommand.createResponse(req);
         switch (req.getMethodName()) {
             case "send": {
                 String app = gson.fromJson(req.getParams()[0], String.class);

@@ -14,29 +14,33 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.youpin.docean.plugin.dmesh.interceptor;
+package com.xiaomi.mone.rcurve.test;
 
-import com.xiaomi.data.push.uds.po.UdsCommand;
-import com.xiaomi.youpin.docean.Ioc;
-import com.xiaomi.youpin.docean.plugin.config.Config;
-import com.xiaomi.youpin.docean.plugin.dmesh.anno.MeshMsService;
-import lombok.extern.slf4j.Slf4j;
+import com.xiaomi.data.push.uds.codes.GsonCodes;
+import org.junit.Test;
+import org.msgpack.MessagePack;
+import org.springframework.util.Assert;
 
 /**
- * @author dingpei@xiaomi.com
  * @author goodjava@qq.com
- * @date 1/11/21
+ * @date 1/22/21
  */
-@Slf4j
-public class CallNacosInterceptor extends AbstractInterceptor {
+public class CodesTest {
 
-
-    public CallNacosInterceptor(Ioc ioc, Config config, MeshMsService reference) {
-        super(ioc, config, reference);
+    @Test
+    public void testGsonCodes() {
+        GsonCodes codes = new GsonCodes();
+        Obj obj = new Obj();
+        obj.setId(1);
+        obj.setName("zzy");
+        byte[] data = codes.encode(obj);
+        Obj obj2 = codes.decode(data, obj.getClass());
+        System.out.println(obj2);
+        Assert.notNull(obj2, "null");
     }
 
-    @Override
-    public void intercept0(UdsCommand req) {
-    }
 
+    @Test
+    public void testMsgPackCodes() {
+    }
 }

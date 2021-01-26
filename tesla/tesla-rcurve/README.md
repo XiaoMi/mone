@@ -12,3 +12,5 @@
     - redis
     - mysql
 * 性能棒棒的
+* egress 出去的请求
+* ingress 进来的请求

@@ -14,22 +14,20 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.data.push.uds.po;
+package com.xiaomi.youpin.tesla.rcurve.proxy.common;
 
-import lombok.Data;
-
-import java.io.Serializable;
+import com.xiaomi.youpin.docean.Ioc;
+import com.xiaomi.youpin.tesla.rcurve.proxy.manager.ServiceManager;
 
 /**
  * @author goodjava@qq.com
+ * @date 1/24/21
  */
-@Data
-public class UdsPing implements Serializable {
-
-    private String data = "ping";
-
-    private String id;
-
-    private long time;
-
+public class RcurveShutdownHook implements Runnable {
+    @Override
+    public void run() {
+        ServiceManager sm = Ioc.ins().getBean(ServiceManager.class);
+        sm.destory();
+        Ioc.ins().destory();
+    }
 }

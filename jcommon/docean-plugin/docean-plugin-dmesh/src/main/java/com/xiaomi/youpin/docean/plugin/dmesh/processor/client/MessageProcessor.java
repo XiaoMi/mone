@@ -32,7 +32,7 @@ public class MessageProcessor implements UdsProcessor {
 
     @Override
     public void processRequest(UdsCommand request) {
-        String data = request.getData();
+        String data = request.getData(String.class);
         log.info("server:{}", data);
     }
 

@@ -1,4 +1,4 @@
-package com.xiaomi.youpin.tesla.rcurve.proxy.impl;
+package com.xiaomi.youpin.tesla.rcurve.proxy.ingress;
 
 import com.google.gson.Gson;
 import com.xiaomi.data.push.uds.UdsServer;
@@ -24,7 +24,7 @@ import java.util.Arrays;
  */
 @Slf4j
 @Service(interfaceClass = MeshService.class)
-public class DubboProxy implements Proxy<MeshRequest, MeshResponse>, MeshService {
+public class DubboIngress implements Proxy<MeshRequest, MeshResponse>, MeshService {
 
     @Resource
     private UdsServer udsServer;
@@ -47,7 +47,8 @@ public class DubboProxy implements Proxy<MeshRequest, MeshResponse>, MeshService
         request.setTimeout(1000);
         UdsCommand res = udsServer.call(request);
         MeshResponse response = new MeshResponse();
-        response.setData(res.getData());
+        String data = res.getData(String.class);
+        response.setData(data);
         return response;
     }
 
@@ -65,6 +66,12 @@ public class DubboProxy implements Proxy<MeshRequest, MeshResponse>, MeshService
         return execute(context, request);
     }
 
+    /**
+     * dubbo 调用->调用上游的service(dubbo 代码在这里有修改->MeshDubboResponse是dubbo定制的结果,为了配合mesh使用)
+     * ingress dubbo 进来的调用(对面是标准的dubbo服务)
+     * @param request
+     * @return
+     */
     @Override
     public MeshDubboResponse invokeDubbo(MeshDubboRequest request) {
         ProxyContext context = new ProxyContext();

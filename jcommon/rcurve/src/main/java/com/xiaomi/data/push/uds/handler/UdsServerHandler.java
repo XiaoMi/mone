@@ -18,6 +18,8 @@ package com.xiaomi.data.push.uds.handler;
 
 import com.google.gson.Gson;
 import com.xiaomi.data.push.uds.UdsServer;
+import com.xiaomi.data.push.uds.codes.CodesFactory;
+import com.xiaomi.data.push.uds.codes.ICodes;
 import com.xiaomi.data.push.uds.context.UdsServerContext;
 import com.xiaomi.data.push.uds.po.UdsCommand;
 import com.xiaomi.data.push.uds.processor.UdsProcessor;
@@ -56,11 +58,15 @@ public class UdsServerHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
-        ByteBuf buffer = (ByteBuf) msg;
-        String str = buffer.toString(CharsetUtil.UTF_8);
-        UdsCommand command = new Gson().fromJson(str, UdsCommand.class);
-        log.info("server receive:{}:{}", command.getApp(), command.getCmd());
+    public void channelRead(ChannelHandlerContext ctx, Object _msg) {
+        ByteBuf msg = (ByteBuf) _msg;
+        byte codeType = msg.readByte();
+        ICodes codes = CodesFactory.getCodes(codeType);
+        byte[] data = new byte[msg.readableBytes()];
+        msg.readBytes(data);
+        UdsCommand command = codes.decode(data, UdsCommand.class);
+        command.setSerializeType(codeType);
+        log.info("server receive:{}:{}:{}", command.getApp(), command.getCmd(), codeType);
         if (command.isRequest()) {
             command.setChannel(ctx.channel());
             UdsProcessor processor = this.m.get(command.getCmd());

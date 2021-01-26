@@ -16,11 +16,9 @@
 
 package com.xiaomi.youpin.docean.plugin.dmesh.state.client;
 
-import com.xiaomi.data.push.common.Send;
 import com.xiaomi.data.push.uds.UdsClient;
 import com.xiaomi.data.push.uds.context.UdsClientContext;
 import com.xiaomi.data.push.uds.po.UdsCommand;
-import com.xiaomi.data.push.uds.po.UdsRequest;
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.Component;
 import com.xiaomi.youpin.docean.plugin.config.anno.Value;
@@ -54,9 +52,10 @@ public class ConnectState extends BaseState {
         try {
             Channel channel = client.getChannel();
             if (null != channel) {
-                UdsRequest request = new UdsRequest();
+                UdsCommand request = UdsCommand.createRequest();
                 request.setApp(app);
                 request.setCmd("ping");
+                request.setData("ping");
                 UdsClientContext.ins().channel.set(channel);
                 UdsCommand res = client.call(request);
                 if (null != res) {

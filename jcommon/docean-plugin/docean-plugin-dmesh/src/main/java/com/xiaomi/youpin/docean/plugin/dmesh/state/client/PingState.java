@@ -20,7 +20,6 @@ import com.google.gson.Gson;
 import com.xiaomi.data.push.common.SafeRun;
 import com.xiaomi.data.push.uds.UdsClient;
 import com.xiaomi.data.push.uds.po.UdsCommand;
-import com.xiaomi.data.push.uds.po.UdsRequest;
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.Component;
 import com.xiaomi.youpin.docean.plugin.config.anno.Value;
@@ -67,14 +66,15 @@ public class PingState extends BaseState {
         }
 
         //像服务器发送ping信息
-        UdsRequest request = new UdsRequest();
+        UdsCommand request = UdsCommand.createRequest();
         request.setApp(app);
         request.setCmd("ping");
+        request.setData("ping");
 
         boolean err = false;
         try {
             UdsCommand res = client.call(request);
-            log.info("{}", res.getData());
+            log.info("{}", (String) res.getData(String.class));
         } catch (Throwable ex) {
             err = true;
             log.error(ex.getMessage());

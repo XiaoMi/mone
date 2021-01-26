@@ -8,7 +8,7 @@ import com.xiaomi.youpin.gateway.common.HttpResponseUtils;
 import com.xiaomi.youpin.tesla.rcurve.proxy.ProxyRequest;
 import com.xiaomi.youpin.tesla.rcurve.proxy.context.ProxyContext;
 import com.xiaomi.youpin.tesla.rcurve.proxy.context.ProxyType;
-import com.xiaomi.youpin.tesla.rcurve.proxy.ingress.HttpProxy;
+import com.xiaomi.youpin.tesla.rcurve.proxy.ingress.HttpIngress;
 import com.xiaomi.youpin.tesla.proxy.MeshResponse;
 import io.netty.handler.codec.http.FullHttpResponse;
 
@@ -22,7 +22,7 @@ import javax.annotation.Resource;
 public class HttpProxyController {
 
     @Resource
-    private HttpProxy httpProxy;
+    private HttpIngress httpIngress;
 
     @RequestMapping(path = "/proxy")
     public FullHttpResponse test(MvcContext ctx, ProxyRequest req) {
@@ -30,7 +30,7 @@ public class HttpProxyController {
         context.setMethod(ctx.getMethod());
         context.setHeaders(ctx.getHeaders());
         context.setType(ProxyType.http);
-        MeshResponse res = httpProxy.execute(context, req);
+        MeshResponse res = httpIngress.execute(context, req);
         return HttpResponseUtils.create(new Gson().toJson(res));
     }
 
