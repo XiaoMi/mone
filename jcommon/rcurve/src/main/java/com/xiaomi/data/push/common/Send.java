@@ -16,23 +16,44 @@
 
 package com.xiaomi.data.push.common;
 
-import com.google.gson.Gson;
+import com.xiaomi.data.push.uds.codes.CodesFactory;
+import com.xiaomi.data.push.uds.codes.ICodes;
 import com.xiaomi.data.push.uds.po.UdsCommand;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
+import lombok.extern.slf4j.Slf4j;
 
 
 /**
  * @author goodjava@qq.com
  */
+@Slf4j
 public abstract class Send {
 
     public static void send(Channel channel, Object obj) {
         if (null == channel || !channel.isOpen()) {
+            log.warn("channel is close");
             return;
         }
-        ByteBuf buf = Unpooled.wrappedBuffer(new Gson().toJson(obj).getBytes());
+        ICodes codes = CodesFactory.getCodes(RcurveConfig.ins().getCodeType());
+        byte[] data = codes.encode(obj);
+        ByteBuf buf = Unpooled.buffer(1 + data.length);
+        buf.writeByte(RcurveConfig.ins().getCodeType());
+        buf.writeBytes(data);
+        channel.writeAndFlush(buf);
+    }
+
+    public static void sendResponse(Channel channel, UdsCommand response) {
+        if (null == channel || !channel.isOpen()) {
+            log.warn("channel is close");
+            return;
+        }
+        ICodes codes = CodesFactory.getCodes(response.getSerializeType());
+        byte[] data = codes.encode(response);
+        ByteBuf buf = Unpooled.buffer(1 + data.length);
+        buf.writeByte(response.getSerializeType());
+        buf.writeBytes(data);
         channel.writeAndFlush(buf);
     }
 

@@ -70,7 +70,9 @@ public class UpdateServiceListProcessor implements UdsProcessor {
 
         Type typeOfT = new TypeToken<List<MeshServiceConfig>>() {
         }.getType();
-        List<MeshServiceConfig> list = gson.fromJson(udsCommand.getData(), typeOfT);
+
+        String data = udsCommand.getData(String.class);
+        List<MeshServiceConfig> list = gson.fromJson(data, typeOfT);
 
         String utime = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date());
         list.stream().forEach(it -> {
@@ -79,10 +81,10 @@ public class UpdateServiceListProcessor implements UdsProcessor {
             instance.setPort(port);
             Map<String, String> metaData = getMetaData(utime, it);
             instance.setMetadata(metaData);
-            serviceManager.reg(serviceName(it.getServiceName(), it.getGroup(), it.getVersion()),instance);
+            serviceManager.reg(serviceName(it.getServiceName(), it.getGroup(), it.getVersion()), instance);
         });
 
-        UdsCommand res = UdsCommand.createResponse(udsCommand.getId());
+        UdsCommand res = UdsCommand.createResponse(udsCommand);
         Send.send(udsCommand.getChannel(), res);
     }
 
@@ -113,7 +115,7 @@ public class UpdateServiceListProcessor implements UdsProcessor {
      * @param udsCommand
      */
     private void initMesh(UdsCommand udsCommand) {
-        String data = udsCommand.getData();
+        String data = udsCommand.getData(String.class);
         Type typeOfT = new TypeToken<Map<String, Datasource>>() {
         }.getType();
         Map<String, Datasource> m = new Gson().fromJson(data, typeOfT);
@@ -134,7 +136,7 @@ public class UpdateServiceListProcessor implements UdsProcessor {
             config.setDataSourcePasswd(v.getDataSourcePasswd());
             config.setDataSourceUrl(v.getDataSourceUrl());
             sqlPlugin.add(config);
-            Send.sendMessage(udsCommand.getChannel(),"init mysql success");
+            Send.sendMessage(udsCommand.getChannel(), "init mysql success");
         }
 
         if (m.containsKey("redis")) {
@@ -148,7 +150,7 @@ public class UpdateServiceListProcessor implements UdsProcessor {
             }
             config.setType(v.getType());
             redisPlugin.add(config);
-            Send.sendMessage(udsCommand.getChannel(),"init redis success");
+            Send.sendMessage(udsCommand.getChannel(), "init redis success");
         }
 
     }

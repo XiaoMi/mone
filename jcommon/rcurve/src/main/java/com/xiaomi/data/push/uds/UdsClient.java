@@ -44,6 +44,7 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -132,6 +133,10 @@ public class UdsClient {
             CompletableFuture<UdsCommand> future = new CompletableFuture<>();
             reqMap.put(req.getId(), future);
             Channel channel = UdsClientContext.ins().channel.get();
+            if (null == channel || !channel.isOpen()) {
+                log.warn("server channel is close");
+                throw new UdsException("server channel is close");
+            }
             Send.send(channel, req);
             return future.get(req.getTimeout(), TimeUnit.MILLISECONDS);
         } catch (Throwable ex) {

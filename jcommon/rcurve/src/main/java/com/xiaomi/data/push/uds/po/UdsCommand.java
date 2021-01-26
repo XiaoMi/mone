@@ -16,15 +16,17 @@
 
 package com.xiaomi.data.push.uds.po;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.Gson;
 import com.google.gson.annotations.Expose;
+import com.xiaomi.data.push.common.RcurveConfig;
+import com.xiaomi.data.push.uds.codes.CodesFactory;
+import com.xiaomi.data.push.uds.codes.ICodes;
 import io.netty.channel.Channel;
 import lombok.Data;
-import org.msgpack.jackson.dataformat.MessagePackFactory;
+import org.msgpack.annotation.Ignore;
+import org.msgpack.annotation.Message;
 
 import java.io.Serializable;
+import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
@@ -32,11 +34,17 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author goodjava@qq.com
  */
+@Message
 @Data
 public class UdsCommand implements Serializable {
 
+    @Ignore
     @Expose
     public static final AtomicLong requestId = new AtomicLong(0);
+
+    @Ignore
+    @Expose
+    private Channel channel;
 
     private Map<String, String> attachments = new HashMap<>();
 
@@ -65,12 +73,7 @@ public class UdsCommand implements Serializable {
 
     private byte[][] byteParams;
 
-    @Expose
-    private Channel channel;
-
-    private String data;
-
-    private byte[] bytes;
+    private byte[] data;
 
     private boolean mesh = true;
 
@@ -83,7 +86,15 @@ public class UdsCommand implements Serializable {
     /**
      * 0 json 1 msgpack
      */
-    private int serializeType;
+    private byte serializeType;
+
+    public static UdsCommand createResponse(UdsCommand request) {
+        UdsCommand res = new UdsCommand();
+        res.setId(request.getId());
+        res.setSerializeType(request.getSerializeType());
+        res.setType(1);
+        return res;
+    }
 
     public boolean isRequest() {
         return type == 0;
@@ -97,18 +108,6 @@ public class UdsCommand implements Serializable {
         return this.attachments.getOrDefault(key, defaultValue);
     }
 
-    public static UdsCommand createResponse() {
-        UdsCommand res = new UdsCommand();
-        res.setType(1);
-        return res;
-    }
-
-    public static UdsCommand createResponse(long id) {
-        UdsCommand res = new UdsCommand();
-        res.setType(1);
-        res.setId(id);
-        return res;
-    }
 
     public static UdsCommand createErrorResponse(long id, String message) {
         UdsCommand res = new UdsCommand();
@@ -119,31 +118,25 @@ public class UdsCommand implements Serializable {
         return res;
     }
 
-    public static UdsCommand createResponse(UdsCommand req, Object obj) {
-        UdsCommand res = new UdsCommand();
-        res.setType(1);
-        res.setId(req.getId());
-        res.setSerializeType(req.getSerializeType());
-        if (req.getSerializeType() == 0) {
-            res.setData(new Gson().toJson(obj));
-        }
-        if (req.getSerializeType() == 1) {
-            ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
-            try {
-                byte[] d = objectMapper.writeValueAsBytes(obj);
-                res.setBytes(d);
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-            }
-        }
-        return res;
-    }
-
 
     public static UdsCommand createRequest() {
         UdsCommand req = new UdsCommand();
         req.setId(requestId.incrementAndGet());
+        req.setSerializeType(RcurveConfig.ins().getCodeType());
         return req;
+    }
+
+    public void setData(Object data) {
+        ICodes codes = CodesFactory.getCodes(this.getSerializeType());
+        this.data = codes.encode(data);
+    }
+
+    public <T> T getData(Type type) {
+        if (null == this.data) {
+            return null;
+        }
+        ICodes codes = CodesFactory.getCodes(this.getSerializeType());
+        return codes.decode(this.data, type);
     }
 
 }

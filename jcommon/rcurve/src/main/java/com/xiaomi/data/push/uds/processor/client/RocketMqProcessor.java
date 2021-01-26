@@ -47,7 +47,7 @@ public class RocketMqProcessor implements UdsProcessor {
 
     @Override
     public void processRequest(UdsCommand req) {
-        UdsCommand response = UdsCommand.createResponse(req.getId());
+        UdsCommand response = UdsCommand.createResponse(req);
         try {
             log.info("{} {}", req.getApp(), req.getData());
             this.listenerList.stream().forEach(l -> l.handle(new UdsEvent(req.getApp(), req.getData())));

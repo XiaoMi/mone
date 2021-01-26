@@ -14,15 +14,14 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.data.push.uds.po;
+package com.xiaomi.data.push.uds.listener;
 
-import lombok.Data;
 
 /**
  * @author goodjava@qq.com
  */
-@Data
-public class UdsRequest extends UdsCommand {
+public abstract class UdsListener {
 
+    public abstract void handle(UdsEvent event);
 
 }

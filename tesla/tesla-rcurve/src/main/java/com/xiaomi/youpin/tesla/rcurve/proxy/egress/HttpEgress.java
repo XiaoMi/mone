@@ -25,7 +25,7 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-public class HttpEntry implements UdsProcessor {
+public class HttpEgress implements UdsProcessor {
 
     @Resource
     private Http http;
@@ -37,7 +37,7 @@ public class HttpEntry implements UdsProcessor {
 
     @Override
     public void processRequest(UdsCommand req) {
-        UdsCommand res = UdsCommand.createResponse(req.getId());
+        UdsCommand res = UdsCommand.createResponse(req);
         switch (req.getMethodName()) {
             case "get": {
                 String url = new Gson().fromJson(req.getParams()[0], String.class);

@@ -14,10 +14,8 @@ import java.util.stream.IntStream;
  */
 public class HttpTest {
 
-        private String url = "http://127.0.0.1:7778/proxy";
+    private String url = "http://127.0.0.1:7778/proxy";
 
-    //staging地址
-//    private String url = "http://10.38.160.248:7778/proxy";
 
     /**
      * 测试和proxy的连通性
@@ -30,6 +28,22 @@ public class HttpTest {
         System.out.println(res);
         Assert.assertNotNull(res);
     }
+
+
+    /**
+     * 测试标准的dubbo调用provider
+     */
+    @Test
+    public void testDubbo() {
+        ProxyRequest request = new ProxyRequest();
+        request.setApp("demo_one_app");
+        request.setServiceName("com.xiaomi.mone.mds.service.DemoOneService");
+        request.setMethodName("dubbo");
+        String res = HttpClient.post(url, new Gson().toJson(request));
+        System.out.println(res);
+        Assert.assertNotNull(res);
+    }
+
 
     /**
      * 测试是否能调用proxy下边的服务
@@ -47,7 +61,6 @@ public class HttpTest {
             System.out.println(res);
             Assert.assertNotNull(res);
         });
-
     }
 
     /**
@@ -105,6 +118,21 @@ public class HttpTest {
         request.setApp("demo_one_app");
         request.setServiceName("com.xiaomi.mone.mds.service.DemoOneService");
         request.setMethodName("http");
+        request.setTimeout(1000L);
+        String res = HttpClient.post(url, new Gson().toJson(request));
+        System.out.println(res);
+        Assert.assertNotNull(res);
+    }
+
+    /**
+     * 测试中间件rocketmq的调用
+     */
+    @Test
+    public void testNacos() {
+        ProxyRequest request = new ProxyRequest();
+        request.setApp("demo_one_app");
+        request.setServiceName("com.xiaomi.mone.mds.service.DemoOneService");
+        request.setMethodName("nacos");
         request.setTimeout(1000L);
         String res = HttpClient.post(url, new Gson().toJson(request));
         System.out.println(res);

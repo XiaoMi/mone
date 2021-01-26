@@ -14,29 +14,24 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.youpin.docean.plugin.dmesh.interceptor;
+package com.xiaomi.mone.rcurve.test;
 
-import com.xiaomi.data.push.uds.po.UdsCommand;
-import com.xiaomi.youpin.docean.Ioc;
-import com.xiaomi.youpin.docean.plugin.config.Config;
-import com.xiaomi.youpin.docean.plugin.dmesh.anno.MeshMsService;
-import lombok.extern.slf4j.Slf4j;
+import lombok.Data;
+import org.msgpack.annotation.Message;
+
+import java.io.Serializable;
 
 /**
- * @author dingpei@xiaomi.com
  * @author goodjava@qq.com
- * @date 1/11/21
+ * @date 1/22/21
  */
-@Slf4j
-public class CallNacosInterceptor extends AbstractInterceptor {
+@Message
+@Data
+public class Obj implements Serializable {
 
+    private int id;
 
-    public CallNacosInterceptor(Ioc ioc, Config config, MeshMsService reference) {
-        super(ioc, config, reference);
-    }
+    private String name;
 
-    @Override
-    public void intercept0(UdsCommand req) {
-    }
-
+    private byte[] data;
 }

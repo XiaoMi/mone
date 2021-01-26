@@ -1,10 +1,8 @@
 package com.xiaomi.youpin.tesla.rcurve.proxy.egress;
 
-import com.google.gson.Gson;
 import com.xiaomi.data.push.uds.UdsServer;
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.Component;
-import com.xiaomi.youpin.tesla.rcurve.proxy.egress.BaseEntry;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -14,9 +12,7 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 @Component
-public class MysqlEntry extends BaseEntry {
-
-    private Gson gson = new Gson();
+public class MysqlEgress extends BaseEgress {
 
     public void init() {
         UdsServer server = Ioc.ins().getBean(UdsServer.class);

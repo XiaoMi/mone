@@ -1,4 +1,4 @@
-package com.xiaomi.youpin.tesla.rcurve.proxy.impl;
+package com.xiaomi.youpin.tesla.rcurve.proxy.ingress;
 
 import com.google.common.collect.Lists;
 import com.xiaomi.data.push.uds.UdsServer;
@@ -26,7 +26,7 @@ import java.util.List;
  */
 @Component
 @Slf4j
-public class GRpcProxy implements Proxy<GrpcMeshRequest, MeshResponse> {
+public class GRpcIngress implements Proxy<GrpcMeshRequest, MeshResponse> {
 
     @Resource
     private UdsServer udsServer;
@@ -71,7 +71,8 @@ public class GRpcProxy implements Proxy<GrpcMeshRequest, MeshResponse> {
             MeshResponse meshResponse = new MeshResponse();
             meshResponse.setCode(res.getCode());
             meshResponse.setMessage(res.getMessage());
-            meshResponse.setData(res.getData());
+            String data = res.getData(String.class);
+            meshResponse.setData(data);
             return meshResponse;
         } catch (Throwable ex) {
             MeshResponse res = new MeshResponse();

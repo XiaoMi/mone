@@ -14,19 +14,34 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.data.push.uds.po;
+package com.xiaomi.data.push.common;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
-import java.io.Serializable;
+import java.util.function.Consumer;
 
 /**
  * @author goodjava@qq.com
+ * @date 1/22/21
  */
-@Data
-public class UdsResponse implements Serializable {
+public class RcurveConfig {
 
-    private long id;
+    @Getter
+    @Setter
+    private byte codeType = 1;
 
-    private String data;
+    private static class LazyHolder {
+        private static RcurveConfig ins = new RcurveConfig();
+    }
+
+    public void init(Consumer<RcurveConfig> consumer) {
+        consumer.accept(this);
+    }
+
+    public static RcurveConfig ins() {
+        return LazyHolder.ins;
+    }
+
+
 }

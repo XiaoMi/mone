@@ -62,6 +62,9 @@ public class DmeshPlugin implements IPlugin {
 
     private Gson gson = new Gson();
 
+    /**
+     * 这个app的名称
+     */
     private String app;
 
     private Config config;
@@ -73,11 +76,13 @@ public class DmeshPlugin implements IPlugin {
     private String udsPath = "";
 
 
+
     @Override
     public void init(Set<? extends Class<?>> classSet, Ioc ioc) {
         log.info("DmeshPlugin init");
         config = ioc.getBean(Config.class);
         String udsPath = config.get("uds_path", "");
+
         if (StringUtils.isEmpty(udsPath)) {
             log.info("uds_path is null return");
             return;
@@ -189,12 +194,20 @@ public class DmeshPlugin implements IPlugin {
     }
 
 
+    /**
+     * 提供provider的必要信息
+     * @param ioc
+     * @param bean
+     * @param s
+     * @return
+     */
     public MeshServiceConfig initService(Ioc ioc, Bean bean, MeshService s) {
         MeshServiceConfig serviceConfig = new MeshServiceConfig();
         serviceConfig.setServiceName(s.interfaceClass().getName());
         serviceConfig.setGroup(s.group());
         serviceConfig.setVersion(s.version());
-        serviceConfig.setApp(s.app());
+        //使用这个应用的app name
+        serviceConfig.setApp(this.app);
         ioc.putBean(s.interfaceClass().getName(), bean.getObj());
         return serviceConfig;
     }

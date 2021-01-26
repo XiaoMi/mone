@@ -36,10 +36,9 @@ public class PingProcessor implements UdsProcessor {
         attr.setIfAbsent(request.getApp());
         log.info("ping:{}", request.getApp());
         UdsServerContext.ins().put(request.getApp(), request.getChannel());
-        UdsCommand res = UdsCommand.createResponse(request.getId());
-        res.setId(request.getId());
+        UdsCommand res = UdsCommand.createResponse(request);
         res.setData("pong");
-        Send.send(request.getChannel(), res);
+        Send.sendResponse(request.getChannel(), res);
     }
 
 }

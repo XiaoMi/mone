@@ -18,6 +18,8 @@ package com.xiaomi.data.push.uds.handler;
 
 import com.google.gson.Gson;
 import com.xiaomi.data.push.uds.UdsClient;
+import com.xiaomi.data.push.uds.codes.CodesFactory;
+import com.xiaomi.data.push.uds.codes.ICodes;
 import com.xiaomi.data.push.uds.context.UdsClientContext;
 import com.xiaomi.data.push.uds.po.UdsCommand;
 import com.xiaomi.data.push.uds.processor.UdsProcessor;
@@ -49,9 +51,13 @@ public class UdsClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
-        String str = msg.toString(CharsetUtil.UTF_8);
-        log.debug("client received:{}", msg.toString(CharsetUtil.UTF_8));
-        UdsCommand command = new Gson().fromJson(str, UdsCommand.class);
+        byte codeType = msg.readByte();
+        ICodes codes = CodesFactory.getCodes(codeType);
+        byte[] data = new byte[msg.readableBytes()];
+        msg.readBytes(data);
+        UdsCommand command = codes.decode(data, UdsCommand.class);
+        command.setSerializeType(codeType);
+        log.debug("client received:{}", command);
         if (command.isRequest()) {
             command.setChannel(ctx.channel());
             UdsProcessor processor = this.processorMap.get(command.getCmd());

@@ -18,11 +18,11 @@ import javax.annotation.Resource;
 /**
  * @author goodjava@qq.com
  * @date 1/2/21
- * Http 代理协议的支持
+ * Http Ingress
  */
 @Component
 @Slf4j
-public class HttpProxy implements Proxy<ProxyRequest, MeshResponse> {
+public class HttpIngress implements Proxy<ProxyRequest, MeshResponse> {
 
     @Resource
     private UdsServer udsServer;
@@ -65,7 +65,8 @@ public class HttpProxy implements Proxy<ProxyRequest, MeshResponse> {
                 response.setCode(res.getCode());
                 response.setMessage(res.getMessage());
             } else {
-                response.setData(res.getData());
+                String data = res.getData(String.class);
+                response.setData(data);
             }
             return response;
         } catch (Throwable ex) {
