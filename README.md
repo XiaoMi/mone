@@ -101,7 +101,7 @@ It has been used intensively at Xiaomi to meet the tough scalability demands of 
 
 ## 📃 文档
 
- 想要了解更多或快速入门[快速入门](http://10.38.162.163:9006/#/doc/1)，请参照 [米效官网](http://10.38.162.163:9006/#/index)
+ 想要了解更多或快速入门[快速入门](http://mone.xiaomiyoupin.com/#/doc/1)，请参照 [米效官网](http://mone.xiaomiyoupin.com/)
  
 ## 🔨维护者
 
