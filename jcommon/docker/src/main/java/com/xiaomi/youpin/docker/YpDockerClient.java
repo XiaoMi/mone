@@ -251,6 +251,41 @@ public class YpDockerClient {
     }
 
     /**
+     * 创建容器
+     * @param image
+     * @param hostName  bridge host
+     * @param netWorkMode
+     * @param name
+     * @param limit
+     * @param exposedPorts
+     * @param portBindings
+     * @param binds
+     * @param env
+     * @return
+     */
+    public String createContainer(String image, String hostName,String netWorkMode, String name, DockerLimit limit, List<ExposedPort> exposedPorts, List<PortBinding> portBindings, List<Bind> binds, String... env) {
+        CreateContainerCmd cmd = dockerClient.createContainerCmd(image)
+                //使用几核
+                .withCpusetCpus(limit.getCpu());
+        if (limit.getMem() > 0) {
+            //使用多少内存
+            cmd.withMemory(limit.getMem());
+        }
+
+        //io权重
+        return cmd.withBlkioWeight(limit.getBlkioWeight())
+                .withRestartPolicy(RestartPolicy.onFailureRestart(3))
+                .withName(name)
+                .withExposedPorts(exposedPorts)
+                .withPortBindings(portBindings)
+                .withBinds(binds)
+                .withHostName(hostName)
+                //bridge host
+                .withNetworkMode(netWorkMode)
+                .withEnv(env).exec().getId();
+    }
+
+    /**
      * build 镜像
      *
      * @param file

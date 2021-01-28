@@ -20,6 +20,7 @@ import com.xiaomi.youpin.docean.Aop;
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.DOceanPlugin;
 import com.xiaomi.youpin.docean.plugin.IPlugin;
+import com.xiaomi.youpin.docean.plugin.datasource.DatasourceConfig;
 import com.xiaomi.youpin.docean.plugin.datasource.DatasourcePlugin;
 import com.xiaomi.youpin.docean.plugin.datasource.anno.Transactional;
 import com.xiaomi.youpin.docean.plugin.sql.interceptor.TransactionalInterceptor;
@@ -43,7 +44,35 @@ public class SqlPlugin implements IPlugin {
         log.info("init dbplugin");
         Aop.ins().getInterceptorMap().put(Transactional.class, new TransactionalInterceptor());
         List<String> dbNames = ioc.getBean(DatasourcePlugin.DB_NAMES);
-        dbNames.stream().forEach(it->addDAO(ioc,it));
+        if (dbNames.size() == 1) {
+            DataSource ds = ioc.getBean(dbNames.get(0));
+            JdbcTransaction tran = new JdbcTransaction(ds, null, true);
+            Db db = new Db(ds, tran);
+            ioc.putBean(db);
+        } else {
+            dbNames.stream().forEach(it -> addDAO(ioc, it));
+        }
+    }
+
+    /**
+     * 增加一个dao
+     */
+    public void add(DatasourceConfig config) {
+        DatasourcePlugin datasourcePlugin = Ioc.ins().getBean(DatasourcePlugin.class);
+        DataSource ds = datasourcePlugin.add(config);
+        JdbcTransaction tran = new JdbcTransaction(ds, null, true);
+        Db db = new Db(ds, tran);
+        Ioc.ins().putBean("dao:" + config.getName(), db);
+    }
+
+    /**
+     * 移除一个dao
+     */
+    public void remove(DatasourceConfig config) {
+        Db db = Ioc.ins().getBean("dao:" + config.getName());
+        DatasourcePlugin datasourcePlugin = Ioc.ins().getBean(DatasourcePlugin.class);
+        Ioc.ins().remove("dao:"+config.getName());
+        datasourcePlugin.remove(config);
     }
 
     private void addDAO(Ioc ioc, String beanName) {

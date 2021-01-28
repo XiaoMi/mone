@@ -97,6 +97,17 @@ public class TalosClient {
         }
     }
 
+    public void shutdown() {
+        try {
+            if (this.producer != null) {
+                this.producer.shutdown();
+            }
+        } catch (Exception e) {
+            System.out.println("failed to shutdown talos-producer");
+        }
+        initSuccess.set(false);
+    }
+
 
     private class BatchMessageSendCallBack implements UserMessageCallback {
 

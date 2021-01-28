@@ -19,6 +19,7 @@ package com.xiaomi.youpin.docean.plugin.nacos;
 import com.alibaba.nacos.api.NacosFactory;
 import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.exception.NacosException;
+import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,23 +123,29 @@ public class NacosConfig {
         return configMap;
     }
 
-
-    public String getConfigStr(String dataId, String group, long timeout) throws NacosException {
+    @SneakyThrows
+    public String getConfigStr(String dataId, String group, long timeout) {
         String content = configService.getConfig(dataId, group, timeout);
         return content;
     }
 
-    public String getConfigStr(long timeout) throws NacosException {
+    @SneakyThrows
+    public String getConfigStr(long timeout) {
         String content = configService.getConfig(dataId, group, timeout);
         return content;
     }
 
-    public boolean publishConfig(String dataId, String group, String content) throws NacosException {
+    @SneakyThrows
+    public boolean publishConfig(String dataId, String group, String content) {
         return configService.publishConfig(dataId, group, content);
     }
 
     public boolean publishConfig(String content) throws NacosException {
         return configService.publishConfig(dataId, group, content);
+    }
+
+    public boolean deleteConfig(String dataId, String group) throws NacosException {
+        return configService.removeConfig(dataId, group);
     }
 
     public String getServerAddr() {

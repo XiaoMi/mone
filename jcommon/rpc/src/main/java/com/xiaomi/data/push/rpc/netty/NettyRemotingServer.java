@@ -198,6 +198,8 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
 
             log.info("rpc server host:{} regHost:{} port:{}", this.host, this.regHost, this.port);
 
+            log.info("rpc server host:{} port:{}", this.host, this.port);
+
             ChannelFuture sync = this.serverBootstrap.bind(this.host, this.port).sync();
             InetSocketAddress addr = (InetSocketAddress) sync.channel().localAddress();
             this.port = addr.getPort();

@@ -19,6 +19,8 @@ package com.xiaomi.data.push.nacos;
 import com.alibaba.nacos.api.NacosFactory;
 import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.exception.NacosException;
+import lombok.Getter;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +39,10 @@ public class NacosConfig {
 
     private String group;
 
+    @Setter
+    private Properties properties;
+
+    @Getter
     private ConfigService configService;
 
     @PostConstruct
@@ -48,6 +54,12 @@ public class NacosConfig {
 
         Properties properties = new Properties();
         properties.put("serverAddr", serverAddr);
+
+        if (null != this.properties) {
+            this.properties.forEach((k, v) -> {
+                properties.put(k, v);
+            });
+        }
 
         try {
             configService = NacosFactory.createConfigService(properties);
@@ -132,6 +144,10 @@ public class NacosConfig {
 
     public boolean publishConfig(String content) throws NacosException {
         return configService.publishConfig(dataId, group, content);
+    }
+
+    public boolean deleteConfig(String dataId, String group) throws NacosException {
+        return configService.removeConfig(dataId, group);
     }
 
     public String getServerAddr() {

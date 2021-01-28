@@ -35,16 +35,16 @@ import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.kqueue.KQueueDomainSocketChannel;
 import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.kqueue.KQueueSocketChannel;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.channel.unix.DomainSocketAddress;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import io.netty.util.concurrent.Promise;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -84,9 +84,21 @@ public class UdsClient {
 
     private Class getChannelClass(boolean mac) {
         if (this.remote) {
+            if (CommonUtils.isWindows()) {
+                return NioSocketChannel.class;
+            }
+
             return mac ? KQueueSocketChannel.class : EpollSocketChannel.class;
         }
         return mac ? KQueueDomainSocketChannel.class : EpollDomainSocketChannel.class;
+    }
+
+
+    private EventLoopGroup getEventLoopGroup() {
+        if (CommonUtils.isWindows()) {
+            return new NioEventLoopGroup();
+        }
+        return CommonUtils.isMac() ? new KQueueEventLoopGroup() : new EpollEventLoopGroup();
     }
 
 
@@ -95,7 +107,7 @@ public class UdsClient {
         log.info(" start mac:{}", mac);
         EventLoopGroup group = null;
         try {
-            group = mac ? new KQueueEventLoopGroup() : new EpollEventLoopGroup();
+            group = getEventLoopGroup();
             Bootstrap b = new Bootstrap();
             b.group(group)
                     .channel(getChannelClass(mac))

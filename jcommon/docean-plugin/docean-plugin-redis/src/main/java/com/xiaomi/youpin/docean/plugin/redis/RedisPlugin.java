@@ -42,4 +42,19 @@ public class RedisPlugin implements IPlugin {
         ioc.putBean(redis);
     }
 
+    public void add(RedisDsConfig config) {
+        Redis redis = new Redis();
+        redis.setRedisHosts(config.getHosts());
+        redis.setServerType(config.getType());
+        redis.init();
+        Ioc.ins().putBean("redis:" + config.getName(), redis);
+    }
+
+
+    public void remove(RedisDsConfig config) {
+        Redis redis = Ioc.ins().getBean("redis:" + config.getName());
+        redis.close();
+        Ioc.ins().remove("redis:" + config.getName());
+    }
+
 }

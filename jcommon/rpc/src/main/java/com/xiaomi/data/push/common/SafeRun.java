@@ -44,6 +44,19 @@ public class SafeRun {
         }
     }
 
+    public static void run(SafeRunnable runnable) {
+        try {
+            runnable.run();
+        } catch (Throwable ex) {
+            log.error("safe run  error:" + ex.getMessage(), ex);
+        }
+    }
+
+
+    public interface SafeRunnable {
+        void run() throws Throwable;
+    }
+
 
     @FunctionalInterface
     public interface SafeSupplier<T> {

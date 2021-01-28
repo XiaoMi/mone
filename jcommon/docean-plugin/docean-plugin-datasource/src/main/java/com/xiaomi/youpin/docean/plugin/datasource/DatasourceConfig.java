@@ -25,6 +25,11 @@ import lombok.Data;
 @Data
 public class DatasourceConfig {
 
+    /**
+     * 数据源的名称
+     */
+    private String name;
+
     private String driverClass;
 
     private Integer defaultInitialPoolSize;

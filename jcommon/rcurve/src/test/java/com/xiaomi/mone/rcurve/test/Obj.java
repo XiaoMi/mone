@@ -17,7 +17,6 @@
 package com.xiaomi.mone.rcurve.test;
 
 import lombok.Data;
-import org.msgpack.annotation.Message;
 
 import java.io.Serializable;
 
@@ -25,7 +24,6 @@ import java.io.Serializable;
  * @author goodjava@qq.com
  * @date 1/22/21
  */
-@Message
 @Data
 public class Obj implements Serializable {
 

@@ -19,7 +19,6 @@ package com.xiaomi.youpin.docean.plugin.dubbo;
 import com.alibaba.nacos.api.PropertyKeyConst;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.DOceanPlugin;
 import com.xiaomi.youpin.docean.bo.Bean;
@@ -32,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.*;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -69,6 +69,26 @@ public class DubboPlugin implements IPlugin {
 
         ioc.putBean(applicationConfig);
         ioc.putBean(registryConfig);
+
+        try {
+            //3.0 需要初始化DubboBootstrap,但dubbo2 并没有这个类,用次hack的方法fix 掉
+            Class<?> clazz = Class.forName("org.apache.dubbo.config.bootstrap.DubboBootstrap");
+            Method method = clazz.getMethod("getInstance");
+            Object obj = method.invoke(null);
+            Method applicationMethod = clazz.getMethod("application", ApplicationConfig.class);
+            Method registryMethod = clazz.getMethod("registry", RegistryConfig.class);
+            Method protocolMethod = clazz.getMethod("protocol", ProtocolConfig.class);
+
+            //DubboBootstrap.getInstance().application(this.applicationConfig).registry(this.registryConfig).protocol(this.protocol);
+            obj = applicationMethod.invoke(obj, this.applicationConfig);
+            obj = registryMethod.invoke(obj, this.registryConfig);
+            protocolMethod.invoke(obj, this.protocol);
+        } catch (Throwable ex) {
+            log.info(ex.getMessage());
+        }
+
+        DubboCall dubboCall = new DubboCall(this.applicationConfig,this.registryConfig);
+        ioc.putBean(dubboCall);
     }
 
 
@@ -120,6 +140,7 @@ public class DubboPlugin implements IPlugin {
             referenceConfig.setInterface(reference.interfaceClass());
             referenceConfig.setGroup(getGroup(ioc, reference.group()));
             referenceConfig.setCheck(reference.check());
+            referenceConfig.setVersion(getVersion(ioc, reference.version()));
             referenceConfig.setTimeout(reference.timeout());
             referenceConfig.setCluster(reference.cluster());
             Object service = referenceConfig.get();
@@ -137,6 +158,13 @@ public class DubboPlugin implements IPlugin {
         return group;
     }
 
+    private String getVersion(Ioc ioc, String version) {
+        if (version.startsWith("$")) {
+            return ioc.getBean(version);
+        }
+        return version;
+    }
+
     @Override
     public boolean disable(Ioc ioc) {
         Config config = ioc.getBean(Config.class);
@@ -145,7 +173,7 @@ public class DubboPlugin implements IPlugin {
 
     @Override
     public String version() {
-        return "0.0.1:2020-09-23";
+        return "0.0.1:2021-01-16";
     }
 }
 

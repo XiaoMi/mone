@@ -21,6 +21,7 @@ import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.DOceanPlugin;
 import com.xiaomi.youpin.docean.plugin.IPlugin;
 import com.xiaomi.youpin.docean.plugin.datasource.DatasourcePlugin;
+import com.xiaomi.youpin.docean.plugin.db.interceptor.DoceanInterceptor;
 import com.xiaomi.youpin.docean.plugin.db.interceptor.TransactionalInterceptor;
 import lombok.extern.slf4j.Slf4j;
 import org.nutz.dao.Dao;
@@ -45,7 +46,9 @@ public class DbPlugin implements IPlugin {
 
         List<String> dbNames = ioc.getBean(DatasourcePlugin.DB_NAMES);
         if (dbNames.size() == 1) {
-            ioc.putBean(new NutDao(ioc.getBean(dbNames.get(0))));
+            NutDao nutDao = new NutDao(ioc.getBean(dbNames.get(0)));
+            nutDao.addInterceptor(new DoceanInterceptor());
+            ioc.putBean(nutDao);
         } else {
             dbNames.stream().forEach(it->addDAO(ioc,it));
         }

@@ -31,6 +31,7 @@
     <modules>
         <module>docean-plugin-aop</module>
         <module>docean-plugin-db</module>
+        <module>docean-plugin-shardingSphere</module>
         <module>docean-plugin-config</module>
         <module>docean-plugin-dubbo</module>
         <module>docean-plugin-http</module>
@@ -47,6 +48,10 @@
         <module>docean-plugin-log</module>
         <module>docean-plugin-cat</module>
         <module>docean-plugin-mvc</module>
+        <module>docean-plugin-dmesh</module>
+        <module>docean-plugin-shadingsphere</module>
+        <module>docean-plugin-akka</module>
+        <module>docean-plugin-api</module>
     </modules>
 
     <dependencies>

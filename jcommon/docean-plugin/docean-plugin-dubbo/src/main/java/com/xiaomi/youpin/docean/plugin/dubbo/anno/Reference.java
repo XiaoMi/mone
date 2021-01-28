@@ -42,4 +42,6 @@ public @interface Reference {
      */
     String cluster() default "";
 
+    String version() default "";
+
 }
