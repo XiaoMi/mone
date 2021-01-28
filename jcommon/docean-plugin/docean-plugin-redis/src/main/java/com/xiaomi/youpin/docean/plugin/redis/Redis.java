@@ -30,7 +30,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by zhangzhiyong on 30/05/2018.
+ * Created by goodjava@qq.com on 30/05/2018.
  * redis 操作类
  * 支持pool模式和集群模式
  */
@@ -71,7 +71,7 @@ public class Redis {
             final GenericObjectPoolConfig config = new GenericObjectPoolConfig();
             int timeout = 2000;
             if (null == redisHosts || redisHosts.equals("")) {
-                logger.error("[Redis.init()] invalid redisHosts info: {}", redisHosts);
+                logger.info("[Redis not init because reidsHost is null]  hosts: {}", redisHosts);
                 return;
             }
             String[] serverArray = redisHosts.split(",");

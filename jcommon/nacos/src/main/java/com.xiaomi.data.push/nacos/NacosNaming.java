@@ -29,6 +29,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 
@@ -154,6 +155,11 @@ public class NacosNaming {
         throw new RuntimeException("serverAddr is null");
     }
 
+    public String login (String username, String password) {
+        Map<String, String> headers = Maps.newHashMap();
+        headers.put("Content-Type", "application/x-www-form-urlencoded");
+        return HttpClientV2.post("http://" + getNamingServer() + "/nacos/v1/auth/users/login", "username=" + username + "&password=" + password, headers, 1000);
+    }
 
     public String serviceList(String namespaceId, int page, int pageSize, String keyword) {
         String res = HttpClientV2.get("http://" + getNamingServer() + "/nacos/v1/ns/catalog/serviceList?startPg=" + page + "&pgSize=" + pageSize + "&keyword=" + keyword + "&namespaceId=" + namespaceId, Maps.newHashMap());
@@ -162,6 +168,14 @@ public class NacosNaming {
 
     public String serviceList2(String namespaceId, int page, int pageSize, String keyword) {
         String params = "?hasIpCount=true&withInstances=false&pageNo=1&pageSize=10&serviceNameParam=" + keyword;
+        if (!StringUtils.isEmpty(namespaceId) && !StringUtils.isEmpty(namespaceId.trim())) {
+            params += "&namespaceId=" + namespaceId;
+        }
+        return HttpClientV2.get("http://" + getNamingServer() + "/nacos/v1/ns/catalog/services" + params, Maps.newHashMap());
+    }
+
+    public String serviceList2(String namespaceId, int page, int pageSize, String keyword, String accessToken) {
+        String params = "?hasIpCount=true&withInstances=false&pageNo=1&pageSize=10&serviceNameParam=" + keyword + "&accessToken=" + accessToken;
         if (!StringUtils.isEmpty(namespaceId) && !StringUtils.isEmpty(namespaceId.trim())) {
             params += "&namespaceId=" + namespaceId;
         }

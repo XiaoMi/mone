@@ -16,7 +16,6 @@
 
 package com.xiaomi.youpin.docean.common;
 
-import com.google.common.collect.Maps;
 import net.sf.cglib.beans.BeanMap;
 
 import java.util.Map;
@@ -28,9 +27,7 @@ import java.util.Map;
 public abstract class BeanUtils {
 
     public static <T> Map<String, Object> beanToMap(T bean) {
-        Map<String, Object> map = Maps.newHashMap();
-        map.putAll(BeanMap.create(bean));
-        return map;
+        return BeanMap.create(bean);
     }
 
     public static <T> T mapToBean(Map<String, Object> map, T bean) {

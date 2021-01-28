@@ -349,7 +349,7 @@ public class SpringBootProGen {
         smpom.put("parent_artifactId", projectName);
         smpom.put("artifactId", projectName + "-server");
         smpom.put("version", versionId + "-SNAPSHOT");
-        smpom.put("bootstrap", StringUtils.capitalize(projectName) + "Bootstrap");
+        smpom.put("bootstrap", this.adapterProjectNameToCamelName(projectName) + "Bootstrap");
         smpom.put("service_artifactId", projectName + "-service");
         servicePomGenerator.generator(smpom);
     }

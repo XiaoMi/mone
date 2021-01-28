@@ -61,6 +61,8 @@ public class MiCloud {
 
     private static final String CONTROL_URL = "https://xxx/host-control/production/api/v1/host/control";
     private static final String STATUS_URL = "https://xxx/host-control/production/api/v1/host/status";
+    private String[] machineRunningStatus = {Constants.RUNNING, Constants.STARTING, Constants.REBOOTING};
+    private String[] machineStoppedStatus = {"正在停止", "已经停止", "正在终止", "已经终止", "正在销毁", "已经销毁", "已经挂起", "已经暂停"};
 
     public String getProviderInfo(String cloudProvider, String token) {
         if (StringUtils.isEmpty(cloudProvider) || StringUtils.isEmpty(token)) {
@@ -143,7 +145,7 @@ public class MiCloud {
     public PriceResponse getPrice(String suitId, String siteId) {
         try {
             Map<String, String> headers = new HashMap<>();
-            String response = HttpClientV5.get(micloudUrl + "/api/v1/merge_orderng/region/suit/price?suit_id="+suitId+"&site_id=" + siteId, headers);
+            String response = HttpClientV5.get(micloudUrl + "/api/v1/merge_orderng/region/suit/price?suit_id=" + suitId + "&site_id=" + siteId, headers);
             return gson.fromJson(response, PriceResponse.class);
         } catch (Throwable e) {
             log.error("get price:", e);
@@ -179,6 +181,38 @@ public class MiCloud {
             log.error(e.toString());
         }
         return null;
+    }
+
+    public boolean isMachineRunning(String hostname, ControlResponse status) {
+        log.info("isMachineRunning hostname:{}  status:{}", hostname, status);
+        if (status == null || status.getData() == null || status.getData().isEmpty()
+            || status.getData().get(0).getMessage() == null) {
+            return false;
+        }
+        String message = status.getData().get(0).getMessage();
+        for (String runningStatus : machineRunningStatus) {
+            if (message.equals(runningStatus)) {
+                log.info("isMachineRunning hostname:{}  message equals {}", hostname, runningStatus);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean isMachineOff(String hostname, ControlResponse status) {
+        log.info("isMachineOff hostname:{}  status:{}", hostname, status);
+        if (status == null || status.getData() == null || status.getData().isEmpty()
+            || status.getData().get(0).getMessage() == null) {
+            return false;
+        }
+        String message = status.getData().get(0).getMessage();
+        for (String stoppedStatus : machineStoppedStatus) {
+            if (message.equals(stoppedStatus)) {
+                log.info("isMachineOff hostname:{}  message equals {}", hostname, stoppedStatus);
+                return true;
+            }
+        }
+        return false;
     }
 
     public ControlResponse getStatus(String accessKey, String secretKey, String[] hostnames) {

@@ -27,6 +27,7 @@ import javax.sql.DataSource;
 import java.sql.*;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author goodjava@qq.com
@@ -45,7 +46,7 @@ public class Session {
     }
 
 
-    public List<Map<String, Object>> query(String sql, Object... paras) {
+    public List<Map<String, ColumnRecord>> query(String sql, Object... paras) {
         MutableObject mo = new MutableObject();
         Safe.run(() -> {
             ResultSet rs = null;
@@ -63,13 +64,17 @@ public class Session {
                 }
                 rs = preparedStatement.executeQuery();
                 String[] names = getColumnNames(rs);
-                List<Map<String, Object>> res = Lists.newArrayList();
+                List<Map<String, ColumnRecord>> res = Lists.newArrayList();
                 while (rs.next()) {
-                    Map<String, Object> m = Maps.newHashMap();
+                    Map<String, ColumnRecord> m = Maps.newHashMap();
                     for (String name : names) {
                         try {
                             Object val = rs.getObject(name);
-                            m.put(name, val);
+                            ColumnRecord record = new ColumnRecord();
+                            record.setName(name);
+                            record.setData(Optional.ofNullable(val).isPresent() ? val.toString() : null);
+                            record.setType(Optional.ofNullable(val).isPresent() ? val.getClass().getName() : "");
+                            m.put(name, record);
                         } catch (SQLException e) {
                             e.printStackTrace();
                         }
@@ -84,7 +89,7 @@ public class Session {
         }, e -> {
             throw new DoceanException(e);
         });
-        return (List<Map<String, Object>>) mo.getObj();
+        return (List<Map<String, ColumnRecord>>) mo.getObj();
     }
 
 

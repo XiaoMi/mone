@@ -24,9 +24,11 @@ import com.xiaomi.youpin.docean.common.Resource;
 import com.xiaomi.youpin.docean.plugin.IPlugin;
 import com.xiaomi.youpin.docean.plugin.config.Config;
 import com.xiaomi.youpin.docean.plugin.datasource.DatasourcePlugin;
+import com.xiaomi.youpin.docean.plugin.mybatis.interceptor.DoceanInterceptor;
 import com.xiaomi.youpin.docean.plugin.mybatis.interceptor.TransactionalInterceptor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.ibatis.plugin.Interceptor;
 import org.apache.ibatis.session.SqlSessionFactory;
 
 import javax.sql.DataSource;
@@ -59,6 +61,7 @@ public class MybatisPlugin implements IPlugin {
             SqlSessionFactoryBean bean = new SqlSessionFactoryBean();
             bean.setDataSource((DataSource) dataSource);
             bean.setMapperLocations(new Resource[]{new ClassPathResource(mapperLocation)});
+            bean.setPlugins(new Interceptor[]{new DoceanInterceptor()});
             SqlSessionFactory factory = bean.buildSqlSessionFactory();
             ioc.putBean("mybatis_" + beanName, factory);
         }
@@ -66,6 +69,6 @@ public class MybatisPlugin implements IPlugin {
 
     @Override
     public String version() {
-        return "0.0.2:2020-07-07";
+        return "0.0.1:2021-01-24";
     }
 }

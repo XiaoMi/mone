@@ -130,6 +130,15 @@ public class YouPinLogAppender extends UnsynchronizedAppenderBase<ILoggingEvent>
     }
 
     @Override
+    public void stop() {
+        super.stop();
+        if (this.talosClient != null) {
+            this.talosClient.shutdown();
+        }
+        this.talosClient = null;
+    }
+
+    @Override
     protected void append(ILoggingEvent eventObject) {
         if (isInit.get() == false) {
             return;

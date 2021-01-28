@@ -61,11 +61,35 @@ public class DatasourcePlugin implements IPlugin {
         ioc.putBean(DB_NAMES, dbNames);
     }
 
+    /**
+     * 关闭指定数据源
+     *
+     * @param config
+     */
+    public void remove(DatasourceConfig config) {
+        ComboPooledDataSource ds = Ioc.ins().getBean("ds:" + config.getName());
+        ds.close();
+        Ioc.ins().remove("ds:" + config.getName());
+    }
+
+
+    /**
+     * 添加数据源
+     *
+     * @param config
+     * @return
+     */
+    public DataSource add(DatasourceConfig config) {
+        DataSource ds = dataSource(config);
+        Ioc.ins().putBean("ds:" + config.getName(), ds);
+        return ds;
+    }
+
     private DatasourceConfig generateDatasourceConfig(int datasourceNum, Config c, boolean multipleEnable) {
         DatasourceConfig config = new DatasourceConfig();
         String prefix = "";
         if (multipleEnable) {
-            prefix = PREFIX + datasourceNum+".";
+            prefix = PREFIX + datasourceNum + ".";
         }
         config.setDataSourcePasswd(c.get(prefix + "db_pwd", ""));
         config.setDataSourceUrl(c.get(prefix + "db_url", ""));

@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Created by zhangzhiyong on 30/05/2018.
@@ -95,8 +96,13 @@ public class Redis {
         this.catEnabled = catEnabled;
     }
 
+    private AtomicBoolean init = new AtomicBoolean(false);
+
     @PostConstruct
     public void init() {
+        if (!init.compareAndSet(false,true)) {
+            return;
+        }
         CatPlugin cat = new CatPlugin("init", catEnabled);
         boolean success = true;
         cat.before(null);

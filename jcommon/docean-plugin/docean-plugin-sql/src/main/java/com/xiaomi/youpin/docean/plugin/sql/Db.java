@@ -17,6 +17,8 @@
 package com.xiaomi.youpin.docean.plugin.sql;
 
 import javax.sql.DataSource;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author goodjava@qq.com
@@ -47,6 +49,19 @@ public class Db {
             return new Session(TransactionalContext.getContext().get(), dataSource);
         }
         return new Session(transaction, dataSource);
+    }
+
+    public List<Map<String, ColumnRecord>> query(String sql, String... params) {
+        Session session = openSession();
+        return session.query(sql, params);
+    }
+
+
+    public int update(String sql, String... params) {
+        Session session = openSession();
+        int n = session.update(sql, params);
+        session.commit();
+        return n;
     }
 
 
