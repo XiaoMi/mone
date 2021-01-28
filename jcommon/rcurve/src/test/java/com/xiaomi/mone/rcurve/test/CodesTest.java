@@ -17,9 +17,12 @@
 package com.xiaomi.mone.rcurve.test;
 
 import com.xiaomi.data.push.uds.codes.GsonCodes;
+import com.xiaomi.data.push.uds.codes.HessianCodes;
 import org.junit.Test;
-import org.msgpack.MessagePack;
+import org.springframework.cglib.beans.BeanMap;
 import org.springframework.util.Assert;
+
+import java.util.Map;
 
 /**
  * @author goodjava@qq.com
@@ -39,8 +42,28 @@ public class CodesTest {
         Assert.notNull(obj2, "null");
     }
 
+    public static <T> Map<String, Object> beanToMap(T bean) {
+        return BeanMap.create(bean);
+    }
+
 
     @Test
-    public void testMsgPackCodes() {
+    public void testHessianCodes() {
+        HessianCodes codes = new HessianCodes();
+        Obj obj = new Obj();
+        obj.setId(1);
+        obj.setName("zzy");
+        byte[] data = codes.encode(obj);
+        Obj obj2 = codes.decode(data, obj.getClass());
+        System.out.println(obj2);
+        Assert.notNull(obj2, "null");
+
+
+        Map<String, Object> m = beanToMap(obj);
+        data = codes.encode(m);
+        Object m2 = codes.decode(data, Map.class);
+        System.out.println(m2);
+
+
     }
 }

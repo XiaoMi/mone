@@ -22,8 +22,6 @@ import com.xiaomi.data.push.uds.codes.CodesFactory;
 import com.xiaomi.data.push.uds.codes.ICodes;
 import io.netty.channel.Channel;
 import lombok.Data;
-import org.msgpack.annotation.Ignore;
-import org.msgpack.annotation.Message;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;
@@ -34,15 +32,12 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @author goodjava@qq.com
  */
-@Message
 @Data
 public class UdsCommand implements Serializable {
 
-    @Ignore
     @Expose
     public static final AtomicLong requestId = new AtomicLong(0);
 
-    @Ignore
     @Expose
     private Channel channel;
 

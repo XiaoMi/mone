@@ -40,9 +40,13 @@ public class CommonUtils {
         return osName().equals("mac");
     }
 
+    public static boolean isWindows() {
+        return osName().equals("windows");
+    }
+
 
     public static void sleep(long timeout) {
-        SafeRun.run(()-> TimeUnit.SECONDS.sleep(timeout));
+        SafeRun.run(() -> TimeUnit.SECONDS.sleep(timeout));
     }
 
 
