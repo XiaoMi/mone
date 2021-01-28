@@ -17,6 +17,7 @@ import io.grpc.BindableService;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Resource;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -65,13 +66,15 @@ public class GRpcIngress implements Proxy<GrpcMeshRequest, MeshResponse> {
         command.setMethodName(request.getMethodName());
         command.setParamTypes(request.getParamTypesList().stream().toArray(String[]::new));
         command.setParams(request.getParamsList().stream().toArray(String[]::new));
+        command.setByteParams(Arrays.stream(request.getParamsList().stream().toArray(String[]::new)).map(it->it.getBytes()).toArray(byte[][]::new));
         command.setTimeout(request.getTimeout());
+        command.putAtt("resultJson", "true");
         try {
             UdsCommand res = udsServer.call(command);
             MeshResponse meshResponse = new MeshResponse();
             meshResponse.setCode(res.getCode());
             meshResponse.setMessage(res.getMessage());
-            String data = res.getData(String.class);
+            String data = new String((byte[])res.getData(byte[].class));
             meshResponse.setData(data);
             return meshResponse;
         } catch (Throwable ex) {

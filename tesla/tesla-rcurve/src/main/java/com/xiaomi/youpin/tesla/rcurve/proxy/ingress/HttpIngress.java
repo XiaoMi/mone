@@ -1,5 +1,6 @@
 package com.xiaomi.youpin.tesla.rcurve.proxy.ingress;
 
+import com.google.gson.Gson;
 import com.xiaomi.data.push.uds.UdsServer;
 import com.xiaomi.data.push.uds.po.UdsCommand;
 import com.xiaomi.youpin.docean.anno.Component;
@@ -14,6 +15,7 @@ import com.xiaomi.youpin.tesla.proxy.MeshResponse;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Resource;
+import java.util.Arrays;
 
 /**
  * @author goodjava@qq.com
@@ -57,16 +59,19 @@ public class HttpIngress implements Proxy<ProxyRequest, MeshResponse> {
             request.setMethodName(r.getMethodName());
             request.setParamTypes(r.getParamTypes());
             request.setParams(r.getParams());
+            request.setByteParams(Arrays.stream(r.getParams()).map(it->it.getBytes()).toArray(byte[][]::new));
             long timeout = getTimeout(r);
             request.setTimeout(timeout);
+            request.putAtt("resultJson", "true");
             UdsCommand res = udsServer.call(request);
             MeshResponse response = new MeshResponse();
             if (res.getCode() != 0) {
                 response.setCode(res.getCode());
                 response.setMessage(res.getMessage());
             } else {
-                String data = res.getData(String.class);
-                response.setData(data);
+                String returnType = res.getAtt("returnType","");
+                Object data = res.getData(Class.forName(returnType));
+                response.setData(new Gson().toJson(data));
             }
             return response;
         } catch (Throwable ex) {

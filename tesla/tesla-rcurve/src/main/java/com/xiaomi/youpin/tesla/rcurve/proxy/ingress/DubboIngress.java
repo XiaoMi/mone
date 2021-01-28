@@ -44,6 +44,7 @@ public class DubboIngress implements Proxy<MeshRequest, MeshResponse>, MeshServi
         request.setMethodName(r.getMethodName());
         request.setParamTypes(r.getParamTypes());
         request.setParams(r.getParams());
+        request.setByteParams(Arrays.stream(r.getParams()).map(it -> it.getBytes()).toArray(byte[][]::new));
         request.setTimeout(1000);
         UdsCommand res = udsServer.call(request);
         MeshResponse response = new MeshResponse();
@@ -69,6 +70,7 @@ public class DubboIngress implements Proxy<MeshRequest, MeshResponse>, MeshServi
     /**
      * dubbo 调用->调用上游的service(dubbo 代码在这里有修改->MeshDubboResponse是dubbo定制的结果,为了配合mesh使用)
      * ingress dubbo 进来的调用(对面是标准的dubbo服务)
+     *
      * @param request
      * @return
      */
@@ -78,8 +80,8 @@ public class DubboIngress implements Proxy<MeshRequest, MeshResponse>, MeshServi
         MeshRequest r = new MeshRequest();
         r.setMethodName(request.getMethodName());
         r.setServiceName(request.getServiceName());
-        r.setParamTypes(Arrays.stream(request.getParameterTypes()).map(it->it.getName()).toArray(String[]::new));
-        r.setParams(Arrays.stream(request.getArguments()).map(it->gson.toJson(it)).toArray(String[]::new));
+        r.setParamTypes(Arrays.stream(request.getParameterTypes()).map(it -> it.getName()).toArray(String[]::new));
+        r.setParams(Arrays.stream(request.getArguments()).map(it -> gson.toJson(it)).toArray(String[]::new));
         r.setRemoteApp(request.getApp());
         r.setApp(request.getApp());
         MeshResponse rs = execute(context, r);

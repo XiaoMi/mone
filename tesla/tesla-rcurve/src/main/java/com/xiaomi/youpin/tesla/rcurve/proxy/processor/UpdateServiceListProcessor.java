@@ -1,13 +1,10 @@
 package com.xiaomi.youpin.tesla.rcurve.proxy.processor;
 
-import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.xiaomi.data.push.common.Send;
-import com.xiaomi.data.push.nacos.NacosNaming;
-import com.xiaomi.data.push.rpc.RpcClient;
 import com.xiaomi.data.push.uds.UdsServer;
 import com.xiaomi.data.push.uds.po.UdsCommand;
 import com.xiaomi.data.push.uds.processor.UdsProcessor;
@@ -24,6 +21,7 @@ import com.xiaomi.youpin.tesla.rcurve.proxy.common.NetUtils;
 import com.xiaomi.youpin.tesla.rcurve.proxy.manager.DsManager;
 import com.xiaomi.youpin.tesla.rcurve.proxy.manager.ServiceManager;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.common.utils.ConfigUtils;
 
 import javax.annotation.Resource;
 import java.lang.reflect.Type;
@@ -43,7 +41,7 @@ public class UpdateServiceListProcessor implements UdsProcessor {
 
     private Gson gson = new Gson();
 
-    private String ip = NetUtils.getLocalHost();
+    private String ip;
 
     private int port;
 
@@ -56,6 +54,13 @@ public class UpdateServiceListProcessor implements UdsProcessor {
     public void init() {
         UdsServer server = Ioc.ins().getBean(UdsServer.class);
         server.getProcessorMap().put("updateServerList", this);
+
+        String hostToRegistry = ConfigUtils.getSystemProperty("TESLA_HOST");
+        if (StringUtils.isEmpty(hostToRegistry)) {
+            hostToRegistry = NetUtils.getLocalHost();
+        }
+        ip = hostToRegistry;
+
         port = 7777;
     }
 
