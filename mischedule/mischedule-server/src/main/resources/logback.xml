@@ -22,8 +22,8 @@
     <appender name="youpinLogAppender" class="com.xiaomi.youpin.jcommon.log.YouPinLogAppender">
         <appName>mischedule</appName>
         <group>${youpin.log.group}</group>
-        <talosAccessKey>AK2PF3BOQLDEBPIHK5</talosAccessKey>
-        <talosAccessSecret>FyROsKvfusCUjJQxy8ERkd+9D4RoL2QVXe4+Dw2N</talosAccessSecret>
+        <talosAccessKey></talosAccessKey>
+        <talosAccessSecret></talosAccessSecret>
         <talosTopicName>youpin_common</talosTopicName>
         <talosSendpoint>http://cnbj4-talos.api.xiaomi.net</talosSendpoint>
         <needCatLog>true</needCatLog>
