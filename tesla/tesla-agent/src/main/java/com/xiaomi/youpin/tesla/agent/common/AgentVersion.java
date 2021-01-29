@@ -23,7 +23,7 @@ public class AgentVersion {
 
     @Override
     public String toString() {
-        return "AgentVersion:0.0.1:2020-12-10";
+        return "AgentVersion:0.0.1:2021-01-29";
     }
 
 }

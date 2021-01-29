@@ -25,7 +25,7 @@
         <talosAccessKey></talosAccessKey>
         <talosAccessSecret></talosAccessSecret>
         <talosTopicName>youpin_common</talosTopicName>
-        <talosSendpoint>http://cnbj4-talos.api.xiaomi.net</talosSendpoint>
+        <talosSendpoint></talosSendpoint>
         <needCatLog>true</needCatLog>
         <whitelist>com.xiaomi.youpin</whitelist>
     </appender>

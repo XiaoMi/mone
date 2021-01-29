@@ -44,6 +44,7 @@ public class PortCal {
     private int httpPort;
     private int nacosPushPort;
     private int thirdPort = -1;
+    private int fourPort = -1;
     private int gsonDubboPort = -1;
     private int debugPort = -1;
     private List<Integer> cports = Lists.newArrayList();
@@ -87,6 +88,13 @@ public class PortCal {
         if (StringUtils.isNotEmpty(tp)) {
             thirdPort = Integer.valueOf(tp);
             cports.add(thirdPort);
+        }
+
+        //第四方端口号
+        String fp = LabelService.ins().getLabelValue(req.getLabels(), LabelService.FOUR_PORT);
+        if (StringUtils.isNotEmpty(fp)) {
+            fourPort = Integer.valueOf(fp);
+            cports.add(fourPort);
         }
 
         portList.add(Port.builder().type(1).port(dubboPort).build());
@@ -133,6 +141,16 @@ public class PortCal {
             String thirdPortStr = String.valueOf(thirdPort);
             ExposedPort exposedThirdPort = ExposedPort.parse(thirdPortStr);
             PortBinding thirdPortBinding = PortBinding.parse(thirdPortStr + ":" + thirdPortStr);
+            exposedPorts.add(exposedThirdPort);
+            portBindings.add(thirdPortBinding);
+        }
+
+        //第四方端口暴露
+        if (fourPort != -1) {
+            log.info("bind four port:{}", fourPort);
+            String fourPortStr = String.valueOf(fourPort);
+            ExposedPort exposedThirdPort = ExposedPort.parse(fourPortStr);
+            PortBinding thirdPortBinding = PortBinding.parse(fourPortStr + ":" + fourPortStr);
             exposedPorts.add(exposedThirdPort);
             portBindings.add(thirdPortBinding);
         }
