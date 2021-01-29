@@ -59,6 +59,7 @@ public class CallMethodProcessor implements UdsProcessor {
             mr.setByteParams(req.getByteParams());
 
             Object res = ReflectUtils.invokeMethod(mr, obj, CovertUtils::convert);
+
             if (req.getAtt("resultJson","false").equals("true")) {
                 response.setData(new Gson().toJson(res).getBytes());
             } else {

@@ -1,9 +1,9 @@
 package com.xiaomi.youpin.tesla.rcurve.proxy.ingress;
 
-import com.google.gson.Gson;
 import com.xiaomi.data.push.uds.UdsServer;
 import com.xiaomi.data.push.uds.po.UdsCommand;
 import com.xiaomi.youpin.docean.anno.Component;
+import com.xiaomi.youpin.tesla.proxy.MeshResponse;
 import com.xiaomi.youpin.tesla.rcurve.proxy.Proxy;
 import com.xiaomi.youpin.tesla.rcurve.proxy.ProxyRequest;
 import com.xiaomi.youpin.tesla.rcurve.proxy.common.CurveVersion;
@@ -11,7 +11,6 @@ import com.xiaomi.youpin.tesla.rcurve.proxy.context.ProxyContext;
 import com.xiaomi.youpin.tesla.rcurve.proxy.context.ProxyType;
 import com.xiaomi.youpin.tesla.rcurve.proxy.control.ControlCallable;
 import com.xiaomi.youpin.tesla.rcurve.proxy.control.ControlChain;
-import com.xiaomi.youpin.tesla.proxy.MeshResponse;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Resource;
@@ -69,9 +68,8 @@ public class HttpIngress implements Proxy<ProxyRequest, MeshResponse> {
                 response.setCode(res.getCode());
                 response.setMessage(res.getMessage());
             } else {
-                String returnType = res.getAtt("returnType","");
-                Object data = res.getData(Class.forName(returnType));
-                response.setData(new Gson().toJson(data));
+                String data = new String((byte[]) res.getData(byte[].class));
+                response.setData(data);
             }
             return response;
         } catch (Throwable ex) {
