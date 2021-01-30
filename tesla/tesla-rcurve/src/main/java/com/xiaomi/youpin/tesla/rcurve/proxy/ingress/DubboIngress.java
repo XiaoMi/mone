@@ -20,7 +20,7 @@ import java.util.Arrays;
 /**
  * @author goodjava@qq.com
  * @date 1/2/21
- * 支持dubbo 代理协议
+ * Dubbo Ingress
  */
 @Slf4j
 @Service(interfaceClass = MeshService.class)

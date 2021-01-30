@@ -26,13 +26,14 @@ import lombok.Data;
 @Builder
 public class HttpServerConfig {
 
-
     private boolean ssl;
 
     private boolean websocket;
 
     private int port;
 
+    public static int HTTP_POOL_SIZE = 500;
+    public static int HTTP_POOL_QUEUE_SIZE = 1000;
 
     public HttpServerConfig(boolean ssl, boolean websocket, int port) {
         this.ssl = ssl;

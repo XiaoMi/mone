@@ -14,39 +14,27 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.youpin.docean.mvc;
+package com.xiaomi.youpin.tesla.rcurve.proxy.bo;
 
-import com.xiaomi.youpin.docean.mvc.session.HttpSession;
-import com.xiaomi.youpin.docean.mvc.session.HttpSessionManager;
-import io.netty.channel.ChannelHandlerContext;
+import com.xiaomi.mone.grpc.demo.GrpcMeshRequest;
+import com.xiaomi.youpin.tesla.rcurve.proxy.context.ProxyContext;
+import lombok.Builder;
 import lombok.Data;
 
-import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 
 /**
- * @author goodjava@qq.com
- * @date 2020/6/21
+ * @Author goodjava@qq.com
+ * @Date 2021/1/30 15:55
  */
 @Data
-public class MvcContext {
+@Builder
+public class GrpcReqMsg {
 
-    private String traceId;
+    private ProxyContext context;
 
-    private Map<String, String> attachments;
+    private GrpcMeshRequest request;
 
-    private Map<String, String> headers;
-
-    private boolean websocket;
-
-
-    public HttpSession session() {
-        return HttpSessionManager.getSession(this);
-    }
-
-    private String sessionId = "";
-
-    private String method;
-
-    private ChannelHandlerContext handlerContext;
+    private CompletableFuture<Object> future;
 
 }

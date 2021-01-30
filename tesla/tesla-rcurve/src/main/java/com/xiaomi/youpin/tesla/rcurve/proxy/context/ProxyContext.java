@@ -1,6 +1,7 @@
 package com.xiaomi.youpin.tesla.rcurve.proxy.context;
 
 import com.youpin.xiaomi.tesla.bo.DubboApiInfo;
+import io.netty.channel.ChannelHandlerContext;
 import lombok.Data;
 
 import java.util.HashMap;
@@ -33,6 +34,8 @@ public class ProxyContext {
      * 用户设置新的dubbo api info
      */
     private DubboApiInfo dubboApiInfo;
+
+    private ChannelHandlerContext handlerContext;
 
     public String getAttachment(String key, String defaultValue) {
         String value = this.attachments.get(key);
