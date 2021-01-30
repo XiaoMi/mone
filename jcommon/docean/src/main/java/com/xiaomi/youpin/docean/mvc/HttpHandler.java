@@ -60,6 +60,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
         String method = request.method().name();
         MvcContext context = new MvcContext();
         context.setMethod(method);
+        context.setHandlerContext(ctx);
         MvcRequest req = new MvcRequest();
         req.setHeaders(request.headers().entries().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
         context.setHeaders(req.getHeaders());

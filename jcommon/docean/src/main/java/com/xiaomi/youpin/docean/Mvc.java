@@ -24,6 +24,7 @@ import com.xiaomi.youpin.docean.common.Cons;
 import com.xiaomi.youpin.docean.common.MutableObject;
 import com.xiaomi.youpin.docean.common.ReflectUtils;
 import com.xiaomi.youpin.docean.common.Safe;
+import com.xiaomi.youpin.docean.config.HttpServerConfig;
 import com.xiaomi.youpin.docean.exception.DoceanException;
 import com.xiaomi.youpin.docean.mvc.*;
 import io.netty.handler.codec.http.*;
@@ -45,7 +46,8 @@ public class Mvc {
     private ConcurrentHashMap<String, HttpRequestMethod> requestMethodMap = new ConcurrentHashMap<>();
 
     private Mvc() {
-        executor = new ThreadPoolExecutor(500, 500, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(1000));
+        log.info("http server pool size:{}", HttpServerConfig.HTTP_POOL_SIZE);
+        executor = new ThreadPoolExecutor(HttpServerConfig.HTTP_POOL_SIZE, HttpServerConfig.HTTP_POOL_SIZE, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(HttpServerConfig.HTTP_POOL_QUEUE_SIZE));
         initHttpRequestMethod();
     }
 
@@ -149,13 +151,15 @@ public class Mvc {
             JsonElement args = mo.getObj();
             Object[] params = ReflectUtils.getMethodParams(method.getMethod(), args);
             setMvcContext(context, params);
-
             Object data = ReflectUtils.invokeFastMethod(method.getObj(), method.getMethod(), params);
-
-
             //需要跳转(302)
             if (data instanceof MvcResult) {
                 MvcResult<String> mr = (MvcResult) data;
+                //使用akka处理
+                if (mr.getCode() == -999) {
+                    return;
+                }
+
                 if (mr.getCode() == HttpResponseStatus.FOUND.code()) {
                     FullHttpResponse response302 = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.FOUND);
                     response302.headers().set(HttpHeaderNames.CONTENT_LENGTH, 0);
@@ -169,7 +173,7 @@ public class Mvc {
             //直接返回构造的结果
             if (data instanceof FullHttpResponse) {
                 FullHttpResponse res = (FullHttpResponse) data;
-                response.getCtx().writeAndFlush( HttpResponseUtils.create(res));
+                response.getCtx().writeAndFlush(HttpResponseUtils.create(res));
                 return;
             }
 

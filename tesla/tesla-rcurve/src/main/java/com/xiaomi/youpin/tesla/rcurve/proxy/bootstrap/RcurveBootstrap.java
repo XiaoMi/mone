@@ -17,6 +17,7 @@
 package com.xiaomi.youpin.tesla.rcurve.proxy.bootstrap;
 
 import com.xiaomi.youpin.docean.Ioc;
+import com.xiaomi.youpin.docean.config.HttpServerConfig;
 import com.xiaomi.youpin.tesla.rcurve.proxy.ProxyServer;
 import com.xiaomi.youpin.tesla.rcurve.proxy.common.RcurveShutdownHook;
 import lombok.extern.slf4j.Slf4j;
@@ -29,8 +30,10 @@ import lombok.extern.slf4j.Slf4j;
 public class RcurveBootstrap {
 
     public static void main(String... args) {
+        HttpServerConfig.HTTP_POOL_SIZE = 1;
+        HttpServerConfig.HTTP_POOL_QUEUE_SIZE = 20000;
         ProxyServer proxyServer = new ProxyServer();
-        Ioc.ins().putBean(proxyServer).init("com.xiaomi.youpin.tesla.rcurve", "com.xiaomi.youpin.docean.plugin");
+        Ioc.ins().putBean(proxyServer).init("com.xiaomi" );
         Runtime.getRuntime().addShutdownHook(new Thread(new RcurveShutdownHook()));
         proxyServer.openProxy();
         log.info("tesla rcurve start finish");

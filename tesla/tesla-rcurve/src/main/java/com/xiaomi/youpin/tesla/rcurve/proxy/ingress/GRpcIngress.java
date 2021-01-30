@@ -3,27 +3,31 @@ package com.xiaomi.youpin.tesla.rcurve.proxy.ingress;
 import com.google.common.collect.Lists;
 import com.xiaomi.data.push.uds.UdsServer;
 import com.xiaomi.data.push.uds.po.UdsCommand;
+import com.xiaomi.mone.docean.plugin.akka.AkkaPlugin;
 import com.xiaomi.mone.grpc.GrpcServer;
 import com.xiaomi.mone.grpc.demo.GrpcMeshRequest;
 import com.xiaomi.mone.grpc.service.MeshServiceImpl;
+import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.Component;
 import com.xiaomi.youpin.docean.common.Safe;
 import com.xiaomi.youpin.docean.plugin.config.anno.Value;
+import com.xiaomi.youpin.tesla.proxy.MeshResponse;
 import com.xiaomi.youpin.tesla.rcurve.proxy.Proxy;
+import com.xiaomi.youpin.tesla.rcurve.proxy.bo.GrpcReqMsg;
 import com.xiaomi.youpin.tesla.rcurve.proxy.context.ProxyContext;
 import com.xiaomi.youpin.tesla.rcurve.proxy.context.ProxyType;
-import com.xiaomi.youpin.tesla.proxy.MeshResponse;
 import io.grpc.BindableService;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Resource;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * @author goodjava@qq.com
  * @date 1/2/21
- * grpc 代理协议的支持
+ * Grpc Ingress
  */
 @Component
 @Slf4j
@@ -38,24 +42,42 @@ public class GRpcIngress implements Proxy<GrpcMeshRequest, MeshResponse> {
     @Value(value = "$openGrpc", defaultValue = "false")
     private String openGrpc;
 
+
+    @Value(value = "$use_actor", defaultValue = "false")
+    private String useActor;
+
+
+
     public void init() {
         log.info("grpc proxy init");
         if (openGrpc.equals("false")) {
             return;
         }
+        AkkaPlugin akkaPlugin = Ioc.ins().getBean(AkkaPlugin.class);
         GrpcServer grpcServer = new GrpcServer();
         MeshServiceImpl meshService = new MeshServiceImpl();
         ProxyContext context = new ProxyContext();
         context.setType(ProxyType.grpc);
-        meshService.setInvoker(grpcRequest -> execute(context, grpcRequest));
+        meshService.setInvoker(grpcRequest -> {
+            if (useActor.equals("true")) {
+                CompletableFuture<Object> future = new CompletableFuture<>();
+                akkaPlugin.sendMessage("grpc_ingress", GrpcReqMsg.builder().context(context)
+                        .request(grpcRequest).future(future).build());
+                return future;
+            }
+
+            return execute(context, grpcRequest);
+        });
         List<BindableService> serviceList = Lists.newArrayList(meshService);
         grpcServer.setServiceList(serviceList);
         grpcServer.setPort(Integer.valueOf(grpcPort));
         new Thread(() -> Safe.run(() -> grpcServer.start())).start();
+
     }
 
     @Override
     public MeshResponse execute(ProxyContext context, GrpcMeshRequest request) {
+        log.info("grpc execute");
         if (request.getMethodName().equals("$version$")) {
             return new MeshResponse(this.type() + ":" + this.version());
         }

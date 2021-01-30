@@ -79,6 +79,12 @@
 
         <dependency>
             <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>docean-plugin-akka</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
             <artifactId>docean-plugin-http</artifactId>
             <version>1.4-SNAPSHOT</version>
         </dependency>
