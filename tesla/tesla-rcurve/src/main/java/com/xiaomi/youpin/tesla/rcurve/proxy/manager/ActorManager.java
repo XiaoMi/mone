@@ -16,15 +16,15 @@
 
 package com.xiaomi.youpin.tesla.rcurve.proxy.manager;
 
-import akka.japi.pf.ReceiveBuilder;
-import com.google.gson.Gson;
+import akka.actor.ActorRef;
+import akka.actor.Props;
 import com.xiaomi.mone.docean.plugin.akka.AkkaPlugin;
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.Service;
-import com.xiaomi.youpin.gateway.common.HttpResponseUtils;
-import com.xiaomi.youpin.tesla.proxy.MeshResponse;
-import com.xiaomi.youpin.tesla.rcurve.proxy.bo.GrpcReqMsg;
-import com.xiaomi.youpin.tesla.rcurve.proxy.bo.HttpReqMsg;
+import com.xiaomi.youpin.tesla.rcurve.proxy.actor.AppActor;
+import com.xiaomi.youpin.tesla.rcurve.proxy.actor.message.RegAppMsg;
+import com.xiaomi.youpin.tesla.rcurve.proxy.actor.message.UnRegAppMsg;
+import com.xiaomi.youpin.tesla.rcurve.proxy.ingress.DubboIngress;
 import com.xiaomi.youpin.tesla.rcurve.proxy.ingress.GRpcIngress;
 import com.xiaomi.youpin.tesla.rcurve.proxy.ingress.HttpIngress;
 
@@ -43,22 +43,34 @@ public class ActorManager {
     @Resource
     private GRpcIngress gRpcIngress;
 
+    @Resource
+    private DubboIngress dubboIngress;
+
+
+    private AkkaPlugin akkaPlugin;
+
 
     public void init() {
-        AkkaPlugin akkaPlugin = Ioc.ins().getBean(AkkaPlugin.class);
+        akkaPlugin = Ioc.ins().getBean(AkkaPlugin.class);
+        ActorRef actor = akkaPlugin.getSystem().actorOf(Props.create(AppActor.class, () ->
+                new AppActor(httpIngress, gRpcIngress, dubboIngress)), "appActor");
+        RegAppMsg msg = new RegAppMsg();
+        msg.setAppName("default");
+        actor.tell(msg, ActorRef.noSender());
+    }
 
-        akkaPlugin.createActor("http_ingress", 500,
-                ReceiveBuilder.create().match(HttpReqMsg.class, msg -> {
-                    MeshResponse res = httpIngress.execute(msg.getCtx(), msg.getReq());
-                    msg.getCtx().getHandlerContext().writeAndFlush(HttpResponseUtils.create(new Gson().toJson(res)));
-                }).build());
+
+    public void regApp(String appName) {
+        RegAppMsg msg = new RegAppMsg();
+        msg.setAppName(appName);
+        akkaPlugin.getSystem().actorSelection("/user/appActor").tell(msg, ActorRef.noSender());
+    }
 
 
-        akkaPlugin.createActor("grpc_ingress", 500,
-                ReceiveBuilder.create().match(GrpcReqMsg.class, msg -> {
-                    MeshResponse res = gRpcIngress.execute(msg.getContext(), msg.getRequest());
-                    msg.getFuture().complete(res);
-                }).build());
+    public void unregApp(String appName) {
+        UnRegAppMsg msg = new UnRegAppMsg();
+        msg.setAppName(appName);
+        akkaPlugin.getSystem().actorSelection("/user/appActor").tell(msg, ActorRef.noSender());
     }
 
 }

@@ -13,7 +13,7 @@ import com.xiaomi.youpin.docean.common.Safe;
 import com.xiaomi.youpin.docean.plugin.config.anno.Value;
 import com.xiaomi.youpin.tesla.proxy.MeshResponse;
 import com.xiaomi.youpin.tesla.rcurve.proxy.Proxy;
-import com.xiaomi.youpin.tesla.rcurve.proxy.bo.GrpcReqMsg;
+import com.xiaomi.youpin.tesla.rcurve.proxy.actor.message.GrpcReqMsg;
 import com.xiaomi.youpin.tesla.rcurve.proxy.context.ProxyContext;
 import com.xiaomi.youpin.tesla.rcurve.proxy.context.ProxyType;
 import io.grpc.BindableService;
@@ -22,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Resource;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * @author goodjava@qq.com
@@ -47,7 +46,6 @@ public class GRpcIngress implements Proxy<GrpcMeshRequest, MeshResponse> {
     private String useActor;
 
 
-
     public void init() {
         log.info("grpc proxy init");
         if (openGrpc.equals("false")) {
@@ -58,14 +56,15 @@ public class GRpcIngress implements Proxy<GrpcMeshRequest, MeshResponse> {
         MeshServiceImpl meshService = new MeshServiceImpl();
         ProxyContext context = new ProxyContext();
         context.setType(ProxyType.grpc);
-        meshService.setInvoker(grpcRequest -> {
+        meshService.setInvoker((grpcRequest, observer) -> {
             if (useActor.equals("true")) {
-                CompletableFuture<Object> future = new CompletableFuture<>();
-                akkaPlugin.sendMessage("grpc_ingress", GrpcReqMsg.builder().context(context)
-                        .request(grpcRequest).future(future).build());
-                return future;
+                akkaPlugin.sendMessage(AkkaPlugin.getName("grpc", grpcRequest.getApp()), GrpcReqMsg.builder()
+                        .context(context)
+                        .responseObserver(observer)
+                        .request(grpcRequest).build());
+                //返回空,grpc的线程就不会等待了
+                return null;
             }
-
             return execute(context, grpcRequest);
         });
         List<BindableService> serviceList = Lists.newArrayList(meshService);
@@ -88,7 +87,7 @@ public class GRpcIngress implements Proxy<GrpcMeshRequest, MeshResponse> {
         command.setMethodName(request.getMethodName());
         command.setParamTypes(request.getParamTypesList().stream().toArray(String[]::new));
         command.setParams(request.getParamsList().stream().toArray(String[]::new));
-        command.setByteParams(Arrays.stream(request.getParamsList().stream().toArray(String[]::new)).map(it->it.getBytes()).toArray(byte[][]::new));
+        command.setByteParams(Arrays.stream(request.getParamsList().stream().toArray(String[]::new)).map(it -> it.getBytes()).toArray(byte[][]::new));
         command.setTimeout(request.getTimeout());
         command.putAtt("resultJson", "true");
         try {
@@ -96,7 +95,7 @@ public class GRpcIngress implements Proxy<GrpcMeshRequest, MeshResponse> {
             MeshResponse meshResponse = new MeshResponse();
             meshResponse.setCode(res.getCode());
             meshResponse.setMessage(res.getMessage());
-            String data = new String((byte[])res.getData(byte[].class));
+            String data = new String((byte[]) res.getData(byte[].class));
             meshResponse.setData(data);
             return meshResponse;
         } catch (Throwable ex) {

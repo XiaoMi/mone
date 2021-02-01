@@ -24,6 +24,7 @@ import com.google.common.base.Joiner;
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.DOceanPlugin;
 import com.xiaomi.youpin.docean.plugin.IPlugin;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -41,6 +42,7 @@ import java.util.stream.IntStream;
 @Slf4j
 public class AkkaPlugin implements IPlugin {
 
+    @Getter
     private ActorSystem system;
 
     private ConcurrentHashMap<String, ActorInfo> map = new ConcurrentHashMap<>();
@@ -66,6 +68,16 @@ public class AkkaPlugin implements IPlugin {
     }
 
 
+    public void createActor(String name, int num, List<ActorRef> list) {
+        log.info("create actor:{} {}", name, num);
+        ActorInfo info = new ActorInfo();
+        info.setName(name);
+        info.setNum(num);
+        info.setList(list);
+        map.put(name, info);
+    }
+
+
     public void destoryActor(String name) {
         log.info("destroy actor:{}", name);
         map.computeIfPresent(name, (k, v) -> {
@@ -83,5 +95,9 @@ public class AkkaPlugin implements IPlugin {
         int v = random.nextInt(num);
         ActorRef actorRef = info.getList().get(v);
         actorRef.tell(msg, ActorRef.noSender());
+    }
+
+    public static String getName(Object... params) {
+        return Joiner.on(":").join(params);
     }
 }

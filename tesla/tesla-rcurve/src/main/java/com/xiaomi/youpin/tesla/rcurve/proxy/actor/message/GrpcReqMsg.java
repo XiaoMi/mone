@@ -14,22 +14,29 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.youpin.tesla.rcurve.proxy.bo;
+package com.xiaomi.youpin.tesla.rcurve.proxy.actor.message;
 
-import com.xiaomi.youpin.tesla.rcurve.proxy.ProxyRequest;
+import com.xiaomi.mone.grpc.demo.GrpcMeshRequest;
+import com.xiaomi.mone.grpc.demo.GrpcMeshResponse;
 import com.xiaomi.youpin.tesla.rcurve.proxy.context.ProxyContext;
+import io.grpc.stub.StreamObserver;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
- * @author goodjava@qq.com
- * @date 1/30/21
+ * @Author goodjava@qq.com
+ * @Date 2021/1/30 15:55
  */
-@Builder
 @Data
-public class HttpReqMsg {
+@Builder
+public class GrpcReqMsg {
 
-    private ProxyContext ctx;
+    private ProxyContext context;
 
-    private ProxyRequest req;
+    private GrpcMeshRequest request;
+
+    private StreamObserver<GrpcMeshResponse> responseObserver;
+
 }

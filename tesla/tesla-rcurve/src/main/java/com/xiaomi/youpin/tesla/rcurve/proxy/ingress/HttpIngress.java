@@ -9,7 +9,7 @@ import com.xiaomi.youpin.docean.plugin.config.anno.Value;
 import com.xiaomi.youpin.tesla.proxy.MeshResponse;
 import com.xiaomi.youpin.tesla.rcurve.proxy.Proxy;
 import com.xiaomi.youpin.tesla.rcurve.proxy.ProxyRequest;
-import com.xiaomi.youpin.tesla.rcurve.proxy.bo.HttpReqMsg;
+import com.xiaomi.youpin.tesla.rcurve.proxy.actor.message.HttpReqMsg;
 import com.xiaomi.youpin.tesla.rcurve.proxy.common.CurveVersion;
 import com.xiaomi.youpin.tesla.rcurve.proxy.context.ProxyContext;
 import com.xiaomi.youpin.tesla.rcurve.proxy.context.ProxyType;
@@ -42,7 +42,7 @@ public class HttpIngress implements Proxy<ProxyRequest, MeshResponse> {
     public MeshResponse execute0(ProxyContext context, ProxyRequest request) {
         if (useActor.equals("true")) {
             AkkaPlugin akkaPlugin = Ioc.ins().getBean(AkkaPlugin.class);
-            akkaPlugin.sendMessage("http_ingress", HttpReqMsg.builder().ctx(context).req(request).build());
+            akkaPlugin.sendMessage(AkkaPlugin.getName("http", request.getApp()), HttpReqMsg.builder().ctx(context).req(request).build());
             MeshResponse result = new MeshResponse();
             result.setCode(-999);
             return result;

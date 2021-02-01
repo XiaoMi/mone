@@ -8,6 +8,6 @@ public class CurveVersion {
 
     @Override
     public String toString() {
-        return "curve mesh version:0.0.3:2021-01-30";
+        return "curve mesh version:0.0.2:2021-02-01";
     }
 }

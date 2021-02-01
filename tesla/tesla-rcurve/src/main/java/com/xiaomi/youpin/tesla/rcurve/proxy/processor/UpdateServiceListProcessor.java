@@ -18,6 +18,7 @@ import com.xiaomi.youpin.docean.plugin.redis.RedisDsConfig;
 import com.xiaomi.youpin.docean.plugin.redis.RedisPlugin;
 import com.xiaomi.youpin.docean.plugin.sql.SqlPlugin;
 import com.xiaomi.youpin.tesla.rcurve.proxy.common.NetUtils;
+import com.xiaomi.youpin.tesla.rcurve.proxy.manager.ActorManager;
 import com.xiaomi.youpin.tesla.rcurve.proxy.manager.DsManager;
 import com.xiaomi.youpin.tesla.rcurve.proxy.manager.ServiceManager;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +52,10 @@ public class UpdateServiceListProcessor implements UdsProcessor {
     @Resource
     private ServiceManager serviceManager;
 
+
+    @Resource
+    private ActorManager actorManager;
+
     public void init() {
         UdsServer server = Ioc.ins().getBean(UdsServer.class);
         server.getProcessorMap().put("updateServerList", this);
@@ -70,6 +75,8 @@ public class UpdateServiceListProcessor implements UdsProcessor {
         if (udsCommand.getServiceName().equals("init")) {
             log.info("app init");
             initMesh(udsCommand);
+            //初始化这个应用的actor
+            actorManager.regApp(udsCommand.getApp());
             return;
         }
 

@@ -23,6 +23,7 @@ import com.xiaomi.data.push.uds.context.NetType;
 import com.xiaomi.data.push.uds.po.UdsCommand;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.tesla.rcurve.proxy.common.CurveVersion;
+import com.xiaomi.youpin.tesla.rcurve.proxy.manager.ActorManager;
 import com.xiaomi.youpin.tesla.rcurve.proxy.manager.DsManager;
 import lombok.extern.slf4j.Slf4j;
 
@@ -41,13 +42,19 @@ public class ProxyNetListener implements NetListener {
     private DsManager dsManager;
 
 
+    @Resource
+    private ActorManager actorManager;
+
+
     @Override
     public void handle(NetEvent netEvent) {
         log.info("{}", netEvent);
 
-        //注销数据源
         if (netEvent.getType().equals(NetType.inactive)) {
+            //注销数据源
             dsManager.remove(netEvent.getApp());
+            //销毁actor
+            actorManager.unregApp(netEvent.getApp());
         }
 
         //发送一些系统信息给客户端

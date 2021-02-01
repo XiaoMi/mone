@@ -14,27 +14,19 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.youpin.tesla.rcurve.proxy.bo;
+package com.xiaomi.youpin.tesla.rcurve.proxy.actor.message;
 
-import com.xiaomi.mone.grpc.demo.GrpcMeshRequest;
-import com.xiaomi.youpin.tesla.rcurve.proxy.context.ProxyContext;
-import lombok.Builder;
 import lombok.Data;
 
-import java.util.concurrent.CompletableFuture;
+import java.io.Serializable;
 
 /**
  * @Author goodjava@qq.com
- * @Date 2021/1/30 15:55
+ * @Date 2021/2/1 14:06
  */
 @Data
-@Builder
-public class GrpcReqMsg {
+public class UnRegAppMsg implements Serializable {
 
-    private ProxyContext context;
-
-    private GrpcMeshRequest request;
-
-    private CompletableFuture<Object> future;
+    private String appName;
 
 }
