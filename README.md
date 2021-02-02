@@ -46,10 +46,6 @@ It has been used intensively at Xiaomi to meet the tough scalability demands of 
   </a>
 <br/>
   <a href="">
-    <img width=400" src="https://img.youpin.mi-img.com/middlewareGroup/ebb77505347e969da35a1493426d7896.png?w=882&h=408">
-  </a>
-<br/>
-  <a href="">
     <img width=500" src="https://img.youpin.mi-img.com/middlewareGroup/72506657fbcd5e2117d9ea28bfbf76f3.png?w=1024&h=776">
   </a>
 </div>
