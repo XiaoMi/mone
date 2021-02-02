@@ -1,0 +1,694 @@
+<?xml version="1.0"?>
+<!--
+  ~  Copyright 2020 Xiaomi
+  ~
+  ~    Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<project
+        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
+        xmlns="http://maven.apache.org/POM/4.0.0"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.xiaomi.youpin</groupId>
+        <artifactId>tesla</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>tesla-gateway</artifactId>
+    <name>tesla-gateway</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.8.6</version>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.validation</groupId>
+            <artifactId>validation-api</artifactId>
+            <version>1.0.0.GA</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>${netty.version}</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.mchange</groupId>
+            <artifactId>c3p0</artifactId>
+            <version>0.9.5.2</version>
+        </dependency>
+
+        <!--dubbo-->
+        <dependency>
+            <groupId>org.apache.dubbo</groupId>
+            <artifactId>dubbo</artifactId>
+            <version>2.7.7-youpin-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>javassist</artifactId>
+                    <groupId>org.javassist</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+
+
+        <dependency>
+            <groupId>com.dianping.cat</groupId>
+            <artifactId>cat-client</artifactId>
+            <version>3.0.3-youpin-SNAPSHOT</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>1.2.70</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.xiaomi.common.perfcounter</groupId>
+            <artifactId>xiaomi-common-perfcounter</artifactId>
+            <version>2.8.8</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>commons-lang</artifactId>
+                    <groupId>commons-lang</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+            <version>1.12</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.javassist</groupId>
+            <artifactId>javassist</artifactId>
+            <version>3.20.0-GA</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.yammer.metrics</groupId>
+            <artifactId>metrics-core</artifactId>
+            <version>2.2.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20080701</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>io.github.tesla</groupId>
+            <artifactId>tesla-common</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.littleshoot</groupId>
+            <artifactId>dnssec4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>javax.annotation</groupId>
+            <artifactId>javax.annotation-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>dnsjava</groupId>
+            <artifactId>dnsjava</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.prometheus</groupId>
+            <artifactId>simpleclient</artifactId>
+            <version>0.4.0</version>
+        </dependency>
+
+
+        <!-- log -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.1.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>1.1.2</version>
+        </dependency>
+
+
+
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>dubbo-registry-nacos</artifactId>
+            <version>0.0.2-youpin-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-client</artifactId>
+            <version>0.8.0-youpin-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-spring-context</artifactId>
+            <version>0.2.2-RC1</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>api</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+        <!--dubbo-->
+
+
+
+
+        <dependency>
+            <groupId>io.github.tesla</groupId>
+            <artifactId>tesla-api</artifactId>
+            <version>1.0.4-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>gwdash-service</artifactId>
+                    <groupId>com.xiaomi.youpin</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.5.5</version>
+        </dependency>
+
+
+
+        <!--script-->
+        <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy</artifactId>
+            <version>2.5.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.codehaus.groovy</groupId>
+            <artifactId>groovy-jsr223</artifactId>
+            <version>2.5.0</version>
+        </dependency>
+        <!--script-->
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>antlr</artifactId>
+            <version>1.4-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>spring-boot-starter-web</artifactId>
+                    <groupId>org.springframework.boot</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>redis</artifactId>
+            <version>1.6-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>cat-client</artifactId>
+                    <groupId>com.dianping.cat</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>struct</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>25.1-jre</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.esotericsoftware</groupId>
+            <artifactId>reflectasm</artifactId>
+            <version>1.11.6</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>log</artifactId>
+            <version>1.6-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>cat-client</artifactId>
+                    <groupId>com.dianping.cat</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>3.0.1</version>
+            <scope>provided</scope>
+        </dependency>
+
+
+        <!-- https://mvnrepository.com/artifact/org.apache.thrift/libthrift -->
+        <dependency>
+            <groupId>org.apache.thrift</groupId>
+            <artifactId>libthrift</artifactId>
+            <version>0.11.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>common</artifactId>
+            <version>1.7-SNAPSHOT</version>
+
+            <exclusions>
+                <exclusion>
+                    <artifactId>spring-boot-starter-web</artifactId>
+                    <groupId>org.springframework.boot</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>annotation</artifactId>
+            <version>1.5-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>redis</artifactId>
+                    <groupId>com.xiaomi.youpin</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>cat-client</artifactId>
+                    <groupId>com.dianping.cat</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>common</artifactId>
+                    <groupId>com.xiaomi.youpin</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.pf4j</groupId>
+            <artifactId>pf4j</artifactId>
+            <version>2.7.1-youpin-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.tesla</groupId>
+            <artifactId>tesla-plugin-api</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.nutz</groupId>
+            <artifactId>nutz</artifactId>
+            <version>1.r.68-youpin-SNAPSHOT</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>2.9.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.codehaus.janino</groupId>
+            <artifactId>janino</artifactId>
+            <version>3.0.8</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>redis</artifactId>
+            <version>1.6-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>cat-client</artifactId>
+                    <groupId>com.dianping.cat</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>nacos</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>mongodb</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin.cat.plugins</groupId>
+            <artifactId>cat-plugins</artifactId>
+            <version>3.0.0-youpin-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>cat-client</artifactId>
+                    <groupId>com.dianping.cat</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>tesla-filter-api</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin.account</groupId>
+            <artifactId>passport-proxy-api</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>dubbo-serialization-gson</artifactId>
+                    <groupId>org.apache.dubbo</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.graphql-java</groupId>
+            <artifactId>graphql-java</artifactId>
+            <version>13.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alibaba.csp</groupId>
+            <artifactId>sentinel-transport-simple-http</artifactId>
+            <version>1.7.1-mi-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin.sweeper</groupId>
+            <artifactId>sweeper-api</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.rocketmq</groupId>
+            <artifactId>rocketmq-client</artifactId>
+            <version>4.4.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>tesla-traffic-recording-api</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>3.11.0</version>
+
+            <!-- 去掉Android的包 -->
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.android</groupId>
+                    <artifactId>android</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+
+    </dependencies>
+
+    <profiles>
+        <profile>
+            <id>local</id>
+            <properties>
+                <profileActive>local</profileActive>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/application-local.properties</filter>
+                </filters>
+            </build>
+        </profile>
+        <profile>
+            <id>dev</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <profileActive>dev</profileActive>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/application-dev.properties</filter>
+                </filters>
+            </build>
+        </profile>
+        <profile>
+            <id>staging</id>
+            <properties>
+                <profileActive>staging</profileActive>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/application-staging.properties</filter>
+                </filters>
+            </build>
+        </profile>
+        <profile>
+            <id>mistaging</id>
+            <properties>
+                <profileActive>mistaging</profileActive>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/application-mistaging.properties</filter>
+                </filters>
+            </build>
+        </profile>
+        <profile>
+            <id>c3</id>
+            <properties>
+                <profileActive>c3</profileActive>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/application-c3.properties</filter>
+                </filters>
+            </build>
+        </profile>
+        <profile>
+            <id>mic3</id>
+            <properties>
+                <profileActive>mic3</profileActive>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/application-mic3.properties</filter>
+                </filters>
+            </build>
+        </profile>
+        <profile>
+            <id>c4</id>
+            <properties>
+                <profileActive>c4</profileActive>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/application-c4.properties</filter>
+                </filters>
+            </build>
+        </profile>
+        <profile>
+            <id>intranet</id>
+            <properties>
+                <profileActive>intranet</profileActive>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/application-intranet.properties</filter>
+                </filters>
+            </build>
+        </profile>
+        <profile>
+            <id>phonetest</id>
+            <properties>
+                <profileActive>phonetest</profileActive>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/application-phonetest.properties</filter>
+                </filters>
+            </build>
+        </profile>
+        <profile>
+            <id>youyu</id>
+            <properties>
+                <profileActive>youyu</profileActive>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/application-youyu.properties</filter>
+                </filters>
+            </build>
+        </profile>
+        <profile>
+            <id>miintranet</id>
+            <properties>
+                <profileActive>miintranet</profileActive>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/application-miintranet.properties</filter>
+                </filters>
+            </build>
+        </profile>
+    </profiles>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>*application*.properties</exclude>
+                    <exclude>*application*.yml</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <!-- 是否替换@xx@表示的maven properties属性值 -->
+                <filtering>true</filtering>
+                <includes>
+                    <include>tesla-application.properties</include>
+                    <include>application-${profileActive}.properties</include>
+                </includes>
+            </resource>
+
+
+            <resource>
+                <directory>src/main/resources/META-INF</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>app.properties</include>
+                    <!--<include>application-${profileActive}.properties</include>-->
+                </includes>
+                <targetPath>META-INF/</targetPath>
+            </resource>
+
+        </resources>
+        <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                    <finalName>${project.artifactId}-${project.version}</finalName>
+                    <appendAssemblyId>false</appendAssemblyId>
+                    <attach>false</attach>
+                    <archive>
+                        <addMavenDescriptor>false</addMavenDescriptor>
+                        <manifest>
+                            <mainClass>com.xiaomi.youpin.gateway.bootstrap.GateWayApplication</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+
+            </plugin>
+
+
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>2.8.2</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+
+    <distributionManagement>
+        <repository>
+            <id>central</id>
+            <name>maven-release-virtual</name>
+            <url>https://pkgs.d.xiaomi.net/artifactory/maven-release-virtual</url>
+        </repository>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <name>maven-snapshot-virtual</name>
+            <url>https://pkgs.d.xiaomi.net/artifactory/maven-snapshot-virtual</url>
+        </snapshotRepository>
+    </distributionManagement>
+</project>

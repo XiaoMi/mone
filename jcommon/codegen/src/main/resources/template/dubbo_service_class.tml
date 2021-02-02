@@ -1,0 +1,11 @@
+package ${package}.service;
+
+
+/**
+ * @author ${author}
+ */
+public interface ${project}Service {
+
+    String version();
+
+}

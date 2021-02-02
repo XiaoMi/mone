@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+  ~  Copyright 2020 Xiaomi
+  ~
+  ~    Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <artifactId>gwdash</artifactId>
+        <groupId>com.xiaomi.youpin</groupId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>gwdash-server</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+
+
+    <dependencies>
+
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>5.1.4.RELEASE</version>
+            <scope>test</scope>
+        </dependency>
+
+
+
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr4-runtime</artifactId>
+            <version>4.3</version>
+        </dependency>
+
+
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>4.3.4</version>
+        </dependency>
+
+
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>codegen</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>gwdash-service</artifactId>
+            <version>0.0.4-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>mysql-connector-java</artifactId>
+                    <groupId>mysql</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>commons-lang3</artifactId>
+                    <groupId>org.apache.commons</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>cat-client</artifactId>
+                    <groupId>com.dianping.cat</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>kotlin-stdlib</artifactId>
+                    <groupId>org.jetbrains.kotlin</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-stdlib</artifactId>
+            <version>1.3.50</version>
+        </dependency>
+
+        <dependency>
+            <groupId>mysql</groupId>
+            <artifactId>mysql-connector-java</artifactId>
+            <version>5.1.46</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.nutz</groupId>
+            <artifactId>nutz</artifactId>
+            <version>1.r.68-youpin-SNAPSHOT</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>io.github.tesla</groupId>
+            <artifactId>tesla-plugin-api</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>tesla-quota-api</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.xiaomi.youpin.cat.plugins</groupId>
+            <artifactId>cat-plugins</artifactId>
+            <version>3.0.3-youpin-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.6</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>ideamanager-api</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>ks3</artifactId>
+            <version>1.4-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>tesla-quota-api</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>mibench-api</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.16</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>commons-collections</groupId>
+            <artifactId>commons-collections</artifactId>
+            <version>3.2</version>
+            <scope>compile</scope>
+        </dependency>
+
+
+    </dependencies>
+
+    <profiles>
+        <profile>
+            <id>local</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <profileActive>local</profileActive>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/application-local.properties</filter>
+                </filters>
+            </build>
+        </profile>
+        <profile>
+            <id>dev</id>
+            <properties>
+                <profileActive>dev</profileActive>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/application-dev.properties</filter>
+                </filters>
+            </build>
+        </profile>
+        <profile>
+            <id>newstaging</id>
+            <properties>
+                <profileActive>staging</profileActive>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/application-staging.properties</filter>
+                </filters>
+            </build>
+        </profile>
+        <profile>
+            <id>staging</id>
+            <properties>
+                <profileActive>staging</profileActive>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/application-staging.properties</filter>
+                </filters>
+            </build>
+        </profile>
+        <profile>
+            <id>xmnstaging</id>
+            <properties>
+                <profileActive>xmnstaging</profileActive>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/application-xmnstaging.properties</filter>
+                </filters>
+            </build>
+        </profile>
+        <profile>
+            <id>intranet</id>
+            <properties>
+                <profileActive>intranet</profileActive>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/application-intranet.properties</filter>
+                </filters>
+            </build>
+        </profile>
+        <profile>
+            <id>xmnintranet</id>
+            <properties>
+                <profileActive>xmnintranet</profileActive>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/application-xmnintranet.properties</filter>
+                </filters>
+            </build>
+        </profile>
+        <profile>
+            <id>c3</id>
+            <properties>
+                <profileActive>c3</profileActive>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/application-c3.properties</filter>
+                </filters>
+            </build>
+        </profile>
+        <profile>
+            <id>xmnc3</id>
+            <properties>
+                <profileActive>xmnc3</profileActive>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/application-xmnc3.properties</filter>
+                </filters>
+            </build>
+        </profile>
+        <profile>
+            <id>c4</id>
+            <properties>
+                <profileActive>c4</profileActive>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/application-c4.properties</filter>
+                </filters>
+            </build>
+        </profile>
+    </profiles>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>application*.properties</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <!-- 是否替换@xx@表示的maven properties属性值 -->
+                <filtering>true</filtering>
+                <includes>
+                    <include>application.properties</include>
+                    <!--<include>application-${profileActive}.properties</include>-->
+                    <include>zookeeper.properties</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources/META-INF</directory>
+                <!-- 是否替换@xx@表示的maven properties属性值 -->
+                <filtering>true</filtering>
+                <includes>
+                    <include>app.properties</include>
+                </includes>
+                <targetPath>META-INF/</targetPath>
+            </resource>
+        </resources>
+        <plugins>
+            <!--<plugin>-->
+            <!--<groupId>org.apache.maven.plugins</groupId>-->
+            <!--<artifactId>maven-war-plugin</artifactId>-->
+            <!--</plugin>-->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+
+                <configuration>
+                    <mainClass>com.xiaomi.youpin.gwdash.bootstrap.GwDashBootstrap</mainClass>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+</project>

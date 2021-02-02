@@ -1,0 +1,1 @@
+dubbo.trace.log.path=xxxx/log/dubbo/${project}_
