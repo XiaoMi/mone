@@ -16,17 +16,13 @@
 
 package com.xiaomi.data.push.uds.handler;
 
-import com.google.gson.Gson;
 import com.xiaomi.data.push.uds.UdsClient;
-import com.xiaomi.data.push.uds.codes.CodesFactory;
-import com.xiaomi.data.push.uds.codes.ICodes;
 import com.xiaomi.data.push.uds.context.UdsClientContext;
 import com.xiaomi.data.push.uds.po.UdsCommand;
 import com.xiaomi.data.push.uds.processor.UdsProcessor;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Optional;
@@ -51,12 +47,8 @@ public class UdsClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
-        byte codeType = msg.readByte();
-        ICodes codes = CodesFactory.getCodes(codeType);
-        byte[] data = new byte[msg.readableBytes()];
-        msg.readBytes(data);
-        UdsCommand command = codes.decode(data, UdsCommand.class);
-        command.setSerializeType(codeType);
+        UdsCommand command = new UdsCommand();
+        command.decode(msg);
         log.debug("client received:{}", command);
         if (command.isRequest()) {
             command.setChannel(ctx.channel());

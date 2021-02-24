@@ -39,7 +39,7 @@ public class ClassFinder {
     public Set<String> findClassSet(String packageName) {
         packageName = packageName.replace(".", "/");
         try {
-            URLClassLoader classLoader = (URLClassLoader) Thread.currentThread().getContextClassLoader();
+            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
             Enumeration resources = classLoader.getResources(packageName);
             Set<String> result = new HashSet<>();
             while (resources.hasMoreElements()) {

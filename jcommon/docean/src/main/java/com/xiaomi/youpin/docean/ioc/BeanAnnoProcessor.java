@@ -32,7 +32,7 @@ public class BeanAnnoProcessor {
 
     public static void process(Class<?> configuration, Ioc ioc) {
             Arrays.stream(configuration.getMethods()).filter(m -> Optional.ofNullable(m.getAnnotation(Bean.class)).isPresent())
-                    .map(m -> Pair.of(m.getName(),ReflectUtils.invokeMethod(ReflectUtils.getInstance(configuration), m, new Object[]{}))).forEach(pair->{
+                    .map(m -> Pair.of(m.getReturnType().getName(),ReflectUtils.invokeMethod(ReflectUtils.getInstance(configuration), m, new Object[]{}))).forEach(pair->{
                         ioc.putBean(pair.getKey(),pair.getValue());
             });
     }

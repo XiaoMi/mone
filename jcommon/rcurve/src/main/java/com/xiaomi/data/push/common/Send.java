@@ -20,7 +20,6 @@ import com.xiaomi.data.push.uds.codes.CodesFactory;
 import com.xiaomi.data.push.uds.codes.ICodes;
 import com.xiaomi.data.push.uds.po.UdsCommand;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,16 +30,13 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public abstract class Send {
 
-    public static void send(Channel channel, Object obj) {
+    public static void send(Channel channel, UdsCommand command) {
         if (null == channel || !channel.isOpen()) {
             log.warn("channel is close");
             return;
         }
-        ICodes codes = CodesFactory.getCodes(RcurveConfig.ins().getCodeType());
-        byte[] data = codes.encode(obj);
-        ByteBuf buf = Unpooled.buffer(1 + data.length);
-        buf.writeByte(RcurveConfig.ins().getCodeType());
-        buf.writeBytes(data);
+        command.setSerializeType(RcurveConfig.ins().getCodeType());
+        ByteBuf buf = command.encode();
         channel.writeAndFlush(buf);
     }
 
@@ -49,11 +45,7 @@ public abstract class Send {
             log.warn("channel is close");
             return;
         }
-        ICodes codes = CodesFactory.getCodes(response.getSerializeType());
-        byte[] data = codes.encode(response);
-        ByteBuf buf = Unpooled.buffer(1 + data.length);
-        buf.writeByte(response.getSerializeType());
-        buf.writeBytes(data);
+        ByteBuf buf = response.encode();
         channel.writeAndFlush(buf);
     }
 
@@ -62,7 +54,7 @@ public abstract class Send {
         UdsCommand msg = UdsCommand.createRequest();
         msg.setCmd("message");
         msg.setData(message);
-        Send.send(channel, msg);
+        send(channel, msg);
     }
 
 }

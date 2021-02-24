@@ -19,6 +19,7 @@ package com.xiaomi.data.push.uds.processor.client;
 import com.google.gson.Gson;
 import com.xiaomi.data.push.common.CovertUtils;
 import com.xiaomi.data.push.common.Send;
+import com.xiaomi.data.push.uds.codes.CodesFactory;
 import com.xiaomi.data.push.uds.po.UdsCommand;
 import com.xiaomi.data.push.uds.processor.UdsProcessor;
 import com.xiaomi.youpin.docean.common.MethodReq;
@@ -60,8 +61,15 @@ public class CallMethodProcessor implements UdsProcessor {
 
             Object res = ReflectUtils.invokeMethod(mr, obj, CovertUtils::convert);
 
-            if (req.getAtt("resultJson","false").equals("true")) {
-                response.setData(new Gson().toJson(res).getBytes());
+            if (req.getAtt("resultJson", "false").equals("true")) {
+                if (res.getClass().equals(int.class) || res.getClass().equals(Integer.class)
+                        || res.getClass().equals(long.class)  || res.getClass().equals(Long.class)
+                        || res.getClass().equals(String.class)) {
+                    response.putAtt("_returnType", res.getClass().getSimpleName());
+                    response.setData(CodesFactory.getCodes((byte) 2).encode(res), false);
+                } else {
+                    response.setData(new Gson().toJson(res).getBytes());
+                }
             } else {
                 response.setData(res);
             }

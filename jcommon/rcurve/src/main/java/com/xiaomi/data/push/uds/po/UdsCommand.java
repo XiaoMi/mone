@@ -17,9 +17,14 @@
 package com.xiaomi.data.push.uds.po;
 
 import com.google.gson.annotations.Expose;
+import com.xiaomi.data.push.common.FlagCal;
 import com.xiaomi.data.push.common.RcurveConfig;
+import com.xiaomi.data.push.uds.codes.BytesCodes;
 import com.xiaomi.data.push.uds.codes.CodesFactory;
 import com.xiaomi.data.push.uds.codes.ICodes;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.CompositeByteBuf;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import lombok.Data;
 
@@ -27,6 +32,7 @@ import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -41,12 +47,20 @@ public class UdsCommand implements Serializable {
     @Expose
     private Channel channel;
 
-    private Map<String, String> attachments = new HashMap<>();
+    @Expose
+    private BytesCodes bytesCodes = new BytesCodes();
 
     /**
-     * 0 request 1 response
+     * 魔术码
      */
-    private int type;
+    private byte magic;
+
+    /**
+     * 用来存储标志位
+     */
+    private int flag;
+
+    private Map<String, String> attachments = new HashMap<>();
 
     private long id;
 
@@ -66,9 +80,12 @@ public class UdsCommand implements Serializable {
 
     private String[] params;
 
-    private byte[][] byteParams;
+    private byte[][] byteParams = new byte[][]{};
 
     private byte[] data;
+
+    @Expose
+    private Object obj;
 
     private boolean mesh = true;
 
@@ -76,10 +93,8 @@ public class UdsCommand implements Serializable {
 
     private String message;
 
-    private boolean oneway;
-
     /**
-     * 0 json 1 msgpack
+     * 序列化类型
      */
     private byte serializeType;
 
@@ -87,12 +102,11 @@ public class UdsCommand implements Serializable {
         UdsCommand res = new UdsCommand();
         res.setId(request.getId());
         res.setSerializeType(request.getSerializeType());
-        res.setType(1);
         return res;
     }
 
     public boolean isRequest() {
-        return type == 0;
+        return new FlagCal(this.flag).isTrue(Permission.IS_REQUEST);
     }
 
     public void putAtt(String key, String value) {
@@ -104,9 +118,144 @@ public class UdsCommand implements Serializable {
     }
 
 
+    /**
+     * 自定义编码,为了提升编解码效率
+     *
+     * @return
+     */
+    public ByteBuf encode() {
+        // magic flag meta  (methodInfo <cmd serviceName methodName paramTypes params byteParams mesh code message>)  serializeType  payload
+        int methodInfoSize = 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1;
+        CompositeByteBuf buf = Unpooled.compositeBuffer(1 + 1 + 1 + this.attachments.size() + methodInfoSize + 1 + 1);
+        //magic
+        buf.addComponents(true, Unpooled.buffer(1).writeByte(14));
+        //flag
+        buf.addComponents(true, Unpooled.buffer(4).writeInt(this.flag));
+        //meta
+        buf.addComponents(true, Unpooled.buffer(4).writeInt(this.attachments.size()));
+        this.attachments.forEach((k, v) -> {
+            byte[] kk = bytesCodes.encode(k);
+            byte[] vv = bytesCodes.encode(v);
+            buf.addComponents(true, Unpooled.wrappedBuffer(kk, vv));
+        });
+
+        //method info
+        buf.addComponents(true, Unpooled.wrappedBuffer(bytesCodes.encode(this.id)));
+        buf.addComponents(true, Unpooled.wrappedBuffer(bytesCodes.encode(getStr(this.app))));
+        buf.addComponents(true, Unpooled.wrappedBuffer(bytesCodes.encode(getStr(this.remoteApp))));
+        buf.addComponents(true, Unpooled.wrappedBuffer(bytesCodes.encode(this.timeout)));
+        buf.addComponents(true, Unpooled.wrappedBuffer(bytesCodes.encode(getStr(this.cmd))));
+        buf.addComponents(true, Unpooled.wrappedBuffer(bytesCodes.encode(getStr(this.serviceName))));
+        buf.addComponents(true, Unpooled.wrappedBuffer(bytesCodes.encode(getStr(this.methodName))));
+        buf.addComponents(true, Unpooled.wrappedBuffer(bytesCodes.encode(getStrs(this.paramTypes))));
+        buf.addComponents(true, Unpooled.wrappedBuffer(bytesCodes.encode(getStrs(this.params))));
+        buf.addComponents(true, Unpooled.wrappedBuffer(bytesCodes.encode(this.byteParams)));
+        buf.addComponents(true, Unpooled.wrappedBuffer(bytesCodes.encode(this.mesh)));
+        buf.addComponents(true, Unpooled.wrappedBuffer(bytesCodes.encode(this.code)));
+        buf.addComponents(true, Unpooled.wrappedBuffer(bytesCodes.encode(getStr(this.message))));
+
+        //serializeType
+        buf.addComponents(true, Unpooled.wrappedBuffer(new byte[]{this.serializeType}));
+
+        if (null != this.data && this.data.length > 0) {
+           //里边已经有数据了
+        } else if (null != this.obj) {
+            ICodes codes = CodesFactory.getCodes(this.serializeType);
+            this.data = codes.encode(this.obj);
+        } else {
+            this.data = new byte[]{};
+        }
+
+        //playload
+        buf.addComponents(true, Unpooled.buffer(4).writeInt(this.data.length));
+        buf.addComponents(true, Unpooled.wrappedBuffer(this.data));
+        return buf;
+    }
+
+
+    private String getStr(String str) {
+        return Optional.ofNullable(str).orElse("");
+    }
+
+
+    private String[] getStrs(String[] strs) {
+        if (null == strs) {
+            return new String[]{};
+        }
+        return strs;
+    }
+
+    public void decode(ByteBuf buf) {
+        // magic flag meta (methodInfo <serviceName methodName paramTypes params byteParams>) serializeType payload
+        this.magic = buf.readByte();
+        this.flag = buf.readInt();
+
+        //meta
+        int len = buf.readInt();
+        for (int i = 0; i < len; i++) {
+            int size = buf.readInt();
+            byte[] k = new byte[size];
+            buf.readBytes(k);
+            size = buf.readInt();
+            byte[] v = new byte[size];
+            buf.readBytes(v);
+            this.attachments.put(new String(k), new String(v));
+        }
+
+        //method info
+        this.id = readLong(buf);
+        this.app = readString(buf);
+        this.remoteApp = readString(buf);
+        this.timeout = readLong(buf);
+        this.cmd = readString(buf);
+        this.serviceName = readString(buf);
+        this.methodName = readString(buf);
+        this.paramTypes = readStringArray(buf);
+        this.params = readStringArray(buf);
+        this.byteParams = readyByteArray(buf);
+        this.mesh = readBoolean(buf);
+        this.code = readInt(buf);
+        this.message = readString(buf);
+
+        //serializeType
+        this.serializeType = buf.readByte();
+
+        //payload
+        len = buf.readInt();
+        this.data = new byte[len];
+        buf.readBytes(this.data);
+    }
+
+    private long readLong(ByteBuf buf) {
+        return bytesCodes.decode(buf, long.class);
+    }
+
+    private int readInt(ByteBuf buf) {
+        return bytesCodes.decode(buf, int.class);
+    }
+
+    private boolean readBoolean(ByteBuf buf) {
+        return bytesCodes.decode(buf, boolean.class);
+    }
+
+    private byte[][] readyByteArray(ByteBuf buf) {
+        return bytesCodes.decode(buf, byte[][].class);
+    }
+
+    private String[] readStringArray(ByteBuf buf) {
+        return bytesCodes.decode(buf, String[].class);
+    }
+
+    private String readString(ByteBuf buf) {
+        int len = buf.readInt();
+        byte[] data = new byte[len];
+        buf.readBytes(data);
+        return new String(data);
+    }
+
+
     public static UdsCommand createErrorResponse(long id, String message) {
         UdsCommand res = new UdsCommand();
-        res.setType(1);
         res.setId(id);
         res.setCode(500);
         res.setMessage(message);
@@ -118,12 +267,24 @@ public class UdsCommand implements Serializable {
         UdsCommand req = new UdsCommand();
         req.setId(requestId.incrementAndGet());
         req.setSerializeType(RcurveConfig.ins().getCodeType());
+        FlagCal cal = new FlagCal(0);
+        cal.enable(Permission.IS_REQUEST);
+        req.setFlag(cal.getFlag());
         return req;
     }
 
     public void setData(Object data) {
-        ICodes codes = CodesFactory.getCodes(this.getSerializeType());
-        this.data = codes.encode(data);
+        this.obj = data;
+        this.data = null;
+    }
+
+
+    public void setData(Object data, boolean codes) {
+        if (codes) {
+            setData(data);
+        } else {
+            this.data = (byte[]) data;
+        }
     }
 
     public <T> T getData(Type type) {
@@ -134,4 +295,19 @@ public class UdsCommand implements Serializable {
         return codes.decode(this.data, type);
     }
 
+    public <T> T getData(Type type, boolean codes) {
+        if (codes) {
+            return getData(type);
+        }
+        return (T) this.data;
+    }
+
+    public void setOneway(boolean oneway) {
+        if (oneway) {
+            FlagCal flagCal = new FlagCal(this.flag);
+            flagCal.enable(Permission.IS_ONWAY);
+            this.flag = flagCal.getFlag();
+        }
+
+    }
 }

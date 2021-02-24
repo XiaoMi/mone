@@ -28,6 +28,8 @@ public class CodesFactory {
 
     private static HessianCodes hessianCodes = new HessianCodes();
 
+    private static BytesCodes bytesCodes = new BytesCodes();
+
     public static ICodes getCodes(byte id) {
         if (id == gsonCodes.type()) {
             return gsonCodes;
@@ -35,6 +37,10 @@ public class CodesFactory {
 
         if (id == hessianCodes.type()) {
             return hessianCodes;
+        }
+
+        if (id == bytesCodes.type()) {
+            return bytesCodes;
         }
 
         throw new UdsException("type error");

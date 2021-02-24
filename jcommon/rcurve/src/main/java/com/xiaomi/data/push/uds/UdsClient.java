@@ -135,7 +135,9 @@ public class UdsClient {
 
 
     public void call(Object msg) {
-        Send.send(this.channel, msg);
+        UdsCommand command = UdsCommand.createRequest();
+        command.setObj(msg);
+        Send.send(this.channel, command);
     }
 
 

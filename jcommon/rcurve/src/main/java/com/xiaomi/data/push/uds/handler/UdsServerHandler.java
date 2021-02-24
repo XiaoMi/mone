@@ -16,10 +16,7 @@
 
 package com.xiaomi.data.push.uds.handler;
 
-import com.google.gson.Gson;
 import com.xiaomi.data.push.uds.UdsServer;
-import com.xiaomi.data.push.uds.codes.CodesFactory;
-import com.xiaomi.data.push.uds.codes.ICodes;
 import com.xiaomi.data.push.uds.context.UdsServerContext;
 import com.xiaomi.data.push.uds.po.UdsCommand;
 import com.xiaomi.data.push.uds.processor.UdsProcessor;
@@ -28,7 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
-import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -60,13 +56,9 @@ public class UdsServerHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object _msg) {
         ByteBuf msg = (ByteBuf) _msg;
-        byte codeType = msg.readByte();
-        ICodes codes = CodesFactory.getCodes(codeType);
-        byte[] data = new byte[msg.readableBytes()];
-        msg.readBytes(data);
-        UdsCommand command = codes.decode(data, UdsCommand.class);
-        command.setSerializeType(codeType);
-        log.info("server receive:{}:{}:{}", command.getApp(), command.getCmd(), codeType);
+        UdsCommand command = new UdsCommand();
+        command.decode(msg);
+        log.debug("server receive:{}:{}:{}", command.getApp(), command.getCmd(), command.getSerializeType());
         if (command.isRequest()) {
             command.setChannel(ctx.channel());
             UdsProcessor processor = this.m.get(command.getCmd());
