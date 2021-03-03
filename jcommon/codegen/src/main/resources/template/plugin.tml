@@ -1,0 +1,5 @@
+plugin.id=${project}
+plugin.class=com.xiaomi.youpin.tesla.plug.DemoPlugin
+plugin.version=0.0.1
+plugin.provider=#{author}
+plugin.dependencies=

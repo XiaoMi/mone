@@ -1,0 +1,17 @@
+package ${package}.service;
+
+import com.xiaomi.mone.dubbo.common.Health;
+import com.xiaomi.mone.dubbo.common.Result;
+import ${package}.api.service.DubboHealthService;
+import org.apache.dubbo.config.annotation.DubboService;
+
+@DubboService(timeout = 1000, group = "\${dubbo.group}", version="1.0")
+public class DubboHealthServiceImpl implements DubboHealthService {
+
+    @Override
+    public Result<Health> health() {
+        Health health = new Health();
+        health.setQps(0);
+        return Result.success(health);
+    }
+}

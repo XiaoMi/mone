@@ -1,0 +1,6 @@
+package ${package}.api.service;
+
+
+public interface DubboTestService {
+    String test();
+}

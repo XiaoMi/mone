@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~  Copyright 2020 Xiaomi
+  ~
+  ~    Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>jcommon</artifactId>
+        <groupId>com.xiaomi.youpin</groupId>
+        <version>1.4-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>schedule</artifactId>
+    <version>1.5-SNAPSHOT</version>
+
+
+    <dependencies>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>feishu</artifactId>
+            <version>1.4-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>common</artifactId>
+            <version>1.7-SNAPSHOT</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>annotation</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>rpc</artifactId>
+            <version>1.7-SNAPSHOT</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>redis</artifactId>
+            <version>1.5-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>struct</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>antlr</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <version>5.0.6.RELEASE</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>http</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>cron</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+
+
+        <plugins>
+            <plugin>
+                <groupId>org.mybatis.generator</groupId>
+                <artifactId>mybatis-generator-maven-plugin</artifactId>
+                <version>1.3.2</version>
+                <configuration>
+                    <verbose>true</verbose>
+                    <overwrite>true</overwrite>
+                </configuration>
+
+                <dependencies>
+                    <dependency>
+                        <groupId>com.xiaomi.bigdata</groupId>
+                        <artifactId>user-profile-push</artifactId>
+                        <version>0.0.2-SNAPSHOT</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

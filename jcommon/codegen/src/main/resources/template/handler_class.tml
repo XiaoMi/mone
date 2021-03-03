@@ -1,0 +1,29 @@
+package ${package};
+
+import com.xiaomi.youpin.tesla.plug.BaseHandler;
+import com.youpin.xiaomi.tesla.plugin.bo.Request;
+import com.youpin.xiaomi.tesla.plugin.bo.RequestContext;
+import com.youpin.xiaomi.tesla.plugin.bo.Response;
+import lombok.extern.slf4j.Slf4j;
+import org.pf4j.Extension;
+
+/**
+ * @author ${author}
+ */
+@Slf4j
+@Extension
+public class ${project}Handler extends BaseHandler<String> {
+
+
+    @Override
+    public Response<String> execute(RequestContext context, Request request) {
+        return new Response<>(0, "msg", "data");
+    }
+
+
+    @Override
+    public String url() {
+        return "${url}";
+    }
+
+}
