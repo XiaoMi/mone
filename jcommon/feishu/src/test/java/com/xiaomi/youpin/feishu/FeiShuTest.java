@@ -29,11 +29,11 @@ import java.util.List;
 public class FeiShuTest {
     private FeiShu feiShu;
 
-    private static final String GET_TOKEN_URL = "https://open.f.mioffice.cn/open-apis/auth/v3/tenant_access_token/internal/";
-    private static final String GET_GROUPS_URL = "https://open.f.mioffice.cn/open-apis/chat/v4/list";
-    private static final String SEND_MSG_URL = "https://open.f.mioffice.cn/open-apis/message/v4/send/";
-    private static final String SEND_BATCH_MSG_URL = "https://open.f.mioffice.cn/open-apis/message/v4/batch_send/";
-    private static final String GET_USER_ID = "https://open.f.mioffice.cn/open-apis/user/v1/batch_get_id?emails=";
+    private static final String GET_TOKEN_URL = "https://xx_replace_xx";
+    private static final String GET_GROUPS_URL = "https://xx_replace_xx";
+    private static final String SEND_MSG_URL = "https://xx_replace_xx";
+    private static final String SEND_BATCH_MSG_URL = "https://xx_replace_xx";
+    private static final String GET_USER_ID = "https://xx_replace_xx";
 
 
     @Before
