@@ -1,0 +1,86 @@
+/*
+ * Copyright 2020 Xiaomi
+ *
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
+ *
+ *        http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS,
+ *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *    See the License for the specific language governing permissions and
+ *    limitations under the License.
+ */
+
+/*
+Description: Magula style for highligh.js
+Author: Ruslan Keba <rukeba@gmail.com>
+Website: http://rukeba.com/
+Version: 1.0
+Date: 2009-01-03
+Music: Aphex Twin / Xtal
+*/
+
+.hljs {
+  display: block;
+  overflow-x: auto;
+  padding: 0.5em;
+  background-color: #f4f4f4;
+}
+
+.hljs,
+.hljs-subst {
+  color: black;
+}
+
+.hljs-string,
+.hljs-title,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-attribute,
+.hljs-addition,
+.hljs-variable,
+.hljs-template-tag,
+.hljs-template-variable {
+  color: #050;
+}
+
+.hljs-comment,
+.hljs-quote {
+  color: #777;
+}
+
+.hljs-number,
+.hljs-regexp,
+.hljs-literal,
+.hljs-type,
+.hljs-link {
+  color: #800;
+}
+
+.hljs-deletion,
+.hljs-meta {
+  color: #00e;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-doctag,
+.hljs-title,
+.hljs-section,
+.hljs-built_in,
+.hljs-tag,
+.hljs-name {
+  font-weight: bold;
+  color: navy;
+}
+
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
