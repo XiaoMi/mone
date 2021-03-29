@@ -33,6 +33,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Optional;
+
 /**
  * @author goodjava@qq.com
  */
@@ -48,7 +50,7 @@ public class HeadFilter extends RequestFilter {
 
     @Override
     public FullHttpResponse doFilter(FilterContext context, Invoker invoker, ApiInfo apiInfo, FullHttpRequest request) {
-        qpsAop.incr(String.valueOf(apiInfo.getId()));
+        qpsAop.incr(String.valueOf(Optional.ofNullable(apiInfo).isPresent() ? apiInfo.getId() : "null"));
         if (null == apiInfo) {
             return HttpResponseUtils.create(Result.fail(GeneralCodes.NotFound, HttpResponseStatus.NOT_FOUND.reasonPhrase(), "apiInfo is null"));
         } else {

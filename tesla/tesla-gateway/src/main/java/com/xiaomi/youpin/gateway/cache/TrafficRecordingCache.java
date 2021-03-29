@@ -53,6 +53,8 @@ import java.util.stream.Collectors;
 @Slf4j
 public class TrafficRecordingCache {
 
+    public static final String DEFAULR_ALL_API = "*";
+
     /**
      *只缓存录制中的配置，待录制的不缓存
      */

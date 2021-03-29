@@ -220,7 +220,7 @@ public class FilterManager {
             log.info("jarList:{}", jarList);
             return loadRequestFilter(jarList);
         } catch (Throwable ex) {
-            log.error("getUserFilterList ex:{}", ex.getMessage());
+                log.error("getUserFilterList ex:{}", ex.getMessage());
             return Lists.newArrayList();
         }
     }

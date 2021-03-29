@@ -215,7 +215,7 @@ public class RequestFilterChain {
             }
             return res.getData();
         } catch (Exception e) {
-            log.error("RequestFilterChain.getMachineGroup, failed to getMachineGroup", e);
+            log.error("RequestFilterChain.getMachineGroup, failed to getMachineGroup, msg:{}", e.getMessage());
             return defaultMachineGroup;
         }
     }
@@ -261,6 +261,7 @@ public class RequestFilterChain {
             ctx.setRequestContext(context);
             ctx.setTraceId(HttpRequestUtils.traceId(request));
             ctx.setBeginTime(begin);
+            ctx.setCallId(context.getCallId());
             try {
                 lock.readLock().lock();
                 return this.lastInvoker.doInvoker(ctx, apiInfo, request);

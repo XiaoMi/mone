@@ -20,23 +20,26 @@ import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.xiaomi.data.push.redis.Redis;
 import com.xiaomi.youpin.gateway.common.*;
+import com.xiaomi.youpin.gateway.dubbo.Dubbo;
 import com.xiaomi.youpin.gateway.filter.FilterContext;
 import com.xiaomi.youpin.gateway.filter.Invoker;
 import com.xiaomi.youpin.gateway.filter.RequestFilter;
+import com.xiaomi.youpin.gateway.http.Http;
+import com.xiaomi.youpin.gateway.function.imp.RocketMqImp;
+import com.xiaomi.youpin.gateway.nacos.Nacos;
 import com.xiaomi.youpin.infra.rpc.Result;
 import com.xiaomi.youpin.infra.rpc.errors.GeneralCodes;
-import com.youpin.xiaomi.tesla.bo.ApiInfo;
-import com.youpin.xiaomi.tesla.bo.Flag;
-import com.youpin.xiaomi.tesla.bo.ScriptInfo;
-import com.youpin.xiaomi.tesla.bo.ScriptType;
+import com.youpin.xiaomi.tesla.bo.*;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.client.producer.DefaultMQProducer;
+import org.nutz.dao.Dao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author goodjava@qq.com
@@ -45,9 +48,8 @@ import java.util.Map;
  */
 @FilterOrder(2500)
 @Component
+@Slf4j
 public class ScriptFilter extends RequestFilter {
-
-    private static final Logger logger = LoggerFactory.getLogger(ScriptFilter.class);
 
     @Autowired
     private ScriptManager scriptManager;
@@ -55,30 +57,41 @@ public class ScriptFilter extends RequestFilter {
     @Autowired
     private Redis redis;
 
+    @Autowired
+    private Dubbo dubbo;
+
+    @Autowired
+    private Nacos nacos;
+
+    @Autowired
+    private Dao dao;
+
+    @Autowired
+    private RocketMqImp rocketMq;
+
+    @Autowired
+    private Http http;
+
     @Override
     public FullHttpResponse doFilter(FilterContext context, Invoker invoker, ApiInfo apiInfo, FullHttpRequest request) {
         if (apiInfo.isAllow(Flag.ALLOW_SCRIPT)) {
             ScriptDebug scriptDebug = new ScriptDebug();
             try {
-                Gson gson = new Gson();
-                String scriptInfoStr = redis.get(Keys.scriptKey(String.valueOf(apiInfo.getId())));
-                ScriptInfo info = gson.fromJson(scriptInfoStr, ScriptInfo.class);
+                log.info("invoke script:{}", apiInfo.getId());
+                ScriptInfo info = scriptManager.loadScriptInfo(apiInfo.getId());
                 int type = info.getScriptType();
-                //当脚本来执行
+                //当function执行
                 if (type == ScriptType.Function.ordinal()) {
                     Map<String, Object> bindMap = Maps.newHashMap();
-                    bindMap.put("request", request);
-                    bindMap.put("scriptInfo", info);
-                    bindMap.put("log", logger);
-                    bindMap.put("scriptDebug", scriptDebug);
+                    inject(context, request, scriptDebug, info, bindMap);
+                    log.info("invoke method:{} {}", apiInfo.getId(), info.getMethodName());
                     Object res = scriptManager.invoke(info.getScript(), info.getMethodName(), bindMap, info.getParams().toArray());
                     return HttpResponseUtils.create(context.byteBuf(new Gson().toJson(res).getBytes()));
                 }
                 //前置执行
                 if (type == ScriptType.Before.ordinal()) {
                     Map<String, Object> bindMap = Maps.newHashMap();
-                    bindMap.put("log", logger);
-                    bindMap.put("scriptDebug", scriptDebug);
+                    inject(context, request, scriptDebug, info, bindMap);
                     scriptManager.invokeBefore(info.getScript(), apiInfo, request, bindMap);
                     return invoker.doInvoker(context, apiInfo, request);
                 }
@@ -87,24 +100,22 @@ public class ScriptFilter extends RequestFilter {
                     FullHttpResponse res = invoker.doInvoker(context, apiInfo, request);
                     String content = HttpResponseUtils.getContent(res);
                     Map<String, Object> bindMap = Maps.newHashMap();
-                    bindMap.put("log", logger);
-                    bindMap.put("scriptDebug", scriptDebug);
+                    inject(context, request, scriptDebug, info, bindMap);
                     Object r = scriptManager.invokeAfter(info.getScript(), apiInfo, request, content, bindMap);
                     return HttpResponseUtils.create(context.byteBuf(r.toString().getBytes()));
                 }
                 //环绕执行
                 if (type == ScriptType.Around.ordinal()) {
                     Map<String, Object> bindMap = Maps.newHashMap();
-                    bindMap.put("log", logger);
-                    bindMap.put("scriptDebug", scriptDebug);
-                    scriptManager.invokeBefore(scriptInfoStr, apiInfo, request, bindMap);
+                    inject(context, request, scriptDebug, info, bindMap);
+                    scriptManager.invokeBefore(info.getScript(), apiInfo, request, bindMap);
                     FullHttpResponse res = invoker.doInvoker(context, apiInfo, request);
                     String content = HttpResponseUtils.getContent(res);
                     return HttpResponseUtils.create(context.byteBuf(scriptManager.invokeAfter(info.getScript(), apiInfo, request, content, bindMap).toString().getBytes()));
                 }
 
             } catch (Throwable ex) {
-                logger.warn("invoke script error:" + ex.getMessage(), ex);
+                log.warn("invoke script error:" + ex.getMessage(), ex);
                 return HttpResponseUtils.create(Result.fail(GeneralCodes.InternalError, Msg.msgFor500, "invoke script error:" + ex.getMessage()));
             } finally {
                 if (request.headers().get("Script-Debug") != null && request.headers().get("Script-Debug").equals("on")) {
@@ -112,6 +123,55 @@ public class ScriptFilter extends RequestFilter {
                 }
             }
         }
+
         return invoker.doInvoker(context, apiInfo, request);
+    }
+
+    private void inject(FilterContext context, FullHttpRequest request, ScriptDebug scriptDebug, ScriptInfo info, Map<String, Object> bindMap) {
+        bindMap.put("sRequest", initScriptRequest(context, request));
+        bindMap.put("request", request);
+        bindMap.put("scriptInfo", info);
+        //日志
+        bindMap.put("log", log);
+        //script的调试信息
+        bindMap.put("scriptDebug", scriptDebug);
+        //cache调用
+        bindMap.put("redis", redis);
+        //dubbo调用
+        bindMap.put("dubbo", dubbo);
+        //配置调用
+        bindMap.put("nacos", nacos);
+        //数据库调用
+        bindMap.put("sql", dao);
+        //http调用
+        bindMap.put("http", http);
+        //rocketMq
+        bindMap.put("mq", rocketMq);
+    }
+
+    private ScriptRequest initScriptRequest(FilterContext context, FullHttpRequest request) {
+        ScriptRequest req = new ScriptRequest();
+
+        try {
+            req.setIp(context.getIp());
+            req.setTraceId(HttpRequestUtils.traceId(request));
+            req.setUid(context.getUid());
+            req.setAttachments(context.getAttachments());
+
+            Map<String, String> headers = request.headers().entries()
+                    .stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1));
+            req.setHeader(headers);
+
+            if (request.method().toString().toUpperCase().equals("GET")) {
+                req.setGetParam(HttpRequestUtils.getQueryParams(request.uri()));
+            } else {
+                req.setFormParam(HttpRequestUtils.getFormBody(request));
+                req.setPostParam(new String(HttpRequestUtils.getRequestBody(request)));
+            }
+        } catch (Exception e) {
+            log.error("initScriptRequest error... ", e);
+        }
+
+        return req;
     }
 }

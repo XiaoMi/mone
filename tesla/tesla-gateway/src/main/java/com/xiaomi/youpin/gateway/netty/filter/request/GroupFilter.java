@@ -32,6 +32,7 @@ import com.xiaomi.youpin.gateway.bo.CodeResponse;
 import com.xiaomi.youpin.gateway.cache.ApiRouteCache;
 import com.xiaomi.youpin.gateway.common.*;
 import com.xiaomi.youpin.gateway.dispatch.Dispatcher;
+import com.xiaomi.youpin.gateway.exception.GatewayException;
 import com.xiaomi.youpin.gateway.filter.FilterContext;
 import com.xiaomi.youpin.gateway.filter.Invoker;
 import com.xiaomi.youpin.gateway.filter.RequestContext;
@@ -396,22 +397,25 @@ public class GroupFilter extends RequestFilter {
         final FullHttpRequest req = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, method, url, buf, headers, trailingHeaders);
 
         dispatcher.dispatcher((str) -> {
-            context.setIp("");
-
-            FullHttpResponse fhres = chain.doFilter(apiInfo, req, context);
-            //放入结果的string信息
-            //结果都要符合json的样式,不然不能执行group任务
-            d.setTaskResult(HttpResponseUtils.getContent(fhres));
-
-            //需要自己释放掉
-            ReferenceCountUtil.release(fhres.content());
-
-            d.setStatus(TaskStatus.Success.code);
-            context.getLatch().countDown();
-            return "";
-        }, (res) -> TeslaSafeRun.run(() -> {
-            ReferenceCountUtil.release(request);
-        }), null);
+            FullHttpResponse fhres = null;
+            try {
+                context.setIp("");
+                fhres = chain.doFilter(apiInfo, req, context);
+                //放入结果的string信息
+                //结果都要符合json的样式,不然不能执行group任务
+                d.setTaskResult(HttpResponseUtils.getContent(fhres));
+                d.setStatus(TaskStatus.Success.code);
+                context.getLatch().countDown();
+                return "";
+            } catch (Throwable ex) {
+                log.error("GroupFilter ex:{}", ex.getMessage());
+                throw new GatewayException(ex);
+            } finally {
+                if (null != fhres) {
+                    NettyUtils.release(fhres.content(), "groupFilter_release_response");
+                }
+            }
+        }, (res) -> TeslaSafeRun.run(() -> NettyUtils.release(request, "groupFilter_release_request")), null);
 
 
     }

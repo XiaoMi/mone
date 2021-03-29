@@ -79,7 +79,7 @@ public class HandlerManager {
             if (null != scriptInfoStr) {
                 ScriptInfo info = gson.fromJson(scriptInfoStr, ScriptInfo.class);
                 int type = info.getScriptType();
-                if (type == ScriptType.Function.ordinal() && info.getMethodName().equals("__schedule__")) {
+                if (type == ScriptType.Function.ordinal() && ("__schedule__").equals(info.getMethodName())) {
                     Map<String, Object> bindMap = Maps.newHashMap();
                     bindMap.put("request", null);
                     bindMap.put("scriptInfo", info);
