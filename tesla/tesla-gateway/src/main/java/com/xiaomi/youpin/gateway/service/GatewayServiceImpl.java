@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import com.xiaomi.youpin.gateway.cache.TrafficRecordingCache;
 import com.xiaomi.youpin.gateway.common.GateWayVersion;
 import com.xiaomi.youpin.gateway.common.NetUtils;
+import com.xiaomi.youpin.gateway.common.ScriptManager;
 import com.xiaomi.youpin.gateway.common.Utils;
 import com.xiaomi.youpin.gateway.context.GatewayServerContext;
 import com.xiaomi.youpin.gateway.filter.RequestFilter;
@@ -93,6 +94,9 @@ public class GatewayServiceImpl implements TeslaGatewayService {
 
     @Autowired
     private GatewayServerContext gatewayServerContext;
+
+    @Autowired
+    private ScriptManager scriptManager;
 
     @Override
     public Result<Health> health() {
@@ -239,6 +243,7 @@ public class GatewayServiceImpl implements TeslaGatewayService {
 
     /**
      * 如果不是这组网关的过滤器,则不需要更新
+     *
      * @param name
      * @param groups
      * @param type
@@ -269,5 +274,12 @@ public class GatewayServiceImpl implements TeslaGatewayService {
         gatewayInfo.setGatewayFilterInfoList(requestFilterChain.getFilterInfoList());
 
         return Result.success(gatewayInfo);
+    }
+
+    @Override
+    public Result<Boolean> updateScript(Long id) {
+        log.info("update script id:{}", id);
+        scriptManager.removeScriptInfo(id);
+        return Result.success(true);
     }
 }

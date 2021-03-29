@@ -132,19 +132,32 @@ public class DubboClient extends IRpcClient implements Dubbo {
 
     @Override
     public Object call(MethodInfo methodInfo) {
-        ReferenceConfig<GenericService> reference = new ReferenceConfig<>();
-        reference.setApplication(applicationConfig);
-        reference.setRegistry(registryConfig);
-        reference.setInterface(methodInfo.getServiceName());
-        reference.setGeneric(true);
-        reference.setGroup(methodInfo.getGroup());
-        reference.setVersion(methodInfo.getVersion());
-        reference.setTimeout(methodInfo.getTimeout());
-        RpcContext.getContext().setAttachment(Constants.TIMEOUT_KEY, String.valueOf(methodInfo.getTimeout()));
-        ReferenceConfigCache cache = ReferenceConfigCache.getCache();
-        GenericService genericService = cache.get(reference);
-        Object res = genericService.$invoke(methodInfo.getMethodName(), methodInfo.getParameterTypes(), methodInfo.getArgs());
-        return res;
+        try {
+            String key = ReferenceConfigCache.getKey(methodInfo.getServiceName(), methodInfo.getGroup(), methodInfo.getVersion());
+            GenericService genericService = ReferenceConfigCache.getCache().get(key);
+            if (null == genericService) {
+                ReferenceConfig<GenericService> reference = new ReferenceConfig<>();
+                reference.setApplication(applicationConfig);
+                reference.setRegistry(registryConfig);
+                reference.setInterface(methodInfo.getServiceName());
+                reference.setGeneric(true);
+                reference.setCheck(false);
+                reference.setGroup(methodInfo.getGroup());
+                reference.setVersion(methodInfo.getVersion());
+                reference.setTimeout(methodInfo.getTimeout());
+                //支持直接使用json协议(更好的支持scirpt filter)
+                if ("json".equals(methodInfo.getProto())) {
+                    reference.setGeneric(Constants.GENERIC_SERIALIZATION_YOUPIN_JSON);
+                }
+                ReferenceConfigCache cache = ReferenceConfigCache.getCache();
+                genericService = cache.get(reference);
+            }
+            RpcContext.getContext().setAttachment(Constants.TIMEOUT_KEY, String.valueOf(methodInfo.getTimeout()));
+            Object res = genericService.$invoke(methodInfo.getMethodName(), methodInfo.getParameterTypes(), methodInfo.getArgs());
+            return res;
+        } finally {
+            RpcContext.getContext().clearAttachments();
+        }
     }
 
     private String getServiceName(FilterContext ctx, final ApiInfo apiInfo) {
@@ -289,7 +302,7 @@ public class DubboClient extends IRpcClient implements Dubbo {
             outPutJson = "";
             if (StringUtils.isNotEmpty(ctx.getAttachments().get(FilterContext.New_Body))) {
                 outPutJson = ctx.getAttachments().get(FilterContext.New_Body);
-            } else {
+            }else {
                 outPutJson = new String(HttpRequestUtils.getRequestBody(request));
             }
 
@@ -340,12 +353,16 @@ public class DubboClient extends IRpcClient implements Dubbo {
             throw e;
         } catch (Throwable e) {
             logger.warn("dubbo invoke param:" + outPutJson + "error:" + e.getMessage() + " " + apiInfo.getId() + " " + source + ":" + apiInfo.getUrl());
-            String detailMsg = debug(request) ? outPutJson + ":" + e.getMessage() : "failed to get dubbo response";
+            String detailMsg = "failed to get dubbo response";
+            if (configService.isReturnDubboLog() || debug(request)) {
+                detailMsg = outPutJson + ":" + e.getMessage();
+            }
             return HttpResponseUtils.create(Result.fail(GeneralCodes.InternalError, Msg.msgFor500, detailMsg));
         } finally {
             if (StringUtils.isNotEmpty(traceId)) {
                 TraceIdContext.ins().remove(TraceIdUtils.getKey(traceId, "0"));
             }
+            RpcContext.getContext().clearAttachments();
         }
     }
 
@@ -354,7 +371,7 @@ public class DubboClient extends IRpcClient implements Dubbo {
             String[] types = typeAndValue.getKey();
             if (null != types
                     && types.length >= 1
-                    && types[0].equals(com.xiaomi.youpin.dubbo.request.RequestContext.class.getName())) {
+                        && types[0].equals(com.xiaomi.youpin.dubbo.request.RequestContext.class.getName())) {
 
                 Map<String, String> headers = request.headers().entries()
                         .stream()

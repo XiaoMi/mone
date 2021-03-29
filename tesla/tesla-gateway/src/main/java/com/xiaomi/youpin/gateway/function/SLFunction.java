@@ -14,16 +14,31 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.youpin.gateway.common;
+package com.xiaomi.youpin.gateway.function;
+
+import com.xiaomi.data.push.redis.Redis;
+import com.xiaomi.youpin.gateway.dubbo.Dubbo;
+import com.xiaomi.youpin.gateway.nacos.Nacos;
+import lombok.Data;
+import org.nutz.dao.Dao;
 
 /**
  * @author goodjava@qq.com
+ * @date 3/14/21
+ *
+ * server less function
  */
-public class GateWayVersion {
+@Data
+public abstract class SLFunction {
 
+    protected Dao dao;
 
-    @Override
-    public String toString() {
-        return "GateWayVersion:0.0.1:2020-12-14";
-    }
+    protected Redis redis;
+
+    protected Nacos nacos;
+
+    protected Dubbo dubbo;
+
+    abstract FResponse call(FRequest request);
+
 }

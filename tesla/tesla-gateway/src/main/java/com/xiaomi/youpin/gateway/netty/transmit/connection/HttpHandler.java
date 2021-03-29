@@ -16,12 +16,14 @@
 
 package com.xiaomi.youpin.gateway.netty.transmit.connection;
 
+import com.xiaomi.youpin.gateway.RouteType;
 import com.xiaomi.youpin.gateway.TeslaConstants;
 import com.xiaomi.youpin.gateway.cache.ApiRouteCache;
 import com.xiaomi.youpin.gateway.common.*;
 import com.xiaomi.youpin.gateway.dispatch.Dispatcher;
 import com.xiaomi.youpin.gateway.filter.RequestContext;
 import com.xiaomi.youpin.gateway.netty.filter.RequestFilterChain;
+import com.xiaomi.youpin.gateway.protocol.http.HttpClient;
 import com.xiaomi.youpin.infra.rpc.Result;
 import com.xiaomi.youpin.infra.rpc.errors.GeneralCodes;
 import com.youpin.xiaomi.tesla.bo.ApiInfo;
@@ -84,62 +86,61 @@ public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
             logger.info("http handler websocket");
             ctx.fireChannelRead(request);
         } else {
-            try {
-                if (checkDecoderResult(ctx, request)) {
-                    logger.warn("check decoder result error:{}", request.refCnt());
-                    ReferenceCountUtil.release(request);
-                    return;
-                }
-
-                String uri = HttpRequestUtils.getBasePath(request);
-                //会从路由里获取路由信息
-                ApiInfo apiInfo = apiRouteCache.get(uri);
-                logger.debug("call uri:{}", uri);
-                if (apiInfo == null) {
-                    logger.info("HttpHandler.nullapiinfo, uri is: {}, request header is: {}", uri, request.headers());
-                }
-
-                final long begin = System.currentTimeMillis();
-                String callId = TraceId.uuid();
-                //这里会异步处理
-                dispatcher.dispatcher((str) -> {
-                    try {
-                        RequestContext context = new RequestContext();
-                        context.setBegin(begin);
-                        context.setIp(Utils.getClientIp(request, ctx.channel()));
-                        context.setChannel(ctx.channel());
-                        HttpResponse res = filterChain.doFilter(apiInfo, request, context);
-                        return res;
-                    } catch (Throwable ex) {
-                        logger.error("HttpHandler error:" + ex.getMessage(), ex);
-                        return ex.getMessage();
-                    }
-                }, (response) -> {
-                    TeslaSafeRun.run(() -> {
-                        logger.debug("release:{} {}", uri, request.refCnt());
-                        //自己手动释放
-                        if (request.refCnt() > 1) {
-                            logger.info("HttpHandler release refCnt > 1 :{}", request.refCnt());
-                            ReferenceCountUtil.release(request, request.refCnt());
-                        } else {
-                            ReferenceCountUtil.release(request);
-                        }
-                    });
-                    futureMap.remove(callId);
-                    if (null == response) {
-                        logger.warn("http hander res = null id:{}", apiInfo.getId());
-                    } else if (response instanceof String && StringUtils.isNotEmpty(response.toString())) {
-                        ctx.writeAndFlush(HttpResponseUtils.create(Result.fail(GeneralCodes.InternalError, Msg.msgFor500, response.toString())));
-                    } else {
-                        ctx.writeAndFlush(response);
-                    }
-                }, apiInfo, f -> futureMap.put(callId, f));
-            } catch (Throwable ex) {
-                logger.info("channelRead0 error:{}", ex.getMessage());
-                TeslaSafeRun.run(() -> {
-                    ReferenceCountUtil.release(request);
-                });
+            if (checkDecoderResult(ctx, request)) {
+                logger.warn("check decoder result error:{}", request.refCnt());
+                ReferenceCountUtil.release(request);
+                return;
             }
+
+            String uri = HttpRequestUtils.getBasePath(request);
+            //会从路由里获取路由信息
+            ApiInfo apiInfo = apiRouteCache.get(uri);
+            logger.debug("call uri:{}", uri);
+            if (apiInfo == null) {
+                logger.info("HttpHandler.nullapiinfo, uri is: {}, request header is: {}", uri, request.headers());
+            }
+
+            final long begin = System.currentTimeMillis();
+            String callId = TraceId.uuid();
+            //这里会异步处理
+            dispatcher.dispatcher((str) -> {
+                try {
+                    RequestContext context = new RequestContext();
+                    context.setBegin(begin);
+                    context.setIp(Utils.getClientIp(request, ctx.channel()));
+                    context.setChannel(ctx.channel());
+                    context.setCallId(callId);
+                    HttpResponse res = filterChain.doFilter(apiInfo, request, context);
+                    return res;
+                } catch (Throwable ex) {
+                    logger.error("HttpHandler error:" + ex.getMessage(), ex);
+                    return ex.getMessage();
+                }
+            }, (response) -> {
+                TeslaSafeRun.run(() -> {
+                    logger.debug("release:{} {}", uri, request.refCnt());
+                    //自己手动释放
+                    if (request.refCnt() > 1) {
+                        logger.info("HttpHandler release refCnt > 1 :{}", request.refCnt());
+                        ReferenceCountUtil.release(request, request.refCnt());
+                    } else {
+                        ReferenceCountUtil.release(request);
+                    }
+                });
+                futureMap.remove(callId);
+                if (null == response) {
+                    logger.warn("http hander res = null id:{}", apiInfo.getId());
+                } else if (response instanceof String && StringUtils.isNotEmpty(response.toString())) {
+                    ctx.writeAndFlush(HttpResponseUtils.create(Result.fail(GeneralCodes.InternalError, Msg.msgFor500, response.toString())));
+                } else {
+                    ctx.writeAndFlush(response);
+                }
+            }, apiInfo, f -> futureMap.put(callId, f), (ai) -> {
+                if (ai != null && ai.getRouteType().equals(RouteType.Http.type())) {
+                    //http 不支持拦截InterruptedException 需要自己控制
+                    HttpClient.closeClinet(callId);
+                }
+            });
 
         }
     }

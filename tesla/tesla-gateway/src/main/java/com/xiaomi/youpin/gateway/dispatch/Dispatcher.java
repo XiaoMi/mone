@@ -18,11 +18,9 @@ package com.xiaomi.youpin.gateway.dispatch;
 
 
 import com.alibaba.nacos.api.config.annotation.NacosValue;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.*;
+import com.xiaomi.youpin.gateway.common.GatewayWheelTimer;
 import com.xiaomi.youpin.gateway.common.TeslaSafeRun;
-import com.xiaomi.youpin.gateway.dispatch.strategy.impl.NormalStrategy;
 import com.xiaomi.youpin.gateway.netty.transmit.connection.HttpHandler;
 import com.xiaomi.youpin.gateway.protocol.http.HttpClient;
 import com.xiaomi.youpin.gateway.service.ConfigService;
@@ -35,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -59,10 +58,13 @@ public class Dispatcher {
     @Autowired
     private ConfigService configService;
 
-    private NormalStrategy strategy = new NormalStrategy();
+    @Autowired
+    private GatewayWheelTimer wheelTimer;
 
 
     private ThreadPoolExecutor executor = null;
+
+    private ListeningExecutorService listeningExecutor = null;
 
     public Dispatcher() {
 
@@ -73,8 +75,8 @@ public class Dispatcher {
     public void init() {
         //这里必须用lined 的queue 不然被拒绝掉了,req 的内存资源不能得到清理(堆外内存泄漏)
         executor = new ThreadPoolExecutor(invokePoolSize, invokePoolSize, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingDeque<>(), new NamedThreadFactory("Dispatcher_Executor"));
-        strategy.setQueueSize(queueSize);
-        strategy.initPool(invokePoolSize);
+
+        listeningExecutor = MoreExecutors.listeningDecorator(executor);
 
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> TeslaSafeRun.run(() ->
                         log.info("Dispatcher_Executor {} {} {} future num:{} client num:{}",
@@ -88,21 +90,31 @@ public class Dispatcher {
     }
 
     public Future dispatcher(Function<String, Object> function, Consumer<Object> resultConsumer, ApiInfo apiInfo, Consumer<ListenableFuture> futureConsumer) {
+        return dispatcher(function, resultConsumer, apiInfo, futureConsumer, null);
+    }
+
+    public Future dispatcher(Function<String, Object> function, Consumer<Object> resultConsumer, ApiInfo apiInfo, Consumer<ListenableFuture> futureConsumer, Consumer<ApiInfo> cancel) {
         final int timeOut = getTimeout(apiInfo);
-        ListenableFuture<?> l = strategy.pool(0).submit(() -> {
-            try {
-                return strategy.callWithTimeout(() -> {
-                    Object res = function.apply("");
-                    return res;
-                }, timeOut, TimeUnit.MILLISECONDS);
-            } catch (Throwable e) {
-                throw new RuntimeException(e);
-            }
+        ListenableFuture<?> l = this.listeningExecutor.submit(() -> {
+            return function.apply("");
         });
 
         if (null != futureConsumer) {
             futureConsumer.accept(l);
         }
+
+        this.wheelTimer.newTimeout(() -> {
+            if (!l.isDone()) {
+                log.info("{} timeout cancel", Optional.ofNullable(apiInfo).isPresent() ? apiInfo.getUrl() : "null");
+                l.cancel(true);
+                if (null != cancel) {
+                    cancel.accept(apiInfo);
+                }
+            } else {
+                log.info("{} is done", Optional.ofNullable(apiInfo).isPresent() ? apiInfo.getUrl() : "null");
+            }
+
+        }, timeOut + 50);
 
 
         Futures.addCallback(l, new FutureCallback<Object>() {
@@ -123,7 +135,7 @@ public class Dispatcher {
 
 
     public Future dispatcher(Function<String, Object> function, Consumer<Object> resultConsumer, ApiInfo apiInfo) {
-        return dispatcher(function, resultConsumer, apiInfo, null);
+        return dispatcher(function, resultConsumer, apiInfo, null, null);
     }
 
 

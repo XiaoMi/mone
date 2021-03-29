@@ -14,16 +14,13 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.youpin.gateway.common;
+package com.xiaomi.youpin.gateway.function;
+
+import java.io.Serializable;
 
 /**
  * @author goodjava@qq.com
+ * @date 3/14/21
  */
-public class GateWayVersion {
-
-
-    @Override
-    public String toString() {
-        return "GateWayVersion:0.0.1:2020-12-14";
-    }
+public class FResponse implements Serializable {
 }

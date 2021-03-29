@@ -24,13 +24,14 @@ import com.xiaomi.youpin.gateway.common.HttpResponseUtils;
 import com.xiaomi.youpin.gateway.filter.FilterContext;
 import com.xiaomi.youpin.gateway.filter.Invoker;
 import com.xiaomi.youpin.gateway.filter.RequestFilter;
+import com.xiaomi.youpin.gateway.netty.filter.CodeParser;
 import com.xiaomi.youpin.gateway.service.ConfigService;
 import com.xiaomi.youpin.tesla.traffic.recording.api.bo.enums.RecordingSourceTypeEnum;
-import com.xiaomi.youpin.tesla.traffic.recording.api.bo.enums.RecordingStrategyEnum;
 import com.xiaomi.youpin.tesla.traffic.recording.api.bo.recording.RecordingConfig;
 import com.xiaomi.youpin.tesla.traffic.recording.api.bo.traffic.HttpTraffic;
 import com.xiaomi.youpin.tesla.traffic.recording.api.bo.traffic.Traffic;
 import com.youpin.xiaomi.tesla.bo.ApiInfo;
+import io.netty.buffer.ByteBuf;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpMethod;
@@ -42,11 +43,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.stream.Collectors;
 
+import static com.xiaomi.youpin.gateway.cache.TrafficRecordingCache.DEFAULR_ALL_API;
 import static com.xiaomi.youpin.tesla.traffic.recording.api.bo.enums.RecordingStrategyEnum.*;
+import static com.xiaomi.youpin.tesla.traffic.recording.api.bo.recording.RecordingConfig.*;
 
 /**
  * @author dp@qq.com
@@ -75,27 +80,38 @@ public class TrafficRecordingFilter extends RequestFilter {
     @Override
     public FullHttpResponse doFilter(FilterContext context, Invoker invoker, ApiInfo apiInfo, FullHttpRequest request) {
         //是否要校验token
-        if (needRecordTraffic(apiInfo, context, request)) {
-            log.info("TrafficRecordingFilter record:{} {}", apiInfo.getId(), apiInfo.getUrl());
-            long invokeBeginTime = System.currentTimeMillis();
-            FullHttpResponse res = invoker.doInvoker(context, apiInfo, request);
-            long invokeEndTime = System.currentTimeMillis();
+        long invokeBeginTime = System.currentTimeMillis();
+        FullHttpResponse res = invoker.doInvoker(context, apiInfo, request);
 
-            sendMessage(adapterTraffic(context, apiInfo, request, invokeBeginTime, invokeEndTime, res));
-            return res;
+        try {
+            if (needRecordTraffic(apiInfo, context, request, res)) {
+                log.info("TrafficRecordingFilter record:{} {}", apiInfo.getId(), apiInfo.getUrl());
+                long invokeEndTime = System.currentTimeMillis();
+                sendMessage(adapterTraffic(context, apiInfo, request, invokeBeginTime, invokeEndTime, res));
+            }
+        } catch (Exception e) {
+            log.warn("TrafficRecordingFilter.doFilter, failed to record traffic, msg: {}", e.getMessage());
         }
-        return invoker.doInvoker(context, apiInfo, request);
+
+        return res;
     }
 
-    private boolean needRecordTraffic(ApiInfo apiInfo, FilterContext context, FullHttpRequest request) {
+    private RecordingConfig getRecordingConfig(String url) {
+        if (cache.get(DEFAULR_ALL_API) == null) {
+            return cache.get(url);
+        } else {
+            return cache.get(DEFAULR_ALL_API);
+        }
+    }
+
+    private boolean needRecordTraffic(ApiInfo apiInfo, FilterContext context, FullHttpRequest request, FullHttpResponse res) {
 
         if (!configService.isOpenTrafficRecord()) {
             return false;
         }
 
+        RecordingConfig recordingConfig = getRecordingConfig(apiInfo.getUrl());
 
-        String url = apiInfo.getUrl();
-        RecordingConfig recordingConfig = cache.get(url);
         if (recordingConfig != null && recordingConfig.getStatus() == 1) {
             //分析录制策略
             int strategy = recordingConfig.getRecordingStrategy();
@@ -111,6 +127,9 @@ public class TrafficRecordingFilter extends RequestFilter {
                 }
                 case PARAM_CODE: {
 
+                }
+                case RESCODE_CODE: {
+                    return needRecordingByResCode(recordingConfig, res);
                 }
                 default: {
                     return true;
@@ -137,6 +156,66 @@ public class TrafficRecordingFilter extends RequestFilter {
             return true;
         }
         return false;
+    }
+
+    private boolean needRecordingByResCode(RecordingConfig recordingConfig, FullHttpResponse response) {
+        try {
+            String operator = recordingConfig.getRecordingStrategyOperator();
+            String codes = recordingConfig.getResCode();
+            if (StringUtils.isEmpty(operator) || StringUtils.isEmpty(codes)) {
+                return false;
+            }
+            List<String> codeList = Arrays.asList(codes.split(","));
+
+            ByteBuf buf = response.content().duplicate();
+            int resCode = CodeParser.parseCode(buf);
+
+            switch (operator) {
+                case STRATEGY_OPERATOR_EQUAL : {
+                    if (codeList.contains(String.valueOf(resCode))) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+                case STRATEGY_OPERATOR_MORE: {
+                    if (resCode > Integer.valueOf(codeList.get(0))) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+                case STRATEGY_OPERATOR_LESS: {
+                    if (resCode < Integer.valueOf(codeList.get(0))) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+                case STRATEGY_OPERATOR_BETWEEN: {
+                    if (codeList.size() < 2) {
+                        return false;
+                    }
+                    if (resCode >= Integer.valueOf(codeList.get(0)) && resCode <= Integer.valueOf(codeList.get(1))) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+                case STRATEGY_OPERATOR_NOT_EQUAL: {
+                    if (!codeList.contains(String.valueOf(resCode))) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                }
+                default:
+                    return false;
+            }
+        } catch (Exception e) {
+            log.warn("TrafficRecordingFilter.needRecordingByResCode, failed to get code, msg: {}", e.getMessage());
+            return false;
+        }
     }
 
     private boolean needRecordingByStrategyHeader(RecordingConfig recordingConfig, FullHttpRequest request) {
@@ -177,14 +256,17 @@ public class TrafficRecordingFilter extends RequestFilter {
             traffic.setHttpTraffic(httpTraffic);
             traffic.setInvokeBeginTime(invokeBeginTime);
             traffic.setInvokeEndTime(invokeEndTime);
-            traffic.setRecordingConfigId(cache.get(apiInfo.getUrl()).getId());
+
+            RecordingConfig recordingConfig = getRecordingConfig(apiInfo.getUrl());
+
+            traffic.setRecordingConfigId(recordingConfig.getId());
             traffic.setSourceType(RecordingSourceTypeEnum.GATEWAY.getCode());
             traffic.setResponse(HttpResponseUtils.getContent(res));
             traffic.setTraceId(context.getTraceId());
             if (StringUtils.isNotEmpty(context.getUid())) {
                 traffic.setUid(Long.parseLong(context.getUid()));
             }
-            traffic.setSaveDays(cache.get(apiInfo.getUrl()).getSaveDays());
+            traffic.setSaveDays(recordingConfig.getSaveDays());
         } catch (Exception e) {
             log.warn("TrafficRecordingFilter.adapterTraffic error: {}", e.getMessage(), e);
         }

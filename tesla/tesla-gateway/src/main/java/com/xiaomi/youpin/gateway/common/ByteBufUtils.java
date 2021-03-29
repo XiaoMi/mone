@@ -33,7 +33,7 @@ public abstract class ByteBufUtils {
             return Unpooled.wrappedBuffer(content.getBytes());
         }
         try {
-            return ctx.byteBuf(content.getBytes());
+            return ctx.byteBuf(content.getBytes(), true);
         } catch (Throwable ex) {
             log.warn("alloc direct bytebuf error:{}", ex.getMessage());
             return Unpooled.wrappedBuffer(content.getBytes());

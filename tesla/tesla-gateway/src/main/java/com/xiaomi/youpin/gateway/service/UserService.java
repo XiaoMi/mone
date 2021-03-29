@@ -29,7 +29,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class UserService {
 
-    @Reference(check = false, interfaceClass = PassportProxyService.class, timeout = 600, retries = 1)
+    @Reference(check = false, interfaceClass = PassportProxyService.class, group = "${user_service_dubbo_group}", timeout = 600, retries = 1)
     private PassportProxyService passportProxyService;
 
     /**
@@ -37,7 +37,7 @@ public class UserService {
      *
      * @throws TException
      */
-    public long getUidFromCookie(String cookie) throws TException {
+    public long getUidFromCookie(String cookie) {
         try {
             if (cookie.equals("")) {
                 return 0L;
@@ -52,6 +52,29 @@ public class UserService {
         } catch (Throwable ex) {
             log.warn("user service error:" + ex.getMessage(), ex);
             return 0L;
+        }
+    }
+
+    /**
+     * cookie 转换uid
+     *
+     * @throws TException
+     */
+    public com.xiaomi.youpin.account.passportproxy.api.ParseCookieResponseV2 getExpiredUidFromCookie(String cookie) {
+        try {
+            if (cookie.equals("")) {
+                return null;
+            }
+
+            com.xiaomi.youpin.account.passportproxy.api.ParseCookieRequestV2 request = new com.xiaomi.youpin.account.passportproxy.api.ParseCookieRequestV2();
+            request.setCookie(cookie);
+
+            com.xiaomi.youpin.account.passportproxy.api.ParseCookieResponseV2 res = passportProxyService.parseCookieV2(request);
+            return res;
+
+        } catch (Throwable ex) {
+            log.warn("user service error:" + ex.getMessage(), ex);
+            return null;
         }
     }
 

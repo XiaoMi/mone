@@ -63,6 +63,9 @@ public class ConfigService implements Nacos {
     @NacosValue(value = "${needParseCode:false}", autoRefreshed = true)
     private boolean needParseCode = true;
 
+    @NacosValue(value = "${returnDubboLog:false}", autoRefreshed = true)
+    private boolean returnDubboLog = false;
+
     @NacosValue(value = "${closeLimitFilter:false}", autoRefreshed = true)
     private boolean closeLimitFilter = false;
 
@@ -100,6 +103,9 @@ public class ConfigService implements Nacos {
     @NacosValue(value = "${allowDirectBuf:true}", autoRefreshed = true)
     private boolean allowDirectBuf = true;
 
+    public boolean isReturnDubboLog() {
+        return returnDubboLog;
+    }
 
     public boolean isNeedParseCode() {
         return needParseCode;

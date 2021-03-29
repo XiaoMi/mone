@@ -32,4 +32,16 @@ public abstract class TeslaSafeRun {
             log.error(ex.getMessage());
         }
     }
+
+    public static interface ExRunnable {
+        void run() throws Throwable;
+    }
+
+    public static void runEx(ExRunnable runnable) {
+        try {
+            runnable.run();
+        } catch (Throwable ex) {
+            log.error(ex.getMessage(), ex);
+        }
+    }
 }
