@@ -71,7 +71,7 @@ public class LogFilter extends RequestFilter {
                 params = new String(HttpRequestUtils.getRequestBody(request));
             }
 
-            String traceId = HttpRequestUtils.traceId(request);
+            String traceId = context.getTraceId();
             logger.info("invoke begin : id:{} traceId:{} method:{} uri:{} params:{} headers:{}", apiInfo.getId(), traceId, request.method(), request.uri(), params, request.headers().toString());
             try {
                 FullHttpResponse res = invoker.doInvoker(context, apiInfo, request);

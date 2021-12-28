@@ -16,6 +16,7 @@
 
 package com.xiaomi.youpin.gateway.service;
 
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.xiaomi.youpin.gateway.cache.TrafficRecordingCache;
 import com.xiaomi.youpin.gateway.common.GateWayVersion;
@@ -87,6 +88,9 @@ public class GatewayServiceImpl implements TeslaGatewayService {
 
     @Autowired
     private QpsAop qpsAop;
+
+    @Autowired
+    private ScriptJarManager scriptJarManager;
 
     @Value("${dubbo.protocol.port}")
     private int dubboPort;
@@ -211,7 +215,7 @@ public class GatewayServiceImpl implements TeslaGatewayService {
 
     @Override
     public Result<Boolean> reloadFilter() {
-        requestFilterChain.reload();
+        requestFilterChain.reload("reload", Lists.newArrayList());
         return Result.success(true);
     }
 
@@ -226,7 +230,7 @@ public class GatewayServiceImpl implements TeslaGatewayService {
         log.info("{} {}", name, type);
 
         if (type.equals("add") || type.equals("remove")) {
-            requestFilterChain.reload();
+            requestFilterChain.reload(type, Lists.newArrayList(name));
         }
 
         if (type.equals("remove")) {
@@ -280,6 +284,15 @@ public class GatewayServiceImpl implements TeslaGatewayService {
     public Result<Boolean> updateScript(Long id) {
         log.info("update script id:{}", id);
         scriptManager.removeScriptInfo(id);
+        return Result.success(true);
+    }
+
+    @Override
+    public Result<Boolean> deployServerLessJar(String key, String jarUrl) {
+        log.info("deploy server less jar:{} {}", key, jarUrl);
+        scriptJarManager.releaseJar(key);
+        scriptJarManager.loadJar(key, jarUrl);
+        scriptManager.removeScriptInfo(Long.valueOf(key));
         return Result.success(true);
     }
 }

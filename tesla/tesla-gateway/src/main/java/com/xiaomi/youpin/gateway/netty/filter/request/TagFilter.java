@@ -16,47 +16,39 @@
 
 package com.xiaomi.youpin.gateway.netty.filter.request;
 
-import com.xiaomi.youpin.gateway.RouteType;
+import com.xiaomi.youpin.gateway.TeslaConstants;
 import com.xiaomi.youpin.gateway.common.FilterOrder;
 import com.xiaomi.youpin.gateway.filter.FilterContext;
 import com.xiaomi.youpin.gateway.filter.Invoker;
 import com.xiaomi.youpin.gateway.filter.RequestFilter;
-import com.xiaomi.youpin.gateway.protocol.dubbo.DubboClient;
 import com.youpin.xiaomi.tesla.bo.ApiInfo;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.stereotype.Component;
 
-import static com.xiaomi.youpin.gateway.filter.FilterContext.New_Route_Type;
+import static com.xiaomi.youpin.gateway.TeslaConstants.Tag;
 
 /**
- * @author goodjava@qq.com
+ * @author dingpei@xiaomi.com
  * <p>
- * dubbo协议调用
+ * tag filter
+ * 根据tag来负载均衡
  */
+@Slf4j
 @Component
-@FilterOrder(3000)
-public class DubboFilter extends RequestFilter {
+@FilterOrder(1000 + 1)
+public class TagFilter extends RequestFilter {
 
-    @Autowired
-    private DubboClient dubboClient;
 
     @Override
     public FullHttpResponse doFilter(FilterContext context, Invoker invoker, ApiInfo apiInfo, FullHttpRequest request) {
-        int routeType = apiInfo.getRouteType();
-        if (StringUtils.isNotEmpty(context.getAttachments().get(New_Route_Type))) {
-            routeType = Integer.valueOf(context.getAttachments().get(New_Route_Type));
-        }
-        if (routeType == RouteType.Dubbo.type() || routeType == RouteType.Native_Dubbo.type()) {
-            return dubboClient.call(context, apiInfo, request);
-        }
+        String tag = request.headers().get(TeslaConstants.FrontHeaderTag, "");
+
+        context.setAttachment(Tag, tag);
+
         return invoker.doInvoker(context, apiInfo, request);
     }
 
-    @Override
-    public boolean rpcFilter() {
-        return true;
-    }
 }

@@ -66,7 +66,7 @@ public class ApiRouteCache {
 
     private static final String fileName = "api_route.cache";
 
-    @Reference(check = false, interfaceClass = TeslaOpsService.class, group = "${dubbo.group}")
+    @Reference(check = false, interfaceClass = TeslaOpsService.class, group = "${dubbo.group}", timeout = 4000)
     private TeslaOpsService teslaOpsService;
 
 
@@ -78,7 +78,7 @@ public class ApiRouteCache {
 
     @PostConstruct
     public void init() {
-        new ScheduledThreadPoolExecutor(1).scheduleAtFixedRate(() -> {
+        new ScheduledThreadPoolExecutor(1).scheduleWithFixedDelay(() -> {
             try {
                 List<ApiInfo> list = Lists.newArrayList();
                 int pageNum = 1;
@@ -88,6 +88,7 @@ public class ApiRouteCache {
                     if (res.getCode() == GeneralCodes.OK.getCode()) {
                         log.debug("teslaOpsService.apiInfoList, get apiinfo, res count: {}", res.getData().getTotal());
                         res.getData().getList().stream().forEach(it -> {
+                            log.debug("teslaOpsService.apiInfoList, get apiinfo: {}", it);
                             cache.put(it.getUrl(), it);
                             if (it.getRouteType().equals(RouteType.Http.type())) {
                                 gatewayNamingService.subscribeWithPath(it.getPath(), it);

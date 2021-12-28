@@ -17,6 +17,7 @@
 package com.xiaomi.youpin.gateway.protocol.http;
 
 import com.google.common.collect.Maps;
+import com.xiaomi.youpin.dubbo.filter.TraceIdUtils;
 import com.xiaomi.youpin.gateway.TeslaConstants;
 import com.xiaomi.youpin.gateway.common.*;
 import com.xiaomi.youpin.gateway.filter.FilterContext;
@@ -49,9 +50,10 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
+import static com.xiaomi.youpin.gateway.filter.FilterContext.SUPPORT_ORIGIN_BYTES;
 
 /**
  * @author goodjava@qq.com
@@ -166,13 +168,13 @@ public class HttpClient extends IRpcClient {
             response = httpClient.execute(get);
             entity = response.getEntity();
 
-            boolean originBytes = isOriginBytes(url);
+            boolean originBytes = isOriginBytes(ctx);
             byte[] data = new byte[]{};
 
             if (null != entity) {
                 if (originBytes) {
                     data = getBytes(entity);
-                    logger.info("data:{}", Arrays.toString(data));
+                    logger.debug("data:{}", Arrays.toString(data));
                 } else {
                     responseContent = EntityUtils.toString(entity, "UTF-8");
                 }
@@ -207,20 +209,25 @@ public class HttpClient extends IRpcClient {
                     httpClient.close();
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error(e.getMessage());
             }
         }
 
     }
 
-    //临时解决方案(需要加一个filter解决,这样比较完美)
-    private boolean isOriginBytes(String url) {
-        logger.info("isOriginBytes url:{}", url);
-        return url.contains("kratos/rta/service");
+    private boolean isOriginBytes(FilterContext ctx) {
+        String str = ctx.getAttachment(SUPPORT_ORIGIN_BYTES, "false");
+        if ("true".equals(str)) {
+            return true;
+        }
+        return false;
     }
 
 
+
     public FullHttpResponse post(FilterContext ctx, String url, byte[] body, Map<String, String> headers, int timeOut, String callId) {
+
+        logger.debug("post params, ctx: {}, url: {}, headers: {}, callId: {}", ctx, url, headers, callId);
 
         ctx.getAttachments().put("param", new String(body));
 
@@ -249,9 +256,25 @@ public class HttpClient extends IRpcClient {
             clientMap.put(callId, httpClient);
             response = httpClient.execute(post);
             entity = response.getEntity();
-            responseContent = EntityUtils.toString(entity, "UTF-8");
+
+
+            boolean originBytes = isOriginBytes(ctx);
+            byte[] data = new byte[]{};
+
+            if (originBytes) {
+                data = getBytes(entity);
+            } else {
+                responseContent = EntityUtils.toString(entity, "UTF-8");
+            }
+
+
             logger.debug("----------> http post url:{} body:{} result:{}", url, body, responseContent);
-            ByteBuf buf = ByteBufUtils.createBuf(ctx, responseContent, configService.isAllowDirectBuf());
+            ByteBuf buf = null;
+            if (originBytes) {
+                buf = Unpooled.wrappedBuffer(data);
+            } else {
+                buf = ByteBufUtils.createBuf(ctx, responseContent, configService.isAllowDirectBuf());
+            }
             FullHttpResponse r = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.valueOf(response.getStatusLine().getStatusCode()), buf);
 
             Arrays.stream(response.getAllHeaders()).forEach(it -> r.headers().add(it.getName(), it.getValue()));
@@ -260,7 +283,9 @@ public class HttpClient extends IRpcClient {
             logger.warn(e.getMessage());
             return HttpResponseUtils.create(Result.fail(GeneralCodes.InternalError, Msg.msgFor500, e.getMessage()));
         } finally {
-            clientMap.remove(callId);
+            if (null != callId) {
+                clientMap.remove(callId);
+            }
             try {
                 if (response != null) {
                     response.close();
@@ -300,11 +325,10 @@ public class HttpClient extends IRpcClient {
                 realUri = path;
             }
 
-            int timeOut = Math.max(1000, apiInfo.getTimeout());
-
+            int timeOut = Math.max(300, apiInfo.getTimeout());
             return call(ctx, request.method().toString(), realUri, getBody(ctx, request), headers, timeOut);
         } catch (Throwable ex) {
-            logger.warn("http client:" + ex.getMessage());
+            logger.warn("http client:" + ex.getMessage(), ex);
             return HttpResponseUtils.create(Result.fromException(ex));
         }
     }
@@ -325,7 +349,7 @@ public class HttpClient extends IRpcClient {
 
     private void setTraceId(HashMap<String, String> headers) {
         if (StringUtils.isEmpty(headers.get(TeslaConstants.TraceId))) {
-            String traceId = UUID.randomUUID().toString().replaceAll("-", "");
+            String traceId = TraceIdUtils.getUUID();
             headers.put(TeslaConstants.TraceId, traceId);
         }
     }

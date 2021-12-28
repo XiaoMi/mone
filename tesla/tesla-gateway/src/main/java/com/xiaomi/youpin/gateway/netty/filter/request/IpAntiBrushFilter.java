@@ -40,7 +40,7 @@ import org.springframework.stereotype.Component;
 @Component
 @FilterOrder(Integer.MIN_VALUE + 11)
 public class IpAntiBrushFilter extends RequestFilter {
-
+    static final String ipTag = "IP-ANTI-BRUSH-TIME";
     @Autowired
     private Redis redis;
 
@@ -57,7 +57,8 @@ public class IpAntiBrushFilter extends RequestFilter {
             try {
                 long value = redis.incr(key);
                 if (value == 1L) {
-                    redis.expire(key, 60);
+                    String ipTimeStr = context.getAttachment(ipTag, "60");
+                    redis.expire(key, Integer.parseInt(ipTimeStr));
                 }
                 if (value > apiInfo.getIpAntiBrushLimit()) {
                     //429

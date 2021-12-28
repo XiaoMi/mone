@@ -32,17 +32,16 @@ public class GatewayWheelTimer {
 
     private HashedWheelTimer hashedWheelTimer;
 
+    private HashedWheelTimer slowHashedWheelTimer;
+
     @PostConstruct
     public void init() {
-        hashedWheelTimer = new HashedWheelTimer(1000, TimeUnit.MILLISECONDS, 16);
+        hashedWheelTimer = new HashedWheelTimer(100, TimeUnit.MILLISECONDS, 512);
+        slowHashedWheelTimer = new HashedWheelTimer(100, TimeUnit.MILLISECONDS, 512);
     }
 
 
-    public void newTimeout(TimerTask task, long delay, TimeUnit timeUnit) {
-        hashedWheelTimer.newTimeout(task, delay, timeUnit);
-    }
-
-    public void newTimeout(Runnable runnable, long delay) {
-        hashedWheelTimer.newTimeout(timeout -> runnable.run(), delay, TimeUnit.MILLISECONDS);
+    public void newTimeout(int t, Runnable runnable, long delay) {
+        (t < Const.SLOW_TIME ? hashedWheelTimer : slowHashedWheelTimer).newTimeout(timeout -> runnable.run(), delay, TimeUnit.MILLISECONDS);
     }
 }

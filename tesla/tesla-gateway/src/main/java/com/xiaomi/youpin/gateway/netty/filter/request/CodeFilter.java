@@ -20,7 +20,6 @@ import com.dianping.cat.Cat;
 import com.dianping.cat.message.Trace;
 import com.dianping.cat.message.Transaction;
 import com.xiaomi.youpin.gateway.common.FilterOrder;
-import com.xiaomi.youpin.gateway.common.HttpRequestUtils;
 import com.xiaomi.youpin.gateway.common.HttpResponseUtils;
 import com.xiaomi.youpin.gateway.filter.FilterContext;
 import com.xiaomi.youpin.gateway.filter.Invoker;
@@ -42,12 +41,12 @@ import org.springframework.stereotype.Component;
 /**
  * @author goodjava@qq.com
  * @author 许铮
- * @author 丁雯
+ * @author 丁佩
  * 解析code,并记录到cat
  */
 @Slf4j
 @Component
-@FilterOrder(Integer.MIN_VALUE)
+@FilterOrder(Integer.MIN_VALUE + 11)
 public class CodeFilter extends RequestFilter {
 
     @Autowired
@@ -60,6 +59,9 @@ public class CodeFilter extends RequestFilter {
 
     @Override
     public FullHttpResponse doFilter(FilterContext context, Invoker invoker, ApiInfo apiInfo, FullHttpRequest request) {
+        if (!configService.isUseCatFilter()) {
+            return invoker.doInvoker(context, apiInfo, request);
+        }
         long now = System.currentTimeMillis();
         Transaction t = Cat.newTransaction("tesla", apiInfo == null ? "api_null" : apiInfo.getUrl());
         t.addChild(Cat.newTrace("uri", request.uri()));
@@ -68,7 +70,7 @@ public class CodeFilter extends RequestFilter {
             t.setStatus(Transaction.SUCCESS);
             response = invoker.doInvoker(context, apiInfo, request);
 
-            t.addChild(Cat.newTrace("trace_id", HttpRequestUtils.traceId(request)));
+            t.addChild(Cat.newTrace("trace_id", context.getTraceId()));
             t.addChild(Cat.newTrace("param", context.getAttachments().get("param")));
 
             if (response.status().equals(HttpResponseStatus.FOUND)) {
@@ -114,7 +116,7 @@ public class CodeFilter extends RequestFilter {
             trace.setTimestamp(System.currentTimeMillis() - begin);
             t.addChild(trace);
             if (String.valueOf(code).startsWith("5")) {
-                t.setStatus("failed");
+                t.setStatus("failed", false);
                 log.error("invoke {} error code:{}", url, code,
                         LogContext.builder().code(String.valueOf(code)).errorSource(url).build());
                 return false;
