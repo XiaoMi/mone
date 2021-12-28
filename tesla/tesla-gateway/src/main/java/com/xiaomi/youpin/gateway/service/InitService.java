@@ -45,7 +45,7 @@ public class InitService {
     @PostConstruct
     public void init() {
         final String host = Optional.ofNullable(System.getenv("host.ip")).orElse(com.xiaomi.youpin.gateway.common.NetUtils.getLocalHost());
-        final String port = httpPort;
+        final String port = Optional.ofNullable(System.getenv("host.port")).orElse(httpPort);
         final String appName = "tesla";
         log.info("init service execute appName:{} host:{}", appName, host);
         try {

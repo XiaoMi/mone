@@ -19,6 +19,7 @@ package com.xiaomi.youpin.gateway.dispatch;
 
 import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.common.util.concurrent.*;
+import com.xiaomi.youpin.gateway.common.Const;
 import com.xiaomi.youpin.gateway.common.GatewayWheelTimer;
 import com.xiaomi.youpin.gateway.common.TeslaSafeRun;
 import com.xiaomi.youpin.gateway.netty.transmit.connection.HttpHandler;
@@ -30,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.common.utils.NamedThreadFactory;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -45,15 +47,15 @@ import java.util.function.Function;
 @Slf4j
 public class Dispatcher {
 
-    @Setter
-    @NacosValue(value = "${invokePoolSize:50}")
-    private int invokePoolSize = 50;
-
+    @Value("${server.type}")
+    private String serverType;
 
     @Setter
-    @NacosValue(value = "${invokeQueueSize:5000}")
-    private int queueSize = 5000;
+    @NacosValue(value = "${invokePoolSize:200}")
+    private int invokePoolSize = 200;
 
+    @NacosValue(value = "${slowInvokePoolSize:200}")
+    private int slowInvokePoolSize = 200;
 
     @Autowired
     private ConfigService configService;
@@ -61,13 +63,13 @@ public class Dispatcher {
     @Autowired
     private GatewayWheelTimer wheelTimer;
 
-
     private ThreadPoolExecutor executor = null;
-
     private ListeningExecutorService listeningExecutor = null;
 
-    public Dispatcher() {
+    private ThreadPoolExecutor slowExecutor = null;
+    private ListeningExecutorService slowListeningExecutor = null;
 
+    public Dispatcher() {
     }
 
 
@@ -75,35 +77,42 @@ public class Dispatcher {
     public void init() {
         //这里必须用lined 的queue 不然被拒绝掉了,req 的内存资源不能得到清理(堆外内存泄漏)
         executor = new ThreadPoolExecutor(invokePoolSize, invokePoolSize, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingDeque<>(), new NamedThreadFactory("Dispatcher_Executor"));
-
         listeningExecutor = MoreExecutors.listeningDecorator(executor);
+        //专门处理慢的请求
+        slowExecutor = new ThreadPoolExecutor(slowInvokePoolSize, slowInvokePoolSize, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingDeque<>(), new NamedThreadFactory("Dispatcher_Slow_Executor"));
+        slowListeningExecutor = MoreExecutors.listeningDecorator(slowExecutor);
 
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> TeslaSafeRun.run(() ->
-                        log.info("Dispatcher_Executor {} {} {} future num:{} client num:{}",
+                        log.info("Dispatcher_Executor {} {} {} future num:{} client num:{} slow:{} {} {}",
                                 executor.getActiveCount(),
                                 executor.getQueue().size(),
                                 executor.getActiveCount(),
                                 HttpHandler.futureNum(),
-                                HttpClient.clientSize()
+                                HttpClient.clientSize(),
+                                slowExecutor.getActiveCount(),
+                                slowExecutor.getQueue().size(),
+                                slowExecutor.getActiveCount()
                         ))
                 , 5, 10, TimeUnit.SECONDS);
     }
 
-    public Future dispatcher(Function<String, Object> function, Consumer<Object> resultConsumer, ApiInfo apiInfo, Consumer<ListenableFuture> futureConsumer) {
-        return dispatcher(function, resultConsumer, apiInfo, futureConsumer, null);
+    private ListeningExecutorService getListeningExecutor(int timeout) {
+        return timeout < Const.SLOW_TIME? this.listeningExecutor : this.slowListeningExecutor;
+    }
+
+    private ThreadPoolExecutor getExecutor(int timeout) {
+        return timeout < Const.SLOW_TIME ? this.executor : this.slowExecutor;
     }
 
     public Future dispatcher(Function<String, Object> function, Consumer<Object> resultConsumer, ApiInfo apiInfo, Consumer<ListenableFuture> futureConsumer, Consumer<ApiInfo> cancel) {
         final int timeOut = getTimeout(apiInfo);
-        ListenableFuture<?> l = this.listeningExecutor.submit(() -> {
-            return function.apply("");
-        });
+        ListenableFuture<?> l = this.getListeningExecutor(timeOut).submit(() -> function.apply(""));
 
         if (null != futureConsumer) {
             futureConsumer.accept(l);
         }
 
-        this.wheelTimer.newTimeout(() -> {
+        this.wheelTimer.newTimeout(timeOut,() -> {
             if (!l.isDone()) {
                 log.info("{} timeout cancel", Optional.ofNullable(apiInfo).isPresent() ? apiInfo.getUrl() : "null");
                 l.cancel(true);
@@ -111,9 +120,10 @@ public class Dispatcher {
                     cancel.accept(apiInfo);
                 }
             } else {
-                log.info("{} is done", Optional.ofNullable(apiInfo).isPresent() ? apiInfo.getUrl() : "null");
+                if (log.isDebugEnabled()) {
+                    log.debug("{} is done", Optional.ofNullable(apiInfo).isPresent() ? apiInfo.getUrl() : "null");
+                }
             }
-
         }, timeOut + 50);
 
 
@@ -128,7 +138,7 @@ public class Dispatcher {
                 log.warn("dispatcher error:{}, apiinfo: {}", t.getMessage(), apiInfo);
                 resultConsumer.accept(t.getMessage());
             }
-        }, executor);
+        }, getExecutor(timeOut));
 
         return l;
     }
@@ -145,7 +155,10 @@ public class Dispatcher {
         }
         int timeout = apiInfo.getTimeout();
         if (timeout <= 0) {
-            return 1000;
+            return 300;
+        }
+        if ("file".equals(serverType)) {
+            return configService.getTeslaFileTimeout();
         }
         int maxTimeout = configService.getTeslaTimeout();
         return Math.min(maxTimeout, timeout);

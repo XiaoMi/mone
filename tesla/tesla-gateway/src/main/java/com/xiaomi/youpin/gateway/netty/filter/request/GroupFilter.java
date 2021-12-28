@@ -213,9 +213,10 @@ public class GroupFilter extends RequestFilter {
                 //用来获取bytebuf pool
                 context.setChannel(ctx.getRequestContext().getChannel());
                 context.setLatch(latch);
+                context.setCallId(ctx.getCallId() + "_group_" + TraceId.uuid());
                 dataList.stream().forEach(it -> startTask(context, httpRequest, it, graph, request.headers(), request.trailingHeaders()));
-
                 try {
+                    //这里不用担心,会被外边打断的
                     latch.await(5, TimeUnit.SECONDS);
                 } catch (InterruptedException e) {
                     log.warn("latch wait ex:{}", e.getMessage());
@@ -400,6 +401,10 @@ public class GroupFilter extends RequestFilter {
             FullHttpResponse fhres = null;
             try {
                 context.setIp("");
+                if (null == context.getCallId()) {
+                    log.debug("call id is null");
+                    context.setCallId("");
+                }
                 fhres = chain.doFilter(apiInfo, req, context);
                 //放入结果的string信息
                 //结果都要符合json的样式,不然不能执行group任务

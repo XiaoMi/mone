@@ -16,7 +16,6 @@
 
 package com.xiaomi.youpin.gateway.common;
 
-import com.alibaba.nacos.common.util.Md5Utils;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.gson.Gson;
@@ -64,7 +63,7 @@ public class ScriptManager {
     public ScriptManager() {
         engine = factory.getEngineByName("groovy");
         cache = CacheBuilder.newBuilder()
-                .expireAfterWrite(10, TimeUnit.SECONDS)
+                .expireAfterWrite(50, TimeUnit.SECONDS)
                 .build();
     }
 

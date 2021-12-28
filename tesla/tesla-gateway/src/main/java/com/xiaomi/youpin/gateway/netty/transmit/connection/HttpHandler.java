@@ -33,6 +33,7 @@ import io.netty.handler.codec.DecoderResult;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.util.ReferenceCountUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,6 +45,7 @@ import java.util.concurrent.Future;
 /**
  * @author goodjava@qq.com
  */
+@Slf4j
 public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
     private static final Logger logger = LoggerFactory.getLogger(HttpHandler.class);
@@ -101,7 +103,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
             }
 
             final long begin = System.currentTimeMillis();
-            String callId = TraceId.uuid();
+            final String callId = TraceId.uuid();
             //这里会异步处理
             dispatcher.dispatcher((str) -> {
                 try {
@@ -110,6 +112,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
                     context.setIp(Utils.getClientIp(request, ctx.channel()));
                     context.setChannel(ctx.channel());
                     context.setCallId(callId);
+                    context.setUri(uri);
                     HttpResponse res = filterChain.doFilter(apiInfo, request, context);
                     return res;
                 } catch (Throwable ex) {

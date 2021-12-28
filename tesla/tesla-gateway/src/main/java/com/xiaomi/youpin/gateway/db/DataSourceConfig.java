@@ -18,6 +18,8 @@ package com.xiaomi.youpin.gateway.db;
 
 import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
+import com.xiaomi.youpin.gateway.config.DaoAuthConfig;
+import com.xiaomi.youpin.gateway.db.aop.DaoAuthInterceptor;
 import lombok.extern.slf4j.Slf4j;
 import org.nutz.dao.Dao;
 import org.nutz.dao.impl.NutDao;
@@ -46,6 +48,9 @@ public class DataSourceConfig {
 
     @Value("${datasource.isinit}")
     private String isNeedInit;
+
+    @Value("${datasource.isNeedAuthCheck:false}")
+    private String isNeedAuthCheck;
 
     @Value("${spring.datasource.default.minialPoolSize}")
     private Integer defaultMinPoolSize;
@@ -89,10 +94,17 @@ public class DataSourceConfig {
      * @return
      */
     @Bean
-    public Dao dao(@Qualifier("masterDataSource") DataSource masterDataSource) {
+    public Dao dao(@Qualifier("masterDataSource") DataSource masterDataSource, DaoAuthConfig daoAuthConfig) {
         if ("true".equals(isNeedInit)) {
             log.info("init dao");
             NutDao dao = new NutDao(masterDataSource);
+
+            // 开启权限校验
+            if ("true".equals(isNeedAuthCheck)) {
+                DaoAuthInterceptor authInterceptor = new DaoAuthInterceptor(daoAuthConfig);
+                dao.addInterceptor(authInterceptor);
+            }
+
             return dao;
         } else {
             return new NutDao();

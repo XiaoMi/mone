@@ -69,7 +69,7 @@ public class PingFilter extends RequestFilter {
 
             ByteBuf buf = ByteBufUtils.createBuf(context, sb.toString(), configService.isAllowDirectBuf());
             long useTime = System.currentTimeMillis() - begin;
-            log.info("ping filter use time:{}", useTime);
+            log.debug("ping filter use time:{}", useTime);
             return HttpResponseUtils.create(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.OK, buf));
         }
         return invoker.doInvoker(context, apiInfo, request);
@@ -90,6 +90,9 @@ public class PingFilter extends RequestFilter {
      */
     private int sleep() {
         int sleepTime = configService.getPingSleepTime();
+        if (sleepTime <= 0) {
+            return 0;
+        }
         Random random = new Random();
         try {
             TimeUnit.MILLISECONDS.sleep(20 + random.nextInt(sleepTime));

@@ -16,6 +16,7 @@
 
 package com.xiaomi.youpin.gateway.context;
 
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.xiaomi.youpin.gateway.common.NetUtils;
 import com.xiaomi.youpin.gateway.netty.filter.RequestFilterChain;
@@ -118,7 +119,7 @@ public class GatewayServerContext {
 
                     //group 发生了变更,需要从新拉取filter,因为filter每个组不同
                     if (newGroup != null && !newGroup.equals(oldGroup) && !firstLoad.get()) {
-                        requestFilterChain.reload();
+                        requestFilterChain.reload("init", Lists.newArrayList());
                     }
                     firstLoad.set(false);
 

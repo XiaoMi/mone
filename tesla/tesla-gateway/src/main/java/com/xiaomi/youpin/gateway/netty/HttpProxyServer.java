@@ -162,7 +162,7 @@ public class HttpProxyServer {
             @Override
             protected void initChannel(Channel ch) {
                 ch.pipeline().addLast(new HttpServerCodec());
-                ch.pipeline().addLast(new HttpObjectAggregator(1 * 1024 * 1024));
+                ch.pipeline().addLast(new HttpObjectAggregator(3 * 1024 * 1024));
                 ch.pipeline().addLast(new IdleStateHandler(15, 15, 15));
                 ch.pipeline().addLast(new HttpHandler(dispatcher, filterChain, apiRouteCache));
                 ch.pipeline().addLast(new WebSocketServerProtocolHandler(TeslaConstants.WebSocketPath));

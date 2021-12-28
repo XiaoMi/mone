@@ -30,7 +30,7 @@ public abstract class IRpcClient {
 
     public abstract FullHttpResponse call(final FilterContext ctx, final ApiInfo rpcDo, final FullHttpRequest servletRequest);
 
-    protected static void setFilterContextHeaders(FilterContext ctx, Map<String, String> headers) {
+    public static void setFilterContextHeaders(FilterContext ctx, Map<String, String> headers) {
         ctx.getHeaders().forEach((k, v) -> headers.put(k, v));
     }
 

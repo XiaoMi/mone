@@ -38,7 +38,7 @@ import org.springframework.context.annotation.PropertySource;
 @Configuration
 @PropertySource(value = {"classpath:tesla-application.properties"})
 @DubboComponentScan(basePackages = "com.xiaomi.youpin.gateway")
-@ComponentScan(basePackages = {"com.xiaomi.youpin.gateway", "com.xiaomi.data.push.redis", "com.xiaomi.youpin"})
+@ComponentScan(basePackages = {"com.xiaomi.youpin.gateway", "com.xiaomi.data.push.redis", "com.xiaomi.data.push.mongodb", "com.xiaomi.youpin"})
 @Slf4j
 public class GateWayApplication {
 
