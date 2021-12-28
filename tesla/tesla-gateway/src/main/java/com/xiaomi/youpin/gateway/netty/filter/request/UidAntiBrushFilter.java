@@ -40,7 +40,7 @@ import org.springframework.stereotype.Component;
 @Component
 @FilterOrder(1000 + 2)
 public class UidAntiBrushFilter extends RequestFilter {
-
+    static final String uidTag = "UID-ANTI-BRUSH-TIME";
     @Autowired
     private Redis redis;
 
@@ -58,7 +58,8 @@ public class UidAntiBrushFilter extends RequestFilter {
             try {
                 long value = redis.incr(key);
                 if (value == 1L) {
-                    redis.expire(key, 60);
+                    String uidTimeStr = context.getAttachment(uidTag, "60");
+                    redis.expire(key, Integer.parseInt(uidTimeStr));
                 }
                 if (value > apiInfo.getUidAntiBrushLimit()) {
                     //429

@@ -16,6 +16,7 @@
 
 package com.xiaomi.youpin.gateway.netty.filter.request;
 
+import com.google.common.base.Stopwatch;
 import com.xiaomi.youpin.gateway.RouteType;
 import com.xiaomi.youpin.gateway.common.FilterOrder;
 import com.xiaomi.youpin.gateway.common.HttpRequestUtils;
@@ -34,6 +35,7 @@ import com.youpin.xiaomi.tesla.bo.Flag;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
+import io.opentelemetry.api.common.Attributes;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,10 +43,10 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static com.xiaomi.youpin.gateway.TeslaConstants.Tag;
 import static com.xiaomi.youpin.gateway.filter.FilterContext.New_Route_Type;
 
 /**
@@ -65,6 +67,7 @@ public class HttpFilter extends RequestFilter {
     private GatewayNamingService namingService;
 
 
+
     @Override
     public FullHttpResponse doFilter(FilterContext context, Invoker invoker, ApiInfo apiInfo, FullHttpRequest request) {
         int routeType = apiInfo.getRouteType();
@@ -77,7 +80,17 @@ public class HttpFilter extends RequestFilter {
             } catch (Throwable e) {
                 return HttpResponseUtils.create(Result.fail(GeneralCodes.NotFound, HttpResponseStatus.NOT_FOUND.reasonPhrase(), e.getMessage()));
             }
-            return client.call(context, apiInfo, request);
+            Stopwatch sw = Stopwatch.createStarted();
+            try {
+                return client.call(context, apiInfo, request);
+            } finally {
+                long useTime = sw.elapsed(TimeUnit.MILLISECONDS);
+                context.setRpcUseTime(useTime);
+                context.addTraceEvent("call_http_event", () -> Attributes.builder()
+                        .put("time", useTime + "ms")
+                        .put("timeout", apiInfo.getTimeout() + "ms")
+                        .build());
+            }
         }
         return invoker.doInvoker(context, apiInfo, request);
     }
@@ -99,11 +112,17 @@ public class HttpFilter extends RequestFilter {
         }
 
         boolean isPreview = apiInfo.isAllow(Flag.ALLOW_PREVIEW) && HttpRequestUtils.intranet(request);
+        String group = request.headers().get("group");
 
         //使用了nacos存放ip和端口
         //nacos 的暂不支持权重和preview的概念
         //example: pro|http://${GisServer}$/api?id=123
-        String serviceName = namingService.findServiceName(path);
+        String serviceName = "";
+        if (StringUtils.isEmpty(group)) {
+            serviceName = GatewayNamingService.findServiceName(path);
+        } else {
+            serviceName = namingService.findServiceName(path, group, apiInfo.getId());
+        }
         if (StringUtils.isNotEmpty(serviceName)) {
             setPath(apiInfo, context, path, serviceName, isPreview);
             return;
@@ -144,9 +163,10 @@ public class HttpFilter extends RequestFilter {
 
     private void setPath(ApiInfo apiInfo, FilterContext context, String path, String serviceName, boolean isPreview) {
         if (isPreview) {
-            serviceName = namingService.getPreServiceName(serviceName);
+            serviceName = GatewayNamingService.getPreServiceName(serviceName);
         }
-        String addr = namingService.getOneAddr(serviceName);
+        String tag = context.getAttachment(Tag, "");
+        String addr = namingService.getOneAddr(serviceName, tag);
         if (StringUtils.isEmpty(addr)) {
             //没有可用的ip:port列表
             throw new GatewayException("no http provider id:" + apiInfo.getId() + " url:" + apiInfo.getUrl() + " serviceName: " + serviceName);
@@ -158,5 +178,8 @@ public class HttpFilter extends RequestFilter {
         context.getAttachments().put("Path", currentClient);
     }
 
-
+    @Override
+    public boolean rpcFilter() {
+        return true;
+    }
 }

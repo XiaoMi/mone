@@ -17,6 +17,7 @@
 package com.xiaomi.youpin.gateway.config;
 
 import com.alibaba.nacos.api.annotation.NacosProperties;
+import com.alibaba.nacos.client.naming.NacosNamingService;
 import com.alibaba.nacos.spring.context.annotation.config.EnableNacosConfig;
 import com.alibaba.nacos.spring.context.annotation.config.NacosPropertySource;
 import com.xiaomi.data.push.nacos.NacosNaming;
@@ -41,6 +42,12 @@ public class NacosConfiguration {
         nacosNaming.setServerAddr(address);
         nacosNaming.init();
         return nacosNaming;
+    }
+
+    @Bean
+    public NacosNamingService nacosNamingService() {
+        String address = nacosAddress.split("//")[1];
+        return new NacosNamingService(address);
     }
 
 }

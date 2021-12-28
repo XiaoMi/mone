@@ -113,10 +113,17 @@ public class FilterManager {
     }
 
 
-    public void deleteOldFilter() {
+    public void deleteOldFilter(String type, List<String> names) {
         try {
             File file = new File(configService.getSystemFilterPath());
-            Arrays.stream(file.listFiles()).forEach(f -> f.delete());
+            //如果是添加,则不再删除所有,而是直删除需要更新的
+            if (type.equals("add") || type.equals("remove")) {
+                String name = names.get(0);
+                String delFile = configService.getSystemFilterPath() + name;
+                new File(delFile).delete();
+            } else {
+                Arrays.stream(file.listFiles()).forEach(f -> f.delete());
+            }
         } catch (Throwable ex) {
             //ignore
         }
@@ -207,20 +214,19 @@ public class FilterManager {
     }
 
 
-    public List<RequestFilter> getUserFilterList() {
+    public List<RequestFilter> getUserFilterList(String type, List<String> names) {
         try {
             if (!configService.isAllowUserFilter()) {
                 log.info("skip user filter");
                 return Lists.newArrayList();
             }
-
-            deleteOldFilter();
-            downloadFilter();
+            deleteOldFilter(type, names);
+            downloadFilter(type, names);
             List<String> jarList = getJarPathList();
             log.info("jarList:{}", jarList);
             return loadRequestFilter(jarList);
         } catch (Throwable ex) {
-                log.error("getUserFilterList ex:{}", ex.getMessage());
+            log.error("getUserFilterList ex:{}", ex.getMessage());
             return Lists.newArrayList();
         }
     }
@@ -234,26 +240,49 @@ public class FilterManager {
         return Lists.newArrayList();
     }
 
-    private void downloadFilter() {
+    private void downloadFilter(String type, List<String> names) {
         try {
+            //如果type是remove，则不需要下载任何包
+            if ("remove".equals(type)) {
+                log.info("downloadFilter, type is remove");
+                return;
+            }
             createFilterDirectorie();
             Set<String> set = redis.smembers(Keys.systemFilterSetKey());
+            log.info("filter num:{} type:{} names:{}", set.size(), type, names);
             if (null != set && set.size() > 0) {
                 set.stream().forEach(it -> {
                     try {
-                        byte[] bytes = redis.getBytes(Keys.systemFilterKey(it));
-                        if (Optional.ofNullable(bytes).isPresent()) {
-                            log.info("downloadFilter:{} length:{}", it, bytes.length);
-                            Files.write(Paths.get(configService.getSystemFilterPath() + it), bytes);
+                        //只更新需要添加的
+                        if (type.equals("add") && !names.get(0).equals(it)) {
+                            return;
                         }
+
+                        downloadFilterFromRedis(it);
                     } catch (Throwable e) {
-                        log.error("downlaodFilter:{} error:{}", it, e.getMessage());
+                        log.error("downloadFilter:{} error:{}", it, e.getMessage());
                     }
                 });
             }
         } catch (Throwable ex) {
             log.error("downloadFilter:{}", ex.getMessage());
         }
+    }
+
+    private void downloadFilterFromRedis(String name) throws IOException {
+        for (int i = 0; i < 3; i++) {
+            byte[] bytes = redis.getBytes(Keys.systemFilterKey(name));
+            if (null == bytes || bytes.length == 0) {
+                log.warn("downloadFilter:{} fail, retry times:{}", name, i);
+                continue;
+            }
+            if (Optional.ofNullable(bytes).isPresent()) {
+                log.info("downloadFilter:{} length:{}", name, bytes.length);
+                Files.write(Paths.get(configService.getSystemFilterPath() + name), bytes);
+                break;
+            }
+        }
+        return;
     }
 
 

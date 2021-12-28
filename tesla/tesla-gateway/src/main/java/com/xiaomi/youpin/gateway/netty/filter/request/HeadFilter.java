@@ -16,8 +16,12 @@
 
 package com.xiaomi.youpin.gateway.netty.filter.request;
 
+import com.xiaomi.youpin.gateway.TeslaConstants;
 import com.xiaomi.youpin.gateway.common.FilterOrder;
+import com.xiaomi.youpin.gateway.common.GateWayVersion;
 import com.xiaomi.youpin.gateway.common.HttpResponseUtils;
+import com.xiaomi.youpin.gateway.exception.ApiNotFoundException;
+import com.xiaomi.youpin.gateway.exception.ApiOfflineException;
 import com.xiaomi.youpin.gateway.filter.FilterContext;
 import com.xiaomi.youpin.gateway.filter.Invoker;
 import com.xiaomi.youpin.gateway.filter.RequestFilter;
@@ -30,6 +34,8 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.rpc.RpcContext;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -43,24 +49,65 @@ import java.util.Optional;
 @FilterOrder(Integer.MIN_VALUE + 10)
 public class HeadFilter extends RequestFilter {
 
-
     @Autowired
     private QpsAop qpsAop;
+
+    private String version = new GateWayVersion().toString();
 
 
     @Override
     public FullHttpResponse doFilter(FilterContext context, Invoker invoker, ApiInfo apiInfo, FullHttpRequest request) {
+        FullHttpResponse fullHttpResponse = null;
+        try {
+            doBefore(context, invoker, apiInfo, request);
+            log.debug("head filter id:{} url:{}", apiInfo.getId(), apiInfo.getUrl());
+            fullHttpResponse = doFilter1(context, invoker, apiInfo, request);
+        } catch (ApiNotFoundException e) {
+            fullHttpResponse = HttpResponseUtils.create(Result.fail(GeneralCodes.NotFound, HttpResponseStatus.NOT_FOUND.reasonPhrase(), "apiInfo is null"));
+        } catch (ApiOfflineException e) {
+            fullHttpResponse = HttpResponseUtils.create(Result.fail(GeneralCodes.METHOD_NOT_ALLOWED, HttpResponseStatus.METHOD_NOT_ALLOWED.reasonPhrase(), "api is offline"));
+        } finally {
+            //收尾工作，对response进行一些修饰操作
+            doAfter(context, invoker, apiInfo, fullHttpResponse);
+        }
+
+        return fullHttpResponse;
+    }
+
+    private void doBefore(FilterContext context, Invoker invoker, ApiInfo apiInfo, FullHttpRequest request) {
         qpsAop.incr(String.valueOf(Optional.ofNullable(apiInfo).isPresent() ? apiInfo.getId() : "null"));
+        // copy traceId
+        String traceId = context.getTraceId();
+        String spanId = context.getSpanId();
+        String traceParent = "00-" + traceId + "-" + spanId + "-01";
+        RpcContext.getContext().setAttachment("_trace_id_", traceId);
+        RpcContext.getContext().setAttachment("traceparent", traceParent);
+
+        request.headers().set("X-trace-id", traceId);
+        request.headers().set("traceparent", traceParent);
+        MDC.put("tid", context.getTraceId());
+
         if (null == apiInfo) {
-            return HttpResponseUtils.create(Result.fail(GeneralCodes.NotFound, HttpResponseStatus.NOT_FOUND.reasonPhrase(), "apiInfo is null"));
+            throw new ApiNotFoundException("apiInfo is null");
         } else {
             //服务下线了
             if (apiInfo.isAllow(Flag.OFF_LINE)) {
-                return HttpResponseUtils.create(Result.fail(GeneralCodes.METHOD_NOT_ALLOWED, HttpResponseStatus.METHOD_NOT_ALLOWED.reasonPhrase(), "api is offline"));
+                throw new ApiOfflineException(String.format("api:%s is offline", apiInfo.getId()));
             }
         }
-        log.debug("head filter id:{} url:{}", apiInfo.getId(), apiInfo.getUrl());
+    }
+
+    private FullHttpResponse doFilter1(FilterContext context, Invoker invoker, ApiInfo apiInfo, FullHttpRequest request) {
         return invoker.doInvoker(context, apiInfo, request);
+    }
+
+    private void doAfter(FilterContext context, Invoker invoker, ApiInfo apiInfo, FullHttpResponse res) {
+        MDC.remove("tid");
+        if (null == res) {
+            return;
+        }
+        res.headers().set(TeslaConstants.TeslaVersion, version);
+        res.headers().set(TeslaConstants.TraceId, context.getTraceId());
     }
 
 }

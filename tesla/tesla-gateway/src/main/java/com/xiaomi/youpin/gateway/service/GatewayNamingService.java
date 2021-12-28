@@ -29,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -139,7 +140,15 @@ public class GatewayNamingService {
                     if (event instanceof NamingEvent) {
                         NamingEvent ne = (NamingEvent) event;
                         List<Instance> list = ne.getInstances();
-                        List<String> value = list.stream().filter(it -> (it.isHealthy() && it.isEnabled())).map(it -> it.getIp() + ":" + it.getPort()).collect(Collectors.toList());
+                        List<String> value = list.stream().filter(it -> (it.isHealthy() && it.isEnabled())).map(it -> {
+                            String s = it.getIp() + ":" + it.getPort() + ":";
+                            if (it.getMetadata() != null && StringUtils.isNotEmpty(it.getMetadata().get("tag"))) {
+                                s = s + it.getMetadata().get("tag");
+                            } else {
+                                s = s + "*";
+                            }
+                            return s;
+                        }).collect(Collectors.toList());
                         if (value == null || value.isEmpty()) {
                             log.warn("GatewayNamingService.subscribe, Ignore empty urls for servicename: " + serviceName);
                         } else {
@@ -148,6 +157,14 @@ public class GatewayNamingService {
                     }
                 });
                 nacosNaming.subscribe(serviceName, listenerMap.get(serviceName));
+
+                //兼容group的真实含义就是group的，回归原始含义
+                if (serviceName.contains(":")) {
+                    String[] strs = serviceName.split(":");
+                    String name = strs[1];
+                    String group = strs[0];
+                    nacosNaming.subscribe(name, group, listenerMap.get(serviceName));
+                }
             }
         } catch (Throwable ex) {
             log.warn("subscribe:{} error:{}", serviceName, ex.getMessage());
@@ -183,8 +200,9 @@ public class GatewayNamingService {
         }
     }
 
-    public String getOneAddr(String serviceName) {
-        List<String> list = map.get(serviceName);
+    public String getOneAddr(String serviceName, String tag) {
+        List<String> list = filterIpsByTag(map.get(serviceName), tag);
+
         if (null == list || list.size() == 0) {
             return "";
         }
@@ -194,6 +212,35 @@ public class GatewayNamingService {
         Random r = new Random();
         int index = r.nextInt(list.size());
         return list.get(index);
+    }
+
+    private List<String> filterIpsByTag(List<String> ips, String tag) {
+        if (ips == null || ips.size() == 0) {
+            return ips;
+        }
+        List<String> tagList = new ArrayList<>();
+        List<String> allList = new ArrayList<>();
+        List<String> ipList = new ArrayList<>();
+        ips.stream().forEach(it -> {
+            String[] arr = it.split(":");
+            if (arr.length == 3) {
+                if (tag.equals(arr[2])) {
+                    tagList.add(arr[0] + ":" + arr[1]);
+                } else if ("*".equals(arr[2])) {
+                    allList.add(arr[0] + ":" + arr[1]);
+                }
+            }
+            ipList.add(arr[0] + ":" + arr[1]);
+        });
+
+        if ("".equals(tag)) {
+            return ipList;
+        }
+
+        if (tagList.size() == 0) {
+            return allList;
+        }
+        return tagList;
     }
 
 
@@ -212,6 +259,28 @@ public class GatewayNamingService {
             return serviceName;
         }
         return "";
+    }
+
+    /**
+     * http协议支持自定义group分组
+     * @param path
+     * @param group
+     * @param id
+     * @return
+     */
+    public String findServiceName(String path, String group, long id) {
+        if (StringUtils.isEmpty(path)) {
+            return "";
+        }
+
+        String serviceName = "";
+        if (path.contains("|") && StringUtils.isNotEmpty(group)) {
+            path = group + "|" + path.split("\\|")[1];
+            serviceName = findServiceName(path);
+            subscribe(serviceName, id);
+        }
+
+        return serviceName;
     }
 
     public static String getPreServiceName(String serviceName) {
