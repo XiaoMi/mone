@@ -16,9 +16,11 @@
 
 package com.xiaomi.youpin.tesla.agent.common;
 
+import com.github.dockerjava.api.command.InspectContainerResponse;
 import com.github.dockerjava.api.model.Container;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
+import com.google.gson.Gson;
 import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
 import com.xiaomi.youpin.docker.YpDockerClient;
 import lombok.extern.slf4j.Slf4j;
@@ -33,10 +35,33 @@ import java.util.concurrent.TimeUnit;
  * @date 2020/9/1
  */
 @Slf4j
-public class DockerLog {
+public class DockerInspect {
 
-    public static void logSnapshot(Stopwatch sw, String containerName, RemotingCommand response, int lines) {
-        log.info("logSnapshot container name: {}", containerName);
+    public static void dockerInspectWithRunning(Stopwatch sw, String containerName, RemotingCommand response) {
+        log.info("dockerContainerId container name: {}", containerName);
+        Optional<Container> optional = YpDockerClient.ins().listContainers(Lists.newArrayList(), false)
+                .stream()
+                .filter(it -> CommonUtils.matchImage(containerName, it.getImage()))
+                .findFirst();
+
+        String logs = "{}";
+        if (optional.isPresent()) {
+            try {
+                InspectContainerResponse res = YpDockerClient.ins().inspectContainer(optional.get().getId());
+                logs = new Gson().toJson(res);
+            } catch (Exception e) {
+                log.error("docker processor dockerInspect Exception" + e.getMessage(), e);
+                logs = "{ \"error\":" + e.getMessage() + "}";
+            }
+        } else {
+            logs = "{ \"error\": \"没有检查到容器\" }";
+        }
+        log.info("dockerInspect use time:{}", sw.elapsed(TimeUnit.MILLISECONDS));
+        response.setBody(logs.getBytes());
+    }
+
+    public static void dockerInspect(Stopwatch sw, String containerName, RemotingCommand response) {
+        log.info("dockerInspect container name: {}", containerName);
         Optional<Container> optional = YpDockerClient.ins().listContainers(Lists.newArrayList(), true)
                 .stream()
                 .filter(it -> {
@@ -51,18 +76,19 @@ public class DockerLog {
                 })
                 .findFirst();
 
-        String logs = "";
+        String logs = "{}";
         if (optional.isPresent()) {
             try {
-                logs = "快照信息：\n" + YpDockerClient.ins().logContainerCmd(optional.get().getId(), lines);
-            } catch (InterruptedException e) {
-                log.error("docker processor logSnapshot interruptedException" + e.getMessage(), e);
-                logs = "异常：\n" + e.getMessage();
+                InspectContainerResponse res = YpDockerClient.ins().inspectContainer(optional.get().getId());
+                logs = new Gson().toJson(res);
+            } catch (Exception e) {
+                log.error("docker processor dockerInspect Exception" + e.getMessage(), e);
+                logs = "{ \"error\":" + e.getMessage() + "}";
             }
         } else {
-            logs = "异常：\n没有检查到容器";
+            logs = "{ \"error\": \"没有检查到容器\" }";
         }
-        log.info("logSnapshot use time:{}", sw.elapsed(TimeUnit.MILLISECONDS));
+        log.info("dockerInspect use time:{}", sw.elapsed(TimeUnit.MILLISECONDS));
         response.setBody(logs.getBytes());
     }
 

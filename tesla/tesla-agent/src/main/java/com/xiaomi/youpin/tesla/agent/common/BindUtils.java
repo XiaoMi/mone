@@ -36,13 +36,21 @@ import java.util.Map;
 @Slf4j
 public abstract class BindUtils {
 
-    private final static String HOME_VOLUME = "xxxx/volume";
+    private final static String HOME_VOLUME = "/home/work/volume";
 
     private final static String NACOS_NAMING = "/nacos/naming/public";
 
     private static Bind log(DockerReq req) {
+        if (!req.getLogPath().startsWith("/home/work/log")) {
+            log.warn("log path error:{}", req.getLogPath());
+            req.setLogPath("/home/work/log");
+        }
         CommonUtils.mkdir(req.getLogPath());
         return new Bind(req.getLogPath(), new Volume(req.getLogPath()));
+    }
+
+    private static Bind tmp() {
+        return new Bind("/tmp", new Volume("/tmp"));
     }
 
     private static Bind dubboNaming(String name) {
@@ -56,6 +64,8 @@ public abstract class BindUtils {
         List<Bind> bindList = Lists.newArrayList();
         bindList.add(log(req));
         bindList.add(dubboNaming(name));
+        //挂载tmp目录
+        bindList.add(tmp());
         customBind(req, bindList);
         return bindList;
     }
@@ -69,6 +79,11 @@ public abstract class BindUtils {
                     new TypeToken<List<String>>() {
                     }.getType());
             log.info("volume:{}", volumes);
+            String home_volume = HOME_VOLUME;
+            String modeSideCar = req.getAttachments().get("mode_sidecar");
+            if (StringUtils.isNotEmpty(modeSideCar) && modeSideCar.equals("on")) {
+                home_volume = "";
+            }
             for (String it : volumes) {
                 String[] files = it.split(":");
                 String source = "";
@@ -78,13 +93,13 @@ public abstract class BindUtils {
                         && source.startsWith("/")
                         && StringUtils.isNotEmpty((target = files[1].trim()))
                         && target.startsWith("/")) {
-                    CommonUtils.mkdir(HOME_VOLUME + source);
-                    bindList.add(new Bind(HOME_VOLUME + source, new Volume(target)));
+                    CommonUtils.mkdir(home_volume + source);
+                    bindList.add(new Bind(home_volume + source, new Volume(target)));
                 } else if (files.length == 1
                         && StringUtils.isNotEmpty((source = files[0].trim()))
                         && source.startsWith("/")) {
-                    CommonUtils.mkdir(HOME_VOLUME + source);
-                    bindList.add(new Bind(HOME_VOLUME + source, new Volume(source)));
+                    CommonUtils.mkdir(home_volume + source);
+                    bindList.add(new Bind(home_volume + source, new Volume(source)));
                 }
             }
         }

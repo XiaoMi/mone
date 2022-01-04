@@ -17,7 +17,6 @@
 package com.xiaomi.youpin.tesla.agent.processor;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.xiaomi.data.push.rpc.RpcClient;
 import com.xiaomi.data.push.rpc.netty.NettyRequestProcessor;
@@ -29,9 +28,9 @@ import com.xiaomi.youpin.tesla.agent.po.*;
 import com.xiaomi.youpin.tesla.agent.service.DeployService;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Resource;
-import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -68,13 +67,13 @@ public class DockerProcessor implements NettyRequestProcessor {
     public RemotingCommand processRequest(ChannelHandlerContext channelHandlerContext, RemotingCommand remotingCommand) {
         Stopwatch sw = Stopwatch.createStarted();
         DockerReq req = remotingCommand.getReq(DockerReq.class);
+        //执行命令的上下文
+        DockerContext context = new DockerContext();
         new DockerReqInit().initReq(req);
-        DeployInfo deployInfo = new DeployInfo();
-        deployInfo.setId(UUID.randomUUID().toString());
-        deployInfo.setCtime(System.currentTimeMillis());
-        deployInfo.setName(CommonUtils.getName(req.getContainerName()));
-        deployInfo.setType(1);
-        deployInfo.setPorts(Lists.newArrayList());
+
+        String deployInfoName = CommonUtils.getName(req.getContainerName());
+        DeployInfo deployInfo = DeployService.ins().get(deployInfoName);
+        deployInfo.setUtime(System.currentTimeMillis());
 
         log.info("name:{} id:{} req => {}", deployInfo.getName(), deployInfo.getId(), new Gson().toJson(req));
 
@@ -103,17 +102,17 @@ public class DockerProcessor implements NettyRequestProcessor {
 
             //创建容器
             if (req.getCmd().equals(DockerCmd.create.name())) {
-                create(sw, req, deployInfo);
+                create(context, sw, req, deployInfo);
             }
 
             //停止容器
             if (req.getCmd().equals(DockerCmd.stop.name())) {
-                stop(sw, req, deployInfo);
+                stop(context, sw, req, deployInfo);
             }
 
             //启动容器
             if (req.getCmd().equals(DockerCmd.start.name())) {
-                start(sw, req, deployInfo, response);
+                start(context, sw, req, deployInfo, response);
             }
 
             //获取信息
@@ -128,22 +127,37 @@ public class DockerProcessor implements NettyRequestProcessor {
 
             //停机
             if (req.getCmd().equals(DockerCmd.shutdown.name())) {
-                shutdown(sw, req, deployInfo);
+                shutdown(context, sw, req, deployInfo);
             }
 
             //停机并删除
             if (req.getCmd().equals(DockerCmd.nuke.name())) {
-                nuke(sw, req, response, deployInfo);
+                nuke(context, sw, req, response, deployInfo);
             }
 
             //获取日志快照
             if (req.getCmd().equals(DockerCmd.log.name())) {
-                DockerLog.logSnapshot(sw, response, deployInfo);
+                String linesStr = req.getAttachments().get("lines");
+                Integer lines = 50;
+                if (StringUtils.isNotEmpty(linesStr)) {
+                    lines = new Integer(linesStr);
+                }
+                DockerLog.logSnapshot(sw, req.getContainerName(), response, lines);
+            }
+
+            //获取docker inspect
+            if (req.getCmd().equals(DockerCmd.inspect.name())) {
+                String isRunning = req.getAttachments().get("isRunning");
+                if (StringUtils.isNotEmpty(isRunning) && "true".equals(isRunning)) {
+                    DockerInspect.dockerInspectWithRunning(sw, CommonUtils.getName(req.getContainerName()), response);
+                } else {
+                    DockerInspect.dockerInspect(sw, req.getContainerName(), response);
+                }
             }
         } catch (Throwable ex) {
             log.error("docker processor " + deployInfo.getName() + " error:" + ex.getMessage(), ex);
             deployInfo.setState(DeployInfo.DeployState.failure.ordinal());
-            notifyServer(new NotifyMsg(NotifyMsg.STATUS_FAIL, 0, "error", "[ERROR] " + ex.getMessage() + "\n", sw.elapsed(TimeUnit.MILLISECONDS), req.getId(), req.getAttachments()));
+            notifyServer(new NotifyMsg(NotifyMsg.STATUS_FAIL, 0, "error", "[ERROR] " + ex.getMessage() + "\n", sw.elapsed(TimeUnit.MILLISECONDS), req.getId(), req.getAttachments()), req.getReqSource());
         } finally {
             if (!req.getCmd().equals(DockerCmd.info.name())) {
                 LockUtils.unLock(lockName(deployInfo));
@@ -154,12 +168,17 @@ public class DockerProcessor implements NettyRequestProcessor {
         return response;
     }
 
+    private void sidecar(DockerContext context, Stopwatch sw, DockerReq req, DeployInfo deployInfo) {
+        new DockerSideCar().create(context, sw, req, deployInfo, null);
+    }
+
     private String lockName(DeployInfo deployInfo) {
         return Stream.of(deployInfo.getName(), String.valueOf(deployInfo.getType())).collect(Collectors.joining("_"));
     }
 
-    private void nuke(Stopwatch sw, DockerReq req, RemotingCommand response, DeployInfo deployInfo) {
-        new DockerNuke().nuke(sw, req, response, deployInfo, this.dockerProcessorPool, () -> notifyServer(new NotifyMsg(NotifyMsg.STATUS_PROGRESS, 0, "stop", "[INFO] stop container finish", sw.elapsed(TimeUnit.MILLISECONDS), req.getId(), req.getAttachments())));
+    private void nuke(DockerContext context, Stopwatch sw, DockerReq req, RemotingCommand response, DeployInfo deployInfo) {
+        long time = sw.elapsed(TimeUnit.MILLISECONDS);
+        new DockerNuke().nuke(context, sw, req, response, deployInfo, this.dockerProcessorPool, () -> notifyServer(new NotifyMsg(NotifyMsg.STATUS_PROGRESS, 0, "stop", "[INFO] stop container finish(" + time + "ms)", time, req.getId(), req.getAttachments()), req.getReqSource()));
     }
 
     /**
@@ -171,11 +190,11 @@ public class DockerProcessor implements NettyRequestProcessor {
      * @return
      */
     private RemotingCommand restart(Stopwatch sw, DockerReq req, DeployInfo deployInfo) {
-        return new DockerRestart().restart(sw, req, deployInfo, msg -> notifyServer(msg));
+        return new DockerRestart().restart(sw, req, deployInfo, msg -> notifyServer(msg, req.getReqSource()));
     }
 
-    private void stop(Stopwatch sw, DockerReq req, DeployInfo deployInfo) {
-        shutdown(sw, req, deployInfo);
+    private void stop(DockerContext context, Stopwatch sw, DockerReq req, DeployInfo deployInfo) {
+        shutdown(context, sw, req, deployInfo);
         req.setCmd(DockerCmd.start.name());
     }
 
@@ -186,20 +205,21 @@ public class DockerProcessor implements NettyRequestProcessor {
      * @param req
      * @param deployInfo
      */
-    private void shutdown(Stopwatch sw, DockerReq req, DeployInfo deployInfo) {
-        new DockerNuke().shutdown(sw, req, deployInfo, () -> notifyServer(new NotifyMsg(NotifyMsg.STATUS_PROGRESS, 0, "stop", "[INFO] stop container finish", sw.elapsed(TimeUnit.MILLISECONDS), req.getId(), req.getAttachments())));
+    private void shutdown(DockerContext context, Stopwatch sw, DockerReq req, DeployInfo deployInfo) {
+        long time = sw.elapsed(TimeUnit.MILLISECONDS);
+        new DockerNuke().shutdown(context, sw, req, deployInfo, () -> notifyServer(new NotifyMsg(NotifyMsg.STATUS_PROGRESS, 0, "stop", "[INFO] stop container finish(" + time + "ms)", time, req.getId(), req.getAttachments()), req.getReqSource()));
     }
 
-    private void start(Stopwatch sw, DockerReq req, DeployInfo deployInfo, RemotingCommand response) {
-        new DockerStart().start(sw, req, deployInfo, response, msg -> notifyServer(msg));
+    private void start(DockerContext context, Stopwatch sw, DockerReq req, DeployInfo deployInfo, RemotingCommand response) {
+        new DockerStart().start(context, sw, req, deployInfo, response, this.dockerProcessorPool, msg -> notifyServer(msg, req.getReqSource()));
     }
 
-    private void create(Stopwatch sw, DockerReq req, DeployInfo deployInfo) {
-        new DockerCreate().create(sw,req,deployInfo,msg->notifyServer(msg));
+    private void create(DockerContext context, Stopwatch sw, DockerReq req, DeployInfo deployInfo) {
+        new DockerCreate().create(context, sw, req, deployInfo, msg -> notifyServer(msg, req.getReqSource()));
     }
 
     private void buildOrPull(Stopwatch sw, DockerReq req, DeployInfo deployInfo) throws InterruptedException {
-        new DockerBuildOrPull().buildOrPull(sw, req, deployInfo, msg -> notifyServer(msg));
+        new DockerBuildOrPull().buildOrPull(sw, req, deployInfo, msg -> notifyServer(msg, req.getReqSource()));
     }
 
     @Override
@@ -207,8 +227,8 @@ public class DockerProcessor implements NettyRequestProcessor {
         return false;
     }
 
-    private void notifyServer(NotifyMsg notifyMsg) {
-        CommonUtils.notifyServer(this.client,notifyMsg);
+    private void notifyServer(NotifyMsg notifyMsg, String reqSource) {
+        CommonUtils.notifyServer(this.client, notifyMsg, reqSource);
     }
 
     @Override
