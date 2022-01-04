@@ -70,6 +70,11 @@ public class CommonUtils {
         return Pattern.matches("^(cr\\.d\\.xiaomi\\.net/mixiao(-st)?/)?" + Pattern.quote(name) + "[:-][0-9]+$", imageName);
     }
 
+    /**
+     * 获取容器名称(a-b -> a  a->a)
+     * @param containerName
+     * @return
+     */
     public static String getName(String containerName) {
         int lastIndex = containerName.lastIndexOf("-");
         if (lastIndex != -1) {
@@ -89,10 +94,11 @@ public class CommonUtils {
     }
 
 
-    public static void notifyServer(RpcClient client, NotifyMsg notifyMsg) {
+    public static void notifyServer(RpcClient client, NotifyMsg notifyMsg, String reqSource) {
         try {
             log.info("notify:{}", new Gson().toJson(notifyMsg));
-            RemotingCommand msg = RemotingCommand.createMsgPackRequest(AgentCmd.notifyMsgReq, notifyMsg);
+            int code = "miline".equals(reqSource)?AgentCmd.milineReq:AgentCmd.notifyMsgReq;
+            RemotingCommand msg = RemotingCommand.createMsgPackRequest(code, notifyMsg);
             msg.setTimeout(2000L);
             client.sendMessage(msg);
         } catch (Throwable ex) {

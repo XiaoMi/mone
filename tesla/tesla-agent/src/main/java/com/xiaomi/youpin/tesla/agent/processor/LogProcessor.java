@@ -57,7 +57,7 @@ public class LogProcessor implements NettyRequestProcessor {
             }
 
             case "log": {
-                ReadResult res = FileUtils.readFile(path, req.getPointer(), req.getLineNum());
+                ReadResult res = FileUtils.readFile(path, req.getPointer(), req.getLineNum(), req.getGrepRegex());
                 response.setBody(new Gson().toJson(res).getBytes());
                 break;
             }

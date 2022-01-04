@@ -317,7 +317,7 @@ public class ServiceProcessor implements NettyRequestProcessor {
 
                 long fileLength = downloadFile.length();
 
-                notifyServer(new NotifyMsg(NotifyMsg.STATUS_PROGRESS, 1, "download", "[INFO] download file finish size:" + fileLength + "  time:" + (System.currentTimeMillis() - downloadBegin) / 1000 + "\n", sw.elapsed(TimeUnit.MILLISECONDS), req.getId(), req.getAttachments()));
+                notifyServer(new NotifyMsg(NotifyMsg.STATUS_PROGRESS, 1, "download", "[INFO] download file finish size:" + fileLength + "kb  time:" + (System.currentTimeMillis() - downloadBegin) / 1000 + "\n", sw.elapsed(TimeUnit.MILLISECONDS), req.getId(), req.getAttachments()));
 
 
                 deployInfo.setStep(2);

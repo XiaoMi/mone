@@ -60,6 +60,7 @@ public class CleanTask extends Task {
                     //docker虚拟机
                     cleanDockerByContainer();
                     cleanDockerByImage();
+                    cleanJarsDownloadByDockerMethod();
                 } else {
                     log.info("CleanTask.cleanJar");
                     //物理机
@@ -168,6 +169,41 @@ public class CleanTask extends Task {
             }
         } catch (Exception e) {
             log.error("CleanTask:cleanDockerByImage, error: {}", e.getMessage());
+        }
+
+    }
+
+    /**
+     * 清理docker部署方式下载的jar包
+     */
+    private static void cleanJarsDownloadByDockerMethod() {
+        try {
+            List<DeployInfo> deployInfos = DeployService.ins().getDockerDeployInfos();
+            log.info("CleanTask.cleanDockerJar, deployInfos is: {}", deployInfos);
+            if (deployInfos == null || deployInfos.size() == 0) {
+                return;
+            }
+            deployInfos.stream().forEach(deployInfo -> {
+                if (!StringUtils.isEmpty(deployInfo.getDockerServicePath()) && !StringUtils.isEmpty(deployInfo.getDockerJarName())) {
+
+                    String dockerServicePath = deployInfo.getDockerServicePath().endsWith("/") ? deployInfo.getDockerServicePath() : deployInfo.getDockerServicePath() + "/";
+                    Pair<Integer, List<String>> pair = ProcessUtils.process(dockerServicePath, "ls -1t");
+
+                    List<String> jarDirNames = pair.getValue();
+                    if (jarDirNames.size() > cleanNum) {
+                        jarDirNames.subList(cleanNum, jarDirNames.size()).stream().forEach(jarDirName -> {
+                                    try {
+                                        FileUtils.forceDelete(new File(dockerServicePath + jarDirName));
+                                    } catch (Exception e) {
+                                        log.error("CleanTask:cleanDockerJar error, {}", e.getMessage());
+                                    }
+                                }
+                        );
+                    }
+                }
+            });
+        } catch (Exception e) {
+            log.error("CleanTask:cleanDockerJar, error: {}", e.getMessage());
         }
 
     }

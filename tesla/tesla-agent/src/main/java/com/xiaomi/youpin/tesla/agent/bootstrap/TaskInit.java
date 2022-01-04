@@ -19,6 +19,7 @@ package com.xiaomi.youpin.tesla.agent.bootstrap;
 import com.google.common.collect.Lists;
 import com.xiaomi.data.push.rpc.RpcClient;
 import com.xiaomi.youpin.docean.anno.Component;
+import com.xiaomi.youpin.tesla.agent.common.Config;
 import com.xiaomi.youpin.tesla.agent.interceptor.Log;
 import com.xiaomi.youpin.tesla.agent.service.IService;
 import com.xiaomi.youpin.tesla.agent.task.CleanTask;
@@ -48,8 +49,10 @@ public class TaskInit implements IService {
     @Log
     @Override
     public void init() {
+        String pingTime = Config.ins().get("pingTime", "10");
+        log.info("pintTime:{}", pingTime);
         client.setTasks(Lists.newArrayList(
-                new PingTask(client),
+                new PingTask(client, Integer.valueOf(pingTime)),
                 new CleanTask()
         ));
     }

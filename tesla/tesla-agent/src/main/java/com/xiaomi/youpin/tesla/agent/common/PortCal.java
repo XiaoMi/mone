@@ -27,6 +27,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -47,6 +48,12 @@ public class PortCal {
     private int fourPort = -1;
     private int gsonDubboPort = -1;
     private int debugPort = -1;
+    private int sentinelPort = -1;
+    private int prometheusPort = -1;
+    private int agentPrometheusPort = -1;
+    private int jacocoPort = -1;
+
+    private List<String> tpList = Lists.newArrayList();
     private List<Integer> cports = Lists.newArrayList();
     private List<Port> portList = Lists.newArrayList();
 
@@ -60,6 +67,9 @@ public class PortCal {
         dubboPort = ports.get(0);
         httpPort = ports.get(1);
         nacosPushPort = ports.get(2);
+        sentinelPort = ports.get(3);
+        prometheusPort = ports.get(4);
+        agentPrometheusPort = ports.get(5);
 
         //采用指定的dubbo 端口
         String dp = LabelService.ins().getLabelValue(req.getLabels(), LabelService.DUBBO_PORT);
@@ -75,12 +85,18 @@ public class PortCal {
             cports.add(gsonDubboPort);
         }
 
-
-        //采用指定的http 端口
+        //采用指定的http 端口（单个）
         String hp = LabelService.ins().getLabelValue(req.getLabels(), LabelService.HTTP_PORT);
         if (StringUtils.isNotEmpty(hp)) {
             httpPort = Integer.valueOf(hp);
             cports.add(httpPort);
+        }
+
+        //三方需要暴露的端口（多个，以&分隔）
+        String hps = LabelService.ins().getLabelValue(req.getLabels(), LabelService.PORTS);
+        if (StringUtils.isNotEmpty(hps)) {
+            tpList = Lists.newArrayList(hps.split("&"));
+            tpList.stream().forEach(it -> cports.add(Integer.valueOf(it)));
         }
 
         //第三方端口号
@@ -96,10 +112,20 @@ public class PortCal {
             fourPort = Integer.valueOf(fp);
             cports.add(fourPort);
         }
+        //
+        String jacocoPortStr = LabelService.ins().getLabelValue(req.getLabels(), LabelService.JACOCO_PORT);
+        if (StringUtils.isNotEmpty(jacocoPortStr) && StringUtils.isNumeric(jacocoPortStr)) {
+            jacocoPort = Integer.parseInt(jacocoPortStr);
+            cports.add(jacocoPort);
+        }
 
         portList.add(Port.builder().type(1).port(dubboPort).build());
         portList.add(Port.builder().type(0).port(httpPort).build());
         portList.add(Port.builder().type(0).port(nacosPushPort).build());
+        portList.add(Port.builder().type(0).port(sentinelPort).build());
+        portList.add(Port.builder().type(0).port(prometheusPort).build());
+        portList.add(Port.builder().type(0).port(agentPrometheusPort).build());
+        portList.add(Port.builder().type(0).port(jacocoPort).build());
 
 
         //获取暴露的端口号(肯定会暴露两个端口,一个是http的一个是rpc的)
@@ -135,6 +161,17 @@ public class PortCal {
             portBindings.add(pbDebug);
         }
 
+        //第三方端口(多个)暴露
+        if (tpList != null && tpList.size() > 0) {
+            log.info("bind ports:{}", tpList);
+            tpList.stream().forEach(it1 -> {
+                ExposedPort exposedThirdPort = ExposedPort.parse(it1);
+                PortBinding thirdPortBinding = PortBinding.parse(it1 + ":" + it1);
+                exposedPorts.add(exposedThirdPort);
+                portBindings.add(thirdPortBinding);
+            });
+        }
+
         //第三方端口暴露
         if (thirdPort != -1) {
             log.info("bind third port:{}", thirdPort);
@@ -164,6 +201,46 @@ public class PortCal {
             exposedPorts.add(exposedGsonPort);
             portBindings.add(gsonPortBinding);
         }
+
+        //暴露sentnel 的port
+        if (sentinelPort != -1) {
+            log.info("bind sentinel port:{}", sentinelPort);
+            String sentinelPortStr = String.valueOf(sentinelPort);
+            ExposedPort exposedSentinelPort = ExposedPort.parse(sentinelPortStr);
+            PortBinding sentinelPortBinding = PortBinding.parse(sentinelPortStr + ":" + sentinelPortStr);
+            exposedPorts.add(exposedSentinelPort);
+            portBindings.add(sentinelPortBinding);
+        }
+
+        //暴露prometheus的port
+        if (prometheusPort != -1) {
+            log.info("bind prometheus port:{}", prometheusPort);
+            String promtheusPortStr = String.valueOf(prometheusPort);
+            ExposedPort exposedPrometheusPort = ExposedPort.parse(promtheusPortStr);
+            PortBinding prometheusPortBinding = PortBinding.parse(promtheusPortStr + ":" + exposedPrometheusPort);
+            exposedPorts.add(exposedPrometheusPort);
+            portBindings.add(prometheusPortBinding);
+        }
+
+        //暴露agent prometheus的port
+        if (agentPrometheusPort != -1) {
+            log.info("bind agent prometheus port:{}", agentPrometheusPort);
+            String agentPromtheusPortStr = String.valueOf(agentPrometheusPort);
+            ExposedPort exposedAgentPrometheusPort = ExposedPort.parse(agentPromtheusPortStr);
+            PortBinding agentPrometheusPortBinding = PortBinding.parse(agentPromtheusPortStr + ":" + exposedAgentPrometheusPort);
+            exposedPorts.add(exposedAgentPrometheusPort);
+            portBindings.add(agentPrometheusPortBinding);
+        }
+
+        //暴露jacoco的port
+        if (jacocoPort != -1) {
+            log.info("bind jacoco port:{}", jacocoPort);
+            ExposedPort exposedJacocoPort = ExposedPort.parse(jacocoPortStr);
+            PortBinding jacocoPortBinding = PortBinding.parse(jacocoPortStr + ":" + exposedJacocoPort);
+            exposedPorts.add(exposedJacocoPort);
+            portBindings.add(jacocoPortBinding);
+        }
+
     }
 
     private List<Integer> getPorts() {
@@ -179,7 +256,30 @@ public class PortCal {
             DeployService.ins().portNum.set(httpPort + 1);
             int nacosUdpPushPort = NetUtils.getAvailableUdpPort(DeployService.ins().portNum.getAndIncrement());
             DeployService.ins().portNum.set(nacosUdpPushPort + 1);
-            return Lists.newArrayList(dubboPort, httpPort, nacosUdpPushPort);
+            int sentinelPort = NetUtils.getAvailablePort(DeployService.ins().portNum.getAndIncrement());
+            DeployService.ins().portNum.set(sentinelPort + 1);
+            int prometheusPort = NetUtils.getAvailablePort(DeployService.ins().portNum.getAndIncrement());
+            DeployService.ins().portNum.set(prometheusPort + 1);
+            int agentPrometheusPort = NetUtils.getAvailablePort(DeployService.ins().portNum.getAndIncrement());
+            DeployService.ins().portNum.set(agentPrometheusPort + 1);
+            int jacocoPort = NetUtils.getAvailablePort(DeployService.ins().portNum.getAndIncrement());
+            DeployService.ins().portNum.set(jacocoPort + 1);
+            return Lists.newArrayList(dubboPort, httpPort, nacosUdpPushPort, sentinelPort, prometheusPort, agentPrometheusPort, jacocoPort);
+        } finally {
+            portLock.unlock();
+        }
+    }
+
+    public Integer getPort(String type) {
+        portLock.lock();
+        try {
+            int v = DeployService.ins().portNum.get();
+            if (v > 60000) {
+                DeployService.ins().portNum.compareAndSet(v, DeployService.DEFAULT_PORT_NUM);
+            }
+            int port = type.equals("tcp") ? NetUtils.getAvailablePort(DeployService.ins().portNum.getAndIncrement()) : NetUtils.getAvailableUdpPort(DeployService.ins().portNum.getAndIncrement());
+            DeployService.ins().portNum.set(port + 1);
+            return port;
         } finally {
             portLock.unlock();
         }
