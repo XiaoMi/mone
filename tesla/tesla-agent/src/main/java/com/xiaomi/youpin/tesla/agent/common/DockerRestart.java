@@ -52,7 +52,8 @@ public class DockerRestart {
 
         //停止旧的container
         list.stream().forEach(it -> YpDockerClient.ins().stopContainer(it.getId()));
-        consumer.accept(new NotifyMsg(NotifyMsg.STATUS_PROGRESS, 0, "stop", "[INFO] stop container finish", sw.elapsed(TimeUnit.MILLISECONDS), req.getId(), req.getAttachments()));
+        long time = sw.elapsed(TimeUnit.MILLISECONDS);
+        consumer.accept(new NotifyMsg(NotifyMsg.STATUS_PROGRESS, 0, "stop", "[INFO] stop container finish(" + time + "ms)", time, req.getId(), req.getAttachments()));
 
 
         List<Container> oldList = YpDockerClient.ins().listContainers(Lists.newArrayList(), true, (containerName));
@@ -66,7 +67,8 @@ public class DockerRestart {
 
         //启动container
         YpDockerClient.ins().startContainer(req.getJarName().split("\\.")[0]);
-        consumer.accept(new NotifyMsg(NotifyMsg.STATUS_SUCESSS, 4, "start", "[SUCCESS] start container successfully" + "\n", sw.elapsed(TimeUnit.MILLISECONDS), req.getId(), req.getAttachments()));
+        time = sw.elapsed(TimeUnit.MILLISECONDS);
+        consumer.accept(new NotifyMsg(NotifyMsg.STATUS_SUCESSS, 4, "start", "[SUCCESS] start container successfully(" + time + "ms)\n", sw.elapsed(TimeUnit.MILLISECONDS), req.getId(), req.getAttachments()));
 
         response.setBody("success".getBytes());
 

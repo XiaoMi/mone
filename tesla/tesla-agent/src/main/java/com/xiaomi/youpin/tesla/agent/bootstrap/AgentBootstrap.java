@@ -52,8 +52,9 @@ public class AgentBootstrap {
         m.put(Log.class, new LogInterceptor());
         //ioc容器初始化
         Aop.ins().init(m);
-        Ioc.ins().putBean(client).init("com.xiaomi.youpin.tesla.agent");
+        Ioc.ins().putBean(client).init("com.xiaomi");
         client.start();
+        client.init();
         log.info("tesla agent start finish");
     }
 

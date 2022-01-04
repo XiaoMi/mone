@@ -117,7 +117,17 @@ public class DeployService {
 
 
     public DeployInfo get(String name) {
-        return map.get(name);
+        DeployInfo info = map.get(name);
+        if (null == info) {
+            DeployInfo deployInfo = new DeployInfo();
+            deployInfo.setName(name);
+            deployInfo.setId(name);
+            deployInfo.setType(1);
+            deployInfo.setPorts(com.google.common.collect.Lists.newArrayList());
+            deployInfo.setCtime(System.currentTimeMillis());
+            return deployInfo;
+        }
+        return info;
     }
 
 
@@ -218,6 +228,13 @@ public class DeployService {
     public List<DeployInfo> getPhysicalDeployInfos() {
         if (this.map.size() > 0) {
             return this.map.entrySet().stream().filter(it -> it.getValue().getType() == 0).map(it -> it.getValue()).collect(Collectors.toList());
+        }
+        return new ArrayList<>();
+    }
+
+    public List<DeployInfo> getDockerDeployInfos() {
+        if (this.map.size() > 0) {
+            return this.map.entrySet().stream().filter(it -> it.getValue().getType() == 1).map(it -> it.getValue()).collect(Collectors.toList());
         }
         return new ArrayList<>();
     }
