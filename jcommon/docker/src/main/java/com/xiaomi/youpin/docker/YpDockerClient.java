@@ -104,7 +104,7 @@ public class YpDockerClient {
     public String logContainerCmd(String containerId, Integer tailNum) throws InterruptedException {
         StringBuffer sb = new StringBuffer();
         dockerClient.logContainerCmd(containerId)
-                .withStdOut(true)
+                .withStdOut(true).withStdErr(true)
                 .withTail(tailNum)
                 .exec(new LogContainerResultCallback() {
                     @Override
@@ -115,17 +115,42 @@ public class YpDockerClient {
         return sb.toString();
     }
 
-    public CreateNetworkResponse createNetwork(String name) {
+    public CreateNetworkResponse createNetwork(String name, String subnet) {
+        Network.Ipam ipam = new Network.Ipam();
+        ipam.withConfig(new Network.Ipam.Config().withSubnet(subnet));
         CreateNetworkResponse createNetworkResponse = dockerClient
                 .createNetworkCmd()
                 .withName(name)
+                .withIpam(ipam)
                 .withCheckDuplicate(true)
                 .exec();
         return createNetworkResponse;
     }
 
+
+    public void removeNetwork(String name) {
+        List<Network> list = listNetwork(name);
+        if (list.size() > 0) {
+            dockerClient.removeNetworkCmd(list.get(0).getId()).exec();
+        }
+    }
+
     public List<Network> listNetwork(String name) {
         return dockerClient.listNetworksCmd().withNameFilter(name).exec();
+    }
+
+    public List<Network> listNetwork() {
+        return dockerClient.listNetworksCmd().exec();
+    }
+
+    public Set<String> listSubnet() {
+        Set<String> set = new HashSet<>();
+        listNetwork().forEach(it -> {
+            it.getIpam().getConfig().forEach(it2 -> {
+                set.add(it2.getSubnet());
+            });
+        });
+        return set;
     }
 
     public void connectToNetwork(String containerId, String networkId) {
@@ -166,6 +191,10 @@ public class YpDockerClient {
 
     public void stopContainer(String containerId) {
         dockerClient.stopContainerCmd(containerId).exec();
+    }
+
+    public void stopContainer(String containerId, Integer timeout) {
+        dockerClient.stopContainerCmd(containerId).withTimeout(timeout).exec();
     }
 
 
@@ -215,10 +244,12 @@ public class YpDockerClient {
                 .withEnv(env).exec().getId();
     }
 
+
     /**
      * 创建容器
+     *
      * @param image
-     * @param hostName  bridge host
+     * @param hostName     bridge host
      * @param netWorkMode
      * @param name
      * @param limit
@@ -228,61 +259,55 @@ public class YpDockerClient {
      * @param env
      * @return
      */
-    public String createContainer(String image, String hostName,String netWorkMode, String name, DockerLimit limit, List<ExposedPort> exposedPorts, List<PortBinding> portBindings, List<Bind> binds, String... env) {
-        CreateContainerCmd cmd = dockerClient.createContainerCmd(image)
-                //使用几核
-                .withCpusetCpus(limit.getCpu());
-        if (limit.getMem() > 0) {
-            //使用多少内存
-            cmd.withMemory(limit.getMem());
-        }
-
-        //io权重
-        return cmd.withBlkioWeight(limit.getBlkioWeight())
-                .withRestartPolicy(RestartPolicy.onFailureRestart(3))
-                .withName(name)
-                .withExposedPorts(exposedPorts)
-                .withPortBindings(portBindings)
-                .withBinds(binds)
-                .withHostName(hostName)
-                //bridge host
-                .withNetworkMode(netWorkMode)
-                .withEnv(env).exec().getId();
+    public String createContainer(String image, String hostName, String netWorkMode, String name, DockerLimit limit, List<ExposedPort> exposedPorts, List<PortBinding> portBindings, String pidMode, List<Bind> binds, String... env) {
+        return createContainer(image,hostName,netWorkMode,name,limit,exposedPorts,portBindings,pidMode,binds,Lists.newArrayList(),env);
     }
 
-    /**
-     * 创建容器
-     * @param image
-     * @param hostName  bridge host
-     * @param netWorkMode
-     * @param name
-     * @param limit
-     * @param exposedPorts
-     * @param portBindings
-     * @param binds
-     * @param env
-     * @return
-     */
-    public String createContainer(String image, String hostName,String netWorkMode, String name, DockerLimit limit, List<ExposedPort> exposedPorts, List<PortBinding> portBindings, List<Bind> binds, String... env) {
-        CreateContainerCmd cmd = dockerClient.createContainerCmd(image)
-                //使用几核
-                .withCpusetCpus(limit.getCpu());
+    public String createContainer(String image, String hostName, String netWorkMode, String name, DockerLimit limit, List<ExposedPort> exposedPorts, List<PortBinding> portBindings, String pidMode, List<Bind> binds, List<String> dns, String... env) {
+        CreateContainerCmd cmd = dockerClient.createContainerCmd(image);
+
+        //不绑定cpu(知识指定cpu数量)
+        if (limit.isUseCpus()) {
+            long period = 100000L;
+            cmd.getHostConfig().withCpuPeriod(period);
+            cmd.getHostConfig().withCpuQuota((long) (period * limit.getCpuNum()));
+        } else {
+            //使用几核
+            cmd.withCpusetCpus(limit.getCpu());
+        }
+
         if (limit.getMem() > 0) {
             //使用多少内存
             cmd.withMemory(limit.getMem());
         }
 
         //io权重
-        return cmd.withBlkioWeight(limit.getBlkioWeight())
+        CreateContainerCmd ccc = cmd.withBlkioWeight(limit.getBlkioWeight())
                 .withRestartPolicy(RestartPolicy.onFailureRestart(3))
                 .withName(name)
                 .withExposedPorts(exposedPorts)
                 .withPortBindings(portBindings)
                 .withBinds(binds)
                 .withHostName(hostName)
+                .withPidMode(pidMode)
                 //bridge host
                 .withNetworkMode(netWorkMode)
-                .withEnv(env).exec().getId();
+                .withEnv(env);
+
+        //设置dns
+        if (dns.size() > 0) {
+            log.info("dns:{}", dns);
+            ccc.withDns(dns);
+            ccc.withDnsSearch(new String[]{});
+            ccc.getHostConfig().withDnsOptions(Lists.newArrayList());
+        }
+
+        return ccc.exec().getId();
+    }
+
+
+    public String createContainer(String image, String hostName, String netWorkMode, String name, DockerLimit limit, List<ExposedPort> exposedPorts, List<PortBinding> portBindings, List<Bind> binds, String... env) {
+        return createContainer(image, hostName, netWorkMode, name, limit, exposedPorts, portBindings, "", binds, env);
     }
 
     /**

@@ -38,4 +38,6 @@ public @interface Service {
 
     int timeout() default 1000;
 
+    boolean async() default false;
+
 }

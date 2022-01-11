@@ -16,25 +16,29 @@
 
 package com.xiaomi.youpin.docean;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import com.xiaomi.youpin.docean.anno.Component;
 import com.xiaomi.youpin.docean.anno.Configuration;
 import com.xiaomi.youpin.docean.anno.Controller;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.bo.Bean;
-import com.xiaomi.youpin.docean.common.ClassFinder;
-import com.xiaomi.youpin.docean.common.Cons;
-import com.xiaomi.youpin.docean.common.MutableObject;
-import com.xiaomi.youpin.docean.common.ReflectUtils;
-import com.xiaomi.youpin.docean.exception.DoceanException;
+import com.xiaomi.youpin.docean.common.*;
 import com.xiaomi.youpin.docean.ioc.BeanAnnoProcessor;
 import com.xiaomi.youpin.docean.plugin.Plugin;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Resource;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
@@ -114,6 +118,10 @@ public class Ioc {
     }
 
 
+    /**
+     * 完成依赖注入
+     * @param it
+     */
     private void initIoc(Bean it) {
         Field[] fields = ReflectUtils.fields(it.getClazz());
         Arrays.stream(fields).forEach(f -> {
@@ -124,6 +132,9 @@ public class Ioc {
                     String name = f2.name();
                     if (name.equals("")) {
                         name = f.getType().getName();
+                    }
+                    if (!f2.lookup().equals("")) {
+                        name = Joiner.on(":").join(name, f2.lookup());
                     }
                     res.setObj(name);
                 });
@@ -139,6 +150,7 @@ public class Ioc {
         Bean b = this.beans.get(name);
         Optional.ofNullable(b).ifPresent(o -> {
             o.incrReferenceCnt();
+            o.getDependenceList().add(name);
             ReflectUtils.setField(obj, field, o.getObj());
         });
     }
@@ -198,20 +210,41 @@ public class Ioc {
         return (T) beans.get(clazz.getName()).getObj();
     }
 
+    public Bean getBeanInfo(String name) {
+        return beans.get(name);
+    }
+
     public boolean containsBean(String name) {
         return beans.containsKey(name);
     }
 
-    public Ioc putBean(String name, Object obj) {
-        return putBean(name, name, obj);
+    public Ioc putBean(Object obj) {
+        return this.putBean(obj.getClass().getName(), obj);
     }
 
-    public Ioc putBean(String name, String alias, Object obj) {
+    public Ioc putBeanInfo(Bean bean) {
+        this.beans.put(bean.getName(), bean);
+        return this;
+    }
+
+
+    public Ioc putBean(String name, Object obj) {
+        return putBean(name, name, obj, "", false);
+    }
+
+    public Ioc putBean(String name, String alias, Object obj, String lookup, boolean objMap) {
         Bean bean = new Bean();
         bean.setObj(obj);
         bean.setAlias(alias);
         bean.setClazz(obj.getClass());
         bean.setName(obj.getClass().getName());
+        bean.setLookup(lookup);
+        if (StringUtils.isNotEmpty(lookup)) {
+            name = Joiner.on(":").join(name, lookup);
+        }
+        if (objMap) {
+            beans.put(obj.toString(), bean);
+        }
         beans.put(name, bean);
         return this;
     }
@@ -230,17 +263,13 @@ public class Ioc {
     }
 
 
-    public Ioc putBean(Object obj) {
-        Bean bean = new Bean();
-        bean.setObj(obj);
-        bean.setClazz(obj.getClass());
-        beans.put(obj.getClass().getName(), bean);
-        return this;
+    public Set<Object> getBeans() {
+        return new HashSet<>(beans.values());
     }
 
 
-    public Set<Object> getBeans() {
-        return new HashSet<>(beans.values());
+    public ConcurrentHashMap<String, Bean> getBeanInfos() {
+        return beans;
     }
 
     public <T> Set<T> getBeans(Class<T> clazz) {
@@ -264,6 +293,35 @@ public class Ioc {
             }
         });
         this.beans.clear();
+    }
+
+    @SneakyThrows
+    public void saveSnapshot() {
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(Class.class, new ClassDeserializer())
+                .registerTypeAdapter(Class.class, new ClassSerializer()).create();
+
+        List<Bean> list = this.beans.entrySet().stream().map(it -> it.getValue()).collect(Collectors.toList());
+        Files.write(Paths.get("/tmp/docean.cache"), gson.toJson(list).getBytes());
+    }
+
+    @SneakyThrows
+    public void loadSnapshot() {
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(Class.class, new ClassDeserializer())
+                .registerTypeAdapter(Class.class, new ClassSerializer()).create();
+        byte[] data = Files.readAllBytes(Paths.get("/tmp/docean.cache"));
+        Type typeOfT = new TypeToken<List<Bean>>() {
+        }.getType();
+        List<Bean> list = gson.fromJson(new String(data), typeOfT);
+        list.stream().forEach(it -> {
+            log.info("{} {}",it,it.getClazz());
+            Object obj = Aop.ins().enhance(it.getClazz());
+            it.setObj(obj);
+            this.putBeanInfo(it);
+        });
+
+        this.beans.values().stream().forEach(it -> initIoc(it));
     }
 
 }

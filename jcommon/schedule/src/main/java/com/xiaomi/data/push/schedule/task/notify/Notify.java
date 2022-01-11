@@ -30,4 +30,5 @@ public interface Notify {
      */
     void notify(String type, String message);
 
+    void notify(String type, String message, int shardingKey);
 }

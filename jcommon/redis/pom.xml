@@ -26,7 +26,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>redis</artifactId>
-    <version>1.6-SNAPSHOT</version>
+    <version>1.8-SNAPSHOT</version>
 
     <dependencies>
 
@@ -46,6 +46,24 @@
             <groupId>com.xiaomi.youpin</groupId>
             <artifactId>catPlugin</artifactId>
             <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>prometheus-client</artifactId>
+            <version>0.0.2-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>1.2.70</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.8.1</version>
         </dependency>
 
     </dependencies>

@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
 public class ConstantVariableNamingRule extends VariableCheck {
     private static final String DESC = "Constant names are all capitalized, and words are separated by underscores";
     private static final String CHINA_DESC = "常量命名全部大写，单词间用下划线隔开";
-    private static final Pattern PATTERN = Pattern.compile("([A-Z]+[_]?)+");
+    private static final Pattern PATTERN = Pattern.compile("([A-Z|_])+");
 
     @Override
     public Pair<Integer, CheckResult> _check(VariableTree variableTree) {

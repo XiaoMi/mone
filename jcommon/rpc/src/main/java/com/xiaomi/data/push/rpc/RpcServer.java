@@ -28,6 +28,7 @@ import com.xiaomi.data.push.rpc.common.InvokeCallback;
 import com.xiaomi.data.push.rpc.common.Pair;
 import com.xiaomi.data.push.rpc.common.RemotingUtil;
 import com.xiaomi.data.push.rpc.common.RpcServerVersion;
+import com.xiaomi.data.push.rpc.netty.AgentChannel;
 import com.xiaomi.data.push.rpc.netty.NettyRemotingServer;
 import com.xiaomi.data.push.rpc.netty.NettyRequestProcessor;
 import com.xiaomi.data.push.rpc.netty.NettyServerConfig;
@@ -39,6 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.PostConstruct;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -164,6 +166,8 @@ public class RpcServer implements Service {
             instance.setServiceName(name);
             Map<String, String> metaData = Maps.newHashMap();
             metaData.put("ctime", new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()));
+            metaData.put("version", new RpcServerVersion().toString());
+            SafeRun.run(() -> metaData.put("hostname", InetAddress.getLocalHost().getHostName()));
             instance.setMetadata(metaData);
             nacosNaming.registerInstance(name, instance);
             logger.info("reg service {} {}:{} success", name, server.getHost(), server.getPort());
@@ -302,9 +306,9 @@ public class RpcServer implements Service {
 
     public void closeClient(String address) {
         logger.info("close client:{}", address);
-        Channel ch = AgentContext.ins().map.remove(address);
+        AgentChannel ch = AgentContext.ins().map.remove(address);
         if (null != ch) {
-            RemotingUtil.closeChannel(ch);
+            RemotingUtil.closeChannel(ch.getChannel());
         }
     }
 

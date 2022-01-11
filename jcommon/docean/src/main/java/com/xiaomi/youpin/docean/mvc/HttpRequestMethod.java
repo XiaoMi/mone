@@ -28,6 +28,8 @@ public class HttpRequestMethod {
 
     private String path;
 
+    private String httpMethod;
+
     private Method method;
 
     private Object obj;

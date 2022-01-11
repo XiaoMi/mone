@@ -28,6 +28,7 @@ import java.sql.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * @author goodjava@qq.com
@@ -37,12 +38,35 @@ import java.util.Optional;
 public class Session {
 
     private JdbcTransaction transaction;
+
     private DataSource dataSource;
 
     public Session(JdbcTransaction transaction, DataSource dataSource) {
         this.transaction = transaction;
         this.dataSource = dataSource;
         this.transaction.setDataSource(dataSource);
+    }
+
+
+    /**
+     * 查询有那些表
+     *
+     * @return
+     */
+    public List<String> tables(String schemaName) {
+        List<Map<String, ColumnRecord>> list = query("select * from information_schema.TABLES where TABLE_SCHEMA=?", schemaName);
+        return list.stream().map(it -> it.get("TABLE_NAME").getData()).collect(Collectors.toList());
+    }
+
+    /**
+     * 查询表结构
+     *
+     * @param schemaName
+     * @param tableName
+     * @return
+     */
+    public List<Map<String, ColumnRecord>> desc(String schemaName, String tableName) {
+        return query("select * from information_schema.columns where TABLE_NAME = ? and TABLE_SCHEMA=?", tableName, schemaName);
     }
 
 
@@ -63,20 +87,30 @@ public class Session {
                     }
                 }
                 rs = preparedStatement.executeQuery();
-                String[] names = getColumnNames(rs);
+                ColumnInfo[] columnInfos = getColumnNames(rs);
                 List<Map<String, ColumnRecord>> res = Lists.newArrayList();
                 while (rs.next()) {
                     Map<String, ColumnRecord> m = Maps.newHashMap();
-                    for (String name : names) {
+                    for (ColumnInfo info : columnInfos) {
                         try {
-                            Object val = rs.getObject(name);
                             ColumnRecord record = new ColumnRecord();
-                            record.setName(name);
-                            record.setData(Optional.ofNullable(val).isPresent() ? val.toString() : null);
-                            record.setType(Optional.ofNullable(val).isPresent() ? val.getClass().getName() : "");
-                            m.put(name, record);
+                            record.setName(info.getName());
+                            record.setType(info.getType());
+                            if (info.getType().equals("BLOB")) {
+                                byte[] bytes = rs.getBytes(info.getName());
+                                record.setBytes(bytes);
+                            } else if (info.getType().equals("DATETIME")) {
+                                Timestamp timestamp = rs.getTimestamp(info.getName());
+                                if (null != timestamp) {
+                                    record.setData(String.valueOf(timestamp.getTime()));
+                                }
+                            } else {
+                                Object val = rs.getObject(info.getName());
+                                record.setData(Optional.ofNullable(val).isPresent() ? val.toString() : null);
+                            }
+                            m.put(info.getName(), record);
                         } catch (SQLException e) {
-                            e.printStackTrace();
+                            log.error(e.getMessage());
                         }
                     }
                     res.add(m);
@@ -86,7 +120,9 @@ public class Session {
                 safeClose(rs);
                 safeClose(preparedStatement);
             }
-        }, e -> {
+        }, e ->
+
+        {
             throw new DoceanException(e);
         });
         return (List<Map<String, ColumnRecord>>) mo.getObj();
@@ -104,14 +140,16 @@ public class Session {
     }
 
 
-    private String[] getColumnNames(ResultSet rs) throws SQLException {
+    private ColumnInfo[] getColumnNames(ResultSet rs) throws SQLException {
         ResultSetMetaData rsmd = rs.getMetaData();
         int count = rsmd.getColumnCount();
-        String[] name = new String[count];
+        ColumnInfo[] infos = new ColumnInfo[count];
         for (int i = 0; i < count; i++) {
-            name[i] = rsmd.getColumnName(i + 1);
+            String name = rsmd.getColumnName(i + 1);
+            String type = rsmd.getColumnTypeName(i + 1);
+            infos[i] = new ColumnInfo(name, type);
         }
-        return name;
+        return infos;
     }
 
 

@@ -51,7 +51,7 @@ public class CallMethodProcessor implements UdsProcessor {
             Object obj = beanFactory.apply(req);
             String[] types = req.getParamTypes() == null ? new String[]{} : req.getParamTypes();
             String[] paramArray = req.getParams() == null ? new String[]{} : req.getParams();
-            log.info("invoke method : {} {} {} {}", req.getServiceName(), req.getMethodName(), Arrays.toString(types), Arrays.toString(paramArray));
+            log.debug("invoke method : {} {} {} {}", req.getServiceName(), req.getMethodName(), Arrays.toString(types), Arrays.toString(paramArray));
 
             MethodReq mr = new MethodReq();
             mr.setMethodName(req.getMethodName());
@@ -63,7 +63,7 @@ public class CallMethodProcessor implements UdsProcessor {
 
             if (req.getAtt("resultJson", "false").equals("true")) {
                 if (res.getClass().equals(int.class) || res.getClass().equals(Integer.class)
-                        || res.getClass().equals(long.class)  || res.getClass().equals(Long.class)
+                        || res.getClass().equals(long.class) || res.getClass().equals(Long.class)
                         || res.getClass().equals(String.class)) {
                     response.putAtt("_returnType", res.getClass().getSimpleName());
                     response.setData(CodesFactory.getCodes((byte) 2).encode(res), false);

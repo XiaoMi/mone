@@ -57,9 +57,18 @@ public class DemoController {
         return vo;
     }
 
+    @RequestMapping(path = "/test4",method = "get")
+    public DemoVo test4(MvcContext context) {
+        log.info("{}", context);
+        DemoVo vo = new DemoVo();
+        vo.setName("test4");
+        return vo;
+    }
+
 
     /**
      * 测试302 跳转
+     *
      * @return
      */
     @RequestMapping(path = "/302")
@@ -91,7 +100,15 @@ public class DemoController {
      */
     @RequestMapping(path = "/tests", method = "get")
     public String testSession(MvcContext context) {
-        return "session";
+        String name = String.valueOf(context.session().getAttribute("name"));
+        return "session:" + name;
+    }
+
+
+    @RequestMapping(path = "/tests2", method = "get")
+    public String testSession2(MvcContext context) {
+        String name = String.valueOf(context.session().getAttribute("name"));
+        return "session:" + name;
     }
 
 

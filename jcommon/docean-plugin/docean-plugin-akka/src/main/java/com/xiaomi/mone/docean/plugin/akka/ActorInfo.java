@@ -14,24 +14,20 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.mone.docean.plugin.akka;
+package com.xiaomi.data.push.antlr.java;
 
-import akka.actor.ActorRef;
 import lombok.Data;
 
 import java.util.List;
 
 /**
- * @author goodjava@qq.com
- * @date 1/30/21
+ * @Author goodjava@qq.com
+ * @Date 2021/3/12 10:58
  */
 @Data
-public class ActorInfo {
+public class ClassInfo {
 
     private String name;
 
-    private int num;
-
-    private List<ActorRef> list;
-
+    private List<String> annos;
 }

@@ -98,7 +98,7 @@ public class BytesCodes implements ICodes {
             return data;
         } else if (t.getClass().equals(boolean.class) || t.getClass().equals(Boolean.class)) {
             return ((Boolean) t) ? new byte[]{1} : new byte[]{0};
-        } else if (t.getClass().equals(Integer.class)) {
+        } else if (t.getClass().equals(Integer.class) || t.getClass().equals(int.class)) {
             return int2Bytes((Integer) t);
         } else if (t.getClass().equals(Long.class) || t.getClass().equals(long.class)) {
             return long2Bytes((Long) t);

@@ -85,6 +85,13 @@ public class DockerTest {
     }
 
     @Test
+    public void testListContainers5() {
+        List<Container> list = YpDockerClient.ins().listContainers(Lists.newArrayList(), false, "jaeger");
+        Set<String> set = list.stream().map(it ->it.getNames()[0]).collect(Collectors.toSet());
+        System.out.println(set);
+    }
+
+    @Test
     public void testListContainers4() {
         List<Container> list = YpDockerClient.ins().listContainers(Lists.newArrayList(), true);
         Set<Container> set = list.stream().filter(it -> it.getImage().startsWith("mischedule")).collect(Collectors.toSet());

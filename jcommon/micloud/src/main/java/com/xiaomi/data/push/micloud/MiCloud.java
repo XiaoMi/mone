@@ -31,6 +31,7 @@ import com.xiaomi.fusion.cloud.auth.core.enums.HttpMethod;
 import com.xiaomi.fusion.cloud.auth.core.util.HttpUtil;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -51,10 +52,10 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class MiCloud {
 
-    @Value("${micloud.url}")
+    @Value("${micloud.url:}")
     private String micloudUrl;
 
-    @Value("${catalyst.url}")
+    @Value("${catalyst.url:}")
     private String catalystUrl;
 
     private Gson gson = new Gson();

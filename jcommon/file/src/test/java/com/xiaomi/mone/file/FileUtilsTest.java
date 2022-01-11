@@ -19,6 +19,7 @@ package com.xiaomi.mone.file;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -40,6 +41,35 @@ public class FileUtilsTest {
         }
     }
 
+    @Test
+    public void testReadFileLines2() throws IOException {
+        long pointer = 1;
+        ReadResult res = FileUtils.readFile("/tmp/log/rcurve.log", pointer, 12, "ServiceManager destory");
+        res.getLines().forEach(System.out::println);
+        System.out.println(res.isOver());
+    }
+
+    @Test
+    public void testReadFileLines21() throws IOException {
+        long pointer = 1;
+        ReadResult res = FileUtils.readFile("/tmp/log/rcurve.log", pointer, 12, "26.*ServiceManager");
+        res.getLines().forEach(System.out::println);
+        System.out.println(res.isOver());
+    }
+
+    @Test
+    public void testReadFileLines22() throws IOException {
+        long pointer = 1;
+        for (; ; ) {
+            ReadResult res = FileUtils.readFile("/tmp/log/rcurve.log", pointer, 1, "ServiceManager");
+            res.getLines().forEach(System.out::println);
+            pointer = res.getPointer();
+            if (res.isOver()) {
+                System.out.println("over");
+                break;
+            }
+        }
+    }
 
     @Test
     public void testList() throws IOException {

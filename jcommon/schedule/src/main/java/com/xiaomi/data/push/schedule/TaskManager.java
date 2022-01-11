@@ -27,8 +27,6 @@ import com.xiaomi.data.push.dao.model.TaskExample;
 import com.xiaomi.data.push.dao.model.TaskWithBLOBs;
 import com.xiaomi.data.push.schedule.task.*;
 import com.xiaomi.data.push.schedule.task.notify.Notify;
-import com.xiaomi.data.push.service.FeiShuCommonService;
-import com.xiaomi.data.push.service.TaskHistoryService;
 import com.xiaomi.data.push.service.TaskService;
 import com.xiaomi.youpin.cron.CronExpression;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +43,6 @@ import org.springframework.stereotype.Component;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -83,12 +80,6 @@ public class TaskManager implements ApplicationContextAware, PushService {
 
     @Autowired
     private TaskCacheUpdater taskCacheUpdater;
-
-    @Autowired
-    private FeiShuCommonService feiShuService;
-
-    @Autowired
-    private TaskHistoryService taskHistoryService;
 
     public TaskManager() {
         logger.info("version:{}", new ScheduleVersion());
@@ -149,7 +140,7 @@ public class TaskManager implements ApplicationContextAware, PushService {
                 try {
                     nextRetryTime = new CronExpression(taskParam.getCron()).getNextValidTimeAfter(new Date()).getTime();
                 } catch (Exception e) {
-                    logger.warn("CronExpression error task :{} error:{}",taskParam, e.getMessage());
+                    logger.warn("CronExpression error task :{} error:{}", taskParam, e.getMessage());
                 }
             }
         }
@@ -176,7 +167,7 @@ public class TaskManager implements ApplicationContextAware, PushService {
 
     public void submitTask(TaskParam taskParam, TaskContext taskContext, boolean run, long nextRetryTime, boolean debug) {
         long now = System.currentTimeMillis();
-        log.info("taskParam{}",taskParam.toString());
+        log.info("taskParam{}", taskParam.toString());
         TaskWithBLOBs tb = new TaskWithBLOBs();
         tb.setName(taskParam.getTaskDef().getName());
         tb.setVersion(0);
@@ -185,7 +176,7 @@ public class TaskManager implements ApplicationContextAware, PushService {
         tb.setParams((new Gson()).toJson(taskParam));
         tb.setContext((new Gson()).toJson(taskContext));
 
-        log.info("context{}",tb.getContext().toString());
+        log.info("context{}", tb.getContext().toString());
         tb.setParentId(-1);
         tb.setCreated(now);
         tb.setCreator(taskParam.getCreator());
@@ -239,12 +230,12 @@ public class TaskManager implements ApplicationContextAware, PushService {
         try {
 
             ListenableFuture<TaskResult> future = this.listeningExecutor.submit(() ->
-                    this.timeLimiter.callWithTimeout(() -> {
-                        itask.beforeTask(taskParam, taskContext);
-                        TaskResult result = itask.execute(taskParam, taskContext);
-                        itask.afterTask(taskContext, result);
-                        return result;
-                    }, this.debug ? TimeUnit.HOURS.toMillis(1L) : getTimeout(taskParam), TimeUnit.MILLISECONDS));
+                this.timeLimiter.callWithTimeout(() -> {
+                    itask.beforeTask(taskParam, taskContext);
+                    TaskResult result = itask.execute(taskParam, taskContext);
+                    itask.afterTask(taskContext, result);
+                    return result;
+                }, this.debug ? TimeUnit.HOURS.toMillis(1L) : getTimeout(taskParam), TimeUnit.MILLISECONDS));
             Futures.addCallback(future, new FutureCallback<TaskResult>() {
                 @Override
                 public void onSuccess(TaskResult result) {
@@ -329,20 +320,24 @@ public class TaskManager implements ApplicationContextAware, PushService {
     /**
      * 暂停任务
      */
-    public void pause(int id) {
-        taskService.updateTask(id, (task) -> {
+    public boolean pause(int id) {
+        boolean success = taskService.updateTask(id, (task) -> {
             task.setStatus(TaskStatus.Pause.code);
             task.setUpdated(System.currentTimeMillis());
             return true;
-        });
+
+        }, 10, "pause");
+
+        logger.info("pause taskService.updateTask with id:{} success:{}", id, success);
+        return success;
     }
 
     /**
      * 启动任务
      */
-    public void start(int id) {
-        taskService.updateTask(id, (task) -> {
-            if (task.getStatus().equals(TaskStatus.Retry.code)) {
+    public boolean start(int id) {
+        boolean success = taskService.updateTask(id, (task) -> {
+            if (task.getStatus().equals(TaskStatus.Retry.code) || task.getStatus().equals(TaskStatus.Running.code)) {
                 return false;
             }
             task.setStatus(TaskStatus.Retry.code);
@@ -352,8 +347,11 @@ public class TaskManager implements ApplicationContextAware, PushService {
             task.setErrorRetryNum(0);
             task.setUpdated(System.currentTimeMillis());
             return true;
-        });
 
+        }, 50, "start");
+
+        logger.info("start taskService.updateTask with id:{} success:{}", id, success);
+        return success;
     }
 
     /**
@@ -363,12 +361,12 @@ public class TaskManager implements ApplicationContextAware, PushService {
      * @param params
      */
     public void modifyParam(Integer id, String params) {
-        taskService.updateTask(id, (task) -> {
+        boolean res = taskService.updateTask(id, (task) -> {
             TaskParam taskParam = new Gson().fromJson(params, TaskParam.class);
             TaskParam oldTaskParams = new Gson().fromJson(task.getParams(), TaskParam.class);
-            if(taskParam.getExecuteTime()!=0){
+            if (taskParam.getExecuteTime() != 0) {
                 task.setNextRetryTime(taskParam.getExecuteTime());
-            }else{
+            } else {
                 if (!oldTaskParams.getCron().equals(taskParam.getCron())) {
                     try {
                         long nextRetryTime = new CronExpression(taskParam.getCron()).getNextValidTimeAfter(new Date()).getTime();
@@ -393,7 +391,9 @@ public class TaskManager implements ApplicationContextAware, PushService {
 
             task.setUpdated(System.currentTimeMillis());
             return true;
-        });
+        }, 10, "modify_param");
+
+        logger.info("start taskService.modify with id:{} success:{}", id, res);
     }
 
 

@@ -43,15 +43,18 @@
         <module>docean-plugin-test</module>
 <!--        <module>docean-plugin-sentinel</module>-->
         <module>docean-plugin-mybatis</module>
+        <module>docean-plugin-mybatis-plus</module>
         <module>docean-plugin-datasource</module>
         <module>docean-plugin-mongodb</module>
         <module>docean-plugin-log</module>
         <module>docean-plugin-cat</module>
         <module>docean-plugin-mvc</module>
         <module>docean-plugin-dmesh</module>
-        <module>docean-plugin-shadingsphere</module>
         <module>docean-plugin-akka</module>
         <module>docean-plugin-api</module>
+        <module>docean-plugin-es</module>
+        <module>docean-plugin-etcd</module>
+        <module>docean-plugin-grpc</module>
     </modules>
 
     <dependencies>

@@ -110,4 +110,15 @@ public class TaskContext {
         }
     }
 
+    /**
+     * 发送通知信息
+     *
+     * @param msg
+     */
+    public void notifyMsg(String type, String msg, int shardingKey) {
+        if (null != notify) {
+            notify.notify(type, msg, shardingKey);
+        }
+    }
+
 }

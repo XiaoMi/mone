@@ -30,6 +30,10 @@ public class ReadResult {
 
     private long pointer;
 
+    private Long fileMaxPointer;
+
+    private long lineNumber;
+
     private boolean over;
 
 }

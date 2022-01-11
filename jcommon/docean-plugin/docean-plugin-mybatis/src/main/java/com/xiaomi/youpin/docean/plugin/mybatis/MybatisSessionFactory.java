@@ -107,6 +107,6 @@ public class MybatisSessionFactory implements SqlSessionFactory {
 
     @Override
     public Configuration getConfiguration() {
-        return null;
+        return this.configuration;
     }
 }

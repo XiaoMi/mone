@@ -26,6 +26,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>micloud</artifactId>
+
     <dependencies>
         <dependency>
             <groupId>com.xiaomi.youpin</groupId>
@@ -52,6 +53,7 @@
             <artifactId>cloud-authentication</artifactId>
             <version>1.0.1</version>
         </dependency>
+
     </dependencies>
 
 

@@ -30,6 +30,20 @@
 
     <dependencies>
 
+        <!--支持m1芯片-->
+        <dependency>
+            <groupId>com.kohlschutter.junixsocket</groupId>
+            <artifactId>junixsocket-common</artifactId>
+            <version>2.4.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.kohlschutter.junixsocket</groupId>
+            <artifactId>junixsocket-native-common</artifactId>
+            <version>2.4.0</version>
+        </dependency>
+
+
 
         <dependency>
             <groupId>com.github.docker-java</groupId>

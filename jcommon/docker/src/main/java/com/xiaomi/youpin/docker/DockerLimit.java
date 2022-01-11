@@ -38,4 +38,16 @@ public class DockerLimit {
      */
     private Integer blkioWeight;
 
+
+    /**
+     * 不绑定cpu
+     */
+    private boolean useCpus;
+
+
+    /**
+     * cpu 的数量,可以是0.1
+     */
+    private float cpuNum;
+
 }

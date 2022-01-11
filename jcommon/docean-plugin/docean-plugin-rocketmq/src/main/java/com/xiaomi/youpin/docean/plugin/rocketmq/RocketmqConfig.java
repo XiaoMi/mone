@@ -32,4 +32,8 @@ public class RocketmqConfig {
 
     private String namesrvAddr;
 
+    private String ak;
+
+    private String sk;
+
 }

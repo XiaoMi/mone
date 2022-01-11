@@ -16,21 +16,24 @@
 
 package com.xiaomi.data.push.redis;
 
-import com.xiaomi.youpin.cat.CatPlugin;
+import com.alibaba.fastjson.JSON;
+import com.google.gson.Gson;
+import com.xiaomi.data.push.redis.ext.PipelineCluster;
+import com.xiaomi.data.push.redis.monitor.MetricTypes;
+import com.xiaomi.data.push.redis.monitor.RedisMonitor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import redis.clients.jedis.*;
 
 import javax.annotation.PostConstruct;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -44,14 +47,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class Redis {
 
     private static final String ACTION_GET = "get";
+    private static final String ACTION_MGET = "mget";
     private static final String ACTION_SET = "set";
     private static final String ACTION_ZREM = "zrem";
 
     private static final Logger logger = LoggerFactory.getLogger(Redis.class);
 
+    private static Gson gson = new Gson();
+
     private JedisPool pool;
 
-    private JedisCluster cluster;
+    private PipelineCluster cluster;
 
     @Value("${spring.redis}")
     private String redisHosts;
@@ -71,6 +77,11 @@ public class Redis {
     @Value("${spring.redis.cat.enabled}")
     private boolean catEnabled;
 
+    @Value("${spring.redis.prometheus.enabled:false}")
+    private boolean prometheusEnabled;
+
+    @Autowired
+    private RedisMonitor redisMonitor;
 
     public String getRedisHosts() {
         return redisHosts;
@@ -100,12 +111,12 @@ public class Redis {
 
     @PostConstruct
     public void init() {
-        if (!init.compareAndSet(false,true)) {
+        if (!init.compareAndSet(false, true)) {
             return;
         }
-        CatPlugin cat = new CatPlugin("init", catEnabled);
+
         boolean success = true;
-        cat.before(null);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "INIT", MetricTypes.Gauge, "init", null, success);
         try {
             final GenericObjectPoolConfig config = new GenericObjectPoolConfig();
             int timeout = 2000;
@@ -141,14 +152,14 @@ public class Redis {
                     String[] ipPortPair = ipPort.split(":");
                     nodes.add(new HostAndPort(ipPortPair[0].trim(), Integer.valueOf(ipPortPair[1].trim())));
                 }
-                cluster = new JedisCluster(nodes, timeout, 2000, 5, redisPwd, config);
+                cluster = new PipelineCluster(nodes, timeout, 2000, 5, redisPwd, config);
             }
         } catch (Exception e) {
             success = false;
             log.info("Redis.init error", e);
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "INIT", MetricTypes.Gauge, "init", null, success);
         }
     }
 
@@ -158,9 +169,9 @@ public class Redis {
      * @return
      */
     public boolean close() {
-        CatPlugin cat = new CatPlugin("close", catEnabled);
+
         boolean success = true;
-        cat.before(null);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "CLOSE", MetricTypes.Gauge, "close", null, success);
         try {
             logger.info("redis client close");
             if (serverType.equals("dev")) {
@@ -174,15 +185,14 @@ public class Redis {
             success = false;
             return false;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "CLOSE", MetricTypes.Gauge, "close", null, success);
         }
     }
 
 
     public String get(String key) {
-        CatPlugin cat = new CatPlugin(ACTION_GET, catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "get", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -195,14 +205,38 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "get", key, success);
+        }
+    }
+
+    public Map<String, String> mget(final List<String> keys) {
+        boolean success = true;
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, ACTION_MGET, keys.toString(), success);
+        try {
+            if (serverType.equals("dev")) {
+                Map<String, String> result = new HashMap<>();
+                try (Jedis jedis = pool.getResource()) {
+                    String[] keyArr = keys.toArray(new String[keys.size()]);
+                    List<String> mgetList = jedis.mget(keyArr);
+                    for (int i = 0; i < keys.size(); i++) {
+                        result.put(keys.get(i), i <= mgetList.size() ? mgetList.get(i) : null);
+                    }
+                    return result;
+                }
+            } else {
+                return cluster.mget(keys);
+            }
+        } catch (Exception e) {
+            success = false;
+            throw e;
+        } finally {
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, ACTION_MGET, keys.toString(), success);
         }
     }
 
     public byte[] getBytes(String key) {
-        CatPlugin cat = new CatPlugin("getBytes", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "getBytes", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -215,15 +249,14 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "getBytes", key, success);
         }
     }
 
 
     public boolean exists(String key) {
-        CatPlugin cat = new CatPlugin("exists", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "exists", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -236,14 +269,14 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+//            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "exists", key, success);
         }
     }
 
     public void set(String key, String value) {
-        CatPlugin cat = new CatPlugin(ACTION_SET, catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, ACTION_SET, key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -256,14 +289,13 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, ACTION_SET, key, success);
         }
     }
 
     public Long setNx(String key, String value) {
-        CatPlugin cat = new CatPlugin("setNx", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "setNx", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -276,14 +308,13 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "setNx", key, success);
         }
     }
 
     public void del(String key) {
-        CatPlugin cat = new CatPlugin("del", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "del", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -296,14 +327,13 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "del", key, success);
         }
     }
 
     public String setXx(String key, String value) {
-        CatPlugin cat = new CatPlugin("setXx", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "setXx", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -316,14 +346,13 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "setXx", key, success);
         }
     }
 
     public long incr(String key) {
-        CatPlugin cat = new CatPlugin("incr", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "incr", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -336,15 +365,14 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "incr", key, success);
         }
     }
 
 
     public void expire(String key, int time) {
-        CatPlugin cat = new CatPlugin("expire", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "expire", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -357,14 +385,13 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "expire", key, success);
         }
     }
 
     public List<String> lrange(String key) {
-        CatPlugin cat = new CatPlugin("lrange", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "lrange", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -377,15 +404,14 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "lrange", key, success);
         }
     }
 
 
     public Long lpush(String key, String value) {
-        CatPlugin cat = new CatPlugin("lpush", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "lpush", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -398,14 +424,70 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "lpush", key, success);
+        }
+    }
+
+    public Long rpush(String key, String value) {
+        boolean success = true;
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "rpush", key, success);
+        try {
+            if (serverType.equals("dev")) {
+                try (Jedis jedis = pool.getResource()) {
+                    return jedis.rpush(key, value);
+                }
+            } else {
+                return cluster.rpush(key, value);
+            }
+        } catch (Exception e) {
+            success = false;
+            throw e;
+        } finally {
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "rpush", key, success);
+        }
+    }
+
+    public String rpop(String key) {
+        boolean success = true;
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "rpop", key, success);
+        try {
+            if (serverType.equals("dev")) {
+                try (Jedis jedis = pool.getResource()) {
+                    return jedis.rpop(key);
+                }
+            } else {
+                return cluster.rpop(key);
+            }
+        } catch (Exception e) {
+            success = false;
+            throw e;
+        } finally {
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "rpop", key, success);
+        }
+    }
+
+    public Long llen(String key) {
+        boolean success = true;
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "llen", key, success);
+        try {
+            if (serverType.equals("dev")) {
+                try (Jedis jedis = pool.getResource()) {
+                    return jedis.llen(key);
+                }
+            } else {
+                return cluster.llen(key);
+            }
+        } catch (Exception e) {
+            success = false;
+            throw e;
+        } finally {
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "llen", key, success);
         }
     }
 
     public Long zadd(String key, double score, String member) {
-        CatPlugin cat = new CatPlugin("zadd", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "zadd", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -418,14 +500,13 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "zadd", key, success);
         }
     }
 
     public Long zadd(String key, Map<String, Double> scoreMembers) {
-        CatPlugin cat = new CatPlugin("zadd", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "zadd", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -438,14 +519,13 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "zadd", key, success);
         }
     }
 
     public Set<Tuple> zrevrangeByScoreWithScores(String key, double max, double min) {
-        CatPlugin cat = new CatPlugin("zrevrangeByScoreWithScores", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "zrevrangeByScoreWithScores", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -458,14 +538,13 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "zrevrangeByScoreWithScores", key, success);
         }
     }
 
     public Long zrem(String key, String... members) {
-        CatPlugin cat = new CatPlugin(ACTION_ZREM, catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, ACTION_ZREM, key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -478,7 +557,7 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, ACTION_ZREM, key, success);
         }
     }
 
@@ -491,9 +570,8 @@ public class Redis {
      * @return
      */
     public String set(String key, String value, int time) {
-        CatPlugin cat = new CatPlugin(ACTION_SET, catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, ACTION_SET, key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -506,15 +584,14 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, ACTION_SET, key, success);
         }
     }
 
 
     public String set(String key, String value, String NXXX, int time) {
-        CatPlugin cat = new CatPlugin(ACTION_SET, catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, ACTION_SET, key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -527,14 +604,13 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, ACTION_SET, key, success);
         }
     }
 
     public String set(String key, byte[] value, int time) {
-        CatPlugin cat = new CatPlugin(ACTION_SET, catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, ACTION_SET, key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -547,14 +623,13 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, ACTION_SET, key, success);
         }
     }
 
     public String set(String key, byte[] value) {
-        CatPlugin cat = new CatPlugin(ACTION_SET, catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, ACTION_SET, key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -567,15 +642,27 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, ACTION_SET, key, success);
         }
+    }
+
+    public <T> void set(String key, T value) {
+        set(key, JSON.toJSONString(value));
+    }
+
+    public <T> void set(String key, T value, int time) {
+        set(key, gson.toJson(value), time);
+    }
+
+    public <T> T get(String key, Class<T> clazz) {
+        String value = get(key);
+        return gson.fromJson(value, clazz);
     }
 
 
     public Set<String> zrange(String key, long start, long end) {
-        CatPlugin cat = new CatPlugin("zrange", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "zrange", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -588,14 +675,13 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "zrange", key, success);
         }
     }
 
     public Set<String> zrevrange(String key, long start, long end) {
-        CatPlugin cat = new CatPlugin("zrevrange", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "zrevrange", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -608,14 +694,13 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "zrevrange", key, success);
         }
     }
 
     public Long zrank(String key, String member) {
-        CatPlugin cat = new CatPlugin("zrank", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "zrank", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -628,14 +713,13 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "zrank", key, success);
         }
     }
 
     public Double zincrby(String key, double score, String member) {
-        CatPlugin cat = new CatPlugin("zincrby", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "zincrby", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -648,14 +732,13 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "zincrby", key, success);
         }
     }
 
     public Long sadd(String key, String... members) {
-        CatPlugin cat = new CatPlugin("sadd", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "sadd", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -668,14 +751,13 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "sadd", key, success);
         }
     }
 
     public Long srem(String key, String... members) {
-        CatPlugin cat = new CatPlugin("srem", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "srem", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -688,14 +770,13 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "srem", key, success);
         }
     }
 
     public Set<String> smembers(String key) {
-        CatPlugin cat = new CatPlugin("smembers", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "smembers", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -708,14 +789,13 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "smembers", key, success);
         }
     }
 
     public Set<String> spop(String key, long count) {
-        CatPlugin cat = new CatPlugin("spop", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "spop", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -728,14 +808,13 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "spop", key, success);
         }
     }
 
     public String spop(String key) {
-        CatPlugin cat = new CatPlugin("spop", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "spop", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -748,15 +827,14 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "spop", key, success);
         }
     }
 
 
     public Long scard(String key) {
-        CatPlugin cat = new CatPlugin("scard", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "scard", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -769,14 +847,13 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "scard", key, success);
         }
     }
 
     public Boolean sismember(String key, String member) {
-        CatPlugin cat = new CatPlugin("sismember", catEnabled);
         boolean success = true;
-        cat.before(key);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "sismember", key, success);
         try {
             if (serverType.equals("dev")) {
                 try (Jedis jedis = pool.getResource()) {
@@ -789,9 +866,28 @@ public class Redis {
             success = false;
             throw e;
         } finally {
-            cat.after(success);
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "sismember", key, success);
         }
     }
 
+    public Object eval(String script, List<String> keys, List<String> values) {
+        boolean success = true;
+        String joinKeys = StringUtils.join(keys);
+        redisMonitor.recordMonitorInfo(catEnabled, false, true, "DATA_ACCESS", MetricTypes.Counter, "eval", joinKeys, success);
+        try {
+            if (serverType.equals("dev")) {
+                try (Jedis jedis = pool.getResource()) {
+                    return jedis.eval(script, keys, values);
+                }
+            } else {
+                return cluster.eval(script, keys, values);
+            }
+        } catch (Exception e) {
+            success = false;
+            throw e;
+        } finally {
+            redisMonitor.recordMonitorInfo(catEnabled, prometheusEnabled, false, "DATA_ACCESS", MetricTypes.Counter, "eval", joinKeys, success);
+        }
+    }
 
 }

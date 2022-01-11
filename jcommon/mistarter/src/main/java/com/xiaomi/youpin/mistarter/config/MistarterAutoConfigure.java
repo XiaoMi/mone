@@ -16,7 +16,10 @@
 
 package com.xiaomi.youpin.mistarter.config;
 
+import com.alibaba.nacos.api.annotation.NacosProperties;
+import com.alibaba.nacos.spring.context.annotation.config.EnableNacosConfig;
 import com.xiaomi.data.push.nacos.NacosNaming;
+import com.xiaomi.mone.mistarter.nacos.MoneConfig;
 import com.xiaomi.youpin.health.HealthController;
 import com.xiaomi.youpin.health.HealthServiceImpl;
 import com.xiaomi.youpin.health.InitService;
@@ -42,50 +45,13 @@ import javax.annotation.PostConstruct;
 @ConditionalOnClass({QpsAop.class, InitService.class})
 @EnableAspectJAutoProxy
 @DubboComponentScan(basePackages = "com.xiaomi.youpin")
+@EnableNacosConfig(globalProperties = @NacosProperties(serverAddr = "${nacos.config.addrs}"))
 @Slf4j
 public class MistarterAutoConfigure {
 
     @PostConstruct
     private void init() {
         log.info("mistarter init");
-    }
-
-    /**
-     * qps 工具
-     *
-     * @return
-     */
-    @Bean(initMethod = "init")
-    @ConditionalOnMissingBean
-    public QpsAop qpsAop() {
-        log.info("init qps aop");
-        QpsAop service = new QpsAop();
-        return service;
-    }
-
-
-    @Bean(initMethod = "init")
-    @ConditionalOnMissingBean
-    @ConditionalOnProperty(value = "nacos_naming_addr")
-    public NacosNaming nacosNaming() {
-        log.info("init nacos naming");
-        NacosNaming service = new NacosNaming();
-        return service;
-    }
-
-
-    /**
-     * 上报自己的http服务信息
-     *
-     * @return
-     */
-    @Bean(initMethod = "init")
-    @ConditionalOnMissingBean
-    @ConditionalOnProperty(value = {"nacos_naming_addr", "init_service", "server.port", "server.group", "server.name"})
-    public InitService initService() {
-        log.info("init initService");
-        InitService service = new InitService();
-        return service;
     }
 
 
@@ -115,6 +81,15 @@ public class MistarterAutoConfigure {
         log.info("init dubboHealth");
         HealthService service = new HealthServiceImpl();
         return service;
+    }
+
+    /**
+     * 动态配置
+     * @return
+     */
+    @Bean
+    public MoneConfig moneConfig() {
+        return new MoneConfig();
     }
 
 

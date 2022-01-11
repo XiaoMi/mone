@@ -16,10 +16,21 @@
 
 package com.xiaomi.mone.es;
 
+import lombok.Data;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.message.BasicHeader;
+import org.apache.lucene.queryparser.xml.builders.BooleanQueryBuilder;
+import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.DocWriteRequest;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
+import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
+import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
+import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetRequest;
@@ -28,27 +39,61 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.core.CountRequest;
+import org.elasticsearch.client.core.CountResponse;
+import org.elasticsearch.client.indices.*;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.reindex.BulkByScrollResponse;
-import org.elasticsearch.index.reindex.DeleteByQueryRequest;
+import org.elasticsearch.core.TimeValue;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.aggregations.Aggregation;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
+import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
+import org.elasticsearch.search.aggregations.bucket.histogram.Histogram;
+import org.elasticsearch.search.aggregations.bucket.histogram.LongBounds;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author goodjava@qq.com
  */
 public class EsClient {
 
-
     private RestHighLevelClient client;
+
+//    public EsClient(String esAddr, String user, String pwd) {
+//        final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+//        credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(user, pwd));
+//        RestClientBuilder builder = RestClient.builder(new HttpHost(esAddr.split(":")[0], Integer.valueOf(esAddr.split(":")[1]), "http"))
+//                .setHttpClientConfigCallback(new RestClientBuilder.HttpClientConfigCallback() {
+//                    @Override
+//                    public HttpAsyncClientBuilder customizeHttpClient(HttpAsyncClientBuilder httpAsyncClientBuilder) {
+//                        return httpAsyncClientBuilder.setDefaultCredentialsProvider(credentialsProvider);
+//                    }
+//                }).setRequestConfigCallback(new RestClientBuilder.RequestConfigCallback() {
+//                    // 该方法接收一个RequestConfig.Builder对象，对该对象进行修改后然后返回。
+//                    @Override
+//                    public RequestConfig.Builder customizeRequestConfig(RequestConfig.Builder builder) {
+//                        return builder.setConnectTimeout(5000 * 1000) // 连接超时（默认为1秒）
+//                                .setSocketTimeout(6000 * 1000);// 套接字超时（默认为30秒）//更改客户端的超时限制默认30秒现在改为100*1000分钟
+//                    }
+//                });// 调整最大重试超时时间（默认为30秒）.setMaxRetryTimeoutMillis(60000)
+//        this.client = new RestHighLevelClient(builder);
+//
+//    }
 
     public EsClient(String esAddr, String user, String pwd) {
 
@@ -63,11 +108,17 @@ public class EsClient {
 
         String urlencodePassword = new String(Base64.getUrlEncoder().encode(String.format("%s:%s", user, pwd).getBytes()));
         String basicAuth = String.format("basic %s", urlencodePassword);
-        Header[] headers = new Header[] {new BasicHeader("Authorization", basicAuth)};
+        Header[] headers = new Header[]{new BasicHeader("Authorization", basicAuth)};
 
-        RestClientBuilder clientBuilder = RestClient.builder(hosts.toArray(new HttpHost[0])).setDefaultHeaders(headers);
-
+        RestClientBuilder clientBuilder = RestClient.builder(hosts.toArray(new HttpHost[0]))
+                .setDefaultHeaders(headers)
+                .setHttpClientConfigCallback(x -> x.setMaxConnPerRoute(500)
+                        .setMaxConnTotal(500)
+                        .setDefaultRequestConfig(RequestConfig.custom().setSocketTimeout(2 * 60 * 1000)
+                                .setConnectTimeout(5000 * 1000).build())
+                        .setKeepAliveStrategy((response, context) -> TimeUnit.MINUTES.toMillis(2)));
         this.client = new RestHighLevelClient(clientBuilder);
+
     }
 
     public SearchResponse search(SearchRequest searchRequest) throws IOException {
@@ -88,16 +139,39 @@ public class EsClient {
         IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
     }
 
-    public void createIndex(String name,String mapping) throws IOException {
+    public void insertDocAsyn(String index, Map<String, Object> data, ActionListener<IndexResponse> listener) {
+        IndexRequest request = new IndexRequest(index).source(data);
+        client.indexAsync(request, RequestOptions.DEFAULT, listener);
+    }
+
+    public void createIndex(String name, String mapping) throws IOException {
         CreateIndexRequest request = new CreateIndexRequest(name);
         request.mapping(mapping, XContentType.JSON);
         RequestOptions options = RequestOptions.DEFAULT;
         client.indices().create(request, options);
     }
 
-    public GetResponse get(GetRequest getRequest) throws IOException{
+    public CreateIndexResponse createIndex(CreateIndexRequest request) throws IOException {
+        return client.indices().create(request, RequestOptions.DEFAULT);
+    }
+
+    public org.elasticsearch.client.indices.CreateIndexResponse createIndex(org.elasticsearch.client.indices.CreateIndexRequest request) throws IOException {
+        return client.indices().create(request, RequestOptions.DEFAULT);
+    }
+
+    public GetResponse get(GetRequest getRequest) throws IOException {
         GetResponse getResponse = client.get(getRequest, RequestOptions.DEFAULT);
         return getResponse;
+    }
+
+    public SearchResponse queryByIndex(String index) throws IOException {
+        SearchRequest searchRequest = new SearchRequest(index);
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
+        QueryBuilder queryBuilder = QueryBuilders.matchQuery("_index", index);
+        sourceBuilder.query(queryBuilder);
+        searchRequest.source(sourceBuilder);
+        SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+        return searchResponse;
     }
 
     public DeleteResponse delete(DeleteRequest request) throws IOException {
@@ -110,7 +184,129 @@ public class EsClient {
         return response;
     }
 
+    /**
+     * 批量保存 可能会丢失数据，建议使用bulkProcessor
+     *
+     * @param index
+     * @param dataList
+     * @return
+     * @throws IOException
+     */
+    @Deprecated
+    public boolean bulkInsert(String index, List<Map<String, Object>> dataList) throws IOException {
+        BulkRequest bulkRequest = new BulkRequest();
+        for (int i = 0; i < dataList.size(); i++) {
+            bulkRequest.add(new IndexRequest(index).source(dataList.get(i)));
+        }
+        bulkRequest.timeout(TimeValue.timeValueSeconds(5));
+        BulkResponse bulkResponse = client.bulk(bulkRequest, RequestOptions.DEFAULT);
+        return !bulkResponse.hasFailures();
+    }
 
+    /**
+     * 创建索引模板
+     *
+     * @param request
+     * @return
+     * @throws IOException
+     */
+    public boolean createIndexTemplate(PutIndexTemplateRequest request) throws IOException {
+        AcknowledgedResponse response = client.indices().putTemplate(request, RequestOptions.DEFAULT);
+        return response.isAcknowledged();
+    }
 
+    /**
+     * 索引模板是否存在
+     *
+     * @param request
+     * @return
+     * @throws IOException
+     */
+    public boolean existsTemplate(IndexTemplatesExistRequest request) throws IOException {
+        return client.indices().existsTemplate(request, RequestOptions.DEFAULT);
+    }
+
+    /**
+     * 获取索引模板
+     *
+     * @param request
+     * @return
+     * @throws IOException
+     */
+    public List<IndexTemplateMetadata> getIndexTemplates(GetIndexTemplatesRequest request) throws IOException {
+        GetIndexTemplatesResponse templatesResponse = client.indices().getIndexTemplate(request, RequestOptions.DEFAULT);
+        return templatesResponse.getIndexTemplates();
+    }
+
+    /**
+     * 统计
+     *
+     * @param countRequest
+     * @return
+     * @throws IOException
+     */
+    public Long count(CountRequest countRequest) throws IOException {
+        CountResponse countResponse = client.count(countRequest, RequestOptions.DEFAULT);
+        long count = countResponse.getCount();
+        return count;
+    }
+
+    /**
+     * 数据直方图
+     *
+     * @return
+     */
+    public EsRet dateHistogram(String indexName, String interval, long startTime, long endTime, BoolQueryBuilder builder) throws IOException {
+        // 聚合
+        EsRet esRet = new EsRet();
+        AggregationBuilder aggregationBuilder = AggregationBuilders.dateHistogram("dateHistogram")
+                .minDocCount(0)//返回空桶
+                .fixedInterval(new DateHistogramInterval(interval)) //设置间隔
+                .field("timestamp")
+                .timeZone(TimeZone.getTimeZone("GMT+8").toZoneId())
+                .format("yyyy-MM-dd HH:mm:ss")//设定返回格式
+                .extendedBounds(new LongBounds(startTime, endTime));//统计范围
+        SearchRequest searchRequest = new SearchRequest();
+        SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+        searchSourceBuilder.query(builder).aggregation(aggregationBuilder).size(0);
+        searchRequest.source(searchSourceBuilder);
+        searchRequest.indices(indexName);
+        SearchResponse searchResponse = client.search(searchRequest, RequestOptions.DEFAULT);
+        if (searchResponse == null || searchResponse.getAggregations() == null) {
+            return esRet;
+        }
+        Aggregation agg = searchResponse.getAggregations().get("dateHistogram");
+        List<? extends Histogram.Bucket> buckets = ((Histogram) agg).getBuckets();
+        List<String> timestamps = new ArrayList<>();
+        List<Long> counts = new ArrayList<>();
+        for (Histogram.Bucket bucket : buckets) {
+            timestamps.add(bucket.getKeyAsString());
+            counts.add(bucket.getDocCount());
+        }
+        esRet.setCounts(counts);
+        esRet.setTimestamps(timestamps);
+        return esRet;
+    }
+
+    public Integer getClusterHealth() throws IOException {
+        ClusterHealthRequest request = new ClusterHealthRequest();
+        request.timeout(TimeValue.timeValueSeconds(50));
+        ClusterHealthResponse response = client.cluster().health(request, RequestOptions.DEFAULT);
+        return response.status().getStatus();
+    }
+
+    public void searchAsync(SearchRequest searchRequest, ActionListener<SearchResponse> listener) {
+        client.searchAsync(searchRequest, RequestOptions.DEFAULT, listener);
+    }
+
+    @Data
+    public class EsRet {
+        private List<String> timestamps;
+        private List<Long> counts;
+    }
+
+    protected RestHighLevelClient getEsOriginalClient() {
+        return this.client;
+    }
 
 }

@@ -163,7 +163,7 @@ public class YouPinLogAppender extends UnsynchronizedAppenderBase<ILoggingEvent>
                 ? MDC.get(mdcKey) + " " + messageConverter.convert(eventObject)
                 : messageConverter.convert(eventObject);
         String level = eventObject.getLevel().levelStr;
-        String traceId = TraceIdUtils.ins().traceId();
+        String traceId = LogbackPatternConverter.traceId(eventObject);
         String time = dateConverter.convert(eventObject);
         String line = lineOfCallerConverter.convert(eventObject);
         String methodName = methodOfCallerConverter.convert(eventObject);
@@ -222,7 +222,10 @@ public class YouPinLogAppender extends UnsynchronizedAppenderBase<ILoggingEvent>
     }
 
     protected void setProps(ILoggingEvent eventObject, LogRecord log) {
-        if (eventObject.getArgumentArray() != null && eventObject.getArgumentArray().length > 0 && eventObject.getArgumentArray()[eventObject.getArgumentArray().length - 1].getClass().equals(LogContext.class)) {
+        if (eventObject.getArgumentArray() != null
+                && eventObject.getArgumentArray().length > 0
+                && eventObject.getArgumentArray()[eventObject.getArgumentArray().length - 1] != null
+                && eventObject.getArgumentArray()[eventObject.getArgumentArray().length - 1].getClass().equals(LogContext.class)) {
             LogContext context = (LogContext) eventObject.getArgumentArray()[eventObject.getArgumentArray().length - 1];
             log.setTag(context.getTag());
             log.setParams(context.getParam());

@@ -19,6 +19,7 @@ package com.xiaomi.youpin.docean.mvc;
 import com.google.gson.Gson;
 import com.xiaomi.youpin.docean.Mvc;
 import com.xiaomi.youpin.docean.common.Cons;
+import com.xiaomi.youpin.docean.mvc.download.DownloadService;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -26,7 +27,9 @@ import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.QueryStringDecoder;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 
@@ -47,9 +50,12 @@ public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
         String uri = HttpRequestUtils.getBasePath(request);
         byte[] body = null;
 
+        MvcRequest req = new MvcRequest();
+
         if (request.method().equals(HttpMethod.GET)) {
             QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
             Map<String, String> params = decoder.parameters().entrySet().stream().collect(Collectors.toMap(it -> it.getKey(), it -> it.getValue().get(0)));
+            req.setParams(params);
             body = new Gson().toJson(params).getBytes();
         }
 
@@ -59,9 +65,10 @@ public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
         String method = request.method().name();
         MvcContext context = new MvcContext();
+        context.setRequest(request);
         context.setMethod(method);
         context.setHandlerContext(ctx);
-        MvcRequest req = new MvcRequest();
+        context.setPath(uri);
         req.setHeaders(request.headers().entries().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
         context.setHeaders(req.getHeaders());
         req.setMethod(method);

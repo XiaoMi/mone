@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+Premain-Class: com.xiaomi.mone.buddy.agent.BuddyAgent
+Can-Redefine-Classes: true
+Can-Retransform-Classes: true
+

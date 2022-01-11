@@ -54,7 +54,7 @@ public class TransactionalInterceptor extends EnhanceInterceptor {
             Trans.commit();
             return r;
         } finally {
-//            Trans.close();
+            Trans.close();
         }
     }
 
@@ -65,7 +65,7 @@ public class TransactionalInterceptor extends EnhanceInterceptor {
         try {
             Trans.rollback();
         } finally {
-//            Trans.close();
+            Trans.close();
         }
     }
 

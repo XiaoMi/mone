@@ -35,6 +35,12 @@
             <groupId>com.xiaomi.youpin</groupId>
             <artifactId>common</artifactId>
             <version>1.5-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>fastjson</artifactId>
+                    <groupId>com.alibaba</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
 

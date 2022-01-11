@@ -21,6 +21,7 @@ import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingService;
 import com.alibaba.nacos.api.naming.listener.EventListener;
 import com.alibaba.nacos.api.naming.pojo.Instance;
+import com.alibaba.nacos.api.naming.pojo.ListView;
 import com.xiaomi.youpin.docean.common.StringUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +39,12 @@ public class NacosNaming {
     @Setter
     private String serverAddr;
 
+    @Setter
+    private String username;
+
+    @Setter
+    private String password;
+
     private String addr;
 
     private NamingService namingService;
@@ -51,6 +58,13 @@ public class NacosNaming {
 
         Properties properties = new Properties();
         properties.put("serverAddr", serverAddr);
+
+        if (!StringUtils.isEmpty(username)) {
+            properties.put("username", username);
+        }
+        if (!StringUtils.isEmpty(password)) {
+            properties.put("password", password);
+        }
 
         try {
             namingService = NacosFactory.createNamingService(properties);
@@ -148,6 +162,15 @@ public class NacosNaming {
             return array[0];
         }
         throw new RuntimeException("serverAddr is null");
+    }
+
+    public ListView<String> getServicesOfServer(int page, int pagesize) {
+        try {
+            return namingService.getServicesOfServer(page, pagesize);
+        } catch (NacosException e) {
+            log.error("getServicesOfServer error:{}", e.getMessage());
+        }
+        return null;
     }
 
 

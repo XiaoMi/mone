@@ -16,6 +16,7 @@
 
 package com.xiaomi.data.push.service;
 
+import com.dianping.cat.Cat;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.xiaomi.data.push.common.RpcTaskReq;
@@ -104,36 +105,19 @@ public class TaskService {
 
 
     public boolean updateTask(int id, Function<TaskWithBLOBs, Boolean> function) {
-        return updateTask(id, function, null, null, null);
+        return updateTask(id, function, null, null, null, -1, "");
+    }
+
+    public boolean updateTask(int id, Function<TaskWithBLOBs, Boolean> function, int retryNum, String source) {
+        return updateTask(id, function, null, null, null, retryNum, source);
     }
 
 
-    public boolean updateTask(int id, Function<TaskWithBLOBs, Boolean> function, TaskContext context, TaskResult result, Integer status) {
+    public boolean updateTask(int id, Function<TaskWithBLOBs, Boolean> function, TaskContext context, TaskResult result, Integer status, int retryNum, String source) {
         int n = 0;
-        //调度系统优化,不是直接刷入数据库,而是先刷入内存
-        if (null != context && context.getString(TaskContext.CACHE).equals("true")) {
-            if (serverContext.isLeader()) {
-                //自己就可以完成处理
-                taskCacheUpdater.updateTask(id, new Gson().toJson(result), new Gson().toJson(context),
-                        status);
-            } else {
-                //发送给leader,让leader进行处理
-                RemotingCommand req = RemotingCommand.createRequestCommand(3000);
-                RpcTaskReq rtr = new RpcTaskReq();
-                rtr.setCmd("modify");
-                rtr.setTaskId(id);
-                Map<String, String> attachements = Maps.newHashMap();
-                attachements.put("result", new Gson().toJson(result));
-                attachements.put("context", new Gson().toJson(context));
-                attachements.put("status", status.toString());
-                rtr.setAttachments(attachements);
-                req.setBody(new Gson().toJson(rtr).getBytes());
-                logger.info("updateTask notify leader:{}", id);
-                this.rpcClient.sendMessage(req);
-            }
-            return true;
+        if (retryNum == -1) {
+            retryNum = maxUpdateNum;
         }
-
 
         do {
             try {
@@ -162,19 +146,21 @@ public class TaskService {
                 if (i > 0) {
                     return true;
                 }
+                logger.info("update task fail id:{} version:{}", id, oldVersion);
 
                 try {
-                    TimeUnit.MILLISECONDS.sleep((long) ((new Random()).nextInt(10)));
+                    TimeUnit.MILLISECONDS.sleep((new Random()).nextInt(200));
                 } catch (InterruptedException var10) {
                 }
             } catch (Throwable ex) {
-                logger.warn("updateTask id:{} error:{}", id, ex.getMessage());
+                logger.warn("updateTask id:{} error:{} source:{}", id, ex.getMessage(), source);
             }
 
             ++n;
-        } while (n < maxUpdateNum);
+        } while (n < retryNum);
 
-        logger.warn("updateTask failure n>={} taskId:{}", maxUpdateNum, id);
+        logger.warn("updateTask failure n>={} taskId:{} source:{}", retryNum, id, source);
+        Cat.logEvent("updateTask failure", source, "0", "taskId: " + id + " retryNum: " + retryNum);
         return false;
     }
 

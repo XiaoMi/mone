@@ -16,12 +16,19 @@
 
 package com.xiaomi.youpin.docean.mvc;
 
+import com.google.gson.Gson;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.QueryStringDecoder;
+import io.netty.handler.codec.http.multipart.DefaultHttpDataFactory;
+import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
+import io.netty.handler.codec.http.multipart.InterfaceHttpData;
+import io.netty.handler.codec.http.multipart.MemoryAttribute;
 
 import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -29,6 +36,10 @@ import java.util.stream.Collectors;
  * @author goodjava@qq.com
  */
 public abstract class HttpRequestUtils {
+
+    private static final String CONTENT_TYPE = "Content-Type";
+    private static final String X_WWW_FORM_URLENCODED = "x-www-form-urlencoded";
+    private static final String FORM_DATA = "form-data";
 
 
     public static Map<String, String> getQueryParams(String uri) {
@@ -59,6 +70,20 @@ public abstract class HttpRequestUtils {
     }
 
     public static byte[] getRequestBody(FullHttpRequest request) {
+        String contentType = request.headers().get(CONTENT_TYPE, "").trim();
+        //支持form 表单提交
+        if (contentType.contains(X_WWW_FORM_URLENCODED) || contentType.contains(FORM_DATA)) {
+            HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(new DefaultHttpDataFactory(false), request);
+            List<InterfaceHttpData> postData = decoder.getBodyHttpDatas();
+            Map<String,String> kv = new HashMap<>();
+            for (InterfaceHttpData data : postData) {
+                if (data.getHttpDataType() == InterfaceHttpData.HttpDataType.Attribute) {
+                    MemoryAttribute attribute = (MemoryAttribute) data;
+                    kv.put(attribute.getName(), attribute.getValue());
+                }
+            }
+            return new Gson().toJson(kv).getBytes();
+        }
         ByteBuf buf = request.content();
         byte[] data = new byte[buf.readableBytes()];
         buf.readBytes(data);
