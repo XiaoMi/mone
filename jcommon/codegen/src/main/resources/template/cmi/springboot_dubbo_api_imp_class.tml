@@ -1,0 +1,25 @@
+package ${package}.api;
+
+import javax.annotation.Resource;
+
+import org.apache.dubbo.config.annotation.Service;
+import org.apache.dubbo.rpc.RpcContext;
+
+import com.xiaomi.data.push.common.Health;
+import ${package}.api.service.DubboHealthService;
+import com.xiaomi.youpin.infra.rpc.Result;
+import com.xiaomi.youpin.qps.QpsAop;
+
+@Service(provider = "healthProvider")
+public class DubboHealthServiceImpl implements DubboHealthService {
+
+    @Resource
+    private QpsAop qpsAop;
+
+    @Override
+    public Result<Health> health() {
+        System.out.println(RpcContext.getContext());
+        long qps = qpsAop.getQps();
+        return Result.success(new Health("0.0.1", "2019-11-11", qps));
+    }
+}

@@ -1,0 +1,20 @@
+spring.application.name=${appName}
+
+#激活哪一个环境的配置文件
+spring.profiles.active=preview
+
+#注册中心
+config.dubbo.registry.address=nacos://nacos.systech.b2c.srv:80
+config.dubbo.consumer.group=\${spring.profiles.active}
+#Nacos 配置
+config.nacos.config.addrs=nacos.systech.b2c.srv:80
+#根据你服务的namespace选择
+config.nacos.config.namespace=
+
+
+
+
+
+#默认日志输出位置
+config.local.log.home=/home/work/log
+config.local.log.level=INFO

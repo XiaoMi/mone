@@ -103,6 +103,7 @@ public class DubboPlugin implements IPlugin {
         serviceConfig.setVersion(s.version());
         serviceConfig.setProtocol(protocol);
         serviceConfig.setTimeout(s.timeout());
+        serviceConfig.setAsync(s.async());
         serviceConfig.export();
     }
 

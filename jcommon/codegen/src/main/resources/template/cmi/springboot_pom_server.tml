@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>${parent_artifactId}</artifactId>
+        <groupId>${groupId}</groupId>
+        <version>${version}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>${artifactId}</artifactId>
+
+
+    <dependencies>
+
+        <!-- 接口包 -->
+        <dependency>
+            <artifactId>${apiArtifactId}</artifactId>
+            <groupId>${groupId}</groupId>
+            <version>${version}</version>
+        </dependency>
+
+        <!-- filter解析spi -->
+        <dependency>
+            <groupId>com.xiaomi.planet</groupId>
+            <artifactId>planet-mione-filter</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+        </dependency>
+
+        <!-- ################ Don`t care ############# -->
+
+        <!--阿里巴巴nacos-->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>dubbo-registry-nacos</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-spring-context</artifactId>
+            <exclusions>
+                <exclusion>
+                    <artifactId>spring-context</artifactId>
+                    <groupId>org.springframework</groupId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>spring-context-support</artifactId>
+                    <groupId>com.alibaba.spring</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <!-- nacos end -->
+
+        <!-- youpin  dubbo -->
+        <dependency>
+            <groupId>org.apache.dubbo</groupId>
+            <artifactId>dubbo</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>coloregg</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>aop</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.spring</groupId>
+            <artifactId>spring-context-support</artifactId>
+        </dependency>
+
+        <!-- 自定义 -->
+${dependency}
+    </dependencies>
+
+    <profiles>
+
+        <profile>
+            <id>dev</id>
+            <properties>
+                <profile.active>dev</profile.active>
+            </properties>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+        </profile>
+
+        <profile>
+            <id>staging</id>
+            <properties>
+                <profile.active>staging</profile.active>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>preview</id>
+            <properties>
+                <profile.active>preview</profile.active>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>c3</id>
+            <properties>
+                <profile.active>c3</profile.active>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>c4</id>
+            <properties>
+                <profile.active>c4</profile.active>
+            </properties>
+        </profile>
+
+    </profiles>
+
+    <build>
+        <!-- 使用选中环境的配置执行替换 -->
+        <filters>
+            <filter>src/main/resources/config/application-\${profile.active}.properties</filter>
+        </filters>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+                <!--①-->
+                <!-- excludes 来将所有的 application*.properties 排除在外 -->
+                <excludes>
+                    <exclude>application*.properties</exclude>
+                    <exclude>config/application*.properties</exclude>
+                </excludes>
+            </resource>
+            <resource>
+                <directory>src/main/resources</directory>
+                <!--②-->
+                <!-- filtering，maven 会将文件中的 @XX@ 替换 profile 中定义的 XX 变量/属性 -->
+                <filtering>true</filtering>
+                <includes>
+                    <include>dubbo.properties</include>
+                    <include>application.properties</include>
+                </includes>
+            </resource>
+            <resource>
+                <directory>src/main/resources/META-INF</directory>
+                <filtering>true</filtering>
+                <includes>
+                    <include>app.properties</include>
+                </includes>
+                <targetPath>META-INF/</targetPath>
+            </resource>
+        </resources>
+
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>\${spring-boot.version}</version>
+                <!--加入下面两项配置  如此 打包不需要定义Main.class -->
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <includeSystemScope>true</includeSystemScope>
+                    <!--fork:如果没有该项配置,整个devtools不会起作用-->
+                    <fork>true</fork>
+                </configuration>
+            </plugin>
+        </plugins>
+
+    </build>
+
+</project>

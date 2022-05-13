@@ -1,16 +1,12 @@
 dubbo_app_name=testApp
-dubbo_reg_address=nacos://
+dubbo_reg_address=nacos://10.38.163.218:80
 
-db_pwd=
-db_url=
-db_user_name=shop_x
-db_pool_size=1
 
-redis_hosts=
+redis_hosts=10.38.162.213:6382,10.38.162.213:6380,10.38.162.214:6382,10.38.162.214:6380,10.38.162.214:6381,10.38.162.213:6381
 
 nacos_config_dataid=zjy
 nacos_config_group=DEFAULT_GROUP
-nacos_config_server_addr=
+nacos_config_server_addr=10.38.163.218:80
 
 group=local
 c=zzz

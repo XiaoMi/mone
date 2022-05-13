@@ -18,6 +18,8 @@ package com.xiaomi.youpin.feishu.bo;
 
 import lombok.Data;
 
+import java.util.Map;
+
 @Data
 public class MsgSendRequest {
     private String open_id;
@@ -27,4 +29,6 @@ public class MsgSendRequest {
     private String email;
     private String msg_type;
     private MsgDetail content;
+    private boolean update_multi = true;
+    private Map<String, Object> card;
 }

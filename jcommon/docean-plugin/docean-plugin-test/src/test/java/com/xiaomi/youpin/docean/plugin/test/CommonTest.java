@@ -16,6 +16,9 @@
 
 package com.xiaomi.youpin.docean.plugin.test;
 
+import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
+import com.xiaomi.youpin.docean.plugin.test.bo.TEvent;
 import net.sf.cglib.reflect.FastClass;
 import net.sf.cglib.reflect.FastMethod;
 import org.junit.Test;
@@ -30,6 +33,18 @@ import java.time.format.DateTimeFormatter;
  * @date 2020/7/4
  */
 public class CommonTest {
+
+    @Subscribe
+    public void onMessageEvent(TEvent event){
+        System.out.println(event);
+    }
+
+    @Test
+    public void testEventBus() {
+        EventBus eb = new EventBus();
+        eb.register(this);
+        eb.post(new TEvent());
+    }
 
 
     @Test

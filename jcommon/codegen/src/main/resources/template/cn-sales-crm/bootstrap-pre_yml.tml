@@ -1,0 +1,21 @@
+spring:
+  application:
+    name: ${artifactId}
+  profiles:
+    active: pre
+  cloud:
+    nacos:
+      config:
+        server-addr: cnbj1-nacos.api.xiaomi.net:80
+        file-extension: yaml  #配置格式
+        namespace: info_cn-sales-crm_pre
+        group: cn-sales-crm
+        username:
+        password:
+#        extension-configs[0]: #扩展配置文件
+#          data‐id: cn-crm-enterprise-mall-ums.yml
+#          group: cn-sales-crm
+#          refresh: true #实时刷新
+
+log:
+  path: /home/work/log/\${spring.application.name}

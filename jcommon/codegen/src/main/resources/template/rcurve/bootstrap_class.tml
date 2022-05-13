@@ -1,0 +1,14 @@
+package ${package}.bootstrap;
+
+import com.xiaomi.youpin.docean.Ioc;
+
+/**
+ * @author ${author}
+ */
+public class ${project}Bootstrap {
+
+     public static void main(String... args) {
+          Ioc.ins().init("com.xiaomi");
+     }
+
+}

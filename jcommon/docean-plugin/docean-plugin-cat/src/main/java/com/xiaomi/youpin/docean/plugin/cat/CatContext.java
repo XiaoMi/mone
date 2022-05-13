@@ -16,10 +16,8 @@
 
 package com.xiaomi.youpin.docean.plugin.cat;
 
-import com.dianping.cat.message.Transaction;
-
 /**
- * @author zheng.xucn@outlook.com
+ * @author zheng.xucn@outlook.com goodjava@qq.com
  */
 public class CatContext {
 
@@ -30,21 +28,4 @@ public class CatContext {
         }
     };
 
-    private Transaction transaction;
-
-    public void setTransaction(Transaction transaction) {
-        this.transaction = transaction;
-    }
-
-    public Transaction getTransaction() {
-        return transaction;
-    }
-
-    public static CatContext getContext() {
-        return context.get();
-    }
-
-    public void close() {
-        context.remove();
-    }
 }

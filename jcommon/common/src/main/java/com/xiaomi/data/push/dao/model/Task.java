@@ -51,6 +51,36 @@ public class Task {
 
     private Integer gid;
 
+    private String alarmUsername="";
+
+    private boolean ignoreError;
+
+    private long timeout;
+
+    public long getTimeout() {
+        return timeout;
+    }
+
+    public void setTimeout(long timeout) {
+        this.timeout = timeout;
+    }
+
+    public boolean getIgnoreError() {
+        return ignoreError;
+    }
+
+    public void setIgnoreError(boolean ignoreError) {
+        this.ignoreError = ignoreError;
+    }
+
+    public String getAlarmUsername() {
+        return alarmUsername;
+    }
+
+    public void setAlarmUsername(String alarmUsername) {
+        this.alarmUsername = alarmUsername;
+    }
+
     public Integer getId() {
         return id;
     }

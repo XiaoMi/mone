@@ -1,0 +1,20 @@
+spring.application.name=${appName}
+
+#激活哪一个环境的配置文件
+spring.profiles.active=staging
+
+#注册中心
+config.dubbo.registry.address=nacos://10.38.167.199:80
+config.dubbo.consumer.group=staging
+#Nacos 配置
+config.nacos.config.addrs=10.38.167.199:80
+#根据你服务的namespace选择
+config.nacos.config.namespace=0eb81337-76b1-421a-912c-59402c9691d8
+
+
+
+
+
+#默认日志输出位置
+config.local.log.home=/home/work/log
+config.local.log.level=INFO

@@ -1,1 +1,1 @@
-dubbo.trace.log.path=xxxx/log/dubbo/${project}_
+dubbo.trace.log.path=/home/work/log/dubbo/${project}_

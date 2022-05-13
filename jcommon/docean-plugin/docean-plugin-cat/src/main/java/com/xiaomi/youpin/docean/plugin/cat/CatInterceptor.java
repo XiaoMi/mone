@@ -16,10 +16,9 @@
 
 package com.xiaomi.youpin.docean.plugin.cat;
 
-import com.dianping.cat.Cat;
-import com.dianping.cat.message.Transaction;
 import com.xiaomi.youpin.docean.aop.AopContext;
 import com.xiaomi.youpin.docean.aop.EnhanceInterceptor;
+
 import java.lang.reflect.Method;
 
 /**
@@ -31,25 +30,15 @@ public class CatInterceptor extends EnhanceInterceptor {
 
     @Override
     public void before(AopContext aopContext, Method method, Object[] args) {
-        Transaction t = Cat.newTransaction(CAT_TYPE, method.getName());
-        t.setStatus(Transaction.SUCCESS);
-        CatContext.getContext().setTransaction(t);
     }
 
     @Override
     public Object after(AopContext context, Method method, Object res) {
-        Transaction t = CatContext.getContext().getTransaction();
-        t.complete();
-        CatContext.getContext().close();
         return res;
     }
 
     @Override
     public void exception(AopContext context, Method method, Throwable ex) {
-        Transaction t = CatContext.getContext().getTransaction();
-        t.setStatus(ex);
-        t.complete();
-        CatContext.getContext().close();
     }
 
 }

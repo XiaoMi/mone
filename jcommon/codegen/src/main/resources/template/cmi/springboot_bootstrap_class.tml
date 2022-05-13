@@ -1,0 +1,29 @@
+package ${package};
+
+import org.apache.dubbo.config.spring.context.annotation.DubboComponentScan;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
+
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * @author ${author}
+ */
+@Slf4j
+@EnableAspectJAutoProxy(proxyTargetClass = true)
+@EnableAutoConfiguration
+@ComponentScan(basePackages = {"${package}", "com.xiaomi.youpin"})
+@DubboComponentScan(basePackages = "${package}.api")
+public class ${project}Bootstrap {
+
+    public static void main(String... args) {
+        try {
+            SpringApplication.run(${project}Bootstrap.class, args);
+        } catch (Throwable throwable) {
+            log.error(throwable.getMessage(), throwable);
+            System.exit(-1);
+        }
+    }
+}

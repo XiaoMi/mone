@@ -1,0 +1,23 @@
+
+apiVersion: v1 # API 版本号，这里的值是 v1，但是这个版本号需要根据我们安装的 k8s 版本和资源对象类型变化，不是固定的
+kind: Pod # 描述对象的类型，本例中它就是一个「Pod」，不同的对象类型肯定不一样 (如 Deployment、Service、Job、Ingress 等)
+metadata: # 定义元数据，用于唯一识别对象的数据。常用的配置项如 name (名字)、namespace (命令空间)、labels (标签) 等
+  name: k8s-demo
+  labels:
+    app: k8s
+spec: # 规格声明，描述了某一个实体的期望状态，常用项如 containers、storage、volumes、template
+  containers:
+    - name: k8s-demo
+      image: riskers/k8s-demo:0.1
+      imagePullPolicy: Never # 将imagePullPolicy设置为Never，否则Kubernetes将尝试下载图像。
+      resources:
+        requests: # 资源下限
+          memory: "64Mi" # 64 MB 内存
+          cpu: "500m" # 0.5 CPU
+        limits: # 资源上限
+          memory: "128Mi" # 128 MB 内存
+          cpu: "1000m" # 1 CPU
+      ports:
+        - containerPort: 80
+  imagePullSecrets:
+    - name: regsecret # 为了能够下载私有镜像

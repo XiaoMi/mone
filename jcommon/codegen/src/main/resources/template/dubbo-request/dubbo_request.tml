@@ -1,0 +1,9 @@
+public class MiApiService {
+    @Reference(check = false, interfaceClass = ${ServiceName}.class, ${group} ${version} timeout = 5000)
+    private ${ServiceName} ${serviceName};
+
+    public void MiApiClient(){
+        ${MethodName}RequestBo body = new ${MethodName}RequestBo();
+        ${MethodName}Result ${methodName}Result = ${serviceName}.${methodName}(body);
+    }
+}

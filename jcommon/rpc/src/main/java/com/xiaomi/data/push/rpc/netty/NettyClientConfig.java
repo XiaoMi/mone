@@ -33,6 +33,13 @@ public class NettyClientConfig {
     private int connectTimeoutMillis = 3000;
     private long channelNotActiveInterval = 1000 * 60;
 
+    /**
+     * 允许空闲判断
+     */
+    @Getter
+    @Setter
+    private boolean idle = true;
+
 
     /**
      * 是否支持重连

@@ -5,20 +5,20 @@
 
     <property name="MAX_HISTORY" value="120"/>
 
-    <appender name="youpinLogAppender" class="com.xiaomi.youpin.jcommon.log.YouPinLogAppender">
-        <appName>${project}</appName>
-        <group>\${youpin.log.group}</group>
-        <talosTopicName>\${talos.topic}</talosTopicName>
-        <talosSendpoint>\${talos.sendpoint}</talosSendpoint>
-        <talosAccessKey>\${talos.access.key}</talosAccessKey>
-        <talosAccessSecret>\${talos.access.secret}</talosAccessSecret>
-        <needCatLog>true</needCatLog>
-    </appender>
+<!--    <appender name="youpinLogAppender" class="com.xiaomi.youpin.jcommon.log.YouPinLogAppender">-->
+<!--        <appName>${project}</appName>-->
+<!--        <group>\${youpin.log.group}</group>-->
+<!--        <talosTopicName>\${talos.topic}</talosTopicName>-->
+<!--        <talosSendpoint>\${talos.sendpoint}</talosSendpoint>-->
+<!--        <talosAccessKey>\${talos.access.key}</talosAccessKey>-->
+<!--        <talosAccessSecret>\${talos.access.secret}</talosAccessSecret>-->
+<!--        <needCatLog>true</needCatLog>-->
+<!--    </appender>-->
 
     <appender name="fileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>\${log.path}/${project}/server.log</file>
         <encoder>
-            <pattern>%d|%-5level|%thread|%logger{40}|%L|%msg%n</pattern>
+            <pattern>%d|%-5level|%X{trace_id}|%thread|%logger{40}|%msg%n</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>\${log.path}/${project}/server.log.%d{yyyy-MM-dd-HH}</fileNamePattern>
@@ -36,7 +36,7 @@
     <appender name="errorAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>\${log.path}/${project}/error.log</file>
         <encoder>
-            <pattern>%d|%-5level|%thread|%logger{40}|%L|%msg%n</pattern>
+            <pattern>%d|%-5level|%X{trace_id}|%thread|%logger{40}|%msg%n</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>\${log.path}/${project}/error.log.%d{yyyy-MM-dd-HH}</fileNamePattern>
@@ -51,7 +51,7 @@
 
     <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d|%-5level|%thread|%logger{40}|%L|%msg%n</pattern>
+            <pattern>%d|%-5level|%X{trace_id}|%thread|%logger{40}|%msg%n</pattern>
         </encoder>
     </appender>
 
@@ -64,7 +64,7 @@
         <appender-ref ref="stdout"/>
         <appender-ref ref="errorAppender"/>
         <appender-ref ref="fileAppender"/>
-        <appender-ref ref="youpinLogAppender"/>
+<!--        <appender-ref ref="youpinLogAppender"/>-->
     </root>
 
 </configuration>

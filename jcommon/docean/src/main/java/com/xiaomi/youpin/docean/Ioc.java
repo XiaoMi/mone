@@ -16,28 +16,42 @@
 
 package com.xiaomi.youpin.docean;
 
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
 import com.xiaomi.youpin.docean.anno.Component;
 import com.xiaomi.youpin.docean.anno.Configuration;
 import com.xiaomi.youpin.docean.anno.Controller;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.bo.Bean;
-import com.xiaomi.youpin.docean.common.ClassFinder;
-import com.xiaomi.youpin.docean.common.Cons;
-import com.xiaomi.youpin.docean.common.MutableObject;
-import com.xiaomi.youpin.docean.common.ReflectUtils;
-import com.xiaomi.youpin.docean.exception.DoceanException;
+import com.xiaomi.youpin.docean.common.*;
 import com.xiaomi.youpin.docean.ioc.BeanAnnoProcessor;
+import com.xiaomi.youpin.docean.listener.IocListener;
+import com.xiaomi.youpin.docean.listener.Listener;
+import com.xiaomi.youpin.docean.listener.event.Event;
+import com.xiaomi.youpin.docean.listener.event.EventType;
+import com.xiaomi.youpin.docean.notify.DoceanNotify;
 import com.xiaomi.youpin.docean.plugin.Plugin;
+import lombok.Getter;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 import javax.annotation.Resource;
+import java.io.File;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -51,18 +65,60 @@ public class Ioc {
 
     private static final List<Class<? extends Annotation>> scanAnno = Lists.newArrayList(Component.class, Service.class, Controller.class);
 
+    /**
+     * 和spring这样的容器交互的时候需要用到
+     */
+    private Function<String, Object> contextFunction = new Function<String, Object>() {
+        @Override
+        public @Nullable Object apply(@Nullable String s) {
+            return new Object();
+        }
+    };
+
+    private IocListener iocListener = new IocListener();
+
+    private Predicate<Class> classFilter = o -> true;
+
+    @Getter
+    private ClassLoader classLoader;
+
+    public Ioc setContextFunction(Function<String, Object> function) {
+        this.contextFunction = function;
+        return this;
+    }
+
+    public Ioc classFilter(Predicate<Class> classFilter) {
+        this.classFilter = classFilter;
+        return this;
+    }
+
+    public Ioc setAnnos(Class<? extends Annotation>... annotations) {
+        scanAnno.addAll(Arrays.asList(annotations));
+        return this;
+    }
+
+    public Function<String, Object> contextFunction() {
+        return this.contextFunction;
+    }
+
     private Ioc() {
+        this.iocListener.regListener(new DoceanNotify());
+    }
+
+    private Ioc(ClassLoader classLoader) {
+        this();
+        this.classLoader = classLoader;
     }
 
     private static boolean filterConfigrationClass(Class<?> it) {
         return Optional.ofNullable(it).map(it2 -> it2.getAnnotation(Configuration.class)).isPresent();
     }
 
-    public static boolean filterClass(Class<?> it, List<Class<? extends Annotation>> scanAnnoList) {
+    public static boolean filterClass(Ioc ioc, Class<?> it, List<Class<? extends Annotation>> scanAnnoList) {
         return Optional.ofNullable(it).map(it2 -> {
                     Optional<Annotation> optional = ReflectUtils.getAnno(it2, scanAnnoList);
                     if (optional.isPresent()) {
-                        log.info("ioc add:{}", it);
+                        ioc.publishEvent(new Event(EventType.addBean, it.getName()));
                         return it2;
                     }
                     return null;
@@ -70,8 +126,8 @@ public class Ioc {
         ).isPresent();
     }
 
-    private static Class<?> classForName(String name) {
-        Class<?> clazz = ReflectUtils.classForName(name);
+    private static Class<?> classForName(String name, ClassLoader classLoader) {
+        Class<?> clazz = ReflectUtils.classForName(name, classLoader);
         return clazz;
     }
 
@@ -79,7 +135,11 @@ public class Ioc {
     private int getType(Class<?> clazz) {
         Optional<Annotation> optional = ReflectUtils.getAnno(clazz, scanAnno);
         if (optional.isPresent()) {
-            return (int) ReflectUtils.invokeMethod(optional.get(), "type", new Object[]{});
+            try {
+                return (int) ReflectUtils.invokeMethod(optional.get(), "type", new Object[]{});
+            } catch (Throwable ignore) {
+
+            }
         }
         return -1;
     }
@@ -96,24 +156,55 @@ public class Ioc {
         if (beans) {
             this.beans.put(name, bean);
         }
-        //插件增强
         Plugin.ins().initBean(this, bean);
         return bean;
     }
 
 
     private String getName(Class<?> clazz) {
-        Service service = clazz.getAnnotation(Service.class);
-        return Optional.ofNullable(service).map(it -> {
-            String name = it.name();
-            if (!name.equals("")) {
-                return name;
-            }
+        String name = getName0(clazz);
+        if (StringUtils.isEmpty(name)) {
             return clazz.getName();
-        }).orElse(clazz.getName());
+        }
+        return name;
+    }
+
+    private String getName0(Class<?> clazz) {
+        List<Class<? extends Annotation>> annoList = scanAnno;
+        return annoList.stream().map(it -> {
+            Object obj = clazz.getAnnotation(it);
+            if (Optional.ofNullable(obj).isPresent()) {
+                Optional<String> optional = Lists.newArrayList("name", "value").stream().map(v -> getAnnoValue(obj, v)).filter(v -> null != v).findAny();
+                return optional.orElse("");
+            }
+            return "";
+        }).filter(it -> StringUtils.isNotEmpty(it)).findFirst().orElse("");
+    }
+
+    /**
+     * 获取注解中的值
+     *
+     * @param obj
+     * @param method
+     * @return
+     */
+    private String getAnnoValue(Object obj, String method) {
+        try {
+            String value = obj.getClass().getMethod(method).invoke(obj).toString();
+            if (StringUtils.isNotEmpty(value)) {
+                return value;
+            }
+        } catch (Throwable ignore) {
+        }
+        return null;
     }
 
 
+    /**
+     * 完成依赖注入
+     *
+     * @param it
+     */
     private void initIoc(Bean it) {
         Field[] fields = ReflectUtils.fields(it.getClazz());
         Arrays.stream(fields).forEach(f -> {
@@ -124,6 +215,9 @@ public class Ioc {
                     String name = f2.name();
                     if (name.equals("")) {
                         name = f.getType().getName();
+                    }
+                    if (!f2.lookup().equals("")) {
+                        name = Joiner.on(":").join(name, f2.lookup());
                     }
                     res.setObj(name);
                 });
@@ -139,6 +233,7 @@ public class Ioc {
         Bean b = this.beans.get(name);
         Optional.ofNullable(b).ifPresent(o -> {
             o.incrReferenceCnt();
+            o.getDependenceList().add(name);
             ReflectUtils.setField(obj, field, o.getObj());
         });
     }
@@ -148,36 +243,47 @@ public class Ioc {
     }
 
     public Ioc init(String... scanPackages) {
+        this.publishEvent(new Event(EventType.initBegin));
         Stopwatch sw = Stopwatch.createStarted();
         Set<String> classNameSet = getClassNameSet(scanPackages);
-        Set<? extends Class<?>> classSet = classNameSet.stream().map(Ioc::classForName).filter(it -> Optional.ofNullable(it).isPresent()).collect(Collectors.toSet());
+        Set<? extends Class<?>> classSet = classNameSet.stream().map(it -> classForName(it, this.classLoader)).filter(it -> Optional.ofNullable(it).isPresent()).collect(Collectors.toSet());
         //init plugin
         Plugin.ins().init(classSet, this);
         //init configuration bean
         classSet.stream().filter(Ioc::filterConfigrationClass).forEach(it -> BeanAnnoProcessor.process(it, this));
         //init bean
-        classSet.stream().filter(it -> filterClass(it, annoList())).forEach(it -> initBean(it, true));
+        annoList();
+        classSet.stream().filter(it -> filterClass(this, it, scanAnno)).filter(this.classFilter).forEach(it -> initBean(it, true));
         //ioc
         this.beans.values().stream().forEach(it -> initIoc(it));
         //call init method
         this.beans.values().stream().forEach(Ioc::callInit);
         Plugin.ins().after(this);
         Plugin.ins().start(this);
-        log.info("Docean init use time:{}", sw.elapsed(TimeUnit.MILLISECONDS));
+        this.publishEvent(new Event(EventType.initFinish, sw.elapsed(TimeUnit.MILLISECONDS)));
         return this;
     }
 
     private Set<String> getClassNameSet(String[] scanPackages) {
         return Arrays.stream(scanPackages).map(scanPackage -> {
-            Set<String> set = new ClassFinder().findClassSet(scanPackage);
+            Set<String> set = new ClassFinder().findClassSet(scanPackage, this.classLoader);
             return set;
         }).flatMap(it -> it.stream()).collect(Collectors.toSet());
     }
 
+    /**
+     * 把插件也需要扫描的加载进来
+     *
+     * @return
+     */
     private List<Class<? extends Annotation>> annoList() {
         List<Class<? extends Annotation>> filterAnnotationList = Plugin.ins().filterAnnotationList();
-        filterAnnotationList.addAll(scanAnno);
-        return filterAnnotationList;
+        if (filterAnnotationList.size() > 0) {
+            filterAnnotationList.addAll(scanAnno);
+            scanAnno.clear();
+            scanAnno.addAll(filterAnnotationList);
+        }
+        return scanAnno;
     }
 
 
@@ -189,30 +295,79 @@ public class Ioc {
         return LazyHolder.ins;
     }
 
+    /**
+     * 创建一个全新的Ioc容器(server less 需要)
+     *
+     * @param classLoader
+     * @return
+     */
+    public static Ioc create(ClassLoader classLoader) {
+        return new Ioc(classLoader);
+    }
+
+
+    public Map<String, Object> getBeansWithAnnotation(Class<? extends Annotation> annotationType) {
+        return beans.entrySet().stream().filter(entry -> entry.getValue().getClazz().isAnnotationPresent(annotationType)).collect(Collectors.toMap(Map.Entry::getKey, v -> v.getValue().getObj()));
+    }
+
 
     public <T> T getBean(String name) {
         return (T) beans.get(name).getObj();
+    }
+
+    public <T> T getBean(String name, Object defalutValue) {
+        Bean bean = beans.get(name);
+        return (T) Optional.ofNullable(bean).map(it -> it.getObj()).orElse(defalutValue);
     }
 
     public <T> T getBean(Class clazz) {
         return (T) beans.get(clazz.getName()).getObj();
     }
 
+    public Bean getBeanInfo(String name) {
+        return beans.get(name);
+    }
+
     public boolean containsBean(String name) {
         return beans.containsKey(name);
     }
 
-    public Ioc putBean(String name, Object obj) {
-        return putBean(name, name, obj);
+    public Ioc putBean(Object obj) {
+        return this.putBean(obj.getClass().getName(), obj);
     }
 
-    public Ioc putBean(String name, String alias, Object obj) {
+
+    public Ioc regListener(Listener listener) {
+        this.iocListener.regListener(listener);
+        return this;
+    }
+
+
+    public Ioc putBeanInfo(Bean bean) {
+        this.beans.put(bean.getName(), bean);
+        return this;
+    }
+
+
+    public Ioc putBean(String name, Object obj) {
+        return putBean(name, name, obj, "", false);
+    }
+
+    public Ioc putBean(String name, String alias, Object obj, String lookup, boolean objMap) {
         Bean bean = new Bean();
         bean.setObj(obj);
         bean.setAlias(alias);
         bean.setClazz(obj.getClass());
         bean.setName(obj.getClass().getName());
+        bean.setLookup(lookup);
+        if (StringUtils.isNotEmpty(lookup)) {
+            name = Joiner.on(":").join(name, lookup);
+        }
+        if (objMap) {
+            beans.put(obj.toString(), bean);
+        }
         beans.put(name, bean);
+        this.publishEvent(new Event(EventType.putBean, bean));
         return this;
     }
 
@@ -230,17 +385,13 @@ public class Ioc {
     }
 
 
-    public Ioc putBean(Object obj) {
-        Bean bean = new Bean();
-        bean.setObj(obj);
-        bean.setClazz(obj.getClass());
-        beans.put(obj.getClass().getName(), bean);
-        return this;
+    public Set<Object> getBeans() {
+        return new HashSet<>(beans.values());
     }
 
 
-    public Set<Object> getBeans() {
-        return new HashSet<>(beans.values());
+    public ConcurrentHashMap<String, Bean> getBeanInfos() {
+        return beans;
     }
 
     public <T> Set<T> getBeans(Class<T> clazz) {
@@ -264,6 +415,43 @@ public class Ioc {
             }
         });
         this.beans.clear();
+    }
+
+    @SneakyThrows
+    public void saveSnapshot() {
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(Class.class, new ClassDeserializer())
+                .registerTypeAdapter(Class.class, new ClassSerializer()).create();
+
+        List<Bean> list = this.beans.entrySet().stream().map(it -> it.getValue()).collect(Collectors.toList());
+        Files.write(Paths.get(savePath()), gson.toJson(list).getBytes());
+    }
+
+    private String savePath() {
+        return FileUtils.home() + File.separator + "docean.cache";
+    }
+
+    @SneakyThrows
+    public void loadSnapshot() {
+        Gson gson = new GsonBuilder()
+                .registerTypeAdapter(Class.class, new ClassDeserializer())
+                .registerTypeAdapter(Class.class, new ClassSerializer()).create();
+        byte[] data = Files.readAllBytes(Paths.get(savePath()));
+        Type typeOfT = new TypeToken<List<Bean>>() {
+        }.getType();
+        List<Bean> list = gson.fromJson(new String(data), typeOfT);
+        list.stream().forEach(it -> {
+            log.info("{} {}", it, it.getClazz());
+            Object obj = Aop.ins().enhance(it.getClazz());
+            it.setObj(obj);
+            this.putBeanInfo(it);
+        });
+
+        this.beans.values().stream().forEach(it -> initIoc(it));
+    }
+
+    public void publishEvent(Event event) {
+        this.iocListener.multicastEvent(event);
     }
 
 }

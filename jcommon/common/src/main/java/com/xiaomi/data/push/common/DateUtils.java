@@ -89,5 +89,12 @@ public abstract class DateUtils {
         return Integer.valueOf(time);
     }
 
+    public static String getNow(){
+        DateTimeFormatter fmTime = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        LocalDateTime now = LocalDateTime.now();
+        return now.format(fmTime);
+    }
+
+
 
 }

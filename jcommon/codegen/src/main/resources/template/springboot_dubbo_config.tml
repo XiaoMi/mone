@@ -2,6 +2,7 @@ package ${package}.config;
 
 import com.google.common.collect.Maps;
 import org.apache.dubbo.config.ApplicationConfig;
+import org.apache.commons.lang3.StringUtils;
 import com.xiaomi.youpin.dubbo.common.DubboYoupinVersion;
 import com.xiaomi.youpin.dubbo.gateway.GateWayProcessor;
 import org.apache.dubbo.config.ProtocolConfig;
@@ -29,6 +30,11 @@ public class DubboConfiguration {
         applicationConfig.setParameters(Maps.newHashMap());
         applicationConfig.getParameters().put("http_gateway_port", httpGateWayPort);
         applicationConfig.getParameters().put("dubbo_version", new DubboYoupinVersion().toString());
+        String prometheusPort = System.getenv("PROMETHEUS_PORT");
+        if (StringUtils.isEmpty(prometheusPort)) {
+            prometheusPort = "4444";
+        }
+        applicationConfig.getParameters().put("prometheus_port", prometheusPort);
         applicationConfig.setQosEnable(false);
         return applicationConfig;
     }

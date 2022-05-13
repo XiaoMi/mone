@@ -17,8 +17,12 @@
 package com.xiaomi.youpin.docean.bo;
 
 import com.google.common.collect.Maps;
+import com.google.gson.annotations.Expose;
 import lombok.Data;
 
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -26,15 +30,17 @@ import java.util.Map;
  * @date 2020/6/20
  */
 @Data
-public class Bean implements Comparable<Bean> {
+public class Bean implements Comparable<Bean>, Serializable {
 
     private String name;
 
     private String alias;
 
+    private String lookup;
+
     private Class<?> clazz;
 
-    private Object obj;
+    private transient Object obj;
 
     private int type;
 
@@ -42,6 +48,8 @@ public class Bean implements Comparable<Bean> {
      * 被引用的次数
      */
     private int referenceCnt;
+
+    private List<String> dependenceList = new ArrayList<>();
 
     private Map<String,String> attachments = Maps.newHashMap();
 

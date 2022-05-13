@@ -1,0 +1,9 @@
+package ${package}.common;
+
+
+/**
+ * @author ${author}
+ */
+public class Constant {
+
+}

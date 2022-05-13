@@ -30,10 +30,7 @@ public class CodeCheckTest {
     @Test
     public void testCode() {
 
-//        String path = "/Users/zhangzhiyong/IdeaProjects/jcommon/codecheck/src/test/java/com/xiaomi/youpin/codecheck/test/doc";
-//        String path = "/Users/zhangzhiyong/IdeaProjects/jcommon/codecheck/src/test/java/com/xiaomi/youpin/codecheck/test/container";
-//        String path = "/Users/zhangzhiyong/IdeaProjects/tesla";
-        String path = "/Users/dingpei/workspace/mcenter-admin";
+        String path = "/tmp/miapimanager";
 
         CodeCheck codeCheck = new CodeCheck();
         Map<String, List<CheckResult>> map = codeCheck.check(path);
@@ -47,10 +44,7 @@ public class CodeCheckTest {
     @Test
     public void testDoc() {
 
-//        String path = "/Users/zhangzhiyong/IdeaProjects/jcommon/codecheck/src/test/java/com/xiaomi/youpin/codecheck/test/doc";
-//        String path = "/Users/zhangzhiyong/IdeaProjects/jcommon/codecheck/src/test/java/com/xiaomi/youpin/codecheck/test/container";
-//        String path = "/Users/zhangzhiyong/IdeaProjects/tesla";
-        String path = "/Users/dfz/workspace/niuke";
+        String path = "/tmp/niuke";
 
         DocCheck codeCheck = new DocCheck();
         Map<String, String> map = codeCheck.getDoc(path);

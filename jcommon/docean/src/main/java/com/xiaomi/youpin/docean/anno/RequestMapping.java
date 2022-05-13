@@ -31,4 +31,6 @@ public @interface RequestMapping {
 
     String method() default "post";
 
+    long timeout() default 2000;
+
 }

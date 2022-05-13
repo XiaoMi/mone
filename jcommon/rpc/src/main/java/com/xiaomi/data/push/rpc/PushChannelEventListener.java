@@ -22,18 +22,18 @@ import com.xiaomi.data.push.rpc.common.RemotingUtil;
 import com.xiaomi.data.push.rpc.exception.RemotingSendRequestException;
 import com.xiaomi.data.push.rpc.exception.RemotingTimeoutException;
 import com.xiaomi.data.push.rpc.exception.RemotingTooMuchRequestException;
+import com.xiaomi.data.push.rpc.netty.AgentChannel;
 import com.xiaomi.data.push.rpc.netty.ChannelEventListener;
 import com.xiaomi.data.push.rpc.netty.NettyRemotingServer;
-import com.xiaomi.data.push.rpc.netty.ResponseFuture;
 import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
 import io.netty.channel.Channel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * Created by zhangzhiyong on 30/05/2018.
@@ -55,7 +55,7 @@ public class PushChannelEventListener implements ChannelEventListener {
 
 
     public Collection<Channel> clients() {
-        return AgentContext.ins().map.values();
+        return AgentContext.ins().map.values().stream().map(it->it.getChannel()).collect(Collectors.toList());
     }
 
 
@@ -69,7 +69,7 @@ public class PushChannelEventListener implements ChannelEventListener {
         if (AgentContext.ins().map.size() > 0) {
             AgentContext.ins().map.forEach((k, v) -> {
                 try {
-                    RemotingCommand res = server.invokeSync(v, command, TimeUnit.SECONDS.toMillis(1));
+                    RemotingCommand res = server.invokeSync(v.getChannel(), command, TimeUnit.SECONDS.toMillis(1));
                     logger.info("res----->{}", new String(res.getBody()));
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -94,7 +94,7 @@ public class PushChannelEventListener implements ChannelEventListener {
         if (AgentContext.ins().map.size() > 0) {
             AgentContext.ins().map.forEach((k, v) -> {
                 try {
-                    server.invokeAsync(v, command, timeout, callback);
+                    server.invokeAsync(v.getChannel(), command, timeout, callback);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 } catch (RemotingSendRequestException e) {
@@ -109,14 +109,17 @@ public class PushChannelEventListener implements ChannelEventListener {
     }
 
     public void send(Consumer<Channel> consumer) {
-        AgentContext.ins().map.forEach((k, v) -> consumer.accept(v));
+        AgentContext.ins().map.forEach((k, v) -> consumer.accept(v.getChannel()));
     }
 
 
     @Override
     public void onChannelConnect(String remoteAddr, Channel channel) {
         logger.info("onChannelConnect:{}", remoteAddr);
-        AgentContext.ins().map.put(remoteAddr, channel);
+        AgentChannel ac = new AgentChannel();
+        ac.setChannel(channel);
+        ac.setRemoteAddr(remoteAddr);
+        AgentContext.ins().map.put(remoteAddr, ac);
     }
 
     @Override
@@ -138,6 +141,6 @@ public class PushChannelEventListener implements ChannelEventListener {
 
     @Override
     public Channel channel(String remoteAddr) {
-        return AgentContext.ins().map.get(remoteAddr);
+        return AgentContext.ins().map.get(remoteAddr).getChannel();
     }
 }

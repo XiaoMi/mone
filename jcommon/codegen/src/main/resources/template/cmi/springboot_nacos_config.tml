@@ -1,0 +1,14 @@
+package ${package}.config;
+
+import com.alibaba.nacos.api.annotation.NacosProperties;
+import com.alibaba.nacos.spring.context.annotation.config.EnableNacosConfig;
+import com.alibaba.nacos.spring.context.annotation.config.NacosPropertySource;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+//这里的namespace与服务注册可以不一致
+@EnableNacosConfig(globalProperties = @NacosProperties(serverAddr = "\${nacos.config.addrs}", namespace = "\${nacos.config.namespace}"))
+//dataId 这个外部注入不进来。。。 需要手动修改为你特殊需要的
+@NacosPropertySource(dataId = "test", autoRefreshed = true)
+public class NacosConfiguration {
+}

@@ -6,7 +6,7 @@
     <appender name="fileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>\${log.path}/${project}/server.log</file>
         <encoder>
-            <pattern>%d|%-5level|%thread|%logger{40}|%L|%msg%n</pattern>
+            <pattern>%d|%-5level|%X{trace_id}|%thread|%logger{40}|%msg%n</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>\${log.path}/${project}/server.log.%d{yyyy-MM-dd-HH}</fileNamePattern>
@@ -17,7 +17,7 @@
     <appender name="errorAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>\${log.path}/${project}/error.log</file>
         <encoder>
-            <pattern>%d|%-5level|%thread|%logger{40}|%L|%msg%n</pattern>
+            <pattern>%d|%-5level|%X{trace_id}|%thread|%logger{40}|%msg%n</pattern>
         </encoder>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>\${log.path}/${project}/error.log.%d{yyyy-MM-dd-HH}</fileNamePattern>
@@ -31,7 +31,7 @@
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d|%-5level|%thread|%logger{40}|%L|%msg%n</pattern>
+            <pattern>%d|%-5level|%X{trace_id}|%thread|%logger{40}|%msg%n</pattern>
         </encoder>
     </appender>
 

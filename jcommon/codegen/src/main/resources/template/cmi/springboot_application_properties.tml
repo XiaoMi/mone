@@ -1,0 +1,32 @@
+#Application
+spring.application.name=${appName}
+#激活哪一个环境的配置文件
+spring.profiles.active=@profile.active@
+
+##Dubbo 配置 DubboConfiguration
+dubbo.provider.group=\${spring.profiles.active}
+dubbo.consumer.group=\${spring.profiles.active}
+#注册中心
+dubbo.registry.address=\${config.dubbo.registry.address}
+
+#Nacos配置
+#Nacos 配置
+nacos.config.addrs=\${config.nacos.config.addrs}
+#根据你服务的namespace选择
+nacos.config.namespace=\${config.nacos.config.namespace}
+
+#有品log收集
+youpin.log.group=\${spring.profiles.active}
+#日志收集地址  topicName
+youpin.log.talos.topic=planet-mione-template-topic
+#根据环境区分
+youpin.log.talos.sendpoint=\${config.youpin.log.talos.sendpoint}
+youpin.log.talos.access.key=\${config.youpin.log.talos.access.key}
+youpin.log.talos.access.secret=\${config.youpin.log.talos.access.secret}
+
+
+#日志配置文件位置
+logging.config=classpath:logback-spring.xml
+#默认日志输出位置
+local.log.home=\${config.local.log.home}
+local.log.level=\${config.local.log.level}

@@ -1,29 +1,18 @@
-/*
- *  Copyright 2020 Xiaomi
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.xiaomi.data.push.service;
 
 import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.xiaomi.youpin.feishu.FeiShu;
+import com.xiaomi.youpin.feishu.bo.ContentBo;
+import com.xiaomi.youpin.feishu.bo.MsgBatchSendRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Service
 @Slf4j
@@ -52,7 +41,7 @@ public class FeiShuCommonService {
         try {
             StringBuffer newMsg = new StringBuffer();
             if (StringUtils.isNotEmpty(username)) {
-                String userId = feiShu.getUserIdByEmail(username + "@xxxx.com");
+                String userId = feiShu.getUserIdByEmail(username + "@xiaomi.com");
                 log.info("FeiShuService#sendMsg userId: {}", userId);
                 if (StringUtils.isNotEmpty(userId)) {
                     newMsg.append("<at user_id=\"" + userId + "\"></at>\n");
@@ -75,10 +64,34 @@ public class FeiShuCommonService {
         }
         try {
             log.info("FeiShuService#sendMsg personal msg: {}", msg);
-            feiShu.sendMsgByEmail(username + "@xxxx.com", msg);
+            feiShu.sendMsgByEmail(username + "@xiaomi.com", msg);
         } catch (Exception e) {
             log.error("FeiShuService#send personal msg Throwable" + e.getMessage(), e);
         }
+    }
+
+    public boolean batchSendMsg(String alarmUsername, String msg) {
+        boolean flag = false;
+        MsgBatchSendRequest request = new MsgBatchSendRequest();
+        ContentBo content = new ContentBo();
+        content.setText(msg);
+        request.setContent(content);
+        List<String> users = new ArrayList<>();
+
+        Arrays.asList(alarmUsername.split(",")).stream().distinct().forEach(userName -> {
+            String openIdId = feiShu.getOpenIdIdByEmail(userName + "@xiaomi.com");
+            if (StringUtils.isNotBlank(openIdId)){
+                users.add(openIdId);
+            } else {
+                log.info("FeiShuCommonService.batchSendMsg 根据userName:{}未查询到openIdId", userName);
+            }
+        });
+        if (users.size()>0){
+            request.setOpen_ids(users);
+            flag = feiShu.batchSendMsg(request);
+        }
+        log.info("FeiShuCommonService.batchSendMsg alarmUsername:{}, msg:{} users.size:{} rst:{}", alarmUsername, msg, users.size(), flag);
+        return flag;
     }
 
 }

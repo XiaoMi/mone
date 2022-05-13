@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>docean-plugin</artifactId>
+        <groupId>run.mone</groupId>
+        <version>1.4-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>docean-plugin-mybatis-plus</artifactId>
+    <dependencies>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>docean-plugin-datasource</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>docean-plugin-cat</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>docean-plugin-config</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.mchange</groupId>
+            <artifactId>c3p0</artifactId>
+            <version>0.9.5.2</version>
+        </dependency>
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus</artifactId>
+            <version>3.4.3.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-generator</artifactId>
+            <version>3.4.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.freemarker</groupId>
+            <artifactId>freemarker</artifactId>
+            <version>2.3.31</version>
+        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.github.pagehelper</groupId>-->
+<!--            <artifactId>pagehelper</artifactId>-->
+<!--            <version>4.1.4</version>-->
+<!--        </dependency>-->
+    </dependencies>
+
+    <properties>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+    </properties>
+
+</project>

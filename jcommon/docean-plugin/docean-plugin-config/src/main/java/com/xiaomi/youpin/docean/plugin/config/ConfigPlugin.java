@@ -39,7 +39,11 @@ public class ConfigPlugin implements IPlugin {
     public void init(Set<? extends Class<?>> classSet, Ioc ioc) {
         log.info("init config plugin");
         Config config = new Config();
-        ioc.putBean(config);
+        if (ioc.containsBean(Config.class.getName())) {
+            config = ioc.getBean(Config.class);
+        } else {
+            ioc.putBean(config);
+        }
         config.forEach((k, v) -> ioc.putBean("$" + k, v));
     }
 

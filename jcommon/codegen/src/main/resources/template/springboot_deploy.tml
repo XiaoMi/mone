@@ -8,14 +8,14 @@ class base {
     $tag = "$< tag >"
 
     $prog_name = "${project}"
-    $prog_logdir = "xxxx/log/\${prog_name}/"
+    $prog_logdir = "/home/work/log/\${prog_name}/"
     $mod_proc_log = "\${prog_logdir}/\${prog_name}.log"
     $mod_run_log = "\${basedir}/run.log"
 
     $to_email = ""
     $mod_start = "/opt/soft/openjdk1.8.0_202/bin/java -Xms2g -Xmx2g -XX:MaxDirectMemorySize=500M -XX:+UseG1GC -XX:MaxGCPauseMillis=20 \
       -XX:+PrintReferenceGC -XX:+PrintGCDetails -XX:+PrintGCDateStamps -XX:+PrintHeapAtGC -verbose:gc \
-      -Xloggc:xxxx/log/${project}/gc.log -jar \${basedir}/${project}-server-${version}.jar -r"
+      -Xloggc:/home/work/log/${project}/gc.log -jar \${basedir}/${project}-server-${version}.jar -r"
 
 
     $run_dir = "\${basedir}"

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="5 seconds">
+
+    <property resource="application.properties"/>
+	<!--定义日志文件的存储地址 勿在 LogBack 的配置中使用相对路径     使用spring-boot的配置项LOG_PATH-->
+	<springProperty scope="context" name="LOG_HOME" source="local.log.home" default="/home/work/log"/>
+	<springProperty scope="context" name="APP_NAME" source="spring.application.name" default="${project}"/>
+	<springProperty scope="context" name="LOG_LEVEL" source="local.log.level" default="INFO"/>
+	<property name="MAX_HISTORY" value="120"/>
+
+    <!-- 日志收集 -->
+<!--    <appender name="youpinLogAppender" class="com.xiaomi.youpin.jcommon.log.YouPinLogAppender">-->
+<!--        <appName>\${APP_NAME}</appName>-->
+<!--        <group>\${youpin.log.group}</group>-->
+<!--        <talosTopicName>\${youpin.log.talos.topic}</talosTopicName>-->
+<!--        <talosSendpoint>\${youpin.log.talos.sendpoint}</talosSendpoint>-->
+<!--        <talosAccessKey>\${youpin.log.talos.access.key}</talosAccessKey>-->
+<!--        <talosAccessSecret>\${youpin.log.talos.access.secret}</talosAccessSecret>-->
+<!--        <needCatLog>true</needCatLog>-->
+<!--    </appender>-->
+
+    <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+		<encoder>
+			<pattern>%d{yyyy-MM-dd HH:mm:ss.SSS}|%-5level|%X{trace_id}|%thread|%logger{50}|%msg%n</pattern>
+		</encoder>
+	</appender>
+
+    <appender name="fileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>\${LOG_HOME}/\${APP_NAME}/server.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS}|%-5level|%X{trace_id}|%thread|%logger{50}|%msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>\${LOG_HOME}/\${APP_NAME}/bk/server.log.%d{yyyy-MM-dd}</fileNamePattern>
+            <MaxHistory>\${MAX_HISTORY}</MaxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <appender name="asyncAppender" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>5024</queueSize>
+        <appender-ref ref="fileAppender"/>
+    </appender>
+
+
+    <appender name="errorAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>\${LOG_HOME}/\${APP_NAME}/error.log</file>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS}|%-5level|%X{trace_id}|%thread|%logger{50}|%msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>\${LOG_HOME}/\${APP_NAME}/bk/error.log.%d{yyyy-MM-dd}</fileNamePattern>
+            <MaxHistory>\${MAX_HISTORY}</MaxHistory>
+        </rollingPolicy>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <logger name="org.springframework" level="ERROR"/>
+    <logger name="ch.qos.logback" level="ERROR"/>
+    <logger name="com.xiaomi.data.push.service.state" level="ERROR"/>
+    <logger name="org.reflections.Reflections" level="ERROR"/>
+
+    <root level="${LOG_LEVEL}">
+        <appender-ref ref="stdout"/>
+        <appender-ref ref="errorAppender"/>
+<!--        <appender-ref ref="fileAppender"/>-->
+        <appender-ref ref="asyncAppender"/>
+<!--        <appender-ref ref="youpinLogAppender"/>-->
+    </root>
+
+</configuration>

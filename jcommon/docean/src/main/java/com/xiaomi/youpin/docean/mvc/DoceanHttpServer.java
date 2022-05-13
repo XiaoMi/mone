@@ -36,6 +36,7 @@ import io.netty.handler.ssl.OptionalSslHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
+import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 import lombok.extern.slf4j.Slf4j;
 
@@ -111,6 +112,7 @@ public class DoceanHttpServer {
 
                 ch.pipeline().addLast(new HttpServerCodec());
                 ch.pipeline().addLast(new HttpObjectAggregator(1 * 1024 * 1024));
+                ch.pipeline().addLast(new ChunkedWriteHandler());
                 ch.pipeline().addLast(new IdleStateHandler(15, 15, 15));
                 ch.pipeline().addLast(new HttpHandler());
 

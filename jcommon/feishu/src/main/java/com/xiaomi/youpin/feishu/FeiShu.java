@@ -22,34 +22,35 @@ import com.google.gson.reflect.TypeToken;
 import com.xiaomi.data.push.client.HttpClientV2;
 import com.xiaomi.youpin.feishu.bo.*;
 import com.xiaomi.youpin.feishu.enums.MsgTypeEnum;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 /**
  * @author liuyuchong
  */
 @Slf4j
-@Data
 public class FeiShu {
 
     private String appId;
     private String appSecret;
 
     private AtomicReference<TokenResult> tr = new AtomicReference<>();
+    private String CommonHead = "";
 
-    private String getTokenUrl = "";
-    private String getGroupsUrl = "";
-    private String sendMsgUrl = "";
-    private String sendBatchMsgUrl = "";
-    private String getUserIdUrl = "";
+    private String getTokenUrl = CommonHead+"/open-apis/auth/v3/tenant_access_token/internal/";
+    private String getGroupsUrl = CommonHead+"/open-apis/chat/v4/list";
+    private String sendMsgUrl = CommonHead+"/open-apis/message/v4/send/";
+    private String sendBatchMsgUrl = CommonHead+"/open-apis/message/v4/batch_send/";
+    private String getUserIdUrl = CommonHead+"/open-apis/user/v1/batch_get_id?emails=";
+    private String cardUpdate = CommonHead+"/open-apis/interactive/v1/card/update";
+    private String getBatchUserInfoUrl = CommonHead+"/open-apis/contact/v1/user/batch_get?";
 
     public FeiShu(String appId, String appSecret) {
         this.appId = appId;
@@ -113,11 +114,27 @@ public class FeiShu {
         return token;
     }
 
+    public List<String> getBatchPhone(List<String> openIdSet) {
+        StringBuilder param = new StringBuilder("open_ids=");
+        openIdSet.stream().forEach(it -> {
+                param.append(it + "&open_ids=");
+            }
+        );
+        String url = getBatchUserInfoUrl + param;
+        Map headers = new HashMap();
+        headers.put("Authorization", "Bearer " + getToken());
+        String strResult = HttpClientV2.get(url, headers, 2000);
+        Result<UserInfoWrapperResult> result = null;
+        try {
+            result = new Gson().fromJson(strResult, new TypeToken<Result<UserInfoWrapperResult>>() {
+            }.getType());
+        } catch (Exception e) {
+            log.error("json parse error, result:{}, msg:{}", strResult, e.getMessage());
+        }
+        return result.getData().getUser_infos().stream().map(it -> it.getMobile()).collect(Collectors.toList());
+    }
 
-    /**
-     * 获取邮箱获取用户id
-     */
-    public String getUserIdByEmail(String email) {
+    public UserIdInfo getUserIdInfoByEmail(String email) {
         if (StringUtils.isEmpty(email)) {
             log.error("email error");
             return null;
@@ -126,7 +143,7 @@ public class FeiShu {
         String url = getUserIdUrl + email;
         Map headers = new HashMap();
         headers.put("Authorization", "Bearer " + getToken());
-        String strResult = HttpClientV2.get(url, headers);
+        String strResult = HttpClientV2.get(url, headers, 2000);
         Result<EmailQueryResult> result = null;
         try {
             result = new Gson().fromJson(strResult, new TypeToken<Result<EmailQueryResult>>() {
@@ -145,7 +162,23 @@ public class FeiShu {
         if (CollectionUtils.isEmpty(userIdInfos)) {
             return null;
         }
-        return userIdInfos.get(0).getUser_id();
+        return userIdInfos.get(0);
+    }
+
+    /**
+     * 获取邮箱获取Open_id
+     */
+    public String getOpenIdIdByEmail(String email) {
+        UserIdInfo userIdInfo = getUserIdInfoByEmail(email);
+        return userIdInfo == null ? "" : userIdInfo.getOpen_id();
+    }
+
+    /**
+     * 获取邮箱获取用户id
+     */
+    public String getUserIdByEmail(String email) {
+        UserIdInfo userIdInfo = getUserIdInfoByEmail(email);
+        return userIdInfo == null ? "" : userIdInfo.getUser_id();
     }
 
 
@@ -202,8 +235,6 @@ public class FeiShu {
         }
         MsgSendRequest request = new MsgSendRequest();
         request.setMsg_type(type.getName());
-        MsgDetail detail = new MsgDetail();
-        request.setContent(detail);
         if (!StringUtils.isEmpty(openId)) {
             request.setOpen_id(openId);
         }
@@ -219,19 +250,26 @@ public class FeiShu {
         if (!StringUtils.isEmpty(email)) {
             request.setEmail(email);
         }
+        MsgDetail detail = new MsgDetail();
         switch (type) {
             case TEXT:
                 detail.setText(content);
+                request.setContent(detail);
                 break;
-            default:
+            case IMAGE:
                 detail.setImage_key(content);
+                request.setContent(detail);
+                break;
+            case CARD:
+                request.setCard(GsonFactory.getGson().fromJson(content, Map.class));
+                break;
         }
         Map headers = new HashMap();
         headers.put("Authorization", "Bearer " + getToken());
         headers.put("content-type", "application/json");
         Result result = null;
         try {
-            String response = HttpClientV2.post(sendMsgUrl, new Gson().toJson(request), headers, 2000);
+            String response = HttpClientV2.post(sendMsgUrl, new String(new Gson().toJson(request).getBytes(), StandardCharsets.UTF_8), headers, 2000);
             if (StringUtils.isEmpty(response)) {
                 log.error("http post error when send msg, response:{}", response);
                 return false;
@@ -244,6 +282,14 @@ public class FeiShu {
         if (result == null || result.getCode() != 0) {
             return false;
         }
+        return true;
+    }
+
+    public boolean updateCard(String body) {
+        Map headers = new HashMap();
+        headers.put("Authorization", "Bearer " + getToken());
+        headers.put("content-type", "application/json");
+        String response = HttpClientV2.post(cardUpdate, body, headers, 2000);
         return true;
     }
 
@@ -285,6 +331,17 @@ public class FeiShu {
     }
 
     /**
+     * 通过邮件发送信息
+     *
+     * @param email
+     * @param content
+     * @return
+     */
+    public boolean sendCardByEmail(String email, String content) {
+        return sendMsg(null, null, null, null, email, MsgTypeEnum.CARD, content);
+    }
+
+    /**
      * 通过飞书chatId或者飞书群chatId发消息
      *
      * @param chatId
@@ -293,6 +350,17 @@ public class FeiShu {
      */
     public boolean sendMsgByChatId(String chatId, String content) {
         return sendMsg(null, chatId, null, null, null, MsgTypeEnum.TEXT, content);
+    }
+
+    /**
+     * 通过飞书chatId或者飞书群chatId发消息卡片
+     *
+     * @param chatId
+     * @param card
+     * @return
+     */
+    public boolean sendCardByChatId(String chatId, String card) {
+        return sendMsg(null, chatId, null, null, null, MsgTypeEnum.CARD, card);
     }
 
     /**
@@ -307,6 +375,17 @@ public class FeiShu {
     }
 
     /**
+     * 通过飞书userId发消息
+     *
+     * @param userId
+     * @param card
+     * @return
+     */
+    public boolean sendCardByUserId(String userId, String card) {
+        return sendMsg(null, null, null, userId, null, MsgTypeEnum.CARD, card);
+    }
+
+    /**
      * 通过openId发消息
      *
      * @param openId
@@ -315,5 +394,16 @@ public class FeiShu {
      */
     public boolean sendMsgByOpenId(String openId, String content) {
         return sendMsg(openId, null, null, null, null, MsgTypeEnum.TEXT, content);
+    }
+
+    /**
+     * 通过openId发消息
+     *
+     * @param openId
+     * @param card
+     * @return
+     */
+    public boolean sendCardByOpenId(String openId, String card) {
+        return sendMsg(openId, null, null, null, null, MsgTypeEnum.CARD, card);
     }
 }

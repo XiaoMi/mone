@@ -16,10 +16,6 @@
 
 package com.xiaomi.youpin.cat;
 
-import com.dianping.cat.Cat;
-import com.dianping.cat.message.Transaction;
-import com.site.lookup.util.StringUtils;
-
 /**
  * @author Zheng Xu zheng.xucn@outlook.com
  * CAT监控的集成
@@ -28,7 +24,6 @@ import com.site.lookup.util.StringUtils;
 public class CatPlugin {
 
     private String action;
-    private Transaction tranx;
     private boolean catEnabled;
     private static final String CAT_STATUS_FAILED = "failed";
     private static final String TYPE_REDIS = "redis";
@@ -55,12 +50,6 @@ public class CatPlugin {
         if (!isCatEnabled()) {
             return;
         }
-
-        tranx = Cat.newTransaction(type, this.action);
-        if (!StringUtils.isEmpty(data)) {
-            tranx.addData(data);
-        }
-        tranx.setStatus(Transaction.SUCCESS);
     }
 
     /**
@@ -73,11 +62,6 @@ public class CatPlugin {
         if (!isCatEnabled()) {
             return;
         }
-
-        if (!success) {
-            tranx.setStatus(CAT_STATUS_FAILED);
-        }
-        tranx.complete();
     }
 
     /**

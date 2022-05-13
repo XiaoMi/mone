@@ -108,9 +108,12 @@ public class NacosConfig {
     }
 
     private Map<String, String> getConfigMap() throws NacosException {
+        return getConfigMap(this.dataId, this.group);
+    }
+
+    public Map<String, String> getConfigMap(String dataId, String group) throws NacosException {
         String content = configService.getConfig(dataId, group, 5000);
         Map<String, String> configMap = new HashMap<>();
-
         if (content != null && content.length() != 0) {
             String[] perConfig = content.split("\n");
             for (String it : perConfig) {

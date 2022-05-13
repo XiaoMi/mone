@@ -16,6 +16,7 @@
 
 package com.xiaomi.youpin.docean.test.demo;
 
+import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.Controller;
 import com.xiaomi.youpin.docean.anno.RequestMapping;
 import com.xiaomi.youpin.docean.anno.RequestParam;
@@ -23,6 +24,8 @@ import com.xiaomi.youpin.docean.mvc.MvcContext;
 import com.xiaomi.youpin.docean.mvc.MvcResult;
 import com.xiaomi.youpin.docean.test.anno.TAnno;
 import lombok.extern.slf4j.Slf4j;
+
+import javax.annotation.Resource;
 
 /**
  * @author goodjava@qq.com
@@ -32,12 +35,24 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DemoController {
 
+    @Resource
+    private Ioc ioc;
+
+    public void init(){
+        log.info("init controller");
+    }
+
     @RequestMapping(path = "/test")
     public DemoVo test() {
         DemoVo vo = new DemoVo();
         vo.setId("1");
         vo.setName("test");
         return vo;
+    }
+
+    @RequestMapping(path = "/a/**")
+    public String a() {
+        return "a";
     }
 
     @RequestMapping(path = "/test2")
@@ -57,9 +72,18 @@ public class DemoController {
         return vo;
     }
 
+    @RequestMapping(path = "/test4",method = "get")
+    public DemoVo test4(MvcContext context) {
+        log.info("{}", context);
+        DemoVo vo = new DemoVo();
+        vo.setName("test4");
+        return vo;
+    }
+
 
     /**
      * 测试302 跳转
+     *
      * @return
      */
     @RequestMapping(path = "/302")
@@ -91,7 +115,15 @@ public class DemoController {
      */
     @RequestMapping(path = "/tests", method = "get")
     public String testSession(MvcContext context) {
-        return "session";
+        String name = String.valueOf(context.session().getAttribute("name"));
+        return "session:" + name;
+    }
+
+
+    @RequestMapping(path = "/tests2", method = "get")
+    public String testSession2(MvcContext context) {
+        String name = String.valueOf(context.session().getAttribute("name"));
+        return "session:" + name;
     }
 
 

@@ -8,4 +8,3 @@ gitAddress=${gitAddress}
 params=${params}
 cname=${cname}
 system=${system}
-groups=staging,intranet,online

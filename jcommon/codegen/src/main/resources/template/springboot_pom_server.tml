@@ -61,23 +61,11 @@
             <version>4.5.5</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.xiaomi.youpin</groupId>
-            <artifactId>log</artifactId>
-            <version>1.6-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.xiaomi.youpin.cat.plugins</groupId>
-            <artifactId>cat-plugins</artifactId>
-            <version>3.0.3-youpin-SNAPSHOT</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>dubbo</artifactId>
-                    <groupId>org.apache.dubbo</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.xiaomi.youpin</groupId>-->
+<!--            <artifactId>log</artifactId>-->
+<!--            <version>1.6-SNAPSHOT</version>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>org.codehaus.janino</groupId>

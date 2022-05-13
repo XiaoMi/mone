@@ -29,6 +29,12 @@ import java.util.stream.Stream;
 
 public class CommonTest {
 
+
+    @Test
+    public void testBoolean() {
+        System.out.println(Boolean.TRUE.toString());
+    }
+
     @Test
     public void testStreamGeneraotr() {
         Stream.generate(CommonTest::sleep).forEach(it->{

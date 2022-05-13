@@ -1,0 +1,15 @@
+package ${package}.service;
+
+import com.xiaomi.youpin.infra.rpc.Result;
+import ${package}.api.service.DubboHealthService;
+import com.xiaomi.youpin.docean.plugin.dmesh.anno.MeshService;
+
+@MeshService(interfaceClass = DubboHealthService.class, group = "", version = "", app = "${appName}")
+public class DubboHealthServiceImpl implements DubboHealthService {
+
+
+    @Override
+    public Result<String> health() {
+        return Result.success("ok");
+    }
+}

@@ -16,6 +16,7 @@
 
 package com.xiaomi.data.push.context;
 
+import com.xiaomi.data.push.rpc.netty.AgentChannel;
 import io.netty.channel.Channel;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class AgentContext {
 
-    public ConcurrentHashMap<String, Channel> map = new ConcurrentHashMap<>();
+    public ConcurrentHashMap<String, AgentChannel> map = new ConcurrentHashMap<>();
 
     private AgentContext(){
 

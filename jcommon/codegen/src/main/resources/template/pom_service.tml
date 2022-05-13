@@ -85,7 +85,7 @@
                                 <Plugin-Class>${plugin_class}</Plugin-Class>
                                 <Plugin-Url>${plugin_url}</Plugin-Url>
                                 <Plugin-MvnPath>mvn</Plugin-MvnPath>
-                                <Plugin-DashServer></Plugin-DashServer>
+                                <Plugin-DashServer>10.38.163.218:8088</Plugin-DashServer>
                                 <Plugin-GateWayServer>ip:port</Plugin-GateWayServer>
                             </manifestEntries>
                         </transformer>

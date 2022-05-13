@@ -64,10 +64,21 @@ public class TaskParam implements Serializable {
     private long timeout;
 
     private String roleId;
+
     /**
      * 分组信息
      */
     private Integer gid;
+
+    /**
+     * 告警接收人 多个以,分隔
+     */
+    private String alarmUsername="";
+
+    /**
+     * 是否忽略失败 false:达到失败次数则任务暂停
+     */
+    private boolean ignoreError;
 
     private String creator;
 
@@ -132,6 +143,7 @@ public class TaskParam implements Serializable {
         return "TaskParam{" +
                 "taskDef=" + taskDef +
                 ", taskId=" + taskId +
+                ", alarmUsername=" + alarmUsername +
                 '}';
     }
 

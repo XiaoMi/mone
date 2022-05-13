@@ -1,0 +1,12 @@
+#server
+app_name=${appName}
+uds_app=${appName}
+#本地mesh路径
+uds_path=/tmp/tesla_proxy.sock
+#远程mesh
+mesh_remote=10.38.160.248:8899
+
+
+#redis
+ds_redis_hosts=10.38.162.213:6382,10.38.162.213:6380,10.38.162.214:6382,10.38.162.214:6380,10.38.162.214:6381,10.38.162.213:6381
+

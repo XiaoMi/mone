@@ -1,0 +1,158 @@
+## 工程简介
+CRM团队项目脚手架，基于阿里COLA框架实现
+
+## 新建项目启动前需要修改的地方
+- 在nacos控制台中配置配置文件
+
+## 架构介绍
+本项目整合了 SpringBoot Mybatis-plus Shiro RocketMQ MySQL Redis Redission SpringCache
+微服务整合了SpringCloud Alibaba包括 Nacos(注册中心+配置中心) Dubbo X5(Feign) Sentinel 以及 Mione(网关) 等组件
+
+**Nacos控制台地址:**
+配置中心:
+    https://cloud.d.xiaomi.net/next/console/msp/config  服务树: cn-crm-nacos
+注册中心:
+测试: http://tj1-b2c-systech-mione-test03.kscn/nacos/#/configurationManagement?dataId=&group=&appName=&namespace= 用户名密码: nacos
+线上: http://nacos.systech.b2c.srv/nacos/#/configurationManagement?dataId=&group=&appName=&namespace= 用户名密码:
+
+**Mione:**
+    staging地址: http://xmmione.test.mi.com/gwdash/index
+    prod地址: https://xmmione.be.mi.com/gwdash/index
+
+**Sentinel控制台:**
+    staging地址: http://sentinel.mi.bilibili.network
+    prod地址：http://sentinelc3.mi.bilibili.network
+    用户名密码:
+
+
+### module说明
+
+各个模块的作用说明
+
+|   module名  | 能力  |  说明  |
+|  :----  | :----  | :----  |
+| ***--controler（View层） |     展示层 |        处理http、dubbo协议适配输出        |
+| ***-app（Service层）     |    executor |    处理request，包括command和query     |
+|                                    |   scheduler |             处理定时任务，             |
+| ***-domain（领域层）     |       entity |                领域模型                |
+|                                    |     ability |                领域能力                |
+|                                    |     gateway | 领域网关（用来访问Infra层的interface） |
+| ***-infra（dao层）       | gatewayimpl |                网关实现                |
+|                                    |      mapper |               数据库映射               |
+|                                    |      config |                配置信息                |
+| ***-client（对外接口包）           |       dubbo |            对外提供dubboapi            |
+|                                    |         dto |            对外提供数据模型            |
+
+## dto、vo、entity等名词解释
+
+| 名词   |         作用层         |                             说明                             |
+| :----- | :--------------------: | :----------------------------------------------------------: |
+| DO     | nr-b2b-member-infra层  |         与select出来的字段一一对应，用于多表查询结果         |
+| Entity | nr-b2b-member-domain层 |        用于领域模型，领域层对外输出，统一就是领域对象        |
+| DTO    |  nr-b2b-member-app层   | 在这一层，可以直接输出Entity模型，也可以根据不同需求，组装新的DTO对象来存储不同业务的模型 |
+
+
+## 如何使用脚手架
+#### 概括
+通过在idea中，new project -> maven -> create from archetype 来创建新的项目
+#### 步骤
+##### 1. 在apache maven的settings.xml文件中添加配置
+   ```xml
+<profile>
+         <!-- 这个id是任意填的,用来跟不同的模板进行区分-->
+         <id>crm_archetype</id>
+         <repositories>
+           <repository>
+             <!-- 这repository Id必须是archetype -->
+             <id>archetype</id>
+             <name>crm_archetype</name>
+             <url>https://pkgs.d.xiaomi.net:443/artifactory/maven-release-virtual</url>
+             <releases>
+               <enabled>true</enabled>
+               <checksumPolicy>fail</checksumPolicy>
+             </releases>
+             <snapshots>
+               <enabled>true</enabled>
+               <checksumPolicy>warn</checksumPolicy>
+             </snapshots>
+           </repository>
+         </repositories>
+       </profile>
+```
+
+```xml
+       <!-- 然后在settings.xml文件的最后，加上 -->
+     <activeProfiles>
+       <!-- 这个名字，就是上面定义的id -->
+       <activeProfile>crm_archetype</activeProfile>
+     </activeProfiles>
+```
+
+
+##### 2. 在idea中添加archetype
+菜单 file -> new -> project
+右边选择maven，在左边出现的框中选中单选框 Create from archetype，然后最右边有个Add Archetype
+在弹框中输入如下信息：
+- groupId : com.crm.sales.demo
+- artifactId : cn-sales-crm-archetype-archetype
+- version : 1.0-SNAPSHOT
+点击确定，就可以通过新增的archetype模板来创建项目了
+
+##### <span id="relateToGit"> 3. 如何关联到新的项目的git地址 <\span>
+- 首先在git创建一个空的项目
+- 按照空git项目中的说明来操作
+- 示例：
+```shell script
+#来自于某个空的git项目
+#Push an existing folder
+cd existing_folder
+git init
+git remote add origin git@git.n.xiaomi.com:mit/new-retail/cn-sales-crm/project-demo/test.git
+git add .
+git commit -m "Initial commit"
+git push -u origin master
+```
+
+## 相关平台
+## Nacos和doubbo平台
+- [nacos各个环境地址](https://wiki.n.miui.com/pages/viewpage.action?pageId=567853785)
+
+
+## 如何生成archetype
+[如何生成自定义Maven Archetype](https://xiaomi.f.mioffice.cn/docs/dock4XtpLmS1nfaUxj4i7dt1O9g#)
+
+
+
+## 各种配置说明
+### Redisson配置
+Redisson具体配置在 application-redis.yml中，已经跟spring-boot进行整合配置
+配置的具体含义，请参考官方 [Redisson配置](https://github.com/redisson/redisson/wiki/2.-%E9%85%8D%E7%BD%AE%E6%96%B9%E6%B3%95#22-%E6%96%87%E4%BB%B6%E6%96%B9%E5%BC%8F%E9%85%8D%E7%BD%AE)
+Redisson与Spring-boot整合的配置，请参考[Spring-boot-starter整合Redisson](https://github.com/redisson/redisson/tree/master/redisson-spring-boot-starter#spring-boot-starter)
+
+### Json相关配置
+项目已经去掉spring中默认的jackson的json配置，而使用Gson作为默认的json工具，具体配置方式是
+```xml
+<!-- 在pom里面，引入的spring-boot-starter-web中排除jackson依赖 -->
+<dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-databind</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+```
+
+## 默认测试
+### 测试框架
+[Junit5](https://zhuanlan.zhihu.com/p/111706639)
+
+### 代码功能测试
+- http测试
+启动服务后，浏览器请求：http://127.0.0.1:8081/test/test
+- dubbo测试
+    1.进入mione平台->智能网关->API管理 配置dubbo服务  分组选择cn-sales-crm
+    2.在mione 开发测试->dubbo测试 填入dubbo信息 分组:测试本地:dev 测试环境:test
+

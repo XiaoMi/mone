@@ -1,0 +1,5 @@
+MiApiClient client = new DefaultMiApiClient(url);
+${apiName}Request req = new ${apiName}Request();
+${requestStr}
+${apiName}Response rsp = client.execute(req);
+System.out.println(rsp.getBody());
