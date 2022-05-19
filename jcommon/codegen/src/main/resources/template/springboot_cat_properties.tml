@@ -1,2 +1,0 @@
-app.name=${appName}
-app.nacos=\${app.nacos}

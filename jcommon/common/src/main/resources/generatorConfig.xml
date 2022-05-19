@@ -1,20 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  ~  Copyright 2020 Xiaomi
-  ~
-  ~    Licensed under the Apache License, Version 2.0 (the "License");
-  ~    you may not use this file except in compliance with the License.
-  ~    You may obtain a copy of the License at
-  ~
-  ~        http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~    Unless required by applicable law or agreed to in writing, software
-  ~    distributed under the License is distributed on an "AS IS" BASIS,
-  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~    See the License for the specific language governing permissions and
-  ~    limitations under the License.
-  -->
-
 <!DOCTYPE generatorConfiguration
         PUBLIC "-//mybatis.org//DTD MyBatis Generator Configuration 1.0//EN"
         "http://mybatis.org/dtd/mybatis-generator-config_1_0.dtd">
@@ -22,8 +6,7 @@
 <generatorConfiguration>
 
     <!-- mysql驱动的位置 -->
-    <classPathEntry location="/Users/zhangzhiyong/IdeaProjects/jcommon/common/src/main/resources/mysql-connector-java-5.1.46.jar"/>
-<!--    <classPathEntry location="/Users/gaoyibo/mi/tesla/tesla-common/target/classes/mysql-connector-java-5.1.46.jar"/>-->
+    <classPathEntry location="mysql-connector-java-5.1.47.jar"/>
 
     <context id="Tables" targetRuntime="MyBatis3">
 
@@ -40,17 +23,11 @@
         <!-- JDBC连接 -->
 <!--        <jdbcConnection-->
 <!--                driverClass="com.mysql.jdbc.Driver"-->
-<!--                connectionURL="connectionURL"-->
+<!--                connectionURL="jdbc:mysql://localhost:3306/push"-->
 <!--                userId=""-->
 <!--                password="">-->
 <!--        </jdbcConnection>-->
 
-        <jdbcConnection
-                driverClass="com.mysql.jdbc.Driver"
-                connectionURL="connectionURL"
-                userId="shop_x"
-                password="">
-        </jdbcConnection>
 
         <!-- 非必需，类型处理器，在数据库类型和java类型之间的转换控制-->
         <!-- 默认false，把JDBC DECIMAL 和 NUMERIC 类型解析为 Integer，为 true时把JDBC DECIMAL 和
@@ -87,7 +64,7 @@
             是否生成 example类 -->
 
         <!--<table schema="job" tableName="job" domainObjectName="Job"></table>-->
-        <table schema="task" tableName="task" domainObjectName="Task">
+        <table schema="task_execute_history" tableName="task_execute_history" domainObjectName="TaskExecuteHistory">
             <generatedKey column="id" sqlStatement="JDBC" identity="true"/>
         </table>
 

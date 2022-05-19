@@ -1,25 +1,8 @@
-/*
- *  Copyright 2020 Xiaomi
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.xiaomi.youpin.jcommon.log;
 
 import ch.qos.logback.classic.pattern.*;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
-import com.dianping.cat.Cat;
 import com.google.gson.Gson;
 import com.xiaomi.youpin.dubbo.filter.TraceIdUtils;
 import lombok.Setter;
@@ -57,10 +40,10 @@ public class YouPinLogAppender extends UnsynchronizedAppenderBase<ILoggingEvent>
     private String talosAccessSecret;
 
     @Setter
-    private String talosTopicName;
+    private String talosTopicName = "youpin_common";
 
     @Setter
-    private String talosSendpoint;
+    private String talosSendpoint = "http://127.0.0.1";
 
     @Setter
     private String whitelist = "";
@@ -163,7 +146,7 @@ public class YouPinLogAppender extends UnsynchronizedAppenderBase<ILoggingEvent>
                 ? MDC.get(mdcKey) + " " + messageConverter.convert(eventObject)
                 : messageConverter.convert(eventObject);
         String level = eventObject.getLevel().levelStr;
-        String traceId = TraceIdUtils.ins().traceId();
+        String traceId = LogbackPatternConverter.traceId(eventObject);
         String time = dateConverter.convert(eventObject);
         String line = lineOfCallerConverter.convert(eventObject);
         String methodName = methodOfCallerConverter.convert(eventObject);
@@ -208,13 +191,6 @@ public class YouPinLogAppender extends UnsynchronizedAppenderBase<ILoggingEvent>
 
 
     private void catLog(LogRecord log) {
-        try {
-            if (needCatLog && "ERROR".equals(log.getLevel())) {
-                Cat.logEvent(log.getLevel(), new Gson().toJson(log));
-            }
-        } catch (Throwable e) {
-            //ignore...
-        }
     }
 
     protected void setException(ILoggingEvent eventObject, LogRecord log) {
@@ -222,7 +198,10 @@ public class YouPinLogAppender extends UnsynchronizedAppenderBase<ILoggingEvent>
     }
 
     protected void setProps(ILoggingEvent eventObject, LogRecord log) {
-        if (eventObject.getArgumentArray() != null && eventObject.getArgumentArray().length > 0 && eventObject.getArgumentArray()[eventObject.getArgumentArray().length - 1].getClass().equals(LogContext.class)) {
+        if (eventObject.getArgumentArray() != null
+                && eventObject.getArgumentArray().length > 0
+                && eventObject.getArgumentArray()[eventObject.getArgumentArray().length - 1] != null
+                && eventObject.getArgumentArray()[eventObject.getArgumentArray().length - 1].getClass().equals(LogContext.class)) {
             LogContext context = (LogContext) eventObject.getArgumentArray()[eventObject.getArgumentArray().length - 1];
             log.setTag(context.getTag());
             log.setParams(context.getParam());

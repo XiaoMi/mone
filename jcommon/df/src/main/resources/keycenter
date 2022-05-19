@@ -1,0 +1,15 @@
+#1.指定基础镜像，并且必须是第一条指令
+FROM cr.d.xiaomi.net/mixiao/miserver
+
+#2.指明该镜像的作者
+MAINTAINER wangmin17@xiaomi.com
+
+RUN mkdir -p /home/work/keycenter/
+RUN mkdir -p /home/work/log/keycenter/
+COPY neo.linux /home/work/keycenter/
+
+#4.设置时区
+
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+
+RUN echo 'Asia/Shanghai' >/etc/timezone

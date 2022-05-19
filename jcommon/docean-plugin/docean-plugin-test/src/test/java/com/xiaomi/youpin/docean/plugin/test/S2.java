@@ -1,24 +1,7 @@
-/*
- *  Copyright 2020 Xiaomi
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.xiaomi.youpin.docean.plugin.test;
 
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
-import com.mi.youpin.TestService;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.exception.DoceanException;
 import com.xiaomi.youpin.docean.plugin.config.anno.Value;
@@ -30,10 +13,9 @@ import com.xiaomi.youpin.docean.plugin.sql.Db;
 import com.xiaomi.youpin.docean.plugin.sql.Session;
 import com.xiaomi.youpin.docean.plugin.test.mybatis.Test;
 import com.xiaomi.youpin.docean.plugin.test.mybatis.TestMapper;
+import lombok.SneakyThrows;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
-//import org.influxdb.dto.QueryResult;
-//import org.nutz.dao.Dao;
 import org.nutz.dao.impl.NutDao;
 
 import javax.annotation.Resource;
@@ -45,10 +27,16 @@ import javax.annotation.Resource;
 @Service
 public class S2 {
 
+    class TestService {
+        public int sum(int a,int b) {
+            return a+b;
+        }
+    }
+
     @Reference(interfaceClass = IS.class)
     private IS s;
 
-    @Reference(interfaceClass = TestService.class, group = "$group", check = false)
+//    @Reference(interfaceClass = TestService.class, group = "$group", check = false)
     private TestService testService;
 
     @Resource
@@ -57,8 +45,8 @@ public class S2 {
     @Resource
     private TestRocketmq testRocketmq;
 
-    @Resource
-    private TinfluxDb tinfluxDb;
+//    @Resource
+//    private TinfluxDb tinfluxDb;
 
     @Value("$c")
     private String c;
@@ -82,7 +70,7 @@ public class S2 {
     private NutDao dao;
 
 
-    @Resource(name = "mybatis_ds_2")
+    @Resource(name = "mybatis_ds_0")
     private SqlSessionFactory sqlSessionFactory;
 
     public String hi() {
@@ -105,6 +93,7 @@ public class S2 {
         return new Gson().toJson(testDao.get());
     }
 
+    @SneakyThrows
     public void rocketproduce() {
         testRocketmq.produce();
     }
@@ -175,8 +164,8 @@ public class S2 {
     public String mybatis2() {
         SqlSession session = sqlSessionFactory.openSession();
         TestMapper m = session.getMapper(TestMapper.class);
-        m.insert(new Test(15));
-        m.insert(new Test(16));
+        m.insert(new Test(18));
+//        m.insert(new Test(16));
         return "mybatis2";
     }
 

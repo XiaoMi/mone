@@ -1,23 +1,8 @@
-/*
- *  Copyright 2020 Xiaomi
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.xiaomi.youpin.docean.plugin.nacos;
 
 import com.alibaba.nacos.api.NacosFactory;
 import com.alibaba.nacos.api.config.ConfigService;
+import com.alibaba.nacos.api.config.listener.Listener;
 import com.alibaba.nacos.api.exception.NacosException;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
@@ -60,6 +45,22 @@ public class NacosConfig {
         }
     }
 
+    public void addListener(String dataId, String group, Listener listener) {
+        try {
+            configService.addListener(dataId, group, listener);
+        } catch (Exception e) {
+            logger.error("[NacosConfig.addListener] fail to add config listener, serverAddr:{}, dataId: {}, group: {}, msg: {}", serverAddr, dataId, group, e.getMessage());
+        }
+    }
+
+    public void removeListener(String dataId, String group, Listener listener) {
+        try {
+            configService.removeListener(dataId, group, listener);
+        } catch (Exception e) {
+            logger.error("[NacosConfig.addListener] fail to remove config listener, serverAddr:{}, dataId: {}, group: {}, msg: {}", serverAddr, dataId, group, e.getMessage());
+        }
+    }
+
     /**
      * 底层是http的,其实没什么可关闭的
      *
@@ -94,7 +95,7 @@ public class NacosConfig {
         try {
             return getConfigMap();
         } catch (Exception e) {
-            logger.error("[NacosConfig.getConfig] fail to get config, serverAddr:{}, dataId: {}, group: {}, msg: {}", serverAddr, dataId, group, e.getMessage());
+            logger.error(String.format("[NacosConfig.getConfig] fail to get config, serverAddr:%s, dataId: %s, group: %s", serverAddr, dataId, group), e);
             return new HashMap<>();
         }
     }

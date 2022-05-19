@@ -1,19 +1,3 @@
-/*
- *  Copyright 2020 Xiaomi
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.xiaomi.data.push.nacos;
 
 import com.alibaba.nacos.api.NacosFactory;
@@ -108,9 +92,12 @@ public class NacosConfig {
     }
 
     private Map<String, String> getConfigMap() throws NacosException {
+        return getConfigMap(this.dataId, this.group);
+    }
+
+    public Map<String, String> getConfigMap(String dataId, String group) throws NacosException {
         String content = configService.getConfig(dataId, group, 5000);
         Map<String, String> configMap = new HashMap<>();
-
         if (content != null && content.length() != 0) {
             String[] perConfig = content.split("\n");
             for (String it : perConfig) {

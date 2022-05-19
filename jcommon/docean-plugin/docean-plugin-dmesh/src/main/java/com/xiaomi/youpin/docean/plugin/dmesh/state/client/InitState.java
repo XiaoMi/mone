@@ -1,19 +1,3 @@
-/*
- *  Copyright 2020 Xiaomi
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.xiaomi.youpin.docean.plugin.dmesh.state.client;
 
 import com.google.common.collect.Maps;
@@ -24,10 +8,14 @@ import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.Component;
 import com.xiaomi.youpin.docean.plugin.config.Config;
 import com.xiaomi.youpin.docean.plugin.config.anno.Value;
+import com.xiaomi.youpin.docean.plugin.datasource.DatasourceConfig;
+import com.xiaomi.youpin.docean.plugin.datasource.DatasourcePlugin;
 import com.xiaomi.youpin.docean.plugin.dmesh.ds.Datasource;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Resource;
+import javax.sql.DataSource;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -66,20 +54,36 @@ public class InitState extends BaseState {
         client.oneWay(req);
     }
 
-
+    /**
+     * 获取数据源
+     *
+     * @param ioc
+     * @return
+     */
     private Map<String, Datasource> getDatasourceMap(Ioc ioc) {
         Config config = ioc.getBean(Config.class);
-        Map<String, Datasource> m = Maps.newHashMap();
-        config.forEach((k, v) -> {
-            if (k.toString().startsWith("ds_mysql_")) {
-                if (!m.containsKey("mysql")) {
-                    Datasource ds = new Datasource();
-                    ds.setDsType("mysql");
-                    m.put("mysql", ds);
-                }
-                m.get("mysql").set(k.toString().substring("ds_mysql_".length()), v.toString());
-            }
 
+        Map<String, Datasource> m = Maps.newHashMap();
+
+        if (ioc.containsBean(DatasourcePlugin.DB_NAMES)) {
+            List<String> dsList = ioc.getBean(DatasourcePlugin.DB_NAMES);
+            dsList.stream().map(name -> {
+                DatasourceConfig dc = ioc.getBean(name + "_config");
+                Datasource ds = new Datasource();
+                ds.setName(dc.getName());
+                ds.setDsType("mysql");
+                ds.setDataSourceUserName(dc.getDataSourceUserName());
+                ds.setDataSourcePasswd(dc.getDataSourcePasswd());
+                ds.setDataSourceUrl(dc.getDataSourceUrl());
+                ds.setDefaultInitialPoolSize(dc.getDefaultInitialPoolSize());
+                ds.setDefaultMaxPoolSize(dc.getDefaultMaxPoolSize());
+                ds.setDefaultMinPoolSize(dc.getDefaultMinPoolSize());
+                return ds;
+            }).forEach(dc -> m.put(dc.getName(), dc));
+        }
+
+
+        config.forEach((k, v) -> {
             if (k.toString().startsWith("ds_redis_")) {
                 if (!m.containsKey("redis")) {
                     Datasource ds = new Datasource();

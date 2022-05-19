@@ -1,24 +1,5 @@
-/*
- *  Copyright 2020 Xiaomi
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.xiaomi.youpin.annotation.log;
 
-import com.dianping.cat.Cat;
-import com.dianping.cat.message.Event;
-import com.dianping.cat.message.Transaction;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.xiaomi.common.perfcounter.PerfCounter;
@@ -123,28 +104,7 @@ public class LogAop {
         long useTime = 0;
         long beginTime = System.currentTimeMillis();
         try {
-            Object result = new Object();
-            if (log.useCat()) {
-                Transaction t = Cat.newTransaction("Method." + name, "pageName");
-
-                try {
-                    Cat.logEvent("Method." + name, "serverIp", Event.SUCCESS, "ip=${serverIp}");
-                    Cat.logMetricForCount(name);
-                    Cat.logMetricForDuration(name, 5);
-
-                    result = joinPoint.proceed();
-
-                    t.setStatus(Transaction.SUCCESS);
-                } catch (Throwable e) {
-                    t.setStatus(e);
-                    Cat.logError(e);
-                    throw e;
-                } finally {
-                    t.complete();
-                }
-            } else {
-                result = joinPoint.proceed();
-            }
+            Object result = joinPoint.proceed();
             useTime = System.currentTimeMillis() - beginTime;
             if (log.usePercount()) {
                 PerfCounter.inc(name + ".Success", 1);

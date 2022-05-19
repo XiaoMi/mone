@@ -1,19 +1,3 @@
-/*
- *  Copyright 2020 Xiaomi
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.xiaomi.youpin.codegen;
 
 import com.xiaomi.youpin.infra.rpc.Result;
@@ -75,13 +59,14 @@ public class SpringBootProGen {
 
             //创建module: common
             DirectoryGenerator commonModule = new DirectoryGenerator(projectPath, projectName, projectName + "-common"
-                    + File.separator + srcPath
+                    + File.separator + srcPath + File.separator + packagePath + File.separator + "common"
             );
             commonModule.generator();
             generateCommonPom(projectPath, projectName, groupId, versionId, dubboType);
             DirectoryGenerator commonTest = new DirectoryGenerator(projectPath, projectName, projectName + "-common" +
                     File.separator + testPath);
             commonTest.generator();
+            generateCommonConstant(projectPath, projectName, packageName, author, packagePath + File.separator + "common", projectName + "-common" + File.separator + srcPath);
 
             //创建module: service
             DirectoryGenerator serviceModule = new DirectoryGenerator(projectPath, projectName, projectName + "-service" +
@@ -208,6 +193,15 @@ public class SpringBootProGen {
         m.put("package", packageName);
         m.put("author", author);
         m.put("project", this.adapterProjectNameToCamelName(projectName));
+        classGenerator.generator(m);
+    }
+
+    private void generateCommonConstant(String projectPath, String projectName, String packageName, String author, String packagePath, String serviceSrcPath) {
+        String templateName =  "springboot_common_constant_class.tml";
+        ClassGenerator classGenerator = new ClassGenerator(projectPath, projectName, serviceSrcPath, packagePath, "Constant", templateName);
+        Map<String, Object> m = new HashMap<>(1);
+        m.put("author", author);
+        m.put("package", packageName);
         classGenerator.generator(m);
     }
 

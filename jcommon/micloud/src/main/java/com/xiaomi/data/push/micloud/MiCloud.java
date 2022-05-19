@@ -1,19 +1,3 @@
-/*
- *  Copyright 2020 Xiaomi
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.xiaomi.data.push.micloud;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -31,6 +15,7 @@ import com.xiaomi.fusion.cloud.auth.core.enums.HttpMethod;
 import com.xiaomi.fusion.cloud.auth.core.util.HttpUtil;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -51,16 +36,16 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class MiCloud {
 
-    @Value("${micloud.url}")
+    @Value("${micloud.url:}")
     private String micloudUrl;
 
-    @Value("${catalyst.url}")
+    @Value("${catalyst.url:}")
     private String catalystUrl;
-
+    
     private Gson gson = new Gson();
 
-    private static final String CONTROL_URL = "https://xxx/host-control/production/api/v1/host/control";
-    private static final String STATUS_URL = "https://xxx/host-control/production/api/v1/host/status";
+    private static final String CONTROL_URL = "https://127.0.0.1/api/gateway/host-control/production/api/v1/host/control";
+    private static final String STATUS_URL = "https://127.0.0.1/api/gateway/host-control/production/api/v1/host/status";
     private String[] machineRunningStatus = {Constants.RUNNING, Constants.STARTING, Constants.REBOOTING};
     private String[] machineStoppedStatus = {"正在停止", "已经停止", "正在终止", "已经终止", "正在销毁", "已经销毁", "已经挂起", "已经暂停"};
 

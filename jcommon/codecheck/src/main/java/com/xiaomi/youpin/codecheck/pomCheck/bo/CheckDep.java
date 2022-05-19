@@ -1,25 +1,13 @@
-/*
- *  Copyright 2020 Xiaomi
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.xiaomi.youpin.codecheck.pomCheck.bo;
 
 import com.xiaomi.youpin.codecheck.CommonUtils;
 import com.xiaomi.youpin.codecheck.po.CheckResult;
 
 public class CheckDep {
+
+    public static final String ARTIFACT_LOG4J2 = "log4j-core";
+    public static final Dependency LOG4J_DEP2 = new Dependency("org.apache.logging.log4j", ARTIFACT_LOG4J2, "2.15.1");
+
     public static final String ARTIFACT_FASTJSON = "fastjson";
     public static final Dependency FASTJSON_DEP = new Dependency("com.alibaba", ARTIFACT_FASTJSON, "1.2.67");
 
@@ -34,6 +22,9 @@ public class CheckDep {
 
     public CheckResult checkDep(String groupId, String artifactId, String version) {
         switch (artifactId) {
+            case ARTIFACT_LOG4J2: {
+                return checkLog4jDep2(groupId, version);
+            }
             case ARTIFACT_FASTJSON: {
                 return checkFastjsonDep(groupId, version);
             }
@@ -48,6 +39,21 @@ public class CheckDep {
             }
             default:
                 return CheckResult.getInfoRes("pom.xml", "", "");
+        }
+    }
+
+
+    private CheckResult checkLog4jDep2(String groupId, String version) {
+        if (groupId == null || !groupId.equals(LOG4J_DEP2.groupId)) {
+            return CheckResult.getWarnRes("log4j", "groupId of log4j is null or not equals " + LOG4J_DEP2.groupId, "groupId错误");
+        }
+        if (version == null) {
+            return CheckResult.getWarnRes("log4j", "version of log4j is null", "version为空");
+        }
+        try {
+            return CommonUtils.checkLog4jVersion(version, LOG4J_DEP2.version);
+        } catch (Exception e) {
+            return CheckResult.getWarnRes("log4j", "version of log4j has something wrong", "");
         }
     }
 

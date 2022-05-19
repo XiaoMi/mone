@@ -1,0 +1,2 @@
+prometheusProvider=com.xiaomi.promfilter.PromProviderFilter
+consumerProvider=com.xiaomi.promfilter.PromConsumerFilter

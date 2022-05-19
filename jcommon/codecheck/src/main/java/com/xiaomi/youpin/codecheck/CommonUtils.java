@@ -1,20 +1,6 @@
-/*
- *  Copyright 2020 Xiaomi
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.xiaomi.youpin.codecheck;
+
+import com.xiaomi.youpin.codecheck.po.CheckResult;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -48,6 +34,38 @@ public class CommonUtils {
         return diff;
     }
 
+    public static CheckResult checkLog4jVersion(String curVersion, String targetVersion) throws Exception {
+        if (curVersion == null || targetVersion == null) {
+            throw new Exception("checkVersion error:illegal params.");
+        }
+        if (!curVersion.contains("rc")) {
+            int diff = compareVersion(curVersion, targetVersion);
+            if (diff >= 0) {
+                return CheckResult.getInfoRes("log4j", "", "");
+            }
+        }
+        String[] curVersionArrayByDot = curVersion.split("\\.");
+        //2.x.x版本必须是2.15.0-rc2以上
+        if ("2".equals(curVersionArrayByDot[0])) {
+            if (curVersion.contains("-")) {
+                String[] curVersionArrayByRod = curVersion.split("-");
+                if (curVersionArrayByRod.length != 2) {
+                    return CheckResult.getErrorRes("log4j", "unknown version of log4j,please update your log4j version", "无法解析的log4j版本");
+                }
+                //类似2.15.1-rc1
+                int diff = compareVersion(curVersionArrayByRod[0],targetVersion);
+                if (diff >=0){
+                    return CheckResult.getInfoRes("log4j", "", "");
+                }
+                int version = Integer.parseInt(curVersionArrayByRod[1].substring(2));
+                if (version >= 2) {
+                    return CheckResult.getInfoRes("log4j", "", "");
+                }
+            }
+            return CheckResult.getErrorRes("log4j", "warn version of log4j,please update your log4j version", "log4j版本安全漏洞，请立即更新至2.15.0-rc2以上");
+        }
+        return CheckResult.getErrorRes("log4j", "unknown version of log4j,please update your log4j version", "无法解析的log4j版本");
+    }
 
     public static List<File> searchFiles(File folder, final String keyword) {
         List<File> result = new ArrayList<File>();

@@ -1,9 +1,0 @@
-package ${package}.api.service;
-
-import com.xiaomi.mone.dubbo.common.Health;
-import com.xiaomi.mone.dubbo.common.Result;
-
-public interface DubboHealthService {
-
-    Result<Health> health();
-}

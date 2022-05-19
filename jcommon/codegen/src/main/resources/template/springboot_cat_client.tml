@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<config xmlns:xsi="http://www.w3.org/2001/XMLSchema" xsi:noNamespaceSchemaLocation="config.xsd">
-    <servers>
-        <server ip="" port="2280" http-port="8060" enabled="true"/>
-        <server ip="" port="2280" http-port="8060" enabled="true"/>
-        <server ip="" port="2280" http-port="8060" enabled="true"/>
-    </servers>
-</config>

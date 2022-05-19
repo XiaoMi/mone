@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <groupId>com.xiaomi.youpin</groupId>
+    <modelVersion>4.0.0</modelVersion>
+    <version>1.4-SNAPSHOT</version>
+
+    <artifactId>graalvm</artifactId>
+
+    <dependencies>
+
+        <!--        <dependency>-->
+        <!--            <groupId>org.graalvm.nativeimage</groupId>-->
+        <!--            <artifactId>native-image-maven-plugin</artifactId>-->
+        <!--            <version>21.0.0.2</version>-->
+        <!--        </dependency>-->
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.4</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.graalvm.sdk</groupId>
+            <artifactId>graal-sdk</artifactId>
+            <version>21.0.0.2</version>
+            <scope>provided</scope>
+        </dependency>
+
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.1.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>1.1.2</version>
+        </dependency>
+
+<!--        <dependency>-->
+<!--            <groupId>org.codehaus.groovy</groupId>-->
+<!--            <artifactId>groovy</artifactId>-->
+<!--            <version>3.0.7</version>-->
+<!--        </dependency>-->
+
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>docean</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>io.projectreactor.netty</groupId>
+            <artifactId>reactor-netty</artifactId>
+            <version>0.9.20.RELEASE</version>
+            <scope>compile</scope>
+        </dependency>
+
+
+
+    </dependencies>
+
+
+    <build>
+
+
+        <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>8</source>
+                    <target>8</target>
+                </configuration>
+            </plugin>
+
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-compiler-plugin</artifactId>-->
+<!--                <version>3.7.0</version>-->
+<!--                <configuration>-->
+<!--                    <source>1.8</source>-->
+<!--                    <target>1.8</target>-->
+<!--                    <fork>true</fork>-->
+<!--                    <verbose>true</verbose>-->
+<!--                    <encoding>UTF-8</encoding>-->
+<!--                    <compilerArguments>-->
+<!--                        <sourcepath>-->
+<!--                            ${project.basedir}/src/main/java-->
+<!--                        </sourcepath>-->
+<!--                    </compilerArguments>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
+
+
+<!--            <plugin>-->
+<!--                <groupId>org.graalvm.nativeimage</groupId>-->
+<!--                <artifactId>native-image-maven-plugin</artifactId>-->
+<!--                <version>21.0.0.2</version>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <goals>-->
+<!--                            <goal>native-image</goal>-->
+<!--                        </goals>-->
+<!--                        <phase>package</phase>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--                <configuration>-->
+<!--                    <skip>false</skip>-->
+<!--                    <imageName>demo-graalvm</imageName>-->
+<!--                    <mainClass>com.xiaomi.mione.graalvm.bootstrap.Bootstrap</mainClass>-->
+<!--&lt;!&ndash;                    <mainClass>com.xiaomi.mione.graalvm.bootstrap.ProxyRun</mainClass>&ndash;&gt;-->
+<!--                    <buildArgs>-->
+<!--                        &#45;&#45;no-fallback-->
+<!--                        &#45;&#45;initialize-at-build-time=org.slf4j.MDC-->
+<!--                        &#45;&#45;initialize-at-build-time=ch.qos.logback.classic.Level-->
+<!--                        &#45;&#45;initialize-at-build-time=ch.qos.logback.classic.PatternLayout-->
+<!--                        &#45;&#45;initialize-at-build-time=ch.qos.logback.classic.Logger-->
+<!--                        &#45;&#45;initialize-at-build-time=ch.qos.logback.core.util.StatusPrinter-->
+<!--                        &#45;&#45;initialize-at-build-time=ch.qos.logback.core.status.StatusBase-->
+<!--                        &#45;&#45;initialize-at-build-time=ch.qos.logback.core.status.InfoStatus-->
+<!--                        &#45;&#45;initialize-at-build-time=ch.qos.logback.core.spi.AppenderAttachableImpl-->
+<!--                        &#45;&#45;initialize-at-build-time=org.slf4j.LoggerFactory-->
+<!--                        &#45;&#45;initialize-at-build-time=ch.qos.logback.core.util.Loader-->
+<!--                        &#45;&#45;initialize-at-build-time=org.slf4j.impl.StaticLoggerBinder-->
+<!--                        &#45;&#45;initialize-at-build-time=ch.qos.logback.classic.spi.ThrowableProxy-->
+<!--                        &#45;&#45;initialize-at-build-time=ch.qos.logback.core.CoreConstants-->
+
+<!--                        &#45;&#45;initialize-at-run-time=io.netty.channel.epoll.Epoll-->
+<!--                        &#45;&#45;initialize-at-run-time=io.netty.channel.epoll.Native-->
+<!--                        &#45;&#45;initialize-at-run-time=io.netty.channel.epoll.EpollEventLoop-->
+<!--                        &#45;&#45;initialize-at-run-time=io.netty.channel.epoll.EpollEventArray-->
+<!--                        &#45;&#45;initialize-at-run-time=io.netty.channel.DefaultFileRegion-->
+<!--                        &#45;&#45;initialize-at-run-time=io.netty.channel.kqueue.KQueueEventArray-->
+<!--                        &#45;&#45;initialize-at-run-time=io.netty.channel.kqueue.KQueueEventLoop-->
+<!--                        &#45;&#45;initialize-at-run-time=io.netty.channel.kqueue.Native-->
+<!--                        &#45;&#45;initialize-at-run-time=io.netty.channel.unix.Errors-->
+<!--                        &#45;&#45;initialize-at-run-time=io.netty.channel.unix.IovArray-->
+<!--                        &#45;&#45;initialize-at-run-time=io.netty.channel.unix.Limits-->
+<!--                        &#45;&#45;initialize-at-run-time=io.netty.util.internal.logging.Log4JLogger-->
+<!--                        &#45;&#45;initialize-at-run-time=io.netty.channel.unix.Socket-->
+<!--                        &#45;&#45;initialize-at-run-time=io.netty.channel.ChannelHandlerMask-->
+
+<!--                        &#45;&#45;report-unsupported-elements-at-runtime-->
+<!--                        &#45;&#45;allow-incomplete-classpath-->
+<!--                        &#45;&#45;enable-url-protocols=http-->
+<!--                        -H:+ReportExceptionStackTraces-->
+<!--                    </buildArgs>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
+
+        </plugins>
+
+
+    </build>
+
+    <distributionManagement>
+        <repository>
+            <id>central</id>
+            <name>maven-release-virtual</name>
+            <url>https://pkgs.d.xiaomi.net/artifactory/maven-release-virtual</url>
+        </repository>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <name>maven-snapshot-virtual</name>
+            <url>https://pkgs.d.xiaomi.net/artifactory/maven-snapshot-virtual</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+
+</project>

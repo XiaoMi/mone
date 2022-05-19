@@ -1,0 +1,42 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "zzytest-deployment",
+    "labels": {
+      "app": "zzytest",
+      "http_port": "8888",
+      "dubbo_port": "9999"
+    }
+  },
+  "spec": {
+    "replicas": 1,
+    "selector": {
+      "matchLabels": {
+        "app": "zzytest-server"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "zzytest-server"
+        }
+      },
+      "spec": {
+        "env": [
+        ],
+        "containers": [
+          {
+            "name": "zzytest",
+            "image": "cr.d.xiaomi.net/mixiao/zzytest",
+            "ports": [
+              {
+                "containerPort": 8888
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

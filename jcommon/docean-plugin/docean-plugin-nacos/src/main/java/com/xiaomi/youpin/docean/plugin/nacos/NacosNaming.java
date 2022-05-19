@@ -1,19 +1,3 @@
-/*
- *  Copyright 2020 Xiaomi
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.xiaomi.youpin.docean.plugin.nacos;
 
 import com.alibaba.nacos.api.NacosFactory;
@@ -21,6 +5,7 @@ import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingService;
 import com.alibaba.nacos.api.naming.listener.EventListener;
 import com.alibaba.nacos.api.naming.pojo.Instance;
+import com.alibaba.nacos.api.naming.pojo.ListView;
 import com.xiaomi.youpin.docean.common.StringUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +23,12 @@ public class NacosNaming {
     @Setter
     private String serverAddr;
 
+    @Setter
+    private String username;
+
+    @Setter
+    private String password;
+
     private String addr;
 
     private NamingService namingService;
@@ -51,6 +42,13 @@ public class NacosNaming {
 
         Properties properties = new Properties();
         properties.put("serverAddr", serverAddr);
+
+        if (!StringUtils.isEmpty(username)) {
+            properties.put("username", username);
+        }
+        if (!StringUtils.isEmpty(password)) {
+            properties.put("password", password);
+        }
 
         try {
             namingService = NacosFactory.createNamingService(properties);
@@ -148,6 +146,15 @@ public class NacosNaming {
             return array[0];
         }
         throw new RuntimeException("serverAddr is null");
+    }
+
+    public ListView<String> getServicesOfServer(int page, int pagesize) {
+        try {
+            return namingService.getServicesOfServer(page, pagesize);
+        } catch (NacosException e) {
+            log.error("getServicesOfServer error:{}", e.getMessage());
+        }
+        return null;
     }
 
 

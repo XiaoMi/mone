@@ -1,0 +1,69 @@
+package org.apache.dubbo.maven.plugin;
+
+import lombok.SneakyThrows;
+import org.apache.commons.io.FileUtils;
+import org.apache.maven.plugin.AbstractMojo;
+import org.apache.maven.plugin.logging.Log;
+import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.project.MavenProject;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * generate related self-adaptive code (native image does not support dynamic code generation. Therefore, code needs to be generated before compilation)
+ */
+@Mojo(name = "generate")
+public class DubboNativeCodeGeneratorMojo extends AbstractMojo {
+
+    @SneakyThrows
+    @Override
+    public void execute() {
+        Log log = getLog();
+        log.info("dubbo native code generator mojo execute");
+        MavenProject project = (MavenProject) this.getPluginContext().get("project");
+        copyNativeConfigFile(log, project);
+        generateCode(log, project);
+    }
+
+    private void generateCode(Log log, MavenProject project) throws IOException {
+        String baseDir = project.getBasedir().getPath();
+        File source = new File(baseDir + "/src/main/generated");
+        FileUtils.forceMkdir(source);
+        project.addCompileSourceRoot(source.getAbsolutePath());
+        log.info("Source directory: " + source + " added.");
+        List<String> list = project.getCompileSourceRoots();
+        log.info(list.toString());
+        CodeGenerator.execute(source.getPath(), log);
+    }
+
+    private void copyNativeConfigFile(Log log, MavenProject project) {
+        String[] nativeFiles = {"META-INF/native-image/reflect-config.json",
+                                "META-INF/native-image/jni-config.json",
+                                "META-INF/native-image/proxy-config.json",
+                                "META-INF/native-image/resource-config.json",
+                                "META-INF/native-image/serialization-config.json"};
+
+        Arrays.stream(nativeFiles).forEach(nativeFile -> {
+            InputStream is = DubboNativeCodeGeneratorMojo.class.getClassLoader().getResourceAsStream(nativeFile);
+             project.getResources().stream().findFirst().ifPresent(resource->{
+                 String directory = resource.getDirectory();
+                 try {
+                     FileUtils.forceMkdir(new File(directory + "/META-INF/native-image/"));
+                     File file = new File(directory + "/" + nativeFile);
+                     if (!file.exists()) {
+                         FileUtils.copyInputStreamToFile(is, file);
+                         log.info("Copy native config file:" + file);
+                     } else {
+                         log.info("Skip copy config file:" + file);
+                     }
+                 } catch (Throwable ex) {
+                     log.error("Copy native config file error:" + ex.getMessage());
+                 }
+             });
+        });
+    }
+}

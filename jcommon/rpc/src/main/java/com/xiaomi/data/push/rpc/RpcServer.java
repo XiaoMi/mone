@@ -1,25 +1,10 @@
-/*
- *  Copyright 2020 Xiaomi
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.xiaomi.data.push.rpc;
 
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.xiaomi.data.push.bo.User;
 import com.xiaomi.data.push.common.SafeRun;
 import com.xiaomi.data.push.common.Service;
 import com.xiaomi.data.push.context.AgentContext;
@@ -28,6 +13,7 @@ import com.xiaomi.data.push.rpc.common.InvokeCallback;
 import com.xiaomi.data.push.rpc.common.Pair;
 import com.xiaomi.data.push.rpc.common.RemotingUtil;
 import com.xiaomi.data.push.rpc.common.RpcServerVersion;
+import com.xiaomi.data.push.rpc.netty.AgentChannel;
 import com.xiaomi.data.push.rpc.netty.NettyRemotingServer;
 import com.xiaomi.data.push.rpc.netty.NettyRequestProcessor;
 import com.xiaomi.data.push.rpc.netty.NettyServerConfig;
@@ -39,15 +25,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.PostConstruct;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -67,9 +51,7 @@ public class RpcServer implements Service {
 
     private PushChannelEventListener listener = new PushChannelEventListener();
 
-    private ExecutorService defaultPool = new ThreadPoolExecutor(1000, 1000,
-            0L, TimeUnit.MILLISECONDS,
-            new ArrayBlockingQueue<>(1000));
+    private ExecutorService defaultPool;
 
     @Setter
     private List<Task> tasks = Lists.newArrayList();
@@ -79,7 +61,7 @@ public class RpcServer implements Service {
 
     private ScheduledExecutorService pool;
 
-    private NacosNaming nacosNaming = new NacosNaming();
+    private NacosNaming nacosNaming;
 
     @Setter
     private int listenPort;
@@ -91,14 +73,24 @@ public class RpcServer implements Service {
 
 
     public RpcServer(String nacosAddrs, String name) {
-        logger.info("rpc server version:{}", new RpcVersion());
-        this.nacosAddrs = nacosAddrs;
-        this.name = name;
+        this(nacosAddrs, name, true);
     }
 
     public RpcServer(String nacosAddrs, String name, boolean regNacos) {
-        this(nacosAddrs, name);
+        logger.info("rpc server version:{}", new RpcVersion());
+        this.nacosAddrs = nacosAddrs;
+        this.name = name;
         this.regNacos = regNacos;
+        this.defaultPool = creatThreadPool(200);
+        if (regNacos) {
+            nacosNaming = new NacosNaming();
+        }
+    }
+
+    private ThreadPoolExecutor creatThreadPool(int size) {
+        return new ThreadPoolExecutor(size, size,
+                0L, TimeUnit.MILLISECONDS,
+                new ArrayBlockingQueue<>(1000));
     }
 
     @Override
@@ -121,33 +113,47 @@ public class RpcServer implements Service {
         }
     }
 
-
-    @Override
-    public void start() {
-        logger.info("version:{}", new RpcServerVersion());
+    public void start(Consumer<NettyServerConfig> consumer) {
+        logger.info("rpc server start version:{}", new RpcServerVersion());
         NettyServerConfig config = new NettyServerConfig();
-
         if (this.listenPort != 0) {
             config.setListenPort(this.listenPort);
         }
-
+        consumer.accept(config);
         server = new NettyRemotingServer(config, listener);
-        processorList.stream().forEach(it -> server.registerProcessor(it.getObject1(), it.getObject2(), defaultPool));
-
+        processorList.stream().forEach(it -> {
+            ExecutorService p = defaultPool;
+            if (it.getObject2().poolSize() > 0) {
+                p = creatThreadPool(it.getObject2().poolSize());
+            }
+            server.registerProcessor(it.getObject1(), it.getObject2(), p);
+        });
         server.start();
-
-        nacosNaming.setServerAddr(this.nacosAddrs);
-        nacosNaming.init();
 
         //判断是否需要注册到nacos
         if (regNacos) {
-            //只需要执行一遍,nacos client 会自己重试
-            new Thread(() -> Stream
-                    .generate(() -> true).limit(1)
-                    .forEach(it -> SafeRun.run(
-                            () -> registerInstance(),
-                            "reg service", 2000L))).start();
+            regNacos();
         }
+
+    }
+
+
+    @Override
+    public void start() {
+        start(config -> {
+        });
+    }
+
+    private void regNacos() {
+        logger.info("reg service to nacos");
+        nacosNaming.setServerAddr(this.nacosAddrs);
+        nacosNaming.init();
+        //只需要执行一遍,nacos client 会自己重试
+        new Thread(() -> Stream
+                .generate(() -> true).limit(1)
+                .forEach(it -> SafeRun.run(
+                        () -> registerInstance(),
+                        "reg service", 2000L))).start();
     }
 
     /**
@@ -164,6 +170,8 @@ public class RpcServer implements Service {
             instance.setServiceName(name);
             Map<String, String> metaData = Maps.newHashMap();
             metaData.put("ctime", new SimpleDateFormat("yyyy-MM-dd hh:mm:ss").format(new Date()));
+            metaData.put("version", new RpcServerVersion().toString());
+            SafeRun.run(() -> metaData.put("hostname", InetAddress.getLocalHost().getHostName()));
             instance.setMetadata(metaData);
             nacosNaming.registerInstance(name, instance);
             logger.info("reg service {} {}:{} success", name, server.getHost(), server.getPort());
@@ -188,6 +196,17 @@ public class RpcServer implements Service {
      */
     public RemotingCommand sendMessage(Channel channel, RemotingCommand req) {
         return sendMessage(channel, req, 1000);
+    }
+
+    public void tell(Predicate<User> predicate, RemotingCommand req) {
+        Channel ch = this.listener.channel(predicate);
+        Optional.ofNullable(ch).ifPresent(c -> {
+            try {
+                this.server.invokeOneway(ch, req, 1000);
+            } catch (Throwable ex) {
+                logger.error(ex.getMessage());
+            }
+        });
     }
 
 
@@ -302,9 +321,9 @@ public class RpcServer implements Service {
 
     public void closeClient(String address) {
         logger.info("close client:{}", address);
-        Channel ch = AgentContext.ins().map.remove(address);
+        AgentChannel ch = AgentContext.ins().map.remove(address);
         if (null != ch) {
-            RemotingUtil.closeChannel(ch);
+            RemotingUtil.closeChannel(ch.getChannel());
         }
     }
 

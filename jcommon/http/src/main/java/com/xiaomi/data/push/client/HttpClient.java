@@ -1,19 +1,3 @@
-/*
- *  Copyright 2020 Xiaomi
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.xiaomi.data.push.client;
 
 import com.google.common.collect.Maps;
@@ -116,11 +100,11 @@ public abstract class HttpClient {
     }
 
 
-    public static String post(String url, String body, Map<String, String> headers) {
+    public static String post(String url, String body, Map<String, String> headers, int timeout) {
         RequestConfig requestConfig = RequestConfig.custom()
-                .setSocketTimeout(1000)
-                .setConnectTimeout(500)
-                .setConnectionRequestTimeout(500)
+                .setSocketTimeout(timeout)
+                .setConnectTimeout(timeout)
+                .setConnectionRequestTimeout(timeout)
                 .build();
 
 
@@ -166,6 +150,10 @@ public abstract class HttpClient {
 
 
     public static String post(String url, String body) {
-        return post(url, body, Maps.newHashMap());
+        return post(url, body, Maps.newHashMap(), 1000);
+    }
+
+    public static String post(String url, String body, int timeout) {
+        return post(url, body, Maps.newHashMap(), timeout);
     }
 }

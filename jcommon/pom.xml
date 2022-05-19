@@ -1,31 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-  ~  Copyright 2020 Xiaomi
-  ~
-  ~    Licensed under the Apache License, Version 2.0 (the "License");
-  ~    you may not use this file except in compliance with the License.
-  ~    You may obtain a copy of the License at
-  ~
-  ~        http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~    Unless required by applicable law or agreed to in writing, software
-  ~    distributed under the License is distributed on an "AS IS" BASIS,
-  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~    See the License for the specific language governing permissions and
-  ~    limitations under the License.
-  -->
-
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.xiaomi.youpin</groupId>
+    <groupId>run.mone</groupId>
     <artifactId>jcommon</artifactId>
     <packaging>pom</packaging>
     <version>1.4-SNAPSHOT</version>
 
     <modules>
+        <module>aliyun</module>
         <module>log</module>
         <module>common</module>
         <module>annotation</module>
@@ -33,7 +18,6 @@
         <module>rpc</module>
         <module>redis</module>
         <module>http</module>
-        <!--<module>schedule</module>-->
         <module>monitor</module>
         <module>struct</module>
         <module>gitlab</module>
@@ -61,11 +45,31 @@
         <module>docean</module>
         <module>rcurve</module>
         <module>micloud</module>
-        <module>aliyun</module>
         <module>docean-plugin</module>
-        <module>file</module>
+        <module>ssh</module>
         <module>es</module>
-        <!--<module>docean-plugin-datasource</module>-->
+        <module>file</module>
+        <module>k8s</module>
+        <module>grpc</module>
+        <module>easy</module>
+        <module>df</module>
+        <module>monespring</module>
+        <module>graalvm</module>
+        <module>mquic</module>
+        <module>prometheus</module>
+        <module>buddy</module>
+        <module>hera</module>
+        <module>mv-plugin</module>
+        <module>teambition</module>
+        <module>spider</module>
+        <module>umami</module>
+        <module>disruptor</module>
+        <module>pool</module>
+        <module>raft</module>
+        <module>event</module>
+        <!--
+        <module>schedule</module>
+        -->
     </modules>
 
 
@@ -127,7 +131,6 @@
             <scope>provided</scope>
         </dependency>
 
-
     </dependencies>
 
 
@@ -138,6 +141,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.10.1</version>
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
@@ -150,6 +154,25 @@
                         </sourcepath>
                     </compilerArguments>
                 </configuration>
+            </plugin>
+
+
+            <!-- 打包源码，需要加入这个插件 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.1</version>
+                <configuration>
+                    <attach>true</attach>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
 

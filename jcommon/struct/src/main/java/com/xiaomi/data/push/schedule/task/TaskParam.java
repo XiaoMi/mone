@@ -1,19 +1,3 @@
-/*
- *  Copyright 2020 Xiaomi
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.xiaomi.data.push.schedule.task;
 
 import com.google.common.collect.Maps;
@@ -64,10 +48,21 @@ public class TaskParam implements Serializable {
     private long timeout;
 
     private String roleId;
+
     /**
      * 分组信息
      */
     private Integer gid;
+
+    /**
+     * 告警接收人 多个以,分隔
+     */
+    private String alarmUsername="";
+
+    /**
+     * 是否忽略失败 false:达到失败次数则任务暂停
+     */
+    private boolean ignoreError;
 
     private String creator;
 
@@ -132,6 +127,7 @@ public class TaskParam implements Serializable {
         return "TaskParam{" +
                 "taskDef=" + taskDef +
                 ", taskId=" + taskId +
+                ", alarmUsername=" + alarmUsername +
                 '}';
     }
 

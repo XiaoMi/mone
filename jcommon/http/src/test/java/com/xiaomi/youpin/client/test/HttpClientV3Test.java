@@ -1,19 +1,3 @@
-/*
- *  Copyright 2020 Xiaomi
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.xiaomi.youpin.client.test;
 
 import com.google.common.collect.Maps;
@@ -40,6 +24,12 @@ public class HttpClientV3Test {
         System.out.println(res);
         String res2 = HttpClientV2.get("http://127.0.0.1:9999/version?name=a&token=a", Maps.newHashMap());
         System.out.println(res2);
+    }
+
+    @Test
+    public void testDns() {
+        String res = HttpClientV2.get("http://www.baaafaidu.com", Maps.newHashMap());
+        System.out.println(res);
     }
 
 
@@ -86,13 +76,6 @@ public class HttpClientV3Test {
         System.out.println(res.length);
     }
 
-    @Test
-    public void testGet() {
-        IntStream.range(0, 1).forEach(it -> {
-            String res = new HttpClientV3().get("http://xxxx/mtop/arch/im", Maps.newHashMap());
-            System.out.println("res:" + res);
-        });
-    }
 
 
     @Test
@@ -115,88 +98,4 @@ public class HttpClientV3Test {
         });
     }
 
-
-    //1491=100  8140=1000
-    @Test
-    public void testPost() {
-        Map<String, String> headers = Maps.newHashMap();
-        headers.put("Content-Type", "json");
-        long begin = System.currentTimeMillis();
-        IntStream.range(0, 1).parallel().forEach(it -> {
-            String res = new HttpClientV3().post("http://xxxx/mtop/arch/im", "{\"cmd\":\"test\"}", headers);
-            System.out.println("res:" + res);
-
-        });
-        System.out.println(System.currentTimeMillis() - begin);
-    }
-
-
-    //1219=100  2392=1000
-    @Test
-    public void testPost2() {
-        Map<String, String> headers = Maps.newHashMap();
-//        headers.put("Content-Type", "json");
-        long begin = System.currentTimeMillis();
-        IntStream.range(0, 100000).parallel().forEach(it -> {
-            try {
-                String res = new HttpClientV2().post("http://xxxx/headwater/commonrec", "", headers);
-                System.out.println("res:" + res);
-            } catch (Exception e) {
-
-            }
-
-        });
-        System.out.println(System.currentTimeMillis() - begin);
-    }
-
-
-    //3278 3114 = 1000
-    @Test
-    public void testPost1() {
-        Map<String, String> headers = Maps.newHashMap();
-        headers.put("Content-Type", "json");
-        long begin = System.currentTimeMillis();
-        IntStream.range(0, 1000).parallel().forEach(it -> {
-            try {
-                String res = HttpClient.post("http://xxxx/mtop/arch/im", "{\"cmd\":\"test\"}", headers);
-//                System.out.println("res:" + res);
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
-            }
-
-        });
-        System.out.println(System.currentTimeMillis() - begin);
-    }
-
-
-    //2582 =1000
-    @Test
-    public void testPost3() {
-        Map<String, String> headers = Maps.newHashMap();
-//        headers.put("Content-Type", "json");
-        HttpClientV4 client = new HttpClientV4();
-        long begin = System.currentTimeMillis();
-        IntStream.range(0, 100).parallel().forEach(it -> {
-            try {
-                Response res = client.post("http://xxxxx/mtop/arch/im", "{\"cmd\":\"test\"}", headers, 200);
-                System.out.println("res:" + res.getCode() + " " + new String(res.getData()));
-            } catch (Exception e) {
-                System.out.println(e.getMessage());
-            }
-
-        });
-        System.out.println(System.currentTimeMillis() - begin);
-    }
-
-
-    @Test
-    public void testHttp() {
-        String createRepositoryUrl = "http://xxxx/api/v4/projects?private_token=";
-        String body = "{\"name\": \"test1234567912\",\"namespace_id\": 3578}";
-        Map<String, String> headers = new HashMap<>();
-        headers.put("host", "v9.git.n.xiaomi.com");
-        headers.put("Content-Type", "application/json");
-        String res = HttpClientV2.post(createRepositoryUrl, body, headers, 10000);
-        System.out.println(res);
-    }
 }
