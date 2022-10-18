@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaomi.miapi.mapper.ProjectOperationLogMapper">
+	<insert id="addProjectOperationLog" parameterType="ProjectOperationLog"
+		useGeneratedKeys="true" keyProperty="opID">
+		INSERT INTO
+		eo_log_project_operation
+		(opType,opUsername,opDesc,opTime,opProjectID,opTarget,opTargetID) VALUES
+		(#{opType},#{opUsername},#{opDesc},now(),#{opProjectID},#{opTarget},#{opTargetID})
+	</insert>
+
+	<select id="getLogCount" parameterType="Integer" resultType="Integer">
+		SELECT COUNT(eo_log_project_operation.opID) AS logCount FROM
+		eo_log_project_operation WHERE eo_log_project_operation.opProjectID =
+		#{projectID} AND eo_log_project_operation.opTime >
+		DATE_SUB(NOW(),INTERVAL #{dayOffset} DAY)
+	</select>
+
+	<select id="getProjectLogList" parameterType="Integer" resultType="java.util.Map">
+		SELECT
+		eo_log_project_operation.opUsername,eo_log_project_operation.opTime,eo_log_project_operation.opType,eo_log_project_operation.opTarget,eo_log_project_operation.opDesc
+		FROM eo_log_project_operation
+		WHERE eo_log_project_operation.opProjectID = #{projectID} AND
+		eo_log_project_operation.opTime > DATE_SUB(NOW(),INTERVAL #{dayOffset} DAY)
+		ORDER BY eo_log_project_operation.opTime DESC LIMIT #{page},#{pageSize}
+	</select>
+
+</mapper>

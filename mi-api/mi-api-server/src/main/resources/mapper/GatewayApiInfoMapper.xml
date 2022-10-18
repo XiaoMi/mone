@@ -1,0 +1,657 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaomi.miapi.mapper.GatewayApiInfoMapper">
+  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.common.pojo.GatewayApiInfo">
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="name" jdbcType="VARCHAR" property="name" />
+    <result column="description" jdbcType="VARCHAR" property="description" />
+    <result column="url" jdbcType="VARCHAR" property="url" />
+    <result column="http_method" jdbcType="VARCHAR" property="httpMethod" />
+    <result column="path" jdbcType="VARCHAR" property="path" />
+    <result column="route_type" jdbcType="INTEGER" property="routeType" />
+    <result column="application" jdbcType="VARCHAR" property="application" />
+    <result column="service_name" jdbcType="VARCHAR" property="serviceName" />
+    <result column="method_name" jdbcType="VARCHAR" property="methodName" />
+    <result column="service_group" jdbcType="VARCHAR" property="serviceGroup" />
+    <result column="service_version" jdbcType="VARCHAR" property="serviceVersion" />
+    <result column="status" jdbcType="INTEGER" property="status" />
+    <result column="invoke_limit" jdbcType="INTEGER" property="invokeLimit" />
+    <result column="qps_limit" jdbcType="INTEGER" property="qpsLimit" />
+    <result column="timeout" jdbcType="INTEGER" property="timeout" />
+    <result column="ctime" jdbcType="BIGINT" property="ctime" />
+    <result column="utime" jdbcType="BIGINT" property="utime" />
+    <result column="allow_mock" jdbcType="BIT" property="allowMock" />
+    <result column="mock_data" jdbcType="VARCHAR" property="mockData" />
+    <result column="mock_data_desc" jdbcType="VARCHAR" property="mockDataDesc" />
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.miapi.common.pojo.GatewayApiInfo">
+    <result column="param_template" jdbcType="LONGVARCHAR" property="paramTemplate" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    id, name, description, url, http_method, path, route_type, application, service_name, 
+    method_name, service_group, service_version, status, invoke_limit, qps_limit, timeout, 
+    ctime, utime, allow_mock, mock_data, mock_data_desc
+  </sql>
+  <sql id="Blob_Column_List">
+    param_template
+  </sql>
+  <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.GatewayApiInfoExample" resultMap="ResultMapWithBLOBs">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from gateway_api_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByExample" parameterType="com.xiaomi.miapi.common.pojo.GatewayApiInfoExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from gateway_api_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="ResultMapWithBLOBs">
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from gateway_api_info
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from gateway_api_info
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.common.pojo.GatewayApiInfoExample">
+    delete from gateway_api_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.xiaomi.miapi.common.pojo.GatewayApiInfo">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Long">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into gateway_api_info (name, description, url, 
+      http_method, path, route_type, 
+      application, service_name, method_name, 
+      service_group, service_version, status, 
+      invoke_limit, qps_limit, timeout, 
+      ctime, utime, allow_mock, 
+      mock_data, mock_data_desc, param_template
+      )
+    values (#{name,jdbcType=VARCHAR}, #{description,jdbcType=VARCHAR}, #{url,jdbcType=VARCHAR}, 
+      #{httpMethod,jdbcType=VARCHAR}, #{path,jdbcType=VARCHAR}, #{routeType,jdbcType=INTEGER}, 
+      #{application,jdbcType=VARCHAR}, #{serviceName,jdbcType=VARCHAR}, #{methodName,jdbcType=VARCHAR}, 
+      #{serviceGroup,jdbcType=VARCHAR}, #{serviceVersion,jdbcType=VARCHAR}, #{status,jdbcType=INTEGER}, 
+      #{invokeLimit,jdbcType=INTEGER}, #{qpsLimit,jdbcType=INTEGER}, #{timeout,jdbcType=INTEGER}, 
+      #{ctime,jdbcType=BIGINT}, #{utime,jdbcType=BIGINT}, #{allowMock,jdbcType=BIT}, 
+      #{mockData,jdbcType=VARCHAR}, #{mockDataDesc,jdbcType=VARCHAR}, #{paramTemplate,jdbcType=LONGVARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.xiaomi.miapi.common.pojo.GatewayApiInfo">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Long">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into gateway_api_info
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="name != null">
+        name,
+      </if>
+      <if test="description != null">
+        description,
+      </if>
+      <if test="url != null">
+        url,
+      </if>
+      <if test="httpMethod != null">
+        http_method,
+      </if>
+      <if test="path != null">
+        path,
+      </if>
+      <if test="routeType != null">
+        route_type,
+      </if>
+      <if test="application != null">
+        application,
+      </if>
+      <if test="serviceName != null">
+        service_name,
+      </if>
+      <if test="methodName != null">
+        method_name,
+      </if>
+      <if test="serviceGroup != null">
+        service_group,
+      </if>
+      <if test="serviceVersion != null">
+        service_version,
+      </if>
+      <if test="status != null">
+        status,
+      </if>
+      <if test="invokeLimit != null">
+        invoke_limit,
+      </if>
+      <if test="qpsLimit != null">
+        qps_limit,
+      </if>
+      <if test="timeout != null">
+        timeout,
+      </if>
+      <if test="ctime != null">
+        ctime,
+      </if>
+      <if test="utime != null">
+        utime,
+      </if>
+      <if test="allowMock != null">
+        allow_mock,
+      </if>
+      <if test="mockData != null">
+        mock_data,
+      </if>
+      <if test="mockDataDesc != null">
+        mock_data_desc,
+      </if>
+      <if test="paramTemplate != null">
+        param_template,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="name != null">
+        #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="description != null">
+        #{description,jdbcType=VARCHAR},
+      </if>
+      <if test="url != null">
+        #{url,jdbcType=VARCHAR},
+      </if>
+      <if test="httpMethod != null">
+        #{httpMethod,jdbcType=VARCHAR},
+      </if>
+      <if test="path != null">
+        #{path,jdbcType=VARCHAR},
+      </if>
+      <if test="routeType != null">
+        #{routeType,jdbcType=INTEGER},
+      </if>
+      <if test="application != null">
+        #{application,jdbcType=VARCHAR},
+      </if>
+      <if test="serviceName != null">
+        #{serviceName,jdbcType=VARCHAR},
+      </if>
+      <if test="methodName != null">
+        #{methodName,jdbcType=VARCHAR},
+      </if>
+      <if test="serviceGroup != null">
+        #{serviceGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="serviceVersion != null">
+        #{serviceVersion,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="invokeLimit != null">
+        #{invokeLimit,jdbcType=INTEGER},
+      </if>
+      <if test="qpsLimit != null">
+        #{qpsLimit,jdbcType=INTEGER},
+      </if>
+      <if test="timeout != null">
+        #{timeout,jdbcType=INTEGER},
+      </if>
+      <if test="ctime != null">
+        #{ctime,jdbcType=BIGINT},
+      </if>
+      <if test="utime != null">
+        #{utime,jdbcType=BIGINT},
+      </if>
+      <if test="allowMock != null">
+        #{allowMock,jdbcType=BIT},
+      </if>
+      <if test="mockData != null">
+        #{mockData,jdbcType=VARCHAR},
+      </if>
+      <if test="mockDataDesc != null">
+        #{mockDataDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="paramTemplate != null">
+        #{paramTemplate,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.xiaomi.miapi.common.pojo.GatewayApiInfoExample" resultType="java.lang.Long">
+    select count(*) from gateway_api_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update gateway_api_info
+    <set>
+      <if test="record.id != null">
+        id = #{record.id,jdbcType=BIGINT},
+      </if>
+      <if test="record.name != null">
+        name = #{record.name,jdbcType=VARCHAR},
+      </if>
+      <if test="record.description != null">
+        description = #{record.description,jdbcType=VARCHAR},
+      </if>
+      <if test="record.url != null">
+        url = #{record.url,jdbcType=VARCHAR},
+      </if>
+      <if test="record.httpMethod != null">
+        http_method = #{record.httpMethod,jdbcType=VARCHAR},
+      </if>
+      <if test="record.path != null">
+        path = #{record.path,jdbcType=VARCHAR},
+      </if>
+      <if test="record.routeType != null">
+        route_type = #{record.routeType,jdbcType=INTEGER},
+      </if>
+      <if test="record.application != null">
+        application = #{record.application,jdbcType=VARCHAR},
+      </if>
+      <if test="record.serviceName != null">
+        service_name = #{record.serviceName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.methodName != null">
+        method_name = #{record.methodName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.serviceGroup != null">
+        service_group = #{record.serviceGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="record.serviceVersion != null">
+        service_version = #{record.serviceVersion,jdbcType=VARCHAR},
+      </if>
+      <if test="record.status != null">
+        status = #{record.status,jdbcType=INTEGER},
+      </if>
+      <if test="record.invokeLimit != null">
+        invoke_limit = #{record.invokeLimit,jdbcType=INTEGER},
+      </if>
+      <if test="record.qpsLimit != null">
+        qps_limit = #{record.qpsLimit,jdbcType=INTEGER},
+      </if>
+      <if test="record.timeout != null">
+        timeout = #{record.timeout,jdbcType=INTEGER},
+      </if>
+      <if test="record.ctime != null">
+        ctime = #{record.ctime,jdbcType=BIGINT},
+      </if>
+      <if test="record.utime != null">
+        utime = #{record.utime,jdbcType=BIGINT},
+      </if>
+      <if test="record.allowMock != null">
+        allow_mock = #{record.allowMock,jdbcType=BIT},
+      </if>
+      <if test="record.mockData != null">
+        mock_data = #{record.mockData,jdbcType=VARCHAR},
+      </if>
+      <if test="record.mockDataDesc != null">
+        mock_data_desc = #{record.mockDataDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="record.paramTemplate != null">
+        param_template = #{record.paramTemplate,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExampleWithBLOBs" parameterType="map">
+    update gateway_api_info
+    set id = #{record.id,jdbcType=BIGINT},
+      name = #{record.name,jdbcType=VARCHAR},
+      description = #{record.description,jdbcType=VARCHAR},
+      url = #{record.url,jdbcType=VARCHAR},
+      http_method = #{record.httpMethod,jdbcType=VARCHAR},
+      path = #{record.path,jdbcType=VARCHAR},
+      route_type = #{record.routeType,jdbcType=INTEGER},
+      application = #{record.application,jdbcType=VARCHAR},
+      service_name = #{record.serviceName,jdbcType=VARCHAR},
+      method_name = #{record.methodName,jdbcType=VARCHAR},
+      service_group = #{record.serviceGroup,jdbcType=VARCHAR},
+      service_version = #{record.serviceVersion,jdbcType=VARCHAR},
+      status = #{record.status,jdbcType=INTEGER},
+      invoke_limit = #{record.invokeLimit,jdbcType=INTEGER},
+      qps_limit = #{record.qpsLimit,jdbcType=INTEGER},
+      timeout = #{record.timeout,jdbcType=INTEGER},
+      ctime = #{record.ctime,jdbcType=BIGINT},
+      utime = #{record.utime,jdbcType=BIGINT},
+      allow_mock = #{record.allowMock,jdbcType=BIT},
+      mock_data = #{record.mockData,jdbcType=VARCHAR},
+      mock_data_desc = #{record.mockDataDesc,jdbcType=VARCHAR},
+      param_template = #{record.paramTemplate,jdbcType=LONGVARCHAR}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update gateway_api_info
+    set id = #{record.id,jdbcType=BIGINT},
+      name = #{record.name,jdbcType=VARCHAR},
+      description = #{record.description,jdbcType=VARCHAR},
+      url = #{record.url,jdbcType=VARCHAR},
+      http_method = #{record.httpMethod,jdbcType=VARCHAR},
+      path = #{record.path,jdbcType=VARCHAR},
+      route_type = #{record.routeType,jdbcType=INTEGER},
+      application = #{record.application,jdbcType=VARCHAR},
+      service_name = #{record.serviceName,jdbcType=VARCHAR},
+      method_name = #{record.methodName,jdbcType=VARCHAR},
+      service_group = #{record.serviceGroup,jdbcType=VARCHAR},
+      service_version = #{record.serviceVersion,jdbcType=VARCHAR},
+      status = #{record.status,jdbcType=INTEGER},
+      invoke_limit = #{record.invokeLimit,jdbcType=INTEGER},
+      qps_limit = #{record.qpsLimit,jdbcType=INTEGER},
+      timeout = #{record.timeout,jdbcType=INTEGER},
+      ctime = #{record.ctime,jdbcType=BIGINT},
+      utime = #{record.utime,jdbcType=BIGINT},
+      allow_mock = #{record.allowMock,jdbcType=BIT},
+      mock_data = #{record.mockData,jdbcType=VARCHAR},
+      mock_data_desc = #{record.mockDataDesc,jdbcType=VARCHAR}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.common.pojo.GatewayApiInfo">
+    update gateway_api_info
+    <set>
+      <if test="name != null">
+        name = #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="description != null">
+        description = #{description,jdbcType=VARCHAR},
+      </if>
+      <if test="url != null">
+        url = #{url,jdbcType=VARCHAR},
+      </if>
+      <if test="httpMethod != null">
+        http_method = #{httpMethod,jdbcType=VARCHAR},
+      </if>
+      <if test="path != null">
+        path = #{path,jdbcType=VARCHAR},
+      </if>
+      <if test="routeType != null">
+        route_type = #{routeType,jdbcType=INTEGER},
+      </if>
+      <if test="application != null">
+        application = #{application,jdbcType=VARCHAR},
+      </if>
+      <if test="serviceName != null">
+        service_name = #{serviceName,jdbcType=VARCHAR},
+      </if>
+      <if test="methodName != null">
+        method_name = #{methodName,jdbcType=VARCHAR},
+      </if>
+      <if test="serviceGroup != null">
+        service_group = #{serviceGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="serviceVersion != null">
+        service_version = #{serviceVersion,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="invokeLimit != null">
+        invoke_limit = #{invokeLimit,jdbcType=INTEGER},
+      </if>
+      <if test="qpsLimit != null">
+        qps_limit = #{qpsLimit,jdbcType=INTEGER},
+      </if>
+      <if test="timeout != null">
+        timeout = #{timeout,jdbcType=INTEGER},
+      </if>
+      <if test="ctime != null">
+        ctime = #{ctime,jdbcType=BIGINT},
+      </if>
+      <if test="utime != null">
+        utime = #{utime,jdbcType=BIGINT},
+      </if>
+      <if test="allowMock != null">
+        allow_mock = #{allowMock,jdbcType=BIT},
+      </if>
+      <if test="mockData != null">
+        mock_data = #{mockData,jdbcType=VARCHAR},
+      </if>
+      <if test="mockDataDesc != null">
+        mock_data_desc = #{mockDataDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="paramTemplate != null">
+        param_template = #{paramTemplate,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.GatewayApiInfo">
+    update gateway_api_info
+    set name = #{name,jdbcType=VARCHAR},
+      description = #{description,jdbcType=VARCHAR},
+      url = #{url,jdbcType=VARCHAR},
+      http_method = #{httpMethod,jdbcType=VARCHAR},
+      path = #{path,jdbcType=VARCHAR},
+      route_type = #{routeType,jdbcType=INTEGER},
+      application = #{application,jdbcType=VARCHAR},
+      service_name = #{serviceName,jdbcType=VARCHAR},
+      method_name = #{methodName,jdbcType=VARCHAR},
+      service_group = #{serviceGroup,jdbcType=VARCHAR},
+      service_version = #{serviceVersion,jdbcType=VARCHAR},
+      status = #{status,jdbcType=INTEGER},
+      invoke_limit = #{invokeLimit,jdbcType=INTEGER},
+      qps_limit = #{qpsLimit,jdbcType=INTEGER},
+      timeout = #{timeout,jdbcType=INTEGER},
+      ctime = #{ctime,jdbcType=BIGINT},
+      utime = #{utime,jdbcType=BIGINT},
+      allow_mock = #{allowMock,jdbcType=BIT},
+      mock_data = #{mockData,jdbcType=VARCHAR},
+      mock_data_desc = #{mockDataDesc,jdbcType=VARCHAR},
+      param_template = #{paramTemplate,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.common.pojo.GatewayApiInfo">
+    update gateway_api_info
+    set name = #{name,jdbcType=VARCHAR},
+      description = #{description,jdbcType=VARCHAR},
+      url = #{url,jdbcType=VARCHAR},
+      http_method = #{httpMethod,jdbcType=VARCHAR},
+      path = #{path,jdbcType=VARCHAR},
+      route_type = #{routeType,jdbcType=INTEGER},
+      application = #{application,jdbcType=VARCHAR},
+      service_name = #{serviceName,jdbcType=VARCHAR},
+      method_name = #{methodName,jdbcType=VARCHAR},
+      service_group = #{serviceGroup,jdbcType=VARCHAR},
+      service_version = #{serviceVersion,jdbcType=VARCHAR},
+      status = #{status,jdbcType=INTEGER},
+      invoke_limit = #{invokeLimit,jdbcType=INTEGER},
+      qps_limit = #{qpsLimit,jdbcType=INTEGER},
+      timeout = #{timeout,jdbcType=INTEGER},
+      ctime = #{ctime,jdbcType=BIGINT},
+      utime = #{utime,jdbcType=BIGINT},
+      allow_mock = #{allowMock,jdbcType=BIT},
+      mock_data = #{mockData,jdbcType=VARCHAR},
+      mock_data_desc = #{mockDataDesc,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    insert into gateway_api_info
+    (name, description, url, http_method, path, route_type, application, service_name, 
+      method_name, service_group, service_version, status, invoke_limit, qps_limit, timeout, 
+      ctime, utime, allow_mock, mock_data, mock_data_desc, param_template)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.name,jdbcType=VARCHAR}, #{item.description,jdbcType=VARCHAR}, #{item.url,jdbcType=VARCHAR}, 
+        #{item.httpMethod,jdbcType=VARCHAR}, #{item.path,jdbcType=VARCHAR}, #{item.routeType,jdbcType=INTEGER}, 
+        #{item.application,jdbcType=VARCHAR}, #{item.serviceName,jdbcType=VARCHAR}, #{item.methodName,jdbcType=VARCHAR}, 
+        #{item.serviceGroup,jdbcType=VARCHAR}, #{item.serviceVersion,jdbcType=VARCHAR}, 
+        #{item.status,jdbcType=INTEGER}, #{item.invokeLimit,jdbcType=INTEGER}, #{item.qpsLimit,jdbcType=INTEGER}, 
+        #{item.timeout,jdbcType=INTEGER}, #{item.ctime,jdbcType=BIGINT}, #{item.utime,jdbcType=BIGINT}, 
+        #{item.allowMock,jdbcType=BIT}, #{item.mockData,jdbcType=VARCHAR}, #{item.mockDataDesc,jdbcType=VARCHAR}, 
+        #{item.paramTemplate,jdbcType=LONGVARCHAR})
+    </foreach>
+  </insert>
+  <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
+    insert into gateway_api_info (
+    <foreach collection="selective" item="column" separator=",">
+      ${column.escapedColumnName}
+    </foreach>
+    )
+    values
+    <foreach collection="list" item="item" separator=",">
+      (
+      <foreach collection="selective" item="column" separator=",">
+        <if test="'name'.toString() == column.value">
+          #{item.name,jdbcType=VARCHAR}
+        </if>
+        <if test="'description'.toString() == column.value">
+          #{item.description,jdbcType=VARCHAR}
+        </if>
+        <if test="'url'.toString() == column.value">
+          #{item.url,jdbcType=VARCHAR}
+        </if>
+        <if test="'http_method'.toString() == column.value">
+          #{item.httpMethod,jdbcType=VARCHAR}
+        </if>
+        <if test="'path'.toString() == column.value">
+          #{item.path,jdbcType=VARCHAR}
+        </if>
+        <if test="'route_type'.toString() == column.value">
+          #{item.routeType,jdbcType=INTEGER}
+        </if>
+        <if test="'application'.toString() == column.value">
+          #{item.application,jdbcType=VARCHAR}
+        </if>
+        <if test="'service_name'.toString() == column.value">
+          #{item.serviceName,jdbcType=VARCHAR}
+        </if>
+        <if test="'method_name'.toString() == column.value">
+          #{item.methodName,jdbcType=VARCHAR}
+        </if>
+        <if test="'service_group'.toString() == column.value">
+          #{item.serviceGroup,jdbcType=VARCHAR}
+        </if>
+        <if test="'service_version'.toString() == column.value">
+          #{item.serviceVersion,jdbcType=VARCHAR}
+        </if>
+        <if test="'status'.toString() == column.value">
+          #{item.status,jdbcType=INTEGER}
+        </if>
+        <if test="'invoke_limit'.toString() == column.value">
+          #{item.invokeLimit,jdbcType=INTEGER}
+        </if>
+        <if test="'qps_limit'.toString() == column.value">
+          #{item.qpsLimit,jdbcType=INTEGER}
+        </if>
+        <if test="'timeout'.toString() == column.value">
+          #{item.timeout,jdbcType=INTEGER}
+        </if>
+        <if test="'ctime'.toString() == column.value">
+          #{item.ctime,jdbcType=BIGINT}
+        </if>
+        <if test="'utime'.toString() == column.value">
+          #{item.utime,jdbcType=BIGINT}
+        </if>
+        <if test="'allow_mock'.toString() == column.value">
+          #{item.allowMock,jdbcType=BIT}
+        </if>
+        <if test="'mock_data'.toString() == column.value">
+          #{item.mockData,jdbcType=VARCHAR}
+        </if>
+        <if test="'mock_data_desc'.toString() == column.value">
+          #{item.mockDataDesc,jdbcType=VARCHAR}
+        </if>
+        <if test="'param_template'.toString() == column.value">
+          #{item.paramTemplate,jdbcType=LONGVARCHAR}
+        </if>
+      </foreach>
+      )
+    </foreach>
+  </insert>
+
+  <delete id="batchDeleteGatewayApi">
+    DELETE FROM gateway_api_info WHERE gateway_api_info.id IN
+    <foreach collection="Ids" item="item" index="index"
+             open="(" separator="," close=")">
+      #{item}
+    </foreach>
+  </delete>
+
+</mapper>
