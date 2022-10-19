@@ -1,0 +1,924 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaomi.miapi.mapper.ApiTestCaseMapper">
+  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.common.pojo.ApiTestCase">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="account_id" jdbcType="INTEGER" property="accountId" />
+    <result column="api_id" jdbcType="INTEGER" property="apiId" />
+    <result column="api_protocal" jdbcType="INTEGER" property="apiProtocal" />
+    <result column="http_method" jdbcType="VARCHAR" property="httpMethod" />
+    <result column="url" jdbcType="VARCHAR" property="url" />
+    <result column="request_timeout" jdbcType="INTEGER" property="requestTimeout" />
+    <result column="http_headers" jdbcType="VARCHAR" property="httpHeaders" />
+    <result column="case_name" jdbcType="VARCHAR" property="caseName" />
+    <result column="http_domian" jdbcType="VARCHAR" property="httpDomian" />
+    <result column="env_id" jdbcType="INTEGER" property="envId" />
+    <result column="http_req_body_type" jdbcType="INTEGER" property="httpReqBodyType" />
+    <result column="dubbo_interface" jdbcType="VARCHAR" property="dubboInterface" />
+    <result column="dubbo_method_name" jdbcType="VARCHAR" property="dubboMethodName" />
+    <result column="dubbo_group" jdbcType="VARCHAR" property="dubboGroup" />
+    <result column="dubbo_version" jdbcType="VARCHAR" property="dubboVersion" />
+    <result column="dubbo_addr" jdbcType="VARCHAR" property="dubboAddr" />
+    <result column="dubbo_param_type" jdbcType="VARCHAR" property="dubboParamType" />
+    <result column="dubbo_is_generic" jdbcType="BIT" property="dubboIsGeneric" />
+    <result column="dubbo_retry_time" jdbcType="INTEGER" property="dubboRetryTime" />
+    <result column="dubbo_use_attachment" jdbcType="BIT" property="dubboUseAttachment" />
+    <result column="dubbo_attachment" jdbcType="VARCHAR" property="dubboAttachment" />
+    <result column="dubbo_env" jdbcType="VARCHAR" property="dubboEnv" />
+    <result column="use_x5_filter" jdbcType="BIT" property="useX5Filter" />
+    <result column="x5_app_key" jdbcType="VARCHAR" property="x5AppKey" />
+    <result column="x5_app_id" jdbcType="INTEGER" property="x5AppId" />
+    <result column="case_group_id" jdbcType="INTEGER" property="caseGroupId" />
+    <result column="grpc_package_name" jdbcType="VARCHAR" property="grpcPackageName" />
+    <result column="grpc_interface_name" jdbcType="VARCHAR" property="grpcInterfaceName" />
+    <result column="grpc_method_name" jdbcType="VARCHAR" property="grpcMethodName" />
+    <result column="grpc_server_addr" jdbcType="VARCHAR" property="grpcServerAddr" />
+    <result column="grpc_app_name" jdbcType="VARCHAR" property="grpcAppName" />
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.miapi.common.pojo.ApiTestCase">
+    <result column="http_request_body" jdbcType="LONGVARCHAR" property="httpRequestBody" />
+    <result column="dubbo_param_body" jdbcType="LONGVARCHAR" property="dubboParamBody" />
+    <result column="grpc_param_body" jdbcType="LONGVARCHAR" property="grpcParamBody" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    id, account_id, api_id, api_protocal, http_method, url, request_timeout, http_headers, 
+    case_name, http_domian, env_id, http_req_body_type, dubbo_interface, dubbo_method_name, 
+    dubbo_group, dubbo_version, dubbo_addr, dubbo_param_type, dubbo_is_generic, dubbo_retry_time, 
+    dubbo_use_attachment, dubbo_attachment, dubbo_env, use_x5_filter, x5_app_key, x5_app_id, 
+    case_group_id, grpc_package_name, grpc_interface_name, grpc_method_name, grpc_server_addr, 
+    grpc_app_name
+  </sql>
+  <sql id="Blob_Column_List">
+    http_request_body, dubbo_param_body, grpc_param_body
+  </sql>
+  <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.ApiTestCaseExample" resultMap="ResultMapWithBLOBs">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from api_test_case
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiTestCaseExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from api_test_case
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="ResultMapWithBLOBs">
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from api_test_case
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from api_test_case
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiTestCaseExample">
+    delete from api_test_case
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.xiaomi.miapi.common.pojo.ApiTestCase">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into api_test_case (account_id, api_id, api_protocal, 
+      http_method, url, request_timeout, 
+      http_headers, case_name, http_domian, 
+      env_id, http_req_body_type, dubbo_interface, 
+      dubbo_method_name, dubbo_group, dubbo_version, 
+      dubbo_addr, dubbo_param_type, dubbo_is_generic, 
+      dubbo_retry_time, dubbo_use_attachment, dubbo_attachment, 
+      dubbo_env, use_x5_filter, x5_app_key, 
+      x5_app_id, case_group_id, grpc_package_name, 
+      grpc_interface_name, grpc_method_name, grpc_server_addr, 
+      grpc_app_name, http_request_body, dubbo_param_body, 
+      grpc_param_body)
+    values (#{accountId,jdbcType=INTEGER}, #{apiId,jdbcType=INTEGER}, #{apiProtocal,jdbcType=INTEGER}, 
+      #{httpMethod,jdbcType=VARCHAR}, #{url,jdbcType=VARCHAR}, #{requestTimeout,jdbcType=INTEGER}, 
+      #{httpHeaders,jdbcType=VARCHAR}, #{caseName,jdbcType=VARCHAR}, #{httpDomian,jdbcType=VARCHAR}, 
+      #{envId,jdbcType=INTEGER}, #{httpReqBodyType,jdbcType=INTEGER}, #{dubboInterface,jdbcType=VARCHAR}, 
+      #{dubboMethodName,jdbcType=VARCHAR}, #{dubboGroup,jdbcType=VARCHAR}, #{dubboVersion,jdbcType=VARCHAR}, 
+      #{dubboAddr,jdbcType=VARCHAR}, #{dubboParamType,jdbcType=VARCHAR}, #{dubboIsGeneric,jdbcType=BIT}, 
+      #{dubboRetryTime,jdbcType=INTEGER}, #{dubboUseAttachment,jdbcType=BIT}, #{dubboAttachment,jdbcType=VARCHAR}, 
+      #{dubboEnv,jdbcType=VARCHAR}, #{useX5Filter,jdbcType=BIT}, #{x5AppKey,jdbcType=VARCHAR}, 
+      #{x5AppId,jdbcType=INTEGER}, #{caseGroupId,jdbcType=INTEGER}, #{grpcPackageName,jdbcType=VARCHAR}, 
+      #{grpcInterfaceName,jdbcType=VARCHAR}, #{grpcMethodName,jdbcType=VARCHAR}, #{grpcServerAddr,jdbcType=VARCHAR}, 
+      #{grpcAppName,jdbcType=VARCHAR}, #{httpRequestBody,jdbcType=LONGVARCHAR}, #{dubboParamBody,jdbcType=LONGVARCHAR}, 
+      #{grpcParamBody,jdbcType=LONGVARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.xiaomi.miapi.common.pojo.ApiTestCase">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into api_test_case
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="accountId != null">
+        account_id,
+      </if>
+      <if test="apiId != null">
+        api_id,
+      </if>
+      <if test="apiProtocal != null">
+        api_protocal,
+      </if>
+      <if test="httpMethod != null">
+        http_method,
+      </if>
+      <if test="url != null">
+        url,
+      </if>
+      <if test="requestTimeout != null">
+        request_timeout,
+      </if>
+      <if test="httpHeaders != null">
+        http_headers,
+      </if>
+      <if test="caseName != null">
+        case_name,
+      </if>
+      <if test="httpDomian != null">
+        http_domian,
+      </if>
+      <if test="envId != null">
+        env_id,
+      </if>
+      <if test="httpReqBodyType != null">
+        http_req_body_type,
+      </if>
+      <if test="dubboInterface != null">
+        dubbo_interface,
+      </if>
+      <if test="dubboMethodName != null">
+        dubbo_method_name,
+      </if>
+      <if test="dubboGroup != null">
+        dubbo_group,
+      </if>
+      <if test="dubboVersion != null">
+        dubbo_version,
+      </if>
+      <if test="dubboAddr != null">
+        dubbo_addr,
+      </if>
+      <if test="dubboParamType != null">
+        dubbo_param_type,
+      </if>
+      <if test="dubboIsGeneric != null">
+        dubbo_is_generic,
+      </if>
+      <if test="dubboRetryTime != null">
+        dubbo_retry_time,
+      </if>
+      <if test="dubboUseAttachment != null">
+        dubbo_use_attachment,
+      </if>
+      <if test="dubboAttachment != null">
+        dubbo_attachment,
+      </if>
+      <if test="dubboEnv != null">
+        dubbo_env,
+      </if>
+      <if test="useX5Filter != null">
+        use_x5_filter,
+      </if>
+      <if test="x5AppKey != null">
+        x5_app_key,
+      </if>
+      <if test="x5AppId != null">
+        x5_app_id,
+      </if>
+      <if test="caseGroupId != null">
+        case_group_id,
+      </if>
+      <if test="grpcPackageName != null">
+        grpc_package_name,
+      </if>
+      <if test="grpcInterfaceName != null">
+        grpc_interface_name,
+      </if>
+      <if test="grpcMethodName != null">
+        grpc_method_name,
+      </if>
+      <if test="grpcServerAddr != null">
+        grpc_server_addr,
+      </if>
+      <if test="grpcAppName != null">
+        grpc_app_name,
+      </if>
+      <if test="httpRequestBody != null">
+        http_request_body,
+      </if>
+      <if test="dubboParamBody != null">
+        dubbo_param_body,
+      </if>
+      <if test="grpcParamBody != null">
+        grpc_param_body,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="accountId != null">
+        #{accountId,jdbcType=INTEGER},
+      </if>
+      <if test="apiId != null">
+        #{apiId,jdbcType=INTEGER},
+      </if>
+      <if test="apiProtocal != null">
+        #{apiProtocal,jdbcType=INTEGER},
+      </if>
+      <if test="httpMethod != null">
+        #{httpMethod,jdbcType=VARCHAR},
+      </if>
+      <if test="url != null">
+        #{url,jdbcType=VARCHAR},
+      </if>
+      <if test="requestTimeout != null">
+        #{requestTimeout,jdbcType=INTEGER},
+      </if>
+      <if test="httpHeaders != null">
+        #{httpHeaders,jdbcType=VARCHAR},
+      </if>
+      <if test="caseName != null">
+        #{caseName,jdbcType=VARCHAR},
+      </if>
+      <if test="httpDomian != null">
+        #{httpDomian,jdbcType=VARCHAR},
+      </if>
+      <if test="envId != null">
+        #{envId,jdbcType=INTEGER},
+      </if>
+      <if test="httpReqBodyType != null">
+        #{httpReqBodyType,jdbcType=INTEGER},
+      </if>
+      <if test="dubboInterface != null">
+        #{dubboInterface,jdbcType=VARCHAR},
+      </if>
+      <if test="dubboMethodName != null">
+        #{dubboMethodName,jdbcType=VARCHAR},
+      </if>
+      <if test="dubboGroup != null">
+        #{dubboGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="dubboVersion != null">
+        #{dubboVersion,jdbcType=VARCHAR},
+      </if>
+      <if test="dubboAddr != null">
+        #{dubboAddr,jdbcType=VARCHAR},
+      </if>
+      <if test="dubboParamType != null">
+        #{dubboParamType,jdbcType=VARCHAR},
+      </if>
+      <if test="dubboIsGeneric != null">
+        #{dubboIsGeneric,jdbcType=BIT},
+      </if>
+      <if test="dubboRetryTime != null">
+        #{dubboRetryTime,jdbcType=INTEGER},
+      </if>
+      <if test="dubboUseAttachment != null">
+        #{dubboUseAttachment,jdbcType=BIT},
+      </if>
+      <if test="dubboAttachment != null">
+        #{dubboAttachment,jdbcType=VARCHAR},
+      </if>
+      <if test="dubboEnv != null">
+        #{dubboEnv,jdbcType=VARCHAR},
+      </if>
+      <if test="useX5Filter != null">
+        #{useX5Filter,jdbcType=BIT},
+      </if>
+      <if test="x5AppKey != null">
+        #{x5AppKey,jdbcType=VARCHAR},
+      </if>
+      <if test="x5AppId != null">
+        #{x5AppId,jdbcType=INTEGER},
+      </if>
+      <if test="caseGroupId != null">
+        #{caseGroupId,jdbcType=INTEGER},
+      </if>
+      <if test="grpcPackageName != null">
+        #{grpcPackageName,jdbcType=VARCHAR},
+      </if>
+      <if test="grpcInterfaceName != null">
+        #{grpcInterfaceName,jdbcType=VARCHAR},
+      </if>
+      <if test="grpcMethodName != null">
+        #{grpcMethodName,jdbcType=VARCHAR},
+      </if>
+      <if test="grpcServerAddr != null">
+        #{grpcServerAddr,jdbcType=VARCHAR},
+      </if>
+      <if test="grpcAppName != null">
+        #{grpcAppName,jdbcType=VARCHAR},
+      </if>
+      <if test="httpRequestBody != null">
+        #{httpRequestBody,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="dubboParamBody != null">
+        #{dubboParamBody,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="grpcParamBody != null">
+        #{grpcParamBody,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiTestCaseExample" resultType="java.lang.Long">
+    select count(*) from api_test_case
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update api_test_case
+    <set>
+      <if test="record.id != null">
+        id = #{record.id,jdbcType=INTEGER},
+      </if>
+      <if test="record.accountId != null">
+        account_id = #{record.accountId,jdbcType=INTEGER},
+      </if>
+      <if test="record.apiId != null">
+        api_id = #{record.apiId,jdbcType=INTEGER},
+      </if>
+      <if test="record.apiProtocal != null">
+        api_protocal = #{record.apiProtocal,jdbcType=INTEGER},
+      </if>
+      <if test="record.httpMethod != null">
+        http_method = #{record.httpMethod,jdbcType=VARCHAR},
+      </if>
+      <if test="record.url != null">
+        url = #{record.url,jdbcType=VARCHAR},
+      </if>
+      <if test="record.requestTimeout != null">
+        request_timeout = #{record.requestTimeout,jdbcType=INTEGER},
+      </if>
+      <if test="record.httpHeaders != null">
+        http_headers = #{record.httpHeaders,jdbcType=VARCHAR},
+      </if>
+      <if test="record.caseName != null">
+        case_name = #{record.caseName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.httpDomian != null">
+        http_domian = #{record.httpDomian,jdbcType=VARCHAR},
+      </if>
+      <if test="record.envId != null">
+        env_id = #{record.envId,jdbcType=INTEGER},
+      </if>
+      <if test="record.httpReqBodyType != null">
+        http_req_body_type = #{record.httpReqBodyType,jdbcType=INTEGER},
+      </if>
+      <if test="record.dubboInterface != null">
+        dubbo_interface = #{record.dubboInterface,jdbcType=VARCHAR},
+      </if>
+      <if test="record.dubboMethodName != null">
+        dubbo_method_name = #{record.dubboMethodName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.dubboGroup != null">
+        dubbo_group = #{record.dubboGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="record.dubboVersion != null">
+        dubbo_version = #{record.dubboVersion,jdbcType=VARCHAR},
+      </if>
+      <if test="record.dubboAddr != null">
+        dubbo_addr = #{record.dubboAddr,jdbcType=VARCHAR},
+      </if>
+      <if test="record.dubboParamType != null">
+        dubbo_param_type = #{record.dubboParamType,jdbcType=VARCHAR},
+      </if>
+      <if test="record.dubboIsGeneric != null">
+        dubbo_is_generic = #{record.dubboIsGeneric,jdbcType=BIT},
+      </if>
+      <if test="record.dubboRetryTime != null">
+        dubbo_retry_time = #{record.dubboRetryTime,jdbcType=INTEGER},
+      </if>
+      <if test="record.dubboUseAttachment != null">
+        dubbo_use_attachment = #{record.dubboUseAttachment,jdbcType=BIT},
+      </if>
+      <if test="record.dubboAttachment != null">
+        dubbo_attachment = #{record.dubboAttachment,jdbcType=VARCHAR},
+      </if>
+      <if test="record.dubboEnv != null">
+        dubbo_env = #{record.dubboEnv,jdbcType=VARCHAR},
+      </if>
+      <if test="record.useX5Filter != null">
+        use_x5_filter = #{record.useX5Filter,jdbcType=BIT},
+      </if>
+      <if test="record.x5AppKey != null">
+        x5_app_key = #{record.x5AppKey,jdbcType=VARCHAR},
+      </if>
+      <if test="record.x5AppId != null">
+        x5_app_id = #{record.x5AppId,jdbcType=INTEGER},
+      </if>
+      <if test="record.caseGroupId != null">
+        case_group_id = #{record.caseGroupId,jdbcType=INTEGER},
+      </if>
+      <if test="record.grpcPackageName != null">
+        grpc_package_name = #{record.grpcPackageName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.grpcInterfaceName != null">
+        grpc_interface_name = #{record.grpcInterfaceName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.grpcMethodName != null">
+        grpc_method_name = #{record.grpcMethodName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.grpcServerAddr != null">
+        grpc_server_addr = #{record.grpcServerAddr,jdbcType=VARCHAR},
+      </if>
+      <if test="record.grpcAppName != null">
+        grpc_app_name = #{record.grpcAppName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.httpRequestBody != null">
+        http_request_body = #{record.httpRequestBody,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.dubboParamBody != null">
+        dubbo_param_body = #{record.dubboParamBody,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.grpcParamBody != null">
+        grpc_param_body = #{record.grpcParamBody,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExampleWithBLOBs" parameterType="map">
+    update api_test_case
+    set id = #{record.id,jdbcType=INTEGER},
+      account_id = #{record.accountId,jdbcType=INTEGER},
+      api_id = #{record.apiId,jdbcType=INTEGER},
+      api_protocal = #{record.apiProtocal,jdbcType=INTEGER},
+      http_method = #{record.httpMethod,jdbcType=VARCHAR},
+      url = #{record.url,jdbcType=VARCHAR},
+      request_timeout = #{record.requestTimeout,jdbcType=INTEGER},
+      http_headers = #{record.httpHeaders,jdbcType=VARCHAR},
+      case_name = #{record.caseName,jdbcType=VARCHAR},
+      http_domian = #{record.httpDomian,jdbcType=VARCHAR},
+      env_id = #{record.envId,jdbcType=INTEGER},
+      http_req_body_type = #{record.httpReqBodyType,jdbcType=INTEGER},
+      dubbo_interface = #{record.dubboInterface,jdbcType=VARCHAR},
+      dubbo_method_name = #{record.dubboMethodName,jdbcType=VARCHAR},
+      dubbo_group = #{record.dubboGroup,jdbcType=VARCHAR},
+      dubbo_version = #{record.dubboVersion,jdbcType=VARCHAR},
+      dubbo_addr = #{record.dubboAddr,jdbcType=VARCHAR},
+      dubbo_param_type = #{record.dubboParamType,jdbcType=VARCHAR},
+      dubbo_is_generic = #{record.dubboIsGeneric,jdbcType=BIT},
+      dubbo_retry_time = #{record.dubboRetryTime,jdbcType=INTEGER},
+      dubbo_use_attachment = #{record.dubboUseAttachment,jdbcType=BIT},
+      dubbo_attachment = #{record.dubboAttachment,jdbcType=VARCHAR},
+      dubbo_env = #{record.dubboEnv,jdbcType=VARCHAR},
+      use_x5_filter = #{record.useX5Filter,jdbcType=BIT},
+      x5_app_key = #{record.x5AppKey,jdbcType=VARCHAR},
+      x5_app_id = #{record.x5AppId,jdbcType=INTEGER},
+      case_group_id = #{record.caseGroupId,jdbcType=INTEGER},
+      grpc_package_name = #{record.grpcPackageName,jdbcType=VARCHAR},
+      grpc_interface_name = #{record.grpcInterfaceName,jdbcType=VARCHAR},
+      grpc_method_name = #{record.grpcMethodName,jdbcType=VARCHAR},
+      grpc_server_addr = #{record.grpcServerAddr,jdbcType=VARCHAR},
+      grpc_app_name = #{record.grpcAppName,jdbcType=VARCHAR},
+      http_request_body = #{record.httpRequestBody,jdbcType=LONGVARCHAR},
+      dubbo_param_body = #{record.dubboParamBody,jdbcType=LONGVARCHAR},
+      grpc_param_body = #{record.grpcParamBody,jdbcType=LONGVARCHAR}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update api_test_case
+    set id = #{record.id,jdbcType=INTEGER},
+      account_id = #{record.accountId,jdbcType=INTEGER},
+      api_id = #{record.apiId,jdbcType=INTEGER},
+      api_protocal = #{record.apiProtocal,jdbcType=INTEGER},
+      http_method = #{record.httpMethod,jdbcType=VARCHAR},
+      url = #{record.url,jdbcType=VARCHAR},
+      request_timeout = #{record.requestTimeout,jdbcType=INTEGER},
+      http_headers = #{record.httpHeaders,jdbcType=VARCHAR},
+      case_name = #{record.caseName,jdbcType=VARCHAR},
+      http_domian = #{record.httpDomian,jdbcType=VARCHAR},
+      env_id = #{record.envId,jdbcType=INTEGER},
+      http_req_body_type = #{record.httpReqBodyType,jdbcType=INTEGER},
+      dubbo_interface = #{record.dubboInterface,jdbcType=VARCHAR},
+      dubbo_method_name = #{record.dubboMethodName,jdbcType=VARCHAR},
+      dubbo_group = #{record.dubboGroup,jdbcType=VARCHAR},
+      dubbo_version = #{record.dubboVersion,jdbcType=VARCHAR},
+      dubbo_addr = #{record.dubboAddr,jdbcType=VARCHAR},
+      dubbo_param_type = #{record.dubboParamType,jdbcType=VARCHAR},
+      dubbo_is_generic = #{record.dubboIsGeneric,jdbcType=BIT},
+      dubbo_retry_time = #{record.dubboRetryTime,jdbcType=INTEGER},
+      dubbo_use_attachment = #{record.dubboUseAttachment,jdbcType=BIT},
+      dubbo_attachment = #{record.dubboAttachment,jdbcType=VARCHAR},
+      dubbo_env = #{record.dubboEnv,jdbcType=VARCHAR},
+      use_x5_filter = #{record.useX5Filter,jdbcType=BIT},
+      x5_app_key = #{record.x5AppKey,jdbcType=VARCHAR},
+      x5_app_id = #{record.x5AppId,jdbcType=INTEGER},
+      case_group_id = #{record.caseGroupId,jdbcType=INTEGER},
+      grpc_package_name = #{record.grpcPackageName,jdbcType=VARCHAR},
+      grpc_interface_name = #{record.grpcInterfaceName,jdbcType=VARCHAR},
+      grpc_method_name = #{record.grpcMethodName,jdbcType=VARCHAR},
+      grpc_server_addr = #{record.grpcServerAddr,jdbcType=VARCHAR},
+      grpc_app_name = #{record.grpcAppName,jdbcType=VARCHAR}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.common.pojo.ApiTestCase">
+    update api_test_case
+    <set>
+      <if test="accountId != null">
+        account_id = #{accountId,jdbcType=INTEGER},
+      </if>
+      <if test="apiId != null">
+        api_id = #{apiId,jdbcType=INTEGER},
+      </if>
+      <if test="apiProtocal != null">
+        api_protocal = #{apiProtocal,jdbcType=INTEGER},
+      </if>
+      <if test="httpMethod != null">
+        http_method = #{httpMethod,jdbcType=VARCHAR},
+      </if>
+      <if test="url != null">
+        url = #{url,jdbcType=VARCHAR},
+      </if>
+      <if test="requestTimeout != null">
+        request_timeout = #{requestTimeout,jdbcType=INTEGER},
+      </if>
+      <if test="httpHeaders != null">
+        http_headers = #{httpHeaders,jdbcType=VARCHAR},
+      </if>
+      <if test="caseName != null">
+        case_name = #{caseName,jdbcType=VARCHAR},
+      </if>
+      <if test="httpDomian != null">
+        http_domian = #{httpDomian,jdbcType=VARCHAR},
+      </if>
+      <if test="envId != null">
+        env_id = #{envId,jdbcType=INTEGER},
+      </if>
+      <if test="httpReqBodyType != null">
+        http_req_body_type = #{httpReqBodyType,jdbcType=INTEGER},
+      </if>
+      <if test="dubboInterface != null">
+        dubbo_interface = #{dubboInterface,jdbcType=VARCHAR},
+      </if>
+      <if test="dubboMethodName != null">
+        dubbo_method_name = #{dubboMethodName,jdbcType=VARCHAR},
+      </if>
+      <if test="dubboGroup != null">
+        dubbo_group = #{dubboGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="dubboVersion != null">
+        dubbo_version = #{dubboVersion,jdbcType=VARCHAR},
+      </if>
+      <if test="dubboAddr != null">
+        dubbo_addr = #{dubboAddr,jdbcType=VARCHAR},
+      </if>
+      <if test="dubboParamType != null">
+        dubbo_param_type = #{dubboParamType,jdbcType=VARCHAR},
+      </if>
+      <if test="dubboIsGeneric != null">
+        dubbo_is_generic = #{dubboIsGeneric,jdbcType=BIT},
+      </if>
+      <if test="dubboRetryTime != null">
+        dubbo_retry_time = #{dubboRetryTime,jdbcType=INTEGER},
+      </if>
+      <if test="dubboUseAttachment != null">
+        dubbo_use_attachment = #{dubboUseAttachment,jdbcType=BIT},
+      </if>
+      <if test="dubboAttachment != null">
+        dubbo_attachment = #{dubboAttachment,jdbcType=VARCHAR},
+      </if>
+      <if test="dubboEnv != null">
+        dubbo_env = #{dubboEnv,jdbcType=VARCHAR},
+      </if>
+      <if test="useX5Filter != null">
+        use_x5_filter = #{useX5Filter,jdbcType=BIT},
+      </if>
+      <if test="x5AppKey != null">
+        x5_app_key = #{x5AppKey,jdbcType=VARCHAR},
+      </if>
+      <if test="x5AppId != null">
+        x5_app_id = #{x5AppId,jdbcType=INTEGER},
+      </if>
+      <if test="caseGroupId != null">
+        case_group_id = #{caseGroupId,jdbcType=INTEGER},
+      </if>
+      <if test="grpcPackageName != null">
+        grpc_package_name = #{grpcPackageName,jdbcType=VARCHAR},
+      </if>
+      <if test="grpcInterfaceName != null">
+        grpc_interface_name = #{grpcInterfaceName,jdbcType=VARCHAR},
+      </if>
+      <if test="grpcMethodName != null">
+        grpc_method_name = #{grpcMethodName,jdbcType=VARCHAR},
+      </if>
+      <if test="grpcServerAddr != null">
+        grpc_server_addr = #{grpcServerAddr,jdbcType=VARCHAR},
+      </if>
+      <if test="grpcAppName != null">
+        grpc_app_name = #{grpcAppName,jdbcType=VARCHAR},
+      </if>
+      <if test="httpRequestBody != null">
+        http_request_body = #{httpRequestBody,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="dubboParamBody != null">
+        dubbo_param_body = #{dubboParamBody,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="grpcParamBody != null">
+        grpc_param_body = #{grpcParamBody,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.ApiTestCase">
+    update api_test_case
+    set account_id = #{accountId,jdbcType=INTEGER},
+      api_id = #{apiId,jdbcType=INTEGER},
+      api_protocal = #{apiProtocal,jdbcType=INTEGER},
+      http_method = #{httpMethod,jdbcType=VARCHAR},
+      url = #{url,jdbcType=VARCHAR},
+      request_timeout = #{requestTimeout,jdbcType=INTEGER},
+      http_headers = #{httpHeaders,jdbcType=VARCHAR},
+      case_name = #{caseName,jdbcType=VARCHAR},
+      http_domian = #{httpDomian,jdbcType=VARCHAR},
+      env_id = #{envId,jdbcType=INTEGER},
+      http_req_body_type = #{httpReqBodyType,jdbcType=INTEGER},
+      dubbo_interface = #{dubboInterface,jdbcType=VARCHAR},
+      dubbo_method_name = #{dubboMethodName,jdbcType=VARCHAR},
+      dubbo_group = #{dubboGroup,jdbcType=VARCHAR},
+      dubbo_version = #{dubboVersion,jdbcType=VARCHAR},
+      dubbo_addr = #{dubboAddr,jdbcType=VARCHAR},
+      dubbo_param_type = #{dubboParamType,jdbcType=VARCHAR},
+      dubbo_is_generic = #{dubboIsGeneric,jdbcType=BIT},
+      dubbo_retry_time = #{dubboRetryTime,jdbcType=INTEGER},
+      dubbo_use_attachment = #{dubboUseAttachment,jdbcType=BIT},
+      dubbo_attachment = #{dubboAttachment,jdbcType=VARCHAR},
+      dubbo_env = #{dubboEnv,jdbcType=VARCHAR},
+      use_x5_filter = #{useX5Filter,jdbcType=BIT},
+      x5_app_key = #{x5AppKey,jdbcType=VARCHAR},
+      x5_app_id = #{x5AppId,jdbcType=INTEGER},
+      case_group_id = #{caseGroupId,jdbcType=INTEGER},
+      grpc_package_name = #{grpcPackageName,jdbcType=VARCHAR},
+      grpc_interface_name = #{grpcInterfaceName,jdbcType=VARCHAR},
+      grpc_method_name = #{grpcMethodName,jdbcType=VARCHAR},
+      grpc_server_addr = #{grpcServerAddr,jdbcType=VARCHAR},
+      grpc_app_name = #{grpcAppName,jdbcType=VARCHAR},
+      http_request_body = #{httpRequestBody,jdbcType=LONGVARCHAR},
+      dubbo_param_body = #{dubboParamBody,jdbcType=LONGVARCHAR},
+      grpc_param_body = #{grpcParamBody,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.common.pojo.ApiTestCase">
+    update api_test_case
+    set account_id = #{accountId,jdbcType=INTEGER},
+      api_id = #{apiId,jdbcType=INTEGER},
+      api_protocal = #{apiProtocal,jdbcType=INTEGER},
+      http_method = #{httpMethod,jdbcType=VARCHAR},
+      url = #{url,jdbcType=VARCHAR},
+      request_timeout = #{requestTimeout,jdbcType=INTEGER},
+      http_headers = #{httpHeaders,jdbcType=VARCHAR},
+      case_name = #{caseName,jdbcType=VARCHAR},
+      http_domian = #{httpDomian,jdbcType=VARCHAR},
+      env_id = #{envId,jdbcType=INTEGER},
+      http_req_body_type = #{httpReqBodyType,jdbcType=INTEGER},
+      dubbo_interface = #{dubboInterface,jdbcType=VARCHAR},
+      dubbo_method_name = #{dubboMethodName,jdbcType=VARCHAR},
+      dubbo_group = #{dubboGroup,jdbcType=VARCHAR},
+      dubbo_version = #{dubboVersion,jdbcType=VARCHAR},
+      dubbo_addr = #{dubboAddr,jdbcType=VARCHAR},
+      dubbo_param_type = #{dubboParamType,jdbcType=VARCHAR},
+      dubbo_is_generic = #{dubboIsGeneric,jdbcType=BIT},
+      dubbo_retry_time = #{dubboRetryTime,jdbcType=INTEGER},
+      dubbo_use_attachment = #{dubboUseAttachment,jdbcType=BIT},
+      dubbo_attachment = #{dubboAttachment,jdbcType=VARCHAR},
+      dubbo_env = #{dubboEnv,jdbcType=VARCHAR},
+      use_x5_filter = #{useX5Filter,jdbcType=BIT},
+      x5_app_key = #{x5AppKey,jdbcType=VARCHAR},
+      x5_app_id = #{x5AppId,jdbcType=INTEGER},
+      case_group_id = #{caseGroupId,jdbcType=INTEGER},
+      grpc_package_name = #{grpcPackageName,jdbcType=VARCHAR},
+      grpc_interface_name = #{grpcInterfaceName,jdbcType=VARCHAR},
+      grpc_method_name = #{grpcMethodName,jdbcType=VARCHAR},
+      grpc_server_addr = #{grpcServerAddr,jdbcType=VARCHAR},
+      grpc_app_name = #{grpcAppName,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    insert into api_test_case
+    (account_id, api_id, api_protocal, http_method, url, request_timeout, http_headers, 
+      case_name, http_domian, env_id, http_req_body_type, dubbo_interface, dubbo_method_name, 
+      dubbo_group, dubbo_version, dubbo_addr, dubbo_param_type, dubbo_is_generic, dubbo_retry_time, 
+      dubbo_use_attachment, dubbo_attachment, dubbo_env, use_x5_filter, x5_app_key, x5_app_id, 
+      case_group_id, grpc_package_name, grpc_interface_name, grpc_method_name, grpc_server_addr, 
+      grpc_app_name, http_request_body, dubbo_param_body, grpc_param_body)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.accountId,jdbcType=INTEGER}, #{item.apiId,jdbcType=INTEGER}, #{item.apiProtocal,jdbcType=INTEGER}, 
+        #{item.httpMethod,jdbcType=VARCHAR}, #{item.url,jdbcType=VARCHAR}, #{item.requestTimeout,jdbcType=INTEGER}, 
+        #{item.httpHeaders,jdbcType=VARCHAR}, #{item.caseName,jdbcType=VARCHAR}, #{item.httpDomian,jdbcType=VARCHAR}, 
+        #{item.envId,jdbcType=INTEGER}, #{item.httpReqBodyType,jdbcType=INTEGER}, #{item.dubboInterface,jdbcType=VARCHAR}, 
+        #{item.dubboMethodName,jdbcType=VARCHAR}, #{item.dubboGroup,jdbcType=VARCHAR}, 
+        #{item.dubboVersion,jdbcType=VARCHAR}, #{item.dubboAddr,jdbcType=VARCHAR}, #{item.dubboParamType,jdbcType=VARCHAR}, 
+        #{item.dubboIsGeneric,jdbcType=BIT}, #{item.dubboRetryTime,jdbcType=INTEGER}, #{item.dubboUseAttachment,jdbcType=BIT}, 
+        #{item.dubboAttachment,jdbcType=VARCHAR}, #{item.dubboEnv,jdbcType=VARCHAR}, #{item.useX5Filter,jdbcType=BIT}, 
+        #{item.x5AppKey,jdbcType=VARCHAR}, #{item.x5AppId,jdbcType=INTEGER}, #{item.caseGroupId,jdbcType=INTEGER}, 
+        #{item.grpcPackageName,jdbcType=VARCHAR}, #{item.grpcInterfaceName,jdbcType=VARCHAR}, 
+        #{item.grpcMethodName,jdbcType=VARCHAR}, #{item.grpcServerAddr,jdbcType=VARCHAR}, 
+        #{item.grpcAppName,jdbcType=VARCHAR}, #{item.httpRequestBody,jdbcType=LONGVARCHAR}, 
+        #{item.dubboParamBody,jdbcType=LONGVARCHAR}, #{item.grpcParamBody,jdbcType=LONGVARCHAR}
+        )
+    </foreach>
+  </insert>
+  <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
+    insert into api_test_case (
+    <foreach collection="selective" item="column" separator=",">
+      ${column.escapedColumnName}
+    </foreach>
+    )
+    values
+    <foreach collection="list" item="item" separator=",">
+      (
+      <foreach collection="selective" item="column" separator=",">
+        <if test="'account_id'.toString() == column.value">
+          #{item.accountId,jdbcType=INTEGER}
+        </if>
+        <if test="'api_id'.toString() == column.value">
+          #{item.apiId,jdbcType=INTEGER}
+        </if>
+        <if test="'api_protocal'.toString() == column.value">
+          #{item.apiProtocal,jdbcType=INTEGER}
+        </if>
+        <if test="'http_method'.toString() == column.value">
+          #{item.httpMethod,jdbcType=VARCHAR}
+        </if>
+        <if test="'url'.toString() == column.value">
+          #{item.url,jdbcType=VARCHAR}
+        </if>
+        <if test="'request_timeout'.toString() == column.value">
+          #{item.requestTimeout,jdbcType=INTEGER}
+        </if>
+        <if test="'http_headers'.toString() == column.value">
+          #{item.httpHeaders,jdbcType=VARCHAR}
+        </if>
+        <if test="'case_name'.toString() == column.value">
+          #{item.caseName,jdbcType=VARCHAR}
+        </if>
+        <if test="'http_domian'.toString() == column.value">
+          #{item.httpDomian,jdbcType=VARCHAR}
+        </if>
+        <if test="'env_id'.toString() == column.value">
+          #{item.envId,jdbcType=INTEGER}
+        </if>
+        <if test="'http_req_body_type'.toString() == column.value">
+          #{item.httpReqBodyType,jdbcType=INTEGER}
+        </if>
+        <if test="'dubbo_interface'.toString() == column.value">
+          #{item.dubboInterface,jdbcType=VARCHAR}
+        </if>
+        <if test="'dubbo_method_name'.toString() == column.value">
+          #{item.dubboMethodName,jdbcType=VARCHAR}
+        </if>
+        <if test="'dubbo_group'.toString() == column.value">
+          #{item.dubboGroup,jdbcType=VARCHAR}
+        </if>
+        <if test="'dubbo_version'.toString() == column.value">
+          #{item.dubboVersion,jdbcType=VARCHAR}
+        </if>
+        <if test="'dubbo_addr'.toString() == column.value">
+          #{item.dubboAddr,jdbcType=VARCHAR}
+        </if>
+        <if test="'dubbo_param_type'.toString() == column.value">
+          #{item.dubboParamType,jdbcType=VARCHAR}
+        </if>
+        <if test="'dubbo_is_generic'.toString() == column.value">
+          #{item.dubboIsGeneric,jdbcType=BIT}
+        </if>
+        <if test="'dubbo_retry_time'.toString() == column.value">
+          #{item.dubboRetryTime,jdbcType=INTEGER}
+        </if>
+        <if test="'dubbo_use_attachment'.toString() == column.value">
+          #{item.dubboUseAttachment,jdbcType=BIT}
+        </if>
+        <if test="'dubbo_attachment'.toString() == column.value">
+          #{item.dubboAttachment,jdbcType=VARCHAR}
+        </if>
+        <if test="'dubbo_env'.toString() == column.value">
+          #{item.dubboEnv,jdbcType=VARCHAR}
+        </if>
+        <if test="'use_x5_filter'.toString() == column.value">
+          #{item.useX5Filter,jdbcType=BIT}
+        </if>
+        <if test="'x5_app_key'.toString() == column.value">
+          #{item.x5AppKey,jdbcType=VARCHAR}
+        </if>
+        <if test="'x5_app_id'.toString() == column.value">
+          #{item.x5AppId,jdbcType=INTEGER}
+        </if>
+        <if test="'case_group_id'.toString() == column.value">
+          #{item.caseGroupId,jdbcType=INTEGER}
+        </if>
+        <if test="'grpc_package_name'.toString() == column.value">
+          #{item.grpcPackageName,jdbcType=VARCHAR}
+        </if>
+        <if test="'grpc_interface_name'.toString() == column.value">
+          #{item.grpcInterfaceName,jdbcType=VARCHAR}
+        </if>
+        <if test="'grpc_method_name'.toString() == column.value">
+          #{item.grpcMethodName,jdbcType=VARCHAR}
+        </if>
+        <if test="'grpc_server_addr'.toString() == column.value">
+          #{item.grpcServerAddr,jdbcType=VARCHAR}
+        </if>
+        <if test="'grpc_app_name'.toString() == column.value">
+          #{item.grpcAppName,jdbcType=VARCHAR}
+        </if>
+        <if test="'http_request_body'.toString() == column.value">
+          #{item.httpRequestBody,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'dubbo_param_body'.toString() == column.value">
+          #{item.dubboParamBody,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'grpc_param_body'.toString() == column.value">
+          #{item.grpcParamBody,jdbcType=LONGVARCHAR}
+        </if>
+      </foreach>
+      )
+    </foreach>
+  </insert>
+</mapper>

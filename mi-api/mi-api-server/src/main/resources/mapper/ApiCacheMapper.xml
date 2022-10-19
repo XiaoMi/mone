@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+	PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaomi.miapi.mapper.ApiCacheMapper">
+	<insert id="addApiCache" parameterType="ApiCache"
+		useGeneratedKeys="true">
+		INSERT INTO eo_api_cache
+		(eo_api_cache.projectID,eo_api_cache.groupID,eo_api_cache.apiID,eo_api_cache.apiJson,eo_api_cache.starred,eo_api_cache.updateUsername)
+		VALUES
+		(#{projectID},#{groupID},#{apiID},#{apiJson},#{starred},#{updateUsername});
+	</insert>
+	<update id="updateApiCache" parameterType="ApiCache">
+		UPDATE eo_api_cache
+		SET eo_api_cache.apiJson =
+		#{apiJson},eo_api_cache.groupID =
+		#{groupID},eo_api_cache.starred =
+		#{starred},eo_api_cache.updateUsername
+		= #{updateUsername} WHERE
+		eo_api_cache.apiID = #{apiID}
+	</update>
+	<update id="updateApiStar">
+		UPDATE eo_api_cache SET eo_api_cache.starred =
+		#{starred} WHERE eo_api_cache.apiID = #{apiID} AND
+		eo_api_cache.projectID = #{projectID}
+	</update>
+
+	<select id="getApiCache" resultType="ApiCache">
+		SELECT * FROM eo_api_cache WHERE eo_api_cache.projectID = #{projectID} AND
+		eo_api_cache.apiID = #{apiID}
+	</select>
+	<update id="changeApiGroup">
+		UPDATE eo_api SET eo_api.groupID = #{groupID} WHERE eo_api.apiID IN
+		<foreach collection="apiIDs" item="item" index="index" open="("
+			separator="," close=")">
+			#{item}
+		</foreach>
+		AND eo_api.projectID = #{projectID}
+	</update>
+	<select id="getApiCacheByGroupID" resultType="ApiCache">
+		SELECT eo_api_cache.apiID,eo_api_cache.apiJson,eo_api_cache.starred FROM eo_api_cache INNER JOIN eo_api ON eo_api.apiID = eo_api_cache.apiID WHERE eo_api_cache.projectID = #{projectID} AND eo_api_cache.groupID = #{groupID} AND eo_api.removed = 0;
+	</select>
+</mapper>
