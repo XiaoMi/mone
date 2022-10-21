@@ -1,16 +1,12 @@
 package com.xiaomi.mone.tpc.login.vo;
 
 import com.google.gson.annotations.SerializedName;
-import lombok.Data;
-import lombok.ToString;
 
 /**
  * @project: mi-tpc
  * @author: zgf1
  * @date: 2022/10/8 10:34
  */
-@Data
-@ToString
 public class UserInfoVO {
 
     /**
@@ -58,4 +54,67 @@ public class UserInfoVO {
     @SerializedName("cas:avatar")
     private String avatar;
 
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDisplayName() {
+        return displayName;
+    }
+
+    public void setDisplayName(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public String getDepartmentName() {
+        return departmentName;
+    }
+
+    public void setDepartmentName(String departmentName) {
+        this.departmentName = departmentName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getMiID() {
+        return miID;
+    }
+
+    public void setMiID(String miID) {
+        this.miID = miID;
+    }
+
+    public String getuID() {
+        return uID;
+    }
+
+    public void setuID(String uID) {
+        this.uID = uID;
+    }
+
+    public String getAvatar() {
+        return avatar;
+    }
+
+    public void setAvatar(String avatar) {
+        this.avatar = avatar;
+    }
 }

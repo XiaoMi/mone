@@ -6,7 +6,7 @@ import com.xiaomi.mone.tpc.login.util.ConstUtil;
 import com.xiaomi.mone.tpc.login.util.HttpClientUtil;
 import com.xiaomi.mone.tpc.login.util.UserUtil;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
-import com.xiaomi.youpin.infra.rpc.Result;
+import com.xiaomi.mone.tpc.login.vo.ResultVo;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.servlet.*;
@@ -59,7 +59,7 @@ public class AuthHermesFilter implements Filter {
         } else {
             getParams.put("email", "mock@xiaomi.com");
         }
-        Result<Boolean> resultVo = HttpClientUtil.doHttpGet(hermesUrl, getParams, new TypeToken<Result<Boolean>>(){});
+        ResultVo<Boolean> resultVo = HttpClientUtil.doHttpGet(hermesUrl, getParams, new TypeToken<ResultVo<Boolean>>(){});
         if (resultVo == null || !Boolean.TRUE.equals(resultVo.getData())) {
             response.sendError(403, "Forbidden");
             return;

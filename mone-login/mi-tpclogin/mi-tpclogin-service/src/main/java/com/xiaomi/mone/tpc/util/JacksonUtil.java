@@ -6,9 +6,9 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.*;
 import com.fasterxml.jackson.databind.Module;
 import com.fasterxml.jackson.databind.module.SimpleModule;
-import io.micrometer.core.instrument.util.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -52,19 +52,19 @@ public class JacksonUtil {
         JsonDeserializer<ZonedDateTime> jsonDeserializerZonedDateTime = new JsonDeserializer<ZonedDateTime>() {
             @Override
             public ZonedDateTime deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
-                return StringUtils.isNotEmpty(jsonParser.getValueAsString()) ? ZonedDateTime.parse(jsonParser.getValueAsString()) : null;
+                return !StringUtils.isEmpty(jsonParser.getValueAsString()) ? ZonedDateTime.parse(jsonParser.getValueAsString()) : null;
             }
         };
         JsonDeserializer<LocalDateTime> jsonDeserializerDateTime = new JsonDeserializer<LocalDateTime>() {
             @Override
             public LocalDateTime deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
-                return StringUtils.isNotEmpty(jsonParser.getValueAsString()) ? LocalDateTime.parse(jsonParser.getValueAsString(), ftf) : null;
+                return !StringUtils.isEmpty(jsonParser.getValueAsString()) ? LocalDateTime.parse(jsonParser.getValueAsString(), ftf) : null;
             }
         };
         JsonDeserializer<LocalDate> jsonDeserializerDate = new JsonDeserializer<LocalDate>() {
             @Override
             public LocalDate deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException {
-                return StringUtils.isNotEmpty(jsonParser.getValueAsString()) ? LocalDate.parse(jsonParser.getValueAsString(), ftf) : null;
+                return !StringUtils.isEmpty(jsonParser.getValueAsString()) ? LocalDate.parse(jsonParser.getValueAsString(), ftf) : null;
             }
         };
         simpleModule.addSerializer(ZonedDateTime.class, jsonSerializerZonedDateTime);

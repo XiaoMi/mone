@@ -2,8 +2,6 @@ package com.xiaomi.mone.tpc.login.vo;
 
 import com.xiaomi.mone.tpc.login.util.SignUtil;
 import com.xiaomi.mone.tpc.login.util.UserUtil;
-import lombok.Data;
-import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
@@ -16,8 +14,6 @@ import java.util.Map;
  * @author: zgf1
  * @date: 2022/7/29 15:54
  */
-@Data
-@ToString
 public class MoneTpcContext implements Serializable {
 
     private String sysName;
@@ -92,4 +88,64 @@ public class MoneTpcContext implements Serializable {
         return userVo;
     }
 
+    public String getSysName() {
+        return sysName;
+    }
+
+    public void setSysName(String sysName) {
+        this.sysName = sysName;
+    }
+
+    public String getSysSign() {
+        return sysSign;
+    }
+
+    public void setSysSign(String sysSign) {
+        this.sysSign = sysSign;
+    }
+
+    public String getUserToken() {
+        return userToken;
+    }
+
+    public void setUserToken(String userToken) {
+        this.userToken = userToken;
+    }
+
+    public long getReqTime() {
+        return reqTime;
+    }
+
+    public void setReqTime(long reqTime) {
+        this.reqTime = reqTime;
+    }
+
+    public String getAccount() {
+        return account;
+    }
+
+    public void setAccount(String account) {
+        this.account = account;
+    }
+
+    public Integer getUserType() {
+        return userType;
+    }
+
+    public void setUserType(Integer userType) {
+        this.userType = userType;
+    }
+
+    @Override
+    public String toString() {
+        return "MoneTpcContext{" +
+                "sysName='" + sysName + '\'' +
+                ", sysSign='" + sysSign + '\'' +
+                ", userToken='" + userToken + '\'' +
+                ", reqTime=" + reqTime +
+                ", account='" + account + '\'' +
+                ", userType=" + userType +
+                ", extMap=" + extMap +
+                '}';
+    }
 }

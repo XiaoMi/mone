@@ -22,14 +22,6 @@
             <artifactId>java-jwt</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.alibaba.nacos</groupId>
-            <artifactId>nacos-client</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.alibaba.nacos</groupId>
-            <artifactId>nacos-spring-context</artifactId>
-        </dependency>
-        <dependency>
             <artifactId>mi-tpclogin-common</artifactId>
             <groupId>run.mone</groupId>
             <version>1.0.0-SNAPSHOT</version>

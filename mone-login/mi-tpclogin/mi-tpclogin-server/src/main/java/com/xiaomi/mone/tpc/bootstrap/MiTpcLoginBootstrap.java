@@ -10,7 +10,7 @@ import org.springframework.context.annotation.ComponentScan;
  */
 @Slf4j
 @EnableAutoConfiguration
-@ComponentScan(basePackages = {"com.xiaomi.mone.tpc", "com.xiaomi.youpin"})
+@ComponentScan(basePackages = {"com.xiaomi.mone.tpc"})
 public class MiTpcLoginBootstrap {
 
     public static void main(String... args) {

@@ -3,7 +3,7 @@ package com.xiaomi.mone.tpc.login;
 import com.xiaomi.mone.tpc.common.vo.AuthAccountVo;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
+import org.junit.platform.commons.util.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.net.URLEncoder;

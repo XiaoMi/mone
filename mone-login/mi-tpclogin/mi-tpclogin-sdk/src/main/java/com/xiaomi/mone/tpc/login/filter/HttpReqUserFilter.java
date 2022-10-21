@@ -101,7 +101,7 @@ public class HttpReqUserFilter implements Filter {
                                 authUserVo.setName(userInfo.getDisplayName());
                                 authUserVo.setEmail(userInfo.getEmail());
                                 authUserVo.setAvatarUrl(userInfo.getAvatar());
-                                authUserVo.setCasUid(userInfo.getUID());
+                                authUserVo.setCasUid(userInfo.getuID());
                                 authUserVo.setDepartmentName(userInfo.getDepartmentName());
                                 UserUtil.setUser(authUserVo);
                                 if (isUserRequest(var1)) {
