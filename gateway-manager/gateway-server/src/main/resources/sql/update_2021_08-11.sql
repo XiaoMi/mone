@@ -1,0 +1,1 @@
+alter table project_env add kc_refresh_token_task_id int default 0;

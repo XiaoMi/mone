@@ -1,0 +1,1 @@
+alter table account add token varchar(200);

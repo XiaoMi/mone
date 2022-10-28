@@ -1,0 +1,2 @@
+ALTER TABLE `apply_machine`
+    ADD COLUMN `env` VARCHAR(64) NOT NULL DEFAULT '';

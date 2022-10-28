@@ -1,0 +1,1 @@
+ALTER TABLE sonarqube_config ADD build_path varchar(255) NULL COMMENT '构建目录';

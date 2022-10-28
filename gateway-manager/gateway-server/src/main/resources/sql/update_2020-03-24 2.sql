@@ -1,0 +1,9 @@
+ALTER TABLE `project_env_machine`
+    ADD COLUMN `app_id` BIGINT(64) NULL DEFAULT 0,
+    ADD COLUMN `used` TINYINT NULL DEFAULT 1,
+    ADD COLUMN `ctime` BIGINT(64) NULL DEFAULT 0,
+    ADD COLUMN `utime` BIGINT(64) NULL DEFAULT 0,
+    ADD COLUMN `version` INT(32) NULL;
+
+ALTER TABLE `project_env`
+    ADD COLUMN `status` INT(11) NULL DEFAULT 1;

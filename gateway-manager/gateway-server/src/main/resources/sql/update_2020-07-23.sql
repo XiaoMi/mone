@@ -1,0 +1,1 @@
+alter table project_pipeline add error_message TEXT;
