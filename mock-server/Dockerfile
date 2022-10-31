@@ -1,4 +1,4 @@
-FROM registry.cn-shenzhen.aliyuncs.com/lingdong_dev/miserver
+FROM miserver
 MAINTAINER dongzhenxing@xiaomi.com
 RUN mkdir -p /home/work/mock-server/
 RUN mkdir -p /home/work/log/mock-server/
