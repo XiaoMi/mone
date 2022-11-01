@@ -1,0 +1,35 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.integration,RegistryProtocol.InvokerDelegete,20,0,2,0,6,0,3,0,2,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.integration,RegistryDirectory,1539,0,264,0,323,0,155,0,23,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.integration,RegistryDirectory.InvokerDelegate,11,0,0,0,4,0,2,0,2,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.integration,RegistryProtocol.ExporterChangeableWrapper,39,0,0,0,12,0,5,0,5,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.integration,RegistryProtocol.OverrideListener,186,0,18,0,39,0,13,0,4,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.integration,RegistryProtocol.DestroyableExporter.new Runnable() {...},37,0,2,0,10,0,3,0,2,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.integration,RegistryDirectory.InvokerComparator,15,0,0,0,3,0,3,0,3,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.integration,RegistryProtocol,577,0,46,0,126,0,47,0,24,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.integration,RegistryProtocol.DestroyableExporter,70,0,0,0,20,0,4,0,4,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.status,RegistryStatusChecker,64,0,8,0,16,0,6,0,2,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.retry,FailedRegisteredTask,13,0,0,0,5,0,2,0,2,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.retry,FailedUnsubscribedTask,26,0,2,0,8,0,3,0,2,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.retry,AbstractRetryTask,138,0,20,0,30,0,15,0,5,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.retry,FailedUnregisteredTask,13,0,0,0,5,0,2,0,2,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.retry,FailedSubscribedTask,26,0,2,0,8,0,3,0,2,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.retry,FailedNotifiedTask,54,0,6,0,17,0,7,0,4,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.support,AbstractRegistryFactory,124,0,8,0,31,0,9,0,5,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.support,AbstractRegistry,1285,0,176,0,261,0,112,0,24,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.support,FailbackRegistry.Holder,49,0,10,0,11,0,8,0,3,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.support,ProviderConsumerRegTable,149,0,16,0,40,0,15,0,7,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.support,ConsumerInvokerWrapper,59,0,0,0,18,0,11,0,11,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.support,FailbackRegistry,951,0,94,0,199,0,76,0,29,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.support,AbstractRegistry.SaveProperties,15,0,0,0,5,0,2,0,2,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.support,SkipFailbackWrapperException,6,0,0,0,3,0,2,0,2,0
+dubbo-registry-zookeeper/dubbo-registry-api,org.apache.dubbo.registry.support,ProviderInvokerWrapper,60,0,0,0,19,0,12,0,12,0
+dubbo-registry-zookeeper/dubbo-remoting-zookeeper,org.apache.dubbo.remoting.zookeeper.zkclient,ZkClientWrapper,205,0,8,0,47,0,19,0,15,0
+dubbo-registry-zookeeper/dubbo-remoting-zookeeper,org.apache.dubbo.remoting.zookeeper.zkclient,ZkclientZookeeperTransporter,8,0,0,0,2,0,2,0,2,0
+dubbo-registry-zookeeper/dubbo-remoting-zookeeper,org.apache.dubbo.remoting.zookeeper.zkclient,ZkclientZookeeperClient.new IZkStateListener() {...},32,0,4,0,9,0,5,0,3,0
+dubbo-registry-zookeeper/dubbo-remoting-zookeeper,org.apache.dubbo.remoting.zookeeper.zkclient,ZkclientZookeeperClient,97,0,2,0,32,0,12,0,11,0
+dubbo-registry-zookeeper/dubbo-remoting-zookeeper,org.apache.dubbo.remoting.zookeeper.support,AbstractZookeeperClient,168,0,20,0,50,0,21,0,11,0
+dubbo-registry-zookeeper/dubbo-remoting-zookeeper,org.apache.dubbo.remoting.zookeeper.curator,CuratorZookeeperTransporter,8,0,0,0,2,0,2,0,2,0
+dubbo-registry-zookeeper/dubbo-remoting-zookeeper,org.apache.dubbo.remoting.zookeeper.curator,CuratorZookeeperClient.CuratorWatcherImpl,44,0,6,0,12,0,6,0,3,0
+dubbo-registry-zookeeper/dubbo-remoting-zookeeper,org.apache.dubbo.remoting.zookeeper.curator,CuratorZookeeperClient,187,0,6,0,55,0,14,0,11,0
+dubbo-registry-zookeeper/dubbo-remoting-zookeeper,org.apache.dubbo.remoting.zookeeper.curator,CuratorZookeeperClient.new ConnectionStateListener() {...},30,0,6,0,8,0,5,0,2,0

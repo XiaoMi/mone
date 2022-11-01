@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ProviderConsumerRegTable.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-registry-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-registry-api</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.registry.support</a> &gt; <span class="el_source">ProviderConsumerRegTable.java</span></div><h1>ProviderConsumerRegTable.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.registry.support;
+
+import org.apache.dubbo.common.Constants;
+import org.apache.dubbo.common.URL;
+import org.apache.dubbo.common.utils.ConcurrentHashSet;
+import org.apache.dubbo.registry.integration.RegistryDirectory;
+import org.apache.dubbo.rpc.Invoker;
+
+import java.util.Collections;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * @date 2017/11/23
+ */
+<span class="nc" id="L32">public class ProviderConsumerRegTable {</span>
+<span class="nc" id="L33">    public static ConcurrentHashMap&lt;String, Set&lt;ProviderInvokerWrapper&gt;&gt; providerInvokers = new ConcurrentHashMap&lt;String, Set&lt;ProviderInvokerWrapper&gt;&gt;();</span>
+<span class="nc" id="L34">    public static ConcurrentHashMap&lt;String, Set&lt;ConsumerInvokerWrapper&gt;&gt; consumerInvokers = new ConcurrentHashMap&lt;String, Set&lt;ConsumerInvokerWrapper&gt;&gt;();</span>
+
+    public static void registerProvider(Invoker invoker, URL registryUrl, URL providerUrl) {
+<span class="nc" id="L37">        ProviderInvokerWrapper wrapperInvoker = new ProviderInvokerWrapper(invoker, registryUrl, providerUrl);</span>
+<span class="nc" id="L38">        String serviceUniqueName = providerUrl.getServiceKey();</span>
+<span class="nc" id="L39">        Set&lt;ProviderInvokerWrapper&gt; invokers = providerInvokers.get(serviceUniqueName);</span>
+<span class="nc bnc" id="L40" title="All 2 branches missed.">        if (invokers == null) {</span>
+<span class="nc" id="L41">            providerInvokers.putIfAbsent(serviceUniqueName, new ConcurrentHashSet&lt;ProviderInvokerWrapper&gt;());</span>
+<span class="nc" id="L42">            invokers = providerInvokers.get(serviceUniqueName);</span>
+        }
+<span class="nc" id="L44">        invokers.add(wrapperInvoker);</span>
+<span class="nc" id="L45">    }</span>
+
+    public static Set&lt;ProviderInvokerWrapper&gt; getProviderInvoker(String serviceUniqueName) {
+<span class="nc" id="L48">        Set&lt;ProviderInvokerWrapper&gt; invokers = providerInvokers.get(serviceUniqueName);</span>
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        if (invokers == null) {</span>
+<span class="nc" id="L50">            return Collections.emptySet();</span>
+        }
+<span class="nc" id="L52">        return invokers;</span>
+    }
+
+    public static ProviderInvokerWrapper getProviderWrapper(Invoker invoker) {
+<span class="nc" id="L56">        URL providerUrl = invoker.getUrl();</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        if (Constants.REGISTRY_PROTOCOL.equals(providerUrl.getProtocol())) {</span>
+<span class="nc" id="L58">            providerUrl = URL.valueOf(providerUrl.getParameterAndDecoded(Constants.EXPORT_KEY));</span>
+        }
+<span class="nc" id="L60">        String serviceUniqueName = providerUrl.getServiceKey();</span>
+<span class="nc" id="L61">        Set&lt;ProviderInvokerWrapper&gt; invokers = providerInvokers.get(serviceUniqueName);</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">        if (invokers == null) {</span>
+<span class="nc" id="L63">            return null;</span>
+        }
+
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        for (ProviderInvokerWrapper providerWrapper : invokers) {</span>
+<span class="nc" id="L67">            Invoker providerInvoker = providerWrapper.getInvoker();</span>
+<span class="nc bnc" id="L68" title="All 2 branches missed.">            if (providerInvoker == invoker) {</span>
+<span class="nc" id="L69">                return providerWrapper;</span>
+            }
+<span class="nc" id="L71">        }</span>
+
+<span class="nc" id="L73">        return null;</span>
+    }
+
+    public static void registerConsumer(Invoker invoker, URL registryUrl, URL consumerUrl, RegistryDirectory registryDirectory) {
+<span class="nc" id="L77">        ConsumerInvokerWrapper wrapperInvoker = new ConsumerInvokerWrapper(invoker, registryUrl, consumerUrl, registryDirectory);</span>
+<span class="nc" id="L78">        String serviceUniqueName = consumerUrl.getServiceKey();</span>
+<span class="nc" id="L79">        Set&lt;ConsumerInvokerWrapper&gt; invokers = consumerInvokers.get(serviceUniqueName);</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        if (invokers == null) {</span>
+<span class="nc" id="L81">            consumerInvokers.putIfAbsent(serviceUniqueName, new ConcurrentHashSet&lt;ConsumerInvokerWrapper&gt;());</span>
+<span class="nc" id="L82">            invokers = consumerInvokers.get(serviceUniqueName);</span>
+        }
+<span class="nc" id="L84">        invokers.add(wrapperInvoker);</span>
+<span class="nc" id="L85">    }</span>
+
+    public static Set&lt;ConsumerInvokerWrapper&gt; getConsumerInvoker(String serviceUniqueName) {
+<span class="nc" id="L88">        Set&lt;ConsumerInvokerWrapper&gt; invokers = consumerInvokers.get(serviceUniqueName);</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        if (invokers == null) {</span>
+<span class="nc" id="L90">            return Collections.emptySet();</span>
+        }
+<span class="nc" id="L92">        return invokers;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>

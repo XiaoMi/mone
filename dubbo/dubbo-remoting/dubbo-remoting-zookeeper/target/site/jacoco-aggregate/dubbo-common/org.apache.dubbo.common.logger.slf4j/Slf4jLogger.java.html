@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>Slf4jLogger.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-remoting-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.common.logger.slf4j</a> &gt; <span class="el_source">Slf4jLogger.java</span></div><h1>Slf4jLogger.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.common.logger.slf4j;
+
+import org.apache.dubbo.common.logger.Logger;
+import org.apache.dubbo.common.logger.support.FailsafeLogger;
+
+import org.slf4j.spi.LocationAwareLogger;
+
+import java.io.Serializable;
+
+public class Slf4jLogger implements Logger, Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+<span class="nc" id="L30">    private static final String FQCN = FailsafeLogger.class.getName();</span>
+
+    private final org.slf4j.Logger logger;
+
+    private final LocationAwareLogger locationAwareLogger;
+
+<span class="nc" id="L36">    public Slf4jLogger(org.slf4j.Logger logger) {</span>
+<span class="nc bnc" id="L37" title="All 2 branches missed.">        if (logger instanceof LocationAwareLogger) {</span>
+<span class="nc" id="L38">            locationAwareLogger = (LocationAwareLogger) logger;</span>
+        } else {
+<span class="nc" id="L40">            locationAwareLogger = null;</span>
+        }
+<span class="nc" id="L42">        this.logger = logger;</span>
+<span class="nc" id="L43">    }</span>
+
+    @Override
+    public void trace(String msg) {
+<span class="nc bnc" id="L47" title="All 2 branches missed.">        if (locationAwareLogger != null) {</span>
+<span class="nc" id="L48">            locationAwareLogger.log(null, FQCN, LocationAwareLogger.TRACE_INT, msg, null, null);</span>
+<span class="nc" id="L49">            return;</span>
+        }
+<span class="nc" id="L51">        logger.trace(msg);</span>
+<span class="nc" id="L52">    }</span>
+
+    @Override
+    public void trace(Throwable e) {
+<span class="nc bnc" id="L56" title="All 2 branches missed.">        if (locationAwareLogger != null) {</span>
+<span class="nc" id="L57">            locationAwareLogger.log(null, FQCN, LocationAwareLogger.TRACE_INT, e.getMessage(), null, e);</span>
+<span class="nc" id="L58">            return;</span>
+        }
+<span class="nc" id="L60">        logger.trace(e.getMessage(), e);</span>
+<span class="nc" id="L61">    }</span>
+
+    @Override
+    public void trace(String msg, Throwable e) {
+<span class="nc bnc" id="L65" title="All 2 branches missed.">        if (locationAwareLogger != null) {</span>
+<span class="nc" id="L66">            locationAwareLogger.log(null, FQCN, LocationAwareLogger.TRACE_INT, msg, null, e);</span>
+<span class="nc" id="L67">            return;</span>
+        }
+<span class="nc" id="L69">        logger.trace(msg, e);</span>
+<span class="nc" id="L70">    }</span>
+
+    @Override
+    public void debug(String msg) {
+<span class="nc bnc" id="L74" title="All 2 branches missed.">        if (locationAwareLogger != null) {</span>
+<span class="nc" id="L75">            locationAwareLogger.log(null, FQCN, LocationAwareLogger.DEBUG_INT, msg, null, null);</span>
+<span class="nc" id="L76">            return;</span>
+        }
+<span class="nc" id="L78">        logger.debug(msg);</span>
+<span class="nc" id="L79">    }</span>
+
+    @Override
+    public void debug(Throwable e) {
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        if (locationAwareLogger != null) {</span>
+<span class="nc" id="L84">            locationAwareLogger.log(null, FQCN, LocationAwareLogger.DEBUG_INT, e.getMessage(), null, e);</span>
+<span class="nc" id="L85">            return;</span>
+        }
+<span class="nc" id="L87">        logger.debug(e.getMessage(), e);</span>
+<span class="nc" id="L88">    }</span>
+
+    @Override
+    public void debug(String msg, Throwable e) {
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        if (locationAwareLogger != null) {</span>
+<span class="nc" id="L93">            locationAwareLogger.log(null, FQCN, LocationAwareLogger.DEBUG_INT, msg, null, e);</span>
+<span class="nc" id="L94">            return;</span>
+        }
+<span class="nc" id="L96">        logger.debug(msg, e);</span>
+<span class="nc" id="L97">    }</span>
+
+    @Override
+    public void info(String msg) {
+<span class="nc bnc" id="L101" title="All 2 branches missed.">        if (locationAwareLogger != null) {</span>
+<span class="nc" id="L102">            locationAwareLogger.log(null, FQCN, LocationAwareLogger.INFO_INT, msg, null, null);</span>
+<span class="nc" id="L103">            return;</span>
+        }
+<span class="nc" id="L105">        logger.info(msg);</span>
+<span class="nc" id="L106">    }</span>
+
+    @Override
+    public void info(Throwable e) {
+<span class="nc bnc" id="L110" title="All 2 branches missed.">        if (locationAwareLogger != null) {</span>
+<span class="nc" id="L111">            locationAwareLogger.log(null, FQCN, LocationAwareLogger.INFO_INT, e.getMessage(), null, e);</span>
+<span class="nc" id="L112">            return;</span>
+        }
+<span class="nc" id="L114">        logger.info(e.getMessage(), e);</span>
+<span class="nc" id="L115">    }</span>
+
+    @Override
+    public void info(String msg, Throwable e) {
+<span class="nc bnc" id="L119" title="All 2 branches missed.">        if (locationAwareLogger != null) {</span>
+<span class="nc" id="L120">            locationAwareLogger.log(null, FQCN, LocationAwareLogger.INFO_INT, msg, null, e);</span>
+<span class="nc" id="L121">            return;</span>
+        }
+<span class="nc" id="L123">        logger.info(msg, e);</span>
+<span class="nc" id="L124">    }</span>
+
+    @Override
+    public void warn(String msg) {
+<span class="nc bnc" id="L128" title="All 2 branches missed.">        if (locationAwareLogger != null) {</span>
+<span class="nc" id="L129">            locationAwareLogger.log(null, FQCN, LocationAwareLogger.WARN_INT, msg, null, null);</span>
+<span class="nc" id="L130">            return;</span>
+        }
+<span class="nc" id="L132">        logger.warn(msg);</span>
+<span class="nc" id="L133">    }</span>
+
+    @Override
+    public void warn(Throwable e) {
+<span class="nc bnc" id="L137" title="All 2 branches missed.">        if (locationAwareLogger != null) {</span>
+<span class="nc" id="L138">            locationAwareLogger.log(null, FQCN, LocationAwareLogger.WARN_INT, e.getMessage(), null, e);</span>
+<span class="nc" id="L139">            return;</span>
+        }
+<span class="nc" id="L141">        logger.warn(e.getMessage(), e);</span>
+<span class="nc" id="L142">    }</span>
+
+    @Override
+    public void warn(String msg, Throwable e) {
+<span class="nc bnc" id="L146" title="All 2 branches missed.">        if (locationAwareLogger != null) {</span>
+<span class="nc" id="L147">            locationAwareLogger.log(null, FQCN, LocationAwareLogger.WARN_INT, msg, null, e);</span>
+<span class="nc" id="L148">            return;</span>
+        }
+<span class="nc" id="L150">        logger.warn(msg, e);</span>
+<span class="nc" id="L151">    }</span>
+
+    @Override
+    public void error(String msg) {
+<span class="nc bnc" id="L155" title="All 2 branches missed.">        if (locationAwareLogger != null) {</span>
+<span class="nc" id="L156">            locationAwareLogger.log(null, FQCN, LocationAwareLogger.ERROR_INT, msg, null, null);</span>
+<span class="nc" id="L157">            return;</span>
+        }
+<span class="nc" id="L159">        logger.error(msg);</span>
+<span class="nc" id="L160">    }</span>
+
+    @Override
+    public void error(Throwable e) {
+<span class="nc bnc" id="L164" title="All 2 branches missed.">        if (locationAwareLogger != null) {</span>
+<span class="nc" id="L165">            locationAwareLogger.log(null, FQCN, LocationAwareLogger.ERROR_INT, e.getMessage(), null, e);</span>
+<span class="nc" id="L166">            return;</span>
+        }
+<span class="nc" id="L168">        logger.error(e.getMessage(), e);</span>
+<span class="nc" id="L169">    }</span>
+
+    @Override
+    public void error(String msg, Throwable e) {
+<span class="nc bnc" id="L173" title="All 2 branches missed.">        if (locationAwareLogger != null) {</span>
+<span class="nc" id="L174">            locationAwareLogger.log(null, FQCN, LocationAwareLogger.ERROR_INT, msg, null, e);</span>
+<span class="nc" id="L175">            return;</span>
+        }
+<span class="nc" id="L177">        logger.error(msg, e);</span>
+<span class="nc" id="L178">    }</span>
+
+    @Override
+    public boolean isTraceEnabled() {
+<span class="nc" id="L182">        return logger.isTraceEnabled();</span>
+    }
+
+    @Override
+    public boolean isDebugEnabled() {
+<span class="nc" id="L187">        return logger.isDebugEnabled();</span>
+    }
+
+    @Override
+    public boolean isInfoEnabled() {
+<span class="nc" id="L192">        return logger.isInfoEnabled();</span>
+    }
+
+    @Override
+    public boolean isWarnEnabled() {
+<span class="nc" id="L197">        return logger.isWarnEnabled();</span>
+    }
+
+    @Override
+    public boolean isErrorEnabled() {
+<span class="nc" id="L202">        return logger.isErrorEnabled();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>

@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>Stack.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-remoting-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.common.utils</a> &gt; <span class="el_source">Stack.java</span></div><h1>Stack.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.common.utils;
+
+import java.util.ArrayList;
+import java.util.EmptyStackException;
+import java.util.List;
+
+/**
+ * Stack.
+ */
+
+public class Stack&lt;E&gt; {
+<span class="nc" id="L28">    private int mSize = 0;</span>
+
+<span class="nc" id="L30">    private List&lt;E&gt; mElements = new ArrayList&lt;E&gt;();</span>
+
+<span class="nc" id="L32">    public Stack() {</span>
+<span class="nc" id="L33">    }</span>
+
+    /**
+     * push.
+     *
+     * @param ele
+     */
+    public void push(E ele) {
+<span class="nc bnc" id="L41" title="All 2 branches missed.">        if (mElements.size() &gt; mSize) {</span>
+<span class="nc" id="L42">            mElements.set(mSize, ele);</span>
+        } else {
+<span class="nc" id="L44">            mElements.add(ele);</span>
+        }
+<span class="nc" id="L46">        mSize++;</span>
+<span class="nc" id="L47">    }</span>
+
+    /**
+     * pop.
+     *
+     * @return the last element.
+     */
+    public E pop() {
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        if (mSize == 0) {</span>
+<span class="nc" id="L56">            throw new EmptyStackException();</span>
+        }
+<span class="nc" id="L58">        return mElements.set(--mSize, null);</span>
+    }
+
+    /**
+     * peek.
+     *
+     * @return the last element.
+     */
+    public E peek() {
+<span class="nc bnc" id="L67" title="All 2 branches missed.">        if (mSize == 0) {</span>
+<span class="nc" id="L68">            throw new EmptyStackException();</span>
+        }
+<span class="nc" id="L70">        return mElements.get(mSize - 1);</span>
+    }
+
+    /**
+     * get.
+     *
+     * @param index index.
+     * @return element.
+     */
+    public E get(int index) {
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        if (index &gt;= mSize) {</span>
+<span class="nc" id="L81">            throw new IndexOutOfBoundsException(&quot;Index: &quot; + index + &quot;, Size: &quot; + mSize);</span>
+        }
+
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        return index &lt; 0 ? mElements.get(index + mSize) : mElements.get(index);</span>
+    }
+
+    /**
+     * set.
+     *
+     * @param index index.
+     * @param value element.
+     * @return old element.
+     */
+    public E set(int index, E value) {
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        if (index &gt;= mSize) {</span>
+<span class="nc" id="L96">            throw new IndexOutOfBoundsException(&quot;Index: &quot; + index + &quot;, Size: &quot; + mSize);</span>
+        }
+
+<span class="nc bnc" id="L99" title="All 2 branches missed.">        return mElements.set(index &lt; 0 ? index + mSize : index, value);</span>
+    }
+
+    /**
+     * remove.
+     *
+     * @param index
+     * @return element
+     */
+    public E remove(int index) {
+<span class="nc bnc" id="L109" title="All 2 branches missed.">        if (index &gt;= mSize) {</span>
+<span class="nc" id="L110">            throw new IndexOutOfBoundsException(&quot;Index: &quot; + index + &quot;, Size: &quot; + mSize);</span>
+        }
+
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        E ret = mElements.remove(index &lt; 0 ? index + mSize : index);</span>
+<span class="nc" id="L114">        mSize--;</span>
+<span class="nc" id="L115">        return ret;</span>
+    }
+
+    /**
+     * get stack size.
+     *
+     * @return size.
+     */
+    public int size() {
+<span class="nc" id="L124">        return mSize;</span>
+    }
+
+    /**
+     * is empty.
+     *
+     * @return empty or not.
+     */
+    public boolean isEmpty() {
+<span class="nc bnc" id="L133" title="All 2 branches missed.">        return mSize == 0;</span>
+    }
+
+    /**
+     * clear stack.
+     */
+    public void clear() {
+<span class="nc" id="L140">        mSize = 0;</span>
+<span class="nc" id="L141">        mElements.clear();</span>
+<span class="nc" id="L142">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>

@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>EagerThreadPool.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-remoting-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.common.threadpool.support.eager</a> &gt; <span class="el_source">EagerThreadPool.java</span></div><h1>EagerThreadPool.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.dubbo.common.threadpool.support.eager;
+
+import org.apache.dubbo.common.Constants;
+import org.apache.dubbo.common.URL;
+import org.apache.dubbo.common.threadlocal.NamedInternalThreadFactory;
+import org.apache.dubbo.common.threadpool.ThreadPool;
+import org.apache.dubbo.common.threadpool.support.AbortPolicyWithReport;
+
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * EagerThreadPool
+ * When the core threads are all in busy,
+ * create new thread instead of putting task into blocking queue.
+ */
+<span class="nc" id="L34">public class EagerThreadPool implements ThreadPool {</span>
+
+    @Override
+    public Executor getExecutor(URL url) {
+<span class="nc" id="L38">        String name = url.getParameter(Constants.THREAD_NAME_KEY, Constants.DEFAULT_THREAD_NAME);</span>
+<span class="nc" id="L39">        int cores = url.getParameter(Constants.CORE_THREADS_KEY, Constants.DEFAULT_CORE_THREADS);</span>
+<span class="nc" id="L40">        int threads = url.getParameter(Constants.THREADS_KEY, Integer.MAX_VALUE);</span>
+<span class="nc" id="L41">        int queues = url.getParameter(Constants.QUEUES_KEY, Constants.DEFAULT_QUEUES);</span>
+<span class="nc" id="L42">        int alive = url.getParameter(Constants.ALIVE_KEY, Constants.DEFAULT_ALIVE);</span>
+
+        // init queue and executor
+<span class="nc bnc" id="L45" title="All 2 branches missed.">        TaskQueue&lt;Runnable&gt; taskQueue = new TaskQueue&lt;Runnable&gt;(queues &lt;= 0 ? 1 : queues);</span>
+<span class="nc" id="L46">        EagerThreadPoolExecutor executor = new EagerThreadPoolExecutor(cores,</span>
+                threads,
+                alive,
+                TimeUnit.MILLISECONDS,
+                taskQueue,
+                new NamedInternalThreadFactory(name, true),
+                new AbortPolicyWithReport(name, url));
+<span class="nc" id="L53">        taskQueue.setExecutor(executor);</span>
+<span class="nc" id="L54">        return executor;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>

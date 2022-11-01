@@ -1,0 +1,439 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>FailbackRegistry.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-registry-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-registry-api</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.registry.support</a> &gt; <span class="el_source">FailbackRegistry.java</span></div><h1>FailbackRegistry.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.registry.support;
+
+import org.apache.dubbo.common.Constants;
+import org.apache.dubbo.common.URL;
+import org.apache.dubbo.common.timer.HashedWheelTimer;
+import org.apache.dubbo.common.utils.NamedThreadFactory;
+import org.apache.dubbo.registry.NotifyListener;
+import org.apache.dubbo.registry.retry.FailedNotifiedTask;
+import org.apache.dubbo.registry.retry.FailedRegisteredTask;
+import org.apache.dubbo.registry.retry.FailedSubscribedTask;
+import org.apache.dubbo.registry.retry.FailedUnregisteredTask;
+import org.apache.dubbo.registry.retry.FailedUnsubscribedTask;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * FailbackRegistry. (SPI, Prototype, ThreadSafe)
+ */
+public abstract class FailbackRegistry extends AbstractRegistry {
+
+    /*  retry task map */
+
+<span class="nc" id="L46">    private final ConcurrentMap&lt;URL, FailedRegisteredTask&gt; failedRegistered = new ConcurrentHashMap&lt;URL, FailedRegisteredTask&gt;();</span>
+
+<span class="nc" id="L48">    private final ConcurrentMap&lt;URL, FailedUnregisteredTask&gt; failedUnregistered = new ConcurrentHashMap&lt;URL, FailedUnregisteredTask&gt;();</span>
+
+<span class="nc" id="L50">    private final ConcurrentMap&lt;Holder, FailedSubscribedTask&gt; failedSubscribed = new ConcurrentHashMap&lt;Holder, FailedSubscribedTask&gt;();</span>
+
+<span class="nc" id="L52">    private final ConcurrentMap&lt;Holder, FailedUnsubscribedTask&gt; failedUnsubscribed = new ConcurrentHashMap&lt;Holder, FailedUnsubscribedTask&gt;();</span>
+
+<span class="nc" id="L54">    private final ConcurrentMap&lt;Holder, FailedNotifiedTask&gt; failedNotified = new ConcurrentHashMap&lt;Holder, FailedNotifiedTask&gt;();</span>
+
+    /**
+     * The time in milliseconds the retryExecutor will wait
+     */
+    private final int retryPeriod;
+
+    // Timer for failure retry, regular check if there is a request for failure, and if there is, an unlimited retry
+    private final HashedWheelTimer retryTimer;
+
+    public FailbackRegistry(URL url) {
+<span class="nc" id="L65">        super(url);</span>
+<span class="nc" id="L66">        this.retryPeriod = url.getParameter(Constants.REGISTRY_RETRY_PERIOD_KEY, Constants.DEFAULT_REGISTRY_RETRY_PERIOD);</span>
+
+        // since the retry task will not be very much. 128 ticks is enough.
+<span class="nc" id="L69">        retryTimer = new HashedWheelTimer(new NamedThreadFactory(&quot;DubboRegistryRetryTimer&quot;, true), retryPeriod, TimeUnit.MILLISECONDS, 128);</span>
+<span class="nc" id="L70">    }</span>
+
+    public void removeFailedRegisteredTask(URL url) {
+<span class="nc" id="L73">        failedRegistered.remove(url);</span>
+<span class="nc" id="L74">    }</span>
+
+    public void removeFailedUnregisteredTask(URL url) {
+<span class="nc" id="L77">        failedUnregistered.remove(url);</span>
+<span class="nc" id="L78">    }</span>
+
+    public void removeFailedSubscribedTask(URL url, NotifyListener listener) {
+<span class="nc" id="L81">        Holder h = new Holder(url, listener);</span>
+<span class="nc" id="L82">        failedSubscribed.remove(h);</span>
+<span class="nc" id="L83">    }</span>
+
+    public void removeFailedUnsubscribedTask(URL url, NotifyListener listener) {
+<span class="nc" id="L86">        Holder h = new Holder(url, listener);</span>
+<span class="nc" id="L87">        failedUnsubscribed.remove(h);</span>
+<span class="nc" id="L88">    }</span>
+
+    public void removeFailedNotifiedTask(URL url, NotifyListener listener) {
+<span class="nc" id="L91">        Holder h = new Holder(url, listener);</span>
+<span class="nc" id="L92">        failedNotified.remove(h);</span>
+<span class="nc" id="L93">    }</span>
+
+    private void addFailedRegistered(URL url) {
+<span class="nc" id="L96">        FailedRegisteredTask oldOne = failedRegistered.get(url);</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">        if (oldOne != null) {</span>
+<span class="nc" id="L98">            return;</span>
+        }
+<span class="nc" id="L100">        FailedRegisteredTask newTask = new FailedRegisteredTask(url, this);</span>
+<span class="nc" id="L101">        oldOne = failedRegistered.putIfAbsent(url, newTask);</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">        if (oldOne == null) {</span>
+            // never has a retry task. then start a new task for retry.
+<span class="nc" id="L104">            retryTimer.newTimeout(newTask, retryPeriod, TimeUnit.MILLISECONDS);</span>
+        }
+<span class="nc" id="L106">    }</span>
+
+    private void removeFailedRegistered(URL url) {
+<span class="nc" id="L109">        FailedRegisteredTask f = failedRegistered.remove(url);</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">        if (f != null) {</span>
+<span class="nc" id="L111">            f.cancel();</span>
+        }
+<span class="nc" id="L113">    }</span>
+
+    private void addFailedUnregistered(URL url) {
+<span class="nc" id="L116">        FailedUnregisteredTask oldOne = failedUnregistered.get(url);</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        if (oldOne != null) {</span>
+<span class="nc" id="L118">            return;</span>
+        }
+<span class="nc" id="L120">        FailedUnregisteredTask newTask = new FailedUnregisteredTask(url, this);</span>
+<span class="nc" id="L121">        oldOne = failedUnregistered.putIfAbsent(url, newTask);</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        if (oldOne == null) {</span>
+            // never has a retry task. then start a new task for retry.
+<span class="nc" id="L124">            retryTimer.newTimeout(newTask, retryPeriod, TimeUnit.MILLISECONDS);</span>
+        }
+<span class="nc" id="L126">    }</span>
+
+    private void removeFailedUnregistered(URL url) {
+<span class="nc" id="L129">        FailedUnregisteredTask f = failedUnregistered.remove(url);</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">        if (f != null) {</span>
+<span class="nc" id="L131">            f.cancel();</span>
+        }
+<span class="nc" id="L133">    }</span>
+
+    private void addFailedSubscribed(URL url, NotifyListener listener) {
+<span class="nc" id="L136">        Holder h = new Holder(url, listener);</span>
+<span class="nc" id="L137">        FailedSubscribedTask oldOne = failedSubscribed.get(h);</span>
+<span class="nc bnc" id="L138" title="All 2 branches missed.">        if (oldOne != null) {</span>
+<span class="nc" id="L139">            return;</span>
+        }
+<span class="nc" id="L141">        FailedSubscribedTask newTask = new FailedSubscribedTask(url, this, listener);</span>
+<span class="nc" id="L142">        oldOne = failedSubscribed.putIfAbsent(h, newTask);</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        if (oldOne == null) {</span>
+            // never has a retry task. then start a new task for retry.
+<span class="nc" id="L145">            retryTimer.newTimeout(newTask, retryPeriod, TimeUnit.MILLISECONDS);</span>
+        }
+<span class="nc" id="L147">    }</span>
+
+    private void removeFailedSubscribed(URL url, NotifyListener listener) {
+<span class="nc" id="L150">        Holder h = new Holder(url, listener);</span>
+<span class="nc" id="L151">        FailedSubscribedTask f = failedSubscribed.remove(h);</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">        if (f != null) {</span>
+<span class="nc" id="L153">            f.cancel();</span>
+        }
+<span class="nc" id="L155">        removeFailedUnsubscribed(url, listener);</span>
+<span class="nc" id="L156">        removeFailedNotified(url, listener);</span>
+<span class="nc" id="L157">    }</span>
+
+    private void addFailedUnsubscribed(URL url, NotifyListener listener) {
+<span class="nc" id="L160">        Holder h = new Holder(url, listener);</span>
+<span class="nc" id="L161">        FailedUnsubscribedTask oldOne = failedUnsubscribed.get(h);</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">        if (oldOne != null) {</span>
+<span class="nc" id="L163">            return;</span>
+        }
+<span class="nc" id="L165">        FailedUnsubscribedTask newTask = new FailedUnsubscribedTask(url, this, listener);</span>
+<span class="nc" id="L166">        oldOne = failedUnsubscribed.putIfAbsent(h, newTask);</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">        if (oldOne == null) {</span>
+            // never has a retry task. then start a new task for retry.
+<span class="nc" id="L169">            retryTimer.newTimeout(newTask, retryPeriod, TimeUnit.MILLISECONDS);</span>
+        }
+<span class="nc" id="L171">    }</span>
+
+    private void removeFailedUnsubscribed(URL url, NotifyListener listener) {
+<span class="nc" id="L174">        Holder h = new Holder(url, listener);</span>
+<span class="nc" id="L175">        FailedUnsubscribedTask f = failedUnsubscribed.remove(h);</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">        if (f != null) {</span>
+<span class="nc" id="L177">            f.cancel();</span>
+        }
+<span class="nc" id="L179">    }</span>
+
+    private void addFailedNotified(URL url, NotifyListener listener, List&lt;URL&gt; urls) {
+<span class="nc" id="L182">        Holder h = new Holder(url, listener);</span>
+<span class="nc" id="L183">        FailedNotifiedTask newTask = new FailedNotifiedTask(url, listener);</span>
+<span class="nc" id="L184">        FailedNotifiedTask f = failedNotified.putIfAbsent(h, newTask);</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">        if (f == null) {</span>
+            // never has a retry task. then start a new task for retry.
+<span class="nc" id="L187">            newTask.addUrlToRetry(urls);</span>
+<span class="nc" id="L188">            retryTimer.newTimeout(newTask, retryPeriod, TimeUnit.MILLISECONDS);</span>
+        } else {
+            // just add urls which needs retry.
+<span class="nc" id="L191">            newTask.addUrlToRetry(urls);</span>
+        }
+<span class="nc" id="L193">    }</span>
+
+    private void removeFailedNotified(URL url, NotifyListener listener) {
+<span class="nc" id="L196">        Holder h = new Holder(url, listener);</span>
+<span class="nc" id="L197">        FailedNotifiedTask f = failedNotified.remove(h);</span>
+<span class="nc bnc" id="L198" title="All 2 branches missed.">        if (f != null) {</span>
+<span class="nc" id="L199">            f.cancel();</span>
+        }
+<span class="nc" id="L201">    }</span>
+
+    public ConcurrentMap&lt;URL, FailedRegisteredTask&gt; getFailedRegistered() {
+<span class="nc" id="L204">        return failedRegistered;</span>
+    }
+
+    public ConcurrentMap&lt;URL, FailedUnregisteredTask&gt; getFailedUnregistered() {
+<span class="nc" id="L208">        return failedUnregistered;</span>
+    }
+
+    public ConcurrentMap&lt;Holder, FailedSubscribedTask&gt; getFailedSubscribed() {
+<span class="nc" id="L212">        return failedSubscribed;</span>
+    }
+
+    public ConcurrentMap&lt;Holder, FailedUnsubscribedTask&gt; getFailedUnsubscribed() {
+<span class="nc" id="L216">        return failedUnsubscribed;</span>
+    }
+
+    public ConcurrentMap&lt;Holder, FailedNotifiedTask&gt; getFailedNotified() {
+<span class="nc" id="L220">        return failedNotified;</span>
+    }
+
+    @Override
+    public void register(URL url) {
+<span class="nc" id="L225">        super.register(url);</span>
+<span class="nc" id="L226">        removeFailedRegistered(url);</span>
+<span class="nc" id="L227">        removeFailedUnregistered(url);</span>
+        try {
+            // Sending a registration request to the server side
+<span class="nc" id="L230">            doRegister(url);</span>
+<span class="nc" id="L231">        } catch (Exception e) {</span>
+<span class="nc" id="L232">            Throwable t = e;</span>
+
+            // If the startup detection is opened, the Exception is thrown directly.
+<span class="nc bnc" id="L235" title="All 2 branches missed.">            boolean check = getUrl().getParameter(Constants.CHECK_KEY, true)</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">                    &amp;&amp; url.getParameter(Constants.CHECK_KEY, true)</span>
+<span class="nc bnc" id="L237" title="All 2 branches missed.">                    &amp;&amp; !Constants.CONSUMER_PROTOCOL.equals(url.getProtocol());</span>
+<span class="nc" id="L238">            boolean skipFailback = t instanceof SkipFailbackWrapperException;</span>
+<span class="nc bnc" id="L239" title="All 4 branches missed.">            if (check || skipFailback) {</span>
+<span class="nc bnc" id="L240" title="All 2 branches missed.">                if (skipFailback) {</span>
+<span class="nc" id="L241">                    t = t.getCause();</span>
+                }
+<span class="nc" id="L243">                throw new IllegalStateException(&quot;Failed to register &quot; + url + &quot; to registry &quot; + getUrl().getAddress() + &quot;, cause: &quot; + t.getMessage(), t);</span>
+            } else {
+<span class="nc" id="L245">                logger.error(&quot;Failed to register &quot; + url + &quot;, waiting for retry, cause: &quot; + t.getMessage(), t);</span>
+            }
+
+            // Record a failed registration request to a failed list, retry regularly
+<span class="nc" id="L249">            addFailedRegistered(url);</span>
+<span class="nc" id="L250">        }</span>
+<span class="nc" id="L251">    }</span>
+
+    @Override
+    public void unregister(URL url) {
+<span class="nc" id="L255">        super.unregister(url);</span>
+<span class="nc" id="L256">        removeFailedRegistered(url);</span>
+<span class="nc" id="L257">        removeFailedUnregistered(url);</span>
+        try {
+            // Sending a cancellation request to the server side
+<span class="nc" id="L260">            doUnregister(url);</span>
+<span class="nc" id="L261">        } catch (Exception e) {</span>
+<span class="nc" id="L262">            Throwable t = e;</span>
+
+            // If the startup detection is opened, the Exception is thrown directly.
+<span class="nc bnc" id="L265" title="All 2 branches missed.">            boolean check = getUrl().getParameter(Constants.CHECK_KEY, true)</span>
+<span class="nc bnc" id="L266" title="All 2 branches missed.">                    &amp;&amp; url.getParameter(Constants.CHECK_KEY, true)</span>
+<span class="nc bnc" id="L267" title="All 2 branches missed.">                    &amp;&amp; !Constants.CONSUMER_PROTOCOL.equals(url.getProtocol());</span>
+<span class="nc" id="L268">            boolean skipFailback = t instanceof SkipFailbackWrapperException;</span>
+<span class="nc bnc" id="L269" title="All 4 branches missed.">            if (check || skipFailback) {</span>
+<span class="nc bnc" id="L270" title="All 2 branches missed.">                if (skipFailback) {</span>
+<span class="nc" id="L271">                    t = t.getCause();</span>
+                }
+<span class="nc" id="L273">                throw new IllegalStateException(&quot;Failed to unregister &quot; + url + &quot; to registry &quot; + getUrl().getAddress() + &quot;, cause: &quot; + t.getMessage(), t);</span>
+            } else {
+<span class="nc" id="L275">                logger.error(&quot;Failed to uregister &quot; + url + &quot;, waiting for retry, cause: &quot; + t.getMessage(), t);</span>
+            }
+
+            // Record a failed registration request to a failed list, retry regularly
+<span class="nc" id="L279">            addFailedUnregistered(url);</span>
+<span class="nc" id="L280">        }</span>
+<span class="nc" id="L281">    }</span>
+
+    @Override
+    public void subscribe(URL url, NotifyListener listener) {
+<span class="nc" id="L285">        super.subscribe(url, listener);</span>
+<span class="nc" id="L286">        removeFailedSubscribed(url, listener);</span>
+        try {
+            // Sending a subscription request to the server side
+<span class="nc" id="L289">            doSubscribe(url, listener);</span>
+<span class="nc" id="L290">        } catch (Exception e) {</span>
+<span class="nc" id="L291">            Throwable t = e;</span>
+
+<span class="nc" id="L293">            List&lt;URL&gt; urls = getCacheUrls(url);</span>
+<span class="nc bnc" id="L294" title="All 4 branches missed.">            if (urls != null &amp;&amp; !urls.isEmpty()) {</span>
+<span class="nc" id="L295">                notify(url, listener, urls);</span>
+<span class="nc" id="L296">                logger.error(&quot;Failed to subscribe &quot; + url + &quot;, Using cached list: &quot; + urls + &quot; from cache file: &quot; + getUrl().getParameter(Constants.FILE_KEY, System.getProperty(&quot;user.home&quot;) + &quot;/dubbo-registry-&quot; + url.getHost() + &quot;.cache&quot;) + &quot;, cause: &quot; + t.getMessage(), t);</span>
+            } else {
+                // If the startup detection is opened, the Exception is thrown directly.
+<span class="nc bnc" id="L299" title="All 2 branches missed.">                boolean check = getUrl().getParameter(Constants.CHECK_KEY, true)</span>
+<span class="nc bnc" id="L300" title="All 2 branches missed.">                        &amp;&amp; url.getParameter(Constants.CHECK_KEY, true);</span>
+<span class="nc" id="L301">                boolean skipFailback = t instanceof SkipFailbackWrapperException;</span>
+<span class="nc bnc" id="L302" title="All 4 branches missed.">                if (check || skipFailback) {</span>
+<span class="nc bnc" id="L303" title="All 2 branches missed.">                    if (skipFailback) {</span>
+<span class="nc" id="L304">                        t = t.getCause();</span>
+                    }
+<span class="nc" id="L306">                    throw new IllegalStateException(&quot;Failed to subscribe &quot; + url + &quot;, cause: &quot; + t.getMessage(), t);</span>
+                } else {
+<span class="nc" id="L308">                    logger.error(&quot;Failed to subscribe &quot; + url + &quot;, waiting for retry, cause: &quot; + t.getMessage(), t);</span>
+                }
+            }
+
+            // Record a failed registration request to a failed list, retry regularly
+<span class="nc" id="L313">            addFailedSubscribed(url, listener);</span>
+<span class="nc" id="L314">        }</span>
+<span class="nc" id="L315">    }</span>
+
+    @Override
+    public void unsubscribe(URL url, NotifyListener listener) {
+<span class="nc" id="L319">        super.unsubscribe(url, listener);</span>
+<span class="nc" id="L320">        removeFailedSubscribed(url, listener);</span>
+        try {
+            // Sending a canceling subscription request to the server side
+<span class="nc" id="L323">            doUnsubscribe(url, listener);</span>
+<span class="nc" id="L324">        } catch (Exception e) {</span>
+<span class="nc" id="L325">            Throwable t = e;</span>
+
+            // If the startup detection is opened, the Exception is thrown directly.
+<span class="nc bnc" id="L328" title="All 2 branches missed.">            boolean check = getUrl().getParameter(Constants.CHECK_KEY, true)</span>
+<span class="nc bnc" id="L329" title="All 2 branches missed.">                    &amp;&amp; url.getParameter(Constants.CHECK_KEY, true);</span>
+<span class="nc" id="L330">            boolean skipFailback = t instanceof SkipFailbackWrapperException;</span>
+<span class="nc bnc" id="L331" title="All 4 branches missed.">            if (check || skipFailback) {</span>
+<span class="nc bnc" id="L332" title="All 2 branches missed.">                if (skipFailback) {</span>
+<span class="nc" id="L333">                    t = t.getCause();</span>
+                }
+<span class="nc" id="L335">                throw new IllegalStateException(&quot;Failed to unsubscribe &quot; + url + &quot; to registry &quot; + getUrl().getAddress() + &quot;, cause: &quot; + t.getMessage(), t);</span>
+            } else {
+<span class="nc" id="L337">                logger.error(&quot;Failed to unsubscribe &quot; + url + &quot;, waiting for retry, cause: &quot; + t.getMessage(), t);</span>
+            }
+
+            // Record a failed registration request to a failed list, retry regularly
+<span class="nc" id="L341">            addFailedUnsubscribed(url, listener);</span>
+<span class="nc" id="L342">        }</span>
+<span class="nc" id="L343">    }</span>
+
+    @Override
+    protected void notify(URL url, NotifyListener listener, List&lt;URL&gt; urls) {
+<span class="nc bnc" id="L347" title="All 2 branches missed.">        if (url == null) {</span>
+<span class="nc" id="L348">            throw new IllegalArgumentException(&quot;notify url == null&quot;);</span>
+        }
+<span class="nc bnc" id="L350" title="All 2 branches missed.">        if (listener == null) {</span>
+<span class="nc" id="L351">            throw new IllegalArgumentException(&quot;notify listener == null&quot;);</span>
+        }
+        try {
+<span class="nc" id="L354">            doNotify(url, listener, urls);</span>
+<span class="nc" id="L355">        } catch (Exception t) {</span>
+            // Record a failed registration request to a failed list, retry regularly
+<span class="nc" id="L357">            addFailedNotified(url, listener, urls);</span>
+<span class="nc" id="L358">            logger.error(&quot;Failed to notify for subscribe &quot; + url + &quot;, waiting for retry, cause: &quot; + t.getMessage(), t);</span>
+<span class="nc" id="L359">        }</span>
+<span class="nc" id="L360">    }</span>
+
+    protected void doNotify(URL url, NotifyListener listener, List&lt;URL&gt; urls) {
+<span class="nc" id="L363">        super.notify(url, listener, urls);</span>
+<span class="nc" id="L364">    }</span>
+
+    @Override
+    protected void recover() throws Exception {
+        // register
+<span class="nc" id="L369">        Set&lt;URL&gt; recoverRegistered = new HashSet&lt;URL&gt;(getRegistered());</span>
+<span class="nc bnc" id="L370" title="All 2 branches missed.">        if (!recoverRegistered.isEmpty()) {</span>
+<span class="nc bnc" id="L371" title="All 2 branches missed.">            if (logger.isInfoEnabled()) {</span>
+<span class="nc" id="L372">                logger.info(&quot;Recover register url &quot; + recoverRegistered);</span>
+            }
+<span class="nc bnc" id="L374" title="All 2 branches missed.">            for (URL url : recoverRegistered) {</span>
+<span class="nc" id="L375">                addFailedRegistered(url);</span>
+<span class="nc" id="L376">            }</span>
+        }
+        // subscribe
+<span class="nc" id="L379">        Map&lt;URL, Set&lt;NotifyListener&gt;&gt; recoverSubscribed = new HashMap&lt;URL, Set&lt;NotifyListener&gt;&gt;(getSubscribed());</span>
+<span class="nc bnc" id="L380" title="All 2 branches missed.">        if (!recoverSubscribed.isEmpty()) {</span>
+<span class="nc bnc" id="L381" title="All 2 branches missed.">            if (logger.isInfoEnabled()) {</span>
+<span class="nc" id="L382">                logger.info(&quot;Recover subscribe url &quot; + recoverSubscribed.keySet());</span>
+            }
+<span class="nc bnc" id="L384" title="All 2 branches missed.">            for (Map.Entry&lt;URL, Set&lt;NotifyListener&gt;&gt; entry : recoverSubscribed.entrySet()) {</span>
+<span class="nc" id="L385">                URL url = entry.getKey();</span>
+<span class="nc bnc" id="L386" title="All 2 branches missed.">                for (NotifyListener listener : entry.getValue()) {</span>
+<span class="nc" id="L387">                    addFailedSubscribed(url, listener);</span>
+<span class="nc" id="L388">                }</span>
+<span class="nc" id="L389">            }</span>
+        }
+<span class="nc" id="L391">    }</span>
+
+    @Override
+    public void destroy() {
+<span class="nc" id="L395">        super.destroy();</span>
+<span class="nc" id="L396">        retryTimer.stop();</span>
+<span class="nc" id="L397">    }</span>
+
+    // ==== Template method ====
+
+    public abstract void doRegister(URL url);
+
+    public abstract void doUnregister(URL url);
+
+    public abstract void doSubscribe(URL url, NotifyListener listener);
+
+    public abstract void doUnsubscribe(URL url, NotifyListener listener);
+
+    static class Holder {
+
+        private final URL url;
+
+        private final NotifyListener notifyListener;
+
+<span class="nc" id="L415">        Holder(URL url, NotifyListener notifyListener) {</span>
+<span class="nc bnc" id="L416" title="All 4 branches missed.">            if (url == null || notifyListener == null) {</span>
+<span class="nc" id="L417">                throw new IllegalArgumentException();</span>
+            }
+<span class="nc" id="L419">            this.url = url;</span>
+<span class="nc" id="L420">            this.notifyListener = notifyListener;</span>
+<span class="nc" id="L421">        }</span>
+
+        @Override
+        public int hashCode() {
+<span class="nc" id="L425">            return url.hashCode() + notifyListener.hashCode();</span>
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+<span class="nc bnc" id="L430" title="All 2 branches missed.">            if (obj instanceof Holder) {</span>
+<span class="nc" id="L431">                Holder h = (Holder) obj;</span>
+<span class="nc bnc" id="L432" title="All 4 branches missed.">                return this.url.equals(h.url) &amp;&amp; this.notifyListener.equals(h.notifyListener);</span>
+            } else {
+<span class="nc" id="L434">                return false;</span>
+            }
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>
