@@ -15,7 +15,7 @@
 				<el-col :span="10" :offset="1">
 					<el-form-item :label="`${$i18n.t('serviceAddress')}:`">
 						<div class="grpc-port">
-							<el-input v-model="grpcParams.addrs" placeholder='eg:127.0.0.1:8080,10.38.167.161:8999'/>
+							<el-input v-model="grpcParams.addrs" placeholder='eg:127.0.0.1:8080,10.11.111.111:8999'/>
 							<span class="grpc-prot-tips">{{$i18n.t('multipleAddressesWillRandomlySelectOneCall')}}</span>
 						</div>
 					</el-form-item>

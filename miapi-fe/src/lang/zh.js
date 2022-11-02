@@ -180,7 +180,7 @@ export default {
   DubboType: 'dubbo类型',
   NonDubboType: '非dubbo类型',
   documentTitle: '文档标题',
-  China: '中国区',
+  China: '中国',
   controllerName: 'Controller名称',
   projectRelatedController: '项目相关Controller',
   importFromProject: '从项目导入',

@@ -177,7 +177,7 @@ export default defineComponent({
       store.dispatch('app/toggleSideBar')
     }
     const logout = () => {
-      window.location.href = `https://${document.domain}/_aegis/cas/logout`
+      window.location.href = ``
     }
     const handleSelf = () => {
       router.push({ path: PATH.ACCOUNT })
