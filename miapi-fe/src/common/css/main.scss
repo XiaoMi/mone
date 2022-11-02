@@ -1,0 +1,34 @@
+@import url(./form.scss);
+
+*,*::after,*::before{
+    padding:0 ;
+    margin:0;
+    box-sizing: border-box;
+}
+html,body{
+	min-width: 1200px;
+    background-color: rgba(242, 242, 242, 1) !important;
+}
+.el-container{
+    height: 100%;
+}
+body #app, html #app, td, th {
+		font-family: 'PingFangSC-Regular', 'PingFang SC', sans-serif !important;
+}
+li{
+    list-style: none;
+}
+a{
+    text-decoration: none;
+    color: #303133;
+}
+.el-textarea__inner{
+	font-size: 14px !important;
+	font-family: PingFang SC,Arial,Microsoft YaHei,"\9ED1\4F53","\5B8B\4F53",sans-serif;
+}
+.el-form-item__label-wrap .el-form-item__label{
+    color:rgba(0, 0, 0, 0.84)
+}
+body .el-tabs__active-bar {
+	background-color: #108EE9;
+}
