@@ -136,6 +136,9 @@ public class ApiGroupInfoController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
+        if (true) {
+            return groupService.getApiGroupListAll(null);
+        }
 
         String username = user != null ? user.getUsername() : request.getHeader(SKIP_MI_DUN_USER_NAME);
 
@@ -206,6 +209,9 @@ public class ApiGroupInfoController {
         if (null == user) {
             response.sendError(401, "未登录或者无权限");
             return null;
+        }
+        if (true) {
+            return groupService.getApiGroupListAll2(null);
         }
         String username = user.getUsername();
         QueryRoleRequest queryRoleRequest = new QueryRoleRequest();
