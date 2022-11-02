@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<configuration scan="false" debug="false">
+    <property resource="tesla-application.properties"></property>
+
+    <property name="LOG_GROUP" value="${youpin.log.group}"/>
+
+    <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <pattern>%date [%thread] %-5level %X{tid} %logger{50}:%L - tesla %msg%n</pattern>
+        </layout>
+    </appender>
+
+    <appender name="logfile"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <File>${log.path}/server.log</File>
+        <encoder>
+            <layout>
+                <pattern>%d|%-5level|%X{tid}|%thread|%logger{40}|tesla|%msg%n</pattern>
+            </layout>
+        </encoder>
+
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>${log.path}/server.log.%d{yyyy-MM-dd-HH}</FileNamePattern>
+            <maxHistory>148</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <appender name="asyncLogFile" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>5024</queueSize>
+        <appender-ref ref="logfile"/>
+    </appender>
+
+    <appender name="accessLogFile"
+              class="com.xiaomi.youpin.jcommon.log.RecreateRollingFileAppender">
+        <File>${log.path}/access.log</File>
+        <encoder>
+            <layout>
+                <pattern>%d|%-5level|%X{tid}|%thread|access|tesla|%msg|%X{uri}|%X{remote}|%X{delay}|%X{code}|%X{parent}|%X{gwid}|%X{app}|%X{path}%n</pattern>
+            </layout>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>${log.path}/access.log.%d{yyyy-MM-dd-HH}.zip</FileNamePattern>
+            <maxHistory>14</maxHistory>
+        </rollingPolicy>
+    </appender>
+    <appender name="asyncAccessLog" class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>5120</queueSize>
+        <appender-ref ref="accessLogFile"/>
+    </appender>
+
+    <logger name="com.xiaomi.youpin.gateway.common.AccessLog" level="INFO" additivity="false">
+        <appender-ref ref="asyncAccessLog"/>
+    </logger>
+    <logger name="org.springframework" level="ERROR"/>
+    <logger name="ch.qos.logback" level="ERROR"/>
+    <logger name="com.xiaomi.data.push.service.state" level="ERROR"/>
+    <logger name="org.reflections.Reflections" level="ERROR"/>
+    <logger name="com.xiaomi.infra.galaxy" level="ERROR"/>
+
+    <root level="INFO">
+        <appender-ref ref="stdout"/>
+        <appender-ref ref="asyncLogFile"/>
+    </root>
+
+
+</configuration>
