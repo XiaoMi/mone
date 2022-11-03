@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ExecutionList.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-remoting-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.common.concurrent</a> &gt; <span class="el_source">ExecutionList.java</span></div><h1>ExecutionList.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.common.concurrent;
+
+import org.apache.dubbo.common.logger.Logger;
+import org.apache.dubbo.common.logger.LoggerFactory;
+import org.apache.dubbo.common.utils.NamedThreadFactory;
+
+import java.util.concurrent.Executor;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * &lt;p&gt;A list of listeners, each with an associated {@code Executor}, that
+ * guarantees that every {@code Runnable} that is {@linkplain #add added} will
+ * be executed after {@link #execute()} is called. Any {@code Runnable} added
+ * after the call to {@code execute} is still guaranteed to execute. There is no
+ * guarantee, however, that listeners will be executed in the order that they
+ * are added.
+ * &lt;p&gt;
+ * &lt;p&gt;Exceptions thrown by a listener will be propagated up to the executor.
+ * Any exception thrown during {@code Executor.execute} (e.g., a {@code
+ * RejectedExecutionException} or an exception thrown by {@linkplain
+ * MoreExecutors#sameThreadExecutor inline execution}) will be caught and
+ * logged.
+ */
+public final class ExecutionList {
+    // Logger to log exceptions caught when running runnables.
+<span class="nc" id="L44">    static final Logger logger = LoggerFactory.getLogger(ExecutionList.class.getName());</span>
+
+    /**
+     * The runnable, executor pairs to execute.  This acts as a stack threaded through the
+     * {@link RunnableExecutorPair#next} field.
+     */
+    private RunnableExecutorPair runnables;
+
+    private boolean executed;
+
+<span class="nc" id="L54">    private static final Executor DEFAULT_EXECUTOR = new ThreadPoolExecutor(1, 10, 60000L, TimeUnit.MILLISECONDS, new SynchronousQueue&lt;Runnable&gt;(), new NamedThreadFactory(&quot;DubboFutureCallbackDefault&quot;, true));</span>
+
+    /**
+     * Creates a new, empty {@link ExecutionList}.
+     */
+<span class="nc" id="L59">    public ExecutionList() {</span>
+<span class="nc" id="L60">    }</span>
+
+    /**
+     * Adds the {@code Runnable} and accompanying {@code Executor} to the list of
+     * listeners to execute. If execution has already begun, the listener is
+     * executed immediately.
+     * &lt;p&gt;
+     * &lt;p&gt;Note: For fast, lightweight listeners that would be safe to execute in
+     * any thread, consider {@link MoreExecutors#sameThreadExecutor}. For heavier
+     * listeners, {@code sameThreadExecutor()} carries some caveats: First, the
+     * thread that the listener runs in depends on whether the {@code
+     * ExecutionList} has been executed at the time it is added. In particular,
+     * listeners may run in the thread that calls {@code add}. Second, the thread
+     * that calls {@link #execute} may be an internal implementation thread, such
+     * as an RPC network thread, and {@code sameThreadExecutor()} listeners may
+     * run in this thread. Finally, during the execution of a {@code
+     * sameThreadExecutor} listener, all other registered but unexecuted
+     * listeners are prevented from running, even if those listeners are to run
+     * in other executors.
+     */
+    public void add(Runnable runnable, Executor executor) {
+        // Fail fast on a null.  We throw NPE here because the contract of
+        // Executor states that it throws NPE on null listener, so we propagate
+        // that contract up into the add method as well.
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        if (runnable == null) {</span>
+<span class="nc" id="L85">            throw new NullPointerException(&quot;Runnable can not be null!&quot;);</span>
+        }
+<span class="nc bnc" id="L87" title="All 2 branches missed.">        if (executor == null) {</span>
+<span class="nc" id="L88">            logger.info(&quot;Executor for listenablefuture is null, will use default executor!&quot;);</span>
+<span class="nc" id="L89">            executor = DEFAULT_EXECUTOR;</span>
+        }
+        // Lock while we check state.  We must maintain the lock while adding the
+        // new pair so that another thread can't run the list out from under us.
+        // We only add to the list if we have not yet started execution.
+<span class="nc" id="L94">        synchronized (this) {</span>
+<span class="nc bnc" id="L95" title="All 2 branches missed.">            if (!executed) {</span>
+<span class="nc" id="L96">                runnables = new RunnableExecutorPair(runnable, executor, runnables);</span>
+<span class="nc" id="L97">                return;</span>
+            }
+<span class="nc" id="L99">        }</span>
+        // Execute the runnable immediately. Because of scheduling this may end up
+        // getting called before some of the previously added runnables, but we're
+        // OK with that.  If we want to change the contract to guarantee ordering
+        // among runnables we'd have to modify the logic here to allow it.
+<span class="nc" id="L104">        executeListener(runnable, executor);</span>
+<span class="nc" id="L105">    }</span>
+
+    /**
+     * Runs this execution list, executing all existing pairs in the order they
+     * were added. However, note that listeners added after this point may be
+     * executed before those previously added, and note that the execution order
+     * of all listeners is ultimately chosen by the implementations of the
+     * supplied executors.
+     * &lt;p&gt;
+     * &lt;p&gt;This method is idempotent. Calling it several times in parallel is
+     * semantically equivalent to calling it exactly once.
+     *
+     * @since 10.0 (present in 1.0 as {@code run})
+     */
+    public void execute() {
+        // Lock while we update our state so the add method above will finish adding
+        // any listeners before we start to run them.
+        RunnableExecutorPair list;
+<span class="nc" id="L123">        synchronized (this) {</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">            if (executed) {</span>
+<span class="nc" id="L125">                return;</span>
+            }
+<span class="nc" id="L127">            executed = true;</span>
+<span class="nc" id="L128">            list = runnables;</span>
+<span class="nc" id="L129">            runnables = null;  // allow GC to free listeners even if this stays around for a while.</span>
+<span class="nc" id="L130">        }</span>
+        // If we succeeded then list holds all the runnables we to execute.  The pairs in the stack are
+        // in the opposite order from how they were added so we need to reverse the list to fulfill our
+        // contract.
+        // This is somewhat annoying, but turns out to be very fast in practice.  Alternatively, we
+        // could drop the contract on the method that enforces this queue like behavior since depending
+        // on it is likely to be a bug anyway.
+
+        // N.B. All writes to the list and the next pointers must have happened before the above
+        // synchronized block, so we can iterate the list without the lock held here.
+<span class="nc" id="L140">        RunnableExecutorPair reversedList = null;</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">        while (list != null) {</span>
+<span class="nc" id="L142">            RunnableExecutorPair tmp = list;</span>
+<span class="nc" id="L143">            list = list.next;</span>
+<span class="nc" id="L144">            tmp.next = reversedList;</span>
+<span class="nc" id="L145">            reversedList = tmp;</span>
+<span class="nc" id="L146">        }</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">        while (reversedList != null) {</span>
+<span class="nc" id="L148">            executeListener(reversedList.runnable, reversedList.executor);</span>
+<span class="nc" id="L149">            reversedList = reversedList.next;</span>
+        }
+<span class="nc" id="L151">    }</span>
+
+    /**
+     * Submits the given runnable to the given {@link Executor} catching and logging all
+     * {@linkplain RuntimeException runtime exceptions} thrown by the executor.
+     */
+    private static void executeListener(Runnable runnable, Executor executor) {
+        try {
+<span class="nc" id="L159">            executor.execute(runnable);</span>
+<span class="nc" id="L160">        } catch (RuntimeException e) {</span>
+            // Log it and keep going, bad runnable and/or executor.  Don't
+            // punish the other runnables if we're given a bad one.  We only
+            // catch RuntimeException because we want Errors to propagate up.
+<span class="nc" id="L164">            logger.error(&quot;RuntimeException while executing runnable &quot;</span>
+                    + runnable + &quot; with executor &quot; + executor, e);
+<span class="nc" id="L166">        }</span>
+<span class="nc" id="L167">    }</span>
+
+    private static final class RunnableExecutorPair {
+        final Runnable runnable;
+        final Executor executor;
+        RunnableExecutorPair next;
+
+<span class="nc" id="L174">        RunnableExecutorPair(Runnable runnable, Executor executor, RunnableExecutorPair next) {</span>
+<span class="nc" id="L175">            this.runnable = runnable;</span>
+<span class="nc" id="L176">            this.executor = executor;</span>
+<span class="nc" id="L177">            this.next = next;</span>
+<span class="nc" id="L178">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>

@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ConcurrentHashSet.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-remoting-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.common.utils</a> &gt; <span class="el_source">ConcurrentHashSet.java</span></div><h1>ConcurrentHashSet.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.common.utils;
+
+import java.util.AbstractSet;
+import java.util.ConcurrentModificationException;
+import java.util.Iterator;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+public class ConcurrentHashSet&lt;E&gt; extends AbstractSet&lt;E&gt; implements Set&lt;E&gt;, java.io.Serializable {
+
+    private static final long serialVersionUID = -8672117787651310382L;
+
+<span class="nc" id="L30">    private static final Object PRESENT = new Object();</span>
+
+    private final ConcurrentMap&lt;E, Object&gt; map;
+
+<span class="nc" id="L34">    public ConcurrentHashSet() {</span>
+<span class="nc" id="L35">        map = new ConcurrentHashMap&lt;E, Object&gt;();</span>
+<span class="nc" id="L36">    }</span>
+
+<span class="nc" id="L38">    public ConcurrentHashSet(int initialCapacity) {</span>
+<span class="nc" id="L39">        map = new ConcurrentHashMap&lt;E, Object&gt;(initialCapacity);</span>
+<span class="nc" id="L40">    }</span>
+
+    /**
+     * Returns an iterator over the elements in this set. The elements are
+     * returned in no particular order.
+     *
+     * @return an Iterator over the elements in this set
+     * @see ConcurrentModificationException
+     */
+    @Override
+    public Iterator&lt;E&gt; iterator() {
+<span class="nc" id="L51">        return map.keySet().iterator();</span>
+    }
+
+    /**
+     * Returns the number of elements in this set (its cardinality).
+     *
+     * @return the number of elements in this set (its cardinality)
+     */
+    @Override
+    public int size() {
+<span class="nc" id="L61">        return map.size();</span>
+    }
+
+    /**
+     * Returns &lt;tt&gt;true&lt;/tt&gt; if this set contains no elements.
+     *
+     * @return &lt;tt&gt;true&lt;/tt&gt; if this set contains no elements
+     */
+    @Override
+    public boolean isEmpty() {
+<span class="nc" id="L71">        return map.isEmpty();</span>
+    }
+
+    /**
+     * Returns &lt;tt&gt;true&lt;/tt&gt; if this set contains the specified element. More
+     * formally, returns &lt;tt&gt;true&lt;/tt&gt; if and only if this set contains an
+     * element &lt;tt&gt;e&lt;/tt&gt; such that
+     * &lt;tt&gt;(o==null&amp;nbsp;?&amp;nbsp;e==null&amp;nbsp;:&amp;nbsp;o.equals(e))&lt;/tt&gt;.
+     *
+     * @param o element whose presence in this set is to be tested
+     * @return &lt;tt&gt;true&lt;/tt&gt; if this set contains the specified element
+     */
+    @Override
+    public boolean contains(Object o) {
+<span class="nc" id="L85">        return map.containsKey(o);</span>
+    }
+
+    /**
+     * Adds the specified element to this set if it is not already present. More
+     * formally, adds the specified element &lt;tt&gt;e&lt;/tt&gt; to this set if this set
+     * contains no element &lt;tt&gt;e2&lt;/tt&gt; such that
+     * &lt;tt&gt;(e==null&amp;nbsp;?&amp;nbsp;e2==null&amp;nbsp;:&amp;nbsp;e.equals(e2))&lt;/tt&gt;. If this
+     * set already contains the element, the call leaves the set unchanged and
+     * returns &lt;tt&gt;false&lt;/tt&gt;.
+     *
+     * @param e element to be added to this set
+     * @return &lt;tt&gt;true&lt;/tt&gt; if this set did not already contain the specified
+     * element
+     */
+    @Override
+    public boolean add(E e) {
+<span class="nc bnc" id="L102" title="All 2 branches missed.">        return map.put(e, PRESENT) == null;</span>
+    }
+
+    /**
+     * Removes the specified element from this set if it is present. More
+     * formally, removes an element &lt;tt&gt;e&lt;/tt&gt; such that
+     * &lt;tt&gt;(o==null&amp;nbsp;?&amp;nbsp;e==null&amp;nbsp;:&amp;nbsp;o.equals(e))&lt;/tt&gt;, if this
+     * set contains such an element. Returns &lt;tt&gt;true&lt;/tt&gt; if this set contained
+     * the element (or equivalently, if this set changed as a result of the
+     * call). (This set will not contain the element once the call returns.)
+     *
+     * @param o object to be removed from this set, if present
+     * @return &lt;tt&gt;true&lt;/tt&gt; if the set contained the specified element
+     */
+    @Override
+    public boolean remove(Object o) {
+<span class="nc bnc" id="L118" title="All 2 branches missed.">        return map.remove(o) == PRESENT;</span>
+    }
+
+    /**
+     * Removes all of the elements from this set. The set will be empty after
+     * this call returns.
+     */
+    @Override
+    public void clear() {
+<span class="nc" id="L127">        map.clear();</span>
+<span class="nc" id="L128">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>
