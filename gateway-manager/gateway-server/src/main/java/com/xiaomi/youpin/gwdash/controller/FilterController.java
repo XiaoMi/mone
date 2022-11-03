@@ -1,80 +1,85 @@
-//package com.xiaomi.youpin.gwdash.controller;
-//
-//import com.xiaomi.youpin.gitlab.bo.GitlabCommit;
-//import com.xiaomi.youpin.gwdash.bo.FilterInfoBo;
-//import com.xiaomi.youpin.gwdash.bo.FilterInfoWithoutDataBo;
-//import com.xiaomi.youpin.gwdash.bo.SessionAccount;
-//import com.xiaomi.youpin.gwdash.common.Result;
+package com.xiaomi.youpin.gwdash.controller;
+
+import com.xiaomi.youpin.gitlab.bo.GitlabCommit;
+import com.xiaomi.youpin.gwdash.bo.FilterInfoBo;
+import com.xiaomi.youpin.gwdash.bo.FilterInfoWithoutDataBo;
+import com.xiaomi.youpin.gwdash.bo.SessionAccount;
+import com.xiaomi.youpin.gwdash.common.Result;
 //import com.xiaomi.youpin.gwdash.service.FilterService;
-//import com.xiaomi.youpin.gwdash.service.LoginService;
-//import lombok.extern.slf4j.Slf4j;
-//import org.eclipse.jgit.api.errors.GitAPIException;
-//import org.springframework.beans.factory.annotation.Autowired;
-//import org.springframework.http.ResponseEntity;
-//import org.springframework.web.bind.annotation.RequestMapping;
-//import org.springframework.web.bind.annotation.RequestMethod;
-//import org.springframework.web.bind.annotation.RequestParam;
-//import org.springframework.web.bind.annotation.RestController;
-//
-//import javax.servlet.http.HttpServletRequest;
-//import javax.servlet.http.HttpServletResponse;
-//import java.io.IOException;
-//import java.util.List;
-//import java.util.Map;
-//import java.util.Optional;
-//
-//import static com.xiaomi.youpin.gwdash.common.Consts.ROLE_ADMIN;
-//
-///**
-// * @author dp
-// */
-//@RestController
-//@Slf4j
-//public class FilterController {
-//
+import com.xiaomi.youpin.gwdash.service.LoginService;
+import lombok.extern.slf4j.Slf4j;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.nutz.dao.Cnd;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.*;
+
+import static com.xiaomi.youpin.gwdash.common.Consts.ROLE_ADMIN;
+
+/**
+ * @author dp
+ */
+@RestController
+@Slf4j
+public class FilterController {
+
 //    @Autowired
 //    private FilterService filterService;
-//
-//    @Autowired
-//    private LoginService loginService;
-//
-//    /**
-//     * 展示 filter 列表
-//     **/
-//    @RequestMapping(value = "/api/filter/list", method = RequestMethod.GET)
-//    public Result<Map<String, Object>> getFilterList(HttpServletRequest request,
-//                                                     HttpServletResponse response,
-//                                                     @RequestParam(required = false, value = "status", defaultValue = "0") int status,
-//                                                     @RequestParam("page") int page,
-//                                                     @RequestParam("pageSize") int pageSize) throws IOException {
-//        SessionAccount account = loginService.getAccountFromSession(request);
-//        if (!Optional.ofNullable(account).isPresent()) {
-//            log.warn("[FilterController.getApiList] current user not have valid account info in session");
-//            response.sendError(401, "未登录或者无权限");
-//            return null;
-//        }
-//        Map<String, Object> result = filterService.getFilterList(page, pageSize, status);
-//        return Result.success(result);
-//    }
-//
-//    /**
-//     * 展示 filter 列表
-//     **/
-//    @RequestMapping(value = "/api/filter/effect/list", method = RequestMethod.GET)
-//    public List<FilterInfoWithoutDataBo> getAllEffectList(HttpServletRequest request, HttpServletResponse response) throws IOException {
-//        SessionAccount account = loginService.getAccountFromSession(request);
-//        if (!Optional.ofNullable(account).isPresent()) {
-//            log.warn("[FilterController.getAllEffectList] current user not have valid account info in session");
-//            response.sendError(401, "未登录或者无权限");
-//            return null;
-//        }
-//        return filterService.getAllEffectList();
-//    }
-//
-//    /**
-//     * 创建新的filter
-//     * 新建
-//     */
+
+    @Autowired
+    private LoginService loginService;
+
+    /**
+     * 展示 filter 列表
+     **/
+    @RequestMapping(value = "/api/filter/list", method = RequestMethod.GET)
+    public Result<Map<String, Object>> getFilterList(HttpServletRequest request,
+                                                     HttpServletResponse response,
+                                                     @RequestParam(required = false, value = "status", defaultValue = "0") int status,
+                                                     @RequestParam("page") int page,
+                                                     @RequestParam("pageSize") int pageSize) throws IOException {
+        SessionAccount account = loginService.getAccountFromSession(request);
+        if (!Optional.ofNullable(account).isPresent()) {
+            log.warn("[FilterController.getApiList] current user not have valid account info in session");
+            response.sendError(401, "未登录或者无权限");
+            return null;
+        }
+        //Map<String, Object> result = filterService.getFilterList(page, pageSize, status);
+        Map<String, Object> result = new HashMap<>();
+        result.put("pluginList", null);
+        result.put("total", 0);
+        result.put("page", page);
+        result.put("pageSize", pageSize);
+        return Result.success(result);
+    }
+
+    /**
+     * 展示 filter 列表
+     **/
+    @RequestMapping(value = "/api/filter/effect/list", method = RequestMethod.GET)
+    public List<FilterInfoWithoutDataBo> getAllEffectList(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        SessionAccount account = loginService.getAccountFromSession(request);
+        if (!Optional.ofNullable(account).isPresent()) {
+            log.warn("[FilterController.getAllEffectList] current user not have valid account info in session");
+            response.sendError(401, "未登录或者无权限");
+            return null;
+        }
+        //return filterService.getAllEffectList();
+        return new ArrayList<>();
+    }
+
+    /**
+     * 创建新的filter
+     * 新建
+     */
 //    @RequestMapping(value = "/api/filter/new", method = RequestMethod.POST)
 //    public Result<Boolean> createNewFilter(
 //            HttpServletRequest request,
@@ -298,5 +303,5 @@
 //        int accountId = account.getId().intValue();
 //        return filterService.rate(id, 1, accountId, rate);
 //    }
-//
-//}
+
+}
