@@ -1,0 +1,106 @@
+/*
+ *  Copyright 2020 Xiaomi
+ *
+ *      Licensed under the Apache License, Version 2.0 (the "License");
+ *      you may not use this file except in compliance with the License.
+ *      You may obtain a copy of the License at
+ *
+ *          http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *      Unless required by applicable law or agreed to in writing, software
+ *      distributed under the License is distributed on an "AS IS" BASIS,
+ *      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *      See the License for the specific language governing permissions and
+ *      limitations under the License.
+ */
+
+
+.flowchart-panel {
+  width: 100%;
+  display: flex;
+  flex-grow: 1;
+}
+.flowchart-panel .left {
+  padding: 10px 0;
+  width: 200px;
+  background: #f0f1f9;
+  border-right: 1px solid #aaa;
+}
+.flowchart-panel .left h3,
+.flowchart-panel .left input {
+  margin-left: 10px;
+}
+.flowchart-panel .left ul.nodes {
+  color: #333;
+  list-style: none;
+}
+.flowchart-panel .left ul.nodes li {
+  text-indent: 30px;
+  font-size: 14px;
+  padding: 8px 0;
+  margin: 8px 0;
+  list-style: none;
+}
+.flowchart-panel .left ul.nodes li a {
+  float: right;
+  padding-right: 10px;
+  text-decoration: none;
+  display: none;
+}
+.flowchart-panel .left ul.nodes li:hover {
+  background-color: #d8dcf0;
+}
+.flowchart-panel .left ul.nodes li:hover a {
+  display: inline;
+}
+.flowchart-panel .middle {
+  flex-grow: 1;
+  position: relative;
+  margin: 0 10px;
+}
+.flowchart-panel .right {
+  width: 300px;
+  padding: 10px;
+  position: relative;
+  color: #555;
+  border-left: 1px solid #aaa;
+}
+.flowchart-panel .right p {
+  margin: 10px 0;
+  font-size: 12px;
+}
+.flowchart-panel .right h4 {
+  margin: 20px 0;
+}
+._jsPlumb_connector,
+._jsPlumb_startpoint,
+._jsPlumb_endpoint,
+.endpointTargetLabel,
+.endpointSourceLabel {
+  cursor: pointer;
+}
+.btns {
+  padding: 20px;
+  border-top: 1px solid #aaa;
+}
+.btns button {
+  padding: 4px 16px;
+  background: #2196f3;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  outline: 0;
+  margin: 0 10px; 
+  
+}
+.btns button:hover {
+  background: #0c7cd5;
+}
+.btns button:active {
+  background: #0960a5;
+}
+#jsonOutput {
+  width: 99%;
+  height: 100px;
+  margin: 0 auto;
+}
