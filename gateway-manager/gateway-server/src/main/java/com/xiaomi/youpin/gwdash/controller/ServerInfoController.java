@@ -2,7 +2,6 @@ package com.xiaomi.youpin.gwdash.controller;
 
 import com.google.common.collect.Maps;
 import com.xiaomi.youpin.gwdash.bo.SessionAccount;
-import com.xiaomi.youpin.gwdash.common.UmaniWrapper;
 import com.xiaomi.youpin.gwdash.dao.model.TCustomeConfig;
 import com.xiaomi.youpin.gwdash.service.CustomConfigService;
 import com.xiaomi.youpin.gwdash.service.LoginService;
@@ -48,9 +47,6 @@ public class ServerInfoController {
         } else {
             map.put("serverEnv", serverEnv);
         }
-        try {
-            UmaniWrapper.getUmani(url, website).sentUsername(sessionAccount.getUsername());
-        } catch (Throwable e) {}
         return map;
     }
 }

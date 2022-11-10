@@ -24,11 +24,9 @@ import com.xiaomi.youpin.gwdash.context.DashServerContext;
 import com.xiaomi.youpin.gwdash.exception.CommonError;
 import com.xiaomi.youpin.gwdash.service.impl.TenantComponent;
 import com.youpin.xiaomi.tesla.bo.GatewayInfo;
-import com.youpin.xiaomi.tesla.service.TeslaGatewayService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.dubbo.common.Constants;
-import org.apache.dubbo.config.annotation.Reference;
 import org.apache.dubbo.rpc.RpcContext;
+import org.apache.dubbo.rpc.cluster.router.address.Address;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Dao;
 import org.slf4j.Logger;
@@ -121,8 +119,8 @@ public class AgentService {
 
     public Result<Map> getAgentDetailInfo(String ip, String port) {
         try {
-            RpcContext.getContext().setAttachment(Constants.PROVIDER_IP, ip);
-            RpcContext.getContext().setAttachment(Constants.PROVIDER_PORT, port);
+            Address address = new Address(ip, Integer.parseInt(port));
+            RpcContext.getContext().setAttachment("address", address);
             String tenant = tenantComponent.getTenement();
             Map obj = (Map) teslaGatewayServiceGroup.getGatewayInfo(tenant);
             Map data = (Map) obj.get("data");
