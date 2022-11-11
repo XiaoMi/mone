@@ -79,7 +79,7 @@ public class FilterInfoWithoutDataBo {
 
 //    @One(target = ProjectCompileRecord.class, key = "id", field = "compileId")
 //    private ProjectCompileRecord projectCompileRecord;
-    private CompileRecord projectCompileRecord;
+//    private CompileRecord projectCompileRecord;
 
     @Many(target = UserRateBo.class, field = "theRateId")
     private List<UserRateBo> userRateBos;

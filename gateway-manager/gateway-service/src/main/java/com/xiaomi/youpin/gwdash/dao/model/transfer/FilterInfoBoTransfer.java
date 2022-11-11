@@ -16,7 +16,7 @@
 
 package com.xiaomi.youpin.gwdash.dao.model.transfer;
 
-import com.xiaomi.youpin.gwdash.bo.CompileRecord;
+//import com.xiaomi.youpin.gwdash.bo.CompileRecord;
 import com.xiaomi.youpin.gwdash.bo.UserRateBo;
 import lombok.Data;
 import org.nutz.dao.entity.annotation.Column;
@@ -104,7 +104,7 @@ public class FilterInfoBoTransfer {
 
 //    @One(target = ProjectCompileRecord.class, key = "id", field = "compileId")
 //    private ProjectCompileRecord projectCompileRecord;
-    private CompileRecord projectCompileRecord;
+//    private CompileRecord projectCompileRecord;
 
 
     @Many(target = UserRateBo.class, field = "theRateId")

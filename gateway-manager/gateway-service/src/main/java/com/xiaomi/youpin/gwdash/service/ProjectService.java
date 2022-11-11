@@ -5,9 +5,9 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
-import com.xiaomi.youpin.gwdash.bo.ProjectBo;
+//import com.xiaomi.youpin.gwdash.bo.ProjectBo;
 import com.xiaomi.youpin.gwdash.bo.ProjectStatusEnum;
-import com.xiaomi.youpin.gwdash.bo.SearchAppNameParam;
+//import com.xiaomi.youpin.gwdash.bo.SearchAppNameParam;
 import com.xiaomi.youpin.gwdash.bo.SessionAccount;
 import com.xiaomi.youpin.gwdash.common.Result;
 import com.xiaomi.youpin.gwdash.dao.model.*;
@@ -43,8 +43,8 @@ public class ProjectService {
     @Autowired
     private Dao dao;
 
-    @Reference(check = false, interfaceClass = IProjectService.class, group = "${gwdash.dubbo.group}")
-    private IProjectService projectService;
+//    @Reference(check = false, interfaceClass = IProjectService.class, group = "${gwdash.dubbo.group}")
+//    private IProjectService projectService;
 
     @Autowired
     private UserService userService;
@@ -82,48 +82,49 @@ public class ProjectService {
         if (!getAppNameCache().asMap().isEmpty()) {
             return;
         }
-        Set<String> appNames = this.projectService.getAllAppNames().getData();
-        appNames.forEach(appName -> getAppNameCache().put(appName, true));
-        log.info("gw manager project service reloaded app name cache, size is {}", getAppNameCache().size());
+//        Set<String> appNames = this.projectService.getAllAppNames().getData();
+//        appNames.forEach(appName -> getAppNameCache().put(appName, true));
+//        log.info("gw manager project service reloaded app name cache, size is {}", getAppNameCache().size());
     }
 
     public boolean existedAppName(String input) {
         if (1==1){
             return true;
         }
-        if (getAppNameCache().asMap().isEmpty()) {
-            this.reloadCache();
-        }
-        try {
-            if (getAppNameCache().asMap().containsKey(input)) {
-                return getAppNameCache().asMap().get(input);
-            }
-            return getAppNameCache().get(input, () -> {
-                List<ProjectBo> projects = this.projectService.getProjectByName(input, true);
-                boolean res = projects != null && !projects.isEmpty();
-                getAppNameCache().put(input, res);
-
-                if (!res) {
-                    log.warn("ProjectService existedAppName invalid app name {}, cache size of {}",
-                            input, getAppNameCache().size());
-                }
-                return res;
-            });
-        } catch (ExecutionException e) {
-            log.error("ProjectService existedAppName error", e);
-            return false;
-        }
+        return false;
+//        if (getAppNameCache().asMap().isEmpty()) {
+//            this.reloadCache();
+//        }
+//        try {
+//            if (getAppNameCache().asMap().containsKey(input)) {
+//                return getAppNameCache().asMap().get(input);
+//            }
+//            return getAppNameCache().get(input, () -> {
+//                List<ProjectBo> projects = this.projectService.getProjectByName(input, true);
+//                boolean res = projects != null && !projects.isEmpty();
+//                getAppNameCache().put(input, res);
+//
+//                if (!res) {
+//                    log.warn("ProjectService existedAppName invalid app name {}, cache size of {}",
+//                            input, getAppNameCache().size());
+//                }
+//                return res;
+//            });
+//        } catch (ExecutionException e) {
+//            log.error("ProjectService existedAppName error", e);
+//            return false;
+//        }
     }
 
     public Result<Set<String>> getApplicationNames() {
-        Set<String> appNames = projectService.getAllAppNames().getData();
-        log.info("gwdash appnames : [{}]", new Gson().toJson(appNames));
-        return Result.success(appNames);
+//        Set<String> appNames = projectService.getAllAppNames().getData();
+//        log.info("gwdash appnames : [{}]", new Gson().toJson(appNames));
+        return Result.success(null);
     }
 
-    public Result<List<String>> getApplicationNames(SearchAppNameParam param) {
-        return Result.success(projectService.searchAppNames(param).getData());
-    }
+//    public Result<List<String>> getApplicationNames(SearchAppNameParam param) {
+//        return Result.success(projectService.searchAppNames(param).getData());
+//    }
 
     public boolean isProjectSuperUser(SessionAccount account) {
         long count = account.getRoles().stream().filter(role -> "project-superuser".equals(role.getName())).count();

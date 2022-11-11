@@ -28,7 +28,7 @@ import com.xiaomi.youpin.gwdash.dao.model.Project;
 import com.xiaomi.youpin.gwdash.dao.model.ProjectGen;
 import com.xiaomi.youpin.gwdash.exception.CommonError;
 import com.xiaomi.youpin.gwdash.service.ApiInfoService;
-import com.xiaomi.youpin.gwdash.service.GitlabService;
+//import com.xiaomi.youpin.gwdash.service.GitlabService;
 import com.xiaomi.youpin.gwdash.service.LoginService;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -56,8 +56,8 @@ public class ApiInfoController {
     @Autowired
     private ApiInfoService apiInfoService;
 
-    @Autowired
-    private GitlabService gitlabService;
+//    @Autowired
+//    private GitlabService gitlabService;
 
     @Autowired
     private LoginService loginService;
@@ -309,31 +309,31 @@ public class ApiInfoController {
     }
 
 
-    @RequestMapping(value = "/api/gitlab/commits", method = RequestMethod.POST, consumes = {"application/json"})
-    public Result<CommitHistoryResult> getCommits(@RequestBody GitlabOptParam param) {
-        LOGGER.debug("[ApiInfoController.getCommits] param: {}", param);
-
-        CheckResult chkResult = BizUtils.chkGitlabOptParam(param);
-        if (!chkResult.isValid()) {
-            LOGGER.error("[AccountController.getCommits] invalid param: {}, check result: {}", param, chkResult);
-            return Result.fail(CommonError.InvalidParamError);
-        }
-
-        return gitlabService.getCommits("x.x.x.x", param.getProjectId(), param.getToken(), param.getPath(), param.getBranch());
-    }
-
-    @RequestMapping(value = "/api/gitlab/file", method = RequestMethod.POST, consumes = {"application/json"})
-    public Result<FileContentResult> getFileContent(@RequestBody GitlabOptParam param) {
-        LOGGER.debug("[ApiInfoController.getFileContent] param: {}", param);
-
-        CheckResult chkResult = BizUtils.chkGitlabOptParam(param);
-        if (!chkResult.isValid()) {
-            LOGGER.error("[AccountController.getFileContent] invalid param: {}, check result: {}", param, chkResult);
-            return Result.fail(CommonError.InvalidParamError);
-        }
-
-        return gitlabService.getFileContent("x.x.x.x", param.getProjectId(), param.getToken(), param.getPath(), param.getBranch());
-    }
+//    @RequestMapping(value = "/api/gitlab/commits", method = RequestMethod.POST, consumes = {"application/json"})
+//    public Result<CommitHistoryResult> getCommits(@RequestBody GitlabOptParam param) {
+//        LOGGER.debug("[ApiInfoController.getCommits] param: {}", param);
+//
+//        CheckResult chkResult = BizUtils.chkGitlabOptParam(param);
+//        if (!chkResult.isValid()) {
+//            LOGGER.error("[AccountController.getCommits] invalid param: {}, check result: {}", param, chkResult);
+//            return Result.fail(CommonError.InvalidParamError);
+//        }
+//
+//        return gitlabService.getCommits("x.x.x.x", param.getProjectId(), param.getToken(), param.getPath(), param.getBranch());
+//    }
+//
+//    @RequestMapping(value = "/api/gitlab/file", method = RequestMethod.POST, consumes = {"application/json"})
+//    public Result<FileContentResult> getFileContent(@RequestBody GitlabOptParam param) {
+//        LOGGER.debug("[ApiInfoController.getFileContent] param: {}", param);
+//
+//        CheckResult chkResult = BizUtils.chkGitlabOptParam(param);
+//        if (!chkResult.isValid()) {
+//            LOGGER.error("[AccountController.getFileContent] invalid param: {}, check result: {}", param, chkResult);
+//            return Result.fail(CommonError.InvalidParamError);
+//        }
+//
+//        return gitlabService.getFileContent("x.x.x.x", param.getProjectId(), param.getToken(), param.getPath(), param.getBranch());
+//    }
 
     @RequestMapping(value = "/api/apiinfo/urlexist", method = RequestMethod.POST, consumes = {"application/json"})
     public Result<Boolean> existUrl(@RequestBody ApiInfoUpdateParam param) {
