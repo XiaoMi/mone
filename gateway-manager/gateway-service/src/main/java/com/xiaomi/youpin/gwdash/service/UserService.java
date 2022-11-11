@@ -80,7 +80,7 @@ public class UserService implements GWUserServiceAPI {
     }
 
     public List<RoleBo> getAllRolesByProjectName(String projectName) {
-        return accountService.getAllRolesByProjectName(projectName);
+        return null;
     }
 
     public List<Account> getAllAccountList() {
@@ -88,7 +88,7 @@ public class UserService implements GWUserServiceAPI {
     }
 
     public String generateToken(Long userId) {
-        return accountService.generateToken(userId);
+        return null;
     }
 
     public Account registerAccount(AccountRegisterRequest request) {
@@ -96,7 +96,7 @@ public class UserService implements GWUserServiceAPI {
     }
 
     public List<ResourceBo> getUserResource(String userName, String projectName) {
-        return accountService.getUserResource(userName, projectName);
+        return null;
     }
 
     public List<String> describeOwnerGids(String userName) {

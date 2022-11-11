@@ -17,7 +17,6 @@
 package com.xiaomi.youpin.gwdash.config;
 
 import com.google.common.collect.Maps;
-import com.xiaomi.youpin.dubbo.gateway.GateWayProcessor;
 import org.apache.dubbo.config.ApplicationConfig;
 import org.apache.dubbo.config.ProtocolConfig;
 import org.apache.dubbo.config.RegistryConfig;
@@ -71,10 +70,5 @@ public class DubboConfiguration {
         return protocolConfig;
     }
 
-    @Bean
-    public GateWayProcessor gateWayProcessor() {
-        GateWayProcessor processor = new GateWayProcessor(String.valueOf(port));
-        return processor;
-    }
 
 }

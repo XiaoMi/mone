@@ -80,21 +80,21 @@ public class PrivateApiController {
 
     private static final long DEFAULT_TIME_OUT = 6000;
 
-    @RequestMapping(value = "/project/getApplicationNames", method = RequestMethod.GET)
-    public Result<List<String>> getApplicationNames(HttpServletRequest request,
-                                                    @RequestParam(value = "name", required = false)
-                                                            String name,
-                                                    @RequestParam(value = "pageSize", required = false)
-                                                            Integer pageSize,
-                                                    @RequestParam(value = "pageNo", required = false)
-                                                            Integer pageNo
-    ) {
-        return this.projectService.getApplicationNames(SearchAppNameParam.builder()
-                .name(name)
-                .pageNo(pageNo)
-                .pageSize(pageSize)
-                .build());
-    }
+//    @RequestMapping(value = "/project/getApplicationNames", method = RequestMethod.GET)
+//    public Result<List<String>> getApplicationNames(HttpServletRequest request,
+//                                                    @RequestParam(value = "name", required = false)
+//                                                            String name,
+//                                                    @RequestParam(value = "pageSize", required = false)
+//                                                            Integer pageSize,
+//                                                    @RequestParam(value = "pageNo", required = false)
+//                                                            Integer pageNo
+//    ) {
+//        return this.projectService.getApplicationNames(SearchAppNameParam.builder()
+//                .name(name)
+//                .pageNo(pageNo)
+//                .pageSize(pageSize)
+//                .build());
+//    }
 
     @RequestMapping(value = "/project/getAllApplicationNames", method = RequestMethod.GET)
     public Result<Set<String>> getApplicationNames1(HttpServletRequest request) {

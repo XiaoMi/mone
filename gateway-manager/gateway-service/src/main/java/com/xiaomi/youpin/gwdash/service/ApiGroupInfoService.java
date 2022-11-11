@@ -36,7 +36,7 @@ import com.xiaomi.youpin.gwdash.service.impl.TenantComponent;
 import com.xiaomi.youpin.hermes.bo.RoleBo;
 import com.xiaomi.youpin.hermes.bo.response.Account;
 import com.xiaomi.youpin.hermes.entity.Group;
-import com.xiaomi.youpin.hermes.service.GroupService;
+//import com.xiaomi.youpin.hermes.service.GroupService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.Reference;
 import org.apache.dubbo.config.annotation.Service;
@@ -61,8 +61,8 @@ public class ApiGroupInfoService implements GroupServiceAPI{
     @Autowired
     private ApiGroupInfoDao groupInfoDao;
 
-    @Reference(check = false, interfaceClass = GroupService.class, group = "${ref.hermes.service.group}")
-    private GroupService oldGroupService;
+//    @Reference(check = false, interfaceClass = GroupService.class, group = "${ref.hermes.service.group}")
+//    private GroupService oldGroupService;
 
     @Autowired
     private GroupInfoService groupService;
@@ -356,26 +356,26 @@ public class ApiGroupInfoService implements GroupServiceAPI{
 
 
     public Result<Boolean> initGroup() {
-        List<Group> list = oldGroupService.getAllGroups();
-        LOGGER.info("initGroup list:[{}]", list);
-        list.stream().forEach(it -> {
-            GroupInfoEntity old = groupService.queryGroupById(it.getId());
-            if(old == null){
-                GroupInfoEntity groupInfoEntity = new GroupInfoEntity();
-                groupInfoEntity.setId(it.getId());
-                groupInfoEntity.setName(it.getName());
-                groupInfoEntity.setDescription(it.getDescription());
-                groupInfoEntity.setCreationDate(it.getCreationDate());
-                groupInfoEntity.setModifyDate(it.getModifyDate());
-                groupService.createGroupWithId(groupInfoEntity);
-            }else{
-                old.setName(it.getName());
-                old.setDescription(it.getDescription());
-                old.setCreationDate(it.getCreationDate());
-                old.setModifyDate(it.getModifyDate());
-                groupService.updateGroupInfo(old);
-            }
-        });
+//        List<Group> list = oldGroupService.getAllGroups();
+//        LOGGER.info("initGroup list:[{}]", list);
+//        list.stream().forEach(it -> {
+//            GroupInfoEntity old = groupService.queryGroupById(it.getId());
+//            if(old == null){
+//                GroupInfoEntity groupInfoEntity = new GroupInfoEntity();
+//                groupInfoEntity.setId(it.getId());
+//                groupInfoEntity.setName(it.getName());
+//                groupInfoEntity.setDescription(it.getDescription());
+//                groupInfoEntity.setCreationDate(it.getCreationDate());
+//                groupInfoEntity.setModifyDate(it.getModifyDate());
+//                groupService.createGroupWithId(groupInfoEntity);
+//            }else{
+//                old.setName(it.getName());
+//                old.setDescription(it.getDescription());
+//                old.setCreationDate(it.getCreationDate());
+//                old.setModifyDate(it.getModifyDate());
+//                groupService.updateGroupInfo(old);
+//            }
+//        });
         return Result.success(true);
     }
 

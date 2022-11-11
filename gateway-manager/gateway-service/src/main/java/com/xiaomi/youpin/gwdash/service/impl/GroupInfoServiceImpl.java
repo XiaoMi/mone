@@ -1,6 +1,7 @@
 package com.xiaomi.youpin.gwdash.service.impl;
 
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.xiaomi.youpin.gwdash.bo.GroupInfoEntity;
 import com.xiaomi.youpin.gwdash.bo.GroupInfoEntityDTO;
@@ -13,7 +14,6 @@ import com.xiaomi.youpin.gwdash.dao.model.UserInfo;
 import com.xiaomi.youpin.gwdash.service.GroupInfoService;
 import com.xiaomi.youpin.gwdash.service.UserService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.compress.utils.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;

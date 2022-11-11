@@ -16,7 +16,7 @@
 
 package com.xiaomi.youpin.gwdash.dao.model;
 
-import com.xiaomi.youpin.mischedule.api.service.bo.HealthResult;
+//import com.xiaomi.youpin.mischedule.api.service.bo.HealthResult;
 import lombok.Data;
 import org.nutz.dao.entity.annotation.*;
 
@@ -106,9 +106,9 @@ public class ProjectEnv implements Serializable {
     private int processMonitorTaskId;
 
 
-    @ColDefine(type = ColType.MYSQL_JSON)
-    @Column("health_check_result")
-    private HealthResult healthResult;
+//    @ColDefine(type = ColType.MYSQL_JSON)
+//    @Column("health_check_result")
+//    private HealthResult healthResult;
 
 
     @Column("web_host")

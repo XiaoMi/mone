@@ -17,6 +17,7 @@
 package com.xiaomi.youpin.gwdash.service;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Lists;
 import com.xiaomi.youpin.gwdash.bo.GatewayServerInfo;
 import com.xiaomi.youpin.gwdash.common.Consts;
 import com.xiaomi.youpin.gwdash.context.DashServerContext;
@@ -30,7 +31,6 @@ import com.xiaomi.youpin.infra.rpc.errors.GeneralCodes;
 import com.youpin.xiaomi.tesla.bo.*;
 import com.youpin.xiaomi.tesla.service.TeslaOpsService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.compress.utils.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.Service;
 import org.springframework.beans.BeanUtils;
