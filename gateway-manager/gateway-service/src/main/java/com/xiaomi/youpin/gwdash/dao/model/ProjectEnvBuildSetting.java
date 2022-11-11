@@ -16,7 +16,6 @@
 
 package com.xiaomi.youpin.gwdash.dao.model;
 
-import com.xiaomi.youpin.mischedule.enums.XmlSettingEnums;
 import lombok.Data;
 import org.nutz.dao.entity.annotation.*;
 
@@ -56,9 +55,7 @@ public class ProjectEnvBuildSetting {
     @ColDefine(type = ColType.MYSQL_JSON)
     private Map<String, String> dockerParams;
 
-    /**
-     * @see XmlSettingEnums
-     */
+
     @Column("xml_setting")
     private int xmlSetting;
 }

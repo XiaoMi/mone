@@ -21,23 +21,15 @@
         </dependency>
 
         <dependency>
-            <artifactId>gwdash-api</artifactId>
             <groupId>run.mone</groupId>
-            <version>1.0.1-SNAPSHOT</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.dubbo</groupId>
-                    <artifactId>dubbo</artifactId>
-                </exclusion>
-            </exclusions>
+            <artifactId>gwdash-api</artifactId>
+            <version>0.0.1-SNAPSHOT</version>
         </dependency>
-
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
             <version>1.2.70</version>
         </dependency>
-
 
         <!-- log -->
         <dependency>
@@ -221,25 +213,6 @@
             <version>1.4-SNAPSHOT</version>
         </dependency>
 
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>micloud</artifactId>
-            <version>1.4-SNAPSHOT</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>kotlin-stdlib</artifactId>
-                    <groupId>org.jetbrains.kotlin</groupId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-api</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>

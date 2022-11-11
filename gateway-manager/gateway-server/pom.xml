@@ -56,11 +56,6 @@
         </dependency>
 
         <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>codegen</artifactId>
-            <version>1.4-SNAPSHOT</version>
-        </dependency>
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.12</version>
@@ -121,18 +116,10 @@
             <version>5.1.46</version>
         </dependency>
 
-
         <dependency>
             <groupId>org.nutz</groupId>
             <artifactId>nutz</artifactId>
             <version>1.r.68-youpin-SNAPSHOT</version>
-        </dependency>
-
-
-        <dependency>
-            <groupId>io.github.tesla</groupId>
-            <artifactId>tesla-plugin-api</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -161,11 +148,6 @@
             <scope>compile</scope>
         </dependency>
 
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>gwdash-api</artifactId>
-            <version>1.0.1-SNAPSHOT</version>
-        </dependency>
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>mi-tpc-api</artifactId>
