@@ -21,6 +21,7 @@ import com.xiaomi.youpin.docean.mvc.MvcContext;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.cookie.Cookie;
+import io.netty.handler.codec.http.cookie.DefaultCookie;
 import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
 import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
 
@@ -104,13 +105,17 @@ public class HttpSessionManager {
 
     public static void setSessionId(MvcContext context, boolean exists, FullHttpResponse response) {
         if (!context.getSessionId().equals("")) {
-            String encodeCookie = ServerCookieEncoder.STRICT.encode(HttpSession.SESSIONID, context.getSessionId());
+            Cookie cookie = new DefaultCookie(HttpSession.SESSIONID,context.getSessionId());
+            cookie.setPath("/");
+            String encodeCookie = ServerCookieEncoder.STRICT.encode(cookie);
             response.headers().set(HttpHeaderNames.SET_COOKIE, encodeCookie);
             return;
         }
 
         if (exists == false) {
-            String encodeCookie = ServerCookieEncoder.STRICT.encode(HttpSession.SESSIONID, HttpSessionManager.createSession());
+            Cookie cookie = new DefaultCookie(HttpSession.SESSIONID,HttpSessionManager.createSession());
+            cookie.setPath("/");
+            String encodeCookie = ServerCookieEncoder.STRICT.encode(cookie);
             response.headers().set(HttpHeaderNames.SET_COOKIE, encodeCookie);
         }
     }
@@ -119,7 +124,10 @@ public class HttpSessionManager {
     public static boolean isHasSessionId(Map<String, String> headers) {
         String cookieStr = headers.get("Cookie");
         if (cookieStr == null || "".equals(cookieStr)) {
-            return false;
+            if (!headers.containsKey("cookie")) {
+                return false;
+            }
+            cookieStr = headers.get("cookie");
         }
         Set<Cookie> cookieSet = ServerCookieDecoder.STRICT.decode(cookieStr);
         Iterator<Cookie> iter = cookieSet.iterator();
@@ -138,7 +146,10 @@ public class HttpSessionManager {
     public static String getSessionId(Map<String, String> headers) {
         String cookieStr = headers.get("Cookie");
         if (cookieStr == null || "".equals(cookieStr)) {
-            return "";
+            cookieStr = headers.get("cookie");
+            if (cookieStr == null || "".equals(cookieStr)) {
+                return "";
+            }
         }
         Set<Cookie> cookieSet = ServerCookieDecoder.STRICT.decode(cookieStr);
         Iterator<Cookie> iter = cookieSet.iterator();

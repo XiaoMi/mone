@@ -84,7 +84,7 @@ public class SqlSessionFactoryBean {
         } else {
             log.debug("Property 'mapperLocations' was not specified or no matching resources found");
         }
-        return new MybatisSessionFactory((DefaultSqlSessionFactory) this.sqlSessionFactoryBuilder.build(configuration));
+        return new MybatisSessionFactory(this.sqlSessionFactoryBuilder.build(configuration));
 
     }
 

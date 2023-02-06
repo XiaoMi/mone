@@ -35,10 +35,10 @@ public class AopPlugin implements IPlugin {
 
     @Override
     public void init(Set<? extends Class<?>> classSet, Ioc ioc) {
-        classSet.stream().filter(it -> Ioc.filterClass(it, Lists.newArrayList(AopConfig.class))).forEach(it -> {
-            AopConfig ac = it.getAnnotation(AopConfig.class);
-            Aop.ins().getInterceptorMap().put(ac.clazz(), (EnhanceInterceptor) ReflectUtils.getInstance(it));
-        });
+//        classSet.stream().filter(it -> Ioc.filterClass(ioc, it, Lists.newArrayList(AopConfig.class))).forEach(it -> {
+//            AopConfig ac = it.getAnnotation(AopConfig.class);
+//            Aop.ins().getInterceptorMap().put(ac.clazz(), (EnhanceInterceptor) ReflectUtils.getInstance(it));
+//        });
     }
 
 }

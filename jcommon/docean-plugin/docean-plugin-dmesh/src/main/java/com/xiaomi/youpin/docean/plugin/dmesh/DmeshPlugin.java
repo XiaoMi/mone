@@ -17,6 +17,7 @@
 package com.xiaomi.youpin.docean.plugin.dmesh;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.xiaomi.data.push.uds.UdsClient;
 import com.xiaomi.data.push.uds.UdsServer;
@@ -33,11 +34,14 @@ import com.xiaomi.youpin.docean.common.Safe;
 import com.xiaomi.youpin.docean.common.StringUtils;
 import com.xiaomi.youpin.docean.plugin.IPlugin;
 import com.xiaomi.youpin.docean.plugin.config.Config;
+import com.xiaomi.youpin.docean.plugin.datasource.DatasourcePlugin;
 import com.xiaomi.youpin.docean.plugin.dmesh.anno.MeshMsService;
 import com.xiaomi.youpin.docean.plugin.dmesh.anno.MeshReference;
 import com.xiaomi.youpin.docean.plugin.dmesh.anno.MeshService;
 import com.xiaomi.youpin.docean.plugin.dmesh.common.Cons;
+import com.xiaomi.youpin.docean.plugin.dmesh.ds.Datasource;
 import com.xiaomi.youpin.docean.plugin.dmesh.interceptor.*;
+import com.xiaomi.youpin.docean.plugin.dmesh.ms.MySql;
 import com.xiaomi.youpin.docean.plugin.dmesh.processor.client.MessageProcessor;
 import com.xiaomi.youpin.docean.plugin.dmesh.service.MeshServiceConfig;
 import com.xiaomi.youpin.docean.plugin.dmesh.state.client.ClientFsm;
@@ -49,18 +53,20 @@ import java.lang.annotation.Annotation;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 /**
  * @author goodjava@qq.com
+ * <p>
+ * mesh 框架插件(主要用于编写sidecar代码)
  */
 @Slf4j
 @DOceanPlugin
 public class DmeshPlugin implements IPlugin {
-
-    private Gson gson = new Gson();
 
     /**
      * 这个app的名称
@@ -75,6 +81,7 @@ public class DmeshPlugin implements IPlugin {
 
     private String udsPath = "";
 
+    public static final String SERVER_LIST = "serviceConfigList";
 
 
     @Override
@@ -96,7 +103,7 @@ public class DmeshPlugin implements IPlugin {
             startClient(ioc, udsPath);
         }
         List<MeshServiceConfig> list = Lists.newArrayList();
-        Ioc.ins().putBean("serviceConfigList", list);
+        Ioc.ins().putBean(SERVER_LIST, list);
     }
 
     private void startClient(Ioc ioc, String udsPath) {
@@ -137,7 +144,7 @@ public class DmeshPlugin implements IPlugin {
     }
 
     @Override
-    public Optional<String> ioc(Ioc ioc, Annotation[] annotations) {
+    public Optional<String> ioc(Ioc ioc, Class type, Annotation[] annotations) {
         Config config = ioc.getBean(Config.class);
         Optional<Annotation> optional = getAnno(annotations, MeshReference.class);
         if (optional.isPresent()) {
@@ -155,14 +162,36 @@ public class DmeshPlugin implements IPlugin {
 
     @Override
     public Bean initBean(Ioc ioc, Bean bean) {
+        //获取所有服务列表
         MeshService s = bean.getClazz().getAnnotation(MeshService.class);
         if (Optional.ofNullable(s).isPresent()) {
             MeshServiceConfig config = initService(ioc, bean, s);
-            List<MeshServiceConfig> list = Ioc.ins().getBean("serviceConfigList");
+            List<MeshServiceConfig> list = Ioc.ins().getBean(SERVER_LIST);
             list.add(config);
         }
 
         MeshMsService ms = bean.getClazz().getAnnotation(MeshMsService.class);
+
+        if (Optional.ofNullable(ms).isPresent()) {
+            if (ms.name().equals("mysql")) {
+                if (ioc.containsBean(DatasourcePlugin.DB_NAMES)) {
+                    List<String> dsList = ioc.getBean(DatasourcePlugin.DB_NAMES);
+                    //多数据源
+                    if (dsList.size() >= 2) {
+                        dsList.stream().forEach(dsName -> {
+                            Enhancer enhancer = new Enhancer();
+                            enhancer.setSuperclass(ms.interfaceClass());
+                            enhancer.setCallback(new CallMysqlInterceptor(ioc, this.config, ms));
+                            Object service = enhancer.create();
+                            String name = bean.getClazz().getName();
+                            ioc.putBean(name, name, service, dsName, true);
+                        });
+                        return bean;
+                    }
+                }
+            }
+        }
+
         if (Optional.ofNullable(ms).isPresent()) {
             Enhancer enhancer = new Enhancer();
             enhancer.setSuperclass(ms.interfaceClass());
@@ -185,6 +214,7 @@ public class DmeshPlugin implements IPlugin {
             ioc.putBean(bean.getClazz().getName(), service);
         }
 
+
         return bean;
     }
 
@@ -196,6 +226,7 @@ public class DmeshPlugin implements IPlugin {
 
     /**
      * 提供provider的必要信息
+     *
      * @param ioc
      * @param bean
      * @param s
@@ -222,13 +253,15 @@ public class DmeshPlugin implements IPlugin {
     @Override
     public boolean after(Ioc ioc) {
         String udsServer = config.get("udsServer", "false");
+        String udsClient = config.get("udsClient", "false");
         //如果是服务端,不需要上报
         if (udsServer.equals(Cons.TRUE)) {
             //网络请求的监听器(服务器的监听)
             NetListener listener = ioc.getBean(NetListener.class);
             UdsServerContext.ins().setListener(listener);
             return true;
-        } else {
+        }
+        if (udsClient.equals(Cons.TRUE)) {
             NetListener listener = ioc.getBean("clientNetListener");
             UdsClientContext.ins().setListener(listener);
             //客户端需要启动状态机
@@ -264,5 +297,23 @@ public class DmeshPlugin implements IPlugin {
     @Override
     public String version() {
         return "0.0.1:2021-01-17";
+    }
+
+
+    public static Map<String, MySql> getMySql() {
+        Set<MySql> list = Ioc.ins().getBeans(MySql.class);
+        if (list.size() == 1) {
+            Map<String, MySql> m = Maps.newHashMap();
+            m.put("", Ioc.ins().getBean(MySql.class));
+            return m;
+        }
+        return list.stream().filter(it -> null != it).map(it -> {
+            Bean bean = Ioc.ins().getBeanInfo(it.toString());
+            return bean;
+        }).collect(Collectors.toMap(Bean::getLookup, it -> {
+            Object o = it.getObj();
+            MySql m = (MySql) o;
+            return m;
+        }));
     }
 }

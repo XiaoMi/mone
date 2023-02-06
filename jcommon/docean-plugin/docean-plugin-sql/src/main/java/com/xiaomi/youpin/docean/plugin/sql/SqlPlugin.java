@@ -19,6 +19,7 @@ package com.xiaomi.youpin.docean.plugin.sql;
 import com.xiaomi.youpin.docean.Aop;
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.DOceanPlugin;
+import com.xiaomi.youpin.docean.common.StringUtils;
 import com.xiaomi.youpin.docean.plugin.IPlugin;
 import com.xiaomi.youpin.docean.plugin.datasource.DatasourceConfig;
 import com.xiaomi.youpin.docean.plugin.datasource.DatasourcePlugin;
@@ -71,7 +72,7 @@ public class SqlPlugin implements IPlugin {
     public void remove(DatasourceConfig config) {
         Db db = Ioc.ins().getBean("dao:" + config.getName());
         DatasourcePlugin datasourcePlugin = Ioc.ins().getBean(DatasourcePlugin.class);
-        Ioc.ins().remove("dao:"+config.getName());
+        Ioc.ins().remove("dao:" + config.getName());
         datasourcePlugin.remove(config);
     }
 

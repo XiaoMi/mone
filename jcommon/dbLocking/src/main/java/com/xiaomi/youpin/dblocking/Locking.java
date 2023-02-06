@@ -16,7 +16,6 @@
 
 package com.xiaomi.youpin.dblocking;
 
-import com.dianping.cat.Cat;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.impl.NutDao;
 
@@ -96,17 +95,8 @@ public class Locking {
                 version = getVersion(data);
             }
         } catch (NoSuchFieldException e) {
-            if (Cat.isInitialized()) {
-                Cat.logError(e);
-            }
         } catch (IllegalAccessException e) {
-            if (Cat.isInitialized()) {
-                Cat.logError(e);
-            }
         } catch (Exception e) {
-            if (Cat.isInitialized()) {
-                Cat.logError(e);
-            }
         }
         return false;
     }

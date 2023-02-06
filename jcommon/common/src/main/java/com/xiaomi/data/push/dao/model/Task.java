@@ -51,6 +51,55 @@ public class Task {
 
     private Integer gid;
 
+    private String alarmUsername;
+    private String alarmGroup;
+    //告警级别 100=P0、101=P1、102=P2
+    private Integer alarmLevel;
+
+    private boolean ignoreError;
+
+    private long timeout;
+
+    public String getAlarmGroup() {
+        return alarmGroup;
+    }
+
+    public void setAlarmGroup(String alarmGroup) {
+        this.alarmGroup = alarmGroup;
+    }
+
+    public Integer getAlarmLevel() {
+        return alarmLevel;
+    }
+
+    public void setAlarmLevel(Integer alarmLevel) {
+        this.alarmLevel = alarmLevel;
+    }
+
+    public long getTimeout() {
+        return timeout;
+    }
+
+    public void setTimeout(long timeout) {
+        this.timeout = timeout;
+    }
+
+    public boolean getIgnoreError() {
+        return ignoreError;
+    }
+
+    public void setIgnoreError(boolean ignoreError) {
+        this.ignoreError = ignoreError;
+    }
+
+    public String getAlarmUsername() {
+        return alarmUsername;
+    }
+
+    public void setAlarmUsername(String alarmUsername) {
+        this.alarmUsername = alarmUsername;
+    }
+
     public Integer getId() {
         return id;
     }

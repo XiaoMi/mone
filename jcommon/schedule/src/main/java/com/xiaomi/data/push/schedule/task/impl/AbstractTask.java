@@ -1,41 +1,31 @@
-/*
- *  Copyright 2020 Xiaomi
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.xiaomi.data.push.schedule.task.impl;
 
 import com.google.gson.Gson;
 import com.xiaomi.data.push.client.Pair;
+import com.xiaomi.data.push.common.SafeRun;
 import com.xiaomi.data.push.common.TimeUtils;
 import com.xiaomi.data.push.dao.mapper.TaskMapper;
 import com.xiaomi.data.push.dao.model.TaskWithBLOBs;
+import com.xiaomi.data.push.dto.AlertEventDto;
 import com.xiaomi.data.push.schedule.TaskCacheUpdater;
 import com.xiaomi.data.push.schedule.task.*;
+import com.xiaomi.data.push.service.FalconService;
+import com.xiaomi.data.push.service.FeiShuCommonService;
 import com.xiaomi.data.push.service.TaskService;
 import com.xiaomi.youpin.cron.CronExpression;
-import org.checkerframework.checker.units.qual.A;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.util.StringUtils;
 
 import java.text.ParseException;
 import java.util.Date;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -56,8 +46,19 @@ public abstract class AbstractTask implements ITask, ApplicationContextAware {
     @Autowired
     private TaskMapper taskMapper;
 
+    @Value("${server.type}")
+    private String serverType;
+    @Value("${task.detail.url}")
+    private String TASK_DETAIL_URL;
+
+    @Autowired
+    private FeiShuCommonService feiShuService;
+    @Autowired
+    private FalconService falconService;
 
     protected ApplicationContext ac;
+
+    private ExecutorService msgPool = Executors.newCachedThreadPool();
 
 
     @Override
@@ -109,12 +110,14 @@ public abstract class AbstractTask implements ITask, ApplicationContextAware {
             task.setContext(new Gson().toJson(taskContext));
             task.setResult(new Gson().toJson(taskResult));
             task.setNextRetryTime(getNextRetryTime());
+            //重置错误的重试次数(只要有一个周期正常了,错误次数就被重置)
+            task.setErrorRetryNum(0);
             task.setRetryNum(task.getRetryNum() + 1);
             if (!task.getStatus().equals(TaskStatus.Pause.code)) {
                 task.setStatus(TaskStatus.Retry.code);
             }
             return true;
-        }, taskContext, taskResult, TaskStatus.Retry.code);
+        }, taskContext, taskResult, TaskStatus.Retry.code, 5, "");
     }
 
     @Override
@@ -140,9 +143,11 @@ public abstract class AbstractTask implements ITask, ApplicationContextAware {
                 }
                 task.setSuccessNum(task.getSuccessNum() + 1);
                 task.setUpdated(now);
+                //重试的错误数被强制设置为0
+                task.setErrorRetryNum(0);
                 taskContext.setTaskData(task);
                 return true;
-            }, taskContext, taskResult, status);
+            }, taskContext, taskResult, status, 50, "");
 
             //没有更新成功,开启强制更新
             if (!res) {
@@ -211,25 +216,32 @@ public abstract class AbstractTask implements ITask, ApplicationContextAware {
                     task.setSuccessNum(0);
                     task.setFailureNum(0);
                 }
+                Pair<TaskStatus, Long> pair = getStatusAndNextRetryTime(taskParam, taskContext);
                 task.setContext(new Gson().toJson(taskContext));
                 task.setResult(new Gson().toJson(taskResult));
-                task.setNextRetryTime(getNextErrorRetryTime());
+                //即使失败也不再拉起重试(dubboTask任务可配置自身的重试、httpTask不重试
+                task.setNextRetryTime(pair.getValue());
                 task.setErrorRetryNum(task.getErrorRetryNum() + 1);
+                boolean pause = false;
                 //没被暂停的情况下
                 if (!task.getStatus().equals(TaskStatus.Pause.code)) {
-                    //错误次数过多(不再重试了,而是直接返回失败)
+                    //错误次数过多(若未设置 忽略失败，则不再重试了,而是直接返回失败)
                     if (task.getErrorRetryNum() >= taskParam.getTaskDef().getErrorRetryNum()) {
-                        task.setStatus(TaskStatus.Failure.code);
+                        pause = true;
+                        if (!task.getIgnoreError()){
+                            task.setStatus(TaskStatus.Failure.code);
+                        }
                     } else {
                         task.setStatus(TaskStatus.Retry.code);
                     }
                 }
-
+                alarm(id, taskParam, taskResult, pause);
                 task.setFailureNum(task.getFailureNum() + 1);
                 task.setUpdated(now);
                 taskContext.setTaskData(task);
                 return true;
-            }, taskContext, taskResult, TaskStatus.Failure.code);
+            }, taskContext, taskResult, TaskStatus.Failure.code, 50, "");
+
         }
 
         if (!StringUtils.isEmpty(taskContext.get(TaskContext.INTERCEPTOR))) {
@@ -243,6 +255,38 @@ public abstract class AbstractTask implements ITask, ApplicationContextAware {
         }
     }
 
+    /**
+     * 任务异常暂停通知
+     * @param id
+     * @param taskParam
+     * @param taskResult
+     */
+    private void alarm(int id, TaskParam taskParam, TaskResult taskResult, boolean pauseFlag){
+        msgPool.execute(() -> {
+            SafeRun.run(()->{
+                logger.info("AbstractTask.alarm id:{}任务已暂停，超过失败重试次数{}，本次调用结果:{},alarmGroup:{},pauseFlag:{}", id, taskParam.getTaskDef().getErrorRetryNum(), taskResult, taskParam.getAlarmGroup(),pauseFlag);
+                String title = (serverType.equals("c3") || serverType.equals("c4") || serverType.equals("online"))?
+                        "【online-mischedule告警】":"【st-mischedule告警】";
+                String desc = pauseFlag?"id:" + id + "任务已暂停，超过失败重试次数" + taskParam.getTaskDef().getErrorRetryNum():"id:" + id + "任务执行失败";
+                String timestamp = TimeUtils.getCurrentTime();
+                if (!StringUtils.isEmpty(taskParam.getAlarmGroup())){
+                    AlertEventDto.Meta meta = AlertEventDto.Meta.builder()
+                            .errorRetryNum(taskParam.getTaskDef().getErrorRetryNum())
+                            .id(id)
+                            .title(title)
+                            .url(TASK_DETAIL_URL + taskParam.getTaskId())
+                            .summary(desc)
+                            .timestamp(timestamp)
+                            .taskResult(new Gson().toJson(taskResult)).build();
+                    falconService.alert(taskParam, meta);
+                    return;
+                }
+                String alarmUsername = StringUtils.isEmpty(taskParam.getAlarmUsername())?taskParam.getCreator():taskParam.getAlarmUsername();
+                feiShuService.batchSendMsg(alarmUsername,
+                        title + timestamp + "，" + desc + "，本次调用结果:" + new Gson().toJson(taskResult));
+            });
+        });
+    }
 
     @Override
     public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {

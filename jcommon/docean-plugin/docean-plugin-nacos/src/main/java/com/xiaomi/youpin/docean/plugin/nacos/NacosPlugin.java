@@ -33,19 +33,23 @@ public class NacosPlugin implements IPlugin {
     @Override
     public void init(Set<? extends Class<?>> classSet, Ioc ioc) {
         Config config = ioc.getBean(Config.class);
+        if (config.get("close_nacos_plugin", "false").equals("true")) {
+            return;
+        }
         NacosConfig nacosConfig = new NacosConfig();
-        nacosConfig.setDataId(config.get("nacos_config_dataid",""));
-        nacosConfig.setGroup(config.get("nacos_config_group",""));
-        nacosConfig.setServerAddr(config.get("nacos_config_server_addr",""));
+        nacosConfig.setDataId(config.get("nacos_config_dataid", ""));
+        nacosConfig.setGroup(config.get("nacos_config_group", ""));
+        nacosConfig.setServerAddr(config.get("nacos_config_server_addr", ""));
         nacosConfig.init();
         ioc.putBean(nacosConfig);
         //会覆盖基础配置(配置文件)
         nacosConfig.forEach((k, v) -> {
             ioc.putBean("$" + k, v);
+            config.put(k, v);
         });
 
         NacosNaming nacosNaming = new NacosNaming();
-        nacosNaming.setServerAddr(config.get("nacos_config_server_addr",""));
+        nacosNaming.setServerAddr(config.get("nacos_config_server_addr", ""));
         nacosNaming.init();
 
         ioc.putBean(nacosNaming);

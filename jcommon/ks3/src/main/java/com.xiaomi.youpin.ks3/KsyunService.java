@@ -54,11 +54,11 @@ public class KsyunService {
 
     private Ks3 ks3;
 
-    private static final String BUCKET_NAME = "127.0.0.1";
+    private static final String BUCKET_NAME = "localhost";
 
     private static final String ROOT_FOLDER = "youpin-arch";
 
-    private static final String DEFAULT_ENDPOINT = "ks3-cn-beijing.ksyun.com";
+    private static final String DEFAULT_ENDPOINT = "localhost";
 
     private static final String Version = "0.0.1:2020-03-09";
 
@@ -75,8 +75,6 @@ public class KsyunService {
     @Setter
     private String token;
 
-
-    //金山云相关文档 https://docs.ksyun.com/documents/963#4.4
 
     @PostConstruct
     public void init() {

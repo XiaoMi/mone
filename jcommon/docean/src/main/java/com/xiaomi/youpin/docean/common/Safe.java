@@ -33,6 +33,10 @@ public class Safe {
         void run() throws Throwable;
     }
 
+    public interface ExCallable {
+        Object call() throws Throwable;
+    }
+
 
     public static void run(ExRunnable runnable, Consumer<Throwable> consumer) {
         try {
@@ -59,5 +63,22 @@ public class Safe {
             log.error(ex.getMessage(), ex);
         }
     }
+
+    /**
+     * 执行并记录Error,但不会抛出异常
+     * @param callable
+     * @param defaultValue
+     * @return
+     * @param <T>
+     */
+    public static <T> T callAndLog(ExCallable callable, T defaultValue) {
+        try {
+            return (T)callable.call();
+        } catch (Throwable ex) {
+            log.error(ex.getMessage(), ex);
+        }
+        return defaultValue;
+    }
+
 
 }

@@ -20,7 +20,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 import com.google.common.net.HttpHeaders;
-import com.xiaomi.youpin.cat.CatPlugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -112,9 +111,7 @@ public class HttpClientV5 {
 
 
     public static String post(String url, byte[] body, Map<String, String> headers, int timeout) {
-        CatPlugin cat = new CatPlugin("POST", catEnabled, CAT_TYPE);
         boolean success = true;
-        cat.before(null);
         HttpURLConnection conn = null;
         try {
             conn = (HttpURLConnection) new URL(url).openConnection();
@@ -140,7 +137,6 @@ public class HttpClientV5 {
             if (null != conn) {
                 conn.disconnect();
             }
-            cat.after(success);
         }
 
     }
@@ -195,9 +191,7 @@ public class HttpClientV5 {
 
 
     public static HttpResult request(String url, List<String> headers, Map<String, String> paramValues, String encoding, String method, int readTimeout, boolean download, File file) {
-        CatPlugin cat = new CatPlugin(method, catEnabled, CAT_TYPE);
         boolean success = true;
-        cat.before(null);
 
         HttpURLConnection conn = null;
         try {
@@ -241,7 +235,6 @@ public class HttpClientV5 {
             if (conn != null) {
                 conn.disconnect();
             }
-            cat.after(success);
         }
     }
 

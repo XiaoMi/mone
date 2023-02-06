@@ -16,6 +16,11 @@
 
 package com.xiaomi.youpin.docean.plugin.mybatis;
 
+import org.apache.ibatis.session.SqlSession;
+import org.springframework.core.NamedThreadLocal;
+
+import java.sql.Connection;
+
 /**
  * @author goodjava@qq.com
  * @date 2020/7/5
@@ -47,6 +52,39 @@ public class TransactionalContext {
 
     public void close() {
         context.remove();
+        transactionSqlSession.remove();
+        connection.remove();
+        transactionActive.remove();
+    }
+
+    private static ThreadLocal<SqlSession> transactionSqlSession = new NamedThreadLocal<>("transactionSqlSession");
+
+    private static ThreadLocal<Connection> connection = new NamedThreadLocal<>("connection");
+
+    private static ThreadLocal<Boolean> transactionActive = new NamedThreadLocal<>("transactionActive");
+
+    public static SqlSession getSqlSession() {
+        return transactionSqlSession.get();
+    }
+
+    public static void setSqlSession(SqlSession sqlSession){
+        transactionSqlSession.set(sqlSession);
+    }
+
+    public static Connection getConnection() {
+        return connection.get();
+    }
+
+    public static void setConnection(Connection conn) {
+        connection.set(conn);
+    }
+
+    public static Boolean getTransactionActive() {
+        return transactionActive.get();
+    }
+
+    public static void setTransactionActive(Boolean f) {
+        transactionActive.set(f);
     }
 
 }

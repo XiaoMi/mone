@@ -1,20 +1,4 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<!--
-  ~  Copyright 2020 Xiaomi
-  ~
-  ~    Licensed under the Apache License, Version 2.0 (the "License");
-  ~    you may not use this file except in compliance with the License.
-  ~    You may obtain a copy of the License at
-  ~
-  ~        http://www.apache.org/licenses/LICENSE-2.0
-  ~
-  ~    Unless required by applicable law or agreed to in writing, software
-  ~    distributed under the License is distributed on an "AS IS" BASIS,
-  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  ~    See the License for the specific language governing permissions and
-  ~    limitations under the License.
-  -->
-
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 <mapper namespace="com.xiaomi.data.push.dao.mapper.TaskMapper" >
   <resultMap id="BaseResultMap" type="com.xiaomi.data.push.dao.model.Task" >
@@ -35,6 +19,10 @@
     <result column="schedule_group" property="scheduleGroup" jdbcType="INTEGER" />
     <result column="type" property="type" jdbcType="VARCHAR" />
     <result column="gid" property="gid" jdbcType="INTEGER" />
+    <result column="alarmUsername" property="alarmUsername" jdbcType="VARCHAR" />
+    <result column="ignoreError" property="ignoreError" jdbcType="TINYINT" />
+    <result column="alarmGroup" property="alarmGroup" jdbcType="VARCHAR" />
+    <result column="alarmLevel" property="alarmLevel" jdbcType="INTEGER" />
   </resultMap>
   <resultMap id="ResultMapWithBLOBs" type="com.xiaomi.data.push.dao.model.TaskWithBLOBs" extends="BaseResultMap" >
     <result column="bid" property="bid" jdbcType="LONGVARCHAR" />
@@ -103,7 +91,7 @@
   <sql id="Base_Column_List" >
     id, name, version, retry_num, error_retry_num, next_retry_time, status, parent_id, 
     created, updated, success_num, failure_num, creator, role_id, schedule_group, type, 
-    gid
+    gid, alarmUsername, ignoreError, alarmGroup, alarmLevel
   </sql>
   <sql id="Blob_Column_List" >
     bid, result, params, context
@@ -169,14 +157,16 @@
       success_num, failure_num, creator, 
       role_id, schedule_group, type, 
       gid, bid, result, 
-      params, context)
+      params, context, alarmUsername, ignoreError, alarmGroup, alarmLevel)
     values (#{name,jdbcType=VARCHAR}, #{version,jdbcType=INTEGER}, #{retryNum,jdbcType=INTEGER}, 
       #{errorRetryNum,jdbcType=INTEGER}, #{nextRetryTime,jdbcType=BIGINT}, #{status,jdbcType=INTEGER}, 
       #{parentId,jdbcType=INTEGER}, #{created,jdbcType=BIGINT}, #{updated,jdbcType=BIGINT}, 
       #{successNum,jdbcType=INTEGER}, #{failureNum,jdbcType=INTEGER}, #{creator,jdbcType=VARCHAR}, 
       #{roleId,jdbcType=VARCHAR}, #{scheduleGroup,jdbcType=INTEGER}, #{type,jdbcType=VARCHAR}, 
       #{gid,jdbcType=INTEGER}, #{bid,jdbcType=LONGVARCHAR}, #{result,jdbcType=LONGVARCHAR}, 
-      #{params,jdbcType=LONGVARCHAR}, #{context,jdbcType=LONGVARCHAR})
+      #{params,jdbcType=LONGVARCHAR}, #{context,jdbcType=LONGVARCHAR},
+      #{alarmUsername,jdbcType=VARCHAR}, #{ignoreError,jdbcType=TINYINT},
+      #{alarmGroup,jdbcType=VARCHAR}, #{alarmLevel,jdbcType=INTEGER})
   </insert>
   <insert id="insertSelective" parameterType="com.xiaomi.data.push.dao.model.TaskWithBLOBs" useGeneratedKeys="true" keyProperty="id" >
     insert into task
@@ -241,6 +231,18 @@
       <if test="context != null" >
         context,
       </if>
+      <if test="alarmUsername != null" >
+        alarmUsername,
+      </if>
+      <if test="ignoreError != null" >
+        ignoreError,
+      </if>
+      <if test="alarmGroup != null" >
+        alarmGroup,
+      </if>
+      <if test="alarmLevel != null" >
+        alarmLevel,
+      </if>
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides="," >
       <if test="name != null" >
@@ -302,6 +304,18 @@
       </if>
       <if test="context != null" >
         #{context,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="alarmUsername != null" >
+        #{alarmUsername,jdbcType=VARCHAR},
+      </if>
+      <if test="ignoreError != null" >
+        #{ignoreError,jdbcType=TINYINT},
+      </if>
+      <if test="alarmGroup != null" >
+        #{alarmGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="alarmLevel != null" >
+        #{alarmLevel,jdbcType=INTEGER},
       </if>
     </trim>
   </insert>
@@ -377,6 +391,18 @@
       <if test="record.context != null" >
         context = #{record.context,jdbcType=LONGVARCHAR},
       </if>
+      <if test="record.alarmUsername != null" >
+        alarmUsername = #{record.alarmUsername,jdbcType=VARCHAR},
+      </if>
+      <if test="record.ignoreError != null" >
+        ignoreError = #{record.ignoreError,jdbcType=TINYINT},
+      </if>
+      <if test="record.alarmGroup != null" >
+        alarmGroup = #{record.alarmGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="record.alarmLevel != null" >
+        alarmLevel = #{record.alarmLevel,jdbcType=INTEGER},
+      </if>
     </set>
     <if test="_parameter != null" >
       <include refid="Update_By_Example_Where_Clause" />
@@ -404,7 +430,11 @@
       bid = #{record.bid,jdbcType=LONGVARCHAR},
       result = #{record.result,jdbcType=LONGVARCHAR},
       params = #{record.params,jdbcType=LONGVARCHAR},
-      context = #{record.context,jdbcType=LONGVARCHAR}
+      context = #{record.context,jdbcType=LONGVARCHAR},
+      alarmUsername = #{record.alarmUsername,jdbcType=VARCHAR},
+      ignoreError = #{record.ignoreError,jdbcType=TINYINT},
+      alarmGroup = #{record.alarmGroup,jdbcType=VARCHAR},
+      alarmLevel = #{record.alarmLevel,jdbcType=INTEGER}
     <if test="_parameter != null" >
       <include refid="Update_By_Example_Where_Clause" />
     </if>
@@ -427,7 +457,11 @@
       role_id = #{record.roleId,jdbcType=VARCHAR},
       schedule_group = #{record.scheduleGroup,jdbcType=INTEGER},
       type = #{record.type,jdbcType=VARCHAR},
-      gid = #{record.gid,jdbcType=INTEGER}
+      gid = #{record.gid,jdbcType=INTEGER},
+      alarmUsername = #{record.alarmUsername,jdbcType=VARCHAR},
+      ignoreError = #{record.ignoreError,jdbcType=TINYINT},
+      alarmGroup = #{record.alarmGroup,jdbcType=VARCHAR},
+      alarmLevel = #{record.alarmLevel,jdbcType=INTEGER}
     <if test="_parameter != null" >
       <include refid="Update_By_Example_Where_Clause" />
     </if>
@@ -495,6 +529,18 @@
       <if test="context != null" >
         context = #{context,jdbcType=LONGVARCHAR},
       </if>
+      <if test="alarmUsername != null" >
+        alarmUsername = #{alarmUsername,jdbcType=VARCHAR},
+      </if>
+      <if test="ignoreError != null" >
+        ignoreError = #{ignoreError,jdbcType=TINYINT},
+      </if>
+      <if test="alarmGroup != null" >
+        alarmGroup = #{alarmGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="alarmLevel != null" >
+        alarmLevel = #{alarmLevel,jdbcType=INTEGER},
+      </if>
     </set>
     where id = #{id,jdbcType=INTEGER}
   </update>
@@ -519,7 +565,11 @@
       bid = #{bid,jdbcType=LONGVARCHAR},
       result = #{result,jdbcType=LONGVARCHAR},
       params = #{params,jdbcType=LONGVARCHAR},
-      context = #{context,jdbcType=LONGVARCHAR}
+      context = #{context,jdbcType=LONGVARCHAR},
+      alarmUsername = #{alarmUsername,jdbcType=VARCHAR},
+      ignoreError = #{ignoreError,jdbcType=TINYINT},
+      alarmGroup = #{alarmGroup,jdbcType=VARCHAR},
+      alarmLevel = #{alarmLevel,jdbcType=INTEGER}
     where id = #{id,jdbcType=INTEGER}
   </update>
   <update id="updateByPrimaryKey" parameterType="com.xiaomi.data.push.dao.model.Task" >
@@ -539,7 +589,11 @@
       role_id = #{roleId,jdbcType=VARCHAR},
       schedule_group = #{scheduleGroup,jdbcType=INTEGER},
       type = #{type,jdbcType=VARCHAR},
-      gid = #{gid,jdbcType=INTEGER}
+      gid = #{gid,jdbcType=INTEGER},
+      alarmUsername = #{alarmUsername,jdbcType=VARCHAR},
+      ignoreError = #{ignoreError,jdbcType=TINYINT},
+      alarmGroup = #{alarmGroup,jdbcType=VARCHAR},
+      alarmLevel = #{alarmLevel,jdbcType=INTEGER}
     where id = #{id,jdbcType=INTEGER}
   </update>
 </mapper>

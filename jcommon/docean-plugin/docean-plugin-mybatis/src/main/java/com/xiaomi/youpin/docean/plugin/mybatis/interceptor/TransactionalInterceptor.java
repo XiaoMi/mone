@@ -17,7 +17,7 @@
 package com.xiaomi.youpin.docean.plugin.mybatis.interceptor;
 
 import com.xiaomi.youpin.docean.aop.AopContext;
-import com.xiaomi.youpin.docean.plugin.cat.CatInterceptor;
+import com.xiaomi.youpin.docean.aop.EnhanceInterceptor;
 import com.xiaomi.youpin.docean.plugin.mybatis.MybatisTransaction;
 import com.xiaomi.youpin.docean.plugin.mybatis.Transactional;
 import com.xiaomi.youpin.docean.plugin.mybatis.TransactionalContext;
@@ -29,11 +29,11 @@ import java.lang.reflect.Method;
  * @author goodjava@qq.com
  * @date 2020/7/5
  */
-public class TransactionalInterceptor extends CatInterceptor {
+public class TransactionalInterceptor extends EnhanceInterceptor {
 
     @Override
     public void before(AopContext context, Method method, Object[] args) {
-        super.before(context, method, args);
+        TransactionalContext.setTransactionActive(true);
         TransactionalContext.getContext().set(new MybatisTransaction(null, false));
     }
 

@@ -39,6 +39,11 @@ public class ReflectUtilsTest {
         Arrays.stream(fields).forEach(it -> {
             Resource r = it.getAnnotation(Resource.class);
             System.out.println(r);
+            if (null != r) {
+                Arrays.stream(r.getClass().getMethods()).forEach(it2 -> {
+                    System.out.println(it2.getName());
+                });
+            }
         });
     }
 

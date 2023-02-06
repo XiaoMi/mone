@@ -28,7 +28,6 @@ import java.lang.annotation.*;
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Indexed
 public @interface Sentinel {
 
     String value() default "";

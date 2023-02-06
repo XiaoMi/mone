@@ -27,8 +27,10 @@ import java.util.Set;
 /**
  * @author goodjava@qq.com
  * @date 2020/7/4
+ * 主要干两件事情
+ * 1.日志记录
+ * 2.操作记录(方便用来回放,比如下游服务器挂了,可以先把日志记录下来,就是redo log)
  */
-
 @Slf4j
 @DOceanPlugin
 public class LogPlugin implements IPlugin {
@@ -37,19 +39,30 @@ public class LogPlugin implements IPlugin {
     public void init(Set<? extends Class<?>> classSet, Ioc ioc) {
         log.info("init log plugin");
         Config config = ioc.getBean(Config.class);
-        Log log = new Log();
         if (config.get("log_type", "console").equals("file")) {
+            Log log = new Log();
             LogWriter lw = new LogWriter(config.get("log_path", "/tmp/log"));
             lw.init(1024 * 1024 * 20);
             log.setLogWriter(lw);
+            log.init();
+            ioc.putBean(log);
         }
-        log.init();
-        ioc.putBean(log);
+        //是否支持redolog操作
+        if (config.get("log_type", "").equals("redolog")) {
+            String logPath = config.get("log_path", "/tmp/redolog");
+            LogWriter lw = new LogWriter(logPath, false);
+            lw.setRefreshLineNum(1);
+            lw.init(0, 1024 * 1024 * 20);
+            ioc.putBean(lw);
+            LogReader lr = new LogReader(logPath);
+            ioc.putBean(lr);
+        }
+
     }
 
 
     @Override
     public String version() {
-        return "0.0.2:2020-07-09:goodjava@qq.com";
+        return "0.0.3:2022-12-11:goodjava@qq.com";
     }
 }

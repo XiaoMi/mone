@@ -16,6 +16,9 @@
 
 package com.xiaomi.data.push.uds.handler;
 
+import com.xiaomi.data.push.common.Pair;
+import com.xiaomi.data.push.common.SafeRun;
+import com.xiaomi.data.push.common.Send;
 import com.xiaomi.data.push.uds.UdsClient;
 import com.xiaomi.data.push.uds.context.UdsClientContext;
 import com.xiaomi.data.push.uds.po.UdsCommand;
@@ -28,7 +31,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 /**
  * @author goodjava@qq.com
@@ -37,11 +39,10 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class UdsClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
-    private ConcurrentHashMap<String, UdsProcessor> processorMap;
+    private ConcurrentHashMap<String, Pair<UdsProcessor<UdsCommand, UdsCommand>,ExecutorService>> processorMap;
 
-    private ExecutorService pool = Executors.newFixedThreadPool(200);
 
-    public UdsClientHandler(ConcurrentHashMap<String, UdsProcessor> processorMap) {
+    public UdsClientHandler(ConcurrentHashMap<String, Pair<UdsProcessor<UdsCommand, UdsCommand>,ExecutorService>> processorMap) {
         this.processorMap = processorMap;
     }
 
@@ -52,9 +53,17 @@ public class UdsClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
         log.debug("client received:{}", command);
         if (command.isRequest()) {
             command.setChannel(ctx.channel());
-            UdsProcessor processor = this.processorMap.get(command.getCmd());
-            if (null != processor) {
-                pool.submit(() -> processor.processRequest(command));
+            Pair<UdsProcessor<UdsCommand, UdsCommand>, ExecutorService> pair = this.processorMap.get(command.getCmd());
+            if (null != pair) {
+                UdsProcessor processor = pair.getKey();
+                pair.getValue().submit(()->{
+                    SafeRun.run(() -> {
+                        Object res = processor.processRequest(command);
+                        if (null != res) {
+                            Send.send(ctx.channel(), (UdsCommand) res);
+                        }
+                    });
+                });
             } else {
                 log.warn("processor is null cmd:{}", command.getCmd());
             }
@@ -70,7 +79,7 @@ public class UdsClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        log.error("exceptionCaught:{}", cause.getMessage());
+        log.error("exceptionCaught:{}", cause);
         UdsClientContext.ins().exceptionCaught(cause);
         ctx.close();
     }

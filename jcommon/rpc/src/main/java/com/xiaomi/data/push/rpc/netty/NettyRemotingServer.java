@@ -171,11 +171,12 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
                                         defaultEventExecutorGroup,
                                         new ChunkedWriteHandler(),
                                         new NettyEncoder(),
-                                        new NettyDecoder(),
-                                        new IdleStateHandler(0, 0, nettyServerConfig.getServerChannelMaxIdleTimeSeconds()),
-                                        new NettyConnetManageHandler(),
-                                        //写大文件
-                                        new NettyServerHandler());
+                                        new NettyDecoder());
+                                if (NettyRemotingServer.this.nettyServerConfig.isIdle()) {
+                                   ch.pipeline().addLast(new IdleStateHandler(0, 0, nettyServerConfig.getServerChannelMaxIdleTimeSeconds()));
+                                }
+                                ch.pipeline().addLast(new NettyConnetManageHandler(),new NettyServerHandler());
+
                             }
                         });
 
@@ -184,22 +185,13 @@ public class NettyRemotingServer extends NettyRemotingAbstract implements Remoti
         }
 
         try {
-
-
             if (this.port == 0) {
                 this.port = NetUtils.getAvailablePort();
             }
-
-
             this.regHost = System.getenv("host.ip") == null ? NetUtils.getLocalAddress().getHostAddress() : System.getenv("host.ip");
-
             this.host = System.getenv("host.ip") == null ? NetUtils.getLocalAddress().getHostAddress() : "0.0.0.0";
 
-
             log.info("rpc server host:{} regHost:{} port:{}", this.host, this.regHost, this.port);
-
-            log.info("rpc server host:{} port:{}", this.host, this.port);
-
             ChannelFuture sync = this.serverBootstrap.bind(this.host, this.port).sync();
             InetSocketAddress addr = (InetSocketAddress) sync.channel().localAddress();
             this.port = addr.getPort();

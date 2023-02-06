@@ -48,8 +48,6 @@ public interface Redis {
 
     void del(String key);
 
-
-
     List<String> lrange(String key);
 
     Long lpush(String key, String value);

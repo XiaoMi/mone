@@ -16,6 +16,7 @@
 
 package com.xiaomi.youpin.feishu;
 
+import com.xiaomi.data.push.nacos.NacosConfig;
 import com.xiaomi.youpin.feishu.bo.ContentBo;
 import com.xiaomi.youpin.feishu.bo.GroupPageData;
 import com.xiaomi.youpin.feishu.bo.MsgBatchSendRequest;
@@ -28,17 +29,23 @@ import java.util.List;
 
 public class FeiShuTest {
     private FeiShu feiShu;
-
-    private static final String GET_TOKEN_URL = "https://xx_replace_xx";
-    private static final String GET_GROUPS_URL = "https://xx_replace_xx";
-    private static final String SEND_MSG_URL = "https://xx_replace_xx";
-    private static final String SEND_BATCH_MSG_URL = "https://xx_replace_xx";
-    private static final String GET_USER_ID = "https://xx_replace_xx";
+    String appId = "";
+    String appSecret = "";
+    private static final String GET_TOKEN_URL = "";
+    private static final String GET_GROUPS_URL = "";
+    private static final String SEND_MSG_URL = "";
+    private static final String SEND_BATCH_MSG_URL = "";
+    private static final String GET_USER_ID = "";
 
 
     @Before
     public void init() {
-        feiShu = new FeiShu("", "", GET_TOKEN_URL, GET_GROUPS_URL, SEND_MSG_URL, SEND_BATCH_MSG_URL, GET_USER_ID);
+        NacosConfig config = new NacosConfig();
+        config.setDataId("zzy_new");
+        config.init();
+        appId = config.getConfig("feishu_appid");
+        appSecret = config.getConfig("58eASBLGw9IqBFyds5m93m4GmTDYBMMt");
+        feiShu = new FeiShu(appId, appSecret);
     }
 
     @Test
@@ -49,9 +56,8 @@ public class FeiShuTest {
 
     @Test
     public void sendMsg(){
-//        feiShu.sendMsgByEmail("liuyuchong@xxxx.com","@liuyuchong");
-//        feiShu.sendMsgByChatId("oc_3646758afc45327e7b906e8b4cc1891e","msg1  <at user_id=\"1cd5cg8c\">  test at msg </at>   msg2");
-        feiShu.sendMsgByChatId("oc_3646758afc45327e7b906e8b4cc1891e","<at user_id=\"d3ceea95\"></at>   吃饭了吗");
+        String chatId = "";
+        feiShu.sendMsgByChatId(chatId,"<at user_id=\"d3ceea95\"></at>   吃饭了吗");
     }
 
     @Test
@@ -61,24 +67,35 @@ public class FeiShuTest {
         content.setText("test");
         request.setContent(content);
         List<String> users = new ArrayList<>();
-        users.add(feiShu.getUserIdByEmail("liuyuchong@xxxx.com"));
-        users.add(feiShu.getUserIdByEmail("zhangxiuhua@xxxx.com"));
+        users.add(feiShu.getUserIdByEmail(""));
+        users.add(feiShu.getUserIdByEmail(""));
         request.setUser_ids(users);
         feiShu.batchSendMsg(request);
     }
+    @Test
+    public void getPhone(){
+        List<String> users = new ArrayList<>();
+        users.add(feiShu.getOpenIdIdByEmail(""));
+        users.add(feiShu.getOpenIdIdByEmail(""));
+        System.out.println(feiShu.getBatchPhone(users));
+    }
+
+
 
     @Test
     public void sendMsgByOpenId(){
-        feiShu.sendMsgByOpenId("ou_2b58f952b9b226d8c69bd437a2cfbf87", "test open id msg 1");
+        String openId = "";
+        feiShu.sendMsgByOpenId(openId, "test open id msg 1");
     }
 
     @Test
     public void sendMsgByUserId(){
-        feiShu.sendMsgByUserId("1cd5cg8c", "test user id msg 1");
+        String userId = "";
+        feiShu.sendMsgByUserId(userId, "test user id msg 1");
     }
 
     @Test
     public void getGroupMembersByPage(){
-        System.out.println(feiShu.getUserIdByEmail("z111hangxiuhua@xxxx.com"));
+        System.out.println(feiShu.getUserIdByEmail("xxxxxxxx@xiaomi.com"));
     }
 }

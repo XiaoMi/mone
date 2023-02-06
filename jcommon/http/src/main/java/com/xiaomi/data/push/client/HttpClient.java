@@ -116,11 +116,11 @@ public abstract class HttpClient {
     }
 
 
-    public static String post(String url, String body, Map<String, String> headers) {
+    public static String post(String url, String body, Map<String, String> headers, int timeout) {
         RequestConfig requestConfig = RequestConfig.custom()
-                .setSocketTimeout(1000)
-                .setConnectTimeout(500)
-                .setConnectionRequestTimeout(500)
+                .setSocketTimeout(timeout)
+                .setConnectTimeout(timeout)
+                .setConnectionRequestTimeout(timeout)
                 .build();
 
 
@@ -166,6 +166,10 @@ public abstract class HttpClient {
 
 
     public static String post(String url, String body) {
-        return post(url, body, Maps.newHashMap());
+        return post(url, body, Maps.newHashMap(), 1000);
+    }
+
+    public static String post(String url, String body, int timeout) {
+        return post(url, body, Maps.newHashMap(), timeout);
     }
 }

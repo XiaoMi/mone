@@ -30,12 +30,14 @@ import java.util.Optional;
  */
 public class BeanAnnoProcessor {
 
-    public static void process(Class<?> configuration, Ioc ioc) {
-            Arrays.stream(configuration.getMethods()).filter(m -> Optional.ofNullable(m.getAnnotation(Bean.class)).isPresent())
-                    .map(m -> Pair.of(m.getReturnType().getName(),ReflectUtils.invokeMethod(ReflectUtils.getInstance(configuration), m, new Object[]{}))).forEach(pair->{
-                        ioc.putBean(pair.getKey(),pair.getValue());
-            });
+    public static void process(Object cInstance, Ioc ioc) {
+        Class<?> configuration = cInstance.getClass();
+        Arrays.stream(configuration.getMethods())
+                .filter(m -> Optional.ofNullable(m.getAnnotation(Bean.class)).isPresent())
+                .map(m -> Pair.of(m.getReturnType().getName(),ReflectUtils.invokeMethod(cInstance, m, new Object[]{})))
+                .forEach(pair->{
+                    ioc.putBean(pair.getKey(),pair.getValue());
+                });
     }
-
 
 }

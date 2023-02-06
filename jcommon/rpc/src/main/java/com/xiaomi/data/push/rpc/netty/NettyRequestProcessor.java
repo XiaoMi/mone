@@ -33,4 +33,12 @@ public interface NettyRequestProcessor {
     default int cmdId() {
         return 0;
     }
+
+    /**
+     * 可以设定每个业务的线程数量(0使用默认线程池)
+     * @return
+     */
+    default int poolSize() {
+        return 0;
+    }
 }

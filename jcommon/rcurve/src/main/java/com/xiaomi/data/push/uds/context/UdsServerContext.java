@@ -54,7 +54,7 @@ public class UdsServerContext {
     }
 
     public void remove(String id) {
-        log.info("remove id:{}", id);
+        log.info("server context remove id:{}", id);
         this.listener.handle(new NetEvent(NetType.inactive, id));
         this.channelMap.remove(id);
     }

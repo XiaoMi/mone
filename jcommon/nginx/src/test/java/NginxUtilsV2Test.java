@@ -34,13 +34,4 @@ public class NginxUtilsV2Test {
         List<String> list = NginxUtilsV2.getServers(config, "gateway");
         System.out.println(list);
     }
-
-
-    @Test
-    public void testAddServer() throws IOException {
-        String path = this.getClass().getResource("/").getPath()+"nginx.conf";
-        String config = new String(Files.readAllBytes(Paths.get(path)));
-        String r = NginxUtilsV2.addServer(config, "gateway", Lists.newArrayList("xxxx", "xxxx"));
-        System.out.println(r);
-    }
 }

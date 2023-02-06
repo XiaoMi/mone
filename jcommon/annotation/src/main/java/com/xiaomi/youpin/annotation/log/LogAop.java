@@ -16,9 +16,6 @@
 
 package com.xiaomi.youpin.annotation.log;
 
-import com.dianping.cat.Cat;
-import com.dianping.cat.message.Event;
-import com.dianping.cat.message.Transaction;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.xiaomi.common.perfcounter.PerfCounter;
@@ -123,28 +120,7 @@ public class LogAop {
         long useTime = 0;
         long beginTime = System.currentTimeMillis();
         try {
-            Object result = new Object();
-            if (log.useCat()) {
-                Transaction t = Cat.newTransaction("Method." + name, "pageName");
-
-                try {
-                    Cat.logEvent("Method." + name, "serverIp", Event.SUCCESS, "ip=${serverIp}");
-                    Cat.logMetricForCount(name);
-                    Cat.logMetricForDuration(name, 5);
-
-                    result = joinPoint.proceed();
-
-                    t.setStatus(Transaction.SUCCESS);
-                } catch (Throwable e) {
-                    t.setStatus(e);
-                    Cat.logError(e);
-                    throw e;
-                } finally {
-                    t.complete();
-                }
-            } else {
-                result = joinPoint.proceed();
-            }
+            Object result = joinPoint.proceed();
             useTime = System.currentTimeMillis() - beginTime;
             if (log.usePercount()) {
                 PerfCounter.inc(name + ".Success", 1);

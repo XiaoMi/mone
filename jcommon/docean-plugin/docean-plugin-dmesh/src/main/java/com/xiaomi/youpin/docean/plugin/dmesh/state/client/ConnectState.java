@@ -63,7 +63,7 @@ public class ConnectState extends BaseState {
                 }
             }
         } catch (Throwable ex) {
-            log.error(ex.getMessage());
+            log.error(ex.getMessage(), ex);
         }
     }
 

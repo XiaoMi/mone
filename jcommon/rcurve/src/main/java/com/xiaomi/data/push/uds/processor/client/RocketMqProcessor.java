@@ -32,7 +32,7 @@ import java.util.List;
  * mesh server 会把rocketmq注册的信息发回来
  */
 @Slf4j
-public class RocketMqProcessor implements UdsProcessor {
+public class RocketMqProcessor implements UdsProcessor<UdsCommand,UdsCommand> {
 
     private List<UdsListener> listenerList = Lists.newLinkedList();
 
@@ -46,7 +46,7 @@ public class RocketMqProcessor implements UdsProcessor {
 
 
     @Override
-    public void processRequest(UdsCommand req) {
+    public UdsCommand processRequest(UdsCommand req) {
         UdsCommand response = UdsCommand.createResponse(req);
         try {
             log.info("{} {}", req.getApp(), req.getData());
@@ -57,6 +57,7 @@ public class RocketMqProcessor implements UdsProcessor {
             response.setMessage("call method error:" + req.getMethodName() + ex.getMessage());
         }
         Send.send(req.getChannel(), response);
+        return null;
     }
 
     @Override

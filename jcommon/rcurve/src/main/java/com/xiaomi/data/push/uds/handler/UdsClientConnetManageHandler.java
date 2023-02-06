@@ -17,6 +17,7 @@
 package com.xiaomi.data.push.uds.handler;
 
 import com.xiaomi.data.push.uds.UdsClient;
+import com.xiaomi.data.push.uds.context.UdsClientContext;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoop;
@@ -40,6 +41,12 @@ public class UdsClientConnetManageHandler extends ChannelDuplexHandler {
         this.reconnection = reconnection;
         this.udsClient = udsClient;
         this.path = path;
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        log.info("uds client channel active");
+        UdsClientContext.ins().channel.set(ctx.channel());
     }
 
     /**

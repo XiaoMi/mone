@@ -28,12 +28,13 @@ import lombok.extern.slf4j.Slf4j;
  *
  */
 @Slf4j
-public class MessageProcessor implements UdsProcessor {
+public class MessageProcessor implements UdsProcessor<UdsCommand,UdsCommand> {
 
     @Override
-    public void processRequest(UdsCommand request) {
+    public UdsCommand processRequest(UdsCommand request) {
         String data = request.getData(String.class);
         log.info("server:{}", data);
+        return null;
     }
 
     @Override

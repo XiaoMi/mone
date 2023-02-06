@@ -1,0 +1,53 @@
+syntax = "proto3";
+option java_multiple_files = true;
+package com.xiaomi.mone.grpc.demo;
+
+message HelloRequest {
+    string firstName = 1; //姓氏
+    string lastName = 2;
+}
+
+message HelloResponse {
+    string greeting = 1;
+}
+
+
+message MeshAddress {
+    string ip = 1;
+    int32 port =2;
+}
+
+message GrpcMeshRequest {
+    string serviceName = 1;
+    string methodName = 2;
+    repeated string paramTypes = 3;
+    repeated string params = 4;
+    string group = 5;
+    string version = 6;
+    MeshAddress address = 7;
+    string id = 8;
+    string app = 9;
+    int64 timeout = 10;
+}
+
+message GrpcMeshResponse {
+    int32 code = 1 ;
+    string message = 2;
+    string data = 3;
+}
+
+message PushMsg {
+    int32 code = 1;
+    string message = 2;
+    string data = 3;
+}
+
+service MeshService {
+    rpc call(GrpcMeshRequest) returns (GrpcMeshResponse);
+    rpc listen(GrpcMeshRequest) returns (stream PushMsg);
+}
+
+
+service HelloService {
+    rpc hello(HelloRequest) returns (HelloResponse);
+}

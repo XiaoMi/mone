@@ -90,7 +90,7 @@ public class TalosClient {
                     new SimpleTopicAbnormalCallback(),
                     callBack);
             this.producer = producer;
-            System.out.println("youpin log init success");
+                System.out.println("youpin log init success");
             initSuccess.set(true);
         } catch (Throwable ex) {
             System.err.println("youpin log init error " + ex.getMessage());

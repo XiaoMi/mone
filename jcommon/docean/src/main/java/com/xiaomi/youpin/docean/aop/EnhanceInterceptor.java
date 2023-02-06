@@ -16,7 +16,6 @@
 
 package com.xiaomi.youpin.docean.aop;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 
 /**
@@ -25,19 +24,14 @@ import java.lang.reflect.Method;
  */
 public class EnhanceInterceptor {
 
-
     public void before(AopContext aopContext, Method method, Object[] args) {
-
     }
-
 
     public Object after(AopContext context, Method method, Object res) {
         return res;
     }
 
-
     public void exception(AopContext context, Method method, Throwable ex) {
-
     }
 
     public boolean needEnhance(Method method) {

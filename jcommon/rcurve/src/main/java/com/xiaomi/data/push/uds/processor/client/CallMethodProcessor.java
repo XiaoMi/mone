@@ -19,14 +19,18 @@ package com.xiaomi.data.push.uds.processor.client;
 import com.google.gson.Gson;
 import com.xiaomi.data.push.common.CovertUtils;
 import com.xiaomi.data.push.common.Send;
-import com.xiaomi.data.push.uds.codes.CodesFactory;
+import com.xiaomi.data.push.uds.classloader.ClassLoaderExecute;
+import com.xiaomi.data.push.uds.context.CallContext;
+import com.xiaomi.data.push.uds.context.ContextHolder;
 import com.xiaomi.data.push.uds.po.UdsCommand;
 import com.xiaomi.data.push.uds.processor.UdsProcessor;
 import com.xiaomi.youpin.docean.common.MethodReq;
 import com.xiaomi.youpin.docean.common.ReflectUtils;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 
@@ -36,22 +40,38 @@ import java.util.function.Function;
  * 反射调用方法(从mesh agent 拿到的参数)
  */
 @Slf4j
-public class CallMethodProcessor implements UdsProcessor {
+public class CallMethodProcessor implements UdsProcessor<UdsCommand, UdsCommand> {
 
     private final Function<UdsCommand, Object> beanFactory;
+
+    @Setter
+    private Function<String, ClassLoader> classLoaderFunction;
+
+    /**
+     * 异常转换function
+     */
+    @Setter
+    private BiFunction<Throwable,UdsCommand, Throwable> throwableFunction = (throwable, res) -> throwable;
+
+    private Gson gson = new Gson();
+
 
     public CallMethodProcessor(Function<UdsCommand, Object> beanFactory) {
         this.beanFactory = beanFactory;
     }
 
     @Override
-    public void processRequest(UdsCommand req) {
+    public UdsCommand processRequest(UdsCommand req) {
+        log.debug("process request:{}",req.getCmd());
         UdsCommand response = UdsCommand.createResponse(req);
-        try {
+        new ClassLoaderExecute(this.throwableFunction).execute(() -> {
+            CallContext ctx = new CallContext();
+            ctx.setAttrs(req.getAttachments());
+            ContextHolder.getContext().set(ctx);
             Object obj = beanFactory.apply(req);
             String[] types = req.getParamTypes() == null ? new String[]{} : req.getParamTypes();
             String[] paramArray = req.getParams() == null ? new String[]{} : req.getParams();
-            log.info("invoke method : {} {} {} {}", req.getServiceName(), req.getMethodName(), Arrays.toString(types), Arrays.toString(paramArray));
+            log.debug("invoke method : {} {} {} {}", req.getServiceName(), req.getMethodName(), Arrays.toString(types), Arrays.toString(paramArray));
 
             MethodReq mr = new MethodReq();
             mr.setMethodName(req.getMethodName());
@@ -59,30 +79,19 @@ public class CallMethodProcessor implements UdsProcessor {
             mr.setParams(paramArray);
             mr.setByteParams(req.getByteParams());
 
-            Object res = ReflectUtils.invokeMethod(mr, obj, CovertUtils::convert);
-
-            if (req.getAtt("resultJson", "false").equals("true")) {
-                if (res.getClass().equals(int.class) || res.getClass().equals(Integer.class)
-                        || res.getClass().equals(long.class)  || res.getClass().equals(Long.class)
-                        || res.getClass().equals(String.class)) {
-                    response.putAtt("_returnType", res.getClass().getSimpleName());
-                    response.setData(CodesFactory.getCodes((byte) 2).encode(res), false);
-                } else {
-                    response.setData(new Gson().toJson(res).getBytes());
-                }
-            } else {
-                response.setData(res);
-            }
-        } catch (Throwable ex) {
-            log.error(ex.getMessage(), ex);
-            response.setCode(500);
-            response.setMessage("invoke method error:" + req.getServiceName() + "->" + req.getMethodName() + " error:" + ex.getMessage());
-        }
+            return ReflectUtils.invokeMethod(mr, obj, (paramTypes, params) -> CovertUtils.convert(req.getSerializeType(), paramTypes, params));
+        }, this.classLoaderFunction, response, req);
         Send.sendResponse(req.getChannel(), response);
+        return null;
     }
 
     @Override
     public String cmd() {
         return "call";
+    }
+
+    @Override
+    public int poolSize() {
+        return 300;
     }
 }

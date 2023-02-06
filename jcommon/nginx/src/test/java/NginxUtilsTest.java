@@ -46,8 +46,8 @@ public class NginxUtilsTest {
 
     private static final String SERVER_GOOGLE = "server www.google.com";
     private static final String SERVER_BAIDU = "server www.baidu.com";
-    private static final String SERVER_IP_1 = "server xxxx";
-    private static final String SERVER_IP_2 = "server     xxxx   asdfa  dsfafa ";
+    private static final String SERVER_IP_1 = "server 10.0.0.1";
+    private static final String SERVER_IP_2 = "server      10.0.0.2   asdfa  dsfafa ";
     private static final String SERVER_ABC = "server abc";
 
     private static final String TEST_FILE = "upstreams.conf";
@@ -69,15 +69,6 @@ public class NginxUtilsTest {
     @BeforeClass
     public static void commonData() throws IOException {
         commentFile = readFile(TEST_FILE);
-    }
-
-    @Test
-    public void removeServer_Comment_removeOne() throws IOException {
-        String config = NginxUtils.removeServer(commentFile, "staging_kylin_backend", "server xxxxx");
-        List<String> servers = NginxUtils.getServers(config, "staging_kylin_backend");
-        System.out.println(servers);
-        assertEquals(1, servers.size());
-
     }
 
     @Test

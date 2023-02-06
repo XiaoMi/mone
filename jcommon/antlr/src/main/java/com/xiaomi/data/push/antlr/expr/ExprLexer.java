@@ -1,19 +1,3 @@
-/*
- *  Copyright 2020 Xiaomi
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 // Generated from Expr.g4 by ANTLR 4.7.1
 package com.xiaomi.data.push.antlr.expr;
 import org.antlr.v4.runtime.Lexer;
@@ -125,7 +109,7 @@ public class ExprLexer extends Lexer {
 		"S\13\f\3\f\3\f\3\f\3\f\3\r\3\r\3\r\3\r\7\r]\n\r\f\r\16\r`\13\r\3\r\3\r"+
 		"\3\r\3\r\3\r\3\16\3\16\3\17\3\17\3\20\3\20\3\21\3\21\3\22\3\22\3\23\3"+
 		"\23\3\24\3\24\4Q^\2\25\3\3\5\4\7\5\t\6\13\7\r\b\17\t\21\n\23\13\25\f\27"+
-		"\r\31\16\33\17\35\20\37\21!\22#\23%\24\'\25\3\2\5\5\2\62;C\\c|\3\2\62"+
+		"\r\31\16\33\17\35\20\37\21!\22#\23%\24\'\25\3\2\5\6\2\62;C\\aac|\3\2\62"+
 		";\5\2\13\f\17\17\"\"\2y\2\3\3\2\2\2\2\5\3\2\2\2\2\7\3\2\2\2\2\t\3\2\2"+
 		"\2\2\13\3\2\2\2\2\r\3\2\2\2\2\17\3\2\2\2\2\21\3\2\2\2\2\23\3\2\2\2\2\25"+
 		"\3\2\2\2\2\27\3\2\2\2\2\31\3\2\2\2\2\33\3\2\2\2\2\35\3\2\2\2\2\37\3\2"+

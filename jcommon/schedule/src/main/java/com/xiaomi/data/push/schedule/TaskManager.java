@@ -1,19 +1,3 @@
-/*
- *  Copyright 2020 Xiaomi
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.xiaomi.data.push.schedule;
 
 import com.google.common.util.concurrent.*;
@@ -27,8 +11,6 @@ import com.xiaomi.data.push.dao.model.TaskExample;
 import com.xiaomi.data.push.dao.model.TaskWithBLOBs;
 import com.xiaomi.data.push.schedule.task.*;
 import com.xiaomi.data.push.schedule.task.notify.Notify;
-import com.xiaomi.data.push.service.FeiShuCommonService;
-import com.xiaomi.data.push.service.TaskHistoryService;
 import com.xiaomi.data.push.service.TaskService;
 import com.xiaomi.youpin.cron.CronExpression;
 import lombok.extern.slf4j.Slf4j;
@@ -45,7 +27,6 @@ import org.springframework.stereotype.Component;
 import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -83,12 +64,6 @@ public class TaskManager implements ApplicationContextAware, PushService {
 
     @Autowired
     private TaskCacheUpdater taskCacheUpdater;
-
-    @Autowired
-    private FeiShuCommonService feiShuService;
-
-    @Autowired
-    private TaskHistoryService taskHistoryService;
 
     public TaskManager() {
         logger.info("version:{}", new ScheduleVersion());
@@ -149,23 +124,10 @@ public class TaskManager implements ApplicationContextAware, PushService {
                 try {
                     nextRetryTime = new CronExpression(taskParam.getCron()).getNextValidTimeAfter(new Date()).getTime();
                 } catch (Exception e) {
-                    logger.warn("CronExpression error task :{} error:{}",taskParam, e.getMessage());
+                    logger.warn("CronExpression error task :{} error:{}", taskParam, e.getMessage());
                 }
             }
         }
-
-//        if (!StringUtils.isEmpty(taskParam.getCron())) {
-//            try {
-//                nextRetryTime = new CronExpression(taskParam.getCron()).getNextValidTimeAfter(new Date()).getTime();
-//            } catch (Exception e) {
-//                logger.warn("error:{}", e.getMessage());
-//            }
-//        } else {
-//            if (!run && 0 != taskParam.getExecuteTime()) {
-//                nextRetryTime = taskParam.getExecuteTime();
-//            }
-//        }
-
         this.submitTask(taskParam, taskContext, run, nextRetryTime, false);
     }
 
@@ -176,7 +138,7 @@ public class TaskManager implements ApplicationContextAware, PushService {
 
     public void submitTask(TaskParam taskParam, TaskContext taskContext, boolean run, long nextRetryTime, boolean debug) {
         long now = System.currentTimeMillis();
-        log.info("taskParam{}",taskParam.toString());
+        log.info("taskParam{}", taskParam.toString());
         TaskWithBLOBs tb = new TaskWithBLOBs();
         tb.setName(taskParam.getTaskDef().getName());
         tb.setVersion(0);
@@ -185,10 +147,13 @@ public class TaskManager implements ApplicationContextAware, PushService {
         tb.setParams((new Gson()).toJson(taskParam));
         tb.setContext((new Gson()).toJson(taskContext));
 
-        log.info("context{}",tb.getContext().toString());
+        log.info("context{}", tb.getContext().toString());
         tb.setParentId(-1);
         tb.setCreated(now);
         tb.setCreator(taskParam.getCreator());
+        tb.setAlarmUsername(taskParam.getAlarmUsername());
+        tb.setAlarmGroup(taskParam.getAlarmGroup());
+        tb.setAlarmLevel(taskParam.getAlarmLevel());
         tb.setRoleId(taskParam.getRoleId());
         tb.setGid(taskParam.getGid());
         if (null == tb.getGid()) {
@@ -200,20 +165,21 @@ public class TaskManager implements ApplicationContextAware, PushService {
         tb.setScheduleGroup(micheduleGroup);
         tb.setNextRetryTime(nextRetryTime);
         tb.setType(taskParam.getTaskDef().getType());
+        tb.setTimeout(taskParam.getTimeout());
 
         tb.setBid(taskParam.getBizId());
 
         if (run) {
             tb.setStatus(TaskStatus.Running.code);
             if (!debug) {
-                this.taskMapper.insert(tb);
+                this.taskMapper.insertSelective(tb);
             }
             taskParam.setTaskId(tb.getId());
             this.doTask(taskParam, taskContext);
         } else {
             tb.setStatus(TaskStatus.Retry.code);
             if (!debug) {
-                this.taskMapper.insert(tb);
+                this.taskMapper.insertSelective(tb);
             }
             taskParam.setTaskId(tb.getId());
         }
@@ -239,12 +205,12 @@ public class TaskManager implements ApplicationContextAware, PushService {
         try {
 
             ListenableFuture<TaskResult> future = this.listeningExecutor.submit(() ->
-                    this.timeLimiter.callWithTimeout(() -> {
-                        itask.beforeTask(taskParam, taskContext);
-                        TaskResult result = itask.execute(taskParam, taskContext);
-                        itask.afterTask(taskContext, result);
-                        return result;
-                    }, this.debug ? TimeUnit.HOURS.toMillis(1L) : getTimeout(taskParam), TimeUnit.MILLISECONDS));
+                this.timeLimiter.callWithTimeout(() -> {
+                    itask.beforeTask(taskParam, taskContext);
+                    TaskResult result = itask.execute(taskParam, taskContext);
+                    itask.afterTask(taskContext, result);
+                    return result;
+                }, this.debug ? TimeUnit.HOURS.toMillis(1L) : getTimeout(taskParam), TimeUnit.MILLISECONDS));
             Futures.addCallback(future, new FutureCallback<TaskResult>() {
                 @Override
                 public void onSuccess(TaskResult result) {
@@ -315,6 +281,8 @@ public class TaskManager implements ApplicationContextAware, PushService {
 
             TaskParam taskParam = new Gson().fromJson(taskBlob.getParams(), TaskParam.class);
             taskParam.setTaskId(taskId);
+            taskParam.setAlarmGroup(taskBlob.getAlarmGroup());
+            taskParam.setAlarmLevel(taskBlob.getAlarmLevel());
             this.doTask(taskParam, context);
         } else {
             logger.error("retry task task is null taskId:{}", taskId);
@@ -329,20 +297,24 @@ public class TaskManager implements ApplicationContextAware, PushService {
     /**
      * 暂停任务
      */
-    public void pause(int id) {
-        taskService.updateTask(id, (task) -> {
+    public boolean pause(int id) {
+        boolean success = taskService.updateTask(id, (task) -> {
             task.setStatus(TaskStatus.Pause.code);
             task.setUpdated(System.currentTimeMillis());
             return true;
-        });
+
+        }, 10, "pause");
+
+        logger.info("pause taskService.updateTask with id:{} success:{}", id, success);
+        return success;
     }
 
     /**
      * 启动任务
      */
-    public void start(int id) {
-        taskService.updateTask(id, (task) -> {
-            if (task.getStatus().equals(TaskStatus.Retry.code)) {
+    public boolean start(int id) {
+        boolean success = taskService.updateTask(id, (task) -> {
+            if (task.getStatus().equals(TaskStatus.Retry.code) || task.getStatus().equals(TaskStatus.Running.code)) {
                 return false;
             }
             task.setStatus(TaskStatus.Retry.code);
@@ -352,8 +324,11 @@ public class TaskManager implements ApplicationContextAware, PushService {
             task.setErrorRetryNum(0);
             task.setUpdated(System.currentTimeMillis());
             return true;
-        });
 
+        }, 50, "start");
+
+        logger.info("start taskService.updateTask with id:{} success:{}", id, success);
+        return success;
     }
 
     /**
@@ -363,12 +338,12 @@ public class TaskManager implements ApplicationContextAware, PushService {
      * @param params
      */
     public void modifyParam(Integer id, String params) {
-        taskService.updateTask(id, (task) -> {
+        boolean res = taskService.updateTask(id, (task) -> {
             TaskParam taskParam = new Gson().fromJson(params, TaskParam.class);
             TaskParam oldTaskParams = new Gson().fromJson(task.getParams(), TaskParam.class);
-            if(taskParam.getExecuteTime()!=0){
+            if (taskParam.getExecuteTime() != 0) {
                 task.setNextRetryTime(taskParam.getExecuteTime());
-            }else{
+            } else {
                 if (!oldTaskParams.getCron().equals(taskParam.getCron())) {
                     try {
                         long nextRetryTime = new CronExpression(taskParam.getCron()).getNextValidTimeAfter(new Date()).getTime();
@@ -387,13 +362,19 @@ public class TaskManager implements ApplicationContextAware, PushService {
             task.setErrorRetryNum(0);
             task.setParams(params);
             task.setGid(taskParam.getGid());
+            task.setAlarmUsername(taskParam.getAlarmUsername());
+            task.setAlarmGroup(taskParam.getAlarmGroup());
+            task.setAlarmLevel(taskParam.getAlarmLevel());
+            task.setBid(taskParam.getBizId());
             if (task.getGid() == null) {
                 task.setGid(0);
             }
 
             task.setUpdated(System.currentTimeMillis());
             return true;
-        });
+        }, 10, "modify_param");
+
+        logger.info("start taskService.modify with id:{} success:{}", id, res);
     }
 
 

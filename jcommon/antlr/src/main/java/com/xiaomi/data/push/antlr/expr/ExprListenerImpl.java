@@ -157,12 +157,16 @@ public class ExprListenerImpl extends ExprBaseListener {
                 String[] ss = params.split(",");
                 for (String s : ss) {
                     String[] pp = s.split(":");
-                    if (pp[1].equals("int")) {
-                        list.add(Integer.parseInt(pp[0]));
-                    } else if (pp[1].equals("long")) {
-                        list.add(Long.valueOf(pp[0]));
-                    } else if (pp[1].equals("string")) {
+                    if (pp.length == 1) {
                         list.add(pp[0]);
+                    } else {
+                        if (pp[1].equals("int")) {
+                            list.add(Integer.parseInt(pp[0]));
+                        } else if (pp[1].equals("long")) {
+                            list.add(Long.valueOf(pp[0]));
+                        } else if (pp[1].equals("string")) {
+                            list.add(pp[0]);
+                        }
                     }
                 }
             }
@@ -193,6 +197,10 @@ public class ExprListenerImpl extends ExprBaseListener {
         this.stack.add(new ExpNode("method", ctx.ID().getText()));
     }
 
+    /**
+     * map 取值
+     * @param ctx the parse tree
+     */
     @Override
     public void exitMp(ExprParser.MpContext ctx) {
         log.debug("map=" + ctx.getText());
