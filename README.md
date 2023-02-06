@@ -12,6 +12,12 @@
   Mone是以微服务为核心的一站式企业协同研发平台。支持公共云、专有云和混合云多种部署形态；提供从“项目创建->开发->部署->治理->应用观测”端到端的研发全流程服务。
   Mone通过云原生新技术和研发新模式，打造“双敏”，敏捷研发和敏捷组织，保障小米-中国区高复杂业务、大规模团队的敏捷研发协同，实现多倍效能提升。
 
+## ✨ Architecture
+### 产品架构
+![mone](readme/image/mione产品架构.png)
+### 研发全流程提效
+![mone](readme/image/mione_devflow.png)
+
 
 ## ✨ Features
 - 🌈 项目全生命周期管理
@@ -22,13 +28,11 @@
 - 🎨 FaaS平台
 - ⚙️ API管理平台
 
-![mone](readme/image/mione产品架构.png)
 
 
+## 🔗 Mone introduction
 
-## 🔗 产品介绍
-
-- [首页]
+### [首页]
 
 <div align='center'>
   <a href="https://github.com/XiaoMi/mone">
@@ -64,12 +68,14 @@
 ![mone-hera](readme/image/miapi03.png)
 
 
+## Getting started
+    todo...
 
-## 📃 文档
+## 📃 Document
 
  想要了解更多或快速入门[快速入门](http://mone.xiaomiyoupin.com/#/doc/1)，请参照 [米效官网](http://mone.xiaomiyoupin.com/#/index)
  
-## 🔨维护者
+## 🔨Contributing
 
 **owners:**
 - 邢鑫岩                                                                                                                     
@@ -98,10 +104,14 @@
 - 陈磊
 - 郑浩
     
- ## 📞 联系我们
+ ## 📞 Contact
 
 
- 📮 邮箱 : mione@xiaomi.com
+ + 📮 Mailing list:
+   + mione@xiaomi.com
+ + 📮 Wechat official account（微信公众号）
+   + 天穹云原生
+
 
 ## *License*
 Mone is released under the [Apache 2.0 license](LICENSE).
