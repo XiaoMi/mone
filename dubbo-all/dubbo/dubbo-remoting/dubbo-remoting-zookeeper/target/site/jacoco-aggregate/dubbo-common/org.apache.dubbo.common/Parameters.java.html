@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>Parameters.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-remoting-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.common</a> &gt; <span class="el_source">Parameters.java</span></div><h1>Parameters.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.common;
+
+import org.apache.dubbo.common.extension.ExtensionLoader;
+import org.apache.dubbo.common.logger.Logger;
+import org.apache.dubbo.common.logger.LoggerFactory;
+import org.apache.dubbo.common.utils.CollectionUtils;
+import org.apache.dubbo.common.utils.StringUtils;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Parameters for backward compatibility for version prior to 2.0.5
+ *
+ * @deprecated
+ */
+@Deprecated
+public class Parameters {
+<span class="nc" id="L38">    protected static final Logger logger = LoggerFactory.getLogger(Parameters.class);</span>
+    private final Map&lt;String, String&gt; parameters;
+
+    public Parameters(String... pairs) {
+<span class="nc" id="L42">        this(toMap(pairs));</span>
+<span class="nc" id="L43">    }</span>
+
+<span class="nc" id="L45">    public Parameters(Map&lt;String, String&gt; parameters) {</span>
+<span class="nc bnc" id="L46" title="All 2 branches missed.">        this.parameters = Collections.unmodifiableMap(parameters != null ? new HashMap&lt;&gt;(parameters) : new HashMap&lt;&gt;(0));</span>
+<span class="nc" id="L47">    }</span>
+
+    private static Map&lt;String, String&gt; toMap(String... pairs) {
+<span class="nc" id="L50">        return CollectionUtils.toStringMap(pairs);</span>
+    }
+
+    public static Parameters parseParameters(String query) {
+<span class="nc" id="L54">        return new Parameters(StringUtils.parseQueryString(query));</span>
+    }
+
+    public Map&lt;String, String&gt; getParameters() {
+<span class="nc" id="L58">        return parameters;</span>
+    }
+
+    public &lt;T&gt; T getExtension(Class&lt;T&gt; type, String key) {
+<span class="nc" id="L62">        String name = getParameter(key);</span>
+<span class="nc" id="L63">        return ExtensionLoader.getExtensionLoader(type).getExtension(name);</span>
+    }
+
+    public &lt;T&gt; T getExtension(Class&lt;T&gt; type, String key, String defaultValue) {
+<span class="nc" id="L67">        String name = getParameter(key, defaultValue);</span>
+<span class="nc" id="L68">        return ExtensionLoader.getExtensionLoader(type).getExtension(name);</span>
+    }
+
+    public &lt;T&gt; T getMethodExtension(Class&lt;T&gt; type, String method, String key) {
+<span class="nc" id="L72">        String name = getMethodParameter(method, key);</span>
+<span class="nc" id="L73">        return ExtensionLoader.getExtensionLoader(type).getExtension(name);</span>
+    }
+
+    public &lt;T&gt; T getMethodExtension(Class&lt;T&gt; type, String method, String key, String defaultValue) {
+<span class="nc" id="L77">        String name = getMethodParameter(method, key, defaultValue);</span>
+<span class="nc" id="L78">        return ExtensionLoader.getExtensionLoader(type).getExtension(name);</span>
+    }
+
+    public String getDecodedParameter(String key) {
+<span class="nc" id="L82">        return getDecodedParameter(key, null);</span>
+    }
+
+    public String getDecodedParameter(String key, String defaultValue) {
+<span class="nc" id="L86">        String value = getParameter(key, defaultValue);</span>
+<span class="nc bnc" id="L87" title="All 4 branches missed.">        if (value != null &amp;&amp; value.length() &gt; 0) {</span>
+            try {
+<span class="nc" id="L89">                value = URLDecoder.decode(value, &quot;UTF-8&quot;);</span>
+<span class="nc" id="L90">            } catch (UnsupportedEncodingException e) {</span>
+<span class="nc" id="L91">                logger.error(e.getMessage(), e);</span>
+<span class="nc" id="L92">            }</span>
+        }
+<span class="nc" id="L94">        return value;</span>
+    }
+
+    public String getParameter(String key) {
+<span class="nc" id="L98">        String value = parameters.get(key);</span>
+<span class="nc bnc" id="L99" title="All 4 branches missed.">        if (value == null || value.length() == 0) {</span>
+<span class="nc" id="L100">            value = parameters.get(Constants.HIDE_KEY_PREFIX + key);</span>
+        }
+<span class="nc bnc" id="L102" title="All 4 branches missed.">        if (value == null || value.length() == 0) {</span>
+<span class="nc" id="L103">            value = parameters.get(Constants.DEFAULT_KEY_PREFIX + key);</span>
+        }
+<span class="nc bnc" id="L105" title="All 4 branches missed.">        if (value == null || value.length() == 0) {</span>
+<span class="nc" id="L106">            value = parameters.get(Constants.HIDE_KEY_PREFIX + Constants.DEFAULT_KEY_PREFIX + key);</span>
+        }
+<span class="nc" id="L108">        return value;</span>
+    }
+
+    public String getParameter(String key, String defaultValue) {
+<span class="nc" id="L112">        String value = getParameter(key);</span>
+<span class="nc bnc" id="L113" title="All 4 branches missed.">        if (value == null || value.length() == 0) {</span>
+<span class="nc" id="L114">            return defaultValue;</span>
+        }
+<span class="nc" id="L116">        return value;</span>
+    }
+
+    public int getIntParameter(String key) {
+<span class="nc" id="L120">        String value = getParameter(key);</span>
+<span class="nc bnc" id="L121" title="All 4 branches missed.">        if (value == null || value.length() == 0) {</span>
+<span class="nc" id="L122">            return 0;</span>
+        }
+<span class="nc" id="L124">        return Integer.parseInt(value);</span>
+    }
+
+    public int getIntParameter(String key, int defaultValue) {
+<span class="nc" id="L128">        String value = getParameter(key);</span>
+<span class="nc bnc" id="L129" title="All 4 branches missed.">        if (value == null || value.length() == 0) {</span>
+<span class="nc" id="L130">            return defaultValue;</span>
+        }
+<span class="nc" id="L132">        return Integer.parseInt(value);</span>
+    }
+
+    public int getPositiveIntParameter(String key, int defaultValue) {
+<span class="nc bnc" id="L136" title="All 2 branches missed.">        if (defaultValue &lt;= 0) {</span>
+<span class="nc" id="L137">            throw new IllegalArgumentException(&quot;defaultValue &lt;= 0&quot;);</span>
+        }
+<span class="nc" id="L139">        String value = getParameter(key);</span>
+<span class="nc bnc" id="L140" title="All 4 branches missed.">        if (value == null || value.length() == 0) {</span>
+<span class="nc" id="L141">            return defaultValue;</span>
+        }
+<span class="nc" id="L143">        int i = Integer.parseInt(value);</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">        if (i &gt; 0) {</span>
+<span class="nc" id="L145">            return i;</span>
+        }
+<span class="nc" id="L147">        return defaultValue;</span>
+    }
+
+    public boolean getBooleanParameter(String key) {
+<span class="nc" id="L151">        String value = getParameter(key);</span>
+<span class="nc bnc" id="L152" title="All 4 branches missed.">        if (value == null || value.length() == 0) {</span>
+<span class="nc" id="L153">            return false;</span>
+        }
+<span class="nc" id="L155">        return Boolean.parseBoolean(value);</span>
+    }
+
+    public boolean getBooleanParameter(String key, boolean defaultValue) {
+<span class="nc" id="L159">        String value = getParameter(key);</span>
+<span class="nc bnc" id="L160" title="All 4 branches missed.">        if (value == null || value.length() == 0) {</span>
+<span class="nc" id="L161">            return defaultValue;</span>
+        }
+<span class="nc" id="L163">        return Boolean.parseBoolean(value);</span>
+    }
+
+    public boolean hasParamter(String key) {
+<span class="nc" id="L167">        String value = getParameter(key);</span>
+<span class="nc bnc" id="L168" title="All 4 branches missed.">        return value != null &amp;&amp; value.length() &gt; 0;</span>
+    }
+
+    public String getMethodParameter(String method, String key) {
+<span class="nc" id="L172">        String value = parameters.get(method + &quot;.&quot; + key);</span>
+<span class="nc bnc" id="L173" title="All 4 branches missed.">        if (value == null || value.length() == 0) {</span>
+<span class="nc" id="L174">            value = parameters.get(Constants.HIDE_KEY_PREFIX + method + &quot;.&quot; + key);</span>
+        }
+<span class="nc bnc" id="L176" title="All 4 branches missed.">        if (value == null || value.length() == 0) {</span>
+<span class="nc" id="L177">            return getParameter(key);</span>
+        }
+<span class="nc" id="L179">        return value;</span>
+    }
+
+    public String getMethodParameter(String method, String key, String defaultValue) {
+<span class="nc" id="L183">        String value = getMethodParameter(method, key);</span>
+<span class="nc bnc" id="L184" title="All 4 branches missed.">        if (value == null || value.length() == 0) {</span>
+<span class="nc" id="L185">            return defaultValue;</span>
+        }
+<span class="nc" id="L187">        return value;</span>
+    }
+
+    public int getMethodIntParameter(String method, String key) {
+<span class="nc" id="L191">        String value = getMethodParameter(method, key);</span>
+<span class="nc bnc" id="L192" title="All 4 branches missed.">        if (value == null || value.length() == 0) {</span>
+<span class="nc" id="L193">            return 0;</span>
+        }
+<span class="nc" id="L195">        return Integer.parseInt(value);</span>
+    }
+
+    public int getMethodIntParameter(String method, String key, int defaultValue) {
+<span class="nc" id="L199">        String value = getMethodParameter(method, key);</span>
+<span class="nc bnc" id="L200" title="All 4 branches missed.">        if (value == null || value.length() == 0) {</span>
+<span class="nc" id="L201">            return defaultValue;</span>
+        }
+<span class="nc" id="L203">        return Integer.parseInt(value);</span>
+    }
+
+    public int getMethodPositiveIntParameter(String method, String key, int defaultValue) {
+<span class="nc bnc" id="L207" title="All 2 branches missed.">        if (defaultValue &lt;= 0) {</span>
+<span class="nc" id="L208">            throw new IllegalArgumentException(&quot;defaultValue &lt;= 0&quot;);</span>
+        }
+<span class="nc" id="L210">        String value = getMethodParameter(method, key);</span>
+<span class="nc bnc" id="L211" title="All 4 branches missed.">        if (value == null || value.length() == 0) {</span>
+<span class="nc" id="L212">            return defaultValue;</span>
+        }
+<span class="nc" id="L214">        int i = Integer.parseInt(value);</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">        if (i &gt; 0) {</span>
+<span class="nc" id="L216">            return i;</span>
+        }
+<span class="nc" id="L218">        return defaultValue;</span>
+    }
+
+    public boolean getMethodBooleanParameter(String method, String key) {
+<span class="nc" id="L222">        String value = getMethodParameter(method, key);</span>
+<span class="nc bnc" id="L223" title="All 4 branches missed.">        if (value == null || value.length() == 0) {</span>
+<span class="nc" id="L224">            return false;</span>
+        }
+<span class="nc" id="L226">        return Boolean.parseBoolean(value);</span>
+    }
+
+    public boolean getMethodBooleanParameter(String method, String key, boolean defaultValue) {
+<span class="nc" id="L230">        String value = getMethodParameter(method, key);</span>
+<span class="nc bnc" id="L231" title="All 4 branches missed.">        if (value == null || value.length() == 0) {</span>
+<span class="nc" id="L232">            return defaultValue;</span>
+        }
+<span class="nc" id="L234">        return Boolean.parseBoolean(value);</span>
+    }
+
+    public boolean hasMethodParamter(String method, String key) {
+<span class="nc" id="L238">        String value = getMethodParameter(method, key);</span>
+<span class="nc bnc" id="L239" title="All 4 branches missed.">        return value != null &amp;&amp; value.length() &gt; 0;</span>
+    }
+
+    @Override
+    public boolean equals(Object o) {
+<span class="nc" id="L244">        return parameters.equals(o);</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc" id="L249">        return parameters.hashCode();</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L254">        return StringUtils.toQueryString(getParameters());</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>

@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LoggerFactory.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-remoting-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.common.logger</a> &gt; <span class="el_source">LoggerFactory.java</span></div><h1>LoggerFactory.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.common.logger;
+
+import org.apache.dubbo.common.extension.ExtensionLoader;
+import org.apache.dubbo.common.logger.jcl.JclLoggerAdapter;
+import org.apache.dubbo.common.logger.jdk.JdkLoggerAdapter;
+import org.apache.dubbo.common.logger.log4j.Log4jLoggerAdapter;
+import org.apache.dubbo.common.logger.log4j2.Log4j2LoggerAdapter;
+import org.apache.dubbo.common.logger.slf4j.Slf4jLoggerAdapter;
+import org.apache.dubbo.common.logger.support.FailsafeLogger;
+
+import java.io.File;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
+/**
+ * Logger factory
+ */
+public class LoggerFactory {
+
+<span class="nc" id="L37">    private static final ConcurrentMap&lt;String, FailsafeLogger&gt; LOGGERS = new ConcurrentHashMap&lt;String, FailsafeLogger&gt;();</span>
+    private static volatile LoggerAdapter LOGGER_ADAPTER;
+
+    // search common-used logging frameworks
+    static {
+<span class="nc" id="L42">        String logger = System.getProperty(&quot;dubbo.application.logger&quot;);</span>
+<span class="nc bnc" id="L43" title="All 2 branches missed.">        if (&quot;slf4j&quot;.equals(logger)) {</span>
+<span class="nc" id="L44">            setLoggerAdapter(new Slf4jLoggerAdapter());</span>
+<span class="nc bnc" id="L45" title="All 2 branches missed.">        } else if (&quot;jcl&quot;.equals(logger)) {</span>
+<span class="nc" id="L46">            setLoggerAdapter(new JclLoggerAdapter());</span>
+<span class="nc bnc" id="L47" title="All 2 branches missed.">        } else if (&quot;log4j&quot;.equals(logger)) {</span>
+<span class="nc" id="L48">            setLoggerAdapter(new Log4jLoggerAdapter());</span>
+<span class="nc bnc" id="L49" title="All 2 branches missed.">        } else if (&quot;jdk&quot;.equals(logger)) {</span>
+<span class="nc" id="L50">            setLoggerAdapter(new JdkLoggerAdapter());</span>
+<span class="nc bnc" id="L51" title="All 2 branches missed.">        } else if (&quot;log4j2&quot;.equals(logger)) {</span>
+<span class="nc" id="L52">            setLoggerAdapter(new Log4j2LoggerAdapter());</span>
+        } else {
+            try {
+<span class="nc" id="L55">                setLoggerAdapter(new Slf4jLoggerAdapter());</span>
+<span class="nc" id="L56">            } catch (Throwable e1) {</span>
+                try {
+<span class="nc" id="L58">                    setLoggerAdapter(new Log4jLoggerAdapter());</span>
+<span class="nc" id="L59">                } catch (Throwable e2) {</span>
+                    try {
+<span class="nc" id="L61">                        setLoggerAdapter(new Log4j2LoggerAdapter());</span>
+<span class="nc" id="L62">                    } catch (Throwable e3) {</span>
+                        try {
+<span class="nc" id="L64">                            setLoggerAdapter(new JclLoggerAdapter());</span>
+<span class="nc" id="L65">                        } catch (Throwable e4) {</span>
+<span class="nc" id="L66">                            setLoggerAdapter(new JdkLoggerAdapter());</span>
+<span class="nc" id="L67">                        }</span>
+<span class="nc" id="L68">                    }</span>
+<span class="nc" id="L69">                }</span>
+<span class="nc" id="L70">            }</span>
+        }
+<span class="nc" id="L72">    }</span>
+
+    private LoggerFactory() {
+    }
+
+    public static void setLoggerAdapter(String loggerAdapter) {
+<span class="nc bnc" id="L78" title="All 4 branches missed.">        if (loggerAdapter != null &amp;&amp; loggerAdapter.length() &gt; 0) {</span>
+<span class="nc" id="L79">            setLoggerAdapter(ExtensionLoader.getExtensionLoader(LoggerAdapter.class).getExtension(loggerAdapter));</span>
+        }
+<span class="nc" id="L81">    }</span>
+
+    /**
+     * Set logger provider
+     *
+     * @param loggerAdapter logger provider
+     */
+    public static void setLoggerAdapter(LoggerAdapter loggerAdapter) {
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        if (loggerAdapter != null) {</span>
+<span class="nc" id="L90">            Logger logger = loggerAdapter.getLogger(LoggerFactory.class.getName());</span>
+<span class="nc" id="L91">            logger.info(&quot;using logger: &quot; + loggerAdapter.getClass().getName());</span>
+<span class="nc" id="L92">            LoggerFactory.LOGGER_ADAPTER = loggerAdapter;</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">            for (Map.Entry&lt;String, FailsafeLogger&gt; entry : LOGGERS.entrySet()) {</span>
+<span class="nc" id="L94">                entry.getValue().setLogger(LOGGER_ADAPTER.getLogger(entry.getKey()));</span>
+<span class="nc" id="L95">            }</span>
+        }
+<span class="nc" id="L97">    }</span>
+
+    /**
+     * Get logger provider
+     *
+     * @param key the returned logger will be named after clazz
+     * @return logger
+     */
+    public static Logger getLogger(Class&lt;?&gt; key) {
+<span class="nc" id="L106">        FailsafeLogger logger = LOGGERS.get(key.getName());</span>
+<span class="nc bnc" id="L107" title="All 2 branches missed.">        if (logger == null) {</span>
+<span class="nc" id="L108">            LOGGERS.putIfAbsent(key.getName(), new FailsafeLogger(LOGGER_ADAPTER.getLogger(key)));</span>
+<span class="nc" id="L109">            logger = LOGGERS.get(key.getName());</span>
+        }
+<span class="nc" id="L111">        return logger;</span>
+    }
+
+    /**
+     * Get logger provider
+     *
+     * @param key the returned logger will be named after key
+     * @return logger provider
+     */
+    public static Logger getLogger(String key) {
+<span class="nc" id="L121">        FailsafeLogger logger = LOGGERS.get(key);</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        if (logger == null) {</span>
+<span class="nc" id="L123">            LOGGERS.putIfAbsent(key, new FailsafeLogger(LOGGER_ADAPTER.getLogger(key)));</span>
+<span class="nc" id="L124">            logger = LOGGERS.get(key);</span>
+        }
+<span class="nc" id="L126">        return logger;</span>
+    }
+
+    /**
+     * Get logging level
+     *
+     * @return logging level
+     */
+    public static Level getLevel() {
+<span class="nc" id="L135">        return LOGGER_ADAPTER.getLevel();</span>
+    }
+
+    /**
+     * Set the current logging level
+     *
+     * @param level logging level
+     */
+    public static void setLevel(Level level) {
+<span class="nc" id="L144">        LOGGER_ADAPTER.setLevel(level);</span>
+<span class="nc" id="L145">    }</span>
+
+    /**
+     * Get the current logging file
+     *
+     * @return current logging file
+     */
+    public static File getFile() {
+<span class="nc" id="L153">        return LOGGER_ADAPTER.getFile();</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>

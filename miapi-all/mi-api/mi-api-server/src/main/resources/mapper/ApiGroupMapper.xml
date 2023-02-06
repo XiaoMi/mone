@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaomi.miapi.mapper.ApiGroupMapper">
+    <insert id="addApiGroup" parameterType="ApiGroup"
+            useGeneratedKeys="true" keyProperty="groupID">
+        INSERT INTO
+        eo_api_group(projectID,groupName,groupDesc,systemGroup)VALUES(#{projectID},#{groupName},#{groupDesc},#{systemGroup})
+    </insert>
+
+
+    <delete id="deleteGroup" parameterType="Integer">
+        DELETE FROM eo_api_group
+        WHERE eo_api_group.groupID IN
+        <foreach collection="groupIDS" item="item" index="index"
+                 open="(" separator="," close=")">
+            #{item}
+        </foreach>
+    </delete>
+
+    <select id="getGroupList" parameterType="Integer"
+            resultType="java.util.Map">
+        SELECT
+        eo_api_group.groupID,eo_api_group.groupName,eo_api_group.groupDesc,eo_api_group.systemGroup FROM
+        eo_api_group WHERE projectID = #{projectID} ORDER BY
+        eo_api_group.groupID DESC
+    </select>
+
+    <select id="getGroupOrderList" parameterType="Integer"
+            resultType="String">
+        SELECT eo_api_group_order.orderList FROM eo_api_group_order
+        WHERE
+        eo_api_group_order.projectID = #{projectID}
+    </select>
+
+    <update id="editGroup" parameterType="ApiGroup">
+        UPDATE eo_api_group SET eo_api_group.groupName =
+        #{groupName}, eo_api_group.groupDesc =
+        #{groupDesc}, eo_api_group.systemGroup =
+        #{systemGroup}
+        WHERE eo_api_group.groupID = #{groupID}
+    </update>
+    <update id="sortGroup">
+        REPLACE INTO eo_api_group_order(projectID, orderList)
+        VALUES (#{projectID},#{orderList})
+    </update>
+
+    <select id="getGroupByID" parameterType="Integer"
+            resultType="ApiGroup">
+        SELECT * FROM eo_api_group WHERE groupID = #{groupID}
+    </select>
+
+    <select id="getGroupByName"  resultType="ApiGroup">
+        SELECT * FROM eo_api_group WHERE projectID = #{projectID} and groupName = #{groupName}
+    </select>
+
+</mapper>

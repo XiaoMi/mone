@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>Log4jLoggerAdapter.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-remoting-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.common.logger.log4j</a> &gt; <span class="el_source">Log4jLoggerAdapter.java</span></div><h1>Log4jLoggerAdapter.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.common.logger.log4j;
+
+import org.apache.dubbo.common.logger.Level;
+import org.apache.dubbo.common.logger.Logger;
+import org.apache.dubbo.common.logger.LoggerAdapter;
+
+import org.apache.log4j.Appender;
+import org.apache.log4j.FileAppender;
+import org.apache.log4j.LogManager;
+
+import java.io.File;
+import java.util.Enumeration;
+
+public class Log4jLoggerAdapter implements LoggerAdapter {
+
+    private File file;
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L35">    public Log4jLoggerAdapter() {</span>
+        try {
+<span class="nc" id="L37">            org.apache.log4j.Logger logger = LogManager.getRootLogger();</span>
+<span class="nc bnc" id="L38" title="All 2 branches missed.">            if (logger != null) {</span>
+<span class="nc" id="L39">                Enumeration&lt;Appender&gt; appenders = logger.getAllAppenders();</span>
+<span class="nc bnc" id="L40" title="All 2 branches missed.">                if (appenders != null) {</span>
+<span class="nc bnc" id="L41" title="All 2 branches missed.">                    while (appenders.hasMoreElements()) {</span>
+<span class="nc" id="L42">                        Appender appender = appenders.nextElement();</span>
+<span class="nc bnc" id="L43" title="All 2 branches missed.">                        if (appender instanceof FileAppender) {</span>
+<span class="nc" id="L44">                            FileAppender fileAppender = (FileAppender) appender;</span>
+<span class="nc" id="L45">                            String filename = fileAppender.getFile();</span>
+<span class="nc" id="L46">                            file = new File(filename);</span>
+<span class="nc" id="L47">                            break;</span>
+                        }
+<span class="nc" id="L49">                    }</span>
+                }
+            }
+<span class="nc" id="L52">        } catch (Throwable t) {</span>
+<span class="nc" id="L53">        }</span>
+<span class="nc" id="L54">    }</span>
+
+    private static org.apache.log4j.Level toLog4jLevel(Level level) {
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        if (level == Level.ALL) {</span>
+<span class="nc" id="L58">            return org.apache.log4j.Level.ALL;</span>
+        }
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        if (level == Level.TRACE) {</span>
+<span class="nc" id="L61">            return org.apache.log4j.Level.TRACE;</span>
+        }
+<span class="nc bnc" id="L63" title="All 2 branches missed.">        if (level == Level.DEBUG) {</span>
+<span class="nc" id="L64">            return org.apache.log4j.Level.DEBUG;</span>
+        }
+<span class="nc bnc" id="L66" title="All 2 branches missed.">        if (level == Level.INFO) {</span>
+<span class="nc" id="L67">            return org.apache.log4j.Level.INFO;</span>
+        }
+<span class="nc bnc" id="L69" title="All 2 branches missed.">        if (level == Level.WARN) {</span>
+<span class="nc" id="L70">            return org.apache.log4j.Level.WARN;</span>
+        }
+<span class="nc bnc" id="L72" title="All 2 branches missed.">        if (level == Level.ERROR) {</span>
+<span class="nc" id="L73">            return org.apache.log4j.Level.ERROR;</span>
+        }
+        // if (level == Level.OFF)
+<span class="nc" id="L76">        return org.apache.log4j.Level.OFF;</span>
+    }
+
+    private static Level fromLog4jLevel(org.apache.log4j.Level level) {
+<span class="nc bnc" id="L80" title="All 2 branches missed.">        if (level == org.apache.log4j.Level.ALL) {</span>
+<span class="nc" id="L81">            return Level.ALL;</span>
+        }
+<span class="nc bnc" id="L83" title="All 2 branches missed.">        if (level == org.apache.log4j.Level.TRACE) {</span>
+<span class="nc" id="L84">            return Level.TRACE;</span>
+        }
+<span class="nc bnc" id="L86" title="All 2 branches missed.">        if (level == org.apache.log4j.Level.DEBUG) {</span>
+<span class="nc" id="L87">            return Level.DEBUG;</span>
+        }
+<span class="nc bnc" id="L89" title="All 2 branches missed.">        if (level == org.apache.log4j.Level.INFO) {</span>
+<span class="nc" id="L90">            return Level.INFO;</span>
+        }
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        if (level == org.apache.log4j.Level.WARN) {</span>
+<span class="nc" id="L93">            return Level.WARN;</span>
+        }
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        if (level == org.apache.log4j.Level.ERROR) {</span>
+<span class="nc" id="L96">            return Level.ERROR;</span>
+        }
+        // if (level == org.apache.log4j.Level.OFF)
+<span class="nc" id="L99">        return Level.OFF;</span>
+    }
+
+    @Override
+    public Logger getLogger(Class&lt;?&gt; key) {
+<span class="nc" id="L104">        return new Log4jLogger(LogManager.getLogger(key));</span>
+    }
+
+    @Override
+    public Logger getLogger(String key) {
+<span class="nc" id="L109">        return new Log4jLogger(LogManager.getLogger(key));</span>
+    }
+
+    @Override
+    public Level getLevel() {
+<span class="nc" id="L114">        return fromLog4jLevel(LogManager.getRootLogger().getLevel());</span>
+    }
+
+    @Override
+    public void setLevel(Level level) {
+<span class="nc" id="L119">        LogManager.getRootLogger().setLevel(toLog4jLevel(level));</span>
+<span class="nc" id="L120">    }</span>
+
+    @Override
+    public File getFile() {
+<span class="nc" id="L124">        return file;</span>
+    }
+
+    @Override
+    public void setFile(File file) {
+
+<span class="nc" id="L130">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>

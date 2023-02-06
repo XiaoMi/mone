@@ -1,0 +1,394 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaomi.miapi.mapper.ApiHistoryRecordMapper">
+  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.common.pojo.ApiHistoryRecord">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="project_id" jdbcType="INTEGER" property="projectId" />
+    <result column="group_id" jdbcType="INTEGER" property="groupId" />
+    <result column="api_id" jdbcType="INTEGER" property="apiId" />
+    <result column="api_protocal" jdbcType="INTEGER" property="apiProtocal" />
+    <result column="update_user" jdbcType="VARCHAR" property="updateUser" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="update_msg" jdbcType="VARCHAR" property="updateMsg" />
+    <result column="is_now" jdbcType="BIT" property="isNow" />
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.miapi.common.pojo.ApiHistoryRecord">
+    <result column="api_histiry_json" jdbcType="LONGVARCHAR" property="apiHistiryJson" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    id, project_id, group_id, api_id, api_protocal, update_user, update_time, update_msg, 
+    is_now
+  </sql>
+  <sql id="Blob_Column_List">
+    api_histiry_json
+  </sql>
+  <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.ApiHistoryRecordExample" resultMap="ResultMapWithBLOBs">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from api_history_record
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiHistoryRecordExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from api_history_record
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="ResultMapWithBLOBs">
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from api_history_record
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from api_history_record
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiHistoryRecordExample">
+    delete from api_history_record
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.xiaomi.miapi.common.pojo.ApiHistoryRecord">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into api_history_record (project_id, group_id, api_id, 
+      api_protocal, update_user, update_time, 
+      update_msg, is_now, api_histiry_json
+      )
+    values (#{projectId,jdbcType=INTEGER}, #{groupId,jdbcType=INTEGER}, #{apiId,jdbcType=INTEGER}, 
+      #{apiProtocal,jdbcType=INTEGER}, #{updateUser,jdbcType=VARCHAR}, #{updateTime,jdbcType=TIMESTAMP}, 
+      #{updateMsg,jdbcType=VARCHAR}, #{isNow,jdbcType=BIT}, #{apiHistiryJson,jdbcType=LONGVARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.xiaomi.miapi.common.pojo.ApiHistoryRecord">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into api_history_record
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="projectId != null">
+        project_id,
+      </if>
+      <if test="groupId != null">
+        group_id,
+      </if>
+      <if test="apiId != null">
+        api_id,
+      </if>
+      <if test="apiProtocal != null">
+        api_protocal,
+      </if>
+      <if test="updateUser != null">
+        update_user,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+      <if test="updateMsg != null">
+        update_msg,
+      </if>
+      <if test="isNow != null">
+        is_now,
+      </if>
+      <if test="apiHistiryJson != null">
+        api_histiry_json,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="projectId != null">
+        #{projectId,jdbcType=INTEGER},
+      </if>
+      <if test="groupId != null">
+        #{groupId,jdbcType=INTEGER},
+      </if>
+      <if test="apiId != null">
+        #{apiId,jdbcType=INTEGER},
+      </if>
+      <if test="apiProtocal != null">
+        #{apiProtocal,jdbcType=INTEGER},
+      </if>
+      <if test="updateUser != null">
+        #{updateUser,jdbcType=VARCHAR},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateMsg != null">
+        #{updateMsg,jdbcType=VARCHAR},
+      </if>
+      <if test="isNow != null">
+        #{isNow,jdbcType=BIT},
+      </if>
+      <if test="apiHistiryJson != null">
+        #{apiHistiryJson,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiHistoryRecordExample" resultType="java.lang.Long">
+    select count(*) from api_history_record
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update api_history_record
+    <set>
+      <if test="record.id != null">
+        id = #{record.id,jdbcType=INTEGER},
+      </if>
+      <if test="record.projectId != null">
+        project_id = #{record.projectId,jdbcType=INTEGER},
+      </if>
+      <if test="record.groupId != null">
+        group_id = #{record.groupId,jdbcType=INTEGER},
+      </if>
+      <if test="record.apiId != null">
+        api_id = #{record.apiId,jdbcType=INTEGER},
+      </if>
+      <if test="record.apiProtocal != null">
+        api_protocal = #{record.apiProtocal,jdbcType=INTEGER},
+      </if>
+      <if test="record.updateUser != null">
+        update_user = #{record.updateUser,jdbcType=VARCHAR},
+      </if>
+      <if test="record.updateTime != null">
+        update_time = #{record.updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="record.updateMsg != null">
+        update_msg = #{record.updateMsg,jdbcType=VARCHAR},
+      </if>
+      <if test="record.isNow != null">
+        is_now = #{record.isNow,jdbcType=BIT},
+      </if>
+      <if test="record.apiHistiryJson != null">
+        api_histiry_json = #{record.apiHistiryJson,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExampleWithBLOBs" parameterType="map">
+    update api_history_record
+    set id = #{record.id,jdbcType=INTEGER},
+      project_id = #{record.projectId,jdbcType=INTEGER},
+      group_id = #{record.groupId,jdbcType=INTEGER},
+      api_id = #{record.apiId,jdbcType=INTEGER},
+      api_protocal = #{record.apiProtocal,jdbcType=INTEGER},
+      update_user = #{record.updateUser,jdbcType=VARCHAR},
+      update_time = #{record.updateTime,jdbcType=TIMESTAMP},
+      update_msg = #{record.updateMsg,jdbcType=VARCHAR},
+      is_now = #{record.isNow,jdbcType=BIT},
+      api_histiry_json = #{record.apiHistiryJson,jdbcType=LONGVARCHAR}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update api_history_record
+    set id = #{record.id,jdbcType=INTEGER},
+      project_id = #{record.projectId,jdbcType=INTEGER},
+      group_id = #{record.groupId,jdbcType=INTEGER},
+      api_id = #{record.apiId,jdbcType=INTEGER},
+      api_protocal = #{record.apiProtocal,jdbcType=INTEGER},
+      update_user = #{record.updateUser,jdbcType=VARCHAR},
+      update_time = #{record.updateTime,jdbcType=TIMESTAMP},
+      update_msg = #{record.updateMsg,jdbcType=VARCHAR},
+      is_now = #{record.isNow,jdbcType=BIT}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.common.pojo.ApiHistoryRecord">
+    update api_history_record
+    <set>
+      <if test="projectId != null">
+        project_id = #{projectId,jdbcType=INTEGER},
+      </if>
+      <if test="groupId != null">
+        group_id = #{groupId,jdbcType=INTEGER},
+      </if>
+      <if test="apiId != null">
+        api_id = #{apiId,jdbcType=INTEGER},
+      </if>
+      <if test="apiProtocal != null">
+        api_protocal = #{apiProtocal,jdbcType=INTEGER},
+      </if>
+      <if test="updateUser != null">
+        update_user = #{updateUser,jdbcType=VARCHAR},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateMsg != null">
+        update_msg = #{updateMsg,jdbcType=VARCHAR},
+      </if>
+      <if test="isNow != null">
+        is_now = #{isNow,jdbcType=BIT},
+      </if>
+      <if test="apiHistiryJson != null">
+        api_histiry_json = #{apiHistiryJson,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.ApiHistoryRecord">
+    update api_history_record
+    set project_id = #{projectId,jdbcType=INTEGER},
+      group_id = #{groupId,jdbcType=INTEGER},
+      api_id = #{apiId,jdbcType=INTEGER},
+      api_protocal = #{apiProtocal,jdbcType=INTEGER},
+      update_user = #{updateUser,jdbcType=VARCHAR},
+      update_time = #{updateTime,jdbcType=TIMESTAMP},
+      update_msg = #{updateMsg,jdbcType=VARCHAR},
+      is_now = #{isNow,jdbcType=BIT},
+      api_histiry_json = #{apiHistiryJson,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.common.pojo.ApiHistoryRecord">
+    update api_history_record
+    set project_id = #{projectId,jdbcType=INTEGER},
+      group_id = #{groupId,jdbcType=INTEGER},
+      api_id = #{apiId,jdbcType=INTEGER},
+      api_protocal = #{apiProtocal,jdbcType=INTEGER},
+      update_user = #{updateUser,jdbcType=VARCHAR},
+      update_time = #{updateTime,jdbcType=TIMESTAMP},
+      update_msg = #{updateMsg,jdbcType=VARCHAR},
+      is_now = #{isNow,jdbcType=BIT}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    insert into api_history_record
+    (project_id, group_id, api_id, api_protocal, update_user, update_time, update_msg, 
+      is_now, api_histiry_json)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.projectId,jdbcType=INTEGER}, #{item.groupId,jdbcType=INTEGER}, #{item.apiId,jdbcType=INTEGER}, 
+        #{item.apiProtocal,jdbcType=INTEGER}, #{item.updateUser,jdbcType=VARCHAR}, #{item.updateTime,jdbcType=TIMESTAMP}, 
+        #{item.updateMsg,jdbcType=VARCHAR}, #{item.isNow,jdbcType=BIT}, #{item.apiHistiryJson,jdbcType=LONGVARCHAR}
+        )
+    </foreach>
+  </insert>
+  <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
+    insert into api_history_record (
+    <foreach collection="selective" item="column" separator=",">
+      ${column.escapedColumnName}
+    </foreach>
+    )
+    values
+    <foreach collection="list" item="item" separator=",">
+      (
+      <foreach collection="selective" item="column" separator=",">
+        <if test="'project_id'.toString() == column.value">
+          #{item.projectId,jdbcType=INTEGER}
+        </if>
+        <if test="'group_id'.toString() == column.value">
+          #{item.groupId,jdbcType=INTEGER}
+        </if>
+        <if test="'api_id'.toString() == column.value">
+          #{item.apiId,jdbcType=INTEGER}
+        </if>
+        <if test="'api_protocal'.toString() == column.value">
+          #{item.apiProtocal,jdbcType=INTEGER}
+        </if>
+        <if test="'update_user'.toString() == column.value">
+          #{item.updateUser,jdbcType=VARCHAR}
+        </if>
+        <if test="'update_time'.toString() == column.value">
+          #{item.updateTime,jdbcType=TIMESTAMP}
+        </if>
+        <if test="'update_msg'.toString() == column.value">
+          #{item.updateMsg,jdbcType=VARCHAR}
+        </if>
+        <if test="'is_now'.toString() == column.value">
+          #{item.isNow,jdbcType=BIT}
+        </if>
+        <if test="'api_histiry_json'.toString() == column.value">
+          #{item.apiHistiryJson,jdbcType=LONGVARCHAR}
+        </if>
+      </foreach>
+      )
+    </foreach>
+  </insert>
+</mapper>

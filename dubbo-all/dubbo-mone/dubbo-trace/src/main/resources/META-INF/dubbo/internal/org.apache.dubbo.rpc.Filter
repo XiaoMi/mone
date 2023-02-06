@@ -1,0 +1,2 @@
+traceIdFilter=com.xiaomi.youpin.dubbo.filter.TraceIdFilter
+consumerTraceIdFilter=com.xiaomi.youpin.dubbo.filter.ConsumerTraceIdFilter

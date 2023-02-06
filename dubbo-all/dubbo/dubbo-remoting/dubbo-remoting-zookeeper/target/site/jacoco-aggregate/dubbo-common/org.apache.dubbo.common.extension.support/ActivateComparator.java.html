@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ActivateComparator.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-remoting-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.common.extension.support</a> &gt; <span class="el_source">ActivateComparator.java</span></div><h1>ActivateComparator.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.common.extension.support;
+
+import org.apache.dubbo.common.extension.Activate;
+import org.apache.dubbo.common.extension.ExtensionLoader;
+import org.apache.dubbo.common.extension.SPI;
+
+import java.util.Comparator;
+
+/**
+ * OrderComparator
+ */
+<span class="nc" id="L28">public class ActivateComparator implements Comparator&lt;Object&gt; {</span>
+
+<span class="nc" id="L30">    public static final Comparator&lt;Object&gt; COMPARATOR = new ActivateComparator();</span>
+
+    @Override
+    public int compare(Object o1, Object o2) {
+<span class="nc bnc" id="L34" title="All 4 branches missed.">        if (o1 == null &amp;&amp; o2 == null) {</span>
+<span class="nc" id="L35">            return 0;</span>
+        }
+<span class="nc bnc" id="L37" title="All 2 branches missed.">        if (o1 == null) {</span>
+<span class="nc" id="L38">            return -1;</span>
+        }
+<span class="nc bnc" id="L40" title="All 2 branches missed.">        if (o2 == null) {</span>
+<span class="nc" id="L41">            return 1;</span>
+        }
+<span class="nc bnc" id="L43" title="All 2 branches missed.">        if (o1.equals(o2)) {</span>
+<span class="nc" id="L44">            return 0;</span>
+        }
+
+        // to support com.alibab.dubbo.common.extension.Activate
+        String[] a1Before, a2Before, a1After, a2After;
+        int a1Order, a2Order;
+<span class="nc" id="L50">        Class&lt;?&gt; inf = null;</span>
+<span class="nc bnc" id="L51" title="All 2 branches missed.">        if (o1.getClass().getInterfaces().length &gt; 0) {</span>
+<span class="nc" id="L52">            inf = o1.getClass().getInterfaces()[0];</span>
+
+<span class="nc bnc" id="L54" title="All 2 branches missed.">            if (inf.getInterfaces().length &gt; 0) {</span>
+<span class="nc" id="L55">                inf = inf.getInterfaces()[0];</span>
+            }
+        }
+
+<span class="nc" id="L59">        Activate a1 = o1.getClass().getAnnotation(Activate.class);</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        if (a1 != null) {</span>
+<span class="nc" id="L61">            a1Before = a1.before();</span>
+<span class="nc" id="L62">            a1After = a1.after();</span>
+<span class="nc" id="L63">            a1Order = a1.order();</span>
+        } else {
+<span class="nc" id="L65">            com.alibaba.dubbo.common.extension.Activate oa1 = o1.getClass().getAnnotation(com.alibaba.dubbo.common.extension.Activate.class);</span>
+<span class="nc" id="L66">            a1Before = oa1.before();</span>
+<span class="nc" id="L67">            a1After = oa1.after();</span>
+<span class="nc" id="L68">            a1Order = oa1.order();</span>
+        }
+<span class="nc" id="L70">        Activate a2 = o2.getClass().getAnnotation(Activate.class);</span>
+<span class="nc bnc" id="L71" title="All 2 branches missed.">        if (a2 != null) {</span>
+<span class="nc" id="L72">            a2Before = a2.before();</span>
+<span class="nc" id="L73">            a2After = a2.after();</span>
+<span class="nc" id="L74">            a2Order = a2.order();</span>
+        } else {
+<span class="nc" id="L76">            com.alibaba.dubbo.common.extension.Activate oa2 = o2.getClass().getAnnotation(com.alibaba.dubbo.common.extension.Activate.class);</span>
+<span class="nc" id="L77">            a2Before = oa2.before();</span>
+<span class="nc" id="L78">            a2After = oa2.after();</span>
+<span class="nc" id="L79">            a2Order = oa2.order();</span>
+        }
+<span class="nc bnc" id="L81" title="All 10 branches missed.">        if ((a1Before.length &gt; 0 || a1After.length &gt; 0</span>
+                || a2Before.length &gt; 0 || a2After.length &gt; 0)
+<span class="nc bnc" id="L83" title="All 2 branches missed.">                &amp;&amp; inf != null &amp;&amp; inf.isAnnotationPresent(SPI.class)) {</span>
+<span class="nc" id="L84">            ExtensionLoader&lt;?&gt; extensionLoader = ExtensionLoader.getExtensionLoader(inf);</span>
+<span class="nc bnc" id="L85" title="All 4 branches missed.">            if (a1Before.length &gt; 0 || a1After.length &gt; 0) {</span>
+<span class="nc" id="L86">                String n2 = extensionLoader.getExtensionName(o2.getClass());</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">                for (String before : a1Before) {</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">                    if (before.equals(n2)) {</span>
+<span class="nc" id="L89">                        return -1;</span>
+                    }
+                }
+<span class="nc bnc" id="L92" title="All 2 branches missed.">                for (String after : a1After) {</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">                    if (after.equals(n2)) {</span>
+<span class="nc" id="L94">                        return 1;</span>
+                    }
+                }
+            }
+<span class="nc bnc" id="L98" title="All 4 branches missed.">            if (a2Before.length &gt; 0 || a2After.length &gt; 0) {</span>
+<span class="nc" id="L99">                String n1 = extensionLoader.getExtensionName(o1.getClass());</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">                for (String before : a2Before) {</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">                    if (before.equals(n1)) {</span>
+<span class="nc" id="L102">                        return 1;</span>
+                    }
+                }
+<span class="nc bnc" id="L105" title="All 2 branches missed.">                for (String after : a2After) {</span>
+<span class="nc bnc" id="L106" title="All 2 branches missed.">                    if (after.equals(n1)) {</span>
+<span class="nc" id="L107">                        return -1;</span>
+                    }
+                }
+            }
+        }
+<span class="nc bnc" id="L112" title="All 2 branches missed.">        int n1 = a1 == null ? 0 : a1Order;</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">        int n2 = a2 == null ? 0 : a2Order;</span>
+        // never return 0 even if n1 equals n2, otherwise, o1 and o2 will override each other in collection like HashSet
+<span class="nc bnc" id="L115" title="All 2 branches missed.">        return n1 &gt; n2 ? 1 : -1;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>
