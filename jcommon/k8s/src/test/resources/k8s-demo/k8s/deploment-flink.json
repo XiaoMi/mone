@@ -1,0 +1,38 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "flink-deployment"
+  },
+  "spec": {
+    "replicas": 1,
+    "selector": {
+      "matchLabels": {
+        "app": "flink-server"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "flink-server"
+        }
+      },
+      "spec": {
+        "containers": [
+          {
+            "name": "flink",
+            "image": "flink:scala_2.12-java8",
+            "ports": [
+              {
+                "containerPort": 6123
+              },
+              {
+                "containerPort": 8081
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

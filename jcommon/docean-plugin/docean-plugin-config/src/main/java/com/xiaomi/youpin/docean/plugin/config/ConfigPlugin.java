@@ -18,6 +18,7 @@ package com.xiaomi.youpin.docean.plugin.config;
 
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.DOceanPlugin;
+import com.xiaomi.youpin.docean.bo.Bean;
 import com.xiaomi.youpin.docean.plugin.IPlugin;
 import com.xiaomi.youpin.docean.plugin.config.anno.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -39,9 +40,17 @@ public class ConfigPlugin implements IPlugin {
     public void init(Set<? extends Class<?>> classSet, Ioc ioc) {
         log.info("init config plugin");
         Config config = new Config();
-        ioc.putBean(config);
-        config.forEach((k, v) -> ioc.putBean("$" + k, v));
+        if (ioc.containsBean(Config.class.getName())) {
+            config = ioc.getBean(Config.class);
+        } else {
+            ioc.putBean(config);
+        }
+        config.forEach((k, v) -> {
+            ioc.putBean("$" + k, v, Bean.Type.config.ordinal());
+            ioc.putBean("${" + k + "}", v, Bean.Type.config.ordinal());
+        });
     }
+
 
     /**
      * 把属性注入进去
@@ -51,7 +60,7 @@ public class ConfigPlugin implements IPlugin {
      * @return
      */
     @Override
-    public Optional<String> ioc(Ioc ioc, Annotation[] annotation) {
+    public Optional<String> ioc(Ioc ioc, Class type, Annotation[] annotation) {
         Optional<Annotation> optional = getAnno(annotation, Value.class);
         if (optional.isPresent()) {
             Value value = (Value) optional.get();

@@ -16,6 +16,8 @@
 
 package com.xiaomi.data.push.task;
 
+import com.xiaomi.data.push.rpc.RpcClient;
+import com.xiaomi.data.push.rpc.RpcServer;
 import lombok.Data;
 
 /**
@@ -26,10 +28,17 @@ public class Task {
 
     private Runnable runnable;
 
+    private RpcClient client;
+
+    private RpcServer server;
+
     private long delay;
 
     public Task(Runnable runnable, long delay) {
         this.runnable = runnable;
         this.delay = delay;
+    }
+
+    public Task() {
     }
 }

@@ -17,24 +17,33 @@
 package com.xiaomi.youpin.docean.bo;
 
 import com.google.common.collect.Maps;
+import com.google.gson.annotations.Expose;
 import lombok.Data;
 
+import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author goodjava@qq.com
  * @date 2020/6/20
  */
 @Data
-public class Bean implements Comparable<Bean> {
+public class Bean implements Comparable<Bean>, Serializable {
 
     private String name;
 
     private String alias;
 
+    private String lookup;
+
     private Class<?> clazz;
 
-    private Object obj;
+    private transient Object obj;
 
     private int type;
 
@@ -43,7 +52,14 @@ public class Bean implements Comparable<Bean> {
      */
     private int referenceCnt;
 
-    private Map<String,String> attachments = Maps.newHashMap();
+    /**
+     * 依赖我的那些Bean
+     */
+    private List<String> dependenceList = new ArrayList<>();
+
+    private Map<String, Field> dependenceFieldMap = new ConcurrentHashMap<>();
+
+    private Map<String, String> attachments = Maps.newHashMap();
 
     public void incrReferenceCnt() {
         this.referenceCnt++;
@@ -71,7 +87,7 @@ public class Bean implements Comparable<Bean> {
 
 
     public enum Type {
-        controller, service, component
+        controller, service, component, config
     }
 
 }

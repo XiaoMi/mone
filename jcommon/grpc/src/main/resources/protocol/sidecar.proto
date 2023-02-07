@@ -1,0 +1,54 @@
+syntax = "proto3";
+option java_multiple_files = true;
+option go_package = "/golang/;message";
+package run.mone.mesh.bo;
+
+message SideCarAddress {
+  string ip = 1;
+  int32 port = 2;
+  string app = 3;
+}
+
+message SideCarRequest {
+  string serviceName = 1;
+  string methodName = 2;
+  repeated string paramTypes = 3;
+  repeated string params = 4;
+  string group = 5;
+  string version = 6;
+  SideCarAddress address = 7;
+  string id = 8;
+  string app = 9;
+  int64 timeout = 10;
+  string cmd = 11;
+  bytes data = 12;
+  string type = 13;
+  int32 reqId = 14;
+  map<string, string> attachments = 15;
+}
+
+message SideCarResponse {
+  int32 code = 1 ;
+  string message = 2;
+  bytes data = 3;
+  map<string, string> attachments = 4;
+}
+
+/**
+服务端推给客户端的信息
+ */
+message SideCarPushMsg {
+  int32 code = 1;
+  string message = 2;
+  bytes data = 3;
+  string cmd = 4;
+  string app = 5;
+  string type = 6;
+  int32 reqId = 7;
+  map<string, string> attachments = 8;
+}
+
+service SideCarService {
+  rpc call(SideCarRequest) returns (SideCarResponse);
+  rpc listen(stream SideCarRequest) returns (stream SideCarPushMsg);
+}

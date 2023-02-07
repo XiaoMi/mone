@@ -19,12 +19,13 @@ package com.xiaomi.data.push.schedule.task.graph;
 import com.google.common.collect.Lists;
 import com.xiaomi.data.push.schedule.task.TaskDefBean;
 import com.xiaomi.data.push.schedule.task.TaskParam;
-import com.xiaomi.data.push.schedule.task.impl.TaskDef;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 /**
- *
  * @author zhangzhiyong
  * @date 08/06/2018
  */
@@ -36,6 +37,12 @@ public class TaskVertexData<D> {
     private int taskId;
 
     private List<Integer> dependList = Lists.newArrayList();
+
+    private transient CountDownLatch latch;
+
+    private volatile boolean cancel;
+
+    private List<TaskVertexData<D>> childList;
 
     private int status;
 
@@ -105,5 +112,29 @@ public class TaskVertexData<D> {
 
     public void setData(D data) {
         this.data = data;
+    }
+
+    public CountDownLatch getLatch() {
+        return latch;
+    }
+
+    public void setLatch(CountDownLatch latch) {
+        this.latch = latch;
+    }
+
+    public boolean isCancel() {
+        return cancel;
+    }
+
+    public void setCancel(boolean cancel) {
+        this.cancel = cancel;
+    }
+
+    public List<TaskVertexData<D>> getChildList() {
+        return childList;
+    }
+
+    public void setChildList(List<TaskVertexData<D>> childList) {
+        this.childList = childList;
     }
 }

@@ -30,8 +30,6 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -39,7 +37,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author goodjava@qq.com
  */
 @Data
-public class UdsCommand implements Serializable {
+public class UdsCommand extends RpcCommand implements Serializable {
 
     @Expose
     public static final AtomicLong requestId = new AtomicLong(0);
@@ -50,40 +48,6 @@ public class UdsCommand implements Serializable {
     @Expose
     private BytesCodes bytesCodes = new BytesCodes();
 
-    /**
-     * 魔术码
-     */
-    private byte magic;
-
-    /**
-     * 用来存储标志位
-     */
-    private int flag;
-
-    private Map<String, String> attachments = new HashMap<>();
-
-    private long id;
-
-    private String app;
-
-    private String remoteApp;
-
-    private long timeout = 1000;
-
-    private String cmd;
-
-    private String serviceName;
-
-    private String methodName;
-
-    private String[] paramTypes;
-
-    private String[] params;
-
-    private byte[][] byteParams = new byte[][]{};
-
-    private byte[] data;
-
     @Expose
     private Object obj;
 
@@ -93,12 +57,10 @@ public class UdsCommand implements Serializable {
 
     private String message;
 
-    /**
-     * 序列化类型
-     */
-    private byte serializeType;
+    private int retries;
 
-    public static UdsCommand createResponse(UdsCommand request) {
+
+    public static UdsCommand createResponse(RpcCommand request) {
         UdsCommand res = new UdsCommand();
         res.setId(request.getId());
         res.setSerializeType(request.getSerializeType());
@@ -158,7 +120,7 @@ public class UdsCommand implements Serializable {
         buf.addComponents(true, Unpooled.wrappedBuffer(new byte[]{this.serializeType}));
 
         if (null != this.data && this.data.length > 0) {
-           //里边已经有数据了
+            //里边已经有数据了
         } else if (null != this.obj) {
             ICodes codes = CodesFactory.getCodes(this.serializeType);
             this.data = codes.encode(this.obj);
@@ -273,6 +235,13 @@ public class UdsCommand implements Serializable {
         return req;
     }
 
+    /**
+     * 获取一个刷新后的id
+     */
+    public void refreshId() {
+        this.setId(requestId.incrementAndGet());
+    }
+
     public void setData(Object data) {
         this.obj = data;
         this.data = null;
@@ -295,6 +264,15 @@ public class UdsCommand implements Serializable {
         return codes.decode(this.data, type);
     }
 
+    public <T> T getData(Class clazz) {
+        if (null == this.data) {
+            return null;
+        }
+        ICodes codes = CodesFactory.getCodes(this.getSerializeType());
+        return codes.decode(this.data, clazz);
+    }
+
+
     public <T> T getData(Type type, boolean codes) {
         if (codes) {
             return getData(type);
@@ -308,6 +286,11 @@ public class UdsCommand implements Serializable {
             flagCal.enable(Permission.IS_ONWAY);
             this.flag = flagCal.getFlag();
         }
+    }
 
+
+    @Override
+    public byte[] data() {
+        return gson.toJson(this.obj).getBytes();
     }
 }

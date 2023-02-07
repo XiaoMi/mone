@@ -16,6 +16,8 @@
 
 package com.xiaomi.youpin.docean.plugin.mybatis;
 
+import com.xiaomi.youpin.docean.plugin.mybatis.transaction.Xid;
+import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.session.TransactionIsolationLevel;
@@ -41,9 +43,19 @@ public class MybatisTransaction implements Transaction {
 
     protected boolean autoCommmit;
 
+    @Getter
+    @Setter
+    private Xid xid;
+
     public MybatisTransaction(TransactionIsolationLevel level, boolean autoCommmit) {
         this.level = level;
         this.autoCommmit = autoCommmit;
+    }
+
+    public MybatisTransaction(TransactionIsolationLevel level, boolean autoCommmit, Xid xid) {
+        this.level = level;
+        this.autoCommmit = autoCommmit;
+        this.xid = xid;
     }
 
     public MybatisTransaction(DataSource ds, TransactionIsolationLevel desiredLevel, boolean desiredAutoCommit) {
@@ -118,11 +130,32 @@ public class MybatisTransaction implements Transaction {
         if (log.isDebugEnabled()) {
             log.debug("Opening JDBC Connection");
         }
+
+        //sidecar的事务
+        if (null != this.xid) {
+            if (SidecarTransactionContext.connectionnMap.get(this.xid.getId()) != null) {
+                return;
+            }
+            connection = dataSource.getConnection();
+            if (level != null) {
+                connection.setTransactionIsolation(level.getLevel());
+            }
+            setDesiredAutoCommit(autoCommmit);
+            SidecarTransactionContext.connectionnMap.put(this.xid.getId(),connection);
+            return;
+        }
+
+        if (TransactionalContext.getConnection() != null) {
+            return;
+        }
         connection = dataSource.getConnection();
         if (level != null) {
             connection.setTransactionIsolation(level.getLevel());
         }
         setDesiredAutoCommit(autoCommmit);
+        if (TransactionalContext.getTransactionActive() != null && TransactionalContext.getTransactionActive()) {
+            TransactionalContext.setConnection(connection);
+        }
     }
 
 

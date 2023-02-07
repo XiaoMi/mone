@@ -37,6 +37,14 @@ public class ClassPathResource implements Resource {
         inputStream = ClassPathResource.class.getClassLoader().getResourceAsStream(classPath);
     }
 
+    public ClassPathResource(String classPath, ClassLoader cl) {
+        if (null == cl) {
+            cl = ClassPathResource.class.getClassLoader();
+        }
+        this.classPath = classPath;
+        inputStream = cl.getResourceAsStream(classPath);
+    }
+
     @Override
     public boolean exists() {
         return false;

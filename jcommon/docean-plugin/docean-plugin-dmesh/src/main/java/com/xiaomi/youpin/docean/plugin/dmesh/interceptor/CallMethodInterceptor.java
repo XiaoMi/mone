@@ -16,11 +16,9 @@
 
 package com.xiaomi.youpin.docean.plugin.dmesh.interceptor;
 
-import com.google.gson.Gson;
 import com.xiaomi.data.push.uds.po.UdsCommand;
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.plugin.config.Config;
-import com.xiaomi.youpin.docean.plugin.dmesh.anno.MeshMsService;
 import com.xiaomi.youpin.docean.plugin.dmesh.anno.MeshReference;
 import lombok.extern.slf4j.Slf4j;
 

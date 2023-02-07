@@ -16,6 +16,10 @@
 
 package com.xiaomi.youpin.docean.test;
 
+import com.google.common.collect.ImmutableMap;
+import com.xiaomi.youpin.docean.test.bo.M;
+import com.xiaomi.youpin.docean.test.bo.TResult;
+import net.sf.cglib.beans.BeanMap;
 import org.junit.Test;
 
 /**
@@ -34,5 +38,17 @@ public class CglibTest {
     @Test
     public void testCglib() {
 
+    }
+
+    @Test
+    public void testMapBean() {
+        M m  = new M();
+        m.setId(123);
+        TResult r = new TResult();
+        r.setData(m);
+        BeanMap bm = BeanMap.create(r);
+        bm.put("code",999);
+        bm.put("data", ImmutableMap.of("id",678));
+        System.out.println(r);
     }
 }

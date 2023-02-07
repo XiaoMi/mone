@@ -16,8 +16,6 @@
 
 package com.xiaomi.data.push.common;
 
-import com.xiaomi.data.push.uds.codes.CodesFactory;
-import com.xiaomi.data.push.uds.codes.ICodes;
 import com.xiaomi.data.push.uds.po.UdsCommand;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
@@ -35,9 +33,15 @@ public abstract class Send {
             log.warn("channel is close");
             return;
         }
-        command.setSerializeType(RcurveConfig.ins().getCodeType());
-        ByteBuf buf = command.encode();
-        channel.writeAndFlush(buf);
+        if (command.getSerializeType() == -1) {
+            command.setSerializeType(RcurveConfig.ins().getCodeType());
+        }
+        try {
+            ByteBuf buf = command.encode();
+            channel.writeAndFlush(buf);
+        } catch (Throwable ex) {
+            log.error("send error:" + ex.getMessage(), ex);
+        }
     }
 
     public static void sendResponse(Channel channel, UdsCommand response) {
@@ -45,8 +49,12 @@ public abstract class Send {
             log.warn("channel is close");
             return;
         }
-        ByteBuf buf = response.encode();
-        channel.writeAndFlush(buf);
+        try {
+            ByteBuf buf = response.encode();
+            channel.writeAndFlush(buf);
+        } catch (Throwable ex) {
+            log.error("send response error:" + ex.getMessage(), ex);
+        }
     }
 
 

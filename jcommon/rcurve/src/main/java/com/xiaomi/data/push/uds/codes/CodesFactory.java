@@ -30,6 +30,8 @@ public class CodesFactory {
 
     private static BytesCodes bytesCodes = new BytesCodes();
 
+    private static ProtostuffCodes protostuffCodes = new ProtostuffCodes();
+
     public static ICodes getCodes(byte id) {
         if (id == gsonCodes.type()) {
             return gsonCodes;
@@ -43,7 +45,11 @@ public class CodesFactory {
             return bytesCodes;
         }
 
-        throw new UdsException("type error");
+        if (id == protostuffCodes.type()) {
+            return protostuffCodes;
+        }
+
+        throw new UdsException("type error:" + id);
     }
 
 }

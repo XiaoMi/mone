@@ -115,10 +115,45 @@ public class HttpClientV2 {
             }
             conn.addRequestProperty("Connection", "close");
             conn.getOutputStream().write(body);
+            conn.connect();
+            int code = conn.getResponseCode();
+            logger.info("code:{}", code);
             return new String(ByteStreams.toByteArray(conn.getInputStream()));
         } catch (Exception ex) {
             logger.warn("http client v2 error:{}", ex.getMessage());
             throw new RuntimeException(ex.getMessage());
+        } finally {
+            if (null != conn) {
+                conn.disconnect();
+            }
+        }
+
+    }
+
+    public static HttpResult post(String url, byte[] body, Map<String, String> headers, int connectTimeout, int readTimeout) {
+        HttpURLConnection conn = null;
+        try {
+            conn = (HttpURLConnection) new URL(url).openConnection();
+            conn.setRequestMethod("POST");
+            conn.setConnectTimeout(connectTimeout);
+            conn.setReadTimeout(readTimeout);
+            conn.setDoOutput(true);
+            conn.setDoInput(true);
+            if (null != headers) {
+                for (Map.Entry<String, String> entry : headers.entrySet()) {
+                    conn.addRequestProperty(entry.getKey(), entry.getValue());
+                }
+            }
+            conn.addRequestProperty("Connection", "close");
+            conn.getOutputStream().write(body);
+            conn.connect();
+            int code = conn.getResponseCode();
+            logger.info("code:{}", code);
+            String content = new String(ByteStreams.toByteArray(conn.getInputStream()));
+            return new HttpResult(code, content, Maps.newHashMap());
+        } catch (Throwable ex) {
+            logger.warn("http client v2 error:{}", ex.getMessage());
+            return new HttpResult(500, ex.getMessage(), Maps.newHashMap());
         } finally {
             if (null != conn) {
                 conn.disconnect();
@@ -376,6 +411,7 @@ public class HttpClientV2 {
             this.content = content;
             this.respHeaders = respHeaders;
         }
+
 
         public String getHeader(String name) {
             return respHeaders.get(name);

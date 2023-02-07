@@ -31,6 +31,7 @@ import com.xiaomi.fusion.cloud.auth.core.enums.HttpMethod;
 import com.xiaomi.fusion.cloud.auth.core.util.HttpUtil;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -51,16 +52,16 @@ import java.util.concurrent.TimeUnit;
 @Service
 public class MiCloud {
 
-    @Value("${micloud.url}")
+    @Value("${micloud.url:}")
     private String micloudUrl;
 
-    @Value("${catalyst.url}")
+    @Value("${catalyst.url:}")
     private String catalystUrl;
-
+    
     private Gson gson = new Gson();
 
-    private static final String CONTROL_URL = "https://xxx/host-control/production/api/v1/host/control";
-    private static final String STATUS_URL = "https://xxx/host-control/production/api/v1/host/status";
+    private static final String CONTROL_URL = "https://127.0.0.1/api/gateway/host-control/production/api/v1/host/control";
+    private static final String STATUS_URL = "https://127.0.0.1/api/gateway/host-control/production/api/v1/host/status";
     private String[] machineRunningStatus = {Constants.RUNNING, Constants.STARTING, Constants.REBOOTING};
     private String[] machineStoppedStatus = {"正在停止", "已经停止", "正在终止", "已经终止", "正在销毁", "已经销毁", "已经挂起", "已经暂停"};
 

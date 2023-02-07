@@ -16,6 +16,7 @@
 
 package com.xiaomi.data.push.common;
 
+import com.xiaomi.data.push.uds.codes.CodeType;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -29,7 +30,7 @@ public class RcurveConfig {
 
     @Getter
     @Setter
-    private byte codeType = 1;
+    private byte codeType = CodeType.HESSIAN;
 
     private static class LazyHolder {
         private static RcurveConfig ins = new RcurveConfig();

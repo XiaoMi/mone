@@ -20,6 +20,7 @@ import com.google.common.collect.Lists;
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.DOceanPlugin;
 import com.xiaomi.youpin.docean.bo.Bean;
+import com.xiaomi.youpin.docean.common.Cons;
 import com.xiaomi.youpin.docean.common.ReflectUtils;
 import lombok.Getter;
 
@@ -66,6 +67,10 @@ public class Plugin {
         this.plugins.stream().forEach(p -> p.start(ioc));
     }
 
+    public void putBean(String name, Bean bean) {
+        this.plugins.stream().forEach(p -> p.putBean(name, bean));
+    }
+
     public void destory(Ioc ioc) {
         this.plugins.forEach(it -> it.destory(ioc));
     }
@@ -84,15 +89,27 @@ public class Plugin {
         });
     }
 
-    public String initIoc(Ioc ioc, Annotation[] anns, Supplier<String> supplier) {
+    public String initIoc(Ioc ioc, Class type, Annotation[] anns, Supplier<String> supplier) {
         return plugins.stream().map(plugin -> {
-            Optional<String> obj = plugin.ioc(ioc, anns);
+            Optional<String> obj = plugin.ioc(ioc, type, anns);
             return obj;
         }).filter(it -> it.isPresent()).map(it -> it.get()).findAny().orElse(supplier.get());
     }
 
     public List<Class<? extends Annotation>> filterAnnotationList() {
         return plugins.stream().map(it -> it.filterAnnotations()).flatMap(l -> l.stream()).collect(Collectors.toList());
+    }
+
+    public List<Class<? extends Annotation>> filterResourceAnnotationList() {
+        return plugins.stream().map(it -> it.filterResourceAnnotations()).flatMap(l -> l.stream()).collect(Collectors.toList());
+    }
+
+    public String getInitMethodName(Object obj, Class clazz) {
+        return plugins.stream().map(it -> it.getInitMethodName(obj, clazz)).filter(it -> !it.equals(Cons.INIT)).findAny().orElse(Cons.INIT);
+    }
+
+    public String getDestoryMethodName(Object obj, Class clazz) {
+        return plugins.stream().map(it -> it.getDestoryMethodName(obj, clazz)).filter(it -> !it.equals(Cons.DESTORY)).findAny().orElse(Cons.DESTORY);
     }
 
 

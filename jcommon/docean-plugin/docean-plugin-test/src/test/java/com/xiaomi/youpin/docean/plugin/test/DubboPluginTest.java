@@ -34,9 +34,10 @@ public class DubboPluginTest {
 
     @Test
     public void testPlugin() throws InterruptedException {
+        String ip = "" ;
         Map<String,String> properties = ImmutableMap.<String,String>builder()
                 .put("appName","testApp")
-                .put("regAddress","nacos://")
+                .put("regAddress","nacos://"+ip+":80")
                 .build();
         List<Bean> beans = Lists.newArrayList();
         DubboPlugin plugin = new DubboPlugin();

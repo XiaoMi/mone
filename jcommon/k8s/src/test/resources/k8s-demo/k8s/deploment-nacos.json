@@ -1,0 +1,45 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "nacos-deployment"
+  },
+  "spec": {
+    "replicas": 1,
+    "selector": {
+      "matchLabels": {
+        "app": "nacos-server"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "nacos-server"
+        }
+      },
+      "spec": {
+        "env": [
+          {
+            "name": "MODE",
+            "value": "standalone"
+          },
+          {
+            "name": "SPRING_DATASOURCE_PLATFORM",
+            "value": ""
+          }
+        ],
+        "containers": [
+          {
+            "name": "nacos",
+            "image": "x.net/mixiao/mionenacos:1.4.2",
+            "ports": [
+              {
+                "containerPort": 8848
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

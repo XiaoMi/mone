@@ -44,5 +44,11 @@ public abstract class RpcCmd {
     public static final int getInfoReq = 2000;
     public static final int getInfoRes = 2001;
 
+    /**
+     * 执行本地方法
+     */
+    public static final int callMethodReq = 3000;
+    public static final int callMethodRes = 3001;
+
 
 }

@@ -48,22 +48,26 @@ public class MvcPlugin implements IPlugin {
         this.ip = host;
 
         this.port = Integer.parseInt(config.get("http_port", "80"));
-        NacosNaming nn = ioc.getBean(NacosNaming.class);
-        try {
-            nn.registerInstance(this.serviceName, this.ip, this.port);
-        } catch (NacosException e) {
-            log.error(e.getMessage());
+        NacosNaming nn = ioc.getBean(NacosNaming.class.getName(), null);
+        if (null != nn) {
+            try {
+                nn.registerInstance(this.serviceName, this.ip, this.port);
+            } catch (NacosException e) {
+                log.error(e.getMessage());
+            }
         }
     }
 
 
     @Override
     public void destory(Ioc ioc) {
-        NacosNaming nn = ioc.getBean(NacosNaming.class);
-        try {
-            nn.deregisterInstance(this.serviceName, this.ip, this.port);
-        } catch (NacosException e) {
-            log.error(e.getMessage());
+        NacosNaming nn = ioc.getBean(NacosNaming.class.getName(), null);
+        if (null != nn) {
+            try {
+                nn.deregisterInstance(this.serviceName, this.ip, this.port);
+            } catch (NacosException e) {
+                log.error(e.getMessage());
+            }
         }
     }
 }

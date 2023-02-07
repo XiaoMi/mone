@@ -50,4 +50,5 @@ import lombok.Data;
 public class GitlabBranch {
     private String name;
     private GitlabCommit commit;
+    private String web_url;
 }

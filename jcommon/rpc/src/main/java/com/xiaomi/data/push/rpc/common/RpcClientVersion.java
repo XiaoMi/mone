@@ -23,7 +23,7 @@ public class RpcClientVersion {
 
     @Override
     public String toString() {
-        return "RpcClientVersion:0.0.2:2019-08-26";
+        return "RpcClientVersion:0.0.2:2021-09-02";
     }
 
 }

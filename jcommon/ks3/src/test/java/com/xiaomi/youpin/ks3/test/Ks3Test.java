@@ -101,7 +101,7 @@ public class Ks3Test {
 
 
     private byte[] download() {
-        String url = "http://127.0.0.1.ks3-cn-beijing.ksyun.com/youpin-arch/test";
+        String url = "127.0.0.1";
         long now = System.currentTimeMillis();
         byte[] data = HttpClientV2.download(url, 3000);
         System.out.println("len:" + data.length);
@@ -112,7 +112,7 @@ public class Ks3Test {
 
     @Test
     public void testFileServerGetFile() throws IOException {
-        KsyunService service = new KsyunService("http://xxxx");
+        KsyunService service = new KsyunService("http://127.0.0.1:9999");
         service.setToken("");
         byte[] data = service.getFileByKey("detail-gateway-20200306123943316.jar");
         System.out.println(data.length);
@@ -122,8 +122,8 @@ public class Ks3Test {
 
     @Test
     public void testFileServerUploadFile() {
-        KsyunService service = new KsyunService("http://xxxx");
-        service.setToken("");
+        KsyunService service = new KsyunService("http://127:9999");
+        service.setToken("dprqfzzy123!");
         service.uploadFile("test2", new File("/tmp/data/download/test"), 0);
     }
 

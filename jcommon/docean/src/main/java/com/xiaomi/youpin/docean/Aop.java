@@ -16,36 +16,128 @@
 
 package com.xiaomi.youpin.docean;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.xiaomi.youpin.docean.anno.Lookup;
-import com.xiaomi.youpin.docean.aop.AopContext;
-import com.xiaomi.youpin.docean.aop.EnhanceInterceptor;
-import com.xiaomi.youpin.docean.common.MutableObject;
+import com.xiaomi.youpin.docean.aop.*;
+import com.xiaomi.youpin.docean.aop.anno.After;
+import com.xiaomi.youpin.docean.aop.anno.Aspect;
+import com.xiaomi.youpin.docean.aop.anno.Before;
+import com.xiaomi.youpin.docean.common.DoceanConfig;
 import com.xiaomi.youpin.docean.common.ReflectUtils;
-import com.xiaomi.youpin.docean.exception.DoceanException;
 import com.xiaomi.youpin.docean.interceptor.LookupInterceptor;
 import lombok.Getter;
-import net.sf.cglib.proxy.Enhancer;
-import net.sf.cglib.proxy.MethodInterceptor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
-import java.util.*;
+import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author goodjava@qq.com
  * @date 2020/6/20
  */
+@Slf4j
 public class Aop {
 
     @Getter
     private LinkedHashMap<Class, EnhanceInterceptor> interceptorMap = new LinkedHashMap<>();
 
+    /**
+     * native image 模式下是不能使用cglib的
+     */
+    private boolean cglib = true;
+
     private Aop() {
     }
 
-    public void init(LinkedHashMap<Class, EnhanceInterceptor> map) {
-        this.interceptorMap.put(Lookup.class,new LookupInterceptor());
+    public Aop init(LinkedHashMap<Class, EnhanceInterceptor> map) {
+        this.interceptorMap.put(Lookup.class, new LookupInterceptor());
         this.interceptorMap.putAll(map);
+        this.cglib = DoceanConfig.ins().get("cglib", "true").equals("true");
+        log.info("aop use cglib:{}", this.cglib);
+        return this;
+    }
+
+    /**
+     * 支持根据注解Aspect来实现aop
+     *
+     * @param packages
+     * @return
+     */
+    public Aop useAspect(Ioc ioc, String... packages) {
+        Ioc.create(Thread.currentThread().getContextClassLoader()).cleanAnnos().setAnnos(Aspect.class).init(packages).getBeansWithAnnotation(Aspect.class).values().forEach(it -> {
+            Arrays.stream(it.getClass().getDeclaredMethods()).forEach(m -> {
+
+                Optional.ofNullable(m.getAnnotation(Before.class)).ifPresent(a -> {
+                    EnhanceInterceptor interceptor = new EnhanceInterceptor() {
+                        @SneakyThrows
+                        @Override
+                        public void before(AopContext aopContext, Method method, Object[] args) {
+                            ProceedingJoinPoint point = new ProceedingJoinPoint();
+                            point.setArgs(args);
+                            m.invoke(it, point);
+                        }
+                    };
+                    interceptorMap.put(a.anno(), interceptor);
+                });
+
+                Optional.ofNullable(m.getAnnotation(After.class)).ifPresent(a -> {
+                    EnhanceInterceptor interceptor = new EnhanceInterceptor() {
+                        @SneakyThrows
+                        @Override
+                        public Object after(AopContext context, Method method, Object res) {
+                            ProceedingJoinPoint point = new ProceedingJoinPoint();
+                            point.setRes(res);
+                            return m.invoke(it, point);
+                        }
+                    };
+                    interceptorMap.put(a.anno(), interceptor);
+                });
+            });
+            ioc.putBean(it);
+        });
+        return this;
+    }
+
+    public Aop useAspect(Ioc ioc, ClassLoader classLoader, String... packages) {
+        if (classLoader == null) {
+            classLoader = Thread.currentThread().getContextClassLoader();
+        }
+        Ioc.create(classLoader).cleanAnnos().setAnnos(Aspect.class).init(packages).getBeansWithAnnotation(Aspect.class).values().forEach(it -> {
+            Arrays.stream(it.getClass().getDeclaredMethods()).forEach(m -> {
+
+                Optional.ofNullable(m.getAnnotation(Before.class)).ifPresent(a -> {
+                    EnhanceInterceptor interceptor = new EnhanceInterceptor() {
+                        @SneakyThrows
+                        @Override
+                        public void before(AopContext aopContext, Method method, Object[] args) {
+                            ProceedingJoinPoint point = new ProceedingJoinPoint();
+                            point.setArgs(args);
+                            m.invoke(it, point);
+                        }
+                    };
+                    interceptorMap.put(a.anno(), interceptor);
+                });
+
+                Optional.ofNullable(m.getAnnotation(After.class)).ifPresent(a -> {
+                    EnhanceInterceptor interceptor = new EnhanceInterceptor() {
+                        @SneakyThrows
+                        @Override
+                        public Object after(AopContext context, Method method, Object res) {
+                            ProceedingJoinPoint point = new ProceedingJoinPoint();
+                            point.setRes(res);
+                            return m.invoke(it, point);
+                        }
+                    };
+                    interceptorMap.put(a.anno(), interceptor);
+                });
+            });
+            ioc.putBean(it);
+        });
+        return this;
     }
 
     private boolean needEnhance(Class clazz, Class annotation) {
@@ -68,47 +160,8 @@ public class Aop {
 
 
     public <T> T enhance(Class clazz, LinkedHashMap<Class, EnhanceInterceptor> interceptor) {
-        Enhancer enhancer = new Enhancer();
-        enhancer.setSuperclass(clazz);
-
-        MethodInterceptor callback = (obj, method, args, proxy) -> {
-            List<EnhanceInterceptor> interceptors = Lists.newArrayList();
-            for (Map.Entry<Class, EnhanceInterceptor> entry : interceptor.entrySet()) {
-                if (method.getAnnotation(entry.getKey()) != null) {
-                    interceptors.add(entry.getValue());
-                }
-            }
-
-            if (interceptors.size() == 0) {
-                return proxy.invokeSuper(obj, args);
-            }
-            AopContext context = new AopContext();
-            try {
-                interceptors.stream().forEach(it -> {
-                    if (it.needEnhance(method)) {
-                        it.before(context, method, args);
-                    }
-                });
-                Object result = proxy.invokeSuper(obj, args);
-                MutableObject o = new MutableObject(result);
-                interceptors.stream().forEach(it -> {
-                    if (it.needEnhance(method)) {
-                        Object r = it.after(context, method, o.getObj());
-                        o.setObj(r);
-                    }
-                });
-                return o.getObj();
-            } catch (Throwable ex) {
-                interceptors.stream().forEach(it -> {
-                    if (it.needEnhance(method)) {
-                        it.exception(context, method, ex);
-                    }
-                });
-                throw new DoceanException(ex);
-            }
-        };
-        enhancer.setCallback(callback);
-        return (T) enhancer.create();
+        IProxy proxy = cglib ? new CglibProxy(clazz, interceptor) : new Proxy(clazz, interceptor);
+        return proxy.getInstance();
     }
 
 

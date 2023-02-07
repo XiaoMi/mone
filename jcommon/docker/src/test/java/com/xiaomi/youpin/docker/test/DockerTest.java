@@ -54,10 +54,37 @@ public class DockerTest {
 
         List<Image> images = dockerClient.listImagesCmd().exec();
 
-        images.forEach(it -> {
+        images.stream().filter(it -> (null != it) && (null != it.getRepoTags())).forEach(it -> {
             System.out.println(it.getId() + ":" + it.getRepoTags()[0]);
         });
 
+    }
+
+
+    @Test
+    public void testListNetWork() {
+        YpDockerClient.ins().listNetwork().forEach(System.out::println);
+    }
+
+    @Test
+    public void testListSubset() {
+        YpDockerClient.ins().listSubnet().forEach(System.out::println);
+    }
+
+
+    @Test
+    public void testCreateNetwork() {
+        IntStream.range(0, 10).forEach(i -> {
+            YpDockerClient.ins().createNetwork("n_" + i, "172." + (20 + i) + ".0.0/16");
+        });
+    }
+
+
+    @Test
+    public void testRemoveNetwork() {
+        IntStream.range(0, 10).forEach(i -> {
+            YpDockerClient.ins().removeNetwork("n_" + i);
+        });
     }
 
 
@@ -81,6 +108,13 @@ public class DockerTest {
     public void testListContainers3() {
         List<Container> list = YpDockerClient.ins().listContainers(Lists.newArrayList(), true);
         Set<String> set = list.stream().map(it -> it.getImage().split("-")[0]).collect(Collectors.toSet());
+        System.out.println(set);
+    }
+
+    @Test
+    public void testListContainers5() {
+        List<Container> list = YpDockerClient.ins().listContainers(Lists.newArrayList(), false, "jaeger");
+        Set<String> set = list.stream().map(it -> it.getNames()[0]).collect(Collectors.toSet());
         System.out.println(set);
     }
 
@@ -207,7 +241,7 @@ public class DockerTest {
 
     @Test
     public void testBuild() {
-        YpDockerClient.ins().build("/Users/zhangzhiyong/docker/Dockerfile", "mischedule:555");
+        YpDockerClient.ins().build("/tmp/Dockerfile", "mischedule:555");
     }
 
 
@@ -224,13 +258,13 @@ public class DockerTest {
                 Lists.newArrayList(ep),
                 Lists.newArrayList(pb),
                 Lists.newArrayList(bind),
-                "DOCKER_DUBBO_IP_TO_BIND=");
+                "DOCKER_DUBBO_IP_TO_BIND=10.231.72.88");
         System.out.println(id);
     }
 
     @Test
     public void testListImages() {
-        List<Image> list = YpDockerClient.ins().listImages("");
+        List<Image> list = YpDockerClient.ins().listImages("redis:latest");
         list.stream().filter(it -> it.getRepoTags()[0].startsWith("mischedule-")).forEach(it -> {
             System.out.println(it.getId() + ":" + it.getRepoTags()[0]);
         });
@@ -298,7 +332,8 @@ public class DockerTest {
 
     @Test
     public void testPull() throws InterruptedException {
-        YpDockerClient.ins().pullImage("127.0.0.1:5000/miserver", new PullImageResultCallback() {
+        String ip = "";
+        YpDockerClient.ins().pullImage("" + ip + "/miserver", new PullImageResultCallback() {
             @Override
             public void onNext(PullResponseItem item) {
                 super.onNext(item);
@@ -309,9 +344,10 @@ public class DockerTest {
 
     @Test
     public void testPush() throws InterruptedException {
-        YpDockerClient.ins().setAuthConfig("http://xxxx/v2/", "mione", "");
+        String ip = "";
+        YpDockerClient.ins().setAuthConfig("http://" + ip + ":7999/v2/", "mione", "12345678!Abc");
         YpDockerClient.ins()
-                .pushImage("xxxx/mione/renqingfu.node-webca52ff57-3717-47d8-9c51-3b4f93417ed9",
+                .pushImage("" + ip + ":7999/mione/renqingfu.node-webca52ff57-3717-47d8-9c51-3b4f93417ed9",
                         new PushImageResultCallback())
                 .awaitCompletion();
     }

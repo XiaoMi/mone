@@ -16,6 +16,7 @@
 
 package com.xiaomi.youpin.docean.common;
 
+import net.sf.cglib.beans.BeanCopier;
 import net.sf.cglib.beans.BeanMap;
 
 import java.util.Map;
@@ -34,6 +35,11 @@ public abstract class BeanUtils {
         BeanMap beanMap = BeanMap.create(bean);
         beanMap.putAll(map);
         return bean;
+    }
+
+    public static void copy(Object source, Object target) {
+        BeanCopier copier = BeanCopier.create(source.getClass(), target.getClass(), false);
+        copier.copy(source, target, null);
     }
 
 

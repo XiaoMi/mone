@@ -16,9 +16,10 @@
 
 package com.xiaomi.data.push.uds;
 
-import com.xiaomi.data.push.common.CommonUtils;
-import com.xiaomi.data.push.common.Send;
-import com.xiaomi.data.push.common.UdsException;
+import com.google.common.base.Stopwatch;
+import com.xiaomi.data.push.common.*;
+import com.xiaomi.data.push.uds.context.TraceContext;
+import com.xiaomi.data.push.uds.context.TraceEvent;
 import com.xiaomi.data.push.uds.context.UdsClientContext;
 import com.xiaomi.data.push.uds.handler.UdsClientConnetManageHandler;
 import com.xiaomi.data.push.uds.handler.UdsClientHandler;
@@ -29,25 +30,16 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.epoll.EpollDomainSocketChannel;
-import io.netty.channel.epoll.EpollEventLoopGroup;
-import io.netty.channel.epoll.EpollSocketChannel;
-import io.netty.channel.kqueue.KQueueDomainSocketChannel;
-import io.netty.channel.kqueue.KQueueEventLoopGroup;
-import io.netty.channel.kqueue.KQueueSocketChannel;
-import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.channel.unix.DomainSocketAddress;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import run.mone.api.IClient;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * @author goodjava@qq.com
@@ -56,15 +48,16 @@ import java.util.concurrent.TimeUnit;
  * 只支持mac和linux
  */
 @Slf4j
-public class UdsClient {
+public class UdsClient implements IClient<UdsCommand> {
+
+    private ExecutorService pool = new ThreadPoolExecutor(200, 200, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(100));
 
     @Getter
     private volatile Channel channel;
 
     private final String id;
 
-    @Getter
-    private final ConcurrentHashMap<String, UdsProcessor> processorMap = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Pair<UdsProcessor<UdsCommand, UdsCommand>, ExecutorService>> processorMap = new ConcurrentHashMap<>();
 
     @Setter
     private boolean remote;
@@ -82,35 +75,22 @@ public class UdsClient {
         this.id = id;
     }
 
-    private Class getChannelClass(boolean mac) {
-        if (this.remote) {
-            if (CommonUtils.isWindows()) {
-                return NioSocketChannel.class;
-            }
-
-            return mac ? KQueueSocketChannel.class : EpollSocketChannel.class;
-        }
-        return mac ? KQueueDomainSocketChannel.class : EpollDomainSocketChannel.class;
-    }
-
 
     private EventLoopGroup getEventLoopGroup() {
-        if (CommonUtils.isWindows()) {
-            return new NioEventLoopGroup();
-        }
-        return CommonUtils.isMac() ? new KQueueEventLoopGroup() : new EpollEventLoopGroup();
+        return NetUtils.getEventLoopGroup();
     }
 
 
+    @Override
     public void start(String path) {
         boolean mac = CommonUtils.isMac();
-        log.info(" start mac:{}", mac);
+        log.info("start client system is mac:{} host:{} port:{} remote:{}", mac, this.host, this.port, remote);
         EventLoopGroup group = null;
         try {
             group = getEventLoopGroup();
             Bootstrap b = new Bootstrap();
             b.group(group)
-                    .channel(getChannelClass(mac))
+                    .channel(NetUtils.getClientChannelClass(mac, this.remote))
                     .handler(new ChannelInitializer<Channel>() {
                         @Override
                         protected void initChannel(Channel ch) throws Exception {
@@ -140,25 +120,42 @@ public class UdsClient {
         Send.send(this.channel, command);
     }
 
-
+    @Override
     public UdsCommand call(UdsCommand req) {
+        Stopwatch sw = Stopwatch.createStarted();
+        TraceContext context = new TraceContext();
+        context.enter();
         long id = req.getId();
         try {
             CompletableFuture<UdsCommand> future = new CompletableFuture<>();
             reqMap.put(req.getId(), future);
             Channel channel = UdsClientContext.ins().channel.get();
             if (null == channel || !channel.isOpen()) {
-                log.warn("server channel is close");
-                throw new UdsException("server channel is close");
+                log.warn("client channel is close");
+                throw new UdsException("client channel is close");
             }
             Send.send(channel, req);
             return future.get(req.getTimeout(), TimeUnit.MILLISECONDS);
         } catch (Throwable ex) {
             log.error("client call:{} error:{}", req.getCmd(), ex.getMessage());
-            throw new UdsException("cal:" + ex);
+            throw new UdsException("cal error:" + ex);
         } finally {
             reqMap.remove(id);
+            context.exit(new TraceEvent("client", sw.elapsed(TimeUnit.MILLISECONDS)));
         }
+    }
+
+    @Override
+    public ConcurrentHashMap<String, UdsProcessor<UdsCommand, UdsCommand>> getProcessorMap() {
+        ConcurrentHashMap<String, UdsProcessor<UdsCommand, UdsCommand>> res = new ConcurrentHashMap<>();
+        this.processorMap.forEach((k, v) -> {
+            res.put(k, v.getKey());
+        });
+        return res;
+    }
+
+    public void putProcessor(UdsProcessor processor) {
+        this.processorMap.put(processor.cmd(), Pair.of(processor, ExecutorServiceUtils.creatThreadPool(processor.poolSize(), this.pool)));
     }
 
     public void oneWay(UdsCommand req) {
@@ -168,7 +165,7 @@ public class UdsClient {
             Send.send(channel, req);
         } catch (Throwable ex) {
             log.error(ex.getMessage());
-            throw new UdsException("one way:" + ex);
+            throw new UdsException("one way error:" + ex);
         }
     }
 

@@ -18,6 +18,7 @@ package com.xiaomi.youpin.docean.plugin;
 
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.bo.Bean;
+import com.xiaomi.youpin.docean.common.Cons;
 
 import java.lang.annotation.Annotation;
 import java.util.*;
@@ -29,7 +30,14 @@ import java.util.*;
 public interface IPlugin {
 
     default void init() {
+    }
 
+    default String getInitMethodName(Object obj, Class clazz) {
+        return Cons.INIT;
+    }
+
+    default String getDestoryMethodName(Object obj, Class clazz) {
+        return Cons.DESTORY;
     }
 
     default void init(Set<? extends Class<?>> classSet, Ioc ioc) {
@@ -38,6 +46,7 @@ public interface IPlugin {
 
     /**
      * 销毁操作
+     *
      * @param ioc
      */
     default void destory(Ioc ioc) {
@@ -53,6 +62,10 @@ public interface IPlugin {
         return new ArrayList<>();
     }
 
+    default List<Class<? extends Annotation>> filterResourceAnnotations() {
+        return new ArrayList<>();
+    }
+
     /**
      * 初始化需要被接管的bean
      *
@@ -64,7 +77,7 @@ public interface IPlugin {
     }
 
 
-    default Optional<String> ioc(Ioc ioc, Annotation[] annotations) {
+    default Optional<String> ioc(Ioc ioc, Class type, Annotation[] annotations) {
         return Optional.empty();
     }
 
@@ -91,10 +104,15 @@ public interface IPlugin {
 
     /**
      * plugin 启动操作(可以理解为依赖注入都完成后,想要完成的操作都可以放到这里)
+     *
      * @param ioc
      * @return
      */
     default boolean start(Ioc ioc) {
         return true;
+    }
+
+    default void putBean(String name, Bean bean) {
+
     }
 }

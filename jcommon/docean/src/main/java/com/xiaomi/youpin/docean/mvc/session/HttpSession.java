@@ -22,7 +22,7 @@ package com.xiaomi.youpin.docean.mvc.session;
 public interface HttpSession {
 
 
-    String SESSIONID = "OSESSIONID";
+    String SESSIONID = "DOCEANID";
 
     Object getAttribute(String name);
 

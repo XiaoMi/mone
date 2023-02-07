@@ -35,7 +35,7 @@ public class AdminProcessor implements NettyRequestProcessor {
             case "df":{
                 String address = req.getParams().get("address");
                 String filePath = req.getParams().get("file");
-                Channel ch = AgentContext.ins().map.get(address);
+                Channel ch = AgentContext.ins().map.get(address).getChannel();
                 if (null != ch) {
 
                 }

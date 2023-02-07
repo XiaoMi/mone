@@ -64,10 +64,26 @@ public class TaskParam implements Serializable {
     private long timeout;
 
     private String roleId;
+
     /**
      * 分组信息
      */
     private Integer gid;
+
+    /**
+     * 告警接收人 多个以,分隔
+     */
+    private String alarmUsername;
+
+    //告警组名称
+    private String alarmGroup;
+    //告警级别 100=P0、101=P1、102=P2
+    private Integer alarmLevel;
+
+    /**
+     * 是否忽略失败 false:达到失败次数则任务暂停
+     */
+    private boolean ignoreError;
 
     private String creator;
 
@@ -80,6 +96,22 @@ public class TaskParam implements Serializable {
 
 
     public TaskParam() {
+    }
+
+    public String getAlarmGroup() {
+        return alarmGroup;
+    }
+
+    public void setAlarmGroup(String alarmGroup) {
+        this.alarmGroup = alarmGroup;
+    }
+
+    public Integer getAlarmLevel() {
+        return alarmLevel;
+    }
+
+    public void setAlarmLevel(Integer alarmLevel) {
+        this.alarmLevel = alarmLevel;
     }
 
     public TaskDefBean getTaskDef() {
@@ -132,6 +164,7 @@ public class TaskParam implements Serializable {
         return "TaskParam{" +
                 "taskDef=" + taskDef +
                 ", taskId=" + taskId +
+                ", alarmUsername=" + alarmUsername +
                 '}';
     }
 

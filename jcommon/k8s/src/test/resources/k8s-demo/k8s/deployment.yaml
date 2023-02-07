@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-demo-deployment
+spec:
+  selector:
+    matchLabels:
+      app: k8s # 和 pod.yaml 对应
+  replicas: 3 # 这个 deployment要有 3 个 pod
+  minReadySeconds: 3 # 指在更新了一个 Pod 后，需要在它进入正常状态后 3 秒再更新下一个 Pod
+  strategy:
+    type: RollingUpdate # 升级策略是滚动升级 (RollingUpdate)
+    rollingUpdate:
+      maxUnavailable: 1 # 指同时处于不可用状态的 Pod 不能超过一个
+      maxSurge: 1 # 指多余的 Pod 不能超过一个
+  template:
+    metadata:
+      labels:
+        app: k8s # 和 pod.yaml 对应
+    spec:
+      containers:
+        - name: k8s-demo
+          image: x.net/mixiao/k8s-demo:0.1
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "10m"
+            limits:
+              memory: "128Mi"
+              cpu: "1000m"
+          ports:
+            - containerPort: 80
+              protocol: TCP

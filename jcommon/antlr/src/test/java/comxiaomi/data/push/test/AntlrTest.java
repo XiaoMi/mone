@@ -61,6 +61,19 @@ public class AntlrTest {
     }
 
     @Test
+    public void testParam() {
+        String v2 = "{\"code\":0,\"message\":\"ok\",\"data\":{\"goodId\":16666,\"goodName\":\"小米手机\",\"goodPrice\":1999.0},\"traceId\":null,\"attachments\":null}";
+        int v = (int) Expr.params(v2, "params.json().get(code:string).getAsInt()");
+        System.out.println(v);
+    }
+
+    @Test
+    public void testParam2() {
+        String v2 = "{\"code\":0,\"message\":\"ok\",\"data\":{\"goodId\":16666,\"goodName\":\"小米手机\",\"goodPrice\":1999.0},\"traceId\":null,\"attachments\":null}";
+        System.out.println(Expr.params(v2, "params.json().get(data).get(goodId).getAsInt()"));
+    }
+
+    @Test
     public void testAntlrResult() {
         Map<String, Object> m = new HashMap<>();
         m.put("name", "zzy");
@@ -171,5 +184,16 @@ public class AntlrTest {
         String str = Json.json("$lista", m);
         System.out.println(str);
     }
+
+
+    @Test
+    public void test4() {
+        String v = "{\"code\":0,\"info\":\"ok\",\"desc\":\"成功\",\"data\":{\"order_id\":\"5221015445001044\"}}";
+//        Object r4 = Expr.params(v, "params.toMap(){data}");
+        Object r5 = Expr.params(v, "params.toMap(){data}{order_id}");
+        System.out.println(r5);
+    }
+
+
 
 }

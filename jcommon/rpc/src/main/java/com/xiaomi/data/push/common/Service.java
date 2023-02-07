@@ -16,6 +16,8 @@
 
 package com.xiaomi.data.push.common;
 
+import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
+
 /**
  *
  * @author zhangzhiyong
@@ -56,5 +58,9 @@ public interface Service {
      */
     default void schedule() {
 
+    }
+
+    default RemotingCommand call(RemotingCommand req) {
+        return null;
     }
 }

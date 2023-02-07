@@ -55,12 +55,13 @@ public class DubboPlugin implements IPlugin {
     public void init(Set<? extends Class<?>> classSet, Ioc ioc) {
         log.info("init dubbo plugin");
         Config config = ioc.getBean(Config.class);
-        applicationConfig = new ApplicationConfig(config.get(Cons.DUBBO_APP_NAME,""));
-        registryConfig = new RegistryConfig(config.get(Cons.DUBBO_REG_ADDRESS,""));
+        applicationConfig = new ApplicationConfig(config.get(Cons.DUBBO_APP_NAME, ""));
+        applicationConfig.setQosEnable(false);
+        registryConfig = new RegistryConfig(config.get(Cons.DUBBO_REG_ADDRESS, ""));
         //启动的时候是否check 注册中心
-        registryConfig.setCheck(Boolean.valueOf(config.get(Cons.DUBBO_REG_CHECK,Boolean.FALSE.toString())));
-        Map<String,String> m = Maps.newHashMap();
-        m.put(PropertyKeyConst.NAMING_LOAD_CACHE_AT_START,config.get(Cons.DUBBO_LOAD_CACHE_AT_START, Boolean.TRUE.toString()));
+        registryConfig.setCheck(Boolean.valueOf(config.get(Cons.DUBBO_REG_CHECK, Boolean.FALSE.toString())));
+        Map<String, String> m = Maps.newHashMap();
+        m.put(PropertyKeyConst.NAMING_LOAD_CACHE_AT_START, config.get(Cons.DUBBO_LOAD_CACHE_AT_START, Boolean.TRUE.toString()));
         registryConfig.setParameters(m);
         int dubboPort = Integer.valueOf(config.get(Cons.DUBBO_PORT, "-1"));
         int dubboThreads = Integer.valueOf(config.get(Cons.DUBBO_THREADS, "200"));
@@ -87,7 +88,7 @@ public class DubboPlugin implements IPlugin {
             log.info(ex.getMessage());
         }
 
-        DubboCall dubboCall = new DubboCall(this.applicationConfig,this.registryConfig);
+        DubboCall dubboCall = new DubboCall(this.applicationConfig, this.registryConfig);
         ioc.putBean(dubboCall);
     }
 
@@ -100,9 +101,10 @@ public class DubboPlugin implements IPlugin {
         serviceConfig.setInterface(s.interfaceClass());
         serviceConfig.setRef(bean.getObj());
         serviceConfig.setGroup(getGroup(ioc, s.group()));
-        serviceConfig.setVersion(s.version());
+        serviceConfig.setVersion(getVersion(ioc, s.version()));
         serviceConfig.setProtocol(protocol);
         serviceConfig.setTimeout(s.timeout());
+        serviceConfig.setAsync(s.async());
         serviceConfig.export();
     }
 
@@ -130,7 +132,7 @@ public class DubboPlugin implements IPlugin {
     }
 
     @Override
-    public Optional<String> ioc(Ioc ioc, Annotation[] annotations) {
+    public Optional<String> ioc(Ioc ioc, Class type, Annotation[] annotations) {
         Optional<Annotation> optional = getAnno(annotations, Reference.class);
         if (optional.isPresent()) {
             Reference reference = (Reference) optional.get();
@@ -168,7 +170,7 @@ public class DubboPlugin implements IPlugin {
     @Override
     public boolean disable(Ioc ioc) {
         Config config = ioc.getBean(Config.class);
-        return Boolean.valueOf(config.get("disable_dubbo_plugin","false"));
+        return Boolean.valueOf(config.get("disable_dubbo_plugin", "false"));
     }
 
     @Override

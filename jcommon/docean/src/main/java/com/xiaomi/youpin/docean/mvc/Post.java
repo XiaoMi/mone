@@ -47,6 +47,11 @@ public abstract class Post {
                 array.add(it);
             });
         }
+
+        if (arguments.isJsonPrimitive()) {
+            array.add(arguments.getAsJsonPrimitive());
+        }
+
         return array;
     }
 

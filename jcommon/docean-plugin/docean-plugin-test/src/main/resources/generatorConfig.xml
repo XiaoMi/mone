@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE generatorConfiguration
+        PUBLIC "-//mybatis.org//DTD MyBatis Generator Configuration 1.0//EN"
+        "http://mybatis.org/dtd/mybatis-generator-config_1_0.dtd">
+
+<generatorConfiguration>
+
+    <!-- mysql驱动的位置 -->
+<!--    <classPathEntry location="/Users/zhangzhiyong/IdeaProjects/jcommon/common/src/main/resources/mysql-connector-java-5.1.46.jar"/>-->
+    <classPathEntry location="/tmp/mysql-connector-java-5.1.46.jar"/>
+
+    <context id="Tables" targetRuntime="MyBatis3">
+
+
+        <!-- 注释 -->
+        <commentGenerator>
+            <!-- 是否生成注释代时间戳 -->
+            <property name="suppressDate" value="true"/>
+            <!-- 是否去除自动生成的注释 true：是 ： false:否 -->
+            <property name="suppressAllComments" value="true"/>
+        </commentGenerator>
+
+
+        <jdbcConnection
+                driverClass="com.mysql.jdbc.Driver"
+                connectionURL="jdbc:mysql://127.0.0.1:9696/gateway_web"
+                userId="root"
+                password="123456">
+        </jdbcConnection>
+
+        <!-- 非必需，类型处理器，在数据库类型和java类型之间的转换控制-->
+        <!-- 默认false，把JDBC DECIMAL 和 NUMERIC 类型解析为 Integer，为 true时把JDBC DECIMAL 和
+         NUMERIC 类型解析为java.math.BigDecimal -->
+        <javaTypeResolver>
+            <!-- 是否使用bigDecimal， false可自动转化以下类型（Long, Integer, Short, etc.） -->
+            <property name="forceBigDecimals" value="false"/>
+        </javaTypeResolver>
+
+        <!-- 生成实体类地址 -->
+        <javaModelGenerator targetPackage="com.xiaomi.mione.plugin.dao.model" targetProject="src/main/java">
+        <!--<javaModelGenerator targetPackage="com.xiaomi.data.push.dao.model" targetProject="/data/workspace/java/web-service/user-profile-push/src/main/java">-->
+            <!-- 从数据库返回的值被清理前后的空格 -->
+            <property name="trimStrings" value="true"/>
+            <!-- enableSubPackages:是否让schema作为包的后缀 -->
+            <property name="enableSubPackages" value="false"/>
+        </javaModelGenerator>
+
+        <!-- 生成mapper xml文件 -->
+        <sqlMapGenerator targetPackage="com.xiaomi.mione.plugin.dao.mapper" targetProject="src/main/resources/">
+            <!-- enableSubPackages:是否让schema作为包的后缀 -->
+            <property name="enableSubPackages" value="false"/>
+        </sqlMapGenerator>
+
+        <!-- 生成mapper xml对应Client-->
+        <javaClientGenerator targetPackage="com.xiaomi.mione.plugin.dao.mapper" targetProject="src/main/java" type="XMLMAPPER">
+        <!--<javaClientGenerator targetPackage="com.xiaomi.data.push.dao.mapper" targetProject="/data/workspace/java/web-service/user-profile-push/src/main/java" type="XMLMAPPER">-->
+            <!-- enableSubPackages:是否让schema作为包的后缀 -->
+            <property name="enableSubPackages" value="false"/>
+        </javaClientGenerator>
+
+        <!-- 配置表信息 -->
+        <!-- schema即为数据库名 tableName为对应的数据库表 domainObjectName是要生成的实体类 enable*ByExample
+            是否生成 example类 -->
+
+        <!--<table schema="job" tableName="job" domainObjectName="Job"></table>-->
+        <table schema="task" tableName="task" domainObjectName="Task">
+            <generatedKey column="id" sqlStatement="JDBC" identity="true"/>
+        </table>
+
+
+    </context>
+</generatorConfiguration>

@@ -22,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.File;
 import java.net.JarURLConnection;
 import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
@@ -36,10 +35,19 @@ import java.util.jar.JarFile;
 @Slf4j
 public class ClassFinder {
 
+
     public Set<String> findClassSet(String packageName) {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        return findClassSet(packageName, classLoader);
+    }
+
+
+    public Set<String> findClassSet(String packageName, ClassLoader classLoader) {
+        if (null == classLoader) {
+            classLoader = Thread.currentThread().getContextClassLoader();
+        }
         packageName = packageName.replace(".", "/");
         try {
-            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
             Enumeration resources = classLoader.getResources(packageName);
             Set<String> result = new HashSet<>();
             while (resources.hasMoreElements()) {
