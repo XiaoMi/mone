@@ -1,13 +1,14 @@
-# 提供了hera相关的注解、工具类。
+# Provides Hera related annotations and utility classes.
 
-## 注解
+## Annotation
 
-`@Trace`注解，方法级别修饰，可以使方法接入链路追踪。
 
-`@TraceTimeEvent`注解，方法级别修饰，可以将该注解修饰的方法耗时，以event的形式加入当前span中。
+`@Trace` method - level modifications, enable method access link tracing.
 
-## 工具类
+`@TraceTimeEvent` method level modification, which can be added to the current span as an event.
 
-`HeraContextUtil`类，提供了Java代码中读写HeraContext的方法。
+## Tool
 
-`TraceIdUtil`类，提高了Java代码中读取当前traceID与spanID的方法
+`HeraContextUtil` which provides methods for reading and writing HeraContext in Java code.
+
+`TraceIdUtil` to improve the method of reading the current traceID and spanID in Java code
