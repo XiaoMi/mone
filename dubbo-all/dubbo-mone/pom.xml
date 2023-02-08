@@ -10,10 +10,7 @@
     <modules>
         <module>dubbo-auth</module>
         <module>dubbo-trace</module>
-        <module>dubbo-mock</module>
-        <module>dubbo-docs</module>
         <module>dubbo-auth-function</module>
-        <module>http-docs</module>
         <module>dubbo-server-registry</module>
     </modules>
 

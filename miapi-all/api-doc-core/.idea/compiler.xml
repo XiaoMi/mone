@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="dubbo-docs-core" />
+        <module name="dubbo-docs-annotations" />
+        <module name="dubbo-mock" />
+        <module name="http-docs-annotations" />
+        <module name="http-docs-core" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="api-doc-core" target="1.8" />
+      <module name="dubbo-docs" target="1.8" />
+      <module name="dubbo-docs-annotations" target="1.8" />
+      <module name="dubbo-docs-core" target="1.8" />
+      <module name="dubbo-mock" target="1.8" />
+      <module name="http-docs" target="1.8" />
+      <module name="http-docs-annotations" target="1.8" />
+      <module name="http-docs-core" target="1.8" />
+    </bytecodeTargetLevel>
+  </component>
+  <component name="JavacSettings">
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="api-doc-core" options="" />
+      <module name="dubbo-docs-annotations" options="-sourcepath $PROJECT_DIR$/dubbo-docs/dubbo-docs-annotations/src/main/java" />
+      <module name="dubbo-docs-core" options="-sourcepath $PROJECT_DIR$/dubbo-docs/dubbo-docs-core/src/main/java" />
+      <module name="dubbo-mock" options="-sourcepath $PROJECT_DIR$/dubbo-mock/src/main/java" />
+      <module name="http-docs-annotations" options="-sourcepath $PROJECT_DIR$/http-docs/http-docs-annotations/src/main/java" />
+      <module name="http-docs-core" options="-sourcepath $PROJECT_DIR$/http-docs/http-docs-core/src/main/java" />
+    </option>
+  </component>
+</project>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="RemoteRepositoriesConfiguration">
+    <remote-repository>
+      <option name="id" value="miremote" />
+      <option name="name" value="maven-remote-virtual" />
+      <option name="url" value="https://pkgs.d.xiaomi.net/artifactory/maven-remote-virtual" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="central" />
+      <option name="name" value="Central Repository" />
+      <option name="url" value="https://repo.maven.apache.org/maven2" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="snapshots" />
+      <option name="name" value="maven-snapshot-virtual" />
+      <option name="url" value="https://pkgs.d.xiaomi.net:443/artifactory/maven-snapshot-virtual" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="central" />
+      <option name="name" value="Maven Central repository" />
+      <option name="url" value="https://repo1.maven.org/maven2" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="central" />
+      <option name="name" value="maven-release-virtual" />
+      <option name="url" value="https://pkgs.d.xiaomi.net:443/artifactory/maven-release-virtual" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="jboss.community" />
+      <option name="name" value="JBoss Community repository" />
+      <option name="url" value="https://repository.jboss.org/nexus/content/repositories/public/" />
+    </remote-repository>
+    <remote-repository>
+      <option name="id" value="ossrh" />
+      <option name="name" value="ossrh-snapshot" />
+      <option name="url" value="https://s01.oss.sonatype.org/content/repositories/snapshots" />
+    </remote-repository>
+  </component>
+</project>
