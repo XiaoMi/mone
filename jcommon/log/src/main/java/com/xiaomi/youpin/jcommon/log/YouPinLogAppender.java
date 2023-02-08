@@ -22,8 +22,8 @@ import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import com.google.gson.Gson;
 import com.xiaomi.youpin.dubbo.filter.TraceIdUtils;
 import lombok.Setter;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.MDC;
+import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.HashSet;

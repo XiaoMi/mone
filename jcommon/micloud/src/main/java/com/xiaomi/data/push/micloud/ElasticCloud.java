@@ -23,9 +23,6 @@ import com.xiaomi.data.push.micloud.bo.request.CountRequest;
 import com.xiaomi.data.push.micloud.bo.request.DetailRequest;
 import com.xiaomi.data.push.micloud.bo.request.OfflineRequest;
 import com.xiaomi.data.push.micloud.bo.response.*;
-import com.xiaomi.fusion.cloud.auth.core.auth.Signer;
-import com.xiaomi.fusion.cloud.auth.core.enums.HttpMethod;
-import com.xiaomi.fusion.cloud.auth.core.util.HttpUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -100,15 +97,8 @@ public class ElasticCloud {
             LinkedListMultimap<String, String> headers = LinkedListMultimap.create();
             headers.put("content-type", "application/json; charset=utf-8");
             headers.put("date", dateFormat.format(new Date()));
-            String signature = Signer.getAuthorizationHeader(HttpMethod.POST, uri, headers, accessKey, secretKey);
-            headers.put("authorization", signature);
-            response = HttpUtil.postJson(uri.toString(), input, headers);
             return response;
         } catch (URISyntaxException e) {
-            log.info("params: {}", input);
-            log.error("response: " + response);
-            log.error(e.toString());
-        } catch (IOException e) {
             log.info("params: {}", input);
             log.error("response: " + response);
             log.error(e.toString());
