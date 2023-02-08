@@ -33,16 +33,19 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
+ * Docker operation client implementation
  * @author goodjava@qq.com
  */
 @Slf4j
 public class YpDockerClient {
 
+    // real docker client
     private com.github.dockerjava.api.DockerClient dockerClient;
     private AuthConfig authConfig;
 
     private YpDockerClient() {
         log.info("docker client version: {}", new Version());
+        // build real docker client
         DefaultDockerClientConfig.Builder config
                 = DefaultDockerClientConfig.createDefaultConfigBuilder()
                 .withDockerTlsVerify(false);
@@ -51,22 +54,27 @@ public class YpDockerClient {
                 .build();
     }
 
+    // lazy instantiation of docker operation client
     private static final class LazyHolder {
         private static final YpDockerClient ins = new YpDockerClient();
     }
 
+    // set auth info
     public void setAuthConfig(String registryAddress, String username, String password) {
         authConfig = new AuthConfig().withRegistryAddress(registryAddress).withUsername(username).withPassword(password);
     }
 
+    // push docker image
     public PushImageResultCallback pushImage(String name, PushImageResultCallback callback) {
         return dockerClient.pushImageCmd(name).withAuthConfig(authConfig).exec(callback);
     }
 
+    // pull docker image
     public PullImageResultCallback pullImage(String name, PullImageResultCallback callback) {
         return dockerClient.pullImageCmd(name).exec(callback);
     }
 
+    // build docker image
     public BuildImageResultCallback buildImage(File baseDir, Set<String> tags, BuildImageResultCallback callback) {
         return dockerClient
                 .buildImageCmd()
@@ -76,6 +84,7 @@ public class YpDockerClient {
                 .exec(callback);
     }
 
+    // get client instance
     public static final YpDockerClient ins() {
         return LazyHolder.ins;
     }
@@ -85,6 +94,13 @@ public class YpDockerClient {
         return info;
     }
 
+    /**
+     * get docker contaniner
+     * @param ids container id list
+     * @param showAll false is runing container list
+     * @param names container name list
+     * @return
+     */
     public List<Container> listContainers(List<String> ids, boolean showAll, String... names) {
         ListContainersCmd cmd = dockerClient.listContainersCmd();
         if (ids.size() > 0) {
@@ -97,10 +113,22 @@ public class YpDockerClient {
         return list;
     }
 
+    /**
+     * list docker contaniner list
+     * @param showAll false is runing container list
+     * @return
+     */
     public List<Container> listAllContainer(boolean showAll) {
         return dockerClient.listContainersCmd().withShowAll(showAll).exec();
     }
 
+    /**
+     * tail log for container
+     * @param containerId
+     * @param tailNum
+     * @return
+     * @throws InterruptedException
+     */
     public String logContainerCmd(String containerId, Integer tailNum) throws InterruptedException {
         StringBuffer sb = new StringBuffer();
         dockerClient.logContainerCmd(containerId)
@@ -115,6 +143,11 @@ public class YpDockerClient {
         return sb.toString();
     }
 
+    /**
+     * create docker network
+     * @param name
+     * @return
+     */
     public CreateNetworkResponse createNetwork(String name) {
         CreateNetworkResponse createNetworkResponse = dockerClient
                 .createNetworkCmd()
@@ -124,6 +157,11 @@ public class YpDockerClient {
         return createNetworkResponse;
     }
 
+    /**
+     * get docker network list by name
+     * @param name network name
+     * @return
+     */
     public List<Network> listNetwork(String name) {
         return dockerClient.listNetworksCmd().withNameFilter(name).exec();
     }
@@ -136,6 +174,14 @@ public class YpDockerClient {
         dockerClient.disconnectFromNetworkCmd().withContainerId(containerId).withNetworkId(networkId).exec();
     }
 
+    /**
+     * get container list
+     * @param ids
+     * @param showAll
+     * @param status
+     * @param name
+     * @return
+     */
     public List<Container> listContainers(List<String> ids, boolean showAll, List<String> status, List<String> name) {
         ListContainersCmd cmd = dockerClient.listContainersCmd();
         if (ids.size() > 0) {
@@ -149,12 +195,20 @@ public class YpDockerClient {
         return list;
     }
 
-
+    /**
+     * startup docker container
+     * @param containerId
+     */
     public void startContainer(String containerId) {
         dockerClient.startContainerCmd(containerId).exec();
     }
 
 
+    /**
+     * docker images list by name
+     * @param name
+     * @return
+     */
     public List<Image> listImages(String name) {
         return dockerClient.listImagesCmd().withImageNameFilter(name).exec();
     }
@@ -170,22 +224,22 @@ public class YpDockerClient {
 
 
     /**
-     * 创建容器
+     * create container
      * <p>
-     * 支持挂载磁盘/
-     * 支持端口暴露
-     * 支持参数设定
+     * Support for mounting disks
+     * Support port exposure
+     * Support parameter setting
      *
      * @param image
      * @param name
      */
     public String createContainer(String image, String name, DockerLimit limit, List<ExposedPort> exposedPorts, List<PortBinding> portBindings, List<Bind> binds, String... env) {
         return dockerClient.createContainerCmd(image)
-                //使用几核
+                //Number of CPUs used
                 .withCpusetCpus(limit.getCpu())
-                //使用多少内存
+                //Number of memory used
                 .withMemory(limit.getMem())
-                //io权重
+                //io weigth
                 .withBlkioWeight(limit.getBlkioWeight())
                 .withName(name)
                 .withRestartPolicy(RestartPolicy.onFailureRestart(3))
@@ -197,14 +251,14 @@ public class YpDockerClient {
 
     public String createContainer(String image, String hostName, String name, DockerLimit limit, List<ExposedPort> exposedPorts, List<PortBinding> portBindings, List<Bind> binds, String... env) {
         CreateContainerCmd cmd = dockerClient.createContainerCmd(image)
-                //使用几核
+                //Number of CPUs used
                 .withCpusetCpus(limit.getCpu());
         if (limit.getMem() > 0) {
-            //使用多少内存
+            //Number of memory used
             cmd.withMemory(limit.getMem());
         }
 
-        //io权重
+        //io weigth
         return cmd.withBlkioWeight(limit.getBlkioWeight())
                 .withRestartPolicy(RestartPolicy.onFailureRestart(3))
                 .withName(name)
@@ -216,7 +270,7 @@ public class YpDockerClient {
     }
 
     /**
-     * 创建容器
+     * create docker container
      * @param image
      * @param hostName  bridge host
      * @param netWorkMode
@@ -230,14 +284,14 @@ public class YpDockerClient {
      */
     public String createContainer(String image, String hostName,String netWorkMode, String name, DockerLimit limit, List<ExposedPort> exposedPorts, List<PortBinding> portBindings, List<Bind> binds, String... env) {
         CreateContainerCmd cmd = dockerClient.createContainerCmd(image)
-                //使用几核
+                //Number of CPUs used
                 .withCpusetCpus(limit.getCpu());
         if (limit.getMem() > 0) {
-            //使用多少内存
+            //Number of memory used
             cmd.withMemory(limit.getMem());
         }
 
-        //io权重
+        //io weigth
         return cmd.withBlkioWeight(limit.getBlkioWeight())
                 .withRestartPolicy(RestartPolicy.onFailureRestart(3))
                 .withName(name)
@@ -251,7 +305,7 @@ public class YpDockerClient {
     }
 
     /**
-     * 创建容器
+     * create container
      * @param image
      * @param hostName  bridge host
      * @param netWorkMode
@@ -265,14 +319,14 @@ public class YpDockerClient {
      */
     public String createContainer(String image, String hostName,String netWorkMode, String name, DockerLimit limit, List<ExposedPort> exposedPorts, List<PortBinding> portBindings, List<Bind> binds, String... env) {
         CreateContainerCmd cmd = dockerClient.createContainerCmd(image)
-                //使用几核
+                //Number of CPUs used
                 .withCpusetCpus(limit.getCpu());
         if (limit.getMem() > 0) {
-            //使用多少内存
+            //Number of memory used
             cmd.withMemory(limit.getMem());
         }
 
-        //io权重
+        //io weight
         return cmd.withBlkioWeight(limit.getBlkioWeight())
                 .withRestartPolicy(RestartPolicy.onFailureRestart(3))
                 .withName(name)
@@ -286,7 +340,7 @@ public class YpDockerClient {
     }
 
     /**
-     * build 镜像
+     * build image
      *
      * @param file
      * @param tag
@@ -335,15 +389,12 @@ public class YpDockerClient {
     }
 
     /**
-     * 获取容器 cpu 和 内存的使用情况
-     * cpu  是个数
-     * 内存  是 使用大小
+     * Get the CPU and memory usage of the container
      *
      * @return
      */
     public UseInfo containerUseInfo(String ip) {
         final List<Container> list = this.listContainers(Lists.newArrayList(), false);
-        //app详情
         List<AppInfo> appList = Lists.newLinkedList();
         Safe.run(() -> appList.addAll(list.stream().filter(it -> {
             Map<String, String> labels = it.getLabels();
@@ -409,10 +460,18 @@ public class YpDockerClient {
     }
 
 
+    /**
+     * delete container
+     * @param containerId
+     */
     public void rm(String containerId) {
         dockerClient.removeContainerCmd(containerId).exec();
     }
 
+    /**
+     * delete container list
+     * @param containerIds
+     */
     public void rmContainers(List<String> containerIds) {
         if (containerIds == null || containerIds.size() == 0) {
             return;
@@ -426,6 +485,10 @@ public class YpDockerClient {
         });
     }
 
+    /**
+     * delete docker image
+     * @param imageId
+     */
     public void rmi(String imageId) {
         dockerClient.removeImageCmd(imageId).exec();
     }
@@ -453,7 +516,7 @@ public class YpDockerClient {
     }
 
     /**
-     * 停机(关闭所有容器)
+     * power off(Close all containers)
      *
      * @return
      */
@@ -465,7 +528,7 @@ public class YpDockerClient {
     }
 
     /**
-     * 开机(启动上次被关闭的所有容器)
+     * power on(Start all containers that were last closed)
      *
      * @param containerIdList
      */
