@@ -26,12 +26,8 @@ import com.xiaomi.data.push.micloud.bo.request.CatalystRequest;
 import com.xiaomi.data.push.micloud.bo.request.Control;
 import com.xiaomi.data.push.micloud.bo.request.OrderInfo;
 import com.xiaomi.data.push.micloud.bo.response.*;
-import com.xiaomi.fusion.cloud.auth.core.auth.Signer;
-import com.xiaomi.fusion.cloud.auth.core.enums.HttpMethod;
-import com.xiaomi.fusion.cloud.auth.core.util.HttpUtil;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -39,7 +35,6 @@ import org.springframework.util.StringUtils;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -255,15 +250,8 @@ public class MiCloud {
             LinkedListMultimap<String, String> headers = LinkedListMultimap.create();
             headers.put("content-type", "application/json; charset=utf-8");
             headers.put("date", dateFormat.format(new Date()));
-            String signature = Signer.getAuthorizationHeader(HttpMethod.POST, uri, headers, accessKey, secretKey);
-            headers.put("authorization", signature);
-            response = HttpUtil.postJson(uri.toString(), input, headers);
             return gson.fromJson(response, ControlResponse.class);
         } catch (URISyntaxException e) {
-            log.info("params: {}", input);
-            log.error("response: " + response);
-            log.error(e.toString());
-        } catch (IOException e) {
             log.info("params: {}", input);
             log.error("response: " + response);
             log.error(e.toString());

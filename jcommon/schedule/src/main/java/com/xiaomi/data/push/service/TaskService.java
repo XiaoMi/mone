@@ -1,15 +1,10 @@
 package com.xiaomi.data.push.service;
 
-import com.dianping.cat.Cat;
-import com.google.common.collect.Maps;
-import com.google.gson.Gson;
-import com.xiaomi.data.push.common.RpcTaskReq;
 import com.xiaomi.data.push.context.ServerContext;
 import com.xiaomi.data.push.dao.mapper.TaskMapper;
 import com.xiaomi.data.push.dao.model.TaskExample;
 import com.xiaomi.data.push.dao.model.TaskWithBLOBs;
 import com.xiaomi.data.push.rpc.RpcClient;
-import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
 import com.xiaomi.data.push.schedule.TaskCacheUpdater;
 import com.xiaomi.data.push.schedule.TaskManager;
 import com.xiaomi.data.push.schedule.task.TaskContext;
@@ -20,7 +15,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -145,7 +139,6 @@ public class TaskService {
         } while (n < retryNum);
 
         logger.warn("updateTask failure n>={} taskId:{} source:{}", retryNum, id, source);
-        Cat.logEvent("updateTask failure", source, "0", "taskId: " + id + " retryNum: " + retryNum);
         return false;
     }
 

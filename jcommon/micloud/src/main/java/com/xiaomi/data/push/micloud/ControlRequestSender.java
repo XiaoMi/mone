@@ -19,13 +19,9 @@ package com.xiaomi.data.push.micloud;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.gson.Gson;
 import com.xiaomi.data.push.micloud.bo.response.ControlResponse;
-import com.xiaomi.fusion.cloud.auth.core.auth.Signer;
-import com.xiaomi.fusion.cloud.auth.core.enums.HttpMethod;
-import com.xiaomi.fusion.cloud.auth.core.util.HttpUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.SimpleDateFormat;
@@ -50,15 +46,8 @@ public class ControlRequestSender {
             LinkedListMultimap<String, String> headers = LinkedListMultimap.create();
             headers.put("content-type", "application/json; charset=utf-8");
             headers.put("date", dateFormat.format(new Date()));
-            String signature = Signer.getAuthorizationHeader(HttpMethod.POST, uri, headers, accessKey, secretKey);
-            headers.put("authorization", signature);
-            response = HttpUtil.postJson(uri.toString(), input, headers);
             return gson.fromJson(response, ControlResponse.class);
         } catch (URISyntaxException e) {
-            log.info("params: {}", input);
-            log.error("response: " + response);
-            log.error(e.toString());
-        } catch (IOException e) {
             log.info("params: {}", input);
             log.error("response: " + response);
             log.error(e.toString());

@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>schedule</artifactId>
-    <version>1.5.1-SNAPSHOT</version>
+    <version>1.5.2-SNAPSHOT</version>
 
 
     <dependencies>
@@ -32,7 +32,7 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>annotation</artifactId>
-            <version>1.6-SNAPSHOT</version>
+            <version>1.6.1-SNAPSHOT</version>
         </dependency>
 
 
@@ -46,7 +46,7 @@
         <dependency>
             <groupId>com.xiaomi.youpin</groupId>
             <artifactId>redis</artifactId>
-            <version>1.5-SNAPSHOT</version>
+            <version>1.8-SNAPSHOT</version>
         </dependency>
 
         <dependency>

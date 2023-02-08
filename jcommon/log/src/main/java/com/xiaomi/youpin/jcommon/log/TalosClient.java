@@ -16,19 +16,6 @@
 
 package com.xiaomi.youpin.jcommon.log;
 
-import com.xiaomi.infra.galaxy.rpc.thrift.Credential;
-import com.xiaomi.infra.galaxy.rpc.thrift.UserType;
-import com.xiaomi.infra.galaxy.talos.admin.TalosAdmin;
-import com.xiaomi.infra.galaxy.talos.client.SimpleTopicAbnormalCallback;
-import com.xiaomi.infra.galaxy.talos.client.TalosClientConfig;
-import com.xiaomi.infra.galaxy.talos.producer.TalosProducer;
-import com.xiaomi.infra.galaxy.talos.producer.TalosProducerConfig;
-import com.xiaomi.infra.galaxy.talos.producer.UserMessageCallback;
-import com.xiaomi.infra.galaxy.talos.producer.UserMessageResult;
-import com.xiaomi.infra.galaxy.talos.thrift.DescribeTopicRequest;
-import com.xiaomi.infra.galaxy.talos.thrift.Message;
-import com.xiaomi.infra.galaxy.talos.thrift.Topic;
-import com.xiaomi.infra.galaxy.talos.thrift.TopicTalosResourceName;
 import lombok.Setter;
 
 import java.nio.ByteBuffer;
@@ -42,8 +29,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author goodjava@qq.com
  */
 public class TalosClient {
-
-    private TalosProducer producer;
 
     @Setter
     private String accessKey;
@@ -72,71 +57,16 @@ public class TalosClient {
     public void init() {
         Properties properties = new Properties();
         properties.setProperty("galaxy.talos.service.endpoint", endpoint);
-        TalosClientConfig talosClientConfig = new TalosClientConfig(properties);
-        TalosProducerConfig talosProducerConfig = new TalosProducerConfig(properties);
-
-        Credential credential = new Credential();
-        credential.setSecretKeyId(accessKey).setSecretKey(accessSecret).setType(UserType.DEV_XIAOMI);
-
-        TalosAdmin talosAdmin = new TalosAdmin(talosClientConfig, credential);
-
-        try {
-            Topic batchTopic = talosAdmin.describeTopic(new DescribeTopicRequest(topicName));
-            TopicTalosResourceName batchTopicTalosResourceName = batchTopic.getTopicInfo().getTopicTalosResourceName();
-
-            BatchMessageSendCallBack callBack = new BatchMessageSendCallBack();
-            TalosProducer producer = new TalosProducer(talosProducerConfig, credential,
-                    batchTopicTalosResourceName,
-                    new SimpleTopicAbnormalCallback(),
-                    callBack);
-            this.producer = producer;
-                System.out.println("youpin log init success");
-            initSuccess.set(true);
-        } catch (Throwable ex) {
-            System.err.println("youpin log init error " + ex.getMessage());
-        }
     }
 
     public void shutdown() {
-        try {
-            if (this.producer != null) {
-                this.producer.shutdown();
-            }
-        } catch (Exception e) {
-            System.out.println("failed to shutdown talos-producer");
-        }
         initSuccess.set(false);
     }
 
 
-    private class BatchMessageSendCallBack implements UserMessageCallback {
-
-        @Override
-        public void onSuccess(UserMessageResult userMessageResult) {
-        }
-
-        @Override
-        public void onError(UserMessageResult userMessageResult) {
-            for (Message message : userMessageResult.getMessageList()) {
-                System.err.println("send message: " + message + " error");
-            }
-        }
-    }
 
 
     public boolean sendMsg(String msgStr) {
-        if (initSuccess.get() != true) {
-            return false;
-        }
-        List<Message> msgs = new ArrayList<>();
-        Message msg = new Message(ByteBuffer.wrap(msgStr.getBytes()));
-        msgs.add(msg);
-        try {
-            producer.addUserMessage(msgs);
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
 
         return true;
     }

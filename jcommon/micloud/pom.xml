@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>micloud</artifactId>
+    <version>1.4.1-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -31,21 +32,6 @@
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
             <version>4.7.2</version>
-        </dependency>
-        <dependency>
-            <groupId>com.xiaomi.fusion.cloud</groupId>
-            <artifactId>cloud-authentication</artifactId>
-            <version>1.0.1</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-api</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>

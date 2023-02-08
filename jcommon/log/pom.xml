@@ -12,7 +12,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>log</artifactId>
-    <version>1.6-SNAPSHOT</version>
+    <version>1.7-SNAPSHOT</version>
 
     <dependencies>
 
@@ -20,30 +20,6 @@
             <groupId>com.lmax</groupId>
             <artifactId>disruptor</artifactId>
             <version>3.4.2</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.xiaomi.infra.galaxy</groupId>
-            <artifactId>galaxy-talos-sdk</artifactId>
-            <version>2.1.7</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>log4j</artifactId>
-                    <groupId>log4j</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>commons-logging</artifactId>
-                    <groupId>commons-logging</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>httpclient</artifactId>
-                    <groupId>org.apache.httpcomponents</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>slf4j-log4j12</artifactId>
-                    <groupId>org.slf4j</groupId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>

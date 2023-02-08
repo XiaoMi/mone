@@ -21,14 +21,10 @@ import com.xiaomi.youpin.docean.anno.DOceanPlugin;
 import com.xiaomi.youpin.docean.plugin.IPlugin;
 import com.xiaomi.youpin.docean.plugin.config.Config;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.rocketmq.acl.common.AclClientRPCHook;
-import org.apache.rocketmq.acl.common.SessionCredentials;
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
-import org.apache.rocketmq.client.consumer.rebalance.AllocateMessageQueueAveragely;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
 import org.apache.rocketmq.common.consumer.ConsumeFromWhere;
-import org.apache.rocketmq.remoting.RPCHook;
 
 import java.util.Optional;
 import java.util.Set;
@@ -68,9 +64,6 @@ public class RocketmqPlugin implements IPlugin {
     private DefaultMQProducer initDefaultMQProducer(RocketmqConfig config) {
         DefaultMQProducer producer = null;
         if (!config.getAk().equals("") && !config.getSk().equals("")) {
-            SessionCredentials credentials = new SessionCredentials(config.getAk(), config.getSk());
-            RPCHook rpcHook = new AclClientRPCHook(credentials);
-            producer = new DefaultMQProducer(config.getProducerGroup(), rpcHook);
         } else {
             producer = new DefaultMQProducer(config.getProducerGroup());
         }
@@ -88,10 +81,6 @@ public class RocketmqPlugin implements IPlugin {
     private DefaultMQPushConsumer initDefaultMQPushConsumer(RocketmqConfig config) {
         DefaultMQPushConsumer defaultMQPushConsumer = new DefaultMQPushConsumer(config.getConsumerGroup());
         if (!config.getAk().equals("") && !config.getSk().equals("")) {
-            SessionCredentials credentials = new SessionCredentials(config.getAk(), config.getSk());
-            RPCHook rpcHook = new AclClientRPCHook(credentials);
-            defaultMQPushConsumer = new DefaultMQPushConsumer(config.getConsumerGroup(), rpcHook, new AllocateMessageQueueAveragely());
-
         } else {
             defaultMQPushConsumer = new DefaultMQPushConsumer(config.getConsumerGroup());
         }

@@ -18,7 +18,6 @@ package com.xiaomi.youpin.annotation.log;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import com.xiaomi.common.perfcounter.PerfCounter;
 import com.xiaomi.data.push.action.ActionContext;
 import com.xiaomi.data.push.action.ActionInfo;
 import com.xiaomi.data.push.common.ExceptionUtils;
@@ -90,7 +89,6 @@ public class LogAop {
         }
 
         if (log.usePercount()) {
-            PerfCounter.inc(name + ".Count", 1);
         }
 
         long begin = System.currentTimeMillis();
@@ -123,7 +121,6 @@ public class LogAop {
             Object result = joinPoint.proceed();
             useTime = System.currentTimeMillis() - beginTime;
             if (log.usePercount()) {
-                PerfCounter.inc(name + ".Success", 1);
             }
 
             String res = "";
@@ -139,7 +136,6 @@ public class LogAop {
         } catch (Throwable throwable) {
             useTime = System.currentTimeMillis() - beginTime;
             if (log.usePercount()) {
-                PerfCounter.inc(name + ".Failure", 1);
             }
             if (null != executeInfo) {
                 executeInfo.getFailureNum().incrementAndGet();
@@ -175,7 +171,6 @@ public class LogAop {
             }
 
             if (log.usePercount()) {
-                PerfCounter.count(name, 1, useTime);
             }
         }
     }
