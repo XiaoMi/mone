@@ -1,19 +1,3 @@
-/*
- *  Copyright 2020 Xiaomi
- *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
- *
- *        http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
- */
-
 package com.xiaomi.data.push.schedule;
 
 import com.google.gson.Gson;
@@ -74,9 +58,6 @@ public class TaskFinder implements PushService {
 
     private volatile boolean shutdown = false;
 
-    @Value("${michedule_max_task}")
-    private int maxTaskSize = 300;
-
 
     public TaskFinder() {
     }
@@ -100,16 +81,6 @@ public class TaskFinder implements PushService {
                 log.info("id:{} need retry task size:{} use time:{}", now, tasks.size(), (System.currentTimeMillis() - now));
             }
 
-            //任务是否需要缓存处理
-            final boolean cache = tasks.size() > maxTaskSize;
-
-            if (cache) {
-                tasks.stream().forEach(it -> {
-                    it.setStatus(TaskStatus.Running.code);
-                    taskCacheUpdater.putTask(it);
-                });
-            }
-
 
             long updateBegin = System.currentTimeMillis();
             int updateNum = this.taskService.batchUpdateStatus(TaskStatus.Running.code, now, micheduleGroup);
@@ -130,7 +101,7 @@ public class TaskFinder implements PushService {
                     }
 
                     //是否缓存任务
-                    context.put(TaskContext.CACHE, String.valueOf(cache));
+                    context.put(TaskContext.CACHE, String.valueOf(false));
 
                     //让其他work机器执行
                     if (!serverContext.getType().equals(ServerContext.STANDALONE)) {
@@ -148,11 +119,11 @@ public class TaskFinder implements PushService {
                             }
                         } else {
                             //本地执行
-                            this.taskManager.retryTask(task, cache);
+                            this.taskManager.retryTask(task, false);
                         }
                     } else {
                         //本地执行
-                        this.taskManager.retryTask(task, cache);
+                        this.taskManager.retryTask(task, false);
                     }
                 } catch (Exception ex) {
                     log.error("id: " + now + "retry task:" + task.getId() + " error:" + ex.getMessage(), ex);

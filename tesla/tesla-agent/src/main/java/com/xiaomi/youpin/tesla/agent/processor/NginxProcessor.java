@@ -24,6 +24,7 @@ import com.xiaomi.youpin.docean.anno.Component;
 import com.xiaomi.youpin.nginx.NginxUtils;
 import com.xiaomi.youpin.nginx.NginxUtilsV2;
 import com.xiaomi.youpin.tesla.agent.cmd.AgentCmd;
+import com.xiaomi.youpin.tesla.agent.common.Config;
 import com.xiaomi.youpin.tesla.agent.common.ProcessUtils;
 import com.xiaomi.youpin.tesla.agent.po.NginxInfo;
 import com.xiaomi.youpin.tesla.agent.po.NginxReq;
@@ -38,6 +39,8 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -67,7 +70,9 @@ public class NginxProcessor implements NettyRequestProcessor {
                 log.info("newConfig:{}", req.getConfigStr());
                 String oldConfig = new String(Files.readAllBytes(Paths.get(configPath)));
                 log.info("oldConfig:{}", oldConfig);
-                if (StringUtils.isEmpty(req.getConfigStr())) {
+                if (StringUtils.isEmpty(req.getConfigStr()) || !req.getConfigStr().contains("server")) {
+                    //当配置不包含server，ip列表为空
+                    log.info("NginxProcessor.processRequest, nginx config is: {}", req.getConfigStr());
                     return null;
                 }
 

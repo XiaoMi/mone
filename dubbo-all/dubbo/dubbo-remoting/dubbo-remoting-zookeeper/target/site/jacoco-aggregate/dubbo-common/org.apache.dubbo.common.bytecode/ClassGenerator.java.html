@@ -1,0 +1,400 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ClassGenerator.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-remoting-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.common.bytecode</a> &gt; <span class="el_source">ClassGenerator.java</span></div><h1>ClassGenerator.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.common.bytecode;
+
+import org.apache.dubbo.common.utils.ClassHelper;
+import org.apache.dubbo.common.utils.ReflectUtils;
+
+import javassist.CannotCompileException;
+import javassist.ClassPool;
+import javassist.CtClass;
+import javassist.CtConstructor;
+import javassist.CtField;
+import javassist.CtMethod;
+import javassist.CtNewConstructor;
+import javassist.CtNewMethod;
+import javassist.LoaderClassPath;
+import javassist.NotFoundException;
+
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.security.ProtectionDomain;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+
+/**
+ * ClassGenerator
+ */
+public final class ClassGenerator {
+
+<span class="nc" id="L51">    private static final AtomicLong CLASS_NAME_COUNTER = new AtomicLong(0);</span>
+    private static final String SIMPLE_NAME_TAG = &quot;&lt;init&gt;&quot;;
+<span class="nc" id="L53">    private static final Map&lt;ClassLoader, ClassPool&gt; POOL_MAP = new ConcurrentHashMap&lt;ClassLoader, ClassPool&gt;(); //ClassLoader - ClassPool</span>
+    private ClassPool mPool;
+    private CtClass mCtc;
+    private String mClassName;
+    private String mSuperClass;
+    private Set&lt;String&gt; mInterfaces;
+    private List&lt;String&gt; mFields;
+    private List&lt;String&gt; mConstructors;
+    private List&lt;String&gt; mMethods;
+    private Map&lt;String, Method&gt; mCopyMethods; // &lt;method desc,method instance&gt;
+    private Map&lt;String, Constructor&lt;?&gt;&gt; mCopyConstructors; // &lt;constructor desc,constructor instance&gt;
+<span class="nc" id="L64">    private boolean mDefaultConstructor = false;</span>
+
+<span class="nc" id="L66">    private ClassGenerator() {</span>
+<span class="nc" id="L67">    }</span>
+
+<span class="nc" id="L69">    private ClassGenerator(ClassPool pool) {</span>
+<span class="nc" id="L70">        mPool = pool;</span>
+<span class="nc" id="L71">    }</span>
+
+    public static ClassGenerator newInstance() {
+<span class="nc" id="L74">        return new ClassGenerator(getClassPool(Thread.currentThread().getContextClassLoader()));</span>
+    }
+
+    public static ClassGenerator newInstance(ClassLoader loader) {
+<span class="nc" id="L78">        return new ClassGenerator(getClassPool(loader));</span>
+    }
+
+    public static boolean isDynamicClass(Class&lt;?&gt; cl) {
+<span class="nc" id="L82">        return ClassGenerator.DC.class.isAssignableFrom(cl);</span>
+    }
+
+    public static ClassPool getClassPool(ClassLoader loader) {
+<span class="nc bnc" id="L86" title="All 2 branches missed.">        if (loader == null) {</span>
+<span class="nc" id="L87">            ClassPool pool = ClassPool.getDefault();</span>
+<span class="nc" id="L88">            return pool;</span>
+        }
+
+<span class="nc" id="L91">        ClassPool pool = POOL_MAP.get(loader);</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">        if (pool == null) {</span>
+<span class="nc" id="L93">            pool = new ClassPool(true);</span>
+<span class="nc" id="L94">            pool.appendClassPath(new LoaderClassPath(loader));</span>
+<span class="nc" id="L95">            POOL_MAP.put(loader, pool);</span>
+        }
+<span class="nc" id="L97">        return pool;</span>
+    }
+
+    private static String modifier(int mod) {
+<span class="nc" id="L101">        StringBuilder modifier = new StringBuilder();</span>
+<span class="nc bnc" id="L102" title="All 2 branches missed.">        if (Modifier.isPublic(mod)) {</span>
+<span class="nc" id="L103">            modifier.append(&quot;public&quot;);</span>
+        }
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        if (Modifier.isProtected(mod)) {</span>
+<span class="nc" id="L106">            modifier.append(&quot;protected&quot;);</span>
+        }
+<span class="nc bnc" id="L108" title="All 2 branches missed.">        if (Modifier.isPrivate(mod)) {</span>
+<span class="nc" id="L109">            modifier.append(&quot;private&quot;);</span>
+        }
+
+<span class="nc bnc" id="L112" title="All 2 branches missed.">        if (Modifier.isStatic(mod)) {</span>
+<span class="nc" id="L113">            modifier.append(&quot; static&quot;);</span>
+        }
+<span class="nc bnc" id="L115" title="All 2 branches missed.">        if (Modifier.isVolatile(mod)) {</span>
+<span class="nc" id="L116">            modifier.append(&quot; volatile&quot;);</span>
+        }
+
+<span class="nc" id="L119">        return modifier.toString();</span>
+    }
+
+    public String getClassName() {
+<span class="nc" id="L123">        return mClassName;</span>
+    }
+
+    public ClassGenerator setClassName(String name) {
+<span class="nc" id="L127">        mClassName = name;</span>
+<span class="nc" id="L128">        return this;</span>
+    }
+
+    public ClassGenerator addInterface(String cn) {
+<span class="nc bnc" id="L132" title="All 2 branches missed.">        if (mInterfaces == null) {</span>
+<span class="nc" id="L133">            mInterfaces = new HashSet&lt;String&gt;();</span>
+        }
+<span class="nc" id="L135">        mInterfaces.add(cn);</span>
+<span class="nc" id="L136">        return this;</span>
+    }
+
+    public ClassGenerator addInterface(Class&lt;?&gt; cl) {
+<span class="nc" id="L140">        return addInterface(cl.getName());</span>
+    }
+
+    public ClassGenerator setSuperClass(String cn) {
+<span class="nc" id="L144">        mSuperClass = cn;</span>
+<span class="nc" id="L145">        return this;</span>
+    }
+
+    public ClassGenerator setSuperClass(Class&lt;?&gt; cl) {
+<span class="nc" id="L149">        mSuperClass = cl.getName();</span>
+<span class="nc" id="L150">        return this;</span>
+    }
+
+    public ClassGenerator addField(String code) {
+<span class="nc bnc" id="L154" title="All 2 branches missed.">        if (mFields == null) {</span>
+<span class="nc" id="L155">            mFields = new ArrayList&lt;String&gt;();</span>
+        }
+<span class="nc" id="L157">        mFields.add(code);</span>
+<span class="nc" id="L158">        return this;</span>
+    }
+
+    public ClassGenerator addField(String name, int mod, Class&lt;?&gt; type) {
+<span class="nc" id="L162">        return addField(name, mod, type, null);</span>
+    }
+
+    public ClassGenerator addField(String name, int mod, Class&lt;?&gt; type, String def) {
+<span class="nc" id="L166">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L167">        sb.append(modifier(mod)).append(' ').append(ReflectUtils.getName(type)).append(' ');</span>
+<span class="nc" id="L168">        sb.append(name);</span>
+<span class="nc bnc" id="L169" title="All 4 branches missed.">        if (def != null &amp;&amp; def.length() &gt; 0) {</span>
+<span class="nc" id="L170">            sb.append('=');</span>
+<span class="nc" id="L171">            sb.append(def);</span>
+        }
+<span class="nc" id="L173">        sb.append(';');</span>
+<span class="nc" id="L174">        return addField(sb.toString());</span>
+    }
+
+    public ClassGenerator addMethod(String code) {
+<span class="nc bnc" id="L178" title="All 2 branches missed.">        if (mMethods == null) {</span>
+<span class="nc" id="L179">            mMethods = new ArrayList&lt;String&gt;();</span>
+        }
+<span class="nc" id="L181">        mMethods.add(code);</span>
+<span class="nc" id="L182">        return this;</span>
+    }
+
+    public ClassGenerator addMethod(String name, int mod, Class&lt;?&gt; rt, Class&lt;?&gt;[] pts, String body) {
+<span class="nc" id="L186">        return addMethod(name, mod, rt, pts, null, body);</span>
+    }
+
+    public ClassGenerator addMethod(String name, int mod, Class&lt;?&gt; rt, Class&lt;?&gt;[] pts, Class&lt;?&gt;[] ets,
+                                    String body) {
+<span class="nc" id="L191">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L192">        sb.append(modifier(mod)).append(' ').append(ReflectUtils.getName(rt)).append(' ').append(name);</span>
+<span class="nc" id="L193">        sb.append('(');</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">        for (int i = 0; i &lt; pts.length; i++) {</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">            if (i &gt; 0) {</span>
+<span class="nc" id="L196">                sb.append(',');</span>
+            }
+<span class="nc" id="L198">            sb.append(ReflectUtils.getName(pts[i]));</span>
+<span class="nc" id="L199">            sb.append(&quot; arg&quot;).append(i);</span>
+        }
+<span class="nc" id="L201">        sb.append(')');</span>
+<span class="nc bnc" id="L202" title="All 4 branches missed.">        if (ets != null &amp;&amp; ets.length &gt; 0) {</span>
+<span class="nc" id="L203">            sb.append(&quot; throws &quot;);</span>
+<span class="nc bnc" id="L204" title="All 2 branches missed.">            for (int i = 0; i &lt; ets.length; i++) {</span>
+<span class="nc bnc" id="L205" title="All 2 branches missed.">                if (i &gt; 0) {</span>
+<span class="nc" id="L206">                    sb.append(',');</span>
+                }
+<span class="nc" id="L208">                sb.append(ReflectUtils.getName(ets[i]));</span>
+            }
+        }
+<span class="nc" id="L211">        sb.append('{').append(body).append('}');</span>
+<span class="nc" id="L212">        return addMethod(sb.toString());</span>
+    }
+
+    public ClassGenerator addMethod(Method m) {
+<span class="nc" id="L216">        addMethod(m.getName(), m);</span>
+<span class="nc" id="L217">        return this;</span>
+    }
+
+    public ClassGenerator addMethod(String name, Method m) {
+<span class="nc" id="L221">        String desc = name + ReflectUtils.getDescWithoutMethodName(m);</span>
+<span class="nc" id="L222">        addMethod(':' + desc);</span>
+<span class="nc bnc" id="L223" title="All 2 branches missed.">        if (mCopyMethods == null) {</span>
+<span class="nc" id="L224">            mCopyMethods = new ConcurrentHashMap&lt;String, Method&gt;(8);</span>
+        }
+<span class="nc" id="L226">        mCopyMethods.put(desc, m);</span>
+<span class="nc" id="L227">        return this;</span>
+    }
+
+    public ClassGenerator addConstructor(String code) {
+<span class="nc bnc" id="L231" title="All 2 branches missed.">        if (mConstructors == null) {</span>
+<span class="nc" id="L232">            mConstructors = new LinkedList&lt;String&gt;();</span>
+        }
+<span class="nc" id="L234">        mConstructors.add(code);</span>
+<span class="nc" id="L235">        return this;</span>
+    }
+
+    public ClassGenerator addConstructor(int mod, Class&lt;?&gt;[] pts, String body) {
+<span class="nc" id="L239">        return addConstructor(mod, pts, null, body);</span>
+    }
+
+    public ClassGenerator addConstructor(int mod, Class&lt;?&gt;[] pts, Class&lt;?&gt;[] ets, String body) {
+<span class="nc" id="L243">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L244">        sb.append(modifier(mod)).append(' ').append(SIMPLE_NAME_TAG);</span>
+<span class="nc" id="L245">        sb.append('(');</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">        for (int i = 0; i &lt; pts.length; i++) {</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">            if (i &gt; 0) {</span>
+<span class="nc" id="L248">                sb.append(',');</span>
+            }
+<span class="nc" id="L250">            sb.append(ReflectUtils.getName(pts[i]));</span>
+<span class="nc" id="L251">            sb.append(&quot; arg&quot;).append(i);</span>
+        }
+<span class="nc" id="L253">        sb.append(')');</span>
+<span class="nc bnc" id="L254" title="All 4 branches missed.">        if (ets != null &amp;&amp; ets.length &gt; 0) {</span>
+<span class="nc" id="L255">            sb.append(&quot; throws &quot;);</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">            for (int i = 0; i &lt; ets.length; i++) {</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">                if (i &gt; 0) {</span>
+<span class="nc" id="L258">                    sb.append(',');</span>
+                }
+<span class="nc" id="L260">                sb.append(ReflectUtils.getName(ets[i]));</span>
+            }
+        }
+<span class="nc" id="L263">        sb.append('{').append(body).append('}');</span>
+<span class="nc" id="L264">        return addConstructor(sb.toString());</span>
+    }
+
+    public ClassGenerator addConstructor(Constructor&lt;?&gt; c) {
+<span class="nc" id="L268">        String desc = ReflectUtils.getDesc(c);</span>
+<span class="nc" id="L269">        addConstructor(&quot;:&quot; + desc);</span>
+<span class="nc bnc" id="L270" title="All 2 branches missed.">        if (mCopyConstructors == null) {</span>
+<span class="nc" id="L271">            mCopyConstructors = new ConcurrentHashMap&lt;String, Constructor&lt;?&gt;&gt;(4);</span>
+        }
+<span class="nc" id="L273">        mCopyConstructors.put(desc, c);</span>
+<span class="nc" id="L274">        return this;</span>
+    }
+
+    public ClassGenerator addDefaultConstructor() {
+<span class="nc" id="L278">        mDefaultConstructor = true;</span>
+<span class="nc" id="L279">        return this;</span>
+    }
+
+    public ClassPool getClassPool() {
+<span class="nc" id="L283">        return mPool;</span>
+    }
+
+    public Class&lt;?&gt; toClass() {
+<span class="nc" id="L287">        return toClass(ClassHelper.getClassLoader(ClassGenerator.class),</span>
+<span class="nc" id="L288">                getClass().getProtectionDomain());</span>
+    }
+
+
+    public Class&lt;?&gt; toClass(ClassLoader classLoader) {
+<span class="nc" id="L293">        return toClass(classLoader,</span>
+<span class="nc" id="L294">                getClass().getProtectionDomain());</span>
+    }
+
+
+    public Class&lt;?&gt; toClass(ClassLoader loader, ProtectionDomain pd) {
+<span class="nc bnc" id="L299" title="All 2 branches missed.">        if (mCtc != null) {</span>
+<span class="nc" id="L300">            mCtc.detach();</span>
+        }
+<span class="nc" id="L302">        long id = CLASS_NAME_COUNTER.getAndIncrement();</span>
+        try {
+<span class="nc bnc" id="L304" title="All 2 branches missed.">            CtClass ctcs = mSuperClass == null ? null : mPool.get(mSuperClass);</span>
+<span class="nc bnc" id="L305" title="All 2 branches missed.">            if (mClassName == null) {</span>
+<span class="nc bnc" id="L306" title="All 4 branches missed.">                mClassName = (mSuperClass == null || javassist.Modifier.isPublic(ctcs.getModifiers())</span>
+<span class="nc" id="L307">                        ? ClassGenerator.class.getName() : mSuperClass + &quot;$sc&quot;) + id;</span>
+            }
+<span class="nc" id="L309">            mCtc = mPool.makeClass(mClassName);</span>
+<span class="nc bnc" id="L310" title="All 2 branches missed.">            if (mSuperClass != null) {</span>
+<span class="nc" id="L311">                mCtc.setSuperclass(ctcs);</span>
+            }
+<span class="nc" id="L313">            mCtc.addInterface(mPool.get(DC.class.getName())); // add dynamic class tag.</span>
+<span class="nc bnc" id="L314" title="All 2 branches missed.">            if (mInterfaces != null) {</span>
+<span class="nc bnc" id="L315" title="All 2 branches missed.">                for (String cl : mInterfaces) {</span>
+<span class="nc" id="L316">                    mCtc.addInterface(mPool.get(cl));</span>
+<span class="nc" id="L317">                }</span>
+            }
+<span class="nc bnc" id="L319" title="All 2 branches missed.">            if (mFields != null) {</span>
+<span class="nc bnc" id="L320" title="All 2 branches missed.">                for (String code : mFields) {</span>
+<span class="nc" id="L321">                    mCtc.addField(CtField.make(code, mCtc));</span>
+<span class="nc" id="L322">                }</span>
+            }
+<span class="nc bnc" id="L324" title="All 2 branches missed.">            if (mMethods != null) {</span>
+<span class="nc bnc" id="L325" title="All 2 branches missed.">                for (String code : mMethods) {</span>
+<span class="nc bnc" id="L326" title="All 2 branches missed.">                    if (code.charAt(0) == ':') {</span>
+<span class="nc" id="L327">                        mCtc.addMethod(CtNewMethod.copy(getCtMethod(mCopyMethods.get(code.substring(1))),</span>
+<span class="nc" id="L328">                                code.substring(1, code.indexOf('(')), mCtc, null));</span>
+                    } else {
+<span class="nc" id="L330">                        mCtc.addMethod(CtNewMethod.make(code, mCtc));</span>
+                    }
+<span class="nc" id="L332">                }</span>
+            }
+<span class="nc bnc" id="L334" title="All 2 branches missed.">            if (mDefaultConstructor) {</span>
+<span class="nc" id="L335">                mCtc.addConstructor(CtNewConstructor.defaultConstructor(mCtc));</span>
+            }
+<span class="nc bnc" id="L337" title="All 2 branches missed.">            if (mConstructors != null) {</span>
+<span class="nc bnc" id="L338" title="All 2 branches missed.">                for (String code : mConstructors) {</span>
+<span class="nc bnc" id="L339" title="All 2 branches missed.">                    if (code.charAt(0) == ':') {</span>
+<span class="nc" id="L340">                        mCtc.addConstructor(CtNewConstructor</span>
+<span class="nc" id="L341">                                .copy(getCtConstructor(mCopyConstructors.get(code.substring(1))), mCtc, null));</span>
+                    } else {
+<span class="nc" id="L343">                        String[] sn = mCtc.getSimpleName().split(&quot;\\$+&quot;); // inner class name include $.</span>
+<span class="nc" id="L344">                        mCtc.addConstructor(</span>
+<span class="nc" id="L345">                                CtNewConstructor.make(code.replaceFirst(SIMPLE_NAME_TAG, sn[sn.length - 1]), mCtc));</span>
+                    }
+<span class="nc" id="L347">                }</span>
+            }
+<span class="nc" id="L349">            return mCtc.toClass(loader, pd);</span>
+<span class="nc" id="L350">        } catch (RuntimeException e) {</span>
+<span class="nc" id="L351">            throw e;</span>
+<span class="nc" id="L352">        } catch (NotFoundException e) {</span>
+<span class="nc" id="L353">            throw new RuntimeException(e.getMessage(), e);</span>
+<span class="nc" id="L354">        } catch (CannotCompileException e) {</span>
+<span class="nc" id="L355">            throw new RuntimeException(e.getMessage(), e);</span>
+        }
+    }
+
+    public void release() {
+<span class="nc bnc" id="L360" title="All 2 branches missed.">        if (mCtc != null) {</span>
+<span class="nc" id="L361">            mCtc.detach();</span>
+        }
+<span class="nc bnc" id="L363" title="All 2 branches missed.">        if (mInterfaces != null) {</span>
+<span class="nc" id="L364">            mInterfaces.clear();</span>
+        }
+<span class="nc bnc" id="L366" title="All 2 branches missed.">        if (mFields != null) {</span>
+<span class="nc" id="L367">            mFields.clear();</span>
+        }
+<span class="nc bnc" id="L369" title="All 2 branches missed.">        if (mMethods != null) {</span>
+<span class="nc" id="L370">            mMethods.clear();</span>
+        }
+<span class="nc bnc" id="L372" title="All 2 branches missed.">        if (mConstructors != null) {</span>
+<span class="nc" id="L373">            mConstructors.clear();</span>
+        }
+<span class="nc bnc" id="L375" title="All 2 branches missed.">        if (mCopyMethods != null) {</span>
+<span class="nc" id="L376">            mCopyMethods.clear();</span>
+        }
+<span class="nc bnc" id="L378" title="All 2 branches missed.">        if (mCopyConstructors != null) {</span>
+<span class="nc" id="L379">            mCopyConstructors.clear();</span>
+        }
+<span class="nc" id="L381">    }</span>
+
+    private CtClass getCtClass(Class&lt;?&gt; c) throws NotFoundException {
+<span class="nc" id="L384">        return mPool.get(c.getName());</span>
+    }
+
+    private CtMethod getCtMethod(Method m) throws NotFoundException {
+<span class="nc" id="L388">        return getCtClass(m.getDeclaringClass())</span>
+<span class="nc" id="L389">                .getMethod(m.getName(), ReflectUtils.getDescWithoutMethodName(m));</span>
+    }
+
+    private CtConstructor getCtConstructor(Constructor&lt;?&gt; c) throws NotFoundException {
+<span class="nc" id="L393">        return getCtClass(c.getDeclaringClass()).getConstructor(ReflectUtils.getDesc(c));</span>
+    }
+
+    public static interface DC {
+
+    } // dynamic class tag interface.
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>

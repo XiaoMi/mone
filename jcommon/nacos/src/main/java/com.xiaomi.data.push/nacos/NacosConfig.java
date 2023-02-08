@@ -21,6 +21,7 @@ import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.exception.NacosException;
 import lombok.Getter;
 import lombok.Setter;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +38,7 @@ public class NacosConfig {
 
     private String dataId;
 
-    private String group;
+    private String group = "DEFAULT_GROUP";
 
     @Setter
     private Properties properties;
@@ -47,10 +48,15 @@ public class NacosConfig {
 
     @PostConstruct
     public void init() {
+        String nacosAddr = System.getenv("nacos_addr");
+        if (StringUtils.isNotEmpty(nacosAddr)) {
+            serverAddr = nacosAddr;
+        }
 
         if (serverAddr == null || serverAddr.length() == 0) {
             return;
         }
+
 
         Properties properties = new Properties();
         properties.put("serverAddr", serverAddr);
@@ -108,11 +114,14 @@ public class NacosConfig {
     }
 
     private Map<String, String> getConfigMap() throws NacosException {
+        return getConfigMap(this.dataId, this.group);
+    }
+
+    public Map<String, String> getConfigMap(String dataId, String group) throws NacosException {
         String content = configService.getConfig(dataId, group, 5000);
         Map<String, String> configMap = new HashMap<>();
-
         if (content != null && content.length() != 0) {
-            String[] perConfig = content.split("\n");
+            String[] perConfig = content.split("\n|\r\n");
             for (String it : perConfig) {
                 if (it == null || it.length() == 0 || it.startsWith("#")) {
                     continue;

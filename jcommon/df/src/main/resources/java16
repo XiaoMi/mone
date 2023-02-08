@@ -1,0 +1,27 @@
+#1.指定基础镜像，并且必须是第一条指令
+
+FROM ubuntu:18.04
+
+#2.指明该镜像的作者
+
+MAINTAINER "zhangzhiyong1@xiaomi.com"
+
+#3.在构建镜像时，指定镜像的工作目录，之后的命令都是基于此工作目录，如果不存在，则会创建目录
+
+WORKDIR /soft/jdk
+
+#4.一个复制命令，把jdk安装文件复制到镜像中，语法：ADD ... ,注意：jdk*.tar.gz使用的是相对路径
+
+ADD openjdk-16_linux-x64_bin.tar.gz /soft/jdk/
+#5.设置时区
+
+RUN ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+
+RUN echo 'Asia/Shanghai' >/etc/timezone
+#6.配置环境变量
+
+ENV JAVA_HOME=/soft/jdk/jdk-16
+
+ENV CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
+
+ENV PATH=$JAVA_HOME/bin:$PATH

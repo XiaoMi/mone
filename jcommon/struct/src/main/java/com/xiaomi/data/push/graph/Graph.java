@@ -18,10 +18,10 @@ package com.xiaomi.data.push.graph;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import lombok.Getter;
 
 import java.util.*;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 
 /**
  * Created by  zhangzhiyong
@@ -32,6 +32,7 @@ public class Graph<D> {
 
     private int[] array;
 
+    @Getter
     List<Integer> adj[];//有向边
 
     private Map<Integer, D> vertexMap = Maps.newHashMap();
@@ -47,7 +48,7 @@ public class Graph<D> {
         this.V = V;//顶点数量
         adj = new ArrayList[V];//边的集合的数量
         for (int i = 0; i < V; i++) {
-            adj[i] = new ArrayList<>();//舒适化
+            adj[i] = new ArrayList<>();//初始化
         }
         array = new int[V];//用来存储访问过没访问过
     }

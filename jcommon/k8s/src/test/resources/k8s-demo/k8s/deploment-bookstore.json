@@ -1,0 +1,40 @@
+{
+  "apiVersion": "apps/v1",
+  "kind": "Deployment",
+  "metadata": {
+    "name": "bookstore-deployment",
+    "labels": {
+      "app": "bookstore"
+    }
+  },
+  "spec": {
+    "replicas": 1,
+    "selector": {
+      "matchLabels": {
+        "app": "bookstore-server"
+      }
+    },
+    "template": {
+      "metadata": {
+        "labels": {
+          "app": "bookstore-server"
+        }
+      },
+      "spec": {
+        "env": [
+        ],
+        "containers": [
+          {
+            "name": "bookstore",
+            "image": "x.net/mixiao/bookstore",
+            "ports": [
+              {
+                "containerPort": 8321
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+}

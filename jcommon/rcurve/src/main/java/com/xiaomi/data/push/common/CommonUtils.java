@@ -44,6 +44,11 @@ public class CommonUtils {
         return osName().equals("windows");
     }
 
+    public static boolean isArch64() {
+        String osArch = System.getProperty("os.arch","");
+        return osArch.contains("arch64");
+    }
+
 
     public static void sleep(long timeout) {
         SafeRun.run(() -> TimeUnit.SECONDS.sleep(timeout));

@@ -17,6 +17,8 @@
 package com.xiaomi.youpin.codegen.common;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringUtils;
+import run.mone.Templates;
 import org.beetl.core.Configuration;
 import org.beetl.core.GroupTemplate;
 import org.beetl.core.Template;
@@ -46,6 +48,10 @@ public class FileUtils {
     }
 
     public static String getTemplate(String name) {
+        String t = Templates.getTemplate(name);
+        if (!StringUtils.isEmpty(t)) {
+            return t;
+        }
         InputStream is = FileUtils.class.getClassLoader().getResourceAsStream("template/" + name);
         try {
             return IOUtils.toString(is, StandardCharsets.UTF_8);
@@ -74,6 +80,7 @@ public class FileUtils {
 
     /**
      * 写文件
+     *
      * @param path
      * @param content
      */
@@ -87,7 +94,7 @@ public class FileUtils {
 
     static final int BUFFER = 8192;
 
-    public static void compress(String srcPath , String dstPath) throws IOException{
+    public static void compress(String srcPath, String dstPath) throws IOException {
         File srcFile = new File(srcPath);
         File dstFile = new File(dstPath);
         if (!srcFile.exists()) {
@@ -98,23 +105,23 @@ public class FileUtils {
         ZipOutputStream zipOut = null;
         try {
             out = new FileOutputStream(dstFile);
-            CheckedOutputStream cos = new CheckedOutputStream(out,new CRC32());
+            CheckedOutputStream cos = new CheckedOutputStream(out, new CRC32());
             zipOut = new ZipOutputStream(cos);
             String baseDir = "";
             compress(srcFile, zipOut, baseDir);
         } finally {
-            if(null != zipOut){
+            if (null != zipOut) {
                 zipOut.close();
                 out = null;
             }
 
-            if(null != out){
+            if (null != out) {
                 out.close();
             }
         }
     }
 
-    private static void compress(File file, ZipOutputStream zipOut, String baseDir) throws IOException{
+    private static void compress(File file, ZipOutputStream zipOut, String baseDir) throws IOException {
         if (file.isDirectory()) {
             compressDirectory(file, zipOut, baseDir);
         } else {
@@ -122,17 +129,21 @@ public class FileUtils {
         }
     }
 
-    /** 压缩一个目录 */
-    private static void compressDirectory(File dir, ZipOutputStream zipOut, String baseDir) throws IOException{
+    /**
+     * 压缩一个目录
+     */
+    private static void compressDirectory(File dir, ZipOutputStream zipOut, String baseDir) throws IOException {
         File[] files = dir.listFiles();
         for (int i = 0; i < files.length; i++) {
             compress(files[i], zipOut, baseDir + dir.getName() + "/");
         }
     }
 
-    /** 压缩一个文件 */
-    private static void compressFile(File file, ZipOutputStream zipOut, String baseDir)  throws IOException{
-        if (!file.exists()){
+    /**
+     * 压缩一个文件
+     */
+    private static void compressFile(File file, ZipOutputStream zipOut, String baseDir) throws IOException {
+        if (!file.exists()) {
             return;
         }
 
@@ -147,7 +158,7 @@ public class FileUtils {
                 zipOut.write(data, 0, count);
             }
         } finally {
-            if(null != bis){
+            if (null != bis) {
                 bis.close();
             }
         }

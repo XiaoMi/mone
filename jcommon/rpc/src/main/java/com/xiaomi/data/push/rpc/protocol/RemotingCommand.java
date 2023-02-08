@@ -26,7 +26,7 @@ import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -60,11 +60,18 @@ public class RemotingCommand {
     @Getter
     private long timeout = 1000;
 
+    @Getter
+    @Setter
+    private String address;
+
     /**
      * 0 json 1 msgpack
      */
     @Setter
+    @Getter
     private int serializeType = SerializaType.json.ordinal();
+
+    private static Gson gson = new Gson();
 
     private String remark;
 
@@ -78,6 +85,7 @@ public class RemotingCommand {
     public RemotingCommand() {
     }
 
+
     public static RemotingCommand createRequestCommand(int code) {
         RemotingCommand cmd = new RemotingCommand();
         cmd.setCode(code);
@@ -85,9 +93,26 @@ public class RemotingCommand {
         return cmd;
     }
 
+    public static RemotingCommand createGsonRequestCommand(int code, Object body, Gson customGson) {
+        RemotingCommand cmd = new RemotingCommand();
+        cmd.setCode(code);
+        setCmdVersion(cmd);
+        cmd.setBody(customGson.toJson(body).getBytes(StandardCharsets.UTF_8));
+        return cmd;
+    }
+
+    public static RemotingCommand createGsonRequestCommand(int code, Object body) {
+        RemotingCommand cmd = new RemotingCommand();
+        cmd.setCode(code);
+        setCmdVersion(cmd);
+        cmd.setBody(gson.toJson(body).getBytes(StandardCharsets.UTF_8));
+        return cmd;
+    }
+
 
     /**
      * support msgpack
+     *
      * @param code
      * @param body
      * @return
@@ -149,7 +174,7 @@ public class RemotingCommand {
         return cmd;
     }
 
-    public static RemotingCommand createMsgpackResponse(int code,Object body) {
+    public static RemotingCommand createMsgpackResponse(int code, Object body) {
         RemotingCommand cmd = new RemotingCommand();
         cmd.markResponseType();
         cmd.setCode(code);
@@ -399,4 +424,27 @@ public class RemotingCommand {
     }
 
 
+    public void setApp(String app) {
+        this.addExtField("app", app);
+    }
+
+    public void setMethodName(String name) {
+        this.addExtField("methodName", name);
+    }
+
+    public int getRetries() {
+        return 1;
+    }
+
+    public String getMessage() {
+        return this.extFields.get("message");
+    }
+
+    public String servcieName() {
+        return this.extFields.get("servcieName");
+    }
+
+    public void setServiceName(String serviceName) {
+        this.addExtField("serviceName", serviceName);
+    }
 }

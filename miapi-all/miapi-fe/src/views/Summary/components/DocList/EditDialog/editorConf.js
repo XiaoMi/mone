@@ -1,0 +1,70 @@
+// https://www.wangeditor.com/v5/menu-config.html#%E4%BF%AE%E6%94%B9%E9%85%8D%E7%BD%AE
+export const FONT_SIZE = ['12px', '14px', '16px', '18px', '24px', '32px', '48px']
+export const FONT_NAMES = [
+  { name: "苹方-常规体", value: "PingFangSC-Regular, sans-serif" },
+  { name: "微软雅黑", value: "Microsoft Yahei" },
+  { name: "华文宋体", value: "STSong" },
+  { name: "华文黑体", value: "STHeiti" },
+  { name: "华文仿宋", value: "STFangsong" },
+  { name: "华文楷体", value: "STKaiti" },
+  { name: "隶书", value: "LiSu" },
+  { name: "幼圆", value: "YouYuan" },
+  { name: "Arial", value: "Arial" },
+  { name: "Andale Mono", value: "andale mono,times" }
+]
+
+export const COLORS = [
+  '#FF0000',
+  '#FFA500',
+  '#FFFF00',
+  '#008000',
+  '#00FFFF',
+  '#0000FF',
+  '#800080',
+  '#A52A2A',
+  '#D3D3D3',
+  '#000000',
+  '#ffffff',
+  '#1c487f',
+  '#4d80bf',
+  '#DC143C',
+  '#FF69B4',
+  '#4B0082',
+  '#191970',
+  '#1E90FF',
+  '#F0F8FF',
+  '#00BFFF',
+  '#00FFFF',
+  '#40E0D0',
+  '#F0FFF0',
+  '#90EE90',
+  '#006400',
+  '#ADFF2F',
+  '#DAA520',
+  '#FF8C00',
+  '#FF4500'
+]
+
+export const LANG_TYPE = [
+  'Bash',
+  'C',
+  'C#',
+  'C++',
+  'CSS',
+  'Java',
+  'JavaScript',
+  'JSON',
+  'TypeScript',
+  'Plain text',
+  'Html',
+  'XML',
+  'SQL',
+  'Go',
+  'Kotlin',
+  'Lua',
+  'Markdown',
+  'PHP',
+  'Python',
+  'Shell Session',
+  'Ruby'
+]

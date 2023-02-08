@@ -1,0 +1,502 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>AbstractRegistry.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-registry-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-registry-api</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.registry.support</a> &gt; <span class="el_source">AbstractRegistry.java</span></div><h1>AbstractRegistry.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.registry.support;
+
+import org.apache.dubbo.common.Constants;
+import org.apache.dubbo.common.URL;
+import org.apache.dubbo.common.logger.Logger;
+import org.apache.dubbo.common.logger.LoggerFactory;
+import org.apache.dubbo.common.utils.ConcurrentHashSet;
+import org.apache.dubbo.common.utils.ConfigUtils;
+import org.apache.dubbo.common.utils.NamedThreadFactory;
+import org.apache.dubbo.common.utils.UrlUtils;
+import org.apache.dubbo.registry.NotifyListener;
+import org.apache.dubbo.registry.Registry;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+
+/**
+ * AbstractRegistry. (SPI, Prototype, ThreadSafe)
+ *
+ */
+public abstract class AbstractRegistry implements Registry {
+
+    // URL address separator, used in file cache, service provider URL separation
+    private static final char URL_SEPARATOR = ' ';
+    // URL address separated regular expression for parsing the service provider URL list in the file cache
+    private static final String URL_SPLIT = &quot;\\s+&quot;;
+    // Log output
+<span class="nc" id="L63">    protected final Logger logger = LoggerFactory.getLogger(getClass());</span>
+    // Local disk cache, where the special key value.registies records the list of registry centers, and the others are the list of notified service providers
+<span class="nc" id="L65">    private final Properties properties = new Properties();</span>
+    // File cache timing writing
+<span class="nc" id="L67">    private final ExecutorService registryCacheExecutor = Executors.newFixedThreadPool(1, new NamedThreadFactory(&quot;DubboSaveRegistryCache&quot;, true));</span>
+    // Is it synchronized to save the file
+    private final boolean syncSaveFile;
+<span class="nc" id="L70">    private final AtomicLong lastCacheChanged = new AtomicLong();</span>
+<span class="nc" id="L71">    private final Set&lt;URL&gt; registered = new ConcurrentHashSet&lt;URL&gt;();</span>
+<span class="nc" id="L72">    private final ConcurrentMap&lt;URL, Set&lt;NotifyListener&gt;&gt; subscribed = new ConcurrentHashMap&lt;URL, Set&lt;NotifyListener&gt;&gt;();</span>
+<span class="nc" id="L73">    private final ConcurrentMap&lt;URL, Map&lt;String, List&lt;URL&gt;&gt;&gt; notified = new ConcurrentHashMap&lt;URL, Map&lt;String, List&lt;URL&gt;&gt;&gt;();</span>
+    private URL registryUrl;
+    // Local disk cache file
+    private File file;
+
+<span class="nc" id="L78">    public AbstractRegistry(URL url) {</span>
+<span class="nc" id="L79">        setUrl(url);</span>
+        // Start file save timer
+<span class="nc" id="L81">        syncSaveFile = url.getParameter(Constants.REGISTRY_FILESAVE_SYNC_KEY, false);</span>
+<span class="nc" id="L82">        String filename = url.getParameter(Constants.FILE_KEY, System.getProperty(&quot;user.home&quot;) + &quot;/.dubbo/dubbo-registry-&quot; + url.getParameter(Constants.APPLICATION_KEY) + &quot;-&quot; + url.getAddress() + &quot;.cache&quot;);</span>
+<span class="nc" id="L83">        File file = null;</span>
+<span class="nc bnc" id="L84" title="All 2 branches missed.">        if (ConfigUtils.isNotEmpty(filename)) {</span>
+<span class="nc" id="L85">            file = new File(filename);</span>
+<span class="nc bnc" id="L86" title="All 6 branches missed.">            if (!file.exists() &amp;&amp; file.getParentFile() != null &amp;&amp; !file.getParentFile().exists()) {</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">                if (!file.getParentFile().mkdirs()) {</span>
+<span class="nc" id="L88">                    throw new IllegalArgumentException(&quot;Invalid registry store file &quot; + file + &quot;, cause: Failed to create directory &quot; + file.getParentFile() + &quot;!&quot;);</span>
+                }
+            }
+        }
+<span class="nc" id="L92">        this.file = file;</span>
+<span class="nc" id="L93">        loadProperties();</span>
+<span class="nc" id="L94">        notify(url.getBackupUrls());</span>
+<span class="nc" id="L95">    }</span>
+
+    protected static List&lt;URL&gt; filterEmpty(URL url, List&lt;URL&gt; urls) {
+<span class="nc bnc" id="L98" title="All 4 branches missed.">        if (urls == null || urls.isEmpty()) {</span>
+<span class="nc" id="L99">            List&lt;URL&gt; result = new ArrayList&lt;URL&gt;(1);</span>
+<span class="nc" id="L100">            result.add(url.setProtocol(Constants.EMPTY_PROTOCOL));</span>
+<span class="nc" id="L101">            return result;</span>
+        }
+<span class="nc" id="L103">        return urls;</span>
+    }
+
+    @Override
+    public URL getUrl() {
+<span class="nc" id="L108">        return registryUrl;</span>
+    }
+
+    protected void setUrl(URL url) {
+<span class="nc bnc" id="L112" title="All 2 branches missed.">        if (url == null) {</span>
+<span class="nc" id="L113">            throw new IllegalArgumentException(&quot;registry url == null&quot;);</span>
+        }
+<span class="nc" id="L115">        this.registryUrl = url;</span>
+<span class="nc" id="L116">    }</span>
+
+    public Set&lt;URL&gt; getRegistered() {
+<span class="nc" id="L119">        return registered;</span>
+    }
+
+    public Map&lt;URL, Set&lt;NotifyListener&gt;&gt; getSubscribed() {
+<span class="nc" id="L123">        return subscribed;</span>
+    }
+
+    public Map&lt;URL, Map&lt;String, List&lt;URL&gt;&gt;&gt; getNotified() {
+<span class="nc" id="L127">        return notified;</span>
+    }
+
+    public File getCacheFile() {
+<span class="nc" id="L131">        return file;</span>
+    }
+
+    public Properties getCacheProperties() {
+<span class="nc" id="L135">        return properties;</span>
+    }
+
+    public AtomicLong getLastCacheChanged() {
+<span class="nc" id="L139">        return lastCacheChanged;</span>
+    }
+
+    public void doSaveProperties(long version) {
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        if (version &lt; lastCacheChanged.get()) {</span>
+<span class="nc" id="L144">            return;</span>
+        }
+<span class="nc bnc" id="L146" title="All 2 branches missed.">        if (file == null) {</span>
+<span class="nc" id="L147">            return;</span>
+        }
+        // Save
+        try {
+<span class="nc" id="L151">            File lockfile = new File(file.getAbsolutePath() + &quot;.lock&quot;);</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">            if (!lockfile.exists()) {</span>
+<span class="nc" id="L153">                lockfile.createNewFile();</span>
+            }
+<span class="nc" id="L155">            RandomAccessFile raf = new RandomAccessFile(lockfile, &quot;rw&quot;);</span>
+            try {
+<span class="nc" id="L157">                FileChannel channel = raf.getChannel();</span>
+                try {
+<span class="nc" id="L159">                    FileLock lock = channel.tryLock();</span>
+<span class="nc bnc" id="L160" title="All 2 branches missed.">                    if (lock == null) {</span>
+<span class="nc" id="L161">                        throw new IOException(&quot;Can not lock the registry cache file &quot; + file.getAbsolutePath() + &quot;, ignore and retry later, maybe multi java process use the file, please config: dubbo.registry.file=xxx.properties&quot;);</span>
+                    }
+                    // Save
+                    try {
+<span class="nc bnc" id="L165" title="All 2 branches missed.">                        if (!file.exists()) {</span>
+<span class="nc" id="L166">                            file.createNewFile();</span>
+                        }
+<span class="nc" id="L168">                        FileOutputStream outputFile = new FileOutputStream(file);</span>
+                        try {
+<span class="nc" id="L170">                            properties.store(outputFile, &quot;Dubbo Registry Cache&quot;);</span>
+                        } finally {
+<span class="nc" id="L172">                            outputFile.close();</span>
+                        }
+                    } finally {
+<span class="nc" id="L175">                        lock.release();</span>
+                    }
+                } finally {
+<span class="nc" id="L178">                    channel.close();</span>
+                }
+            } finally {
+<span class="nc" id="L181">                raf.close();</span>
+            }
+<span class="nc" id="L183">        } catch (Throwable e) {</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">            if (version &lt; lastCacheChanged.get()) {</span>
+<span class="nc" id="L185">                return;</span>
+            } else {
+<span class="nc" id="L187">                registryCacheExecutor.execute(new SaveProperties(lastCacheChanged.incrementAndGet()));</span>
+            }
+<span class="nc" id="L189">            logger.warn(&quot;Failed to save registry store file, cause: &quot; + e.getMessage(), e);</span>
+<span class="nc" id="L190">        }</span>
+<span class="nc" id="L191">    }</span>
+
+    private void loadProperties() {
+<span class="nc bnc" id="L194" title="All 4 branches missed.">        if (file != null &amp;&amp; file.exists()) {</span>
+<span class="nc" id="L195">            InputStream in = null;</span>
+            try {
+<span class="nc" id="L197">                in = new FileInputStream(file);</span>
+<span class="nc" id="L198">                properties.load(in);</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">                if (logger.isInfoEnabled()) {</span>
+<span class="nc" id="L200">                    logger.info(&quot;Load registry store file &quot; + file + &quot;, data: &quot; + properties);</span>
+                }
+<span class="nc" id="L202">            } catch (Throwable e) {</span>
+<span class="nc" id="L203">                logger.warn(&quot;Failed to load registry store file &quot; + file, e);</span>
+            } finally {
+<span class="nc bnc" id="L205" title="All 2 branches missed.">                if (in != null) {</span>
+                    try {
+<span class="nc" id="L207">                        in.close();</span>
+<span class="nc" id="L208">                    } catch (IOException e) {</span>
+<span class="nc" id="L209">                        logger.warn(e.getMessage(), e);</span>
+<span class="nc" id="L210">                    }</span>
+                }
+            }
+        }
+<span class="nc" id="L214">    }</span>
+
+    public List&lt;URL&gt; getCacheUrls(URL url) {
+<span class="nc bnc" id="L217" title="All 2 branches missed.">        for (Map.Entry&lt;Object, Object&gt; entry : properties.entrySet()) {</span>
+<span class="nc" id="L218">            String key = (String) entry.getKey();</span>
+<span class="nc" id="L219">            String value = (String) entry.getValue();</span>
+<span class="nc bnc" id="L220" title="All 6 branches missed.">            if (key != null &amp;&amp; key.length() &gt; 0 &amp;&amp; key.equals(url.getServiceKey())</span>
+<span class="nc bnc" id="L221" title="All 6 branches missed.">                    &amp;&amp; (Character.isLetter(key.charAt(0)) || key.charAt(0) == '_')</span>
+<span class="nc bnc" id="L222" title="All 2 branches missed.">                    &amp;&amp; value != null &amp;&amp; value.length() &gt; 0) {</span>
+<span class="nc" id="L223">                String[] arr = value.trim().split(URL_SPLIT);</span>
+<span class="nc" id="L224">                List&lt;URL&gt; urls = new ArrayList&lt;URL&gt;();</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">                for (String u : arr) {</span>
+<span class="nc" id="L226">                    urls.add(URL.valueOf(u));</span>
+                }
+<span class="nc" id="L228">                return urls;</span>
+            }
+<span class="nc" id="L230">        }</span>
+<span class="nc" id="L231">        return null;</span>
+    }
+
+    @Override
+    public List&lt;URL&gt; lookup(URL url) {
+<span class="nc" id="L236">        List&lt;URL&gt; result = new ArrayList&lt;URL&gt;();</span>
+<span class="nc" id="L237">        Map&lt;String, List&lt;URL&gt;&gt; notifiedUrls = getNotified().get(url);</span>
+<span class="nc bnc" id="L238" title="All 4 branches missed.">        if (notifiedUrls != null &amp;&amp; notifiedUrls.size() &gt; 0) {</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">            for (List&lt;URL&gt; urls : notifiedUrls.values()) {</span>
+<span class="nc bnc" id="L240" title="All 2 branches missed.">                for (URL u : urls) {</span>
+<span class="nc bnc" id="L241" title="All 2 branches missed.">                    if (!Constants.EMPTY_PROTOCOL.equals(u.getProtocol())) {</span>
+<span class="nc" id="L242">                        result.add(u);</span>
+                    }
+<span class="nc" id="L244">                }</span>
+<span class="nc" id="L245">            }</span>
+        } else {
+<span class="nc" id="L247">            final AtomicReference&lt;List&lt;URL&gt;&gt; reference = new AtomicReference&lt;List&lt;URL&gt;&gt;();</span>
+<span class="nc" id="L248">            NotifyListener listener = reference::set;</span>
+<span class="nc" id="L249">            subscribe(url, listener); // Subscribe logic guarantees the first notify to return</span>
+<span class="nc" id="L250">            List&lt;URL&gt; urls = reference.get();</span>
+<span class="nc bnc" id="L251" title="All 4 branches missed.">            if (urls != null &amp;&amp; !urls.isEmpty()) {</span>
+<span class="nc bnc" id="L252" title="All 2 branches missed.">                for (URL u : urls) {</span>
+<span class="nc bnc" id="L253" title="All 2 branches missed.">                    if (!Constants.EMPTY_PROTOCOL.equals(u.getProtocol())) {</span>
+<span class="nc" id="L254">                        result.add(u);</span>
+                    }
+<span class="nc" id="L256">                }</span>
+            }
+        }
+<span class="nc" id="L259">        return result;</span>
+    }
+
+    @Override
+    public void register(URL url) {
+<span class="nc bnc" id="L264" title="All 2 branches missed.">        if (url == null) {</span>
+<span class="nc" id="L265">            throw new IllegalArgumentException(&quot;register url == null&quot;);</span>
+        }
+<span class="nc bnc" id="L267" title="All 2 branches missed.">        if (logger.isInfoEnabled()) {</span>
+<span class="nc" id="L268">            logger.info(&quot;Register: &quot; + url);</span>
+        }
+<span class="nc" id="L270">        registered.add(url);</span>
+<span class="nc" id="L271">    }</span>
+
+    @Override
+    public void unregister(URL url) {
+<span class="nc bnc" id="L275" title="All 2 branches missed.">        if (url == null) {</span>
+<span class="nc" id="L276">            throw new IllegalArgumentException(&quot;unregister url == null&quot;);</span>
+        }
+<span class="nc bnc" id="L278" title="All 2 branches missed.">        if (logger.isInfoEnabled()) {</span>
+<span class="nc" id="L279">            logger.info(&quot;Unregister: &quot; + url);</span>
+        }
+<span class="nc" id="L281">        registered.remove(url);</span>
+<span class="nc" id="L282">    }</span>
+
+    @Override
+    public void subscribe(URL url, NotifyListener listener) {
+<span class="nc bnc" id="L286" title="All 2 branches missed.">        if (url == null) {</span>
+<span class="nc" id="L287">            throw new IllegalArgumentException(&quot;subscribe url == null&quot;);</span>
+        }
+<span class="nc bnc" id="L289" title="All 2 branches missed.">        if (listener == null) {</span>
+<span class="nc" id="L290">            throw new IllegalArgumentException(&quot;subscribe listener == null&quot;);</span>
+        }
+<span class="nc bnc" id="L292" title="All 2 branches missed.">        if (logger.isInfoEnabled()) {</span>
+<span class="nc" id="L293">            logger.info(&quot;Subscribe: &quot; + url);</span>
+        }
+<span class="nc" id="L295">        Set&lt;NotifyListener&gt; listeners = subscribed.get(url);</span>
+<span class="nc bnc" id="L296" title="All 2 branches missed.">        if (listeners == null) {</span>
+<span class="nc" id="L297">            subscribed.putIfAbsent(url, new ConcurrentHashSet&lt;NotifyListener&gt;());</span>
+<span class="nc" id="L298">            listeners = subscribed.get(url);</span>
+        }
+<span class="nc" id="L300">        listeners.add(listener);</span>
+<span class="nc" id="L301">    }</span>
+
+    @Override
+    public void unsubscribe(URL url, NotifyListener listener) {
+<span class="nc bnc" id="L305" title="All 2 branches missed.">        if (url == null) {</span>
+<span class="nc" id="L306">            throw new IllegalArgumentException(&quot;unsubscribe url == null&quot;);</span>
+        }
+<span class="nc bnc" id="L308" title="All 2 branches missed.">        if (listener == null) {</span>
+<span class="nc" id="L309">            throw new IllegalArgumentException(&quot;unsubscribe listener == null&quot;);</span>
+        }
+<span class="nc bnc" id="L311" title="All 2 branches missed.">        if (logger.isInfoEnabled()) {</span>
+<span class="nc" id="L312">            logger.info(&quot;Unsubscribe: &quot; + url);</span>
+        }
+<span class="nc" id="L314">        Set&lt;NotifyListener&gt; listeners = subscribed.get(url);</span>
+<span class="nc bnc" id="L315" title="All 2 branches missed.">        if (listeners != null) {</span>
+<span class="nc" id="L316">            listeners.remove(listener);</span>
+        }
+<span class="nc" id="L318">    }</span>
+
+    protected void recover() throws Exception {
+        // register
+<span class="nc" id="L322">        Set&lt;URL&gt; recoverRegistered = new HashSet&lt;URL&gt;(getRegistered());</span>
+<span class="nc bnc" id="L323" title="All 2 branches missed.">        if (!recoverRegistered.isEmpty()) {</span>
+<span class="nc bnc" id="L324" title="All 2 branches missed.">            if (logger.isInfoEnabled()) {</span>
+<span class="nc" id="L325">                logger.info(&quot;Recover register url &quot; + recoverRegistered);</span>
+            }
+<span class="nc bnc" id="L327" title="All 2 branches missed.">            for (URL url : recoverRegistered) {</span>
+<span class="nc" id="L328">                register(url);</span>
+<span class="nc" id="L329">            }</span>
+        }
+        // subscribe
+<span class="nc" id="L332">        Map&lt;URL, Set&lt;NotifyListener&gt;&gt; recoverSubscribed = new HashMap&lt;URL, Set&lt;NotifyListener&gt;&gt;(getSubscribed());</span>
+<span class="nc bnc" id="L333" title="All 2 branches missed.">        if (!recoverSubscribed.isEmpty()) {</span>
+<span class="nc bnc" id="L334" title="All 2 branches missed.">            if (logger.isInfoEnabled()) {</span>
+<span class="nc" id="L335">                logger.info(&quot;Recover subscribe url &quot; + recoverSubscribed.keySet());</span>
+            }
+<span class="nc bnc" id="L337" title="All 2 branches missed.">            for (Map.Entry&lt;URL, Set&lt;NotifyListener&gt;&gt; entry : recoverSubscribed.entrySet()) {</span>
+<span class="nc" id="L338">                URL url = entry.getKey();</span>
+<span class="nc bnc" id="L339" title="All 2 branches missed.">                for (NotifyListener listener : entry.getValue()) {</span>
+<span class="nc" id="L340">                    subscribe(url, listener);</span>
+<span class="nc" id="L341">                }</span>
+<span class="nc" id="L342">            }</span>
+        }
+<span class="nc" id="L344">    }</span>
+
+    protected void notify(List&lt;URL&gt; urls) {
+<span class="nc bnc" id="L347" title="All 4 branches missed.">        if (urls == null || urls.isEmpty()) {</span>
+<span class="nc" id="L348">            return;</span>
+        }
+
+<span class="nc bnc" id="L351" title="All 2 branches missed.">        for (Map.Entry&lt;URL, Set&lt;NotifyListener&gt;&gt; entry : getSubscribed().entrySet()) {</span>
+<span class="nc" id="L352">            URL url = entry.getKey();</span>
+
+<span class="nc bnc" id="L354" title="All 2 branches missed.">            if (!UrlUtils.isMatch(url, urls.get(0))) {</span>
+<span class="nc" id="L355">                continue;</span>
+            }
+
+<span class="nc" id="L358">            Set&lt;NotifyListener&gt; listeners = entry.getValue();</span>
+<span class="nc bnc" id="L359" title="All 2 branches missed.">            if (listeners != null) {</span>
+<span class="nc bnc" id="L360" title="All 2 branches missed.">                for (NotifyListener listener : listeners) {</span>
+                    try {
+<span class="nc" id="L362">                        notify(url, listener, filterEmpty(url, urls));</span>
+<span class="nc" id="L363">                    } catch (Throwable t) {</span>
+<span class="nc" id="L364">                        logger.error(&quot;Failed to notify registry event, urls: &quot; + urls + &quot;, cause: &quot; + t.getMessage(), t);</span>
+<span class="nc" id="L365">                    }</span>
+<span class="nc" id="L366">                }</span>
+            }
+<span class="nc" id="L368">        }</span>
+<span class="nc" id="L369">    }</span>
+
+    protected void notify(URL url, NotifyListener listener, List&lt;URL&gt; urls) {
+<span class="nc bnc" id="L372" title="All 2 branches missed.">        if (url == null) {</span>
+<span class="nc" id="L373">            throw new IllegalArgumentException(&quot;notify url == null&quot;);</span>
+        }
+<span class="nc bnc" id="L375" title="All 2 branches missed.">        if (listener == null) {</span>
+<span class="nc" id="L376">            throw new IllegalArgumentException(&quot;notify listener == null&quot;);</span>
+        }
+<span class="nc bnc" id="L378" title="All 4 branches missed.">        if ((urls == null || urls.isEmpty())</span>
+<span class="nc bnc" id="L379" title="All 2 branches missed.">                &amp;&amp; !Constants.ANY_VALUE.equals(url.getServiceInterface())) {</span>
+<span class="nc" id="L380">            logger.warn(&quot;Ignore empty notify urls for subscribe url &quot; + url);</span>
+<span class="nc" id="L381">            return;</span>
+        }
+<span class="nc bnc" id="L383" title="All 2 branches missed.">        if (logger.isInfoEnabled()) {</span>
+<span class="nc" id="L384">            logger.info(&quot;Notify urls for subscribe url &quot; + url + &quot;, urls: &quot; + urls);</span>
+        }
+<span class="nc" id="L386">        Map&lt;String, List&lt;URL&gt;&gt; result = new HashMap&lt;String, List&lt;URL&gt;&gt;();</span>
+<span class="nc bnc" id="L387" title="All 2 branches missed.">        for (URL u : urls) {</span>
+<span class="nc bnc" id="L388" title="All 2 branches missed.">            if (UrlUtils.isMatch(url, u)) {</span>
+<span class="nc" id="L389">                String category = u.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY);</span>
+<span class="nc" id="L390">                List&lt;URL&gt; categoryList = result.get(category);</span>
+<span class="nc bnc" id="L391" title="All 2 branches missed.">                if (categoryList == null) {</span>
+<span class="nc" id="L392">                    categoryList = new ArrayList&lt;URL&gt;();</span>
+<span class="nc" id="L393">                    result.put(category, categoryList);</span>
+                }
+<span class="nc" id="L395">                categoryList.add(u);</span>
+            }
+<span class="nc" id="L397">        }</span>
+<span class="nc bnc" id="L398" title="All 2 branches missed.">        if (result.size() == 0) {</span>
+<span class="nc" id="L399">            return;</span>
+        }
+<span class="nc" id="L401">        Map&lt;String, List&lt;URL&gt;&gt; categoryNotified = notified.get(url);</span>
+<span class="nc bnc" id="L402" title="All 2 branches missed.">        if (categoryNotified == null) {</span>
+<span class="nc" id="L403">            notified.putIfAbsent(url, new ConcurrentHashMap&lt;String, List&lt;URL&gt;&gt;());</span>
+<span class="nc" id="L404">            categoryNotified = notified.get(url);</span>
+        }
+<span class="nc bnc" id="L406" title="All 2 branches missed.">        for (Map.Entry&lt;String, List&lt;URL&gt;&gt; entry : result.entrySet()) {</span>
+<span class="nc" id="L407">            String category = entry.getKey();</span>
+<span class="nc" id="L408">            List&lt;URL&gt; categoryList = entry.getValue();</span>
+<span class="nc" id="L409">            categoryNotified.put(category, categoryList);</span>
+<span class="nc" id="L410">            saveProperties(url);</span>
+<span class="nc" id="L411">            listener.notify(categoryList);</span>
+<span class="nc" id="L412">        }</span>
+<span class="nc" id="L413">    }</span>
+
+    private void saveProperties(URL url) {
+<span class="nc bnc" id="L416" title="All 2 branches missed.">        if (file == null) {</span>
+<span class="nc" id="L417">            return;</span>
+        }
+
+        try {
+<span class="nc" id="L421">            StringBuilder buf = new StringBuilder();</span>
+<span class="nc" id="L422">            Map&lt;String, List&lt;URL&gt;&gt; categoryNotified = notified.get(url);</span>
+<span class="nc bnc" id="L423" title="All 2 branches missed.">            if (categoryNotified != null) {</span>
+<span class="nc bnc" id="L424" title="All 2 branches missed.">                for (List&lt;URL&gt; us : categoryNotified.values()) {</span>
+<span class="nc bnc" id="L425" title="All 2 branches missed.">                    for (URL u : us) {</span>
+<span class="nc bnc" id="L426" title="All 2 branches missed.">                        if (buf.length() &gt; 0) {</span>
+<span class="nc" id="L427">                            buf.append(URL_SEPARATOR);</span>
+                        }
+<span class="nc" id="L429">                        buf.append(u.toFullString());</span>
+<span class="nc" id="L430">                    }</span>
+<span class="nc" id="L431">                }</span>
+            }
+<span class="nc" id="L433">            properties.setProperty(url.getServiceKey(), buf.toString());</span>
+<span class="nc" id="L434">            long version = lastCacheChanged.incrementAndGet();</span>
+<span class="nc bnc" id="L435" title="All 2 branches missed.">            if (syncSaveFile) {</span>
+<span class="nc" id="L436">                doSaveProperties(version);</span>
+            } else {
+<span class="nc" id="L438">                registryCacheExecutor.execute(new SaveProperties(version));</span>
+            }
+<span class="nc" id="L440">        } catch (Throwable t) {</span>
+<span class="nc" id="L441">            logger.warn(t.getMessage(), t);</span>
+<span class="nc" id="L442">        }</span>
+<span class="nc" id="L443">    }</span>
+
+    @Override
+    public void destroy() {
+<span class="nc bnc" id="L447" title="All 2 branches missed.">        if (logger.isInfoEnabled()) {</span>
+<span class="nc" id="L448">            logger.info(&quot;Destroy registry:&quot; + getUrl());</span>
+        }
+<span class="nc" id="L450">        Set&lt;URL&gt; destroyRegistered = new HashSet&lt;URL&gt;(getRegistered());</span>
+<span class="nc bnc" id="L451" title="All 2 branches missed.">        if (!destroyRegistered.isEmpty()) {</span>
+<span class="nc bnc" id="L452" title="All 2 branches missed.">            for (URL url : new HashSet&lt;URL&gt;(getRegistered())) {</span>
+<span class="nc bnc" id="L453" title="All 2 branches missed.">                if (url.getParameter(Constants.DYNAMIC_KEY, true)) {</span>
+                    try {
+<span class="nc" id="L455">                        unregister(url);</span>
+<span class="nc bnc" id="L456" title="All 2 branches missed.">                        if (logger.isInfoEnabled()) {</span>
+<span class="nc" id="L457">                            logger.info(&quot;Destroy unregister url &quot; + url);</span>
+                        }
+<span class="nc" id="L459">                    } catch (Throwable t) {</span>
+<span class="nc" id="L460">                        logger.warn(&quot;Failed to unregister url &quot; + url + &quot; to registry &quot; + getUrl() + &quot; on destroy, cause: &quot; + t.getMessage(), t);</span>
+<span class="nc" id="L461">                    }</span>
+                }
+<span class="nc" id="L463">            }</span>
+        }
+<span class="nc" id="L465">        Map&lt;URL, Set&lt;NotifyListener&gt;&gt; destroySubscribed = new HashMap&lt;URL, Set&lt;NotifyListener&gt;&gt;(getSubscribed());</span>
+<span class="nc bnc" id="L466" title="All 2 branches missed.">        if (!destroySubscribed.isEmpty()) {</span>
+<span class="nc bnc" id="L467" title="All 2 branches missed.">            for (Map.Entry&lt;URL, Set&lt;NotifyListener&gt;&gt; entry : destroySubscribed.entrySet()) {</span>
+<span class="nc" id="L468">                URL url = entry.getKey();</span>
+<span class="nc bnc" id="L469" title="All 2 branches missed.">                for (NotifyListener listener : entry.getValue()) {</span>
+                    try {
+<span class="nc" id="L471">                        unsubscribe(url, listener);</span>
+<span class="nc bnc" id="L472" title="All 2 branches missed.">                        if (logger.isInfoEnabled()) {</span>
+<span class="nc" id="L473">                            logger.info(&quot;Destroy unsubscribe url &quot; + url);</span>
+                        }
+<span class="nc" id="L475">                    } catch (Throwable t) {</span>
+<span class="nc" id="L476">                        logger.warn(&quot;Failed to unsubscribe url &quot; + url + &quot; to registry &quot; + getUrl() + &quot; on destroy, cause: &quot; + t.getMessage(), t);</span>
+<span class="nc" id="L477">                    }</span>
+<span class="nc" id="L478">                }</span>
+<span class="nc" id="L479">            }</span>
+        }
+<span class="nc" id="L481">    }</span>
+
+    @Override
+    public String toString() {
+<span class="nc" id="L485">        return getUrl().toString();</span>
+    }
+
+    private class SaveProperties implements Runnable {
+        private long version;
+
+<span class="nc" id="L491">        private SaveProperties(long version) {</span>
+<span class="nc" id="L492">            this.version = version;</span>
+<span class="nc" id="L493">        }</span>
+
+        @Override
+        public void run() {
+<span class="nc" id="L497">            doSaveProperties(version);</span>
+<span class="nc" id="L498">        }</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>

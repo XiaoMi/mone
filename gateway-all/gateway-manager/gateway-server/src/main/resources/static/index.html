@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <link rel="icon" href="/icon.ico">
+    <title>小米Gateway管理平台</title>
+    <style>
+      html, body, #app {
+        height: 100%;
+        margin: 0px;
+        padding: 0px;
+      }
+      .d2-app-loading-group {
+        height: 100%;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        background: linear-gradient(to bottom, rgba(255,255,255,0.15) 0%, rgba(0,0,0,0.15) 100%), radial-gradient(at top center, rgba(255,255,255,0.40) 0%, rgba(0,0,0,0.40) 120%) #989898;
+        background-blend-mode: multiply,multiply;
+      }
+      .d2-app-loading-title {
+        color: #FFF;
+        font-weight: bold;
+        font-size: 14px;
+        margin-top: 40px;
+        margin-bottom: 10px;
+        letter-spacing: 0.2em;
+      }
+      .d2-app-loading-sub-title {
+        color: #FFF;
+        font-size: 10px;
+        margin-bottom: 10px;
+      }
+      .d2-app-loading-sub-info {
+        color: #FFF;
+        font-size: 10px;
+        opacity: .8;
+        margin-bottom: 4px;
+      }
+      .d2-app-loading-btn {
+        text-decoration: none;
+        display: inline-block;
+        line-height: 1;
+        white-space: nowrap;
+        cursor: pointer;
+        background: #fff;
+        border: 1px solid #dcdfe6;
+        border-color: #dcdfe6;
+        color: #606266;
+        -webkit-appearance: none;
+        text-align: center;
+        box-sizing: border-box;
+        outline: none;
+        margin: 0;
+        transition: .1s;
+        font-weight: 500;
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        -ms-user-select: none;
+        padding: 12px 20px;
+        font-size: 14px;
+        border-radius: 4px;
+        /* 圆角 */
+        padding: 7px 15px;
+        border-radius: 20px;
+        font-size: 12px;
+      }
+      .d2-app-loading-grid {
+        width: 30px;
+        height: 30px;
+      }
+      .d2-app-loading-grid .d2-app-loading {
+        width: 10px;
+        height: 10px;
+        background-color: #FFF;
+        float: left;
+        -webkit-animation: d2-app-loading-grid-scale-delay 1.3s infinite ease-in-out;
+                animation: d2-app-loading-grid-scale-delay 1.3s infinite ease-in-out;
+      }
+      .d2-app-loading-grid .d2-app-loading1 {
+        border-top-left-radius: 4px;
+        -webkit-animation-delay: 0.2s;
+                animation-delay: 0.2s; }
+      .d2-app-loading-grid .d2-app-loading2 {
+        -webkit-animation-delay: 0.3s;
+                animation-delay: 0.3s; }
+      .d2-app-loading-grid .d2-app-loading3 {
+        border-top-right-radius: 4px;
+        -webkit-animation-delay: 0.4s;
+                animation-delay: 0.4s; }
+      .d2-app-loading-grid .d2-app-loading4 {
+        -webkit-animation-delay: 0.1s;
+                animation-delay: 0.1s; }
+      .d2-app-loading-grid .d2-app-loading5 {
+        -webkit-animation-delay: 0.2s;
+                animation-delay: 0.2s; }
+      .d2-app-loading-grid .d2-app-loading6 {
+        -webkit-animation-delay: 0.3s;
+                animation-delay: 0.3s; }
+      .d2-app-loading-grid .d2-app-loading7 {
+        border-bottom-left-radius: 4px;
+        -webkit-animation-delay: 0s;
+                animation-delay: 0s; }
+      .d2-app-loading-grid .d2-app-loading8 {
+        -webkit-animation-delay: 0.1s;
+                animation-delay: 0.1s; }
+      .d2-app-loading-grid .d2-app-loading9 {
+        border-bottom-right-radius: 4px;
+        -webkit-animation-delay: 0.2s;
+                animation-delay: 0.2s; }
+
+      @-webkit-keyframes d2-app-loading-grid-scale-delay {
+        0%, 70%, 100% {
+          -webkit-transform: scale3D(1, 1, 1);
+                  transform: scale3D(1, 1, 1);
+        } 35% {
+          -webkit-transform: scale3D(0, 0, 1);
+                  transform: scale3D(0, 0, 1);
+        }
+      }
+
+      @keyframes d2-app-loading-grid-scale-delay {
+        0%, 70%, 100% {
+          -webkit-transform: scale3D(1, 1, 1);
+                  transform: scale3D(1, 1, 1);
+        } 35% {
+          -webkit-transform: scale3D(0, 0, 1);
+                  transform: scale3D(0, 0, 1);
+        }
+      }
+    </style>
+    <!-- ua -->
+    <script src="/script/ua-parser.min.js"></script>
+    <script src="/script/ua.js"></script>
+   
+    <!--jq  and plugin -->
+    <script src="/script/jquery.min.js"></script>
+    <script src="/script/jsPlumb.min.js"></script>
+    <script th:inline="javascript">
+      var userInfo = {"name":"任清福1","username":"renqingfu1","role":2,"uuid": 45}
+      var serverEnv = "local"
+    </script>
+  <link href="/0.22b27d7705ac73be9dfe.js" rel="prefetch"><link href="/1.814cd7f33a710384e38f.js" rel="prefetch"><link href="/10.138ada5369aff3d7ab2e.js" rel="prefetch"><link href="/11.cff5c7f1c81d0e5db796.js" rel="prefetch"><link href="/12.9be145d83c5e90a9be30.js" rel="prefetch"><link href="/13.a6f737fa6e3683655f7b.js" rel="prefetch"><link href="/14.b5fc59590a37fb8358cf.js" rel="prefetch"><link href="/15.5f3db8f5d1ffe9801b2c.js" rel="prefetch"><link href="/16.825a9ca55ba7c55718f4.js" rel="prefetch"><link href="/17.ccee05f5f10fc41ee35d.js" rel="prefetch"><link href="/18.71bad8e74e5ee11617fc.js" rel="prefetch"><link href="/19.ddbd6db66f995ed1c0c9.js" rel="prefetch"><link href="/2.c7d6d1d9ea2f141b1a0a.js" rel="prefetch"><link href="/20.81bd7f9ba1e43223b939.js" rel="prefetch"><link href="/21.d32e30183bed441d2014.js" rel="prefetch"><link href="/22.4310f084653203afb24a.js" rel="prefetch"><link href="/23.cf3fa70837f6f1bf95b3.js" rel="prefetch"><link href="/24.399304fe0df43be90f67.js" rel="prefetch"><link href="/25.bf0e9cb5f8bcd8ba48c2.js" rel="prefetch"><link href="/26.b27793353587ea8eff7a.js" rel="prefetch"><link href="/27.6893f42480a4729f5420.js" rel="prefetch"><link href="/28.9b317c908857b1bc0812.js" rel="prefetch"><link href="/29.ad64f65eab105fa85a49.js" rel="prefetch"><link href="/3.88597284b69e80baccdf.js" rel="prefetch"><link href="/30.4b61d4369cdc3a2e3df7.js" rel="prefetch"><link href="/31.28fe4f6127c28ffd2939.js" rel="prefetch"><link href="/32.6424f5e3b8999143ba6f.js" rel="prefetch"><link href="/33.6eb7e47099c58cbfb864.js" rel="prefetch"><link href="/34.7324f7cdb20baaee8ca4.js" rel="prefetch"><link href="/35.d5827dbc7db5973b8201.js" rel="prefetch"><link href="/36.48627da950ae77cced89.js" rel="prefetch"><link href="/37.12e7f1b5bca63dc7cdff.js" rel="prefetch"><link href="/38.f4973fa24eed76d98fcb.js" rel="prefetch"><link href="/39.d0d6ede8dfd2767cf172.js" rel="prefetch"><link href="/4.126376d3d87229da0bc2.js" rel="prefetch"><link href="/40.5626b7e7a4675edeed05.js" rel="prefetch"><link href="/41.2644c645b6091f21cf54.js" rel="prefetch"><link href="/42.6b5a3c9476dac3d586e9.js" rel="prefetch"><link href="/43.fcb8170528dd135d28ed.js" rel="prefetch"><link href="/44.031533240172bb6aac00.js" rel="prefetch"><link href="/45.196b0f91b887f2469bbe.js" rel="prefetch"><link href="/46.ca753c3d9856650c3332.js" rel="prefetch"><link href="/5.1bb55445d2f2d652807c.js" rel="prefetch"><link href="/6.c697b91b817c02c40b77.js" rel="prefetch"><link href="/7.3b7754cd1518d29f0681.js" rel="prefetch"><link href="/8.472fd727868ec7a6a78d.js" rel="prefetch"><link href="/9.0dd2080c7e0f62ffe0e4.js" rel="prefetch"><link href="/app.72da1c0aa350d569ea82.js" rel="preload" as="script"><link href="/elementui-app.80cb6a199cdc75ba0545.js" rel="preload" as="script"><link href="/vendors.3237803e044ae9fc9993.js" rel="preload" as="script"></head>
+  <body>
+    <noscript>
+      <strong>We're sorry but d2-admin doesn't work properly without JavaScript enabled. Please enable it to continue.</strong>
+    </noscript>
+    <div id="app">
+      <div class="d2-app-loading-group">
+        <div class="d2-app-loading-grid">
+          <div class="d2-app-loading d2-app-loading1"></div>
+          <div class="d2-app-loading d2-app-loading2"></div>
+          <div class="d2-app-loading d2-app-loading3"></div>
+          <div class="d2-app-loading d2-app-loading4"></div>
+          <div class="d2-app-loading d2-app-loading5"></div>
+          <div class="d2-app-loading d2-app-loading6"></div>
+          <div class="d2-app-loading d2-app-loading7"></div>
+          <div class="d2-app-loading d2-app-loading8"></div>
+          <div class="d2-app-loading d2-app-loading9"></div>
+        </div>
+      </div>
+    </div>
+    <!-- built files will be auto injected -->
+  <script type="text/javascript" src="/vendors.3237803e044ae9fc9993.js"></script><script type="text/javascript" src="/elementui-app.80cb6a199cdc75ba0545.js"></script><script type="text/javascript" src="/app.72da1c0aa350d569ea82.js"></script></body>
+</html>

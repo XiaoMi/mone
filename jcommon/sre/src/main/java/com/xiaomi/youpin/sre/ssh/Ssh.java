@@ -35,8 +35,7 @@ public class Ssh {
 
 
     public static void main(String... args) throws JSchException, IOException {
-        new Ssh().connect("root", "xxxx", "/Users/zhangzhiyong/ssh/id_rsa", System.in, System.out);
-//        new Ssh().connect("zhangzhiyong", "127.0.0.1", "/Users/zhangzhiyong/ssh/id_rsa", System.in, System.out);
+        new Ssh().connect("user", "127.0.0.1", "/tmp/ssh/id_rsa", System.in, System.out);
     }
 
 

@@ -16,6 +16,8 @@
 
 package com.xiaomi.data.push.uds.handler;
 
+import com.xiaomi.data.push.common.Pair;
+import com.xiaomi.data.push.common.Send;
 import com.xiaomi.data.push.uds.UdsServer;
 import com.xiaomi.data.push.uds.context.UdsServerContext;
 import com.xiaomi.data.push.uds.po.UdsCommand;
@@ -25,13 +27,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
+import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 /**
  * @author goodjava@qq.com
@@ -42,33 +43,40 @@ public class UdsServerHandler extends ChannelInboundHandlerAdapter {
 
     public static AttributeKey<String> app = AttributeKey.valueOf("app");
 
-
-    private ExecutorService pool = Executors.newFixedThreadPool(200);
-
-
-    private Map<String, UdsProcessor> m;
+    private Map<String, Pair<UdsProcessor, ExecutorService>> m;
 
 
-    public UdsServerHandler(ConcurrentHashMap<String, UdsProcessor> processorMap) {
+    public UdsServerHandler(ConcurrentHashMap<String, Pair<UdsProcessor, ExecutorService>> processorMap) {
         this.m = processorMap;
     }
 
+
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object _msg) {
-        ByteBuf msg = (ByteBuf) _msg;
-        UdsCommand command = new UdsCommand();
-        command.decode(msg);
-        log.debug("server receive:{}:{}:{}", command.getApp(), command.getCmd(), command.getSerializeType());
-        if (command.isRequest()) {
-            command.setChannel(ctx.channel());
-            UdsProcessor processor = this.m.get(command.getCmd());
-            if (null != processor) {
-                pool.submit(() -> processor.processRequest(command));
+        try {
+            ByteBuf msg = (ByteBuf) _msg;
+            UdsCommand command = new UdsCommand();
+            command.decode(msg);
+            log.debug("server receive:{}:{}:{}", command.getApp(), command.getCmd(), command.getSerializeType());
+            if (command.isRequest()) {
+                command.setChannel(ctx.channel());
+                Pair<UdsProcessor, ExecutorService> pair = this.m.get(command.getCmd());
+                if (null != pair) {
+                    UdsProcessor<UdsCommand, UdsCommand> processor = pair.getKey();
+                    pair.getValue().submit(() -> {
+                        UdsCommand res = processor.processRequest(command);
+                        if (null != res) {
+                            Send.send(ctx.channel(), res);
+                        }
+                    });
+                } else {
+                    log.warn("processor is null cmd:{}", command.getCmd());
+                }
             } else {
-                log.warn("processor is null cmd:{}", command.getCmd());
+                Optional.ofNullable(UdsServer.reqMap.get(command.getId())).ifPresent(f -> f.complete(command));
             }
-        } else {
-            Optional.ofNullable(UdsServer.reqMap.get(command.getId())).ifPresent(f -> f.complete(command));
+        } finally {
+            ReferenceCountUtil.release(_msg);
         }
     }
 

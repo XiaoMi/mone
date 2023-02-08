@@ -1,0 +1,676 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>RegistryDirectory.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-registry-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-registry-api</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.registry.integration</a> &gt; <span class="el_source">RegistryDirectory.java</span></div><h1>RegistryDirectory.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.registry.integration;
+
+import org.apache.dubbo.common.Constants;
+import org.apache.dubbo.common.URL;
+import org.apache.dubbo.common.Version;
+import org.apache.dubbo.common.extension.ExtensionLoader;
+import org.apache.dubbo.common.logger.Logger;
+import org.apache.dubbo.common.logger.LoggerFactory;
+import org.apache.dubbo.common.utils.NetUtils;
+import org.apache.dubbo.common.utils.StringUtils;
+import org.apache.dubbo.registry.NotifyListener;
+import org.apache.dubbo.registry.Registry;
+import org.apache.dubbo.rpc.Invocation;
+import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.Protocol;
+import org.apache.dubbo.rpc.RpcException;
+import org.apache.dubbo.rpc.RpcInvocation;
+import org.apache.dubbo.rpc.cluster.Cluster;
+import org.apache.dubbo.rpc.cluster.Configurator;
+import org.apache.dubbo.rpc.cluster.ConfiguratorFactory;
+import org.apache.dubbo.rpc.cluster.Router;
+import org.apache.dubbo.rpc.cluster.RouterFactory;
+import org.apache.dubbo.rpc.cluster.directory.AbstractDirectory;
+import org.apache.dubbo.rpc.cluster.directory.StaticDirectory;
+import org.apache.dubbo.rpc.cluster.support.ClusterUtils;
+import org.apache.dubbo.rpc.protocol.InvokerWrapper;
+import org.apache.dubbo.rpc.support.RpcUtils;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * RegistryDirectory
+ */
+public class RegistryDirectory&lt;T&gt; extends AbstractDirectory&lt;T&gt; implements NotifyListener {
+
+<span class="nc" id="L60">    private static final Logger logger = LoggerFactory.getLogger(RegistryDirectory.class);</span>
+
+<span class="nc" id="L62">    private static final Cluster cluster = ExtensionLoader.getExtensionLoader(Cluster.class).getAdaptiveExtension();</span>
+
+<span class="nc" id="L64">    private static final RouterFactory routerFactory = ExtensionLoader.getExtensionLoader(RouterFactory.class).getAdaptiveExtension();</span>
+
+<span class="nc" id="L66">    private static final ConfiguratorFactory configuratorFactory = ExtensionLoader.getExtensionLoader(ConfiguratorFactory.class).getAdaptiveExtension();</span>
+    private final String serviceKey; // Initialization at construction time, assertion not null
+    private final Class&lt;T&gt; serviceType; // Initialization at construction time, assertion not null
+    private final Map&lt;String, String&gt; queryMap; // Initialization at construction time, assertion not null
+    private final URL directoryUrl; // Initialization at construction time, assertion not null, and always assign non null value
+    private final String[] serviceMethods;
+    private final boolean multiGroup;
+    private Protocol protocol; // Initialization at the time of injection, the assertion is not null
+    private Registry registry; // Initialization at the time of injection, the assertion is not null
+<span class="nc" id="L75">    private volatile boolean forbidden = false;</span>
+
+    private volatile URL overrideDirectoryUrl; // Initialization at construction time, assertion not null, and always assign non null value
+
+    /**
+     * override rules
+     * Priority: override&gt;-D&gt;consumer&gt;provider
+     * Rule one: for a certain provider &lt;ip:port,timeout=100&gt;
+     * Rule two: for all providers &lt;* ,timeout=5000&gt;
+     */
+    private volatile List&lt;Configurator&gt; configurators; // The initial value is null and the midway may be assigned to null, please use the local variable reference
+
+    // Map&lt;url, Invoker&gt; cache service url to invoker mapping.
+    private volatile Map&lt;String, Invoker&lt;T&gt;&gt; urlInvokerMap; // The initial value is null and the midway may be assigned to null, please use the local variable reference
+
+    // Map&lt;methodName, Invoker&gt; cache service method to invokers mapping.
+    private volatile Map&lt;String, List&lt;Invoker&lt;T&gt;&gt;&gt; methodInvokerMap; // The initial value is null and the midway may be assigned to null, please use the local variable reference
+
+    // Set&lt;invokerUrls&gt; cache invokeUrls to invokers mapping.
+    private volatile Set&lt;URL&gt; cachedInvokerUrls; // The initial value is null and the midway may be assigned to null, please use the local variable reference
+
+    public RegistryDirectory(Class&lt;T&gt; serviceType, URL url) {
+<span class="nc" id="L97">        super(url);</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        if (serviceType == null) {</span>
+<span class="nc" id="L99">            throw new IllegalArgumentException(&quot;service type is null.&quot;);</span>
+        }
+<span class="nc bnc" id="L101" title="All 4 branches missed.">        if (url.getServiceKey() == null || url.getServiceKey().length() == 0) {</span>
+<span class="nc" id="L102">            throw new IllegalArgumentException(&quot;registry serviceKey is null.&quot;);</span>
+        }
+<span class="nc" id="L104">        this.serviceType = serviceType;</span>
+<span class="nc" id="L105">        this.serviceKey = url.getServiceKey();</span>
+<span class="nc" id="L106">        this.queryMap = StringUtils.parseQueryString(url.getParameterAndDecoded(Constants.REFER_KEY));</span>
+<span class="nc" id="L107">        this.overrideDirectoryUrl = this.directoryUrl = url.setPath(url.getServiceInterface()).clearParameters().addParameters(queryMap).removeParameter(Constants.MONITOR_KEY);</span>
+<span class="nc" id="L108">        String group = directoryUrl.getParameter(Constants.GROUP_KEY, &quot;&quot;);</span>
+<span class="nc bnc" id="L109" title="All 6 branches missed.">        this.multiGroup = group != null &amp;&amp; (&quot;*&quot;.equals(group) || group.contains(&quot;,&quot;));</span>
+<span class="nc" id="L110">        String methods = queryMap.get(Constants.METHODS_KEY);</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">        this.serviceMethods = methods == null ? null : Constants.COMMA_SPLIT_PATTERN.split(methods);</span>
+<span class="nc" id="L112">    }</span>
+
+    /**
+     * Convert override urls to map for use when re-refer.
+     * Send all rules every time, the urls will be reassembled and calculated
+     *
+     * @param urls Contract:
+     *             &lt;/br&gt;1.override://0.0.0.0/...( or override://ip:port...?anyhost=true)&amp;para1=value1... means global rules (all of the providers take effect)
+     *             &lt;/br&gt;2.override://ip:port...?anyhost=false Special rules (only for a certain provider)
+     *             &lt;/br&gt;3.override:// rule is not supported... ,needs to be calculated by registry itself.
+     *             &lt;/br&gt;4.override://0.0.0.0/ without parameters means clearing the override
+     * @return
+     */
+    public static List&lt;Configurator&gt; toConfigurators(List&lt;URL&gt; urls) {
+<span class="nc bnc" id="L126" title="All 4 branches missed.">        if (urls == null || urls.isEmpty()) {</span>
+<span class="nc" id="L127">            return Collections.emptyList();</span>
+        }
+
+<span class="nc" id="L130">        List&lt;Configurator&gt; configurators = new ArrayList&lt;Configurator&gt;(urls.size());</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">        for (URL url : urls) {</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">            if (Constants.EMPTY_PROTOCOL.equals(url.getProtocol())) {</span>
+<span class="nc" id="L133">                configurators.clear();</span>
+<span class="nc" id="L134">                break;</span>
+            }
+<span class="nc" id="L136">            Map&lt;String, String&gt; override = new HashMap&lt;String, String&gt;(url.getParameters());</span>
+            //The anyhost parameter of override may be added automatically, it can't change the judgement of changing url
+<span class="nc" id="L138">            override.remove(Constants.ANYHOST_KEY);</span>
+<span class="nc bnc" id="L139" title="All 2 branches missed.">            if (override.size() == 0) {</span>
+<span class="nc" id="L140">                configurators.clear();</span>
+<span class="nc" id="L141">                continue;</span>
+            }
+<span class="nc" id="L143">            configurators.add(configuratorFactory.getConfigurator(url));</span>
+<span class="nc" id="L144">        }</span>
+<span class="nc" id="L145">        Collections.sort(configurators);</span>
+<span class="nc" id="L146">        return configurators;</span>
+    }
+
+    public void setProtocol(Protocol protocol) {
+<span class="nc" id="L150">        this.protocol = protocol;</span>
+<span class="nc" id="L151">    }</span>
+
+    public void setRegistry(Registry registry) {
+<span class="nc" id="L154">        this.registry = registry;</span>
+<span class="nc" id="L155">    }</span>
+
+    public void subscribe(URL url) {
+<span class="nc" id="L158">        setConsumerUrl(url);</span>
+<span class="nc" id="L159">        registry.subscribe(url, this);</span>
+<span class="nc" id="L160">    }</span>
+
+    @Override
+    public void destroy() {
+<span class="nc bnc" id="L164" title="All 2 branches missed.">        if (isDestroyed()) {</span>
+<span class="nc" id="L165">            return;</span>
+        }
+        // unsubscribe.
+        try {
+<span class="nc bnc" id="L169" title="All 6 branches missed.">            if (getConsumerUrl() != null &amp;&amp; registry != null &amp;&amp; registry.isAvailable()) {</span>
+<span class="nc" id="L170">                registry.unsubscribe(getConsumerUrl(), this);</span>
+            }
+<span class="nc" id="L172">        } catch (Throwable t) {</span>
+<span class="nc" id="L173">            logger.warn(&quot;unexpected error when unsubscribe service &quot; + serviceKey + &quot;from registry&quot; + registry.getUrl(), t);</span>
+<span class="nc" id="L174">        }</span>
+<span class="nc" id="L175">        super.destroy(); // must be executed after unsubscribing</span>
+        try {
+<span class="nc" id="L177">            destroyAllInvokers();</span>
+<span class="nc" id="L178">        } catch (Throwable t) {</span>
+<span class="nc" id="L179">            logger.warn(&quot;Failed to destroy service &quot; + serviceKey, t);</span>
+<span class="nc" id="L180">        }</span>
+<span class="nc" id="L181">    }</span>
+
+    @Override
+    public synchronized void notify(List&lt;URL&gt; urls) {
+<span class="nc" id="L185">        List&lt;URL&gt; invokerUrls = new ArrayList&lt;URL&gt;();</span>
+<span class="nc" id="L186">        List&lt;URL&gt; routerUrls = new ArrayList&lt;URL&gt;();</span>
+<span class="nc" id="L187">        List&lt;URL&gt; configuratorUrls = new ArrayList&lt;URL&gt;();</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">        for (URL url : urls) {</span>
+<span class="nc" id="L189">            String protocol = url.getProtocol();</span>
+<span class="nc" id="L190">            String category = url.getParameter(Constants.CATEGORY_KEY, Constants.DEFAULT_CATEGORY);</span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">            if (Constants.ROUTERS_CATEGORY.equals(category)</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">                    || Constants.ROUTE_PROTOCOL.equals(protocol)) {</span>
+<span class="nc" id="L193">                routerUrls.add(url);</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">            } else if (Constants.CONFIGURATORS_CATEGORY.equals(category)</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">                    || Constants.OVERRIDE_PROTOCOL.equals(protocol)) {</span>
+<span class="nc" id="L196">                configuratorUrls.add(url);</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">            } else if (Constants.PROVIDERS_CATEGORY.equals(category)) {</span>
+<span class="nc" id="L198">                invokerUrls.add(url);</span>
+            } else {
+<span class="nc" id="L200">                logger.warn(&quot;Unsupported category &quot; + category + &quot; in notified url: &quot; + url + &quot; from registry &quot; + getUrl().getAddress() + &quot; to consumer &quot; + NetUtils.getLocalHost());</span>
+            }
+<span class="nc" id="L202">        }</span>
+        // configurators
+<span class="nc bnc" id="L204" title="All 4 branches missed.">        if (configuratorUrls != null &amp;&amp; !configuratorUrls.isEmpty()) {</span>
+<span class="nc" id="L205">            this.configurators = toConfigurators(configuratorUrls);</span>
+        }
+        // routers
+<span class="nc bnc" id="L208" title="All 4 branches missed.">        if (routerUrls != null &amp;&amp; !routerUrls.isEmpty()) {</span>
+<span class="nc" id="L209">            List&lt;Router&gt; routers = toRouters(routerUrls);</span>
+<span class="nc bnc" id="L210" title="All 2 branches missed.">            if (routers != null) { // null - do nothing</span>
+<span class="nc" id="L211">                setRouters(routers);</span>
+            }
+        }
+<span class="nc" id="L214">        List&lt;Configurator&gt; localConfigurators = this.configurators; // local reference</span>
+        // merge override parameters
+<span class="nc" id="L216">        this.overrideDirectoryUrl = directoryUrl;</span>
+<span class="nc bnc" id="L217" title="All 4 branches missed.">        if (localConfigurators != null &amp;&amp; !localConfigurators.isEmpty()) {</span>
+<span class="nc bnc" id="L218" title="All 2 branches missed.">            for (Configurator configurator : localConfigurators) {</span>
+<span class="nc" id="L219">                this.overrideDirectoryUrl = configurator.configure(overrideDirectoryUrl);</span>
+<span class="nc" id="L220">            }</span>
+        }
+        // providers
+<span class="nc" id="L223">        refreshInvoker(invokerUrls);</span>
+<span class="nc" id="L224">    }</span>
+
+    /**
+     * Convert the invokerURL list to the Invoker Map. The rules of the conversion are as follows:
+     * 1.If URL has been converted to invoker, it is no longer re-referenced and obtained directly from the cache, and notice that any parameter changes in the URL will be re-referenced.
+     * 2.If the incoming invoker list is not empty, it means that it is the latest invoker list
+     * 3.If the list of incoming invokerUrl is empty, It means that the rule is only a override rule or a route rule, which needs to be re-contrasted to decide whether to re-reference.
+     *
+     * @param invokerUrls this parameter can't be null
+     */
+    // TODO: 2017/8/31 FIXME The thread pool should be used to refresh the address, otherwise the task may be accumulated.
+    private void refreshInvoker(List&lt;URL&gt; invokerUrls) {
+<span class="nc bnc" id="L236" title="All 6 branches missed.">        if (invokerUrls != null &amp;&amp; invokerUrls.size() == 1 &amp;&amp; invokerUrls.get(0) != null</span>
+<span class="nc bnc" id="L237" title="All 2 branches missed.">                &amp;&amp; Constants.EMPTY_PROTOCOL.equals(invokerUrls.get(0).getProtocol())) {</span>
+<span class="nc" id="L238">            this.forbidden = true; // Forbid to access</span>
+<span class="nc" id="L239">            this.methodInvokerMap = null; // Set the method invoker map to null</span>
+<span class="nc" id="L240">            destroyAllInvokers(); // Close all invokers</span>
+        } else {
+<span class="nc" id="L242">            this.forbidden = false; // Allow to access</span>
+<span class="nc" id="L243">            Map&lt;String, Invoker&lt;T&gt;&gt; oldUrlInvokerMap = this.urlInvokerMap; // local reference</span>
+<span class="nc bnc" id="L244" title="All 4 branches missed.">            if (invokerUrls.isEmpty() &amp;&amp; this.cachedInvokerUrls != null) {</span>
+<span class="nc" id="L245">                invokerUrls.addAll(this.cachedInvokerUrls);</span>
+            } else {
+<span class="nc" id="L247">                this.cachedInvokerUrls = new HashSet&lt;URL&gt;();</span>
+<span class="nc" id="L248">                this.cachedInvokerUrls.addAll(invokerUrls);//Cached invoker urls, convenient for comparison</span>
+            }
+<span class="nc bnc" id="L250" title="All 2 branches missed.">            if (invokerUrls.isEmpty()) {</span>
+<span class="nc" id="L251">                return;</span>
+            }
+<span class="nc" id="L253">            Map&lt;String, Invoker&lt;T&gt;&gt; newUrlInvokerMap = toInvokers(invokerUrls);// Translate url list to Invoker map</span>
+<span class="nc" id="L254">            Map&lt;String, List&lt;Invoker&lt;T&gt;&gt;&gt; newMethodInvokerMap = toMethodInvokers(newUrlInvokerMap); // Change method name to map Invoker Map</span>
+            // state change
+            // If the calculation is wrong, it is not processed.
+<span class="nc bnc" id="L257" title="All 4 branches missed.">            if (newUrlInvokerMap == null || newUrlInvokerMap.size() == 0) {</span>
+<span class="nc" id="L258">                logger.error(new IllegalStateException(&quot;urls to invokers error .invokerUrls.size :&quot; + invokerUrls.size() + &quot;, invoker.size :0. urls :&quot; + invokerUrls.toString()));</span>
+<span class="nc" id="L259">                return;</span>
+            }
+<span class="nc bnc" id="L261" title="All 2 branches missed.">            this.methodInvokerMap = multiGroup ? toMergeMethodInvokerMap(newMethodInvokerMap) : newMethodInvokerMap;</span>
+<span class="nc" id="L262">            this.urlInvokerMap = newUrlInvokerMap;</span>
+            try {
+<span class="nc" id="L264">                destroyUnusedInvokers(oldUrlInvokerMap, newUrlInvokerMap); // Close the unused Invoker</span>
+<span class="nc" id="L265">            } catch (Exception e) {</span>
+<span class="nc" id="L266">                logger.warn(&quot;destroyUnusedInvokers error. &quot;, e);</span>
+<span class="nc" id="L267">            }</span>
+        }
+<span class="nc" id="L269">    }</span>
+
+    private Map&lt;String, List&lt;Invoker&lt;T&gt;&gt;&gt; toMergeMethodInvokerMap(Map&lt;String, List&lt;Invoker&lt;T&gt;&gt;&gt; methodMap) {
+<span class="nc" id="L272">        Map&lt;String, List&lt;Invoker&lt;T&gt;&gt;&gt; result = new HashMap&lt;String, List&lt;Invoker&lt;T&gt;&gt;&gt;();</span>
+<span class="nc bnc" id="L273" title="All 2 branches missed.">        for (Map.Entry&lt;String, List&lt;Invoker&lt;T&gt;&gt;&gt; entry : methodMap.entrySet()) {</span>
+<span class="nc" id="L274">            String method = entry.getKey();</span>
+<span class="nc" id="L275">            List&lt;Invoker&lt;T&gt;&gt; invokers = entry.getValue();</span>
+<span class="nc" id="L276">            Map&lt;String, List&lt;Invoker&lt;T&gt;&gt;&gt; groupMap = new HashMap&lt;String, List&lt;Invoker&lt;T&gt;&gt;&gt;();</span>
+<span class="nc bnc" id="L277" title="All 2 branches missed.">            for (Invoker&lt;T&gt; invoker : invokers) {</span>
+<span class="nc" id="L278">                String group = invoker.getUrl().getParameter(Constants.GROUP_KEY, &quot;&quot;);</span>
+<span class="nc" id="L279">                List&lt;Invoker&lt;T&gt;&gt; groupInvokers = groupMap.get(group);</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">                if (groupInvokers == null) {</span>
+<span class="nc" id="L281">                    groupInvokers = new ArrayList&lt;Invoker&lt;T&gt;&gt;();</span>
+<span class="nc" id="L282">                    groupMap.put(group, groupInvokers);</span>
+                }
+<span class="nc" id="L284">                groupInvokers.add(invoker);</span>
+<span class="nc" id="L285">            }</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">            if (groupMap.size() == 1) {</span>
+<span class="nc" id="L287">                result.put(method, groupMap.values().iterator().next());</span>
+<span class="nc bnc" id="L288" title="All 2 branches missed.">            } else if (groupMap.size() &gt; 1) {</span>
+<span class="nc" id="L289">                List&lt;Invoker&lt;T&gt;&gt; groupInvokers = new ArrayList&lt;Invoker&lt;T&gt;&gt;();</span>
+<span class="nc bnc" id="L290" title="All 2 branches missed.">                for (List&lt;Invoker&lt;T&gt;&gt; groupList : groupMap.values()) {</span>
+<span class="nc" id="L291">                    groupInvokers.add(cluster.join(new StaticDirectory&lt;T&gt;(groupList)));</span>
+<span class="nc" id="L292">                }</span>
+<span class="nc" id="L293">                result.put(method, groupInvokers);</span>
+<span class="nc" id="L294">            } else {</span>
+<span class="nc" id="L295">                result.put(method, invokers);</span>
+            }
+<span class="nc" id="L297">        }</span>
+<span class="nc" id="L298">        return result;</span>
+    }
+
+    /**
+     * @param urls
+     * @return null : no routers ,do nothing
+     * else :routers list
+     */
+    private List&lt;Router&gt; toRouters(List&lt;URL&gt; urls) {
+<span class="nc" id="L307">        List&lt;Router&gt; routers = new ArrayList&lt;Router&gt;();</span>
+<span class="nc bnc" id="L308" title="All 4 branches missed.">        if (urls == null || urls.isEmpty()) {</span>
+<span class="nc" id="L309">            return routers;</span>
+        }
+<span class="nc bnc" id="L311" title="All 4 branches missed.">        if (urls != null &amp;&amp; !urls.isEmpty()) {</span>
+<span class="nc bnc" id="L312" title="All 2 branches missed.">            for (URL url : urls) {</span>
+<span class="nc bnc" id="L313" title="All 2 branches missed.">                if (Constants.EMPTY_PROTOCOL.equals(url.getProtocol())) {</span>
+<span class="nc" id="L314">                    continue;</span>
+                }
+<span class="nc" id="L316">                String routerType = url.getParameter(Constants.ROUTER_KEY);</span>
+<span class="nc bnc" id="L317" title="All 4 branches missed.">                if (routerType != null &amp;&amp; routerType.length() &gt; 0) {</span>
+<span class="nc" id="L318">                    url = url.setProtocol(routerType);</span>
+                }
+                try {
+<span class="nc" id="L321">                    Router router = routerFactory.getRouter(url);</span>
+<span class="nc bnc" id="L322" title="All 2 branches missed.">                    if (!routers.contains(router)) {</span>
+<span class="nc" id="L323">                        routers.add(router);</span>
+                    }
+<span class="nc" id="L325">                } catch (Throwable t) {</span>
+<span class="nc" id="L326">                    logger.error(&quot;convert router url to router error, url: &quot; + url, t);</span>
+<span class="nc" id="L327">                }</span>
+<span class="nc" id="L328">            }</span>
+        }
+<span class="nc" id="L330">        return routers;</span>
+    }
+
+    /**
+     * Turn urls into invokers, and if url has been refer, will not re-reference.
+     *
+     * @param urls
+     * @return invokers
+     */
+    private Map&lt;String, Invoker&lt;T&gt;&gt; toInvokers(List&lt;URL&gt; urls) {
+<span class="nc" id="L340">        Map&lt;String, Invoker&lt;T&gt;&gt; newUrlInvokerMap = new HashMap&lt;String, Invoker&lt;T&gt;&gt;();</span>
+<span class="nc bnc" id="L341" title="All 4 branches missed.">        if (urls == null || urls.isEmpty()) {</span>
+<span class="nc" id="L342">            return newUrlInvokerMap;</span>
+        }
+<span class="nc" id="L344">        Set&lt;String&gt; keys = new HashSet&lt;String&gt;();</span>
+<span class="nc" id="L345">        String queryProtocols = this.queryMap.get(Constants.PROTOCOL_KEY);</span>
+<span class="nc bnc" id="L346" title="All 2 branches missed.">        for (URL providerUrl : urls) {</span>
+            // If protocol is configured at the reference side, only the matching protocol is selected
+<span class="nc bnc" id="L348" title="All 4 branches missed.">            if (queryProtocols != null &amp;&amp; queryProtocols.length() &gt; 0) {</span>
+<span class="nc" id="L349">                boolean accept = false;</span>
+<span class="nc" id="L350">                String[] acceptProtocols = queryProtocols.split(&quot;,&quot;);</span>
+<span class="nc bnc" id="L351" title="All 2 branches missed.">                for (String acceptProtocol : acceptProtocols) {</span>
+<span class="nc bnc" id="L352" title="All 2 branches missed.">                    if (providerUrl.getProtocol().equals(acceptProtocol)) {</span>
+<span class="nc" id="L353">                        accept = true;</span>
+<span class="nc" id="L354">                        break;</span>
+                    }
+                }
+<span class="nc bnc" id="L357" title="All 2 branches missed.">                if (!accept) {</span>
+<span class="nc" id="L358">                    continue;</span>
+                }
+            }
+<span class="nc bnc" id="L361" title="All 2 branches missed.">            if (Constants.EMPTY_PROTOCOL.equals(providerUrl.getProtocol())) {</span>
+<span class="nc" id="L362">                continue;</span>
+            }
+<span class="nc bnc" id="L364" title="All 2 branches missed.">            if (!ExtensionLoader.getExtensionLoader(Protocol.class).hasExtension(providerUrl.getProtocol())) {</span>
+<span class="nc" id="L365">                logger.error(new IllegalStateException(&quot;Unsupported protocol &quot; + providerUrl.getProtocol() + &quot; in notified url: &quot; + providerUrl + &quot; from registry &quot; + getUrl().getAddress() + &quot; to consumer &quot; + NetUtils.getLocalHost()</span>
+<span class="nc" id="L366">                        + &quot;, supported protocol: &quot; + ExtensionLoader.getExtensionLoader(Protocol.class).getSupportedExtensions()));</span>
+<span class="nc" id="L367">                continue;</span>
+            }
+<span class="nc" id="L369">            URL url = mergeUrl(providerUrl);</span>
+
+<span class="nc" id="L371">            String key = url.toFullString(); // The parameter urls are sorted</span>
+<span class="nc bnc" id="L372" title="All 2 branches missed.">            if (keys.contains(key)) { // Repeated url</span>
+<span class="nc" id="L373">                continue;</span>
+            }
+<span class="nc" id="L375">            keys.add(key);</span>
+            // Cache key is url that does not merge with consumer side parameters, regardless of how the consumer combines parameters, if the server url changes, then refer again
+<span class="nc" id="L377">            Map&lt;String, Invoker&lt;T&gt;&gt; localUrlInvokerMap = this.urlInvokerMap; // local reference</span>
+<span class="nc bnc" id="L378" title="All 2 branches missed.">            Invoker&lt;T&gt; invoker = localUrlInvokerMap == null ? null : localUrlInvokerMap.get(key);</span>
+<span class="nc bnc" id="L379" title="All 2 branches missed.">            if (invoker == null) { // Not in the cache, refer again</span>
+                try {
+<span class="nc" id="L381">                    boolean enabled = true;</span>
+<span class="nc bnc" id="L382" title="All 2 branches missed.">                    if (url.hasParameter(Constants.DISABLED_KEY)) {</span>
+<span class="nc bnc" id="L383" title="All 2 branches missed.">                        enabled = !url.getParameter(Constants.DISABLED_KEY, false);</span>
+                    } else {
+<span class="nc" id="L385">                        enabled = url.getParameter(Constants.ENABLED_KEY, true);</span>
+                    }
+<span class="nc bnc" id="L387" title="All 2 branches missed.">                    if (enabled) {</span>
+<span class="nc" id="L388">                        invoker = new InvokerDelegate&lt;T&gt;(protocol.refer(serviceType, url), url, providerUrl);</span>
+                    }
+<span class="nc" id="L390">                } catch (Throwable t) {</span>
+<span class="nc" id="L391">                    logger.error(&quot;Failed to refer invoker for interface:&quot; + serviceType + &quot;,url:(&quot; + url + &quot;)&quot; + t.getMessage(), t);</span>
+<span class="nc" id="L392">                }</span>
+<span class="nc bnc" id="L393" title="All 2 branches missed.">                if (invoker != null) { // Put new invoker in cache</span>
+<span class="nc" id="L394">                    newUrlInvokerMap.put(key, invoker);</span>
+                }
+            } else {
+<span class="nc" id="L397">                newUrlInvokerMap.put(key, invoker);</span>
+            }
+<span class="nc" id="L399">        }</span>
+<span class="nc" id="L400">        keys.clear();</span>
+<span class="nc" id="L401">        return newUrlInvokerMap;</span>
+    }
+
+    /**
+     * Merge url parameters. the order is: override &gt; -D &gt;Consumer &gt; Provider
+     *
+     * @param providerUrl
+     * @return
+     */
+    private URL mergeUrl(URL providerUrl) {
+<span class="nc" id="L411">        providerUrl = ClusterUtils.mergeUrl(providerUrl, queryMap); // Merge the consumer side parameters</span>
+
+<span class="nc" id="L413">        List&lt;Configurator&gt; localConfigurators = this.configurators; // local reference</span>
+<span class="nc bnc" id="L414" title="All 4 branches missed.">        if (localConfigurators != null &amp;&amp; !localConfigurators.isEmpty()) {</span>
+<span class="nc bnc" id="L415" title="All 2 branches missed.">            for (Configurator configurator : localConfigurators) {</span>
+<span class="nc" id="L416">                providerUrl = configurator.configure(providerUrl);</span>
+<span class="nc" id="L417">            }</span>
+        }
+
+<span class="nc" id="L420">        providerUrl = providerUrl.addParameter(Constants.CHECK_KEY, String.valueOf(false)); // Do not check whether the connection is successful or not, always create Invoker!</span>
+
+        // The combination of directoryUrl and override is at the end of notify, which can't be handled here
+<span class="nc" id="L423">        this.overrideDirectoryUrl = this.overrideDirectoryUrl.addParametersIfAbsent(providerUrl.getParameters()); // Merge the provider side parameters</span>
+
+<span class="nc bnc" id="L425" title="All 4 branches missed.">        if ((providerUrl.getPath() == null || providerUrl.getPath().length() == 0)</span>
+<span class="nc bnc" id="L426" title="All 2 branches missed.">                &amp;&amp; &quot;dubbo&quot;.equals(providerUrl.getProtocol())) { // Compatible version 1.0</span>
+            //fix by tony.chenl DUBBO-44
+<span class="nc" id="L428">            String path = directoryUrl.getParameter(Constants.INTERFACE_KEY);</span>
+<span class="nc bnc" id="L429" title="All 2 branches missed.">            if (path != null) {</span>
+<span class="nc" id="L430">                int i = path.indexOf('/');</span>
+<span class="nc bnc" id="L431" title="All 2 branches missed.">                if (i &gt;= 0) {</span>
+<span class="nc" id="L432">                    path = path.substring(i + 1);</span>
+                }
+<span class="nc" id="L434">                i = path.lastIndexOf(':');</span>
+<span class="nc bnc" id="L435" title="All 2 branches missed.">                if (i &gt;= 0) {</span>
+<span class="nc" id="L436">                    path = path.substring(0, i);</span>
+                }
+<span class="nc" id="L438">                providerUrl = providerUrl.setPath(path);</span>
+            }
+        }
+<span class="nc" id="L441">        return providerUrl;</span>
+    }
+
+    private List&lt;Invoker&lt;T&gt;&gt; route(List&lt;Invoker&lt;T&gt;&gt; invokers, String method) {
+<span class="nc" id="L445">        Invocation invocation = new RpcInvocation(method, new Class&lt;?&gt;[0], new Object[0]);</span>
+<span class="nc" id="L446">        List&lt;Router&gt; routers = getRouters();</span>
+<span class="nc bnc" id="L447" title="All 2 branches missed.">        if (routers != null) {</span>
+<span class="nc bnc" id="L448" title="All 2 branches missed.">            for (Router router : routers) {</span>
+                // If router's url not null and is not route by runtime,we filter invokers here
+<span class="nc bnc" id="L450" title="All 4 branches missed.">                if (router.getUrl() != null &amp;&amp; !router.getUrl().getParameter(Constants.RUNTIME_KEY, false)) {</span>
+<span class="nc" id="L451">                    invokers = router.route(invokers, getConsumerUrl(), invocation);</span>
+                }
+<span class="nc" id="L453">            }</span>
+        }
+<span class="nc" id="L455">        return invokers;</span>
+    }
+
+    /**
+     * Transform the invokers list into a mapping relationship with a method
+     *
+     * @param invokersMap Invoker Map
+     * @return Mapping relation between Invoker and method
+     */
+    private Map&lt;String, List&lt;Invoker&lt;T&gt;&gt;&gt; toMethodInvokers(Map&lt;String, Invoker&lt;T&gt;&gt; invokersMap) {
+<span class="nc" id="L465">        Map&lt;String, List&lt;Invoker&lt;T&gt;&gt;&gt; newMethodInvokerMap = new HashMap&lt;String, List&lt;Invoker&lt;T&gt;&gt;&gt;();</span>
+        // According to the methods classification declared by the provider URL, the methods is compatible with the registry to execute the filtered methods
+<span class="nc" id="L467">        List&lt;Invoker&lt;T&gt;&gt; invokersList = new ArrayList&lt;Invoker&lt;T&gt;&gt;();</span>
+<span class="nc bnc" id="L468" title="All 4 branches missed.">        if (invokersMap != null &amp;&amp; invokersMap.size() &gt; 0) {</span>
+<span class="nc bnc" id="L469" title="All 2 branches missed.">            for (Invoker&lt;T&gt; invoker : invokersMap.values()) {</span>
+<span class="nc" id="L470">                String parameter = invoker.getUrl().getParameter(Constants.METHODS_KEY);</span>
+<span class="nc bnc" id="L471" title="All 4 branches missed.">                if (parameter != null &amp;&amp; parameter.length() &gt; 0) {</span>
+<span class="nc" id="L472">                    String[] methods = Constants.COMMA_SPLIT_PATTERN.split(parameter);</span>
+<span class="nc bnc" id="L473" title="All 4 branches missed.">                    if (methods != null &amp;&amp; methods.length &gt; 0) {</span>
+<span class="nc bnc" id="L474" title="All 2 branches missed.">                        for (String method : methods) {</span>
+<span class="nc bnc" id="L475" title="All 4 branches missed.">                            if (method != null &amp;&amp; method.length() &gt; 0</span>
+<span class="nc bnc" id="L476" title="All 2 branches missed.">                                    &amp;&amp; !Constants.ANY_VALUE.equals(method)) {</span>
+<span class="nc" id="L477">                                List&lt;Invoker&lt;T&gt;&gt; methodInvokers = newMethodInvokerMap.get(method);</span>
+<span class="nc bnc" id="L478" title="All 2 branches missed.">                                if (methodInvokers == null) {</span>
+<span class="nc" id="L479">                                    methodInvokers = new ArrayList&lt;Invoker&lt;T&gt;&gt;();</span>
+<span class="nc" id="L480">                                    newMethodInvokerMap.put(method, methodInvokers);</span>
+                                }
+<span class="nc" id="L482">                                methodInvokers.add(invoker);</span>
+                            }
+                        }
+                    }
+                }
+<span class="nc" id="L487">                invokersList.add(invoker);</span>
+<span class="nc" id="L488">            }</span>
+        }
+<span class="nc" id="L490">        List&lt;Invoker&lt;T&gt;&gt; newInvokersList = route(invokersList, null);</span>
+<span class="nc" id="L491">        newMethodInvokerMap.put(Constants.ANY_VALUE, newInvokersList);</span>
+<span class="nc bnc" id="L492" title="All 4 branches missed.">        if (serviceMethods != null &amp;&amp; serviceMethods.length &gt; 0) {</span>
+<span class="nc bnc" id="L493" title="All 2 branches missed.">            for (String method : serviceMethods) {</span>
+<span class="nc" id="L494">                List&lt;Invoker&lt;T&gt;&gt; methodInvokers = newMethodInvokerMap.get(method);</span>
+<span class="nc bnc" id="L495" title="All 4 branches missed.">                if (methodInvokers == null || methodInvokers.isEmpty()) {</span>
+<span class="nc" id="L496">                    methodInvokers = newInvokersList;</span>
+                }
+<span class="nc" id="L498">                newMethodInvokerMap.put(method, route(methodInvokers, method));</span>
+            }
+        }
+        // sort and unmodifiable
+<span class="nc bnc" id="L502" title="All 2 branches missed.">        for (String method : new HashSet&lt;String&gt;(newMethodInvokerMap.keySet())) {</span>
+<span class="nc" id="L503">            List&lt;Invoker&lt;T&gt;&gt; methodInvokers = newMethodInvokerMap.get(method);</span>
+<span class="nc" id="L504">            Collections.sort(methodInvokers, InvokerComparator.getComparator());</span>
+<span class="nc" id="L505">            newMethodInvokerMap.put(method, Collections.unmodifiableList(methodInvokers));</span>
+<span class="nc" id="L506">        }</span>
+<span class="nc" id="L507">        return Collections.unmodifiableMap(newMethodInvokerMap);</span>
+    }
+
+    /**
+     * Close all invokers
+     */
+    private void destroyAllInvokers() {
+<span class="nc" id="L514">        Map&lt;String, Invoker&lt;T&gt;&gt; localUrlInvokerMap = this.urlInvokerMap; // local reference</span>
+<span class="nc bnc" id="L515" title="All 2 branches missed.">        if (localUrlInvokerMap != null) {</span>
+<span class="nc bnc" id="L516" title="All 2 branches missed.">            for (Invoker&lt;T&gt; invoker : new ArrayList&lt;Invoker&lt;T&gt;&gt;(localUrlInvokerMap.values())) {</span>
+                try {
+<span class="nc" id="L518">                    invoker.destroy();</span>
+<span class="nc" id="L519">                } catch (Throwable t) {</span>
+<span class="nc" id="L520">                    logger.warn(&quot;Failed to destroy service &quot; + serviceKey + &quot; to provider &quot; + invoker.getUrl(), t);</span>
+<span class="nc" id="L521">                }</span>
+<span class="nc" id="L522">            }</span>
+<span class="nc" id="L523">            localUrlInvokerMap.clear();</span>
+        }
+<span class="nc" id="L525">        methodInvokerMap = null;</span>
+<span class="nc" id="L526">    }</span>
+
+    /**
+     * Check whether the invoker in the cache needs to be destroyed
+     * If set attribute of url: refer.autodestroy=false, the invokers will only increase without decreasing,there may be a refer leak
+     *
+     * @param oldUrlInvokerMap
+     * @param newUrlInvokerMap
+     */
+    private void destroyUnusedInvokers(Map&lt;String, Invoker&lt;T&gt;&gt; oldUrlInvokerMap, Map&lt;String, Invoker&lt;T&gt;&gt; newUrlInvokerMap) {
+<span class="nc bnc" id="L536" title="All 4 branches missed.">        if (newUrlInvokerMap == null || newUrlInvokerMap.size() == 0) {</span>
+<span class="nc" id="L537">            destroyAllInvokers();</span>
+<span class="nc" id="L538">            return;</span>
+        }
+        // check deleted invoker
+<span class="nc" id="L541">        List&lt;String&gt; deleted = null;</span>
+<span class="nc bnc" id="L542" title="All 2 branches missed.">        if (oldUrlInvokerMap != null) {</span>
+<span class="nc" id="L543">            Collection&lt;Invoker&lt;T&gt;&gt; newInvokers = newUrlInvokerMap.values();</span>
+<span class="nc bnc" id="L544" title="All 2 branches missed.">            for (Map.Entry&lt;String, Invoker&lt;T&gt;&gt; entry : oldUrlInvokerMap.entrySet()) {</span>
+<span class="nc bnc" id="L545" title="All 2 branches missed.">                if (!newInvokers.contains(entry.getValue())) {</span>
+<span class="nc bnc" id="L546" title="All 2 branches missed.">                    if (deleted == null) {</span>
+<span class="nc" id="L547">                        deleted = new ArrayList&lt;String&gt;();</span>
+                    }
+<span class="nc" id="L549">                    deleted.add(entry.getKey());</span>
+                }
+<span class="nc" id="L551">            }</span>
+        }
+
+<span class="nc bnc" id="L554" title="All 2 branches missed.">        if (deleted != null) {</span>
+<span class="nc bnc" id="L555" title="All 2 branches missed.">            for (String url : deleted) {</span>
+<span class="nc bnc" id="L556" title="All 2 branches missed.">                if (url != null) {</span>
+<span class="nc" id="L557">                    Invoker&lt;T&gt; invoker = oldUrlInvokerMap.remove(url);</span>
+<span class="nc bnc" id="L558" title="All 2 branches missed.">                    if (invoker != null) {</span>
+                        try {
+<span class="nc" id="L560">                            invoker.destroy();</span>
+<span class="nc bnc" id="L561" title="All 2 branches missed.">                            if (logger.isDebugEnabled()) {</span>
+<span class="nc" id="L562">                                logger.debug(&quot;destroy invoker[&quot; + invoker.getUrl() + &quot;] success. &quot;);</span>
+                            }
+<span class="nc" id="L564">                        } catch (Exception e) {</span>
+<span class="nc" id="L565">                            logger.warn(&quot;destroy invoker[&quot; + invoker.getUrl() + &quot;] faild. &quot; + e.getMessage(), e);</span>
+<span class="nc" id="L566">                        }</span>
+                    }
+                }
+<span class="nc" id="L569">            }</span>
+        }
+<span class="nc" id="L571">    }</span>
+
+    @Override
+    public List&lt;Invoker&lt;T&gt;&gt; doList(Invocation invocation) {
+<span class="nc bnc" id="L575" title="All 2 branches missed.">        if (forbidden) {</span>
+            // 1. No service provider 2. Service providers are disabled
+<span class="nc" id="L577">            throw new RpcException(RpcException.FORBIDDEN_EXCEPTION,</span>
+<span class="nc" id="L578">                    &quot;No provider available from registry &quot; + getUrl().getAddress() + &quot; for service &quot; + getConsumerUrl().getServiceKey() + &quot; on consumer &quot; + NetUtils.getLocalHost()</span>
+<span class="nc" id="L579">                            + &quot; use dubbo version &quot; + Version.getVersion() + &quot;, please check status of providers(disabled, not registered or in blacklist).&quot;);</span>
+        }
+<span class="nc" id="L581">        List&lt;Invoker&lt;T&gt;&gt; invokers = null;</span>
+<span class="nc" id="L582">        Map&lt;String, List&lt;Invoker&lt;T&gt;&gt;&gt; localMethodInvokerMap = this.methodInvokerMap; // local reference</span>
+<span class="nc bnc" id="L583" title="All 4 branches missed.">        if (localMethodInvokerMap != null &amp;&amp; localMethodInvokerMap.size() &gt; 0) {</span>
+<span class="nc" id="L584">            String methodName = RpcUtils.getMethodName(invocation);</span>
+<span class="nc" id="L585">            Object[] args = RpcUtils.getArguments(invocation);</span>
+<span class="nc bnc" id="L586" title="All 8 branches missed.">            if (args != null &amp;&amp; args.length &gt; 0 &amp;&amp; args[0] != null</span>
+<span class="nc bnc" id="L587" title="All 2 branches missed.">                    &amp;&amp; (args[0] instanceof String || args[0].getClass().isEnum())) {</span>
+<span class="nc" id="L588">                invokers = localMethodInvokerMap.get(methodName + &quot;.&quot; + args[0]); // The routing can be enumerated according to the first parameter</span>
+            }
+<span class="nc bnc" id="L590" title="All 2 branches missed.">            if (invokers == null) {</span>
+<span class="nc" id="L591">                invokers = localMethodInvokerMap.get(methodName);</span>
+            }
+<span class="nc bnc" id="L593" title="All 2 branches missed.">            if (invokers == null) {</span>
+<span class="nc" id="L594">                invokers = localMethodInvokerMap.get(Constants.ANY_VALUE);</span>
+            }
+        }
+<span class="nc bnc" id="L597" title="All 2 branches missed.">        return invokers == null ? new ArrayList&lt;Invoker&lt;T&gt;&gt;(0) : invokers;</span>
+    }
+
+    @Override
+    public Class&lt;T&gt; getInterface() {
+<span class="nc" id="L602">        return serviceType;</span>
+    }
+
+    @Override
+    public URL getUrl() {
+<span class="nc" id="L607">        return this.overrideDirectoryUrl;</span>
+    }
+
+    @Override
+    public boolean isAvailable() {
+<span class="nc bnc" id="L612" title="All 2 branches missed.">        if (isDestroyed()) {</span>
+<span class="nc" id="L613">            return false;</span>
+        }
+<span class="nc" id="L615">        Map&lt;String, Invoker&lt;T&gt;&gt; localUrlInvokerMap = urlInvokerMap;</span>
+<span class="nc bnc" id="L616" title="All 4 branches missed.">        if (localUrlInvokerMap != null &amp;&amp; localUrlInvokerMap.size() &gt; 0) {</span>
+<span class="nc bnc" id="L617" title="All 2 branches missed.">            for (Invoker&lt;T&gt; invoker : new ArrayList&lt;Invoker&lt;T&gt;&gt;(localUrlInvokerMap.values())) {</span>
+<span class="nc bnc" id="L618" title="All 2 branches missed.">                if (invoker.isAvailable()) {</span>
+<span class="nc" id="L619">                    return true;</span>
+                }
+<span class="nc" id="L621">            }</span>
+        }
+<span class="nc" id="L623">        return false;</span>
+    }
+
+    /**
+     * Haomin: added for test purpose
+     */
+    public Map&lt;String, Invoker&lt;T&gt;&gt; getUrlInvokerMap() {
+<span class="nc" id="L630">        return urlInvokerMap;</span>
+    }
+
+    /**
+     * Haomin: added for test purpose
+     */
+    public Map&lt;String, List&lt;Invoker&lt;T&gt;&gt;&gt; getMethodInvokerMap() {
+<span class="nc" id="L637">        return methodInvokerMap;</span>
+    }
+
+    private static class InvokerComparator implements Comparator&lt;Invoker&lt;?&gt;&gt; {
+
+<span class="nc" id="L642">        private static final InvokerComparator comparator = new InvokerComparator();</span>
+
+        private InvokerComparator() {
+        }
+
+        public static InvokerComparator getComparator() {
+<span class="nc" id="L648">            return comparator;</span>
+        }
+
+        @Override
+        public int compare(Invoker&lt;?&gt; o1, Invoker&lt;?&gt; o2) {
+<span class="nc" id="L653">            return o1.getUrl().toString().compareTo(o2.getUrl().toString());</span>
+        }
+
+    }
+
+    /**
+     * The delegate class, which is mainly used to store the URL address sent by the registry,and can be reassembled on the basis of providerURL queryMap overrideMap for re-refer.
+     *
+     * @param &lt;T&gt;
+     */
+    private static class InvokerDelegate&lt;T&gt; extends InvokerWrapper&lt;T&gt; {
+        private URL providerUrl;
+
+        public InvokerDelegate(Invoker&lt;T&gt; invoker, URL url, URL providerUrl) {
+<span class="nc" id="L667">            super(invoker, url);</span>
+<span class="nc" id="L668">            this.providerUrl = providerUrl;</span>
+<span class="nc" id="L669">        }</span>
+
+        public URL getProviderUrl() {
+<span class="nc" id="L672">            return providerUrl;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>

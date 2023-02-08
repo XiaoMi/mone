@@ -37,7 +37,11 @@ public class LabelService {
     /**
      * 第三方需要开的端口
      */
+    public static final String PORTS = "ports";
+
     public static final String THIRD_PORT = "third_port";
+
+    public static final String FOUR_PORT = "four_port";
 
     public static final String LOG_PATH = "log_path";
 
@@ -46,6 +50,14 @@ public class LabelService {
     public static final String IMAGE_NAME = "image_name";
 
     public static final String NET_MODULE = "net_module";
+
+    public static final String K8S = "k8s";
+
+    public static final String CPUS = "cpus";
+
+    public static final String KEYCENTER_PRIVATE_SID = "kc_private_sid";
+
+    public static final String PID_MODE = "pid_mode";
 
     /**
      * 是否支持远程debug
@@ -68,6 +80,11 @@ public class LabelService {
      * 用来挂载磁盘
      */
     public static final String VOLUME = "volume";
+
+    /**
+     * 添加代码覆盖测试探针
+     */
+    public static final String JACOCO_PORT = "jacoco_port";
 
 
     /**
@@ -106,7 +123,7 @@ public class LabelService {
 
     public String getLabelValue(String labels, String key, String defaultValue) {
         if (StringUtils.isEmpty(labels) || StringUtils.isEmpty(key)) {
-            return "";
+            return defaultValue;
         }
         return Arrays.stream(labels.split(",")).map(it -> it.split("=")).filter(it -> it[0].equals(key)).map(it -> it[1]).findAny().orElse(defaultValue);
     }

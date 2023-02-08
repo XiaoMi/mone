@@ -7,7 +7,6 @@ dependency-reduced-pom.xml
 .idea/
 *.iml
 logs/
-log/
 .project
 .settings/
 .tags*
@@ -18,5 +17,6 @@ nohup*
 *.log
 *.swp
 *.pyc
+*.class
 .sbtserver*
 

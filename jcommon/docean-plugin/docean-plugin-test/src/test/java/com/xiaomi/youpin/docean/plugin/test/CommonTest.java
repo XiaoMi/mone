@@ -16,6 +16,11 @@
 
 package com.xiaomi.youpin.docean.plugin.test;
 
+import com.google.common.base.Throwables;
+import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
+import com.mysql.jdbc.exceptions.MySQLDataException;
+import com.xiaomi.youpin.docean.plugin.test.bo.TEvent;
 import net.sf.cglib.reflect.FastClass;
 import net.sf.cglib.reflect.FastMethod;
 import org.junit.Test;
@@ -24,12 +29,47 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Arrays;
 
 /**
  * @author goodjava@qq.com
  * @date 2020/7/4
  */
 public class CommonTest {
+
+    @Subscribe
+    public void onMessageEvent(TEvent event){
+        System.out.println(event);
+    }
+
+    @Test
+    public void testException() {
+        MySQLDataException ex = new MySQLDataException("mysql error");
+        RuntimeException re = new RuntimeException(ex);
+        RuntimeException re2 = new RuntimeException(re);
+
+        Throwable v = Throwables.getRootCause(re2);
+        System.out.println(v);
+
+        RuntimeException re3 = new RuntimeException(v.getMessage());
+        re3.setStackTrace(v.getStackTrace());
+        System.out.println(re3);
+    }
+
+    @Test
+    public void testSplit() {
+        String abc = "arnbrzz";
+        Arrays.stream(abc.split("rn|r")).forEach(it->{
+            System.out.println(it);
+        });
+    }
+
+    @Test
+    public void testEventBus() {
+        EventBus eb = new EventBus();
+        eb.register(this);
+        eb.post(new TEvent());
+    }
 
 
     @Test

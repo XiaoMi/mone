@@ -19,9 +19,11 @@ package com.xiaomi.youpin.tesla.agent.common;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
+import com.xiaomi.data.push.common.SafeRun;
 import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
 import com.xiaomi.youpin.docker.YpDockerClient;
 import com.xiaomi.youpin.tesla.agent.po.DeployInfo;
+import com.xiaomi.youpin.tesla.agent.po.DockerContext;
 import com.xiaomi.youpin.tesla.agent.po.DockerReq;
 import com.xiaomi.youpin.tesla.agent.po.NukeRes;
 import lombok.extern.slf4j.Slf4j;
@@ -40,39 +42,39 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DockerNuke {
 
-    public void shutdown(Stopwatch sw, DockerReq req, DeployInfo deployInfo, Runnable notify) {
+    public void shutdown(DockerContext context, Stopwatch sw, DockerReq req, DeployInfo deployInfo, Runnable notify) {
         log.info("shutdown begin id:{}", deployInfo.getId());
         deployInfo.setStep(DeployInfo.DockerStep.stop.ordinal());
+
+        new DockerSideCar().stop(context, req, deployInfo);
+
         log.info("stop continer name:{}", deployInfo.getName());
         List<String> list = YpDockerClient.ins().listContainers(Lists.newArrayList(), false)
                 .stream()
                 .filter(it -> CommonUtils.matchImage(deployInfo.getName(), it.getImage())).map(it -> it.getId())
                 .collect(Collectors.toList());
         log.info("container:{} ", list);
-        list.forEach(it -> Safe.execute(() -> YpDockerClient.ins().stopContainer(it)));
+        list.forEach(it -> Safe.execute(() -> YpDockerClient.ins().stopContainer(it, req.getStopTimeout())));
         notify.run();
         deployInfo.setState(DeployInfo.DeployState.stop.ordinal());
         log.info("shutdown finish id:{}", deployInfo.getId());
     }
 
 
-    public void nuke(Stopwatch sw, DockerReq req, RemotingCommand response, DeployInfo deployInfo, ExecutorService dockerProcessorPool, Runnable notify) {
+    public void nuke(DockerContext context, Stopwatch sw, DockerReq req, RemotingCommand response, DeployInfo deployInfo, ExecutorService dockerProcessorPool, Runnable notify) {
         log.info("nuke:{} begin", deployInfo.getId());
         NukeRes nukeRes = new NukeRes();
         nukeRes.setName(req.getJarName());
         log.info("nuke {}", new Gson().toJson(req));
-        Safe.execute(() -> shutdown(sw, req, deployInfo, notify));
-        if (req.getServicePath().startsWith("/homw/work/")) {
-            dockerProcessorPool.submit(() -> Safe.execute(() -> FileUtils.forceDelete(new File(req.getServicePath()))));
-        }
-        if (req.getLogPath().startsWith("xxxx/log/")) {
-            dockerProcessorPool.submit(() -> Safe.execute(() -> FileUtils.forceDelete(new File(req.getLogPath()))));
-        }
+        Safe.execute(() -> shutdown(context, sw, req, deployInfo, notify));
         try {
             String name = deployInfo.getName();
+            new DockerSideCar().remove(deployInfo, dockerProcessorPool);
             List<String> cids = YpDockerClient.ins().listContainers(Lists.newArrayList(), true).stream()
                     .filter(it -> CommonUtils.matchImage(name, it.getImage()))
                     .map(it -> it.getId()).collect(Collectors.toList());
+
+            //删除容器
             cids.stream().forEach(it -> {
                 dockerProcessorPool.submit(() -> YpDockerClient.ins().rm(it));
             });
@@ -86,6 +88,9 @@ public class DockerNuke {
                         }
                     })
                     .map(it -> it.getId()).collect(Collectors.toList());
+            //删除网桥
+            SafeRun.run(() -> YpDockerClient.ins().removeNetwork("bridge_" + req.getEnvId()));
+            //删除镜像
             iids.stream().forEach(it -> dockerProcessorPool.submit(() -> YpDockerClient.ins().rmi(it)));
             response.setBody(new Gson().toJson(nukeRes).getBytes());
             deployInfo.setState(DeployInfo.DeployState.nuke.ordinal());

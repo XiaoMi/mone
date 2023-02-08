@@ -16,6 +16,7 @@
 
 package com.xiaomi.youpin.docean.config;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
@@ -24,6 +25,7 @@ import lombok.Data;
  */
 @Data
 @Builder
+@AllArgsConstructor
 public class HttpServerConfig {
 
     private boolean ssl;
@@ -31,6 +33,19 @@ public class HttpServerConfig {
     private boolean websocket;
 
     private int port;
+
+    /**
+     * 允许上传文件
+     */
+    private boolean upload;
+
+    /**
+     * 上传的路径
+     */
+    private String uploadDir;
+
+    private boolean userWs;
+
 
     public static int HTTP_POOL_SIZE = 500;
     public static int HTTP_POOL_QUEUE_SIZE = 1000;

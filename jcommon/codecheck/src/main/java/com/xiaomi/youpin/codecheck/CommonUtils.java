@@ -16,6 +16,8 @@
 
 package com.xiaomi.youpin.codecheck;
 
+import com.xiaomi.youpin.codecheck.po.CheckResult;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +50,38 @@ public class CommonUtils {
         return diff;
     }
 
+    public static CheckResult checkLog4jVersion(String curVersion, String targetVersion) throws Exception {
+        if (curVersion == null || targetVersion == null) {
+            throw new Exception("checkVersion error:illegal params.");
+        }
+        if (!curVersion.contains("rc")) {
+            int diff = compareVersion(curVersion, targetVersion);
+            if (diff >= 0) {
+                return CheckResult.getInfoRes("log4j", "", "");
+            }
+        }
+        String[] curVersionArrayByDot = curVersion.split("\\.");
+        //2.x.x版本必须是2.15.0-rc2以上
+        if ("2".equals(curVersionArrayByDot[0])) {
+            if (curVersion.contains("-")) {
+                String[] curVersionArrayByRod = curVersion.split("-");
+                if (curVersionArrayByRod.length != 2) {
+                    return CheckResult.getErrorRes("log4j", "unknown version of log4j,please update your log4j version", "无法解析的log4j版本");
+                }
+                //类似2.15.1-rc1
+                int diff = compareVersion(curVersionArrayByRod[0],targetVersion);
+                if (diff >=0){
+                    return CheckResult.getInfoRes("log4j", "", "");
+                }
+                int version = Integer.parseInt(curVersionArrayByRod[1].substring(2));
+                if (version >= 2) {
+                    return CheckResult.getInfoRes("log4j", "", "");
+                }
+            }
+            return CheckResult.getErrorRes("log4j", "warn version of log4j,please update your log4j version", "log4j版本安全漏洞，请立即更新至2.15.0-rc2以上");
+        }
+        return CheckResult.getErrorRes("log4j", "unknown version of log4j,please update your log4j version", "无法解析的log4j版本");
+    }
 
     public static List<File> searchFiles(File folder, final String keyword) {
         List<File> result = new ArrayList<File>();
@@ -77,5 +111,39 @@ public class CommonUtils {
             }
         }
         return result;
+    }
+
+    public static List<File> searchFiles(File folder, final List<String> keywords) {
+        List<File> result = new ArrayList<>();
+        if (folder.isFile()) {
+            result.add(folder);
+        }
+        File[] subFolders = folder.listFiles(
+                (File file) -> {
+                    if (file.isDirectory()) {
+                        return true;
+                    }
+                    return anyEndWith(file.getName().toLowerCase(), keywords);
+                }
+        );
+        if (subFolders != null) {
+            for (File file : subFolders) {
+                if (file.isFile()) {
+                    // 如果是文件则将文件添加到结果列表中
+                    result.add(file);
+                } else {
+                    // 如果是文件夹，则递归调用本方法，然后把所有的文件加到结果列表中
+                    result.addAll(searchFiles(file, keywords));
+                }
+            }
+        }
+        return result;
+    }
+
+    private static boolean anyEndWith(String fileName, List<String> keywords){
+        if(fileName == null || keywords == null || keywords.isEmpty()){
+            return false;
+        }
+        return keywords.stream().anyMatch(fileName::endsWith);
     }
 }

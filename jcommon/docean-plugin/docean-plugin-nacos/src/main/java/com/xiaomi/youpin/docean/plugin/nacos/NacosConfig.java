@@ -18,6 +18,7 @@ package com.xiaomi.youpin.docean.plugin.nacos;
 
 import com.alibaba.nacos.api.NacosFactory;
 import com.alibaba.nacos.api.config.ConfigService;
+import com.alibaba.nacos.api.config.listener.Listener;
 import com.alibaba.nacos.api.exception.NacosException;
 import lombok.SneakyThrows;
 import org.slf4j.Logger;
@@ -60,6 +61,22 @@ public class NacosConfig {
         }
     }
 
+    public void addListener(String dataId, String group, Listener listener) {
+        try {
+            configService.addListener(dataId, group, listener);
+        } catch (Exception e) {
+            logger.error("[NacosConfig.addListener] fail to add config listener, serverAddr:{}, dataId: {}, group: {}, msg: {}", serverAddr, dataId, group, e.getMessage());
+        }
+    }
+
+    public void removeListener(String dataId, String group, Listener listener) {
+        try {
+            configService.removeListener(dataId, group, listener);
+        } catch (Exception e) {
+            logger.error("[NacosConfig.addListener] fail to remove config listener, serverAddr:{}, dataId: {}, group: {}, msg: {}", serverAddr, dataId, group, e.getMessage());
+        }
+    }
+
     /**
      * 底层是http的,其实没什么可关闭的
      *
@@ -94,7 +111,7 @@ public class NacosConfig {
         try {
             return getConfigMap();
         } catch (Exception e) {
-            logger.error("[NacosConfig.getConfig] fail to get config, serverAddr:{}, dataId: {}, group: {}, msg: {}", serverAddr, dataId, group, e.getMessage());
+            logger.error(String.format("[NacosConfig.getConfig] fail to get config, serverAddr:%s, dataId: %s, group: %s", serverAddr, dataId, group), e);
             return new HashMap<>();
         }
     }
@@ -108,7 +125,7 @@ public class NacosConfig {
         Map<String, String> configMap = new HashMap<>();
 
         if (content != null && content.length() != 0) {
-            String[] perConfig = content.split("\n");
+            String[] perConfig = content.split("\n|\r\n");
             for (String it : perConfig) {
                 if (it == null || it.length() == 0 || it.startsWith("#")) {
                     continue;

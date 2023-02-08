@@ -47,8 +47,7 @@ public class YpDockerClient {
         log.info("docker client version: {}", new Version());
         // build real docker client
         DefaultDockerClientConfig.Builder config
-                = DefaultDockerClientConfig.createDefaultConfigBuilder()
-                .withDockerTlsVerify(false);
+                = DefaultDockerClientConfig.createDefaultConfigBuilder();
         dockerClient = DockerClientBuilder
                 .getInstance(config)
                 .build();
@@ -71,7 +70,11 @@ public class YpDockerClient {
 
     // pull docker image
     public PullImageResultCallback pullImage(String name, PullImageResultCallback callback) {
-        return dockerClient.pullImageCmd(name).exec(callback);
+        return dockerClient.pullImageCmd(name).withAuthConfig(authConfig).exec(callback);
+    }
+
+    public PullImageResultCallback pullImageWithAuth(String name, PullImageResultCallback callback) {
+        return dockerClient.pullImageCmd(name).withAuthConfig(authConfig).exec(callback);
     }
 
     // build docker image
@@ -132,7 +135,7 @@ public class YpDockerClient {
     public String logContainerCmd(String containerId, Integer tailNum) throws InterruptedException {
         StringBuffer sb = new StringBuffer();
         dockerClient.logContainerCmd(containerId)
-                .withStdOut(true)
+                .withStdOut(true).withStdErr(true)
                 .withTail(tailNum)
                 .exec(new LogContainerResultCallback() {
                     @Override
@@ -148,13 +151,23 @@ public class YpDockerClient {
      * @param name
      * @return
      */
-    public CreateNetworkResponse createNetwork(String name) {
+    public CreateNetworkResponse createNetwork(String name, String subnet) {
+        Network.Ipam ipam = new Network.Ipam();
+        ipam.withConfig(new Network.Ipam.Config().withSubnet(subnet));
         CreateNetworkResponse createNetworkResponse = dockerClient
                 .createNetworkCmd()
                 .withName(name)
+                .withIpam(ipam)
                 .withCheckDuplicate(true)
                 .exec();
         return createNetworkResponse;
+    }
+
+    public void removeNetwork(String name) {
+        List<Network> list = listNetwork(name);
+        if (list.size() > 0) {
+            dockerClient.removeNetworkCmd(list.get(0).getId()).exec();
+        }
     }
 
     /**
@@ -164,6 +177,20 @@ public class YpDockerClient {
      */
     public List<Network> listNetwork(String name) {
         return dockerClient.listNetworksCmd().withNameFilter(name).exec();
+    }
+
+    public List<Network> listNetwork() {
+        return dockerClient.listNetworksCmd().exec();
+    }
+
+    public Set<String> listSubnet() {
+        Set<String> set = new HashSet<>();
+        listNetwork().forEach(it -> {
+            it.getIpam().getConfig().forEach(it2 -> {
+                set.add(it2.getSubnet());
+            });
+        });
+        return set;
     }
 
     public void connectToNetwork(String containerId, String networkId) {
@@ -222,6 +249,10 @@ public class YpDockerClient {
         dockerClient.stopContainerCmd(containerId).exec();
     }
 
+    public void stopContainer(String containerId, Integer timeout) {
+        dockerClient.stopContainerCmd(containerId).withTimeout(timeout).exec();
+    }
+
 
     /**
      * create container
@@ -269,10 +300,11 @@ public class YpDockerClient {
                 .withEnv(env).exec().getId();
     }
 
+
     /**
      * create docker container
      * @param image
-     * @param hostName  bridge host
+     * @param hostName     bridge host
      * @param netWorkMode
      * @param name
      * @param limit
@@ -282,61 +314,58 @@ public class YpDockerClient {
      * @param env
      * @return
      */
-    public String createContainer(String image, String hostName,String netWorkMode, String name, DockerLimit limit, List<ExposedPort> exposedPorts, List<PortBinding> portBindings, List<Bind> binds, String... env) {
-        CreateContainerCmd cmd = dockerClient.createContainerCmd(image)
-                //Number of CPUs used
-                .withCpusetCpus(limit.getCpu());
+    public String createContainer(String image, String hostName, String netWorkMode, String name, DockerLimit limit, List<ExposedPort> exposedPorts, List<PortBinding> portBindings, String pidMode, List<Bind> binds, String... env) {
+        return createContainer(image,hostName,netWorkMode,name,limit,exposedPorts,portBindings,pidMode,binds,Lists.newArrayList(),null, env);
+    }
+
+    public String createContainer(String image, String hostName, String netWorkMode, String name, DockerLimit limit, List<ExposedPort> exposedPorts, List<PortBinding> portBindings, String pidMode, List<Bind> binds, List<String> dns, Capability capability, String... env) {
+        CreateContainerCmd cmd = dockerClient.createContainerCmd(image);
+
+        //Do not bind cpus (knowledge specifies the number of cpus)
+        if (limit.isUseCpus()) {
+            long period = 100000L;
+            cmd.getHostConfig().withCpuPeriod(period);
+            cmd.getHostConfig().withCpuQuota((long) (period * limit.getCpuNum()));
+        } else {
+            //How many cpus are used
+            cmd.withCpusetCpus(limit.getCpu());
+        }
+
         if (limit.getMem() > 0) {
             //Number of memory used
             cmd.withMemory(limit.getMem());
+        }
+        log.info("image:{} capability:{}", image, capability);
+        if (capability!=null){
+            cmd.withCapAdd(capability);
         }
 
         //io weigth
-        return cmd.withBlkioWeight(limit.getBlkioWeight())
+        CreateContainerCmd ccc = cmd.withBlkioWeight(limit.getBlkioWeight())
                 .withRestartPolicy(RestartPolicy.onFailureRestart(3))
                 .withName(name)
                 .withExposedPorts(exposedPorts)
                 .withPortBindings(portBindings)
                 .withBinds(binds)
                 .withHostName(hostName)
+                .withPidMode(pidMode)
                 //bridge host
                 .withNetworkMode(netWorkMode)
-                .withEnv(env).exec().getId();
-    }
+                .withEnv(env);
 
-    /**
-     * create container
-     * @param image
-     * @param hostName  bridge host
-     * @param netWorkMode
-     * @param name
-     * @param limit
-     * @param exposedPorts
-     * @param portBindings
-     * @param binds
-     * @param env
-     * @return
-     */
-    public String createContainer(String image, String hostName,String netWorkMode, String name, DockerLimit limit, List<ExposedPort> exposedPorts, List<PortBinding> portBindings, List<Bind> binds, String... env) {
-        CreateContainerCmd cmd = dockerClient.createContainerCmd(image)
-                //Number of CPUs used
-                .withCpusetCpus(limit.getCpu());
-        if (limit.getMem() > 0) {
-            //Number of memory used
-            cmd.withMemory(limit.getMem());
+        //set dns
+        if (dns.size() > 0) {
+            log.info("dns:{}", dns);
+            ccc.withDns(dns);
+            ccc.withDnsSearch(new String[]{});
+            ccc.getHostConfig().withDnsOptions(Lists.newArrayList());
         }
 
-        //io weight
-        return cmd.withBlkioWeight(limit.getBlkioWeight())
-                .withRestartPolicy(RestartPolicy.onFailureRestart(3))
-                .withName(name)
-                .withExposedPorts(exposedPorts)
-                .withPortBindings(portBindings)
-                .withBinds(binds)
-                .withHostName(hostName)
-                //bridge host
-                .withNetworkMode(netWorkMode)
-                .withEnv(env).exec().getId();
+        return ccc.exec().getId();
+    }
+
+    public String createContainer(String image, String hostName, String netWorkMode, String name, DockerLimit limit, List<ExposedPort> exposedPorts, List<PortBinding> portBindings, List<Bind> binds, String... env) {
+        return createContainer(image, hostName, netWorkMode, name, limit, exposedPorts, portBindings, "", binds, env);
     }
 
     /**
@@ -356,6 +385,34 @@ public class YpDockerClient {
                 }).awaitImageId();
     }
 
+    public BuildImageResultCallback buildWithAuth(String file, String tag) throws InterruptedException {
+        AuthConfigurations authConfigurations = new AuthConfigurations();
+        authConfigurations.addConfig(authConfig);
+        return dockerClient.buildImageCmd(new File(file))
+                .withBuildAuthConfigs(authConfigurations)
+                .withTag(tag)
+                .exec(new BuildImageResultCallback() {
+                    @Override
+                    public void onNext(BuildResponseItem item) {
+                        log.info("item:{}", item.getImageId());
+                        System.out.println(item);
+                    }
+                }).awaitCompletion();
+    }
+
+    public BuildImageResultCallback build(String file, String tag, AuthConfigurations authConfigurations) throws InterruptedException {
+         return dockerClient.buildImageCmd(new File(file))
+                 .withBuildAuthConfigs(authConfigurations)
+                 .withTag(tag)
+                .exec(new BuildImageResultCallback() {
+                    @Override
+                    public void onNext(BuildResponseItem item) {
+                        log.info("item:{}", item.getImageId());
+                        System.out.println(item);
+                    }
+                }).awaitCompletion();
+    }
+
     public String exec(String containerId, String cmd, long timeout) throws InterruptedException {
         ExecCreateCmdResponse res = dockerClient.execCreateCmd(containerId)
                 .withAttachStdout(true)
@@ -367,7 +424,7 @@ public class YpDockerClient {
             dockerClient.execStartCmd(res.getId()).exec(
                     new ExecStartResultCallback(os, os)).awaitCompletion(timeout, TimeUnit.MILLISECONDS);
 
-            return new String(os.toByteArray());
+            return os.toString();
 
         } finally {
             try {
@@ -377,6 +434,26 @@ public class YpDockerClient {
         }
     }
 
+    public String exec(String containerId, List<String> cmdList, long timeout) throws InterruptedException {
+        ExecCreateCmdResponse res = dockerClient.execCreateCmd(containerId)
+                .withAttachStdout(true)
+                .withAttachStderr(true)
+                .withCmd(cmdList.toArray(new String[0])).exec();
+
+        ByteArrayOutputStream os = new ByteArrayOutputStream();
+        try {
+            dockerClient.execStartCmd(res.getId()).exec(
+                    new ExecStartResultCallback(os, os)).awaitCompletion(timeout, TimeUnit.MILLISECONDS);
+
+            return os.toString();
+
+        } finally {
+            try {
+                os.close();
+            } catch (IOException e) {
+            }
+        }
+    }
 
     public InspectContainerResponse inspectContainer(String containerId) {
         InspectContainerResponse res = dockerClient.inspectContainerCmd(containerId).exec();

@@ -23,6 +23,7 @@ import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.Enumeration;
+import java.util.function.Predicate;
 
 /**
  * Created by zhangzhiyong on 30/05/2018.
@@ -31,7 +32,7 @@ public abstract class Utils {
 
     private static final Logger logger = LoggerFactory.getLogger(Utils.class);
 
-    public static String getIp() {
+    public static String getIp(Predicate<String> predicate) {
         try {
             Enumeration allNetInterfaces = NetworkInterface.getNetworkInterfaces();
             InetAddress ip = null;
@@ -45,6 +46,9 @@ public abstract class Utils {
                         if (ipStr.startsWith("172.17")) {
                             continue;
                         }
+                        if (predicate.test(ipStr)) {
+                            continue;
+                        }
                         return ip.getHostAddress();
                     }
                 }
@@ -54,6 +58,11 @@ public abstract class Utils {
             return "";
         }
         return "";
+    }
+
+
+    public static String getIp() {
+        return getIp((str) -> false);
     }
 
 }

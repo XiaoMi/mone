@@ -1,0 +1,927 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>Bytes.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-remoting-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.common.io</a> &gt; <span class="el_source">Bytes.java</span></div><h1>Bytes.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.common.io;
+
+import org.apache.dubbo.common.utils.IOUtils;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.zip.DeflaterOutputStream;
+import java.util.zip.InflaterInputStream;
+
+/**
+ * CodecUtils.
+ */
+
+public class Bytes {
+    private static final String C64 = &quot;ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=&quot;; //default base64.
+
+<span class="nc" id="L40">    private static final char[] BASE16 = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'}, BASE64 = C64.toCharArray();</span>
+
+    private static final int MASK4 = 0x0f, MASK6 = 0x3f, MASK8 = 0xff;
+
+<span class="nc" id="L44">    private static final Map&lt;Integer, byte[]&gt; DECODE_TABLE_MAP = new ConcurrentHashMap&lt;Integer, byte[]&gt;();</span>
+
+<span class="nc" id="L46">    private static ThreadLocal&lt;MessageDigest&gt; MD = new ThreadLocal&lt;MessageDigest&gt;();</span>
+
+    private Bytes() {
+    }
+
+    /**
+     * byte array copy.
+     *
+     * @param src    src.
+     * @param length new length.
+     * @return new byte array.
+     */
+    public static byte[] copyOf(byte[] src, int length) {
+<span class="nc" id="L59">        byte[] dest = new byte[length];</span>
+<span class="nc" id="L60">        System.arraycopy(src, 0, dest, 0, Math.min(src.length, length));</span>
+<span class="nc" id="L61">        return dest;</span>
+    }
+
+    /**
+     * to byte array.
+     *
+     * @param v value.
+     * @return byte[].
+     */
+    public static byte[] short2bytes(short v) {
+<span class="nc" id="L71">        byte[] ret = {0, 0};</span>
+<span class="nc" id="L72">        short2bytes(v, ret);</span>
+<span class="nc" id="L73">        return ret;</span>
+    }
+
+    /**
+     * to byte array.
+     *
+     * @param v value.
+     * @param b byte array.
+     */
+    public static void short2bytes(short v, byte[] b) {
+<span class="nc" id="L83">        short2bytes(v, b, 0);</span>
+<span class="nc" id="L84">    }</span>
+
+    /**
+     * to byte array.
+     *
+     * @param v value.
+     * @param b byte array.
+     */
+    public static void short2bytes(short v, byte[] b, int off) {
+<span class="nc" id="L93">        b[off + 1] = (byte) v;</span>
+<span class="nc" id="L94">        b[off + 0] = (byte) (v &gt;&gt;&gt; 8);</span>
+<span class="nc" id="L95">    }</span>
+
+    /**
+     * to byte array.
+     *
+     * @param v value.
+     * @return byte[].
+     */
+    public static byte[] int2bytes(int v) {
+<span class="nc" id="L104">        byte[] ret = {0, 0, 0, 0};</span>
+<span class="nc" id="L105">        int2bytes(v, ret);</span>
+<span class="nc" id="L106">        return ret;</span>
+    }
+
+    /**
+     * to byte array.
+     *
+     * @param v value.
+     * @param b byte array.
+     */
+    public static void int2bytes(int v, byte[] b) {
+<span class="nc" id="L116">        int2bytes(v, b, 0);</span>
+<span class="nc" id="L117">    }</span>
+
+    /**
+     * to byte array.
+     *
+     * @param v   value.
+     * @param b   byte array.
+     * @param off array offset.
+     */
+    public static void int2bytes(int v, byte[] b, int off) {
+<span class="nc" id="L127">        b[off + 3] = (byte) v;</span>
+<span class="nc" id="L128">        b[off + 2] = (byte) (v &gt;&gt;&gt; 8);</span>
+<span class="nc" id="L129">        b[off + 1] = (byte) (v &gt;&gt;&gt; 16);</span>
+<span class="nc" id="L130">        b[off + 0] = (byte) (v &gt;&gt;&gt; 24);</span>
+<span class="nc" id="L131">    }</span>
+
+    /**
+     * to byte array.
+     *
+     * @param v value.
+     * @return byte[].
+     */
+    public static byte[] float2bytes(float v) {
+<span class="nc" id="L140">        byte[] ret = {0, 0, 0, 0};</span>
+<span class="nc" id="L141">        float2bytes(v, ret);</span>
+<span class="nc" id="L142">        return ret;</span>
+    }
+
+    /**
+     * to byte array.
+     *
+     * @param v value.
+     * @param b byte array.
+     */
+    public static void float2bytes(float v, byte[] b) {
+<span class="nc" id="L152">        float2bytes(v, b, 0);</span>
+<span class="nc" id="L153">    }</span>
+
+    /**
+     * to byte array.
+     *
+     * @param v   value.
+     * @param b   byte array.
+     * @param off array offset.
+     */
+    public static void float2bytes(float v, byte[] b, int off) {
+<span class="nc" id="L163">        int i = Float.floatToIntBits(v);</span>
+<span class="nc" id="L164">        b[off + 3] = (byte) i;</span>
+<span class="nc" id="L165">        b[off + 2] = (byte) (i &gt;&gt;&gt; 8);</span>
+<span class="nc" id="L166">        b[off + 1] = (byte) (i &gt;&gt;&gt; 16);</span>
+<span class="nc" id="L167">        b[off + 0] = (byte) (i &gt;&gt;&gt; 24);</span>
+<span class="nc" id="L168">    }</span>
+
+    /**
+     * to byte array.
+     *
+     * @param v value.
+     * @return byte[].
+     */
+    public static byte[] long2bytes(long v) {
+<span class="nc" id="L177">        byte[] ret = {0, 0, 0, 0, 0, 0, 0, 0};</span>
+<span class="nc" id="L178">        long2bytes(v, ret);</span>
+<span class="nc" id="L179">        return ret;</span>
+    }
+
+    /**
+     * to byte array.
+     *
+     * @param v value.
+     * @param b byte array.
+     */
+    public static void long2bytes(long v, byte[] b) {
+<span class="nc" id="L189">        long2bytes(v, b, 0);</span>
+<span class="nc" id="L190">    }</span>
+
+    /**
+     * to byte array.
+     *
+     * @param v   value.
+     * @param b   byte array.
+     * @param off array offset.
+     */
+    public static void long2bytes(long v, byte[] b, int off) {
+<span class="nc" id="L200">        b[off + 7] = (byte) v;</span>
+<span class="nc" id="L201">        b[off + 6] = (byte) (v &gt;&gt;&gt; 8);</span>
+<span class="nc" id="L202">        b[off + 5] = (byte) (v &gt;&gt;&gt; 16);</span>
+<span class="nc" id="L203">        b[off + 4] = (byte) (v &gt;&gt;&gt; 24);</span>
+<span class="nc" id="L204">        b[off + 3] = (byte) (v &gt;&gt;&gt; 32);</span>
+<span class="nc" id="L205">        b[off + 2] = (byte) (v &gt;&gt;&gt; 40);</span>
+<span class="nc" id="L206">        b[off + 1] = (byte) (v &gt;&gt;&gt; 48);</span>
+<span class="nc" id="L207">        b[off + 0] = (byte) (v &gt;&gt;&gt; 56);</span>
+<span class="nc" id="L208">    }</span>
+
+    /**
+     * to byte array.
+     *
+     * @param v value.
+     * @return byte[].
+     */
+    public static byte[] double2bytes(double v) {
+<span class="nc" id="L217">        byte[] ret = {0, 0, 0, 0, 0, 0, 0, 0};</span>
+<span class="nc" id="L218">        double2bytes(v, ret);</span>
+<span class="nc" id="L219">        return ret;</span>
+    }
+
+    /**
+     * to byte array.
+     *
+     * @param v value.
+     * @param b byte array.
+     */
+    public static void double2bytes(double v, byte[] b) {
+<span class="nc" id="L229">        double2bytes(v, b, 0);</span>
+<span class="nc" id="L230">    }</span>
+
+    /**
+     * to byte array.
+     *
+     * @param v   value.
+     * @param b   byte array.
+     * @param off array offset.
+     */
+    public static void double2bytes(double v, byte[] b, int off) {
+<span class="nc" id="L240">        long j = Double.doubleToLongBits(v);</span>
+<span class="nc" id="L241">        b[off + 7] = (byte) j;</span>
+<span class="nc" id="L242">        b[off + 6] = (byte) (j &gt;&gt;&gt; 8);</span>
+<span class="nc" id="L243">        b[off + 5] = (byte) (j &gt;&gt;&gt; 16);</span>
+<span class="nc" id="L244">        b[off + 4] = (byte) (j &gt;&gt;&gt; 24);</span>
+<span class="nc" id="L245">        b[off + 3] = (byte) (j &gt;&gt;&gt; 32);</span>
+<span class="nc" id="L246">        b[off + 2] = (byte) (j &gt;&gt;&gt; 40);</span>
+<span class="nc" id="L247">        b[off + 1] = (byte) (j &gt;&gt;&gt; 48);</span>
+<span class="nc" id="L248">        b[off + 0] = (byte) (j &gt;&gt;&gt; 56);</span>
+<span class="nc" id="L249">    }</span>
+
+    /**
+     * to short.
+     *
+     * @param b byte array.
+     * @return short.
+     */
+    public static short bytes2short(byte[] b) {
+<span class="nc" id="L258">        return bytes2short(b, 0);</span>
+    }
+
+    /**
+     * to short.
+     *
+     * @param b   byte array.
+     * @param off offset.
+     * @return short.
+     */
+    public static short bytes2short(byte[] b, int off) {
+<span class="nc" id="L269">        return (short) (((b[off + 1] &amp; 0xFF) &lt;&lt; 0) +</span>
+                ((b[off + 0]) &lt;&lt; 8));
+    }
+
+    /**
+     * to int.
+     *
+     * @param b byte array.
+     * @return int.
+     */
+    public static int bytes2int(byte[] b) {
+<span class="nc" id="L280">        return bytes2int(b, 0);</span>
+    }
+
+    /**
+     * to int.
+     *
+     * @param b   byte array.
+     * @param off offset.
+     * @return int.
+     */
+    public static int bytes2int(byte[] b, int off) {
+<span class="nc" id="L291">        return ((b[off + 3] &amp; 0xFF) &lt;&lt; 0) +</span>
+                ((b[off + 2] &amp; 0xFF) &lt;&lt; 8) +
+                ((b[off + 1] &amp; 0xFF) &lt;&lt; 16) +
+                ((b[off + 0]) &lt;&lt; 24);
+    }
+
+    /**
+     * to int.
+     *
+     * @param b byte array.
+     * @return int.
+     */
+    public static float bytes2float(byte[] b) {
+<span class="nc" id="L304">        return bytes2float(b, 0);</span>
+    }
+
+    /**
+     * to int.
+     *
+     * @param b   byte array.
+     * @param off offset.
+     * @return int.
+     */
+    public static float bytes2float(byte[] b, int off) {
+<span class="nc" id="L315">        int i = ((b[off + 3] &amp; 0xFF) &lt;&lt; 0) +</span>
+                ((b[off + 2] &amp; 0xFF) &lt;&lt; 8) +
+                ((b[off + 1] &amp; 0xFF) &lt;&lt; 16) +
+                ((b[off + 0]) &lt;&lt; 24);
+<span class="nc" id="L319">        return Float.intBitsToFloat(i);</span>
+    }
+
+    /**
+     * to long.
+     *
+     * @param b byte array.
+     * @return long.
+     */
+    public static long bytes2long(byte[] b) {
+<span class="nc" id="L329">        return bytes2long(b, 0);</span>
+    }
+
+    /**
+     * to long.
+     *
+     * @param b   byte array.
+     * @param off offset.
+     * @return long.
+     */
+    public static long bytes2long(byte[] b, int off) {
+<span class="nc" id="L340">        return ((b[off + 7] &amp; 0xFFL) &lt;&lt; 0) +</span>
+                ((b[off + 6] &amp; 0xFFL) &lt;&lt; 8) +
+                ((b[off + 5] &amp; 0xFFL) &lt;&lt; 16) +
+                ((b[off + 4] &amp; 0xFFL) &lt;&lt; 24) +
+                ((b[off + 3] &amp; 0xFFL) &lt;&lt; 32) +
+                ((b[off + 2] &amp; 0xFFL) &lt;&lt; 40) +
+                ((b[off + 1] &amp; 0xFFL) &lt;&lt; 48) +
+                (((long) b[off + 0]) &lt;&lt; 56);
+    }
+
+    /**
+     * to long.
+     *
+     * @param b byte array.
+     * @return double.
+     */
+    public static double bytes2double(byte[] b) {
+<span class="nc" id="L357">        return bytes2double(b, 0);</span>
+    }
+
+    /**
+     * to long.
+     *
+     * @param b   byte array.
+     * @param off offset.
+     * @return double.
+     */
+    public static double bytes2double(byte[] b, int off) {
+<span class="nc" id="L368">        long j = ((b[off + 7] &amp; 0xFFL) &lt;&lt; 0) +</span>
+                ((b[off + 6] &amp; 0xFFL) &lt;&lt; 8) +
+                ((b[off + 5] &amp; 0xFFL) &lt;&lt; 16) +
+                ((b[off + 4] &amp; 0xFFL) &lt;&lt; 24) +
+                ((b[off + 3] &amp; 0xFFL) &lt;&lt; 32) +
+                ((b[off + 2] &amp; 0xFFL) &lt;&lt; 40) +
+                ((b[off + 1] &amp; 0xFFL) &lt;&lt; 48) +
+                (((long) b[off + 0]) &lt;&lt; 56);
+<span class="nc" id="L376">        return Double.longBitsToDouble(j);</span>
+    }
+
+    /**
+     * to hex string.
+     *
+     * @param bs byte array.
+     * @return hex string.
+     */
+    public static String bytes2hex(byte[] bs) {
+<span class="nc" id="L386">        return bytes2hex(bs, 0, bs.length);</span>
+    }
+
+    /**
+     * to hex string.
+     *
+     * @param bs  byte array.
+     * @param off offset.
+     * @param len length.
+     * @return hex string.
+     */
+    public static String bytes2hex(byte[] bs, int off, int len) {
+<span class="nc bnc" id="L398" title="All 2 branches missed.">        if (off &lt; 0) {</span>
+<span class="nc" id="L399">            throw new IndexOutOfBoundsException(&quot;bytes2hex: offset &lt; 0, offset is &quot; + off);</span>
+        }
+<span class="nc bnc" id="L401" title="All 2 branches missed.">        if (len &lt; 0) {</span>
+<span class="nc" id="L402">            throw new IndexOutOfBoundsException(&quot;bytes2hex: length &lt; 0, length is &quot; + len);</span>
+        }
+<span class="nc bnc" id="L404" title="All 2 branches missed.">        if (off + len &gt; bs.length) {</span>
+<span class="nc" id="L405">            throw new IndexOutOfBoundsException(&quot;bytes2hex: offset + length &gt; array length.&quot;);</span>
+        }
+
+        byte b;
+<span class="nc" id="L409">        int r = off, w = 0;</span>
+<span class="nc" id="L410">        char[] cs = new char[len * 2];</span>
+<span class="nc bnc" id="L411" title="All 2 branches missed.">        for (int i = 0; i &lt; len; i++) {</span>
+<span class="nc" id="L412">            b = bs[r++];</span>
+<span class="nc" id="L413">            cs[w++] = BASE16[b &gt;&gt; 4 &amp; MASK4];</span>
+<span class="nc" id="L414">            cs[w++] = BASE16[b &amp; MASK4];</span>
+        }
+<span class="nc" id="L416">        return new String(cs);</span>
+    }
+
+    /**
+     * from hex string.
+     *
+     * @param str hex string.
+     * @return byte array.
+     */
+    public static byte[] hex2bytes(String str) {
+<span class="nc" id="L426">        return hex2bytes(str, 0, str.length());</span>
+    }
+
+    /**
+     * from hex string.
+     *
+     * @param str hex string.
+     * @param off offset.
+     * @param len length.
+     * @return byte array.
+     */
+    public static byte[] hex2bytes(final String str, final int off, int len) {
+<span class="nc bnc" id="L438" title="All 2 branches missed.">        if ((len &amp; 1) == 1) {</span>
+<span class="nc" id="L439">            throw new IllegalArgumentException(&quot;hex2bytes: ( len &amp; 1 ) == 1.&quot;);</span>
+        }
+
+<span class="nc bnc" id="L442" title="All 2 branches missed.">        if (off &lt; 0) {</span>
+<span class="nc" id="L443">            throw new IndexOutOfBoundsException(&quot;hex2bytes: offset &lt; 0, offset is &quot; + off);</span>
+        }
+<span class="nc bnc" id="L445" title="All 2 branches missed.">        if (len &lt; 0) {</span>
+<span class="nc" id="L446">            throw new IndexOutOfBoundsException(&quot;hex2bytes: length &lt; 0, length is &quot; + len);</span>
+        }
+<span class="nc bnc" id="L448" title="All 2 branches missed.">        if (off + len &gt; str.length()) {</span>
+<span class="nc" id="L449">            throw new IndexOutOfBoundsException(&quot;hex2bytes: offset + length &gt; array length.&quot;);</span>
+        }
+
+<span class="nc" id="L452">        int num = len / 2, r = off, w = 0;</span>
+<span class="nc" id="L453">        byte[] b = new byte[num];</span>
+<span class="nc bnc" id="L454" title="All 2 branches missed.">        for (int i = 0; i &lt; num; i++) {</span>
+<span class="nc" id="L455">            b[w++] = (byte) (hex(str.charAt(r++)) &lt;&lt; 4 | hex(str.charAt(r++)));</span>
+        }
+<span class="nc" id="L457">        return b;</span>
+    }
+
+    /**
+     * to base64 string.
+     *
+     * @param b byte array.
+     * @return base64 string.
+     */
+    public static String bytes2base64(byte[] b) {
+<span class="nc" id="L467">        return bytes2base64(b, 0, b.length, BASE64);</span>
+    }
+
+    /**
+     * to base64 string.
+     *
+     * @param b byte array.
+     * @return base64 string.
+     */
+    public static String bytes2base64(byte[] b, int offset, int length) {
+<span class="nc" id="L477">        return bytes2base64(b, offset, length, BASE64);</span>
+    }
+
+    /**
+     * to base64 string.
+     *
+     * @param b    byte array.
+     * @param code base64 code string(0-63 is base64 char,64 is pad char).
+     * @return base64 string.
+     */
+    public static String bytes2base64(byte[] b, String code) {
+<span class="nc" id="L488">        return bytes2base64(b, 0, b.length, code);</span>
+    }
+
+    /**
+     * to base64 string.
+     *
+     * @param b    byte array.
+     * @param code base64 code string(0-63 is base64 char,64 is pad char).
+     * @return base64 string.
+     */
+    public static String bytes2base64(byte[] b, int offset, int length, String code) {
+<span class="nc bnc" id="L499" title="All 2 branches missed.">        if (code.length() &lt; 64) {</span>
+<span class="nc" id="L500">            throw new IllegalArgumentException(&quot;Base64 code length &lt; 64.&quot;);</span>
+        }
+
+<span class="nc" id="L503">        return bytes2base64(b, offset, length, code.toCharArray());</span>
+    }
+
+    /**
+     * to base64 string.
+     *
+     * @param b    byte array.
+     * @param code base64 code(0-63 is base64 char,64 is pad char).
+     * @return base64 string.
+     */
+    public static String bytes2base64(byte[] b, char[] code) {
+<span class="nc" id="L514">        return bytes2base64(b, 0, b.length, code);</span>
+    }
+
+    /**
+     * to base64 string.
+     *
+     * @param bs   byte array.
+     * @param off  offset.
+     * @param len  length.
+     * @param code base64 code(0-63 is base64 char,64 is pad char).
+     * @return base64 string.
+     */
+    public static String bytes2base64(final byte[] bs, final int off, final int len, final char[] code) {
+<span class="nc bnc" id="L527" title="All 2 branches missed.">        if (off &lt; 0) {</span>
+<span class="nc" id="L528">            throw new IndexOutOfBoundsException(&quot;bytes2base64: offset &lt; 0, offset is &quot; + off);</span>
+        }
+<span class="nc bnc" id="L530" title="All 2 branches missed.">        if (len &lt; 0) {</span>
+<span class="nc" id="L531">            throw new IndexOutOfBoundsException(&quot;bytes2base64: length &lt; 0, length is &quot; + len);</span>
+        }
+<span class="nc bnc" id="L533" title="All 2 branches missed.">        if (off + len &gt; bs.length) {</span>
+<span class="nc" id="L534">            throw new IndexOutOfBoundsException(&quot;bytes2base64: offset + length &gt; array length.&quot;);</span>
+        }
+
+<span class="nc bnc" id="L537" title="All 2 branches missed.">        if (code.length &lt; 64) {</span>
+<span class="nc" id="L538">            throw new IllegalArgumentException(&quot;Base64 code length &lt; 64.&quot;);</span>
+        }
+
+<span class="nc bnc" id="L541" title="All 2 branches missed.">        boolean pad = code.length &gt; 64; // has pad char.</span>
+<span class="nc" id="L542">        int num = len / 3, rem = len % 3, r = off, w = 0;</span>
+<span class="nc bnc" id="L543" title="All 4 branches missed.">        char[] cs = new char[num * 4 + (rem == 0 ? 0 : pad ? 4 : rem + 1)];</span>
+
+<span class="nc bnc" id="L545" title="All 2 branches missed.">        for (int i = 0; i &lt; num; i++) {</span>
+<span class="nc" id="L546">            int b1 = bs[r++] &amp; MASK8, b2 = bs[r++] &amp; MASK8, b3 = bs[r++] &amp; MASK8;</span>
+
+<span class="nc" id="L548">            cs[w++] = code[b1 &gt;&gt; 2];</span>
+<span class="nc" id="L549">            cs[w++] = code[(b1 &lt;&lt; 4) &amp; MASK6 | (b2 &gt;&gt; 4)];</span>
+<span class="nc" id="L550">            cs[w++] = code[(b2 &lt;&lt; 2) &amp; MASK6 | (b3 &gt;&gt; 6)];</span>
+<span class="nc" id="L551">            cs[w++] = code[b3 &amp; MASK6];</span>
+        }
+
+<span class="nc bnc" id="L554" title="All 2 branches missed.">        if (rem == 1) {</span>
+<span class="nc" id="L555">            int b1 = bs[r++] &amp; MASK8;</span>
+<span class="nc" id="L556">            cs[w++] = code[b1 &gt;&gt; 2];</span>
+<span class="nc" id="L557">            cs[w++] = code[(b1 &lt;&lt; 4) &amp; MASK6];</span>
+<span class="nc bnc" id="L558" title="All 2 branches missed.">            if (pad) {</span>
+<span class="nc" id="L559">                cs[w++] = code[64];</span>
+<span class="nc" id="L560">                cs[w++] = code[64];</span>
+            }
+<span class="nc bnc" id="L562" title="All 2 branches missed.">        } else if (rem == 2) {</span>
+<span class="nc" id="L563">            int b1 = bs[r++] &amp; MASK8, b2 = bs[r++] &amp; MASK8;</span>
+<span class="nc" id="L564">            cs[w++] = code[b1 &gt;&gt; 2];</span>
+<span class="nc" id="L565">            cs[w++] = code[(b1 &lt;&lt; 4) &amp; MASK6 | (b2 &gt;&gt; 4)];</span>
+<span class="nc" id="L566">            cs[w++] = code[(b2 &lt;&lt; 2) &amp; MASK6];</span>
+<span class="nc bnc" id="L567" title="All 2 branches missed.">            if (pad) {</span>
+<span class="nc" id="L568">                cs[w++] = code[64];</span>
+            }
+        }
+<span class="nc" id="L571">        return new String(cs);</span>
+    }
+
+    /**
+     * from base64 string.
+     *
+     * @param str base64 string.
+     * @return byte array.
+     */
+    public static byte[] base642bytes(String str) {
+<span class="nc" id="L581">        return base642bytes(str, 0, str.length());</span>
+    }
+
+    /**
+     * from base64 string.
+     *
+     * @param str    base64 string.
+     * @param offset offset.
+     * @param length length.
+     * @return byte array.
+     */
+    public static byte[] base642bytes(String str, int offset, int length) {
+<span class="nc" id="L593">        return base642bytes(str, offset, length, C64);</span>
+    }
+
+    /**
+     * from base64 string.
+     *
+     * @param str  base64 string.
+     * @param code base64 code(0-63 is base64 char,64 is pad char).
+     * @return byte array.
+     */
+    public static byte[] base642bytes(String str, String code) {
+<span class="nc" id="L604">        return base642bytes(str, 0, str.length(), code);</span>
+    }
+
+    /**
+     * from base64 string.
+     *
+     * @param str  base64 string.
+     * @param off  offset.
+     * @param len  length.
+     * @param code base64 code(0-63 is base64 char,64 is pad char).
+     * @return byte array.
+     */
+    public static byte[] base642bytes(final String str, final int off, final int len, final String code) {
+<span class="nc bnc" id="L617" title="All 2 branches missed.">        if (off &lt; 0) {</span>
+<span class="nc" id="L618">            throw new IndexOutOfBoundsException(&quot;base642bytes: offset &lt; 0, offset is &quot; + off);</span>
+        }
+<span class="nc bnc" id="L620" title="All 2 branches missed.">        if (len &lt; 0) {</span>
+<span class="nc" id="L621">            throw new IndexOutOfBoundsException(&quot;base642bytes: length &lt; 0, length is &quot; + len);</span>
+        }
+<span class="nc bnc" id="L623" title="All 2 branches missed.">        if (off + len &gt; str.length()) {</span>
+<span class="nc" id="L624">            throw new IndexOutOfBoundsException(&quot;base642bytes: offset + length &gt; string length.&quot;);</span>
+        }
+
+<span class="nc bnc" id="L627" title="All 2 branches missed.">        if (code.length() &lt; 64) {</span>
+<span class="nc" id="L628">            throw new IllegalArgumentException(&quot;Base64 code length &lt; 64.&quot;);</span>
+        }
+
+<span class="nc" id="L631">        int rem = len % 4;</span>
+<span class="nc bnc" id="L632" title="All 2 branches missed.">        if (rem == 1) {</span>
+<span class="nc" id="L633">            throw new IllegalArgumentException(&quot;base642bytes: base64 string length % 4 == 1.&quot;);</span>
+        }
+
+<span class="nc" id="L636">        int num = len / 4, size = num * 3;</span>
+<span class="nc bnc" id="L637" title="All 2 branches missed.">        if (code.length() &gt; 64) {</span>
+<span class="nc bnc" id="L638" title="All 2 branches missed.">            if (rem != 0) {</span>
+<span class="nc" id="L639">                throw new IllegalArgumentException(&quot;base642bytes: base64 string length error.&quot;);</span>
+            }
+
+<span class="nc" id="L642">            char pc = code.charAt(64);</span>
+<span class="nc bnc" id="L643" title="All 2 branches missed.">            if (str.charAt(off + len - 2) == pc) {</span>
+<span class="nc" id="L644">                size -= 2;</span>
+<span class="nc" id="L645">                --num;</span>
+<span class="nc" id="L646">                rem = 2;</span>
+<span class="nc bnc" id="L647" title="All 2 branches missed.">            } else if (str.charAt(off + len - 1) == pc) {</span>
+<span class="nc" id="L648">                size--;</span>
+<span class="nc" id="L649">                --num;</span>
+<span class="nc" id="L650">                rem = 3;</span>
+            }
+<span class="nc" id="L652">        } else {</span>
+<span class="nc bnc" id="L653" title="All 2 branches missed.">            if (rem == 2) {</span>
+<span class="nc" id="L654">                size++;</span>
+<span class="nc bnc" id="L655" title="All 2 branches missed.">            } else if (rem == 3) {</span>
+<span class="nc" id="L656">                size += 2;</span>
+            }
+        }
+
+<span class="nc" id="L660">        int r = off, w = 0;</span>
+<span class="nc" id="L661">        byte[] b = new byte[size], t = decodeTable(code);</span>
+<span class="nc bnc" id="L662" title="All 2 branches missed.">        for (int i = 0; i &lt; num; i++) {</span>
+<span class="nc" id="L663">            int c1 = t[str.charAt(r++)], c2 = t[str.charAt(r++)];</span>
+<span class="nc" id="L664">            int c3 = t[str.charAt(r++)], c4 = t[str.charAt(r++)];</span>
+
+<span class="nc" id="L666">            b[w++] = (byte) ((c1 &lt;&lt; 2) | (c2 &gt;&gt; 4));</span>
+<span class="nc" id="L667">            b[w++] = (byte) ((c2 &lt;&lt; 4) | (c3 &gt;&gt; 2));</span>
+<span class="nc" id="L668">            b[w++] = (byte) ((c3 &lt;&lt; 6) | c4);</span>
+        }
+
+<span class="nc bnc" id="L671" title="All 2 branches missed.">        if (rem == 2) {</span>
+<span class="nc" id="L672">            int c1 = t[str.charAt(r++)], c2 = t[str.charAt(r++)];</span>
+
+<span class="nc" id="L674">            b[w++] = (byte) ((c1 &lt;&lt; 2) | (c2 &gt;&gt; 4));</span>
+<span class="nc bnc" id="L675" title="All 2 branches missed.">        } else if (rem == 3) {</span>
+<span class="nc" id="L676">            int c1 = t[str.charAt(r++)], c2 = t[str.charAt(r++)], c3 = t[str.charAt(r++)];</span>
+
+<span class="nc" id="L678">            b[w++] = (byte) ((c1 &lt;&lt; 2) | (c2 &gt;&gt; 4));</span>
+<span class="nc" id="L679">            b[w++] = (byte) ((c2 &lt;&lt; 4) | (c3 &gt;&gt; 2));</span>
+        }
+<span class="nc" id="L681">        return b;</span>
+    }
+
+    /**
+     * from base64 string.
+     *
+     * @param str  base64 string.
+     * @param code base64 code(0-63 is base64 char,64 is pad char).
+     * @return byte array.
+     */
+    public static byte[] base642bytes(String str, char[] code) {
+<span class="nc" id="L692">        return base642bytes(str, 0, str.length(), code);</span>
+    }
+
+    /**
+     * from base64 string.
+     *
+     * @param str  base64 string.
+     * @param off  offset.
+     * @param len  length.
+     * @param code base64 code(0-63 is base64 char,64 is pad char).
+     * @return byte array.
+     */
+    public static byte[] base642bytes(final String str, final int off, final int len, final char[] code) {
+<span class="nc bnc" id="L705" title="All 2 branches missed.">        if (off &lt; 0) {</span>
+<span class="nc" id="L706">            throw new IndexOutOfBoundsException(&quot;base642bytes: offset &lt; 0, offset is &quot; + off);</span>
+        }
+<span class="nc bnc" id="L708" title="All 2 branches missed.">        if (len &lt; 0) {</span>
+<span class="nc" id="L709">            throw new IndexOutOfBoundsException(&quot;base642bytes: length &lt; 0, length is &quot; + len);</span>
+        }
+<span class="nc bnc" id="L711" title="All 2 branches missed.">        if (off + len &gt; str.length()) {</span>
+<span class="nc" id="L712">            throw new IndexOutOfBoundsException(&quot;base642bytes: offset + length &gt; string length.&quot;);</span>
+        }
+
+<span class="nc bnc" id="L715" title="All 2 branches missed.">        if (code.length &lt; 64) {</span>
+<span class="nc" id="L716">            throw new IllegalArgumentException(&quot;Base64 code length &lt; 64.&quot;);</span>
+        }
+
+<span class="nc" id="L719">        int rem = len % 4;</span>
+<span class="nc bnc" id="L720" title="All 2 branches missed.">        if (rem == 1) {</span>
+<span class="nc" id="L721">            throw new IllegalArgumentException(&quot;base642bytes: base64 string length % 4 == 1.&quot;);</span>
+        }
+
+<span class="nc" id="L724">        int num = len / 4, size = num * 3;</span>
+<span class="nc bnc" id="L725" title="All 2 branches missed.">        if (code.length &gt; 64) {</span>
+<span class="nc bnc" id="L726" title="All 2 branches missed.">            if (rem != 0) {</span>
+<span class="nc" id="L727">                throw new IllegalArgumentException(&quot;base642bytes: base64 string length error.&quot;);</span>
+            }
+
+<span class="nc" id="L730">            char pc = code[64];</span>
+<span class="nc bnc" id="L731" title="All 2 branches missed.">            if (str.charAt(off + len - 2) == pc) {</span>
+<span class="nc" id="L732">                size -= 2;</span>
+<span class="nc bnc" id="L733" title="All 2 branches missed.">            } else if (str.charAt(off + len - 1) == pc) {</span>
+<span class="nc" id="L734">                size--;</span>
+            }
+<span class="nc" id="L736">        } else {</span>
+<span class="nc bnc" id="L737" title="All 2 branches missed.">            if (rem == 2) {</span>
+<span class="nc" id="L738">                size++;</span>
+<span class="nc bnc" id="L739" title="All 2 branches missed.">            } else if (rem == 3) {</span>
+<span class="nc" id="L740">                size += 2;</span>
+            }
+        }
+
+<span class="nc" id="L744">        int r = off, w = 0;</span>
+<span class="nc" id="L745">        byte[] b = new byte[size];</span>
+<span class="nc bnc" id="L746" title="All 2 branches missed.">        for (int i = 0; i &lt; num; i++) {</span>
+<span class="nc" id="L747">            int c1 = indexOf(code, str.charAt(r++)), c2 = indexOf(code, str.charAt(r++));</span>
+<span class="nc" id="L748">            int c3 = indexOf(code, str.charAt(r++)), c4 = indexOf(code, str.charAt(r++));</span>
+
+<span class="nc" id="L750">            b[w++] = (byte) ((c1 &lt;&lt; 2) | (c2 &gt;&gt; 4));</span>
+<span class="nc" id="L751">            b[w++] = (byte) ((c2 &lt;&lt; 4) | (c3 &gt;&gt; 2));</span>
+<span class="nc" id="L752">            b[w++] = (byte) ((c3 &lt;&lt; 6) | c4);</span>
+        }
+
+<span class="nc bnc" id="L755" title="All 2 branches missed.">        if (rem == 2) {</span>
+<span class="nc" id="L756">            int c1 = indexOf(code, str.charAt(r++)), c2 = indexOf(code, str.charAt(r++));</span>
+
+<span class="nc" id="L758">            b[w++] = (byte) ((c1 &lt;&lt; 2) | (c2 &gt;&gt; 4));</span>
+<span class="nc bnc" id="L759" title="All 2 branches missed.">        } else if (rem == 3) {</span>
+<span class="nc" id="L760">            int c1 = indexOf(code, str.charAt(r++)), c2 = indexOf(code, str.charAt(r++)), c3 = indexOf(code, str.charAt(r++));</span>
+
+<span class="nc" id="L762">            b[w++] = (byte) ((c1 &lt;&lt; 2) | (c2 &gt;&gt; 4));</span>
+<span class="nc" id="L763">            b[w++] = (byte) ((c2 &lt;&lt; 4) | (c3 &gt;&gt; 2));</span>
+        }
+<span class="nc" id="L765">        return b;</span>
+    }
+
+    /**
+     * zip.
+     *
+     * @param bytes source.
+     * @return compressed byte array.
+     * @throws IOException
+     */
+    public static byte[] zip(byte[] bytes) throws IOException {
+<span class="nc" id="L776">        UnsafeByteArrayOutputStream bos = new UnsafeByteArrayOutputStream();</span>
+<span class="nc" id="L777">        OutputStream os = new DeflaterOutputStream(bos);</span>
+        try {
+<span class="nc" id="L779">            os.write(bytes);</span>
+        } finally {
+<span class="nc" id="L781">            os.close();</span>
+<span class="nc" id="L782">            bos.close();</span>
+        }
+<span class="nc" id="L784">        return bos.toByteArray();</span>
+    }
+
+    /**
+     * unzip.
+     *
+     * @param bytes compressed byte array.
+     * @return byte uncompressed array.
+     * @throws IOException
+     */
+    public static byte[] unzip(byte[] bytes) throws IOException {
+<span class="nc" id="L795">        UnsafeByteArrayInputStream bis = new UnsafeByteArrayInputStream(bytes);</span>
+<span class="nc" id="L796">        UnsafeByteArrayOutputStream bos = new UnsafeByteArrayOutputStream();</span>
+<span class="nc" id="L797">        InputStream is = new InflaterInputStream(bis);</span>
+        try {
+<span class="nc" id="L799">            IOUtils.write(is, bos);</span>
+<span class="nc" id="L800">            return bos.toByteArray();</span>
+        } finally {
+<span class="nc" id="L802">            is.close();</span>
+<span class="nc" id="L803">            bis.close();</span>
+<span class="nc" id="L804">            bos.close();</span>
+        }
+    }
+
+    /**
+     * get md5.
+     *
+     * @param str input string.
+     * @return MD5 byte array.
+     */
+    public static byte[] getMD5(String str) {
+<span class="nc" id="L815">        return getMD5(str.getBytes());</span>
+    }
+
+    /**
+     * get md5.
+     *
+     * @param source byte array source.
+     * @return MD5 byte array.
+     */
+    public static byte[] getMD5(byte[] source) {
+<span class="nc" id="L825">        MessageDigest md = getMessageDigest();</span>
+<span class="nc" id="L826">        return md.digest(source);</span>
+    }
+
+    /**
+     * get md5.
+     *
+     * @param file file source.
+     * @return MD5 byte array.
+     */
+    public static byte[] getMD5(File file) throws IOException {
+<span class="nc" id="L836">        InputStream is = new FileInputStream(file);</span>
+        try {
+<span class="nc" id="L838">            return getMD5(is);</span>
+        } finally {
+<span class="nc" id="L840">            is.close();</span>
+        }
+    }
+
+    /**
+     * get md5.
+     *
+     * @param is input stream.
+     * @return MD5 byte array.
+     */
+    public static byte[] getMD5(InputStream is) throws IOException {
+<span class="nc" id="L851">        return getMD5(is, 1024 * 8);</span>
+    }
+
+    private static byte hex(char c) {
+<span class="nc bnc" id="L855" title="All 2 branches missed.">        if (c &lt;= '9') {</span>
+<span class="nc" id="L856">            return (byte) (c - '0');</span>
+        }
+<span class="nc bnc" id="L858" title="All 4 branches missed.">        if (c &gt;= 'a' &amp;&amp; c &lt;= 'f') {</span>
+<span class="nc" id="L859">            return (byte) (c - 'a' + 10);</span>
+        }
+<span class="nc bnc" id="L861" title="All 4 branches missed.">        if (c &gt;= 'A' &amp;&amp; c &lt;= 'F') {</span>
+<span class="nc" id="L862">            return (byte) (c - 'A' + 10);</span>
+        }
+<span class="nc" id="L864">        throw new IllegalArgumentException(&quot;hex string format error [&quot; + c + &quot;].&quot;);</span>
+    }
+
+    private static int indexOf(char[] cs, char c) {
+<span class="nc bnc" id="L868" title="All 2 branches missed.">        for (int i = 0, len = cs.length; i &lt; len; i++) {</span>
+<span class="nc bnc" id="L869" title="All 2 branches missed.">            if (cs[i] == c) {</span>
+<span class="nc" id="L870">                return i;</span>
+            }
+        }
+<span class="nc" id="L873">        return -1;</span>
+    }
+
+    private static byte[] decodeTable(String code) {
+<span class="nc" id="L877">        int hash = code.hashCode();</span>
+<span class="nc" id="L878">        byte[] ret = DECODE_TABLE_MAP.get(hash);</span>
+<span class="nc bnc" id="L879" title="All 2 branches missed.">        if (ret == null) {</span>
+<span class="nc bnc" id="L880" title="All 2 branches missed.">            if (code.length() &lt; 64) {</span>
+<span class="nc" id="L881">                throw new IllegalArgumentException(&quot;Base64 code length &lt; 64.&quot;);</span>
+            }
+            // create new decode table.
+<span class="nc" id="L884">            ret = new byte[128];</span>
+<span class="nc bnc" id="L885" title="All 2 branches missed.">            for (int i = 0; i &lt; 128; i++) // init table.</span>
+            {
+<span class="nc" id="L887">                ret[i] = -1;</span>
+            }
+<span class="nc bnc" id="L889" title="All 2 branches missed.">            for (int i = 0; i &lt; 64; i++) {</span>
+<span class="nc" id="L890">                ret[code.charAt(i)] = (byte) i;</span>
+            }
+<span class="nc" id="L892">            DECODE_TABLE_MAP.put(hash, ret);</span>
+        }
+<span class="nc" id="L894">        return ret;</span>
+    }
+
+    private static byte[] getMD5(InputStream is, int bs) throws IOException {
+<span class="nc" id="L898">        MessageDigest md = getMessageDigest();</span>
+<span class="nc" id="L899">        byte[] buf = new byte[bs];</span>
+<span class="nc bnc" id="L900" title="All 2 branches missed.">        while (is.available() &gt; 0) {</span>
+<span class="nc" id="L901">            int read, total = 0;</span>
+            do {
+<span class="nc bnc" id="L903" title="All 2 branches missed.">                if ((read = is.read(buf, total, bs - total)) &lt;= 0) {</span>
+<span class="nc" id="L904">                    break;</span>
+                }
+<span class="nc" id="L906">                total += read;</span>
+            }
+<span class="nc bnc" id="L908" title="All 2 branches missed.">            while (total &lt; bs);</span>
+<span class="nc" id="L909">            md.update(buf);</span>
+<span class="nc" id="L910">        }</span>
+<span class="nc" id="L911">        return md.digest();</span>
+    }
+
+    private static MessageDigest getMessageDigest() {
+<span class="nc" id="L915">        MessageDigest ret = MD.get();</span>
+<span class="nc bnc" id="L916" title="All 2 branches missed.">        if (ret == null) {</span>
+            try {
+<span class="nc" id="L918">                ret = MessageDigest.getInstance(&quot;MD5&quot;);</span>
+<span class="nc" id="L919">                MD.set(ret);</span>
+<span class="nc" id="L920">            } catch (NoSuchAlgorithmException e) {</span>
+<span class="nc" id="L921">                throw new RuntimeException(e);</span>
+<span class="nc" id="L922">            }</span>
+        }
+<span class="nc" id="L924">        return ret;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>

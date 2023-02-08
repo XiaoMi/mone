@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>LRUCache.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-remoting-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.common.utils</a> &gt; <span class="el_source">LRUCache.java</span></div><h1>LRUCache.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.common.utils;
+
+import java.util.LinkedHashMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+public class LRUCache&lt;K, V&gt; extends LinkedHashMap&lt;K, V&gt; {
+
+    private static final long serialVersionUID = -5167631809472116969L;
+
+    private static final float DEFAULT_LOAD_FACTOR = 0.75f;
+
+    private static final int DEFAULT_MAX_CAPACITY = 1000;
+<span class="nc" id="L30">    private final Lock lock = new ReentrantLock();</span>
+    private volatile int maxCapacity;
+
+    public LRUCache() {
+<span class="nc" id="L34">        this(DEFAULT_MAX_CAPACITY);</span>
+<span class="nc" id="L35">    }</span>
+
+    public LRUCache(int maxCapacity) {
+<span class="nc" id="L38">        super(16, DEFAULT_LOAD_FACTOR, true);</span>
+<span class="nc" id="L39">        this.maxCapacity = maxCapacity;</span>
+<span class="nc" id="L40">    }</span>
+
+    @Override
+    protected boolean removeEldestEntry(java.util.Map.Entry&lt;K, V&gt; eldest) {
+<span class="nc bnc" id="L44" title="All 2 branches missed.">        return size() &gt; maxCapacity;</span>
+    }
+
+    @Override
+    public boolean containsKey(Object key) {
+<span class="nc" id="L49">        lock.lock();</span>
+        try {
+<span class="nc" id="L51">            return super.containsKey(key);</span>
+        } finally {
+<span class="nc" id="L53">            lock.unlock();</span>
+        }
+    }
+
+    @Override
+    public V get(Object key) {
+<span class="nc" id="L59">        lock.lock();</span>
+        try {
+<span class="nc" id="L61">            return super.get(key);</span>
+        } finally {
+<span class="nc" id="L63">            lock.unlock();</span>
+        }
+    }
+
+    @Override
+    public V put(K key, V value) {
+<span class="nc" id="L69">        lock.lock();</span>
+        try {
+<span class="nc" id="L71">            return super.put(key, value);</span>
+        } finally {
+<span class="nc" id="L73">            lock.unlock();</span>
+        }
+    }
+
+    @Override
+    public V remove(Object key) {
+<span class="nc" id="L79">        lock.lock();</span>
+        try {
+<span class="nc" id="L81">            return super.remove(key);</span>
+        } finally {
+<span class="nc" id="L83">            lock.unlock();</span>
+        }
+    }
+
+    @Override
+    public int size() {
+<span class="nc" id="L89">        lock.lock();</span>
+        try {
+<span class="nc" id="L91">            return super.size();</span>
+        } finally {
+<span class="nc" id="L93">            lock.unlock();</span>
+        }
+    }
+
+    @Override
+    public void clear() {
+<span class="nc" id="L99">        lock.lock();</span>
+        try {
+<span class="nc" id="L101">            super.clear();</span>
+        } finally {
+<span class="nc" id="L103">            lock.unlock();</span>
+        }
+<span class="nc" id="L105">    }</span>
+
+    public int getMaxCapacity() {
+<span class="nc" id="L108">        return maxCapacity;</span>
+    }
+
+    public void setMaxCapacity(int maxCapacity) {
+<span class="nc" id="L112">        this.maxCapacity = maxCapacity;</span>
+<span class="nc" id="L113">    }</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>

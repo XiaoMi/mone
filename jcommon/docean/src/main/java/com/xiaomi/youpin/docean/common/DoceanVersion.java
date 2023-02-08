@@ -24,6 +24,6 @@ public class DoceanVersion {
 
     @Override
     public String toString() {
-        return "DoceanVersion:0.0.1:2020-11-25";
+        return "DoceanVersion:0.0.1:2022-03-21";
     }
 }

@@ -19,7 +19,6 @@ package com.xiaomi.youpin.jcommon.log.test;
 import com.google.gson.Gson;
 import com.xiaomi.youpin.jcommon.log.LogRecord;
 import com.xiaomi.youpin.jcommon.log.TalosClient;
-import libthrift091.TException;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -27,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 public class TalosClientTest {
 
     @Test
-    public void testSend() throws TException, InterruptedException {
+    public void testSend() throws InterruptedException {
         TalosClient client = new TalosClient();
         client.init();
 

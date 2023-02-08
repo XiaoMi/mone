@@ -17,5 +17,5 @@
 package com.xiaomi.youpin.jcommon.coloregg;
 
 public class Des {
-    public static String SECRET_KEY = "1234";
+    public static String SECRET_KEY = "xiaomiYP";
 }

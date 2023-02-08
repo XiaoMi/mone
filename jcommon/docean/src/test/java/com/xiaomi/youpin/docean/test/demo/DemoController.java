@@ -16,13 +16,19 @@
 
 package com.xiaomi.youpin.docean.test.demo;
 
+import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.Controller;
 import com.xiaomi.youpin.docean.anno.RequestMapping;
 import com.xiaomi.youpin.docean.anno.RequestParam;
 import com.xiaomi.youpin.docean.mvc.MvcContext;
 import com.xiaomi.youpin.docean.mvc.MvcResult;
 import com.xiaomi.youpin.docean.test.anno.TAnno;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+
+import javax.annotation.Resource;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 /**
  * @author goodjava@qq.com
@@ -32,12 +38,41 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class DemoController {
 
+    @Resource
+    private Ioc ioc;
+
+    public void init() {
+        log.info("init controller");
+    }
+
     @RequestMapping(path = "/test")
     public DemoVo test() {
         DemoVo vo = new DemoVo();
         vo.setId("1");
         vo.setName("test");
         return vo;
+    }
+
+    @RequestMapping(path = "/header")
+    public DemoVo header(MvcContext context) {
+        DemoVo vo = new DemoVo();
+        vo.setId("1");
+        vo.setName("test");
+        context.getResHeaders().put("name","zzy");
+        return vo;
+    }
+
+
+    @SneakyThrows
+    @RequestMapping(path = "/view")
+    public String view() {
+        return new String(Files.readAllBytes(Paths.get("/Users/dongzhenxing/Documents/Mi/Projects/mione/jcommon/docean/src/test/resources/html/upload.html")));
+    }
+
+
+    @RequestMapping(path = "/a/**")
+    public String a() {
+        return "a";
     }
 
     @RequestMapping(path = "/test2")
@@ -57,9 +92,18 @@ public class DemoController {
         return vo;
     }
 
+    @RequestMapping(path = "/test4", method = "get")
+    public DemoVo test4(MvcContext context) {
+        log.info("{}", context);
+        DemoVo vo = new DemoVo();
+        vo.setName("test4");
+        return vo;
+    }
+
 
     /**
      * 测试302 跳转
+     *
      * @return
      */
     @RequestMapping(path = "/302")
@@ -83,6 +127,12 @@ public class DemoController {
         return String.valueOf(a + b);
     }
 
+    @RequestMapping(path = "/testpost")
+    public String testPost(String b) {
+        log.info("b={}", b);
+        return b;
+    }
+
 
     /**
      * 测试session
@@ -91,7 +141,15 @@ public class DemoController {
      */
     @RequestMapping(path = "/tests", method = "get")
     public String testSession(MvcContext context) {
-        return "session";
+        String name = String.valueOf(context.session().getAttribute("name"));
+        return "session:" + name;
+    }
+
+
+    @RequestMapping(path = "/tests2", method = "get")
+    public String testSession2(MvcContext context) {
+        String name = String.valueOf(context.session().getAttribute("name"));
+        return "session:" + name;
     }
 
 

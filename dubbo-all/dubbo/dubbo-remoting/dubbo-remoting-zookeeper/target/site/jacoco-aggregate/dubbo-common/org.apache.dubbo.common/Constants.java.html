@@ -1,0 +1,727 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>Constants.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-remoting-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.common</a> &gt; <span class="el_source">Constants.java</span></div><h1>Constants.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.dubbo.common;
+
+import java.util.concurrent.ExecutorService;
+import java.util.regex.Pattern;
+
+/**
+ * Constants
+ */
+<span class="nc" id="L26">public class Constants {</span>
+
+    public static final String PROVIDER = &quot;provider&quot;;
+
+    public static final String CONSUMER = &quot;consumer&quot;;
+
+    public static final String REGISTER = &quot;register&quot;;
+
+    public static final String UNREGISTER = &quot;unregister&quot;;
+
+    public static final String SUBSCRIBE = &quot;subscribe&quot;;
+
+    public static final String UNSUBSCRIBE = &quot;unsubscribe&quot;;
+
+    public static final String CATEGORY_KEY = &quot;category&quot;;
+
+    public static final String PROVIDERS_CATEGORY = &quot;providers&quot;;
+
+    public static final String CONSUMERS_CATEGORY = &quot;consumers&quot;;
+
+    public static final String ROUTERS_CATEGORY = &quot;routers&quot;;
+
+    public static final String CONFIGURATORS_CATEGORY = &quot;configurators&quot;;
+
+    public static final String DEFAULT_CATEGORY = PROVIDERS_CATEGORY;
+
+    public static final String ENABLED_KEY = &quot;enabled&quot;;
+
+    public static final String DISABLED_KEY = &quot;disabled&quot;;
+
+    public static final String VALIDATION_KEY = &quot;validation&quot;;
+
+    public static final String CACHE_KEY = &quot;cache&quot;;
+
+    public static final String DYNAMIC_KEY = &quot;dynamic&quot;;
+
+    public static final String DUBBO_PROPERTIES_KEY = &quot;dubbo.properties.file&quot;;
+
+    public static final String DEFAULT_DUBBO_PROPERTIES = &quot;dubbo.properties&quot;;
+
+    public static final String SENT_KEY = &quot;sent&quot;;
+
+    public static final boolean DEFAULT_SENT = false;
+
+    public static final String REGISTRY_PROTOCOL = &quot;registry&quot;;
+
+    public static final String $INVOKE = &quot;$invoke&quot;;
+
+    public static final String $ECHO = &quot;$echo&quot;;
+
+<span class="nc" id="L76">    public static final int DEFAULT_IO_THREADS = Math.min(Runtime.getRuntime().availableProcessors() + 1, 32);</span>
+
+    public static final String DEFAULT_PROXY = &quot;javassist&quot;;
+
+    public static final int DEFAULT_PAYLOAD = 8 * 1024 * 1024;                      // 8M
+
+    public static final String DEFAULT_CLUSTER = &quot;failover&quot;;
+
+    public static final String DEFAULT_DIRECTORY = &quot;dubbo&quot;;
+
+    public static final String DEFAULT_LOADBALANCE = &quot;random&quot;;
+
+    public static final String DEFAULT_PROTOCOL = &quot;dubbo&quot;;
+
+    public static final String DEFAULT_EXCHANGER = &quot;header&quot;;
+
+    public static final String DEFAULT_TRANSPORTER = &quot;netty&quot;;
+
+    public static final String DEFAULT_REMOTING_SERVER = &quot;netty&quot;;
+
+    public static final String DEFAULT_REMOTING_CLIENT = &quot;netty&quot;;
+
+    public static final String DEFAULT_REMOTING_CODEC = &quot;dubbo&quot;;
+
+    public static final String DEFAULT_REMOTING_SERIALIZATION = &quot;hessian2&quot;;
+
+    public static final String DEFAULT_HTTP_SERVER = &quot;servlet&quot;;
+
+    public static final String DEFAULT_HTTP_CLIENT = &quot;jdk&quot;;
+
+    public static final String DEFAULT_HTTP_SERIALIZATION = &quot;json&quot;;
+
+    public static final String DEFAULT_CHARSET = &quot;UTF-8&quot;;
+
+    public static final int DEFAULT_WEIGHT = 100;
+
+    public static final int DEFAULT_FORKS = 2;
+
+    public static final String DEFAULT_THREAD_NAME = &quot;Dubbo&quot;;
+
+    public static final int DEFAULT_CORE_THREADS = 0;
+
+    public static final int DEFAULT_THREADS = 200;
+
+    public static final boolean DEFAULT_KEEP_ALIVE = true;
+
+    public static final int DEFAULT_QUEUES = 0;
+
+    public static final int DEFAULT_ALIVE = 60 * 1000;
+
+    public static final int DEFAULT_CONNECTIONS = 0;
+
+    public static final int DEFAULT_ACCEPTS = 0;
+
+    public static final int DEFAULT_IDLE_TIMEOUT = 600 * 1000;
+
+    public static final int DEFAULT_HEARTBEAT = 60 * 1000;
+
+    public static final int DEFAULT_TIMEOUT = 1000;
+
+    public static final int DEFAULT_CONNECT_TIMEOUT = 3000;
+
+//    public static final int DEFAULT_REGISTRY_CONNECT_TIMEOUT = 5000;
+
+    public static final int DEFAULT_RETRIES = 2;
+
+    // default buffer size is 8k.
+    public static final int DEFAULT_BUFFER_SIZE = 8 * 1024;
+
+    public static final int MAX_BUFFER_SIZE = 16 * 1024;
+
+    public static final int MIN_BUFFER_SIZE = 1 * 1024;
+
+    public static final String REMOVE_VALUE_PREFIX = &quot;-&quot;;
+
+    public static final String HIDE_KEY_PREFIX = &quot;.&quot;;
+
+    public static final String DEFAULT_KEY_PREFIX = &quot;default.&quot;;
+
+    public static final String DEFAULT_KEY = &quot;default&quot;;
+
+    public static final String LOADBALANCE_KEY = &quot;loadbalance&quot;;
+
+    // key for router type, for e.g., &quot;script&quot;/&quot;file&quot;,  corresponding to ScriptRouterFactory.NAME, FileRouterFactory.NAME
+    public static final String ROUTER_KEY = &quot;router&quot;;
+
+    public static final String CLUSTER_KEY = &quot;cluster&quot;;
+
+    public static final String REGISTRY_KEY = &quot;registry&quot;;
+
+    public static final String MONITOR_KEY = &quot;monitor&quot;;
+
+    public static final String SIDE_KEY = &quot;side&quot;;
+
+    public static final String MONE_CLUSTER_KEY = &quot;mone.cluster&quot;;
+
+    public static final String PROVIDER_SIDE = &quot;provider&quot;;
+
+    public static final String CONSUMER_SIDE = &quot;consumer&quot;;
+
+    public static final String DEFAULT_REGISTRY = &quot;dubbo&quot;;
+
+    public static final String BACKUP_KEY = &quot;backup&quot;;
+
+    public static final String DIRECTORY_KEY = &quot;directory&quot;;
+
+    public static final String DEPRECATED_KEY = &quot;deprecated&quot;;
+
+    public static final String ANYHOST_KEY = &quot;anyhost&quot;;
+
+    public static final String ANYHOST_VALUE = &quot;0.0.0.0&quot;;
+
+    public static final String LOCALHOST_KEY = &quot;localhost&quot;;
+
+    public static final String LOCALHOST_VALUE = &quot;127.0.0.1&quot;;
+
+    public static final String APPLICATION_KEY = &quot;application&quot;;
+
+    public static final String GATEWAY_SOURCE_KEY = &quot;gateway_source_key&quot;;
+
+    public static final String LOCAL_KEY = &quot;local&quot;;
+
+    public static final String STUB_KEY = &quot;stub&quot;;
+
+    public static final String MOCK_KEY = &quot;mock&quot;;
+
+    public static final String PROTOCOL_KEY = &quot;protocol&quot;;
+
+    public static final String PROXY_KEY = &quot;proxy&quot;;
+
+    public static final String WEIGHT_KEY = &quot;weight&quot;;
+
+    public static final String FORKS_KEY = &quot;forks&quot;;
+
+    public static final String DEFAULT_THREADPOOL = &quot;limited&quot;;
+
+    public static final String DEFAULT_CLIENT_THREADPOOL = &quot;cached&quot;;
+
+    public static final String THREADPOOL_KEY = &quot;threadpool&quot;;
+
+    public static final String THREAD_NAME_KEY = &quot;threadname&quot;;
+
+    public static final String IO_THREADS_KEY = &quot;iothreads&quot;;
+
+    public static final String CORE_THREADS_KEY = &quot;corethreads&quot;;
+
+    public static final String THREADS_KEY = &quot;threads&quot;;
+
+    public static final String QUEUES_KEY = &quot;queues&quot;;
+
+    public static final String ALIVE_KEY = &quot;alive&quot;;
+
+    public static final String EXECUTES_KEY = &quot;executes&quot;;
+
+    public static final String BUFFER_KEY = &quot;buffer&quot;;
+
+    public static final String PAYLOAD_KEY = &quot;payload&quot;;
+
+    public static final String REFERENCE_FILTER_KEY = &quot;reference.filter&quot;;
+
+    public static final String INVOKER_LISTENER_KEY = &quot;invoker.listener&quot;;
+
+    public static final String SERVICE_FILTER_KEY = &quot;service.filter&quot;;
+
+    public static final String EXPORTER_LISTENER_KEY = &quot;exporter.listener&quot;;
+
+    public static final String ACCESS_LOG_KEY = &quot;accesslog&quot;;
+
+    public static final String ACTIVES_KEY = &quot;actives&quot;;
+
+    public static final String CONNECTIONS_KEY = &quot;connections&quot;;
+
+    public static final String ACCEPTS_KEY = &quot;accepts&quot;;
+
+    public static final String IDLE_TIMEOUT_KEY = &quot;idle.timeout&quot;;
+
+    public static final String HEARTBEAT_KEY = &quot;heartbeat&quot;;
+
+    /**
+     * Every heartbeat duration / HEATBEAT_CHECK_TICK, check if a heartbeat should be sent. Every heartbeat timeout
+     * duration / HEATBEAT_CHECK_TICK, check if a connection should be closed on server side, and if reconnect on
+     * client side
+     */
+    public static final int HEARTBEAT_CHECK_TICK = 3;
+
+    /**
+     * the least heartbeat during is 1000 ms.
+     */
+    public static final long LEAST_HEARTBEAT_DURATION = 1000;
+
+    /**
+     * ticks per wheel. Currently only contains two tasks, so 16 locations are enough
+     */
+    public static final int TICKS_PER_WHEEL = 16;
+
+    public static final String HEARTBEAT_TIMEOUT_KEY = &quot;heartbeat.timeout&quot;;
+
+    public static final String CONNECT_TIMEOUT_KEY = &quot;connect.timeout&quot;;
+
+    public static final String TIMEOUT_KEY = &quot;timeout&quot;;
+
+    public static final String RETRIES_KEY = &quot;retries&quot;;
+
+    public static final String PREFIX_GENERIC_RETRIES_KEY = &quot;generic.retries&quot;;
+
+    public static final String PROMPT_KEY = &quot;prompt&quot;;
+
+    public static final String DEFAULT_PROMPT = &quot;dubbo&gt;&quot;;
+
+    public static final String CODEC_KEY = &quot;codec&quot;;
+
+    public static final String SERIALIZATION_KEY = &quot;serialization&quot;;
+
+    public static final String EXTENSION_KEY = &quot;extension&quot;;
+
+    public static final String KEEP_ALIVE_KEY = &quot;keepalive&quot;;
+
+    public static final String OPTIMIZER_KEY = &quot;optimizer&quot;;
+
+    public static final String EXCHANGER_KEY = &quot;exchanger&quot;;
+
+    public static final String TRANSPORTER_KEY = &quot;transporter&quot;;
+
+    public static final String SERVER_KEY = &quot;server&quot;;
+
+    public static final String CLIENT_KEY = &quot;client&quot;;
+
+    public static final String ID_KEY = &quot;id&quot;;
+
+    public static final String ASYNC_KEY = &quot;async&quot;;
+
+    public static final String FUTURE_GENERATED_KEY = &quot;future_generated&quot;;
+    public static final String FUTURE_RETURNTYPE_KEY = &quot;future_returntype&quot;;
+
+    public static final String ASYNC_SUFFIX = &quot;Async&quot;;
+
+    public static final String RETURN_KEY = &quot;return&quot;;
+
+    public static final String TOKEN_KEY = &quot;token&quot;;
+
+    public static final String METHOD_KEY = &quot;method&quot;;
+
+    public static final String METHODS_KEY = &quot;methods&quot;;
+
+    public static final String CHARSET_KEY = &quot;charset&quot;;
+
+    public static final String RECONNECT_KEY = &quot;reconnect&quot;;
+
+    public static final String SEND_RECONNECT_KEY = &quot;send.reconnect&quot;;
+
+    public static final int DEFAULT_RECONNECT_PERIOD = 2000;
+
+    public static final String SHUTDOWN_TIMEOUT_KEY = &quot;shutdown.timeout&quot;;
+
+    public static final int DEFAULT_SHUTDOWN_TIMEOUT = 1000 * 60 * 15;
+
+    public static final String PID_KEY = &quot;pid&quot;;
+
+    public static final String TIMESTAMP_KEY = &quot;timestamp&quot;;
+
+    public static final String REMOTE_TIMESTAMP_KEY = &quot;remote.timestamp&quot;;
+
+    public static final String WARMUP_KEY = &quot;warmup&quot;;
+
+    public static final int DEFAULT_WARMUP = 10 * 60 * 1000;
+
+    public static final String CHECK_KEY = &quot;check&quot;;
+
+    public static final String REGISTER_KEY = &quot;register&quot;;
+
+    public static final String SUBSCRIBE_KEY = &quot;subscribe&quot;;
+
+    public static final String GROUP_KEY = &quot;group&quot;;
+
+    public static final String PATH_KEY = &quot;path&quot;;
+
+    public static final String INTERFACE_KEY = &quot;interface&quot;;
+
+    public static final String INTERFACES = &quot;interfaces&quot;;
+
+    public static final String GENERIC_KEY = &quot;generic&quot;;
+
+    public static final String FILE_KEY = &quot;file&quot;;
+
+    public static final String DUMP_DIRECTORY = &quot;dump.directory&quot;;
+
+    public static final String WAIT_KEY = &quot;wait&quot;;
+
+    public static final String CLASSIFIER_KEY = &quot;classifier&quot;;
+
+    public static final String VERSION_KEY = &quot;version&quot;;
+
+    public static final String REVISION_KEY = &quot;revision&quot;;
+
+    public static final String DUBBO_VERSION_KEY = &quot;dubbo&quot;;
+
+    public static final String HESSIAN_VERSION_KEY = &quot;hessian.version&quot;;
+
+    public static final String DISPATCHER_KEY = &quot;dispatcher&quot;;
+
+    public static final String CHANNEL_HANDLER_KEY = &quot;channel.handler&quot;;
+
+    public static final String DEFAULT_CHANNEL_HANDLER = &quot;default&quot;;
+
+    public static final String ANY_VALUE = &quot;*&quot;;
+
+    public static final String COMMA_SEPARATOR = &quot;,&quot;;
+
+<span class="nc" id="L384">    public static final Pattern COMMA_SPLIT_PATTERN = Pattern</span>
+<span class="nc" id="L385">            .compile(&quot;\\s*[,]+\\s*&quot;);</span>
+
+    public final static String PATH_SEPARATOR = &quot;/&quot;;
+
+    public final static String PROTOCOL_SEPARATOR = &quot;://&quot;;
+
+    public static final String REGISTRY_SEPARATOR = &quot;|&quot;;
+
+<span class="nc" id="L393">    public static final Pattern REGISTRY_SPLIT_PATTERN = Pattern</span>
+<span class="nc" id="L394">            .compile(&quot;\\s*[|;]+\\s*&quot;);</span>
+
+    public static final String SEMICOLON_SEPARATOR = &quot;;&quot;;
+
+<span class="nc" id="L398">    public static final Pattern SEMICOLON_SPLIT_PATTERN = Pattern</span>
+<span class="nc" id="L399">            .compile(&quot;\\s*[;]+\\s*&quot;);</span>
+
+    public static final String CONNECT_QUEUE_CAPACITY = &quot;connect.queue.capacity&quot;;
+
+    public static final String CONNECT_QUEUE_WARNING_SIZE = &quot;connect.queue.warning.size&quot;;
+
+    public static final int DEFAULT_CONNECT_QUEUE_WARNING_SIZE = 1000;
+
+    public static final String CHANNEL_ATTRIBUTE_READONLY_KEY = &quot;channel.readonly&quot;;
+
+    public static final String CHANNEL_READONLYEVENT_SENT_KEY = &quot;channel.readonly.sent&quot;;
+
+    public static final String CHANNEL_SEND_READONLYEVENT_KEY = &quot;channel.readonly.send&quot;;
+
+    public static final String COUNT_PROTOCOL = &quot;count&quot;;
+
+    public static final String TRACE_PROTOCOL = &quot;trace&quot;;
+
+    public static final String EMPTY_PROTOCOL = &quot;empty&quot;;
+
+    public static final String ADMIN_PROTOCOL = &quot;admin&quot;;
+
+    public static final String PROVIDER_PROTOCOL = &quot;provider&quot;;
+
+    public static final String CONSUMER_PROTOCOL = &quot;consumer&quot;;
+
+    public static final String ROUTE_PROTOCOL = &quot;route&quot;;
+
+    public static final String SCRIPT_PROTOCOL = &quot;script&quot;;
+
+    public static final String CONDITION_PROTOCOL = &quot;condition&quot;;
+
+    public static final String MOCK_PROTOCOL = &quot;mock&quot;;
+
+    public static final String RETURN_PREFIX = &quot;return &quot;;
+
+    public static final String THROW_PREFIX = &quot;throw&quot;;
+
+    public static final String FAIL_PREFIX = &quot;fail:&quot;;
+
+    public static final String FORCE_PREFIX = &quot;force:&quot;;
+
+    public static final String FORCE_KEY = &quot;force&quot;;
+
+    public static final String MERGER_KEY = &quot;merger&quot;;
+
+    /**
+     * To decide whether to exclude unavailable invoker from the cluster
+     */
+    public static final String CLUSTER_AVAILABLE_CHECK_KEY = &quot;cluster.availablecheck&quot;;
+
+    /**
+     * The default value of cluster.availablecheck
+     *
+     * @see #CLUSTER_AVAILABLE_CHECK_KEY
+     */
+    public static final boolean DEFAULT_CLUSTER_AVAILABLE_CHECK = true;
+
+    /**
+     * To decide whether to enable sticky strategy for cluster
+     */
+    public static final String CLUSTER_STICKY_KEY = &quot;sticky&quot;;
+
+    /**
+     * The default value of sticky
+     *
+     * @see #CLUSTER_STICKY_KEY
+     */
+    public static final boolean DEFAULT_CLUSTER_STICKY = false;
+
+    /**
+     * To decide whether to make connection when the client is created
+     */
+    public static final String LAZY_CONNECT_KEY = &quot;lazy&quot;;
+
+    /**
+     * The initial state for lazy connection
+     */
+    public static final String LAZY_CONNECT_INITIAL_STATE_KEY = &quot;connect.lazy.initial.state&quot;;
+
+    /**
+     * The default value of lazy connection's initial state: true
+     *
+     * @see #LAZY_CONNECT_INITIAL_STATE_KEY
+     */
+    public static final boolean DEFAULT_LAZY_CONNECT_INITIAL_STATE = true;
+
+    /**
+     * To decide whether register center saves file synchronously, the default value is asynchronously
+     */
+    public static final String REGISTRY_FILESAVE_SYNC_KEY = &quot;save.file&quot;;
+
+    /**
+     * Period of registry center's retry interval
+     */
+    public static final String REGISTRY_RETRY_PERIOD_KEY = &quot;retry.period&quot;;
+
+    /**
+     * Default value for the period of retry interval in milliseconds: 5000
+     */
+    public static final int DEFAULT_REGISTRY_RETRY_PERIOD = 5 * 1000;
+
+    /**
+     * Reconnection period in milliseconds for register center
+     */
+    public static final String REGISTRY_RECONNECT_PERIOD_KEY = &quot;reconnect.period&quot;;
+
+    public static final int DEFAULT_REGISTRY_RECONNECT_PERIOD = 3 * 1000;
+
+    public static final String SESSION_TIMEOUT_KEY = &quot;session&quot;;
+
+    public static final int DEFAULT_SESSION_TIMEOUT = 60 * 1000;
+
+    /**
+     * The key name for export URL in register center
+     */
+    public static final String EXPORT_KEY = &quot;export&quot;;
+
+    /**
+     * The key name for reference URL in register center
+     */
+    public static final String REFER_KEY = &quot;refer&quot;;
+
+    /**
+     * callback inst id
+     */
+    public static final String CALLBACK_SERVICE_KEY = &quot;callback.service.instid&quot;;
+
+    /**
+     * The limit of callback service instances for one interface on every client
+     */
+    public static final String CALLBACK_INSTANCES_LIMIT_KEY = &quot;callbacks&quot;;
+
+    /**
+     * The default limit number for callback service instances
+     *
+     * @see #CALLBACK_INSTANCES_LIMIT_KEY
+     */
+    public static final int DEFAULT_CALLBACK_INSTANCES = 1;
+
+    public static final String CALLBACK_SERVICE_PROXY_KEY = &quot;callback.service.proxy&quot;;
+
+    public static final String IS_CALLBACK_SERVICE = &quot;is_callback_service&quot;;
+
+    /**
+     * Invokers in channel's callback
+     */
+    public static final String CHANNEL_CALLBACK_KEY = &quot;channel.callback.invokers.key&quot;;
+
+    @Deprecated
+    public static final String SHUTDOWN_WAIT_SECONDS_KEY = &quot;dubbo.service.shutdown.wait.seconds&quot;;
+
+    public static final String SHUTDOWN_WAIT_KEY = &quot;dubbo.service.shutdown.wait&quot;;
+
+    public static final String IS_SERVER_KEY = &quot;isserver&quot;;
+
+    /**
+     * Default timeout value in milliseconds for server shutdown
+     */
+    public static final int DEFAULT_SERVER_SHUTDOWN_TIMEOUT = 10000;
+
+    public static final String ON_CONNECT_KEY = &quot;onconnect&quot;;
+
+    public static final String ON_DISCONNECT_KEY = &quot;ondisconnect&quot;;
+
+    public static final String ON_INVOKE_METHOD_KEY = &quot;oninvoke.method&quot;;
+
+    public static final String ON_RETURN_METHOD_KEY = &quot;onreturn.method&quot;;
+
+    public static final String ON_THROW_METHOD_KEY = &quot;onthrow.method&quot;;
+
+    public static final String ON_INVOKE_INSTANCE_KEY = &quot;oninvoke.instance&quot;;
+
+    public static final String ON_RETURN_INSTANCE_KEY = &quot;onreturn.instance&quot;;
+
+    public static final String ON_THROW_INSTANCE_KEY = &quot;onthrow.instance&quot;;
+
+    public static final String OVERRIDE_PROTOCOL = &quot;override&quot;;
+
+    public static final String PRIORITY_KEY = &quot;priority&quot;;
+
+    public static final String RULE_KEY = &quot;rule&quot;;
+
+    public static final String TYPE_KEY = &quot;type&quot;;
+
+    public static final String RUNTIME_KEY = &quot;runtime&quot;;
+
+    /**
+     * when ROUTER_KEY's value is set to ROUTER_TYPE_CLEAR, RegistryDirectory will clean all current routers
+     */
+    public static final String ROUTER_TYPE_CLEAR = &quot;clean&quot;;
+
+    public static final String DEFAULT_SCRIPT_TYPE_KEY = &quot;javascript&quot;;
+
+    public static final String STUB_EVENT_KEY = &quot;dubbo.stub.event&quot;;
+
+    public static final boolean DEFAULT_STUB_EVENT = false;
+
+    public static final String STUB_EVENT_METHODS_KEY = &quot;dubbo.stub.event.methods&quot;;
+
+    /**
+     * When this attribute appears in invocation's attachment, mock invoker will be used
+     */
+    public static final String INVOCATION_NEED_MOCK = &quot;invocation.need.mock&quot;;
+
+    public static final String LOCAL_PROTOCOL = &quot;injvm&quot;;
+
+    public static final String AUTO_ATTACH_INVOCATIONID_KEY = &quot;invocationid.autoattach&quot;;
+
+    public static final String SCOPE_KEY = &quot;scope&quot;;
+
+    public static final String SCOPE_LOCAL = &quot;local&quot;;
+
+    public static final String SCOPE_REMOTE = &quot;remote&quot;;
+
+    public static final String SCOPE_NONE = &quot;none&quot;;
+
+    public static final String RELIABLE_PROTOCOL = &quot;napoli&quot;;
+
+    public static final String TPS_LIMIT_RATE_KEY = &quot;tps&quot;;
+
+    public static final String TPS_LIMIT_INTERVAL_KEY = &quot;tps.interval&quot;;
+
+    public static final long DEFAULT_TPS_LIMIT_INTERVAL = 60 * 1000;
+
+    public static final String DECODE_IN_IO_THREAD_KEY = &quot;decode.in.io&quot;;
+
+    public static final boolean DEFAULT_DECODE_IN_IO_THREAD = true;
+
+    public static final String INPUT_KEY = &quot;input&quot;;
+
+    public static final String OUTPUT_KEY = &quot;output&quot;;
+
+<span class="nc" id="L632">    public static final String EXECUTOR_SERVICE_COMPONENT_KEY = ExecutorService.class.getName();</span>
+
+    public static final String GENERIC_SERIALIZATION_NATIVE_JAVA = &quot;nativejava&quot;;
+
+    public static final String GENERIC_SERIALIZATION_DEFAULT = &quot;true&quot;;
+
+    public static final String GENERIC_SERIALIZATION_BEAN = &quot;bean&quot;;
+
+    public static final String GENERIC_SERIALIZATION_YOUPIN_JSON = &quot;youpin_json&quot;;
+
+    public static final String YOUPIN_PROTOCOL_VERSION = &quot;youpin_protocol_version&quot;;
+
+    public static final String DUBBO_IP_TO_REGISTRY = &quot;DUBBO_IP_TO_REGISTRY&quot;;
+
+    public static final String DUBBO_PORT_TO_REGISTRY = &quot;DUBBO_PORT_TO_REGISTRY&quot;;
+
+    public static final String DUBBO_IP_TO_BIND = &quot;DUBBO_IP_TO_BIND&quot;;
+
+    public static final String DOCKER_DUBBO_IP_TO_BIND = &quot;DOCKER_DUBBO_IP_TO_BIND&quot;;
+
+    public static final String DUBBO_PORT_TO_BIND = &quot;DUBBO_PORT_TO_BIND&quot;;
+
+    /**
+     * 绑定的gson端口
+     */
+    public static final String GSON_DUBBO_PORT_TO_BIND = &quot;GSON_DUBBO_PORT_TO_BIND&quot;;
+
+    public static final String BIND_IP_KEY = &quot;bind.ip&quot;;
+
+    public static final String BIND_PORT_KEY = &quot;bind.port&quot;;
+
+    public static final String REGISTER_IP_KEY = &quot;register.ip&quot;;
+
+    public static final String QOS_ENABLE = &quot;qos.enable&quot;;
+
+    public static final String QOS_PORT = &quot;qos.port&quot;;
+
+    public static final String ACCEPT_FOREIGN_IP = &quot;qos.accept.foreign.ip&quot;;
+
+    public static final String HESSIAN2_REQUEST_KEY = &quot;hessian2.request&quot;;
+
+    public static final boolean DEFAULT_HESSIAN2_REQUEST = false;
+
+    public static final String HESSIAN_OVERLOAD_METHOD_KEY = &quot;hessian.overload.method&quot;;
+
+    public static final boolean DEFAULT_HESSIAN_OVERLOAD_METHOD = false;
+
+    public static final String MULTICAST = &quot;multicast&quot;;
+
+    public static final String TAG_KEY = &quot;tag&quot;;
+
+    public static final String REQUEST_TAG_KEY = &quot;request.tag&quot;;
+
+    public static final String TELNET = &quot;telnet&quot;;
+    /*
+     * private Constants(){ }
+     */
+
+    public static final String LOG_ARGUMENTS = &quot;log_arguments&quot;;
+
+    public static final String LOG_RESULT = &quot;log_result&quot;;
+
+    public static final String LOG_EXCEPTION = &quot;log_exception&quot;;
+
+    public static final String TRUE = &quot;true&quot;;
+
+    public static final String FALSE = &quot;false&quot;;
+
+
+    public static final String TRACE_ID = &quot;_trace_id_&quot;;
+
+    public static final String SPAN_ID = &quot;_span_id_&quot;;
+
+    public static final String RETRY_SPAN_ID = &quot;_retry_span_id_&quot;;
+
+    public static final String PROVIDER_IP = &quot;_provider_ip_&quot;;
+
+    public static final String PROVIDER_PORT = &quot;_provider_port_&quot;;
+
+    public static final String MUST_PROVIDER_IP_PORT = &quot;_must_provider_ip_port_&quot;;
+
+    public static final String PROVIDER_REGION = &quot;provider.region&quot;;
+
+    public static final String CONSUMER_REGION = &quot;consumer.region&quot;;
+
+    public static final String FILTER_FIELD = &quot;filter_field&quot;;
+
+    public static final String USE_LOADER_FUNC = &quot;dubbo.use.loader.func&quot;;
+
+    public static final String CONSUMER_TOKEN = &quot;consumer_token&quot;;
+
+    public static final String PROVIDER_TOKEN = &quot;provider_token&quot;;
+
+    public static final String GSON_GENERIC_ARGS = &quot;gson_generic_args&quot;;
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>

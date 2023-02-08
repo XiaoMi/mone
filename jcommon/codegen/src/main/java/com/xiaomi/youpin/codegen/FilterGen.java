@@ -62,7 +62,7 @@ public class FilterGen {
     }
 
     private void generateExtensions(String projectPath, String projectName, String version, String desc, String author, String packageName, String gitAddress, String params, String cname, String system) {
-        if (!system.equals("0") && !system.equals("1")) {
+        if (!"0".equals(system) && !"1".equals(system)) {
             system = "0";
         }
 

@@ -32,6 +32,7 @@ public class GetInfoProcessor implements NettyRequestProcessor {
 
     @Override
     public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request) {
+        log.info("get info");
         return RemotingCommand.createResponseCommand(RpcCmd.getInfoRes, version());
     }
 

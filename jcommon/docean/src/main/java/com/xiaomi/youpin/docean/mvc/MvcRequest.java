@@ -42,4 +42,6 @@ public class MvcRequest {
     private String method;
 
     private Map<String,String> headers;
+
+    private Map<String, String> params;
 }

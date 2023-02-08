@@ -22,9 +22,7 @@ import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
 import com.xiaomi.youpin.docean.anno.Component;
 import com.xiaomi.youpin.docean.plugin.config.anno.Value;
 import com.xiaomi.youpin.tesla.agent.cmd.AgentCmd;
-import com.xiaomi.youpin.tesla.agent.common.Config;
 import com.xiaomi.youpin.tesla.agent.common.ProcessUtils;
-import com.xiaomi.youpin.tesla.agent.common.Tail;
 import com.xiaomi.youpin.tesla.agent.po.ShellReq;
 import com.xiaomi.youpin.tesla.agent.po.ShellRes;
 import io.netty.channel.ChannelHandlerContext;
@@ -51,6 +49,7 @@ public class ShellProcessor implements NettyRequestProcessor {
     private static final String clear = "__clear__";
 
     private static final String init = "__init__";
+
 
     @Value("$sshKey")
     private String sshKey;

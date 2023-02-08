@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ConfigUtils.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-remoting-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.common.utils</a> &gt; <span class="el_source">ConfigUtils.java</span></div><h1>ConfigUtils.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.common.utils;
+
+import org.apache.dubbo.common.Constants;
+import org.apache.dubbo.common.extension.ExtensionLoader;
+import org.apache.dubbo.common.logger.Logger;
+import org.apache.dubbo.common.logger.LoggerFactory;
+
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class ConfigUtils {
+
+<span class="nc" id="L38">    private static final Logger logger = LoggerFactory.getLogger(ConfigUtils.class);</span>
+<span class="nc" id="L39">    private static Pattern VARIABLE_PATTERN = Pattern.compile(</span>
+            &quot;\\$\\s*\\{?\\s*([\\._0-9a-zA-Z]+)\\s*\\}?&quot;);
+    private static volatile Properties PROPERTIES;
+<span class="nc" id="L42">    private static int PID = -1;</span>
+
+    private ConfigUtils() {
+    }
+
+    public static boolean isNotEmpty(String value) {
+<span class="nc bnc" id="L48" title="All 2 branches missed.">        return !isEmpty(value);</span>
+    }
+
+    public static boolean isEmpty(String value) {
+<span class="nc bnc" id="L52" title="All 4 branches missed.">        return value == null || value.length() == 0</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">                || &quot;false&quot;.equalsIgnoreCase(value)</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">                || &quot;0&quot;.equalsIgnoreCase(value)</span>
+<span class="nc bnc" id="L55" title="All 2 branches missed.">                || &quot;null&quot;.equalsIgnoreCase(value)</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">                || &quot;N/A&quot;.equalsIgnoreCase(value);</span>
+    }
+
+    public static boolean isDefault(String value) {
+<span class="nc bnc" id="L60" title="All 2 branches missed.">        return &quot;true&quot;.equalsIgnoreCase(value)</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">                || &quot;default&quot;.equalsIgnoreCase(value);</span>
+    }
+
+    /**
+     * Insert default extension into extension list.
+     * &lt;p&gt;
+     * Extension list support&lt;ul&gt;
+     * &lt;li&gt;Special value &lt;code&gt;&lt;strong&gt;default&lt;/strong&gt;&lt;/code&gt;, means the location for default extensions.
+     * &lt;li&gt;Special symbol&lt;code&gt;&lt;strong&gt;-&lt;/strong&gt;&lt;/code&gt;, means remove. &lt;code&gt;-foo1&lt;/code&gt; will remove default extension 'foo'; &lt;code&gt;-default&lt;/code&gt; will remove all default extensions.
+     * &lt;/ul&gt;
+     *
+     * @param type Extension type
+     * @param cfg  Extension name list
+     * @param def  Default extension list
+     * @return result extension list
+     */
+    public static List&lt;String&gt; mergeValues(Class&lt;?&gt; type, String cfg, List&lt;String&gt; def) {
+<span class="nc" id="L78">        List&lt;String&gt; defaults = new ArrayList&lt;String&gt;();</span>
+<span class="nc bnc" id="L79" title="All 2 branches missed.">        if (def != null) {</span>
+<span class="nc bnc" id="L80" title="All 2 branches missed.">            for (String name : def) {</span>
+<span class="nc bnc" id="L81" title="All 2 branches missed.">                if (ExtensionLoader.getExtensionLoader(type).hasExtension(name)) {</span>
+<span class="nc" id="L82">                    defaults.add(name);</span>
+                }
+<span class="nc" id="L84">            }</span>
+        }
+
+<span class="nc" id="L87">        List&lt;String&gt; names = new ArrayList&lt;String&gt;();</span>
+
+        // add initial values
+<span class="nc bnc" id="L90" title="All 4 branches missed.">        String[] configs = (cfg == null || cfg.trim().length() == 0) ? new String[0] : Constants.COMMA_SPLIT_PATTERN.split(cfg);</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">        for (String config : configs) {</span>
+<span class="nc bnc" id="L92" title="All 4 branches missed.">            if (config != null &amp;&amp; config.trim().length() &gt; 0) {</span>
+<span class="nc" id="L93">                names.add(config);</span>
+            }
+        }
+
+        // -default is not included
+<span class="nc bnc" id="L98" title="All 2 branches missed.">        if (!names.contains(Constants.REMOVE_VALUE_PREFIX + Constants.DEFAULT_KEY)) {</span>
+            // add default extension
+<span class="nc" id="L100">            int i = names.indexOf(Constants.DEFAULT_KEY);</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">            if (i &gt; 0) {</span>
+<span class="nc" id="L102">                names.addAll(i, defaults);</span>
+            } else {
+<span class="nc" id="L104">                names.addAll(0, defaults);</span>
+            }
+<span class="nc" id="L106">            names.remove(Constants.DEFAULT_KEY);</span>
+<span class="nc" id="L107">        } else {</span>
+<span class="nc" id="L108">            names.remove(Constants.DEFAULT_KEY);</span>
+        }
+
+        // merge - configuration
+<span class="nc bnc" id="L112" title="All 2 branches missed.">        for (String name : new ArrayList&lt;String&gt;(names)) {</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">            if (name.startsWith(Constants.REMOVE_VALUE_PREFIX)) {</span>
+<span class="nc" id="L114">                names.remove(name);</span>
+<span class="nc" id="L115">                names.remove(name.substring(1));</span>
+            }
+<span class="nc" id="L117">        }</span>
+<span class="nc" id="L118">        return names;</span>
+    }
+
+    public static String replaceProperty(String expression, Map&lt;String, String&gt; params) {
+<span class="nc bnc" id="L122" title="All 6 branches missed.">        if (expression == null || expression.length() == 0 || expression.indexOf('$') &lt; 0) {</span>
+<span class="nc" id="L123">            return expression;</span>
+        }
+<span class="nc" id="L125">        Matcher matcher = VARIABLE_PATTERN.matcher(expression);</span>
+<span class="nc" id="L126">        StringBuffer sb = new StringBuffer();</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">        while (matcher.find()) {</span>
+<span class="nc" id="L128">            String key = matcher.group(1);</span>
+<span class="nc" id="L129">            String value = System.getProperty(key);</span>
+<span class="nc bnc" id="L130" title="All 4 branches missed.">            if (value == null &amp;&amp; params != null) {</span>
+<span class="nc" id="L131">                value = params.get(key);</span>
+            }
+<span class="nc bnc" id="L133" title="All 2 branches missed.">            if (value == null) {</span>
+<span class="nc" id="L134">                value = &quot;&quot;;</span>
+            }
+<span class="nc" id="L136">            matcher.appendReplacement(sb, Matcher.quoteReplacement(value));</span>
+<span class="nc" id="L137">        }</span>
+<span class="nc" id="L138">        matcher.appendTail(sb);</span>
+<span class="nc" id="L139">        return sb.toString();</span>
+    }
+
+    public static Properties getProperties() {
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        if (PROPERTIES == null) {</span>
+<span class="nc" id="L144">            synchronized (ConfigUtils.class) {</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">                if (PROPERTIES == null) {</span>
+<span class="nc" id="L146">                    String path = System.getProperty(Constants.DUBBO_PROPERTIES_KEY);</span>
+<span class="nc bnc" id="L147" title="All 4 branches missed.">                    if (path == null || path.length() == 0) {</span>
+<span class="nc" id="L148">                        path = System.getenv(Constants.DUBBO_PROPERTIES_KEY);</span>
+<span class="nc bnc" id="L149" title="All 4 branches missed.">                        if (path == null || path.length() == 0) {</span>
+<span class="nc" id="L150">                            path = Constants.DEFAULT_DUBBO_PROPERTIES;</span>
+                        }
+                    }
+<span class="nc" id="L153">                    PROPERTIES = ConfigUtils.loadProperties(path, false, true);</span>
+                }
+<span class="nc" id="L155">            }</span>
+        }
+<span class="nc" id="L157">        return PROPERTIES;</span>
+    }
+
+    public static void setProperties(Properties properties) {
+<span class="nc" id="L161">        PROPERTIES = properties;</span>
+<span class="nc" id="L162">    }</span>
+
+    public static void addProperties(Properties properties) {
+<span class="nc bnc" id="L165" title="All 2 branches missed.">        if (properties != null) {</span>
+<span class="nc" id="L166">            getProperties().putAll(properties);</span>
+        }
+<span class="nc" id="L168">    }</span>
+
+    public static String getProperty(String key) {
+<span class="nc" id="L171">        return getProperty(key, null);</span>
+    }
+
+    @SuppressWarnings({&quot;unchecked&quot;, &quot;rawtypes&quot;})
+    public static String getProperty(String key, String defaultValue) {
+<span class="nc" id="L176">        String value = System.getProperty(key);</span>
+<span class="nc bnc" id="L177" title="All 4 branches missed.">        if (value != null &amp;&amp; value.length() &gt; 0) {</span>
+<span class="nc" id="L178">            return value;</span>
+        }
+<span class="nc" id="L180">        Properties properties = getProperties();</span>
+<span class="nc" id="L181">        return replaceProperty(properties.getProperty(key, defaultValue), (Map) properties);</span>
+    }
+
+    /**
+     * System environment -&gt; System properties
+     *
+     * @param key key
+     * @return value
+     */
+    public static String getSystemProperty(String key) {
+<span class="nc" id="L191">        String value = System.getenv(key);</span>
+<span class="nc bnc" id="L192" title="All 4 branches missed.">        if (value == null || value.length() == 0) {</span>
+<span class="nc" id="L193">            value = System.getProperty(key);</span>
+        }
+<span class="nc" id="L195">        return value;</span>
+    }
+
+    public static Properties loadProperties(String fileName) {
+<span class="nc" id="L199">        return loadProperties(fileName, false, false);</span>
+    }
+
+    public static Properties loadProperties(String fileName, boolean allowMultiFile) {
+<span class="nc" id="L203">        return loadProperties(fileName, allowMultiFile, false);</span>
+    }
+
+    /**
+     * Load properties file to {@link Properties} from class path.
+     *
+     * @param fileName       properties file name. for example: &lt;code&gt;dubbo.properties&lt;/code&gt;, &lt;code&gt;METE-INF/conf/foo.properties&lt;/code&gt;
+     * @param allowMultiFile if &lt;code&gt;false&lt;/code&gt;, throw {@link IllegalStateException} when found multi file on the class path.
+     * @param optional       is optional. if &lt;code&gt;false&lt;/code&gt;, log warn when properties config file not found!s
+     * @return loaded {@link Properties} content. &lt;ul&gt;
+     * &lt;li&gt;return empty Properties if no file found.
+     * &lt;li&gt;merge multi properties file if found multi file
+     * &lt;/ul&gt;
+     * @throws IllegalStateException not allow multi-file, but multi-file exsit on class path.
+     */
+    public static Properties loadProperties(String fileName, boolean allowMultiFile, boolean optional) {
+<span class="nc" id="L219">        Properties properties = new Properties();</span>
+        // add scene judgement in windows environment Fix 2557
+<span class="nc bnc" id="L221" title="All 4 branches missed.">        if (fileName.startsWith(&quot;/&quot;) || fileName.matches(&quot;^[A-z]:\\\\\\S+$&quot;)) {</span>
+            try {
+<span class="nc" id="L223">                FileInputStream input = new FileInputStream(fileName);</span>
+                try {
+<span class="nc" id="L225">                    properties.load(input);</span>
+                } finally {
+<span class="nc" id="L227">                    input.close();</span>
+                }
+<span class="nc" id="L229">            } catch (Throwable e) {</span>
+<span class="nc" id="L230">                logger.warn(&quot;Failed to load &quot; + fileName + &quot; file from &quot; + fileName + &quot;(ignore this file): &quot; + e.getMessage(), e);</span>
+<span class="nc" id="L231">            }</span>
+<span class="nc" id="L232">            return properties;</span>
+        }
+
+<span class="nc" id="L235">        List&lt;java.net.URL&gt; list = new ArrayList&lt;java.net.URL&gt;();</span>
+        try {
+<span class="nc" id="L237">            Enumeration&lt;java.net.URL&gt; urls = ClassHelper.getClassLoader().getResources(fileName);</span>
+<span class="nc" id="L238">            list = new ArrayList&lt;java.net.URL&gt;();</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">            while (urls.hasMoreElements()) {</span>
+<span class="nc" id="L240">                list.add(urls.nextElement());</span>
+            }
+<span class="nc" id="L242">        } catch (Throwable t) {</span>
+<span class="nc" id="L243">            logger.warn(&quot;Fail to load &quot; + fileName + &quot; file: &quot; + t.getMessage(), t);</span>
+<span class="nc" id="L244">        }</span>
+
+<span class="nc bnc" id="L246" title="All 2 branches missed.">        if (list.isEmpty()) {</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">            if (!optional) {</span>
+<span class="nc" id="L248">                logger.warn(&quot;No &quot; + fileName + &quot; found on the class path.&quot;);</span>
+            }
+<span class="nc" id="L250">            return properties;</span>
+        }
+
+<span class="nc bnc" id="L253" title="All 2 branches missed.">        if (!allowMultiFile) {</span>
+<span class="nc bnc" id="L254" title="All 2 branches missed.">            if (list.size() &gt; 1) {</span>
+<span class="nc" id="L255">                String errMsg = String.format(&quot;only 1 %s file is expected, but %d dubbo.properties files found on class path: %s&quot;,</span>
+<span class="nc" id="L256">                        fileName, list.size(), list.toString());</span>
+<span class="nc" id="L257">                logger.warn(errMsg);</span>
+                // throw new IllegalStateException(errMsg); // see http://code.alibabatech.com/jira/browse/DUBBO-133
+            }
+
+            // fall back to use method getResourceAsStream
+            try {
+<span class="nc" id="L263">                properties.load(ClassHelper.getClassLoader().getResourceAsStream(fileName));</span>
+<span class="nc" id="L264">            } catch (Throwable e) {</span>
+<span class="nc" id="L265">                logger.warn(&quot;Failed to load &quot; + fileName + &quot; file from &quot; + fileName + &quot;(ignore this file): &quot; + e.getMessage(), e);</span>
+<span class="nc" id="L266">            }</span>
+<span class="nc" id="L267">            return properties;</span>
+        }
+
+<span class="nc" id="L270">        logger.info(&quot;load &quot; + fileName + &quot; properties file from &quot; + list);</span>
+
+<span class="nc bnc" id="L272" title="All 2 branches missed.">        for (java.net.URL url : list) {</span>
+            try {
+<span class="nc" id="L274">                Properties p = new Properties();</span>
+<span class="nc" id="L275">                InputStream input = url.openStream();</span>
+<span class="nc bnc" id="L276" title="All 2 branches missed.">                if (input != null) {</span>
+                    try {
+<span class="nc" id="L278">                        p.load(input);</span>
+<span class="nc" id="L279">                        properties.putAll(p);</span>
+                    } finally {
+                        try {
+<span class="nc" id="L282">                            input.close();</span>
+<span class="nc" id="L283">                        } catch (Throwable t) {</span>
+<span class="nc" id="L284">                        }</span>
+                    }
+                }
+<span class="nc" id="L287">            } catch (Throwable e) {</span>
+<span class="nc" id="L288">                logger.warn(&quot;Fail to load &quot; + fileName + &quot; file from &quot; + url + &quot;(ignore this file): &quot; + e.getMessage(), e);</span>
+<span class="nc" id="L289">            }</span>
+<span class="nc" id="L290">        }</span>
+
+<span class="nc" id="L292">        return properties;</span>
+    }
+
+    public static int getPid() {
+<span class="nc bnc" id="L296" title="All 2 branches missed.">        if (PID &lt; 0) {</span>
+            try {
+<span class="nc" id="L298">                RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();</span>
+<span class="nc" id="L299">                String name = runtime.getName(); // format: &quot;pid@hostname&quot;</span>
+<span class="nc" id="L300">                PID = Integer.parseInt(name.substring(0, name.indexOf('@')));</span>
+<span class="nc" id="L301">            } catch (Throwable e) {</span>
+<span class="nc" id="L302">                PID = 0;</span>
+<span class="nc" id="L303">            }</span>
+        }
+<span class="nc" id="L305">        return PID;</span>
+    }
+
+    @SuppressWarnings(&quot;deprecation&quot;)
+    public static int getServerShutdownTimeout() {
+<span class="nc" id="L310">        int timeout = Constants.DEFAULT_SERVER_SHUTDOWN_TIMEOUT;</span>
+<span class="nc" id="L311">        String value = ConfigUtils.getProperty(Constants.SHUTDOWN_WAIT_KEY);</span>
+<span class="nc bnc" id="L312" title="All 4 branches missed.">        if (value != null &amp;&amp; value.length() &gt; 0) {</span>
+            try {
+<span class="nc" id="L314">                timeout = Integer.parseInt(value);</span>
+<span class="nc" id="L315">            } catch (Exception e) {</span>
+                // ignore
+<span class="nc" id="L317">            }</span>
+        } else {
+<span class="nc" id="L319">            value = ConfigUtils.getProperty(Constants.SHUTDOWN_WAIT_SECONDS_KEY);</span>
+<span class="nc bnc" id="L320" title="All 4 branches missed.">            if (value != null &amp;&amp; value.length() &gt; 0) {</span>
+                try {
+<span class="nc" id="L322">                    timeout = Integer.parseInt(value) * 1000;</span>
+<span class="nc" id="L323">                } catch (Exception e) {</span>
+                    // ignore
+<span class="nc" id="L325">                }</span>
+            }
+        }
+
+<span class="nc" id="L329">        return timeout;</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>

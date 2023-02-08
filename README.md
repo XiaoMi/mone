@@ -1,113 +1,102 @@
 <div align='center'>
-    <a href="">
+    <a href="https://github.com/XiaoMi/mone">
       <img width="500" style='background:black' src="https://img.youpin.mi-img.com/middlewareGroup/1bd0957f930473e6449e3c34d52df98a.png">
     </a>
 </div>
 <div align='center'>
 <br>
-<h2 align='center' >Provided by Xiaomi Youpin</h2>
+<h2 align='center' >Provided by Xiaomi Mione Team </h2>
 <br>
 </div>
-  Mone is a reliable devops system that automatically deploys, scales, and manages docker containerized micro-service applications.
-It has been used intensively at Xiaomi to meet the tough scalability demands of Xiaomi's high traffic online services.
 
-  米效，一站式企业协同研发系统，提供从“项目创建->开发->发布->运维”端到端的协同服务和研发工具支撑。
-米效将战略规划、敏捷研发、持续集成、持续交付、DevOps等理念引入，助力企业产品快速创新迭代和研发效能升级。
+  Mone是以微服务为核心的一站式企业协同研发平台。支持公共云、专有云和混合云多种部署形态；提供从“项目创建->开发->部署->治理->应用观测”端到端的研发全流程服务。
+  Mone通过云原生新技术和研发新模式，打造“双敏”，敏捷研发和敏捷组织，保障小米-中国区高复杂业务、大规模团队的敏捷研发协同，实现多倍效能提升。
 
+## ✨ Architecture
+### 产品架构
+![mone](readme/image/mione产品架构.png)
+### 研发全流程提效
+![mone](readme/image/mione_devflow.png)
 
 
 ## ✨ Features
 - 🌈 项目全生命周期管理
 - 📦 持续集成、持续交付
-- 🛡 质量与安全保障
-- ⚙️ 部署多样化
-- 🌍 敏捷开发、精益开发
-- 🎨 流量预测、自助扩缩容
+- 🛡 Dayu微服务治理
+- ⚙️ Tesla网关
+- 🌍 Hera应用可观测平台
+- 🎨 FaaS平台
+- ⚙️ API管理平台
 
 
 
-## 🔗 Links
+## 🔗 Mone introduction
 
-- [首页]
+### [首页]
 
 <div align='center'>
-  <a href="">
+  <a href="https://github.com/XiaoMi/mone">
     <img width=500" src="https://img.youpin.mi-img.com/middlewareGroup/79896da74b1a269a3a88455ab0439103.png?w=1306&h=851">
   </a>
 </div>
 
-- [智能网关]
+### [应用管理]
+![mone-miline](readme/image/miline01.png)
+![mone-miline](readme/image/miline02.png)
+![mone-miline](readme/image/miline03.png)
+![mone-miline](readme/image/miline05.png)
+![mone-miline](readme/image/miline04.png)
 
-- [应用管理]
+### [智能网关]
+![mone-miline](readme/image/gw01.png)
+![mone-miline](readme/image/gw02.png)
+![mone-miline](readme/image/gw04.png)
 
-<div align="center">
-   <a href="">
-    <img width=400" src="https://img.youpin.mi-img.com/middlewareGroup/3ac516d7fc012573ff311d5d66054ebf.png?w=795&h=534">
-  </a>
-<br/>
-  <a href="">
-    <img width=500" src="https://img.youpin.mi-img.com/middlewareGroup/72506657fbcd5e2117d9ea28bfbf76f3.png?w=1024&h=776">
-  </a>
-</div>
+### [Hera可观测平台]
+![mone-hera](readme/image/hera01.jpeg)
+![mone-hera](readme/image/hera02.png)
+![mone-hera](readme/image/hera03.png)
+![mone-hera](readme/image/hera04.png)
+![mone-hera](readme/image/hera05.png)
+![mone-hera](readme/image/hera06.png)
+![mone-hera](readme/image/hera07.png)
+![mone-hera](readme/image/hera08.png)
 
-- [流量预测]
-
-<div align="center">
-  <a href="">
-    <img width=500" src="https://img.youpin.mi-img.com/middlewareGroup/1d435f178c0398e02ee66e11499ae2eb.png?w=736&h=563">
-  </a>
-</div>
-
-- [项目审核]
-
-<div align="center">
-  <a href="">
-    <img width=500" src="https://img.youpin.mi-img.com/middlewareGroup/c2fbb6ad98469ed1d6715c04f7b33da6.png?w=1277&h=608">
-  </a>
-</div>
-
-- [测试管理]
+### [API管理平台]
+![mone-hera](readme/image/miapi01.png)
+![mone-hera](readme/image/miapi02.png)
+![mone-hera](readme/image/miapi03.png)
 
 
-- [运维中心]
+## Getting started
+    todo...
 
-<div align="center">
-  <a href="">
-    <img width=500" src="https://img.youpin.mi-img.com/middlewareGroup/63f577cbc6ce335cb7ca3d477b37b030.png?w=1287&h=713">
-  </a>
-</div>
-
-
-- [监控中心]
-
-- [文档管理]
-
-<div align="center">
-  <a href="">
-    <img width=500" src="https://img.youpin.mi-img.com/middlewareGroup/2901cf06800d5089642e4881388e0d27.png?w=1290&h=860">
-  </a>
-</div>
-
-- [开发测试]
-
-<div align="center">  <a href="">
-    <img width=500" src="https://img.youpin.mi-img.com/middlewareGroup/251022cf4f982346867eefcd522fa184.png?w=1295&h=828">
-  </a>
-</div>
-
-## 📃 文档
+## 📃 Document
 
  想要了解更多或快速入门[快速入门](http://mone.xiaomiyoupin.com/#/doc/1)，请参照 [米效官网](http://mone.xiaomiyoupin.com/#/index)
  
-## 🔨维护者
+## 🔨Contributing
 
 **owners:**
--  张志勇
+- 邢鑫岩                                                                                                                     
+- 张志勇
+- 单文榜
+- 任清福
+- 丁佩
 
 **committers:**
--  任清福
-- 丁佩
+- 张平
 - 高一波
+- 董振兴
+- 王志东
+- 丁涛
+- 张校炜
+- 张高峰
+- 王涛
+- 王敏
+- 高希辉
+- 王浩阳
+- 谭琳琳
 - 刘玉冲
 - 张秀华
 - 许铮
@@ -115,8 +104,30 @@ It has been used intensively at Xiaomi to meet the tough scalability demands of 
 - 陈磊
 - 郑浩
     
- ## 📞 联系我们
+ ## 📞 Contact
 
 
- 📮 邮箱 : mione@xiaomi.com
- 
+ + 📮 Mailing list:
+   + mione@xiaomi.com
+ + 📮 Wechat official account（微信公众号）
+   + 天穹云原生
+
+
+## *License*
+Mone is released under the [Apache 2.0 license](LICENSE).
+
+```
+Copyright 2020 XiaoMi.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at the following link.
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+```

@@ -30,12 +30,24 @@ import javax.annotation.Resource;
 @Slf4j
 public class DemoService {
 
+
     @Resource(shareable = false)
     private DemoDao testDao;
 
 
     @Resource(name = "strBean")
     private String str;
+
+
+    @Resource(lookup = "zzy")
+    private DemoA demoA;
+
+    @Resource
+    private ErrorReport errorReport;
+
+    public String demoA() {
+        return demoA.f();
+    }
 
 
     public String call() {
@@ -53,7 +65,9 @@ public class DemoService {
     }
 
     public void init() {
-        System.out.println("init");
+        log.info("demoService init");
+        errorReport.setError(false);
+        errorReport.setMessage("error!");
     }
 
     public void destory() {

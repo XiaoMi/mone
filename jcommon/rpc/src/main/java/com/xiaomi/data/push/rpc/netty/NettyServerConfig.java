@@ -16,6 +16,9 @@
 
 package com.xiaomi.data.push.rpc.netty;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * @author goodjava@qq.com
  */
@@ -34,6 +37,13 @@ public class NettyServerConfig implements Cloneable {
     private boolean serverPooledByteBufAllocatorEnable = true;
 
     private boolean useEpollNativeSelector = false;
+
+    /**
+     * 空闲check
+     */
+    @Getter
+    @Setter
+    private boolean idle = true;
 
     public int getListenPort() {
         return listenPort;

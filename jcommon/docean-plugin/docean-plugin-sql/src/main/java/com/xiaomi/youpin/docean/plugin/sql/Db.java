@@ -64,5 +64,16 @@ public class Db {
         return n;
     }
 
+    public List<String> tables(String schemaName) {
+        Session session = openSession();
+        return session.tables(schemaName);
+    }
+
+
+    public List<Map<String, ColumnRecord>> desc(String schemaName, String tableName) {
+        Session session = openSession();
+        return session.desc(schemaName, tableName);
+    }
+
 
 }

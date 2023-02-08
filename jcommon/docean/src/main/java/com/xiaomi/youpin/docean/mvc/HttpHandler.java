@@ -16,18 +16,16 @@
 
 package com.xiaomi.youpin.docean.mvc;
 
-import com.google.gson.Gson;
 import com.xiaomi.youpin.docean.Mvc;
 import com.xiaomi.youpin.docean.common.Cons;
+import com.xiaomi.youpin.docean.config.HttpServerConfig;
+import com.xiaomi.youpin.docean.mvc.util.RequestUtils;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.FullHttpRequest;
-import io.netty.handler.codec.http.HttpMethod;
-import io.netty.handler.codec.http.QueryStringDecoder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
-import java.util.stream.Collectors;
 
 
 /**
@@ -36,33 +34,29 @@ import java.util.stream.Collectors;
 @Slf4j
 public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
-    private boolean userWs = true;
+
+    private HttpServerConfig config;
+
+    public HttpHandler(HttpServerConfig config) {
+        this.config = config;
+    }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) {
-        if (userWs && Cons.WebSocketPath.equalsIgnoreCase(request.uri())) {
+        if (config.isUserWs() && Cons.WebSocketPath.equalsIgnoreCase(request.uri())) {
             ctx.fireChannelRead(request.retain());
             return;
         }
         String uri = HttpRequestUtils.getBasePath(request);
-        byte[] body = null;
-
-        if (request.method().equals(HttpMethod.GET)) {
-            QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-            Map<String, String> params = decoder.parameters().entrySet().stream().collect(Collectors.toMap(it -> it.getKey(), it -> it.getValue().get(0)));
-            body = new Gson().toJson(params).getBytes();
-        }
-
-        if (request.method().equals(HttpMethod.POST)) {
-            body = HttpRequestUtils.getRequestBody(request);
-        }
-
+        MvcRequest req = new MvcRequest();
+        byte[] body = RequestUtils.getData(config, uri, request, (params) -> req.setParams((Map<String, String>) params));
         String method = request.method().name();
         MvcContext context = new MvcContext();
+        context.setRequest(request);
         context.setMethod(method);
         context.setHandlerContext(ctx);
-        MvcRequest req = new MvcRequest();
-        req.setHeaders(request.headers().entries().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue)));
+        context.setPath(uri);
+        req.setHeaders(RequestUtils.headers(request));
         context.setHeaders(req.getHeaders());
         req.setMethod(method);
         req.setPath(uri);

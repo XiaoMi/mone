@@ -18,11 +18,13 @@ package com.xiaomi.youpin.gitlab.bo;
 
 import lombok.Data;
 
+import java.io.Serializable;
+
 /**
  * @author gaoyibo
  */
 @Data
-public class GitlabCommit {
+public class GitlabCommit implements Serializable {
     private String id;
     private String short_id;
     private String title;

@@ -76,7 +76,7 @@ public class PingTask extends Task {
         }
     }
 
-    public PingTask(RpcClient client) {
+    public PingTask(RpcClient client,long pingTime) {
         super(() -> {
 
             if (stop.get()) {
@@ -157,7 +157,7 @@ public class PingTask extends Task {
             } catch (Exception ex) {
                 log.error("ping error:{}", ex.getMessage());
             }
-        }, 10);
+        }, pingTime);
     }
 
 

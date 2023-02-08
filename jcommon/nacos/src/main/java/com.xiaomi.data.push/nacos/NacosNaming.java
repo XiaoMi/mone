@@ -21,8 +21,10 @@ import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.NamingService;
 import com.alibaba.nacos.api.naming.listener.EventListener;
 import com.alibaba.nacos.api.naming.pojo.Instance;
+import com.alibaba.nacos.api.naming.pojo.ListView;
 import com.google.common.collect.Maps;
 import com.xiaomi.data.push.client.HttpClientV2;
+import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,11 +45,31 @@ public class NacosNaming {
     @Setter
     private String serverAddr;
 
+    @Setter
+    private String username;
+
+    @Setter
+    private String password;
+
     private String addr;
 
+    @Getter
     private NamingService namingService;
 
+
+    /**
+     * 支持直接注入namingService(就不用再次创建了)
+     * @param namingService
+     */
+    public void setNamingService(NamingService namingService) {
+        this.namingService = namingService;
+    }
+
     public void init() {
+        if (null != this.namingService) {
+            return;
+        }
+
         if (serverAddr == null || serverAddr.length() == 0) {
             throw new RuntimeException("serverAddr = null");
         }
@@ -56,6 +78,14 @@ public class NacosNaming {
 
         Properties properties = new Properties();
         properties.put("serverAddr", serverAddr);
+        properties.put("close_docean_rpc", "true");
+
+        if (username != null && !username.equals("")) {
+            properties.put("username", username);
+        }
+        if (password != null && !password.equals("")) {
+            properties.put("password", password);
+        }
 
         try {
             namingService = NacosFactory.createNamingService(properties);
@@ -132,6 +162,14 @@ public class NacosNaming {
         }
     }
 
+    public void subscribe(String serviceName, String group, EventListener listener) {
+        try {
+            namingService.subscribe(serviceName, group, listener);
+        } catch (NacosException e) {
+            log.error("nacos subscribe error:{}", e.getMessage());
+        }
+    }
+
     /**
      * 取消订阅
      *
@@ -155,6 +193,24 @@ public class NacosNaming {
         throw new RuntimeException("serverAddr is null");
     }
 
+    public ListView<String> getServicesOfServer(int page, int pagesize) {
+        try {
+            return namingService.getServicesOfServer(page, pagesize);
+        } catch (NacosException e) {
+            log.error("getServicesOfServer error:{}", e.getMessage());
+        }
+        return null;
+    }
+
+    public Instance selectOneHealthInstance(String serviceName) {
+        try {
+            return namingService.selectOneHealthyInstance(serviceName);
+        } catch (NacosException e) {
+            log.error("selectOneHealthInstance error:{}", e.getMessage());
+        }
+        return null;
+    }
+
     public String login (String username, String password) {
         Map<String, String> headers = Maps.newHashMap();
         headers.put("Content-Type", "application/x-www-form-urlencoded");
@@ -176,6 +232,14 @@ public class NacosNaming {
 
     public String serviceList2(String namespaceId, int page, int pageSize, String keyword, String accessToken) {
         String params = "?hasIpCount=true&withInstances=false&pageNo=1&pageSize=10&serviceNameParam=" + keyword + "&accessToken=" + accessToken;
+        if (!StringUtils.isEmpty(namespaceId) && !StringUtils.isEmpty(namespaceId.trim())) {
+            params += "&namespaceId=" + namespaceId;
+        }
+        return HttpClientV2.get("http://" + getNamingServer() + "/nacos/v1/ns/catalog/services" + params, Maps.newHashMap());
+    }
+
+    public String serviceList2(String namespaceId, int page, int pageSize, boolean withInstances, String accessToken) {
+        String params = "?hasIpCount=true&withInstances=false&pageNo=1&pageSize=10&withInstances=" + withInstances + "&accessToken=" + accessToken;
         if (!StringUtils.isEmpty(namespaceId) && !StringUtils.isEmpty(namespaceId.trim())) {
             params += "&namespaceId=" + namespaceId;
         }

@@ -1,0 +1,529 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>RegistryProtocol.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-registry-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-registry-api</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.registry.integration</a> &gt; <span class="el_source">RegistryProtocol.java</span></div><h1>RegistryProtocol.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.registry.integration;
+
+import org.apache.dubbo.common.Constants;
+import org.apache.dubbo.common.URL;
+import org.apache.dubbo.common.extension.ExtensionLoader;
+import org.apache.dubbo.common.logger.Logger;
+import org.apache.dubbo.common.logger.LoggerFactory;
+import org.apache.dubbo.common.utils.ConfigUtils;
+import org.apache.dubbo.common.utils.NamedThreadFactory;
+import org.apache.dubbo.common.utils.StringUtils;
+import org.apache.dubbo.common.utils.UrlUtils;
+import org.apache.dubbo.registry.NotifyListener;
+import org.apache.dubbo.registry.Registry;
+import org.apache.dubbo.registry.RegistryFactory;
+import org.apache.dubbo.registry.RegistryService;
+import org.apache.dubbo.registry.support.ProviderConsumerRegTable;
+import org.apache.dubbo.rpc.Exporter;
+import org.apache.dubbo.rpc.Invoker;
+import org.apache.dubbo.rpc.Protocol;
+import org.apache.dubbo.rpc.ProxyFactory;
+import org.apache.dubbo.rpc.RpcException;
+import org.apache.dubbo.rpc.cluster.Cluster;
+import org.apache.dubbo.rpc.cluster.Configurator;
+import org.apache.dubbo.rpc.protocol.InvokerWrapper;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import static org.apache.dubbo.common.Constants.ACCEPT_FOREIGN_IP;
+import static org.apache.dubbo.common.Constants.INTERFACES;
+import static org.apache.dubbo.common.Constants.QOS_ENABLE;
+import static org.apache.dubbo.common.Constants.QOS_PORT;
+import static org.apache.dubbo.common.Constants.VALIDATION_KEY;
+
+/**
+ * RegistryProtocol
+ *
+ */
+public class RegistryProtocol implements Protocol {
+
+<span class="nc" id="L62">    private final static Logger logger = LoggerFactory.getLogger(RegistryProtocol.class);</span>
+    private static RegistryProtocol INSTANCE;
+<span class="nc" id="L64">    private final Map&lt;URL, NotifyListener&gt; overrideListeners = new ConcurrentHashMap&lt;URL, NotifyListener&gt;();</span>
+    //To solve the problem of RMI repeated exposure port conflicts, the services that have been exposed are no longer exposed.
+    //providerurl &lt;--&gt; exporter
+<span class="nc" id="L67">    private final Map&lt;String, ExporterChangeableWrapper&lt;?&gt;&gt; bounds = new ConcurrentHashMap&lt;String, ExporterChangeableWrapper&lt;?&gt;&gt;();</span>
+    private Cluster cluster;
+    private Protocol protocol;
+    private RegistryFactory registryFactory;
+    private ProxyFactory proxyFactory;
+
+<span class="nc" id="L73">    public RegistryProtocol() {</span>
+<span class="nc" id="L74">        INSTANCE = this;</span>
+<span class="nc" id="L75">    }</span>
+
+    public static RegistryProtocol getRegistryProtocol() {
+<span class="nc bnc" id="L78" title="All 2 branches missed.">        if (INSTANCE == null) {</span>
+<span class="nc" id="L79">            ExtensionLoader.getExtensionLoader(Protocol.class).getExtension(Constants.REGISTRY_PROTOCOL); // load</span>
+        }
+<span class="nc" id="L81">        return INSTANCE;</span>
+    }
+
+    //Filter the parameters that do not need to be output in url(Starting with .)
+    private static String[] getFilteredKeys(URL url) {
+<span class="nc" id="L86">        Map&lt;String, String&gt; params = url.getParameters();</span>
+<span class="nc bnc" id="L87" title="All 4 branches missed.">        if (params != null &amp;&amp; !params.isEmpty()) {</span>
+<span class="nc" id="L88">            List&lt;String&gt; filteredKeys = new ArrayList&lt;String&gt;();</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">            for (Map.Entry&lt;String, String&gt; entry : params.entrySet()) {</span>
+<span class="nc bnc" id="L90" title="All 6 branches missed.">                if (entry != null &amp;&amp; entry.getKey() != null &amp;&amp; entry.getKey().startsWith(Constants.HIDE_KEY_PREFIX)) {</span>
+<span class="nc" id="L91">                    filteredKeys.add(entry.getKey());</span>
+                }
+<span class="nc" id="L93">            }</span>
+<span class="nc" id="L94">            return filteredKeys.toArray(new String[filteredKeys.size()]);</span>
+        } else {
+<span class="nc" id="L96">            return new String[]{};</span>
+        }
+    }
+
+    public void setCluster(Cluster cluster) {
+<span class="nc" id="L101">        this.cluster = cluster;</span>
+<span class="nc" id="L102">    }</span>
+
+    public void setProtocol(Protocol protocol) {
+<span class="nc" id="L105">        this.protocol = protocol;</span>
+<span class="nc" id="L106">    }</span>
+
+    public void setRegistryFactory(RegistryFactory registryFactory) {
+<span class="nc" id="L109">        this.registryFactory = registryFactory;</span>
+<span class="nc" id="L110">    }</span>
+
+    public void setProxyFactory(ProxyFactory proxyFactory) {
+<span class="nc" id="L113">        this.proxyFactory = proxyFactory;</span>
+<span class="nc" id="L114">    }</span>
+
+    @Override
+    public int getDefaultPort() {
+<span class="nc" id="L118">        return 9090;</span>
+    }
+
+    public Map&lt;URL, NotifyListener&gt; getOverrideListeners() {
+<span class="nc" id="L122">        return overrideListeners;</span>
+    }
+
+    public void register(URL registryUrl, URL registedProviderUrl) {
+<span class="nc" id="L126">        Registry registry = registryFactory.getRegistry(registryUrl);</span>
+<span class="nc" id="L127">        registry.register(registedProviderUrl);</span>
+<span class="nc" id="L128">    }</span>
+
+    @Override
+    public &lt;T&gt; Exporter&lt;T&gt; export(final Invoker&lt;T&gt; originInvoker) throws RpcException {
+        //export invoker
+<span class="nc" id="L133">        final ExporterChangeableWrapper&lt;T&gt; exporter = doLocalExport(originInvoker);</span>
+
+<span class="nc" id="L135">        URL registryUrl = getRegistryUrl(originInvoker);</span>
+
+
+
+        //registry provider
+<span class="nc" id="L140">        final Registry registry = getRegistry(originInvoker);</span>
+<span class="nc" id="L141">        URL regUrl = getRegisteredProviderUrl(originInvoker);</span>
+
+        //支持docker 绑定ip  --&gt;去注册中心注册对的ip
+<span class="nc" id="L144">        String dockerHostBind  = ConfigUtils.getSystemProperty(Constants.DOCKER_DUBBO_IP_TO_BIND);</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">        if (null != dockerHostBind) {</span>
+<span class="nc" id="L146">            regUrl = regUrl.setHost(dockerHostBind);</span>
+        }
+<span class="nc" id="L148">        final URL registeredProviderUrl = regUrl;</span>
+
+        //to judge to delay publish whether or not
+<span class="nc" id="L151">        boolean register = registeredProviderUrl.getParameter(&quot;register&quot;, true);</span>
+
+<span class="nc" id="L153">        ProviderConsumerRegTable.registerProvider(originInvoker, registryUrl, registeredProviderUrl);</span>
+
+<span class="nc bnc" id="L155" title="All 2 branches missed.">        if (register) {</span>
+<span class="nc" id="L156">            register(registryUrl, registeredProviderUrl);</span>
+<span class="nc" id="L157">            ProviderConsumerRegTable.getProviderWrapper(originInvoker).setReg(true);</span>
+        }
+
+        // Subscribe the override data
+        // FIXME When the provider subscribes, it will affect the scene : a certain JVM exposes the service and call the same service. Because the subscribed is cached key with the name of the service, it causes the subscription information to cover.
+<span class="nc" id="L162">        final URL overrideSubscribeUrl = getSubscribedOverrideUrl(registeredProviderUrl);</span>
+<span class="nc" id="L163">        final OverrideListener overrideSubscribeListener = new OverrideListener(overrideSubscribeUrl, originInvoker);</span>
+<span class="nc" id="L164">        overrideListeners.put(overrideSubscribeUrl, overrideSubscribeListener);</span>
+<span class="nc" id="L165">        registry.subscribe(overrideSubscribeUrl, overrideSubscribeListener);</span>
+        //Ensure that a new exporter instance is returned every time export
+<span class="nc" id="L167">        return new DestroyableExporter&lt;T&gt;(exporter, originInvoker, overrideSubscribeUrl, registeredProviderUrl);</span>
+    }
+
+    @SuppressWarnings(&quot;unchecked&quot;)
+    private &lt;T&gt; ExporterChangeableWrapper&lt;T&gt; doLocalExport(final Invoker&lt;T&gt; originInvoker) {
+<span class="nc" id="L172">        String key = getCacheKey(originInvoker);</span>
+<span class="nc" id="L173">        ExporterChangeableWrapper&lt;T&gt; exporter = (ExporterChangeableWrapper&lt;T&gt;) bounds.get(key);</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        if (exporter == null) {</span>
+<span class="nc" id="L175">            synchronized (bounds) {</span>
+<span class="nc" id="L176">                exporter = (ExporterChangeableWrapper&lt;T&gt;) bounds.get(key);</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">                if (exporter == null) {</span>
+<span class="nc" id="L178">                    final Invoker&lt;?&gt; invokerDelegete = new InvokerDelegete&lt;T&gt;(originInvoker, getProviderUrl(originInvoker));</span>
+<span class="nc" id="L179">                    exporter = new ExporterChangeableWrapper&lt;T&gt;((Exporter&lt;T&gt;) protocol.export(invokerDelegete), originInvoker);</span>
+<span class="nc" id="L180">                    bounds.put(key, exporter);</span>
+                }
+<span class="nc" id="L182">            }</span>
+        }
+<span class="nc" id="L184">        return exporter;</span>
+    }
+
+    /**
+     * Reexport the invoker of the modified url
+     *
+     * @param originInvoker
+     * @param newInvokerUrl
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    private &lt;T&gt; void doChangeLocalExport(final Invoker&lt;T&gt; originInvoker, URL newInvokerUrl) {
+<span class="nc" id="L195">        String key = getCacheKey(originInvoker);</span>
+<span class="nc" id="L196">        final ExporterChangeableWrapper&lt;T&gt; exporter = (ExporterChangeableWrapper&lt;T&gt;) bounds.get(key);</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">        if (exporter == null) {</span>
+<span class="nc" id="L198">            logger.warn(new IllegalStateException(&quot;error state, exporter should not be null&quot;));</span>
+        } else {
+<span class="nc" id="L200">            final Invoker&lt;T&gt; invokerDelegete = new InvokerDelegete&lt;T&gt;(originInvoker, newInvokerUrl);</span>
+<span class="nc" id="L201">            exporter.setExporter(protocol.export(invokerDelegete));</span>
+        }
+<span class="nc" id="L203">    }</span>
+
+    /**
+     * Get an instance of registry based on the address of invoker
+     *
+     * @param originInvoker
+     * @return
+     */
+    private Registry getRegistry(final Invoker&lt;?&gt; originInvoker) {
+<span class="nc" id="L212">        URL registryUrl = getRegistryUrl(originInvoker);</span>
+<span class="nc" id="L213">        return registryFactory.getRegistry(registryUrl);</span>
+    }
+
+    private URL getRegistryUrl(Invoker&lt;?&gt; originInvoker) {
+<span class="nc" id="L217">        URL registryUrl = originInvoker.getUrl();</span>
+<span class="nc bnc" id="L218" title="All 2 branches missed.">        if (Constants.REGISTRY_PROTOCOL.equals(registryUrl.getProtocol())) {</span>
+<span class="nc" id="L219">            String protocol = registryUrl.getParameter(Constants.REGISTRY_KEY, Constants.DEFAULT_DIRECTORY);</span>
+<span class="nc" id="L220">            registryUrl = registryUrl.setProtocol(protocol).removeParameter(Constants.REGISTRY_KEY);</span>
+        }
+<span class="nc" id="L222">        return registryUrl;</span>
+    }
+
+
+    /**
+     * Return the url that is registered to the registry and filter the url parameter once
+     *
+     * @param originInvoker
+     * @return
+     */
+    private URL getRegisteredProviderUrl(final Invoker&lt;?&gt; originInvoker) {
+<span class="nc" id="L233">        URL providerUrl = getProviderUrl(originInvoker);</span>
+        //The address you see at the registry
+<span class="nc" id="L235">        return providerUrl.removeParameters(getFilteredKeys(providerUrl))</span>
+<span class="nc" id="L236">                .removeParameter(Constants.MONITOR_KEY)</span>
+<span class="nc" id="L237">                .removeParameter(Constants.BIND_IP_KEY)</span>
+<span class="nc" id="L238">                .removeParameter(Constants.BIND_PORT_KEY)</span>
+<span class="nc" id="L239">                .removeParameter(QOS_ENABLE)</span>
+<span class="nc" id="L240">                .removeParameter(QOS_PORT)</span>
+<span class="nc" id="L241">                .removeParameter(ACCEPT_FOREIGN_IP)</span>
+<span class="nc" id="L242">                .removeParameter(VALIDATION_KEY)</span>
+<span class="nc" id="L243">                .removeParameter(INTERFACES);</span>
+    }
+
+    private URL getSubscribedOverrideUrl(URL registedProviderUrl) {
+<span class="nc" id="L247">        return registedProviderUrl.setProtocol(Constants.PROVIDER_PROTOCOL)</span>
+<span class="nc" id="L248">                .addParameters(Constants.CATEGORY_KEY, Constants.CONFIGURATORS_CATEGORY,</span>
+<span class="nc" id="L249">                        Constants.CHECK_KEY, String.valueOf(false));</span>
+    }
+
+    /**
+     * Get the address of the providerUrl through the url of the invoker
+     *
+     * @param origininvoker
+     * @return
+     */
+    private URL getProviderUrl(final Invoker&lt;?&gt; origininvoker) {
+<span class="nc" id="L259">        String export = origininvoker.getUrl().getParameterAndDecoded(Constants.EXPORT_KEY);</span>
+<span class="nc bnc" id="L260" title="All 4 branches missed.">        if (export == null || export.length() == 0) {</span>
+<span class="nc" id="L261">            throw new IllegalArgumentException(&quot;The registry export url is null! registry: &quot; + origininvoker.getUrl());</span>
+        }
+
+<span class="nc" id="L264">        URL providerUrl = URL.valueOf(export);</span>
+<span class="nc" id="L265">        return providerUrl;</span>
+    }
+
+    /**
+     * Get the key cached in bounds by invoker
+     *
+     * @param originInvoker
+     * @return
+     */
+    private String getCacheKey(final Invoker&lt;?&gt; originInvoker) {
+<span class="nc" id="L275">        URL providerUrl = getProviderUrl(originInvoker);</span>
+<span class="nc" id="L276">        String key = providerUrl.removeParameters(&quot;dynamic&quot;, &quot;enabled&quot;).toFullString();</span>
+<span class="nc" id="L277">        return key;</span>
+    }
+
+    @Override
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public &lt;T&gt; Invoker&lt;T&gt; refer(Class&lt;T&gt; type, URL url) throws RpcException {
+<span class="nc" id="L283">        url = url.setProtocol(url.getParameter(Constants.REGISTRY_KEY, Constants.DEFAULT_REGISTRY)).removeParameter(Constants.REGISTRY_KEY);</span>
+<span class="nc" id="L284">        Registry registry = registryFactory.getRegistry(url);</span>
+<span class="nc bnc" id="L285" title="All 2 branches missed.">        if (RegistryService.class.equals(type)) {</span>
+<span class="nc" id="L286">            return proxyFactory.getInvoker((T) registry, type, url);</span>
+        }
+
+        // group=&quot;a,b&quot; or group=&quot;*&quot;
+<span class="nc" id="L290">        Map&lt;String, String&gt; qs = StringUtils.parseQueryString(url.getParameterAndDecoded(Constants.REFER_KEY));</span>
+<span class="nc" id="L291">        String group = qs.get(Constants.GROUP_KEY);</span>
+<span class="nc bnc" id="L292" title="All 4 branches missed.">        if (group != null &amp;&amp; group.length() &gt; 0) {</span>
+<span class="nc bnc" id="L293" title="All 2 branches missed.">            if ((Constants.COMMA_SPLIT_PATTERN.split(group)).length &gt; 1</span>
+<span class="nc bnc" id="L294" title="All 2 branches missed.">                    || &quot;*&quot;.equals(group)) {</span>
+<span class="nc" id="L295">                return doRefer(getMergeableCluster(), registry, type, url);</span>
+            }
+        }
+<span class="nc" id="L298">        return doRefer(cluster, registry, type, url);</span>
+    }
+
+    private Cluster getMergeableCluster() {
+<span class="nc" id="L302">        return ExtensionLoader.getExtensionLoader(Cluster.class).getExtension(&quot;mergeable&quot;);</span>
+    }
+
+    private &lt;T&gt; Invoker&lt;T&gt; doRefer(Cluster cluster, Registry registry, Class&lt;T&gt; type, URL url) {
+<span class="nc" id="L306">        RegistryDirectory&lt;T&gt; directory = new RegistryDirectory&lt;T&gt;(type, url);</span>
+<span class="nc" id="L307">        directory.setRegistry(registry);</span>
+<span class="nc" id="L308">        directory.setProtocol(protocol);</span>
+        // all attributes of REFER_KEY
+<span class="nc" id="L310">        Map&lt;String, String&gt; parameters = new HashMap&lt;String, String&gt;(directory.getUrl().getParameters());</span>
+<span class="nc" id="L311">        URL subscribeUrl = new URL(Constants.CONSUMER_PROTOCOL, parameters.remove(Constants.REGISTER_IP_KEY), 0, type.getName(), parameters);</span>
+<span class="nc bnc" id="L312" title="All 2 branches missed.">        if (!Constants.ANY_VALUE.equals(url.getServiceInterface())</span>
+<span class="nc bnc" id="L313" title="All 2 branches missed.">                &amp;&amp; url.getParameter(Constants.REGISTER_KEY, true)) {</span>
+<span class="nc" id="L314">            registry.register(subscribeUrl.addParameters(Constants.CATEGORY_KEY, Constants.CONSUMERS_CATEGORY,</span>
+<span class="nc" id="L315">                    Constants.CHECK_KEY, String.valueOf(false)));</span>
+        }
+<span class="nc" id="L317">        directory.subscribe(subscribeUrl.addParameter(Constants.CATEGORY_KEY,</span>
+                Constants.PROVIDERS_CATEGORY
+                        + &quot;,&quot; + Constants.CONFIGURATORS_CATEGORY
+                        + &quot;,&quot; + Constants.ROUTERS_CATEGORY));
+
+<span class="nc" id="L322">        Invoker invoker = cluster.join(directory);</span>
+<span class="nc" id="L323">        ProviderConsumerRegTable.registerConsumer(invoker, url, subscribeUrl, directory);</span>
+<span class="nc" id="L324">        return invoker;</span>
+    }
+
+    @Override
+    public void destroy() {
+<span class="nc" id="L329">        List&lt;Exporter&lt;?&gt;&gt; exporters = new ArrayList&lt;Exporter&lt;?&gt;&gt;(bounds.values());</span>
+<span class="nc bnc" id="L330" title="All 2 branches missed.">        for (Exporter&lt;?&gt; exporter : exporters) {</span>
+<span class="nc" id="L331">            exporter.unexport();</span>
+<span class="nc" id="L332">        }</span>
+<span class="nc" id="L333">        bounds.clear();</span>
+<span class="nc" id="L334">    }</span>
+
+    public static class InvokerDelegete&lt;T&gt; extends InvokerWrapper&lt;T&gt; {
+        private final Invoker&lt;T&gt; invoker;
+
+        /**
+         * @param invoker
+         * @param url     invoker.getUrl return this value
+         */
+        public InvokerDelegete(Invoker&lt;T&gt; invoker, URL url) {
+<span class="nc" id="L344">            super(invoker, url);</span>
+<span class="nc" id="L345">            this.invoker = invoker;</span>
+<span class="nc" id="L346">        }</span>
+
+        public Invoker&lt;T&gt; getInvoker() {
+<span class="nc bnc" id="L349" title="All 2 branches missed.">            if (invoker instanceof InvokerDelegete) {</span>
+<span class="nc" id="L350">                return ((InvokerDelegete&lt;T&gt;) invoker).getInvoker();</span>
+            } else {
+<span class="nc" id="L352">                return invoker;</span>
+            }
+        }
+    }
+
+    /**
+     * Reexport: the exporter destroy problem in protocol
+     * 1.Ensure that the exporter returned by registryprotocol can be normal destroyed
+     * 2.No need to re-register to the registry after notify
+     * 3.The invoker passed by the export method , would better to be the invoker of exporter
+     */
+    private class OverrideListener implements NotifyListener {
+
+        private final URL subscribeUrl;
+        private final Invoker originInvoker;
+
+<span class="nc" id="L368">        public OverrideListener(URL subscribeUrl, Invoker originalInvoker) {</span>
+<span class="nc" id="L369">            this.subscribeUrl = subscribeUrl;</span>
+<span class="nc" id="L370">            this.originInvoker = originalInvoker;</span>
+<span class="nc" id="L371">        }</span>
+
+        /**
+         * @param urls The list of registered information , is always not empty, The meaning is the same as the return value of {@link org.apache.dubbo.registry.RegistryService#lookup(URL)}.
+         */
+        @Override
+        public synchronized void notify(List&lt;URL&gt; urls) {
+<span class="nc" id="L378">            logger.debug(&quot;original override urls: &quot; + urls);</span>
+<span class="nc" id="L379">            List&lt;URL&gt; matchedUrls = getMatchedUrls(urls, subscribeUrl);</span>
+<span class="nc" id="L380">            logger.debug(&quot;subscribe url: &quot; + subscribeUrl + &quot;, override urls: &quot; + matchedUrls);</span>
+            // No matching results
+<span class="nc bnc" id="L382" title="All 2 branches missed.">            if (matchedUrls.isEmpty()) {</span>
+<span class="nc" id="L383">                return;</span>
+            }
+
+<span class="nc" id="L386">            List&lt;Configurator&gt; configurators = RegistryDirectory.toConfigurators(matchedUrls);</span>
+
+            final Invoker&lt;?&gt; invoker;
+<span class="nc bnc" id="L389" title="All 2 branches missed.">            if (originInvoker instanceof InvokerDelegete) {</span>
+<span class="nc" id="L390">                invoker = ((InvokerDelegete&lt;?&gt;) originInvoker).getInvoker();</span>
+            } else {
+<span class="nc" id="L392">                invoker = originInvoker;</span>
+            }
+            //The origin invoker
+<span class="nc" id="L395">            URL originUrl = RegistryProtocol.this.getProviderUrl(invoker);</span>
+<span class="nc" id="L396">            String key = getCacheKey(originInvoker);</span>
+<span class="nc" id="L397">            ExporterChangeableWrapper&lt;?&gt; exporter = bounds.get(key);</span>
+<span class="nc bnc" id="L398" title="All 2 branches missed.">            if (exporter == null) {</span>
+<span class="nc" id="L399">                logger.warn(new IllegalStateException(&quot;error state, exporter should not be null&quot;));</span>
+<span class="nc" id="L400">                return;</span>
+            }
+            //The current, may have been merged many times
+<span class="nc" id="L403">            URL currentUrl = exporter.getInvoker().getUrl();</span>
+            //Merged with this configuration
+<span class="nc" id="L405">            URL newUrl = getConfigedInvokerUrl(configurators, originUrl);</span>
+<span class="nc bnc" id="L406" title="All 2 branches missed.">            if (!currentUrl.equals(newUrl)) {</span>
+<span class="nc" id="L407">                RegistryProtocol.this.doChangeLocalExport(originInvoker, newUrl);</span>
+<span class="nc" id="L408">                logger.info(&quot;exported provider url changed, origin url: &quot; + originUrl + &quot;, old export url: &quot; + currentUrl + &quot;, new export url: &quot; + newUrl);</span>
+            }
+<span class="nc" id="L410">        }</span>
+
+        private List&lt;URL&gt; getMatchedUrls(List&lt;URL&gt; configuratorUrls, URL currentSubscribe) {
+<span class="nc" id="L413">            List&lt;URL&gt; result = new ArrayList&lt;URL&gt;();</span>
+<span class="nc bnc" id="L414" title="All 2 branches missed.">            for (URL url : configuratorUrls) {</span>
+<span class="nc" id="L415">                URL overrideUrl = url;</span>
+                // Compatible with the old version
+<span class="nc bnc" id="L417" title="All 2 branches missed.">                if (url.getParameter(Constants.CATEGORY_KEY) == null</span>
+<span class="nc bnc" id="L418" title="All 2 branches missed.">                        &amp;&amp; Constants.OVERRIDE_PROTOCOL.equals(url.getProtocol())) {</span>
+<span class="nc" id="L419">                    overrideUrl = url.addParameter(Constants.CATEGORY_KEY, Constants.CONFIGURATORS_CATEGORY);</span>
+                }
+
+                // Check whether url is to be applied to the current service
+<span class="nc bnc" id="L423" title="All 2 branches missed.">                if (UrlUtils.isMatch(currentSubscribe, overrideUrl)) {</span>
+<span class="nc" id="L424">                    result.add(url);</span>
+                }
+<span class="nc" id="L426">            }</span>
+<span class="nc" id="L427">            return result;</span>
+        }
+
+        //Merge the urls of configurators
+        private URL getConfigedInvokerUrl(List&lt;Configurator&gt; configurators, URL url) {
+<span class="nc bnc" id="L432" title="All 2 branches missed.">            for (Configurator configurator : configurators) {</span>
+<span class="nc" id="L433">                url = configurator.configure(url);</span>
+<span class="nc" id="L434">            }</span>
+<span class="nc" id="L435">            return url;</span>
+        }
+    }
+
+    /**
+     * exporter proxy, establish the corresponding relationship between the returned exporter and the exporter exported by the protocol, and can modify the relationship at the time of override.
+     *
+     * @param &lt;T&gt;
+     */
+    private class ExporterChangeableWrapper&lt;T&gt; implements Exporter&lt;T&gt; {
+
+        private final Invoker&lt;T&gt; originInvoker;
+        private Exporter&lt;T&gt; exporter;
+
+<span class="nc" id="L449">        public ExporterChangeableWrapper(Exporter&lt;T&gt; exporter, Invoker&lt;T&gt; originInvoker) {</span>
+<span class="nc" id="L450">            this.exporter = exporter;</span>
+<span class="nc" id="L451">            this.originInvoker = originInvoker;</span>
+<span class="nc" id="L452">        }</span>
+
+        public Invoker&lt;T&gt; getOriginInvoker() {
+<span class="nc" id="L455">            return originInvoker;</span>
+        }
+
+        @Override
+        public Invoker&lt;T&gt; getInvoker() {
+<span class="nc" id="L460">            return exporter.getInvoker();</span>
+        }
+
+        public void setExporter(Exporter&lt;T&gt; exporter) {
+<span class="nc" id="L464">            this.exporter = exporter;</span>
+<span class="nc" id="L465">        }</span>
+
+        @Override
+        public void unexport() {
+<span class="nc" id="L469">            String key = getCacheKey(this.originInvoker);</span>
+<span class="nc" id="L470">            bounds.remove(key);</span>
+<span class="nc" id="L471">            exporter.unexport();</span>
+<span class="nc" id="L472">        }</span>
+    }
+
+    static private class DestroyableExporter&lt;T&gt; implements Exporter&lt;T&gt; {
+
+<span class="nc" id="L477">        public static final ExecutorService executor = Executors.newSingleThreadExecutor(new NamedThreadFactory(&quot;Exporter-Unexport&quot;, true));</span>
+
+        private Exporter&lt;T&gt; exporter;
+        private Invoker&lt;T&gt; originInvoker;
+        private URL subscribeUrl;
+        private URL registerUrl;
+
+<span class="nc" id="L484">        public DestroyableExporter(Exporter&lt;T&gt; exporter, Invoker&lt;T&gt; originInvoker, URL subscribeUrl, URL registerUrl) {</span>
+<span class="nc" id="L485">            this.exporter = exporter;</span>
+<span class="nc" id="L486">            this.originInvoker = originInvoker;</span>
+<span class="nc" id="L487">            this.subscribeUrl = subscribeUrl;</span>
+<span class="nc" id="L488">            this.registerUrl = registerUrl;</span>
+<span class="nc" id="L489">        }</span>
+
+        @Override
+        public Invoker&lt;T&gt; getInvoker() {
+<span class="nc" id="L493">            return exporter.getInvoker();</span>
+        }
+
+        @Override
+        public void unexport() {
+<span class="nc" id="L498">            Registry registry = RegistryProtocol.INSTANCE.getRegistry(originInvoker);</span>
+            try {
+<span class="nc" id="L500">                registry.unregister(registerUrl);</span>
+<span class="nc" id="L501">            } catch (Throwable t) {</span>
+<span class="nc" id="L502">                logger.warn(t.getMessage(), t);</span>
+<span class="nc" id="L503">            }</span>
+            try {
+<span class="nc" id="L505">                NotifyListener listener = RegistryProtocol.INSTANCE.overrideListeners.remove(subscribeUrl);</span>
+<span class="nc" id="L506">                registry.unsubscribe(subscribeUrl, listener);</span>
+<span class="nc" id="L507">            } catch (Throwable t) {</span>
+<span class="nc" id="L508">                logger.warn(t.getMessage(), t);</span>
+<span class="nc" id="L509">            }</span>
+
+<span class="nc" id="L511">            executor.submit(new Runnable() {</span>
+                @Override
+                public void run() {
+                    try {
+<span class="nc" id="L515">                        int timeout = ConfigUtils.getServerShutdownTimeout();</span>
+<span class="nc bnc" id="L516" title="All 2 branches missed.">                        if (timeout &gt; 0) {</span>
+<span class="nc" id="L517">                            logger.info(&quot;Waiting &quot; + timeout + &quot;ms for registry to notify all consumers before unexport. Usually, this is called when you use dubbo API&quot;);</span>
+<span class="nc" id="L518">                            Thread.sleep(timeout);</span>
+                        }
+<span class="nc" id="L520">                        exporter.unexport();</span>
+<span class="nc" id="L521">                    } catch (Throwable t) {</span>
+<span class="nc" id="L522">                        logger.warn(t.getMessage(), t);</span>
+<span class="nc" id="L523">                    }</span>
+<span class="nc" id="L524">                }</span>
+            });
+<span class="nc" id="L526">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>

@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ZkClientWrapper.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-registry-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-remoting-zookeeper</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.remoting.zookeeper.zkclient</a> &gt; <span class="el_source">ZkClientWrapper.java</span></div><h1>ZkClientWrapper.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.remoting.zookeeper.zkclient;
+
+import org.apache.dubbo.common.logger.Logger;
+import org.apache.dubbo.common.logger.LoggerFactory;
+import org.apache.dubbo.common.utils.Assert;
+
+import org.I0Itec.zkclient.IZkChildListener;
+import org.I0Itec.zkclient.IZkStateListener;
+import org.I0Itec.zkclient.ZkClient;
+import org.apache.zookeeper.Watcher.Event.KeeperState;
+
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
+
+/**
+ * Zkclient wrapper class that can monitor the state of the connection automatically after the connection is out of time
+ * It is also consistent with the use of curator
+ *
+ * @date 2017/10/29
+ */
+public class ZkClientWrapper {
+<span class="nc" id="L39">    private Logger logger = LoggerFactory.getLogger(ZkClientWrapper.class);</span>
+    private long timeout;
+    private ZkClient client;
+    private volatile KeeperState state;
+    private CompletableFuture&lt;ZkClient&gt; completableFuture;
+<span class="nc" id="L44">    private volatile boolean started = false;</span>
+
+<span class="nc" id="L46">    public ZkClientWrapper(final String serverAddr, long timeout) {</span>
+<span class="nc" id="L47">        this.timeout = timeout;</span>
+<span class="nc" id="L48">        completableFuture = CompletableFuture.supplyAsync(() -&gt; new ZkClient(serverAddr, Integer.MAX_VALUE));</span>
+<span class="nc" id="L49">    }</span>
+
+    public void start() {
+<span class="nc bnc" id="L52" title="All 2 branches missed.">        if (!started) {</span>
+            try {
+<span class="nc" id="L54">                client = completableFuture.get(timeout, TimeUnit.MILLISECONDS);</span>
+//                this.client.subscribeStateChanges(IZkStateListener);
+<span class="nc" id="L56">            } catch (Throwable t) {</span>
+<span class="nc" id="L57">                logger.error(&quot;Timeout! zookeeper server can not be connected in : &quot; + timeout + &quot;ms!&quot;, t);</span>
+<span class="nc" id="L58">                completableFuture.whenComplete(this::makeClientReady);</span>
+<span class="nc" id="L59">            }</span>
+<span class="nc" id="L60">            started = true;</span>
+        } else {
+<span class="nc" id="L62">            logger.warn(&quot;Zkclient has already been started!&quot;);</span>
+        }
+<span class="nc" id="L64">    }</span>
+
+    public void addListener(IZkStateListener listener) {
+<span class="nc" id="L67">        completableFuture.whenComplete((value, exception) -&gt; {</span>
+<span class="nc" id="L68">            this.makeClientReady(value, exception);</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">            if (exception == null) {</span>
+<span class="nc" id="L70">                client.subscribeStateChanges(listener);</span>
+            }
+<span class="nc" id="L72">        });</span>
+<span class="nc" id="L73">    }</span>
+
+    public boolean isConnected() {
+//        return client != null &amp;&amp; state == KeeperState.SyncConnected;
+<span class="nc bnc" id="L77" title="All 2 branches missed.">        return client != null;</span>
+    }
+
+    public void createPersistent(String path) {
+<span class="nc" id="L81">        Assert.notNull(client, new IllegalStateException(&quot;Zookeeper is not connected yet!&quot;));</span>
+<span class="nc" id="L82">        client.createPersistent(path, true);</span>
+<span class="nc" id="L83">    }</span>
+
+    public void createEphemeral(String path) {
+<span class="nc" id="L86">        Assert.notNull(client, new IllegalStateException(&quot;Zookeeper is not connected yet!&quot;));</span>
+<span class="nc" id="L87">        client.createEphemeral(path);</span>
+<span class="nc" id="L88">    }</span>
+
+    public void delete(String path) {
+<span class="nc" id="L91">        Assert.notNull(client, new IllegalStateException(&quot;Zookeeper is not connected yet!&quot;));</span>
+<span class="nc" id="L92">        client.delete(path);</span>
+<span class="nc" id="L93">    }</span>
+
+    public List&lt;String&gt; getChildren(String path) {
+<span class="nc" id="L96">        Assert.notNull(client, new IllegalStateException(&quot;Zookeeper is not connected yet!&quot;));</span>
+<span class="nc" id="L97">        return client.getChildren(path);</span>
+    }
+
+    public boolean exists(String path) {
+<span class="nc" id="L101">        Assert.notNull(client, new IllegalStateException(&quot;Zookeeper is not connected yet!&quot;));</span>
+<span class="nc" id="L102">        return client.exists(path);</span>
+    }
+
+    public void close() {
+<span class="nc" id="L106">        Assert.notNull(client, new IllegalStateException(&quot;Zookeeper is not connected yet!&quot;));</span>
+<span class="nc" id="L107">        client.close();</span>
+<span class="nc" id="L108">    }</span>
+
+    public List&lt;String&gt; subscribeChildChanges(String path, final IZkChildListener listener) {
+<span class="nc" id="L111">        Assert.notNull(client, new IllegalStateException(&quot;Zookeeper is not connected yet!&quot;));</span>
+<span class="nc" id="L112">        return client.subscribeChildChanges(path, listener);</span>
+    }
+
+    public void unsubscribeChildChanges(String path, IZkChildListener listener) {
+<span class="nc" id="L116">        Assert.notNull(client, new IllegalStateException(&quot;Zookeeper is not connected yet!&quot;));</span>
+<span class="nc" id="L117">        client.unsubscribeChildChanges(path, listener);</span>
+<span class="nc" id="L118">    }</span>
+
+    private void makeClientReady(ZkClient client, Throwable e) {
+<span class="nc bnc" id="L121" title="All 2 branches missed.">        if (e != null) {</span>
+<span class="nc" id="L122">            logger.error(&quot;Got an exception when trying to create zkclient instance, can not connect to zookeeper server, please check!&quot;, e);</span>
+        } else {
+<span class="nc" id="L124">            this.client = client;</span>
+//            this.client.subscribeStateChanges(IZkStateListener);
+        }
+<span class="nc" id="L127">    }</span>
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>

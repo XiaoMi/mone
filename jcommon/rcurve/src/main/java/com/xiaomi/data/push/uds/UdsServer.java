@@ -16,9 +16,10 @@
 
 package com.xiaomi.data.push.uds;
 
-import com.xiaomi.data.push.common.CommonUtils;
-import com.xiaomi.data.push.common.Send;
-import com.xiaomi.data.push.common.UdsException;
+import com.google.common.base.Stopwatch;
+import com.xiaomi.data.push.common.*;
+import com.xiaomi.data.push.uds.context.TraceContext;
+import com.xiaomi.data.push.uds.context.TraceEvent;
 import com.xiaomi.data.push.uds.context.UdsServerContext;
 import com.xiaomi.data.push.uds.handler.UdsServerHandler;
 import com.xiaomi.data.push.uds.po.UdsCommand;
@@ -26,36 +27,38 @@ import com.xiaomi.data.push.uds.processor.UdsProcessor;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
-import io.netty.channel.epoll.EpollEventLoopGroup;
-import io.netty.channel.epoll.EpollServerDomainSocketChannel;
-import io.netty.channel.epoll.EpollServerSocketChannel;
-import io.netty.channel.kqueue.KQueueEventLoopGroup;
-import io.netty.channel.kqueue.KQueueServerDomainSocketChannel;
-import io.netty.channel.kqueue.KQueueServerSocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.unix.DomainSocketAddress;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import run.mone.api.IServer;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.concurrent.*;
 
 /**
  * @author goodjava@qq.com
  * @date 1/3/21
+ * <p>
+ * uds server 同时也支持remote模式(还是传统的tcp,方便windows用户调试)
  */
 @Slf4j
-public class UdsServer {
+public class UdsServer implements IServer<UdsCommand> {
 
+    private ConcurrentHashMap<String, Pair<UdsProcessor, ExecutorService>> processorMap = new ConcurrentHashMap<>();
 
-    @Getter
-    private ConcurrentHashMap<String, UdsProcessor> processorMap = new ConcurrentHashMap<>();
+    private ExecutorService pool = new ThreadPoolExecutor(200, 200,
+            0L, TimeUnit.MILLISECONDS,
+            new ArrayBlockingQueue<>(100));
 
+    /**
+     * 是否使用remote模式(标准tcp)
+     */
     @Setter
     private boolean remote;
 
@@ -65,30 +68,33 @@ public class UdsServer {
     @Setter
     private int port;
 
+    private String path;
+
     public static ConcurrentHashMap<Long, CompletableFuture<UdsCommand>> reqMap = new ConcurrentHashMap<>();
 
 
     public UdsServer() {
     }
 
-    private Class getChannelClass(boolean mac) {
-        if (this.remote) {
-            return mac ? KQueueServerSocketChannel.class : EpollServerSocketChannel.class;
-        }
-        return mac ? KQueueServerDomainSocketChannel.class : EpollServerDomainSocketChannel.class;
+    public void putProcessor(UdsProcessor processor) {
+        this.processorMap.put(processor.cmd(), Pair.of(processor, ExecutorServiceUtils.creatThreadPool(processor.poolSize(),this.pool)));
     }
 
+
+    @Override
     @SneakyThrows
     public void start(String path) {
+        this.path = path;
+        delPath();
         boolean mac = CommonUtils.isMac();
-        EventLoopGroup bossGroup = mac ? new KQueueEventLoopGroup() : new EpollEventLoopGroup();
-        EventLoopGroup workerGroup = mac ? new KQueueEventLoopGroup() : new EpollEventLoopGroup();
+        EventLoopGroup bossGroup = NetUtils.getEventLoopGroup();
+        EventLoopGroup workerGroup = NetUtils.getEventLoopGroup();
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
                     .option(ChannelOption.SO_BACKLOG, 4096)
                     .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                    .channel(getChannelClass(mac))
+                    .channel(NetUtils.getServerChannelClass(mac, this.remote))
                     .childHandler(new ChannelInitializer<Channel>() {
                         @Override
                         public void initChannel(Channel ch) throws Exception {
@@ -102,10 +108,32 @@ public class UdsServer {
             ChannelFuture f = b.bind(s);
             log.info("bind:{}", this.remote ? this.host + ":" + this.port : path);
             f.channel().closeFuture().sync();
-        } finally {
-            workerGroup.shutdownGracefully();
-            bossGroup.shutdownGracefully();
+        } catch (Throwable ex) {
+            log.error(ex.getMessage(), ex);
         }
+    }
+
+    @Override
+    public ConcurrentHashMap<String, UdsProcessor> getProcessorMap() {
+        ConcurrentHashMap<String, UdsProcessor> res = new ConcurrentHashMap<>();
+        this.processorMap.forEach((k, v) -> {
+            res.put(k, v.getKey());
+        });
+        return res;
+    }
+
+    public void destory() {
+        log.info("destory");
+        delPath();
+    }
+
+
+    private void delPath() {
+        SafeRun.run(() -> {
+            if (Files.exists(Paths.get(this.path))) {
+                Files.delete(Paths.get((this.path)));
+            }
+        });
     }
 
 
@@ -118,7 +146,11 @@ public class UdsServer {
      * @throws ExecutionException
      * @throws TimeoutException
      */
+    @Override
     public UdsCommand call(UdsCommand req) {
+        Stopwatch sw = Stopwatch.createStarted();
+        TraceContext context = new TraceContext();
+        context.enter();
         long id = req.getId();
         try {
             String app = req.getApp();
@@ -135,6 +167,7 @@ public class UdsServer {
             throw new UdsException(ex);
         } finally {
             reqMap.remove(id);
+            context.exit(new TraceEvent("server", sw.elapsed(TimeUnit.MILLISECONDS)));
         }
     }
 

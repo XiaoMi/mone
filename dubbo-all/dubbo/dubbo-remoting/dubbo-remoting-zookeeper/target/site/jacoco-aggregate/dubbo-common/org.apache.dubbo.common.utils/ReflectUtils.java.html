@@ -1,0 +1,1107 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>ReflectUtils.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-remoting-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.common.utils</a> &gt; <span class="el_source">ReflectUtils.java</span></div><h1>ReflectUtils.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.common.utils;
+
+import javassist.CtClass;
+import javassist.CtConstructor;
+import javassist.CtMethod;
+import javassist.NotFoundException;
+
+import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.lang.reflect.GenericArrayType;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.net.URL;
+import java.security.CodeSource;
+import java.security.ProtectionDomain;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * ReflectUtils
+ */
+public final class ReflectUtils {
+
+    /**
+     * void(V).
+     */
+    public static final char JVM_VOID = 'V';
+
+    /**
+     * boolean(Z).
+     */
+    public static final char JVM_BOOLEAN = 'Z';
+
+    /**
+     * byte(B).
+     */
+    public static final char JVM_BYTE = 'B';
+
+    /**
+     * char(C).
+     */
+    public static final char JVM_CHAR = 'C';
+
+    /**
+     * double(D).
+     */
+    public static final char JVM_DOUBLE = 'D';
+
+    /**
+     * float(F).
+     */
+    public static final char JVM_FLOAT = 'F';
+
+    /**
+     * int(I).
+     */
+    public static final char JVM_INT = 'I';
+
+    /**
+     * long(J).
+     */
+    public static final char JVM_LONG = 'J';
+
+    /**
+     * short(S).
+     */
+    public static final char JVM_SHORT = 'S';
+
+<span class="nc" id="L95">    public static final Class&lt;?&gt;[] EMPTY_CLASS_ARRAY = new Class&lt;?&gt;[0];</span>
+
+    public static final String JAVA_IDENT_REGEX = &quot;(?:[_$a-zA-Z][_$a-zA-Z0-9]*)&quot;;
+
+    public static final String JAVA_NAME_REGEX = &quot;(?:&quot; + JAVA_IDENT_REGEX + &quot;(?:\\.&quot; + JAVA_IDENT_REGEX + &quot;)*)&quot;;
+
+    public static final String CLASS_DESC = &quot;(?:L&quot; + JAVA_IDENT_REGEX + &quot;(?:\\/&quot; + JAVA_IDENT_REGEX + &quot;)*;)&quot;;
+
+    public static final String ARRAY_DESC = &quot;(?:\\[+(?:(?:[VZBCDFIJS])|&quot; + CLASS_DESC + &quot;))&quot;;
+
+    public static final String DESC_REGEX = &quot;(?:(?:[VZBCDFIJS])|&quot; + CLASS_DESC + &quot;|&quot; + ARRAY_DESC + &quot;)&quot;;
+
+<span class="nc" id="L107">    public static final Pattern DESC_PATTERN = Pattern.compile(DESC_REGEX);</span>
+
+    public static final String METHOD_DESC_REGEX = &quot;(?:(&quot; + JAVA_IDENT_REGEX + &quot;)?\\((&quot; + DESC_REGEX + &quot;*)\\)(&quot; + DESC_REGEX + &quot;)?)&quot;;
+
+<span class="nc" id="L111">    public static final Pattern METHOD_DESC_PATTERN = Pattern.compile(METHOD_DESC_REGEX);</span>
+
+<span class="nc" id="L113">    public static final Pattern GETTER_METHOD_DESC_PATTERN = Pattern.compile(&quot;get([A-Z][_a-zA-Z0-9]*)\\(\\)(&quot; + DESC_REGEX + &quot;)&quot;);</span>
+
+<span class="nc" id="L115">    public static final Pattern SETTER_METHOD_DESC_PATTERN = Pattern.compile(&quot;set([A-Z][_a-zA-Z0-9]*)\\((&quot; + DESC_REGEX + &quot;)\\)V&quot;);</span>
+
+<span class="nc" id="L117">    public static final Pattern IS_HAS_CAN_METHOD_DESC_PATTERN = Pattern.compile(&quot;(?:is|has|can)([A-Z][_a-zA-Z0-9]*)\\(\\)Z&quot;);</span>
+
+<span class="nc" id="L119">    private static final ConcurrentMap&lt;String, Class&lt;?&gt;&gt; DESC_CLASS_CACHE = new ConcurrentHashMap&lt;String, Class&lt;?&gt;&gt;();</span>
+
+<span class="nc" id="L121">    private static final ConcurrentMap&lt;String, Class&lt;?&gt;&gt; NAME_CLASS_CACHE = new ConcurrentHashMap&lt;String, Class&lt;?&gt;&gt;();</span>
+
+<span class="nc" id="L123">    private static final ConcurrentMap&lt;String, Method&gt; Signature_METHODS_CACHE = new ConcurrentHashMap&lt;String, Method&gt;();</span>
+
+    private ReflectUtils() {
+    }
+
+    public static boolean isPrimitives(Class&lt;?&gt; cls) {
+<span class="nc bnc" id="L129" title="All 2 branches missed.">        if (cls.isArray()) {</span>
+<span class="nc" id="L130">            return isPrimitive(cls.getComponentType());</span>
+        }
+<span class="nc" id="L132">        return isPrimitive(cls);</span>
+    }
+
+    public static boolean isPrimitive(Class&lt;?&gt; cls) {
+<span class="nc bnc" id="L136" title="All 8 branches missed.">        return cls.isPrimitive() || cls == String.class || cls == Boolean.class || cls == Character.class</span>
+<span class="nc bnc" id="L137" title="All 4 branches missed.">                || Number.class.isAssignableFrom(cls) || Date.class.isAssignableFrom(cls);</span>
+    }
+
+    public static Class&lt;?&gt; getBoxedClass(Class&lt;?&gt; c) {
+<span class="nc bnc" id="L141" title="All 2 branches missed.">        if (c == int.class) {</span>
+<span class="nc" id="L142">            c = Integer.class;</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">        } else if (c == boolean.class) {</span>
+<span class="nc" id="L144">            c = Boolean.class;</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">        } else if (c == long.class) {</span>
+<span class="nc" id="L146">            c = Long.class;</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">        } else if (c == float.class) {</span>
+<span class="nc" id="L148">            c = Float.class;</span>
+<span class="nc bnc" id="L149" title="All 2 branches missed.">        } else if (c == double.class) {</span>
+<span class="nc" id="L150">            c = Double.class;</span>
+<span class="nc bnc" id="L151" title="All 2 branches missed.">        } else if (c == char.class) {</span>
+<span class="nc" id="L152">            c = Character.class;</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">        } else if (c == byte.class) {</span>
+<span class="nc" id="L154">            c = Byte.class;</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">        } else if (c == short.class) {</span>
+<span class="nc" id="L156">            c = Short.class;</span>
+        }
+<span class="nc" id="L158">        return c;</span>
+    }
+
+    /**
+     * is compatible.
+     *
+     * @param c class.
+     * @param o instance.
+     * @return compatible or not.
+     */
+    public static boolean isCompatible(Class&lt;?&gt; c, Object o) {
+<span class="nc" id="L169">        boolean pt = c.isPrimitive();</span>
+<span class="nc bnc" id="L170" title="All 2 branches missed.">        if (o == null) {</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">            return !pt;</span>
+        }
+
+<span class="nc bnc" id="L174" title="All 2 branches missed.">        if (pt) {</span>
+<span class="nc" id="L175">            c = getBoxedClass(c);</span>
+        }
+
+<span class="nc bnc" id="L178" title="All 4 branches missed.">        return c == o.getClass() || c.isInstance(o);</span>
+    }
+
+    /**
+     * is compatible.
+     *
+     * @param cs class array.
+     * @param os object array.
+     * @return compatible or not.
+     */
+    public static boolean isCompatible(Class&lt;?&gt;[] cs, Object[] os) {
+<span class="nc" id="L189">        int len = cs.length;</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">        if (len != os.length) {</span>
+<span class="nc" id="L191">            return false;</span>
+        }
+<span class="nc bnc" id="L193" title="All 2 branches missed.">        if (len == 0) {</span>
+<span class="nc" id="L194">            return true;</span>
+        }
+<span class="nc bnc" id="L196" title="All 2 branches missed.">        for (int i = 0; i &lt; len; i++) {</span>
+<span class="nc bnc" id="L197" title="All 2 branches missed.">            if (!isCompatible(cs[i], os[i])) {</span>
+<span class="nc" id="L198">                return false;</span>
+            }
+        }
+<span class="nc" id="L201">        return true;</span>
+    }
+
+    public static String getCodeBase(Class&lt;?&gt; cls) {
+<span class="nc bnc" id="L205" title="All 2 branches missed.">        if (cls == null) {</span>
+<span class="nc" id="L206">            return null;</span>
+        }
+<span class="nc" id="L208">        ProtectionDomain domain = cls.getProtectionDomain();</span>
+<span class="nc bnc" id="L209" title="All 2 branches missed.">        if (domain == null) {</span>
+<span class="nc" id="L210">            return null;</span>
+        }
+<span class="nc" id="L212">        CodeSource source = domain.getCodeSource();</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">        if (source == null) {</span>
+<span class="nc" id="L214">            return null;</span>
+        }
+<span class="nc" id="L216">        URL location = source.getLocation();</span>
+<span class="nc bnc" id="L217" title="All 2 branches missed.">        if (location == null) {</span>
+<span class="nc" id="L218">            return null;</span>
+        }
+<span class="nc" id="L220">        return location.getFile();</span>
+    }
+
+    /**
+     * get name.
+     * java.lang.Object[][].class =&gt; &quot;java.lang.Object[][]&quot;
+     *
+     * @param c class.
+     * @return name.
+     */
+    public static String getName(Class&lt;?&gt; c) {
+<span class="nc bnc" id="L231" title="All 2 branches missed.">        if (c.isArray()) {</span>
+<span class="nc" id="L232">            StringBuilder sb = new StringBuilder();</span>
+            do {
+<span class="nc" id="L234">                sb.append(&quot;[]&quot;);</span>
+<span class="nc" id="L235">                c = c.getComponentType();</span>
+            }
+<span class="nc bnc" id="L237" title="All 2 branches missed.">            while (c.isArray());</span>
+
+<span class="nc" id="L239">            return c.getName() + sb.toString();</span>
+        }
+<span class="nc" id="L241">        return c.getName();</span>
+    }
+
+    public static Class&lt;?&gt; getGenericClass(Class&lt;?&gt; cls) {
+<span class="nc" id="L245">        return getGenericClass(cls, 0);</span>
+    }
+
+    public static Class&lt;?&gt; getGenericClass(Class&lt;?&gt; cls, int i) {
+        try {
+<span class="nc" id="L250">            ParameterizedType parameterizedType = ((ParameterizedType) cls.getGenericInterfaces()[0]);</span>
+<span class="nc" id="L251">            Object genericClass = parameterizedType.getActualTypeArguments()[i];</span>
+<span class="nc bnc" id="L252" title="All 2 branches missed.">            if (genericClass instanceof ParameterizedType) { // handle nested generic type</span>
+<span class="nc" id="L253">                return (Class&lt;?&gt;) ((ParameterizedType) genericClass).getRawType();</span>
+<span class="nc bnc" id="L254" title="All 2 branches missed.">            } else if (genericClass instanceof GenericArrayType) { // handle array generic type</span>
+<span class="nc" id="L255">                return (Class&lt;?&gt;) ((GenericArrayType) genericClass).getGenericComponentType();</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">            } else if (((Class) genericClass).isArray()) {</span>
+                // Requires JDK 7 or higher, Foo&lt;int[]&gt; is no longer GenericArrayType
+<span class="nc" id="L258">                return ((Class) genericClass).getComponentType();</span>
+            } else {
+<span class="nc" id="L260">                return (Class&lt;?&gt;) genericClass;</span>
+            }
+<span class="nc" id="L262">        } catch (Throwable e) {</span>
+<span class="nc" id="L263">            throw new IllegalArgumentException(cls.getName()</span>
+                    + &quot; generic type undefined!&quot;, e);
+        }
+    }
+
+    /**
+     * get method name.
+     * &quot;void do(int)&quot;, &quot;void do()&quot;, &quot;int do(java.lang.String,boolean)&quot;
+     *
+     * @param m method.
+     * @return name.
+     */
+    public static String getName(final Method m) {
+<span class="nc" id="L276">        StringBuilder ret = new StringBuilder();</span>
+<span class="nc" id="L277">        ret.append(getName(m.getReturnType())).append(' ');</span>
+<span class="nc" id="L278">        ret.append(m.getName()).append('(');</span>
+<span class="nc" id="L279">        Class&lt;?&gt;[] parameterTypes = m.getParameterTypes();</span>
+<span class="nc bnc" id="L280" title="All 2 branches missed.">        for (int i = 0; i &lt; parameterTypes.length; i++) {</span>
+<span class="nc bnc" id="L281" title="All 2 branches missed.">            if (i &gt; 0) {</span>
+<span class="nc" id="L282">                ret.append(',');</span>
+            }
+<span class="nc" id="L284">            ret.append(getName(parameterTypes[i]));</span>
+        }
+<span class="nc" id="L286">        ret.append(')');</span>
+<span class="nc" id="L287">        return ret.toString();</span>
+    }
+
+    public static String getSignature(String methodName, Class&lt;?&gt;[] parameterTypes) {
+<span class="nc" id="L291">        StringBuilder sb = new StringBuilder(methodName);</span>
+<span class="nc" id="L292">        sb.append(&quot;(&quot;);</span>
+<span class="nc bnc" id="L293" title="All 4 branches missed.">        if (parameterTypes != null &amp;&amp; parameterTypes.length &gt; 0) {</span>
+<span class="nc" id="L294">            boolean first = true;</span>
+<span class="nc bnc" id="L295" title="All 2 branches missed.">            for (Class&lt;?&gt; type : parameterTypes) {</span>
+<span class="nc bnc" id="L296" title="All 2 branches missed.">                if (first) {</span>
+<span class="nc" id="L297">                    first = false;</span>
+                } else {
+<span class="nc" id="L299">                    sb.append(&quot;,&quot;);</span>
+                }
+<span class="nc" id="L301">                sb.append(type.getName());</span>
+            }
+        }
+<span class="nc" id="L304">        sb.append(&quot;)&quot;);</span>
+<span class="nc" id="L305">        return sb.toString();</span>
+    }
+
+    /**
+     * get constructor name.
+     * &quot;()&quot;, &quot;(java.lang.String,int)&quot;
+     *
+     * @param c constructor.
+     * @return name.
+     */
+    public static String getName(final Constructor&lt;?&gt; c) {
+<span class="nc" id="L316">        StringBuilder ret = new StringBuilder(&quot;(&quot;);</span>
+<span class="nc" id="L317">        Class&lt;?&gt;[] parameterTypes = c.getParameterTypes();</span>
+<span class="nc bnc" id="L318" title="All 2 branches missed.">        for (int i = 0; i &lt; parameterTypes.length; i++) {</span>
+<span class="nc bnc" id="L319" title="All 2 branches missed.">            if (i &gt; 0) {</span>
+<span class="nc" id="L320">                ret.append(',');</span>
+            }
+<span class="nc" id="L322">            ret.append(getName(parameterTypes[i]));</span>
+        }
+<span class="nc" id="L324">        ret.append(')');</span>
+<span class="nc" id="L325">        return ret.toString();</span>
+    }
+
+    /**
+     * get class desc.
+     * boolean[].class =&gt; &quot;[Z&quot;
+     * Object.class =&gt; &quot;Ljava/lang/Object;&quot;
+     *
+     * @param c class.
+     * @return desc.
+     * @throws NotFoundException
+     */
+    public static String getDesc(Class&lt;?&gt; c) {
+<span class="nc" id="L338">        StringBuilder ret = new StringBuilder();</span>
+
+<span class="nc bnc" id="L340" title="All 2 branches missed.">        while (c.isArray()) {</span>
+<span class="nc" id="L341">            ret.append('[');</span>
+<span class="nc" id="L342">            c = c.getComponentType();</span>
+        }
+
+<span class="nc bnc" id="L345" title="All 2 branches missed.">        if (c.isPrimitive()) {</span>
+<span class="nc" id="L346">            String t = c.getName();</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">            if (&quot;void&quot;.equals(t)) {</span>
+<span class="nc" id="L348">                ret.append(JVM_VOID);</span>
+<span class="nc bnc" id="L349" title="All 2 branches missed.">            } else if (&quot;boolean&quot;.equals(t)) {</span>
+<span class="nc" id="L350">                ret.append(JVM_BOOLEAN);</span>
+<span class="nc bnc" id="L351" title="All 2 branches missed.">            } else if (&quot;byte&quot;.equals(t)) {</span>
+<span class="nc" id="L352">                ret.append(JVM_BYTE);</span>
+<span class="nc bnc" id="L353" title="All 2 branches missed.">            } else if (&quot;char&quot;.equals(t)) {</span>
+<span class="nc" id="L354">                ret.append(JVM_CHAR);</span>
+<span class="nc bnc" id="L355" title="All 2 branches missed.">            } else if (&quot;double&quot;.equals(t)) {</span>
+<span class="nc" id="L356">                ret.append(JVM_DOUBLE);</span>
+<span class="nc bnc" id="L357" title="All 2 branches missed.">            } else if (&quot;float&quot;.equals(t)) {</span>
+<span class="nc" id="L358">                ret.append(JVM_FLOAT);</span>
+<span class="nc bnc" id="L359" title="All 2 branches missed.">            } else if (&quot;int&quot;.equals(t)) {</span>
+<span class="nc" id="L360">                ret.append(JVM_INT);</span>
+<span class="nc bnc" id="L361" title="All 2 branches missed.">            } else if (&quot;long&quot;.equals(t)) {</span>
+<span class="nc" id="L362">                ret.append(JVM_LONG);</span>
+<span class="nc bnc" id="L363" title="All 2 branches missed.">            } else if (&quot;short&quot;.equals(t)) {</span>
+<span class="nc" id="L364">                ret.append(JVM_SHORT);</span>
+            }
+<span class="nc" id="L366">        } else {</span>
+<span class="nc" id="L367">            ret.append('L');</span>
+<span class="nc" id="L368">            ret.append(c.getName().replace('.', '/'));</span>
+<span class="nc" id="L369">            ret.append(';');</span>
+        }
+<span class="nc" id="L371">        return ret.toString();</span>
+    }
+
+    /**
+     * get class array desc.
+     * [int.class, boolean[].class, Object.class] =&gt; &quot;I[ZLjava/lang/Object;&quot;
+     *
+     * @param cs class array.
+     * @return desc.
+     * @throws NotFoundException
+     */
+    public static String getDesc(final Class&lt;?&gt;[] cs) {
+<span class="nc bnc" id="L383" title="All 2 branches missed.">        if (cs.length == 0) {</span>
+<span class="nc" id="L384">            return &quot;&quot;;</span>
+        }
+
+<span class="nc" id="L387">        StringBuilder sb = new StringBuilder(64);</span>
+<span class="nc bnc" id="L388" title="All 2 branches missed.">        for (Class&lt;?&gt; c : cs) {</span>
+<span class="nc" id="L389">            sb.append(getDesc(c));</span>
+        }
+<span class="nc" id="L391">        return sb.toString();</span>
+    }
+
+    /**
+     * get method desc.
+     * int do(int arg1) =&gt; &quot;do(I)I&quot;
+     * void do(String arg1,boolean arg2) =&gt; &quot;do(Ljava/lang/String;Z)V&quot;
+     *
+     * @param m method.
+     * @return desc.
+     */
+    public static String getDesc(final Method m) {
+<span class="nc" id="L403">        StringBuilder ret = new StringBuilder(m.getName()).append('(');</span>
+<span class="nc" id="L404">        Class&lt;?&gt;[] parameterTypes = m.getParameterTypes();</span>
+<span class="nc bnc" id="L405" title="All 2 branches missed.">        for (int i = 0; i &lt; parameterTypes.length; i++) {</span>
+<span class="nc" id="L406">            ret.append(getDesc(parameterTypes[i]));</span>
+        }
+<span class="nc" id="L408">        ret.append(')').append(getDesc(m.getReturnType()));</span>
+<span class="nc" id="L409">        return ret.toString();</span>
+    }
+
+    /**
+     * get constructor desc.
+     * &quot;()V&quot;, &quot;(Ljava/lang/String;I)V&quot;
+     *
+     * @param c constructor.
+     * @return desc
+     */
+    public static String getDesc(final Constructor&lt;?&gt; c) {
+<span class="nc" id="L420">        StringBuilder ret = new StringBuilder(&quot;(&quot;);</span>
+<span class="nc" id="L421">        Class&lt;?&gt;[] parameterTypes = c.getParameterTypes();</span>
+<span class="nc bnc" id="L422" title="All 2 branches missed.">        for (int i = 0; i &lt; parameterTypes.length; i++) {</span>
+<span class="nc" id="L423">            ret.append(getDesc(parameterTypes[i]));</span>
+        }
+<span class="nc" id="L425">        ret.append(')').append('V');</span>
+<span class="nc" id="L426">        return ret.toString();</span>
+    }
+
+    /**
+     * get method desc.
+     * &quot;(I)I&quot;, &quot;()V&quot;, &quot;(Ljava/lang/String;Z)V&quot;
+     *
+     * @param m method.
+     * @return desc.
+     */
+    public static String getDescWithoutMethodName(Method m) {
+<span class="nc" id="L437">        StringBuilder ret = new StringBuilder();</span>
+<span class="nc" id="L438">        ret.append('(');</span>
+<span class="nc" id="L439">        Class&lt;?&gt;[] parameterTypes = m.getParameterTypes();</span>
+<span class="nc bnc" id="L440" title="All 2 branches missed.">        for (int i = 0; i &lt; parameterTypes.length; i++) {</span>
+<span class="nc" id="L441">            ret.append(getDesc(parameterTypes[i]));</span>
+        }
+<span class="nc" id="L443">        ret.append(')').append(getDesc(m.getReturnType()));</span>
+<span class="nc" id="L444">        return ret.toString();</span>
+    }
+
+    /**
+     * get class desc.
+     * Object.class =&gt; &quot;Ljava/lang/Object;&quot;
+     * boolean[].class =&gt; &quot;[Z&quot;
+     *
+     * @param c class.
+     * @return desc.
+     * @throws NotFoundException
+     */
+    public static String getDesc(final CtClass c) throws NotFoundException {
+<span class="nc" id="L457">        StringBuilder ret = new StringBuilder();</span>
+<span class="nc bnc" id="L458" title="All 2 branches missed.">        if (c.isArray()) {</span>
+<span class="nc" id="L459">            ret.append('[');</span>
+<span class="nc" id="L460">            ret.append(getDesc(c.getComponentType()));</span>
+<span class="nc bnc" id="L461" title="All 2 branches missed.">        } else if (c.isPrimitive()) {</span>
+<span class="nc" id="L462">            String t = c.getName();</span>
+<span class="nc bnc" id="L463" title="All 2 branches missed.">            if (&quot;void&quot;.equals(t)) {</span>
+<span class="nc" id="L464">                ret.append(JVM_VOID);</span>
+<span class="nc bnc" id="L465" title="All 2 branches missed.">            } else if (&quot;boolean&quot;.equals(t)) {</span>
+<span class="nc" id="L466">                ret.append(JVM_BOOLEAN);</span>
+<span class="nc bnc" id="L467" title="All 2 branches missed.">            } else if (&quot;byte&quot;.equals(t)) {</span>
+<span class="nc" id="L468">                ret.append(JVM_BYTE);</span>
+<span class="nc bnc" id="L469" title="All 2 branches missed.">            } else if (&quot;char&quot;.equals(t)) {</span>
+<span class="nc" id="L470">                ret.append(JVM_CHAR);</span>
+<span class="nc bnc" id="L471" title="All 2 branches missed.">            } else if (&quot;double&quot;.equals(t)) {</span>
+<span class="nc" id="L472">                ret.append(JVM_DOUBLE);</span>
+<span class="nc bnc" id="L473" title="All 2 branches missed.">            } else if (&quot;float&quot;.equals(t)) {</span>
+<span class="nc" id="L474">                ret.append(JVM_FLOAT);</span>
+<span class="nc bnc" id="L475" title="All 2 branches missed.">            } else if (&quot;int&quot;.equals(t)) {</span>
+<span class="nc" id="L476">                ret.append(JVM_INT);</span>
+<span class="nc bnc" id="L477" title="All 2 branches missed.">            } else if (&quot;long&quot;.equals(t)) {</span>
+<span class="nc" id="L478">                ret.append(JVM_LONG);</span>
+<span class="nc bnc" id="L479" title="All 2 branches missed.">            } else if (&quot;short&quot;.equals(t)) {</span>
+<span class="nc" id="L480">                ret.append(JVM_SHORT);</span>
+            }
+<span class="nc" id="L482">        } else {</span>
+<span class="nc" id="L483">            ret.append('L');</span>
+<span class="nc" id="L484">            ret.append(c.getName().replace('.', '/'));</span>
+<span class="nc" id="L485">            ret.append(';');</span>
+        }
+<span class="nc" id="L487">        return ret.toString();</span>
+    }
+
+    /**
+     * get method desc.
+     * &quot;do(I)I&quot;, &quot;do()V&quot;, &quot;do(Ljava/lang/String;Z)V&quot;
+     *
+     * @param m method.
+     * @return desc.
+     */
+    public static String getDesc(final CtMethod m) throws NotFoundException {
+<span class="nc" id="L498">        StringBuilder ret = new StringBuilder(m.getName()).append('(');</span>
+<span class="nc" id="L499">        CtClass[] parameterTypes = m.getParameterTypes();</span>
+<span class="nc bnc" id="L500" title="All 2 branches missed.">        for (int i = 0; i &lt; parameterTypes.length; i++) {</span>
+<span class="nc" id="L501">            ret.append(getDesc(parameterTypes[i]));</span>
+        }
+<span class="nc" id="L503">        ret.append(')').append(getDesc(m.getReturnType()));</span>
+<span class="nc" id="L504">        return ret.toString();</span>
+    }
+
+    /**
+     * get constructor desc.
+     * &quot;()V&quot;, &quot;(Ljava/lang/String;I)V&quot;
+     *
+     * @param c constructor.
+     * @return desc
+     */
+    public static String getDesc(final CtConstructor c) throws NotFoundException {
+<span class="nc" id="L515">        StringBuilder ret = new StringBuilder(&quot;(&quot;);</span>
+<span class="nc" id="L516">        CtClass[] parameterTypes = c.getParameterTypes();</span>
+<span class="nc bnc" id="L517" title="All 2 branches missed.">        for (int i = 0; i &lt; parameterTypes.length; i++) {</span>
+<span class="nc" id="L518">            ret.append(getDesc(parameterTypes[i]));</span>
+        }
+<span class="nc" id="L520">        ret.append(')').append('V');</span>
+<span class="nc" id="L521">        return ret.toString();</span>
+    }
+
+    /**
+     * get method desc.
+     * &quot;(I)I&quot;, &quot;()V&quot;, &quot;(Ljava/lang/String;Z)V&quot;.
+     *
+     * @param m method.
+     * @return desc.
+     */
+    public static String getDescWithoutMethodName(final CtMethod m) throws NotFoundException {
+<span class="nc" id="L532">        StringBuilder ret = new StringBuilder();</span>
+<span class="nc" id="L533">        ret.append('(');</span>
+<span class="nc" id="L534">        CtClass[] parameterTypes = m.getParameterTypes();</span>
+<span class="nc bnc" id="L535" title="All 2 branches missed.">        for (int i = 0; i &lt; parameterTypes.length; i++) {</span>
+<span class="nc" id="L536">            ret.append(getDesc(parameterTypes[i]));</span>
+        }
+<span class="nc" id="L538">        ret.append(')').append(getDesc(m.getReturnType()));</span>
+<span class="nc" id="L539">        return ret.toString();</span>
+    }
+
+    /**
+     * name to desc.
+     * java.util.Map[][] =&gt; &quot;[[Ljava/util/Map;&quot;
+     *
+     * @param name name.
+     * @return desc.
+     */
+    public static String name2desc(String name) {
+<span class="nc" id="L550">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L551">        int c = 0, index = name.indexOf('[');</span>
+<span class="nc bnc" id="L552" title="All 2 branches missed.">        if (index &gt; 0) {</span>
+<span class="nc" id="L553">            c = (name.length() - index) / 2;</span>
+<span class="nc" id="L554">            name = name.substring(0, index);</span>
+        }
+<span class="nc bnc" id="L556" title="All 2 branches missed.">        while (c-- &gt; 0) {</span>
+<span class="nc" id="L557">            sb.append(&quot;[&quot;);</span>
+        }
+<span class="nc bnc" id="L559" title="All 2 branches missed.">        if (&quot;void&quot;.equals(name)) {</span>
+<span class="nc" id="L560">            sb.append(JVM_VOID);</span>
+<span class="nc bnc" id="L561" title="All 2 branches missed.">        } else if (&quot;boolean&quot;.equals(name)) {</span>
+<span class="nc" id="L562">            sb.append(JVM_BOOLEAN);</span>
+<span class="nc bnc" id="L563" title="All 2 branches missed.">        } else if (&quot;byte&quot;.equals(name)) {</span>
+<span class="nc" id="L564">            sb.append(JVM_BYTE);</span>
+<span class="nc bnc" id="L565" title="All 2 branches missed.">        } else if (&quot;char&quot;.equals(name)) {</span>
+<span class="nc" id="L566">            sb.append(JVM_CHAR);</span>
+<span class="nc bnc" id="L567" title="All 2 branches missed.">        } else if (&quot;double&quot;.equals(name)) {</span>
+<span class="nc" id="L568">            sb.append(JVM_DOUBLE);</span>
+<span class="nc bnc" id="L569" title="All 2 branches missed.">        } else if (&quot;float&quot;.equals(name)) {</span>
+<span class="nc" id="L570">            sb.append(JVM_FLOAT);</span>
+<span class="nc bnc" id="L571" title="All 2 branches missed.">        } else if (&quot;int&quot;.equals(name)) {</span>
+<span class="nc" id="L572">            sb.append(JVM_INT);</span>
+<span class="nc bnc" id="L573" title="All 2 branches missed.">        } else if (&quot;long&quot;.equals(name)) {</span>
+<span class="nc" id="L574">            sb.append(JVM_LONG);</span>
+<span class="nc bnc" id="L575" title="All 2 branches missed.">        } else if (&quot;short&quot;.equals(name)) {</span>
+<span class="nc" id="L576">            sb.append(JVM_SHORT);</span>
+        } else {
+<span class="nc" id="L578">            sb.append('L').append(name.replace('.', '/')).append(';');</span>
+        }
+<span class="nc" id="L580">        return sb.toString();</span>
+    }
+
+    /**
+     * desc to name.
+     * &quot;[[I&quot; =&gt; &quot;int[][]&quot;
+     *
+     * @param desc desc.
+     * @return name.
+     */
+    public static String desc2name(String desc) {
+<span class="nc" id="L591">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L592">        int c = desc.lastIndexOf('[') + 1;</span>
+<span class="nc bnc" id="L593" title="All 2 branches missed.">        if (desc.length() == c + 1) {</span>
+<span class="nc bnc" id="L594" title="All 10 branches missed.">            switch (desc.charAt(c)) {</span>
+                case JVM_VOID: {
+<span class="nc" id="L596">                    sb.append(&quot;void&quot;);</span>
+<span class="nc" id="L597">                    break;</span>
+                }
+                case JVM_BOOLEAN: {
+<span class="nc" id="L600">                    sb.append(&quot;boolean&quot;);</span>
+<span class="nc" id="L601">                    break;</span>
+                }
+                case JVM_BYTE: {
+<span class="nc" id="L604">                    sb.append(&quot;byte&quot;);</span>
+<span class="nc" id="L605">                    break;</span>
+                }
+                case JVM_CHAR: {
+<span class="nc" id="L608">                    sb.append(&quot;char&quot;);</span>
+<span class="nc" id="L609">                    break;</span>
+                }
+                case JVM_DOUBLE: {
+<span class="nc" id="L612">                    sb.append(&quot;double&quot;);</span>
+<span class="nc" id="L613">                    break;</span>
+                }
+                case JVM_FLOAT: {
+<span class="nc" id="L616">                    sb.append(&quot;float&quot;);</span>
+<span class="nc" id="L617">                    break;</span>
+                }
+                case JVM_INT: {
+<span class="nc" id="L620">                    sb.append(&quot;int&quot;);</span>
+<span class="nc" id="L621">                    break;</span>
+                }
+                case JVM_LONG: {
+<span class="nc" id="L624">                    sb.append(&quot;long&quot;);</span>
+<span class="nc" id="L625">                    break;</span>
+                }
+                case JVM_SHORT: {
+<span class="nc" id="L628">                    sb.append(&quot;short&quot;);</span>
+<span class="nc" id="L629">                    break;</span>
+                }
+                default:
+<span class="nc" id="L632">                    throw new RuntimeException();</span>
+            }
+        } else {
+<span class="nc" id="L635">            sb.append(desc.substring(c + 1, desc.length() - 1).replace('/', '.'));</span>
+        }
+<span class="nc bnc" id="L637" title="All 2 branches missed.">        while (c-- &gt; 0) {</span>
+<span class="nc" id="L638">            sb.append(&quot;[]&quot;);</span>
+        }
+<span class="nc" id="L640">        return sb.toString();</span>
+    }
+
+    public static Class&lt;?&gt; forName(String name) {
+        try {
+<span class="nc" id="L645">            return name2class(name);</span>
+<span class="nc" id="L646">        } catch (ClassNotFoundException e) {</span>
+<span class="nc" id="L647">            throw new IllegalStateException(&quot;Not found class &quot; + name + &quot;, cause: &quot; + e.getMessage(), e);</span>
+        }
+    }
+
+    public static Class&lt;?&gt; forName(ClassLoader cl, String name) {
+        try {
+<span class="nc" id="L653">            return name2class(cl, name);</span>
+<span class="nc" id="L654">        } catch (ClassNotFoundException e) {</span>
+<span class="nc" id="L655">            throw new IllegalStateException(&quot;Not found class &quot; + name + &quot;, cause: &quot; + e.getMessage(), e);</span>
+        }
+    }
+
+    /**
+     * name to class.
+     * &quot;boolean&quot; =&gt; boolean.class
+     * &quot;java.util.Map[][]&quot; =&gt; java.util.Map[][].class
+     *
+     * @param name name.
+     * @return Class instance.
+     */
+    public static Class&lt;?&gt; name2class(String name) throws ClassNotFoundException {
+<span class="nc" id="L668">        return name2class(ClassHelper.getClassLoader(), name);</span>
+    }
+
+    /**
+     * name to class.
+     * &quot;boolean&quot; =&gt; boolean.class
+     * &quot;java.util.Map[][]&quot; =&gt; java.util.Map[][].class
+     *
+     * @param cl   ClassLoader instance.
+     * @param name name.
+     * @return Class instance.
+     */
+    private static Class&lt;?&gt; name2class(ClassLoader cl, String name) throws ClassNotFoundException {
+<span class="nc" id="L681">        int c = 0, index = name.indexOf('[');</span>
+<span class="nc bnc" id="L682" title="All 2 branches missed.">        if (index &gt; 0) {</span>
+<span class="nc" id="L683">            c = (name.length() - index) / 2;</span>
+<span class="nc" id="L684">            name = name.substring(0, index);</span>
+        }
+<span class="nc bnc" id="L686" title="All 2 branches missed.">        if (c &gt; 0) {</span>
+<span class="nc" id="L687">            StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L688" title="All 2 branches missed.">            while (c-- &gt; 0) {</span>
+<span class="nc" id="L689">                sb.append(&quot;[&quot;);</span>
+            }
+
+<span class="nc bnc" id="L692" title="All 2 branches missed.">            if (&quot;void&quot;.equals(name)) {</span>
+<span class="nc" id="L693">                sb.append(JVM_VOID);</span>
+<span class="nc bnc" id="L694" title="All 2 branches missed.">            } else if (&quot;boolean&quot;.equals(name)) {</span>
+<span class="nc" id="L695">                sb.append(JVM_BOOLEAN);</span>
+<span class="nc bnc" id="L696" title="All 2 branches missed.">            } else if (&quot;byte&quot;.equals(name)) {</span>
+<span class="nc" id="L697">                sb.append(JVM_BYTE);</span>
+<span class="nc bnc" id="L698" title="All 2 branches missed.">            } else if (&quot;char&quot;.equals(name)) {</span>
+<span class="nc" id="L699">                sb.append(JVM_CHAR);</span>
+<span class="nc bnc" id="L700" title="All 2 branches missed.">            } else if (&quot;double&quot;.equals(name)) {</span>
+<span class="nc" id="L701">                sb.append(JVM_DOUBLE);</span>
+<span class="nc bnc" id="L702" title="All 2 branches missed.">            } else if (&quot;float&quot;.equals(name)) {</span>
+<span class="nc" id="L703">                sb.append(JVM_FLOAT);</span>
+<span class="nc bnc" id="L704" title="All 2 branches missed.">            } else if (&quot;int&quot;.equals(name)) {</span>
+<span class="nc" id="L705">                sb.append(JVM_INT);</span>
+<span class="nc bnc" id="L706" title="All 2 branches missed.">            } else if (&quot;long&quot;.equals(name)) {</span>
+<span class="nc" id="L707">                sb.append(JVM_LONG);</span>
+<span class="nc bnc" id="L708" title="All 2 branches missed.">            } else if (&quot;short&quot;.equals(name)) {</span>
+<span class="nc" id="L709">                sb.append(JVM_SHORT);</span>
+            } else {
+<span class="nc" id="L711">                sb.append('L').append(name).append(';'); // &quot;java.lang.Object&quot; ==&gt; &quot;Ljava.lang.Object;&quot;</span>
+            }
+<span class="nc" id="L713">            name = sb.toString();</span>
+<span class="nc" id="L714">        } else {</span>
+<span class="nc bnc" id="L715" title="All 2 branches missed.">            if (&quot;void&quot;.equals(name)) {</span>
+<span class="nc" id="L716">                return void.class;</span>
+<span class="nc bnc" id="L717" title="All 2 branches missed.">            } else if (&quot;boolean&quot;.equals(name)) {</span>
+<span class="nc" id="L718">                return boolean.class;</span>
+<span class="nc bnc" id="L719" title="All 2 branches missed.">            } else if (&quot;byte&quot;.equals(name)) {</span>
+<span class="nc" id="L720">                return byte.class;</span>
+<span class="nc bnc" id="L721" title="All 2 branches missed.">            } else if (&quot;char&quot;.equals(name)) {</span>
+<span class="nc" id="L722">                return char.class;</span>
+<span class="nc bnc" id="L723" title="All 2 branches missed.">            } else if (&quot;double&quot;.equals(name)) {</span>
+<span class="nc" id="L724">                return double.class;</span>
+<span class="nc bnc" id="L725" title="All 2 branches missed.">            } else if (&quot;float&quot;.equals(name)) {</span>
+<span class="nc" id="L726">                return float.class;</span>
+<span class="nc bnc" id="L727" title="All 2 branches missed.">            } else if (&quot;int&quot;.equals(name)) {</span>
+<span class="nc" id="L728">                return int.class;</span>
+<span class="nc bnc" id="L729" title="All 2 branches missed.">            } else if (&quot;long&quot;.equals(name)) {</span>
+<span class="nc" id="L730">                return long.class;</span>
+<span class="nc bnc" id="L731" title="All 2 branches missed.">            } else if (&quot;short&quot;.equals(name)) {</span>
+<span class="nc" id="L732">                return short.class;</span>
+            }
+        }
+
+<span class="nc bnc" id="L736" title="All 2 branches missed.">        if (cl == null) {</span>
+<span class="nc" id="L737">            cl = ClassHelper.getClassLoader();</span>
+        }
+<span class="nc" id="L739">        Class&lt;?&gt; clazz = NAME_CLASS_CACHE.get(name);</span>
+<span class="nc bnc" id="L740" title="All 2 branches missed.">        if (clazz == null) {</span>
+<span class="nc" id="L741">            clazz = Class.forName(name, true, cl);</span>
+<span class="nc" id="L742">            NAME_CLASS_CACHE.put(name, clazz);</span>
+        }
+<span class="nc" id="L744">        return clazz;</span>
+    }
+
+    /**
+     * desc to class.
+     * &quot;[Z&quot; =&gt; boolean[].class
+     * &quot;[[Ljava/util/Map;&quot; =&gt; java.util.Map[][].class
+     *
+     * @param desc desc.
+     * @return Class instance.
+     * @throws ClassNotFoundException
+     */
+    public static Class&lt;?&gt; desc2class(String desc) throws ClassNotFoundException {
+<span class="nc" id="L757">        return desc2class(ClassHelper.getClassLoader(desc), desc);</span>
+    }
+
+    /**
+     * desc to class.
+     * &quot;[Z&quot; =&gt; boolean[].class
+     * &quot;[[Ljava/util/Map;&quot; =&gt; java.util.Map[][].class
+     *
+     * @param cl   ClassLoader instance.
+     * @param desc desc.
+     * @return Class instance.
+     * @throws ClassNotFoundException
+     */
+    private static Class&lt;?&gt; desc2class(ClassLoader cl, String desc) throws ClassNotFoundException {
+<span class="nc bnc" id="L771" title="All 12 branches missed.">        switch (desc.charAt(0)) {</span>
+            case JVM_VOID:
+<span class="nc" id="L773">                return void.class;</span>
+            case JVM_BOOLEAN:
+<span class="nc" id="L775">                return boolean.class;</span>
+            case JVM_BYTE:
+<span class="nc" id="L777">                return byte.class;</span>
+            case JVM_CHAR:
+<span class="nc" id="L779">                return char.class;</span>
+            case JVM_DOUBLE:
+<span class="nc" id="L781">                return double.class;</span>
+            case JVM_FLOAT:
+<span class="nc" id="L783">                return float.class;</span>
+            case JVM_INT:
+<span class="nc" id="L785">                return int.class;</span>
+            case JVM_LONG:
+<span class="nc" id="L787">                return long.class;</span>
+            case JVM_SHORT:
+<span class="nc" id="L789">                return short.class;</span>
+            case 'L':
+<span class="nc" id="L791">                desc = desc.substring(1, desc.length() - 1).replace('/', '.'); // &quot;Ljava/lang/Object;&quot; ==&gt; &quot;java.lang.Object&quot;</span>
+<span class="nc" id="L792">                break;</span>
+            case '[':
+<span class="nc" id="L794">                desc = desc.replace('/', '.');  // &quot;[[Ljava/lang/Object;&quot; ==&gt; &quot;[[Ljava.lang.Object;&quot;</span>
+<span class="nc" id="L795">                break;</span>
+            default:
+<span class="nc" id="L797">                throw new ClassNotFoundException(&quot;Class not found: &quot; + desc);</span>
+        }
+
+<span class="nc bnc" id="L800" title="All 2 branches missed.">        if (cl == null) {</span>
+<span class="nc" id="L801">            cl = ClassHelper.getClassLoader();</span>
+        }
+<span class="nc" id="L803">        Class&lt;?&gt; clazz = DESC_CLASS_CACHE.get(desc);</span>
+<span class="nc bnc" id="L804" title="All 2 branches missed.">        if (clazz == null) {</span>
+<span class="nc" id="L805">            clazz = Class.forName(desc, true, cl);</span>
+<span class="nc" id="L806">            DESC_CLASS_CACHE.put(desc, clazz);</span>
+        }
+<span class="nc" id="L808">        return clazz;</span>
+    }
+
+    /**
+     * get class array instance.
+     *
+     * @param desc desc.
+     * @return Class class array.
+     * @throws ClassNotFoundException
+     */
+    public static Class&lt;?&gt;[] desc2classArray(String desc) throws ClassNotFoundException {
+<span class="nc" id="L819">        Class&lt;?&gt;[] ret = desc2classArray(ClassHelper.getClassLoader(desc), desc);</span>
+<span class="nc" id="L820">        return ret;</span>
+    }
+
+    /**
+     * get class array instance.
+     *
+     * @param cl   ClassLoader instance.
+     * @param desc desc.
+     * @return Class[] class array.
+     * @throws ClassNotFoundException
+     */
+    private static Class&lt;?&gt;[] desc2classArray(ClassLoader cl, String desc) throws ClassNotFoundException {
+<span class="nc bnc" id="L832" title="All 2 branches missed.">        if (desc.length() == 0) {</span>
+<span class="nc" id="L833">            return EMPTY_CLASS_ARRAY;</span>
+        }
+
+<span class="nc" id="L836">        List&lt;Class&lt;?&gt;&gt; cs = new ArrayList&lt;Class&lt;?&gt;&gt;();</span>
+<span class="nc" id="L837">        Matcher m = DESC_PATTERN.matcher(desc);</span>
+<span class="nc bnc" id="L838" title="All 2 branches missed.">        while (m.find()) {</span>
+<span class="nc" id="L839">            cs.add(desc2class(cl, m.group()));</span>
+        }
+<span class="nc" id="L841">        return cs.toArray(EMPTY_CLASS_ARRAY);</span>
+    }
+
+    /**
+     * Find method from method signature
+     *
+     * @param clazz      Target class to find method
+     * @param methodName Method signature, e.g.: method1(int, String). It is allowed to provide method name only, e.g.: method2
+     * @return target method
+     * @throws NoSuchMethodException
+     * @throws ClassNotFoundException
+     * @throws IllegalStateException  when multiple methods are found (overridden method when parameter info is not provided)
+     */
+    public static Method findMethodByMethodSignature(Class&lt;?&gt; clazz, String methodName, String[] parameterTypes)
+            throws NoSuchMethodException, ClassNotFoundException {
+<span class="nc" id="L856">        String signature = clazz.getName() + &quot;.&quot; + methodName;</span>
+<span class="nc bnc" id="L857" title="All 4 branches missed.">        if (parameterTypes != null &amp;&amp; parameterTypes.length &gt; 0) {</span>
+<span class="nc" id="L858">            signature += StringUtils.join(parameterTypes);</span>
+        }
+<span class="nc" id="L860">        Method method = Signature_METHODS_CACHE.get(signature);</span>
+<span class="nc bnc" id="L861" title="All 2 branches missed.">        if (method != null) {</span>
+<span class="nc" id="L862">            return method;</span>
+        }
+<span class="nc bnc" id="L864" title="All 2 branches missed.">        if (parameterTypes == null) {</span>
+<span class="nc" id="L865">            List&lt;Method&gt; finded = new ArrayList&lt;Method&gt;();</span>
+<span class="nc bnc" id="L866" title="All 2 branches missed.">            for (Method m : clazz.getMethods()) {</span>
+<span class="nc bnc" id="L867" title="All 2 branches missed.">                if (m.getName().equals(methodName)) {</span>
+<span class="nc" id="L868">                    finded.add(m);</span>
+                }
+            }
+<span class="nc bnc" id="L871" title="All 2 branches missed.">            if (finded.isEmpty()) {</span>
+<span class="nc" id="L872">                throw new NoSuchMethodException(&quot;No such method &quot; + methodName + &quot; in class &quot; + clazz);</span>
+            }
+<span class="nc bnc" id="L874" title="All 2 branches missed.">            if (finded.size() &gt; 1) {</span>
+<span class="nc" id="L875">                String msg = String.format(&quot;Not unique method for method name(%s) in class(%s), find %d methods.&quot;,</span>
+<span class="nc" id="L876">                        methodName, clazz.getName(), finded.size());</span>
+<span class="nc" id="L877">                throw new IllegalStateException(msg);</span>
+            }
+<span class="nc" id="L879">            method = finded.get(0);</span>
+<span class="nc" id="L880">        } else {</span>
+<span class="nc" id="L881">            Class&lt;?&gt;[] types = new Class&lt;?&gt;[parameterTypes.length];</span>
+<span class="nc bnc" id="L882" title="All 2 branches missed.">            for (int i = 0; i &lt; parameterTypes.length; i++) {</span>
+<span class="nc" id="L883">                types[i] = ReflectUtils.name2class(parameterTypes[i]);</span>
+            }
+<span class="nc" id="L885">            method = clazz.getMethod(methodName, types);</span>
+
+        }
+<span class="nc" id="L888">        Signature_METHODS_CACHE.put(signature, method);</span>
+<span class="nc" id="L889">        return method;</span>
+    }
+
+    public static Method findMethodByMethodName(Class&lt;?&gt; clazz, String methodName)
+            throws NoSuchMethodException, ClassNotFoundException {
+<span class="nc" id="L894">        return findMethodByMethodSignature(clazz, methodName, null);</span>
+    }
+
+    public static Constructor&lt;?&gt; findConstructor(Class&lt;?&gt; clazz, Class&lt;?&gt; paramType) throws NoSuchMethodException {
+        Constructor&lt;?&gt; targetConstructor;
+        try {
+<span class="nc" id="L900">            targetConstructor = clazz.getConstructor(new Class&lt;?&gt;[]{paramType});</span>
+<span class="nc" id="L901">        } catch (NoSuchMethodException e) {</span>
+<span class="nc" id="L902">            targetConstructor = null;</span>
+<span class="nc" id="L903">            Constructor&lt;?&gt;[] constructors = clazz.getConstructors();</span>
+<span class="nc bnc" id="L904" title="All 2 branches missed.">            for (Constructor&lt;?&gt; constructor : constructors) {</span>
+<span class="nc bnc" id="L905" title="All 2 branches missed.">                if (Modifier.isPublic(constructor.getModifiers())</span>
+<span class="nc bnc" id="L906" title="All 2 branches missed.">                        &amp;&amp; constructor.getParameterTypes().length == 1</span>
+<span class="nc bnc" id="L907" title="All 2 branches missed.">                        &amp;&amp; constructor.getParameterTypes()[0].isAssignableFrom(paramType)) {</span>
+<span class="nc" id="L908">                    targetConstructor = constructor;</span>
+<span class="nc" id="L909">                    break;</span>
+                }
+            }
+<span class="nc bnc" id="L912" title="All 2 branches missed.">            if (targetConstructor == null) {</span>
+<span class="nc" id="L913">                throw e;</span>
+            }
+<span class="nc" id="L915">        }</span>
+<span class="nc" id="L916">        return targetConstructor;</span>
+    }
+
+    /**
+     * Check if one object is the implementation for a given interface.
+     * &lt;p&gt;
+     * This method will not trigger classloading for the given interface, therefore it will not lead to error when
+     * the given interface is not visible by the classloader
+     *
+     * @param obj                Object to examine
+     * @param interfaceClazzName The given interface
+     * @return true if the object implements the given interface, otherwise return false
+     */
+    public static boolean isInstance(Object obj, String interfaceClazzName) {
+<span class="nc" id="L930">        for (Class&lt;?&gt; clazz = obj.getClass();</span>
+<span class="nc bnc" id="L931" title="All 4 branches missed.">             clazz != null &amp;&amp; !clazz.equals(Object.class);</span>
+<span class="nc" id="L932">             clazz = clazz.getSuperclass()) {</span>
+<span class="nc" id="L933">            Class&lt;?&gt;[] interfaces = clazz.getInterfaces();</span>
+<span class="nc bnc" id="L934" title="All 2 branches missed.">            for (Class&lt;?&gt; itf : interfaces) {</span>
+<span class="nc bnc" id="L935" title="All 2 branches missed.">                if (itf.getName().equals(interfaceClazzName)) {</span>
+<span class="nc" id="L936">                    return true;</span>
+                }
+            }
+        }
+<span class="nc" id="L940">        return false;</span>
+    }
+
+    public static Object getEmptyObject(Class&lt;?&gt; returnType) {
+<span class="nc" id="L944">        return getEmptyObject(returnType, new HashMap&lt;Class&lt;?&gt;, Object&gt;(), 0);</span>
+    }
+
+    private static Object getEmptyObject(Class&lt;?&gt; returnType, Map&lt;Class&lt;?&gt;, Object&gt; emptyInstances, int level) {
+<span class="nc bnc" id="L948" title="All 2 branches missed.">        if (level &gt; 2) {</span>
+<span class="nc" id="L949">            return null;</span>
+        }
+<span class="nc bnc" id="L951" title="All 2 branches missed.">        if (returnType == null) {</span>
+<span class="nc" id="L952">            return null;</span>
+<span class="nc bnc" id="L953" title="All 4 branches missed.">        } else if (returnType == boolean.class || returnType == Boolean.class) {</span>
+<span class="nc" id="L954">            return false;</span>
+<span class="nc bnc" id="L955" title="All 4 branches missed.">        } else if (returnType == char.class || returnType == Character.class) {</span>
+<span class="nc" id="L956">            return '\0';</span>
+<span class="nc bnc" id="L957" title="All 4 branches missed.">        } else if (returnType == byte.class || returnType == Byte.class) {</span>
+<span class="nc" id="L958">            return (byte) 0;</span>
+<span class="nc bnc" id="L959" title="All 4 branches missed.">        } else if (returnType == short.class || returnType == Short.class) {</span>
+<span class="nc" id="L960">            return (short) 0;</span>
+<span class="nc bnc" id="L961" title="All 4 branches missed.">        } else if (returnType == int.class || returnType == Integer.class) {</span>
+<span class="nc" id="L962">            return 0;</span>
+<span class="nc bnc" id="L963" title="All 4 branches missed.">        } else if (returnType == long.class || returnType == Long.class) {</span>
+<span class="nc" id="L964">            return 0L;</span>
+<span class="nc bnc" id="L965" title="All 4 branches missed.">        } else if (returnType == float.class || returnType == Float.class) {</span>
+<span class="nc" id="L966">            return 0F;</span>
+<span class="nc bnc" id="L967" title="All 4 branches missed.">        } else if (returnType == double.class || returnType == Double.class) {</span>
+<span class="nc" id="L968">            return 0D;</span>
+<span class="nc bnc" id="L969" title="All 2 branches missed.">        } else if (returnType.isArray()) {</span>
+<span class="nc" id="L970">            return Array.newInstance(returnType.getComponentType(), 0);</span>
+<span class="nc bnc" id="L971" title="All 2 branches missed.">        } else if (returnType.isAssignableFrom(ArrayList.class)) {</span>
+<span class="nc" id="L972">            return new ArrayList&lt;Object&gt;(0);</span>
+<span class="nc bnc" id="L973" title="All 2 branches missed.">        } else if (returnType.isAssignableFrom(HashSet.class)) {</span>
+<span class="nc" id="L974">            return new HashSet&lt;Object&gt;(0);</span>
+<span class="nc bnc" id="L975" title="All 2 branches missed.">        } else if (returnType.isAssignableFrom(HashMap.class)) {</span>
+<span class="nc" id="L976">            return new HashMap&lt;Object, Object&gt;(0);</span>
+<span class="nc bnc" id="L977" title="All 2 branches missed.">        } else if (String.class.equals(returnType)) {</span>
+<span class="nc" id="L978">            return &quot;&quot;;</span>
+<span class="nc bnc" id="L979" title="All 2 branches missed.">        } else if (!returnType.isInterface()) {</span>
+            try {
+<span class="nc" id="L981">                Object value = emptyInstances.get(returnType);</span>
+<span class="nc bnc" id="L982" title="All 2 branches missed.">                if (value == null) {</span>
+<span class="nc" id="L983">                    value = returnType.newInstance();</span>
+<span class="nc" id="L984">                    emptyInstances.put(returnType, value);</span>
+                }
+<span class="nc" id="L986">                Class&lt;?&gt; cls = value.getClass();</span>
+<span class="nc bnc" id="L987" title="All 4 branches missed.">                while (cls != null &amp;&amp; cls != Object.class) {</span>
+<span class="nc" id="L988">                    Field[] fields = cls.getDeclaredFields();</span>
+<span class="nc bnc" id="L989" title="All 2 branches missed.">                    for (Field field : fields) {</span>
+<span class="nc bnc" id="L990" title="All 2 branches missed.">                        if (field.isSynthetic()) {</span>
+<span class="nc" id="L991">                            continue;</span>
+                        }
+<span class="nc" id="L993">                        Object property = getEmptyObject(field.getType(), emptyInstances, level + 1);</span>
+<span class="nc bnc" id="L994" title="All 2 branches missed.">                        if (property != null) {</span>
+                            try {
+<span class="nc bnc" id="L996" title="All 2 branches missed.">                                if (!field.isAccessible()) {</span>
+<span class="nc" id="L997">                                    field.setAccessible(true);</span>
+                                }
+<span class="nc" id="L999">                                field.set(value, property);</span>
+<span class="nc" id="L1000">                            } catch (Throwable e) {</span>
+<span class="nc" id="L1001">                            }</span>
+                        }
+                    }
+<span class="nc" id="L1004">                    cls = cls.getSuperclass();</span>
+<span class="nc" id="L1005">                }</span>
+<span class="nc" id="L1006">                return value;</span>
+<span class="nc" id="L1007">            } catch (Throwable e) {</span>
+<span class="nc" id="L1008">                return null;</span>
+            }
+        } else {
+<span class="nc" id="L1011">            return null;</span>
+        }
+    }
+
+    public static boolean isBeanPropertyReadMethod(Method method) {
+<span class="nc bnc" id="L1016" title="All 2 branches missed.">        return method != null</span>
+<span class="nc bnc" id="L1017" title="All 2 branches missed.">                &amp;&amp; Modifier.isPublic(method.getModifiers())</span>
+<span class="nc bnc" id="L1018" title="All 2 branches missed.">                &amp;&amp; !Modifier.isStatic(method.getModifiers())</span>
+<span class="nc bnc" id="L1019" title="All 2 branches missed.">                &amp;&amp; method.getReturnType() != void.class</span>
+<span class="nc bnc" id="L1020" title="All 2 branches missed.">                &amp;&amp; method.getDeclaringClass() != Object.class</span>
+<span class="nc bnc" id="L1021" title="All 2 branches missed.">                &amp;&amp; method.getParameterTypes().length == 0</span>
+<span class="nc bnc" id="L1022" title="All 4 branches missed.">                &amp;&amp; ((method.getName().startsWith(&quot;get&quot;) &amp;&amp; method.getName().length() &gt; 3)</span>
+<span class="nc bnc" id="L1023" title="All 4 branches missed.">                || (method.getName().startsWith(&quot;is&quot;) &amp;&amp; method.getName().length() &gt; 2));</span>
+    }
+
+    public static String getPropertyNameFromBeanReadMethod(Method method) {
+<span class="nc bnc" id="L1027" title="All 2 branches missed.">        if (isBeanPropertyReadMethod(method)) {</span>
+<span class="nc bnc" id="L1028" title="All 2 branches missed.">            if (method.getName().startsWith(&quot;get&quot;)) {</span>
+<span class="nc" id="L1029">                return method.getName().substring(3, 4).toLowerCase()</span>
+<span class="nc" id="L1030">                        + method.getName().substring(4);</span>
+            }
+<span class="nc bnc" id="L1032" title="All 2 branches missed.">            if (method.getName().startsWith(&quot;is&quot;)) {</span>
+<span class="nc" id="L1033">                return method.getName().substring(2, 3).toLowerCase()</span>
+<span class="nc" id="L1034">                        + method.getName().substring(3);</span>
+            }
+        }
+<span class="nc" id="L1037">        return null;</span>
+    }
+
+    public static boolean isBeanPropertyWriteMethod(Method method) {
+<span class="nc bnc" id="L1041" title="All 2 branches missed.">        return method != null</span>
+<span class="nc bnc" id="L1042" title="All 2 branches missed.">                &amp;&amp; Modifier.isPublic(method.getModifiers())</span>
+<span class="nc bnc" id="L1043" title="All 2 branches missed.">                &amp;&amp; !Modifier.isStatic(method.getModifiers())</span>
+<span class="nc bnc" id="L1044" title="All 2 branches missed.">                &amp;&amp; method.getDeclaringClass() != Object.class</span>
+<span class="nc bnc" id="L1045" title="All 2 branches missed.">                &amp;&amp; method.getParameterTypes().length == 1</span>
+<span class="nc bnc" id="L1046" title="All 2 branches missed.">                &amp;&amp; method.getName().startsWith(&quot;set&quot;)</span>
+<span class="nc bnc" id="L1047" title="All 2 branches missed.">                &amp;&amp; method.getName().length() &gt; 3;</span>
+    }
+
+    public static String getPropertyNameFromBeanWriteMethod(Method method) {
+<span class="nc bnc" id="L1051" title="All 2 branches missed.">        if (isBeanPropertyWriteMethod(method)) {</span>
+<span class="nc" id="L1052">            return method.getName().substring(3, 4).toLowerCase()</span>
+<span class="nc" id="L1053">                    + method.getName().substring(4);</span>
+        }
+<span class="nc" id="L1055">        return null;</span>
+    }
+
+    public static boolean isPublicInstanceField(Field field) {
+<span class="nc bnc" id="L1059" title="All 2 branches missed.">        return Modifier.isPublic(field.getModifiers())</span>
+<span class="nc bnc" id="L1060" title="All 2 branches missed.">                &amp;&amp; !Modifier.isStatic(field.getModifiers())</span>
+<span class="nc bnc" id="L1061" title="All 2 branches missed.">                &amp;&amp; !Modifier.isFinal(field.getModifiers())</span>
+<span class="nc bnc" id="L1062" title="All 2 branches missed.">                &amp;&amp; !field.isSynthetic();</span>
+    }
+
+    public static Map&lt;String, Field&gt; getBeanPropertyFields(Class cl) {
+<span class="nc" id="L1066">        Map&lt;String, Field&gt; properties = new HashMap&lt;String, Field&gt;();</span>
+<span class="nc bnc" id="L1067" title="All 2 branches missed.">        for (; cl != null; cl = cl.getSuperclass()) {</span>
+<span class="nc" id="L1068">            Field[] fields = cl.getDeclaredFields();</span>
+<span class="nc bnc" id="L1069" title="All 2 branches missed.">            for (Field field : fields) {</span>
+<span class="nc bnc" id="L1070" title="All 2 branches missed.">                if (Modifier.isTransient(field.getModifiers())</span>
+<span class="nc bnc" id="L1071" title="All 2 branches missed.">                        || Modifier.isStatic(field.getModifiers())) {</span>
+<span class="nc" id="L1072">                    continue;</span>
+                }
+
+<span class="nc" id="L1075">                field.setAccessible(true);</span>
+
+<span class="nc" id="L1077">                properties.put(field.getName(), field);</span>
+            }
+        }
+
+<span class="nc" id="L1081">        return properties;</span>
+    }
+
+    public static Map&lt;String, Method&gt; getBeanPropertyReadMethods(Class cl) {
+<span class="nc" id="L1085">        Map&lt;String, Method&gt; properties = new HashMap&lt;String, Method&gt;();</span>
+<span class="nc bnc" id="L1086" title="All 2 branches missed.">        for (; cl != null; cl = cl.getSuperclass()) {</span>
+<span class="nc" id="L1087">            Method[] methods = cl.getDeclaredMethods();</span>
+<span class="nc bnc" id="L1088" title="All 2 branches missed.">            for (Method method : methods) {</span>
+<span class="nc bnc" id="L1089" title="All 2 branches missed.">                if (isBeanPropertyReadMethod(method)) {</span>
+<span class="nc" id="L1090">                    method.setAccessible(true);</span>
+<span class="nc" id="L1091">                    String property = getPropertyNameFromBeanReadMethod(method);</span>
+<span class="nc" id="L1092">                    properties.put(property, method);</span>
+                }
+            }
+        }
+
+<span class="nc" id="L1097">        return properties;</span>
+    }
+
+
+    public static void clear() {
+<span class="nc" id="L1102">        DESC_CLASS_CACHE.clear();</span>
+<span class="nc" id="L1103">        NAME_CLASS_CACHE.clear();</span>
+<span class="nc" id="L1104">        Signature_METHODS_CACHE.clear();</span>
+<span class="nc" id="L1105">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>
