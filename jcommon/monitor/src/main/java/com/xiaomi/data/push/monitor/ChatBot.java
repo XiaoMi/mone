@@ -27,12 +27,12 @@ import com.xiaomi.data.push.monitor.model.CreateChatGroupResponse;
 public interface ChatBot {
 
     /**
-     * 创建群聊会话
+     * create a chat group
      */
     CreateChatGroupResponse createChatGroup(CreateChatGroupRequest request);
 
     /**
-     * 向群聊会话发送推送
+     * send message to chat group
      */
     ChatGroupMessageResponse sendMessageToChatGroup(ChatGroupMessageRequest request);
 }
