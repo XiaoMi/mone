@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CompatibleTypeUtils.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-remoting-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.common.utils</a> &gt; <span class="el_source">CompatibleTypeUtils.java</span></div><h1>CompatibleTypeUtils.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.common.utils;
+
+import java.lang.reflect.Array;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+public class CompatibleTypeUtils {
+
+    private static final String DATE_FORMAT = &quot;yyyy-MM-dd HH:mm:ss&quot;;
+
+    private CompatibleTypeUtils() {
+    }
+
+    /**
+     * Compatible type convert. Null value is allowed to pass in. If no conversion is needed, then the original value
+     * will be returned.
+     * &lt;p&gt;
+     * Supported compatible type conversions include (primary types and corresponding wrappers are not listed):
+     * &lt;ul&gt;
+     * &lt;li&gt; String -&gt; char, enum, Date
+     * &lt;li&gt; byte, short, int, long -&gt; byte, short, int, long
+     * &lt;li&gt; float, double -&gt; float, double
+     * &lt;/ul&gt;
+     */
+    @SuppressWarnings({&quot;unchecked&quot;, &quot;rawtypes&quot;})
+    public static Object compatibleTypeConvert(Object value, Class&lt;?&gt; type) {
+<span class="nc bnc" id="L51" title="All 6 branches missed.">        if (value == null || type == null || type.isAssignableFrom(value.getClass())) {</span>
+<span class="nc" id="L52">            return value;</span>
+        }
+<span class="nc bnc" id="L54" title="All 2 branches missed.">        if (value instanceof String) {</span>
+<span class="nc" id="L55">            String string = (String) value;</span>
+<span class="nc bnc" id="L56" title="All 4 branches missed.">            if (char.class.equals(type) || Character.class.equals(type)) {</span>
+<span class="nc bnc" id="L57" title="All 2 branches missed.">                if (string.length() != 1) {</span>
+<span class="nc" id="L58">                    throw new IllegalArgumentException(String.format(&quot;CAN NOT convert String(%s) to char!&quot; +</span>
+                            &quot; when convert String to char, the String MUST only 1 char.&quot;, string));
+                }
+<span class="nc" id="L61">                return string.charAt(0);</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">            } else if (type.isEnum()) {</span>
+<span class="nc" id="L63">                return Enum.valueOf((Class&lt;Enum&gt;) type, string);</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">            } else if (type == BigInteger.class) {</span>
+<span class="nc" id="L65">                return new BigInteger(string);</span>
+<span class="nc bnc" id="L66" title="All 2 branches missed.">            } else if (type == BigDecimal.class) {</span>
+<span class="nc" id="L67">                return new BigDecimal(string);</span>
+<span class="nc bnc" id="L68" title="All 4 branches missed.">            } else if (type == Short.class || type == short.class) {</span>
+<span class="nc" id="L69">                return new Short(string);</span>
+<span class="nc bnc" id="L70" title="All 4 branches missed.">            } else if (type == Integer.class || type == int.class) {</span>
+<span class="nc" id="L71">                return new Integer(string);</span>
+<span class="nc bnc" id="L72" title="All 4 branches missed.">            } else if (type == Long.class || type == long.class) {</span>
+<span class="nc" id="L73">                return new Long(string);</span>
+<span class="nc bnc" id="L74" title="All 4 branches missed.">            } else if (type == Double.class || type == double.class) {</span>
+<span class="nc" id="L75">                return new Double(string);</span>
+<span class="nc bnc" id="L76" title="All 4 branches missed.">            } else if (type == Float.class || type == float.class) {</span>
+<span class="nc" id="L77">                return new Float(string);</span>
+<span class="nc bnc" id="L78" title="All 4 branches missed.">            } else if (type == Byte.class || type == byte.class) {</span>
+<span class="nc" id="L79">                return new Byte(string);</span>
+<span class="nc bnc" id="L80" title="All 4 branches missed.">            } else if (type == Boolean.class || type == boolean.class) {</span>
+<span class="nc" id="L81">                return new Boolean(string);</span>
+<span class="nc bnc" id="L82" title="All 8 branches missed.">            } else if (type == Date.class || type == java.sql.Date.class || type == java.sql.Timestamp.class || type == java.sql.Time.class) {</span>
+                try {
+<span class="nc" id="L84">                    Date date = new SimpleDateFormat(DATE_FORMAT).parse((String) value);</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">                    if (type == java.sql.Date.class) {</span>
+<span class="nc" id="L86">                        return new java.sql.Date(date.getTime());</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">                    } else if (type == java.sql.Timestamp.class) {</span>
+<span class="nc" id="L88">                        return new java.sql.Timestamp(date.getTime());</span>
+<span class="nc bnc" id="L89" title="All 2 branches missed.">                    } else if (type == java.sql.Time.class) {</span>
+<span class="nc" id="L90">                        return new java.sql.Time(date.getTime());</span>
+                    } else {
+<span class="nc" id="L92">                        return date;</span>
+                    }
+<span class="nc" id="L94">                } catch (ParseException e) {</span>
+<span class="nc" id="L95">                    throw new IllegalStateException(&quot;Failed to parse date &quot; + value + &quot; by format &quot; + DATE_FORMAT + &quot;, cause: &quot; + e.getMessage(), e);</span>
+                }
+<span class="nc bnc" id="L97" title="All 2 branches missed.">            } else if (type == Class.class) {</span>
+                try {
+<span class="nc" id="L99">                    return ReflectUtils.name2class((String) value);</span>
+<span class="nc" id="L100">                } catch (ClassNotFoundException e) {</span>
+<span class="nc" id="L101">                    throw new RuntimeException(e.getMessage(), e);</span>
+                }
+<span class="nc bnc" id="L103" title="All 2 branches missed.">            } else if (char[].class.equals(type)) {</span>
+                // Process string to char array for generic invoke
+                // See
+                // - https://github.com/apache/incubator-dubbo/issues/2003
+<span class="nc bnc" id="L107" title="All 2 branches missed.">                if (string == null) {</span>
+<span class="nc" id="L108">                    return null;</span>
+                }
+                else {
+<span class="nc" id="L111">                    int len = string.length();</span>
+<span class="nc" id="L112">                    char[] chars = new char[len];</span>
+<span class="nc" id="L113">                    string.getChars(0, len, chars, 0);</span>
+<span class="nc" id="L114">                    return chars;</span>
+                }
+            }
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        } else if (value instanceof Number) {</span>
+<span class="nc" id="L118">            Number number = (Number) value;</span>
+<span class="nc bnc" id="L119" title="All 4 branches missed.">            if (type == byte.class || type == Byte.class) {</span>
+<span class="nc" id="L120">                return number.byteValue();</span>
+<span class="nc bnc" id="L121" title="All 4 branches missed.">            } else if (type == short.class || type == Short.class) {</span>
+<span class="nc" id="L122">                return number.shortValue();</span>
+<span class="nc bnc" id="L123" title="All 4 branches missed.">            } else if (type == int.class || type == Integer.class) {</span>
+<span class="nc" id="L124">                return number.intValue();</span>
+<span class="nc bnc" id="L125" title="All 4 branches missed.">            } else if (type == long.class || type == Long.class) {</span>
+<span class="nc" id="L126">                return number.longValue();</span>
+<span class="nc bnc" id="L127" title="All 4 branches missed.">            } else if (type == float.class || type == Float.class) {</span>
+<span class="nc" id="L128">                return number.floatValue();</span>
+<span class="nc bnc" id="L129" title="All 4 branches missed.">            } else if (type == double.class || type == Double.class) {</span>
+<span class="nc" id="L130">                return number.doubleValue();</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">            } else if (type == BigInteger.class) {</span>
+<span class="nc" id="L132">                return BigInteger.valueOf(number.longValue());</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">            } else if (type == BigDecimal.class) {</span>
+<span class="nc" id="L134">                return BigDecimal.valueOf(number.doubleValue());</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">            } else if (type == Date.class) {</span>
+<span class="nc" id="L136">                return new Date(number.longValue());</span>
+            }
+<span class="nc bnc" id="L138" title="All 2 branches missed.">        } else if (value instanceof Collection) {</span>
+<span class="nc" id="L139">            Collection collection = (Collection) value;</span>
+<span class="nc bnc" id="L140" title="All 2 branches missed.">            if (type.isArray()) {</span>
+<span class="nc" id="L141">                int length = collection.size();</span>
+<span class="nc" id="L142">                Object array = Array.newInstance(type.getComponentType(), length);</span>
+<span class="nc" id="L143">                int i = 0;</span>
+<span class="nc bnc" id="L144" title="All 2 branches missed.">                for (Object item : collection) {</span>
+<span class="nc" id="L145">                    Array.set(array, i++, item);</span>
+<span class="nc" id="L146">                }</span>
+<span class="nc" id="L147">                return array;</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">            } else if (!type.isInterface()) {</span>
+                try {
+<span class="nc" id="L150">                    Collection result = (Collection) type.newInstance();</span>
+<span class="nc" id="L151">                    result.addAll(collection);</span>
+<span class="nc" id="L152">                    return result;</span>
+<span class="nc" id="L153">                } catch (Throwable e) {</span>
+<span class="nc" id="L154">                }</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">            } else if (type == List.class) {</span>
+<span class="nc" id="L156">                return new ArrayList&lt;Object&gt;(collection);</span>
+<span class="nc bnc" id="L157" title="All 2 branches missed.">            } else if (type == Set.class) {</span>
+<span class="nc" id="L158">                return new HashSet&lt;Object&gt;(collection);</span>
+            }
+<span class="nc bnc" id="L160" title="All 4 branches missed.">        } else if (value.getClass().isArray() &amp;&amp; Collection.class.isAssignableFrom(type)) {</span>
+            Collection collection;
+<span class="nc bnc" id="L162" title="All 2 branches missed.">            if (!type.isInterface()) {</span>
+                try {
+<span class="nc" id="L164">                    collection = (Collection) type.newInstance();</span>
+<span class="nc" id="L165">                } catch (Throwable e) {</span>
+<span class="nc" id="L166">                    collection = new ArrayList&lt;Object&gt;();</span>
+<span class="nc" id="L167">                }</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">            } else if (type == Set.class) {</span>
+<span class="nc" id="L169">                collection = new HashSet&lt;Object&gt;();</span>
+            } else {
+<span class="nc" id="L171">                collection = new ArrayList&lt;Object&gt;();</span>
+            }
+<span class="nc" id="L173">            int length = Array.getLength(value);</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">            for (int i = 0; i &lt; length; i++) {</span>
+<span class="nc" id="L175">                collection.add(Array.get(value, i));</span>
+            }
+<span class="nc" id="L177">            return collection;</span>
+        }
+<span class="nc" id="L179">        return value;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>

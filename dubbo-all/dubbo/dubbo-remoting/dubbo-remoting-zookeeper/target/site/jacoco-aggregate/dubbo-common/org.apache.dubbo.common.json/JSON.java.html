@@ -1,0 +1,710 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>JSON.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-remoting-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.common.json</a> &gt; <span class="el_source">JSON.java</span></div><h1>JSON.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.common.json;
+
+import org.apache.dubbo.common.bytecode.Wrapper;
+import org.apache.dubbo.common.utils.Stack;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.io.Writer;
+
+/**
+ * JSON.
+ */
+@Deprecated
+public class JSON {
+    public static final char LBRACE = '{', RBRACE = '}';
+
+    public static final char LSQUARE = '[', RSQUARE = ']';
+
+    public static final char COMMA = ',', COLON = ':', QUOTE = '&quot;';
+
+    public static final String NULL = &quot;null&quot;;
+    // state.
+    public static final byte END = 0, START = 1, OBJECT_ITEM = 2, OBJECT_VALUE = 3, ARRAY_ITEM = 4;
+<span class="nc" id="L42">    static final JSONConverter DEFAULT_CONVERTER = new GenericJSONConverter();</span>
+
+    private JSON() {
+    }
+
+    /**
+     * json string.
+     *
+     * @param obj object.
+     * @return json string.
+     * @throws IOException
+     */
+    public static String json(Object obj) throws IOException {
+<span class="nc bnc" id="L55" title="All 2 branches missed.">        if (obj == null) {</span>
+<span class="nc" id="L56">            return NULL;</span>
+        }
+<span class="nc" id="L58">        StringWriter sw = new StringWriter();</span>
+        try {
+<span class="nc" id="L60">            json(obj, sw);</span>
+<span class="nc" id="L61">            return sw.getBuffer().toString();</span>
+        } finally {
+<span class="nc" id="L63">            sw.close();</span>
+        }
+    }
+
+    /**
+     * write json.
+     *
+     * @param obj    object.
+     * @param writer writer.
+     * @throws IOException
+     */
+    public static void json(Object obj, Writer writer) throws IOException {
+<span class="nc" id="L75">        json(obj, writer, false);</span>
+<span class="nc" id="L76">    }</span>
+
+    public static void json(Object obj, Writer writer, boolean writeClass) throws IOException {
+<span class="nc bnc" id="L79" title="All 2 branches missed.">        if (obj == null) {</span>
+<span class="nc" id="L80">            writer.write(NULL);</span>
+        } else {
+<span class="nc" id="L82">            json(obj, new JSONWriter(writer), writeClass);</span>
+        }
+<span class="nc" id="L84">    }</span>
+
+    /**
+     * json string.
+     *
+     * @param obj        object.
+     * @param properties property name array.
+     * @return json string.
+     * @throws IOException
+     */
+    public static String json(Object obj, String[] properties) throws IOException {
+<span class="nc bnc" id="L95" title="All 2 branches missed.">        if (obj == null) {</span>
+<span class="nc" id="L96">            return NULL;</span>
+        }
+<span class="nc" id="L98">        StringWriter sw = new StringWriter();</span>
+        try {
+<span class="nc" id="L100">            json(obj, properties, sw);</span>
+<span class="nc" id="L101">            return sw.getBuffer().toString();</span>
+        } finally {
+<span class="nc" id="L103">            sw.close();</span>
+        }
+    }
+
+    public static void json(Object obj, final String[] properties, Writer writer) throws IOException {
+<span class="nc" id="L108">        json(obj, properties, writer, false);</span>
+<span class="nc" id="L109">    }</span>
+
+    /**
+     * write json.
+     *
+     * @param obj        object.
+     * @param properties property name array.
+     * @param writer     writer.
+     * @throws IOException
+     */
+    public static void json(Object obj, final String[] properties, Writer writer, boolean writeClass) throws IOException {
+<span class="nc bnc" id="L120" title="All 2 branches missed.">        if (obj == null) {</span>
+<span class="nc" id="L121">            writer.write(NULL);</span>
+        } else {
+<span class="nc" id="L123">            json(obj, properties, new JSONWriter(writer), writeClass);</span>
+        }
+<span class="nc" id="L125">    }</span>
+
+    private static void json(Object obj, JSONWriter jb, boolean writeClass) throws IOException {
+<span class="nc bnc" id="L128" title="All 2 branches missed.">        if (obj == null) {</span>
+<span class="nc" id="L129">            jb.valueNull();</span>
+        } else {
+<span class="nc" id="L131">            DEFAULT_CONVERTER.writeValue(obj, jb, writeClass);</span>
+        }
+<span class="nc" id="L133">    }</span>
+
+    private static void json(Object obj, String[] properties, JSONWriter jb, boolean writeClass) throws IOException {
+<span class="nc bnc" id="L136" title="All 2 branches missed.">        if (obj == null) {</span>
+<span class="nc" id="L137">            jb.valueNull();</span>
+        } else {
+<span class="nc" id="L139">            Wrapper wrapper = Wrapper.getWrapper(obj.getClass());</span>
+
+            Object value;
+<span class="nc" id="L142">            jb.objectBegin();</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">            for (String prop : properties) {</span>
+<span class="nc" id="L144">                jb.objectItem(prop);</span>
+<span class="nc" id="L145">                value = wrapper.getPropertyValue(obj, prop);</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">                if (value == null) {</span>
+<span class="nc" id="L147">                    jb.valueNull();</span>
+                } else {
+<span class="nc" id="L149">                    DEFAULT_CONVERTER.writeValue(value, jb, writeClass);</span>
+                }
+            }
+<span class="nc" id="L152">            jb.objectEnd();</span>
+        }
+<span class="nc" id="L154">    }</span>
+
+    /**
+     * parse json.
+     *
+     * @param json json source.
+     * @return JSONObject or JSONArray or Boolean or Long or Double or String or null
+     * @throws ParseException
+     */
+    public static Object parse(String json) throws ParseException {
+<span class="nc" id="L164">        StringReader reader = new StringReader(json);</span>
+        try {
+<span class="nc" id="L166">            return parse(reader);</span>
+<span class="nc" id="L167">        } catch (IOException e) {</span>
+<span class="nc" id="L168">            throw new ParseException(e.getMessage());</span>
+        } finally {
+<span class="nc" id="L170">            reader.close();</span>
+        }
+    }
+
+    /**
+     * parse json.
+     *
+     * @param reader reader.
+     * @return JSONObject or JSONArray or Boolean or Long or Double or String or null
+     * @throws IOException
+     * @throws ParseException
+     */
+    public static Object parse(Reader reader) throws IOException, ParseException {
+<span class="nc" id="L183">        return parse(reader, JSONToken.ANY);</span>
+    }
+
+    /**
+     * parse json.
+     *
+     * @param json json string.
+     * @param type target type.
+     * @return result.
+     * @throws ParseException
+     */
+    public static &lt;T&gt; T parse(String json, Class&lt;T&gt; type) throws ParseException {
+<span class="nc" id="L195">        StringReader reader = new StringReader(json);</span>
+        try {
+<span class="nc" id="L197">            return parse(reader, type);</span>
+<span class="nc" id="L198">        } catch (IOException e) {</span>
+<span class="nc" id="L199">            throw new ParseException(e.getMessage());</span>
+        } finally {
+<span class="nc" id="L201">            reader.close();</span>
+        }
+    }
+
+    /**
+     * parse json
+     *
+     * @param reader json source.
+     * @param type   target type.
+     * @return result.
+     * @throws IOException
+     * @throws ParseException
+     */
+    @SuppressWarnings(&quot;unchecked&quot;)
+    public static &lt;T&gt; T parse(Reader reader, Class&lt;T&gt; type) throws IOException, ParseException {
+<span class="nc" id="L216">        return (T) parse(reader, new J2oVisitor(type, DEFAULT_CONVERTER), JSONToken.ANY);</span>
+    }
+
+    /**
+     * parse json.
+     *
+     * @param json  json string.
+     * @param types target type array.
+     * @return result.
+     * @throws ParseException
+     */
+    public static Object[] parse(String json, Class&lt;?&gt;[] types) throws ParseException {
+<span class="nc" id="L228">        StringReader reader = new StringReader(json);</span>
+        try {
+<span class="nc" id="L230">            return (Object[]) parse(reader, types);</span>
+<span class="nc" id="L231">        } catch (IOException e) {</span>
+<span class="nc" id="L232">            throw new ParseException(e.getMessage());</span>
+        } finally {
+<span class="nc" id="L234">            reader.close();</span>
+        }
+    }
+
+    /**
+     * parse json.
+     *
+     * @param reader json source.
+     * @param types  target type array.
+     * @return result.
+     * @throws IOException
+     * @throws ParseException
+     */
+    public static Object[] parse(Reader reader, Class&lt;?&gt;[] types) throws IOException, ParseException {
+<span class="nc" id="L248">        return (Object[]) parse(reader, new J2oVisitor(types, DEFAULT_CONVERTER), JSONToken.LSQUARE);</span>
+    }
+
+    /**
+     * parse json.
+     *
+     * @param json    json string.
+     * @param handler handler.
+     * @return result.
+     * @throws ParseException
+     */
+    public static Object parse(String json, JSONVisitor handler) throws ParseException {
+<span class="nc" id="L260">        StringReader reader = new StringReader(json);</span>
+        try {
+<span class="nc" id="L262">            return parse(reader, handler);</span>
+<span class="nc" id="L263">        } catch (IOException e) {</span>
+<span class="nc" id="L264">            throw new ParseException(e.getMessage());</span>
+        } finally {
+<span class="nc" id="L266">            reader.close();</span>
+        }
+    }
+
+    /**
+     * parse json.
+     *
+     * @param reader  json source.
+     * @param handler handler.
+     * @return resule.
+     * @throws IOException
+     * @throws ParseException
+     */
+    public static Object parse(Reader reader, JSONVisitor handler) throws IOException, ParseException {
+<span class="nc" id="L280">        return parse(reader, handler, JSONToken.ANY);</span>
+    }
+
+    private static Object parse(Reader reader, int expect) throws IOException, ParseException {
+<span class="nc" id="L284">        JSONReader jr = new JSONReader(reader);</span>
+<span class="nc" id="L285">        JSONToken token = jr.nextToken(expect);</span>
+
+<span class="nc" id="L287">        byte state = START;</span>
+<span class="nc" id="L288">        Object value = null, tmp;</span>
+<span class="nc" id="L289">        Stack&lt;Entry&gt; stack = new Stack&lt;Entry&gt;();</span>
+
+        do {
+<span class="nc bnc" id="L292" title="All 6 branches missed.">            switch (state) {</span>
+                case END:
+<span class="nc" id="L294">                    throw new ParseException(&quot;JSON source format error.&quot;);</span>
+                case START: {
+<span class="nc bnc" id="L296" title="All 4 branches missed.">                    switch (token.type) {</span>
+                        case JSONToken.NULL:
+                        case JSONToken.BOOL:
+                        case JSONToken.INT:
+                        case JSONToken.FLOAT:
+                        case JSONToken.STRING: {
+<span class="nc" id="L302">                            state = END;</span>
+<span class="nc" id="L303">                            value = token.value;</span>
+<span class="nc" id="L304">                            break;</span>
+                        }
+                        case JSONToken.LSQUARE: {
+<span class="nc" id="L307">                            state = ARRAY_ITEM;</span>
+<span class="nc" id="L308">                            value = new JSONArray();</span>
+<span class="nc" id="L309">                            break;</span>
+                        }
+                        case JSONToken.LBRACE: {
+<span class="nc" id="L312">                            state = OBJECT_ITEM;</span>
+<span class="nc" id="L313">                            value = new JSONObject();</span>
+<span class="nc" id="L314">                            break;</span>
+                        }
+                        default:
+<span class="nc" id="L317">                            throw new ParseException(&quot;Unexcepted token expect [ VALUE or '[' or '{' ] get '&quot; + JSONToken.token2string(token.type) + &quot;'&quot;);</span>
+                    }
+                    break;
+                }
+                case ARRAY_ITEM: {
+<span class="nc bnc" id="L322" title="All 6 branches missed.">                    switch (token.type) {</span>
+                        case JSONToken.COMMA:
+<span class="nc" id="L324">                            break;</span>
+                        case JSONToken.NULL:
+                        case JSONToken.BOOL:
+                        case JSONToken.INT:
+                        case JSONToken.FLOAT:
+                        case JSONToken.STRING: {
+<span class="nc" id="L330">                            ((JSONArray) value).add(token.value);</span>
+<span class="nc" id="L331">                            break;</span>
+                        }
+                        case JSONToken.RSQUARE: // end of array.
+                        {
+<span class="nc bnc" id="L335" title="All 2 branches missed.">                            if (stack.isEmpty()) {</span>
+<span class="nc" id="L336">                                state = END;</span>
+                            } else {
+<span class="nc" id="L338">                                Entry entry = stack.pop();</span>
+<span class="nc" id="L339">                                state = entry.state;</span>
+<span class="nc" id="L340">                                value = entry.value;</span>
+                            }
+<span class="nc" id="L342">                            break;</span>
+                        }
+                        case JSONToken.LSQUARE: // array begin.
+                        {
+<span class="nc" id="L346">                            tmp = new JSONArray();</span>
+<span class="nc" id="L347">                            ((JSONArray) value).add(tmp);</span>
+<span class="nc" id="L348">                            stack.push(new Entry(state, value));</span>
+
+<span class="nc" id="L350">                            state = ARRAY_ITEM;</span>
+<span class="nc" id="L351">                            value = tmp;</span>
+<span class="nc" id="L352">                            break;</span>
+                        }
+                        case JSONToken.LBRACE: // object begin.
+                        {
+<span class="nc" id="L356">                            tmp = new JSONObject();</span>
+<span class="nc" id="L357">                            ((JSONArray) value).add(tmp);</span>
+<span class="nc" id="L358">                            stack.push(new Entry(state, value));</span>
+
+<span class="nc" id="L360">                            state = OBJECT_ITEM;</span>
+<span class="nc" id="L361">                            value = tmp;</span>
+<span class="nc" id="L362">                            break;</span>
+                        }
+                        default:
+<span class="nc" id="L365">                            throw new ParseException(&quot;Unexcepted token expect [ VALUE or ',' or ']' or '[' or '{' ] get '&quot; + JSONToken.token2string(token.type) + &quot;'&quot;);</span>
+                    }
+                    break;
+                }
+                case OBJECT_ITEM: {
+<span class="nc bnc" id="L370" title="All 6 branches missed.">                    switch (token.type) {</span>
+                        case JSONToken.COMMA:
+<span class="nc" id="L372">                            break;</span>
+                        case JSONToken.IDENT: // item name.
+                        {
+<span class="nc" id="L375">                            stack.push(new Entry(OBJECT_ITEM, (String) token.value));</span>
+<span class="nc" id="L376">                            state = OBJECT_VALUE;</span>
+<span class="nc" id="L377">                            break;</span>
+                        }
+                        case JSONToken.NULL: {
+<span class="nc" id="L380">                            stack.push(new Entry(OBJECT_ITEM, &quot;null&quot;));</span>
+<span class="nc" id="L381">                            state = OBJECT_VALUE;</span>
+<span class="nc" id="L382">                            break;</span>
+                        }
+                        case JSONToken.BOOL:
+                        case JSONToken.INT:
+                        case JSONToken.FLOAT:
+                        case JSONToken.STRING: {
+<span class="nc" id="L388">                            stack.push(new Entry(OBJECT_ITEM, token.value.toString()));</span>
+<span class="nc" id="L389">                            state = OBJECT_VALUE;</span>
+<span class="nc" id="L390">                            break;</span>
+                        }
+                        case JSONToken.RBRACE: // end of object.
+                        {
+<span class="nc bnc" id="L394" title="All 2 branches missed.">                            if (stack.isEmpty()) {</span>
+<span class="nc" id="L395">                                state = END;</span>
+                            } else {
+<span class="nc" id="L397">                                Entry entry = stack.pop();</span>
+<span class="nc" id="L398">                                state = entry.state;</span>
+<span class="nc" id="L399">                                value = entry.value;</span>
+                            }
+<span class="nc" id="L401">                            break;</span>
+                        }
+                        default:
+<span class="nc" id="L404">                            throw new ParseException(&quot;Unexcepted token expect [ IDENT or VALUE or ',' or '}' ] get '&quot; + JSONToken.token2string(token.type) + &quot;'&quot;);</span>
+                    }
+                    break;
+                }
+                case OBJECT_VALUE: {
+<span class="nc bnc" id="L409" title="All 5 branches missed.">                    switch (token.type) {</span>
+                        case JSONToken.COLON:
+<span class="nc" id="L411">                            break;</span>
+                        case JSONToken.NULL:
+                        case JSONToken.BOOL:
+                        case JSONToken.INT:
+                        case JSONToken.FLOAT:
+                        case JSONToken.STRING: {
+<span class="nc" id="L417">                            ((JSONObject) value).put((String) stack.pop().value, token.value);</span>
+<span class="nc" id="L418">                            state = OBJECT_ITEM;</span>
+<span class="nc" id="L419">                            break;</span>
+                        }
+                        case JSONToken.LSQUARE: // array begin.
+                        {
+<span class="nc" id="L423">                            tmp = new JSONArray();</span>
+<span class="nc" id="L424">                            ((JSONObject) value).put((String) stack.pop().value, tmp);</span>
+<span class="nc" id="L425">                            stack.push(new Entry(OBJECT_ITEM, value));</span>
+
+<span class="nc" id="L427">                            state = ARRAY_ITEM;</span>
+<span class="nc" id="L428">                            value = tmp;</span>
+<span class="nc" id="L429">                            break;</span>
+                        }
+                        case JSONToken.LBRACE: // object begin.
+                        {
+<span class="nc" id="L433">                            tmp = new JSONObject();</span>
+<span class="nc" id="L434">                            ((JSONObject) value).put((String) stack.pop().value, tmp);</span>
+<span class="nc" id="L435">                            stack.push(new Entry(OBJECT_ITEM, value));</span>
+
+<span class="nc" id="L437">                            state = OBJECT_ITEM;</span>
+<span class="nc" id="L438">                            value = tmp;</span>
+<span class="nc" id="L439">                            break;</span>
+                        }
+                        default:
+<span class="nc" id="L442">                            throw new ParseException(&quot;Unexcepted token expect [ VALUE or '[' or '{' ] get '&quot; + JSONToken.token2string(token.type) + &quot;'&quot;);</span>
+                    }
+                    break;
+                }
+                default:
+<span class="nc" id="L447">                    throw new ParseException(&quot;Unexcepted state.&quot;);</span>
+            }
+        }
+<span class="nc bnc" id="L450" title="All 2 branches missed.">        while ((token = jr.nextToken()) != null);</span>
+<span class="nc" id="L451">        stack.clear();</span>
+<span class="nc" id="L452">        return value;</span>
+    }
+
+    private static Object parse(Reader reader, JSONVisitor handler, int expect) throws IOException, ParseException {
+<span class="nc" id="L456">        JSONReader jr = new JSONReader(reader);</span>
+<span class="nc" id="L457">        JSONToken token = jr.nextToken(expect);</span>
+
+<span class="nc" id="L459">        Object value = null;</span>
+<span class="nc" id="L460">        int state = START, index = 0;</span>
+<span class="nc" id="L461">        Stack&lt;int[]&gt; states = new Stack&lt;int[]&gt;();</span>
+<span class="nc" id="L462">        boolean pv = false;</span>
+
+<span class="nc" id="L464">        handler.begin();</span>
+        do {
+<span class="nc bnc" id="L466" title="All 6 branches missed.">            switch (state) {</span>
+                case END:
+<span class="nc" id="L468">                    throw new ParseException(&quot;JSON source format error.&quot;);</span>
+                case START: {
+<span class="nc bnc" id="L470" title="All 8 branches missed.">                    switch (token.type) {</span>
+                        case JSONToken.NULL: {
+<span class="nc" id="L472">                            value = token.value;</span>
+<span class="nc" id="L473">                            state = END;</span>
+<span class="nc" id="L474">                            pv = true;</span>
+<span class="nc" id="L475">                            break;</span>
+                        }
+                        case JSONToken.BOOL: {
+<span class="nc" id="L478">                            value = token.value;</span>
+<span class="nc" id="L479">                            state = END;</span>
+<span class="nc" id="L480">                            pv = true;</span>
+<span class="nc" id="L481">                            break;</span>
+                        }
+                        case JSONToken.INT: {
+<span class="nc" id="L484">                            value = token.value;</span>
+<span class="nc" id="L485">                            state = END;</span>
+<span class="nc" id="L486">                            pv = true;</span>
+<span class="nc" id="L487">                            break;</span>
+                        }
+                        case JSONToken.FLOAT: {
+<span class="nc" id="L490">                            value = token.value;</span>
+<span class="nc" id="L491">                            state = END;</span>
+<span class="nc" id="L492">                            pv = true;</span>
+<span class="nc" id="L493">                            break;</span>
+                        }
+                        case JSONToken.STRING: {
+<span class="nc" id="L496">                            value = token.value;</span>
+<span class="nc" id="L497">                            state = END;</span>
+<span class="nc" id="L498">                            pv = true;</span>
+<span class="nc" id="L499">                            break;</span>
+                        }
+                        case JSONToken.LSQUARE: {
+<span class="nc" id="L502">                            handler.arrayBegin();</span>
+<span class="nc" id="L503">                            state = ARRAY_ITEM;</span>
+<span class="nc" id="L504">                            break;</span>
+                        }
+                        case JSONToken.LBRACE: {
+<span class="nc" id="L507">                            handler.objectBegin();</span>
+<span class="nc" id="L508">                            state = OBJECT_ITEM;</span>
+<span class="nc" id="L509">                            break;</span>
+                        }
+                        default:
+<span class="nc" id="L512">                            throw new ParseException(&quot;Unexcepted token expect [ VALUE or '[' or '{' ] get '&quot; + JSONToken.token2string(token.type) + &quot;'&quot;);</span>
+                    }
+                    break;
+                }
+                case ARRAY_ITEM: {
+<span class="nc bnc" id="L517" title="All 10 branches missed.">                    switch (token.type) {</span>
+                        case JSONToken.COMMA:
+<span class="nc" id="L519">                            break;</span>
+                        case JSONToken.NULL: {
+<span class="nc" id="L521">                            handler.arrayItem(index++);</span>
+<span class="nc" id="L522">                            handler.arrayItemValue(index, token.value, true);</span>
+<span class="nc" id="L523">                            break;</span>
+                        }
+                        case JSONToken.BOOL: {
+<span class="nc" id="L526">                            handler.arrayItem(index++);</span>
+<span class="nc" id="L527">                            handler.arrayItemValue(index, token.value, true);</span>
+<span class="nc" id="L528">                            break;</span>
+                        }
+                        case JSONToken.INT: {
+<span class="nc" id="L531">                            handler.arrayItem(index++);</span>
+<span class="nc" id="L532">                            handler.arrayItemValue(index, token.value, true);</span>
+<span class="nc" id="L533">                            break;</span>
+                        }
+                        case JSONToken.FLOAT: {
+<span class="nc" id="L536">                            handler.arrayItem(index++);</span>
+<span class="nc" id="L537">                            handler.arrayItemValue(index, token.value, true);</span>
+<span class="nc" id="L538">                            break;</span>
+                        }
+                        case JSONToken.STRING: {
+<span class="nc" id="L541">                            handler.arrayItem(index++);</span>
+<span class="nc" id="L542">                            handler.arrayItemValue(index, token.value, true);</span>
+<span class="nc" id="L543">                            break;</span>
+                        }
+                        case JSONToken.LSQUARE: {
+<span class="nc" id="L546">                            handler.arrayItem(index++);</span>
+<span class="nc" id="L547">                            states.push(new int[]{state, index});</span>
+
+<span class="nc" id="L549">                            index = 0;</span>
+<span class="nc" id="L550">                            state = ARRAY_ITEM;</span>
+<span class="nc" id="L551">                            handler.arrayBegin();</span>
+<span class="nc" id="L552">                            break;</span>
+                        }
+                        case JSONToken.LBRACE: {
+<span class="nc" id="L555">                            handler.arrayItem(index++);</span>
+<span class="nc" id="L556">                            states.push(new int[]{state, index});</span>
+
+<span class="nc" id="L558">                            index = 0;</span>
+<span class="nc" id="L559">                            state = OBJECT_ITEM;</span>
+<span class="nc" id="L560">                            handler.objectBegin();</span>
+<span class="nc" id="L561">                            break;</span>
+                        }
+                        case JSONToken.RSQUARE: {
+<span class="nc bnc" id="L564" title="All 2 branches missed.">                            if (states.isEmpty()) {</span>
+<span class="nc" id="L565">                                value = handler.arrayEnd(index);</span>
+<span class="nc" id="L566">                                state = END;</span>
+                            } else {
+<span class="nc" id="L568">                                value = handler.arrayEnd(index);</span>
+<span class="nc" id="L569">                                int[] tmp = states.pop();</span>
+<span class="nc" id="L570">                                state = tmp[0];</span>
+<span class="nc" id="L571">                                index = tmp[1];</span>
+
+<span class="nc bnc" id="L573" title="All 3 branches missed.">                                switch (state) {</span>
+                                    case ARRAY_ITEM: {
+<span class="nc" id="L575">                                        handler.arrayItemValue(index, value, false);</span>
+<span class="nc" id="L576">                                        break;</span>
+                                    }
+                                    case OBJECT_ITEM: {
+<span class="nc" id="L579">                                        handler.objectItemValue(value, false);</span>
+                                        break;
+                                    }
+                                }
+                            }
+<span class="nc" id="L584">                            break;</span>
+                        }
+                        default:
+<span class="nc" id="L587">                            throw new ParseException(&quot;Unexcepted token expect [ VALUE or ',' or ']' or '[' or '{' ] get '&quot; + JSONToken.token2string(token.type) + &quot;'&quot;);</span>
+                    }
+                    break;
+                }
+                case OBJECT_ITEM: {
+<span class="nc bnc" id="L592" title="All 6 branches missed.">                    switch (token.type) {</span>
+                        case JSONToken.COMMA:
+<span class="nc" id="L594">                            break;</span>
+                        case JSONToken.IDENT: {
+<span class="nc" id="L596">                            handler.objectItem((String) token.value);</span>
+<span class="nc" id="L597">                            state = OBJECT_VALUE;</span>
+<span class="nc" id="L598">                            break;</span>
+                        }
+                        case JSONToken.NULL: {
+<span class="nc" id="L601">                            handler.objectItem(&quot;null&quot;);</span>
+<span class="nc" id="L602">                            state = OBJECT_VALUE;</span>
+<span class="nc" id="L603">                            break;</span>
+                        }
+                        case JSONToken.BOOL:
+                        case JSONToken.INT:
+                        case JSONToken.FLOAT:
+                        case JSONToken.STRING: {
+<span class="nc" id="L609">                            handler.objectItem(token.value.toString());</span>
+<span class="nc" id="L610">                            state = OBJECT_VALUE;</span>
+<span class="nc" id="L611">                            break;</span>
+                        }
+                        case JSONToken.RBRACE: {
+<span class="nc bnc" id="L614" title="All 2 branches missed.">                            if (states.isEmpty()) {</span>
+<span class="nc" id="L615">                                value = handler.objectEnd(index);</span>
+<span class="nc" id="L616">                                state = END;</span>
+                            } else {
+<span class="nc" id="L618">                                value = handler.objectEnd(index);</span>
+<span class="nc" id="L619">                                int[] tmp = states.pop();</span>
+<span class="nc" id="L620">                                state = tmp[0];</span>
+<span class="nc" id="L621">                                index = tmp[1];</span>
+
+<span class="nc bnc" id="L623" title="All 3 branches missed.">                                switch (state) {</span>
+                                    case ARRAY_ITEM: {
+<span class="nc" id="L625">                                        handler.arrayItemValue(index, value, false);</span>
+<span class="nc" id="L626">                                        break;</span>
+                                    }
+                                    case OBJECT_ITEM: {
+<span class="nc" id="L629">                                        handler.objectItemValue(value, false);</span>
+                                        break;
+                                    }
+                                }
+                            }
+<span class="nc" id="L634">                            break;</span>
+                        }
+                        default:
+<span class="nc" id="L637">                            throw new ParseException(&quot;Unexcepted token expect [ IDENT or VALUE or ',' or '}' ] get '&quot; + JSONToken.token2string(token.type) + &quot;'&quot;);</span>
+                    }
+                    break;
+                }
+                case OBJECT_VALUE: {
+<span class="nc bnc" id="L642" title="All 9 branches missed.">                    switch (token.type) {</span>
+                        case JSONToken.COLON:
+<span class="nc" id="L644">                            break;</span>
+                        case JSONToken.NULL: {
+<span class="nc" id="L646">                            handler.objectItemValue(token.value, true);</span>
+<span class="nc" id="L647">                            state = OBJECT_ITEM;</span>
+<span class="nc" id="L648">                            break;</span>
+                        }
+                        case JSONToken.BOOL: {
+<span class="nc" id="L651">                            handler.objectItemValue(token.value, true);</span>
+<span class="nc" id="L652">                            state = OBJECT_ITEM;</span>
+<span class="nc" id="L653">                            break;</span>
+                        }
+                        case JSONToken.INT: {
+<span class="nc" id="L656">                            handler.objectItemValue(token.value, true);</span>
+<span class="nc" id="L657">                            state = OBJECT_ITEM;</span>
+<span class="nc" id="L658">                            break;</span>
+                        }
+                        case JSONToken.FLOAT: {
+<span class="nc" id="L661">                            handler.objectItemValue(token.value, true);</span>
+<span class="nc" id="L662">                            state = OBJECT_ITEM;</span>
+<span class="nc" id="L663">                            break;</span>
+                        }
+                        case JSONToken.STRING: {
+<span class="nc" id="L666">                            handler.objectItemValue(token.value, true);</span>
+<span class="nc" id="L667">                            state = OBJECT_ITEM;</span>
+<span class="nc" id="L668">                            break;</span>
+                        }
+                        case JSONToken.LSQUARE: {
+<span class="nc" id="L671">                            states.push(new int[]{OBJECT_ITEM, index});</span>
+
+<span class="nc" id="L673">                            index = 0;</span>
+<span class="nc" id="L674">                            state = ARRAY_ITEM;</span>
+<span class="nc" id="L675">                            handler.arrayBegin();</span>
+<span class="nc" id="L676">                            break;</span>
+                        }
+                        case JSONToken.LBRACE: {
+<span class="nc" id="L679">                            states.push(new int[]{OBJECT_ITEM, index});</span>
+
+<span class="nc" id="L681">                            index = 0;</span>
+<span class="nc" id="L682">                            state = OBJECT_ITEM;</span>
+<span class="nc" id="L683">                            handler.objectBegin();</span>
+<span class="nc" id="L684">                            break;</span>
+                        }
+                        default:
+<span class="nc" id="L687">                            throw new ParseException(&quot;Unexcepted token expect [ VALUE or '[' or '{' ] get '&quot; + JSONToken.token2string(token.type) + &quot;'&quot;);</span>
+                    }
+                    break;
+                }
+                default:
+<span class="nc" id="L692">                    throw new ParseException(&quot;Unexcepted state.&quot;);</span>
+            }
+        }
+<span class="nc bnc" id="L695" title="All 2 branches missed.">        while ((token = jr.nextToken()) != null);</span>
+<span class="nc" id="L696">        states.clear();</span>
+<span class="nc" id="L697">        return handler.end(value, pv);</span>
+    }
+
+    private static class Entry {
+        byte state;
+        Object value;
+
+<span class="nc" id="L704">        Entry(byte s, Object v) {</span>
+<span class="nc" id="L705">            state = s;</span>
+<span class="nc" id="L706">            value = v;</span>
+<span class="nc" id="L707">        }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>

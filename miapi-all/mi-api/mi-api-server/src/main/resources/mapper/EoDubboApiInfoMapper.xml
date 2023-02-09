@@ -1,0 +1,456 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaomi.miapi.mapper.EoDubboApiInfoMapper">
+  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.common.pojo.EoDubboApiInfo">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="apiName" jdbcType="VARCHAR" property="apiname" />
+    <result column="apiDocName" jdbcType="VARCHAR" property="apidocname" />
+    <result column="apiVersion" jdbcType="VARCHAR" property="apiversion" />
+    <result column="apiGroup" jdbcType="VARCHAR" property="apigroup" />
+    <result column="description" jdbcType="VARCHAR" property="description" />
+    <result column="apiRespDec" jdbcType="VARCHAR" property="apirespdec" />
+    <result column="apiModelClass" jdbcType="VARCHAR" property="apimodelclass" />
+    <result column="async" jdbcType="BIT" property="async" />
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.miapi.common.pojo.EoDubboApiInfo">
+    <result column="methodParamInfo" jdbcType="LONGVARCHAR" property="methodparaminfo" />
+    <result column="response" jdbcType="LONGVARCHAR" property="response" />
+    <result column="request" jdbcType="LONGVARCHAR" property="request" />
+    <result column="errorCodes" jdbcType="LONGVARCHAR" property="errorcodes" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    id, apiName, apiDocName, apiVersion, apiGroup, description, apiRespDec, apiModelClass, 
+    async
+  </sql>
+  <sql id="Blob_Column_List">
+    methodParamInfo, request,response, errorCodes
+  </sql>
+  <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.EoDubboApiInfoExample" resultMap="ResultMapWithBLOBs">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from eo_dubbo_api
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByExample" parameterType="com.xiaomi.miapi.common.pojo.EoDubboApiInfoExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from eo_dubbo_api
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="ResultMapWithBLOBs">
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from eo_dubbo_api
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from eo_dubbo_api
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.common.pojo.EoDubboApiInfoExample">
+    delete from eo_dubbo_api
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.xiaomi.miapi.common.pojo.EoDubboApiInfo">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into eo_dubbo_api (apiName, apiDocName, apiVersion, 
+      apiGroup, description, apiRespDec, 
+      apiModelClass, async, methodParamInfo, request,
+      response, errorCodes)
+    values (#{apiname,jdbcType=VARCHAR}, #{apidocname,jdbcType=VARCHAR}, #{apiversion,jdbcType=VARCHAR}, 
+      #{apigroup,jdbcType=VARCHAR}, #{description,jdbcType=VARCHAR}, #{apirespdec,jdbcType=VARCHAR}, 
+      #{apimodelclass,jdbcType=VARCHAR}, #{async,jdbcType=BIT}, #{methodparaminfo,jdbcType=LONGVARCHAR}, #{request,jdbcType=LONGVARCHAR},
+      #{response,jdbcType=LONGVARCHAR}, #{errorcodes,jdbcType=LONGVARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.xiaomi.miapi.common.pojo.EoDubboApiInfo">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into eo_dubbo_api
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="apiname != null">
+        apiName,
+      </if>
+      <if test="apidocname != null">
+        apiDocName,
+      </if>
+      <if test="apiversion != null">
+        apiVersion,
+      </if>
+      <if test="apigroup != null">
+        apiGroup,
+      </if>
+      <if test="description != null">
+        description,
+      </if>
+      <if test="apirespdec != null">
+        apiRespDec,
+      </if>
+      <if test="apimodelclass != null">
+        apiModelClass,
+      </if>
+      <if test="async != null">
+        async,
+      </if>
+      <if test="methodparaminfo != null">
+        methodParamInfo,
+      </if>
+      <if test="response != null">
+        response,
+      </if>
+      <if test="request != null">
+        request,
+      </if>
+      <if test="errorcodes != null">
+        errorCodes,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="apiname != null">
+        #{apiname,jdbcType=VARCHAR},
+      </if>
+      <if test="apidocname != null">
+        #{apidocname,jdbcType=VARCHAR},
+      </if>
+      <if test="apiversion != null">
+        #{apiversion,jdbcType=VARCHAR},
+      </if>
+      <if test="apigroup != null">
+        #{apigroup,jdbcType=VARCHAR},
+      </if>
+      <if test="description != null">
+        #{description,jdbcType=VARCHAR},
+      </if>
+      <if test="apirespdec != null">
+        #{apirespdec,jdbcType=VARCHAR},
+      </if>
+      <if test="apimodelclass != null">
+        #{apimodelclass,jdbcType=VARCHAR},
+      </if>
+      <if test="async != null">
+        #{async,jdbcType=BIT},
+      </if>
+      <if test="methodparaminfo != null">
+        #{methodparaminfo,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="response != null">
+        #{response,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="request != null">
+        #{request,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="errorcodes != null">
+        #{errorcodes,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.xiaomi.miapi.common.pojo.EoDubboApiInfoExample" resultType="java.lang.Long">
+    select count(*) from eo_dubbo_api
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update eo_dubbo_api
+    <set>
+      <if test="record.id != null">
+        id = #{record.id,jdbcType=INTEGER},
+      </if>
+      <if test="record.apiname != null">
+        apiName = #{record.apiname,jdbcType=VARCHAR},
+      </if>
+      <if test="record.apidocname != null">
+        apiDocName = #{record.apidocname,jdbcType=VARCHAR},
+      </if>
+      <if test="record.apiversion != null">
+        apiVersion = #{record.apiversion,jdbcType=VARCHAR},
+      </if>
+      <if test="record.apigroup != null">
+        apiGroup = #{record.apigroup,jdbcType=VARCHAR},
+      </if>
+      <if test="record.description != null">
+        description = #{record.description,jdbcType=VARCHAR},
+      </if>
+      <if test="record.apirespdec != null">
+        apiRespDec = #{record.apirespdec,jdbcType=VARCHAR},
+      </if>
+      <if test="record.apimodelclass != null">
+        apiModelClass = #{record.apimodelclass,jdbcType=VARCHAR},
+      </if>
+      <if test="record.async != null">
+        async = #{record.async,jdbcType=BIT},
+      </if>
+      <if test="record.methodparaminfo != null">
+        methodParamInfo = #{record.methodparaminfo,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.response != null">
+        response = #{record.response,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.request != null">
+        request = #{record.request,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.errorcodes != null">
+        errorCodes = #{record.errorcodes,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExampleWithBLOBs" parameterType="map">
+    update eo_dubbo_api
+    set id = #{record.id,jdbcType=INTEGER},
+      apiName = #{record.apiname,jdbcType=VARCHAR},
+      apiDocName = #{record.apidocname,jdbcType=VARCHAR},
+      apiVersion = #{record.apiversion,jdbcType=VARCHAR},
+      apiGroup = #{record.apigroup,jdbcType=VARCHAR},
+      description = #{record.description,jdbcType=VARCHAR},
+      apiRespDec = #{record.apirespdec,jdbcType=VARCHAR},
+      apiModelClass = #{record.apimodelclass,jdbcType=VARCHAR},
+      async = #{record.async,jdbcType=BIT},
+      methodParamInfo = #{record.methodparaminfo,jdbcType=LONGVARCHAR},
+      response = #{record.response,jdbcType=LONGVARCHAR},
+      request = #{record.request,jdbcType=LONGVARCHAR},
+      errorCodes = #{record.errorcodes,jdbcType=LONGVARCHAR}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update eo_dubbo_api
+    set id = #{record.id,jdbcType=INTEGER},
+      apiName = #{record.apiname,jdbcType=VARCHAR},
+      apiDocName = #{record.apidocname,jdbcType=VARCHAR},
+      apiVersion = #{record.apiversion,jdbcType=VARCHAR},
+      apiGroup = #{record.apigroup,jdbcType=VARCHAR},
+      description = #{record.description,jdbcType=VARCHAR},
+      apiRespDec = #{record.apirespdec,jdbcType=VARCHAR},
+      apiModelClass = #{record.apimodelclass,jdbcType=VARCHAR},
+      async = #{record.async,jdbcType=BIT}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.common.pojo.EoDubboApiInfo">
+    update eo_dubbo_api
+    <set>
+      <if test="apiname != null">
+        apiName = #{apiname,jdbcType=VARCHAR},
+      </if>
+      <if test="apidocname != null">
+        apiDocName = #{apidocname,jdbcType=VARCHAR},
+      </if>
+      <if test="apiversion != null">
+        apiVersion = #{apiversion,jdbcType=VARCHAR},
+      </if>
+      <if test="apigroup != null">
+        apiGroup = #{apigroup,jdbcType=VARCHAR},
+      </if>
+      <if test="description != null">
+        description = #{description,jdbcType=VARCHAR},
+      </if>
+      <if test="apirespdec != null">
+        apiRespDec = #{apirespdec,jdbcType=VARCHAR},
+      </if>
+      <if test="apimodelclass != null">
+        apiModelClass = #{apimodelclass,jdbcType=VARCHAR},
+      </if>
+      <if test="async != null">
+        async = #{async,jdbcType=BIT},
+      </if>
+      <if test="methodparaminfo != null">
+        methodParamInfo = #{methodparaminfo,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="request != null">
+        request = #{request,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="response != null">
+        response = #{response,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="errorcodes != null">
+        errorCodes = #{errorcodes,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.EoDubboApiInfo">
+    update eo_dubbo_api
+    set apiName = #{apiname,jdbcType=VARCHAR},
+      apiDocName = #{apidocname,jdbcType=VARCHAR},
+      apiVersion = #{apiversion,jdbcType=VARCHAR},
+      apiGroup = #{apigroup,jdbcType=VARCHAR},
+      description = #{description,jdbcType=VARCHAR},
+      apiRespDec = #{apirespdec,jdbcType=VARCHAR},
+      apiModelClass = #{apimodelclass,jdbcType=VARCHAR},
+      async = #{async,jdbcType=BIT},
+      methodParamInfo = #{methodparaminfo,jdbcType=LONGVARCHAR},
+      response = #{response,jdbcType=LONGVARCHAR},
+      request = #{request,jdbcType=LONGVARCHAR},
+    errorCodes = #{errorcodes,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.common.pojo.EoDubboApiInfo">
+    update eo_dubbo_api
+    set apiName = #{apiname,jdbcType=VARCHAR},
+      apiDocName = #{apidocname,jdbcType=VARCHAR},
+      apiVersion = #{apiversion,jdbcType=VARCHAR},
+      apiGroup = #{apigroup,jdbcType=VARCHAR},
+      description = #{description,jdbcType=VARCHAR},
+      apiRespDec = #{apirespdec,jdbcType=VARCHAR},
+      apiModelClass = #{apimodelclass,jdbcType=VARCHAR},
+      async = #{async,jdbcType=BIT}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    insert into eo_dubbo_api
+    (apiName, apiDocName, apiVersion, apiGroup, description, apiRespDec, apiModelClass, 
+      async, methodParamInfo, response,request, errorCodes)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.apiname,jdbcType=VARCHAR}, #{item.apidocname,jdbcType=VARCHAR}, #{item.apiversion,jdbcType=VARCHAR}, 
+        #{item.apigroup,jdbcType=VARCHAR}, #{item.description,jdbcType=VARCHAR}, #{item.apirespdec,jdbcType=VARCHAR}, 
+        #{item.apimodelclass,jdbcType=VARCHAR}, #{item.async,jdbcType=BIT}, #{item.methodparaminfo,jdbcType=LONGVARCHAR}, 
+        #{item.response,jdbcType=LONGVARCHAR}, #{item.request,jdbcType=LONGVARCHAR}, #{item.errorcodes,jdbcType=LONGVARCHAR})
+    </foreach>
+  </insert>
+  <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
+    insert into eo_dubbo_api (
+    <foreach collection="selective" item="column" separator=",">
+      ${column.escapedColumnName}
+    </foreach>
+    )
+    values
+    <foreach collection="list" item="item" separator=",">
+      (
+      <foreach collection="selective" item="column" separator=",">
+        <if test="'apiName'.toString() == column.value">
+          #{item.apiname,jdbcType=VARCHAR}
+        </if>
+        <if test="'apiDocName'.toString() == column.value">
+          #{item.apidocname,jdbcType=VARCHAR}
+        </if>
+        <if test="'apiVersion'.toString() == column.value">
+          #{item.apiversion,jdbcType=VARCHAR}
+        </if>
+        <if test="'apiGroup'.toString() == column.value">
+          #{item.apigroup,jdbcType=VARCHAR}
+        </if>
+        <if test="'description'.toString() == column.value">
+          #{item.description,jdbcType=VARCHAR}
+        </if>
+        <if test="'apiRespDec'.toString() == column.value">
+          #{item.apirespdec,jdbcType=VARCHAR}
+        </if>
+        <if test="'apiModelClass'.toString() == column.value">
+          #{item.apimodelclass,jdbcType=VARCHAR}
+        </if>
+        <if test="'async'.toString() == column.value">
+          #{item.async,jdbcType=BIT}
+        </if>
+        <if test="'methodParamInfo'.toString() == column.value">
+          #{item.methodparaminfo,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'request'.toString() == column.value">
+          #{item.request,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'response'.toString() == column.value">
+          #{item.response,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'errorCodes'.toString() == column.value">
+          #{item.errorcodes,jdbcType=LONGVARCHAR}
+        </if>
+      </foreach>
+      )
+    </foreach>
+  </insert>
+
+  <delete id="batchDeleteDubboApi">
+    DELETE FROM eo_dubbo_api WHERE eo_dubbo_api.id IN
+    <foreach collection="Ids" item="item" index="index"
+             open="(" separator="," close=")">
+      #{item}
+    </foreach>
+  </delete>
+</mapper>

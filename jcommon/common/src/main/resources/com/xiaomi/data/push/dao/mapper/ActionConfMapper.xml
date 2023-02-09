@@ -1,0 +1,415 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xiaomi.data.push.dao.mapper.ActionConfMapper" >
+  <resultMap id="BaseResultMap" type="com.xiaomi.data.push.dao.model.ActionConf" >
+    <id column="id" property="id" jdbcType="BIGINT" />
+    <result column="action" property="action" jdbcType="VARCHAR" />
+    <result column="method" property="method" jdbcType="VARCHAR" />
+    <result column="need_cache" property="needCache" jdbcType="TINYINT" />
+    <result column="need_log" property="needLog" jdbcType="TINYINT" />
+    <result column="online" property="online" jdbcType="TINYINT" />
+    <result column="addr" property="addr" jdbcType="VARCHAR" />
+    <result column="mock" property="mock" jdbcType="TINYINT" />
+    <result column="ctime" property="ctime" jdbcType="BIGINT" />
+    <result column="utime" property="utime" jdbcType="BIGINT" />
+    <result column="version" property="version" jdbcType="INTEGER" />
+    <result column="status" property="status" jdbcType="INTEGER" />
+  </resultMap>
+  <resultMap id="ResultMapWithBLOBs" type="com.xiaomi.data.push.dao.model.ActionConfWithBLOBs" extends="BaseResultMap" >
+    <result column="mockData" property="mockdata" jdbcType="LONGVARCHAR" />
+    <result column="script" property="script" jdbcType="LONGVARCHAR" />
+  </resultMap>
+  <sql id="Example_Where_Clause" >
+    <where >
+      <foreach collection="oredCriteria" item="criteria" separator="or" >
+        <if test="criteria.valid" >
+          <trim prefix="(" suffix=")" prefixOverrides="and" >
+            <foreach collection="criteria.criteria" item="criterion" >
+              <choose >
+                <when test="criterion.noValue" >
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue" >
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue" >
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue" >
+                  and ${criterion.condition}
+                  <foreach collection="criterion.value" item="listItem" open="(" close=")" separator="," >
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause" >
+    <where >
+      <foreach collection="example.oredCriteria" item="criteria" separator="or" >
+        <if test="criteria.valid" >
+          <trim prefix="(" suffix=")" prefixOverrides="and" >
+            <foreach collection="criteria.criteria" item="criterion" >
+              <choose >
+                <when test="criterion.noValue" >
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue" >
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue" >
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue" >
+                  and ${criterion.condition}
+                  <foreach collection="criterion.value" item="listItem" open="(" close=")" separator="," >
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List" >
+    id, action, method, need_cache, need_log, online, addr, mock, ctime, utime, version, 
+    status
+  </sql>
+  <sql id="Blob_Column_List" >
+    mockData, script
+  </sql>
+  <select id="selectByExampleWithBLOBs" resultMap="ResultMapWithBLOBs" parameterType="com.xiaomi.data.push.dao.model.ActionConfExample" >
+    select
+    <if test="distinct" >
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from iface_conf
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null" >
+      order by ${orderByClause}
+    </if>
+    <if test="limit != null and limit >= 0" >
+      limit #{offset} , #{limit}
+    </if>
+  </select>
+  <select id="selectByExample" resultMap="BaseResultMap" parameterType="com.xiaomi.data.push.dao.model.ActionConfExample" >
+    select
+    <if test="distinct" >
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from iface_conf
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null" >
+      order by ${orderByClause}
+    </if>
+    <if test="limit != null and limit >= 0" >
+      limit #{offset} , #{limit}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" resultMap="ResultMapWithBLOBs" parameterType="java.lang.Long" >
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from iface_conf
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long" >
+    delete from iface_conf
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.xiaomi.data.push.dao.model.ActionConfExample" >
+    delete from iface_conf
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.xiaomi.data.push.dao.model.ActionConfWithBLOBs" >
+    <selectKey resultType="java.lang.Long" keyProperty="id" order="AFTER" >
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into iface_conf (action, method, need_cache, 
+      need_log, online, addr, 
+      mock, ctime, utime, version, 
+      status, mockData, script
+      )
+    values (#{action,jdbcType=VARCHAR}, #{method,jdbcType=VARCHAR}, #{needCache,jdbcType=TINYINT}, 
+      #{needLog,jdbcType=TINYINT}, #{online,jdbcType=TINYINT}, #{addr,jdbcType=VARCHAR}, 
+      #{mock,jdbcType=TINYINT}, #{ctime,jdbcType=BIGINT}, #{utime,jdbcType=BIGINT}, #{version,jdbcType=INTEGER}, 
+      #{status,jdbcType=INTEGER}, #{mockdata,jdbcType=LONGVARCHAR}, #{script,jdbcType=LONGVARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.xiaomi.data.push.dao.model.ActionConfWithBLOBs" >
+    <selectKey resultType="java.lang.Long" keyProperty="id" order="AFTER" >
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into iface_conf
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="action != null" >
+        action,
+      </if>
+      <if test="method != null" >
+        method,
+      </if>
+      <if test="needCache != null" >
+        need_cache,
+      </if>
+      <if test="needLog != null" >
+        need_log,
+      </if>
+      <if test="online != null" >
+        online,
+      </if>
+      <if test="addr != null" >
+        addr,
+      </if>
+      <if test="mock != null" >
+        mock,
+      </if>
+      <if test="ctime != null" >
+        ctime,
+      </if>
+      <if test="utime != null" >
+        utime,
+      </if>
+      <if test="version != null" >
+        version,
+      </if>
+      <if test="status != null" >
+        status,
+      </if>
+      <if test="mockdata != null" >
+        mockData,
+      </if>
+      <if test="script != null" >
+        script,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="action != null" >
+        #{action,jdbcType=VARCHAR},
+      </if>
+      <if test="method != null" >
+        #{method,jdbcType=VARCHAR},
+      </if>
+      <if test="needCache != null" >
+        #{needCache,jdbcType=TINYINT},
+      </if>
+      <if test="needLog != null" >
+        #{needLog,jdbcType=TINYINT},
+      </if>
+      <if test="online != null" >
+        #{online,jdbcType=TINYINT},
+      </if>
+      <if test="addr != null" >
+        #{addr,jdbcType=VARCHAR},
+      </if>
+      <if test="mock != null" >
+        #{mock,jdbcType=TINYINT},
+      </if>
+      <if test="ctime != null" >
+        #{ctime,jdbcType=BIGINT},
+      </if>
+      <if test="utime != null" >
+        #{utime,jdbcType=BIGINT},
+      </if>
+      <if test="version != null" >
+        #{version,jdbcType=INTEGER},
+      </if>
+      <if test="status != null" >
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="mockdata != null" >
+        #{mockdata,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="script != null" >
+        #{script,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.xiaomi.data.push.dao.model.ActionConfExample" resultType="java.lang.Integer" >
+    select count(*) from iface_conf
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map" >
+    update iface_conf
+    <set >
+      <if test="record.id != null" >
+        id = #{record.id,jdbcType=BIGINT},
+      </if>
+      <if test="record.action != null" >
+        action = #{record.action,jdbcType=VARCHAR},
+      </if>
+      <if test="record.method != null" >
+        method = #{record.method,jdbcType=VARCHAR},
+      </if>
+      <if test="record.needCache != null" >
+        need_cache = #{record.needCache,jdbcType=TINYINT},
+      </if>
+      <if test="record.needLog != null" >
+        need_log = #{record.needLog,jdbcType=TINYINT},
+      </if>
+      <if test="record.online != null" >
+        online = #{record.online,jdbcType=TINYINT},
+      </if>
+      <if test="record.addr != null" >
+        addr = #{record.addr,jdbcType=VARCHAR},
+      </if>
+      <if test="record.mock != null" >
+        mock = #{record.mock,jdbcType=TINYINT},
+      </if>
+      <if test="record.ctime != null" >
+        ctime = #{record.ctime,jdbcType=BIGINT},
+      </if>
+      <if test="record.utime != null" >
+        utime = #{record.utime,jdbcType=BIGINT},
+      </if>
+      <if test="record.version != null" >
+        version = #{record.version,jdbcType=INTEGER},
+      </if>
+      <if test="record.status != null" >
+        status = #{record.status,jdbcType=INTEGER},
+      </if>
+      <if test="record.mockdata != null" >
+        mockData = #{record.mockdata,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.script != null" >
+        script = #{record.script,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    <if test="_parameter != null" >
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExampleWithBLOBs" parameterType="map" >
+    update iface_conf
+    set id = #{record.id,jdbcType=BIGINT},
+      action = #{record.action,jdbcType=VARCHAR},
+      method = #{record.method,jdbcType=VARCHAR},
+      need_cache = #{record.needCache,jdbcType=TINYINT},
+      need_log = #{record.needLog,jdbcType=TINYINT},
+      online = #{record.online,jdbcType=TINYINT},
+      addr = #{record.addr,jdbcType=VARCHAR},
+      mock = #{record.mock,jdbcType=TINYINT},
+      ctime = #{record.ctime,jdbcType=BIGINT},
+      utime = #{record.utime,jdbcType=BIGINT},
+      version = #{record.version,jdbcType=INTEGER},
+      status = #{record.status,jdbcType=INTEGER},
+      mockData = #{record.mockdata,jdbcType=LONGVARCHAR},
+      script = #{record.script,jdbcType=LONGVARCHAR}
+    <if test="_parameter != null" >
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map" >
+    update iface_conf
+    set id = #{record.id,jdbcType=BIGINT},
+      action = #{record.action,jdbcType=VARCHAR},
+      method = #{record.method,jdbcType=VARCHAR},
+      need_cache = #{record.needCache,jdbcType=TINYINT},
+      need_log = #{record.needLog,jdbcType=TINYINT},
+      online = #{record.online,jdbcType=TINYINT},
+      addr = #{record.addr,jdbcType=VARCHAR},
+      mock = #{record.mock,jdbcType=TINYINT},
+      ctime = #{record.ctime,jdbcType=BIGINT},
+      utime = #{record.utime,jdbcType=BIGINT},
+      version = #{record.version,jdbcType=INTEGER},
+      status = #{record.status,jdbcType=INTEGER}
+    <if test="_parameter != null" >
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.data.push.dao.model.ActionConfWithBLOBs" >
+    update iface_conf
+    <set >
+      <if test="action != null" >
+        action = #{action,jdbcType=VARCHAR},
+      </if>
+      <if test="method != null" >
+        method = #{method,jdbcType=VARCHAR},
+      </if>
+      <if test="needCache != null" >
+        need_cache = #{needCache,jdbcType=TINYINT},
+      </if>
+      <if test="needLog != null" >
+        need_log = #{needLog,jdbcType=TINYINT},
+      </if>
+      <if test="online != null" >
+        online = #{online,jdbcType=TINYINT},
+      </if>
+      <if test="addr != null" >
+        addr = #{addr,jdbcType=VARCHAR},
+      </if>
+      <if test="mock != null" >
+        mock = #{mock,jdbcType=TINYINT},
+      </if>
+      <if test="ctime != null" >
+        ctime = #{ctime,jdbcType=BIGINT},
+      </if>
+      <if test="utime != null" >
+        utime = #{utime,jdbcType=BIGINT},
+      </if>
+      <if test="version != null" >
+        version = #{version,jdbcType=INTEGER},
+      </if>
+      <if test="status != null" >
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="mockdata != null" >
+        mockData = #{mockdata,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="script != null" >
+        script = #{script,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.data.push.dao.model.ActionConfWithBLOBs" >
+    update iface_conf
+    set action = #{action,jdbcType=VARCHAR},
+      method = #{method,jdbcType=VARCHAR},
+      need_cache = #{needCache,jdbcType=TINYINT},
+      need_log = #{needLog,jdbcType=TINYINT},
+      online = #{online,jdbcType=TINYINT},
+      addr = #{addr,jdbcType=VARCHAR},
+      mock = #{mock,jdbcType=TINYINT},
+      ctime = #{ctime,jdbcType=BIGINT},
+      utime = #{utime,jdbcType=BIGINT},
+      version = #{version,jdbcType=INTEGER},
+      status = #{status,jdbcType=INTEGER},
+      mockData = #{mockdata,jdbcType=LONGVARCHAR},
+      script = #{script,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.data.push.dao.model.ActionConf" >
+    update iface_conf
+    set action = #{action,jdbcType=VARCHAR},
+      method = #{method,jdbcType=VARCHAR},
+      need_cache = #{needCache,jdbcType=TINYINT},
+      need_log = #{needLog,jdbcType=TINYINT},
+      online = #{online,jdbcType=TINYINT},
+      addr = #{addr,jdbcType=VARCHAR},
+      mock = #{mock,jdbcType=TINYINT},
+      ctime = #{ctime,jdbcType=BIGINT},
+      utime = #{utime,jdbcType=BIGINT},
+      version = #{version,jdbcType=INTEGER},
+      status = #{status,jdbcType=INTEGER}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+</mapper>

@@ -1,0 +1,108 @@
+package com.xiaomi.data.push.schedule.task;
+
+import com.google.common.collect.Maps;
+import com.xiaomi.data.push.dao.model.TaskWithBLOBs;
+import com.xiaomi.data.push.schedule.task.notify.Notify;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+
+import java.util.Map;
+
+/**
+ * @author goodjava@qq.com
+ */
+@Data
+public class TaskContext {
+
+    private Map<String, String> map = Maps.newHashMap();
+
+    @Getter
+    @Setter
+    private transient Notify notify;
+
+    @Getter
+    @Setter
+    private transient TaskWithBLOBs taskData;
+
+    /**
+     * 每个任务只能制定一个拦截器
+     * 拦截器
+     */
+    public static final String INTERCEPTOR = "interceptor";
+
+    public static final String UPDATE = "update";
+
+    public static final String FALSE = "false";
+
+
+    public static final String CACHE = "cache";
+
+    /**
+     * 延时处理
+     */
+    private long delay;
+
+    /**
+     * 只执行一次
+     */
+    private boolean once;
+
+    private String responseCode;
+    private String statusCode;
+    private String email;
+    private String feishu;
+
+
+    public TaskContext() {
+    }
+
+    public int getInt(String key) {
+        String value = this.map.get(key);
+        return null == value ? 0 : Integer.valueOf(value);
+    }
+
+    public void putInt(String key, int value) {
+        this.map.put(key, String.valueOf(value));
+    }
+
+    public void put(String key, String value) {
+        this.map.put(key, value);
+    }
+
+    public void remove(String key) {
+        this.map.remove(key);
+    }
+
+    public String get(String key) {
+        return this.map.get(key);
+    }
+
+    public String getString(String key) {
+        String str = this.map.get(key);
+        return null == str ? "" : str;
+    }
+
+    /**
+     * 发送通知信息
+     *
+     * @param msg
+     */
+    public void notifyMsg(String type, String msg) {
+        if (null != notify) {
+            notify.notify(type, msg);
+        }
+    }
+
+    /**
+     * 发送通知信息
+     *
+     * @param msg
+     */
+    public void notifyMsg(String type, String msg, int shardingKey) {
+        if (null != notify) {
+            notify.notify(type, msg, shardingKey);
+        }
+    }
+
+}

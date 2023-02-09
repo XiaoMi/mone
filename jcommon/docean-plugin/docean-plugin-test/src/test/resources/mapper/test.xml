@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaomi.youpin.docean.plugin.test.mybatis.TestMapper">
+
+    <resultMap id="result" type="com.xiaomi.youpin.docean.plugin.test.mybatis.Test">
+        <result property="id" column="id" />
+    </resultMap>
+
+    <select id="list" parameterType="java.lang.String" resultMap="result">
+        select * from test
+    </select>
+
+    <select id="query" parameterType="java.lang.String" resultMap="result">
+        select * from test where id= #{id} and id =#{id}
+    </select>
+
+
+    <insert id="insert" parameterType="com.xiaomi.youpin.docean.plugin.test.mybatis.Test">
+        insert into test (id) values(#{id})
+    </insert>
+
+</mapper>

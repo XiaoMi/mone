@@ -1,0 +1,1 @@
+authFilter=com.xiaomi.youpin.dubbo.filter.AuthFilter

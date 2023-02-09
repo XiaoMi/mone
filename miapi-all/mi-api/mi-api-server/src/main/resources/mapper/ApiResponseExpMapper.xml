@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaomi.miapi.mapper.ApiResponseExpMapper">
+  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.common.pojo.ApiResponseExp">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="api_id" jdbcType="INTEGER" property="apiId" />
+    <result column="resp_gen_exp_type" jdbcType="INTEGER" property="respGenExpType" />
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.miapi.common.pojo.ApiResponseExp">
+    <result column="resp_gen_exp" jdbcType="LONGVARCHAR" property="respGenExp" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    id, api_id, resp_gen_exp_type
+  </sql>
+  <sql id="Blob_Column_List">
+    resp_gen_exp
+  </sql>
+  <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.ApiResponseExpExample" resultMap="ResultMapWithBLOBs">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from api_response_exp
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiResponseExpExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from api_response_exp
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="ResultMapWithBLOBs">
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from api_response_exp
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from api_response_exp
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiResponseExpExample">
+    delete from api_response_exp
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.xiaomi.miapi.common.pojo.ApiResponseExp">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into api_response_exp (api_id, resp_gen_exp_type, resp_gen_exp
+      )
+    values (#{apiId,jdbcType=INTEGER}, #{respGenExpType,jdbcType=INTEGER}, #{respGenExp,jdbcType=LONGVARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.xiaomi.miapi.common.pojo.ApiResponseExp">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into api_response_exp
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="apiId != null">
+        api_id,
+      </if>
+      <if test="respGenExpType != null">
+        resp_gen_exp_type,
+      </if>
+      <if test="respGenExp != null">
+        resp_gen_exp,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="apiId != null">
+        #{apiId,jdbcType=INTEGER},
+      </if>
+      <if test="respGenExpType != null">
+        #{respGenExpType,jdbcType=INTEGER},
+      </if>
+      <if test="respGenExp != null">
+        #{respGenExp,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiResponseExpExample" resultType="java.lang.Long">
+    select count(*) from api_response_exp
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update api_response_exp
+    <set>
+      <if test="record.id != null">
+        id = #{record.id,jdbcType=INTEGER},
+      </if>
+      <if test="record.apiId != null">
+        api_id = #{record.apiId,jdbcType=INTEGER},
+      </if>
+      <if test="record.respGenExpType != null">
+        resp_gen_exp_type = #{record.respGenExpType,jdbcType=INTEGER},
+      </if>
+      <if test="record.respGenExp != null">
+        resp_gen_exp = #{record.respGenExp,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExampleWithBLOBs" parameterType="map">
+    update api_response_exp
+    set id = #{record.id,jdbcType=INTEGER},
+      api_id = #{record.apiId,jdbcType=INTEGER},
+      resp_gen_exp_type = #{record.respGenExpType,jdbcType=INTEGER},
+      resp_gen_exp = #{record.respGenExp,jdbcType=LONGVARCHAR}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update api_response_exp
+    set id = #{record.id,jdbcType=INTEGER},
+      api_id = #{record.apiId,jdbcType=INTEGER},
+      resp_gen_exp_type = #{record.respGenExpType,jdbcType=INTEGER}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.common.pojo.ApiResponseExp">
+    update api_response_exp
+    <set>
+      <if test="apiId != null">
+        api_id = #{apiId,jdbcType=INTEGER},
+      </if>
+      <if test="respGenExpType != null">
+        resp_gen_exp_type = #{respGenExpType,jdbcType=INTEGER},
+      </if>
+      <if test="respGenExp != null">
+        resp_gen_exp = #{respGenExp,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.ApiResponseExp">
+    update api_response_exp
+    set api_id = #{apiId,jdbcType=INTEGER},
+      resp_gen_exp_type = #{respGenExpType,jdbcType=INTEGER},
+      resp_gen_exp = #{respGenExp,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.common.pojo.ApiResponseExp">
+    update api_response_exp
+    set api_id = #{apiId,jdbcType=INTEGER},
+      resp_gen_exp_type = #{respGenExpType,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    insert into api_response_exp
+    (api_id, resp_gen_exp_type, resp_gen_exp)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.apiId,jdbcType=INTEGER}, #{item.respGenExpType,jdbcType=INTEGER}, #{item.respGenExp,jdbcType=LONGVARCHAR}
+        )
+    </foreach>
+  </insert>
+  <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
+    insert into api_response_exp (
+    <foreach collection="selective" item="column" separator=",">
+      ${column.escapedColumnName}
+    </foreach>
+    )
+    values
+    <foreach collection="list" item="item" separator=",">
+      (
+      <foreach collection="selective" item="column" separator=",">
+        <if test="'api_id'.toString() == column.value">
+          #{item.apiId,jdbcType=INTEGER}
+        </if>
+        <if test="'resp_gen_exp_type'.toString() == column.value">
+          #{item.respGenExpType,jdbcType=INTEGER}
+        </if>
+        <if test="'resp_gen_exp'.toString() == column.value">
+          #{item.respGenExp,jdbcType=LONGVARCHAR}
+        </if>
+      </foreach>
+      )
+    </foreach>
+  </insert>
+</mapper>

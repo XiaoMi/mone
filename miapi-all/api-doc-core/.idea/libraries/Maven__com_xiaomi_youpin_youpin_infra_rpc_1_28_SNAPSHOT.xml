@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="Maven: com.xiaomi.youpin:youpin-infra-rpc:1.28-SNAPSHOT">
+    <CLASSES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/xiaomi/youpin/youpin-infra-rpc/1.28-SNAPSHOT/youpin-infra-rpc-1.28-20200427.063927-3.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://$MAVEN_REPOSITORY$/com/xiaomi/youpin/youpin-infra-rpc/1.28-SNAPSHOT/youpin-infra-rpc-1.28-20200427.063927-3-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://$MAVEN_REPOSITORY$/com/xiaomi/youpin/youpin-infra-rpc/1.28-SNAPSHOT/youpin-infra-rpc-1.28-20200427.063927-3-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

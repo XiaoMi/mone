@@ -1,0 +1,488 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>Wrapper.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-remoting-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-common</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.common.bytecode</a> &gt; <span class="el_source">Wrapper.java</span></div><h1>Wrapper.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.common.bytecode;
+
+import org.apache.dubbo.common.utils.ClassHelper;
+import org.apache.dubbo.common.utils.ReflectUtils;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.regex.Matcher;
+
+/**
+ * Wrapper.
+ */
+<span class="nc" id="L38">public abstract class Wrapper {</span>
+<span class="nc" id="L39">    private static final Map&lt;Class&lt;?&gt;, Wrapper&gt; WRAPPER_MAP = new ConcurrentHashMap&lt;Class&lt;?&gt;, Wrapper&gt;(); //class wrapper map</span>
+<span class="nc" id="L40">    private static final String[] EMPTY_STRING_ARRAY = new String[0];</span>
+<span class="nc" id="L41">    private static final String[] OBJECT_METHODS = new String[]{&quot;getClass&quot;, &quot;hashCode&quot;, &quot;toString&quot;, &quot;equals&quot;};</span>
+<span class="nc" id="L42">    private static final Wrapper OBJECT_WRAPPER = new Wrapper() {</span>
+        @Override
+        public String[] getMethodNames() {
+<span class="nc" id="L45">            return OBJECT_METHODS;</span>
+        }
+
+        @Override
+        public String[] getDeclaredMethodNames() {
+<span class="nc" id="L50">            return OBJECT_METHODS;</span>
+        }
+
+        @Override
+        public String[] getPropertyNames() {
+<span class="nc" id="L55">            return EMPTY_STRING_ARRAY;</span>
+        }
+
+        @Override
+        public Class&lt;?&gt; getPropertyType(String pn) {
+<span class="nc" id="L60">            return null;</span>
+        }
+
+        @Override
+        public Object getPropertyValue(Object instance, String pn) throws NoSuchPropertyException {
+<span class="nc" id="L65">            throw new NoSuchPropertyException(&quot;Property [&quot; + pn + &quot;] not found.&quot;);</span>
+        }
+
+        @Override
+        public void setPropertyValue(Object instance, String pn, Object pv) throws NoSuchPropertyException {
+<span class="nc" id="L70">            throw new NoSuchPropertyException(&quot;Property [&quot; + pn + &quot;] not found.&quot;);</span>
+        }
+
+        @Override
+        public boolean hasProperty(String name) {
+<span class="nc" id="L75">            return false;</span>
+        }
+
+        @Override
+        public Object invokeMethod(Object instance, String mn, Class&lt;?&gt;[] types, Object[] args) throws NoSuchMethodException {
+<span class="nc bnc" id="L80" title="All 2 branches missed.">            if (&quot;getClass&quot;.equals(mn)) {</span>
+<span class="nc" id="L81">                return instance.getClass();</span>
+            }
+<span class="nc bnc" id="L83" title="All 2 branches missed.">            if (&quot;hashCode&quot;.equals(mn)) {</span>
+<span class="nc" id="L84">                return instance.hashCode();</span>
+            }
+<span class="nc bnc" id="L86" title="All 2 branches missed.">            if (&quot;toString&quot;.equals(mn)) {</span>
+<span class="nc" id="L87">                return instance.toString();</span>
+            }
+<span class="nc bnc" id="L89" title="All 2 branches missed.">            if (&quot;equals&quot;.equals(mn)) {</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">                if (args.length == 1) {</span>
+<span class="nc" id="L91">                    return instance.equals(args[0]);</span>
+                }
+<span class="nc" id="L93">                throw new IllegalArgumentException(&quot;Invoke method [&quot; + mn + &quot;] argument number error.&quot;);</span>
+            }
+<span class="nc" id="L95">            throw new NoSuchMethodException(&quot;Method [&quot; + mn + &quot;] not found.&quot;);</span>
+        }
+    };
+<span class="nc" id="L98">    private static AtomicLong WRAPPER_CLASS_COUNTER = new AtomicLong(0);</span>
+
+    /**
+     * get wrapper.
+     *
+     * @param c Class instance.
+     * @return Wrapper instance(not null).
+     */
+    public static Wrapper getWrapper(Class&lt;?&gt; c) {
+<span class="nc" id="L107">        return getWrapper(c, null);</span>
+    }
+
+
+    public static Wrapper getWrapper(Class&lt;?&gt; c, ClassLoader classLoader) {
+<span class="nc bnc" id="L112" title="All 2 branches missed.">        while (ClassGenerator.isDynamicClass(c)) // can not wrapper on dynamic class.</span>
+        {
+<span class="nc" id="L114">            c = c.getSuperclass();</span>
+        }
+
+<span class="nc bnc" id="L117" title="All 2 branches missed.">        if (c == Object.class) {</span>
+<span class="nc" id="L118">            return OBJECT_WRAPPER;</span>
+        }
+
+<span class="nc" id="L121">        Wrapper ret = WRAPPER_MAP.get(c);</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">        if (ret == null) {</span>
+<span class="nc bnc" id="L123" title="All 2 branches missed.">            if (null != classLoader) {</span>
+<span class="nc" id="L124">                ret = makeWrapper(c,classLoader);</span>
+            } else {
+<span class="nc" id="L126">                ret = makeWrapper(c);</span>
+            }
+<span class="nc" id="L128">            WRAPPER_MAP.put(c, ret);</span>
+        }
+<span class="nc" id="L130">        return ret;</span>
+    }
+
+
+
+    private static Wrapper makeWrapper(Class&lt;?&gt; c ) {
+<span class="nc" id="L136">      return makeWrapper(c,null);</span>
+    }
+
+
+    private static Wrapper makeWrapper(Class&lt;?&gt; c, ClassLoader classLoader) {
+<span class="nc bnc" id="L141" title="All 2 branches missed.">        if (c.isPrimitive()) {</span>
+<span class="nc" id="L142">            throw new IllegalArgumentException(&quot;Can not create wrapper for primitive type: &quot; + c);</span>
+        }
+
+<span class="nc" id="L145">        String name = c.getName();</span>
+<span class="nc" id="L146">        ClassLoader cl = ClassHelper.getClassLoader(c);</span>
+
+<span class="nc" id="L148">        StringBuilder c1 = new StringBuilder(&quot;public void setPropertyValue(Object o, String n, Object v){ &quot;);</span>
+<span class="nc" id="L149">        StringBuilder c2 = new StringBuilder(&quot;public Object getPropertyValue(Object o, String n){ &quot;);</span>
+<span class="nc" id="L150">        StringBuilder c3 = new StringBuilder(&quot;public Object invokeMethod(Object o, String n, Class[] p, Object[] v) throws &quot; + InvocationTargetException.class.getName() + &quot;{ &quot;);</span>
+
+<span class="nc" id="L152">        c1.append(name).append(&quot; w; try{ w = ((&quot;).append(name).append(&quot;)$1); }catch(Throwable e){ throw new IllegalArgumentException(e); }&quot;);</span>
+<span class="nc" id="L153">        c2.append(name).append(&quot; w; try{ w = ((&quot;).append(name).append(&quot;)$1); }catch(Throwable e){ throw new IllegalArgumentException(e); }&quot;);</span>
+<span class="nc" id="L154">        c3.append(name).append(&quot; w; try{ w = ((&quot;).append(name).append(&quot;)$1); }catch(Throwable e){ throw new IllegalArgumentException(e); }&quot;);</span>
+
+<span class="nc" id="L156">        Map&lt;String, Class&lt;?&gt;&gt; pts = new HashMap&lt;String, Class&lt;?&gt;&gt;(); // &lt;property name, property types&gt;</span>
+<span class="nc" id="L157">        Map&lt;String, Method&gt; ms = new LinkedHashMap&lt;String, Method&gt;(); // &lt;method desc, Method instance&gt;</span>
+<span class="nc" id="L158">        List&lt;String&gt; mns = new ArrayList&lt;String&gt;(); // method names.</span>
+<span class="nc" id="L159">        List&lt;String&gt; dmns = new ArrayList&lt;String&gt;(); // declaring method names.</span>
+
+        // get all public field.
+<span class="nc bnc" id="L162" title="All 2 branches missed.">        for (Field f : c.getFields()) {</span>
+<span class="nc" id="L163">            String fn = f.getName();</span>
+<span class="nc" id="L164">            Class&lt;?&gt; ft = f.getType();</span>
+<span class="nc bnc" id="L165" title="All 4 branches missed.">            if (Modifier.isStatic(f.getModifiers()) || Modifier.isTransient(f.getModifiers())) {</span>
+<span class="nc" id="L166">                continue;</span>
+            }
+
+<span class="nc" id="L169">            c1.append(&quot; if( $2.equals(\&quot;&quot;).append(fn).append(&quot;\&quot;) ){ w.&quot;).append(fn).append(&quot;=&quot;).append(arg(ft, &quot;$3&quot;)).append(&quot;; return; }&quot;);</span>
+<span class="nc" id="L170">            c2.append(&quot; if( $2.equals(\&quot;&quot;).append(fn).append(&quot;\&quot;) ){ return ($w)w.&quot;).append(fn).append(&quot;; }&quot;);</span>
+<span class="nc" id="L171">            pts.put(fn, ft);</span>
+        }
+
+<span class="nc" id="L174">        Method[] methods = c.getMethods();</span>
+        // get all public method.
+<span class="nc" id="L176">        boolean hasMethod = hasMethods(methods);</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">        if (hasMethod) {</span>
+<span class="nc" id="L178">            c3.append(&quot; try{&quot;);</span>
+        }
+<span class="nc bnc" id="L180" title="All 2 branches missed.">        for (Method m : methods) {</span>
+<span class="nc bnc" id="L181" title="All 2 branches missed.">            if (m.getDeclaringClass() == Object.class) //ignore Object's method.</span>
+            {
+<span class="nc" id="L183">                continue;</span>
+            }
+
+<span class="nc" id="L186">            String mn = m.getName();</span>
+<span class="nc" id="L187">            c3.append(&quot; if( \&quot;&quot;).append(mn).append(&quot;\&quot;.equals( $2 ) &quot;);</span>
+<span class="nc" id="L188">            int len = m.getParameterTypes().length;</span>
+<span class="nc" id="L189">            c3.append(&quot; &amp;&amp; &quot;).append(&quot; $3.length == &quot;).append(len);</span>
+
+<span class="nc" id="L191">            boolean override = false;</span>
+<span class="nc bnc" id="L192" title="All 2 branches missed.">            for (Method m2 : methods) {</span>
+<span class="nc bnc" id="L193" title="All 4 branches missed.">                if (m != m2 &amp;&amp; m.getName().equals(m2.getName())) {</span>
+<span class="nc" id="L194">                    override = true;</span>
+<span class="nc" id="L195">                    break;</span>
+                }
+            }
+<span class="nc bnc" id="L198" title="All 2 branches missed.">            if (override) {</span>
+<span class="nc bnc" id="L199" title="All 2 branches missed.">                if (len &gt; 0) {</span>
+<span class="nc bnc" id="L200" title="All 2 branches missed.">                    for (int l = 0; l &lt; len; l++) {</span>
+<span class="nc" id="L201">                        c3.append(&quot; &amp;&amp; &quot;).append(&quot; $3[&quot;).append(l).append(&quot;].getName().equals(\&quot;&quot;)</span>
+<span class="nc" id="L202">                                .append(m.getParameterTypes()[l].getName()).append(&quot;\&quot;)&quot;);</span>
+                    }
+                }
+            }
+
+<span class="nc" id="L207">            c3.append(&quot; ) { &quot;);</span>
+
+<span class="nc bnc" id="L209" title="All 2 branches missed.">            if (m.getReturnType() == Void.TYPE) {</span>
+<span class="nc" id="L210">                c3.append(&quot; w.&quot;).append(mn).append('(').append(args(m.getParameterTypes(), &quot;$4&quot;)).append(&quot;);&quot;).append(&quot; return null;&quot;);</span>
+            } else {
+<span class="nc" id="L212">                c3.append(&quot; return ($w)w.&quot;).append(mn).append('(').append(args(m.getParameterTypes(), &quot;$4&quot;)).append(&quot;);&quot;);</span>
+            }
+
+<span class="nc" id="L215">            c3.append(&quot; }&quot;);</span>
+
+<span class="nc" id="L217">            mns.add(mn);</span>
+<span class="nc bnc" id="L218" title="All 2 branches missed.">            if (m.getDeclaringClass() == c) {</span>
+<span class="nc" id="L219">                dmns.add(mn);</span>
+            }
+<span class="nc" id="L221">            ms.put(ReflectUtils.getDesc(m), m);</span>
+        }
+<span class="nc bnc" id="L223" title="All 2 branches missed.">        if (hasMethod) {</span>
+<span class="nc" id="L224">            c3.append(&quot; } catch(Throwable e) { &quot;);</span>
+<span class="nc" id="L225">            c3.append(&quot;     throw new java.lang.reflect.InvocationTargetException(e); &quot;);</span>
+<span class="nc" id="L226">            c3.append(&quot; }&quot;);</span>
+        }
+
+<span class="nc" id="L229">        c3.append(&quot; throw new &quot; + NoSuchMethodException.class.getName() + &quot;(\&quot;Not found method \\\&quot;\&quot;+$2+\&quot;\\\&quot; in class &quot; + c.getName() + &quot;.\&quot;); }&quot;);</span>
+
+        // deal with get/set method.
+        Matcher matcher;
+<span class="nc bnc" id="L233" title="All 2 branches missed.">        for (Map.Entry&lt;String, Method&gt; entry : ms.entrySet()) {</span>
+<span class="nc" id="L234">            String md = entry.getKey();</span>
+<span class="nc" id="L235">            Method method = (Method) entry.getValue();</span>
+<span class="nc bnc" id="L236" title="All 2 branches missed.">            if ((matcher = ReflectUtils.GETTER_METHOD_DESC_PATTERN.matcher(md)).matches()) {</span>
+<span class="nc" id="L237">                String pn = propertyName(matcher.group(1));</span>
+<span class="nc" id="L238">                c2.append(&quot; if( $2.equals(\&quot;&quot;).append(pn).append(&quot;\&quot;) ){ return ($w)w.&quot;).append(method.getName()).append(&quot;(); }&quot;);</span>
+<span class="nc" id="L239">                pts.put(pn, method.getReturnType());</span>
+<span class="nc bnc" id="L240" title="All 2 branches missed.">            } else if ((matcher = ReflectUtils.IS_HAS_CAN_METHOD_DESC_PATTERN.matcher(md)).matches()) {</span>
+<span class="nc" id="L241">                String pn = propertyName(matcher.group(1));</span>
+<span class="nc" id="L242">                c2.append(&quot; if( $2.equals(\&quot;&quot;).append(pn).append(&quot;\&quot;) ){ return ($w)w.&quot;).append(method.getName()).append(&quot;(); }&quot;);</span>
+<span class="nc" id="L243">                pts.put(pn, method.getReturnType());</span>
+<span class="nc bnc" id="L244" title="All 2 branches missed.">            } else if ((matcher = ReflectUtils.SETTER_METHOD_DESC_PATTERN.matcher(md)).matches()) {</span>
+<span class="nc" id="L245">                Class&lt;?&gt; pt = method.getParameterTypes()[0];</span>
+<span class="nc" id="L246">                String pn = propertyName(matcher.group(1));</span>
+<span class="nc" id="L247">                c1.append(&quot; if( $2.equals(\&quot;&quot;).append(pn).append(&quot;\&quot;) ){ w.&quot;).append(method.getName()).append(&quot;(&quot;).append(arg(pt, &quot;$3&quot;)).append(&quot;); return; }&quot;);</span>
+<span class="nc" id="L248">                pts.put(pn, pt);</span>
+            }
+<span class="nc" id="L250">        }</span>
+<span class="nc" id="L251">        c1.append(&quot; throw new &quot; + NoSuchPropertyException.class.getName() + &quot;(\&quot;Not found property \\\&quot;\&quot;+$2+\&quot;\\\&quot; field or setter method in class &quot; + c.getName() + &quot;.\&quot;); }&quot;);</span>
+<span class="nc" id="L252">        c2.append(&quot; throw new &quot; + NoSuchPropertyException.class.getName() + &quot;(\&quot;Not found property \\\&quot;\&quot;+$2+\&quot;\\\&quot; field or setter method in class &quot; + c.getName() + &quot;.\&quot;); }&quot;);</span>
+
+        // make class
+<span class="nc" id="L255">        long id = WRAPPER_CLASS_COUNTER.getAndIncrement();</span>
+<span class="nc" id="L256">        ClassGenerator cc = null;</span>
+<span class="nc bnc" id="L257" title="All 2 branches missed.">        if (null == classLoader) {</span>
+<span class="nc" id="L258">            cc = ClassGenerator.newInstance(cl);</span>
+        } else {
+<span class="nc" id="L260">            cc = ClassGenerator.newInstance(classLoader);</span>
+        }
+
+<span class="nc bnc" id="L263" title="All 2 branches missed.">        cc.setClassName((Modifier.isPublic(c.getModifiers()) ? Wrapper.class.getName() : c.getName() + &quot;$sw&quot;) + id);</span>
+<span class="nc" id="L264">        cc.setSuperClass(Wrapper.class);</span>
+
+<span class="nc" id="L266">        cc.addDefaultConstructor();</span>
+<span class="nc" id="L267">        cc.addField(&quot;public static String[] pns;&quot;); // property name array.</span>
+<span class="nc" id="L268">        cc.addField(&quot;public static &quot; + Map.class.getName() + &quot; pts;&quot;); // property type map.</span>
+<span class="nc" id="L269">        cc.addField(&quot;public static String[] mns;&quot;); // all method name array.</span>
+<span class="nc" id="L270">        cc.addField(&quot;public static String[] dmns;&quot;); // declared method name array.</span>
+<span class="nc bnc" id="L271" title="All 2 branches missed.">        for (int i = 0, len = ms.size(); i &lt; len; i++) {</span>
+<span class="nc" id="L272">            cc.addField(&quot;public static Class[] mts&quot; + i + &quot;;&quot;);</span>
+        }
+
+<span class="nc" id="L275">        cc.addMethod(&quot;public String[] getPropertyNames(){ return pns; }&quot;);</span>
+<span class="nc" id="L276">        cc.addMethod(&quot;public boolean hasProperty(String n){ return pts.containsKey($1); }&quot;);</span>
+<span class="nc" id="L277">        cc.addMethod(&quot;public Class getPropertyType(String n){ return (Class)pts.get($1); }&quot;);</span>
+<span class="nc" id="L278">        cc.addMethod(&quot;public String[] getMethodNames(){ return mns; }&quot;);</span>
+<span class="nc" id="L279">        cc.addMethod(&quot;public String[] getDeclaredMethodNames(){ return dmns; }&quot;);</span>
+<span class="nc" id="L280">        cc.addMethod(c1.toString());</span>
+<span class="nc" id="L281">        cc.addMethod(c2.toString());</span>
+<span class="nc" id="L282">        cc.addMethod(c3.toString());</span>
+
+        try {
+<span class="nc" id="L285">            Class&lt;?&gt; wc =  null;</span>
+<span class="nc bnc" id="L286" title="All 2 branches missed.">            if (classLoader == null) {</span>
+<span class="nc" id="L287">                wc = cc.toClass();</span>
+            } else {
+<span class="nc" id="L289">                wc = cc.toClass(classLoader);</span>
+            }
+            // setup static field.
+<span class="nc" id="L292">            wc.getField(&quot;pts&quot;).set(null, pts);</span>
+<span class="nc" id="L293">            wc.getField(&quot;pns&quot;).set(null, pts.keySet().toArray(new String[0]));</span>
+<span class="nc" id="L294">            wc.getField(&quot;mns&quot;).set(null, mns.toArray(new String[0]));</span>
+<span class="nc" id="L295">            wc.getField(&quot;dmns&quot;).set(null, dmns.toArray(new String[0]));</span>
+<span class="nc" id="L296">            int ix = 0;</span>
+<span class="nc bnc" id="L297" title="All 2 branches missed.">            for (Method m : ms.values()) {</span>
+<span class="nc" id="L298">                wc.getField(&quot;mts&quot; + ix++).set(null, m.getParameterTypes());</span>
+<span class="nc" id="L299">            }</span>
+<span class="nc" id="L300">            return (Wrapper) wc.newInstance();</span>
+<span class="nc" id="L301">        } catch (RuntimeException e) {</span>
+<span class="nc" id="L302">            throw e;</span>
+<span class="nc" id="L303">        } catch (Throwable e) {</span>
+<span class="nc" id="L304">            throw new RuntimeException(e.getMessage(), e);</span>
+        } finally {
+<span class="nc" id="L306">            cc.release();</span>
+<span class="nc" id="L307">            ms.clear();</span>
+<span class="nc" id="L308">            mns.clear();</span>
+<span class="nc" id="L309">            dmns.clear();</span>
+        }
+    }
+
+    private static String arg(Class&lt;?&gt; cl, String name) {
+<span class="nc bnc" id="L314" title="All 2 branches missed.">        if (cl.isPrimitive()) {</span>
+<span class="nc bnc" id="L315" title="All 2 branches missed.">            if (cl == Boolean.TYPE) {</span>
+<span class="nc" id="L316">                return &quot;((Boolean)&quot; + name + &quot;).booleanValue()&quot;;</span>
+            }
+<span class="nc bnc" id="L318" title="All 2 branches missed.">            if (cl == Byte.TYPE) {</span>
+<span class="nc" id="L319">                return &quot;((Byte)&quot; + name + &quot;).byteValue()&quot;;</span>
+            }
+<span class="nc bnc" id="L321" title="All 2 branches missed.">            if (cl == Character.TYPE) {</span>
+<span class="nc" id="L322">                return &quot;((Character)&quot; + name + &quot;).charValue()&quot;;</span>
+            }
+<span class="nc bnc" id="L324" title="All 2 branches missed.">            if (cl == Double.TYPE) {</span>
+<span class="nc" id="L325">                return &quot;((Number)&quot; + name + &quot;).doubleValue()&quot;;</span>
+            }
+<span class="nc bnc" id="L327" title="All 2 branches missed.">            if (cl == Float.TYPE) {</span>
+<span class="nc" id="L328">                return &quot;((Number)&quot; + name + &quot;).floatValue()&quot;;</span>
+            }
+<span class="nc bnc" id="L330" title="All 2 branches missed.">            if (cl == Integer.TYPE) {</span>
+<span class="nc" id="L331">                return &quot;((Number)&quot; + name + &quot;).intValue()&quot;;</span>
+            }
+<span class="nc bnc" id="L333" title="All 2 branches missed.">            if (cl == Long.TYPE) {</span>
+<span class="nc" id="L334">                return &quot;((Number)&quot; + name + &quot;).longValue()&quot;;</span>
+            }
+<span class="nc bnc" id="L336" title="All 2 branches missed.">            if (cl == Short.TYPE) {</span>
+<span class="nc" id="L337">                return &quot;((Number)&quot; + name + &quot;).shortValue()&quot;;</span>
+            }
+<span class="nc" id="L339">            throw new RuntimeException(&quot;Unknown primitive type: &quot; + cl.getName());</span>
+        }
+<span class="nc" id="L341">        return &quot;(&quot; + ReflectUtils.getName(cl) + &quot;)&quot; + name;</span>
+    }
+
+    private static String args(Class&lt;?&gt;[] cs, String name) {
+<span class="nc" id="L345">        int len = cs.length;</span>
+<span class="nc bnc" id="L346" title="All 2 branches missed.">        if (len == 0) {</span>
+<span class="nc" id="L347">            return &quot;&quot;;</span>
+        }
+<span class="nc" id="L349">        StringBuilder sb = new StringBuilder();</span>
+<span class="nc bnc" id="L350" title="All 2 branches missed.">        for (int i = 0; i &lt; len; i++) {</span>
+<span class="nc bnc" id="L351" title="All 2 branches missed.">            if (i &gt; 0) {</span>
+<span class="nc" id="L352">                sb.append(',');</span>
+            }
+<span class="nc" id="L354">            sb.append(arg(cs[i], name + &quot;[&quot; + i + &quot;]&quot;));</span>
+        }
+<span class="nc" id="L356">        return sb.toString();</span>
+    }
+
+    private static String propertyName(String pn) {
+<span class="nc bnc" id="L360" title="All 4 branches missed.">        return pn.length() == 1 || Character.isLowerCase(pn.charAt(1)) ? Character.toLowerCase(pn.charAt(0)) + pn.substring(1) : pn;</span>
+    }
+
+    private static boolean hasMethods(Method[] methods) {
+<span class="nc bnc" id="L364" title="All 4 branches missed.">        if (methods == null || methods.length == 0) {</span>
+<span class="nc" id="L365">            return false;</span>
+        }
+<span class="nc bnc" id="L367" title="All 2 branches missed.">        for (Method m : methods) {</span>
+<span class="nc bnc" id="L368" title="All 2 branches missed.">            if (m.getDeclaringClass() != Object.class) {</span>
+<span class="nc" id="L369">                return true;</span>
+            }
+        }
+<span class="nc" id="L372">        return false;</span>
+    }
+
+    /**
+     * get property name array.
+     *
+     * @return property name array.
+     */
+    abstract public String[] getPropertyNames();
+
+    /**
+     * get property type.
+     *
+     * @param pn property name.
+     * @return Property type or nul.
+     */
+    abstract public Class&lt;?&gt; getPropertyType(String pn);
+
+    /**
+     * has property.
+     *
+     * @param name property name.
+     * @return has or has not.
+     */
+    abstract public boolean hasProperty(String name);
+
+    /**
+     * get property value.
+     *
+     * @param instance instance.
+     * @param pn       property name.
+     * @return value.
+     */
+    abstract public Object getPropertyValue(Object instance, String pn) throws NoSuchPropertyException, IllegalArgumentException;
+
+    /**
+     * set property value.
+     *
+     * @param instance instance.
+     * @param pn       property name.
+     * @param pv       property value.
+     */
+    abstract public void setPropertyValue(Object instance, String pn, Object pv) throws NoSuchPropertyException, IllegalArgumentException;
+
+    /**
+     * get property value.
+     *
+     * @param instance instance.
+     * @param pns      property name array.
+     * @return value array.
+     */
+    public Object[] getPropertyValues(Object instance, String[] pns) throws NoSuchPropertyException, IllegalArgumentException {
+<span class="nc" id="L424">        Object[] ret = new Object[pns.length];</span>
+<span class="nc bnc" id="L425" title="All 2 branches missed.">        for (int i = 0; i &lt; ret.length; i++) {</span>
+<span class="nc" id="L426">            ret[i] = getPropertyValue(instance, pns[i]);</span>
+        }
+<span class="nc" id="L428">        return ret;</span>
+    }
+
+    /**
+     * set property value.
+     *
+     * @param instance instance.
+     * @param pns      property name array.
+     * @param pvs      property value array.
+     */
+    public void setPropertyValues(Object instance, String[] pns, Object[] pvs) throws NoSuchPropertyException, IllegalArgumentException {
+<span class="nc bnc" id="L439" title="All 2 branches missed.">        if (pns.length != pvs.length) {</span>
+<span class="nc" id="L440">            throw new IllegalArgumentException(&quot;pns.length != pvs.length&quot;);</span>
+        }
+
+<span class="nc bnc" id="L443" title="All 2 branches missed.">        for (int i = 0; i &lt; pns.length; i++) {</span>
+<span class="nc" id="L444">            setPropertyValue(instance, pns[i], pvs[i]);</span>
+        }
+<span class="nc" id="L446">    }</span>
+
+    /**
+     * get method name array.
+     *
+     * @return method name array.
+     */
+    abstract public String[] getMethodNames();
+
+    /**
+     * get method name array.
+     *
+     * @return method name array.
+     */
+    abstract public String[] getDeclaredMethodNames();
+
+    /**
+     * has method.
+     *
+     * @param name method name.
+     * @return has or has not.
+     */
+    public boolean hasMethod(String name) {
+<span class="nc bnc" id="L469" title="All 2 branches missed.">        for (String mn : getMethodNames()) {</span>
+<span class="nc bnc" id="L470" title="All 2 branches missed.">            if (mn.equals(name)) {</span>
+<span class="nc" id="L471">                return true;</span>
+            }
+        }
+<span class="nc" id="L474">        return false;</span>
+    }
+
+    /**
+     * invoke method.
+     *
+     * @param instance instance.
+     * @param mn       method name.
+     * @param types
+     * @param args     argument array.
+     * @return return value.
+     */
+    abstract public Object invokeMethod(Object instance, String mn, Class&lt;?&gt;[] types, Object[] args) throws NoSuchMethodException, InvocationTargetException;
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>

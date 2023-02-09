@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="zh"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../../jacoco-resources/report.gif" type="image/gif"/><title>CuratorZookeeperClient.java</title><link rel="stylesheet" href="../../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../../index.html" class="el_report">dubbo-registry-zookeeper</a> &gt; <a href="../index.html" class="el_bundle">dubbo-remoting-zookeeper</a> &gt; <a href="index.source.html" class="el_package">org.apache.dubbo.remoting.zookeeper.curator</a> &gt; <span class="el_source">CuratorZookeeperClient.java</span></div><h1>CuratorZookeeperClient.java</h1><pre class="source lang-java linenums">/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the &quot;License&quot;); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.apache.dubbo.remoting.zookeeper.curator;
+
+import org.apache.dubbo.common.Constants;
+import org.apache.dubbo.common.URL;
+import org.apache.dubbo.common.utils.StringUtils;
+import org.apache.dubbo.remoting.zookeeper.ChildListener;
+import org.apache.dubbo.remoting.zookeeper.StateListener;
+import org.apache.dubbo.remoting.zookeeper.support.AbstractZookeeperClient;
+
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.CuratorWatcher;
+import org.apache.curator.framework.state.ConnectionState;
+import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.retry.RetryNTimes;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException.NoNodeException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
+import org.apache.zookeeper.WatchedEvent;
+
+import java.util.Collections;
+import java.util.List;
+
+public class CuratorZookeeperClient extends AbstractZookeeperClient&lt;CuratorWatcher&gt; {
+
+    private final CuratorFramework client;
+
+    public CuratorZookeeperClient(URL url) {
+<span class="nc" id="L45">        super(url);</span>
+        try {
+<span class="nc" id="L47">            int timeout = url.getParameter(Constants.TIMEOUT_KEY, 5000);</span>
+<span class="nc" id="L48">            CuratorFrameworkFactory.Builder builder = CuratorFrameworkFactory.builder()</span>
+<span class="nc" id="L49">                    .connectString(url.getBackupAddress())</span>
+<span class="nc" id="L50">                    .retryPolicy(new RetryNTimes(1, 1000))</span>
+<span class="nc" id="L51">                    .connectionTimeoutMs(timeout);</span>
+<span class="nc" id="L52">            String authority = url.getAuthority();</span>
+<span class="nc bnc" id="L53" title="All 4 branches missed.">            if (authority != null &amp;&amp; authority.length() &gt; 0) {</span>
+<span class="nc" id="L54">                builder = builder.authorization(&quot;digest&quot;, authority.getBytes());</span>
+            }
+<span class="nc" id="L56">            client = builder.build();</span>
+<span class="nc" id="L57">            client.getConnectionStateListenable().addListener(new ConnectionStateListener() {</span>
+                @Override
+                public void stateChanged(CuratorFramework client, ConnectionState state) {
+<span class="nc bnc" id="L60" title="All 2 branches missed.">                    if (state == ConnectionState.LOST) {</span>
+<span class="nc" id="L61">                        CuratorZookeeperClient.this.stateChanged(StateListener.DISCONNECTED);</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">                    } else if (state == ConnectionState.CONNECTED) {</span>
+<span class="nc" id="L63">                        CuratorZookeeperClient.this.stateChanged(StateListener.CONNECTED);</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">                    } else if (state == ConnectionState.RECONNECTED) {</span>
+<span class="nc" id="L65">                        CuratorZookeeperClient.this.stateChanged(StateListener.RECONNECTED);</span>
+                    }
+<span class="nc" id="L67">                }</span>
+            });
+<span class="nc" id="L69">            client.start();</span>
+<span class="nc" id="L70">        } catch (Exception e) {</span>
+<span class="nc" id="L71">            throw new IllegalStateException(e.getMessage(), e);</span>
+<span class="nc" id="L72">        }</span>
+<span class="nc" id="L73">    }</span>
+
+    @Override
+    public void createPersistent(String path) {
+        try {
+<span class="nc" id="L78">            client.create().forPath(path);</span>
+<span class="nc" id="L79">        } catch (NodeExistsException e) {</span>
+<span class="nc" id="L80">        } catch (Exception e) {</span>
+<span class="nc" id="L81">            throw new IllegalStateException(e.getMessage(), e);</span>
+<span class="nc" id="L82">        }</span>
+<span class="nc" id="L83">    }</span>
+
+    @Override
+    public void createEphemeral(String path) {
+        try {
+<span class="nc" id="L88">            client.create().withMode(CreateMode.EPHEMERAL).forPath(path);</span>
+<span class="nc" id="L89">        } catch (NodeExistsException e) {</span>
+<span class="nc" id="L90">        } catch (Exception e) {</span>
+<span class="nc" id="L91">            throw new IllegalStateException(e.getMessage(), e);</span>
+<span class="nc" id="L92">        }</span>
+<span class="nc" id="L93">    }</span>
+
+    @Override
+    public void delete(String path) {
+        try {
+<span class="nc" id="L98">            client.delete().forPath(path);</span>
+<span class="nc" id="L99">        } catch (NoNodeException e) {</span>
+<span class="nc" id="L100">        } catch (Exception e) {</span>
+<span class="nc" id="L101">            throw new IllegalStateException(e.getMessage(), e);</span>
+<span class="nc" id="L102">        }</span>
+<span class="nc" id="L103">    }</span>
+
+    @Override
+    public List&lt;String&gt; getChildren(String path) {
+        try {
+<span class="nc" id="L108">            return client.getChildren().forPath(path);</span>
+<span class="nc" id="L109">        } catch (NoNodeException e) {</span>
+<span class="nc" id="L110">            return null;</span>
+<span class="nc" id="L111">        } catch (Exception e) {</span>
+<span class="nc" id="L112">            throw new IllegalStateException(e.getMessage(), e);</span>
+        }
+    }
+
+    @Override
+    public boolean checkExists(String path) {
+        try {
+<span class="nc bnc" id="L119" title="All 2 branches missed.">            if (client.checkExists().forPath(path) != null) {</span>
+<span class="nc" id="L120">                return true;</span>
+            }
+<span class="nc" id="L122">        } catch (Exception e) {</span>
+<span class="nc" id="L123">        }</span>
+<span class="nc" id="L124">        return false;</span>
+    }
+    @Override
+    public boolean isConnected() {
+<span class="nc" id="L128">        return client.getZookeeperClient().isConnected();</span>
+    }
+
+    @Override
+    public void doClose() {
+<span class="nc" id="L133">        client.close();</span>
+<span class="nc" id="L134">    }</span>
+
+    @Override
+    public CuratorWatcher createTargetChildListener(String path, ChildListener listener) {
+<span class="nc" id="L138">        return new CuratorWatcherImpl(listener);</span>
+    }
+
+    @Override
+    public List&lt;String&gt; addTargetChildListener(String path, CuratorWatcher listener) {
+        try {
+<span class="nc" id="L144">            return client.getChildren().usingWatcher(listener).forPath(path);</span>
+<span class="nc" id="L145">        } catch (NoNodeException e) {</span>
+<span class="nc" id="L146">            return null;</span>
+<span class="nc" id="L147">        } catch (Exception e) {</span>
+<span class="nc" id="L148">            throw new IllegalStateException(e.getMessage(), e);</span>
+        }
+    }
+
+    @Override
+    public void removeTargetChildListener(String path, CuratorWatcher listener) {
+<span class="nc" id="L154">        ((CuratorWatcherImpl) listener).unwatch();</span>
+<span class="nc" id="L155">    }</span>
+
+    private class CuratorWatcherImpl implements CuratorWatcher {
+
+        private volatile ChildListener listener;
+
+<span class="nc" id="L161">        public CuratorWatcherImpl(ChildListener listener) {</span>
+<span class="nc" id="L162">            this.listener = listener;</span>
+<span class="nc" id="L163">        }</span>
+
+        public void unwatch() {
+<span class="nc" id="L166">            this.listener = null;</span>
+<span class="nc" id="L167">        }</span>
+
+        @Override
+        public void process(WatchedEvent event) throws Exception {
+<span class="nc bnc" id="L171" title="All 2 branches missed.">            if (listener != null) {</span>
+<span class="nc bnc" id="L172" title="All 2 branches missed.">                String path = event.getPath() == null ? &quot;&quot; : event.getPath();</span>
+<span class="nc" id="L173">                listener.childChanged(path,</span>
+                        // if path is null, curator using watcher will throw NullPointerException.
+                        // if client connect or disconnect to server, zookeeper will queue
+                        // watched event(Watcher.Event.EventType.None, .., path = null).
+<span class="nc bnc" id="L177" title="All 2 branches missed.">                        StringUtils.isNotEmpty(path)</span>
+<span class="nc" id="L178">                                ? client.getChildren().usingWatcher(this).forPath(path)</span>
+<span class="nc" id="L179">                                : Collections.&lt;String&gt;emptyList());</span>
+            }
+<span class="nc" id="L181">        }</span>
+    }
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.2.201808211720</span></div></body></html>

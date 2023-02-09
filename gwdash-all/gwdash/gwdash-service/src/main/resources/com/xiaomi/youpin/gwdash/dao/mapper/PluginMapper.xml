@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~  Copyright 2020 Xiaomi
+  ~
+  ~    Licensed under the Apache License, Version 2.0 (the "License");
+  ~    you may not use this file except in compliance with the License.
+  ~    You may obtain a copy of the License at
+  ~
+  ~        http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~    Unless required by applicable law or agreed to in writing, software
+  ~    distributed under the License is distributed on an "AS IS" BASIS,
+  ~    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~    See the License for the specific language governing permissions and
+  ~    limitations under the License.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xiaomi.youpin.gwdash.dao.mapper.PluginMapper">
+
+    <resultMap id="ResultMapWithPluginList" type="com.xiaomi.youpin.gwdash.dao.model.Plugin">
+        <id column="id" property="id" jdbcType="BIGINT" />
+        <result column="name" property="name" jdbcType="VARCHAR" />
+        <result column="ctime" property="ctime" jdbcType="BIGINT" />
+        <result column="utime" property="utime" jdbcType="BIGINT" />
+        <result column="creator" property="creator" jdbcType="VARCHAR" />
+        <result column="status" property="status" jdbcType="VARCHAR" />
+        <result column="url" property="url" jdbcType="VARCHAR" />
+    </resultMap>
+
+    <resultMap id="ResultFileContent" type="com.xiaomi.youpin.gwdash.dao.model.PluginFileContent">
+        <result property="fileContent"  column="file_content" jdbcType="BLOB" typeHandler="org.apache.ibatis.type.BlobTypeHandler"/>
+        <result property="url"  column="url" jdbcType="VARCHAR"/>
+    </resultMap>
+
+    <select id="getPluginList" resultMap="ResultMapWithPluginList">
+        select id, name, ctime, utime, creator, status, url from plugin_info
+    </select>
+
+    <select id="getPluginFileContent" resultMap="ResultFileContent">
+        select file_content,url from plugin_info where id = #{id}
+    </select>
+    
+    <insert id="createNewPlugin" useGeneratedKeys="true" keyProperty="id">
+        insert into plugin_info(name, file_content, ctime, utime, creator, url) values (#{name}, #{fileContent}, #{ctime}, #{utime}, #{creator} ,#{url})
+    </insert>
+
+    <update id="updatePlugin">
+        update plugin_info set status=#{status}, utime=#{utime}, url=#{url} where id = #{id}
+    </update>
+    
+    <delete id="deletePlugin" parameterType="int">
+        delete from plugin_info where id = #{id}
+    </delete>
+</mapper>

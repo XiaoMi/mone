@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xiaomi.data.push.dao.mapper.TaskHistoryMapper" >
+  <resultMap id="BaseResultMap" type="com.xiaomi.data.push.dao.model.TaskHistory" >
+    <id column="id" property="id" />
+    <result column="task_id" property="taskId"/>
+    <result column="task_content" property="taskContent" />
+    <result column="ctime" property="ctime" />
+    <result column="status" property="status" />
+  </resultMap>
+
+  <select id="getTaskHistory" resultMap="BaseResultMap" parameterType="map"  >
+    select * from task_history
+    where task_id = #{taskId} and status = #{status}
+  </select>
+
+  <insert id="insert" parameterType="com.xiaomi.data.push.dao.model.TaskHistory" useGeneratedKeys="true" keyProperty="id" >
+    insert into task_history (task_id, task_content, ctime, status, uid)
+    values (#{taskId}, #{taskContent}, #{ctime}, #{status}, #{uid})
+  </insert>
+
+  <update id="update" parameterType="com.xiaomi.data.push.dao.model.TaskHistory" >
+    update task_history
+    set task_content = #{taskContent}
+    where task_id = #{taskId}
+  </update>
+
+</mapper>

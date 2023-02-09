@@ -1,0 +1,85 @@
+# server
+server.port=
+server.type=dev
+server.debug=true
+server.context.path=/
+logging.path=~/log/gwdash/
+
+# CAS server
+server.casServerLoginUrl=https://
+server.casServerUrlPrefix=https://
+server.serverName=http://
+server.serverEnv=local
+server.gwUrl=http://
+
+# redis info
+spring.redis=
+
+# dubbo
+dubbo.protocol.port=
+dubbo.protocol.id=dubbo
+dubbo.protocol.name=dubbo
+dubbo.httpGateway.port=
+dubbo.registry.address=nacos://
+spring.redis.cat.enabled=false
+dubbo.group=local
+nacos.config.addrs=
+app.nacos=
+
+# spring session redis
+# spring.redis.host=
+
+# thymeleaf
+spring.thymeleaf.cache=false
+
+nacos.api.url = http://
+
+# rocketmq
+rocketmq.group=RocketMQResLocal
+rocketmq.topic=GwdashServerTopic
+rocketmq.namesrv.addr=local
+rocket.tag.codechecker=CodeCheckerLocal
+rocket.tag.javadoc=JavaDocLocal
+rocket.tag.healthcheck=HealthCheckLocal
+rocket.tag.rq.heartbeat=HeartBeatLocal
+rocket.tag.nuke=NukeLocal
+rocket.tag.compile=CompileLocal
+
+# hermes
+hermes.url=http://
+hermes.project.name=mione
+
+# reference group
+ref.hermes.service.group=staging
+ref.mischedule.service.group=newstaging
+ref.quota.service.group=
+ref.oracle.service.group=staging
+ref.billing.service.group=staging
+ref.traffic.service.group=staging
+ref.chain.service.group=staging
+
+# cicd log
+cicd.log.group=staging
+
+# cat url
+cat.base.url=
+
+# docker.home.work.base
+docker.home.work.base=/tmp/work/
+
+# project env
+project.env.heap.ratio=1
+
+use.file.server=true
+file.server.url=http://
+
+ssh.key.path=xxxx/id_rsa
+
+# 飞书配置
+feishu.chat.id=
+feishu.platform.name=local
+
+gwdash.review.url=http://
+
+review.success.url=http://
+review.fail.url=http://

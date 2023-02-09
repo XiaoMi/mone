@@ -1,0 +1,523 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xiaomi.mione.plugin.dao.mapper.TaskMapper" >
+  <resultMap id="BaseResultMap" type="com.xiaomi.mione.plugin.dao.model.Task" >
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="name" property="name" jdbcType="VARCHAR" />
+    <result column="version" property="version" jdbcType="INTEGER" />
+    <result column="retry_num" property="retryNum" jdbcType="INTEGER" />
+    <result column="error_retry_num" property="errorRetryNum" jdbcType="INTEGER" />
+    <result column="next_retry_time" property="nextRetryTime" jdbcType="BIGINT" />
+    <result column="status" property="status" jdbcType="INTEGER" />
+    <result column="parent_id" property="parentId" jdbcType="INTEGER" />
+    <result column="created" property="created" jdbcType="BIGINT" />
+    <result column="updated" property="updated" jdbcType="BIGINT" />
+    <result column="success_num" property="successNum" jdbcType="INTEGER" />
+    <result column="failure_num" property="failureNum" jdbcType="INTEGER" />
+    <result column="creator" property="creator" jdbcType="VARCHAR" />
+    <result column="role_id" property="roleId" jdbcType="VARCHAR" />
+    <result column="schedule_group" property="scheduleGroup" jdbcType="INTEGER" />
+    <result column="type" property="type" jdbcType="VARCHAR" />
+    <result column="gid" property="gid" jdbcType="INTEGER" />
+  </resultMap>
+  <resultMap id="ResultMapWithBLOBs" type="com.xiaomi.mione.plugin.dao.model.TaskWithBLOBs" extends="BaseResultMap" >
+    <result column="bid" property="bid" jdbcType="LONGVARCHAR" />
+    <result column="result" property="result" jdbcType="LONGVARCHAR" />
+    <result column="params" property="params" jdbcType="LONGVARCHAR" />
+    <result column="context" property="context" jdbcType="LONGVARCHAR" />
+  </resultMap>
+  <sql id="Example_Where_Clause" >
+    <where >
+      <foreach collection="oredCriteria" item="criteria" separator="or" >
+        <if test="criteria.valid" >
+          <trim prefix="(" suffix=")" prefixOverrides="and" >
+            <foreach collection="criteria.criteria" item="criterion" >
+              <choose >
+                <when test="criterion.noValue" >
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue" >
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue" >
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue" >
+                  and ${criterion.condition}
+                  <foreach collection="criterion.value" item="listItem" open="(" close=")" separator="," >
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause" >
+    <where >
+      <foreach collection="example.oredCriteria" item="criteria" separator="or" >
+        <if test="criteria.valid" >
+          <trim prefix="(" suffix=")" prefixOverrides="and" >
+            <foreach collection="criteria.criteria" item="criterion" >
+              <choose >
+                <when test="criterion.noValue" >
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue" >
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue" >
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue" >
+                  and ${criterion.condition}
+                  <foreach collection="criterion.value" item="listItem" open="(" close=")" separator="," >
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List" >
+    id, name, version, retry_num, error_retry_num, next_retry_time, status, parent_id, 
+    created, updated, success_num, failure_num, creator, role_id, schedule_group, type, 
+    gid
+  </sql>
+  <sql id="Blob_Column_List" >
+    bid, result, params, context
+  </sql>
+  <select id="selectByExampleWithBLOBs" resultMap="ResultMapWithBLOBs" parameterType="com.xiaomi.mione.plugin.dao.model.TaskExample" >
+    select
+    <if test="distinct" >
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from task
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null" >
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByExample" resultMap="BaseResultMap" parameterType="com.xiaomi.mione.plugin.dao.model.TaskExample" >
+    select
+    <if test="distinct" >
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from task
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null" >
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" resultMap="ResultMapWithBLOBs" parameterType="java.lang.Integer" >
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from task
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    delete from task
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.xiaomi.mione.plugin.dao.model.TaskExample" >
+    delete from task
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.xiaomi.mione.plugin.dao.model.TaskWithBLOBs" useGeneratedKeys="true" keyProperty="id" >
+    insert into task (name, version, retry_num, 
+      error_retry_num, next_retry_time, status, 
+      parent_id, created, updated, 
+      success_num, failure_num, creator, 
+      role_id, schedule_group, type, 
+      gid, bid, result, 
+      params, context)
+    values (#{name,jdbcType=VARCHAR}, #{version,jdbcType=INTEGER}, #{retryNum,jdbcType=INTEGER}, 
+      #{errorRetryNum,jdbcType=INTEGER}, #{nextRetryTime,jdbcType=BIGINT}, #{status,jdbcType=INTEGER}, 
+      #{parentId,jdbcType=INTEGER}, #{created,jdbcType=BIGINT}, #{updated,jdbcType=BIGINT}, 
+      #{successNum,jdbcType=INTEGER}, #{failureNum,jdbcType=INTEGER}, #{creator,jdbcType=VARCHAR}, 
+      #{roleId,jdbcType=VARCHAR}, #{scheduleGroup,jdbcType=INTEGER}, #{type,jdbcType=VARCHAR}, 
+      #{gid,jdbcType=INTEGER}, #{bid,jdbcType=LONGVARCHAR}, #{result,jdbcType=LONGVARCHAR}, 
+      #{params,jdbcType=LONGVARCHAR}, #{context,jdbcType=LONGVARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="com.xiaomi.mione.plugin.dao.model.TaskWithBLOBs" useGeneratedKeys="true" keyProperty="id" >
+    insert into task
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="name != null" >
+        name,
+      </if>
+      <if test="version != null" >
+        version,
+      </if>
+      <if test="retryNum != null" >
+        retry_num,
+      </if>
+      <if test="errorRetryNum != null" >
+        error_retry_num,
+      </if>
+      <if test="nextRetryTime != null" >
+        next_retry_time,
+      </if>
+      <if test="status != null" >
+        status,
+      </if>
+      <if test="parentId != null" >
+        parent_id,
+      </if>
+      <if test="created != null" >
+        created,
+      </if>
+      <if test="updated != null" >
+        updated,
+      </if>
+      <if test="successNum != null" >
+        success_num,
+      </if>
+      <if test="failureNum != null" >
+        failure_num,
+      </if>
+      <if test="creator != null" >
+        creator,
+      </if>
+      <if test="roleId != null" >
+        role_id,
+      </if>
+      <if test="scheduleGroup != null" >
+        schedule_group,
+      </if>
+      <if test="type != null" >
+        type,
+      </if>
+      <if test="gid != null" >
+        gid,
+      </if>
+      <if test="bid != null" >
+        bid,
+      </if>
+      <if test="result != null" >
+        result,
+      </if>
+      <if test="params != null" >
+        params,
+      </if>
+      <if test="context != null" >
+        context,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="name != null" >
+        #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="version != null" >
+        #{version,jdbcType=INTEGER},
+      </if>
+      <if test="retryNum != null" >
+        #{retryNum,jdbcType=INTEGER},
+      </if>
+      <if test="errorRetryNum != null" >
+        #{errorRetryNum,jdbcType=INTEGER},
+      </if>
+      <if test="nextRetryTime != null" >
+        #{nextRetryTime,jdbcType=BIGINT},
+      </if>
+      <if test="status != null" >
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="parentId != null" >
+        #{parentId,jdbcType=INTEGER},
+      </if>
+      <if test="created != null" >
+        #{created,jdbcType=BIGINT},
+      </if>
+      <if test="updated != null" >
+        #{updated,jdbcType=BIGINT},
+      </if>
+      <if test="successNum != null" >
+        #{successNum,jdbcType=INTEGER},
+      </if>
+      <if test="failureNum != null" >
+        #{failureNum,jdbcType=INTEGER},
+      </if>
+      <if test="creator != null" >
+        #{creator,jdbcType=VARCHAR},
+      </if>
+      <if test="roleId != null" >
+        #{roleId,jdbcType=VARCHAR},
+      </if>
+      <if test="scheduleGroup != null" >
+        #{scheduleGroup,jdbcType=INTEGER},
+      </if>
+      <if test="type != null" >
+        #{type,jdbcType=VARCHAR},
+      </if>
+      <if test="gid != null" >
+        #{gid,jdbcType=INTEGER},
+      </if>
+      <if test="bid != null" >
+        #{bid,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="result != null" >
+        #{result,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="params != null" >
+        #{params,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="context != null" >
+        #{context,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.xiaomi.mione.plugin.dao.model.TaskExample" resultType="java.lang.Integer" >
+    select count(*) from task
+    <if test="_parameter != null" >
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map" >
+    update task
+    <set >
+      <if test="record.id != null" >
+        id = #{record.id,jdbcType=INTEGER},
+      </if>
+      <if test="record.name != null" >
+        name = #{record.name,jdbcType=VARCHAR},
+      </if>
+      <if test="record.version != null" >
+        version = #{record.version,jdbcType=INTEGER},
+      </if>
+      <if test="record.retryNum != null" >
+        retry_num = #{record.retryNum,jdbcType=INTEGER},
+      </if>
+      <if test="record.errorRetryNum != null" >
+        error_retry_num = #{record.errorRetryNum,jdbcType=INTEGER},
+      </if>
+      <if test="record.nextRetryTime != null" >
+        next_retry_time = #{record.nextRetryTime,jdbcType=BIGINT},
+      </if>
+      <if test="record.status != null" >
+        status = #{record.status,jdbcType=INTEGER},
+      </if>
+      <if test="record.parentId != null" >
+        parent_id = #{record.parentId,jdbcType=INTEGER},
+      </if>
+      <if test="record.created != null" >
+        created = #{record.created,jdbcType=BIGINT},
+      </if>
+      <if test="record.updated != null" >
+        updated = #{record.updated,jdbcType=BIGINT},
+      </if>
+      <if test="record.successNum != null" >
+        success_num = #{record.successNum,jdbcType=INTEGER},
+      </if>
+      <if test="record.failureNum != null" >
+        failure_num = #{record.failureNum,jdbcType=INTEGER},
+      </if>
+      <if test="record.creator != null" >
+        creator = #{record.creator,jdbcType=VARCHAR},
+      </if>
+      <if test="record.roleId != null" >
+        role_id = #{record.roleId,jdbcType=VARCHAR},
+      </if>
+      <if test="record.scheduleGroup != null" >
+        schedule_group = #{record.scheduleGroup,jdbcType=INTEGER},
+      </if>
+      <if test="record.type != null" >
+        type = #{record.type,jdbcType=VARCHAR},
+      </if>
+      <if test="record.gid != null" >
+        gid = #{record.gid,jdbcType=INTEGER},
+      </if>
+      <if test="record.bid != null" >
+        bid = #{record.bid,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.result != null" >
+        result = #{record.result,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.params != null" >
+        params = #{record.params,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.context != null" >
+        context = #{record.context,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    <if test="_parameter != null" >
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExampleWithBLOBs" parameterType="map" >
+    update task
+    set id = #{record.id,jdbcType=INTEGER},
+      name = #{record.name,jdbcType=VARCHAR},
+      version = #{record.version,jdbcType=INTEGER},
+      retry_num = #{record.retryNum,jdbcType=INTEGER},
+      error_retry_num = #{record.errorRetryNum,jdbcType=INTEGER},
+      next_retry_time = #{record.nextRetryTime,jdbcType=BIGINT},
+      status = #{record.status,jdbcType=INTEGER},
+      parent_id = #{record.parentId,jdbcType=INTEGER},
+      created = #{record.created,jdbcType=BIGINT},
+      updated = #{record.updated,jdbcType=BIGINT},
+      success_num = #{record.successNum,jdbcType=INTEGER},
+      failure_num = #{record.failureNum,jdbcType=INTEGER},
+      creator = #{record.creator,jdbcType=VARCHAR},
+      role_id = #{record.roleId,jdbcType=VARCHAR},
+      schedule_group = #{record.scheduleGroup,jdbcType=INTEGER},
+      type = #{record.type,jdbcType=VARCHAR},
+      gid = #{record.gid,jdbcType=INTEGER},
+      bid = #{record.bid,jdbcType=LONGVARCHAR},
+      result = #{record.result,jdbcType=LONGVARCHAR},
+      params = #{record.params,jdbcType=LONGVARCHAR},
+      context = #{record.context,jdbcType=LONGVARCHAR}
+    <if test="_parameter != null" >
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map" >
+    update task
+    set id = #{record.id,jdbcType=INTEGER},
+      name = #{record.name,jdbcType=VARCHAR},
+      version = #{record.version,jdbcType=INTEGER},
+      retry_num = #{record.retryNum,jdbcType=INTEGER},
+      error_retry_num = #{record.errorRetryNum,jdbcType=INTEGER},
+      next_retry_time = #{record.nextRetryTime,jdbcType=BIGINT},
+      status = #{record.status,jdbcType=INTEGER},
+      parent_id = #{record.parentId,jdbcType=INTEGER},
+      created = #{record.created,jdbcType=BIGINT},
+      updated = #{record.updated,jdbcType=BIGINT},
+      success_num = #{record.successNum,jdbcType=INTEGER},
+      failure_num = #{record.failureNum,jdbcType=INTEGER},
+      creator = #{record.creator,jdbcType=VARCHAR},
+      role_id = #{record.roleId,jdbcType=VARCHAR},
+      schedule_group = #{record.scheduleGroup,jdbcType=INTEGER},
+      type = #{record.type,jdbcType=VARCHAR},
+      gid = #{record.gid,jdbcType=INTEGER}
+    <if test="_parameter != null" >
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.mione.plugin.dao.model.TaskWithBLOBs" >
+    update task
+    <set >
+      <if test="name != null" >
+        name = #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="version != null" >
+        version = #{version,jdbcType=INTEGER},
+      </if>
+      <if test="retryNum != null" >
+        retry_num = #{retryNum,jdbcType=INTEGER},
+      </if>
+      <if test="errorRetryNum != null" >
+        error_retry_num = #{errorRetryNum,jdbcType=INTEGER},
+      </if>
+      <if test="nextRetryTime != null" >
+        next_retry_time = #{nextRetryTime,jdbcType=BIGINT},
+      </if>
+      <if test="status != null" >
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="parentId != null" >
+        parent_id = #{parentId,jdbcType=INTEGER},
+      </if>
+      <if test="created != null" >
+        created = #{created,jdbcType=BIGINT},
+      </if>
+      <if test="updated != null" >
+        updated = #{updated,jdbcType=BIGINT},
+      </if>
+      <if test="successNum != null" >
+        success_num = #{successNum,jdbcType=INTEGER},
+      </if>
+      <if test="failureNum != null" >
+        failure_num = #{failureNum,jdbcType=INTEGER},
+      </if>
+      <if test="creator != null" >
+        creator = #{creator,jdbcType=VARCHAR},
+      </if>
+      <if test="roleId != null" >
+        role_id = #{roleId,jdbcType=VARCHAR},
+      </if>
+      <if test="scheduleGroup != null" >
+        schedule_group = #{scheduleGroup,jdbcType=INTEGER},
+      </if>
+      <if test="type != null" >
+        type = #{type,jdbcType=VARCHAR},
+      </if>
+      <if test="gid != null" >
+        gid = #{gid,jdbcType=INTEGER},
+      </if>
+      <if test="bid != null" >
+        bid = #{bid,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="result != null" >
+        result = #{result,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="params != null" >
+        params = #{params,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="context != null" >
+        context = #{context,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.mione.plugin.dao.model.TaskWithBLOBs" >
+    update task
+    set name = #{name,jdbcType=VARCHAR},
+      version = #{version,jdbcType=INTEGER},
+      retry_num = #{retryNum,jdbcType=INTEGER},
+      error_retry_num = #{errorRetryNum,jdbcType=INTEGER},
+      next_retry_time = #{nextRetryTime,jdbcType=BIGINT},
+      status = #{status,jdbcType=INTEGER},
+      parent_id = #{parentId,jdbcType=INTEGER},
+      created = #{created,jdbcType=BIGINT},
+      updated = #{updated,jdbcType=BIGINT},
+      success_num = #{successNum,jdbcType=INTEGER},
+      failure_num = #{failureNum,jdbcType=INTEGER},
+      creator = #{creator,jdbcType=VARCHAR},
+      role_id = #{roleId,jdbcType=VARCHAR},
+      schedule_group = #{scheduleGroup,jdbcType=INTEGER},
+      type = #{type,jdbcType=VARCHAR},
+      gid = #{gid,jdbcType=INTEGER},
+      bid = #{bid,jdbcType=LONGVARCHAR},
+      result = #{result,jdbcType=LONGVARCHAR},
+      params = #{params,jdbcType=LONGVARCHAR},
+      context = #{context,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.mione.plugin.dao.model.Task" >
+    update task
+    set name = #{name,jdbcType=VARCHAR},
+      version = #{version,jdbcType=INTEGER},
+      retry_num = #{retryNum,jdbcType=INTEGER},
+      error_retry_num = #{errorRetryNum,jdbcType=INTEGER},
+      next_retry_time = #{nextRetryTime,jdbcType=BIGINT},
+      status = #{status,jdbcType=INTEGER},
+      parent_id = #{parentId,jdbcType=INTEGER},
+      created = #{created,jdbcType=BIGINT},
+      updated = #{updated,jdbcType=BIGINT},
+      success_num = #{successNum,jdbcType=INTEGER},
+      failure_num = #{failureNum,jdbcType=INTEGER},
+      creator = #{creator,jdbcType=VARCHAR},
+      role_id = #{roleId,jdbcType=VARCHAR},
+      schedule_group = #{scheduleGroup,jdbcType=INTEGER},
+      type = #{type,jdbcType=VARCHAR},
+      gid = #{gid,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+</mapper>

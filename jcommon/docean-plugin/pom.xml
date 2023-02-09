@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>jcommon</artifactId>
+        <groupId>run.mone</groupId>
+        <version>1.4-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>docean-plugin</artifactId>
+    <version>1.4-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <modules>
+        <module>docean-plugin-aop</module>
+        <module>docean-plugin-db</module>
+        <module>docean-plugin-shardingSphere</module>
+        <module>docean-plugin-config</module>
+        <module>docean-plugin-dubbo</module>
+        <module>docean-plugin-http</module>
+        <module>docean-plugin-json</module>
+        <module>docean-plugin-nacos</module>
+        <module>docean-plugin-redis</module>
+        <module>docean-plugin-rocketmq</module>
+        <module>docean-plugin-sql</module>
+        <module>docean-plugin-test</module>
+        <module>docean-plugin-sentinel</module>
+        <module>docean-plugin-mybatis</module>
+        <module>docean-plugin-mybatis-plus</module>
+        <module>docean-plugin-datasource</module>
+        <module>docean-plugin-mongodb</module>
+        <module>docean-plugin-log</module>
+        <module>docean-plugin-cat</module>
+        <module>docean-plugin-mvc</module>
+        <module>docean-plugin-dmesh</module>
+        <module>docean-plugin-akka</module>
+        <module>docean-plugin-api</module>
+        <module>docean-plugin-es</module>
+        <module>docean-plugin-etcd</module>
+        <module>docean-plugin-grpc</module>
+        <module>docean-plugin-dubbo-serverless</module>
+        <module>docean-plugin-datasource-serverless</module>
+        <module>docean-plugin-rpc</module>
+        <module>docean-plugin-k8s</module>
+        <module>docean-plugin-spring</module>
+        <module>docean-plugin-configuration</module>
+        <module>docean-plugin-http-server</module>
+        <module>docean-plugin-classloader</module>
+    </modules>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>docean</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+
+
+    </dependencies>
+
+
+</project>
