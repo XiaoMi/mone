@@ -6,6 +6,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.converter.json.GsonHttpMessageConverter;
 
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 @Configuration
 public class GsonConfig {
     @Bean
@@ -13,7 +17,6 @@ public class GsonConfig {
         GsonHttpMessageConverter converter = new GsonHttpMessageConverter();
         GsonBuilder builder = new GsonBuilder();
         builder.serializeNulls();
-        //设置过滤修饰符为protected的字段
         Gson gson = builder.create();
         converter.setGson(gson);
         return converter;

@@ -1,11 +1,14 @@
 package com.xiaomi.miapi.mapper;
 
-import com.xiaomi.miapi.common.pojo.EoDubboApiInfo;
-import com.xiaomi.miapi.common.pojo.EoDubboApiInfoExample;
+import com.xiaomi.miapi.pojo.EoDubboApiInfo;
+import com.xiaomi.miapi.pojo.EoDubboApiInfoExample;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
-
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 public interface EoDubboApiInfoMapper {
     long countByExample(EoDubboApiInfoExample example);
 

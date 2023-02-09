@@ -1,11 +1,14 @@
 package com.xiaomi.miapi.mapper;
 
-import com.xiaomi.miapi.common.pojo.ApiEnv;
-import com.xiaomi.miapi.common.pojo.ApiEnvExample;
+import com.xiaomi.miapi.pojo.ApiEnv;
+import com.xiaomi.miapi.pojo.ApiEnvExample;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
-
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 public interface ApiEnvMapper {
     long countByExample(ApiEnvExample example);
 

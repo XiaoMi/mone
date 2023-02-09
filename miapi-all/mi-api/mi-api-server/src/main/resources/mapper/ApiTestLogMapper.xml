@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xiaomi.miapi.mapper.ApiTestLogMapper">
-  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.common.pojo.ApiTestLog">
+  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.pojo.ApiTestLog">
     <id column="id" jdbcType="INTEGER" property="id" />
     <result column="op_username" jdbcType="VARCHAR" property="opUsername" />
     <result column="interface_name" jdbcType="VARCHAR" property="interfaceName" />
@@ -76,7 +76,7 @@
     id, op_username, interface_name, method_name, api_group, version, env, ip, url, param, 
     op_time
   </sql>
-  <select id="selectByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiTestLogExample" resultMap="BaseResultMap">
+  <select id="selectByExample" parameterType="com.xiaomi.miapi.pojo.ApiTestLogExample" resultMap="BaseResultMap">
     select
     <if test="distinct">
       distinct
@@ -100,13 +100,13 @@
     delete from api_test_log
     where id = #{id,jdbcType=INTEGER}
   </delete>
-  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiTestLogExample">
+  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.pojo.ApiTestLogExample">
     delete from api_test_log
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
     </if>
   </delete>
-  <insert id="insert" parameterType="com.xiaomi.miapi.common.pojo.ApiTestLog">
+  <insert id="insert" parameterType="com.xiaomi.miapi.pojo.ApiTestLog">
     <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
       SELECT LAST_INSERT_ID()
     </selectKey>
@@ -119,7 +119,7 @@
       #{ip,jdbcType=VARCHAR}, #{url,jdbcType=VARCHAR}, #{param,jdbcType=VARCHAR}, #{opTime,jdbcType=TIMESTAMP}
       )
   </insert>
-  <insert id="insertSelective" parameterType="com.xiaomi.miapi.common.pojo.ApiTestLog">
+  <insert id="insertSelective" parameterType="com.xiaomi.miapi.pojo.ApiTestLog">
     <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
       SELECT LAST_INSERT_ID()
     </selectKey>
@@ -189,7 +189,7 @@
       </if>
     </trim>
   </insert>
-  <select id="countByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiTestLogExample" resultType="java.lang.Long">
+  <select id="countByExample" parameterType="com.xiaomi.miapi.pojo.ApiTestLogExample" resultType="java.lang.Long">
     select count(*) from api_test_log
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
@@ -253,7 +253,7 @@
       <include refid="Update_By_Example_Where_Clause" />
     </if>
   </update>
-  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.common.pojo.ApiTestLog">
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.pojo.ApiTestLog">
     update api_test_log
     <set>
       <if test="opUsername != null">
@@ -289,7 +289,7 @@
     </set>
     where id = #{id,jdbcType=INTEGER}
   </update>
-  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.common.pojo.ApiTestLog">
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.pojo.ApiTestLog">
     update api_test_log
     set op_username = #{opUsername,jdbcType=VARCHAR},
       interface_name = #{interfaceName,jdbcType=VARCHAR},

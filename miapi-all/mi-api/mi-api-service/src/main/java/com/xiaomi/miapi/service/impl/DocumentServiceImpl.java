@@ -1,7 +1,7 @@
 package com.xiaomi.miapi.service.impl;
 
-import com.xiaomi.miapi.common.pojo.Document;
-import com.xiaomi.miapi.common.pojo.ProjectOperationLog;
+import com.xiaomi.miapi.pojo.Document;
+import com.xiaomi.miapi.pojo.ProjectOperationLog;
 import com.xiaomi.miapi.dto.DocumentDTO;
 import com.xiaomi.miapi.mapper.DocumentMapper;
 import com.xiaomi.miapi.mapper.ProjectOperationLogMapper;
@@ -18,7 +18,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 项目文档[业务处理层]
+ * @author dongzhenxing
+ * @date 2023/02/08
  */
 @Service
 @Transactional(propagation = Propagation.REQUIRED, rollbackForClassName = "java.lang.Exception")
@@ -30,12 +31,6 @@ public class DocumentServiceImpl implements DocumentService {
     @Autowired
     private ProjectOperationLogMapper projectOperationLogMapper;
 
-    @Autowired
-    UserService userService;
-
-    /**
-     * 添加文档
-     */
     @Override
     public Result<Boolean> addDocument(Document document, String opUsername) {
         document.setCreateUserName(opUsername);
@@ -55,9 +50,6 @@ public class DocumentServiceImpl implements DocumentService {
         }
     }
 
-    /**
-     * 修改文档
-     */
     @Override
     public Result<Boolean> editDocument(Document document,String opUsername) {
         int affectedRow = this.documentMapper.editDocument(document);
@@ -76,18 +68,12 @@ public class DocumentServiceImpl implements DocumentService {
         }
     }
 
-    /**
-     * 获取文档列表
-     */
     @Override
     public Result<List<DocumentDTO>> getAllDocumentList(int projectID) {
         List<DocumentDTO> documentList = this.documentMapper.getAllDocumentList(projectID);
         return Result.success(documentList);
     }
 
-    /**
-     * 搜索文档
-     */
     @Override
     public Result<List<DocumentDTO>> searchDocument(int projectID, String tips,Integer type) {
         List<DocumentDTO> resultList;
@@ -102,25 +88,18 @@ public class DocumentServiceImpl implements DocumentService {
         return Result.success(resultList);
     }
 
-    /**
-     * 获取文档详情
-     */
     @Override
     public Result<Map<String, Object>> getDocument(int documentID) {
 
         Map<String, Object> document = documentMapper.getDocument(documentID);
         if (document != null && !document.isEmpty()) {
-            Long userID = (Long) document.get("userID");
-            document.put("creator",userService.getUserById(userID.intValue()).getName());
+            document.put("creator",document.get("username"));
             return Result.success(document);
         } else {
             return Result.fail(CommonError.InvalidParamError);
         }
     }
 
-    /**
-     * 批量删除文档
-     */
     @Override
     public Result<Boolean> deleteBatchDocument(List<Integer> documentIDs, int projectID, int userID,String opUsername) {
 

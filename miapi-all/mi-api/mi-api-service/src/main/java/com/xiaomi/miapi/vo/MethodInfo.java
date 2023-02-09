@@ -5,7 +5,10 @@ import lombok.Data;
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Objects;
-
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 @Data
 public class MethodInfo implements Serializable {
     private String serviceName;

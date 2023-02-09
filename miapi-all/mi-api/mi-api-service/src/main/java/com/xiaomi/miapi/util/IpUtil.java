@@ -5,6 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import javax.servlet.http.HttpServletRequest;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 @Slf4j
 public class IpUtil {
     private static final String UNKNOWN = "unknown";

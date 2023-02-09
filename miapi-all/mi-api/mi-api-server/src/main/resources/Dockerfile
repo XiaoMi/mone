@@ -1,5 +1,5 @@
 FROM miserver
-MAINTAINER youpin-biz-arch@xiaomi.com
+MAINTAINER dongzhenxing@xiaomi.com
 RUN mkdir -p /home/work/mi-api/
 RUN mkdir -p /home/work/log/mi-api/
 COPY mi-api-server-1.0.0-SNAPSHOT.jar /home/work/mi-api/

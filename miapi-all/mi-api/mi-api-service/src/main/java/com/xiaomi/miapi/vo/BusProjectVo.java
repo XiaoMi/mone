@@ -1,9 +1,15 @@
 
 package com.xiaomi.miapi.vo;
 
+import lombok.Data;
+
 import java.io.Serializable;
 import java.util.Objects;
-
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
+@Data
 public class BusProjectVo implements Serializable {
     private int id;
     private String name;
@@ -21,114 +27,6 @@ public class BusProjectVo implements Serializable {
 
 
     public BusProjectVo() {
-    }
-
-    public int getId() {
-        return this.id;
-    }
-
-    public String getName() {
-        return this.name;
-    }
-
-    public String getDescription() {
-        return this.description;
-    }
-
-    public long getCtime() {
-        return this.ctime;
-    }
-
-    public long getUtime() {
-        return this.utime;
-    }
-
-    public int getStatus() {
-        return this.status;
-    }
-
-    public String getGitAddress() {
-        return this.gitAddress;
-    }
-
-    public int getVersion() {
-        return this.version;
-    }
-
-    public String getGitGroup() {
-        return this.gitGroup;
-    }
-
-    public String getGitName() {
-        return this.gitName;
-    }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public void setCtime(long ctime) {
-        this.ctime = ctime;
-    }
-
-    public void setUtime(long utime) {
-        this.utime = utime;
-    }
-
-    public void setStatus(int status) {
-        this.status = status;
-    }
-
-    public void setGitAddress(String gitAddress) {
-        this.gitAddress = gitAddress;
-    }
-
-    public void setVersion(int version) {
-        this.version = version;
-    }
-
-    public void setGitGroup(String gitGroup) {
-        this.gitGroup = gitGroup;
-    }
-
-    public void setGitName(String gitName) {
-        this.gitName = gitName;
-    }
-
-    public boolean isFocus() {
-        return isFocus;
-    }
-
-    public void setFocus(boolean focus) {
-        isFocus = focus;
-    }
-
-    public int getApiCount() {
-        return apiCount;
-    }
-
-    public void setApiCount(int apiCount) {
-        this.apiCount = apiCount;
-    }
-
-    public String getProjectUpdateTime() {
-        return projectUpdateTime;
-    }
-
-    public void setProjectUpdateTime(String projectUpdateTime) {
-        this.projectUpdateTime = projectUpdateTime;
-    }
-
-    protected boolean canEqual(Object other) {
-        return other instanceof BusProjectVo;
     }
 
     @Override

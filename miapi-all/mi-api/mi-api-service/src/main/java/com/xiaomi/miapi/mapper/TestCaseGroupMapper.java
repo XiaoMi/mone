@@ -1,11 +1,14 @@
 package com.xiaomi.miapi.mapper;
 
-import com.xiaomi.miapi.common.pojo.TestCaseGroup;
-import com.xiaomi.miapi.common.pojo.TestCaseGroupExample;
+import com.xiaomi.miapi.pojo.TestCaseGroup;
+import com.xiaomi.miapi.pojo.TestCaseGroupExample;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
-
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 public interface TestCaseGroupMapper {
     long countByExample(TestCaseGroupExample example);
 

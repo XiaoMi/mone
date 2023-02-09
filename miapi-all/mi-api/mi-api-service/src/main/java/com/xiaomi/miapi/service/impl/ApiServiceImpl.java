@@ -3,28 +3,26 @@ package com.xiaomi.miapi.service.impl;
 import com.alibaba.fastjson.JSONArray;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.xiaomi.miapi.common.bo.NacosInfo;
-import com.xiaomi.miapi.common.dto.ProjectApisDTO;
-import com.xiaomi.miapi.common.pojo.*;
-import com.xiaomi.miapi.mapper.*;
-import com.xiaomi.miapi.util.HttpUtils;
-import com.xiaomi.miapi.util.RedisUtil;
+import com.xiaomi.data.push.nacos.NacosNaming;
+import com.xiaomi.miapi.bo.LayerItem;
 import com.xiaomi.miapi.common.Consts;
 import com.xiaomi.miapi.common.Result;
-import com.xiaomi.miapi.common.bo.NacosLoginInfo;
-import com.xiaomi.data.push.nacos.NacosNaming;
+import com.xiaomi.miapi.bo.NacosInfo;
+import com.xiaomi.miapi.bo.NacosLoginInfo;
+import com.xiaomi.miapi.dto.ProjectApisDTO;
+import com.xiaomi.miapi.common.exception.CommonError;
 import com.xiaomi.miapi.dto.HttpJsonParamBo;
-import com.xiaomi.mone.dubbo.docs.core.beans.LayerItem;
+import com.xiaomi.miapi.mapper.*;
+import com.xiaomi.miapi.pojo.*;
 import com.xiaomi.miapi.service.ApiService;
 import com.xiaomi.miapi.service.MockService;
-import com.xiaomi.miapi.common.exception.CommonError;
+import com.xiaomi.miapi.util.ApiDateCompare;
+import com.xiaomi.miapi.util.ApiNameCompare;
+import com.xiaomi.miapi.util.RedisUtil;
 import com.xiaomi.youpin.codegen.HttpRequestGen;
 import com.xiaomi.youpin.codegen.bo.ApiHeaderBo;
 import com.xiaomi.youpin.codegen.bo.HttpJsonParamsBo;
-import com.xiaomi.youpin.hermes.service.BusProjectService;
 import org.apache.dubbo.common.utils.StringUtils;
-import org.apache.dubbo.config.annotation.DubboReference;
-import org.checkerframework.checker.units.qual.A;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,9 +38,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-/**
- * 接口业务处理层
- */
 @Service
 public class ApiServiceImpl implements ApiService {
 
@@ -88,11 +83,12 @@ public class ApiServiceImpl implements ApiService {
     @Autowired
     MockService mockService;
 
-    @Autowired
-    NacosInfo nacosInfo;
 
-    @DubboReference(check = false, group = "${ref.hermes.service.group}")
-    private BusProjectService busProjectService;
+    public static final Gson gson = new Gson();
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ApiServiceImpl.class);
+
+    private static final HttpRequestGen codeGenerator = new HttpRequestGen();
 
     @Resource(name = "nacosNamingSt")
     private NacosNaming nacosNamingSt;
@@ -100,21 +96,16 @@ public class ApiServiceImpl implements ApiService {
     @Resource(name = "nacosNamingOl")
     private NacosNaming nacosNamingOl;
 
-    public static final Gson gson = new Gson();
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(ApiServiceImpl.class);
+    @Autowired
+    NacosInfo nacosInfo;
 
     public static String stNacosAccessToken = "";
 
     public static String olNacosAccessToken = "";
 
-    private static final HttpRequestGen codeGenerator = new HttpRequestGen();
-
     private final ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
-    /**
-     * 每5分钟更新nacos的accessToken
-     */
+
     @PostConstruct
     public void init() {
         executorService.scheduleAtFixedRate(this::refreshStNacosToken, 0, 5, TimeUnit.MINUTES);
@@ -124,7 +115,6 @@ public class ApiServiceImpl implements ApiService {
     }
 
     public void refreshStNacosToken() {
-        //测试环境nacos
         try {
             NacosLoginInfo stNacosLoginInfo = new Gson().fromJson(nacosNamingSt.login(nacosInfo.getUsernameSt(), nacosInfo.getPasswordSt()), NacosLoginInfo.class);
             if (null != stNacosLoginInfo && StringUtils.isNotEmpty(stNacosLoginInfo.getAccessToken())) {
@@ -136,7 +126,6 @@ public class ApiServiceImpl implements ApiService {
     }
 
     private void refreshOlNacosToken() {
-        //线上环境nacos
         try {
             NacosLoginInfo olNacosLoginInfo = new Gson().fromJson(nacosNamingOl.login(nacosInfo.getUsernameOl(), nacosInfo.getPasswordOl()), NacosLoginInfo.class);
             if (null != olNacosLoginInfo && StringUtils.isNotEmpty(olNacosLoginInfo.getAccessToken())) {
@@ -146,6 +135,7 @@ public class ApiServiceImpl implements ApiService {
             LOGGER.error(ex.getMessage());
         }
     }
+
 
     @Override
     public Result<Boolean> editApiStatus(Integer projectId, Integer apiId, Integer status) {
@@ -162,39 +152,37 @@ public class ApiServiceImpl implements ApiService {
     }
 
     @Override
-    public Result<Boolean> editApiDiyExp(Integer apiID, Integer expType, Integer type,String content) {
-        if (type == 1){
-            //修改请求示例
+    public Result<Boolean> editApiDiyExp(Integer apiID, Integer expType, Integer type, String content) {
+        if (type == 1) {
+            //update req exp
             ApiRequestExpExample example = new ApiRequestExpExample();
             example.createCriteria().andApiIdEqualTo(apiID).andRequestParamExpTypeEqualTo(expType);
             List<ApiRequestExp> apiRequestExpList = apiRequestExpMapper.selectByExample(example);
-            if (apiRequestExpList.isEmpty()){
-                //新增
+            if (apiRequestExpList.isEmpty()) {
+                //add
                 ApiRequestExp exp = new ApiRequestExp();
                 exp.setApiId(apiID);
                 exp.setRequestParamExpType(expType);
                 exp.setCodeGenExp(content);
                 apiRequestExpMapper.insert(exp);
-            }else {
-                //存在即更新
+            } else {
+                //up
                 ApiRequestExp exp = apiRequestExpList.get(0);
                 exp.setCodeGenExp(content);
                 apiRequestExpMapper.updateByPrimaryKeyWithBLOBs(exp);
             }
-        }else {
-            //修改返回示例
+        } else {
+            //update res exp
             ApiResponseExpExample example = new ApiResponseExpExample();
             example.createCriteria().andApiIdEqualTo(apiID).andRespGenExpTypeEqualTo(expType);
             List<ApiResponseExp> expList = apiResponseExpMapper.selectByExample(example);
-            if (expList.isEmpty()){
-                //新增
+            if (expList.isEmpty()) {
                 ApiResponseExp exp = new ApiResponseExp();
                 exp.setApiId(apiID);
                 exp.setRespGenExpType(expType);
                 exp.setRespGenExp(content);
                 apiResponseExpMapper.insert(exp);
-            }else {
-                //存在即更新
+            } else {
                 ApiResponseExp exp = expList.get(0);
                 exp.setRespGenExp(content);
                 apiResponseExpMapper.updateByPrimaryKeyWithBLOBs(exp);
@@ -203,37 +191,6 @@ public class ApiServiceImpl implements ApiService {
         return Result.success(true);
     }
 
-    /**
-     * 移除接口到回收站
-     */
-    @Override
-    public boolean removeApi(Integer projectID, String apiID, Integer userID, String username) {
-        Integer result = 0;
-        Date date = new Date();
-        Timestamp updateTime = new Timestamp(date.getTime());
-        JSONArray jsonArray = JSONArray.parseArray(apiID);
-        List<Integer> apiIDs = new ArrayList<Integer>();
-        if (jsonArray != null && !jsonArray.isEmpty()) {
-            for (Iterator<Object> iterator = jsonArray.iterator(); iterator.hasNext(); ) {
-                apiIDs.add((Integer) iterator.next());
-            }
-            result = apiMapper.removeApi(projectID, apiIDs, updateTime);
-        }
-        if (result > 0) {
-            String apiName = apiMapper.getApiNameByIDs(apiIDs);
-            Api api = new Api();
-            api.setProjectID(projectID);
-            api.setApiUpdateTime(updateTime);
-            api.setUpdateUsername(username);
-            recordService.doRecord(api, null, "将接口:'" + apiName + "'移入接口回收站", "将接口:'" + apiName + "'移入接口回收站", ProjectOperationLog.OP_TYPE_DELETE);
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * 删除接口
-     */
     @Override
     @Transactional
     public boolean deleteApi(Integer projectID, String apiID, String username) {
@@ -243,8 +200,8 @@ public class ApiServiceImpl implements ApiService {
         List<Integer> apiIDs = new ArrayList<Integer>();
         List<Api> apis = new ArrayList<>();
         if (jsonArray != null && !jsonArray.isEmpty()) {
-            for (Iterator<Object> iterator = jsonArray.iterator(); iterator.hasNext(); ) {
-                apiIDs.add((Integer) iterator.next());
+            for (Object o : jsonArray) {
+                apiIDs.add((Integer) o);
             }
             apiName = apiMapper.getApiNameByIDs(apiIDs);
             apis = apiMapper.getApiListByIDs(apiIDs);
@@ -255,8 +212,7 @@ public class ApiServiceImpl implements ApiService {
         List<Integer> dubboApiIds = new ArrayList<>();
         List<Integer> gatewayApiIds = new ArrayList<>();
 
-        for (Api api :
-                apis) {
+        for (Api api : apis) {
             if (api.getApiProtocol() == Consts.DUBBO_API_TYPE) {
                 dubboApiIds.add(api.getDubboApiId());
             } else if (api.getApiProtocol() == Consts.GATEWAY_API_TYPE) {
@@ -266,11 +222,11 @@ public class ApiServiceImpl implements ApiService {
         Date date = new Date();
         Timestamp updateTime = new Timestamp(date.getTime());
         if (result > 0) {
-            //删除dubbo类型api数据及参数
+            //delete dubbo apis
             if (dubboApiIds.size() != 0) {
                 dubboApiInfoMapper.batchDeleteDubboApi(dubboApiIds);
             }
-            //删除网关类型api数据
+            //delete gateway apis
             if (gatewayApiIds.size() != 0) {
                 gatewayApiInfoMapper.batchDeleteGatewayApi(gatewayApiIds);
             }
@@ -285,10 +241,6 @@ public class ApiServiceImpl implements ApiService {
         return false;
     }
 
-
-    /**
-     * 获取接口列表
-     */
     @Override
     public Map<String, Object> getApiList(Integer pageNo, Integer pageSize, Integer projectID, Integer groupID, Integer orderBy, Integer asc) {
         if (pageNo <= 0) {
@@ -342,6 +294,15 @@ public class ApiServiceImpl implements ApiService {
                 api.put("apiEnv", "staging");
             }
         });
+
+        if (orderBy == 0) {
+            apiList.sort(new ApiNameCompare());
+        }
+
+        if (orderBy == 1) {
+            apiList.sort(new ApiDateCompare());
+        }
+
         Map<String, Object> map = new HashMap<>();
         map.put("apiList", apiList);
         map.put("apiCount", apiMapper.getApiListNum(projectID, groupIDS));
@@ -369,18 +330,27 @@ public class ApiServiceImpl implements ApiService {
     }
 
     @Override
-    public Map<Integer, List<Map<String, Object>>> getGroupApiViewList(Integer projectID) {
+    public Map<Integer, List<Map<String, Object>>> getGroupApiViewList(Integer projectID, Integer orderBy) {
 
         Map<Integer, List<Map<String, Object>>> map = new HashMap<>();
-        List<Map<String, Object>> list = apiMapper.getGroupApiViewList(projectID);
+        if (orderBy == null) {
+            orderBy = 0;
+        }
+        String order = "eo_api.apiID";
+        if (orderBy == 0) {
+            order = "eo_api.apiName";
+        } else if (orderBy == 1) {
+            order = "eo_api.apiUpdateTime";
+        }
+        List<Map<String, Object>> list = apiMapper.getGroupApiViewList(projectID, order);
         for (Map<String, Object> api :
                 list) {
             if (map.containsKey(((Long) api.get("groupID")).intValue())) {
                 map.get(((Long) api.get("groupID")).intValue()).add(api);
             } else {
-                List<Map<String, Object>> l = new ArrayList<>();
-                l.add(api);
-                map.put(((Long) api.get("groupID")).intValue(), l);
+                List<Map<String, Object>> apiList = new ArrayList<>();
+                apiList.add(api);
+                map.put(((Long) api.get("groupID")).intValue(), apiList);
             }
         }
         return map;
@@ -445,9 +415,9 @@ public class ApiServiceImpl implements ApiService {
         return Result.success(result);
     }
 
-    public List<Api> getRecentlyApiList(Integer userId) {
+    public List<Api> getRecentlyApiList(String  username) {
         List<Api> apiList = new ArrayList<>();
-        List<String> apiIdsStr = redis.lRange(Consts.genRecentlyApisKey(userId), 0, 8);
+        List<String> apiIdsStr = redis.lRange(Consts.genRecentlyApisKey(username), 0, 8);
         if (apiIdsStr == null || apiIdsStr.size() == 0) {
             return apiList;
         }
@@ -459,9 +429,6 @@ public class ApiServiceImpl implements ApiService {
         return apiMapper.getApiListByIDs(apiIds);
     }
 
-    /**
-     * 搜索接口
-     */
     @Override
     public List<Map<String, Object>> searchApi(Integer projectID, String tips, Integer type) {
         if (type == Consts.BY_API_NAME) {
@@ -474,9 +441,6 @@ public class ApiServiceImpl implements ApiService {
     }
 
 
-    /**
-     * 获取接口历史列表
-     */
     @Override
     public List<Map<String, Object>> getApiHistoryList(Integer projectID, Integer apiID) {
         return null;
@@ -518,7 +482,6 @@ public class ApiServiceImpl implements ApiService {
     public void recordApiHistory(Api api, String apiJson, String updateMsg) {
         ApiHistoryRecordExample example = new ApiHistoryRecordExample();
         example.createCriteria().andApiIdEqualTo(api.getApiID()).andIsNowEqualTo(true);
-        //变更当前api标志
         List<ApiHistoryRecord> records = historyRecordMapper.selectByExampleWithBLOBs(example);
         ApiHistoryRecord old = null;
         if (!records.isEmpty()) {
@@ -540,16 +503,11 @@ public class ApiServiceImpl implements ApiService {
         if (historyRecordMapper.insert(historyRecord) <= 0) {
             LOGGER.warn("historyRecordMapper.insert history error,apiMsg:{}", historyRecord.getApiHistiryJson());
         }
-        //通知测试团队
-        if (!updateMsg.equals(Consts.IMPORT_SWAGGER_FLAG)) {
-            ApiHistoryRecord finalOld = old;
-            new Thread(() -> notifyTestTeam(historyRecord, finalOld)).start();
-        }
     }
 
     public void dubboApiCodeGen(Api api, EoDubboApiInfo dubboApiInfo, String responseExp, String reqExp, boolean isUpdate) {
         List<ApiRequestExp> requestExpList = new ArrayList<>();
-        //请求示例代码生成
+        //req exp code gen
         ApiRequestExp dubboJavaExp = new ApiRequestExp();
         ApiRequestExp dubboRawExp = new ApiRequestExp();
         requestExpList.add(dubboJavaExp);
@@ -570,7 +528,7 @@ public class ApiServiceImpl implements ApiService {
         dubboJavaExp.setRequestParamExpType(Consts.REQ_EXP_JAVA_TYPE);
         dubboRawExp.setRequestParamExpType(Consts.REQ_EXP_RAW_TYPE);
 
-        //返回示例
+        //res exp
         ApiResponseExp dubboRspExp = new ApiResponseExp();
         dubboRspExp.setApiId(api.getApiID());
         dubboRspExp.setRespGenExp(responseExp);
@@ -580,7 +538,7 @@ public class ApiServiceImpl implements ApiService {
             requestExpMapper.batchInsert(requestExpList);
             responseExpMapper.insert(dubboRspExp);
         } else {
-            //更新 response
+            //up response
             ApiResponseExpExample example = new ApiResponseExpExample();
             example.createCriteria().andApiIdEqualTo(api.getApiID()).andRespGenExpTypeEqualTo(Consts.RSP_EXP_JSON_TYPE);
             List<ApiResponseExp> expList = responseExpMapper.selectByExample(example);
@@ -588,7 +546,7 @@ public class ApiServiceImpl implements ApiService {
                 dubboRspExp.setId(expList.get(0).getId());
                 responseExpMapper.updateByExampleWithBLOBs(dubboRspExp, example);
             }
-            //更新 req java
+            //up req java
             ApiRequestExpExample example2 = new ApiRequestExpExample();
             example2.createCriteria().andApiIdEqualTo(api.getApiID()).andRequestParamExpTypeEqualTo(Consts.REQ_EXP_JAVA_TYPE);
             List<ApiRequestExp> exp2List = requestExpMapper.selectByExample(example2);
@@ -596,7 +554,7 @@ public class ApiServiceImpl implements ApiService {
                 dubboJavaExp.setId(exp2List.get(0).getId());
                 requestExpMapper.updateByExampleWithBLOBs(dubboJavaExp, example2);
             }
-            //更新 req raw
+            //up req raw
             ApiRequestExpExample example3 = new ApiRequestExpExample();
             example3.createCriteria().andApiIdEqualTo(api.getApiID()).andRequestParamExpTypeEqualTo(Consts.REQ_EXP_RAW_TYPE);
             List<ApiRequestExp> exp3List = requestExpMapper.selectByExample(example3);
@@ -607,8 +565,65 @@ public class ApiServiceImpl implements ApiService {
         }
     }
 
+    public void codeSidecarGen(Api api, int apiResultParamType, String apiResultParam, boolean isUpdate) {
+        ApiRequestExp requestJavaExp = new ApiRequestExp();
+        requestJavaExp.setApiId(api.getApiID());
+        String[] apiInfoArr = api.getApiURI().split("\\|");
+        String requestJavaExpCode = "";
+
+        try {
+            requestJavaExpCode = codeGenerator.generateSidecarJavaReq(api.getHttpControllerPath(),apiInfoArr[1]).getData();
+        } catch (Exception e) {
+            LOGGER.error("codeSidecarGen error,cause by:{}",e.getMessage());
+        }
+        requestJavaExp.setRequestParamExpType(Consts.REQ_EXP_JAVA_TYPE);
+        requestJavaExp.setCodeGenExp(requestJavaExpCode);
+
+        //add
+        if (!isUpdate) {
+            requestExpMapper.insert(requestJavaExp);
+        } else {
+            //up
+            ApiRequestExpExample javaExample = new ApiRequestExpExample();
+            javaExample.createCriteria().andApiIdEqualTo(api.getApiID()).andRequestParamExpTypeEqualTo(Consts.REQ_EXP_JAVA_TYPE);
+            List<ApiRequestExp> oldList = requestExpMapper.selectByExample(javaExample);
+            if (Objects.nonNull(oldList) && !oldList.isEmpty()) {
+                //exist,up
+                requestJavaExp.setId(oldList.get(0).getId());
+                requestExpMapper.updateByExampleWithBLOBs(requestJavaExp, javaExample);
+            } else {
+                //else add
+                requestExpMapper.insert(requestJavaExp);
+            }
+        }
+
+        ApiResponseExp responseExp = new ApiResponseExp();
+        responseExp.setApiId(api.getApiID());
+        responseExp.setRespGenExpType(Consts.RSP_EXP_JSON_TYPE);
+        if (apiResultParamType == Consts.JSON_DATA_TYPE) {
+            Object respExpJson = mockService.parseStructToJson(apiResultParam, false);
+            responseExp.setRespGenExp(gson.toJson(respExpJson));
+        } else if (apiResultParamType == Consts.RAW_DATA_TYPE) {
+            responseExp.setRespGenExp(api.getApiResponseRaw());
+        }
+        if (!isUpdate) {
+            //add
+            responseExpMapper.insert(responseExp);
+        } else {
+            ApiResponseExpExample jsonExample = new ApiResponseExpExample();
+            jsonExample.createCriteria().andApiIdEqualTo(api.getApiID()).andRespGenExpTypeEqualTo(Consts.RSP_EXP_JSON_TYPE);
+
+            List<ApiResponseExp> oldList = responseExpMapper.selectByExample(jsonExample);
+            if (Objects.nonNull(oldList) && !oldList.isEmpty()) {
+                responseExp.setId(oldList.get(0).getId());
+                responseExpMapper.updateByExampleWithBLOBs(responseExp, jsonExample);
+            } else {
+                responseExpMapper.insert(responseExp);
+            }
+        }
+    }
+
     public void codeGen(Api api, int apiRequestParamType, String apiRequestParam, int apiResultParamType, String apiResultParam, List<ApiHeaderBo> headers, boolean isUpdate) {
-        //请求示例代码生成
         String methodName = api.getApiURI().substring(api.getApiURI().lastIndexOf('/') + 1);
         ApiRequestExp requestJavaExp = new ApiRequestExp();
         requestJavaExp.setApiId(api.getApiID());
@@ -617,7 +632,7 @@ public class ApiServiceImpl implements ApiService {
 
         String requestJavaExpCode = "";
         String requestCurlExpCode = "";
-        //表单类型参数生成java/curl代码
+        // gen java/curl code by form data param
         if (apiRequestParamType == Consts.FORM_DATA_TYPE) {
             com.xiaomi.youpin.infra.rpc.Result<String> javaGenResult = codeGenerator.generateJavaReq(methodName, Consts.FORM_DATA_TYPE, 0, apiRequestParam);
             if (Objects.nonNull(javaGenResult) && javaGenResult.getMessage().equals("ok")) {
@@ -628,7 +643,7 @@ public class ApiServiceImpl implements ApiService {
                 requestCurlExpCode = curlGenResult.getData();
             }
         } else if (apiRequestParamType == Consts.JSON_DATA_TYPE) {
-            //json类型参数生成java/curl代码
+            // gen java/curl code by json data param
             List<HttpJsonParamsBo> paramList = gson.fromJson(apiRequestParam, new TypeToken<List<HttpJsonParamsBo>>() {
             }.getType());
             if (!paramList.isEmpty()) {
@@ -637,7 +652,7 @@ public class ApiServiceImpl implements ApiService {
                 if (Objects.nonNull(javaGenResult) && javaGenResult.getMessage().equals("ok")) {
                     requestJavaExpCode = javaGenResult.getData();
                 }
-                com.xiaomi.youpin.infra.rpc.Result<String> curlGenResult = codeGenerator.generateCurlReq(api.getApiRequestType(), api.getApiURI(), apiRequestParamType, gson.toJson(mockService.parseStructToJson(gson.toJson(paramList),false)), headers);
+                com.xiaomi.youpin.infra.rpc.Result<String> curlGenResult = codeGenerator.generateCurlReq(api.getApiRequestType(), api.getApiURI(), apiRequestParamType, gson.toJson(mockService.parseStructToJson(gson.toJson(paramList), false)), headers);
                 if (Objects.nonNull(curlGenResult) && curlGenResult.getMessage().equals("ok")) {
                     requestCurlExpCode = curlGenResult.getData();
                 }
@@ -657,23 +672,21 @@ public class ApiServiceImpl implements ApiService {
 
         requestCurlExp.setRequestParamExpType(Consts.REQ_EXP_CURL_TYPE);
         requestCurlExp.setCodeGenExp(requestCurlExpCode);
-        //新增
+        //add
         if (!isUpdate) {
             List<ApiRequestExp> expList = new ArrayList<>(2);
             expList.add(requestJavaExp);
             expList.add(requestCurlExp);
             requestExpMapper.batchInsert(expList);
         } else {
-            //更新
+            //up
             ApiRequestExpExample javaExample = new ApiRequestExpExample();
             javaExample.createCriteria().andApiIdEqualTo(api.getApiID()).andRequestParamExpTypeEqualTo(Consts.REQ_EXP_JAVA_TYPE);
             List<ApiRequestExp> oldList = requestExpMapper.selectByExample(javaExample);
             if (Objects.nonNull(oldList) && !oldList.isEmpty()) {
-                //存在，则更新
                 requestJavaExp.setId(oldList.get(0).getId());
                 requestExpMapper.updateByExampleWithBLOBs(requestJavaExp, javaExample);
             } else {
-                //否则新增
                 requestExpMapper.insert(requestJavaExp);
             }
 
@@ -681,27 +694,24 @@ public class ApiServiceImpl implements ApiService {
             curlExample.createCriteria().andApiIdEqualTo(api.getApiID()).andRequestParamExpTypeEqualTo(Consts.REQ_EXP_CURL_TYPE);
             List<ApiRequestExp> oldList2 = requestExpMapper.selectByExample(curlExample);
             if (Objects.nonNull(oldList2) && !oldList2.isEmpty()) {
-                //存在，则更新
                 requestCurlExp.setId(oldList2.get(0).getId());
                 requestExpMapper.updateByExampleWithBLOBs(requestCurlExp, curlExample);
             } else {
-                //否则新增
                 requestExpMapper.insert(requestCurlExp);
             }
         }
 
-        //返回示例代码生成
         ApiResponseExp responseExp = new ApiResponseExp();
         responseExp.setApiId(api.getApiID());
         responseExp.setRespGenExpType(Consts.RSP_EXP_JSON_TYPE);
         if (apiResultParamType == Consts.JSON_DATA_TYPE) {
-            Object respExpJson = mockService.parseStructToJson(apiResultParam,false);
+            Object respExpJson = mockService.parseStructToJson(apiResultParam, false);
             responseExp.setRespGenExp(gson.toJson(respExpJson));
         } else if (apiResultParamType == Consts.RAW_DATA_TYPE) {
             responseExp.setRespGenExp(api.getApiResponseRaw());
         }
         if (!isUpdate) {
-            //新增
+            //add
             responseExpMapper.insert(responseExp);
         } else {
             ApiResponseExpExample jsonExample = new ApiResponseExpExample();
@@ -709,41 +719,17 @@ public class ApiServiceImpl implements ApiService {
 
             List<ApiResponseExp> oldList = responseExpMapper.selectByExample(jsonExample);
             if (Objects.nonNull(oldList) && !oldList.isEmpty()) {
-                //已存在，更新
+                //up
                 responseExp.setId(oldList.get(0).getId());
                 responseExpMapper.updateByExampleWithBLOBs(responseExp, jsonExample);
             } else {
-                //不存在，插入
+                //add
                 responseExpMapper.insert(responseExp);
             }
         }
     }
 
 
-    /**
-     * 通知测试团队接口变更
-     *
-     * @param currentRecord 当前最新的接口信息
-     * @param oldRecord     上一版接口信息
-     */
-    public void notifyTestTeam(ApiHistoryRecord currentRecord, ApiHistoryRecord oldRecord) {
-        Map<String, String> body = new HashMap<>();
-        compareApiAlterType(currentRecord, oldRecord, body);
-        Map<String, String> header = new HashMap<>();
-
-        body.put("projectName", busProjectService.queryBusProjectById(currentRecord.getProjectId()).getName());
-        body.put("groupName", apiGroupMapper.getGroupByID(currentRecord.getGroupId()).getGroupName());
-        body.put("currentRecord", gson.toJson(currentRecord));
-        body.put("oldRecord", gson.toJson(oldRecord));
-        header.put("Content-Type", "application/json;charset=UTF-8");
-        try {
-            if (body.get("isLogicUpdate").equals("0")) {
-                String TEST_GROUP_NOTIFY_URL = "https://127.0.0.1/paris/openapi/apirecord";
-                HttpUtils.post(TEST_GROUP_NOTIFY_URL, header, gson.toJson(body), 30000);
-            }
-        } catch (Exception ignored) {
-        }
-    }
 
     public void compareApiAlterType(ApiHistoryRecord currentRecord, ApiHistoryRecord oldRecord, Map<String, String> body) {
         String currentApiJson = currentRecord.getApiHistiryJson();
@@ -759,15 +745,15 @@ public class ApiServiceImpl implements ApiService {
         Map<String, Object> oldMap = gson.fromJson(oldApiJson, new TypeToken<Map<String, Object>>() {
         }.getType());
 
-        //http/gateway类型
+        //http/gateway type
         if (currentRecord.getApiProtocal() == Consts.HTTP_API_TYPE || currentRecord.getApiProtocal() == Consts.GATEWAY_API_TYPE) {
-            //比较入参
+            //compare with input
             if (!gson.toJson(currentMap.get("requestInfo")).equals(gson.toJson(oldMap.get("requestInfo")))) {
                 body.put("inputParamChange", "1");
             } else {
                 body.put("inputParamChange", "0");
             }
-            //比较出参
+            //compare with output
             if (!gson.toJson(currentMap.get("resultInfo")).equals(gson.toJson(oldMap.get("resultInfo")))) {
                 body.put("outputParamChange", "1");
             } else {
@@ -775,18 +761,16 @@ public class ApiServiceImpl implements ApiService {
             }
         }
 
-        //dubbo类型
+        //dubbo
         if (currentRecord.getApiProtocal() == Consts.DUBBO_API_TYPE) {
             Map<String, Object> cDubboInfo = (Map<String, Object>) currentMap.get("dubboInfo");
             Map<String, Object> oDubboInfo = (Map<String, Object>) oldMap.get("dubboInfo");
             if (Objects.nonNull(cDubboInfo)) {
-                //比较入参
                 if (!gson.toJson(cDubboInfo.get("methodparaminfo")).equals(gson.toJson(oDubboInfo.get("methodparaminfo")))) {
                     body.put("inputParamChange", "1");
                 } else {
                     body.put("inputParamChange", "0");
                 }
-                //比较出参
                 if (!gson.toJson(cDubboInfo.get("resultInfo")).equals(gson.toJson(oDubboInfo.get("resultInfo")))) {
                     body.put("outputParamChange", "1");
                 } else {
@@ -794,7 +778,6 @@ public class ApiServiceImpl implements ApiService {
                 }
             }
         }
-        //若出入参都没有变动则判断为代码逻辑更新
         if (body.get("inputParamChange").equals("0") && body.get("outputParamChange").equals("0")) {
             body.put("isLogicUpdate", "1");
         } else {
@@ -869,7 +852,7 @@ public class ApiServiceImpl implements ApiService {
 
     public HttpJsonParamBo parseLayerItem(LayerItem layerItem) {
         HttpJsonParamBo jsonParamBo = new HttpJsonParamBo();
-        if (Objects.isNull(layerItem)){
+        if (Objects.isNull(layerItem)) {
             return jsonParamBo;
         }
         jsonParamBo.setParamKey(layerItem.getItemName());

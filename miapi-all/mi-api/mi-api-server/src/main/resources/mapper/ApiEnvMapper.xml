@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xiaomi.miapi.mapper.ApiEnvMapper">
-  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.common.pojo.ApiEnv">
+  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.pojo.ApiEnv">
     <id column="id" jdbcType="INTEGER" property="id" />
     <result column="env_name" jdbcType="VARCHAR" property="envName" />
     <result column="http_domain" jdbcType="VARCHAR" property="httpDomain" />
@@ -9,7 +9,7 @@
     <result column="project_id" jdbcType="INTEGER" property="projectId" />
     <result column="sys_default" jdbcType="BIT" property="sysDefault" />
   </resultMap>
-  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.miapi.common.pojo.ApiEnv">
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.miapi.pojo.ApiEnv">
     <result column="headers" jdbcType="LONGVARCHAR" property="headers" />
     <result column="req_param_form_data" jdbcType="LONGVARCHAR" property="reqParamFormData" />
     <result column="req_param_raw" jdbcType="LONGVARCHAR" property="reqParamRaw" />
@@ -78,7 +78,7 @@
   <sql id="Blob_Column_List">
     headers, req_param_form_data, req_param_raw
   </sql>
-  <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.ApiEnvExample" resultMap="ResultMapWithBLOBs">
+  <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.miapi.pojo.ApiEnvExample" resultMap="ResultMapWithBLOBs">
     select
     <if test="distinct">
       distinct
@@ -94,7 +94,7 @@
       order by ${orderByClause}
     </if>
   </select>
-  <select id="selectByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiEnvExample" resultMap="BaseResultMap">
+  <select id="selectByExample" parameterType="com.xiaomi.miapi.pojo.ApiEnvExample" resultMap="BaseResultMap">
     select
     <if test="distinct">
       distinct
@@ -120,13 +120,13 @@
     delete from api_env
     where id = #{id,jdbcType=INTEGER}
   </delete>
-  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiEnvExample">
+  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.pojo.ApiEnvExample">
     delete from api_env
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
     </if>
   </delete>
-  <insert id="insert" parameterType="com.xiaomi.miapi.common.pojo.ApiEnv">
+  <insert id="insert" parameterType="com.xiaomi.miapi.pojo.ApiEnv">
     <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
       SELECT LAST_INSERT_ID()
     </selectKey>
@@ -137,7 +137,7 @@
       #{projectId,jdbcType=INTEGER}, #{sysDefault,jdbcType=BIT}, #{headers,jdbcType=LONGVARCHAR}, 
       #{reqParamFormData,jdbcType=LONGVARCHAR}, #{reqParamRaw,jdbcType=LONGVARCHAR})
   </insert>
-  <insert id="insertSelective" parameterType="com.xiaomi.miapi.common.pojo.ApiEnv">
+  <insert id="insertSelective" parameterType="com.xiaomi.miapi.pojo.ApiEnv">
     <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
       SELECT LAST_INSERT_ID()
     </selectKey>
@@ -195,7 +195,7 @@
       </if>
     </trim>
   </insert>
-  <select id="countByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiEnvExample" resultType="java.lang.Long">
+  <select id="countByExample" parameterType="com.xiaomi.miapi.pojo.ApiEnvExample" resultType="java.lang.Long">
     select count(*) from api_env
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
@@ -263,7 +263,7 @@
       <include refid="Update_By_Example_Where_Clause" />
     </if>
   </update>
-  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.common.pojo.ApiEnv">
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.pojo.ApiEnv">
     update api_env
     <set>
       <if test="envName != null">
@@ -293,7 +293,7 @@
     </set>
     where id = #{id,jdbcType=INTEGER}
   </update>
-  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.ApiEnv">
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.miapi.pojo.ApiEnv">
     update api_env
     set env_name = #{envName,jdbcType=VARCHAR},
       http_domain = #{httpDomain,jdbcType=VARCHAR},
@@ -305,7 +305,7 @@
       req_param_raw = #{reqParamRaw,jdbcType=LONGVARCHAR}
     where id = #{id,jdbcType=INTEGER}
   </update>
-  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.common.pojo.ApiEnv">
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.pojo.ApiEnv">
     update api_env
     set env_name = #{envName,jdbcType=VARCHAR},
       http_domain = #{httpDomain,jdbcType=VARCHAR},

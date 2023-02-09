@@ -1,11 +1,14 @@
 package com.xiaomi.miapi.mapper;
 
-import com.xiaomi.miapi.common.pojo.GatewayApiInfo;
-import com.xiaomi.miapi.common.pojo.GatewayApiInfoExample;
+import com.xiaomi.miapi.pojo.GatewayApiInfo;
+import com.xiaomi.miapi.pojo.GatewayApiInfoExample;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
-
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 public interface GatewayApiInfoMapper {
     long countByExample(GatewayApiInfoExample example);
 

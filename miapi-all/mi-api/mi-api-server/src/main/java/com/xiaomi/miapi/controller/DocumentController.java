@@ -2,15 +2,12 @@ package com.xiaomi.miapi.controller;
 
 import com.alibaba.fastjson.JSON;
 import com.xiaomi.miapi.common.exception.CommonError;
-import com.xiaomi.miapi.common.pojo.Document;
+import com.xiaomi.miapi.pojo.Document;
 import com.xiaomi.miapi.dto.DocumentDTO;
 import com.xiaomi.miapi.service.DocumentService;
 import com.xiaomi.miapi.service.impl.LoginService;
 import com.xiaomi.miapi.util.SessionAccount;
-import com.xiaomi.miapi.common.Consts;
 import com.xiaomi.miapi.common.Result;
-import com.xiaomi.youpin.hermes.service.BusProjectService;
-import org.apache.dubbo.config.annotation.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,7 +25,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 项目文档控制器
+ * @author dongzhenxing
+ * @date 2023/02/08
+ * deal with document op request
  */
 @Controller
 @RequestMapping("/Document")
@@ -40,17 +39,8 @@ public class DocumentController {
     @Autowired
     private LoginService loginService;
 
-    @Reference(check = false,group = "${ref.hermes.service.group}")
-    private BusProjectService busProjectService;
-
     private static final Logger LOGGER = LoggerFactory.getLogger(DocumentController.class);
 
-    /**
-     * 添加文档
-     *
-     * @param document
-     * @return
-     */
     @ResponseBody
     @RequestMapping("/addDocument")
     public Result<Boolean> addDocument(HttpServletRequest request,
@@ -62,14 +52,6 @@ public class DocumentController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[DocumentController.addDocument] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        if (!busProjectService.isAboveWork(Consts.PROJECT_NAME, document.getProjectID().longValue(), account.getUsername())) {
-            response.sendError(401, "您没有权限执行此操作");
-            return null;
-        }
 
        if (document.getContentType() == null
                 || (document.getContentType() != 1 && document.getContentType() != 0)) {
@@ -79,12 +61,6 @@ public class DocumentController {
         return documentService.addDocument(document, account.getUsername());
     }
 
-    /**
-     * 编辑文档
-     *
-     * @param document
-     * @return
-     */
     @ResponseBody
     @RequestMapping("/editDocument")
     public Result<Boolean> editDocument(HttpServletRequest request,
@@ -96,16 +72,6 @@ public class DocumentController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[DocumentController.editDocument] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-
-        if (!busProjectService.isAboveWork(Consts.PROJECT_NAME, document.getProjectID().longValue(), account.getUsername())) {
-            response.sendError(401, "您没有权限执行此操作");
-            return null;
-        }
-
         if (document.getDocumentID() == null || !String.valueOf(document.getDocumentID()).matches("^[0-9]{1,11}$")) {
             return Result.fail(CommonError.InvalidParamError);
         }
@@ -113,12 +79,6 @@ public class DocumentController {
         return this.documentService.editDocument(document,account.getUsername());
     }
 
-    /**
-     * 获取项目下所有文档列表
-     *
-     * @param projectID
-     * @return
-     */
     @ResponseBody
     @RequestMapping("/getAllDocumentList")
     public Result<List<DocumentDTO>> getAllDocumentList(HttpServletRequest request,
@@ -131,25 +91,9 @@ public class DocumentController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[DocumentController.getAllDocumentList] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-
-        if (!busProjectService.isMember(Consts.PROJECT_NAME, projectID.longValue(), account.getUsername())) {
-            response.sendError(401, "您不是该项目成员");
-            return null;
-        }
         return this.documentService.getAllDocumentList(projectID);
     }
 
-    /**
-     * 搜索文档
-     *
-     * @param projectID
-     * @param tips
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/searchDocument", method = RequestMethod.POST)
     public Result<List<DocumentDTO>> searchDocument(HttpServletRequest request,
@@ -163,15 +107,6 @@ public class DocumentController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[DocumentController.searchDocument] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-
-        if (!busProjectService.isMember(Consts.PROJECT_NAME, projectID.longValue(), account.getUsername())) {
-            response.sendError(401, "您不是该项目成员");
-            return null;
-        }
 
         if (tips.length() < 1 || tips.length() > 255) {
             return Result.fail(CommonError.InvalidParamError);
@@ -179,37 +114,12 @@ public class DocumentController {
         return documentService.searchDocument(projectID, tips,type);
     }
 
-    /**
-     * 获取文档详情
-     *
-     * @param documentID
-     * @return
-     */
     @ResponseBody
     @RequestMapping("/getDocument")
-    public Result<Map<String, Object>> getDocument(HttpServletRequest request,
-                                                   HttpServletResponse response,
-                                                   @RequestParam("documentID") Integer documentID) throws IOException {
-
-        SessionAccount account = loginService.getAccountFromSession(request);
-        if (null == account) {
-            LOGGER.warn("[DocumentController.getDocument] current user not have valid account info in session");
-            response.sendError(401, "未登录或者无权限");
-            return null;
-        }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[DocumentController.getDocument] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
+    public Result<Map<String, Object>> getDocument(@RequestParam("documentID") Integer documentID){
         return documentService.getDocument(documentID);
     }
 
-    /**
-     * 批量删除文档
-     *
-     * @param projectID
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/deleteDocuments", method = RequestMethod.POST)
     public Result<Boolean> deleteDocuments(HttpServletRequest request,
@@ -221,17 +131,8 @@ public class DocumentController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[DocumentController.deleteDocuments] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
 
-        if (!busProjectService.isAboveWork(Consts.PROJECT_NAME, projectID.longValue(), account.getUsername())) {
-            response.sendError(401, "您不是该项目成员");
-            return null;
-        }
-
-        List<Integer> documentIDlist = new ArrayList<Integer>();
+        List<Integer> documentIDlist = new ArrayList<>();
 
         List<String> parseArray = JSON.parseArray(documentIDs, String.class);
 

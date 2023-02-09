@@ -14,13 +14,13 @@ import com.xiaomi.miapi.util.RedisUtil;
 import com.xiaomi.miapi.util.ServiceInfoCall;
 import com.xiaomi.miapi.common.Consts;
 import com.xiaomi.miapi.common.Result;
-import com.xiaomi.miapi.common.bo.BatchAddGrpcApiBo;
-import com.xiaomi.miapi.common.bo.GrpcApiInfosBo;
-import com.xiaomi.miapi.common.bo.GrpcApiParam;
-import com.xiaomi.miapi.common.bo.UpdateGrpcApiBo;
-import com.xiaomi.miapi.common.pojo.Api;
-import com.xiaomi.miapi.common.pojo.ApiCache;
-import com.xiaomi.miapi.common.pojo.ProjectOperationLog;
+import com.xiaomi.miapi.bo.BatchAddGrpcApiBo;
+import com.xiaomi.miapi.bo.GrpcApiInfosBo;
+import com.xiaomi.miapi.bo.GrpcApiParam;
+import com.xiaomi.miapi.bo.UpdateGrpcApiBo;
+import com.xiaomi.miapi.pojo.Api;
+import com.xiaomi.miapi.pojo.ApiCache;
+import com.xiaomi.miapi.pojo.ProjectOperationLog;
 import com.xiaomi.data.push.nacos.NacosNaming;
 import com.xiaomi.miapi.mapper.ApiCacheMapper;
 import com.xiaomi.miapi.service.GrpcApiService;
@@ -29,8 +29,6 @@ import io.grpc.ManagedChannel;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.dubbo.common.utils.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +38,10 @@ import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 @Service
 public class GrpcApiServiceImpl implements GrpcApiService {
     @Autowired
@@ -68,8 +70,6 @@ public class GrpcApiServiceImpl implements GrpcApiService {
     private final ServiceInfoCall serviceInfoCall = new ServiceInfoCall();
 
     public static final Gson gson = new Gson();
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(GrpcApiServiceImpl.class);
 
     @Override
     public Result<GrpcApiInfosBo> loadGrpcApiInfos(String appName) throws Exception {
@@ -111,7 +111,6 @@ public class GrpcApiServiceImpl implements GrpcApiService {
 
         for (DescriptorProtos.FileDescriptorProto fileProto : fileDescriptorProtoMap.values()) {
             fileProto.getServiceList().forEach(serviceDescriptorProto -> {
-                //用户选择加载的接口
                 String fullServiceName = fileProto.getPackage() + "." + serviceDescriptorProto.getName();
                 Descriptors.FileDescriptor[] dependencies = getDependencies(fileProto, fileDescriptorProtoMap);
                 Descriptors.FileDescriptor fileDescriptor = null;
@@ -129,12 +128,13 @@ public class GrpcApiServiceImpl implements GrpcApiService {
     }
 
     @Transactional
-    private Result<Boolean> addGrpcApi(BatchAddGrpcApiBo grpcApiBo, String fullServiceName, Integer groupId, Triple<Descriptors.FileDescriptor, Descriptors.ServiceDescriptor, Descriptors.MethodDescriptor> triple) {
+    private void addGrpcApi(BatchAddGrpcApiBo grpcApiBo, String fullServiceName, Integer groupId, Triple<Descriptors.FileDescriptor, Descriptors.ServiceDescriptor, Descriptors.MethodDescriptor> triple) {
         //唯一关联
         String grpcServicePath = StringUtils.join(new String[]{fullServiceName, triple.getRight().toProto().getName()}, '.');
-        Api oldApi = apiMapper.getApiInfoByUrl(grpcServicePath, 0);
+        Api oldApi = apiMapper.getApiInfoByUrlAndProject(grpcServicePath, 0,grpcApiBo.getProjectID());
         if (Objects.nonNull(oldApi)) {
-            return Result.fail(CommonError.APIAlreadyExist);
+            Result.fail(CommonError.APIAlreadyExist);
+            return;
         }
         Api api = new Api();
         api.setApiEnv(grpcApiBo.getEnv());
@@ -157,7 +157,8 @@ public class GrpcApiServiceImpl implements GrpcApiService {
         api.setApiRemark("");
         int result = apiMapper.addApi(api);
         if (result < 0) {
-            return Result.fail(CommonError.UnknownError);
+            Result.fail(CommonError.UnknownError);
+            return;
         }
         Map<String, Object> cache = new HashMap<String, Object>();
         cache.put("baseInfo", api);
@@ -174,21 +175,19 @@ public class GrpcApiServiceImpl implements GrpcApiService {
         apiCache.setStarred(api.getStarred());
         apiCache.setUpdateUsername(api.getUpdateUsername());
         if (apiCacheMapper.addApiCache(apiCache) < 1) {
-            return Result.fail(CommonError.UnknownError);
+            Result.fail(CommonError.UnknownError);
+            return;
         }
-        //记录历史变更
         String updateMsg = "add grpc api";
-        //记录历史版本
         apiService.recordApiHistory(api, gson.toJson(cache), updateMsg);
         recordService.doRecord(api, null, "添加grpc接口", "添加grpc接口" + api.getApiName(), ProjectOperationLog.OP_TYPE_ADD);
-        return Result.success(true);
+        Result.success(true);
     }
 
     @Override
     @Transactional
     public Result<Boolean> updateGrpcApi(UpdateGrpcApiBo updateGrpcApiBo) {
-        //唯一关联
-        Api api = apiMapper.getApiInfoByUrl(updateGrpcApiBo.getApiPath(), 0);
+        Api api = apiMapper.getApiInfoByUrlAndProject(updateGrpcApiBo.getApiPath(), 0,updateGrpcApiBo.getProjectId());
         if (Objects.isNull(api)) {
             return Result.fail(CommonError.APIDoNotExist);
         }
@@ -219,12 +218,10 @@ public class GrpcApiServiceImpl implements GrpcApiService {
             return Result.fail(CommonError.UnknownError);
         }
 
-        //记录历史变更
         String updateMsg = "update grpc api";
         if (StringUtils.isNotEmpty(updateGrpcApiBo.getUpdateMsg())) {
             updateMsg = updateGrpcApiBo.getUpdateMsg();
         }
-        //记录历史版本
         apiService.recordApiHistory(api, gson.toJson(cache), updateMsg);
 
         recordService.doRecord(api, null, "更新 grpc 接口", "更新 grpc 接口" + api.getApiName(), ProjectOperationLog.OP_TYPE_UPDATE);
@@ -232,7 +229,7 @@ public class GrpcApiServiceImpl implements GrpcApiService {
     }
 
     @Override
-    public Result<Map<String, Object>> getGrpcApiDetail(int accountID, int projectID, int apiID) {
+    public Result<Map<String, Object>> getGrpcApiDetail(String username, int projectID, int apiID) {
         Map<String, Object> map = new HashMap<>();
         Api api = apiMapper.getApiInfo(projectID, apiID);
         if (null == api) {
@@ -270,16 +267,10 @@ public class GrpcApiServiceImpl implements GrpcApiService {
             map.put("appName",apiJson.get("appName"));
             map.put("errorCodes", apiJson.get("errorCodes"));
         }
-        redis.recordRecently10Apis(accountID, apiID);
+        redis.recordRecently10Apis(username, apiID);
         return Result.success(map);
     }
 
-    /**
-     * 解析入参
-     *
-     * @param triple
-     * @return
-     */
     private GrpcApiParam parseGrpcReqParam(Triple<Descriptors.FileDescriptor, Descriptors.ServiceDescriptor, Descriptors.MethodDescriptor> triple) {
         DynamicMessage.Builder messageBuilder = DynamicMessage.newBuilder(triple.getRight().getInputType());
 
@@ -300,12 +291,6 @@ public class GrpcApiServiceImpl implements GrpcApiService {
         return grpcApiParam;
     }
 
-    /**
-     * 解析出参
-     *
-     * @param triple
-     * @return
-     */
     private GrpcApiParam parseGrpcRspParam(Triple<Descriptors.FileDescriptor, Descriptors.ServiceDescriptor, Descriptors.MethodDescriptor> triple) {
         DynamicMessage.Builder messageBuilder = DynamicMessage.newBuilder(triple.getRight().getOutputType());
         GrpcApiParam grpcApiParam = new GrpcApiParam();
@@ -331,7 +316,7 @@ public class GrpcApiServiceImpl implements GrpcApiService {
         } else {
             param.setParamKey(field.getFullName());
         }
-        //对象类型
+        //obj
         if ("MESSAGE".equals(field.getType().name()) && !field.isRepeated()) {
             param.setParamType(field.getMessageType().getFullName());
             List<GrpcApiParam> subParamList = new ArrayList<>();
@@ -344,9 +329,9 @@ public class GrpcApiServiceImpl implements GrpcApiService {
                 param.setChildList(subParamList);
             }
         } else if (field.isRepeated()) {
-            //列表list
+            //list
             if ("MESSAGE".equals(field.getType().name())) {
-                //对象列表
+                //obj list
                 param.setParamType("[]" + field.getFullName());
 
                 List<GrpcApiParam> subParamList = new ArrayList<>();
@@ -365,7 +350,7 @@ public class GrpcApiServiceImpl implements GrpcApiService {
                 subParam.setChildList(subParamList);
                 param.setChildList(Collections.singletonList(subParam));
             } else {
-                //基本类型列表
+                //basic type
                 param.setParamType("[]" + field.getType().name());
             }
             GrpcApiParam subParam = new GrpcApiParam();
@@ -373,7 +358,6 @@ public class GrpcApiServiceImpl implements GrpcApiService {
             subParam.setParamType(field.getType().name());
             param.setChildList(Collections.singletonList(subParam));
         } else {
-            //基本类型
             param.setParamType(field.getType().name());
             param.setParamNotNull(field.isRequired());
             if (field.hasDefaultValue()) {
@@ -391,9 +375,6 @@ public class GrpcApiServiceImpl implements GrpcApiService {
         return Triple.of(fileDescriptor, serviceDescriptor, methodDescriptor);
     }
 
-    /**
-     * 根据包名和服务名查找相应的文件描述
-     */
     private static DescriptorProtos.FileDescriptorProto findServiceFileDescriptorProto(String packageName,
                                                                                        String serviceName,
                                                                                        Map<String, DescriptorProtos.FileDescriptorProto> fileDescriptorProtoMap) {
@@ -411,9 +392,6 @@ public class GrpcApiServiceImpl implements GrpcApiService {
         throw new IllegalArgumentException("服务不存在");
     }
 
-    /**
-     * 获取依赖类型
-     */
     private static Descriptors.FileDescriptor[] getDependencies(DescriptorProtos.FileDescriptorProto proto,
                                                                 Map<String, DescriptorProtos.FileDescriptorProto> finalDescriptorProtoMap) {
         return proto.getDependencyList()
@@ -423,26 +401,17 @@ public class GrpcApiServiceImpl implements GrpcApiService {
                 .toArray(Descriptors.FileDescriptor[]::new);
     }
 
-    /**
-     * 将 FileDescriptorProto 转为 FileDescriptor
-     */
     @SneakyThrows
     private static Descriptors.FileDescriptor toFileDescriptor(DescriptorProtos.FileDescriptorProto fileDescriptorProto,
                                                                Descriptors.FileDescriptor[] dependencies) {
         return Descriptors.FileDescriptor.buildFrom(fileDescriptorProto, dependencies);
     }
 
-    /**
-     * 获取前缀
-     */
     private String extraPrefix(String content) {
         int index = content.lastIndexOf(".");
         return content.substring(0, index);
     }
 
-    /**
-     * 获取后缀
-     */
     private String extraSuffix(String content) {
         int index = content.lastIndexOf(".");
         return content.substring(index + 1);

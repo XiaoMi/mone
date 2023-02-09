@@ -37,7 +37,10 @@ import org.springframework.transaction.support.TransactionTemplate;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
 import java.beans.PropertyVetoException;
-
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 @Slf4j
 @Configuration
 @MapperScan(basePackages = DataSourceConfig.PACKAGE, sqlSessionFactoryRef = "masterSqlSessionFactory")
@@ -69,7 +72,7 @@ public class DataSourceConfig {
 
     @Bean(name = "masterDataSource")
     @Primary
-    public DataSource masterDataSource() throws PropertyVetoException, NamingException {
+    public DataSource masterDataSource() throws PropertyVetoException {
         log.info("DataSourceConfig {} {}", dataSourceUrl, dataSourceUserName);
 
         ComboPooledDataSource dataSource = new ComboPooledDataSource();
@@ -96,7 +99,7 @@ public class DataSourceConfig {
 
     @Bean(name = "masterTransactionManager")
     @Primary
-    public DataSourceTransactionManager masterTransactionManager() throws PropertyVetoException, NamingException {
+    public DataSourceTransactionManager masterTransactionManager() throws PropertyVetoException {
         return new DataSourceTransactionManager(masterDataSource());
     }
 
@@ -108,7 +111,7 @@ public class DataSourceConfig {
         sessionFactory.setDataSource(masterDataSource);
         sessionFactory.setMapperLocations(new PathMatchingResourcePatternResolver()
                 .getResources(DataSourceConfig.MAPPER_LOCATION));
-        sessionFactory.setTypeAliasesPackage("com.xiaomi.miapi.common.pojo");
+        sessionFactory.setTypeAliasesPackage("com.xiaomi.miapi.pojo");
         return sessionFactory.getObject();
     }
 

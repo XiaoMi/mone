@@ -18,7 +18,10 @@ package com.xiaomi.miapi.common;
 
 import java.util.Map;
 import java.util.Objects;
-
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 public class HttpResult {
 
     private int status;

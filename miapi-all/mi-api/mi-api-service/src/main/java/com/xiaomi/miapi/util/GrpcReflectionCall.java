@@ -30,14 +30,17 @@ import org.apache.commons.lang3.tuple.Triple;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 @Slf4j
 public class GrpcReflectionCall {
 
 
     private static ConcurrentHashMap<String, Triple<Descriptors.FileDescriptor, Descriptors.ServiceDescriptor, Descriptors.MethodDescriptor>> m = new ConcurrentHashMap<>();
 
-
-    private static ConcurrentHashMap<String, ManagedChannel> channelMap = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, ManagedChannel> channelMap = new ConcurrentHashMap<>();
 
     private static final int DEFAULT_TIMEOUT = 3000;
 
@@ -56,8 +59,8 @@ public class GrpcReflectionCall {
         ManagedChannel channel = channelMap.computeIfAbsent(addr, (k) -> {
             try {
                 return channel(ipAndPort[0], Integer.parseInt(ipAndPort[1]));
-            } catch (Exception ignored) {
-                log.error(ignored.getMessage());
+            } catch (Exception e) {
+                log.error(e.getMessage());
             }
             return null;
         });
@@ -83,20 +86,16 @@ public class GrpcReflectionCall {
         }
     }
 
-    /**
-     * 执行方法调用
-     */
     private static String executeCall(ManagedChannel channel,
                                       Descriptors.FileDescriptor fileDescriptor,
                                       Descriptors.MethodDescriptor originMethodDescriptor,
                                       String requestContent, int timeout) throws Exception {
 
-        // 重新生成 MethodDescriptor
+        // re gen MethodDescriptor
         MethodDescriptor<DynamicMessage, DynamicMessage> methodDescriptor = generateMethodDescriptor(originMethodDescriptor);
         TypeRegistry registry = TypeRegistry.newBuilder()
                 .add(fileDescriptor.getMessageTypes())
                 .build();
-        // 将请求内容由 JSON 字符串转为相应的类型
         JsonFormat.Parser parser = JsonFormat.parser().usingTypeRegistry(registry);
         DynamicMessage.Builder messageBuilder = DynamicMessage.newBuilder(originMethodDescriptor.getInputType());
         parser.merge(requestContent, messageBuilder);
@@ -111,26 +110,20 @@ public class GrpcReflectionCall {
         return printer.print(response);
     }
 
-    /**
-     * 重新生成方法描述
-     */
     private static MethodDescriptor<DynamicMessage, DynamicMessage> generateMethodDescriptor(Descriptors.MethodDescriptor originMethodDescriptor) {
-        // 生成方法全名
+        // gen method name
         String fullMethodName = MethodDescriptor.generateFullMethodName(originMethodDescriptor.getService().getFullName(), originMethodDescriptor.getName());
-        // 请求和响应类型
+        // req and res
         MethodDescriptor.Marshaller<DynamicMessage> inputTypeMarshaller = ProtoUtils.marshaller(DynamicMessage.newBuilder(originMethodDescriptor.getInputType())
                 .buildPartial());
         MethodDescriptor.Marshaller<DynamicMessage> outputTypeMarshaller = ProtoUtils.marshaller(DynamicMessage.newBuilder(originMethodDescriptor.getOutputType())
                 .buildPartial());
 
-        // 生成方法描述, originMethodDescriptor 的 fullMethodName 不正确
         return MethodDescriptor.<DynamicMessage, DynamicMessage>newBuilder()
                 .setFullMethodName(fullMethodName)
                 .setRequestMarshaller(inputTypeMarshaller)
                 .setResponseMarshaller(outputTypeMarshaller)
-                // 使用 UNKNOWN，自动修改
                 .setType(MethodDescriptor.MethodType.UNKNOWN)
                 .build();
     }
-
 }

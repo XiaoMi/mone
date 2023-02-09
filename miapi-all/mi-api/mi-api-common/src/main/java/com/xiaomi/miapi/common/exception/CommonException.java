@@ -17,7 +17,8 @@
 package com.xiaomi.miapi.common.exception;
 
 /**
- * Created by zhangzhiyong on 05/06/2018.
+ * @author dongzhenxing
+ * @date 2023/02/08
  */
 public class CommonException extends RuntimeException {
 

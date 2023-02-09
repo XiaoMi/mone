@@ -11,6 +11,7 @@ import org.springframework.context.annotation.ComponentScan;
 
 /**
  * @author dongzhenxing
+ * @date 2023/02/08
  */
 @EnableAutoConfiguration
 @ComponentScan(basePackages = {"com.xiaomi.miapi"})

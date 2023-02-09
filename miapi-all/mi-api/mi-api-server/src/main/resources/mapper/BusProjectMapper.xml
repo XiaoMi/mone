@@ -1,0 +1,321 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaomi.miapi.mapper.BusProjectMapper">
+  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.pojo.BusProject">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="name" jdbcType="VARCHAR" property="name" />
+    <result column="description" jdbcType="VARCHAR" property="description" />
+    <result column="ctime" jdbcType="BIGINT" property="ctime" />
+    <result column="utime" jdbcType="BIGINT" property="utime" />
+    <result column="status" jdbcType="INTEGER" property="status" />
+    <result column="version" jdbcType="VARCHAR" property="version" />
+    <result column="bus_group_id" jdbcType="INTEGER" property="busGroupId" />
+    <result column="is_public" jdbcType="BIT" property="isPublic" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    id, name, description, ctime, utime, status, version, bus_group_id, is_public
+  </sql>
+  <select id="selectByExample" parameterType="com.xiaomi.miapi.pojo.BusProjectExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from bus_project
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from bus_project
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from bus_project
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.pojo.BusProjectExample">
+    delete from bus_project
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.xiaomi.miapi.pojo.BusProject">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into bus_project (name, description, ctime, 
+      utime, status, version, 
+      bus_group_id, is_public)
+    values (#{name,jdbcType=VARCHAR}, #{description,jdbcType=VARCHAR}, #{ctime,jdbcType=BIGINT}, 
+      #{utime,jdbcType=BIGINT}, #{status,jdbcType=INTEGER}, #{version,jdbcType=VARCHAR}, 
+      #{busGroupId,jdbcType=INTEGER}, #{isPublic,jdbcType=BIT})
+  </insert>
+  <insert id="insertSelective" parameterType="com.xiaomi.miapi.pojo.BusProject">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into bus_project
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="name != null">
+        name,
+      </if>
+      <if test="description != null">
+        description,
+      </if>
+      <if test="ctime != null">
+        ctime,
+      </if>
+      <if test="utime != null">
+        utime,
+      </if>
+      <if test="status != null">
+        status,
+      </if>
+      <if test="version != null">
+        version,
+      </if>
+      <if test="busGroupId != null">
+        bus_group_id,
+      </if>
+      <if test="isPublic != null">
+        is_public,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="name != null">
+        #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="description != null">
+        #{description,jdbcType=VARCHAR},
+      </if>
+      <if test="ctime != null">
+        #{ctime,jdbcType=BIGINT},
+      </if>
+      <if test="utime != null">
+        #{utime,jdbcType=BIGINT},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="version != null">
+        #{version,jdbcType=VARCHAR},
+      </if>
+      <if test="busGroupId != null">
+        #{busGroupId,jdbcType=INTEGER},
+      </if>
+      <if test="isPublic != null">
+        #{isPublic,jdbcType=BIT},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.xiaomi.miapi.pojo.BusProjectExample" resultType="java.lang.Long">
+    select count(*) from bus_project
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update bus_project
+    <set>
+      <if test="record.id != null">
+        id = #{record.id,jdbcType=INTEGER},
+      </if>
+      <if test="record.name != null">
+        name = #{record.name,jdbcType=VARCHAR},
+      </if>
+      <if test="record.description != null">
+        description = #{record.description,jdbcType=VARCHAR},
+      </if>
+      <if test="record.ctime != null">
+        ctime = #{record.ctime,jdbcType=BIGINT},
+      </if>
+      <if test="record.utime != null">
+        utime = #{record.utime,jdbcType=BIGINT},
+      </if>
+      <if test="record.status != null">
+        status = #{record.status,jdbcType=INTEGER},
+      </if>
+      <if test="record.version != null">
+        version = #{record.version,jdbcType=VARCHAR},
+      </if>
+      <if test="record.busGroupId != null">
+        bus_group_id = #{record.busGroupId,jdbcType=INTEGER},
+      </if>
+      <if test="record.isPublic != null">
+        is_public = #{record.isPublic,jdbcType=BIT},
+      </if>
+    </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update bus_project
+    set id = #{record.id,jdbcType=INTEGER},
+      name = #{record.name,jdbcType=VARCHAR},
+      description = #{record.description,jdbcType=VARCHAR},
+      ctime = #{record.ctime,jdbcType=BIGINT},
+      utime = #{record.utime,jdbcType=BIGINT},
+      status = #{record.status,jdbcType=INTEGER},
+      version = #{record.version,jdbcType=VARCHAR},
+      bus_group_id = #{record.busGroupId,jdbcType=INTEGER},
+      is_public = #{record.isPublic,jdbcType=BIT}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.pojo.BusProject">
+    update bus_project
+    <set>
+      <if test="name != null">
+        name = #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="description != null">
+        description = #{description,jdbcType=VARCHAR},
+      </if>
+      <if test="ctime != null">
+        ctime = #{ctime,jdbcType=BIGINT},
+      </if>
+      <if test="utime != null">
+        utime = #{utime,jdbcType=BIGINT},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="version != null">
+        version = #{version,jdbcType=VARCHAR},
+      </if>
+      <if test="busGroupId != null">
+        bus_group_id = #{busGroupId,jdbcType=INTEGER},
+      </if>
+      <if test="isPublic != null">
+        is_public = #{isPublic,jdbcType=BIT},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.pojo.BusProject">
+    update bus_project
+    set name = #{name,jdbcType=VARCHAR},
+      description = #{description,jdbcType=VARCHAR},
+      ctime = #{ctime,jdbcType=BIGINT},
+      utime = #{utime,jdbcType=BIGINT},
+      status = #{status,jdbcType=INTEGER},
+      version = #{version,jdbcType=VARCHAR},
+      bus_group_id = #{busGroupId,jdbcType=INTEGER},
+      is_public = #{isPublic,jdbcType=BIT}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    insert into bus_project
+    (name, description, ctime, utime, status, version, bus_group_id, is_public)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.name,jdbcType=VARCHAR}, #{item.description,jdbcType=VARCHAR}, #{item.ctime,jdbcType=BIGINT}, 
+        #{item.utime,jdbcType=BIGINT}, #{item.status,jdbcType=INTEGER}, #{item.version,jdbcType=VARCHAR}, 
+        #{item.busGroupId,jdbcType=INTEGER}, #{item.isPublic,jdbcType=BIT})
+    </foreach>
+  </insert>
+  <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
+    insert into bus_project (
+    <foreach collection="selective" item="column" separator=",">
+      ${column.escapedColumnName}
+    </foreach>
+    )
+    values
+    <foreach collection="list" item="item" separator=",">
+      (
+      <foreach collection="selective" item="column" separator=",">
+        <if test="'name'.toString() == column.value">
+          #{item.name,jdbcType=VARCHAR}
+        </if>
+        <if test="'description'.toString() == column.value">
+          #{item.description,jdbcType=VARCHAR}
+        </if>
+        <if test="'ctime'.toString() == column.value">
+          #{item.ctime,jdbcType=BIGINT}
+        </if>
+        <if test="'utime'.toString() == column.value">
+          #{item.utime,jdbcType=BIGINT}
+        </if>
+        <if test="'status'.toString() == column.value">
+          #{item.status,jdbcType=INTEGER}
+        </if>
+        <if test="'version'.toString() == column.value">
+          #{item.version,jdbcType=VARCHAR}
+        </if>
+        <if test="'bus_group_id'.toString() == column.value">
+          #{item.busGroupId,jdbcType=INTEGER}
+        </if>
+        <if test="'is_public'.toString() == column.value">
+          #{item.isPublic,jdbcType=BIT}
+        </if>
+      </foreach>
+      )
+    </foreach>
+  </insert>
+</mapper>

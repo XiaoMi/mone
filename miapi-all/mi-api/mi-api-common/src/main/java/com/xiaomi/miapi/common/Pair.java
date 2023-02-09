@@ -1,5 +1,8 @@
 package com.xiaomi.miapi.common;
-
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 public class Pair<L, R> {
     private L left;
     private R right;

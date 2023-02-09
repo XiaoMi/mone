@@ -1,16 +1,14 @@
 package com.xiaomi.miapi.service.impl;
 
-import com.alibaba.nacos.api.exception.NacosException;
-import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
-import com.xiaomi.miapi.common.bo.*;
-import com.xiaomi.miapi.common.dto.ManualDubboUpDTO;
-import com.xiaomi.miapi.common.pojo.*;
+import com.xiaomi.data.push.nacos.NacosNaming;
+import com.xiaomi.miapi.bo.*;
+import com.xiaomi.miapi.dto.ManualDubboUpDTO;
+import com.xiaomi.miapi.pojo.*;
 import com.xiaomi.miapi.util.Md5Utils;
 import com.xiaomi.miapi.util.RedisUtil;
-import com.xiaomi.data.push.nacos.NacosNaming;
 import com.xiaomi.miapi.service.DubboApiService;
 import com.xiaomi.miapi.service.MockService;
 import com.xiaomi.miapi.common.Consts;
@@ -18,12 +16,7 @@ import com.xiaomi.miapi.common.Result;
 import com.xiaomi.miapi.common.exception.CommonError;
 import com.xiaomi.miapi.mapper.*;
 import com.xiaomi.mone.dubbo.docs.core.beans.ModuleCacheItem;
-import org.apache.dubbo.apidocs.core.providers.IDubboDocProvider;
 import org.apache.dubbo.common.utils.StringUtils;
-import org.apache.dubbo.config.annotation.DubboReference;
-import org.apache.dubbo.rpc.RpcContext;
-import org.apache.dubbo.rpc.RpcException;
-import org.apache.dubbo.rpc.cluster.router.address.Address;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -34,8 +27,14 @@ import org.springframework.transaction.annotation.Transactional;
 import javax.annotation.Resource;
 import java.sql.Timestamp;
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 @Service
 public class DubboApiServiceImpl implements DubboApiService {
 
@@ -69,11 +68,8 @@ public class DubboApiServiceImpl implements DubboApiService {
     @Autowired
     ApiServiceImpl apiService;
 
-    @DubboReference(registry = "olRegistry", lazy = true,check = false, group = "", interfaceClass = IDubboDocProvider.class, timeout = 1000, parameters = {"router", "address"}, retries = 0)
-    private IDubboDocProvider olDubboDocProvider;
-
-    @DubboReference(registry = "stRegistry",lazy = true, check = false, group = "", interfaceClass = IDubboDocProvider.class, timeout = 1000, parameters = {"router", "address"}, retries = 0)
-    private IDubboDocProvider stDubboDocProvider;
+    @Autowired
+    private DubboPushDataMapper dubboPushDataMapper;
 
     @Resource(name = "nacosNamingSt")
     private NacosNaming nacosNamingSt;
@@ -82,16 +78,23 @@ public class DubboApiServiceImpl implements DubboApiService {
     private NacosNaming nacosNamingOl;
 
     @Autowired
+    private ModuleNameDataMapper moduleMapper;
+    @Autowired
     private ApiMockExpectMapper mockExpectMapper;
 
     private String DEFAULT_NAMESPACE = "";
 
     public static final Gson gson = new Gson();
 
+    /**
+     * the thread pool to process data push
+     */
+    private final ExecutorService pushDataPool = Executors.newCachedThreadPool();
+
     private static final Logger LOGGER = LoggerFactory.getLogger(DubboApiServiceImpl.class);
 
     @Override
-    public Result<Map<String, Object>> getDubboApiDetail(Integer userId, Integer projectID, Integer apiID) {
+    public Result<Map<String, Object>> getDubboApiDetail(String username, Integer projectID, Integer apiID) {
         Map<String, Object> map = new HashMap<>();
         Api api = apiMapper.getApiInfo(projectID, apiID);
         if (null == api) {
@@ -110,7 +113,7 @@ public class DubboApiServiceImpl implements DubboApiService {
         map.put("apiNoteType", api.getApiNoteType());
         map.put("apiRemark", api.getApiRemark());
         map.put("apiDesc", dubboApiInfo.getDescription());
-        map.put("mavenAddr",api.getMavenAddr());
+        map.put("mavenAddr", api.getMavenAddr());
         map.put("apiStatus", api.getApiStatus());
         map.put("name", api.getApiName());
         String groupName = apiGroupMapper.getGroupByID(api.getGroupID()).getGroupName();
@@ -130,86 +133,45 @@ public class DubboApiServiceImpl implements DubboApiService {
 
         map.put("mockUrl", String.format(Consts.REQUEST_URL_FORMAT, Consts.MockUrlPrefix + Consts.MockPrefix, md5Location, dubboApiInfo.getApiname()));
 
-        redis.recordRecently10Apis(userId, apiID);
+        redis.recordRecently10Apis(username, apiID);
 
         return Result.success(map);
     }
 
     @Override
-    public Map<String, Object> getBasicDubboApiDetail(Integer projectID, Integer apiID) {
-        Map<String, Object> map = new HashMap<>();
-        Api api = apiMapper.getApiInfo(projectID, apiID);
-        if (api != null){
-            EoDubboApiInfo dubboApiInfo = dubboApiInfoMapper.selectByPrimaryKey(api.getDubboApiId());
-            map.put("dubboApiBaseInfo", dubboApiInfo);
-            if (StringUtils.isEmpty(api.getApiEnv())) {
-                map.put("apiEnv", "staging");
-            } else {
-                map.put("apiEnv", api.getApiEnv());
-            }
-            map.put("projectID",api.getProjectID());
-            map.put("updateUsername", api.getUpdateUsername());
-            map.put("apiNoteType", api.getApiNoteType());
-            map.put("apiRemark", api.getApiRemark());
-            map.put("apiDesc", api.getApiDesc());
-            map.put("apiStatus", api.getApiStatus());
-            map.put("name", api.getApiName());
-        }
-        return map;
-    }
-
-    @Override
-    public Result<Map<String, Object>> getAllModulesInfo(String env, String serviceName, String ip) throws NacosException {
+    public Result<Map<String, Object>> getAllModulesInfo(String env, String serviceName, String ip) {
         Map<String, Object> resultMap = new HashMap<>();
-        List<Instance> instanceList;
-        List<String> ipAndPortList = new ArrayList<>();
-        if ("staging".equals(env)) {
-            instanceList = nacosNamingSt.getAllInstances(serviceName);
-        } else if ("online".equals(env)){
-            instanceList = nacosNamingOl.getAllInstances(serviceName);
-        }else {
-            instanceList = new ArrayList<>();
-        }
-        if (instanceList.isEmpty()) {
+        ModuleNameDataExample moduleExp = new ModuleNameDataExample();
+        moduleExp.createCriteria().andModuleNameEqualTo(serviceName);
+        List<ModuleNameData> moduleList = moduleMapper.selectByExample(moduleExp);
+        if (moduleList == null || moduleList.isEmpty()) {
             return Result.success(resultMap);
         }
-        instanceList = instanceList.stream().filter(Instance::isHealthy).collect(Collectors.toList());
-        Address address;
-        if (!ip.isEmpty()){
-            String[] ipPort = ip.split(":");
-            address = new Address(ipPort[0],Integer.parseInt(ipPort[1]));
-        }else {
-            address = new Address(instanceList.get(0).getIp(), instanceList.get(0).getPort());
+        List<String> ipAndPortList = new ArrayList<>();
+        moduleList.forEach(instance -> ipAndPortList.add(instance.getAddress()));
+        if (ipAndPortList.size() == 0) {
+            return Result.fail(CommonError.DubboApiForIpPortNotFound);
         }
-        RpcContext.getContext().setObjectAttachment("address", address);
-        instanceList.forEach(instance -> {
-            String ipAndPort = instance.getIp() + ":" + instance.getPort();
-            ipAndPortList.add(ipAndPort);
-        });
-
-        if (stDubboDocProvider == null || olDubboDocProvider == null) {
-            LOGGER.error("get dubbo doc error,init dubboDocProvider error");
-        }
-        String apiDoc;
         List<ModuleCacheItem> list;
         try {
-            if (env.equals("staging")) {
-                apiDoc = stDubboDocProvider.apiModuleList();
-            } else if (env.equals("online")) {
-                apiDoc = olDubboDocProvider.apiModuleList();
-            }else {
-                return Result.fail(CommonError.UnknownError);
+            DubboPushDataExample example = new DubboPushDataExample();
+            //default return the first data
+            if (null == ip || ip.isEmpty()) {
+                example.createCriteria().andAddressEqualTo(ipAndPortList.get(0));
+            } else {
+                example.createCriteria().andAddressEqualTo(ip);
             }
+
+            List<DubboPushData> dubboPushDataList = dubboPushDataMapper.selectByExampleWithBLOBs(example);
+            if (dubboPushDataList == null || dubboPushDataList.size() == 0) {
+                return Result.fail(CommonError.DubboApiForIpPortNotFound);
+            }
+            String apiDoc = dubboPushDataList.get(0).getApimodulelist();
             list = gson.fromJson(apiDoc, new TypeToken<List<ModuleCacheItem>>() {
             }.getType());
         } catch (Exception e) {
-            if (e instanceof RpcException) {
-                if (((RpcException) e).getCode() == 6) {
-                    return Result.fail(CommonError.DubboApiForIpPortNotFound);
-                }
-            }
             LOGGER.error("get dubbo doc error", e);
-            return Result.fail(CommonError.UnknownError);
+            return Result.fail(CommonError.DubboApiForIpPortNotFound);
         }
         resultMap.put("list", list);
         resultMap.put("ipAndPort", ipAndPortList);
@@ -217,12 +179,29 @@ public class DubboApiServiceImpl implements DubboApiService {
     }
 
     @Override
-    public Result<List<DubboService>> loadDubboApiServices(String serviceName, String env,String namespace) {
+    public Result<Set<ServiceName>> loadApiServices(String serviceName) {
+        Set<ServiceName> serviceSet = new HashSet<>();
+
+        ModuleNameDataExample example = new ModuleNameDataExample();
+        example.createCriteria().andModuleNameLike("%" + serviceName + "%");
+
+        example.setOrderByClause("id desc limit " + 20);
+
+        List<ModuleNameData> moduleList = moduleMapper.selectByExample(example);
+        if (moduleList == null || moduleList.isEmpty()) {
+            return Result.success(serviceSet);
+        }
+        moduleList.forEach(moduleNameData -> serviceSet.add(new ServiceName(moduleNameData.getModuleName())));
+        return Result.success(serviceSet);
+    }
+
+    @Override
+    public Result<List<ServiceName>> loadDubboApiServicesFromNacos(String serviceName, String env) {
         DubboServiceList serviceList = new DubboServiceList();
         String serviceListStr = "";
         if ("staging".equals(env)) {
             serviceListStr = nacosNamingSt.serviceList2(DEFAULT_NAMESPACE, 1, 50, serviceName, ApiServiceImpl.stNacosAccessToken);
-        } else if ("online".equals(env)){
+        } else if ("online".equals(env)) {
             serviceListStr = nacosNamingOl.serviceList2(DEFAULT_NAMESPACE, 1, 50, serviceName, ApiServiceImpl.olNacosAccessToken);
         }
         if (Objects.nonNull(serviceListStr) && StringUtils.isNotEmpty(serviceListStr)) {
@@ -236,49 +215,32 @@ public class DubboApiServiceImpl implements DubboApiService {
             }
         }
         if (Objects.nonNull(serviceList)) {
-            return Result.success(serviceList.getServiceList().stream().filter(service -> (service.getHealthyInstanceCount() > 0 && !service.getName().startsWith("consumers:"))).collect(Collectors.toList()));
+            return Result.success(serviceList.getServiceList().stream().filter(service -> (!service.getName().startsWith("consumers:"))).collect(Collectors.toList()));
         } else {
             return Result.success(new ArrayList<>());
         }
     }
 
     @Override
-    public Result<Boolean> manualUpdateDubboApi(ManualDubboUpDTO dubboUpDTO) throws NacosException {
-        List<String> list = new ArrayList<>();
-        list.add("providers");
-        list.add(dubboUpDTO.getServiceName());
-        if (Objects.nonNull(dubboUpDTO.getVersion()) && !dubboUpDTO.getVersion().isEmpty()){
-            list.add(dubboUpDTO.getVersion());
-        }
-        if (Objects.nonNull(dubboUpDTO.getGroup()) && !dubboUpDTO.getGroup().isEmpty()){
-            list.add(dubboUpDTO.getGroup());
-        }
-        String serviceNameAddr = StringUtils.join(StringUtils.toStringArray(list),':');
-        List<Instance> instanceList;
-        if ("staging".equals(dubboUpDTO.getEnv())) {
-            instanceList = nacosNamingSt.getAllInstances(serviceNameAddr);
-        } else if ("online".equals(dubboUpDTO.getEnv())){
-            instanceList = nacosNamingOl.getAllInstances(serviceNameAddr);
-        }else {
-            instanceList = new ArrayList<>();
-        }
-        if (instanceList.isEmpty()) {
+    public Result<Boolean> manualUpdateDubboApi(ManualDubboUpDTO dubboUpDTO) {
+        ModuleNameDataExample moduleExp = new ModuleNameDataExample();
+        moduleExp.createCriteria().andModuleNameEqualTo(getFullServiceName(dubboUpDTO));
+        List<ModuleNameData> moduleList = moduleMapper.selectByExample(moduleExp);
+        if (moduleList == null || moduleList.isEmpty()) {
             return Result.fail(CommonError.ServiceMustRun);
         }
-        instanceList = instanceList.stream().filter(Instance::isHealthy).collect(Collectors.toList());
-
-        if (stDubboDocProvider == null || olDubboDocProvider == null) {
-            LOGGER.error("get dubbo doc error,init dubboDocProvider error");
-        }
-        GetDubboApiRequestBo requestBo = new GetDubboApiRequestBo();
-        requestBo.setIp(instanceList.get(0).getIp());
-        requestBo.setPort(instanceList.get(0).getPort());
+        String[] ipAndPort = moduleList.get(0).getAddress().split(":");
+        GetApiBasicRequest requestBo = new GetApiBasicRequest();
+        requestBo.setIp(ipAndPort[0]);
+        requestBo.setPort(Integer.valueOf(ipAndPort[1]));
         requestBo.setApiName(dubboUpDTO.getMethodName());
         requestBo.setModuleClassName(dubboUpDTO.getServiceName());
         ApiCacheItem item = getDubboApiDetailFromRemote(dubboUpDTO.getEnv(), requestBo).getData();
-
+        if (item == null) {
+            return Result.fail(CommonError.ServiceMustRun);
+        }
         String dubboServicePath = StringUtils.join(new String[]{item.getApiModelClass(), item.getApiGroup(), item.getApiVersion(), item.getApiName()}, ':');
-        Api oldApi = apiMapper.getApiInfoByUrl(dubboServicePath, 0);
+        Api oldApi = apiMapper.getApiInfoByUrlAndProject(dubboServicePath, 0, dubboUpDTO.getProjectID());
         if (Objects.isNull(oldApi)) {
             return Result.fail(CommonError.APIDoNotExist);
         }
@@ -299,95 +261,100 @@ public class DubboApiServiceImpl implements DubboApiService {
         return Result.success(true);
     }
 
-    /**
-     * 通知dubbo接口更新
-     *
-     * @param bo
-     * @return
-     */
-    @Override
-    public Result<Boolean> dubboApiUpdateNotify(DubboApiUpdateNotifyBo bo) throws InterruptedException {
-        //获取方法集
-        String docInfo;
-        ModuleCacheItem moduleCacheItem;
-        int retry = 0;
-        while (retry < 3) {
-            try {
-                Address address = new Address(bo.getIp(), bo.getPort());
-                RpcContext.getContext().setObjectAttachment("address", address);
-                if (StringUtils.isNotEmpty(bo.getEnv()) && bo.getEnv().equals("staging")) {
-                    docInfo = stDubboDocProvider.apiModuleInfo(bo.getModuleClassName());
-                } else if (StringUtils.isNotEmpty(bo.getEnv()) && bo.getEnv().equals("online")) {
-                    docInfo = olDubboDocProvider.apiModuleInfo(bo.getModuleClassName());
-                } else {
-                    return Result.fail(CommonError.UnknownError);
-                }
-                moduleCacheItem = gson.fromJson(docInfo, new TypeToken<ModuleCacheItem>() {
-                }.getType());
-
-                List<ApiCacheItem> dubboItems = new ArrayList<>();
-                moduleCacheItem.getModuleApiList().forEach(apiCacheItem -> {
-                    GetDubboApiRequestBo requestBo = new GetDubboApiRequestBo();
-                    requestBo.setIp(bo.getIp());
-                    requestBo.setPort(bo.getPort());
-                    requestBo.setApiName(apiCacheItem.getApiName());
-                    requestBo.setModuleClassName(bo.getModuleClassName());
-                    ApiCacheItem item = getDubboApiDetailFromRemote(bo.getEnv(), requestBo).getData();
-                    dubboItems.add(item);
-                });
-                for (ApiCacheItem item :
-                        dubboItems) {
-                    //唯一关联
-                    String dubboServicePath = StringUtils.join(new String[]{item.getApiModelClass(), item.getApiGroup(), item.getApiVersion(), item.getApiName()}, ':');
-                    Api oldApi = apiMapper.getApiInfoByUrl(dubboServicePath, 0);
-                    if (Objects.isNull(oldApi)) {
-                        continue;
-                    }
-                    ApiCacheItemBo apiCacheItemBo = new ApiCacheItemBo();
-                    BeanUtils.copyProperties(item, apiCacheItemBo);
-                    apiCacheItemBo.setGroupId(oldApi.getGroupID());
-                    apiCacheItemBo.setProjectId(oldApi.getProjectID());
-                    apiCacheItemBo.setName(item.getApiDocName());
-                    apiCacheItemBo.setUsername(bo.getOpUsername());
-                    apiCacheItemBo.setUpdateMsg(bo.getUpdateMsg());
-
-                    apiCacheItemBo.setApiNoteType(0);
-                    apiCacheItemBo.setApiRemark("");
-                    apiCacheItemBo.setApiDesc(item.getApiDocName());
-                    apiCacheItemBo.setRspExp(item.getResponse());
-                    updateDubboApi(apiCacheItemBo, oldApi.getApiID());
-                }
-            } catch (Exception e) {
-                if (e instanceof RpcException) {
-                    if (((RpcException) e).getCode() == 6) {
-                        retry++;
-                        //等10s再重试
-                        Thread.sleep(10000);
-                        continue;
-                    }
-                }
-                LOGGER.warn("get dubbo doc error", e);
-            }
-            break;
+    private String getFullServiceName(ManualDubboUpDTO dubboUpDTO) {
+        List<String> list = new ArrayList<>();
+        list.add("providers");
+        list.add(dubboUpDTO.getServiceName());
+        if (Objects.nonNull(dubboUpDTO.getVersion()) && !dubboUpDTO.getVersion().isEmpty()) {
+            list.add(dubboUpDTO.getVersion());
         }
-        return Result.success(true);
+        if (Objects.nonNull(dubboUpDTO.getGroup()) && !dubboUpDTO.getGroup().isEmpty()) {
+            list.add(dubboUpDTO.getGroup());
+        }
+
+        return StringUtils.join(StringUtils.toStringArray(list), ':');
     }
 
     @Override
-    public Result<ApiCacheItem> getDubboApiDetailFromRemote(String env, GetDubboApiRequestBo dubboApiRequestBo) {
-        Address address = new Address(dubboApiRequestBo.getIp(), dubboApiRequestBo.getPort());
-        RpcContext.getContext().setObjectAttachment("address", address);
+    public void dubboApiUpdateNotify(DubboApiUpdateNotifyBo bo) {
+        pushDataPool.submit(() -> {
+            int retry = 0;
+            while (retry < 3) {
+                try {
+                    DubboPushDataExample example = new DubboPushDataExample();
+                    example.createCriteria().andAddressEqualTo(bo.getIp() + ":" + bo.getPort());
+                    List<DubboPushData> dubboPushDataList = dubboPushDataMapper.selectByExampleWithBLOBs(example);
+                    if (dubboPushDataList == null || dubboPushDataList.size() == 0) {
+                        retry++;
+                        Thread.sleep(3000);
+                        continue;
+                    }
+                    String apiModuleInfoStr = dubboPushDataList.get(0).getApimoduleinfo();
+                    Map<String, ModuleCacheItem> apiModulesCache = gson.fromJson(apiModuleInfoStr, new TypeToken<Map<String, ModuleCacheItem>>() {
+                    }.getType());
+                    ModuleCacheItem moduleCacheItem = apiModulesCache.get(bo.getModuleClassName());
+
+                    List<ApiCacheItem> dubboItems = new ArrayList<>();
+                    moduleCacheItem.getModuleApiList().forEach(apiCacheItem -> {
+                        GetApiBasicRequest requestBo = new GetApiBasicRequest();
+                        requestBo.setIp(bo.getIp());
+                        requestBo.setPort(bo.getPort());
+                        requestBo.setApiName(apiCacheItem.getApiName());
+                        requestBo.setModuleClassName(bo.getModuleClassName());
+                        ApiCacheItem item = getDubboApiDetailFromRemote(bo.getEnv(), requestBo).getData();
+                        dubboItems.add(item);
+                    });
+                    for (ApiCacheItem item :
+                            dubboItems) {
+                        String dubboServicePath = StringUtils.join(new String[]{item.getApiModelClass(), item.getApiGroup(), item.getApiVersion(), item.getApiName()}, ':');
+                        Api oldApi = apiMapper.getApiInfoByUrl(dubboServicePath, 0);
+                        if (Objects.isNull(oldApi)) {
+                            continue;
+                        }
+                        ApiCacheItemBo apiCacheItemBo = new ApiCacheItemBo();
+                        BeanUtils.copyProperties(item, apiCacheItemBo);
+                        apiCacheItemBo.setGroupId(oldApi.getGroupID());
+                        apiCacheItemBo.setProjectId(oldApi.getProjectID());
+                        apiCacheItemBo.setName(item.getApiDocName());
+                        apiCacheItemBo.setUsername(bo.getOpUsername());
+                        apiCacheItemBo.setUpdateMsg(bo.getUpdateMsg());
+
+                        apiCacheItemBo.setApiNoteType(0);
+                        apiCacheItemBo.setApiRemark("");
+                        apiCacheItemBo.setApiDesc(item.getApiDocName());
+                        apiCacheItemBo.setRspExp(item.getResponse());
+                        updateDubboApi(apiCacheItemBo, oldApi.getApiID());
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("get dubbo doc error", e);
+                    retry++;
+                    //10s retry
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException ignored) {
+                    }
+                    continue;
+                }
+                break;
+            }
+        });
+    }
+
+    @Override
+    public Result<ApiCacheItem> getDubboApiDetailFromRemote(String env, GetApiBasicRequest dubboApiRequestBo) {
         ApiCacheItem apiCacheItem;
         try {
-            String apiCacheItemStr;
-            if (env != null && env.equals("staging")) {
-                apiCacheItemStr = stDubboDocProvider.apiParamsResponseInfo(dubboApiRequestBo.getModuleClassName() + "." + dubboApiRequestBo.getApiName());
-            } else if (env != null && env.equals("online")){
-                apiCacheItemStr = olDubboDocProvider.apiParamsResponseInfo(dubboApiRequestBo.getModuleClassName() + "." + dubboApiRequestBo.getApiName());
-            }else {
-                return Result.fail(CommonError.InvalidParamError);
+            DubboPushDataExample example = new DubboPushDataExample();
+            example.createCriteria().andAddressEqualTo(dubboApiRequestBo.getIp() + ":" + dubboApiRequestBo.getPort());
+            List<DubboPushData> dubboPushDataList = dubboPushDataMapper.selectByExampleWithBLOBs(example);
+            if (dubboPushDataList == null || dubboPushDataList.size() == 0) {
+                return Result.success(null);
             }
-            apiCacheItem = gson.fromJson(apiCacheItemStr, ApiCacheItem.class);
+            String detailInfoStr = dubboPushDataList.get(0).getApiparamsresponseinfo();
+            Map<String, ApiCacheItem> apiParamsAndRespCache = gson.fromJson(detailInfoStr, new TypeToken<Map<String, ApiCacheItem>>() {
+            }.getType());
+
+            apiCacheItem = apiParamsAndRespCache.get(dubboApiRequestBo.getModuleClassName() + "." + dubboApiRequestBo.getApiName());
         } catch (Exception e) {
             LOGGER.error("getDubboApiDetailFromRemote error", e);
             return Result.fail(CommonError.UnknownError);
@@ -398,13 +365,12 @@ public class DubboApiServiceImpl implements DubboApiService {
     @Override
     @Transactional
     public Result<Boolean> addDubboApi(ApiCacheItemBo apiBo) {
-        //唯一关联
         String dubboServicePath = StringUtils.join(new String[]{apiBo.getApiModelClass(), apiBo.getApiGroup(), apiBo.getApiVersion(), apiBo.getApiName()}, ':');
-        Api oldApi = apiMapper.getApiInfoByUrl(dubboServicePath, 0);
+        Api oldApi = apiMapper.getApiInfoByUrlAndProject(dubboServicePath, 0, apiBo.getProjectId());
         if (Objects.nonNull(oldApi)) {
             return Result.fail(CommonError.APIAlreadyExist);
         }
-        // 插入dubboApi
+        // add dubbo api
         EoDubboApiInfo dubboApiInfo = new EoDubboApiInfo();
         dubboApiInfo.setAsync(apiBo.getAsync());
         dubboApiInfo.setApidocname(apiBo.getApiDocName());
@@ -415,8 +381,8 @@ public class DubboApiServiceImpl implements DubboApiService {
         dubboApiInfo.setApiversion(apiBo.getApiVersion());
         dubboApiInfo.setDescription(apiBo.getDescription());
         dubboApiInfo.setErrorcodes(apiBo.getApiErrorCodes());
-        String responseParam = "";
-        String requestParam = "";
+        String responseParam;
+        String requestParam;
         try {
             responseParam = gson.toJson(apiBo.getResponseLayer());
             requestParam = gson.toJson(apiBo.getParamsLayerList());
@@ -477,9 +443,9 @@ public class DubboApiServiceImpl implements DubboApiService {
         if (!StringUtils.isEmpty(apiBo.getReqExp())) {
             req = apiBo.getReqExp();
         }
-        apiService.dubboApiCodeGen(api, dubboApiInfo, rsp,req,false);
-        //插入系统默认mock
-        mockService.updateDubboApiMockData(api.getUpdateUsername(), null, api.getApiID(), "", "", 0, "API全局Mock", api.getProjectID(), rsp, 1, true,false,"");
+        apiService.dubboApiCodeGen(api, dubboApiInfo, rsp, req, false);
+        //add system default mock data
+        mockService.updateDubboApiMockData(api.getUpdateUsername(), null, api.getApiID(), "", "", 0, "API全局Mock", api.getProjectID(), rsp, 1, true, false, "");
 
         Map<String, Object> cache = new HashMap<String, Object>();
         cache.put("baseInfo", api);
@@ -499,12 +465,10 @@ public class DubboApiServiceImpl implements DubboApiService {
             return Result.fail(CommonError.UnknownError);
         }
 
-        //记录历史变更
         String updateMsg = "add dubbo api";
         if (StringUtils.isNotEmpty(apiBo.getUpdateMsg())) {
             updateMsg = apiBo.getUpdateMsg();
         }
-        //记录历史版本
         apiService.recordApiHistory(api, gson.toJson(cache), updateMsg);
 
         recordService.doRecord(api, null, "添加dubbo接口", "添加dubbo接口" + api.getApiName(), ProjectOperationLog.OP_TYPE_ADD);
@@ -512,19 +476,19 @@ public class DubboApiServiceImpl implements DubboApiService {
     }
 
     @Override
-    public Result<Boolean> batchAddDubboApi(String apiEnv,List<BatchImportDubboApiBo> bos) {
+    public Result<Boolean> batchAddDubboApi(String apiEnv, List<BatchImportApiBo> bos) {
 
         bos.forEach(bo -> {
             List<ApiCacheItem> dubboItems = new ArrayList<>(bo.getApiNames().size());
             bo.getApiNames().forEach(apiName -> {
-                GetDubboApiRequestBo getDubboApiRequestBo = new GetDubboApiRequestBo();
+                GetApiBasicRequest getDubboApiRequestBo = new GetApiBasicRequest();
                 getDubboApiRequestBo.setApiName(apiName);
                 getDubboApiRequestBo.setIp(bo.getIp());
                 getDubboApiRequestBo.setPort(bo.getPort());
                 getDubboApiRequestBo.setModuleClassName(bo.getModuleClassName());
 
                 ApiCacheItem item = getDubboApiDetailFromRemote(bo.getEnv(), getDubboApiRequestBo).getData();
-                if (Objects.nonNull(item)){
+                if (Objects.nonNull(item)) {
                     dubboItems.add(item);
                 }
             });
@@ -542,18 +506,15 @@ public class DubboApiServiceImpl implements DubboApiService {
                 apiCacheItemBo.setApiDesc(item.getApiDocName());
                 apiCacheItemBo.setMavenAddr(item.getMavenAddr());
                 apiCacheItemBo.setRspExp(item.getResponse());
-                if (Objects.nonNull(item.getRequest()) && !item.getRequest().isEmpty()){
+                if (Objects.nonNull(item.getRequest()) && !item.getRequest().isEmpty()) {
                     apiCacheItemBo.setReqExp(item.getRequest());
                 }
 
-                //唯一关联
                 String dubboServicePath = StringUtils.join(new String[]{item.getApiModelClass(), item.getApiGroup(), item.getApiVersion(), item.getApiName()}, ':');
-                Api oldApi = apiMapper.getApiInfoByUrl(dubboServicePath, 0);
+                Api oldApi = apiMapper.getApiInfoByUrlAndProject(dubboServicePath, 0, bo.getProjectID());
                 if (Objects.isNull(oldApi)) {
-                    //不存在则添加；
                     addDubboApi(apiCacheItemBo);
                 } else if (bo.getForceUpdate()) {
-                    //强制更新
                     updateDubboApi(apiCacheItemBo, oldApi.getApiID());
                 }
             }
@@ -564,9 +525,8 @@ public class DubboApiServiceImpl implements DubboApiService {
     @Override
     @Transactional
     public Result<Boolean> updateDubboApi(ApiCacheItemBo apiBo, Integer apiId) {
-        //唯一关联
         String dubboServicePath = StringUtils.join(new String[]{apiBo.getApiModelClass(), apiBo.getApiGroup(), apiBo.getApiVersion(), apiBo.getApiName()}, ':');
-        Api api = apiMapper.getApiInfoByUrl(dubboServicePath, 0);
+        Api api = apiMapper.getApiInfoByUrlAndProject(dubboServicePath, 0, apiBo.getProjectId());
         if (Objects.isNull(api)) {
             return Result.fail(CommonError.APIDoNotExist);
         }
@@ -589,7 +549,6 @@ public class DubboApiServiceImpl implements DubboApiService {
             return Result.fail(CommonError.UnknownError);
         }
 
-        // 更新dubboApi
         EoDubboApiInfo dubboApiInfo = new EoDubboApiInfo();
         dubboApiInfo.setAsync(apiBo.getAsync());
         dubboApiInfo.setId(api.getDubboApiId());
@@ -621,12 +580,12 @@ public class DubboApiServiceImpl implements DubboApiService {
         String req = "";
         if (!StringUtils.isEmpty(apiBo.getRspExp())) {
             rsp = apiBo.getRspExp();
-            //更新dubbo类型接口系统默认期望
+            //update dubbo api default mock data
             ApiMockExpectExample example = new ApiMockExpectExample();
             example.createCriteria().andApiIdEqualTo(api.getApiID()).andIsDefaultEqualTo(true);
             List<ApiMockExpect> expects = mockExpectMapper.selectByExample(example);
             if (Objects.nonNull(expects) && !expects.isEmpty()) {
-                mockService.updateDubboApiMockData(api.getUpdateUsername(), expects.get(0).getId(), api.getApiID(), "", "", 0, "API全局Mock", api.getProjectID(), rsp, 1, true,false,"");
+                mockService.updateDubboApiMockData(api.getUpdateUsername(), expects.get(0).getId(), api.getApiID(), "", "", 0, "API全局Mock", api.getProjectID(), rsp, 1, true, false, "");
             }
         }
         if (!StringUtils.isEmpty(apiBo.getReqExp())) {
@@ -651,12 +610,10 @@ public class DubboApiServiceImpl implements DubboApiService {
             apiCacheMapper.addApiCache(apiCache);
         }
 
-        //记录历史变更
         String updateMsg = "update dubbo api";
         if (StringUtils.isNotEmpty(apiBo.getUpdateMsg())) {
             updateMsg = apiBo.getUpdateMsg();
         }
-        //记录历史版本
         apiService.recordApiHistory(api, gson.toJson(cache), updateMsg);
 
         recordService.doRecord(api, null, "更新dubbo接口", "更新dubbo接口" + api.getApiName(), ProjectOperationLog.OP_TYPE_UPDATE);

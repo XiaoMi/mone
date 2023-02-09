@@ -1,11 +1,14 @@
 package com.xiaomi.miapi.mapper;
 
-import com.xiaomi.miapi.common.pojo.ApiTestLog;
-import com.xiaomi.miapi.common.pojo.ApiTestLogExample;
+import com.xiaomi.miapi.pojo.ApiTestLog;
+import com.xiaomi.miapi.pojo.ApiTestLogExample;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
-
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 public interface ApiTestLogMapper {
     long countByExample(ApiTestLogExample example);
 
