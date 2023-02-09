@@ -1,13 +1,14 @@
 package com.xiaomi.miapi.controller;
 
 import com.alibaba.nacos.api.exception.NacosException;
-import com.xiaomi.miapi.common.bo.*;
-import com.xiaomi.miapi.common.dto.ManualDubboUpDTO;
-import com.xiaomi.miapi.common.dto.ManualGatewayUpDTO;
-import com.xiaomi.miapi.common.dto.ManualHttpUpDTO;
+import com.xiaomi.miapi.bo.*;
+import com.xiaomi.miapi.dto.ManualDubboUpDTO;
+import com.xiaomi.miapi.dto.ManualGatewayUpDTO;
+import com.xiaomi.miapi.dto.ManualHttpUpDTO;
+import com.xiaomi.miapi.dto.ManualSidecarUpDTO;
 import com.xiaomi.miapi.service.*;
 import com.xiaomi.miapi.util.SessionAccount;
-import com.xiaomi.miapi.common.pojo.Api;
+import com.xiaomi.miapi.pojo.Api;
 import com.xiaomi.miapi.service.impl.LoginService;
 import com.xiaomi.miapi.common.Consts;
 import com.xiaomi.miapi.common.Result;
@@ -19,7 +20,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -27,10 +27,13 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 接口控制器
+ * @author dongzhenxing
+ * @date 2023/02/08
+ * deal with api request
  */
 @Controller
 @RequestMapping("/Api")
@@ -45,6 +48,8 @@ public class ApiController {
     private HttpApiService httpApiService;
 
     @Autowired
+    private SidecarApiService sidecarApiService;
+    @Autowired
     private GatewayApiService gatewayApiService;
 
     @Autowired
@@ -55,16 +60,10 @@ public class ApiController {
     @Autowired
     private LoginService loginService;
 
-    @Reference(check = false, group = "${ref.hermes.service.group}")
-    private BusProjectService busProjectService;
-
     private static final Logger LOGGER = LoggerFactory.getLogger(ApiController.class);
 
     /**
-     * 添加http接口
-     *
-     * @param request
-     * @return
+     * add http api
      */
     @ResponseBody
     @RequestMapping(value = "/addHttpApi", method = RequestMethod.POST)
@@ -83,30 +82,42 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.addProject] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
 
-        if (!busProjectService.isAboveWork(Consts.PROJECT_NAME, api.getProjectID().longValue(), account.getUsername())) {
-            response.sendError(401, "需要work以上权限");
-            return null;
-        }
         api.setUpdateUsername(account.getUsername());
         return httpApiService.addHttpApi(api, apiHeader, apiRequestParam, apiResultParam, apiErrorCodes, false);
     }
 
     /**
-     * 批量添加dubbo接口
-     *
-     * @param request
-     * @return
+     * batch add sidecar api
+     */
+    @ResponseBody
+    @RequestMapping(value = "/batchAddSidecarApi", method = RequestMethod.POST)
+    public Result<Boolean> batchAddSidecarApi(HttpServletRequest request,
+                                              HttpServletResponse response,
+                                              @RequestBody BatchAddApiBo httpApiBo
+    ) throws IOException {
+        SessionAccount account = loginService.getAccountFromSession(request);
+
+        if (null == account) {
+            LOGGER.warn("[ApiController.batchAddSidecarApi] current user not have valid account info in session");
+            response.sendError(401, "未登录或者无权限");
+            return null;
+        }
+        if (httpApiBo.getBos().isEmpty()) {
+            return Result.fail(CommonError.InvalidParamError);
+        }
+        httpApiBo.getBos().forEach(bo -> bo.setUpdateUserName(account.getUsername()));
+        return sidecarApiService.batchAddSidecarApi(httpApiBo.getApiEnv(), httpApiBo.getBos());
+    }
+
+    /**
+     * batch add dubbo api
      */
     @ResponseBody
     @RequestMapping(value = "/batchAddHttpApi", method = RequestMethod.POST)
     public Result<Boolean> batchAddHttpApi(HttpServletRequest request,
                                            HttpServletResponse response,
-                                           @RequestBody BatchAddHttpApiBo httpApiBo
+                                           @RequestBody BatchAddApiBo httpApiBo
     ) throws IOException {
         SessionAccount account = loginService.getAccountFromSession(request);
 
@@ -118,24 +129,12 @@ public class ApiController {
         if (httpApiBo.getBos().isEmpty()) {
             return Result.fail(CommonError.InvalidParamError);
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiController.batchAddHttpApi] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-
-        if (!busProjectService.isAboveWork(Consts.PROJECT_NAME, httpApiBo.getBos().get(0).getProjectID().longValue(), account.getUsername())) {
-            response.sendError(401, "需要work以上权限");
-            return null;
-        }
         httpApiBo.getBos().forEach(bo -> bo.setUpdateUserName(account.getUsername()));
         return httpApiService.batchAddHttpApi(httpApiBo.getApiEnv(), httpApiBo.getBos());
     }
 
     /**
-     * 修改http接口
-     *
-     * @param request
-     * @return
+     * update http api
      */
     @ResponseBody
     @RequestMapping(value = "/editHttpApi", method = RequestMethod.POST)
@@ -154,17 +153,31 @@ public class ApiController {
             return null;
         }
 
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.addProject] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
+        api.setUpdateUsername(account.getUsername());
+        return httpApiService.editHttpApi(api, apiHeader, apiRequestParam, apiResultParam, apiErrorCodes, true);
+    }
 
-        if (!busProjectService.isAboveWork(Consts.PROJECT_NAME, api.getProjectID().longValue(), account.getUsername())) {
-            response.sendError(401, "需要work以上权限");
+    /**
+     * update sidecar 接口
+     *
+     */
+    @ResponseBody
+    @RequestMapping(value = "/editSidecarApi", method = RequestMethod.POST)
+    public Result<Boolean> editSidecarApi(HttpServletRequest request,
+                                          HttpServletResponse response, Api api,
+                                          @RequestParam(value = "apiRequestParam", required = false) String apiRequestParam,
+                                          @RequestParam(value = "apiResultParam", required = false) String apiResultParam
+    ) throws IOException {
+        SessionAccount account = loginService.getAccountFromSession(request);
+
+        if (null == account) {
+            LOGGER.warn("[AccountController.editSidecarApi] current user not have valid account info in session");
+            response.sendError(401, "未登录或者无权限");
             return null;
         }
+
         api.setUpdateUsername(account.getUsername());
-        return httpApiService.editHttpApi(api, apiHeader, apiRequestParam, apiResultParam, apiErrorCodes,true);
+        return sidecarApiService.editSidecarApi(api, apiRequestParam, apiResultParam, true);
     }
 
     @ResponseBody
@@ -182,82 +195,68 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.editApiStatus] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-
-        if (!busProjectService.isAboveWork(Consts.PROJECT_NAME, projectID.longValue(), account.getUsername())) {
-            response.sendError(401, "需要work以上权限");
-            return null;
-        }
         return apiService.editApiStatus(projectID, apiID, status);
     }
 
 
     /**
-     * 根据服务名大致搜索nacos上的服务列表可搜dubbo、http接口服务
-     *
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
+     * search service list by service name from local db,supports dubbo&http
      */
     @ResponseBody
     @RequestMapping(value = "/loadDubboApiServices", method = RequestMethod.POST)
-    public Result<List<DubboService>> loadDubboApiServices(HttpServletRequest request,
-                                                           HttpServletResponse response, String env, String namespace, String serviceName) throws IOException {
+    public Result<Set<ServiceName>> loadDubboApiServices(HttpServletRequest request,
+                                                         HttpServletResponse response, String serviceName) throws IOException {
         SessionAccount account = loginService.getAccountFromSession(request);
         if (null == account) {
             LOGGER.warn("[AccountController.loadDubboApiServices] current user not have valid account info in session");
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.loadDubboApiServices] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        if (namespace == null || namespace.equalsIgnoreCase("default")) {
-            namespace = "";
-        }
 
-        return dubboApiService.loadDubboApiServices(serviceName, env, namespace);
+        return dubboApiService.loadApiServices(serviceName);
     }
 
     /**
-     * 根据服务名大致搜索nacos上的服务列表可搜grpc服务
-     *
-     * @param request
-     * @param response
-     * @return
+     * search dubbo service list by service name from nacos
+     */
+    @ResponseBody
+    @RequestMapping(value = "/loadDubboApiServicesFromNacos", method = RequestMethod.POST)
+    public Result<List<ServiceName>> loadDubboApiServicesFromNacos(HttpServletRequest request,
+                                                                   HttpServletResponse response, String namespace, String serviceName, String env) throws IOException {
+        SessionAccount account = loginService.getAccountFromSession(request);
+        if (null == account) {
+            LOGGER.warn("[AccountController.loadDubboApiServicesFromNacos] current user not have valid account info in session");
+            response.sendError(401, "未登录或者无权限");
+            return null;
+        }
+
+        return dubboApiService.loadDubboApiServicesFromNacos(serviceName, env);
+    }
+
+    /**
+     * search grpc service list by service name
      */
     @ResponseBody
     @RequestMapping(value = "/loadGrpcService", method = RequestMethod.POST)
-    public Result<List<DubboService>> loadGrpcService(HttpServletRequest request,
-                                                      HttpServletResponse response, String serviceName) throws IOException {
+    public Result<Set<ServiceName>> loadGrpcService(HttpServletRequest request,
+                                                    HttpServletResponse response, String serviceName) throws IOException {
         SessionAccount account = loginService.getAccountFromSession(request);
         if (null == account) {
             LOGGER.warn("[AccountController.loadGrpcService] current user not have valid account info in session");
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.loadGrpcService] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
         if (Objects.isNull(serviceName)) {
             serviceName = "";
         }
         serviceName = "grpc:" + serviceName;
-        List<DubboService> services = dubboApiService.loadDubboApiServices(serviceName, "staging", "").getData();
-        services = services.stream().filter(service -> service.getName().startsWith("grpc:")).collect(Collectors.toList());
+        Set<ServiceName> services = dubboApiService.loadApiServices(serviceName).getData();
+        services = services.stream().filter(service -> service.getName().startsWith("grpc:")).collect(Collectors.toSet());
         return Result.success(services);
     }
 
     /**
-     * 根据服务名加载 grpc 类型 api 服务及方法名
-     *
-     * @throws IOException
+     * load grpc api info
      */
     @ResponseBody
     @RequestMapping(value = "/loadGrpcApiInfos", method = RequestMethod.POST)
@@ -270,18 +269,9 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.loadGrpcApiInfos] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
         return grpcApiService.loadGrpcApiInfos(appName);
     }
 
-    /**
-     * 根据服务名加载 grpc 类型 api 服务及方法名
-     *
-     * @throws IOException
-     */
     @ResponseBody
     @RequestMapping(value = "/loadGrpcServerAddr", method = RequestMethod.POST)
     public Result<String> loadGrpcServerAddr(HttpServletRequest request,
@@ -293,18 +283,11 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.loadGrpcServerAddr] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
         return grpcApiService.loadGrpcServerAddr(appName);
     }
 
     /**
-     * 批量添加 grpc 接口
-     *
-     * @param request
-     * @return
+     * batch add grpc apis
      */
     @ResponseBody
     @RequestMapping(value = "/batchAddGrpcApi", method = RequestMethod.POST)
@@ -319,21 +302,12 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiController.batchAddGrpcApi] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-
-        if (!busProjectService.isAboveWork(Consts.PROJECT_NAME, grpcApiBo.getProjectID().longValue(), account.getUsername())) {
-            response.sendError(401, "需要work以上权限");
-            return null;
-        }
         grpcApiBo.setUpdateUserName(account.getUsername());
         return grpcApiService.batchAddGrpcApi(grpcApiBo);
     }
 
     /**
-     * 更新 grpc 接口
+     * update grpc api
      *
      * @param request
      * @return
@@ -351,26 +325,12 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiController.updateGrpcApi] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-
-        if (!busProjectService.isAboveWork(Consts.PROJECT_NAME, updateGrpcApiBo.getProjectId().longValue(), account.getUsername())) {
-            response.sendError(401, "需要work以上权限");
-            return null;
-        }
         updateGrpcApiBo.setUpdateUserName(account.getUsername());
         return grpcApiService.updateGrpcApi(updateGrpcApiBo);
     }
 
     /**
-     * 获取Grpc接口详情
-     *
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
+     * get grpc api info
      */
     @ResponseBody
     @RequestMapping(value = "/getGrpcApiDetail", method = RequestMethod.POST)
@@ -384,25 +344,16 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.getGrpcApiDetail] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        return grpcApiService.getGrpcApiDetail(account.getId().intValue(), projectID, apiID);
+        return grpcApiService.getGrpcApiDetail(account.getUsername(), projectID, apiID);
     }
 
     /**
-     * 根据服务名加载http类型api
-     *
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
+     * load http api by controller name
      */
     @ResponseBody
     @RequestMapping(value = "/loadHttpApiInfos", method = RequestMethod.POST)
     public Result<Map<String, Object>> loadHttpApiInfos(HttpServletRequest request,
-                                                        HttpServletResponse response, String serviceName) throws IOException, NacosException {
+                                                        HttpServletResponse response, String serviceName, String ip) throws IOException {
         SessionAccount account = loginService.getAccountFromSession(request);
 
         if (null == account) {
@@ -410,20 +361,11 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.loadHttpApiInfos] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        return httpApiService.getAllHttpModulesInfo(serviceName);
+        return httpApiService.getAllHttpModulesInfo(serviceName, ip);
     }
 
     /**
-     * 根据服务名加载dubbo类型api
-     *
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
+     * load dubbo service api by service name
      */
     @ResponseBody
     @RequestMapping(value = "/loadDubboApiInfos", method = RequestMethod.POST)
@@ -436,10 +378,6 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.loadDubboApiInfos] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
         if (ip == null) {
             ip = "";
         }
@@ -447,15 +385,29 @@ public class ApiController {
     }
 
     /**
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
+     * load sidecar api by module name
+     */
+    @ResponseBody
+    @RequestMapping(value = "/loadSidecarApiInfos", method = RequestMethod.POST)
+    public Result<Map<String, Object>> loadSidecarApiInfos(HttpServletRequest request,
+                                                           HttpServletResponse response, String moduleName, String ip) throws IOException {
+        SessionAccount account = loginService.getAccountFromSession(request);
+
+        if (null == account) {
+            LOGGER.warn("[AccountController.loadSidecarApiInfos] current user not have valid account info in session");
+            response.sendError(401, "未登录或者无权限");
+            return null;
+        }
+        return sidecarApiService.getAllSidecarModulesInfo(moduleName, ip);
+    }
+
+    /**
+     * update api mock except
      */
     @ResponseBody
     @RequestMapping(value = "/editApiDiyExp", method = RequestMethod.POST)
     public Result<Boolean> editApiDiyExp(HttpServletRequest request,
-                                         HttpServletResponse response, Integer apiID, Integer expType, Integer type,String content) throws IOException, NacosException {
+                                         HttpServletResponse response, Integer apiID, Integer expType, Integer type, String content) throws IOException, NacosException {
         SessionAccount account = loginService.getAccountFromSession(request);
 
         if (null == account) {
@@ -463,13 +415,12 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiController.editApiDiyExp] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        return apiService.editApiDiyExp(apiID,expType,type,content);
+        return apiService.editApiDiyExp(apiID, expType, type, content);
     }
 
+    /**
+     * update dubbo api doc info by manual
+     */
     @ResponseBody
     @RequestMapping(value = "/manualUpdateDubboApi", method = RequestMethod.POST)
     public Result<Boolean> manualUpdateDubboApi(HttpServletRequest request,
@@ -480,10 +431,6 @@ public class ApiController {
             LOGGER.warn("[AccountController.manualUpdateDubboApi] current user not have valid account info in session");
             response.sendError(401, "未登录或者无权限");
             return null;
-        }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.manualUpdateDubboApi] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
         }
         dto.setOpUsername(account.getUsername());
         return dubboApiService.manualUpdateDubboApi(dto);
@@ -500,12 +447,23 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.manualUpdateHttpApi] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
         dto.setOpUsername(account.getUsername());
         return httpApiService.manualUpdateHttpApi(dto);
+    }
+
+    @ResponseBody
+    @RequestMapping(value = "/manualUpdateSidecarApi", method = RequestMethod.POST)
+    public Result<Boolean> manualUpdateSidecarApi(HttpServletRequest request,
+                                                  HttpServletResponse response, ManualSidecarUpDTO dto) throws IOException, NacosException {
+        SessionAccount account = loginService.getAccountFromSession(request);
+
+        if (null == account) {
+            LOGGER.warn("[AccountController.manualUpdateSidecarApi] current user not have valid account info in session");
+            response.sendError(401, "未登录或者无权限");
+            return null;
+        }
+        dto.setOpUsername(account.getUsername());
+        return sidecarApiService.manualUpdateSidecarApi(dto);
     }
 
     @ResponseBody
@@ -519,22 +477,10 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.manualUpdateGatewayApi] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
         dto.setOpUsername(account.getUsername());
         return gatewayApiService.manualUpdateGatewayApi(dto);
     }
 
-    /**
-     * 根据url路径加载mione网关中的api
-     *
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
-     */
     @ResponseBody
     @RequestMapping(value = "/loadGatewayApiInfo", method = RequestMethod.POST)
     public Result<Map<String, Object>> loadGatewayApiInfo(HttpServletRequest request,
@@ -546,22 +492,10 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.loadDubboApiInfos] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
 
         return gatewayApiService.loadGatewayApiInfoFromRemote(env, url);
     }
 
-    /**
-     * 获取dubbo接口详情
-     *
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
-     */
     @ResponseBody
     @RequestMapping(value = "/getGatewayApiDetail", method = RequestMethod.POST)
     public Result<Map<String, Object>> getGatewayApiDetail(HttpServletRequest request,
@@ -574,20 +508,10 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.getGatewayApiDetail] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
 
-        return gatewayApiService.getGatewayApiDetail(account.getId().intValue(), projectID, apiID);
+        return gatewayApiService.getGatewayApiDetail(account.getUsername(), projectID, apiID);
     }
 
-    /**
-     * 添加网关类型接口
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/addGatewayApi", method = RequestMethod.POST)
     public Result<Boolean> addGatewayApi(HttpServletRequest request,
@@ -598,8 +522,7 @@ public class ApiController {
                                          @RequestParam(value = "apiResultParam", required = false) String apiResultParam,
                                          @RequestParam(value = "apiErrorCodes", required = false) String apiErrorCodes,
                                          @RequestParam(value = "dubboParam", required = false) String dubboParam,
-                                         @RequestParam(value = "dubboResp", required = false) String dubboResp
-    ) throws IOException {
+                                         @RequestParam(value = "dubboResp", required = false) String dubboResp) throws IOException {
 
         SessionAccount account = loginService.getAccountFromSession(request);
 
@@ -613,10 +536,6 @@ public class ApiController {
             return Result.fail(CommonError.UnAuthorized);
         }
 
-        if (!busProjectService.isAboveWork(Consts.PROJECT_NAME, gatewayApiInfoBo.getProjectId().longValue(), account.getUsername())) {
-            response.sendError(401, "需要work以上权限");
-            return null;
-        }
         gatewayApiInfoBo.setUpdater(account.getUsername());
 
         if (Objects.nonNull(dubboParam) && !dubboParam.isEmpty()) {
@@ -638,12 +557,6 @@ public class ApiController {
     }
 
 
-    /**
-     * 添加网关类型接口
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/batchAddGatewayApi", method = RequestMethod.POST)
     public Result<Boolean> batchAddGatewayApi(HttpServletRequest request,
@@ -656,24 +569,9 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.batchAddGatewayApi] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-
-        if (!busProjectService.isAboveWork(Consts.PROJECT_NAME, projectID.longValue(), account.getUsername())) {
-            response.sendError(401, "需要work以上权限");
-            return null;
-        }
         return gatewayApiService.batchAddGatewayApi(projectID, groupID, env, urlList, account.getUsername());
     }
 
-    /**
-     * 更新网关类型接口
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/updateGatewayApi", method = RequestMethod.POST)
     public Result<Boolean> updateGatewayApi(HttpServletRequest request,
@@ -692,25 +590,13 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiController.editApiStatus] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-
-        if (!busProjectService.isAboveWork(Consts.PROJECT_NAME, gatewayApiInfoBo.getProjectId().longValue(), account.getUsername())) {
-            response.sendError(401, "需要work以上权限");
-            return null;
-        }
         gatewayApiInfoBo.setUpdater(account.getUsername());
         return gatewayApiService.updateGatewayApi(gatewayApiInfoBo, apiHeader, apiRequestParam, apiResultParam, apiErrorCodes, apiID, Consts.GW_ALTER_TYPE_NORMAL);
-//        }
     }
 
     /**
-     * 添加dubbo接口
+     * add dubbo api
      *
-     * @param request
-     * @return
      */
     @ResponseBody
     @RequestMapping(value = "/addDubboApi", method = RequestMethod.POST)
@@ -725,30 +611,18 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiController.editApiStatus] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-
-        if (!busProjectService.isAboveWork(Consts.PROJECT_NAME, apiBo.getProjectId().longValue(), account.getUsername())) {
-            response.sendError(401, "需要work以上权限");
-            return null;
-        }
         apiBo.setUsername(account.getUsername());
         return dubboApiService.addDubboApi(apiBo);
     }
 
     /**
-     * 批量添加dubbo接口
-     *
-     * @param request
-     * @return
+     * batch add dubbo apis
      */
     @ResponseBody
     @RequestMapping(value = "/batchAddDubboApi", method = RequestMethod.POST)
     public Result<Boolean> batchAddDubboApi(HttpServletRequest request,
                                             HttpServletResponse response,
-                                            @RequestBody BatchAddDubboApiBo dubboApiBo
+                                            @RequestBody BatchAddApiBo dubboApiBo
     ) throws IOException {
         SessionAccount account = loginService.getAccountFromSession(request);
 
@@ -757,62 +631,34 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiController.batchAddDubboApi] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
         if (dubboApiBo.getBos().isEmpty()) {
             return Result.fail(CommonError.InvalidParamError);
-        }
-        if (!busProjectService.isAboveWork(Consts.PROJECT_NAME, dubboApiBo.getBos().get(0).getProjectID().longValue(), account.getUsername())) {
-            response.sendError(401, "需要work以上权限");
-            return null;
         }
         dubboApiBo.getBos().forEach(bo -> bo.setUpdateUserName(account.getUsername()));
         return dubboApiService.batchAddDubboApi(dubboApiBo.getApiEnv(), dubboApiBo.getBos());
     }
 
     /**
-     * 更新dubbo接口
-     *
-     * @param request
-     * @return
+     * update dubbo api
      */
     @ResponseBody
     @RequestMapping(value = "/updateDubboApi", method = RequestMethod.POST)
     public Result<Boolean> updateDubboApi(HttpServletRequest request,
                                           HttpServletResponse response,
-                                          @RequestBody ApiCacheItemBo apiBo
-    ) throws IOException {
+                                          @RequestBody ApiCacheItemBo apiBo) throws IOException {
 
         SessionAccount account = loginService.getAccountFromSession(request);
-
         if (null == account) {
             LOGGER.warn("[AccountController.updateDubboApi] current user not have valid account info in session");
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.editApiStatus] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-
-        if (!busProjectService.isAboveWork(Consts.PROJECT_NAME, apiBo.getProjectId().longValue(), account.getUsername())) {
-            response.sendError(401, "需要work以上权限");
-            return null;
-        }
         apiBo.setUsername(account.getUsername());
         return dubboApiService.updateDubboApi(apiBo, apiBo.getApiID());
-//        }
     }
 
     /**
-     * 获取dubbo接口详情
-     *
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
+     * get dubbo api info
      */
     @ResponseBody
     @RequestMapping(value = "/getDubboApiDetail", method = RequestMethod.POST)
@@ -826,25 +672,16 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.getDubboApiDetail] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        return dubboApiService.getDubboApiDetail(account.getId().intValue(), projectID, apiID);
+        return dubboApiService.getDubboApiDetail(account.getUsername(), projectID, apiID);
     }
 
     /**
      * 获取dubbo接口详情
-     *
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
      */
     @ResponseBody
     @RequestMapping(value = "/getDubboApiDetailRemote", method = RequestMethod.POST)
     public Result<ApiCacheItem> getDubboApiDetailFromRemote(HttpServletRequest request,
-                                                            HttpServletResponse response, String env, String service, GetDubboApiRequestBo dubboApiRequestBo) throws IOException {
+                                                            HttpServletResponse response, String env, String service, GetApiBasicRequest dubboApiRequestBo) throws IOException {
         SessionAccount account = loginService.getAccountFromSession(request);
 
         if (null == account) {
@@ -862,43 +699,6 @@ public class ApiController {
     }
 
 
-    /**
-     * 批量删除api,将其移入回收站
-     *
-     * @param request
-     * @return
-     */
-    @ResponseBody
-    @RequestMapping(value = "/removeApi", method = RequestMethod.POST)
-    public Result<Boolean> removeApi(HttpServletRequest request,
-                                     HttpServletResponse response,
-                                     String apiIDs, Integer projectID) throws IOException {
-        SessionAccount account = loginService.getAccountFromSession(request);
-
-        if (null == account) {
-            LOGGER.warn("[AccountController.removeApi] current user not have valid account info in session");
-            response.sendError(401, "未登录或者无权限");
-            return null;
-        }
-        if (!busProjectService.isBusProjectAdmin(Consts.PROJECT_NAME, projectID.longValue(), account.getUsername())) {
-            response.sendError(401, "需要admin权限执行此操作");
-            return null;
-        }
-
-        boolean result = apiService.removeApi(projectID, apiIDs, account.getId().intValue(), account.getUsername());
-        if (result) {
-            return Result.success(true);
-        } else {
-            return Result.fail(CommonError.UnknownError);
-        }
-    }
-
-    /**
-     * 彻底删除接口
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/deleteApi", method = RequestMethod.POST)
     public Result<Boolean> deleteApi(HttpServletRequest request,
@@ -911,10 +711,6 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (!busProjectService.isBusProjectAdmin(Consts.PROJECT_NAME, projectID.longValue(), account.getUsername())) {
-            response.sendError(401, "需要admin权限执行此操作");
-            return null;
-        }
         boolean result = apiService.deleteApi(projectID, apiIDs, account.getUsername());
         if (result) {
             return Result.success(true);
@@ -924,12 +720,7 @@ public class ApiController {
     }
 
     /**
-     * 获取http接口详情
-     *
-     * @param request
-     * @param apiID
-     * @param projectID
-     * @return
+     * get http api detail
      */
     @ResponseBody
     @RequestMapping(value = "/getHttpApi", method = RequestMethod.POST)
@@ -943,29 +734,30 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.editApiStatus] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
 
-        if (!busProjectService.isMember(Consts.PROJECT_NAME, projectID.longValue(), account.getUsername())) {
-            response.sendError(401, "不是项目成员");
-            return null;
-        }
-
-        Map<String, Object> result = httpApiService.getHttpApi(account.getId().intValue(), projectID, apiID);
+        Map<String, Object> result = httpApiService.getHttpApi(account.getUsername(), projectID, apiID);
         return Result.success(result);
     }
 
     /**
-     * 获取分组接口列表
-     *
-     * @param request
-     * @param projectID
-     * @param orderBy
-     * @param asc
-     * @return
+     * get sidecar api info
      */
+    @ResponseBody
+    @RequestMapping(value = "/getSidecarApi", method = RequestMethod.POST)
+    public Result<Map<String, Object>> getSidecarApi(HttpServletRequest request,
+                                                     HttpServletResponse response,
+                                                     Integer apiID, Integer projectID) throws IOException {
+        SessionAccount account = loginService.getAccountFromSession(request);
+
+        if (null == account) {
+            LOGGER.warn("[AccountController.getSidecarApi] current user not have valid account info in session");
+            response.sendError(401, "未登录或者无权限");
+            return null;
+        }
+        Map<String, Object> result = sidecarApiService.getSidecarApi(account.getId().intValue(), projectID, apiID);
+        return Result.success(result);
+    }
+
     @ResponseBody
     @RequestMapping(value = "/getApiList", method = RequestMethod.POST)
     public Result<Map<String, Object>> getApiList(HttpServletRequest request,
@@ -979,27 +771,16 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (!busProjectService.isMember(Consts.PROJECT_NAME, projectID.longValue(), account.getUsername())) {
-            response.sendError(401, "不是项目成员");
-            return null;
-        }
         Map<String, Object> result = apiService.getApiList(pageNo, pageSize, projectID, groupID, orderBy, asc);
 
         return Result.success(result);
     }
 
-    /**
-     * 获取分组接口列表
-     *
-     * @param request
-     * @param projectID
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/getGroupApiViewList", method = RequestMethod.POST)
     public Result<Map<Integer, List<Map<String, Object>>>> getGroupApiViewList(HttpServletRequest request,
                                                                                HttpServletResponse response,
-                                                                               Integer projectID) throws IOException {
+                                                                               Integer projectID, Integer orderBy) throws IOException {
         SessionAccount account = loginService.getAccountFromSession(request);
 
         if (null == account) {
@@ -1007,11 +788,7 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (!busProjectService.isMember(Consts.PROJECT_NAME, projectID.longValue(), account.getUsername())) {
-            response.sendError(401, "不是项目成员");
-            return null;
-        }
-        Map<Integer, List<Map<String, Object>>> result = apiService.getGroupApiViewList(projectID);
+        Map<Integer, List<Map<String, Object>>> result = apiService.getGroupApiViewList(projectID, orderBy);
         return Result.success(result);
     }
 
@@ -1026,17 +803,10 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        List<Api> result = apiService.getRecentlyApiList(account.getId().intValue());
+        List<Api> result = apiService.getRecentlyApiList(account.getUsername());
         return Result.success(result);
     }
 
-
-    /**
-     * 根据索引分组获取接口列表
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/getApiListByIndex", method = RequestMethod.POST)
     public Result<List<Map<String, String>>> getApiListByIndex(HttpServletRequest request,
@@ -1049,21 +819,9 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-
-        if (!busProjectService.isMember(Consts.PROJECT_NAME, projectID.longValue(), account.getUsername())) {
-            response.sendError(401, "不是项目成员");
-            return null;
-        }
         return apiService.getApiListByIndex(indexID);
     }
 
-    /**
-     * 获取索引分组接口列表
-     *
-     * @param request
-     * @param projectID
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/getAllIndexGroupApiViewList", method = RequestMethod.POST)
     public Result<Map<Integer, List<Map<String, Object>>>> getAllIndexGroupApiViewList(HttpServletRequest request,
@@ -1076,21 +834,10 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (!busProjectService.isMember(Consts.PROJECT_NAME, projectID.longValue(), account.getUsername())) {
-            response.sendError(401, "不是项目成员");
-            return null;
-        }
         Map<Integer, List<Map<String, Object>>> result = apiService.getAllIndexGroupApiViewList(projectID);
         return Result.success(result);
     }
 
-    /**
-     * 获取接口详情
-     *
-     * @param request
-     * @param projectID
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/searchApi", method = RequestMethod.POST)
     public Result<List<Map<String, Object>>> searchApi(HttpServletRequest request,
@@ -1102,10 +849,6 @@ public class ApiController {
             LOGGER.warn("[AccountController.searchApi] current user not have valid account info in session");
             response.sendError(401, "未登录或者无权限");
             return null;
-        }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.editApiStatus] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
         }
 
         List<Map<String, Object>> result = apiService.searchApi(projectID, tips, type);
@@ -1124,14 +867,6 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.editApiMockExpect] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        if (!busProjectService.isMember(Consts.PROJECT_NAME, bo.getProjectID().longValue(), account.getUsername())) {
-            response.sendError(401, "不是该项目成员");
-            return null;
-        }
         switch (bo.getApiType()) {
             case 1:
                 return mockService.updateHttpApiMockData(account.getUsername(), bo.getMockExpID(), bo.getApiID(), bo.getParamsJson(), bo.getMockRequestRaw(), bo.getMockRequestParamType(), bo.getMockExpName(), bo.getProjectID(), bo.getMockRule(), bo.getMockDataType(), bo.getDefaultSys(), bo.getEnableMockScript(), bo.getMockScript());
@@ -1144,11 +879,6 @@ public class ApiController {
         }
     }
 
-    /**
-     * @param request
-     * @param projectID
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/getApiHistoryList", method = RequestMethod.POST)
     public Result<List<Map<String, Object>>> getApiHistoryList(HttpServletRequest request,

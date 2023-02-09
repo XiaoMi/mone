@@ -1,11 +1,13 @@
 package com.xiaomi.miapi.mapper;
 
-import com.xiaomi.miapi.common.pojo.ProjectFocus;
-import com.xiaomi.miapi.common.pojo.ProjectFocusExample;
-import org.apache.ibatis.annotations.Param;
-
+import com.xiaomi.miapi.pojo.ProjectFocus;
+import com.xiaomi.miapi.pojo.ProjectFocusExample;
 import java.util.List;
-
+import org.apache.ibatis.annotations.Param;
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 public interface ProjectFocusMapper {
     long countByExample(ProjectFocusExample example);
 

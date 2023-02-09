@@ -69,23 +69,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.xiaomi.miapi</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>mi-api-api</artifactId>
             <version>1.0.0-SNAPSHOT</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.xiaomi.mone</groupId>
-                    <artifactId>mi-tpc-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.xiaomi.mone</groupId>
-                    <artifactId>dubbo-docs-core</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.xiaomi.youpin</groupId>
-                    <artifactId>youpin-infra-rpc</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
     </dependencies>
 

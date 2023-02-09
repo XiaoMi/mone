@@ -3,46 +3,41 @@ package com.xiaomi.miapi.service.impl;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.alibaba.nacos.api.exception.NacosException;
-import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.xiaomi.miapi.common.pojo.*;
+import com.xiaomi.miapi.bo.BatchImportApiBo;
+import com.xiaomi.miapi.pojo.*;
 import com.xiaomi.miapi.util.Md5Utils;
 import com.xiaomi.miapi.util.RedisUtil;
-import com.xiaomi.data.push.nacos.NacosNaming;
-import com.xiaomi.miapi.common.bo.BatchImportHttpApiBo;
-import com.xiaomi.miapi.common.bo.GetHttpApiRequestBo;
-import com.xiaomi.miapi.common.bo.HttpApiUpdateNotifyBo;
-import com.xiaomi.miapi.common.dto.ManualHttpUpDTO;
+import com.xiaomi.miapi.bo.GetApiBasicRequest;
+import com.xiaomi.miapi.bo.HttpApiUpdateNotifyBo;
+import com.xiaomi.miapi.dto.ManualHttpUpDTO;
 import com.xiaomi.miapi.service.HttpApiService;
 import com.xiaomi.miapi.service.MockService;
 import com.xiaomi.miapi.common.Consts;
 import com.xiaomi.miapi.common.Result;
 import com.xiaomi.miapi.common.exception.CommonError;
 import com.xiaomi.miapi.mapper.*;
-import com.xiaomi.mone.dubbo.docs.core.beans.ModuleCacheItem;
 import com.xiaomi.mone.http.docs.core.beans.HttpApiCacheItem;
 import com.xiaomi.mone.http.docs.core.beans.HttpLayerItem;
 import com.xiaomi.mone.http.docs.core.beans.HttpModuleCacheItem;
-import com.xiaomi.mone.http.docs.providers.IHttpDocProvider;
 import com.xiaomi.youpin.codegen.bo.ApiHeaderBo;
 import org.apache.dubbo.common.utils.StringUtils;
-import org.apache.dubbo.config.annotation.DubboReference;
-import org.apache.dubbo.rpc.RpcContext;
-import org.apache.dubbo.rpc.RpcException;
-import org.apache.dubbo.rpc.cluster.router.address.Address;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.annotation.Resource;
 import java.sql.Timestamp;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 @Service
 public class HttpApiServiceImpl implements HttpApiService {
 
@@ -66,28 +61,17 @@ public class HttpApiServiceImpl implements HttpApiService {
 
     @Autowired
     RecordService recordService;
-
-    @Autowired
-    ApiIndexMapper apiIndexMapper;
-
-    @Autowired
-    IndexInfoMapper indexInfoMapper;
-
-    @Autowired
-    ApiHistoryRecordMapper historyRecordMapper;
-
     @Autowired
     MockService mockService;
 
     @Autowired
     ApiServiceImpl apiService;
 
-    @DubboReference(registry = "stRegistry", lazy = true, check = false, group = "", interfaceClass = IHttpDocProvider.class, timeout = 1000, parameters = {"router", "address"}, retries = 0)
-    private IHttpDocProvider httpDocProvider;
+    @Autowired
+    private HttpPushDataMapper httpPushDataMapper;
 
-    @Resource(name = "nacosNamingSt")
-    private NacosNaming nacosNamingSt;
-
+    @Autowired
+    private ModuleNameDataMapper moduleMapper;
     @Autowired
     private ApiMockExpectMapper mockExpectMapper;
 
@@ -95,17 +79,15 @@ public class HttpApiServiceImpl implements HttpApiService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(HttpApiServiceImpl.class);
 
+    private final ExecutorService pushDataPool = Executors.newCachedThreadPool();
 
-    /**
-     * 新增http接口
-     */
     @Override
     @Transactional
     public Result<Boolean> addHttpApi(Api api, String apiHeader, String apiRequestParam, String apiResultParam, String apiErrorCodes, boolean randomGen) {
 
         api = apiService.checkAndFillApiInfo(api);
-        //校验url是否存在
-        Api oldApi = apiMapper.getApiInfoByUrl(api.getApiURI(), api.getApiRequestType());
+        //check if url exist
+        Api oldApi = apiMapper.getApiInfoByUrlAndProject(api.getApiURI(), api.getApiRequestType(), api.getProjectID());
         if (oldApi != null) {
             return Result.fail(CommonError.APIUrlAlreadyExist);
         }
@@ -156,9 +138,7 @@ public class HttpApiServiceImpl implements HttpApiService {
             if (apiCacheMapper.addApiCache(apiCache) < 1) {
                 return Result.fail(CommonError.UnknownError);
             }
-            //创建http类型接口系统默认期望
             mockService.updateHttpApiMockData(api.getUpdateUsername(), null, api.getApiID(), "", "", Consts.FORM_DATA_TYPE, "系统全局ApiMock", api.getProjectID(), api.getApiResponseRaw(), 1, true, false, "");
-            //示例代码生成
             try {
                 List<ApiHeaderBo> headerList = gson.fromJson(apiHeader, new TypeToken<List<ApiHeaderBo>>() {
                 }.getType());
@@ -174,10 +154,8 @@ public class HttpApiServiceImpl implements HttpApiService {
             if (apiErrorCodes.equals(Consts.IMPORT_SWAGGER_FLAG)) {
                 updateMsg = Consts.IMPORT_SWAGGER_FLAG;
             }
-            //记录历史版本
             apiService.recordApiHistory(api, apiCache.getApiJson(), updateMsg);
 
-            //操作记录
             recordService.doRecord(api, JSON.toJSONString(cache), "添加HTTP接口", "添加HTTP接口:" + api.getApiName(), ProjectOperationLog.OP_TYPE_ADD);
 
             return Result.success(true);
@@ -187,19 +165,19 @@ public class HttpApiServiceImpl implements HttpApiService {
 
     @Override
     @Transactional
-    public Result<Boolean> batchAddHttpApi(String apiEnv, List<BatchImportHttpApiBo> bos) {
+    public Result<Boolean> batchAddHttpApi(String apiEnv, List<BatchImportApiBo> bos) {
         bos.forEach(bo -> {
             List<HttpApiCacheItem> httpItems = new ArrayList<>(bo.getApiNames().size());
 
             bo.getApiNames().forEach(apiMethodName -> {
                 try {
-                    GetHttpApiRequestBo getHttpApiRequestBo = new GetHttpApiRequestBo();
-                    getHttpApiRequestBo.setApiName(apiMethodName);
-                    getHttpApiRequestBo.setIp(bo.getIp());
-                    getHttpApiRequestBo.setPort(bo.getPort());
-                    getHttpApiRequestBo.setModuleClassName(bo.getHttpModuleClassName());
+                    GetApiBasicRequest getApiBasicRequest = new GetApiBasicRequest();
+                    getApiBasicRequest.setApiName(apiMethodName);
+                    getApiBasicRequest.setIp(bo.getIp());
+                    getApiBasicRequest.setPort(bo.getPort());
+                    getApiBasicRequest.setModuleClassName(bo.getModuleClassName());
 
-                    HttpApiCacheItem item = getHttpApiDetailFromRemote(getHttpApiRequestBo);
+                    HttpApiCacheItem item = getHttpApiDetailFromRemote(getApiBasicRequest);
                     httpItems.add(item);
                 } catch (Exception e) {
                     LOGGER.warn("batchAddHttpApi error:{}", e.getMessage());
@@ -221,17 +199,13 @@ public class HttpApiServiceImpl implements HttpApiService {
                     api.setApiRequestParamType(judgeParamType(item.getParamsLayerList()));
                     api.setApiResponseParamType(Consts.JSON_DATA_TYPE);
                     api.setUpdateUsername(bo.getUpdateUserName());
-                    api.setHttpControllerPath(bo.getHttpModuleClassName());
+                    api.setHttpControllerPath(bo.getModuleClassName());
                     List<HttpLayerItem> respLayer = new ArrayList<>();
                     respLayer.add(item.getResponseLayer());
-                    //唯一关联 path& request type
-                    Api oldApi = apiMapper.getApiInfoByUrl(item.getApiPath(), ApiServiceImpl.transferStrMethod2Num(item.getApiMethod()));
+                    Api oldApi = apiMapper.getApiInfoByUrlAndProject(item.getApiPath(), ApiServiceImpl.transferStrMethod2Num(item.getApiMethod()), bo.getProjectID());
                     if (Objects.isNull(oldApi)) {
-                        //不存在则添加；
-                        //todo cache中字段需要选择性更新,或者这里带上errorCode
                         addHttpApi(api, "", gson.toJson(item.getParamsLayerList()), gson.toJson(respLayer), "", false);
                     } else if (bo.getForceUpdate()) {
-                        //强制更新
                         api.setApiID(oldApi.getApiID());
                         editHttpApi(api, "", gson.toJson(item.getParamsLayerList()), gson.toJson(respLayer), "", true);
                     }
@@ -243,9 +217,6 @@ public class HttpApiServiceImpl implements HttpApiService {
         return Result.success(true);
     }
 
-    /**
-     * 修改接口
-     */
     @Override
     @Transactional
     public Result<Boolean> editHttpApi(Api api, String apiHeader, String apiRequestParam, String apiResultParam, String apiErrorCodes, boolean doRecord) {
@@ -254,9 +225,8 @@ public class HttpApiServiceImpl implements HttpApiService {
         if (Objects.isNull(oldApi)) {
             return Result.fail(CommonError.APIDoNotExist);
         }
-        //校验url是否存在
         if (!oldApi.getApiURI().equals(api.getApiURI())) {
-            Api newUrlApi = apiMapper.getApiInfoByUrl(api.getApiURI(), api.getApiRequestType());
+            Api newUrlApi = apiMapper.getApiInfoByUrlAndProject(api.getApiURI(), api.getApiRequestType(), api.getProjectID());
             if (newUrlApi != null) {
                 return Result.fail(CommonError.APIUrlAlreadyExist);
             }
@@ -264,7 +234,6 @@ public class HttpApiServiceImpl implements HttpApiService {
         Date date = new Date();
         Timestamp updateTime = new Timestamp(date.getTime());
         api.setApiUpdateTime(updateTime);
-        //老的接口默认测试环境
         if (StringUtils.isEmpty(oldApi.getApiEnv())) {
             api.setApiEnv("staging");
         }
@@ -310,15 +279,12 @@ public class HttpApiServiceImpl implements HttpApiService {
                 return Result.fail(CommonError.UnknownError);
             }
 
-            //更新http类型接口系统默认期望
             ApiMockExpectExample example = new ApiMockExpectExample();
             example.createCriteria().andApiIdEqualTo(api.getApiID()).andIsDefaultEqualTo(true);
             List<ApiMockExpect> expects = mockExpectMapper.selectByExample(example);
             if (Objects.nonNull(expects) && !expects.isEmpty()) {
                 mockService.updateHttpApiMockData(api.getUpdateUsername(), expects.get(0).getId(), api.getApiID(), "", "", 0, "系统全局ApiMock", api.getProjectID(), api.getApiResponseRaw(), 1, true, false, "");
             }
-
-            //示例代码生成
             try {
                 List<ApiHeaderBo> headerList = gson.fromJson(apiHeader, new TypeToken<List<ApiHeaderBo>>() {
                 }.getType());
@@ -326,27 +292,21 @@ public class HttpApiServiceImpl implements HttpApiService {
             } catch (Exception e) {
                 LOGGER.warn("更新生成代码失败", e);
             }
-            //记录历史按本
             if (doRecord) {
                 String updateMsg = "update http api";
                 if (StringUtils.isNotEmpty(api.getUpdateMsg())) {
                     updateMsg = api.getUpdateMsg();
                 }
-                //记录历史版本
                 apiService.recordApiHistory(api, apiCache.getApiJson(), updateMsg);
             }
-            //操作记录
             recordService.doRecord(api, JSON.toJSONString(cache), "[快速保存]修改接口", "[快速保存]修改接口:" + api.getApiName(), ProjectOperationLog.OP_TYPE_UPDATE);
             return Result.success(true);
         }
         return Result.fail(CommonError.UnknownError);
     }
 
-    /**
-     * 获取http接口详情
-     */
     @Override
-    public Map<String, Object> getHttpApi(Integer userId, Integer projectID, Integer apiID) {
+    public Map<String, Object> getHttpApi(String username, Integer projectID, Integer apiID) {
 
         Map<String, Object> result = apiMapper.getApi(projectID, apiID);
         Map<String, Object> apiJson = JSONObject.parseObject(result.get("apiJson").toString());
@@ -356,7 +316,11 @@ public class HttpApiServiceImpl implements HttpApiService {
             baseInfo.put("projectID", result.get("projectID"));
             baseInfo.put("apiID", result.get("apiID"));
             baseInfo.putIfAbsent("apiEnv", "staging");
-            String groupName = apiGroupMapper.getGroupByID(Integer.parseInt(result.get("groupID").toString())).getGroupName();
+            ApiGroup apiGroup = apiGroupMapper.getGroupByID(Integer.parseInt(result.get("groupID").toString()));
+            if (apiGroup == null) {
+                return null;
+            }
+            String groupName = apiGroup.getGroupName();
             baseInfo.put("groupName", groupName);
             apiJson.put("baseInfo", baseInfo);
             ApiRequestExpExample reqExample = new ApiRequestExpExample();
@@ -378,180 +342,162 @@ public class HttpApiServiceImpl implements HttpApiService {
             apiJson.put("mockInfo", mockInfo);
         }
 
-        redis.recordRecently10Apis(userId, apiID);
-        return apiJson;
-    }
-
-    /**
-     * 获取http接口基本信息
-     */
-    @Override
-    public Map<String, Object> getBasicHttpApi(Integer projectID, Integer apiID) {
-        Map<String, Object> result = apiMapper.getApi(projectID, apiID);
-        Map<String, Object> apiJson = JSONObject.parseObject(result.get("apiJson").toString());
-        if (apiJson != null && !apiJson.isEmpty()) {
-            Map<String, Object> baseInfo = (JSONObject) apiJson.get("baseInfo");
-            baseInfo.put("apiID", result.get("apiID"));
-            baseInfo.putIfAbsent("apiEnv", "staging");
-            apiJson.put("baseInfo", baseInfo);
-        }
+        redis.recordRecently10Apis(username, apiID);
         return apiJson;
     }
 
     @Override
-    public Result<Map<String, Object>> getAllHttpModulesInfo(String serviceName) throws NacosException {
+    public Result<Map<String, Object>> getAllHttpModulesInfo(String serviceName, String ip) {
         Map<String, Object> resultMap = new HashMap<>();
-        List<Instance> instanceList;
-        instanceList = nacosNamingSt.getAllInstances(serviceName);
-
-        if (instanceList.isEmpty()) {
+        ModuleNameDataExample moduleExp = new ModuleNameDataExample();
+        moduleExp.createCriteria().andModuleNameEqualTo(serviceName);
+        List<ModuleNameData> moduleList = moduleMapper.selectByExample(moduleExp);
+        if (moduleList == null || moduleList.isEmpty()) {
             return Result.success(resultMap);
         }
-        Address address = new Address(instanceList.get(0).getIp(), instanceList.get(0).getPort());
-        RpcContext.getContext().setObjectAttachment("address", address);
-
-        String ipAndPort = instanceList.get(0).getIp() + ":" + instanceList.get(0).getPort();
+        List<String> ipAndPortList = new ArrayList<>();
+        moduleList.forEach(instance -> ipAndPortList.add(instance.getAddress()));
+        if (ipAndPortList.size() == 0) {
+            return Result.fail(CommonError.HttpApiForIpPortNotFound);
+        }
         List<HttpModuleCacheItem> list;
-
         try {
-            list = httpDocProvider.httpApiModuleListAndApiInfo();
-        } catch (Exception e) {
-            if (e instanceof RpcException) {
-                if (((RpcException) e).getCode() == 6) {
-                    return Result.fail(CommonError.HttpApiForIpPortNotFound);
-                }
+            HttpPushDataExample example = new HttpPushDataExample();
+            if (null == ip || ip.isEmpty()) {
+                example.createCriteria().andAddressEqualTo(ipAndPortList.get(0));
+            } else {
+                example.createCriteria().andAddressEqualTo(ip);
             }
+            List<HttpPushData> httpPushDataList = httpPushDataMapper.selectByExampleWithBLOBs(example);
+            if (httpPushDataList == null || httpPushDataList.size() == 0) {
+                return Result.fail(CommonError.HttpApiForIpPortNotFound);
+            }
+            String httpApiModuleListAndApiInfoStr = httpPushDataList.get(0).getHttpapimodulelistandapiinfo();
+            list = gson.fromJson(httpApiModuleListAndApiInfoStr, new TypeToken<List<HttpModuleCacheItem>>() {
+            }.getType());
+        } catch (Exception e) {
             LOGGER.error("get http doc error", e);
             return Result.fail(CommonError.UnknownError);
         }
         resultMap.put("list", list);
-        resultMap.put("ipAndPort", ipAndPort);
+        resultMap.put("ipAndPort", ipAndPortList);
         return Result.success(resultMap);
     }
 
     @Override
-    public Result<Boolean> manualUpdateHttpApi(ManualHttpUpDTO httpUpDTO) throws NacosException {
+    public Result<Boolean> manualUpdateHttpApi(ManualHttpUpDTO httpUpDTO) {
         Api api = apiMapper.getApiInfo(httpUpDTO.getProjectID(), httpUpDTO.getApiID());
         if (Objects.isNull(api.getHttpControllerPath()) || api.getHttpControllerPath().isEmpty()) {
-            return Result.fail(CommonError.HttpApiMustBeLoaded);
+            return Result.fail(CommonError.ApiMustBeLoaded);
         }
-        List<Instance> instanceList;
-        instanceList = nacosNamingSt.getAllInstances(api.getHttpControllerPath());
-        if (instanceList.isEmpty()) {
+        ModuleNameDataExample moduleExp = new ModuleNameDataExample();
+        moduleExp.createCriteria().andModuleNameEqualTo(api.getHttpControllerPath());
+        List<ModuleNameData> moduleList = moduleMapper.selectByExample(moduleExp);
+        if (moduleList == null || moduleList.isEmpty()) {
             return Result.fail(CommonError.ServiceMustRun);
         }
-        instanceList = instanceList.stream().filter(Instance::isHealthy).collect(Collectors.toList());
-        if (instanceList.isEmpty()) {
-            return Result.fail(CommonError.ServiceMustRun);
-        }
+        String[] ipAndPort = moduleList.get(0).getAddress().split(":");
+        GetApiBasicRequest getApiBasicRequest = new GetApiBasicRequest();
+        getApiBasicRequest.setApiName(api.getApiURI().substring(api.getApiURI().lastIndexOf("/") + 1));
+        getApiBasicRequest.setIp(ipAndPort[0]);
+        getApiBasicRequest.setPort(Integer.valueOf(ipAndPort[1]));
+        getApiBasicRequest.setModuleClassName(api.getHttpControllerPath());
 
-        //获取方法集
-        GetHttpApiRequestBo getHttpApiRequestBo = new GetHttpApiRequestBo();
-        getHttpApiRequestBo.setApiName(api.getApiURI().substring(api.getApiURI().lastIndexOf("/") + 1));
-        getHttpApiRequestBo.setIp(instanceList.get(0).getIp());
-        getHttpApiRequestBo.setPort(instanceList.get(0).getPort());
-        getHttpApiRequestBo.setModuleClassName(api.getHttpControllerPath());
-
-        HttpApiCacheItem item = getHttpApiDetailFromRemote(getHttpApiRequestBo);
+        HttpApiCacheItem item = getHttpApiDetailFromRemote(getApiBasicRequest);
         if (Objects.isNull(item)) {
             return Result.fail(CommonError.APIDoNotExist);
         }
-        //唯一关联 path& request type
-        Api oldApi = apiMapper.getApiInfoByUrl(item.getApiPath(), ApiServiceImpl.transferStrMethod2Num(item.getApiMethod()));
+        Api oldApi = apiMapper.getApiInfoByUrlAndProject(item.getApiPath(), ApiServiceImpl.transferStrMethod2Num(item.getApiMethod()), httpUpDTO.getProjectID());
         if (Objects.isNull(oldApi)) {
             return Result.fail(CommonError.APIDoNotExist);
         }
-        //更新
-        oldApi.setApiName(item.getApiName());
+        if (item.getApiMethodName() != null && !item.getApiMethodName().isEmpty()) {
+            oldApi.setApiName(item.getApiMethodName());
+        } else {
+            oldApi.setApiName(item.getApiName());
+        }
         oldApi.setApiDesc(item.getDescription());
         oldApi.setUpdateUsername(httpUpDTO.getOpUsername());
         oldApi.setUpdateMsg(httpUpDTO.getUpdateMsg());
         List<HttpLayerItem> respLayer = new ArrayList<>();
         respLayer.add(item.getResponseLayer());
-        //todo deal with header and error_code
         editHttpApi(oldApi, "", gson.toJson(item.getParamsLayerList()), gson.toJson(respLayer), "", true);
         return Result.success(true);
     }
 
-    /**
-     * http接口自动更新通知
-     *
-     * @param bo
-     * @return
-     * @throws InterruptedException
-     */
     @Override
-    public Result<Boolean> httpApiUpdateNotify(HttpApiUpdateNotifyBo bo) throws InterruptedException {
-        //获取方法集
-        String docInfo;
-        HttpModuleCacheItem httpModuleCacheItem;
-        int retry = 0;
-        while (retry < 3) {
-            try {
-                Address address = new Address(bo.getIp(), bo.getPort());
-                RpcContext.getContext().setObjectAttachment("address", address);
-                if (StringUtils.isNotEmpty(bo.getEnv()) && bo.getEnv().equals("staging")) {
-                    docInfo = httpDocProvider.httpApiModuleInfo(bo.getApiController());
-                } else {
-                    return Result.fail(CommonError.UnknownError);
-                }
-                httpModuleCacheItem = gson.fromJson(docInfo, new TypeToken<ModuleCacheItem>() {
-                }.getType());
-
-                List<HttpApiCacheItem> httpItems = new ArrayList<>(httpModuleCacheItem.getHttpModuleApiList().size());
-
-                httpModuleCacheItem.getHttpModuleApiList().forEach(httpApiCacheItem -> {
-                    GetHttpApiRequestBo getHttpApiRequestBo = new GetHttpApiRequestBo();
-                    getHttpApiRequestBo.setApiName(httpApiCacheItem.getApiName());
-                    getHttpApiRequestBo.setIp(bo.getIp());
-                    getHttpApiRequestBo.setPort(bo.getPort());
-                    getHttpApiRequestBo.setModuleClassName(bo.getApiController());
-
-                    HttpApiCacheItem item = getHttpApiDetailFromRemote(getHttpApiRequestBo);
-                    httpItems.add(item);
-                });
-                for (HttpApiCacheItem item :
-                        httpItems) {
-                    //唯一关联 path& request type
-                    Api oldApi = apiMapper.getApiInfoByUrl(item.getApiPath(), ApiServiceImpl.transferStrMethod2Num(item.getApiMethod()));
-                    if (Objects.isNull(oldApi)) {
-                        //不存在则跳过；
-                    } else {
-                        //更新
-                        oldApi.setApiName(item.getApiName());
-                        oldApi.setApiDesc(item.getDescription());
-                        oldApi.setUpdateUsername(bo.getOpUsername());
-                        List<HttpLayerItem> respLayer = new ArrayList<>();
-                        respLayer.add(item.getResponseLayer());
-                        //todo deal with header and error_code
-                        editHttpApi(oldApi, "", gson.toJson(item.getParamsLayerList()), gson.toJson(respLayer), "", true);
-                    }
-                }
-
-            } catch (Exception e) {
-                if (e instanceof RpcException) {
-                    if (((RpcException) e).getCode() == 6) {
+    public void httpApiUpdateNotify(HttpApiUpdateNotifyBo bo) {
+        pushDataPool.submit(() -> {
+            HttpModuleCacheItem httpModuleCacheItem;
+            int retry = 0;
+            while (retry < 3) {
+                try {
+                    HttpPushDataExample example = new HttpPushDataExample();
+                    example.createCriteria().andAddressEqualTo(bo.getIp() + ":" + bo.getPort());
+                    List<HttpPushData> httpPushDataList = httpPushDataMapper.selectByExampleWithBLOBs(example);
+                    if (httpPushDataList == null || httpPushDataList.size() == 0) {
                         retry++;
-                        //等10s再重试
-                        Thread.sleep(10000);
+                        Thread.sleep(3000);
                         continue;
                     }
+                    String httpApiModuleInfoStr = httpPushDataList.get(0).getHttpapimoduleinfo();
+
+                    Map<String, HttpModuleCacheItem> apiModulesCache = gson.fromJson(httpApiModuleInfoStr, new TypeToken<Map<String, HttpModuleCacheItem>>() {
+                    }.getType());
+                    httpModuleCacheItem = apiModulesCache.get(bo.getApiController());
+
+                    List<HttpApiCacheItem> httpItems = new ArrayList<>(httpModuleCacheItem.getHttpModuleApiList().size());
+
+                    httpModuleCacheItem.getHttpModuleApiList().forEach(httpApiCacheItem -> {
+                        GetApiBasicRequest getApiBasicRequest = new GetApiBasicRequest();
+                        getApiBasicRequest.setApiName(httpApiCacheItem.getApiName());
+                        getApiBasicRequest.setIp(bo.getIp());
+                        getApiBasicRequest.setPort(bo.getPort());
+                        getApiBasicRequest.setModuleClassName(bo.getApiController());
+
+                        HttpApiCacheItem item = getHttpApiDetailFromRemote(getApiBasicRequest);
+                        httpItems.add(item);
+                    });
+                    for (HttpApiCacheItem item :
+                            httpItems) {
+                        Api oldApi = apiMapper.getApiInfoByUrl(item.getApiPath(), ApiServiceImpl.transferStrMethod2Num(item.getApiMethod()));
+                        if (Objects.nonNull(oldApi)) {
+                            oldApi.setApiName(item.getApiName());
+                            oldApi.setApiDesc(item.getDescription());
+                            oldApi.setUpdateUsername(bo.getOpUsername());
+                            List<HttpLayerItem> respLayer = new ArrayList<>();
+                            respLayer.add(item.getResponseLayer());
+                            editHttpApi(oldApi, "", gson.toJson(item.getParamsLayerList()), gson.toJson(respLayer), "", true);
+                        }
+                    }
+                } catch (Exception e) {
+                    LOGGER.warn("get dubbo doc error", e);
+                    retry++;
+                    try {
+                        Thread.sleep(3000);
+                    } catch (InterruptedException ignored) {
+                    }
+                    continue;
                 }
-                LOGGER.warn("get dubbo doc error", e);
+                break;
             }
-            break;
-        }
-        return Result.success(true);
+        });
+
     }
 
-    public HttpApiCacheItem getHttpApiDetailFromRemote(GetHttpApiRequestBo httpApiRequestBo) {
-        Address address = new Address(httpApiRequestBo.getIp(), httpApiRequestBo.getPort());
-        RpcContext.getContext().setObjectAttachment("address", address);
+    public HttpApiCacheItem getHttpApiDetailFromRemote(GetApiBasicRequest httpApiRequestBo) {
         HttpApiCacheItem apiCacheItem = null;
         try {
-            String apiCacheItemStr;
-            apiCacheItemStr = httpDocProvider.httpApiParamsResponseInfo(httpApiRequestBo.getModuleClassName() + "." + httpApiRequestBo.getApiName());
-            apiCacheItem = gson.fromJson(apiCacheItemStr, HttpApiCacheItem.class);
+            HttpPushDataExample example = new HttpPushDataExample();
+            example.createCriteria().andAddressEqualTo(httpApiRequestBo.getIp() + ":" + httpApiRequestBo.getPort());
+            List<HttpPushData> httpPushDataList = httpPushDataMapper.selectByExampleWithBLOBs(example);
+            if (httpPushDataList == null || httpPushDataList.size() == 0) {
+                return null;
+            }
+            String detailParamInfo = httpPushDataList.get(0).getHttpapiparamsresponseinfo();
+            Map<String, HttpApiCacheItem> apiParamsAndRespCache = gson.fromJson(detailParamInfo, new TypeToken<Map<String, HttpApiCacheItem>>() {
+            }.getType());
+            apiCacheItem = apiParamsAndRespCache.get(httpApiRequestBo.getModuleClassName() + "." + httpApiRequestBo.getApiName());
         } catch (Exception e) {
             LOGGER.error("getHttpApiDetailFromRemote error", e);
         }

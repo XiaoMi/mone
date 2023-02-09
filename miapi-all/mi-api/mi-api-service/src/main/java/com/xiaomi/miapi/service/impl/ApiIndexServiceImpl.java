@@ -2,7 +2,7 @@ package com.xiaomi.miapi.service.impl;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.xiaomi.miapi.common.pojo.*;
+import com.xiaomi.miapi.pojo.*;
 import com.xiaomi.miapi.util.Md5Utils;
 import com.xiaomi.miapi.service.ApiIndexService;
 import com.xiaomi.miapi.common.Consts;
@@ -33,6 +33,7 @@ public class ApiIndexServiceImpl implements ApiIndexService {
 
     @Autowired
     private ApiMapper apiMapper;
+
 
     @Autowired
     ApiRequestExpMapper requestExpMapper;
@@ -168,7 +169,7 @@ public class ApiIndexServiceImpl implements ApiIndexService {
                     apiList) {
                 Map<String, Object> tmpMap = new HashMap<>();
                 tmpMap.put("protocol", api.getApiProtocol());
-                //http接口
+                //http api
                 if (api.getApiProtocol() == Consts.HTTP_API_TYPE) {
                     Map<String, Object> result = apiMapper.getApiById(api.getApiID());
                     Map<String, Object> apiJson = JSONObject.parseObject(result.get("apiJson").toString());
@@ -196,7 +197,7 @@ public class ApiIndexServiceImpl implements ApiIndexService {
                     tmpMap.put("apiInfo", apiJson);
                 } else if (api.getApiProtocol() == Consts.DUBBO_API_TYPE) {
                     Map<String,Object> map = new HashMap<>();
-                    //dubbo接口
+                    //dubbo api
                     EoDubboApiInfo dubboApiInfo = dubboApiInfoMapper.selectByPrimaryKey(api.getDubboApiId());
                     map.put("dubboApiBaseInfo", dubboApiInfo);
                     map.put("projectID", api.getProjectID());
@@ -223,7 +224,7 @@ public class ApiIndexServiceImpl implements ApiIndexService {
                     tmpMap.put("apiInfo",map);
                 } else if (api.getApiProtocol() == Consts.GATEWAY_API_TYPE) {
                     Map<String,Object> map = new HashMap<>();
-                    //网关接口
+                    //gateway api
                     GatewayApiInfo gatewayApiInfo = gatewayApiInfoMapper.selectByPrimaryKey(api.getGatewayApiId().longValue());
                     map.put("gatewayApiBaseInfo", gatewayApiInfo);
                     map.put("projectID", api.getProjectID());
@@ -239,7 +240,6 @@ public class ApiIndexServiceImpl implements ApiIndexService {
                             map.put("resultInfo", apiJson.get("resultInfo"));
                         }
                     }
-                    //文档信息
                     map.put("apiNoteType", api.getApiNoteType());
                     map.put("apiRemark", api.getApiRemark());
                     map.put("apiDesc", api.getApiDesc());
@@ -303,7 +303,7 @@ public class ApiIndexServiceImpl implements ApiIndexService {
     }
 
     /**
-     * 获取前缀
+     * get prefix
      */
     private String extraPrefix(String content) {
         int index = content.lastIndexOf(".");
@@ -311,7 +311,7 @@ public class ApiIndexServiceImpl implements ApiIndexService {
     }
 
     /**
-     * 获取后缀
+     * get suffix
      */
     private String extraSuffix(String content) {
         int index = content.lastIndexOf(".");

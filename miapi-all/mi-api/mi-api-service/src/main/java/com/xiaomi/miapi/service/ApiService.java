@@ -1,45 +1,35 @@
 package com.xiaomi.miapi.service;
 
 import com.xiaomi.miapi.common.Result;
-import com.xiaomi.miapi.common.dto.ProjectApisDTO;
-import com.xiaomi.miapi.common.pojo.Api;
+import com.xiaomi.miapi.dto.ProjectApisDTO;
+import com.xiaomi.miapi.pojo.Api;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 接口
- */
 public interface ApiService
 {
-	public Result<Boolean> editApiStatus(Integer projectId,Integer apiId,Integer status);
+	Result<Boolean> editApiStatus(Integer projectId,Integer apiId,Integer status);
 
-	public Result<Boolean> editApiDiyExp(Integer apiID,Integer expType,Integer type,String content);
+	Result<Boolean> editApiDiyExp(Integer apiID,Integer expType,Integer type,String content);
 
-	//移除接口到回收站
-	public boolean removeApi(Integer projectID, String apiID, Integer userID,String username);
+	boolean deleteApi(Integer projectID, String apiID, String  username);
 
-	//删除接口
-	public boolean deleteApi(Integer projectID, String apiID, String  username);
+	Map<String,Object> getApiList(Integer pageNo, Integer pageSize,Integer projectID,  Integer groupID, Integer orderBy, Integer asc);
 
-	//获取接口列表
-	public Map<String,Object> getApiList(Integer pageNo, Integer pageSize,Integer projectID,  Integer groupID, Integer orderBy, Integer asc);
+	Result<List<Map<String, Object>>> getApiListByProjectId(ProjectApisDTO dto);
 
-	public Result<List<Map<String, Object>>> getApiListByProjectId(ProjectApisDTO dto);
+	Map<Integer,List<Map<String, Object>>> getGroupApiViewList(Integer projectID,Integer orderBy);
 
-	public Map<Integer,List<Map<String, Object>>> getGroupApiViewList(Integer projectID);
+	Map<Integer,List<Map<String, Object>>> getAllIndexGroupApiViewList(Integer projectID);
 
-	public Map<Integer,List<Map<String, Object>>> getAllIndexGroupApiViewList(Integer projectID);
+	Result<List<Map<String, String>>> getApiListByIndex(Integer indexID) throws IllegalAccessException, NoSuchMethodException, InvocationTargetException;
 
-	public Result<List<Map<String, String>>> getApiListByIndex(Integer indexID) throws IllegalAccessException, NoSuchMethodException, InvocationTargetException;
+	List<Map<String, Object>> searchApi(Integer projectID, String tips, Integer type);
 
-	//搜索接口
-	public List<Map<String, Object>> searchApi(Integer projectID, String tips, Integer type);
+	List<Map<String, Object>> getApiHistoryList(Integer projectID, Integer apiID);
 
-	//获取接口历史列表
-	public List<Map<String, Object>> getApiHistoryList(Integer projectID, Integer apiID);
-
-	public List<Api> getRecentlyApiList(Integer userId);
+	List<Api> getRecentlyApiList(String  username);
 
 }

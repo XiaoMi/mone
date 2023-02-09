@@ -17,15 +17,15 @@
 package com.xiaomi.miapi.common.exception;
 
 /**
- * Created by zhangzhiyong on 05/06/2018.
- * 错误定义
+ * @author dongzhenxing
+ * @date 2023/02/08
+ * error enum
  */
 public enum CommonError {
 
     Success(0, "success"),
     UnknownError(1, "unknown error"),
 
-    // 参数问题
     InvalidParamError(100001, "无效的参数"),
     InvalidIDParamError(100002, "无效的id参数"),
     InvalidPageParamError(100003, "无效的列表请求参数"),
@@ -71,17 +71,18 @@ public enum CommonError {
     PleaseWait(20027,"尽请期待"),
     HttpApiForIpPortNotFound(200027, "该服务尚未接入http文档依赖"),
     ServiceMustRun(200028, "服务需要运行才可同步"),
-    HttpApiMustBeLoaded(200029, "接口需要是自动加载方式才可同步"),
+    ApiMustBeLoaded(200029, "接口需要是自动加载方式才可同步"),
     ServiceMustGetGrpcConfig(200030, "服务需要接入Grpc配置"),
     ApplyPermissionPlease(200031, "请先申请权限"),
     WrongDubboEnv(200032, "请选择正确的环境"),
 
     DataSyxNotSupported(200033, "不支持的数据格式"),
 
+    SidecarApiForIpPortNotFound(200034, "该服务尚未接入sidecar文档依赖")
     ;
 
-    private int code;
-    private String message;
+    private final int code;
+    private final String message;
 
     CommonError(int code, String message) {
         this.code = code;

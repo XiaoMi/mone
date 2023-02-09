@@ -1,11 +1,14 @@
 package com.xiaomi.miapi.mapper;
 
-import com.xiaomi.miapi.common.pojo.ApiRequestExp;
-import com.xiaomi.miapi.common.pojo.ApiRequestExpExample;
+import com.xiaomi.miapi.pojo.ApiRequestExp;
+import com.xiaomi.miapi.pojo.ApiRequestExpExample;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
-
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 public interface ApiRequestExpMapper {
     long countByExample(ApiRequestExpExample example);
 

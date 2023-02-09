@@ -195,7 +195,7 @@
 		SELECT
 		eo_api.apiID,eo_api.apiURI,eo_api.apiName,eo_api.apiRequestType,eo_api.apiStatus,eo_api.apiUpdateTime,eo_api.apiProtocol,eo_api.groupID,eo_api.apiEnv
 		FROM eo_api WHERE
-		eo_api.projectID = #{projectID} AND eo_api.removed = 0 ORDER BY eo_api.apiID DESC
+		eo_api.projectID = #{projectID} AND eo_api.removed = 0 ORDER BY ${orderBy}
 	</select>
 
 	<select id="getAllIndexGroupApiViewListByIndices" resultType="java.util.Map">
@@ -255,9 +255,14 @@
 
 	<select id="searchAllApiByKeyword" resultType="java.util.Map">
 		SELECT DISTINCT
-		eo_api.apiID,eo_api.apiName,eo_api.apiURI,eo_api.apiRequestType,eo_api.projectID
+		eo_api.apiID,eo_api.apiName,eo_api.apiURI,eo_api.apiRequestType,eo_api.projectID,eo_api.apiProtocol
 		FROM eo_api WHERE
-		eo_api.removed = 0 AND eo_api.apiProtocol=#{apiProtocol} AND ((eo_api.apiName LIKE concat('%',#{keyword},'%')) OR (eo_api.apiURI LIKE concat('%',#{keyword},'%'))) ORDER BY eo_api.apiName;
+		eo_api.removed = 0 AND eo_api.apiProtocol in
+		<foreach collection="apiProtocol" item="item" index="index"
+				 open="(" separator="," close=")">
+			#{item}
+		</foreach>
+		AND ((eo_api.apiName LIKE concat('%',#{keyword},'%')) OR (eo_api.apiURI LIKE concat('%',#{keyword},'%'))) ORDER BY eo_api.apiName;
 	</select>
 
 	<select id="searchApiByPath" resultType="java.util.Map">
@@ -271,6 +276,11 @@
 	<select id="getApiInfo" resultType="Api">
 		SELECT * FROM eo_api WHERE
 		eo_api.apiID = #{apiID} AND eo_api.projectID = #{projectID}
+	</select>
+
+	<select id="getApiInfoByUrlAndProject" resultType="Api">
+		SELECT * FROM eo_api WHERE
+		eo_api.apiURI = #{url} AND eo_api.apiRequestType = #{apiRequestType} AND eo_api.projectID = #{projectID}
 	</select>
 
 	<select id="getApiInfoByUrl" resultType="Api">

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xiaomi.miapi.mapper.ApiMockExpectMapper">
-  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.common.pojo.ApiMockExpect">
+  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.pojo.ApiMockExpect">
     <id column="id" jdbcType="INTEGER" property="id" />
     <result column="mock_exp_name" jdbcType="VARCHAR" property="mockExpName" />
     <result column="mock_data_type" jdbcType="INTEGER" property="mockDataType" />
@@ -15,7 +15,7 @@
     <result column="proxy_url" jdbcType="VARCHAR" property="proxyUrl" />
     <result column="use_mock_script" jdbcType="BIT" property="useMockScript" />
   </resultMap>
-  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.miapi.common.pojo.ApiMockExpect">
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.miapi.pojo.ApiMockExpect">
     <result column="mock_params" jdbcType="LONGVARCHAR" property="mockParams" />
     <result column="mock_data" jdbcType="LONGVARCHAR" property="mockData" />
     <result column="mock_rule" jdbcType="LONGVARCHAR" property="mockRule" />
@@ -87,7 +87,7 @@
   <sql id="Blob_Column_List">
     mock_params, mock_data, mock_rule, mock_request_raw, mock_script
   </sql>
-  <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.ApiMockExpectExample" resultMap="ResultMapWithBLOBs">
+  <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.miapi.pojo.ApiMockExpectExample" resultMap="ResultMapWithBLOBs">
     select
     <if test="distinct">
       distinct
@@ -103,7 +103,7 @@
       order by ${orderByClause}
     </if>
   </select>
-  <select id="selectByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiMockExpectExample" resultMap="BaseResultMap">
+  <select id="selectByExample" parameterType="com.xiaomi.miapi.pojo.ApiMockExpectExample" resultMap="BaseResultMap">
     select
     <if test="distinct">
       distinct
@@ -129,13 +129,13 @@
     delete from api_mock_exp
     where id = #{id,jdbcType=INTEGER}
   </delete>
-  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiMockExpectExample">
+  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.pojo.ApiMockExpectExample">
     delete from api_mock_exp
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
     </if>
   </delete>
-  <insert id="insert" parameterType="com.xiaomi.miapi.common.pojo.ApiMockExpect">
+  <insert id="insert" parameterType="com.xiaomi.miapi.pojo.ApiMockExpect">
     <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
       SELECT LAST_INSERT_ID()
     </selectKey>
@@ -152,7 +152,7 @@
       #{mockData,jdbcType=LONGVARCHAR}, #{mockRule,jdbcType=LONGVARCHAR}, #{mockRequestRaw,jdbcType=LONGVARCHAR}, 
       #{mockScript,jdbcType=LONGVARCHAR})
   </insert>
-  <insert id="insertSelective" parameterType="com.xiaomi.miapi.common.pojo.ApiMockExpect">
+  <insert id="insertSelective" parameterType="com.xiaomi.miapi.pojo.ApiMockExpect">
     <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
       SELECT LAST_INSERT_ID()
     </selectKey>
@@ -258,7 +258,7 @@
       </if>
     </trim>
   </insert>
-  <select id="countByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiMockExpectExample" resultType="java.lang.Long">
+  <select id="countByExample" parameterType="com.xiaomi.miapi.pojo.ApiMockExpectExample" resultType="java.lang.Long">
     select count(*) from api_mock_exp
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
@@ -364,7 +364,7 @@
       <include refid="Update_By_Example_Where_Clause" />
     </if>
   </update>
-  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.common.pojo.ApiMockExpect">
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.pojo.ApiMockExpect">
     update api_mock_exp
     <set>
       <if test="mockExpName != null">
@@ -418,7 +418,7 @@
     </set>
     where id = #{id,jdbcType=INTEGER}
   </update>
-  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.ApiMockExpect">
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.miapi.pojo.ApiMockExpect">
     update api_mock_exp
     set mock_exp_name = #{mockExpName,jdbcType=VARCHAR},
       mock_data_type = #{mockDataType,jdbcType=INTEGER},
@@ -438,7 +438,7 @@
       mock_script = #{mockScript,jdbcType=LONGVARCHAR}
     where id = #{id,jdbcType=INTEGER}
   </update>
-  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.common.pojo.ApiMockExpect">
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.pojo.ApiMockExpect">
     update api_mock_exp
     set mock_exp_name = #{mockExpName,jdbcType=VARCHAR},
       mock_data_type = #{mockDataType,jdbcType=INTEGER},

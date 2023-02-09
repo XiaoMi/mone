@@ -23,7 +23,10 @@ import com.xiaomi.youpin.hermes.entity.Group;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 public class SessionAccount {
 
     private Long id;

@@ -36,7 +36,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 @Slf4j
 public class ServiceInfoCall {
 
@@ -64,9 +67,6 @@ public class ServiceInfoCall {
         return Triple.of(fileDescriptor, serviceDescriptor, methodDescriptor);
     }
 
-    /**
-     * 获取依赖类型
-     */
     private static Descriptors.FileDescriptor[] getDependencies(DescriptorProtos.FileDescriptorProto proto,
                                                                 Map<String, DescriptorProtos.FileDescriptorProto> finalDescriptorProtoMap) {
         return proto.getDependencyList()
@@ -77,7 +77,7 @@ public class ServiceInfoCall {
     }
 
     /**
-     * 将 FileDescriptorProto 转为 FileDescriptor
+     * transfer FileDescriptorProto to FileDescriptor
      */
     @SneakyThrows
     private static Descriptors.FileDescriptor toFileDescriptor(DescriptorProtos.FileDescriptorProto fileDescriptorProto,
@@ -85,9 +85,6 @@ public class ServiceInfoCall {
         return Descriptors.FileDescriptor.buildFrom(fileDescriptorProto, dependencies);
     }
 
-    /**
-     * 根据包名和服务名查找相应的文件描述
-     */
     private static DescriptorProtos.FileDescriptorProto findServiceFileDescriptorProto(String packageName,
                                                                                        String serviceName,
                                                                                        Map<String, DescriptorProtos.FileDescriptorProto> fileDescriptorProtoMap) {
@@ -147,26 +144,16 @@ public class ServiceInfoCall {
         return serviceMethodMap;
     }
 
-
-    /**
-     * 获取前缀
-     */
     private static String extraPrefix(String content) {
         int index = content.lastIndexOf(".");
         return content.substring(0, index);
     }
 
-    /**
-     * 获取后缀
-     */
     private static String extraSuffix(String content) {
         int index = content.lastIndexOf(".");
         return content.substring(index + 1);
     }
 
-    /**
-     * 解析并查找方法对应的文件描述
-     */
     private static Descriptors.FileDescriptor getFileDescriptor(List<ByteString> fileDescriptorProtoList,
                                                                 String packageName,
                                                                 String serviceName) throws Exception {
@@ -192,6 +179,5 @@ public class ServiceInfoCall {
         Descriptors.FileDescriptor[] dependencies = getDependencies(fileDescriptorProto, fileDescriptorProtoMap);
         return Descriptors.FileDescriptor.buildFrom(fileDescriptorProto, dependencies);
     }
-
 
 }

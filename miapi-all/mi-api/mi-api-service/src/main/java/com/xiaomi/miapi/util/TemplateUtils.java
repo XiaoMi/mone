@@ -4,6 +4,10 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 public class TemplateUtils {
 
     public static String processTemplate(String template, Map<String, String> params) {

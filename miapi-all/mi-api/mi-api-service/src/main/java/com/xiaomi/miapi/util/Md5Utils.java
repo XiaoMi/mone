@@ -3,7 +3,10 @@ package com.xiaomi.miapi.util;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 public class Md5Utils {
 
     private static ThreadLocal<MessageDigest> MESSAGE_DIGEST_LOCAL = new ThreadLocal<MessageDigest>() {

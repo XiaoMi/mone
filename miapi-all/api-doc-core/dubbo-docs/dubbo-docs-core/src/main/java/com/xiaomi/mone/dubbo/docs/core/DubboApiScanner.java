@@ -27,7 +27,7 @@ import com.xiaomi.mone.dubbo.docs.utils.ClassTypeUtil;
 import com.xiaomi.mone.dubbo.docs.utils.HttpUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.dubbo.apidocs.core.providers.DubboApiDocProvider;
+import com.xiaomi.mone.dubbo.docs.providers.DubboApiDocProvider;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.common.utils.NetUtils;

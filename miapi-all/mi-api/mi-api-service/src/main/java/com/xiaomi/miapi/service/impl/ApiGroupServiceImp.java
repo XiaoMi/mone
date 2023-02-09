@@ -1,10 +1,9 @@
 package com.xiaomi.miapi.service.impl;
 
-import com.xiaomi.miapi.common.pojo.ApiGroup;
-import com.xiaomi.miapi.common.pojo.ProjectOperationLog;
+import com.xiaomi.miapi.pojo.ApiGroup;
+import com.xiaomi.miapi.pojo.ProjectOperationLog;
 import com.xiaomi.miapi.mapper.ApiGroupMapper;
 import com.xiaomi.miapi.mapper.ApiMapper;
-import com.xiaomi.miapi.mapper.ApiCacheMapper;
 import com.xiaomi.miapi.mapper.ProjectOperationLogMapper;
 import com.xiaomi.miapi.service.ApiGroupService;
 import com.xiaomi.miapi.common.Result;
@@ -20,10 +19,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 接口分组业务处理层
- *
- */
 @Service
 @Transactional(propagation = Propagation.REQUIRED, rollbackForClassName = "java.lang.Exception")
 public class ApiGroupServiceImp implements ApiGroupService
@@ -35,13 +30,7 @@ public class ApiGroupServiceImp implements ApiGroupService
     ApiMapper apiMapper;
 	@Autowired
 	ProjectOperationLogMapper projectOperationLogMapper;
-	@Autowired
-	ApiCacheMapper apiCacheMapper;
 
-
-	/**
-	 * 新建分组
-	 */
 	@Override
 	public boolean addApiGroup(ApiGroup apiGroup, String opUsername)
 	{
@@ -66,9 +55,6 @@ public class ApiGroupServiceImp implements ApiGroupService
 		}
 	}
 
-	/**
-	 * 删除分组
-	 */
 	@Transactional
 	@Override
 	public Result<Boolean> deleteGroup(Integer projectID, Integer groupID, Integer userID,String username)
@@ -88,7 +74,6 @@ public class ApiGroupServiceImp implements ApiGroupService
 		if (result > 0)
 		{
 			// 添加操作记录
-//			projectMapper.updateProjectUpdateTime(projectID, nowTime);
 			ProjectOperationLog projectOperationLog = new ProjectOperationLog();
 			projectOperationLog.setOpProjectID(projectID);
 			projectOperationLog.setOpDesc("删除项目分组  '" + apiGroup.getGroupName() + "'");
@@ -104,9 +89,6 @@ public class ApiGroupServiceImp implements ApiGroupService
 		}
 	}
 
-	/**
-	 * 获取分组列表
-	 */
 	@Override
 	public List<Map<String, Object>> getGroupList(Integer projectID)
 	{
@@ -114,9 +96,6 @@ public class ApiGroupServiceImp implements ApiGroupService
 		return (groupList != null && !groupList.isEmpty()) ? groupList : new ArrayList<>();
 	}
 
-	/**
-	 * 修改分组
-	 */
 	@Override
 	public boolean editGroup(ApiGroup apiGroup,String opUserName)
 	{
@@ -138,34 +117,6 @@ public class ApiGroupServiceImp implements ApiGroupService
 			return true;
 		}
 		else {
-			return false;
-		}
-	}
-
-	/**
-	 * 对分组进行排序
-	 */
-	@Override
-	public boolean sortGroup(Integer projectID, Integer userID, String orderList)
-	{
-		int result = apiGroupMapper.sortGroup(projectID, orderList);
-		if (result > 0)
-		{
-			Date date = new Date();
-			Timestamp nowTime = new Timestamp(date.getTime());
-//			projectMapper.updateProjectUpdateTime(projectID, nowTime);
-			ProjectOperationLog projectOperationLog = new ProjectOperationLog();
-			projectOperationLog.setOpProjectID(projectID);
-			projectOperationLog.setOpDesc("修改项目分组排序");
-			projectOperationLog.setOpTarget(ProjectOperationLog.OP_TARGET_API_GROUP);
-			projectOperationLog.setOpTargetID(projectID);
-			projectOperationLog.setOpTime(nowTime);
-			projectOperationLog.setOpType(ProjectOperationLog.OP_TYPE_UPDATE);
-			projectOperationLog.setOpUsername("dzx");
-			projectOperationLogMapper.addProjectOperationLog(projectOperationLog);
-			return true;
-		}
-		else{
 			return false;
 		}
 	}

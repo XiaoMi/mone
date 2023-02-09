@@ -1,8 +1,8 @@
 package com.xiaomi.miapi.service.impl;
 
 import com.google.gson.*;
-import com.xiaomi.miapi.common.pojo.Api;
-import com.xiaomi.miapi.common.pojo.ApiGroup;
+import com.xiaomi.miapi.pojo.Api;
+import com.xiaomi.miapi.pojo.ApiGroup;
 import com.xiaomi.miapi.dto.HttpFormParamBo;
 import com.xiaomi.miapi.dto.HttpJsonParamBo;
 import com.xiaomi.miapi.mapper.ApiGroupMapper;
@@ -44,7 +44,7 @@ public class ApiImportServiceImpl implements ApiImportService {
         if (swagger != null) {
             JsonObject paths = swagger.getAsJsonObject("paths");
             if (Objects.nonNull(paths)) {
-                //记录组信息
+                //record group info
                 Map<String, Integer> groupInfo = new HashMap<>();
                 for (String apiURI : paths.keySet()) {
                     JsonObject apiInfoList = paths.getAsJsonObject(apiURI);
@@ -144,7 +144,7 @@ public class ApiImportServiceImpl implements ApiImportService {
                                 for (Iterator<JsonElement> iterator = parameters.iterator(); iterator.hasNext(); ) {
                                     JsonObject parameter = (JsonObject) iterator.next();
                                     int paramType = 0;
-                                    //参数中有部分可能是header信息
+                                    //maybe header info
                                     if ("header".equals(parameter.get("in").getAsString())) {
                                         Map<String, Object> map = new HashMap<>();
                                         map.put("headerName", parameter.get("name").getAsString());
@@ -193,12 +193,8 @@ public class ApiImportServiceImpl implements ApiImportService {
                                 continue;
                             }
                         }else if (apiInfo.getAsJsonObject("requestBody") != null){
-                            //...
                             api.setApiRequestParamType(Consts.JSON_DATA_TYPE);
                             HttpJsonParamBo jsonParamsBo = new HttpJsonParamBo();
-//                            jsonParamsBo.setParamKey("root");
-//                            jsonParamsBo.setParamName("root node");
-//                            jsonParamsBo.setParamType("13");
                             JsonObject schema = parseReqBody(apiInfo.getAsJsonObject("requestBody"));
                             if (Objects.nonNull(schema)){
                                 jsonParamsBo = parseSwaggerBodyV3(swagger, schema,randomGen,0);
@@ -230,7 +226,6 @@ public class ApiImportServiceImpl implements ApiImportService {
                                         jsonRspParam = parseSwaggerRespBody2(swagger, parameter,randomGen);
                                     }
                                     jsonResultParams.add(jsonRspParam);
-//                                    jsonRspParam.
                                 }
                             }catch (Exception e) {
                                 log.warn("import apiName:{},error,cause:{}",api.getApiName(),e.getMessage());
@@ -278,7 +273,6 @@ public class ApiImportServiceImpl implements ApiImportService {
                 //array
                 List<HttpJsonParamBo> paramsBos = new ArrayList<>();
                 if (Objects.nonNull(schema.get("items").getAsString())) {
-//                    String ref = schema.getAsJsonObject("items").get("$ref").getAsString();
                     HttpJsonParamBo tempBo = parseSwaggerBody(swagger, schema,randomGen,0);
                     paramsBos.add(tempBo);
                 }
@@ -530,11 +524,8 @@ public class ApiImportServiceImpl implements ApiImportService {
     }
 
     /**
-     * 常规类型body
+     * normal type body
      *
-     * @param parentBo
-     * @param schema
-     * @return
      */
     private HttpJsonParamBo parseSchemaBody(HttpJsonParamBo parentBo, JsonObject schema,boolean randomGen) {
         if (Objects.isNull(schema)) {
@@ -547,14 +538,14 @@ public class ApiImportServiceImpl implements ApiImportService {
         List<HttpJsonParamBo> childList = new ArrayList<>();
 
         if (Objects.nonNull(schema.getAsJsonObject("properties"))) {
-            //对象obj
+            //obj
             for (String entityKey : schema.getAsJsonObject("properties").keySet()) {
                 JsonObject paramValueObj = schema.getAsJsonObject("properties").getAsJsonObject(entityKey);
                 HttpJsonParamBo param = new HttpJsonParamBo();
                 param.setParamKey(entityKey);
                 if (!(paramValueObj.get("type").getAsString().equals("array") || paramValueObj.get("type").getAsString().equals("object"))) {
                     String type = "string";
-                    //基本类型
+                    //normal type
                     if (StringUtils.isNotEmpty(paramValueObj.get("type").getAsString())) {
                         type = paramValueObj.get("type").getAsString();
                     }
@@ -571,7 +562,6 @@ public class ApiImportServiceImpl implements ApiImportService {
                         param.setParamValue(mockService.generateParamValue(stringType2IntType(paramValueObj.get("type").getAsString()), "").toString());
                     }
                 } else {
-                    //复合类型,递归构造
                     param.setParamType(String.valueOf(stringType2IntType(paramValueObj.get("type").getAsString())));
                     if (requiredList.contains(entityKey)) {
                         param.setParamNotNull(true);

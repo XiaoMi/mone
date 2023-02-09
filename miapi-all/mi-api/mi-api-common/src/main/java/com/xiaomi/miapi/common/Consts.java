@@ -1,13 +1,17 @@
 package com.xiaomi.miapi.common;
 
-import com.alibaba.nacos.api.config.annotation.NacosValue;
-
 /**
- * @Description TODO
- * @Author zhenxing.dong
- * @Date 2021/7/31 23:46
+ * @author dongzhenxing
+ * @date 2023/02/08
  */
 public final class Consts {
+
+    /**
+     * mock server addr
+     * this is the mock server address,you need to update
+     * this after you start your mock server
+     */
+    public static final String MockUrlPrefix = "http://127.0.0.1:8080";
 
     public static final int ROLE_ADMIN = 1;
     public static final int ROLE_WORK = 2;
@@ -18,6 +22,8 @@ public final class Consts {
     public static final int GATEWAY_API_TYPE = 4;
     public static final int GRPC_API_TYPE = 5;
 
+    public static final int SIDECAR_API_TYPE = 6;
+
     public static final int FORM_DATA_TYPE = 0;
     public static final int JSON_DATA_TYPE = 1;
     public static final int RAW_DATA_TYPE = 2;
@@ -25,6 +31,7 @@ public final class Consts {
 
     public static final int REQ_EXP_JAVA_TYPE = 1;
     public static final int REQ_EXP_CURL_TYPE = 2;
+
     public static final int REQ_EXP_RAW_TYPE = 3;
 
     public static final int RSP_EXP_JSON_TYPE = 2;
@@ -37,6 +44,7 @@ public final class Consts {
 
     private Consts() {
     }
+
     public static final int BY_API_PATH = 0;
     public static final int BY_API_NAME = 1;
 
@@ -50,12 +58,6 @@ public final class Consts {
     public static final String REQUEST_URL_FORMAT = "%s/%s:%s";
 
     public static final String UPDATE_MOCK_DATA_URL_FORMAT = "%s:%s";
-
-    @NacosValue(value = "mock.server.addr",autoRefreshed = true)
-    public static final String MockUrlPrefix = "";
-
-    @NacosValue(value = "mock.server.mock.addr",autoRefreshed = true)
-    public static final String ProxyMockUrlPrefix = "";
     public static final String MockPrefix = "/dubbo/mock";
     public static final String GatewayMockPrefix = "/gateway/mock";
     public static final String HttpMockPrefix = "/http/mock";
@@ -110,6 +112,13 @@ public final class Consts {
             "      }\n" +
             "    },\n" +
             "    {\n" +
+            "      \"tag\": \"div\",\n" +
+            "      \"text\": {\n" +
+            "        \"tag\": \"plain_text\",\n" +
+            "        \"content\": \"开放天数：${days}\"\n" +
+            "      }\n" +
+            "    },\n" +
+            "    {\n" +
             "      \"tag\": \"action\",\n" +
             "      \"actions\": [\n" +
             "        {\n" +
@@ -147,7 +156,7 @@ public final class Consts {
             "      \"tag\": \"div\",\n" +
             "      \"text\": {\n" +
             "        \"tag\": \"lark_md\",\n" +
-            "        \"content\": \"平台地址：<a>https://127.0.0.1:8080/#/</a>\"\n" +
+            "        \"content\": \"平台地址：<a>https://127.0.0.1:8999(need to replace to the right addr)/#/</a>\"\n" +
             "      }\n" +
             "    }\n" +
             "  ]\n" +
@@ -157,12 +166,12 @@ public final class Consts {
         return interfaceName + ":" + version+ ":" + group;
     }
 
-    public static String genRecentlyProjectsKey(Integer userId){
-        return "mi_api:recently10_projects_"+userId;
+    public static String genRecentlyProjectsKey(String username){
+        return "mi_api:recently10_projects_"+username;
     }
 
-    public static String genRecentlyApisKey(Integer userId){
-        return "mi_api:recently10_apis_"+userId;
+    public static String genRecentlyApisKey(String username){
+        return "mi_api:recently10_apis_"+username;
     }
 
 }
