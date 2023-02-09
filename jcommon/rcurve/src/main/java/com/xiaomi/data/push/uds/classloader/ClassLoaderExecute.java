@@ -7,7 +7,9 @@ import com.xiaomi.data.push.uds.po.UdsCommand;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Optional;
+import java.util.concurrent.Callable;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
@@ -26,17 +28,18 @@ public class ClassLoaderExecute {
         this.throwableFunction = throwableFunction;
     }
 
-    public Object execute(Supplier supplier, Function<String, ClassLoader> classLoaderFunction, UdsCommand response, UdsCommand request) {
+    public Object execute(Supplier supplier, Function<String, ClassLoader> classLoaderFunction, UdsCommand response, UdsCommand request, Consumer consumer) {
         response.putAtt("dubbo_mesh", request.getAtt("dubbo_mesh", "false"));
         ClassLoader cl = Thread.currentThread().getContextClassLoader();
         CallContext ctx = new CallContext();
         ctx.setAttrs(request.getAttachments());
         ContextHolder.getContext().set(ctx);
+        Object res = null;
         try {
             if (null != classLoaderFunction) {
                 Thread.currentThread().setContextClassLoader(classLoaderFunction.apply(""));
             }
-            Object res = supplier.get();
+            res = supplier.get();
 
             if (res instanceof AttResult) {
                 AttResult attResult = (AttResult) res;
@@ -65,6 +68,7 @@ public class ClassLoaderExecute {
                 Thread.currentThread().setContextClassLoader(cl);
             }
             ContextHolder.getContext().close();
+            consumer.accept(res);
         }
     }
 

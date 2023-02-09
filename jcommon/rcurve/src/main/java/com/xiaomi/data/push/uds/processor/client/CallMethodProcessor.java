@@ -51,7 +51,7 @@ public class CallMethodProcessor implements UdsProcessor<UdsCommand, UdsCommand>
      * 异常转换function
      */
     @Setter
-    private BiFunction<Throwable,UdsCommand, Throwable> throwableFunction = (throwable, res) -> throwable;
+    private BiFunction<Throwable, UdsCommand, Throwable> throwableFunction = (throwable, res) -> throwable;
 
     private Gson gson = new Gson();
 
@@ -62,7 +62,7 @@ public class CallMethodProcessor implements UdsProcessor<UdsCommand, UdsCommand>
 
     @Override
     public UdsCommand processRequest(UdsCommand req) {
-        log.debug("process request:{}",req.getCmd());
+        log.debug("process request:{}", req.getCmd());
         UdsCommand response = UdsCommand.createResponse(req);
         new ClassLoaderExecute(this.throwableFunction).execute(() -> {
             CallContext ctx = new CallContext();
@@ -78,9 +78,9 @@ public class CallMethodProcessor implements UdsProcessor<UdsCommand, UdsCommand>
             mr.setParamTypes(types);
             mr.setParams(paramArray);
             mr.setByteParams(req.getByteParams());
-
+            beforeCallMethod(req, mr);
             return ReflectUtils.invokeMethod(mr, obj, (paramTypes, params) -> CovertUtils.convert(req.getSerializeType(), paramTypes, params));
-        }, this.classLoaderFunction, response, req);
+        }, this.classLoaderFunction, response, req, (res) -> afterCallMethod(res));
         Send.sendResponse(req.getChannel(), response);
         return null;
     }
@@ -93,5 +93,12 @@ public class CallMethodProcessor implements UdsProcessor<UdsCommand, UdsCommand>
     @Override
     public int poolSize() {
         return 300;
+    }
+
+    public void beforeCallMethod(UdsCommand req, MethodReq mr) {
+
+    }
+
+    public void afterCallMethod(Object res) {
     }
 }
