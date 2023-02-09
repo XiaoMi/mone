@@ -46,8 +46,8 @@ public class NginxUtilsTest {
 
     private static final String SERVER_GOOGLE = "server www.google.com";
     private static final String SERVER_BAIDU = "server www.baidu.com";
-    private static final String SERVER_IP_1 = "server 10.0.0.1";
-    private static final String SERVER_IP_2 = "server      10.0.0.2   asdfa  dsfafa ";
+    private static final String SERVER_IP_1 = "server 127.0.0.1";
+    private static final String SERVER_IP_2 = "server      127.0.0.1   asdfa  dsfafa ";
     private static final String SERVER_ABC = "server abc";
 
     private static final String TEST_FILE = "upstreams.conf";
