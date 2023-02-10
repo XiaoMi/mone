@@ -27,7 +27,7 @@ import java.util.List;
 /**
  * Created by zhangzhiyong on 08/06/2018.
  * <p>
- * 图任务
+ * Graph task
  */
 @Component
 public class GraphTask extends AbstractTask {
@@ -44,19 +44,19 @@ public class GraphTask extends AbstractTask {
 
     @Override
     public TaskResult execute(TaskParam param, TaskContext context) {
-        //获取执行到的步骤
+        //Gets the steps performed
         int step = context.getInt(Step);
 
-        //读取任务的配置
+        //Read the configuration of the task
         if (0 == step) {
-            //获取任务配置
+            //Read the configuration of the task
             String config = param.get(Config);
             context.put(Config, config);
             step = 1;
             context.putInt(Step, step);
         }
 
-        //初始化所有子任务
+        //Initialize all subtasks
         if (1 == step) {
             GraphTaskContext taskContext = new Gson().fromJson(context.get(Config), new TypeToken<GraphTaskContext<Object>>() {
             }.getType());
@@ -73,17 +73,17 @@ public class GraphTask extends AbstractTask {
 
             int taskId = param.getTaskId();
 
-            //初始化
+            //initialized
             graph.bfs(0, (v, d) -> {
                 int id = taskService.insertTask(taskId, new Gson().toJson(d.getTaskParam()), new Gson().toJson(new TaskContext()), d.getTaskDef().getName(), TaskStatus.Init, micheduleGroup);
-                //最后会保存下来
+                //It will be preserved in the end
                 d.setTaskId(id);
-                //依赖的任务
+                //Dependent task
                 d.setDependList(graph.dependList(d.getIndex()));
                 return true;
             });
 
-            //保存新的
+            //Save new
             context.put(Config, new Gson().toJson(taskContext));
             context.putInt(Step, 2);
             return TaskResult.Retry();
@@ -93,13 +93,13 @@ public class GraphTask extends AbstractTask {
             GraphTaskContext taskContext = new Gson().fromJson(context.get(Config), GraphTaskContext.class);
             Graph<TaskVertexData> graph = new Graph<>(taskContext.getTaskList().size());
 
-            //添加顶点
+            //Add vertex
             taskContext.getTaskList().stream().forEach(it -> {
                 TaskVertexData data = (TaskVertexData) it;
                 graph.addVertex(new Vertex(data.getIndex(), data));
             });
 
-            //添加边
+            //Add edge
             taskContext.getDependList().stream().forEach(it -> {
                 TaskEdgeData data = (TaskEdgeData) it;
                 graph.addEdge(data.getFrom(), data.getTo());
@@ -124,10 +124,10 @@ public class GraphTask extends AbstractTask {
                     }
                 }
 
-                //初始化状态
+                //Initialization state
                 if (d.getStatus() == TaskStatus.Init.code) {
                     List<Integer> list = d.getDependList();
-                    //没有依赖
+                    //No dependence
                     if (list.size() == 0) {
                         startTask(d, graph);
                     } else {
@@ -137,7 +137,7 @@ public class GraphTask extends AbstractTask {
                             }
                             return false;
                         });
-                        //依赖的所有任务都执行成功了
+                        //All the dependent tasks were successfully executed
                         if (match) {
                             startTask(d, graph);
                         }
@@ -150,16 +150,16 @@ public class GraphTask extends AbstractTask {
 
             });
 
-            //保存新的
+            //Save new
             context.put(Config, new Gson().toJson(taskContext));
-            //有任务失败了
+            //A mission has failed
             if (failureNum.getValue() >= 1) {
-                //任务失败
+                //task fail
                 return TaskResult.Failure();
             }
-            //所有任务都已经完成
+            //All tasks have been completed
             if (finishNum.getValue() == graph.V) {
-                //任务完成
+                //completion of task
                 return TaskResult.Success();
             }
         }
@@ -169,7 +169,7 @@ public class GraphTask extends AbstractTask {
     }
 
     /**
-     * 启动任务+参数替换
+     * Start task + parameter replacement
      *
      * @param d
      * @param graph
@@ -181,7 +181,7 @@ public class GraphTask extends AbstractTask {
 
         MutableBoolean changeParam = new MutableBoolean(false);
 
-        //$开头的参数会被动态替换掉
+        //$The starting argument is replaced dynamically
         param.param.entrySet().stream().forEach(it -> {
             if (it.getValue().startsWith("$_")) {
                 String[] ss = it.getValue().split("_");
@@ -201,7 +201,7 @@ public class GraphTask extends AbstractTask {
         });
 
         taskService.updateTask(d.getTaskId(), (it) -> {
-            //参数发生了替换
+            //The parameter has been replaced
             if (changeParam.getValue()) {
                 it.setParams(new Gson().toJson(param));
             }
