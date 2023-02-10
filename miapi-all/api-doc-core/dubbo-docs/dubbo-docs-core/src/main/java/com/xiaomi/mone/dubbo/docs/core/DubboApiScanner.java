@@ -89,7 +89,7 @@ public class DubboApiScanner implements ApplicationListener<ApplicationReadyEven
     /**
      * module info heart beat url suffix
      */
-    public static final String MODULE_BEAT_URL = "/OpenApi/beat";
+    public static final String MODULE_BEAT_URL = "/OpenApi/Beat/beat";
 
     /**
      * auto doc notify url suffix
