@@ -33,6 +33,8 @@ import java.util.*;
 /**
  * @author dongzhenxing
  * @date 2023/02/08
+ * work for mone gateway tesla,if you use tesla either,
+ * you can load gateway api by this service
  */
 @Service
 public class GatewayApiServiceImpl implements GatewayApiService {
