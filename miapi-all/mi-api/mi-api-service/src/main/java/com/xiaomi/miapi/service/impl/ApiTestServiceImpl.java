@@ -170,7 +170,7 @@ public class ApiTestServiceImpl implements ApiTestService {
     }
 
     @Override
-    public Result<Object> dubboTest(DubboTestBo request, String opUsername, Integer userId) throws NacosException {
+    public Result<Object> dubboTest(DubboTestBo request, String opUsername) throws NacosException {
         if (request.isProduction()) {
             if (request.getGroup() == null) {
                 request.setGroup("");
@@ -658,7 +658,7 @@ public class ApiTestServiceImpl implements ApiTestService {
 
 
     @Override
-    public Result<List<CaseGroupAndCasesBo>> getCasesByApi(int projectId, int apiId, int accountId) {
+    public Result<List<CaseGroupAndCasesBo>> getCasesByApi(int projectId, int apiId) {
         List<CaseGroupAndCasesBo> groupAndCasesBos = new ArrayList<>();
         Api api = apiMapper.getApiInfo(projectId, apiId);
         if (Objects.isNull(api)) {
@@ -682,7 +682,7 @@ public class ApiTestServiceImpl implements ApiTestService {
     }
 
     @Override
-    public Result<List<CaseGroupAndCasesBo>> getCasesByProject(int projectId, int accountId) {
+    public Result<List<CaseGroupAndCasesBo>> getCasesByProject(int projectId) {
         List<CaseGroupAndCasesBo> groupAndCasesBos = new ArrayList<>();
         TestCaseGroupExample example = new TestCaseGroupExample();
         example.createCriteria().andProjectIdEqualTo(projectId).andApiIdEqualTo(0);

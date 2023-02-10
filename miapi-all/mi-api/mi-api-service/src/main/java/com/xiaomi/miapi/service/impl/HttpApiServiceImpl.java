@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.xiaomi.miapi.bo.BatchImportApiBo;
+import com.xiaomi.miapi.bo.MockServerInfo;
 import com.xiaomi.miapi.pojo.*;
 import com.xiaomi.miapi.util.Md5Utils;
 import com.xiaomi.miapi.util.RedisUtil;
@@ -74,6 +75,9 @@ public class HttpApiServiceImpl implements HttpApiService {
     private ModuleNameDataMapper moduleMapper;
     @Autowired
     private ApiMockExpectMapper mockExpectMapper;
+
+    @Autowired
+    private MockServerInfo mockServerInfo;
 
     public static final Gson gson = new Gson();
 
@@ -338,7 +342,7 @@ public class HttpApiServiceImpl implements HttpApiService {
             String uriMd5 = Md5Utils.getMD5(apiURI);
             String uri = apiURI.replaceAll("/", ":").replaceAll(" ", "");
 
-            mockInfo.put("mockUrl", String.format(Consts.REQUEST_URL_FORMAT, Consts.MockUrlPrefix + Consts.HttpMockPrefix, uriMd5, uri));
+            mockInfo.put("mockUrl", String.format(Consts.REQUEST_URL_FORMAT,  mockServerInfo.getMockServerAddr()+ Consts.HttpMockPrefix, uriMd5, uri));
             apiJson.put("mockInfo", mockInfo);
         }
 

@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -82,6 +83,9 @@ public class DubboApiServiceImpl implements DubboApiService {
     @Autowired
     private ApiMockExpectMapper mockExpectMapper;
 
+    @Autowired
+    private MockServerInfo mockServerInfo;
+
     private String DEFAULT_NAMESPACE = "";
 
     public static final Gson gson = new Gson();
@@ -92,6 +96,7 @@ public class DubboApiServiceImpl implements DubboApiService {
     private final ExecutorService pushDataPool = Executors.newCachedThreadPool();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DubboApiServiceImpl.class);
+
 
     @Override
     public Result<Map<String, Object>> getDubboApiDetail(String username, Integer projectID, Integer apiID) {
@@ -131,7 +136,7 @@ public class DubboApiServiceImpl implements DubboApiService {
 
         String md5Location = Md5Utils.getMD5(Consts.getServiceKey(dubboApiInfo.getApimodelclass(), dubboApiInfo.getApiversion(), dubboApiInfo.getApigroup()));
 
-        map.put("mockUrl", String.format(Consts.REQUEST_URL_FORMAT, Consts.MockUrlPrefix + Consts.MockPrefix, md5Location, dubboApiInfo.getApiname()));
+        map.put("mockUrl", String.format(Consts.REQUEST_URL_FORMAT, mockServerInfo.getMockServerAddr() + Consts.MockPrefix, md5Location, dubboApiInfo.getApiname()));
 
         redis.recordRecently10Apis(username, apiID);
 

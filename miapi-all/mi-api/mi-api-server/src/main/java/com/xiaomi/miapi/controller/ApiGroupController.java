@@ -57,7 +57,6 @@ public class ApiGroupController {
                 response.sendError(401, "未登录或者无权限");
                 return null;
             }
-            apiGroup.setUserID(account.getId().intValue());
             boolean result = apiGroupService.addApiGroup(apiGroup,account.getUsername());
             if (result) {
                 return Result.success(true);
@@ -82,8 +81,7 @@ public class ApiGroupController {
                 response.sendError(401, "未登录或者无权限");
                 return null;
             }
-
-            return apiGroupService.deleteGroup(projectID, groupID, account.getId().intValue(), account.getUsername());
+            return apiGroupService.deleteGroup(projectID, groupID, account.getUsername());
         }
     }
 
@@ -124,7 +122,6 @@ public class ApiGroupController {
                 response.sendError(401, "未登录或者无权限");
                 return null;
             }
-            apiGroup.setUserID(account.getId().intValue());
             boolean result = apiGroupService.editGroup(apiGroup,account.getUsername());
             if (result) {
                 return Result.success(true);

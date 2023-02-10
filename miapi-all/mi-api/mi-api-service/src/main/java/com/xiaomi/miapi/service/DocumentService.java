@@ -21,5 +21,5 @@ public interface DocumentService
 
 	Result<Map<String, Object>> getDocument(int documentID);
 
-	Result<Boolean> deleteBatchDocument(List<Integer> documentIDs, int projectID,int userId,String opUsername);
+	Result<Boolean> deleteBatchDocument(List<Integer> documentIDs, int projectID,String opUsername);
 }

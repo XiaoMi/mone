@@ -10,7 +10,7 @@ public interface ApiGroupService
 {
 	boolean addApiGroup(ApiGroup apiGroup, String opUsername);
 
-	Result<Boolean> deleteGroup(Integer projectID, Integer groupID, Integer userID,String username);
+	Result<Boolean> deleteGroup(Integer projectID, Integer groupID,String username);
 
 	List<Map<String, Object>> getGroupList(Integer projectID);
 

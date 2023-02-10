@@ -85,13 +85,15 @@ public class ProjectServiceImpl implements ProjectService {
         }
         busProject.setIsPublic(project.getIsPublic() == 1);
         busProject.setBusGroupId(project.getProjectGroupID());
-        int projectId = busProjectMapper.insert(busProject);
+        busProject.setStatus(0);
+        busProject.setVersion(project.getProjectVersion());
+        busProjectMapper.insert(busProject);
         String groupName = "默认分组";
 
         // add api default group
         ApiGroup apiGroup = new ApiGroup();
         apiGroup.setGroupName(groupName);
-        apiGroup.setProjectID(projectId);
+        apiGroup.setProjectID(busProject.getId());
         apiGroup.setSystemGroup(true);
         int rt = apiGroupMapper.addApiGroup(apiGroup);
         if (rt < 0) {
@@ -101,7 +103,7 @@ public class ProjectServiceImpl implements ProjectService {
         //add default env
         ApiEnv apiEnv = new ApiEnv();
         apiEnv.setEnvName("默认环境");
-        apiEnv.setProjectId(projectId);
+        apiEnv.setProjectId(busProject.getId());
         apiEnv.setEnvDesc("自动创建的默认环境");
         apiEnv.setHttpDomain("http://127.0.0.1:8080");
         apiEnv.setSysDefault(true);
@@ -111,10 +113,10 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         ProjectOperationLog projectOperationLog = new ProjectOperationLog();
-        projectOperationLog.setOpProjectID(projectId);
+        projectOperationLog.setOpProjectID(busProject.getId());
         projectOperationLog.setOpDesc("创建项目");
         projectOperationLog.setOpTarget(ProjectOperationLog.OP_TARGET_PROJECT);
-        projectOperationLog.setOpTargetID(projectId);
+        projectOperationLog.setOpTargetID(busProject.getId());
         projectOperationLog.setOpTime(updateTime);
         projectOperationLog.setOpType(ProjectOperationLog.OP_TYPE_ADD);
         projectOperationLog.setOpUsername(username);
@@ -177,16 +179,18 @@ public class ProjectServiceImpl implements ProjectService {
                 projectFocusList) {
             busProjectIds.add(projectFocus.getBusprojectid());
         }
-        BusProjectExample example1 = new BusProjectExample();
-        example1.createCriteria().andIdIn(busProjectIds);
-        List<BusProject> busProjects = busProjectMapper.selectByExample(example1);
-        List<BusProjectVo> busProjectVos = new ArrayList<>(busProjects.size());
-        for (BusProject b :
-                busProjects) {
-            BusProjectVo vo = new BusProjectVo();
-            BeanUtils.copyProperties(b, vo);
-            vo.setApiCount(getApiNum(b.getId()));
-            busProjectVos.add(vo);
+        List<BusProjectVo> busProjectVos = new ArrayList<>();
+        if (busProjectIds.size() != 0){
+            BusProjectExample example1 = new BusProjectExample();
+            example1.createCriteria().andIdIn(busProjectIds);
+            List<BusProject> busProjects = busProjectMapper.selectByExample(example1);
+            for (BusProject b :
+                    busProjects) {
+                BusProjectVo vo = new BusProjectVo();
+                BeanUtils.copyProperties(b, vo);
+                vo.setApiCount(getApiNum(b.getId()));
+                busProjectVos.add(vo);
+            }
         }
         return busProjectVos;
     }
@@ -387,8 +391,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public boolean editProject(Project project, String username) {
-        BusProject busProject = new BusProject();
-        busProject.setId(project.getProjectID());
+        BusProject busProject = busProjectMapper.selectByPrimaryKey(project.getProjectID());
         busProject.setUtime(System.currentTimeMillis());
         busProject.setDescription(project.getDesc());
         busProject.setName(project.getProjectName());
@@ -459,7 +462,14 @@ public class ProjectServiceImpl implements ProjectService {
     public Result<Boolean> createProjectGroup(ProjectGroupBo projectGroupBo, String username) {
         BusProjectGroup projectGroup = new BusProjectGroup();
 
-        BeanUtils.copyProperties(projectGroupBo, projectGroup);
+        projectGroup.setGroupDesc(projectGroupBo.getGroupDesc());
+        projectGroup.setStatus(true);
+        projectGroup.setGroupName(projectGroupBo.getGroupName());
+        if (projectGroupBo.isPubGroup()){
+            projectGroup.setPubGroup(1);
+        }else {
+            projectGroup.setPubGroup(0);
+        }
         int projectGroupId = busProjectGroupMapper.insert(projectGroup);
         if (projectGroupId == 0) {
             return Result.fail(CommonError.UnknownError);
@@ -470,8 +480,14 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     public Result<Boolean> updateProjectGroup(ProjectGroupBo projectGroupBo) {
         BusProjectGroup projectGroup = new BusProjectGroup();
-        BeanUtils.copyProperties(projectGroupBo, projectGroup);
+        projectGroup.setGroupName(projectGroupBo.getGroupName());
+        projectGroup.setGroupDesc(projectGroupBo.getGroupDesc());
         projectGroup.setGroupId(projectGroupBo.getGroupID());
+        if (projectGroupBo.isPubGroup()){
+            projectGroup.setPubGroup(1);
+        }else {
+            projectGroup.setPubGroup(0);
+        }
         if (busProjectGroupMapper.updateByPrimaryKey(projectGroup) > 0) {
             return Result.fail(CommonError.UnknownError);
         }

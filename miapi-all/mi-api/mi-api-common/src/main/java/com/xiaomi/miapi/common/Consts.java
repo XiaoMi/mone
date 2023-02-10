@@ -6,13 +6,6 @@ package com.xiaomi.miapi.common;
  */
 public final class Consts {
 
-    /**
-     * mock server addr
-     * this is the mock server address,you need to update
-     * this after you start your mock server
-     */
-    public static final String MockUrlPrefix = "http://127.0.0.1:8080";
-
     public static final int ROLE_ADMIN = 1;
     public static final int ROLE_WORK = 2;
     public static final String SUCCESS_MSG = "ok";

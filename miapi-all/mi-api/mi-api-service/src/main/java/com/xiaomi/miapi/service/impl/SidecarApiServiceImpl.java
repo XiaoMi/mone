@@ -40,7 +40,7 @@ public class SidecarApiServiceImpl implements SidecarApiService {
     }
 
     @Override
-    public Map<String, Object> getSidecarApi(Integer userId, Integer projectID, Integer apiID) {
+    public Map<String, Object> getSidecarApi(String username, Integer projectID, Integer apiID) {
         return null;
     }
 }

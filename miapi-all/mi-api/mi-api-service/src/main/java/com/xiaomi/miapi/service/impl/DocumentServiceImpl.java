@@ -101,7 +101,7 @@ public class DocumentServiceImpl implements DocumentService {
     }
 
     @Override
-    public Result<Boolean> deleteBatchDocument(List<Integer> documentIDs, int projectID, int userID,String opUsername) {
+    public Result<Boolean> deleteBatchDocument(List<Integer> documentIDs, int projectID, String opUsername) {
 
         String documentTitles = this.documentMapper.getDocumentTitle(documentIDs);
         if (this.documentMapper.deleteDocuments(documentIDs, projectID) < 1) {

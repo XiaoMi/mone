@@ -2,6 +2,7 @@ package com.xiaomi.miapi.service.impl;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.xiaomi.miapi.bo.MockServerInfo;
 import com.xiaomi.miapi.pojo.*;
 import com.xiaomi.miapi.util.HttpUtils;
 import com.xiaomi.miapi.util.Md5Utils;
@@ -49,6 +50,8 @@ public class MockServiceImpl implements MockService {
     @Autowired
     ApiMockExpectMapper apiMockExpectMapper;
 
+    @Autowired
+    private MockServerInfo mockServerInfo;
     private ScriptEngine engine;
 
     private static final Gson gson = new Gson();
@@ -124,7 +127,7 @@ public class MockServiceImpl implements MockService {
             params.put("mockExpID", mockExpectID.toString());
             params.put("enable", enable.toString());
             try {
-                result = HttpUtils.post(Consts.MockUrlPrefix + Consts.ENABLE_MOCK_URL,
+                result = HttpUtils.post( mockServerInfo.getMockServerAddr()+ Consts.ENABLE_MOCK_URL,
                         null,
                         gson.toJson(params),
                         3000);
@@ -236,7 +239,7 @@ public class MockServiceImpl implements MockService {
             params.put("enable", "0");
         }
         try {
-            result = HttpUtils.post(Consts.MockUrlPrefix + Consts.HTTP_UPDATE_MOCK_URL,
+            result = HttpUtils.post(mockServerInfo.getMockServerAddr() + Consts.HTTP_UPDATE_MOCK_URL,
                     null,
                     gson.toJson(params),
                     3000);
@@ -340,7 +343,7 @@ public class MockServiceImpl implements MockService {
         }
         params.put("mockScript", mockScript);
         try {
-            result = HttpUtils.post(Consts.MockUrlPrefix + Consts.UPDATE_MOCK_URL,
+            result = HttpUtils.post(mockServerInfo.getMockServerAddr() + Consts.UPDATE_MOCK_URL,
                     null,
                     gson.toJson(params),
                     3000);
@@ -458,7 +461,7 @@ public class MockServiceImpl implements MockService {
 
         params.put("proxyUrl", "/mock/" + apiPathProxy);
         try {
-            result = HttpUtils.post(Consts.MockUrlPrefix + Consts.GATEWAY_UPDATE_MOCK_URL,
+            result = HttpUtils.post(mockServerInfo.getMockServerAddr() + Consts.GATEWAY_UPDATE_MOCK_URL,
                     null,
                     gson.toJson(params),
                     3000);
@@ -755,7 +758,7 @@ public class MockServiceImpl implements MockService {
         HttpResult result;
 
         try {
-            result = HttpUtils.post(Consts.MockUrlPrefix + Consts.ADD_PROXY_URL,
+            result = HttpUtils.post(mockServerInfo.getMockServerAddr() + Consts.ADD_PROXY_URL,
                     null,
                     gson.toJson(params),
                     3000);

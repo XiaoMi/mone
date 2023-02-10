@@ -18,6 +18,6 @@ public interface SidecarApiService {
 
     Result<Boolean> manualUpdateSidecarApi(ManualSidecarUpDTO dto);
 
-    Map<String, Object> getSidecarApi(Integer userId,Integer projectID, Integer apiID);
+    Map<String, Object> getSidecarApi(String username,Integer projectID, Integer apiID);
 
 }

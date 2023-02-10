@@ -57,7 +57,6 @@ public class DocumentController {
                 || (document.getContentType() != 1 && document.getContentType() != 0)) {
             return Result.fail(CommonError.InvalidParamError);
         }
-        document.setUserID(account.getId().intValue());
         return documentService.addDocument(document, account.getUsername());
     }
 
@@ -75,7 +74,6 @@ public class DocumentController {
         if (document.getDocumentID() == null || !String.valueOf(document.getDocumentID()).matches("^[0-9]{1,11}$")) {
             return Result.fail(CommonError.InvalidParamError);
         }
-        document.setUserID(account.getId().intValue());
         return this.documentService.editDocument(document,account.getUsername());
     }
 
@@ -143,6 +141,6 @@ public class DocumentController {
                 documentIDlist.add(Integer.parseInt(id));
             }
         }
-        return this.documentService.deleteBatchDocument(documentIDlist, projectID, account.getId().intValue(), account.getUsername());
+        return this.documentService.deleteBatchDocument(documentIDlist, projectID, account.getUsername());
     }
 }

@@ -14,7 +14,7 @@ public interface ApiTestService {
 
     Result<HttpResult> httpTest(HttpServletRequest servletReq, HttpTestBo request, String opUsername);
 
-    Result<Object> dubboTest(DubboTestBo request, String opUsername, Integer userId) throws NacosException;
+    Result<Object> dubboTest(DubboTestBo request, String opUsername) throws NacosException;
 
     Object grpcTest(GrpcTestBo request, String opUsername) throws Exception;
 
@@ -48,7 +48,7 @@ public interface ApiTestService {
 
     Result<List<String>> getServiceMethod(String serviceName,String env) throws NacosException;
 
-    Result<List<CaseGroupAndCasesBo>> getCasesByApi(int projectId, int apiId, int accountId);
+    Result<List<CaseGroupAndCasesBo>> getCasesByApi(int projectId, int apiId);
 
-    Result<List<CaseGroupAndCasesBo>> getCasesByProject(int projectId, int accountId);
+    Result<List<CaseGroupAndCasesBo>> getCasesByProject(int projectId);
 }

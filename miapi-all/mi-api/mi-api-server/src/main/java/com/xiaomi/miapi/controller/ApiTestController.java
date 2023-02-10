@@ -95,7 +95,7 @@ public class ApiTestController {
         if (Objects.isNull(bo.getVersion())){
             bo.setVersion("");
         }
-        return apiTestService.dubboTest(bo, account.getUsername(),account.getId().intValue());
+        return apiTestService.dubboTest(bo, account.getUsername());
     }
 
     @RequestMapping(value = "/saveTestCaseDir", method = RequestMethod.POST)
@@ -112,7 +112,6 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        dto.setAccountId(account.getId().intValue());
         return apiTestService.createTestCaseDir(dto);
     }
 
@@ -166,7 +165,6 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        bo.setAccountId(account.getId().intValue());
         return apiTestService.saveHttpTestCase(bo);
     }
 
@@ -184,7 +182,6 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        bo.setAccountId(account.getId().intValue());
         return apiTestService.updateHttpTestCase(bo);
     }
 
@@ -202,7 +199,6 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        bo.setAccountId(account.getId().intValue());
         return apiTestService.saveGatewayTestCase(bo);
     }
 
@@ -220,7 +216,6 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        bo.setAccountId(account.getId().intValue());
         return apiTestService.updateGatewayTestCase(bo);
     }
 
@@ -238,7 +233,6 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        bo.setAccountId(account.getId().intValue());
         return apiTestService.saveDubboTestCase(bo);
     }
 
@@ -256,7 +250,6 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        bo.setAccountId(account.getId().intValue());
         return apiTestService.updateDubboTestCase(bo);
     }
 
@@ -273,7 +266,6 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        bo.setAccountId(account.getId().intValue());
         return apiTestService.saveGrpcTestCase(bo);
     }
 
@@ -290,7 +282,6 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        bo.setAccountId(account.getId().intValue());
         return apiTestService.updateGrpcTestCase(bo);
     }
 
@@ -360,7 +351,7 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        return apiTestService.getCasesByApi(projectId,apiId, account.getId().intValue());
+        return apiTestService.getCasesByApi(projectId,apiId);
     }
 
     @RequestMapping(value = "/getCasesByProject", method = RequestMethod.POST)
@@ -377,7 +368,7 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        return apiTestService.getCasesByProject(projectId, account.getId().intValue());
+        return apiTestService.getCasesByProject(projectId);
     }
 
     @RequestMapping(value = "/getServiceMethod", method = RequestMethod.POST)

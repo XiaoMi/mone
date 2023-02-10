@@ -34,13 +34,12 @@ public class LoginService {
         if (null == request) {
             return null;
         }
+        String username;
         AuthUserVo user = UserUtil.getUser();
         if (null == user) {
-            return null;
-        }
-        String username = user.getAccount();
-        if (username == null){
             username = "Tony";
+        }else {
+            username = user.getAccount();
         }
         return new SessionAccount(9999L, username,username, null, null, null, null, null);
     }

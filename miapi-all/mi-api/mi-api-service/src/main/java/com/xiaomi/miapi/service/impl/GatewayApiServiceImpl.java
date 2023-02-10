@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.xiaomi.miapi.bo.MockServerInfo;
 import com.xiaomi.miapi.pojo.*;
 import com.xiaomi.miapi.util.Md5Utils;
 import com.xiaomi.miapi.util.RedisUtil;
@@ -79,6 +80,9 @@ public class GatewayApiServiceImpl implements GatewayApiService {
     @Autowired
     ApiServiceImpl apiService;
 
+    @Autowired
+    private MockServerInfo mockServerInfo;
+
     public static final Gson gson = new Gson();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GatewayApiServiceImpl.class);
@@ -134,7 +138,7 @@ public class GatewayApiServiceImpl implements GatewayApiService {
 
         String md5Location = Md5Utils.getMD5(gatewayApiInfo.getUrl());
         String uri = gatewayApiInfo.getUrl().replaceAll("/", ":");
-        map.put("mockUrl", String.format(Consts.REQUEST_URL_FORMAT, Consts.MockUrlPrefix + Consts.GatewayMockPrefix, md5Location, uri));
+        map.put("mockUrl", String.format(Consts.REQUEST_URL_FORMAT, mockServerInfo.getMockServerAddr() + Consts.GatewayMockPrefix, md5Location, uri));
         redis.recordRecently10Apis(username, apiID);
         return Result.success(map);
     }

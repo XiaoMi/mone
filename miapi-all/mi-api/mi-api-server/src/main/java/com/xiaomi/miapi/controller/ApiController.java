@@ -754,7 +754,7 @@ public class ApiController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        Map<String, Object> result = sidecarApiService.getSidecarApi(account.getId().intValue(), projectID, apiID);
+        Map<String, Object> result = sidecarApiService.getSidecarApi(account.getUsername(), projectID, apiID);
         return Result.success(result);
     }
 

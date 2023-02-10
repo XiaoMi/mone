@@ -57,7 +57,7 @@ public class ApiGroupServiceImp implements ApiGroupService
 
 	@Transactional
 	@Override
-	public Result<Boolean> deleteGroup(Integer projectID, Integer groupID, Integer userID,String username)
+	public Result<Boolean> deleteGroup(Integer projectID, Integer groupID,String username)
 	{
 		ApiGroup apiGroup = apiGroupMapper.getGroupByID(groupID);
 		List<Integer> groupIDS = new ArrayList<Integer>();
@@ -71,9 +71,7 @@ public class ApiGroupServiceImp implements ApiGroupService
 			return Result.fail(CommonError.InvalidIDParamError);
 		}
 		int result = apiGroupMapper.deleteGroup(groupIDS);
-		if (result > 0)
-		{
-			// 添加操作记录
+		if (result > 0) {
 			ProjectOperationLog projectOperationLog = new ProjectOperationLog();
 			projectOperationLog.setOpProjectID(projectID);
 			projectOperationLog.setOpDesc("删除项目分组  '" + apiGroup.getGroupName() + "'");

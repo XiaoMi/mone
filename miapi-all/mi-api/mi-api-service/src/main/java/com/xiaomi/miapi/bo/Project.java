@@ -17,4 +17,5 @@ public class Project
 	private Integer isPublic;
 	private Timestamp projectUpdateTime;
 	private String desc;
+	private String projectVersion;
 }
