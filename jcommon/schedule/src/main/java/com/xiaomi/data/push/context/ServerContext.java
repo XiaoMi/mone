@@ -37,8 +37,8 @@ public class ServerContext {
 
 
     /**
-     * 单机模式 standalone
-     * 集群模式 cluster
+     * standalone
+     * cluster
      */
     @Getter
     @Value("${schedule.server.type}")
@@ -49,7 +49,7 @@ public class ServerContext {
     private String serverName;
 
     /**
-     * 选举策略
+     * election strategy
      */
     @Getter
     @Value("${election.type}")
@@ -86,7 +86,7 @@ public class ServerContext {
 
 
     /**
-     * 服务器关闭(kill 的时候会触发)
+     * Server down (triggered by kill)
      */
     @PreDestroy
     public void shutdown() {

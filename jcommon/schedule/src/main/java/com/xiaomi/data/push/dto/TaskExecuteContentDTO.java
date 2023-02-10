@@ -12,22 +12,22 @@ import java.io.Serializable;
 public class TaskExecuteContentDTO implements Serializable {
 
     /**
-     * 任务id
+     * taskId
      */
     private Integer taskId;
 
     /**
-     * 任务内容
+     * task content
      */
     private String content;
 
     /**
-     * 执行人
+     * operator
      */
     private String userName;
 
     /**
-     * 执行类型 0自动触发、1手动执行
+     * Execute type 0 Automatically or 1 Manually
      */
     private int triggerType;
 
