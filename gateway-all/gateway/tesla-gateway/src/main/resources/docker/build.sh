@@ -1,1 +1,0 @@
-docker build -t micr.cloud.mioffice.cn/mixiao/gateway_sidecar:v5.2 -f Dockerfile .
