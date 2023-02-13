@@ -1,2 +1,0 @@
-memory=org.apache.dubbo.common.status.support.MemoryStatusChecker
-load=org.apache.dubbo.common.status.support.LoadStatusChecker
