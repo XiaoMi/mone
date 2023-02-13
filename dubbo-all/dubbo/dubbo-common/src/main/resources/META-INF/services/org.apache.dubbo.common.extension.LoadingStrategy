@@ -1,3 +1,0 @@
-org.apache.dubbo.common.extension.DubboInternalLoadingStrategy
-org.apache.dubbo.common.extension.DubboLoadingStrategy
-org.apache.dubbo.common.extension.ServicesLoadingStrategy
