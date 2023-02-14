@@ -16,8 +16,8 @@
 
 package com.xiaomi.data.push.uds.codes;
 
-import com.caucho.hessian.io.HessianInput;
-import com.caucho.hessian.io.HessianOutput;
+import com.alibaba.com.caucho.hessian.io.Hessian2Input;
+import com.alibaba.com.caucho.hessian.io.Hessian2Output;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayInputStream;
@@ -34,7 +34,7 @@ public class HessianCodes implements ICodes {
     @Override
     public <T> T decode(byte[] data, Type type) {
         ByteArrayInputStream is = new ByteArrayInputStream(data);
-        HessianInput hi = new HessianInput(is);
+        Hessian2Input hi = new Hessian2Input(is);
         try {
             return (T) hi.readObject();
         } catch (IOException e) {
@@ -52,9 +52,10 @@ public class HessianCodes implements ICodes {
     @Override
     public <T> byte[] encode(T t) {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
-        HessianOutput ho = new HessianOutput(os);
+        Hessian2Output ho = new Hessian2Output(os);
         try {
             ho.writeObject(t);
+            ho.flush();
             return os.toByteArray();
         } catch (IOException e) {
             throw new RuntimeException(e);

@@ -33,9 +33,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.caucho</groupId>
-            <artifactId>hessian</artifactId>
-            <version>4.0.65</version>
+            <groupId>com.alibaba</groupId>
+            <artifactId>hessian-lite</artifactId>
+            <version>3.2.13</version>
         </dependency>
 
         <dependency>
@@ -49,7 +49,6 @@
             <artifactId>netty-all</artifactId>
             <version>4.1.48.Final</version>
         </dependency>
-
 
         <dependency>
             <groupId>run.mone</groupId>
