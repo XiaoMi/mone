@@ -18,9 +18,12 @@ package com.xiaomi.data.push.uds.codes;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+import com.xiaomi.data.push.uds.codes.gson.ObjectTypeAdapterRewrite;
 import run.mone.api.Cons;
 
 import java.lang.reflect.Type;
+import java.util.Map;
 
 /**
  * @author goodjava@qq.com
@@ -30,7 +33,8 @@ public class GsonCodes implements ICodes {
 
     public static final byte type = CodeType.GSON;
 
-    private Gson gson = new GsonBuilder().enableComplexMapKeySerialization().setDateFormat(Cons.EFFAULT_DATE_STYLE).create();
+    private Gson gson = new GsonBuilder().registerTypeAdapter(new TypeToken<Map<String, Object>>() {
+    }.getType(), new ObjectTypeAdapterRewrite()).enableComplexMapKeySerialization().setDateFormat(Cons.EFFAULT_DATE_STYLE).create();
 
     @Override
     public <T> T decode(byte[] data, Type type) {
