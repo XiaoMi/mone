@@ -26,12 +26,19 @@ import java.util.Map;
 
 public class CodeCheckTest {
 
+    /**
+     * 测试代码中是否有明文password
+     */
+    @Test
+    public void testCheckPassword() {
+        CodeCheck codeCheck = new CodeCheck();
+        codeCheck.check("/Users/zhangzhiyong/IdeaProjects/new_opensource/mone/jcommon/codecheck/src/test/java/com/xiaomi/youpin/codecheck/test/code");
+    }
+
 
     @Test
     public void testCode() {
-
         String path = "/tmp/miapimanager";
-
         CodeCheck codeCheck = new CodeCheck();
         Map<String, List<CheckResult>> map = codeCheck.check(path);
         map.entrySet().stream().forEach(it ->  {
@@ -43,9 +50,7 @@ public class CodeCheckTest {
 
     @Test
     public void testDoc() {
-
         String path = "/tmp/niuke";
-
         DocCheck codeCheck = new DocCheck();
         Map<String, String> map = codeCheck.getDoc(path);
         map.entrySet().stream().forEach(it ->  {
