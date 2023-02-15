@@ -1,11 +1,14 @@
 package com.xiaomi.miapi.mapper;
 
-import com.xiaomi.miapi.common.pojo.ApiHistoryRecord;
-import com.xiaomi.miapi.common.pojo.ApiHistoryRecordExample;
+import com.xiaomi.miapi.pojo.ApiHistoryRecord;
+import com.xiaomi.miapi.pojo.ApiHistoryRecordExample;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
-
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 public interface ApiHistoryRecordMapper {
     long countByExample(ApiHistoryRecordExample example);
 

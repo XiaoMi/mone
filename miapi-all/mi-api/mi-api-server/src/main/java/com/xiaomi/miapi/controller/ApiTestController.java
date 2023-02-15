@@ -1,17 +1,15 @@
 package com.xiaomi.miapi.controller;
 
 import com.alibaba.nacos.api.exception.NacosException;
-import com.xiaomi.miapi.common.bo.*;
-import com.xiaomi.miapi.common.dto.TestCaseDirDTO;
-import com.xiaomi.miapi.common.pojo.DubboTestPermissionApplyDTO;
+import com.xiaomi.miapi.bo.*;
+import com.xiaomi.miapi.dto.TestCaseDirDTO;
+import com.xiaomi.miapi.pojo.DubboTestPermissionApplyDTO;
 import com.xiaomi.miapi.util.SessionAccount;
-import com.xiaomi.miapi.common.pojo.ApiTestCase;
+import com.xiaomi.miapi.pojo.ApiTestCase;
 import com.xiaomi.miapi.service.ApiTestService;
 import com.xiaomi.miapi.service.impl.LoginService;
-import com.xiaomi.miapi.common.Consts;
 import com.xiaomi.miapi.common.HttpResult;
 import com.xiaomi.miapi.common.Result;
-import com.xiaomi.miapi.common.exception.CommonError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,7 +25,9 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * 接口测试controller
+ * @author dongzhenxing
+ * @date 2023/02/08
+ * deal with api test request
  */
 @Controller
 @RequestMapping("/ApiTest")
@@ -95,17 +95,9 @@ public class ApiTestController {
         if (Objects.isNull(bo.getVersion())){
             bo.setVersion("");
         }
-        return apiTestService.dubboTest(bo, account.getUsername(),account.getId().intValue());
+        return apiTestService.dubboTest(bo, account.getUsername());
     }
 
-    /**
-     * 添加用例文件夹
-     *
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
-     */
     @RequestMapping(value = "/saveTestCaseDir", method = RequestMethod.POST)
     @ResponseBody
     public Result<Boolean> saveTestCaseDir(
@@ -120,22 +112,9 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiTestController.saveTestCaseDir] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        dto.setAccountId(account.getId().intValue());
         return apiTestService.createTestCaseDir(dto);
     }
 
-    /**
-     * 修改测试用例名
-     *
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
-     */
     @RequestMapping(value = "/updateCaseName", method = RequestMethod.POST)
     @ResponseBody
     public Result<Boolean> updateCaseName(
@@ -151,21 +130,9 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiTestController.updateCaseName] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
         return apiTestService.updateCaseName(caseId,caseName);
     }
 
-    /**
-     * 修改测试用例文件夹名
-     *
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
-     */
     @RequestMapping(value = "/updateCaseDirName", method = RequestMethod.POST)
     @ResponseBody
     public Result<Boolean> updateCaseDirName(
@@ -181,21 +148,9 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiTestController.updateCaseDirName] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
         return apiTestService.updateCaseDirName(dirId,dirName);
     }
 
-    /**
-     * 保存http测试用例
-     *
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
-     */
     @RequestMapping(value = "/saveHttpTestCase", method = RequestMethod.POST)
     @ResponseBody
     public Result<Boolean> saveHttpTestCase(
@@ -210,22 +165,9 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiTestController.saveHttpTestCase] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        bo.setAccountId(account.getId().intValue());
         return apiTestService.saveHttpTestCase(bo);
     }
 
-    /**
-     * 保存http测试用例
-     *
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
-     */
     @RequestMapping(value = "/updateHttpTestCase", method = RequestMethod.POST)
     @ResponseBody
     public Result<Boolean> updateHttpTestCase(
@@ -240,21 +182,9 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiTestController.updateHttpTestCase] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        bo.setAccountId(account.getId().intValue());
         return apiTestService.updateHttpTestCase(bo);
     }
-    /**
-     * 保存网关测试用例
-     *
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
-     */
+
     @RequestMapping(value = "/saveGatewayTestCase", method = RequestMethod.POST)
     @ResponseBody
     public Result<Boolean> saveGatewayTestCase(
@@ -269,22 +199,9 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiTestController.saveGatewayTestCase] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        bo.setAccountId(account.getId().intValue());
         return apiTestService.saveGatewayTestCase(bo);
     }
 
-    /**
-     * 保存网关测试用例
-     *
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
-     */
     @RequestMapping(value = "/updateGatewayTestCase", method = RequestMethod.POST)
     @ResponseBody
     public Result<Boolean> updateGatewayTestCase(
@@ -299,23 +216,9 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiTestController.updateGatewayTestCase] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        bo.setAccountId(account.getId().intValue());
         return apiTestService.updateGatewayTestCase(bo);
     }
 
-    /**
-     * 保存dubbo类型接口的测试用例
-     *
-     * @param bo
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
-     */
     @RequestMapping(value = "/saveDubboTestCase", method = RequestMethod.POST)
     @ResponseBody
     public Result<Boolean> saveDubboTestCase(
@@ -330,23 +233,9 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiTestController.saveDubboTestCase] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        bo.setAccountId(account.getId().intValue());
         return apiTestService.saveDubboTestCase(bo);
     }
 
-    /**
-     * 更新dubbo类型接口的测试用例
-     *
-     * @param bo
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
-     */
     @RequestMapping(value = "/updateDubboTestCase", method = RequestMethod.POST)
     @ResponseBody
     public Result<Boolean> updateDubboTestCase(
@@ -361,23 +250,9 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiTestController.updateDubboTestCase] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        bo.setAccountId(account.getId().intValue());
         return apiTestService.updateDubboTestCase(bo);
     }
 
-    /**
-     * 保存grpc类型接口的测试用例
-     *
-     * @param bo
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
-     */
     @RequestMapping(value = "/saveGrpcTestCase", method = RequestMethod.POST)
     @ResponseBody
     public Result<Boolean> saveGrpcTestCase(
@@ -391,23 +266,9 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiTestController.saveGrpcTestCase] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        bo.setAccountId(account.getId().intValue());
         return apiTestService.saveGrpcTestCase(bo);
     }
 
-    /**
-     * 保存dubbo类型接口的测试用例
-     *
-     * @param bo
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
-     */
     @RequestMapping(value = "/updateGrpcTestCase", method = RequestMethod.POST)
     @ResponseBody
     public Result<Boolean> updateGrpcTestCase(
@@ -421,22 +282,9 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiTestController.updateGrpcTestCase] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        bo.setAccountId(account.getId().intValue());
         return apiTestService.updateGrpcTestCase(bo);
     }
 
-    /**
-     * 删除用例
-     *
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
-     */
     @RequestMapping(value = "/deleteCaseById", method = RequestMethod.POST)
     @ResponseBody
     public Result<Boolean> deleteCaseById(
@@ -451,20 +299,9 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiTestController.deleteCaseById] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
         return apiTestService.deleteCaseById(caseId);
     }
 
-    /**
-     * 删除用例组
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
-     */
     @RequestMapping(value = "/deleteCaseGroup", method = RequestMethod.POST)
     @ResponseBody
     public Result<Boolean> deleteCaseGroup(
@@ -479,21 +316,9 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiTestController.deleteCaseGroup] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
         return apiTestService.deleteCaseGroup(groupId);
     }
 
-    /**
-     * 获取用例详情
-     *
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
-     */
     @RequestMapping(value = "/getCaseDetailById", method = RequestMethod.POST)
     @ResponseBody
     public Result<ApiTestCase> getCaseDetailById(
@@ -508,21 +333,9 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiTestController.getCaseDetailById] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
         return apiTestService.getCaseDetailById(caseId);
     }
 
-    /**
-     * 获取接口下的case分组及列表
-     *
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
-     */
     @RequestMapping(value = "/getCasesByApi", method = RequestMethod.POST)
     @ResponseBody
     public Result<List<CaseGroupAndCasesBo>> getCasesByApi(
@@ -538,21 +351,9 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiTestController.getCasesByApi] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        return apiTestService.getCasesByApi(projectId,apiId, account.getId().intValue());
+        return apiTestService.getCasesByApi(projectId,apiId);
     }
 
-    /**
-     * 获取项目下的case分组及列表
-     *
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
-     */
     @RequestMapping(value = "/getCasesByProject", method = RequestMethod.POST)
     @ResponseBody
     public Result<List<CaseGroupAndCasesBo>> getCasesByProject(
@@ -567,21 +368,9 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiTestController.getCasesByProject] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        return apiTestService.getCasesByProject(projectId, account.getId().intValue());
+        return apiTestService.getCasesByProject(projectId);
     }
 
-    /**
-     * 获取接口方法
-     *
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
-     */
     @RequestMapping(value = "/getServiceMethod", method = RequestMethod.POST)
     @ResponseBody
     public Result<List<String>> getServiceMethod(
@@ -597,42 +386,6 @@ public class ApiTestController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiTestController.getServiceMethod] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
         return apiTestService.getServiceMethod(serviceName,env);
     }
-
-    /**
-     * 申请线上dubbo接口测试权限审批
-     *
-     * @param request
-     * @param response
-     * @return
-     * @throws IOException
-     */
-    @RequestMapping(value = "/applyOnlineDubboTest", method = RequestMethod.POST)
-    @ResponseBody
-    public Result<Boolean> applyOnlineDubboTest(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            DubboTestPermissionApplyDTO dto
-    ) throws IOException {
-
-        SessionAccount account = loginService.getAccountFromSession(request);
-        if (Objects.isNull(account)) {
-            LOGGER.warn("[ApiTestController.applyOnlineDubboTest] current user not have valid account info in session");
-            response.sendError(401, "未登录或者无权限");
-            return null;
-        }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ApiTestController.applyOnlineDubboTest] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        dto.setUserId(account.getId().intValue());
-        dto.setOperator(account.getUsername());
-        return apiTestService.applyOnlineDubboTest(dto);
-    }
-
 }

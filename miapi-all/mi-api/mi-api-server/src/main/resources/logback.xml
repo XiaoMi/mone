@@ -3,6 +3,16 @@
 
     <property resource="application.properties"></property>
 
+    <appender name="youpinLogAppender" class="com.xiaomi.youpin.jcommon.log.YouPinLogAppender">
+        <appName>mi-api</appName>
+        <group>${youpin.log.group}</group>
+        <talosTopicName>${talos.topic}</talosTopicName>
+        <talosSendpoint>${talos.sendpoint}</talosSendpoint>
+        <talosAccessKey>${talos.access.key}</talosAccessKey>
+        <talosAccessSecret>${talos.access.secret}</talosAccessSecret>
+        <needCatLog>true</needCatLog>
+    </appender>
+
     <appender name="fileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${log.path}/mi-api/server.log</file>
         <encoder>
@@ -44,6 +54,7 @@
         <appender-ref ref="STDOUT"/>
         <appender-ref ref="errorAppender"/>
         <appender-ref ref="fileAppender"/>
+        <appender-ref ref="youpinLogAppender"/>
     </root>
 
 </configuration>

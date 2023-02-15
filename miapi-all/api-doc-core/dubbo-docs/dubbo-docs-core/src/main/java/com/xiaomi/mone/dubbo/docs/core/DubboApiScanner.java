@@ -27,7 +27,7 @@ import com.xiaomi.mone.dubbo.docs.utils.ClassTypeUtil;
 import com.xiaomi.mone.dubbo.docs.utils.HttpUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.dubbo.apidocs.core.providers.DubboApiDocProvider;
+import com.xiaomi.mone.dubbo.docs.providers.DubboApiDocProvider;
 import org.apache.dubbo.common.logger.Logger;
 import org.apache.dubbo.common.logger.LoggerFactory;
 import org.apache.dubbo.common.utils.NetUtils;
@@ -89,7 +89,7 @@ public class DubboApiScanner implements ApplicationListener<ApplicationReadyEven
     /**
      * module info heart beat url suffix
      */
-    public static final String MODULE_BEAT_URL = "/OpenApi/beat";
+    public static final String MODULE_BEAT_URL = "/OpenApi/Beat/beat";
 
     /**
      * auto doc notify url suffix

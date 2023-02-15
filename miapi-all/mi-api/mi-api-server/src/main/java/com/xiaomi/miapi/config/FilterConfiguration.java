@@ -24,6 +24,10 @@ import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 @Configuration
 public class FilterConfiguration {
 
@@ -45,19 +49,22 @@ public class FilterConfiguration {
     @Value("${dev.mode}")
     private String devMode;
 
-    @Bean
+//    @Bean
     public FilterRegistrationBean filterCasBean() {
         FilterRegistrationBean registrationBean = new FilterRegistrationBean();
         registrationBean.setFilter(new HttpReqUserFilter());
         registrationBean.addUrlPatterns("/*");
         registrationBean.addInitParameter(ConstUtil.innerAuth, innerAuth);
-        registrationBean.addInitParameter(ConstUtil.CAS_PUBLIC_KEY, aegisSdk + "," + aegisMoneSdk);
+        registrationBean.addInitParameter(ConstUtil.CAS_PUBLIC_KEY, aegisSdk);
         registrationBean.addInitParameter(ConstUtil.authTokenUrl, tokenParseUrl);
         registrationBean.addInitParameter("IGNORE_URL", ignoreUrl);
         registrationBean.addInitParameter(ConstUtil.devMode, devMode);
         registrationBean.addInitParameter(ConstUtil.USER_INFO_PATH, "/api/miapi/login/userinfo");
+
+        //need to set tpc url
+        registrationBean.addInitParameter(ConstUtil.loginUrl,"");
+        registrationBean.addInitParameter(ConstUtil.logoutUrl,"");
         registrationBean.setOrder(4);
         return registrationBean;
     }
-
 }

@@ -79,7 +79,7 @@ public class HttpApiScanner implements ApplicationListener<ApplicationReadyEvent
     /**
      * module heart beat url suffix
      */
-    public static final String MODULE_BEAT_URL = "/OpenApi/beat";
+    public static final String MODULE_BEAT_URL = "/OpenApi/Beat/beat";
 
     /**
      * http data push url suffix

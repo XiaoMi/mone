@@ -5,10 +5,11 @@ import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
-import com.xiaomi.miapi.common.bo.*;
-import com.xiaomi.miapi.common.dto.TestCaseDirDTO;
-import com.xiaomi.miapi.common.pojo.*;
+import com.xiaomi.hera.trace.context.HeraContextUtil;
+import com.xiaomi.miapi.bo.*;
+import com.xiaomi.miapi.dto.TestCaseDirDTO;
 import com.xiaomi.miapi.mapper.*;
+import com.xiaomi.miapi.pojo.*;
 import com.xiaomi.miapi.util.*;
 import com.xiaomi.miapi.vo.MethodInfo;
 import com.xiaomi.miapi.common.Consts;
@@ -68,15 +69,6 @@ public class ApiTestServiceImpl implements ApiTestService {
     @Autowired
     ApiMapper apiMapper;
 
-    @Autowired
-    FeiShuService feiShuService;
-
-    @Autowired
-    RedisUtil redisUtil;
-
-    @DubboReference(check = false, group = "${ref.hermes.service.group}")
-    private BusProjectService busProjectService;
-
     @Resource(name = "stRegistry")
     private RegistryConfig stRegistryConfig;
 
@@ -89,15 +81,16 @@ public class ApiTestServiceImpl implements ApiTestService {
     @Resource(name = "nacosNamingOl")
     private NacosNaming nacosNamingOl;
 
+    private static final Gson gson = new Gson();
     private final GrpcReflectionCall grpcCall = new GrpcReflectionCall();
 
     @Override
-    public Result<HttpResult> httpTest(HttpServletRequest servletReq,HttpTestBo request, String opUsername) {
+    public Result<HttpResult> httpTest(HttpServletRequest servletReq, HttpTestBo request, String opUsername) {
         if (StringUtils.isBlank(request.getMethod()) || StringUtils.isBlank(request.getUrl())) {
             return Result.fail(CommonError.InvalidParamError);
         }
-        //处理本地ip
-        request.setUrl(judgeAndReplaceDomain(servletReq,request.getUrl()));
+        //deal with local ip
+        request.setUrl(judgeAndReplaceDomain(servletReq, request.getUrl()));
         Map<String, String> headers = new HashMap<>();
         try {
             if (StringUtils.isNotBlank(request.getHeaders())) {
@@ -134,20 +127,22 @@ public class ApiTestServiceImpl implements ApiTestService {
                 result = HttpUtils.post(request.getUrl(), headers, request.getBody(), request.getTimeout());
             }
         } else {
-            //使用x5协议
+            //use x5 filter
+            headers.put("form_data", "true");
             Map<String, Object> x5Body = new HashMap<>();
-            Map<String,String> x5Header = new HashMap<>();
-            x5Header.put("appid",request.getAppID());
-            if (Objects.nonNull(request.getX5Method()) && !request.getX5Method().isEmpty()){
-                x5Header.put("method",request.getX5Method());
+            Map<String, String> x5Header = new HashMap<>();
+            x5Header.put("appid", request.getAppID());
+            if (Objects.nonNull(request.getX5Method()) && !request.getX5Method().isEmpty()) {
+                x5Header.put("method", request.getX5Method());
             }
-            String sign = genSign(request.getAppID(), request.getBody(),request.getAppkey());
-            x5Header.put("sign",sign);
-            x5Body.put("header",x5Header);
-            x5Body.put("body",request.getBody());
+            String sign = genSign(request.getAppID(), request.getBody(), request.getAppkey());
+            x5Header.put("sign", sign);
+            x5Body.put("header", x5Header);
+            x5Body.put("body", request.getBody());
             String data = ApiServiceImpl.gson.toJson(x5Body);
-            data = "data="+Base64.getEncoder().encodeToString(data.getBytes(Charsets.UTF_8));
-            result = HttpUtils.post(request.getUrl(), headers, data, request.getTimeout());
+            Map<String, String> body = new HashMap<>();
+            body.put("data", Base64.getEncoder().encodeToString(data.getBytes(Charsets.UTF_8)));
+            result = HttpUtils.post(request.getUrl(), headers, gson.toJson(body), request.getTimeout());
         }
 
         if (Objects.isNull(result)) {
@@ -158,7 +153,7 @@ public class ApiTestServiceImpl implements ApiTestService {
             result.setCost(result.getTimestamp() - start);
             result.setSize(result.getContent().getBytes().length);
         }
-        //记录http请求日志
+        //record http req log
         ApiTestLog apiTestLog = new ApiTestLog();
         apiTestLog.setUrl(request.getUrl());
         apiTestLog.setOpUsername(opUsername);
@@ -175,32 +170,13 @@ public class ApiTestServiceImpl implements ApiTestService {
     }
 
     @Override
-    public Result<Boolean> applyOnlineDubboTest(DubboTestPermissionApplyDTO dto) {
-        Map<String,String> info = new HashMap<>();
-        info.put("serviceName", dto.getServiceName());
-        info.put("groupName",dto.getGroup());
-        info.put("versionName",dto.getVersion());
-        info.put("operator",dto.getOperator());
-        String rKey = String.join(":",dto.getServiceName(),dto.getGroup(),dto.getVersion(),dto.getOperator(),Integer.toString(dto.getUserId()));
-
-        info.put("rKey",rKey);
-        String content = TemplateUtils.processTemplate(Consts.reviewTmp,info);
-
-        List<BusProjectRoleResp> members = busProjectService.members(dto.getProjectId());
-        members.forEach(member ->{
-            if (0 == member.getRoleType()){
-                feiShuService.sendCard2Person(member.getEUsername(),content);
+    public Result<Object> dubboTest(DubboTestBo request, String opUsername) throws NacosException {
+        if (request.isProduction()) {
+            if (request.getGroup() == null) {
+                request.setGroup("");
             }
-        });
-        return Result.success(true);
-    }
-
-    @Override
-    public Result<Object> dubboTest(DubboTestBo request, String opUsername,Integer userId) throws NacosException {
-        if (request.isProduction()){
-            String rKey = String.join(":",request.getInterfaceName(),request.getGroup(),request.getVersion(),opUsername,Integer.toString(userId));
-            if (!checkUserTestPermission(rKey)){
-                return Result.fail(CommonError.ApplyPermissionPlease);
+            if (request.getVersion() == null) {
+                request.setVersion("");
             }
         }
         Map<String, Object> resultMap = new HashMap<>();
@@ -230,10 +206,9 @@ public class ApiTestServiceImpl implements ApiTestService {
             methodInfo.setVersion(request.getVersion());
         }
         if (request.isGenParam()) {
-            //兼容泛型参数
             RpcContext.getContext().setAttachment(Constants.GENERIC_KEY, "youpin_json");
         }
-        //接收attachment
+        //accept attachment
         if (StringUtils.isNotEmpty(request.getAttachment())) {
             List<Attachment> attachments = ApiServiceImpl.gson.fromJson(request.getAttachment(), new TypeToken<List<Attachment>>() {
             }.getType());
@@ -252,7 +227,7 @@ public class ApiTestServiceImpl implements ApiTestService {
         if (StringUtils.isEmpty(request.getParameter())) {
             methodInfo.setArgs(new Object[]{});
         } else {
-            Object[] params = new Object[0];
+            Object[] params;
             try {
                 params = new Gson().fromJson(request.getParameter(), new TypeToken<Object[]>() {
                 }.getType());
@@ -267,13 +242,13 @@ public class ApiTestServiceImpl implements ApiTestService {
         long end = System.currentTimeMillis();
 
         resultMap.put("cost", end - start);
-        if (res != null){
+        if (res != null) {
             resultMap.put("size", res.toString().getBytes().length);
-        }else {
+        } else {
             resultMap.put("size", 0);
         }
         resultMap.put("res", res);
-        //记录dubbo api的请求
+        //record dubbo api log
         ApiTestLog log = new ApiTestLog();
         log.setOpUsername(opUsername);
         log.setInterfaceName(request.getInterfaceName());
@@ -294,23 +269,6 @@ public class ApiTestServiceImpl implements ApiTestService {
         return Result.success(resultMap);
     }
 
-    private boolean checkUserTestPermission(String rKey){
-        return redisUtil.exists(rKey);
-    }
-
-    private boolean checkRightEnv(boolean online,String providerName) throws NacosException {
-        if (providerName.contains("::")){
-            providerName = providerName.replaceFirst("::",":");
-        }
-        List<Instance> instanceList;
-        if (!online){
-            instanceList = nacosNamingSt.getAllInstances(providerName);
-        }else {
-            log.warn("select provider name:{}",providerName);
-            instanceList = nacosNamingOl.getAllInstances(providerName);
-        }
-        return instanceList != null && !instanceList.isEmpty();
-    }
 
     @Override
     public Object grpcTest(GrpcTestBo request, String opUsername) throws Exception {
@@ -323,7 +281,6 @@ public class ApiTestServiceImpl implements ApiTestService {
         } catch (Exception e) {
             return HttpResult.success(HttpStatus.NO_CONTENT.value(), e.getMessage());
         }
-        //调用日志
         ApiTestLog log = new ApiTestLog();
         log.setOpUsername(opUsername);
         log.setInterfaceName(serviceName);
@@ -336,10 +293,6 @@ public class ApiTestServiceImpl implements ApiTestService {
 
     @Override
     public Result<Boolean> createTestCaseDir(TestCaseDirDTO testCaseDir) {
-        BusProject busProject = busProjectService.queryBusProjectById(testCaseDir.getProjectId());
-        if (busProject == null) {
-            Result.fail(CommonError.ProjectDoNotExist);
-        }
         TestCaseGroup caseGroup = new TestCaseGroup();
         caseGroup.setCaseGroupName(testCaseDir.getName());
         if (testCaseDir.getGlobalCase() || Objects.isNull(testCaseDir.getApiId()) || testCaseDir.getApiId() == 0) {
@@ -356,7 +309,7 @@ public class ApiTestServiceImpl implements ApiTestService {
     @Override
     public Result<Boolean> updateCaseName(int caseId, String caseName) {
         ApiTestCase apiTestCase = apiTestCaseMapper.selectByPrimaryKey(caseId);
-        if (Objects.isNull(apiTestCase)){
+        if (Objects.isNull(apiTestCase)) {
             return Result.fail(CommonError.CaseNotExist);
         }
         apiTestCase.setCaseName(caseName);
@@ -367,7 +320,7 @@ public class ApiTestServiceImpl implements ApiTestService {
     @Override
     public Result<Boolean> updateCaseDirName(int dirId, String dirName) {
         TestCaseGroup caseGroup = testCaseGroupMapper.selectByPrimaryKey(dirId);
-        if (Objects.isNull(caseGroup)){
+        if (Objects.isNull(caseGroup)) {
             return Result.fail(CommonError.InvalidParamError);
         }
         caseGroup.setCaseGroupName(dirName);
@@ -417,7 +370,7 @@ public class ApiTestServiceImpl implements ApiTestService {
             return Result.fail(CommonError.CaseNotExist);
         }
         if (apiTestCase.getApiId() != 0) {
-            //全局项目的case
+            //global case
             apiTestCase.setHttpMethod(caseBo.getHttpMethod());
             apiTestCase.setUrl(caseBo.getUrl());
         }
@@ -430,11 +383,11 @@ public class ApiTestServiceImpl implements ApiTestService {
         apiTestCase.setHttpHeaders(caseBo.getHttpHeaders());
         apiTestCase.setHttpRequestBody(caseBo.getHttpRequestBody());
         apiTestCase.setUseX5Filter(caseBo.getUseX5Filter());
-        if (caseBo.getUseX5Filter()){
+        if (caseBo.getUseX5Filter()) {
             apiTestCase.setX5AppId(caseBo.getX5AppId());
             apiTestCase.setX5AppKey(caseBo.getX5AppKey());
-        }else {
-            apiTestCase.setX5AppId(0);
+        } else {
+            apiTestCase.setX5AppId("");
             apiTestCase.setX5AppKey("");
         }
         apiTestCase.setHttpReqBodyType(caseBo.getHttpReqBodyType());
@@ -467,7 +420,7 @@ public class ApiTestServiceImpl implements ApiTestService {
             testCase.setUseX5Filter(caseBo.getUseX5Filter());
             testCase.setX5AppId(caseBo.getX5AppId());
             testCase.setX5AppKey(caseBo.getX5AppKey());
-        }else {
+        } else {
             testCase.setUseX5Filter(caseBo.getUseX5Filter());
         }
         testCase.setHttpReqBodyType(caseBo.getHttpReqBodyType());
@@ -482,7 +435,7 @@ public class ApiTestServiceImpl implements ApiTestService {
             return Result.fail(CommonError.CaseNotExist);
         }
         if (apiTestCase.getApiId() == 0) {
-            //全局项目的case
+            //global case
             apiTestCase.setHttpMethod(caseBo.getHttpMethod());
             apiTestCase.setUrl(caseBo.getUrl());
         }
@@ -492,11 +445,11 @@ public class ApiTestServiceImpl implements ApiTestService {
         apiTestCase.setHttpHeaders(caseBo.getHttpHeaders());
         apiTestCase.setHttpRequestBody(caseBo.getHttpRequestBody());
         apiTestCase.setUseX5Filter(caseBo.getUseX5Filter());
-        if (caseBo.getUseX5Filter()){
+        if (caseBo.getUseX5Filter()) {
             apiTestCase.setX5AppId(caseBo.getX5AppId());
             apiTestCase.setX5AppKey(caseBo.getX5AppKey());
-        }else {
-            apiTestCase.setX5AppId(0);
+        } else {
+            apiTestCase.setX5AppId("");
             apiTestCase.setX5AppKey("");
         }
         apiTestCase.setHttpReqBodyType(caseBo.getHttpReqBodyType());
@@ -527,14 +480,14 @@ public class ApiTestServiceImpl implements ApiTestService {
         }
         testCase.setDubboInterface(caseBo.getDubboInterface());
         testCase.setDubboMethodName(caseBo.getDubboMethodName());
-        if (Objects.nonNull(caseBo.getDubboGroup())){
+        if (Objects.nonNull(caseBo.getDubboGroup())) {
             testCase.setDubboGroup(caseBo.getDubboGroup());
-        }else {
+        } else {
             testCase.setDubboGroup("");
         }
-        if (Objects.nonNull(caseBo.getDubboVersion())){
+        if (Objects.nonNull(caseBo.getDubboVersion())) {
             testCase.setDubboVersion(caseBo.getDubboVersion());
-        }else {
+        } else {
             testCase.setDubboVersion("");
         }
         testCase.setDubboParamType(caseBo.getDubboParamType());
@@ -559,19 +512,18 @@ public class ApiTestServiceImpl implements ApiTestService {
         if (Objects.isNull(testCase)) {
             return Result.fail(CommonError.CaseNotExist);
         }
-        if (testCase.getApiId() == 0){
-            //全局项目用例
+        if (testCase.getApiId() == 0) {
             testCase.setDubboEnv(caseBo.getEnv());
             testCase.setDubboInterface(caseBo.getDubboInterface());
             testCase.setDubboMethodName(caseBo.getDubboMethodName());
-            if (Objects.nonNull(caseBo.getDubboGroup())){
+            if (Objects.nonNull(caseBo.getDubboGroup())) {
                 testCase.setDubboGroup(caseBo.getDubboGroup());
-            }else {
+            } else {
                 testCase.setDubboGroup("");
             }
-            if (Objects.nonNull(caseBo.getDubboVersion())){
+            if (Objects.nonNull(caseBo.getDubboVersion())) {
                 testCase.setDubboVersion(caseBo.getDubboVersion());
-            }else {
+            } else {
                 testCase.setDubboVersion("");
             }
         }
@@ -633,9 +585,8 @@ public class ApiTestServiceImpl implements ApiTestService {
             return Result.fail(CommonError.CaseNotExist);
         }
 
-        if (testCase.getApiId() == 0){
-            //全局项目case
-            if (!caseBo.getAppName().isEmpty()){
+        if (testCase.getApiId() == 0) {
+            if (!caseBo.getAppName().isEmpty()) {
                 testCase.setGrpcAppName(caseBo.getAppName());
             }
             testCase.setGrpcAppName(caseBo.getAppName());
@@ -686,14 +637,14 @@ public class ApiTestServiceImpl implements ApiTestService {
     }
 
     @Override
-    public Result<List<String>> getServiceMethod(String serviceName,String env) throws NacosException {
+    public Result<List<String>> getServiceMethod(String serviceName, String env) throws NacosException {
         List<String> methodNames;
         List<Instance> instanceList;
-        if (env.equals("online")){
+        if (env.equals("online")) {
             instanceList = nacosNamingOl.getAllInstances(serviceName);
-        }else if (env.equals("staging")){
+        } else if (env.equals("staging")) {
             instanceList = nacosNamingSt.getAllInstances(serviceName);
-        }else {
+        } else {
             instanceList = new ArrayList<>();
         }
         if (Objects.nonNull(instanceList) && !instanceList.isEmpty()) {
@@ -707,7 +658,7 @@ public class ApiTestServiceImpl implements ApiTestService {
 
 
     @Override
-    public Result<List<CaseGroupAndCasesBo>> getCasesByApi(int projectId, int apiId, int accountId) {
+    public Result<List<CaseGroupAndCasesBo>> getCasesByApi(int projectId, int apiId) {
         List<CaseGroupAndCasesBo> groupAndCasesBos = new ArrayList<>();
         Api api = apiMapper.getApiInfo(projectId, apiId);
         if (Objects.isNull(api)) {
@@ -731,12 +682,8 @@ public class ApiTestServiceImpl implements ApiTestService {
     }
 
     @Override
-    public Result<List<CaseGroupAndCasesBo>> getCasesByProject(int projectId, int accountId) {
+    public Result<List<CaseGroupAndCasesBo>> getCasesByProject(int projectId) {
         List<CaseGroupAndCasesBo> groupAndCasesBos = new ArrayList<>();
-        BusProject project = busProjectService.queryBusProjectById(projectId);
-        if (Objects.isNull(project)) {
-            return Result.fail(CommonError.ProjectDoNotExist);
-        }
         TestCaseGroupExample example = new TestCaseGroupExample();
         example.createCriteria().andProjectIdEqualTo(projectId).andApiIdEqualTo(0);
         List<TestCaseGroup> caseGroups = testCaseGroupMapper.selectByExample(example);
@@ -861,7 +808,7 @@ public class ApiTestServiceImpl implements ApiTestService {
         testCase.setDubboEnv("");
         testCase.setUseX5Filter(false);
         testCase.setX5AppKey("");
-        testCase.setX5AppId(0);
+        testCase.setX5AppId("");
         testCase.setGrpcPackageName("");
         testCase.setGrpcInterfaceName("");
         testCase.setGrpcMethodName("");
@@ -872,14 +819,14 @@ public class ApiTestServiceImpl implements ApiTestService {
         testCase.setGrpcParamBody("");
     }
 
-    private String judgeAndReplaceDomain(HttpServletRequest request,String url){
+    private String judgeAndReplaceDomain(HttpServletRequest request, String url) {
         String realIp;
-        if (url.contains("127.0.0.1")){
+        if (url.contains("127.0.0.1")) {
             realIp = IpUtil.getIpAddr(request);
-            url = url.replaceAll("127.0.0.1",realIp);
-        }else if (url.contains("localhost")){
+            url = url.replaceAll("127.0.0.1", realIp);
+        } else if (url.contains("localhost")) {
             realIp = IpUtil.getIpAddr(request);
-            url = url.replaceAll("localhost",realIp);
+            url = url.replaceAll("localhost", realIp);
         }
         return url;
     }
@@ -887,15 +834,15 @@ public class ApiTestServiceImpl implements ApiTestService {
 
     /**
      * @param appId
-     * @param body 入参
+     * @param body   入参
      * @param appKey 密钥 secret
      * @return 签名
      */
-    public static String genSign(String appId, String body, String appKey){
+    public static String genSign(String appId, String body, String appKey) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(appId).append(body).append(appKey);
         String str = stringBuilder.toString();
-        StringBuffer md5CodeBuffer = new StringBuffer();
+        StringBuilder md5CodeBuffer = new StringBuilder();
 
         try {
             MessageDigest md5Digest = MessageDigest.getInstance("MD5");

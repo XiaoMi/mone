@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xiaomi.miapi.mapper.EoDubboApiInfoMapper">
-  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.common.pojo.EoDubboApiInfo">
+  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.pojo.EoDubboApiInfo">
     <id column="id" jdbcType="INTEGER" property="id" />
     <result column="apiName" jdbcType="VARCHAR" property="apiname" />
     <result column="apiDocName" jdbcType="VARCHAR" property="apidocname" />
@@ -12,7 +12,7 @@
     <result column="apiModelClass" jdbcType="VARCHAR" property="apimodelclass" />
     <result column="async" jdbcType="BIT" property="async" />
   </resultMap>
-  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.miapi.common.pojo.EoDubboApiInfo">
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.miapi.pojo.EoDubboApiInfo">
     <result column="methodParamInfo" jdbcType="LONGVARCHAR" property="methodparaminfo" />
     <result column="response" jdbcType="LONGVARCHAR" property="response" />
     <result column="request" jdbcType="LONGVARCHAR" property="request" />
@@ -83,7 +83,7 @@
   <sql id="Blob_Column_List">
     methodParamInfo, request,response, errorCodes
   </sql>
-  <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.EoDubboApiInfoExample" resultMap="ResultMapWithBLOBs">
+  <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.miapi.pojo.EoDubboApiInfoExample" resultMap="ResultMapWithBLOBs">
     select
     <if test="distinct">
       distinct
@@ -99,7 +99,7 @@
       order by ${orderByClause}
     </if>
   </select>
-  <select id="selectByExample" parameterType="com.xiaomi.miapi.common.pojo.EoDubboApiInfoExample" resultMap="BaseResultMap">
+  <select id="selectByExample" parameterType="com.xiaomi.miapi.pojo.EoDubboApiInfoExample" resultMap="BaseResultMap">
     select
     <if test="distinct">
       distinct
@@ -125,13 +125,13 @@
     delete from eo_dubbo_api
     where id = #{id,jdbcType=INTEGER}
   </delete>
-  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.common.pojo.EoDubboApiInfoExample">
+  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.pojo.EoDubboApiInfoExample">
     delete from eo_dubbo_api
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
     </if>
   </delete>
-  <insert id="insert" parameterType="com.xiaomi.miapi.common.pojo.EoDubboApiInfo">
+  <insert id="insert" parameterType="com.xiaomi.miapi.pojo.EoDubboApiInfo">
     <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
       SELECT LAST_INSERT_ID()
     </selectKey>
@@ -144,7 +144,7 @@
       #{apimodelclass,jdbcType=VARCHAR}, #{async,jdbcType=BIT}, #{methodparaminfo,jdbcType=LONGVARCHAR}, #{request,jdbcType=LONGVARCHAR},
       #{response,jdbcType=LONGVARCHAR}, #{errorcodes,jdbcType=LONGVARCHAR})
   </insert>
-  <insert id="insertSelective" parameterType="com.xiaomi.miapi.common.pojo.EoDubboApiInfo">
+  <insert id="insertSelective" parameterType="com.xiaomi.miapi.pojo.EoDubboApiInfo">
     <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
       SELECT LAST_INSERT_ID()
     </selectKey>
@@ -226,7 +226,7 @@
       </if>
     </trim>
   </insert>
-  <select id="countByExample" parameterType="com.xiaomi.miapi.common.pojo.EoDubboApiInfoExample" resultType="java.lang.Long">
+  <select id="countByExample" parameterType="com.xiaomi.miapi.pojo.EoDubboApiInfoExample" resultType="java.lang.Long">
     select count(*) from eo_dubbo_api
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
@@ -313,7 +313,7 @@
       <include refid="Update_By_Example_Where_Clause" />
     </if>
   </update>
-  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.common.pojo.EoDubboApiInfo">
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.pojo.EoDubboApiInfo">
     update eo_dubbo_api
     <set>
       <if test="apiname != null">
@@ -355,7 +355,7 @@
     </set>
     where id = #{id,jdbcType=INTEGER}
   </update>
-  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.EoDubboApiInfo">
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.miapi.pojo.EoDubboApiInfo">
     update eo_dubbo_api
     set apiName = #{apiname,jdbcType=VARCHAR},
       apiDocName = #{apidocname,jdbcType=VARCHAR},
@@ -371,7 +371,7 @@
     errorCodes = #{errorcodes,jdbcType=LONGVARCHAR}
     where id = #{id,jdbcType=INTEGER}
   </update>
-  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.common.pojo.EoDubboApiInfo">
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.pojo.EoDubboApiInfo">
     update eo_dubbo_api
     set apiName = #{apiname,jdbcType=VARCHAR},
       apiDocName = #{apidocname,jdbcType=VARCHAR},

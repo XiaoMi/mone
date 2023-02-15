@@ -1,23 +1,20 @@
 package com.xiaomi.miapi.service;
 
 import com.alibaba.nacos.api.exception.NacosException;
+import com.xiaomi.miapi.bo.*;
 import com.xiaomi.miapi.common.HttpResult;
 import com.xiaomi.miapi.common.Result;
-import com.xiaomi.miapi.common.bo.*;
-import com.xiaomi.miapi.common.dto.TestCaseDirDTO;
-import com.xiaomi.miapi.common.pojo.ApiTestCase;
-import com.xiaomi.miapi.common.pojo.DubboTestPermissionApplyDTO;
+import com.xiaomi.miapi.dto.TestCaseDirDTO;
+import com.xiaomi.miapi.pojo.ApiTestCase;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 public interface ApiTestService {
 
-    Result<HttpResult> httpTest(HttpServletRequest servletReq,HttpTestBo request, String opUsername);
+    Result<HttpResult> httpTest(HttpServletRequest servletReq, HttpTestBo request, String opUsername);
 
-    Result<Object> dubboTest(DubboTestBo request, String opUsername,Integer userId) throws NacosException;
-
-    Result<Boolean> applyOnlineDubboTest(DubboTestPermissionApplyDTO dto);
+    Result<Object> dubboTest(DubboTestBo request, String opUsername) throws NacosException;
 
     Object grpcTest(GrpcTestBo request, String opUsername) throws Exception;
 
@@ -51,7 +48,7 @@ public interface ApiTestService {
 
     Result<List<String>> getServiceMethod(String serviceName,String env) throws NacosException;
 
-    Result<List<CaseGroupAndCasesBo>> getCasesByApi(int projectId, int apiId, int accountId);
+    Result<List<CaseGroupAndCasesBo>> getCasesByApi(int projectId, int apiId);
 
-    Result<List<CaseGroupAndCasesBo>> getCasesByProject(int projectId, int accountId);
+    Result<List<CaseGroupAndCasesBo>> getCasesByProject(int projectId);
 }

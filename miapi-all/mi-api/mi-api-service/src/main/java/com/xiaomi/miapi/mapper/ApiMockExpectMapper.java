@@ -1,11 +1,14 @@
 package com.xiaomi.miapi.mapper;
 
-import com.xiaomi.miapi.common.pojo.ApiMockExpect;
-import com.xiaomi.miapi.common.pojo.ApiMockExpectExample;
+import com.xiaomi.miapi.pojo.ApiMockExpect;
+import com.xiaomi.miapi.pojo.ApiMockExpectExample;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
-
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 public interface ApiMockExpectMapper {
     long countByExample(ApiMockExpectExample example);
 

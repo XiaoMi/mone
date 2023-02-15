@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xiaomi.miapi.mapper.GatewayApiInfoMapper">
-  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.common.pojo.GatewayApiInfo">
+  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.pojo.GatewayApiInfo">
     <id column="id" jdbcType="BIGINT" property="id" />
     <result column="name" jdbcType="VARCHAR" property="name" />
     <result column="description" jdbcType="VARCHAR" property="description" />
@@ -24,7 +24,7 @@
     <result column="mock_data" jdbcType="VARCHAR" property="mockData" />
     <result column="mock_data_desc" jdbcType="VARCHAR" property="mockDataDesc" />
   </resultMap>
-  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.miapi.common.pojo.GatewayApiInfo">
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.miapi.pojo.GatewayApiInfo">
     <result column="param_template" jdbcType="LONGVARCHAR" property="paramTemplate" />
   </resultMap>
   <sql id="Example_Where_Clause">
@@ -93,7 +93,7 @@
   <sql id="Blob_Column_List">
     param_template
   </sql>
-  <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.GatewayApiInfoExample" resultMap="ResultMapWithBLOBs">
+  <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.miapi.pojo.GatewayApiInfoExample" resultMap="ResultMapWithBLOBs">
     select
     <if test="distinct">
       distinct
@@ -109,7 +109,7 @@
       order by ${orderByClause}
     </if>
   </select>
-  <select id="selectByExample" parameterType="com.xiaomi.miapi.common.pojo.GatewayApiInfoExample" resultMap="BaseResultMap">
+  <select id="selectByExample" parameterType="com.xiaomi.miapi.pojo.GatewayApiInfoExample" resultMap="BaseResultMap">
     select
     <if test="distinct">
       distinct
@@ -135,13 +135,13 @@
     delete from gateway_api_info
     where id = #{id,jdbcType=BIGINT}
   </delete>
-  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.common.pojo.GatewayApiInfoExample">
+  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.pojo.GatewayApiInfoExample">
     delete from gateway_api_info
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
     </if>
   </delete>
-  <insert id="insert" parameterType="com.xiaomi.miapi.common.pojo.GatewayApiInfo">
+  <insert id="insert" parameterType="com.xiaomi.miapi.pojo.GatewayApiInfo">
     <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Long">
       SELECT LAST_INSERT_ID()
     </selectKey>
@@ -162,7 +162,7 @@
       #{mockData,jdbcType=VARCHAR}, #{mockDataDesc,jdbcType=VARCHAR}, #{paramTemplate,jdbcType=LONGVARCHAR}
       )
   </insert>
-  <insert id="insertSelective" parameterType="com.xiaomi.miapi.common.pojo.GatewayApiInfo">
+  <insert id="insertSelective" parameterType="com.xiaomi.miapi.pojo.GatewayApiInfo">
     <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Long">
       SELECT LAST_INSERT_ID()
     </selectKey>
@@ -298,7 +298,7 @@
       </if>
     </trim>
   </insert>
-  <select id="countByExample" parameterType="com.xiaomi.miapi.common.pojo.GatewayApiInfoExample" resultType="java.lang.Long">
+  <select id="countByExample" parameterType="com.xiaomi.miapi.pojo.GatewayApiInfoExample" resultType="java.lang.Long">
     select count(*) from gateway_api_info
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
@@ -433,7 +433,7 @@
       <include refid="Update_By_Example_Where_Clause" />
     </if>
   </update>
-  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.common.pojo.GatewayApiInfo">
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.pojo.GatewayApiInfo">
     update gateway_api_info
     <set>
       <if test="name != null">
@@ -502,7 +502,7 @@
     </set>
     where id = #{id,jdbcType=BIGINT}
   </update>
-  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.GatewayApiInfo">
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.miapi.pojo.GatewayApiInfo">
     update gateway_api_info
     set name = #{name,jdbcType=VARCHAR},
       description = #{description,jdbcType=VARCHAR},
@@ -527,7 +527,7 @@
       param_template = #{paramTemplate,jdbcType=LONGVARCHAR}
     where id = #{id,jdbcType=BIGINT}
   </update>
-  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.common.pojo.GatewayApiInfo">
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.pojo.GatewayApiInfo">
     update gateway_api_info
     set name = #{name,jdbcType=VARCHAR},
       description = #{description,jdbcType=VARCHAR},

@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xiaomi.miapi.mapper.IndexInfoMapper">
-  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.common.pojo.IndexInfo">
+  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.pojo.IndexInfo">
     <id column="index_id" jdbcType="INTEGER" property="indexId" />
     <result column="index_name" jdbcType="VARCHAR" property="indexName" />
     <result column="project_id" jdbcType="INTEGER" property="projectId" />
     <result column="description" jdbcType="VARCHAR" property="description" />
   </resultMap>
-  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.miapi.common.pojo.IndexInfo">
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.miapi.pojo.IndexInfo">
     <result column="index_doc" jdbcType="LONGVARCHAR" property="indexDoc" />
   </resultMap>
   <sql id="Example_Where_Clause">
@@ -74,7 +74,7 @@
   <sql id="Blob_Column_List">
     index_doc
   </sql>
-  <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.IndexInfoExample" resultMap="ResultMapWithBLOBs">
+  <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.miapi.pojo.IndexInfoExample" resultMap="ResultMapWithBLOBs">
     select
     <if test="distinct">
       distinct
@@ -90,7 +90,7 @@
       order by ${orderByClause}
     </if>
   </select>
-  <select id="selectByExample" parameterType="com.xiaomi.miapi.common.pojo.IndexInfoExample" resultMap="BaseResultMap">
+  <select id="selectByExample" parameterType="com.xiaomi.miapi.pojo.IndexInfoExample" resultMap="BaseResultMap">
     select
     <if test="distinct">
       distinct
@@ -116,13 +116,13 @@
     delete from index_info
     where index_id = #{indexId,jdbcType=INTEGER}
   </delete>
-  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.common.pojo.IndexInfoExample">
+  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.pojo.IndexInfoExample">
     delete from index_info
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
     </if>
   </delete>
-  <insert id="insert" parameterType="com.xiaomi.miapi.common.pojo.IndexInfo">
+  <insert id="insert" parameterType="com.xiaomi.miapi.pojo.IndexInfo">
     <selectKey keyProperty="indexId" order="AFTER" resultType="java.lang.Integer">
       SELECT LAST_INSERT_ID()
     </selectKey>
@@ -131,7 +131,7 @@
     values (#{indexName,jdbcType=VARCHAR}, #{projectId,jdbcType=INTEGER}, #{description,jdbcType=VARCHAR}, 
       #{indexDoc,jdbcType=LONGVARCHAR})
   </insert>
-  <insert id="insertSelective" parameterType="com.xiaomi.miapi.common.pojo.IndexInfo">
+  <insert id="insertSelective" parameterType="com.xiaomi.miapi.pojo.IndexInfo">
     <selectKey keyProperty="indexId" order="AFTER" resultType="java.lang.Integer">
       SELECT LAST_INSERT_ID()
     </selectKey>
@@ -165,7 +165,7 @@
       </if>
     </trim>
   </insert>
-  <select id="countByExample" parameterType="com.xiaomi.miapi.common.pojo.IndexInfoExample" resultType="java.lang.Long">
+  <select id="countByExample" parameterType="com.xiaomi.miapi.pojo.IndexInfoExample" resultType="java.lang.Long">
     select count(*) from index_info
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
@@ -215,7 +215,7 @@
       <include refid="Update_By_Example_Where_Clause" />
     </if>
   </update>
-  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.common.pojo.IndexInfo">
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.pojo.IndexInfo">
     update index_info
     <set>
       <if test="indexName != null">
@@ -233,7 +233,7 @@
     </set>
     where index_id = #{indexId,jdbcType=INTEGER}
   </update>
-  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.IndexInfo">
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.miapi.pojo.IndexInfo">
     update index_info
     set index_name = #{indexName,jdbcType=VARCHAR},
       project_id = #{projectId,jdbcType=INTEGER},
@@ -241,7 +241,7 @@
       index_doc = #{indexDoc,jdbcType=LONGVARCHAR}
     where index_id = #{indexId,jdbcType=INTEGER}
   </update>
-  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.common.pojo.IndexInfo">
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.pojo.IndexInfo">
     update index_info
     set index_name = #{indexName,jdbcType=VARCHAR},
       project_id = #{projectId,jdbcType=INTEGER},

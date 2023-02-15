@@ -1,8 +1,8 @@
 package com.xiaomi.miapi.service;
 
-import com.xiaomi.miapi.common.bo.BatchAddGrpcApiBo;
-import com.xiaomi.miapi.common.bo.GrpcApiInfosBo;
-import com.xiaomi.miapi.common.bo.UpdateGrpcApiBo;
+import com.xiaomi.miapi.bo.BatchAddGrpcApiBo;
+import com.xiaomi.miapi.bo.GrpcApiInfosBo;
+import com.xiaomi.miapi.bo.UpdateGrpcApiBo;
 import com.xiaomi.miapi.common.Result;
 
 import java.util.Map;
@@ -16,6 +16,6 @@ public interface GrpcApiService {
 
     Result<Boolean> updateGrpcApi(UpdateGrpcApiBo updateGrpcApiBo);
 
-    Result<Map<String,Object>> getGrpcApiDetail(int accountID, int projectID, int apiID);
+    Result<Map<String,Object>> getGrpcApiDetail(String username, int projectID, int apiID);
 
 }

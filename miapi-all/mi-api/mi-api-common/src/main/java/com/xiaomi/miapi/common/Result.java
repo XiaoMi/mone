@@ -21,8 +21,9 @@ import com.xiaomi.miapi.common.exception.CommonError;
 import com.xiaomi.miapi.common.exception.CommonException;
 
 /**
- * Created by dongzhenxing
- * http json 返回结果
+ * @author dongzhenxing
+ * @date 2023/02/08
+ * http json res
  */
 public class Result<T> {
 

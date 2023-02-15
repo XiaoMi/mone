@@ -5,18 +5,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
- * @Description TODO
- * @Author zhenxing.dong
- * @Date 2021/8/9 16:18
+ * @author dongzhenxing
+ * @date 2023/02/08
+ * deal with logout request
  */
 @Controller
 public class LogoutController {
 
     @RequestMapping(value = "/logout", method = RequestMethod.POST, consumes = {"application/json"})
-    public String logout(HttpServletRequest request, HttpServletResponse response) {
+    public String logout(HttpServletRequest request) {
         request.getSession().invalidate();
         return "logout successfully";
     }
