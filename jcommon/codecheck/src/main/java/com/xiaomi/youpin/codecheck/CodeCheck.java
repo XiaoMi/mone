@@ -18,10 +18,11 @@ package com.xiaomi.youpin.codecheck;
 
 import com.google.common.collect.Lists;
 import com.xiaomi.youpin.codecheck.code.impl.*;
-import com.xiaomi.youpin.codecheck.code.impl.naming.*;
-import com.xiaomi.youpin.codecheck.code.impl.set.ContainerSizeCheck;
+import com.xiaomi.youpin.codecheck.code.impl.classcheck.ClassPasswordCheck;
 import com.xiaomi.youpin.codecheck.code.impl.flowcontrol.SwitchCheck;
 import com.xiaomi.youpin.codecheck.code.impl.flowcontrol.SwitchStatementRule;
+import com.xiaomi.youpin.codecheck.code.impl.naming.*;
+import com.xiaomi.youpin.codecheck.code.impl.set.ContainerSizeCheck;
 import com.xiaomi.youpin.codecheck.code.impl.set.LongVariableAvoidNoneL;
 import com.xiaomi.youpin.codecheck.code.impl.youpin.DubboMethodMustReturnResultRule;
 import com.xiaomi.youpin.codecheck.code.impl.youpin.DubboProNeedHealthMethod;
@@ -46,7 +47,8 @@ public class CodeCheck implements Serializable {
 
     public static List<ClassCheck> classCheckList = Lists.newArrayList(
             new ClassNamingShouldBeCamelRule(),
-            new AbstractClassNamingRule()
+            new AbstractClassNamingRule(),
+            new ClassPasswordCheck()
     );
 
     public static List<CompilationCheck> compilationCheckList = Lists.newArrayList(
