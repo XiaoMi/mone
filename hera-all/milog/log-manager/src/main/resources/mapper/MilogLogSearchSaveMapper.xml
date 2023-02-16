@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaomi.mone.log.manager.mapper.MilogLogSearchSaveMapper">
+    <delete id="removeById">
+        DELETE
+        FROM
+            milog_log_search_save
+        WHERE
+            id = #{id}
+    </delete>
+
+    <select id="selectByStoreId" resultType="com.xiaomi.mone.log.manager.model.pojo.MilogLogSearchSaveDO">
+        SELECT
+            *
+        FROM
+            milog_log_search_save
+        WHERE
+            store_id = #{storeId}
+        ORDER BY
+            update_time DESC
+        LIMIT
+            #{startIndex}, #{pageSize}
+    </select>
+    <select id="countByStoreId" resultType="java.lang.Long">
+        SELECT
+            count(1)
+        FROM
+            milog_log_search_save
+        WHERE
+            store_id = #{storeId}
+    </select>
+    <select id="countByStoreAndName" resultType="java.lang.Long">
+        SELECT
+            count( 1 )
+        FROM
+            milog_log_search_save
+        WHERE
+            store_id = #{storeId}
+        AND name = #{name}
+    </select>
+</mapper>
