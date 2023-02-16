@@ -1,0 +1,31 @@
+plugins {
+  id("com.github.johnrengelman.shadow") version "6.0.0"
+}
+
+apply from: "$rootDir/gradle/shadow.gradle"
+
+def relocatePackages = ext.relocatePackages
+
+Project instr_project = project
+subprojects {
+  afterEvaluate { Project subProj ->
+    if (subProj.getPlugins().hasPlugin('java')) {
+      // Make it so all instrumentation subproject tests can be run with a single command.
+      instr_project.tasks.test.dependsOn(subProj.tasks.test)
+
+      instr_project.dependencies {
+        implementation(project(subProj.getPath()))
+      }
+    }
+  }
+}
+
+shadowJar {
+  mergeServiceFiles()
+
+  exclude '**/module-info.class'
+
+  duplicatesStrategy = DuplicatesStrategy.FAIL
+
+  relocatePackages(it)
+}
