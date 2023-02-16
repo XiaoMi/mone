@@ -1,0 +1,306 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaomi.mone.app.dao.mapper.HeraAppRoleMapper">
+  <resultMap id="BaseResultMap" type="com.xiaomi.mone.app.model.HeraAppRole">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="app_id" jdbcType="VARCHAR" property="appId" />
+    <result column="app_platform" jdbcType="INTEGER" property="appPlatform" />
+    <result column="user" jdbcType="VARCHAR" property="user" />
+    <result column="role" jdbcType="INTEGER" property="role" />
+    <result column="status" jdbcType="INTEGER" property="status" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    id, app_id, app_platform, user, role, status, create_time, update_time
+  </sql>
+  <select id="selectByExample" parameterType="com.xiaomi.mone.app.model.HeraAppRoleExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from hera_app_role
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+    <if test="limit != null and limit >= 0">
+      limit #{offset} , #{limit}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from hera_app_role
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from hera_app_role
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.xiaomi.mone.app.model.HeraAppRoleExample">
+    delete from hera_app_role
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.xiaomi.mone.app.model.HeraAppRole">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into hera_app_role (app_id, app_platform, user, 
+      role, status, create_time, 
+      update_time)
+    values (#{appId,jdbcType=VARCHAR}, #{appPlatform,jdbcType=INTEGER}, #{user,jdbcType=VARCHAR}, 
+      #{role,jdbcType=INTEGER}, #{status,jdbcType=INTEGER}, #{createTime,jdbcType=TIMESTAMP}, 
+      #{updateTime,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="com.xiaomi.mone.app.model.HeraAppRole">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into hera_app_role
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="appId != null">
+        app_id,
+      </if>
+      <if test="appPlatform != null">
+        app_platform,
+      </if>
+      <if test="user != null">
+        user,
+      </if>
+      <if test="role != null">
+        role,
+      </if>
+      <if test="status != null">
+        status,
+      </if>
+      <if test="createTime != null">
+        create_time,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="appId != null">
+        #{appId,jdbcType=VARCHAR},
+      </if>
+      <if test="appPlatform != null">
+        #{appPlatform,jdbcType=INTEGER},
+      </if>
+      <if test="user != null">
+        #{user,jdbcType=VARCHAR},
+      </if>
+      <if test="role != null">
+        #{role,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="createTime != null">
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.xiaomi.mone.app.model.HeraAppRoleExample" resultType="java.lang.Long">
+    select count(*) from hera_app_role
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update hera_app_role
+    <set>
+      <if test="record.id != null">
+        id = #{record.id,jdbcType=INTEGER},
+      </if>
+      <if test="record.appId != null">
+        app_id = #{record.appId,jdbcType=VARCHAR},
+      </if>
+      <if test="record.appPlatform != null">
+        app_platform = #{record.appPlatform,jdbcType=INTEGER},
+      </if>
+      <if test="record.user != null">
+        user = #{record.user,jdbcType=VARCHAR},
+      </if>
+      <if test="record.role != null">
+        role = #{record.role,jdbcType=INTEGER},
+      </if>
+      <if test="record.status != null">
+        status = #{record.status,jdbcType=INTEGER},
+      </if>
+      <if test="record.createTime != null">
+        create_time = #{record.createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="record.updateTime != null">
+        update_time = #{record.updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update hera_app_role
+    set id = #{record.id,jdbcType=INTEGER},
+      app_id = #{record.appId,jdbcType=VARCHAR},
+      app_platform = #{record.appPlatform,jdbcType=INTEGER},
+      user = #{record.user,jdbcType=VARCHAR},
+      role = #{record.role,jdbcType=INTEGER},
+      status = #{record.status,jdbcType=INTEGER},
+      create_time = #{record.createTime,jdbcType=TIMESTAMP},
+      update_time = #{record.updateTime,jdbcType=TIMESTAMP}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.mone.app.model.HeraAppRole">
+    update hera_app_role
+    <set>
+      <if test="appId != null">
+        app_id = #{appId,jdbcType=VARCHAR},
+      </if>
+      <if test="appPlatform != null">
+        app_platform = #{appPlatform,jdbcType=INTEGER},
+      </if>
+      <if test="user != null">
+        user = #{user,jdbcType=VARCHAR},
+      </if>
+      <if test="role != null">
+        role = #{role,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="createTime != null">
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.mone.app.model.HeraAppRole">
+    update hera_app_role
+    set app_id = #{appId,jdbcType=VARCHAR},
+      app_platform = #{appPlatform,jdbcType=INTEGER},
+      user = #{user,jdbcType=VARCHAR},
+      role = #{role,jdbcType=INTEGER},
+      status = #{status,jdbcType=INTEGER},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    insert into hera_app_role
+    (app_id, app_platform, user, role, status, create_time, update_time)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.appId,jdbcType=VARCHAR}, #{item.appPlatform,jdbcType=INTEGER}, #{item.user,jdbcType=VARCHAR}, 
+        #{item.role,jdbcType=INTEGER}, #{item.status,jdbcType=INTEGER}, #{item.createTime,jdbcType=TIMESTAMP}, 
+        #{item.updateTime,jdbcType=TIMESTAMP})
+    </foreach>
+  </insert>
+  <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
+    insert into hera_app_role (
+    <foreach collection="selective" item="column" separator=",">
+      ${column.escapedColumnName}
+    </foreach>
+    )
+    values
+    <foreach collection="list" item="item" separator=",">
+      (
+      <foreach collection="selective" item="column" separator=",">
+        <if test="'app_id'.toString() == column.value">
+          #{item.appId,jdbcType=VARCHAR}
+        </if>
+        <if test="'app_platform'.toString() == column.value">
+          #{item.appPlatform,jdbcType=INTEGER}
+        </if>
+        <if test="'user'.toString() == column.value">
+          #{item.user,jdbcType=VARCHAR}
+        </if>
+        <if test="'role'.toString() == column.value">
+          #{item.role,jdbcType=INTEGER}
+        </if>
+        <if test="'status'.toString() == column.value">
+          #{item.status,jdbcType=INTEGER}
+        </if>
+        <if test="'create_time'.toString() == column.value">
+          #{item.createTime,jdbcType=TIMESTAMP}
+        </if>
+        <if test="'update_time'.toString() == column.value">
+          #{item.updateTime,jdbcType=TIMESTAMP}
+        </if>
+      </foreach>
+      )
+    </foreach>
+  </insert>
+</mapper>
