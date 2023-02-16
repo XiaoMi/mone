@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaomi.mone.log.manager.mapper.MilogLogstailMapper">
+
+    <select id="getAllTailForCount" resultType="java.util.Map">
+        SELECT
+            tail.id,
+            tail.tail,
+            store.es_index,
+            store.es_cluster_id
+        FROM
+            milog_logstail tail,
+            milog_logstore store
+        WHERE
+            tail.store_id = store.id
+    </select>
+</mapper>

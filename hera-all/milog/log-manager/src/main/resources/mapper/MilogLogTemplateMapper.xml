@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaomi.mone.log.manager.mapper.MilogLogTemplateMapper">
+
+    <select id="selectSupportedTemplate" resultType="com.xiaomi.mone.log.manager.model.pojo.MilogLogTemplateDO">
+        SELECT
+            *
+        FROM
+            milog_log_template
+        WHERE
+            find_in_set(#{area}, support_area )
+        ORDER BY
+            order_col
+    </select>
+</mapper>
