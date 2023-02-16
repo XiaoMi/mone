@@ -1,0 +1,886 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaomi.mone.monitor.dao.mapper.AppAlarmRuleMapper">
+  <resultMap id="BaseResultMap" type="com.xiaomi.mone.monitor.dao.model.AppAlarmRule">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="alarm_id" jdbcType="INTEGER" property="alarmId" />
+    <result column="alert" jdbcType="VARCHAR" property="alert" />
+    <result column="cname" jdbcType="VARCHAR" property="cname" />
+    <result column="metric_type" jdbcType="INTEGER" property="metricType" />
+    <result column="for_time" jdbcType="VARCHAR" property="forTime" />
+    <result column="annotations" jdbcType="VARCHAR" property="annotations" />
+    <result column="rule_group" jdbcType="VARCHAR" property="ruleGroup" />
+    <result column="priority" jdbcType="VARCHAR" property="priority" />
+    <result column="env" jdbcType="VARCHAR" property="env" />
+    <result column="op" jdbcType="VARCHAR" property="op" />
+    <result column="value" jdbcType="REAL" property="value" />
+    <result column="data_count" jdbcType="INTEGER" property="dataCount" />
+    <result column="send_interval" jdbcType="VARCHAR" property="sendInterval" />
+    <result column="project_id" jdbcType="INTEGER" property="projectId" />
+    <result column="iam_id" jdbcType="INTEGER" property="iamId" />
+    <result column="template_id" jdbcType="INTEGER" property="templateId" />
+    <result column="rule_type" jdbcType="INTEGER" property="ruleType" />
+    <result column="rule_status" jdbcType="INTEGER" property="ruleStatus" />
+    <result column="remark" jdbcType="VARCHAR" property="remark" />
+    <result column="creater" jdbcType="VARCHAR" property="creater" />
+    <result column="status" jdbcType="INTEGER" property="status" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="strategy_id" jdbcType="INTEGER" property="strategyId" />
+    <result column="alert_team" jdbcType="LONGVARCHAR" property="alertTeam" />
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.mone.monitor.dao.model.AppAlarmRule">
+    <result column="expr" jdbcType="LONGVARCHAR" property="expr" />
+    <result column="labels" jdbcType="LONGVARCHAR" property="labels" />
+    <result column="alert_team" jdbcType="LONGVARCHAR" property="alertTeam" />
+  </resultMap>
+  <resultMap id="alarmRulesByApp" type="com.xiaomi.mone.monitor.service.model.prometheus.AppWithAlarmRules">
+    <result column="project_id" property="projectId" />
+    <result column="iam_tree_id" property="iamId" />
+    <result column="project_name" property="appName" />
+    <collection property="alarmRules" ofType="com.xiaomi.mone.monitor.dao.model.AppAlarmRule" column="iamId">
+      <id column="rid" jdbcType="INTEGER" property="id" />
+      <result column="ralarm_id" jdbcType="INTEGER" property="alarmId" />
+      <result column="ralert" jdbcType="VARCHAR" property="alert" />
+      <result column="rcname" jdbcType="VARCHAR" property="cname" />
+      <result column="rmetric_type" jdbcType="INTEGER" property="metricType" />
+      <result column="rfor_time" jdbcType="VARCHAR" property="forTime" />
+      <result column="rannotations" jdbcType="VARCHAR" property="annotations" />
+      <result column="rrule_group" jdbcType="VARCHAR" property="ruleGroup" />
+      <result column="rpriority" jdbcType="VARCHAR" property="priority" />
+      <result column="renv" jdbcType="VARCHAR" property="env" />
+      <result column="rop" jdbcType="VARCHAR" property="op" />
+      <result column="rvalue" jdbcType="REAL" property="value" />
+      <result column="rdata_count" jdbcType="INTEGER" property="dataCount" />
+      <result column="rsend_interval" jdbcType="VARCHAR" property="sendInterval" />
+      <result column="rproject_id" jdbcType="INTEGER" property="projectId" />
+      <result column="riam_id" jdbcType="INTEGER" property="iamId" />
+      <result column="rtemplate_id" jdbcType="INTEGER" property="templateId" />
+      <result column="rrule_type" jdbcType="INTEGER" property="ruleType" />
+      <result column="rrule_status" jdbcType="INTEGER" property="ruleStatus" />
+      <result column="rremark" jdbcType="VARCHAR" property="remark" />
+      <result column="rcreater" jdbcType="VARCHAR" property="creater" />
+      <result column="rstatus" jdbcType="INTEGER" property="status" />
+      <result column="rexpr" javaType="java.lang.String" property="expr" jdbcType="VARCHAR" />
+      <result column="rlabels" javaType="java.lang.String" property="labels" jdbcType="VARCHAR" />
+      <result column="alert_team" property="alertTeam" javaType="java.lang.String" jdbcType="CLOB" typeHandler="org.apache.ibatis.type.ClobTypeHandler" />
+      <result column="rcreate_time" jdbcType="TIMESTAMP" property="createTime" />
+      <result column="rupdate_time" jdbcType="TIMESTAMP" property="updateTime" />
+      <result column="rstrategy_id" jdbcType="INTEGER" property="strategyId" />
+    </collection>
+  </resultMap>
+
+  <select id="selectAlarmRuleByAppName" resultMap="alarmRulesByApp">
+    select a.project_id as project_id,a.iam_tree_id as iam_tree_id,a.project_name as project_name,
+           r.id as rid,r.alert as ralert,r.cname as rcname,r.creater as rcreater,r.create_time as rcreate_time,
+           r.data_count as rdata_count,r.env as renv, r.expr as rexpr,r.for_time as rfor_time, r.labels as rlabels,
+           r.op as rop,r.priority as rpriority,r.remark as rremark,r.rule_group as rrule_group,r.send_interval as rsend_interval,
+           r.status as rstatus,r.value as rvalue,r.alert_team as alert_team,r.template_id as rtemplate_id,r.update_time as rupdate_time,r.strategy_id as rstrategy_id
+    from app_monitor a,app_alarm_rule r
+    where a.`status`=0 and a.`owner` = #{userName} and r.`status`=0 and a.iam_tree_id = r.iam_id and r.rule_type = 1
+    <if test="appName != null">
+      and  a.project_name like "%"#{appName,jdbcType=VARCHAR}"%"
+    </if>
+
+    <if test="limit != null and limit >= 0">
+      limit #{offset} , #{limit}
+    </if>
+
+  </select>
+
+  <select id="countAlarmRuleByAppName" resultType="java.lang.Long">
+    select count(a.iam_tree_id) as totalNum
+     from app_monitor a,app_alarm_rule r
+    where a.`status`=0 and a.`owner` = #{userName} and r.`status`=0 and a.iam_tree_id = r.iam_id and r.rule_type = 1
+    <if test="appName != null">
+      and  a.project_name like "%"#{appName,jdbcType=VARCHAR}"%"
+    </if>
+
+  </select>
+
+  <select id="selectAppNoRulesConfig" resultMap="alarmRulesByApp">
+
+    select a.project_id as project_id,a.iam_tree_id as iam_tree_id,a.project_name as project_name
+    from app_monitor a
+    where a.`status`=0 and a.`owner`= #{userName}
+    and a.iam_tree_id not in(
+    select DISTINCT(iam_id) from app_alarm_rule  where `status`=0 and rule_type = 1)
+
+    <if test="appName != null">
+      and  a.project_name like "%"#{appName,jdbcType=VARCHAR}"%"
+    </if>
+
+    <if test="limit != null and limit >= 0">
+      limit #{offset} , #{limit}
+    </if>
+
+  </select>
+
+  <select id="countAppNoRulesConfig" resultType="java.lang.Long">
+
+    select count(a.iam_tree_id) as totalNum
+    from app_monitor a
+    where a.`status`=0 and a.`owner`= #{userName}
+    and a.iam_tree_id not in(
+    select DISTINCT(iam_id) from app_alarm_rule  where `status`=0 and rule_type = 1)
+
+    <if test="appName != null">
+      and  a.project_name like "%"#{appName,jdbcType=VARCHAR}"%"
+    </if>
+
+
+  </select>
+
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    id, alarm_id, alert, cname, metric_type, expr, for_time, annotations, rule_group, priority,
+    env, op, value, data_count, send_interval, project_id, iam_id, template_id, rule_type, 
+    rule_status, remark, creater, status, create_time, update_time, strategy_id,alert_team,labels
+  </sql>
+  <sql id="Blob_Column_List">
+    expr, labels, alert_team
+  </sql>
+  <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.mone.monitor.dao.model.AppAlarmRuleExample" resultMap="ResultMapWithBLOBs">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from app_alarm_rule
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+    <if test="limit != null and limit >= 0">
+      limit #{offset} , #{limit}
+    </if>
+  </select>
+  <select id="selectByExample" parameterType="com.xiaomi.mone.monitor.dao.model.AppAlarmRuleExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from app_alarm_rule
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+    <if test="limit != null and limit >= 0">
+      limit #{offset} , #{limit}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="ResultMapWithBLOBs">
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from app_alarm_rule
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+
+  <select id="selectByStrategyIdList" parameterType="java.util.List" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from app_alarm_rule
+    where `status`=0 and strategy_id in
+    <foreach collection="strategyIds" item="strategyId" index="index"
+             open="(" close=")" separator=",">
+      #{strategyId,jdbcType=INTEGER}
+    </foreach>
+  </select>
+
+  <select id="selectByStrategyId" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from app_alarm_rule
+    where `status`=0 and strategy_id=#{strategyId,jdbcType=INTEGER}
+  </select>
+
+  <select id="getRulesByIamId" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select  <include refid="Base_Column_List" /> from app_alarm_rule
+    where rule_type != 0 and iam_id= #{iamId,jdbcType=INTEGER} and (strategy_id=0 or strategy_id is null);
+  </select>
+
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from app_alarm_rule
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.xiaomi.mone.monitor.dao.model.AppAlarmRuleExample">
+    delete from app_alarm_rule
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.xiaomi.mone.monitor.dao.model.AppAlarmRule">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into app_alarm_rule (alarm_id, alert, cname, 
+      metric_type, for_time, annotations, 
+      rule_group, priority, env, 
+      op, value, data_count, 
+      send_interval, project_id, iam_id, 
+      template_id, rule_type, rule_status, 
+      remark, creater, status, 
+      create_time, update_time, expr, 
+      labels, alert_team, strategy_id)
+    values (#{alarmId,jdbcType=INTEGER}, #{alert,jdbcType=VARCHAR}, #{cname,jdbcType=VARCHAR}, 
+      #{metricType,jdbcType=INTEGER}, #{forTime,jdbcType=VARCHAR}, #{annotations,jdbcType=VARCHAR}, 
+      #{ruleGroup,jdbcType=VARCHAR}, #{priority,jdbcType=VARCHAR}, #{env,jdbcType=VARCHAR}, 
+      #{op,jdbcType=VARCHAR}, #{value,jdbcType=REAL}, #{dataCount,jdbcType=INTEGER}, 
+      #{sendInterval,jdbcType=VARCHAR}, #{projectId,jdbcType=INTEGER}, #{iamId,jdbcType=INTEGER}, 
+      #{templateId,jdbcType=INTEGER}, #{ruleType,jdbcType=INTEGER}, #{ruleStatus,jdbcType=INTEGER}, 
+      #{remark,jdbcType=VARCHAR}, #{creater,jdbcType=VARCHAR}, #{status,jdbcType=INTEGER}, 
+      #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP}, #{expr,jdbcType=LONGVARCHAR}, 
+      #{labels,jdbcType=LONGVARCHAR}, #{alertTeam,jdbcType=LONGVARCHAR}, #{strategyId,jdbcType=INTEGER})
+  </insert>
+  <insert id="insertSelective" parameterType="com.xiaomi.mone.monitor.dao.model.AppAlarmRule">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into app_alarm_rule
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="alarmId != null">
+        alarm_id,
+      </if>
+      <if test="alert != null">
+        alert,
+      </if>
+      <if test="cname != null">
+        cname,
+      </if>
+      <if test="metricType != null">
+        metric_type,
+      </if>
+      <if test="forTime != null">
+        for_time,
+      </if>
+      <if test="annotations != null">
+        annotations,
+      </if>
+      <if test="ruleGroup != null">
+        rule_group,
+      </if>
+      <if test="priority != null">
+        priority,
+      </if>
+      <if test="env != null">
+        env,
+      </if>
+      <if test="op != null">
+        op,
+      </if>
+      <if test="value != null">
+        value,
+      </if>
+      <if test="dataCount != null">
+        data_count,
+      </if>
+      <if test="sendInterval != null">
+        send_interval,
+      </if>
+      <if test="projectId != null">
+        project_id,
+      </if>
+      <if test="iamId != null">
+        iam_id,
+      </if>
+      <if test="templateId != null">
+        template_id,
+      </if>
+      <if test="ruleType != null">
+        rule_type,
+      </if>
+      <if test="ruleStatus != null">
+        rule_status,
+      </if>
+      <if test="remark != null">
+        remark,
+      </if>
+      <if test="creater != null">
+        creater,
+      </if>
+      <if test="status != null">
+        status,
+      </if>
+      <if test="createTime != null">
+        create_time,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+      <if test="expr != null">
+        expr,
+      </if>
+      <if test="labels != null">
+        labels,
+      </if>
+      <if test="alertTeam != null">
+        alert_team,
+      </if>
+       <if test="strategyId != null">
+         strategy_id,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="alarmId != null">
+        #{alarmId,jdbcType=INTEGER},
+      </if>
+      <if test="alert != null">
+        #{alert,jdbcType=VARCHAR},
+      </if>
+      <if test="cname != null">
+        #{cname,jdbcType=VARCHAR},
+      </if>
+      <if test="metricType != null">
+        #{metricType,jdbcType=INTEGER},
+      </if>
+      <if test="forTime != null">
+        #{forTime,jdbcType=VARCHAR},
+      </if>
+      <if test="annotations != null">
+        #{annotations,jdbcType=VARCHAR},
+      </if>
+      <if test="ruleGroup != null">
+        #{ruleGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="priority != null">
+        #{priority,jdbcType=VARCHAR},
+      </if>
+      <if test="env != null">
+        #{env,jdbcType=VARCHAR},
+      </if>
+      <if test="op != null">
+        #{op,jdbcType=VARCHAR},
+      </if>
+      <if test="value != null">
+        #{value,jdbcType=REAL},
+      </if>
+      <if test="dataCount != null">
+        #{dataCount,jdbcType=INTEGER},
+      </if>
+      <if test="sendInterval != null">
+        #{sendInterval,jdbcType=VARCHAR},
+      </if>
+      <if test="projectId != null">
+        #{projectId,jdbcType=INTEGER},
+      </if>
+      <if test="iamId != null">
+        #{iamId,jdbcType=INTEGER},
+      </if>
+      <if test="templateId != null">
+        #{templateId,jdbcType=INTEGER},
+      </if>
+      <if test="ruleType != null">
+        #{ruleType,jdbcType=INTEGER},
+      </if>
+      <if test="ruleStatus != null">
+        #{ruleStatus,jdbcType=INTEGER},
+      </if>
+      <if test="remark != null">
+        #{remark,jdbcType=VARCHAR},
+      </if>
+      <if test="creater != null">
+        #{creater,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="createTime != null">
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="expr != null">
+        #{expr,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="labels != null">
+        #{labels,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="alertTeam != null">
+        #{alertTeam,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="strategyId != null">
+        #{strategyId,jdbcType=INTEGER},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.xiaomi.mone.monitor.dao.model.AppAlarmRuleExample" resultType="java.lang.Long">
+    select count(*) from app_alarm_rule
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update app_alarm_rule
+    <set>
+      <if test="record.id != null">
+        id = #{record.id,jdbcType=INTEGER},
+      </if>
+      <if test="record.alarmId != null">
+        alarm_id = #{record.alarmId,jdbcType=INTEGER},
+      </if>
+      <if test="record.alert != null">
+        alert = #{record.alert,jdbcType=VARCHAR},
+      </if>
+      <if test="record.cname != null">
+        cname = #{record.cname,jdbcType=VARCHAR},
+      </if>
+      <if test="record.metricType != null">
+        metric_type = #{record.metricType,jdbcType=INTEGER},
+      </if>
+      <if test="record.forTime != null">
+        for_time = #{record.forTime,jdbcType=VARCHAR},
+      </if>
+      <if test="record.annotations != null">
+        annotations = #{record.annotations,jdbcType=VARCHAR},
+      </if>
+      <if test="record.ruleGroup != null">
+        rule_group = #{record.ruleGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="record.priority != null">
+        priority = #{record.priority,jdbcType=VARCHAR},
+      </if>
+      <if test="record.env != null">
+        env = #{record.env,jdbcType=VARCHAR},
+      </if>
+      <if test="record.op != null">
+        op = #{record.op,jdbcType=VARCHAR},
+      </if>
+      <if test="record.value != null">
+        value = #{record.value,jdbcType=REAL},
+      </if>
+      <if test="record.dataCount != null">
+        data_count = #{record.dataCount,jdbcType=INTEGER},
+      </if>
+      <if test="record.sendInterval != null">
+        send_interval = #{record.sendInterval,jdbcType=VARCHAR},
+      </if>
+      <if test="record.projectId != null">
+        project_id = #{record.projectId,jdbcType=INTEGER},
+      </if>
+      <if test="record.iamId != null">
+        iam_id = #{record.iamId,jdbcType=INTEGER},
+      </if>
+      <if test="record.templateId != null">
+        template_id = #{record.templateId,jdbcType=INTEGER},
+      </if>
+      <if test="record.ruleType != null">
+        rule_type = #{record.ruleType,jdbcType=INTEGER},
+      </if>
+      <if test="record.ruleStatus != null">
+        rule_status = #{record.ruleStatus,jdbcType=INTEGER},
+      </if>
+      <if test="record.remark != null">
+        remark = #{record.remark,jdbcType=VARCHAR},
+      </if>
+      <if test="record.creater != null">
+        creater = #{record.creater,jdbcType=VARCHAR},
+      </if>
+      <if test="record.status != null">
+        status = #{record.status,jdbcType=INTEGER},
+      </if>
+      <if test="record.createTime != null">
+        create_time = #{record.createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="record.updateTime != null">
+        update_time = #{record.updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="record.expr != null">
+        expr = #{record.expr,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.labels != null">
+        labels = #{record.labels,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.alertTeam != null">
+        alert_team = #{record.alertTeam,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExampleWithBLOBs" parameterType="map">
+    update app_alarm_rule
+    set id = #{record.id,jdbcType=INTEGER},
+      alarm_id = #{record.alarmId,jdbcType=INTEGER},
+      alert = #{record.alert,jdbcType=VARCHAR},
+      cname = #{record.cname,jdbcType=VARCHAR},
+      metric_type = #{record.metricType,jdbcType=INTEGER},
+      for_time = #{record.forTime,jdbcType=VARCHAR},
+      annotations = #{record.annotations,jdbcType=VARCHAR},
+      rule_group = #{record.ruleGroup,jdbcType=VARCHAR},
+      priority = #{record.priority,jdbcType=VARCHAR},
+      env = #{record.env,jdbcType=VARCHAR},
+      op = #{record.op,jdbcType=VARCHAR},
+      value = #{record.value,jdbcType=REAL},
+      data_count = #{record.dataCount,jdbcType=INTEGER},
+      send_interval = #{record.sendInterval,jdbcType=VARCHAR},
+      project_id = #{record.projectId,jdbcType=INTEGER},
+      iam_id = #{record.iamId,jdbcType=INTEGER},
+      template_id = #{record.templateId,jdbcType=INTEGER},
+      rule_type = #{record.ruleType,jdbcType=INTEGER},
+      rule_status = #{record.ruleStatus,jdbcType=INTEGER},
+      remark = #{record.remark,jdbcType=VARCHAR},
+      creater = #{record.creater,jdbcType=VARCHAR},
+      status = #{record.status,jdbcType=INTEGER},
+      create_time = #{record.createTime,jdbcType=TIMESTAMP},
+      update_time = #{record.updateTime,jdbcType=TIMESTAMP},
+      expr = #{record.expr,jdbcType=LONGVARCHAR},
+      labels = #{record.labels,jdbcType=LONGVARCHAR},
+      alert_team = #{record.alertTeam,jdbcType=LONGVARCHAR}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update app_alarm_rule
+    set id = #{record.id,jdbcType=INTEGER},
+      alarm_id = #{record.alarmId,jdbcType=INTEGER},
+      alert = #{record.alert,jdbcType=VARCHAR},
+      cname = #{record.cname,jdbcType=VARCHAR},
+      metric_type = #{record.metricType,jdbcType=INTEGER},
+      for_time = #{record.forTime,jdbcType=VARCHAR},
+      annotations = #{record.annotations,jdbcType=VARCHAR},
+      rule_group = #{record.ruleGroup,jdbcType=VARCHAR},
+      priority = #{record.priority,jdbcType=VARCHAR},
+      env = #{record.env,jdbcType=VARCHAR},
+      op = #{record.op,jdbcType=VARCHAR},
+      value = #{record.value,jdbcType=REAL},
+      data_count = #{record.dataCount,jdbcType=INTEGER},
+      send_interval = #{record.sendInterval,jdbcType=VARCHAR},
+      project_id = #{record.projectId,jdbcType=INTEGER},
+      iam_id = #{record.iamId,jdbcType=INTEGER},
+      template_id = #{record.templateId,jdbcType=INTEGER},
+      rule_type = #{record.ruleType,jdbcType=INTEGER},
+      rule_status = #{record.ruleStatus,jdbcType=INTEGER},
+      remark = #{record.remark,jdbcType=VARCHAR},
+      creater = #{record.creater,jdbcType=VARCHAR},
+      status = #{record.status,jdbcType=INTEGER},
+      create_time = #{record.createTime,jdbcType=TIMESTAMP},
+      update_time = #{record.updateTime,jdbcType=TIMESTAMP}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.mone.monitor.dao.model.AppAlarmRule">
+    update app_alarm_rule
+    <set>
+      <if test="alarmId != null">
+        alarm_id = #{alarmId,jdbcType=INTEGER},
+      </if>
+      <if test="alert != null">
+        alert = #{alert,jdbcType=VARCHAR},
+      </if>
+      <if test="cname != null">
+        cname = #{cname,jdbcType=VARCHAR},
+      </if>
+      <if test="metricType != null">
+        metric_type = #{metricType,jdbcType=INTEGER},
+      </if>
+      <if test="forTime != null">
+        for_time = #{forTime,jdbcType=VARCHAR},
+      </if>
+      <if test="annotations != null">
+        annotations = #{annotations,jdbcType=VARCHAR},
+      </if>
+      <if test="ruleGroup != null">
+        rule_group = #{ruleGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="priority != null">
+        priority = #{priority,jdbcType=VARCHAR},
+      </if>
+      <if test="env != null">
+        env = #{env,jdbcType=VARCHAR},
+      </if>
+      <if test="op != null">
+        op = #{op,jdbcType=VARCHAR},
+      </if>
+      <if test="value != null">
+        value = #{value,jdbcType=REAL},
+      </if>
+      <if test="dataCount != null">
+        data_count = #{dataCount,jdbcType=INTEGER},
+      </if>
+      <if test="sendInterval != null">
+        send_interval = #{sendInterval,jdbcType=VARCHAR},
+      </if>
+      <if test="projectId != null">
+        project_id = #{projectId,jdbcType=INTEGER},
+      </if>
+      <if test="iamId != null">
+        iam_id = #{iamId,jdbcType=INTEGER},
+      </if>
+      <if test="templateId != null">
+        template_id = #{templateId,jdbcType=INTEGER},
+      </if>
+      <if test="ruleType != null">
+        rule_type = #{ruleType,jdbcType=INTEGER},
+      </if>
+      <if test="ruleStatus != null">
+        rule_status = #{ruleStatus,jdbcType=INTEGER},
+      </if>
+      <if test="remark != null">
+        remark = #{remark,jdbcType=VARCHAR},
+      </if>
+      <if test="creater != null">
+        creater = #{creater,jdbcType=VARCHAR},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="createTime != null">
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="expr != null">
+        expr = #{expr,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="labels != null">
+        labels = #{labels,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="alertTeam != null">
+        alert_team = #{alertTeam,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.mone.monitor.dao.model.AppAlarmRule">
+    update app_alarm_rule
+    set alarm_id = #{alarmId,jdbcType=INTEGER},
+      alert = #{alert,jdbcType=VARCHAR},
+      cname = #{cname,jdbcType=VARCHAR},
+      metric_type = #{metricType,jdbcType=INTEGER},
+      for_time = #{forTime,jdbcType=VARCHAR},
+      annotations = #{annotations,jdbcType=VARCHAR},
+      rule_group = #{ruleGroup,jdbcType=VARCHAR},
+      priority = #{priority,jdbcType=VARCHAR},
+      env = #{env,jdbcType=VARCHAR},
+      op = #{op,jdbcType=VARCHAR},
+      value = #{value,jdbcType=REAL},
+      data_count = #{dataCount,jdbcType=INTEGER},
+      send_interval = #{sendInterval,jdbcType=VARCHAR},
+      project_id = #{projectId,jdbcType=INTEGER},
+      iam_id = #{iamId,jdbcType=INTEGER},
+      template_id = #{templateId,jdbcType=INTEGER},
+      rule_type = #{ruleType,jdbcType=INTEGER},
+      rule_status = #{ruleStatus,jdbcType=INTEGER},
+      remark = #{remark,jdbcType=VARCHAR},
+      creater = #{creater,jdbcType=VARCHAR},
+      status = #{status,jdbcType=INTEGER},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP},
+      expr = #{expr,jdbcType=LONGVARCHAR},
+      labels = #{labels,jdbcType=LONGVARCHAR},
+      alert_team = #{alertTeam,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.mone.monitor.dao.model.AppAlarmRule">
+    update app_alarm_rule
+    set alarm_id = #{alarmId,jdbcType=INTEGER},
+      alert = #{alert,jdbcType=VARCHAR},
+      cname = #{cname,jdbcType=VARCHAR},
+      metric_type = #{metricType,jdbcType=INTEGER},
+      for_time = #{forTime,jdbcType=VARCHAR},
+      annotations = #{annotations,jdbcType=VARCHAR},
+      rule_group = #{ruleGroup,jdbcType=VARCHAR},
+      priority = #{priority,jdbcType=VARCHAR},
+      env = #{env,jdbcType=VARCHAR},
+      op = #{op,jdbcType=VARCHAR},
+      value = #{value,jdbcType=REAL},
+      data_count = #{dataCount,jdbcType=INTEGER},
+      send_interval = #{sendInterval,jdbcType=VARCHAR},
+      project_id = #{projectId,jdbcType=INTEGER},
+      iam_id = #{iamId,jdbcType=INTEGER},
+      template_id = #{templateId,jdbcType=INTEGER},
+      rule_type = #{ruleType,jdbcType=INTEGER},
+      rule_status = #{ruleStatus,jdbcType=INTEGER},
+      remark = #{remark,jdbcType=VARCHAR},
+      creater = #{creater,jdbcType=VARCHAR},
+      status = #{status,jdbcType=INTEGER},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    insert into app_alarm_rule
+    (alarm_id, alert, cname, metric_type, for_time, annotations, rule_group, priority, 
+      env, op, value, data_count, send_interval, project_id, iam_id, template_id, rule_type, 
+      rule_status, remark, creater, status, create_time, update_time, expr, labels, alert_team,strategy_id
+      )
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.alarmId,jdbcType=INTEGER}, #{item.alert,jdbcType=VARCHAR}, #{item.cname,jdbcType=VARCHAR}, 
+        #{item.metricType,jdbcType=INTEGER}, #{item.forTime,jdbcType=VARCHAR}, #{item.annotations,jdbcType=VARCHAR}, 
+        #{item.ruleGroup,jdbcType=VARCHAR}, #{item.priority,jdbcType=VARCHAR}, #{item.env,jdbcType=VARCHAR}, 
+        #{item.op,jdbcType=VARCHAR}, #{item.value,jdbcType=REAL}, #{item.dataCount,jdbcType=INTEGER}, 
+        #{item.sendInterval,jdbcType=VARCHAR}, #{item.projectId,jdbcType=INTEGER}, #{item.iamId,jdbcType=INTEGER}, 
+        #{item.templateId,jdbcType=INTEGER}, #{item.ruleType,jdbcType=INTEGER}, #{item.ruleStatus,jdbcType=INTEGER}, 
+        #{item.remark,jdbcType=VARCHAR}, #{item.creater,jdbcType=VARCHAR}, #{item.status,jdbcType=INTEGER}, 
+        #{item.createTime,jdbcType=TIMESTAMP}, #{item.updateTime,jdbcType=TIMESTAMP}, #{item.expr,jdbcType=LONGVARCHAR}, 
+        #{item.labels,jdbcType=LONGVARCHAR}, #{item.alertTeam,jdbcType=LONGVARCHAR},#{item.strategyId,jdbcType=INTEGER})
+    </foreach>
+  </insert>
+  <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
+    insert into app_alarm_rule (
+    <foreach collection="selective" item="column" separator=",">
+      ${column.escapedColumnName}
+    </foreach>
+    )
+    values
+    <foreach collection="list" item="item" separator=",">
+      (
+      <foreach collection="selective" item="column" separator=",">
+        <if test="'alarm_id'.toString() == column.value">
+          #{item.alarmId,jdbcType=INTEGER}
+        </if>
+        <if test="'alert'.toString() == column.value">
+          #{item.alert,jdbcType=VARCHAR}
+        </if>
+        <if test="'cname'.toString() == column.value">
+          #{item.cname,jdbcType=VARCHAR}
+        </if>
+        <if test="'metric_type'.toString() == column.value">
+          #{item.metricType,jdbcType=INTEGER}
+        </if>
+        <if test="'for_time'.toString() == column.value">
+          #{item.forTime,jdbcType=VARCHAR}
+        </if>
+        <if test="'annotations'.toString() == column.value">
+          #{item.annotations,jdbcType=VARCHAR}
+        </if>
+        <if test="'rule_group'.toString() == column.value">
+          #{item.ruleGroup,jdbcType=VARCHAR}
+        </if>
+        <if test="'priority'.toString() == column.value">
+          #{item.priority,jdbcType=VARCHAR}
+        </if>
+        <if test="'env'.toString() == column.value">
+          #{item.env,jdbcType=VARCHAR}
+        </if>
+        <if test="'op'.toString() == column.value">
+          #{item.op,jdbcType=VARCHAR}
+        </if>
+        <if test="'value'.toString() == column.value">
+          #{item.value,jdbcType=REAL}
+        </if>
+        <if test="'data_count'.toString() == column.value">
+          #{item.dataCount,jdbcType=INTEGER}
+        </if>
+        <if test="'send_interval'.toString() == column.value">
+          #{item.sendInterval,jdbcType=VARCHAR}
+        </if>
+        <if test="'project_id'.toString() == column.value">
+          #{item.projectId,jdbcType=INTEGER}
+        </if>
+        <if test="'iam_id'.toString() == column.value">
+          #{item.iamId,jdbcType=INTEGER}
+        </if>
+        <if test="'template_id'.toString() == column.value">
+          #{item.templateId,jdbcType=INTEGER}
+        </if>
+        <if test="'rule_type'.toString() == column.value">
+          #{item.ruleType,jdbcType=INTEGER}
+        </if>
+        <if test="'rule_status'.toString() == column.value">
+          #{item.ruleStatus,jdbcType=INTEGER}
+        </if>
+        <if test="'remark'.toString() == column.value">
+          #{item.remark,jdbcType=VARCHAR}
+        </if>
+        <if test="'creater'.toString() == column.value">
+          #{item.creater,jdbcType=VARCHAR}
+        </if>
+        <if test="'status'.toString() == column.value">
+          #{item.status,jdbcType=INTEGER}
+        </if>
+        <if test="'create_time'.toString() == column.value">
+          #{item.createTime,jdbcType=TIMESTAMP}
+        </if>
+        <if test="'update_time'.toString() == column.value">
+          #{item.updateTime,jdbcType=TIMESTAMP}
+        </if>
+        <if test="'expr'.toString() == column.value">
+          #{item.expr,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'labels'.toString() == column.value">
+          #{item.labels,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'alert_team'.toString() == column.value">
+          #{item.alertTeam,jdbcType=LONGVARCHAR}
+        </if>
+         <if test="'strategy_id'.toString() == column.value">
+          #{item.strategyId,jdbcType=INTEGER}
+        </if>
+      </foreach>
+      )
+    </foreach>
+  </insert>
+</mapper>
