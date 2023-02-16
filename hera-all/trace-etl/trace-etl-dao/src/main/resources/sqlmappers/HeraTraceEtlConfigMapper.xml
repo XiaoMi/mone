@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.xiaomi.hera.trace.etl.mapper.HeraTraceEtlConfigMapper" >
+  <resultMap id="BaseResultMap" type="com.xiaomi.hera.trace.etl.domain.HeraTraceEtlConfig" >
+    <id column="id" property="id" jdbcType="INTEGER" />
+    <result column="base_info_id" property="baseInfoId" jdbcType="INTEGER" />
+    <result column="bind_id" property="bindId" jdbcType="VARCHAR" />
+    <result column="app_name" property="appName" jdbcType="VARCHAR" />
+    <result column="exclude_method" property="excludeMethod" jdbcType="VARCHAR" />
+    <result column="exclude_httpserver_method" property="excludeHttpserverMethod" jdbcType="VARCHAR" />
+    <result column="exclude_thread" property="excludeThread" jdbcType="VARCHAR" />
+    <result column="exclude_sql" property="excludeSql" jdbcType="VARCHAR" />
+    <result column="exclude_http_url" property="excludeHttpUrl" jdbcType="VARCHAR" />
+    <result column="exclude_ua" property="excludeUa" jdbcType="VARCHAR" />
+    <result column="http_slow_threshold" property="httpSlowThreshold" jdbcType="INTEGER" />
+    <result column="dubbo_slow_threshold" property="dubboSlowThreshold" jdbcType="INTEGER" />
+    <result column="mysql_slow_threshold" property="mysqlSlowThreshold" jdbcType="INTEGER" />
+    <result column="http_status_error" property="httpStatusError" jdbcType="VARCHAR" />
+    <result column="trace_filter" property="traceFilter" jdbcType="INTEGER" />
+    <result column="trace_duration_threshold" property="traceDurationThreshold" jdbcType="INTEGER" />
+    <result column="trace_debug_flag" property="traceDebugFlag" jdbcType="VARCHAR" />
+    <result column="create_time" property="createTime" jdbcType="TIMESTAMP" />
+    <result column="update_time" property="updateTime" jdbcType="TIMESTAMP" />
+    <result column="create_user" property="createUser" jdbcType="VARCHAR" />
+    <result column="update_user" property="updateUser" jdbcType="VARCHAR" />
+  </resultMap>
+  <sql id="Base_Column_List" >
+    id, base_info_id, exclude_method, exclude_httpserver_method, exclude_thread, exclude_sql, 
+    exclude_http_url, exclude_ua, http_slow_threshold, dubbo_slow_threshold, mysql_slow_threshold, trace_filter,
+    trace_duration_threshold, trace_debug_flag, http_status_error, create_time, update_time, create_user, update_user
+  </sql>
+  <sql id="Join_Base_Column_List" >
+    a.id id, a.base_info_id base_info_id, a.exclude_method exclude_method, a.exclude_httpserver_method exclude_httpserver_method, a.exclude_thread exclude_thread, a.exclude_sql exclude_sql,
+    a.exclude_http_url exclude_http_url, a.exclude_ua exclude_ua, a.http_slow_threshold http_slow_threshold, a.dubbo_slow_threshold dubbo_slow_threshold, a.mysql_slow_threshold mysql_slow_threshold,
+    a.trace_duration_threshold, a.trace_debug_flag, a.trace_filter, a.http_status_error http_status_error, a.create_time create_time, a.update_time update_time,
+    a.create_user create_user, a.update_user update_user
+  </sql>
+  <select id="selectByPrimaryKey" resultMap="BaseResultMap" parameterType="java.lang.Integer" >
+    select 
+    <include refid="Join_Base_Column_List" />,
+    b.bind_id bind_id,b.app_name app_name
+    from hera_trace_etl_config a
+    inner join hera_app_base_info b
+    on a.base_info_id = b.id
+    where a.id = #{id,jdbcType=INTEGER} and a.status = '1'
+  </select>
+  <select id="getAll" resultMap="BaseResultMap" parameterType="com.xiaomi.hera.trace.etl.domain.HeraTraceConfigVo">
+    select
+    <include refid="Join_Base_Column_List" />,
+    b.bind_id bind_id,b.app_name app_name
+    from hera_trace_etl_config a
+    inner join hera_app_base_info b
+    on a.base_info_id = b.id
+    where a.status = '1'
+    <if test="bindId != null">
+      and bind_id = #{bindId,jdbcType=INTEGER}
+    </if>
+    <if test="appName != null and appName != ''">
+      and app_name = #{appName,jdbcType=INTEGER}
+    </if>
+  </select>
+  <select id="getAllPage" resultMap="BaseResultMap" >
+    select
+    <include refid="Join_Base_Column_List" />,
+    b.bind_id bind_id,b.app_name app_name
+    from hera_trace_etl_config a
+    inner join hera_app_base_info b
+    on a.base_info_id = b.id
+    <if test="user != null and user != ''">
+      INNER JOIN app_monitor c ON b.bind_id = c.project_id and b.platform_type = c.app_source
+    </if>
+    where a.status = '1'
+    <if test="user != null and user != ''">
+      and c.OWNER = #{user,jdbcType=VARCHAR} and c.status='0'
+    </if>
+  </select>
+  <select id="getByBaseInfoId" resultMap="BaseResultMap" parameterType="java.lang.Integer">
+    select
+    <include refid="Join_Base_Column_List" />,
+    b.bind_id bind_id,b.app_name app_name
+    from hera_trace_etl_config a
+    inner join hera_app_base_info b
+    on a.base_info_id = b.id
+    where a.base_info_id = #{baseInfoId,jdbcType=INTEGER}
+    and a.status = '1'
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer" >
+    update  hera_trace_etl_config set status = '0'
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <insert id="insert" parameterType="com.xiaomi.hera.trace.etl.domain.HeraTraceEtlConfig" >
+    insert into hera_trace_etl_config ( base_info_id, exclude_method,
+      exclude_httpserver_method, exclude_thread, 
+      exclude_sql, exclude_http_url, exclude_ua, 
+      http_slow_threshold, dubbo_slow_threshold, 
+      mysql_slow_threshold, trace_filter, trace_duration_threshold, trace_debug_flag, http_status_error, create_time,
+      update_time, create_user, update_user
+      )
+    values ( #{baseInfoId,jdbcType=INTEGER}, #{excludeMethod,jdbcType=VARCHAR},
+      #{excludeHttpserverMethod,jdbcType=VARCHAR}, #{excludeThread,jdbcType=VARCHAR}, 
+      #{excludeSql,jdbcType=VARCHAR}, #{excludeHttpUrl,jdbcType=VARCHAR}, #{excludeUa,jdbcType=VARCHAR}, 
+      #{httpSlowThreshold,jdbcType=INTEGER}, #{dubboSlowThreshold,jdbcType=INTEGER}, 
+      #{mysqlSlowThreshold,jdbcType=INTEGER},#{traceFilter,jdbcType=INTEGER}, #{traceDurationThreshold,jdbcType=INTEGER},
+      #{traceDebugFlag,jdbcType=VARCHAR}, #{httpStatusError,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP},
+      #{updateTime,jdbcType=TIMESTAMP}, #{createUser,jdbcType=VARCHAR}, #{updateUser,jdbcType=VARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.xiaomi.hera.trace.etl.domain.HeraTraceEtlConfig" >
+    insert into hera_trace_etl_config
+    <trim prefix="(" suffix=")" suffixOverrides="," >
+      <if test="baseInfoId != null" >
+        base_info_id,
+      </if>
+      <if test="excludeMethod != null" >
+        exclude_method,
+      </if>
+      <if test="excludeHttpserverMethod != null" >
+        exclude_httpserver_method,
+      </if>
+      <if test="excludeThread != null" >
+        exclude_thread,
+      </if>
+      <if test="excludeSql != null" >
+        exclude_sql,
+      </if>
+      <if test="excludeHttpUrl != null" >
+        exclude_http_url,
+      </if>
+      <if test="excludeUa != null" >
+        exclude_ua,
+      </if>
+      <if test="httpSlowThreshold != null" >
+        http_slow_threshold,
+      </if>
+      <if test="dubboSlowThreshold != null" >
+        dubbo_slow_threshold,
+      </if>
+      <if test="mysqlSlowThreshold != null" >
+        mysql_slow_threshold,
+      </if>
+      <if test="traceFilter != null" >
+        trace_filter,
+      </if>
+      <if test="traceDurationThreshold != null" >
+        trace_duration_threshold,
+      </if>
+      <if test="traceDebugFlag != null" >
+        trace_debug_flag,
+      </if>
+      <if test="httpStatusError != null" >
+        http_status_error,
+      </if>
+      <if test="createTime != null" >
+        create_time,
+      </if>
+      <if test="updateTime != null" >
+        update_time,
+      </if>
+      <if test="createUser != null" >
+        create_user,
+      </if>
+      <if test="updateUser != null" >
+        update_user,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides="," >
+      <if test="baseInfoId != null" >
+        #{baseInfoId,jdbcType=INTEGER},
+      </if>
+      <if test="excludeMethod != null" >
+        #{excludeMethod,jdbcType=VARCHAR},
+      </if>
+      <if test="excludeHttpserverMethod != null" >
+        #{excludeHttpserverMethod,jdbcType=VARCHAR},
+      </if>
+      <if test="excludeThread != null" >
+        #{excludeThread,jdbcType=VARCHAR},
+      </if>
+      <if test="excludeSql != null" >
+        #{excludeSql,jdbcType=VARCHAR},
+      </if>
+      <if test="excludeHttpUrl != null" >
+        #{excludeHttpUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="excludeUa != null" >
+        #{excludeUa,jdbcType=VARCHAR},
+      </if>
+      <if test="httpSlowThreshold != null" >
+        #{httpSlowThreshold,jdbcType=INTEGER},
+      </if>
+      <if test="dubboSlowThreshold != null" >
+        #{dubboSlowThreshold,jdbcType=INTEGER},
+      </if>
+      <if test="mysqlSlowThreshold != null" >
+        #{mysqlSlowThreshold,jdbcType=INTEGER},
+      </if>
+      <if test="traceFilter != null" >
+        #{traceFilter,jdbcType=VARCHAR},
+      </if>
+      <if test="traceDurationThreshold != null" >
+        #{traceDurationThreshold,jdbcType=VARCHAR},
+      </if>
+      <if test="traceDebugFlag != null" >
+        #{traceDebugFlag,jdbcType=VARCHAR},
+      </if>
+      <if test="httpStatusError != null" >
+        #{httpStatusError,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null" >
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="createUser != null" >
+        #{createUser,jdbcType=VARCHAR},
+      </if>
+      <if test="updateUser != null" >
+        #{updateUser,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.hera.trace.etl.domain.HeraTraceEtlConfig" >
+    update hera_trace_etl_config
+    <set >
+      <if test="baseInfoId != null" >
+        base_info_id = #{baseInfoId,jdbcType=INTEGER},
+      </if>
+      <if test="excludeMethod != null" >
+        exclude_method = #{excludeMethod,jdbcType=VARCHAR},
+      </if>
+      <if test="excludeHttpserverMethod != null" >
+        exclude_httpserver_method = #{excludeHttpserverMethod,jdbcType=VARCHAR},
+      </if>
+      <if test="excludeThread != null" >
+        exclude_thread = #{excludeThread,jdbcType=VARCHAR},
+      </if>
+      <if test="excludeSql != null" >
+        exclude_sql = #{excludeSql,jdbcType=VARCHAR},
+      </if>
+      <if test="excludeHttpUrl != null" >
+        exclude_http_url = #{excludeHttpUrl,jdbcType=VARCHAR},
+      </if>
+      <if test="excludeUa != null" >
+        exclude_ua = #{excludeUa,jdbcType=VARCHAR},
+      </if>
+      <if test="httpSlowThreshold != null" >
+        http_slow_threshold = #{httpSlowThreshold,jdbcType=INTEGER},
+      </if>
+      <if test="dubboSlowThreshold != null" >
+        dubbo_slow_threshold = #{dubboSlowThreshold,jdbcType=INTEGER},
+      </if>
+      <if test="mysqlSlowThreshold != null" >
+        mysql_slow_threshold = #{mysqlSlowThreshold,jdbcType=INTEGER},
+      </if>
+      <if test="traceFilter != null" >
+        trace_filter = #{traceFilter,jdbcType=INTEGER},
+      </if>
+      <if test="traceDurationThreshold != null" >
+        trace_duration_threshold = #{traceDurationThreshold,jdbcType=INTEGER},
+      </if>
+      <if test="traceDebugFlag != null" >
+        trace_debug_flag = #{traceDebugFlag,jdbcType=VARCHAR},
+      </if>
+      <if test="httpStatusError != null" >
+        http_status_error = #{httpStatusError,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null" >
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null" >
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="createUser != null" >
+        create_user = #{createUser,jdbcType=VARCHAR},
+      </if>
+      <if test="updateUser != null" >
+        update_user = #{updateUser,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.hera.trace.etl.domain.HeraTraceEtlConfig" >
+    update hera_trace_etl_config
+    set base_info_id = #{baseInfoId,jdbcType=INTEGER},
+      exclude_method = #{excludeMethod,jdbcType=VARCHAR},
+      exclude_httpserver_method = #{excludeHttpserverMethod,jdbcType=VARCHAR},
+      exclude_thread = #{excludeThread,jdbcType=VARCHAR},
+      exclude_sql = #{excludeSql,jdbcType=VARCHAR},
+      exclude_http_url = #{excludeHttpUrl,jdbcType=VARCHAR},
+      exclude_ua = #{excludeUa,jdbcType=VARCHAR},
+      http_slow_threshold = #{httpSlowThreshold,jdbcType=INTEGER},
+      dubbo_slow_threshold = #{dubboSlowThreshold,jdbcType=INTEGER},
+      mysql_slow_threshold = #{mysqlSlowThreshold,jdbcType=INTEGER},
+      trace_filter = #{traceFilter,jdbcType=INTEGER},
+      trace_duration_threshold = #{traceDurationThreshold,jdbcType=INTEGER},
+      trace_debug_flag = #{traceDebugFlag,jdbcType=VARCHAR},
+      http_status_error = #{httpStatusError,jdbcType=VARCHAR},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP},
+      create_user = #{createUser,jdbcType=VARCHAR},
+      update_user = #{updateUser,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+</mapper>
