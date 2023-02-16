@@ -1,0 +1,18 @@
+{
+  "cname": "http请求延迟增大",
+  "alert": "HighRequestLatency",
+  "expr": "job:request_latency_seconds:mean5m{job=\"myjob\"} > 0.5",
+  "for": "5m",
+  "labels": {
+    "service": "test"
+  },
+  "annotations": {
+    "summary": "High request latency"
+  },
+  "group": "falcon-transfer",
+  "priority": "P0",
+  "alert_member": ["liugang6"],
+  "env": ["staging", "preview", "production"],
+  "enabled": "0",
+  "alert_at_people":["xxx"]
+}
