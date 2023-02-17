@@ -56,6 +56,11 @@
             <version>1.4-SNAPSHOT</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.msgpack</groupId>
+            <artifactId>msgpack-core</artifactId>
+            <version>0.9.3</version>
+        </dependency>
 
     </dependencies>
 
