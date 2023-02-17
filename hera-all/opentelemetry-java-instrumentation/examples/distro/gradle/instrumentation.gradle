@@ -1,0 +1,61 @@
+apply plugin: 'java'
+apply plugin: 'com.github.johnrengelman.shadow'
+
+apply from: "$rootDir/gradle/shadow.gradle"
+
+def relocatePackages = ext.relocatePackages
+
+configurations {
+  testInstrumentation
+  testAgent
+}
+
+dependencies {
+  compileOnly("run.mone:opentelemetry-sdk:${versions.opentelemetry}")
+  compileOnly("io.opentelemetry.javaagent:opentelemetry-javaagent-api:${versions.opentelemetryJavaagentAlpha}")
+  compileOnly("io.opentelemetry.javaagent:opentelemetry-javaagent-extension-api:${versions.opentelemetryJavaagentAlpha}")
+
+  compileOnly deps.bytebuddy
+  compileOnly deps.bytebuddyagent
+  annotationProcessor deps.autoservice
+  compileOnly deps.autoservice
+
+  // the javaagent that is going to be used when running instrumentation unit tests
+  testAgent("io.opentelemetry.javaagent:opentelemetry-agent-for-testing:${versions.opentelemetryJavaagentAlpha}")
+  // test dependencies
+  testImplementation("io.opentelemetry.javaagent:opentelemetry-testing-common:${versions.opentelemetryJavaagentAlpha}")
+  testImplementation("run.mone:opentelemetry-sdk-testing:${versions.opentelemetry}")
+  testImplementation("org.assertj:assertj-core:3.19.0")
+}
+
+shadowJar {
+  configurations = [project.configurations.runtimeClasspath, project.configurations.testInstrumentation]
+  mergeServiceFiles()
+
+  archiveFileName = 'agent-testing.jar'
+
+  relocatePackages(it)
+}
+
+tasks.withType(Test).configureEach {
+  inputs.file(shadowJar.archiveFile)
+
+  jvmArgs "-Dotel.javaagent.debug=true"
+  jvmArgs "-javaagent:${configurations.testAgent.files.first().absolutePath}"
+  jvmArgs "-Dotel.javaagent.experimental.initializer.jar=${shadowJar.archiveFile.get().asFile.absolutePath}"
+  jvmArgs "-Dotel.javaagent.testing.additional-library-ignores.enabled=false"
+  jvmArgs "-Dotel.javaagent.testing.fail-on-context-leak=true"
+  // prevent sporadic gradle deadlocks, see SafeLogger for more details
+  jvmArgs "-Dotel.javaagent.testing.transform-safe-logging.enabled=true"
+
+  dependsOn shadowJar
+
+  // The sources are packaged into the testing jar so we need to make sure to exclude from the test
+  // classpath, which automatically inherits them, to ensure our shaded versions are used.
+  classpath = classpath.filter {
+    if (it == file("$buildDir/resources/main") || it == file("$buildDir/classes/java/main")) {
+      return false
+    }
+    return true
+  }
+}

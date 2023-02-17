@@ -1,0 +1,25 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:5678
+  jaeger:
+    protocols:
+      thrift_http:
+
+processors:
+  batch:
+
+extensions:
+  health_check:
+
+exporters:
+  logging:
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp, jaeger]
+      processors: [batch]
+      exporters: [logging]
