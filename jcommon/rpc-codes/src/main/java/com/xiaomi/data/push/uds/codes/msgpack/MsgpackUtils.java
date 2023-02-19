@@ -1,5 +1,6 @@
 package com.xiaomi.data.push.uds.codes.msgpack;
 
+import com.google.common.primitives.Chars;
 import lombok.SneakyThrows;
 import org.msgpack.core.MessageBufferPacker;
 import org.msgpack.core.MessageUnpacker;
@@ -8,6 +9,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -16,6 +18,7 @@ import java.util.Map;
  */
 public class MsgpackUtils {
 
+    public static Map<Class, Registry> registryMap = new HashMap<>();
 
     @SneakyThrows
     private static void pack(Object obj, MessageBufferPacker packer, ExRunnable runnable) {
@@ -39,6 +42,17 @@ public class MsgpackUtils {
 
     @SneakyThrows
     public static void encode(Object obj, Class clazz, MessageBufferPacker packer) {
+        if (registryMap.containsKey(clazz)) {
+            Registry registry = registryMap.get(clazz);
+            packer.packString("REGISTRY_" + clazz.getName());
+            pack(obj, packer, () -> {
+                byte[] data = registry.encode(obj);
+                packer.packInt(data.length);
+                packer.addPayload(data);
+            });
+            return;
+        }
+
         if (clazz.isAssignableFrom(int.class) || clazz.isAssignableFrom(Integer.class)) {
             packer.packString("int");
             pack(obj, packer, () -> packer.packInt((Integer) obj));
@@ -63,9 +77,25 @@ public class MsgpackUtils {
             return;
         }
 
+        if (clazz.isAssignableFrom(short.class) || clazz.isAssignableFrom(Short.class)) {
+            packer.packString("short");
+            pack(obj, packer, () -> packer.packShort((short) obj));
+            return;
+        }
+
         if (clazz.isAssignableFrom(long.class) || clazz.isAssignableFrom(Long.class)) {
             packer.packString("long");
             pack(obj, packer, () -> packer.packLong((long) obj));
+            return;
+        }
+
+        if (clazz.isAssignableFrom(char.class) || clazz.isAssignableFrom(Character.class)) {
+            packer.packString("char");
+            byte[] data = Chars.toByteArray((char) obj);
+            pack(obj, packer, () -> {
+                packer.packByte(data[0]);
+                packer.packByte(data[1]);
+            });
             return;
         }
 
@@ -149,6 +179,21 @@ public class MsgpackUtils {
     @SneakyThrows
     public static Object decode(MessageUnpacker unpacker) {
         String str = unpacker.unpackString();
+        if (str.startsWith("REGISTRY_")) {
+            String[] ss = str.split("_");
+            Class clazz = Class.forName(ss[1]);
+            Registry registry = registryMap.get(clazz);
+            byte b = unpacker.unpackByte();
+            if (0 == b) {
+                return null;
+            }
+            int size = unpacker.unpackInt();
+            byte[] data = new byte[size];
+            unpacker.readPayload(data);
+            return registry.decode(data);
+        }
+
+
         if (str.equals("_CLASS")) {
             return null;
         }
@@ -254,6 +299,19 @@ public class MsgpackUtils {
             return unpack(unpacker, () -> unpacker.unpackByte());
         }
 
+        if (str.equals("short")) {
+            return unpack(unpacker, () -> unpacker.unpackShort());
+        }
+
+
+        if (str.equals("char")) {
+            return unpack(unpacker, () -> {
+                byte b1 = unpacker.unpackByte();
+                byte b2 = unpacker.unpackByte();
+                return Chars.fromBytes(b1, b2);
+            });
+        }
+
         return null;
 
     }
@@ -263,6 +321,27 @@ public class MsgpackUtils {
     private static Class getClass(String name) {
         if (name.equals("int")) {
             return int.class;
+        }
+        if (name.equals("long")) {
+            return long.class;
+        }
+        if (name.equals("short")) {
+            return short.class;
+        }
+        if (name.equals("float")) {
+            return float.class;
+        }
+        if (name.equals("double")) {
+            return double.class;
+        }
+        if (name.equals("float")) {
+            return float.class;
+        }
+        if (name.equals("byte")) {
+            return byte.class;
+        }
+        if (name.equals("char")) {
+            return char.class;
         }
         return Class.forName(name);
     }
