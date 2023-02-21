@@ -1,13 +1,17 @@
 package run.mone.rpc.codes.test;
 
 import com.google.common.collect.Lists;
+import com.google.common.primitives.Longs;
 import com.xiaomi.data.push.uds.codes.HessianCodes;
 import com.xiaomi.data.push.uds.codes.ProtostuffCodes;
 import com.xiaomi.data.push.uds.codes.msgpack.MsgpackCodes;
+import com.xiaomi.data.push.uds.codes.msgpack.MsgpackUtils;
+import com.xiaomi.data.push.uds.codes.msgpack.Registry;
 import org.junit.Test;
 
 import java.lang.reflect.Array;
 import java.sql.Timestamp;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,8 +63,12 @@ public class CodeTest {
 
     @Test
     public void testMsgpackObj() {
+        MsgpackUtils.registryMap.put(Date.class, new DateRegistry());
         MsgpackCodes codes = new MsgpackCodes();
         A a = new A();
+        a.setDate(new Date());
+        a.setC('a');
+        a.setS((short) 555);
         a.setF(12.2f);
         a.setArray(new int[]{7, 7, 7, 7});
         a.setL(123L);
@@ -138,4 +146,34 @@ public class CodeTest {
         Class<?> clazz2 = clazz.getComponentType();
         System.out.println(clazz2);
     }
+
+
+    class DateRegistry extends Registry<Date> {
+        @Override
+        public byte[] encode(Date obj) {
+            long time = obj.getTime();
+            return Longs.toByteArray(time);
+        }
+
+        @Override
+        public Date decode(byte[] data) {
+            long time = Longs.fromByteArray(data);
+            return new Date(time);
+        }
+    }
+
+    /**
+     * 支持自定义序列化与反序列化
+     */
+    @Test
+    public void test8() {
+        MsgpackCodes codes = new MsgpackCodes();
+        MsgpackUtils.registryMap.put(Date.class, new DateRegistry());
+        Date date = new Date();
+        byte[] data = codes.encode(date);
+        Object l2 = codes.decode(data, Date.class);
+        System.out.println(l2);
+    }
+
+
 }

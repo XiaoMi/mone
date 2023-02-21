@@ -35,6 +35,6 @@ public class MsgpackCodes implements ICodes {
 
     @Override
     public byte type() {
-        return CodeType.MSGPACK;
+        return (byte)55;
     }
 }

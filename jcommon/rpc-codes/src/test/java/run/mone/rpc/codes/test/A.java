@@ -3,6 +3,7 @@ package run.mone.rpc.codes.test;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -14,6 +15,12 @@ import java.util.Map;
 public class A implements Serializable {
 
     private int id;
+
+    private char c;
+
+    private short s;
+
+    private Date date;
 
     private String name;
 
