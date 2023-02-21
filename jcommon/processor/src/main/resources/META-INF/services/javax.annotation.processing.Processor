@@ -1,2 +1,3 @@
 run.mone.processor.HelloWorldProcessor
 run.mone.processor.DataProcessor
+run.mone.processor.CodeCheckProcessor
