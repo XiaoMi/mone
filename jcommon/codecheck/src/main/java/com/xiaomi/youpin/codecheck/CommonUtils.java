@@ -21,6 +21,8 @@ import com.xiaomi.youpin.codecheck.po.CheckResult;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class CommonUtils {
     /**
@@ -140,10 +142,56 @@ public class CommonUtils {
         return result;
     }
 
+    public static List<File> searchNoFiles(File folder, final List<String> keywords) {
+        List<File> result = new ArrayList<>();
+        if (folder.isFile()) {
+            result.add(folder);
+        }
+        File[] subFolders = folder.listFiles(
+                (File file) -> {
+                    if (file.isDirectory()) {
+                        return true;
+                    }
+                    return noneEndWith(file.getName().toLowerCase(), keywords);
+                }
+        );
+        if (subFolders != null) {
+            for (File file : subFolders) {
+                if (file.isFile()) {
+                    // 如果是文件则将文件添加到结果列表中
+                    result.add(file);
+                } else {
+                    // 如果是文件夹，则递归调用本方法，然后把所有的文件加到结果列表中
+                    result.addAll(searchNoFiles(file, keywords));
+                }
+            }
+        }
+        return result;
+    }
+
     private static boolean anyEndWith(String fileName, List<String> keywords){
         if(fileName == null || keywords == null || keywords.isEmpty()){
             return false;
         }
         return keywords.stream().anyMatch(fileName::endsWith);
+    }
+
+    private static boolean noneEndWith(String fileName, List<String> keywords){
+        if(fileName == null || keywords == null || keywords.isEmpty()){
+            return false;
+        }
+        return keywords.stream().noneMatch(fileName::endsWith);
+    }
+
+    /**
+     * 判断内容是否含有IPv4
+     * @param content
+     * @return
+     */
+    public static boolean hasIPv4(String content){
+        String pattern = "\\d+[\\.]\\d+[\\.]\\d+[\\.]\\d+";
+        Pattern p = Pattern.compile(pattern);
+        Matcher m = p.matcher(content);
+        return m.find();
     }
 }

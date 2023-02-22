@@ -26,6 +26,7 @@ import com.xiaomi.youpin.codecheck.code.impl.set.ContainerSizeCheck;
 import com.xiaomi.youpin.codecheck.code.impl.set.LongVariableAvoidNoneL;
 import com.xiaomi.youpin.codecheck.code.impl.youpin.DubboMethodMustReturnResultRule;
 import com.xiaomi.youpin.codecheck.code.impl.youpin.DubboProNeedHealthMethod;
+import com.xiaomi.youpin.codecheck.code.impl.youpin.IPRule;
 import com.xiaomi.youpin.codecheck.docCheck.JavaDocReader;
 import com.xiaomi.youpin.codecheck.po.CheckResult;
 import com.xiaomi.youpin.codecheck.pomCheck.PomCheck;
@@ -53,7 +54,8 @@ public class CodeCheck implements Serializable {
 
     public static List<CompilationCheck> compilationCheckList = Lists.newArrayList(
             new DubboMethodMustReturnResultRule(),
-            new DubboProNeedHealthMethod()
+            new DubboProNeedHealthMethod(),
+            new IPRule()
     );
 
     public static List<VariableCheck> variableCheckList = Lists.newArrayList(
@@ -71,6 +73,13 @@ public class CodeCheck implements Serializable {
 
         if (path == null || path.equals("")) {
             return res;
+        }
+
+        //yml等配置文件校验
+        ConfigCheck ipCheck = new ConfigCheck();
+        Map<String, List<CheckResult>> configCheckMap = ipCheck.configCheck(path);
+        if (!configCheckMap.isEmpty() && configCheckMap.size() > 0) {
+            res.putAll(configCheckMap);
         }
 
         //xxx.java校验
