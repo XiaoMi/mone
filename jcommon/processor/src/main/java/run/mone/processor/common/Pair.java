@@ -14,23 +14,27 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.youpin.test.codefilter;
+package run.mone.processor.common;
+
+import lombok.Data;
 
 /**
  * @author goodjava@qq.com
- * @date 3/14/21
  */
-public class B {
+@Data
+public class Pair<K, V> {
 
-    private String password;
+    private K key;
 
-    public String hi() {
-        return "hi";
+    private V value;
+
+    public Pair(K key, V value) {
+        this.key = key;
+        this.value = value;
     }
 
-
-    public void setPassword(String password) {
-        this.password = password;
+    public static <K, V> Pair<K, V> of(K key, V value) {
+        return new Pair<>(key, value);
     }
 
 }

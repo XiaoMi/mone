@@ -151,7 +151,7 @@
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
-                    <fork>true</fork>
+<!--                    <fork>true</fork>-->
                     <verbose>true</verbose>
                     <encoding>UTF-8</encoding>
                     <compilerArguments>
