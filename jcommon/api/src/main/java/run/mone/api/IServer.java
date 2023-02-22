@@ -17,9 +17,11 @@
 package run.mone.api;
 
 import com.xiaomi.data.push.uds.po.RpcCommand;
+import com.xiaomi.data.push.uds.po.RpcServerInfo;
 import com.xiaomi.data.push.uds.processor.UdsProcessor;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 /**
  * @Author goodjava@qq.com
@@ -27,11 +29,19 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public interface IServer<C extends RpcCommand> {
 
+    default RpcServerInfo getServerInfo() {
+        return new RpcServerInfo();
+    }
+
     void start(String path);
 
     ConcurrentHashMap<String, UdsProcessor> getProcessorMap();
 
     default void putProcessor(UdsProcessor processor) {
+
+    }
+
+    default void setRegConsumer(Consumer<RpcServerInfo> regConsumer) {
 
     }
 

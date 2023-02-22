@@ -22,6 +22,7 @@ import com.xiaomi.data.push.uds.po.UdsCommand;
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.Component;
 import com.xiaomi.youpin.docean.plugin.config.anno.Value;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.api.IClient;
 import run.mone.docean.plugin.sidecar.bo.Ping;
@@ -38,17 +39,24 @@ import javax.annotation.Resource;
 @Component
 public class PingState extends BaseState {
 
+    @Setter
     @Resource
     private ClientFsm fsm;
 
+    @Setter
     @Value("$app")
     private String app;
 
+    @Setter
     @Value(value = "$disable_log", defaultValue = "false")
     private String disableLog;
 
+    @Setter
     @Resource(name = "sideCarClient")
     private IClient client;
+
+    @Setter
+    private ConnectState connectState;
 
     private int errNum = 0;
 
@@ -59,9 +67,9 @@ public class PingState extends BaseState {
         this.errNum = 0;
     }
 
-    private void log(String messsage,Object...params) {
+    private void log(String messsage, Object... params) {
         if (disableLog.equals("false")) {
-            log.info(messsage,params);
+            log.info(messsage, params);
         }
     }
 
@@ -89,7 +97,11 @@ public class PingState extends BaseState {
         } catch (Throwable ex) {
             log.error(ex.getMessage());
             if (this.errNum++ > 3) {
-                fsm.change(Ioc.ins().getBean(ConnectState.class));
+                if (null != this.connectState) {
+                    fsm.change(this.connectState);
+                } else {
+                    fsm.change(Ioc.ins().getBean(ConnectState.class));
+                }
             }
         }
     }

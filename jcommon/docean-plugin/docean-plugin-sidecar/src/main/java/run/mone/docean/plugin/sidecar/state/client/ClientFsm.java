@@ -18,8 +18,11 @@ package run.mone.docean.plugin.sidecar.state.client;
 
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.Component;
+import com.xiaomi.youpin.docean.common.MutableObject;
 import com.xiaomi.youpin.docean.common.Safe;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import run.mone.api.IClient;
 
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
@@ -35,7 +38,13 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class ClientFsm {
 
+    @Setter
     private BaseState state = null;
+
+    @Setter
+    private IClient client;
+
+    private GlobalState globalState = new GlobalState();
 
     private long lastExecuteTime = 0;
 
@@ -49,13 +58,21 @@ public class ClientFsm {
 
 
     public void execute() {
+        MutableObject obj = new MutableObject();
         Safe.runAndLog(() -> {
             long now = System.currentTimeMillis();
             if (now - this.lastExecuteTime > 100L) {
+                globalState.setClient(client);
+                globalState.execute();
+                obj.setObj(globalState.isRes());
                 state.execute();
                 lastExecuteTime = System.currentTimeMillis();
             }
         });
+        if ((boolean) obj.getObj()) {
+            log.info("fsm exit client:{}", client);
+            return;
+        }
         future = pool.schedule(() -> ClientFsm.this.execute(), ClientFsm.this.state.delay(), TimeUnit.MILLISECONDS);
     }
 

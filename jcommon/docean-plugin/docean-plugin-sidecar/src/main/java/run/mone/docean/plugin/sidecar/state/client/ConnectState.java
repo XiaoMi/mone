@@ -21,6 +21,7 @@ import com.xiaomi.data.push.uds.po.UdsCommand;
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.Component;
 import com.xiaomi.youpin.docean.plugin.config.anno.Value;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.api.IClient;
 
@@ -35,14 +36,23 @@ import javax.annotation.Resource;
 @Slf4j
 public class ConnectState extends BaseState {
 
+    @Setter
     @Resource(name = "sideCarClient")
     private IClient client;
 
+    @Setter
     @Value("$app")
     private String app;
 
+    @Setter
     @Resource
     private ClientFsm fsm;
+
+    /**
+     * 支持非单例模式下的调用
+     */
+    @Setter
+    private InitState initState;
 
 
     @Override
@@ -55,7 +65,11 @@ public class ConnectState extends BaseState {
             request.setData("ping");
             RpcCommand res = client.call(request);
             if (null != res) {
-                fsm.change(Ioc.ins().getBean(InitState.class));
+                if (null != this.initState) {
+                    fsm.change(this.initState);
+                } else {
+                    fsm.change(Ioc.ins().getBean(InitState.class));
+                }
             }
         } catch (Throwable ex) {
             log.error(ex.getMessage(), ex);
