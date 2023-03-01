@@ -37,13 +37,13 @@ import java.util.stream.Collectors;
  * 检查用户代码中是否有设置明文password的操作
  * 会check每个方法
  */
-public class ClassPasswordCheck {
+public class ClassClearTextCheck {
 
     private String className;
 
-    private String message = " 有设置明文密码的操作,密码是:";
+    private String message = " 有设置明文的操作(请放入nacos),明文是:";
 
-    private Set<String> methodNames = Sets.newHashSet("password", "setPwd");
+    private Set<String> methodNames = Sets.newHashSet("password", "setPwd", "setIp", "setHost", "ip", "host");
 
     public Pair<Integer, CheckResult> _check(ClassTree classTree, Consumer<String> consumer) {
         className = classTree.getSimpleName().toString();

@@ -21,6 +21,8 @@ import com.xiaomi.data.push.uds.po.UdsCommand;
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.Component;
 import com.xiaomi.youpin.docean.plugin.config.anno.Value;
+import lombok.Data;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.api.IClient;
 import run.mone.docean.plugin.sidecar.bo.SideCarApp;
@@ -40,11 +42,23 @@ import javax.annotation.Resource;
 public class InitState extends BaseState {
 
 
+    @Setter
     @Resource
     private ClientFsm fsm;
 
+    @Setter
     @Value("$app")
     private String app;
+
+    @Setter
+    @Resource(name = "sideCarClient")
+    private IClient client;
+
+    @Setter
+    private PingState pingState;
+
+    @Setter
+    private SideCarInfoService sideCarInfoService;
 
 
     @Override
@@ -52,26 +66,38 @@ public class InitState extends BaseState {
         log.info("side car client:{} init state", app);
         int code = sendInitMsg(Ioc.ins());
         if (code == 0) {
-            fsm.change(Ioc.ins().getBean(PingState.class));
+            if (null != this.pingState) {
+                fsm.change(this.pingState);
+            } else {
+                fsm.change(Ioc.ins().getBean(PingState.class));
+            }
         }
     }
 
 
     /**
      * 会调用到server 端的 RegProcessor处理器
+     *
      * @param ioc
      */
     private int sendInitMsg(Ioc ioc) {
-        IClient client = ioc.getBean("sideCarClient");
         UdsCommand req = UdsCommand.createRequest();
         req.setCmd("regSideCar");
         req.setServiceName("init");
         SideCarApp app = new SideCarApp();
-        SideCarInfoService service = ioc.getBean("sideCarInfoService", null);
-        if (null != service) {
-            app = service.getSideCarApp();
+        SideCarInfoService service = null;
+        if (null != this.sideCarInfoService) {
+            service = this.sideCarInfoService;
+            app = sideCarInfoService.getSideCarApp();
             app.setApp(this.app);
+        } else {
+             service = ioc.getBean("sideCarInfoService", null);
+            if (null != service) {
+                app = service.getSideCarApp();
+                app.setApp(this.app);
+            }
         }
+
         req.setData(app);
         req.setApp(this.app);
         RpcCommand res = client.call(req);

@@ -9,7 +9,7 @@ import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.Names;
 import lombok.SneakyThrows;
 import run.mone.processor.anno.CodeCheck;
-import run.mone.processor.codecheck.ClassPasswordCheck;
+import run.mone.processor.codecheck.ClassClearTextCheck;
 
 import javax.annotation.processing.*;
 import javax.lang.model.SourceVersion;
@@ -38,7 +38,7 @@ public class CodeCheckProcessor extends AbstractProcessor {
 
     private Messager messager;
 
-    private ClassPasswordCheck classPasswordCheck = new ClassPasswordCheck();
+    private ClassClearTextCheck classPasswordCheck = new ClassClearTextCheck();
 
 
     @Override
