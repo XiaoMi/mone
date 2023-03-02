@@ -1,2 +1,0 @@
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-org.apache.dubbo.spring.boot.autoconfigure.DubboRelaxedBinding2AutoConfiguration

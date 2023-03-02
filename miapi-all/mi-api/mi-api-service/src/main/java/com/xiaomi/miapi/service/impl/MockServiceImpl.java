@@ -2,13 +2,14 @@ package com.xiaomi.miapi.service.impl;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.xiaomi.miapi.common.pojo.*;
+import com.xiaomi.miapi.bo.MockServerInfo;
+import com.xiaomi.miapi.pojo.*;
 import com.xiaomi.miapi.util.HttpUtils;
 import com.xiaomi.miapi.util.Md5Utils;
 import com.xiaomi.miapi.common.Consts;
 import com.xiaomi.miapi.common.HttpResult;
 import com.xiaomi.miapi.common.Result;
-import com.xiaomi.miapi.common.bo.FormBo;
+import com.xiaomi.miapi.bo.FormBo;
 import com.xiaomi.miapi.service.MockService;
 import com.xiaomi.miapi.common.exception.CommonError;
 import com.xiaomi.miapi.mapper.*;
@@ -33,7 +34,8 @@ import java.sql.Timestamp;
 import java.util.*;
 
 /**
- * mock[业务处理层]
+ * @author dongzhenxing
+ * @date 2023/02/08
  */
 @Service
 @Slf4j
@@ -48,6 +50,8 @@ public class MockServiceImpl implements MockService {
     @Autowired
     ApiMockExpectMapper apiMockExpectMapper;
 
+    @Autowired
+    private MockServerInfo mockServerInfo;
     private ScriptEngine engine;
 
     private static final Gson gson = new Gson();
@@ -56,12 +60,14 @@ public class MockServiceImpl implements MockService {
     public void init() {
         ScriptEngineManager manager = new ScriptEngineManager();
         engine = manager.getEngineByName("javascript");
-        // 加载mockjs
+        // load mockjs
         try {
             InputStream is = this.getClass().getResourceAsStream("/mock.js");
-            Reader fileReader = new InputStreamReader(is);
-            engine.eval(fileReader);
-            engine.eval("var Random = Mock.Random;");
+            if (is != null){
+                Reader fileReader = new InputStreamReader(is);
+                engine.eval(fileReader);
+                engine.eval("var Random = Mock.Random;");
+            }
         } catch (Exception e) {
             log.error("MockServiceImpl.init:{}", e.getMessage());
         }
@@ -116,12 +122,12 @@ public class MockServiceImpl implements MockService {
             expect.setEnable(false);
         }
         if (apiMockExpectMapper.updateByPrimaryKey(expect) > 0) {
-            //更新mock-server中的状态
+            //update mock-server status
             Map<String, String> params = new HashMap<>();
             params.put("mockExpID", mockExpectID.toString());
             params.put("enable", enable.toString());
             try {
-                result = HttpUtils.post(Consts.MockUrlPrefix + Consts.ENABLE_MOCK_URL,
+                result = HttpUtils.post( mockServerInfo.getMockServerAddr()+ Consts.ENABLE_MOCK_URL,
                         null,
                         gson.toJson(params),
                         3000);
@@ -146,7 +152,7 @@ public class MockServiceImpl implements MockService {
                 paramsMd5 = Md5Utils.getMD5(paramRaw);
             }
         } else {
-            //先对key 排序
+            //sort the key
             if (StringUtils.isNotEmpty(paramsJson)) {
                 List<FormBo> formBos = gson.fromJson(paramsJson, new TypeToken<List<FormBo>>() {
                 }.getType());
@@ -166,7 +172,6 @@ public class MockServiceImpl implements MockService {
 
         String mockData;
         if (mockDataType == 0) {
-            //表单填写
             mockData = gson.toJson(parseStructToJson(mockRule,false));
         } else {
             mockData = mockRule;
@@ -196,14 +201,12 @@ public class MockServiceImpl implements MockService {
         if (apiPathProxy.startsWith("/")) {
             apiPathProxy = apiPathProxy.substring(1);
         }
-        //根据 mockExpID 判断是新增还是更新
         if (mockExpID == null) {
             ApiMockExpectExample example = new ApiMockExpectExample();
             example.createCriteria().andApiIdEqualTo(apiID).andParamsMd5EqualTo(paramsMd5);
             if (!apiMockExpectMapper.selectByExample(example).isEmpty()) {
                 return Result.fail(CommonError.MockExceptAlreadyExist);
             }
-            //兼容
             apiMockExpect.setProxyUrl(apiPathProxy);
             apiMockExpectMapper.insert(apiMockExpect);
         } else {
@@ -236,7 +239,7 @@ public class MockServiceImpl implements MockService {
             params.put("enable", "0");
         }
         try {
-            result = HttpUtils.post(Consts.MockUrlPrefix + Consts.HTTP_UPDATE_MOCK_URL,
+            result = HttpUtils.post(mockServerInfo.getMockServerAddr() + Consts.HTTP_UPDATE_MOCK_URL,
                     null,
                     gson.toJson(params),
                     3000);
@@ -272,7 +275,7 @@ public class MockServiceImpl implements MockService {
                 paramsMd5 = Md5Utils.getMD5(paramRaw);
             }
         } else {
-            //先对key 排序
+            //sort the key
             if (StringUtils.isNotEmpty(paramsJson)) {
                 List<FormBo> formBos = gson.fromJson(paramsJson, new TypeToken<List<FormBo>>() {
                 }.getType());
@@ -305,7 +308,6 @@ public class MockServiceImpl implements MockService {
         apiMockExpect.setUseMockScript(enableMockScript);
         apiMockExpect.setMockScript(mockScript);
 
-        //根据 mockExpID 判断是新增还是更新
         if (mockExpID == null) {
             ApiMockExpectExample example = new ApiMockExpectExample();
             example.createCriteria().andApiIdEqualTo(apiID).andParamsMd5EqualTo(paramsMd5);
@@ -341,7 +343,7 @@ public class MockServiceImpl implements MockService {
         }
         params.put("mockScript", mockScript);
         try {
-            result = HttpUtils.post(Consts.MockUrlPrefix + Consts.UPDATE_MOCK_URL,
+            result = HttpUtils.post(mockServerInfo.getMockServerAddr() + Consts.UPDATE_MOCK_URL,
                     null,
                     gson.toJson(params),
                     3000);
@@ -371,7 +373,7 @@ public class MockServiceImpl implements MockService {
                 paramsMd5 = Md5Utils.getMD5(paramRaw);
             }
         } else {
-            //先对key 排序
+            //sort the key
             if (StringUtils.isNotEmpty(paramsJson)) {
                 List<FormBo> formBos = gson.fromJson(paramsJson, new TypeToken<List<FormBo>>() {
                 }.getType());
@@ -388,11 +390,10 @@ public class MockServiceImpl implements MockService {
             }
         }
         String mockData;
-        //表单类型
+        //form type
         if (mockDataType == 0) {
             mockData = gson.toJson(parseStructToJson(mockRule,false));
         } else {
-            //直接填写的json
             mockData = mockRule;
         }
         ApiMockExpect apiMockExpect = new ApiMockExpect();
@@ -412,12 +413,10 @@ public class MockServiceImpl implements MockService {
         apiMockExpect.setUseMockScript(enableMockScript);
         apiMockExpect.setMockScript(mockScript);
 
-//        Api api = apiMapper.getApiInfo(projectID, apiID);
         String apiPathProxy = api.getApiURI();
         if (apiPathProxy.startsWith("/")) {
             apiPathProxy = apiPathProxy.substring(1);
         }
-        //根据 mockExpID 判断是新增还是更新
         if (mockExpID == null) {
             ApiMockExpectExample example = new ApiMockExpectExample();
             example.createCriteria().andApiIdEqualTo(apiID).andParamsMd5EqualTo(paramsMd5);
@@ -462,7 +461,7 @@ public class MockServiceImpl implements MockService {
 
         params.put("proxyUrl", "/mock/" + apiPathProxy);
         try {
-            result = HttpUtils.post(Consts.MockUrlPrefix + Consts.GATEWAY_UPDATE_MOCK_URL,
+            result = HttpUtils.post(mockServerInfo.getMockServerAddr() + Consts.GATEWAY_UPDATE_MOCK_URL,
                     null,
                     gson.toJson(params),
                     3000);
@@ -578,7 +577,6 @@ public class MockServiceImpl implements MockService {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public Object parseStructToJson(String paramStruct,boolean randomGen) {
         if (StringUtils.isEmpty(paramStruct)) {
             return "";
@@ -596,7 +594,7 @@ public class MockServiceImpl implements MockService {
                 return generateParamValue(rspParamList.get(0).getParamType(), "");
             }
         }
-        //object 及 array类型
+        //object and array
         else if (rspParamList.get(0).getParamType() == 12) {
             List<Object> listResult = new ArrayList<>();
             List<HttpJsonParamsBo> paramsBos = rspParamList.get(0).getChildList();
@@ -628,7 +626,7 @@ public class MockServiceImpl implements MockService {
         if (rspParamList.isEmpty()) {
             return "";
         }
-        //基本类型
+        //basic type
         if (rspParamList.get(0).getParamType() != 12 && rspParamList.get(0).getParamType() != 13 && rspParamList.get(0).getParamType() == 2) {
             if (StringUtils.isNotEmpty(rspParamList.get(0).getParamValue())) {
                 return rspParamList.get(0).getParamValue();
@@ -636,7 +634,7 @@ public class MockServiceImpl implements MockService {
                 return generateDefaultValue(rspParamList.get(0).getParamType());
             }
         }
-        //object 及 array类型
+        //object and array
         else if (rspParamList.get(0).getParamType() == 12) {
             List<Object> listResult = new ArrayList<>();
             List<HttpJsonParamsBo> paramsBos = rspParamList.get(0).getChildList();
@@ -663,7 +661,7 @@ public class MockServiceImpl implements MockService {
         String mockJson = gson.toJson(mockData);
         Object mockResult = null;
         if (engine instanceof Invocable) {
-            // 调用js函数，获取结果
+            // call the js func
             try {
                 mockResult = engine.eval("JSON.stringify(Mock.mock(" + mockJson + "), null, 2)");
             } catch (ScriptException e) {
@@ -677,7 +675,7 @@ public class MockServiceImpl implements MockService {
     }
 
     @SuppressWarnings("unchecked")
-    private Object recursiveAppendJson(HttpJsonParamsBo paramsBo, Object parentContainer,boolean randomGen) {
+    private void recursiveAppendJson(HttpJsonParamsBo paramsBo, Object parentContainer, boolean randomGen) {
         if (parentContainer instanceof ArrayList<?>) {
             if (paramsBo.getParamType() != 12 && paramsBo.getParamType() != 13 && paramsBo.getParamType() != 2) {
                 if (StringUtils.isNotEmpty(paramsBo.getParamValue())) {
@@ -703,7 +701,7 @@ public class MockServiceImpl implements MockService {
                 ((List<Object>) parentContainer).add(paramMap);
             }
         } else if (parentContainer instanceof Map) {
-            //基本类型
+            //basic type
             if (paramsBo.getParamType() != 12 && paramsBo.getParamType() != 13 && paramsBo.getParamType() != 2) {
                 String key = paramsBo.getParamKey();
                 if (StringUtils.isNotEmpty(paramsBo.getRule())) {
@@ -742,7 +740,6 @@ public class MockServiceImpl implements MockService {
                 ((Map<String, Object>) parentContainer).put(key, paramMap);
             }
         }
-        return parentContainer;
     }
 
     @Override
@@ -758,10 +755,10 @@ public class MockServiceImpl implements MockService {
 
         md5Location = Md5Utils.getMD5(md5Location);
         params.put("paramMd5", md5Location);
-        HttpResult result = null;
+        HttpResult result;
 
         try {
-            result = HttpUtils.post(Consts.MockUrlPrefix + Consts.ADD_PROXY_URL,
+            result = HttpUtils.post(mockServerInfo.getMockServerAddr() + Consts.ADD_PROXY_URL,
                     null,
                     gson.toJson(params),
                     3000);

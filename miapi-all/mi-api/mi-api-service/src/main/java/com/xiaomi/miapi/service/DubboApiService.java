@@ -1,35 +1,33 @@
 package com.xiaomi.miapi.service;
 
 import com.alibaba.nacos.api.exception.NacosException;
+import com.xiaomi.miapi.bo.*;
 import com.xiaomi.miapi.common.Result;
-import com.xiaomi.miapi.common.bo.*;
-import com.xiaomi.miapi.common.dto.ManualDubboUpDTO;
+import com.xiaomi.miapi.dto.ManualDubboUpDTO;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public interface DubboApiService {
-    //添加dubbo类型接口
-    public Result<Boolean> addDubboApi(ApiCacheItemBo apiBo);
+    Result<Boolean> addDubboApi(ApiCacheItemBo apiBo);
 
-    //添加dubbo类型接口
-    public Result<Boolean> batchAddDubboApi(String apiEnv,List<BatchImportDubboApiBo> bos);
+    Result<Boolean> batchAddDubboApi(String apiEnv,List<BatchImportApiBo> bos);
 
-    //添加dubbo类型 api
-    public Result<Boolean> updateDubboApi(ApiCacheItemBo apiBo,Integer apiId);
+    Result<Boolean> updateDubboApi(ApiCacheItemBo apiBo,Integer apiId);
 
-    public Result<Map<String,Object>> getAllModulesInfo(String env, String serviceName,String ip) throws NacosException;
+    Result<Map<String,Object>> getAllModulesInfo(String env, String serviceName,String ip) throws NacosException;
 
-    public Result<List<DubboService>> loadDubboApiServices(String serviceName, String env,String namespace);
+    Result<Set<ServiceName>> loadApiServices(String serviceName);
 
-    public Result<Boolean> manualUpdateDubboApi(ManualDubboUpDTO dto) throws NacosException;
+    Result<List<ServiceName>> loadDubboApiServicesFromNacos(String serviceName,String env);
 
-    public Result<Map<String, Object>> getDubboApiDetail(Integer userId,Integer projectID, Integer apiID);
+    Result<Boolean> manualUpdateDubboApi(ManualDubboUpDTO dto) throws NacosException;
 
-    public Map<String, Object> getBasicDubboApiDetail(Integer projectID, Integer apiID);
+    Result<Map<String, Object>> getDubboApiDetail(String username,Integer projectID, Integer apiID);
 
-    public Result<ApiCacheItem> getDubboApiDetailFromRemote(String env, GetDubboApiRequestBo dubboApiRequestBo);
+    Result<ApiCacheItem> getDubboApiDetailFromRemote(String env, GetApiBasicRequest dubboApiRequestBo);
 
-    public Result<Boolean> dubboApiUpdateNotify(DubboApiUpdateNotifyBo bo) throws InterruptedException;
+    void dubboApiUpdateNotify(DubboApiUpdateNotifyBo bo);
 
 }

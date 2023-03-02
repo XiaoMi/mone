@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 
 /**
  * @author goodjava@qq.com
- * 任务寻找,然后拉起来重试
+ * Task search then pull up and try again
  */
 @Service
 @Slf4j
@@ -100,17 +100,17 @@ public class TaskFinder implements PushService {
                         context = new TaskContext();
                     }
 
-                    //是否缓存任务
+                    //Cache task or not
                     context.put(TaskContext.CACHE, String.valueOf(false));
 
-                    //让其他work机器执行
+                    //Let other work machines execute
                     if (!serverContext.getType().equals(ServerContext.STANDALONE)) {
                         ArrayList<Channel> clients = this.rpcServer.clients();
                         if (clients.size() > 0) {
                             Random r = new Random();
                             int i = r.nextInt(clients.size());
                             Channel c = clients.get(i);
-                            //同步任务过去
+                            //Synchronization task past
                             try {
                                 this.sendTaskToWorker(task.getId(), c, task.getParams(), context);
                             } catch (Throwable ex) {
@@ -118,11 +118,11 @@ public class TaskFinder implements PushService {
                                 this.taskManager.retryTask(task);
                             }
                         } else {
-                            //本地执行
+                            //Local execution
                             this.taskManager.retryTask(task, false);
                         }
                     } else {
-                        //本地执行
+                        //Local execution
                         this.taskManager.retryTask(task, false);
                     }
                 } catch (Exception ex) {

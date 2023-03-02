@@ -1,3 +1,0 @@
-mockregistry=org.apache.dubbo.config.mock.MockRegistryFactory
-mockprotocol2=org.apache.dubbo.config.mock.MockRegistryFactory2
-test=org.apache.dubbo.config.mock.MockRegistryFactory

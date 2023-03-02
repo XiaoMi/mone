@@ -36,23 +36,15 @@
         </dependency>
 
         <dependency>
-            <groupId>io.protostuff</groupId>
-            <artifactId>protostuff-runtime</artifactId>
-            <version>1.8.0</version>
-        </dependency>
-
-
-        <dependency>
             <groupId>run.mone</groupId>
             <artifactId>api</artifactId>
             <version>1.4-SNAPSHOT</version>
         </dependency>
 
-
         <dependency>
-            <groupId>com.caucho</groupId>
-            <artifactId>hessian</artifactId>
-            <version>4.0.65</version>
+            <groupId>run.mone</groupId>
+            <artifactId>rpc-codes</artifactId>
+            <version>1.4-SNAPSHOT</version>
         </dependency>
 
         <dependency>

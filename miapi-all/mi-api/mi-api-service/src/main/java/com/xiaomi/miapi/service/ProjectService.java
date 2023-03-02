@@ -1,83 +1,65 @@
 package com.xiaomi.miapi.service;
 
-import com.xiaomi.miapi.common.bo.ApiEnvBo;
-import com.xiaomi.miapi.common.bo.ProjectGroupBo;
-import com.xiaomi.miapi.common.pojo.ApiEnv;
-import com.xiaomi.miapi.common.pojo.Project;
+import com.xiaomi.miapi.bo.ApiEnvBo;
+import com.xiaomi.miapi.bo.Project;
+import com.xiaomi.miapi.bo.ProjectGroupBo;
 import com.xiaomi.miapi.common.Result;
+import com.xiaomi.miapi.pojo.ApiEnv;
+import com.xiaomi.miapi.pojo.BusProjectGroup;
 import com.xiaomi.miapi.vo.BusProjectVo;
-import com.xiaomi.youpin.hermes.entity.ProjectGroup;
 
 import java.util.List;
 import java.util.Map;
 
-/**
- * 自动化测试用例
- */
-public interface ProjectService
-{
+public interface ProjectService {
+	Result<Boolean> addProject(Project project, String username);
 
-	// 新增项目
-	public Result<Boolean> addProject(Project project, Integer userID, String username);
+	boolean focusProject(Integer projectId,String username);
 
-	public boolean focusProject(Integer projectId,Integer accountId);
+	Result<Boolean> unFocusProject(Integer projectId,String username);
 
-	public Result<Boolean> unFocusProject(Integer projectId,Integer accountId);
+	List<BusProjectVo> getFocusProject(String username);
 
-	public List<BusProjectVo> getFocusProject(Integer accountId);
+	boolean deleteProject(Integer projectID,String username);
 
-	// 删除项目
-	public boolean deleteProject(Integer projectID,Integer userId,String username);
+	Result<List<BusProjectVo>> getProjectList(String username);
 
-	// 获取项目列表
-	public Result<List<BusProjectVo>> getProjectList(Integer userId);
+	Result<Map<String,List<Map<String,Object>>>> indexSearch(String keyword);
 
-	public Result<Map<String,List<Map<String,Object>>>> indexSearch(String keyword);
+	Result<List<BusProjectVo>> getProjectListByProjectGroupId(Integer projectGroupID,String username);
 
-	public Result<List<BusProjectVo>> getProjectListByProjectGroupId(Integer projectGroupID,Integer userId,String username);
+	boolean editProject(Project project,String username);
 
-	// 修改项目
-	public boolean editProject(Project project,String username);
+	Result<Map<String, Object>> getProject(Integer projectID,String username);
 
-	//获取项目详情
-	public Result<Map<String, Object>> getProject(Integer projectID,Integer userId);
+	List<BusProjectVo> getRecentlyProjectList(String username);
 
-	public List<BusProjectVo> getRecentlyProjectList(Integer userId);
+	Result<Map<String,Object>> getMyProjects(String username);
 
-	public Result<Map<String,Object>> getMyProjects(Integer userId);
-	//获取项目日志列表
-	public List<Map<String, Object>> getProjectLogList(Integer projectID, Integer page, Integer pageSize);
+	List<Map<String, Object>> getProjectLogList(Integer projectID, Integer page, Integer pageSize);
 
-	//获取项目日志条数
-	public int getProjectLogCount(Integer projectID, int dayOffset);
+	int getProjectLogCount(Integer projectID, int dayOffset);
 
-	//获取接口数量
-	public int getApiNum(Integer projectID);
+	int getApiNum(Integer projectID);
 
-	//===========项目组相关==========
-	Result<Boolean> createProjectGroup(ProjectGroupBo projectGroupBo,int userId);
+	Result<Boolean> createProjectGroup(ProjectGroupBo projectGroupBo, String username);
 
 	Result<Boolean> updateProjectGroup(ProjectGroupBo projectGroupBo);
 
-	List<ProjectGroup> getAllProjectGroup();
+	List<BusProjectGroup> getAllProjectGroup();
 
-	List<ProjectGroup> getAllAccessableProjectGroup(int accountId);
-
-	Result<ProjectGroup> getProjectGroupById(Integer id);
+	Result<BusProjectGroup> getProjectGroupById(Integer id);
 
 	Result<Boolean> deleteProjectGroup(Integer projectGroupId, String userName);
 
-	public Result<Boolean> addApiEnv(ApiEnvBo bo, String opUsername);
+	Result<Boolean> addApiEnv(ApiEnvBo bo, String opUsername);
 
-	public Result<Boolean> editApiEnv(ApiEnvBo bo,String opUsername);
+	Result<Boolean> editApiEnv(ApiEnvBo bo,String opUsername);
 
-	public Result<Boolean> deleteApiEnv(Integer envID,String opUsername);
+	Result<Boolean> deleteApiEnv(Integer envID,String opUsername);
 
-	public Result<ApiEnv> getApiEnv(Integer envID);
+	Result<ApiEnv> getApiEnv(Integer envID);
 
-	public Result<List<ApiEnv>> getApiEnvList(Integer projectID);
-
-
-//	public Result<Boolean> importMioneProject(Project project, Integer userID,String username);
+	Result<List<ApiEnv>> getApiEnvList(Integer projectID);
 
 }

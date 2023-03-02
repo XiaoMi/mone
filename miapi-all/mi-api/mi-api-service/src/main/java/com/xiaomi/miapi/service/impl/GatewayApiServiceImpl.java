@@ -4,12 +4,13 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import com.xiaomi.miapi.common.pojo.*;
+import com.xiaomi.miapi.bo.MockServerInfo;
+import com.xiaomi.miapi.pojo.*;
 import com.xiaomi.miapi.util.Md5Utils;
 import com.xiaomi.miapi.util.RedisUtil;
-import com.xiaomi.miapi.common.bo.GatewayApiInfoBo;
-import com.xiaomi.miapi.common.dto.ManualGatewayUpDTO;
-import com.xiaomi.miapi.common.dto.UrlDTO;
+import com.xiaomi.miapi.bo.GatewayApiInfoBo;
+import com.xiaomi.miapi.dto.ManualGatewayUpDTO;
+import com.xiaomi.miapi.dto.UrlDTO;
 import com.xiaomi.miapi.service.GatewayApiService;
 import com.xiaomi.miapi.service.MockService;
 import com.xiaomi.miapi.common.Consts;
@@ -29,7 +30,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.util.*;
-
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ * work for mone gateway tesla,if you use tesla either,
+ * you can load gateway api by this service
+ */
 @Service
 public class GatewayApiServiceImpl implements GatewayApiService {
     @Autowired
@@ -76,12 +82,15 @@ public class GatewayApiServiceImpl implements GatewayApiService {
     @Autowired
     ApiServiceImpl apiService;
 
+    @Autowired
+    private MockServerInfo mockServerInfo;
+
     public static final Gson gson = new Gson();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(GatewayApiServiceImpl.class);
 
     @Override
-    public Result<Map<String, Object>> getGatewayApiDetail(Integer userId, Integer projectID, Integer apiID) {
+    public Result<Map<String, Object>> getGatewayApiDetail(String username, Integer projectID, Integer apiID) {
         Map<String, Object> map = new HashMap<>();
         Api api = apiMapper.getApiInfo(projectID, apiID);
         if (null == api) {
@@ -111,7 +120,6 @@ public class GatewayApiServiceImpl implements GatewayApiService {
             }
         }
 
-        //文档信息
         map.put("apiNoteType", api.getApiNoteType());
         map.put("apiRemark", api.getApiRemark());
         map.put("apiDesc", api.getApiDesc());
@@ -132,35 +140,9 @@ public class GatewayApiServiceImpl implements GatewayApiService {
 
         String md5Location = Md5Utils.getMD5(gatewayApiInfo.getUrl());
         String uri = gatewayApiInfo.getUrl().replaceAll("/", ":");
-        map.put("mockUrl", String.format(Consts.REQUEST_URL_FORMAT, Consts.MockUrlPrefix + Consts.GatewayMockPrefix, md5Location, uri));
-        redis.recordRecently10Apis(userId, apiID);
+        map.put("mockUrl", String.format(Consts.REQUEST_URL_FORMAT, mockServerInfo.getMockServerAddr() + Consts.GatewayMockPrefix, md5Location, uri));
+        redis.recordRecently10Apis(username, apiID);
         return Result.success(map);
-    }
-
-    @Override
-    public Map<String, Object> getBasicGatewayApiDetail(Integer projectID, Integer apiID) {
-        Map<String, Object> map = new HashMap<>();
-        Api api = apiMapper.getApiInfo(projectID, apiID);
-        GatewayApiInfo gatewayApiInfo = gatewayApiInfoMapper.selectByPrimaryKey(api.getGatewayApiId().longValue());
-        if (StringUtils.isEmpty(api.getApiEnv())) {
-            map.put("apiEnv", "staging");
-        } else {
-            map.put("apiEnv", api.getApiEnv());
-        }
-        map.put("gatewayApiBaseInfo", gatewayApiInfo);
-        map.put("updateUsername", api.getUpdateUsername());
-        map.put("apiStatus", api.getApiStatus());
-        Map<String, Object> result = apiMapper.getApi(projectID, apiID);
-        if (result != null && !result.isEmpty()) {
-            Map<String, Object> apiJson = JSONObject.parseObject(result.get("apiJson").toString());
-            if (apiJson != null && !apiJson.isEmpty()) {
-                map.put("headerInfo", apiJson.get("headerInfo"));
-                map.put("requestInfo", apiJson.get("requestInfo"));
-                map.put("resultInfo", apiJson.get("resultInfo"));
-            }
-        }
-
-        return map;
     }
 
     @Override
@@ -193,7 +175,6 @@ public class GatewayApiServiceImpl implements GatewayApiService {
                     map.put("apiErrorCodes", apiJson.get("errorCodes"));
                 }
             }
-            //文档信息
             map.put("apiRequestParamType", api.getApiRequestParamType());
             map.put("apiRequestRaw", api.getApiRequestRaw());
             map.put("apiResponseParamType", api.getApiResponseParamType());
@@ -250,7 +231,7 @@ public class GatewayApiServiceImpl implements GatewayApiService {
         if ("GET".equalsIgnoreCase(bo.getHttpMethod())) {
             apiRequestType = 1;
         }
-        Api oldApi = apiMapper.getApiInfoByUrl(bo.getUrl(), apiRequestType);
+        Api oldApi = apiMapper.getApiInfoByUrlAndProject(bo.getUrl(), apiRequestType,bo.getProjectId());
         if (oldApi != null) {
             return Result.fail(CommonError.UrlExistError);
         }
@@ -339,10 +320,8 @@ public class GatewayApiServiceImpl implements GatewayApiService {
             return Result.fail(CommonError.UnknownError);
         }
 
-        //添加mock-server中的网关类型API 系统mock期望数据
         mockService.updateGatewayApiMockData(api.getUpdateUsername(), null, api.getApiID(), api.getProjectID(), "", "", 0, "系统默认Mock期望", gatewayApiInfo, api.getApiResponseRaw(), 1, true,false,"");
 
-        //示例代码生成
         try {
             List<ApiHeaderBo> headerList = gson.fromJson(apiHeader, new TypeToken<List<ApiHeaderBo>>() {
             }.getType());
@@ -351,14 +330,12 @@ public class GatewayApiServiceImpl implements GatewayApiService {
             LOGGER.warn("生成代码失败", e);
         }
 
-        //记录历史版本
         String updateMsg = "add gateway api";
         if (StringUtils.isNotEmpty(bo.getUpdateMsg())) {
             updateMsg = bo.getUpdateMsg();
         }
         apiService.recordApiHistory(api, apiCache.getApiJson(), updateMsg);
 
-        //操作记录
         recordService.doRecord(api, "", "添加网关类型接口", "添加网关类型接口" + api.getApiName(), ProjectOperationLog.OP_TYPE_ADD);
 
         return Result.success(true);
@@ -428,7 +405,6 @@ public class GatewayApiServiceImpl implements GatewayApiService {
         api.setUpdateUsername(bo.getUpdater());
 
         if (alterType == Consts.GW_ALTER_TYPE_MANUAL) {
-            //处理底层dubbo参数
             if (bo.getRouteType() == Consts.GATEWAY_ROUTE_TYPE_DUBBO || bo.getRouteType() == Consts.GATEWAY_ROUTE_TYPE_MI_DUBBO) {
                 apiRequestParam = apiService.transDubboParam2Http(apiRequestParam);
                 apiResultParam = apiService.transDubboResp2Http(apiResultParam);
@@ -490,7 +466,6 @@ public class GatewayApiServiceImpl implements GatewayApiService {
         if (apiCacheMapper.updateApiCache(apiCache) < 1) {
             return Result.fail(CommonError.UnknownError);
         }
-        // 更新gatewayApi
         GatewayApiInfo gatewayApiInfo = new GatewayApiInfo();
         BeanUtils.copyProperties(bo, gatewayApiInfo);
         gatewayApiInfo.setUtime(System.currentTimeMillis());
@@ -507,7 +482,6 @@ public class GatewayApiServiceImpl implements GatewayApiService {
         if (Objects.nonNull(expects) && !expects.isEmpty()) {
             mockService.updateGatewayApiMockData(api.getUpdateUsername(), expects.get(0).getId(), api.getApiID(), api.getProjectID(), "", "", 0, "系统默认Mock期望", gatewayApiInfo, api.getApiResponseRaw(), 1, true,false,"");
         }
-        //示例代码生成
         try {
             List<ApiHeaderBo> headerList = gson.fromJson(apiHeader, new TypeToken<List<ApiHeaderBo>>() {
             }.getType());
@@ -515,7 +489,6 @@ public class GatewayApiServiceImpl implements GatewayApiService {
         } catch (Exception e) {
             LOGGER.warn("生成代码失败", e);
         }
-        //记录历史版本
         String updateMsg = "update gateway api";
         if (StringUtils.isNotEmpty(bo.getUpdateMsg())) {
             updateMsg = bo.getUpdateMsg();
@@ -532,13 +505,10 @@ public class GatewayApiServiceImpl implements GatewayApiService {
         com.xiaomi.youpin.infra.rpc.Result<com.xiaomi.youpin.gwdash.bo.GatewayApiInfo> result;
 
         if (StringUtils.isNotEmpty(env) && env.equals("staging")) {
-            //测试环境
             result = stIGatewayOpenApi.getGatewayApiInfo(url,"1");
         } else if (StringUtils.isNotEmpty(env) && env.equals("outer")) {
-            //外网
             result = otGwdashApiService.getGatewayApiInfo(url,"1");
         } else {
-            //默认线上
             result = gwdashApiService.getGatewayApiInfo(url,"1");
         }
         com.xiaomi.youpin.gwdash.bo.GatewayApiInfo gatewayApiInfo = result.getData();
@@ -547,27 +517,24 @@ public class GatewayApiServiceImpl implements GatewayApiService {
         }
         resultMap.put("baseInfo", gatewayApiInfo);
         if (gatewayApiInfo.getRouteType() == Consts.GATEWAY_ROUTE_TYPE_HTTP) {
-            //todo load http doc from anno  需要先加载http类型接口，这里再拉取平台中http类型接口信息
-            //http接口未事先载入
+            // load http doc from anno, we need to load http api first
             resultMap.put("httpParam", "");
             resultMap.put("httpResp", "");
-            //需要处理目标路径的匹配问题
         } else if (gatewayApiInfo.getRouteType() == Consts.GATEWAY_ROUTE_TYPE_MI_DUBBO || gatewayApiInfo.getRouteType() == Consts.GATEWAY_ROUTE_TYPE_DUBBO) {
-            //load dubbo doc from anno  直接根据服务名方法名等拉取平台中的接口信息
-            //唯一关联
+            //load dubbo doc from anno
             String dubboServicePath = StringUtils.join(new String[]{gatewayApiInfo.getServiceName(), gatewayApiInfo.getServiceGroup(), gatewayApiInfo.getServiceVersion(), gatewayApiInfo.getMethodName()}, ':');
+            LOGGER.info("dubboServicePath is :{}",dubboServicePath);
             Api dubboApi = apiMapper.getApiInfoByUrl(dubboServicePath, 0);
             if (Objects.nonNull(dubboApi)) {
+                LOGGER.info("dubboServicePath dubboApi id is :{}",dubboApi.getDubboApiId());
                 EoDubboApiInfo dubboApiInfo = dubboApiInfoMapper.selectByPrimaryKey(dubboApi.getDubboApiId());
                 resultMap.put("dubboParam", dubboApiInfo.getMethodparaminfo());
                 resultMap.put("dubboResp", dubboApiInfo.getResponse());
             } else {
-                //dubbo接口未事先载入
                 resultMap.put("dubboParam", "");
                 resultMap.put("dubboResp", "");
             }
         }
         return Result.success(resultMap);
     }
-
 }

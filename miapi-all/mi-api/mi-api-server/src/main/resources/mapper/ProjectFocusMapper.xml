@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xiaomi.miapi.mapper.ProjectFocusMapper">
-  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.common.pojo.ProjectFocus">
+  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.pojo.ProjectFocus">
     <id column="id" jdbcType="INTEGER" property="id" />
     <result column="busProjectId" jdbcType="INTEGER" property="busprojectid" />
-    <result column="userId" jdbcType="INTEGER" property="userid" />
+    <result column="username" jdbcType="VARCHAR" property="username" />
   </resultMap>
   <sql id="Example_Where_Clause">
     <where>
@@ -65,9 +65,9 @@
     </where>
   </sql>
   <sql id="Base_Column_List">
-    id, busProjectId, userId
+    id, busProjectId, username
   </sql>
-  <select id="selectByExample" parameterType="com.xiaomi.miapi.common.pojo.ProjectFocusExample" resultMap="BaseResultMap">
+  <select id="selectByExample" parameterType="com.xiaomi.miapi.pojo.ProjectFocusExample" resultMap="BaseResultMap">
     select
     <if test="distinct">
       distinct
@@ -91,20 +91,20 @@
     delete from eo_project_focus
     where id = #{id,jdbcType=INTEGER}
   </delete>
-  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.common.pojo.ProjectFocusExample">
+  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.pojo.ProjectFocusExample">
     delete from eo_project_focus
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
     </if>
   </delete>
-  <insert id="insert" parameterType="com.xiaomi.miapi.common.pojo.ProjectFocus">
+  <insert id="insert" parameterType="com.xiaomi.miapi.pojo.ProjectFocus">
     <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
       SELECT LAST_INSERT_ID()
     </selectKey>
-    insert into eo_project_focus (busProjectId, userId)
-    values (#{busprojectid,jdbcType=INTEGER}, #{userid,jdbcType=INTEGER})
+    insert into eo_project_focus (busProjectId, username)
+    values (#{busprojectid,jdbcType=INTEGER}, #{username,jdbcType=VARCHAR})
   </insert>
-  <insert id="insertSelective" parameterType="com.xiaomi.miapi.common.pojo.ProjectFocus">
+  <insert id="insertSelective" parameterType="com.xiaomi.miapi.pojo.ProjectFocus">
     <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
       SELECT LAST_INSERT_ID()
     </selectKey>
@@ -113,20 +113,20 @@
       <if test="busprojectid != null">
         busProjectId,
       </if>
-      <if test="userid != null">
-        userId,
+      <if test="username != null">
+        username,
       </if>
     </trim>
     <trim prefix="values (" suffix=")" suffixOverrides=",">
       <if test="busprojectid != null">
         #{busprojectid,jdbcType=INTEGER},
       </if>
-      <if test="userid != null">
-        #{userid,jdbcType=INTEGER},
+      <if test="username != null">
+        #{username,jdbcType=VARCHAR},
       </if>
     </trim>
   </insert>
-  <select id="countByExample" parameterType="com.xiaomi.miapi.common.pojo.ProjectFocusExample" resultType="java.lang.Long">
+  <select id="countByExample" parameterType="com.xiaomi.miapi.pojo.ProjectFocusExample" resultType="java.lang.Long">
     select count(*) from eo_project_focus
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
@@ -141,8 +141,8 @@
       <if test="record.busprojectid != null">
         busProjectId = #{record.busprojectid,jdbcType=INTEGER},
       </if>
-      <if test="record.userid != null">
-        userId = #{record.userid,jdbcType=INTEGER},
+      <if test="record.username != null">
+        username = #{record.username,jdbcType=VARCHAR},
       </if>
     </set>
     <if test="_parameter != null">
@@ -153,35 +153,35 @@
     update eo_project_focus
     set id = #{record.id,jdbcType=INTEGER},
       busProjectId = #{record.busprojectid,jdbcType=INTEGER},
-      userId = #{record.userid,jdbcType=INTEGER}
+      username = #{record.username,jdbcType=VARCHAR}
     <if test="_parameter != null">
       <include refid="Update_By_Example_Where_Clause" />
     </if>
   </update>
-  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.common.pojo.ProjectFocus">
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.pojo.ProjectFocus">
     update eo_project_focus
     <set>
       <if test="busprojectid != null">
         busProjectId = #{busprojectid,jdbcType=INTEGER},
       </if>
-      <if test="userid != null">
-        userId = #{userid,jdbcType=INTEGER},
+      <if test="username != null">
+        username = #{username,jdbcType=VARCHAR},
       </if>
     </set>
     where id = #{id,jdbcType=INTEGER}
   </update>
-  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.common.pojo.ProjectFocus">
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.pojo.ProjectFocus">
     update eo_project_focus
     set busProjectId = #{busprojectid,jdbcType=INTEGER},
-      userId = #{userid,jdbcType=INTEGER}
+      username = #{username,jdbcType=VARCHAR}
     where id = #{id,jdbcType=INTEGER}
   </update>
   <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
     insert into eo_project_focus
-    (busProjectId, userId)
+    (busProjectId, username)
     values
     <foreach collection="list" item="item" separator=",">
-      (#{item.busprojectid,jdbcType=INTEGER}, #{item.userid,jdbcType=INTEGER})
+      (#{item.busprojectid,jdbcType=INTEGER}, #{item.username,jdbcType=VARCHAR})
     </foreach>
   </insert>
   <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
@@ -197,8 +197,8 @@
         <if test="'busProjectId'.toString() == column.value">
           #{item.busprojectid,jdbcType=INTEGER}
         </if>
-        <if test="'userId'.toString() == column.value">
-          #{item.userid,jdbcType=INTEGER}
+        <if test="'username'.toString() == column.value">
+          #{item.username,jdbcType=VARCHAR}
         </if>
       </foreach>
       )

@@ -1,11 +1,14 @@
 package com.xiaomi.miapi.mapper;
 
-import com.xiaomi.miapi.common.pojo.ApiIndex;
-import com.xiaomi.miapi.common.pojo.ApiIndexExample;
+import com.xiaomi.miapi.pojo.ApiIndex;
+import com.xiaomi.miapi.pojo.ApiIndexExample;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
-
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 public interface ApiIndexMapper {
     long countByExample(ApiIndexExample example);
 

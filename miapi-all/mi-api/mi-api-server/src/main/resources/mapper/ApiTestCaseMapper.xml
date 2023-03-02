@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xiaomi.miapi.mapper.ApiTestCaseMapper">
-  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.common.pojo.ApiTestCase">
+  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.pojo.ApiTestCase">
     <id column="id" jdbcType="INTEGER" property="id" />
     <result column="account_id" jdbcType="INTEGER" property="accountId" />
     <result column="api_id" jdbcType="INTEGER" property="apiId" />
@@ -27,7 +27,7 @@
     <result column="dubbo_env" jdbcType="VARCHAR" property="dubboEnv" />
     <result column="use_x5_filter" jdbcType="BIT" property="useX5Filter" />
     <result column="x5_app_key" jdbcType="VARCHAR" property="x5AppKey" />
-    <result column="x5_app_id" jdbcType="INTEGER" property="x5AppId" />
+    <result column="x5_app_id" jdbcType="VARCHAR" property="x5AppId" />
     <result column="case_group_id" jdbcType="INTEGER" property="caseGroupId" />
     <result column="grpc_package_name" jdbcType="VARCHAR" property="grpcPackageName" />
     <result column="grpc_interface_name" jdbcType="VARCHAR" property="grpcInterfaceName" />
@@ -35,7 +35,7 @@
     <result column="grpc_server_addr" jdbcType="VARCHAR" property="grpcServerAddr" />
     <result column="grpc_app_name" jdbcType="VARCHAR" property="grpcAppName" />
   </resultMap>
-  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.miapi.common.pojo.ApiTestCase">
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.miapi.pojo.ApiTestCase">
     <result column="http_request_body" jdbcType="LONGVARCHAR" property="httpRequestBody" />
     <result column="dubbo_param_body" jdbcType="LONGVARCHAR" property="dubboParamBody" />
     <result column="grpc_param_body" jdbcType="LONGVARCHAR" property="grpcParamBody" />
@@ -109,7 +109,7 @@
   <sql id="Blob_Column_List">
     http_request_body, dubbo_param_body, grpc_param_body
   </sql>
-  <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.ApiTestCaseExample" resultMap="ResultMapWithBLOBs">
+  <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.miapi.pojo.ApiTestCaseExample" resultMap="ResultMapWithBLOBs">
     select
     <if test="distinct">
       distinct
@@ -125,7 +125,7 @@
       order by ${orderByClause}
     </if>
   </select>
-  <select id="selectByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiTestCaseExample" resultMap="BaseResultMap">
+  <select id="selectByExample" parameterType="com.xiaomi.miapi.pojo.ApiTestCaseExample" resultMap="BaseResultMap">
     select
     <if test="distinct">
       distinct
@@ -151,13 +151,13 @@
     delete from api_test_case
     where id = #{id,jdbcType=INTEGER}
   </delete>
-  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiTestCaseExample">
+  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.pojo.ApiTestCaseExample">
     delete from api_test_case
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
     </if>
   </delete>
-  <insert id="insert" parameterType="com.xiaomi.miapi.common.pojo.ApiTestCase">
+  <insert id="insert" parameterType="com.xiaomi.miapi.pojo.ApiTestCase">
     <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
       SELECT LAST_INSERT_ID()
     </selectKey>
@@ -181,12 +181,12 @@
       #{dubboAddr,jdbcType=VARCHAR}, #{dubboParamType,jdbcType=VARCHAR}, #{dubboIsGeneric,jdbcType=BIT}, 
       #{dubboRetryTime,jdbcType=INTEGER}, #{dubboUseAttachment,jdbcType=BIT}, #{dubboAttachment,jdbcType=VARCHAR}, 
       #{dubboEnv,jdbcType=VARCHAR}, #{useX5Filter,jdbcType=BIT}, #{x5AppKey,jdbcType=VARCHAR}, 
-      #{x5AppId,jdbcType=INTEGER}, #{caseGroupId,jdbcType=INTEGER}, #{grpcPackageName,jdbcType=VARCHAR}, 
+      #{x5AppId,jdbcType=VARCHAR}, #{caseGroupId,jdbcType=INTEGER}, #{grpcPackageName,jdbcType=VARCHAR},
       #{grpcInterfaceName,jdbcType=VARCHAR}, #{grpcMethodName,jdbcType=VARCHAR}, #{grpcServerAddr,jdbcType=VARCHAR}, 
       #{grpcAppName,jdbcType=VARCHAR}, #{httpRequestBody,jdbcType=LONGVARCHAR}, #{dubboParamBody,jdbcType=LONGVARCHAR}, 
       #{grpcParamBody,jdbcType=LONGVARCHAR})
   </insert>
-  <insert id="insertSelective" parameterType="com.xiaomi.miapi.common.pojo.ApiTestCase">
+  <insert id="insertSelective" parameterType="com.xiaomi.miapi.pojo.ApiTestCase">
     <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
       SELECT LAST_INSERT_ID()
     </selectKey>
@@ -369,7 +369,7 @@
         #{x5AppKey,jdbcType=VARCHAR},
       </if>
       <if test="x5AppId != null">
-        #{x5AppId,jdbcType=INTEGER},
+        #{x5AppId,jdbcType=VARCHAR},
       </if>
       <if test="caseGroupId != null">
         #{caseGroupId,jdbcType=INTEGER},
@@ -400,7 +400,7 @@
       </if>
     </trim>
   </insert>
-  <select id="countByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiTestCaseExample" resultType="java.lang.Long">
+  <select id="countByExample" parameterType="com.xiaomi.miapi.pojo.ApiTestCaseExample" resultType="java.lang.Long">
     select count(*) from api_test_case
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
@@ -485,7 +485,7 @@
         x5_app_key = #{record.x5AppKey,jdbcType=VARCHAR},
       </if>
       <if test="record.x5AppId != null">
-        x5_app_id = #{record.x5AppId,jdbcType=INTEGER},
+        x5_app_id = #{record.x5AppId,jdbcType=VARCHAR},
       </if>
       <if test="record.caseGroupId != null">
         case_group_id = #{record.caseGroupId,jdbcType=INTEGER},
@@ -546,7 +546,7 @@
       dubbo_env = #{record.dubboEnv,jdbcType=VARCHAR},
       use_x5_filter = #{record.useX5Filter,jdbcType=BIT},
       x5_app_key = #{record.x5AppKey,jdbcType=VARCHAR},
-      x5_app_id = #{record.x5AppId,jdbcType=INTEGER},
+      x5_app_id = #{record.x5AppId,jdbcType=VARCHAR},
       case_group_id = #{record.caseGroupId,jdbcType=INTEGER},
       grpc_package_name = #{record.grpcPackageName,jdbcType=VARCHAR},
       grpc_interface_name = #{record.grpcInterfaceName,jdbcType=VARCHAR},
@@ -587,7 +587,7 @@
       dubbo_env = #{record.dubboEnv,jdbcType=VARCHAR},
       use_x5_filter = #{record.useX5Filter,jdbcType=BIT},
       x5_app_key = #{record.x5AppKey,jdbcType=VARCHAR},
-      x5_app_id = #{record.x5AppId,jdbcType=INTEGER},
+      x5_app_id = #{record.x5AppId,jdbcType=VARCHAR},
       case_group_id = #{record.caseGroupId,jdbcType=INTEGER},
       grpc_package_name = #{record.grpcPackageName,jdbcType=VARCHAR},
       grpc_interface_name = #{record.grpcInterfaceName,jdbcType=VARCHAR},
@@ -598,7 +598,7 @@
       <include refid="Update_By_Example_Where_Clause" />
     </if>
   </update>
-  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.common.pojo.ApiTestCase">
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.pojo.ApiTestCase">
     update api_test_case
     <set>
       <if test="accountId != null">
@@ -674,7 +674,7 @@
         x5_app_key = #{x5AppKey,jdbcType=VARCHAR},
       </if>
       <if test="x5AppId != null">
-        x5_app_id = #{x5AppId,jdbcType=INTEGER},
+        x5_app_id = #{x5AppId,jdbcType=VARCHAR},
       </if>
       <if test="caseGroupId != null">
         case_group_id = #{caseGroupId,jdbcType=INTEGER},
@@ -706,7 +706,7 @@
     </set>
     where id = #{id,jdbcType=INTEGER}
   </update>
-  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.ApiTestCase">
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.miapi.pojo.ApiTestCase">
     update api_test_case
     set account_id = #{accountId,jdbcType=INTEGER},
       api_id = #{apiId,jdbcType=INTEGER},
@@ -732,7 +732,7 @@
       dubbo_env = #{dubboEnv,jdbcType=VARCHAR},
       use_x5_filter = #{useX5Filter,jdbcType=BIT},
       x5_app_key = #{x5AppKey,jdbcType=VARCHAR},
-      x5_app_id = #{x5AppId,jdbcType=INTEGER},
+      x5_app_id = #{x5AppId,jdbcType=VARCHAR},
       case_group_id = #{caseGroupId,jdbcType=INTEGER},
       grpc_package_name = #{grpcPackageName,jdbcType=VARCHAR},
       grpc_interface_name = #{grpcInterfaceName,jdbcType=VARCHAR},
@@ -744,7 +744,7 @@
       grpc_param_body = #{grpcParamBody,jdbcType=LONGVARCHAR}
     where id = #{id,jdbcType=INTEGER}
   </update>
-  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.common.pojo.ApiTestCase">
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.pojo.ApiTestCase">
     update api_test_case
     set account_id = #{accountId,jdbcType=INTEGER},
       api_id = #{apiId,jdbcType=INTEGER},
@@ -770,7 +770,7 @@
       dubbo_env = #{dubboEnv,jdbcType=VARCHAR},
       use_x5_filter = #{useX5Filter,jdbcType=BIT},
       x5_app_key = #{x5AppKey,jdbcType=VARCHAR},
-      x5_app_id = #{x5AppId,jdbcType=INTEGER},
+      x5_app_id = #{x5AppId,jdbcType=VARCHAR},
       case_group_id = #{caseGroupId,jdbcType=INTEGER},
       grpc_package_name = #{grpcPackageName,jdbcType=VARCHAR},
       grpc_interface_name = #{grpcInterfaceName,jdbcType=VARCHAR},
@@ -797,7 +797,7 @@
         #{item.dubboVersion,jdbcType=VARCHAR}, #{item.dubboAddr,jdbcType=VARCHAR}, #{item.dubboParamType,jdbcType=VARCHAR}, 
         #{item.dubboIsGeneric,jdbcType=BIT}, #{item.dubboRetryTime,jdbcType=INTEGER}, #{item.dubboUseAttachment,jdbcType=BIT}, 
         #{item.dubboAttachment,jdbcType=VARCHAR}, #{item.dubboEnv,jdbcType=VARCHAR}, #{item.useX5Filter,jdbcType=BIT}, 
-        #{item.x5AppKey,jdbcType=VARCHAR}, #{item.x5AppId,jdbcType=INTEGER}, #{item.caseGroupId,jdbcType=INTEGER}, 
+        #{item.x5AppKey,jdbcType=VARCHAR}, #{item.x5AppId,jdbcType=VARCHAR}, #{item.caseGroupId,jdbcType=INTEGER},
         #{item.grpcPackageName,jdbcType=VARCHAR}, #{item.grpcInterfaceName,jdbcType=VARCHAR}, 
         #{item.grpcMethodName,jdbcType=VARCHAR}, #{item.grpcServerAddr,jdbcType=VARCHAR}, 
         #{item.grpcAppName,jdbcType=VARCHAR}, #{item.httpRequestBody,jdbcType=LONGVARCHAR}, 
@@ -888,7 +888,7 @@
           #{item.x5AppKey,jdbcType=VARCHAR}
         </if>
         <if test="'x5_app_id'.toString() == column.value">
-          #{item.x5AppId,jdbcType=INTEGER}
+          #{item.x5AppId,jdbcType=VARCHAR}
         </if>
         <if test="'case_group_id'.toString() == column.value">
           #{item.caseGroupId,jdbcType=INTEGER}

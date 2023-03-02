@@ -17,77 +17,30 @@
 package com.xiaomi.miapi.service.impl;
 
 import com.xiaomi.miapi.util.SessionAccount;
-import com.xiaomi.miapi.common.Consts;
 import com.xiaomi.mone.tpc.login.util.UserUtil;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
-import com.xiaomi.mone.umami.Umami;
-import com.xiaomi.youpin.hermes.bo.RoleBo;
-import com.xiaomi.youpin.hermes.bo.request.AccountRegisterRequest;
-import com.xiaomi.youpin.hermes.bo.request.QueryRoleRequest;
-import com.xiaomi.youpin.hermes.bo.response.Account;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
-import java.net.URLDecoder;
-import java.util.List;
 
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 @Service
 public class LoginService {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(LoginService.class);
-
-    @Value("${hermes.project.name}")
-    private String projectName;
-
-    @Autowired
-    private UserService userService;
 
     public SessionAccount getAccountFromSession(HttpServletRequest request) {
         if (null == request) {
             return null;
         }
+        String username;
         AuthUserVo user = UserUtil.getUser();
         if (null == user) {
-            return null;
+            username = "Tony";
+        }else {
+            username = user.getAccount();
         }
-        String username = user.getAccount();
-        Account account = userService.queryUserByName(username);
-        if (null == account) {
-            try {
-                //todo 自动注册用户信息，可去除，使用tpc用户名为唯一键
-                String cname = user.getName();
-                String email = user.getEmail();
-                AccountRegisterRequest accountRegisterRequest = new AccountRegisterRequest();
-                accountRegisterRequest.setProjectName(Consts.PROJECT_NAME);
-                accountRegisterRequest.setUsername(username);
-                accountRegisterRequest.setCname(URLDecoder.decode(cname, "utf-8"));
-                accountRegisterRequest.setEmail(URLDecoder.decode(email, "utf-8"));
-                account = userService.registerAccount(accountRegisterRequest);
-            } catch (Exception e) {
-                LOGGER.error(e.getMessage());
-            }
-        }
-
-        QueryRoleRequest queryRoleRequest = new QueryRoleRequest();
-        queryRoleRequest.setProjectName(Consts.PROJECT_NAME);
-        queryRoleRequest.setUserName(username);
-        List<RoleBo> roles = userService.getRoleByProjectName(queryRoleRequest);
-        int role;
-        if (roles != null && roles.size() > 0 && roles.parallelStream().filter(e -> e.getName().contains("admin")).findAny().orElse(null) != null) {
-            role = Consts.ROLE_ADMIN;
-        } else if (roles != null && roles.size() > 0 && roles.parallelStream().filter(e -> e.getName().contains("work")).findAny().orElse(null) != null) {
-            role = Consts.ROLE_WORK;
-        } else {
-            userService.assginWorkRoleForMiApi(account.getId());
-            role = Consts.ROLE_WORK;
-        }
-
-        return new SessionAccount(account.getId(), username, account.getName(), account.getToken(), role, account.getGid(), roles, account.getGidInfos());
+        return new SessionAccount(9999L, username,username, null, null, null, null, null);
     }
-
 }

@@ -4,9 +4,9 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import com.xiaomi.miapi.common.exception.CommonError;
-import com.xiaomi.miapi.common.pojo.Api;
-import com.xiaomi.miapi.common.pojo.ApiHistoryRecord;
-import com.xiaomi.miapi.common.pojo.ApiHistoryRecordExample;
+import com.xiaomi.miapi.pojo.Api;
+import com.xiaomi.miapi.pojo.ApiHistoryRecord;
+import com.xiaomi.miapi.pojo.ApiHistoryRecordExample;
 import com.xiaomi.miapi.mapper.ApiHistoryRecordMapper;
 import com.xiaomi.miapi.mapper.ApiMapper;
 import com.xiaomi.miapi.service.ApiHistoryService;
@@ -15,7 +15,6 @@ import com.xiaomi.miapi.common.Result;
 import com.xiaomi.miapi.service.DubboApiService;
 import com.xiaomi.miapi.service.GatewayApiService;
 import com.xiaomi.miapi.service.HttpApiService;
-import com.xiaomi.mone.dubbo.docs.core.beans.ModuleCacheItem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -34,12 +33,6 @@ public class ApiHistoryServiceImpl implements ApiHistoryService {
 
     @Autowired
     HttpApiService httpApiService;
-
-    @Autowired
-    DubboApiService dubboApiService;
-
-    @Autowired
-    GatewayApiService gatewayApiService;
 
     @Autowired
     ApiMapper apiMapper;
@@ -123,7 +116,7 @@ public class ApiHistoryServiceImpl implements ApiHistoryService {
             if (rt.getData()){
                 ApiHistoryRecordExample example = new ApiHistoryRecordExample();
                 example.createCriteria().andApiIdEqualTo(apiID).andIsNowEqualTo(true);
-                //变更当前api标志
+                //change cur api flag
                 List<ApiHistoryRecord> records = historyRecordMapper.selectByExample(example);
                 ApiHistoryRecord old = null;
                 if (!records.isEmpty()) {

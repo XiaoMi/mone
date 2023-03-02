@@ -2,7 +2,8 @@ package com.xiaomi.miapi.service.impl;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.xiaomi.miapi.common.pojo.*;
+import com.xiaomi.miapi.bo.MockServerInfo;
+import com.xiaomi.miapi.pojo.*;
 import com.xiaomi.miapi.util.Md5Utils;
 import com.xiaomi.miapi.service.ApiIndexService;
 import com.xiaomi.miapi.common.Consts;
@@ -11,6 +12,7 @@ import com.xiaomi.miapi.common.exception.CommonError;
 import com.xiaomi.miapi.mapper.*;
 import org.apache.dubbo.common.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +41,9 @@ public class ApiIndexServiceImpl implements ApiIndexService {
 
     @Autowired
     ApiResponseExpMapper responseExpMapper;
+
+    @Autowired
+    private MockServerInfo mockServerInfo;
 
     @Override
     public Result<Boolean> batchGroupApis(String apiID, Integer indexID, String username) {
@@ -168,7 +173,7 @@ public class ApiIndexServiceImpl implements ApiIndexService {
                     apiList) {
                 Map<String, Object> tmpMap = new HashMap<>();
                 tmpMap.put("protocol", api.getApiProtocol());
-                //http接口
+                //http api
                 if (api.getApiProtocol() == Consts.HTTP_API_TYPE) {
                     Map<String, Object> result = apiMapper.getApiById(api.getApiID());
                     Map<String, Object> apiJson = JSONObject.parseObject(result.get("apiJson").toString());
@@ -181,7 +186,7 @@ public class ApiIndexServiceImpl implements ApiIndexService {
                         String apiURI = baseInfo.getOrDefault("apiURI", "").toString();
                         String uriMd5 = Md5Utils.getMD5(apiURI);
                         String uri = apiURI.replaceAll("/", ":");
-                        mockInfo.put("mockUrl", String.format(Consts.REQUEST_URL_FORMAT, Consts.MockUrlPrefix + Consts.HttpMockPrefix, uriMd5, uri));
+                        mockInfo.put("mockUrl", String.format(Consts.REQUEST_URL_FORMAT, mockServerInfo.getMockServerAddr() + Consts.HttpMockPrefix, uriMd5, uri));
                         apiJson.put("mockInfo", mockInfo);
                         ApiRequestExpExample reqExample = new ApiRequestExpExample();
                         reqExample.createCriteria().andApiIdEqualTo(api.getApiID());
@@ -196,7 +201,7 @@ public class ApiIndexServiceImpl implements ApiIndexService {
                     tmpMap.put("apiInfo", apiJson);
                 } else if (api.getApiProtocol() == Consts.DUBBO_API_TYPE) {
                     Map<String,Object> map = new HashMap<>();
-                    //dubbo接口
+                    //dubbo api
                     EoDubboApiInfo dubboApiInfo = dubboApiInfoMapper.selectByPrimaryKey(api.getDubboApiId());
                     map.put("dubboApiBaseInfo", dubboApiInfo);
                     map.put("projectID", api.getProjectID());
@@ -210,7 +215,7 @@ public class ApiIndexServiceImpl implements ApiIndexService {
 
                     String md5Location = Md5Utils.getMD5(Consts.getServiceKey(dubboApiInfo.getApimodelclass(), dubboApiInfo.getApiversion(), dubboApiInfo.getApigroup()));
 
-                    map.put("mockUrl", String.format(Consts.REQUEST_URL_FORMAT, Consts.MockUrlPrefix + Consts.MockPrefix, md5Location, dubboApiInfo.getApiname()));
+                    map.put("mockUrl", String.format(Consts.REQUEST_URL_FORMAT, mockServerInfo.getMockServerAddr() + Consts.MockPrefix, md5Location, dubboApiInfo.getApiname()));
                     ApiRequestExpExample reqExample = new ApiRequestExpExample();
                     reqExample.createCriteria().andApiIdEqualTo(api.getApiID());
                     List<ApiRequestExp> reqExpList = requestExpMapper.selectByExampleWithBLOBs(reqExample);
@@ -223,7 +228,7 @@ public class ApiIndexServiceImpl implements ApiIndexService {
                     tmpMap.put("apiInfo",map);
                 } else if (api.getApiProtocol() == Consts.GATEWAY_API_TYPE) {
                     Map<String,Object> map = new HashMap<>();
-                    //网关接口
+                    //gateway api
                     GatewayApiInfo gatewayApiInfo = gatewayApiInfoMapper.selectByPrimaryKey(api.getGatewayApiId().longValue());
                     map.put("gatewayApiBaseInfo", gatewayApiInfo);
                     map.put("projectID", api.getProjectID());
@@ -239,13 +244,12 @@ public class ApiIndexServiceImpl implements ApiIndexService {
                             map.put("resultInfo", apiJson.get("resultInfo"));
                         }
                     }
-                    //文档信息
                     map.put("apiNoteType", api.getApiNoteType());
                     map.put("apiRemark", api.getApiRemark());
                     map.put("apiDesc", api.getApiDesc());
                     String md5Location = Md5Utils.getMD5(gatewayApiInfo.getUrl());
                     String uri = gatewayApiInfo.getUrl().replaceAll("/", ":");
-                    map.put("mockUrl", String.format(Consts.REQUEST_URL_FORMAT, Consts.MockUrlPrefix + Consts.GatewayMockPrefix, md5Location, uri));
+                    map.put("mockUrl", String.format(Consts.REQUEST_URL_FORMAT, mockServerInfo.getMockServerAddr() + Consts.GatewayMockPrefix, md5Location, uri));
                     ApiRequestExpExample reqExample = new ApiRequestExpExample();
                     reqExample.createCriteria().andApiIdEqualTo(api.getApiID());
                     List<ApiRequestExp> reqExpList = requestExpMapper.selectByExampleWithBLOBs(reqExample);
@@ -303,7 +307,7 @@ public class ApiIndexServiceImpl implements ApiIndexService {
     }
 
     /**
-     * 获取前缀
+     * get prefix
      */
     private String extraPrefix(String content) {
         int index = content.lastIndexOf(".");
@@ -311,7 +315,7 @@ public class ApiIndexServiceImpl implements ApiIndexService {
     }
 
     /**
-     * 获取后缀
+     * get suffix
      */
     private String extraSuffix(String content) {
         int index = content.lastIndexOf(".");

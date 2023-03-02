@@ -1,6 +1,6 @@
 package com.xiaomi.miapi.service;
 
-import com.xiaomi.miapi.common.pojo.IndexInfo;
+import com.xiaomi.miapi.pojo.IndexInfo;
 import com.xiaomi.miapi.common.Result;
 
 import java.util.List;

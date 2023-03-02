@@ -1,17 +1,17 @@
 package com.xiaomi.miapi.controller;
 
+import com.xiaomi.miapi.bo.ProjectGroupBo;
+import com.xiaomi.miapi.pojo.BusProjectGroup;
 import com.xiaomi.miapi.util.SessionAccount;
-import com.xiaomi.miapi.common.bo.ApiEnvBo;
-import com.xiaomi.miapi.common.bo.ProjectGroupBo;
-import com.xiaomi.miapi.common.pojo.ApiEnv;
-import com.xiaomi.miapi.common.pojo.Project;
+import com.xiaomi.miapi.bo.ApiEnvBo;
+import com.xiaomi.miapi.pojo.ApiEnv;
+import com.xiaomi.miapi.bo.Project;
 import com.xiaomi.miapi.service.ProjectService;
 import com.xiaomi.miapi.service.impl.LoginService;
 import com.xiaomi.miapi.common.Consts;
 import com.xiaomi.miapi.common.Result;
 import com.xiaomi.miapi.common.exception.CommonError;
 import com.xiaomi.miapi.vo.BusProjectVo;
-import com.xiaomi.youpin.hermes.entity.ProjectGroup;
 import com.xiaomi.youpin.hermes.service.BusProjectService;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.slf4j.Logger;
@@ -32,7 +32,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 项目控制器
+ * @author dongzhenxing
+ * @date 2023/02/08
+ * deal with project request
  */
 @Controller
 @RequestMapping("/Project")
@@ -48,13 +50,6 @@ public class ProjectController {
     @DubboReference(check = false, group = "${ref.hermes.service.group}")
     private BusProjectService busProjectService;
 
-    /**
-     * 新建项目
-     *
-     * @param request
-     * @param project
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/addProject", method = RequestMethod.POST)
     public Result<Boolean> addProject(HttpServletRequest request,
@@ -70,38 +65,23 @@ public class ProjectController {
                 response.sendError(401, "未登录或者无权限");
                 return null;
             }
-            if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-                LOGGER.warn("[ProjectController.addProject] not authorized to create project");
-                return Result.fail(CommonError.UnAuthorized);
-            }
-
-            return projectService.addProject(project, account.getId().intValue(), account.getUsername());
+            return projectService.addProject(project,account.getUsername());
         }
     }
 
-    /**
-     * 关注项目
-     *
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/focusProject", method = RequestMethod.POST)
     public Result<Boolean> focusProject(HttpServletRequest request,
                                         HttpServletResponse response,
-                                        Integer projectID
-    ) throws IOException {
+                                        Integer projectID) throws IOException {
         SessionAccount account = loginService.getAccountFromSession(request);
         if (null == account) {
             LOGGER.warn("[ProjectController.focusProject] current user not have valid account info in session");
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.addProject] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
 
-        boolean ok = projectService.focusProject(projectID, account.getId().intValue());
+        boolean ok = projectService.focusProject(projectID, account.getUsername());
         if (ok) {
             return Result.success(true);
         } else {
@@ -109,11 +89,6 @@ public class ProjectController {
         }
     }
 
-    /**
-     * 关注项目
-     *
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/unFocusProject", method = RequestMethod.POST)
     public Result<Boolean> unFocusProject(HttpServletRequest request,
@@ -127,18 +102,9 @@ public class ProjectController {
             return null;
         }
 
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.addProject] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        return projectService.unFocusProject(projectID, account.getId().intValue());
+        return projectService.unFocusProject(projectID, account.getUsername());
     }
 
-    /**
-     * 关注项目
-     *
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/getFocusProjects", method = RequestMethod.GET)
     public Result<List<BusProjectVo>> getFocusProjects(HttpServletRequest request,
@@ -151,16 +117,11 @@ public class ProjectController {
             return null;
         }
 
-        List<BusProjectVo> busProjectVos = projectService.getFocusProject(account.getId().intValue());
+        List<BusProjectVo> busProjectVos = projectService.getFocusProject(account.getUsername());
 
         return Result.success(busProjectVos);
     }
 
-    /**
-     *
-     *
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/getMyProjects", method = RequestMethod.GET)
     public Result<Map<String,Object>> getMyProjects(HttpServletRequest request,
@@ -173,16 +134,9 @@ public class ProjectController {
             return null;
         }
 
-         return projectService.getMyProjects(account.getId().intValue());
+         return projectService.getMyProjects(account.getUsername());
     }
 
-    /**
-     * 删除项目
-     *
-     * @param request
-     * @param projectID
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/deleteProject", method = RequestMethod.POST)
     public Result<Boolean> deleteProject(HttpServletRequest request,
@@ -199,7 +153,7 @@ public class ProjectController {
             LOGGER.warn("[ProjectController.deleteProject] not authorized to create project");
             return Result.fail(CommonError.UnAuthorized);
         }
-        boolean ok = projectService.deleteProject(projectID, account.getId().intValue(), account.getUsername());
+        boolean ok = projectService.deleteProject(projectID,account.getUsername());
         if (ok) {
             return Result.success(true);
         } else {
@@ -207,17 +161,12 @@ public class ProjectController {
         }
     }
 
-    /**
-     * 根据项目组id获取项目列表
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/getProjectListByProjectGroupId", method = RequestMethod.POST)
     public Result<List<BusProjectVo>> getProjectListByProjectGroupId(HttpServletRequest request,
                                                                      HttpServletResponse response,
-                                                                     Integer projectGroupID) throws IOException {
+                                                                     Integer projectGroupID,
+                                                                     Integer orderBy) throws IOException {
         SessionAccount account = loginService.getAccountFromSession(request);
 
         if (null == account) {
@@ -225,16 +174,9 @@ public class ProjectController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        return projectService.getProjectListByProjectGroupId(projectGroupID, account.getId().intValue(), account.getUsername());
+        return projectService.getProjectListByProjectGroupId(projectGroupID, account.getUsername());
     }
 
-    /**
-     * 修改项目
-     *
-     * @param request
-     * @param project
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/editProject", method = RequestMethod.POST)
     public Result<Boolean> editProject(HttpServletRequest request,
@@ -247,14 +189,6 @@ public class ProjectController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.editProject] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        if (!busProjectService.isAboveWork(Consts.PROJECT_NAME, project.getProjectID(), account.getUsername())) {
-            response.sendError(401, "需要work以上权限");
-            return null;
-        }
         boolean ok = projectService.editProject(project, account.getUsername());
         if (ok) {
             return Result.success(true);
@@ -263,12 +197,6 @@ public class ProjectController {
         }
     }
 
-    /**
-     * 获取项目信息
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/getProject", method = RequestMethod.POST)
     public Result<Map<String, Object>> getProject(HttpServletRequest request,
@@ -282,15 +210,7 @@ public class ProjectController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.getProject] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        if (!busProjectService.isMember(Consts.PROJECT_NAME, projectID.longValue(), account.getUsername())) {
-            response.sendError(401, "不是该项目成员");
-            return null;
-        }
-        return projectService.getProject(projectID, account.getId().intValue());
+        return projectService.getProject(projectID, account.getUsername());
     }
 
     @ResponseBody
@@ -304,16 +224,10 @@ public class ProjectController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        List<BusProjectVo> result = projectService.getRecentlyProjectList(account.getId().intValue());
+        List<BusProjectVo> result = projectService.getRecentlyProjectList(account.getUsername());
         return Result.success(result);
     }
 
-    /**
-     * 获取项目日志列表
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/getProjectLogList", method = RequestMethod.POST)
     public Result<Map<String, Object>> getProjectLogList(HttpServletRequest request,
@@ -340,11 +254,6 @@ public class ProjectController {
         }
     }
 
-    /**
-     * 获取接口数量
-     *
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/getApiNum", method = RequestMethod.POST)
     public Result<Map<String, Object>> getApiNum(HttpServletRequest request,
@@ -352,16 +261,16 @@ public class ProjectController {
                                                  Integer projectID) throws IOException {
         SessionAccount account = loginService.getAccountFromSession(request);
 
-        if (projectID == null || projectID < 0) {
-            return Result.fail(CommonError.InvalidParamError);
-        }
         if (null == account) {
             LOGGER.warn("[AccountController.getProject] current user not have valid account info in session");
             response.sendError(401, "未登录或者无权限");
             return null;
         }
+        if (projectID == null || projectID < 0) {
+            return Result.fail(CommonError.InvalidParamError);
+        }
         Integer apiNum = projectService.getApiNum(projectID);
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         map.put("num", apiNum);
         return Result.success(map);
     }
@@ -381,11 +290,7 @@ public class ProjectController {
                 response.sendError(401, "未登录或者无权限");
                 return null;
             }
-            if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-                LOGGER.warn("[ProjectController.addProjectGroup] not authorized to create project");
-                return Result.fail(CommonError.UnAuthorized);
-            }
-            return projectService.createProjectGroup(projectGroupBo,account.getId().intValue());
+            return projectService.createProjectGroup(projectGroupBo,account.getUsername());
         }
     }
 
@@ -401,18 +306,14 @@ public class ProjectController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.editProjectGroup] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
         return projectService.updateProjectGroup(projectGroupBo);
     }
 
 
     @ResponseBody
     @RequestMapping(value = "/getAllProjectGroups", method = RequestMethod.GET)
-    public Result<List<ProjectGroup>> getAllProjectGroups(HttpServletRequest request,
-                                                          HttpServletResponse response) throws IOException {
+    public Result<List<BusProjectGroup>> getAllProjectGroups(HttpServletRequest request,
+                                                             HttpServletResponse response) throws IOException {
         SessionAccount account = loginService.getAccountFromSession(request);
 
         if (null == account) {
@@ -420,17 +321,13 @@ public class ProjectController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.getAllProjectGroups] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
 
-        return Result.success(projectService.getAllAccessableProjectGroup(account.getId().intValue()));
+        return Result.success(projectService.getAllProjectGroup());
     }
 
     @ResponseBody
     @RequestMapping(value = "/getProjectGroupById", method = RequestMethod.POST)
-    public Result<ProjectGroup> getProjectGroupById(HttpServletRequest request,
+    public Result<BusProjectGroup> getProjectGroupById(HttpServletRequest request,
                                                     HttpServletResponse response,
                                                     Integer projectGroupID) throws IOException {
         SessionAccount account = loginService.getAccountFromSession(request);
@@ -439,10 +336,6 @@ public class ProjectController {
             LOGGER.warn("[ProjectController.getProjectGroupById] current user not have valid account info in session");
             response.sendError(401, "未登录或者无权限");
             return null;
-        }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.getProjectGroupById] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
         }
         return projectService.getProjectGroupById(projectGroupID);
     }
@@ -458,10 +351,6 @@ public class ProjectController {
             LOGGER.warn("[ProjectController.deleteProjectGroupById] current user not have valid account info in session");
             response.sendError(401, "未登录或者无权限");
             return null;
-        }
-        if (account.getRole() != Consts.ROLE_ADMIN) {
-            LOGGER.warn("[ProjectController.getProjectList] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
         }
         return projectService.deleteProjectGroup(projectGroupID, account.getUsername());
     }
@@ -479,19 +368,9 @@ public class ProjectController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.indexSearch] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
         return projectService.indexSearch(keyword);
     }
 
-    /**
-     * 添加API环境
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/addApiEnv", method = RequestMethod.POST)
     public Result<Boolean> addApiEnv(HttpServletRequest request,
@@ -504,23 +383,9 @@ public class ProjectController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.addApiEnv] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        if (!busProjectService.isMember(Consts.PROJECT_NAME, bo.getProjectID().longValue(), account.getUsername())) {
-            response.sendError(401, "不是该项目成员");
-            return null;
-        }
         return projectService.addApiEnv(bo, account.getUsername());
     }
 
-    /**
-     * 编辑API环境
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/editApiEnv", method = RequestMethod.POST)
     public Result<Boolean> editApiEnv(HttpServletRequest request,
@@ -533,28 +398,14 @@ public class ProjectController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.editApiEnv] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        if (!busProjectService.isMember(Consts.PROJECT_NAME, bo.getProjectID().longValue(), account.getUsername())) {
-            response.sendError(401, "不是该项目成员");
-            return null;
-        }
         return projectService.editApiEnv(bo, account.getUsername());
     }
 
-    /**
-     * 删除API环境
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/deleteApiEnv", method = RequestMethod.POST)
     public Result<Boolean> deleteApiEnv(HttpServletRequest request,
                                       HttpServletResponse response,
-                                      Integer envID,Integer projectID) throws IOException {
+                                      Integer envID) throws IOException {
         SessionAccount account = loginService.getAccountFromSession(request);
 
         if (null == account) {
@@ -562,23 +413,9 @@ public class ProjectController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.deleteApiEnv] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        if (!busProjectService.isMember(Consts.PROJECT_NAME, projectID.longValue(), account.getUsername())) {
-            response.sendError(401, "不是该项目成员");
-            return null;
-        }
         return projectService.deleteApiEnv(envID, account.getUsername());
     }
 
-    /**
-     * 获取环境详情
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/getApiEnvById", method = RequestMethod.POST)
     public Result<ApiEnv> getApiEnvById(HttpServletRequest request,
@@ -591,20 +428,10 @@ public class ProjectController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.getApiEnvById] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
         return projectService.getApiEnv(envID);
     }
 
 
-    /**
-     * 获取项目下环境列表
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/getApiEnvListByProjectId", method = RequestMethod.POST)
     public Result<List<ApiEnv>> getApiEnvListByProjectId(HttpServletRequest request,
@@ -616,10 +443,6 @@ public class ProjectController {
             LOGGER.warn("[AccountController.getApiEnvListByProjectId] current user not have valid account info in session");
             response.sendError(401, "未登录或者无权限");
             return null;
-        }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.getApiEnvListByProjectId] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
         }
         return projectService.getApiEnvList(projectID);
     }

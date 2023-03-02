@@ -16,7 +16,6 @@
 
 package com.xiaomi.miapi.util;
 
-import com.google.common.io.ByteStreams;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.xiaomi.miapi.common.HttpResult;
@@ -38,19 +37,20 @@ import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ */
 @Slf4j
 public class HttpUtils {
 
     public static HttpResult get(String url, Map<String, String> headers, Map<String, String> params, int timeout) {
         RequestConfig requestConfig = RequestConfig.custom()
-                .setSocketTimeout(timeout)  // CS 数据交互时间
-                .setConnectTimeout(timeout) // 指建立连接的超时时间
+                .setSocketTimeout(timeout)
+                .setConnectTimeout(timeout)
                 .build();
 
 
@@ -112,8 +112,8 @@ public class HttpUtils {
 
     public static HttpResult post(String url, Map<String, String> headers, String params, int timeout) {
         RequestConfig requestConfig = RequestConfig.custom()
-                .setSocketTimeout(timeout)  // CS 数据交互时间
-                .setConnectTimeout(timeout) // 指建立连接的超时时间
+                .setSocketTimeout(timeout)
+                .setConnectTimeout(timeout)
                 .build();
 
 
@@ -183,37 +183,4 @@ public class HttpUtils {
 
         return result;
     }
-
-
-    /**
-     * 发送邮件
-     *
-     * @param content
-     * @return
-     */
-    public static boolean sendEmail(String urlStr, String address, String title, String content) {
-        URL url = null;
-        HttpURLConnection conn = null;
-        try {
-            url = new URL(urlStr + "&title=" + title + "&address=" + address);
-            conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("POST");
-            conn.setConnectTimeout(1000);
-            conn.setReadTimeout(1000);
-            conn.setDoOutput(true);
-            conn.setDoInput(true);
-            conn.setRequestProperty("content-type", "application/x-www-form-urlencoded;charset=UTF-8");
-            conn.addRequestProperty("Connection", "close");
-            conn.getOutputStream().write(("body=" + content).getBytes());
-            conn.getOutputStream().flush();
-            String res = new String(ByteStreams.toByteArray(conn.getInputStream()));
-            log.info("res:{}", res);
-            return true;
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-            return false;
-        } finally {
-        }
-    }
-
 }

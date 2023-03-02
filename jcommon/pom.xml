@@ -75,6 +75,7 @@
         <module>mv-plugin/mesh-plugin</module>
         <module>rpc-codes</module>
         <module>mybatis-plugins</module>
+        <module>processor</module>
     </modules>
 
 
@@ -150,7 +151,7 @@
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
-                    <fork>true</fork>
+<!--                    <fork>true</fork>-->
                     <verbose>true</verbose>
                     <encoding>UTF-8</encoding>
                     <compilerArguments>

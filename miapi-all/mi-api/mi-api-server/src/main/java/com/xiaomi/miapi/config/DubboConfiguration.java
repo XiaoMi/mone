@@ -10,7 +10,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Dubbo 配置
+ * @author dongzhenxing
+ * @date 2023/02/08
  */
 @Configuration
 public class DubboConfiguration {
@@ -18,25 +19,27 @@ public class DubboConfiguration {
 	@Value("${spring.application.name}")
 	private String applicationName;
 
+	/**
+	 * staging dubbo address
+	 */
 	@NacosValue("${dubbo.registry.address.st}")
 	private String stDubboRegistryAddress;
 
+	/**
+	 * online dubbo address
+	 */
 	@NacosValue("${dubbo.registry.address.ol}")
 	private String olDubboRegistryAddress;
 
-	@NacosValue("${dubbo.registry.address.cloud.dev}")
-	private String cloudDevRegistryAddress;
-
-	// 通过使用分组区分不同测试场景
+	/**
+	 * the dubbo service group you provide
+	 */
 	@Value("${dubbo.provider.group}")
 	private String dubboProviderGroup;
 
 	@Value("${is.online}")
 	private boolean isOnline;
 
-	/**
-	 * Dubbo应用配置
-	 */
 	@Bean
 	public ApplicationConfig applicationConfig() {
 		ApplicationConfig applicationConfig = new ApplicationConfig();
@@ -46,7 +49,9 @@ public class DubboConfiguration {
 	}
 
 	/**
-	 * 配置st注册中心
+	 * staging dubbo service registry
+	 * we use the filed flag 'isOnline' to distinguish the
+	 * default dubbo env we use
 	 */
 	@Bean
 	public RegistryConfig stRegistry() {
@@ -56,20 +61,15 @@ public class DubboConfiguration {
 		return registryConfig;
 	}
 
-	/**
-	 * 配置注册中心
-	 */
 	@Bean
 	public RegistryConfig olRegistry() {
+
 		RegistryConfig registryConfig = new RegistryConfig();
 		registryConfig.setAddress(olDubboRegistryAddress);
 		registryConfig.setDefault(isOnline);
 		return registryConfig;
 	}
 
-	/**
-	 * 配置注册中心
-	 */
 	@Bean
 	public ProviderConfig providerConfig() {
 		ProviderConfig providerConfig = new ProviderConfig();
@@ -79,14 +79,10 @@ public class DubboConfiguration {
 		return providerConfig;
 	}
 
-	/**
-	 * 配置协议
-	 */
 	@Bean
 	public ProtocolConfig protocolConfig() {
 		ProtocolConfig protocolConfig = new ProtocolConfig();
 		protocolConfig.setName("dubbo");
-		//自动尝试
 		protocolConfig.setPort(-1);
 		protocolConfig.setTransporter("netty4");
 		protocolConfig.setThreadpool("fixed");

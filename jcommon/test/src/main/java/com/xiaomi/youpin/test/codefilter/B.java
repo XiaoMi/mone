@@ -22,8 +22,15 @@ package com.xiaomi.youpin.test.codefilter;
  */
 public class B {
 
+    private String password;
+
     public String hi() {
         return "hi";
+    }
+
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
 }

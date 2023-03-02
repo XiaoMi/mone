@@ -18,9 +18,8 @@
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
 
-        <!--阿里巴巴nacos-->
         <dependency>
-            <groupId>com.alibaba</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>dubbo-registry-nacos</artifactId>
             <version>1.2.1-mone-SNAPSHOT</version>
         </dependency>
@@ -59,6 +58,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>2.7.5</version>
                 <configuration>
                     <mainClass>com.xiaomi.miapi.MiApiBootstrap</mainClass>
                 </configuration>
@@ -95,53 +95,33 @@
         </plugins>
 
     </build>
-
     <profiles>
-
         <profile>
-            <id>dev</id>
+            <id>staging</id>
             <properties>
-                <profiles.active>dev</profiles.active>
-            </properties>
-            <!--<activation>-->
-                <!--<activeByDefault>true</activeByDefault>-->
-            <!--</activation>-->
-            <build>
-                <filters>
-                    <filter>src/main/resources/config/dev.properties</filter>
-                </filters>
-            </build>
-        </profile>
-
-        <profile>
-            <id>staging-open</id>
-            <properties>
-                <profiles.active>staging-open</profiles.active>
+                <profiles.active>staging</profiles.active>
             </properties>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
             <build>
                 <filters>
-                    <filter>src/main/resources/config/staging-open.properties</filter>
+                    <filter>src/main/resources/config/staging.properties</filter>
                 </filters>
             </build>
         </profile>
 
         <profile>
-            <id>online-open</id>
+            <id>production</id>
             <properties>
-                <profiles.active>online-open</profiles.active>
+                <profiles.active>production</profiles.active>
             </properties>
             <build>
                 <filters>
-                    <filter>src/main/resources/config/online-open.properties</filter>
+                    <filter>src/main/resources/config/online.properties</filter>
                 </filters>
             </build>
         </profile>
-
-
     </profiles>
-
 
 </project>

@@ -1,21 +1,21 @@
 package com.xiaomi.miapi.controller;
 
 import com.alibaba.nacos.api.config.annotation.NacosValue;
-import com.alibaba.nacos.api.exception.NacosException;
-import com.xiaomi.miapi.common.Consts;
-import com.xiaomi.miapi.common.bo.DubboApiUpdateNotifyBo;
-import com.xiaomi.miapi.common.bo.DubboTestBo;
-import com.xiaomi.miapi.common.bo.HttpApiUpdateNotifyBo;
-import com.xiaomi.miapi.common.dto.ProjectApisDTO;
-import com.xiaomi.miapi.common.dto.UrlDTO;
+import com.xiaomi.miapi.api.service.MiApiDataService;
+import com.xiaomi.miapi.api.service.bo.DubboDocDataBo;
+import com.xiaomi.miapi.api.service.bo.HttpDocDataBo;
+import com.xiaomi.miapi.api.service.bo.SidecarDocDataBo;
+import com.xiaomi.miapi.bo.DubboApiUpdateNotifyBo;
+import com.xiaomi.miapi.bo.HttpApiUpdateNotifyBo;
+import com.xiaomi.miapi.dto.ProjectApisDTO;
+import com.xiaomi.miapi.dto.UrlDTO;
 import com.xiaomi.miapi.common.Result;
 import com.xiaomi.miapi.common.exception.CommonError;
 import com.xiaomi.miapi.service.*;
-import com.xiaomi.miapi.util.SessionAccount;
+import com.xiaomi.miapi.util.RedisUtil;
 import com.xiaomi.youpin.ks3.KsyunService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.DigestUtils;
 import org.springframework.web.bind.annotation.*;
@@ -25,10 +25,17 @@ import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * @author dongzhenxing
+ * @date 2023/02/08
+ * provide open api
+ */
 @Controller
 @RequestMapping("/OpenApi")
 @Slf4j
@@ -55,6 +62,9 @@ public class OpenApiController {
     @Autowired
     private ApiIndexService apiIndexService;
 
+    @Autowired
+    private MiApiDataService miApiDataService;
+
     private KsyunService ksyunService;
 
     @NacosValue("${ks3.AccessKeyID}")
@@ -62,6 +72,9 @@ public class OpenApiController {
 
     @NacosValue("${ks3.AccessKeySecret}")
     private String accessSecret;
+
+    @Autowired
+    private RedisUtil redisUtil;
 
     @PostConstruct
     private void init() {
@@ -73,79 +86,99 @@ public class OpenApiController {
 
     @RequestMapping(value = "/ping", method = RequestMethod.POST)
     @ResponseBody
-    public void ping(HttpServletRequest request,
-                     HttpServletResponse response
-    ) throws IOException, InterruptedException {
+    public void ping() {
         System.out.print("ping success");
     }
 
-    /**
-     * dubbo api 更新通知
-     *
-     * @param request
-     * @return
-     */
     @RequestMapping(value = "/dubboApiUpdateNotify", method = RequestMethod.POST)
     @ResponseBody
-    public void dubboApiUpdateNotify(HttpServletRequest request,
-                                     HttpServletResponse response,
-                                     DubboApiUpdateNotifyBo bo
-    ) throws IOException, InterruptedException {
-        if (dubboApiService.dubboApiUpdateNotify(bo).getCode() != 0) {
-            log.warn("dubboApiUpdateNotify error,serviceName:{},ip:{},port:{}", bo.getModuleClassName(), bo.getIp(), bo.getPort());
+    public void dubboApiUpdateNotify(DubboApiUpdateNotifyBo bo) {
+        try {
+            dubboApiService.dubboApiUpdateNotify(bo);
+        } catch (Exception e) {
+            log.error("dubboApiUpdateNotify error,serviceName:{},ip:{},port:{},error:{}", bo.getModuleClassName(), bo.getIp(), bo.getPort(), e.getMessage());
         }
     }
 
     /**
-     * http api 更新通知
-     *
-     * @param request
-     * @return
+     * accept dubbo api doc data
+     */
+    @RequestMapping(value = "/pushDubboDocData", method = RequestMethod.POST)
+    @ResponseBody
+    public Result<Boolean> pushDubboDocData(@RequestBody DubboDocDataBo dubboDocDataBo) {
+        log.info("pushDubboDocData,address:{}", dubboDocDataBo.getAddress());
+        try {
+            miApiDataService.pushServiceDocDataToMiApi(dubboDocDataBo);
+        } catch (Exception e) {
+            log.error("pushDubboDocData failed,error:{}", e.getMessage());
+        }
+        return Result.success(true);
+    }
+
+    /**
+     * accept http api doc data notify
      */
     @ResponseBody
     @RequestMapping(value = "/httpApiUpdateNotify", method = RequestMethod.POST)
-    public void httpApiUpdateNotify(HttpServletRequest request,
-                                    HttpServletResponse response,
-                                    HttpApiUpdateNotifyBo bo
-    ) throws IOException, InterruptedException {
-        if (httpApiService.httpApiUpdateNotify(bo).getCode() != 0) {
-            log.warn("httpApiUpdateNotify error,serviceName:{},ip:{},port:{}", bo.getApiController(), bo.getIp(), bo.getPort());
+    public void httpApiUpdateNotify(HttpApiUpdateNotifyBo bo) {
+        try {
+            httpApiService.httpApiUpdateNotify(bo);
+        } catch (Exception e) {
+            log.error("httpApiUpdateNotify error,serviceName:{},ip:{},port:{},error:{}", bo.getApiController(), bo.getIp(), bo.getPort(), e.getMessage());
         }
     }
 
     /**
-     * 接口更新示例
-     *
-     * @param request
-     * @return
+     * accept http api doc data
      */
+    @RequestMapping(value = "/pushHttpDocData", method = RequestMethod.POST)
+    @ResponseBody
+    public Result<Boolean> pushHttpDocData(@RequestBody HttpDocDataBo httpDocDataBo) {
+        log.info("pushHttpDocData,address:{}", httpDocDataBo.getAddress());
+        try {
+            miApiDataService.pushServiceDocDataToMiApi(httpDocDataBo);
+        } catch (Exception e) {
+            log.error("pushHttpDocData failed,error:{}", e.getMessage());
+        }
+        return Result.success(true);
+    }
+
+
+    /**
+     * accept sidecar api doc data
+     */
+    @RequestMapping(value = "/pushSidecarDocData", method = RequestMethod.POST)
+    @ResponseBody
+    public Result<Boolean> pushSidecarDocData(@RequestBody SidecarDocDataBo sidecarDocDataBo) {
+        log.info("pushSidecarDocData,address:{}", sidecarDocDataBo.getAddress());
+        try {
+            miApiDataService.pushServiceDocDataToMiApi(sidecarDocDataBo);
+        } catch (Exception e) {
+            log.error("pushSidecarDocData failed,error:{}", e.getMessage());
+        }
+        return Result.success(true);
+    }
+
+
+
     @ResponseBody
     @RequestMapping(value = "/apiUpdateExample", method = RequestMethod.POST)
-    public Map<String, String> apiUpdateExample(HttpServletRequest request,
-                                                HttpServletResponse response,
-                                                Integer apiID, Integer compareID
-    ) throws IOException, InterruptedException {
+    public Map<String, String> apiUpdateExample(Integer apiID, Integer compareID
+    ) {
         return apiHistoryService.compareTwoVersionApi(apiID, compareID);
     }
 
-    /**
-     * 上传图片
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/uploadImage", method = RequestMethod.POST)
-    public Result<String> uploadImage(HttpServletResponse response,
-                                      @RequestParam("file") MultipartFile file, HttpServletRequest request
-    ) throws IOException, InterruptedException {
+    public Result<String> uploadImage(@RequestParam("file") MultipartFile file) {
         String url = "";
         try {
             File tmpFile = File.createTempFile("upload-file-", file.getOriginalFilename());
-            OutputStream os = new FileOutputStream(tmpFile);
+            Path path = tmpFile.toPath();
+            OutputStream os = Files.newOutputStream(path);
             os.write(file.getBytes());
             os.flush();
-            String fileMd5 = DigestUtils.md5DigestAsHex(new FileInputStream(tmpFile));
+            String fileMd5 = DigestUtils.md5DigestAsHex(Files.newInputStream(path));
             log.info("uploadImage md5: {}", fileMd5);
             url = ksyunService.uploadFile("/mi-api/doc/file/" + fileMd5, tmpFile, 60 * 60 * 24 * 23999);
             boolean success = tmpFile.delete();
@@ -153,26 +186,19 @@ public class OpenApiController {
                 log.warn("UploadService delete temp file failed for file with original name: " + file.getOriginalFilename());
             }
         } catch (IOException e) {
-            log.info("UploadService#uploadFile: {}", e);
+            log.info("UploadService#uploadFile: {}", e.getMessage());
         }
         return Result.success(url);
     }
 
-    /**
-     * 上传文件
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/uploadFile", method = RequestMethod.POST)
     public Result<String> uploadFile(HttpServletResponse response,
-                                      @RequestParam("file") MultipartFile file, HttpServletRequest request
-    ) throws IOException, InterruptedException {
+                                     @RequestParam("file") MultipartFile file){
         String url = "";
         try {
             File tmpFile = File.createTempFile("upload-file-", file.getOriginalFilename());
-            OutputStream os = new FileOutputStream(tmpFile);
+            OutputStream os = Files.newOutputStream(tmpFile.toPath());
             os.write(file.getBytes());
             os.flush();
             url = ksyunService.uploadFile("/mi-api/mi-doc/file/" + file.getOriginalFilename(), tmpFile, 60 * 60 * 24 * 23999);
@@ -181,7 +207,7 @@ public class OpenApiController {
                 log.warn("UploadService delete temp file failed for file with original name: " + file.getOriginalFilename());
             }
         } catch (IOException e) {
-            log.info("UploadService#uploadFile: {}", e);
+            log.info("UploadService#uploadFile: {}", e.getMessage());
         }
         return Result.success(url);
     }
@@ -204,24 +230,12 @@ public class OpenApiController {
         return apiService.getApiListByProjectId(dto);
     }
 
-    @RequestMapping(value = "/openDubboTest", method = RequestMethod.POST)
-    @ResponseBody
-    public Result<Object> openDubboTest(@RequestBody DubboTestBo dubboTestBo) throws NacosException {
-        return apiTestService.dubboTest(dubboTestBo,"testUser",99999);
-    }
-
     /**
-     * 具体集合API页面数据
-     *
-     * @param request
-     * @return
+     * the API index page data
      */
     @ResponseBody
     @RequestMapping(value = "/getIndexPageInfo", method = RequestMethod.POST)
-    public Result<List<Map<String,Object>>> getIndexPageInfo(HttpServletRequest request,
-                                                             HttpServletResponse response,
-                                                             String indexIDs
-    ) {
+    public Result<List<Map<String, Object>>> getIndexPageInfo(String indexIDs) {
         return apiIndexService.getIndexPageInfo(indexIDs);
     }
 }

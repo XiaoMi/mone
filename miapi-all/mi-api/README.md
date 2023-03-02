@@ -1,4 +1,3 @@
-
 # MiApi：多协议接口管理测试平台
 ## 它有什么作用
 用于多种协议类型如Http、Dubbo、Grpc等接口的文档生成与管理，以及接口测试、Mock、团队文档维护等。
@@ -41,7 +40,7 @@ mock.server.mock.addr=http://127.0.0.1:8080
 
 配置完成后通过启动类 MiApiBootstrap 可直接运行。
 - mi-api-fe  前端项目
-项目环境： node/10.24.1、npm/6.14.5、@vue/cli 4.5.15
+  项目环境： node/10.24.1、npm/6.14.5、@vue/cli 4.5.15
   部分CodeMirror规则需要手动在html页面中引入public/jshint/jshint.js与public/jshint/jsonlint.js
 ```  // 安装依赖
   npm i

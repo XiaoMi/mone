@@ -7,9 +7,9 @@ package com.xiaomi.data.push.common;
  */
 public enum TaskHistoryEnum {
 
-    // 正常
+    //normal
     NORMAL(1),
-    // 不可用
+    // Not available
     ABNORMAL(0),
     ;
 

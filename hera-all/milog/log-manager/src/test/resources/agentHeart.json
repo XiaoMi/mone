@@ -1,0 +1,27 @@
+{
+  "header": {
+    "title": {
+      "tag": "plain_text",
+      "content": "logAgent存活报告"
+    },
+    "template": "red"
+  },
+  "elements": [
+    {
+      "tag": "div",
+      "text": {
+        "tag": "plain_text",
+        "content": "\uD83E\uDD10 同学你好："
+      },
+      "fields": [
+        {
+          "is_short": false,
+          "text": {
+            "tag": "lark_md",
+            "content": "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log-agent已经2分钟没有发送心跳报告了，可能已经挂掉了，麻烦看看呗，log-agent ip:%s,环境:%s"
+          }
+        }
+      ]
+    }
+  ]
+}

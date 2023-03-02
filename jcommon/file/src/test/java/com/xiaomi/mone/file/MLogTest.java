@@ -42,6 +42,8 @@ public class MLogTest {
         System.out.println(log.append2("error c"));
         System.out.println(log.append2("2021 4|INFO"));
         System.out.println(log.append2("2021 5|INFO"));
+        System.out.println(log.append2("error|2022 5|INFO"));
+        System.out.println(log.append2("info|2022 5|INFO"));
     }
 
     @Test
@@ -65,5 +67,6 @@ public class MLogTest {
 
     @Test
     public void test3() {
+
     }
 }

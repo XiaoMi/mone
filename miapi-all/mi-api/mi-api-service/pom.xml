@@ -26,15 +26,33 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.dubbo</groupId>
+            <groupId>run.mone</groupId>
+            <artifactId>mi-tpc-api</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <artifactId>mi-tpclogin-sdk</artifactId>
+            <groupId>run.mone</groupId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>run.mone</groupId>
             <artifactId>dubbo</artifactId>
-            <version>2.7.12-mone-v4-SNAPSHOT</version>
+            <version>2.7.12-mone-v8-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>dubbo-trace</artifactId>
             <version>2.7.12-mone-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.dubbo</groupId>
+                    <artifactId>dubbo</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -50,9 +68,27 @@
         </dependency>
 
         <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>codegen</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>ks3</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.mchange</groupId>
             <artifactId>c3p0</artifactId>
             <version>0.9.5.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.infosec</groupId>
+            <artifactId>aegis-java-sdk</artifactId>
+            <version>2.3.2</version>
         </dependency>
 
         <dependency>
@@ -71,11 +107,16 @@
             <artifactId>mybatis-spring-boot-starter</artifactId>
             <version>2.1.0</version>
         </dependency>
+
         <dependency>
             <groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-spring-context</artifactId>
             <version>0.3.6-mone-SNAPSHOT</version>
             <exclusions>
+                <exclusion>
+                    <groupId>com.alibaba.nacos</groupId>
+                    <artifactId>nacos-client</artifactId>
+                </exclusion>
                 <exclusion>
                     <groupId>com.alibaba</groupId>
                     <artifactId>fastjson</artifactId>
@@ -93,37 +134,20 @@
 
         <dependency>
             <groupId>run.mone</groupId>
-            <artifactId>umami</artifactId>
-            <version>1.4-SNAPSHOT</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-log4j12</artifactId>
-                </exclusion>
-            </exclusions>
+            <artifactId>nacos-client</artifactId>
+            <version>1.2.1-mone-v3-SNAPSHOT</version>
         </dependency>
 
         <dependency>
-            <groupId>com.alibaba.nacos</groupId>
-            <artifactId>nacos-client</artifactId>
-            <version>1.2.1-mone-SNAPSHOT</version>
-            <exclusions>
-                <exclusion>
-                    <artifactId>commons-io</artifactId>
-                    <groupId>commons-io</groupId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.alibaba</groupId>
-                    <artifactId>fastjson</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>run.mone</groupId>
+            <artifactId>nacos</artifactId>
+            <version>1.4-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>feishu</artifactId>
             <version>1.4-SNAPSHOT</version>
-            <scope>compile</scope>
         </dependency>
 
         <dependency>
@@ -150,10 +174,11 @@
             <version>3.12.0</version>
         </dependency>
 
+
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.35</version>
+            <version>5.1.40</version>
         </dependency>
 
         <dependency>
@@ -221,17 +246,10 @@
             <version>5.2.0.RELEASE</version>
         </dependency>
 
-
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-jdbc</artifactId>
             <version>5.2.0.RELEASE</version>
-        </dependency>
-
-        <dependency>
-            <artifactId>mi-tpclogin-sdk</artifactId>
-            <groupId>run.mone</groupId>
-            <version>1.0.0-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -246,7 +264,17 @@
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
 
-    </dependencies>
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>http-docs-core</artifactId>
+            <version>1.0.0-mone-SNAPSHOT</version>
+        </dependency>
 
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>dubbo-docs-core</artifactId>
+            <version>1.0.0-mone-SNAPSHOT</version>
+        </dependency>
+    </dependencies>
 
 </project>

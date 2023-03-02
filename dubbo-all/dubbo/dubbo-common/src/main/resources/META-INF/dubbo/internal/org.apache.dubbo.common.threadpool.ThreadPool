@@ -1,4 +1,0 @@
-fixed=org.apache.dubbo.common.threadpool.support.fixed.FixedThreadPool
-cached=org.apache.dubbo.common.threadpool.support.cached.CachedThreadPool
-limited=org.apache.dubbo.common.threadpool.support.limited.LimitedThreadPool
-eager=org.apache.dubbo.common.threadpool.support.eager.EagerThreadPool

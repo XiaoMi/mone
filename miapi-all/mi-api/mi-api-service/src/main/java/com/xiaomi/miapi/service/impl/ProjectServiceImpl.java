@@ -2,22 +2,18 @@ package com.xiaomi.miapi.service.impl;
 
 import com.alibaba.fastjson.JSON;
 import com.google.gson.Gson;
-import com.xiaomi.miapi.common.pojo.*;
+import com.xiaomi.miapi.bo.ApiEnvBo;
+import com.xiaomi.miapi.bo.Project;
+import com.xiaomi.miapi.bo.ProjectGroupBo;
 import com.xiaomi.miapi.dto.DocumentDTO;
+import com.xiaomi.miapi.pojo.*;
 import com.xiaomi.miapi.util.RedisUtil;
-import com.xiaomi.miapi.common.bo.ApiEnvBo;
-import com.xiaomi.miapi.common.bo.ProjectGroupBo;
 import com.xiaomi.miapi.service.ProjectService;
 import com.xiaomi.miapi.common.Consts;
 import com.xiaomi.miapi.common.Result;
 import com.xiaomi.miapi.common.exception.CommonError;
 import com.xiaomi.miapi.vo.BusProjectVo;
 import com.xiaomi.miapi.mapper.*;
-import com.xiaomi.youpin.hermes.entity.BusProject;
-import com.xiaomi.youpin.hermes.entity.ProjectGroup;
-import com.xiaomi.youpin.hermes.service.AccountService;
-import com.xiaomi.youpin.hermes.service.BusProjectService;
-import org.apache.dubbo.config.annotation.DubboReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
@@ -31,7 +27,8 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
- * 项目[业务处理层]
+ * @author dongzhenxing
+ * @date 2023/02/08
  */
 @Service
 @Transactional(propagation = Propagation.REQUIRED, rollbackForClassName = "java.lang.Exception")
@@ -50,8 +47,6 @@ public class ProjectServiceImpl implements ProjectService {
     private ProjectOperationLogMapper projectOperationLogMapper;
     @Autowired
     private ApiMapper apiMapper;
-    @Autowired
-    private ApiCacheMapper apiCacheMapper;
 
     @Autowired
     private EoDubboApiInfoMapper dubboApiInfoMapper;
@@ -64,22 +59,18 @@ public class ProjectServiceImpl implements ProjectService {
     @Autowired
     private ProjectFocusMapper projectFocusMapper;
 
-    @DubboReference(check = false, group = "${ref.hermes.service.group}")
-    private BusProjectService busProjectService;
+    @Autowired
+    private BusProjectMapper busProjectMapper;
 
-    @DubboReference(check = false, interfaceClass = AccountService.class, group = "${ref.hermes.service.group}", timeout = 4000)
-    private AccountService accountService;
+    @Autowired
+    private BusProjectGroupMapper busProjectGroupMapper;
 
     private static final Gson gson = new Gson();
     private static final Logger LOGGER = LoggerFactory.getLogger(ProjectServiceImpl.class);
 
-    /**
-     * 新建项目
-     */
     @Override
-    @Transactional(propagation = Propagation.REQUIRED, rollbackForClassName = "Exception")
-    public Result<Boolean> addProject(Project project, Integer userID, String username) {
-        LOGGER.info("[ProjectService.addProject],userId:{},project:{}", userID, project.toString());
+    @Transactional(propagation = Propagation.REQUIRED, rollbackFor = Exception.class)
+    public Result<Boolean> addProject(Project project, String username) {
         Date date = new Date();
         Timestamp updateTime = new Timestamp(date.getTime());
         project.setProjectUpdateTime(updateTime);
@@ -92,32 +83,27 @@ public class ProjectServiceImpl implements ProjectService {
         } else {
             busProject.setDescription("");
         }
-        busProject.setIsPublic(project.getIsPublic());
-        busProject.setBusGroupID(project.getProjectGroupID());
-        BusProject busProjectRt = busProjectService.createBusProject(busProject, userID);
-        if (busProjectRt == null) {
-            LOGGER.info("[ProjectService.addProject] failed,userId:{},project:{}", userID, project.toString());
-            return Result.fail(CommonError.RpcCallError);
-        }
-        if (busProjectRt.getDescription() != null && busProjectRt.getDescription().equals("ProjectAlreadyExist")) {
-            return Result.fail(CommonError.ProjectAlreadyExist);
-        }
+        busProject.setIsPublic(project.getIsPublic() == 1);
+        busProject.setBusGroupId(project.getProjectGroupID());
+        busProject.setStatus(0);
+        busProject.setVersion(project.getProjectVersion());
+        busProjectMapper.insert(busProject);
         String groupName = "默认分组";
 
-        // 添加接口默认分组
+        // add api default group
         ApiGroup apiGroup = new ApiGroup();
         apiGroup.setGroupName(groupName);
-        apiGroup.setProjectID(busProjectRt.getId());
+        apiGroup.setProjectID(busProject.getId());
         apiGroup.setSystemGroup(true);
         int rt = apiGroupMapper.addApiGroup(apiGroup);
         if (rt < 0) {
             return Result.fail(CommonError.UnknownError);
         }
 
-        //添加默认环境
+        //add default env
         ApiEnv apiEnv = new ApiEnv();
         apiEnv.setEnvName("默认环境");
-        apiEnv.setProjectId(busProjectRt.getId());
+        apiEnv.setProjectId(busProject.getId());
         apiEnv.setEnvDesc("自动创建的默认环境");
         apiEnv.setHttpDomain("http://127.0.0.1:8080");
         apiEnv.setSysDefault(true);
@@ -126,12 +112,11 @@ public class ProjectServiceImpl implements ProjectService {
             return Result.fail(CommonError.UnknownError);
         }
 
-        // 添加操作记录
         ProjectOperationLog projectOperationLog = new ProjectOperationLog();
-        projectOperationLog.setOpProjectID(busProjectRt.getId());
+        projectOperationLog.setOpProjectID(busProject.getId());
         projectOperationLog.setOpDesc("创建项目");
         projectOperationLog.setOpTarget(ProjectOperationLog.OP_TARGET_PROJECT);
-        projectOperationLog.setOpTargetID(busProjectRt.getId());
+        projectOperationLog.setOpTargetID(busProject.getId());
         projectOperationLog.setOpTime(updateTime);
         projectOperationLog.setOpType(ProjectOperationLog.OP_TYPE_ADD);
         projectOperationLog.setOpUsername(username);
@@ -139,28 +124,27 @@ public class ProjectServiceImpl implements ProjectService {
         if (rt3 < 0) {
             return Result.fail(CommonError.UnknownError);
         }
-        // 返回信息
         return Result.success(true);
     }
 
     @Override
-    public boolean focusProject(Integer projectId, Integer accountId) {
-        BusProject busProject = busProjectService.queryBusProjectById(projectId);
+    public boolean focusProject(Integer projectId, String username) {
+        BusProject busProject = busProjectMapper.selectByPrimaryKey(projectId);
         if (busProject == null) {
             return false;
         }
         ProjectFocus projectFocus = new ProjectFocus();
         projectFocus.setBusprojectid(projectId);
-        projectFocus.setUserid(accountId);
+        projectFocus.setUsername(username);
         int result = projectFocusMapper.insert(projectFocus);
         return result >= 0;
     }
 
     @Override
-    public Result<Boolean> unFocusProject(Integer projectId, Integer accountId) {
+    public Result<Boolean> unFocusProject(Integer projectId, String username) {
         ProjectFocusExample example = new ProjectFocusExample();
         ProjectFocusExample.Criteria criteria = example.createCriteria();
-        criteria.andBusprojectidEqualTo(projectId).andUseridEqualTo(accountId);
+        criteria.andBusprojectidEqualTo(projectId).andUsernameEqualTo(username);
         List<ProjectFocus> projectFocusList = projectFocusMapper.selectByExample(example);
         if (projectFocusList == null || projectFocusList.size() == 0) {
             return Result.fail(CommonError.InvalidIDParamError);
@@ -176,30 +160,18 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public Result<Map<String, Object>> getMyProjects(Integer userId) {
+    public Result<Map<String, Object>> getMyProjects(String username) {
         Map<String, Object> resultMap = new HashMap<>();
-        List<BusProjectVo> focusProjects = getFocusProject(userId);
+        List<BusProjectVo> focusProjects = getFocusProject(username);
         resultMap.put("myFocus", focusProjects);
-
-
-        List<BusProject> adminProjectList = busProjectService.getMyAdminProjects(userId);
-        List<BusProjectVo> adminProjectVos = new ArrayList<>(adminProjectList.size());
-        for (BusProject b :
-                adminProjectList) {
-            BusProjectVo vo = new BusProjectVo();
-            BeanUtils.copyProperties(b, vo);
-            vo.setApiCount(getApiNum(b.getId()));
-            adminProjectVos.add(vo);
-        }
-        resultMap.put("myAdmin", adminProjectVos);
         return Result.success(resultMap);
     }
 
     @Override
-    public List<BusProjectVo> getFocusProject(Integer accountId) {
+    public List<BusProjectVo> getFocusProject(String username) {
         ProjectFocusExample example = new ProjectFocusExample();
         ProjectFocusExample.Criteria criteria = example.createCriteria();
-        criteria.andUseridEqualTo(accountId);
+        criteria.andUsernameEqualTo(username);
         List<ProjectFocus> projectFocusList = projectFocusMapper.selectByExample(example);
 
         List<Integer> busProjectIds = new ArrayList<>(projectFocusList.size());
@@ -207,34 +179,35 @@ public class ProjectServiceImpl implements ProjectService {
                 projectFocusList) {
             busProjectIds.add(projectFocus.getBusprojectid());
         }
-        List<BusProject> busProjects = busProjectService.getBusProjectsByIds(busProjectIds);
-        List<BusProjectVo> busProjectVos = new ArrayList<>(busProjects.size());
-        for (BusProject b :
-                busProjects) {
-            BusProjectVo vo = new BusProjectVo();
-            BeanUtils.copyProperties(b, vo);
-            vo.setApiCount(getApiNum(b.getId()));
-            busProjectVos.add(vo);
+        List<BusProjectVo> busProjectVos = new ArrayList<>();
+        if (busProjectIds.size() != 0){
+            BusProjectExample example1 = new BusProjectExample();
+            example1.createCriteria().andIdIn(busProjectIds);
+            List<BusProject> busProjects = busProjectMapper.selectByExample(example1);
+            for (BusProject b :
+                    busProjects) {
+                BusProjectVo vo = new BusProjectVo();
+                BeanUtils.copyProperties(b, vo);
+                vo.setApiCount(getApiNum(b.getId()));
+                busProjectVos.add(vo);
+            }
         }
         return busProjectVos;
     }
 
-    /**
-     * 删除项目
-     */
     @Override
     @Transactional
-    public boolean deleteProject(Integer projectID, Integer userId, String username) {
+    public boolean deleteProject(Integer projectID,String username) {
         ProjectOperationLog projectOperationLog = new ProjectOperationLog();
         projectOperationLog.setOpProjectID(projectID);
         projectOperationLog.setOpUsername(username);
-        projectOperationLog.setOpTargetID(userId);
+        projectOperationLog.setOpTargetID(0);
         projectOperationLog.setOpTarget(ProjectOperationLog.OP_TARGET_PROJECT);
         projectOperationLog.setOpType(ProjectOperationLog.OP_TYPE_DELETE);
         projectOperationLog.setOpDesc("删除项目:" + projectID);
 
         this.projectOperationLogMapper.addProjectOperationLog(projectOperationLog);
-        if (busProjectService.deleteBusProject(projectID, userId)) {
+        if (busProjectMapper.deleteByPrimaryKey(projectID) > 0) {
             List<Api> apis = apiMapper.getAllApiByProjectID(projectID);
             if (apis.isEmpty()) {
                 return true;
@@ -245,11 +218,11 @@ public class ProjectServiceImpl implements ProjectService {
                 if (api.getApiProtocol() != Consts.HTTP_API_TYPE) {
                     switch (api.getApiProtocol()) {
                         case Consts.DUBBO_API_TYPE:
-                            //删dubbo api
+                            //delete dubbo api
                             dubboApiInfoMapper.deleteByPrimaryKey(api.getDubboApiId());
 
                         case Consts.GATEWAY_API_TYPE:
-                            //删网关api
+                            //delete gateway api
                             gatewayApiInfoMapper.deleteByPrimaryKey(api.getGatewayApiId().longValue());
                     }
                 }
@@ -263,19 +236,18 @@ public class ProjectServiceImpl implements ProjectService {
         return true;
     }
 
-    /**
-     * 获取项目列表
-     */
     @Override
-    public Result<List<BusProjectVo>> getProjectList(Integer userId) {
+    public Result<List<BusProjectVo>> getProjectList(String username) {
 
-        List<BusProject> busProjects = busProjectService.getAllBusProjects();
-        LOGGER.info("[ProjectService.busProjectService.getAllBusProjects],userId:{},projects:{}", userId, busProjects);
+        BusProjectExample busProjectExample = new BusProjectExample();
+        busProjectExample.createCriteria().andNameIsNotNull();
+        List<BusProject> busProjects = busProjectMapper.selectByExample(busProjectExample);
+        LOGGER.info("[ProjectService.busProjectService.getAllBusProjects],username:{},projects:{}", username, busProjects);
 
         if (null == busProjects) {
             return Result.success(null);
         }
-        List<BusProjectVo> focusProjects = getFocusProject(userId);
+        List<BusProjectVo> focusProjects = getFocusProject(username);
 
         List<BusProjectVo> busProjectVos = new ArrayList<>(busProjects.size());
         for (BusProject p :
@@ -299,32 +271,29 @@ public class ProjectServiceImpl implements ProjectService {
 
         Map<String, List<Map<String, Object>>> resultMap = new HashMap<>();
         try {
-            //搜索项目关键字相关
-            List<BusProject> projects = busProjectService.searchBusProjectsByKeyword(keyword);
+            BusProjectExample example = new BusProjectExample();
+            example.createCriteria().andNameLike("%"+keyword+"%");
+            List<BusProject> projects = busProjectMapper.selectByExample(example);
             List<Map<String, Object>> projectList = new ArrayList<>(projects.size());
 
             for (BusProject p :
                     projects) {
                 Map<String, Object> map = JSON.parseObject(gson.toJson(p), Map.class);
-                ProjectGroup projectGroup = busProjectService.getProjectGroupById(p.getBusGroupID());
+                BusProjectGroup projectGroup = busProjectGroupMapper.selectByPrimaryKey(p.getBusGroupId());
                 if (Objects.nonNull(projectGroup)) {
                     map.put("projectGroupName", projectGroup.getGroupName());
                 }
                 projectList.add(map);
             }
             resultMap.put("projectList", projectList);
-            //搜索api关键字相关
             List<Api> apis = apiMapper.searchAllApi(keyword);
             List<Map<String, Object>> apiList = new ArrayList<>(apis.size());
 
-            for (Api api :
-                    apis) {
+            for (Api api : apis) {
                 Map<String, Object> map = JSON.parseObject(gson.toJson(api), Map.class);
-                List<Integer> id = new ArrayList<>();
-                id.add(api.getProjectID());
 
-                if (!busProjectService.getBusProjectsByIds(id).isEmpty()) {
-                    BusProject project = busProjectService.getBusProjectsByIds(id).get(0);
+                BusProject project = busProjectMapper.selectByPrimaryKey(api.getProjectID());
+                if (project != null) {
                     map.put("projectName", project.getName());
                 }
 
@@ -332,7 +301,6 @@ public class ProjectServiceImpl implements ProjectService {
             }
             resultMap.put("apiList", apiList);
 
-            //搜索文档关键字
             List<DocumentDTO> documentDTOS = documentMapper.searchAllDocument(keyword);
             List<Map<String, Object>> documentList = new ArrayList<>(documentDTOS.size());
             for (DocumentDTO document :
@@ -351,9 +319,9 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public List<BusProjectVo> getRecentlyProjectList(Integer userId) {
+    public List<BusProjectVo> getRecentlyProjectList(String username) {
         List<BusProjectVo> busProjects = new ArrayList<>();
-        List<String> projectIdsStr = redis.lRange(Consts.genRecentlyProjectsKey(userId), 0, 8);
+        List<String> projectIdsStr = redis.lRange(Consts.genRecentlyProjectsKey(username), 0, 8);
         if (projectIdsStr == null || projectIdsStr.size() == 0) {
             return busProjects;
         }
@@ -362,10 +330,11 @@ public class ProjectServiceImpl implements ProjectService {
                 projectIdsStr) {
             projectIds.add(Integer.parseInt(id));
         }
-        List<BusProject> busProjectList = busProjectService.getBusProjectsByIds(projectIds);
+        BusProjectExample example = new BusProjectExample();
+        example.createCriteria().andIdIn(projectIds);
+        List<BusProject> busProjectList = busProjectMapper.selectByExample(example);
 
-        //用户关注项目列表
-        List<BusProjectVo> focusProjects = getFocusProject(userId);
+        List<BusProjectVo> focusProjects = getFocusProject(username);
 
         for (BusProject p :
                 busProjectList) {
@@ -385,14 +354,16 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public Result<List<BusProjectVo>> getProjectListByProjectGroupId(Integer projectGroupID, Integer userId, String username) {
-        List<BusProject> busProjects = busProjectService.getBusProjectInfosByProjectGroupId(projectGroupID);
-        LOGGER.info("[ProjectService.busProjectService.getAllBusProjects],userId:{},projects:{}", userId, busProjects);
+    public Result<List<BusProjectVo>> getProjectListByProjectGroupId(Integer projectGroupID, String username) {
+
+        BusProjectExample example = new BusProjectExample();
+        example.createCriteria().andBusGroupIdEqualTo(projectGroupID);
+        List<BusProject> busProjects = busProjectMapper.selectByExample(example);
 
         if (null == busProjects) {
             return Result.success(new ArrayList<>());
         }
-        List<BusProjectVo> focusProjects = getFocusProject(userId);
+        List<BusProjectVo> focusProjects = getFocusProject(username);
 
         List<BusProjectVo> busProjectVos = new ArrayList<>(busProjects.size());
         for (BusProject p :
@@ -412,29 +383,20 @@ public class ProjectServiceImpl implements ProjectService {
                     vo.setFocus(true);
                 }
             }
-
-            if (p.getIsPublic() == 0 && !busProjectService.isMember(Consts.PROJECT_NAME, p.getId(), username)) {
-                continue;
-            }
             busProjectVos.add(vo);
         }
 
         return Result.success(busProjectVos);
     }
 
-    /**
-     * 修改项目
-     */
     @Override
     public boolean editProject(Project project, String username) {
-        BusProject busProject = new BusProject();
-        busProject.setId(project.getProjectID());
+        BusProject busProject = busProjectMapper.selectByPrimaryKey(project.getProjectID());
         busProject.setUtime(System.currentTimeMillis());
         busProject.setDescription(project.getDesc());
         busProject.setName(project.getProjectName());
-        busProject.setIsPublic(project.getIsPublic());
-        Boolean ok = busProjectService.updateBusProject(busProject);
-        if (ok) {
+        busProject.setIsPublic(project.getIsPublic() == 1);
+        if (busProjectMapper.updateByPrimaryKey(busProject) > 0) {
             Date date = new Date();
             Timestamp updateTime = new Timestamp(date.getTime());
             ProjectOperationLog projectOperationLog = new ProjectOperationLog();
@@ -447,35 +409,17 @@ public class ProjectServiceImpl implements ProjectService {
             projectOperationLog.setOpDesc("编辑项目:" + project.getProjectName());
 
             int rt = projectOperationLogMapper.addProjectOperationLog(projectOperationLog);
-            if (rt < 0) {
-                return false;
-            }
-            //处理老项目没有默认环境问题
-            ApiEnvExample example = new ApiEnvExample();
-            example.createCriteria().andProjectIdEqualTo(project.getProjectID()).andSysDefaultEqualTo(true);
-            List<ApiEnv> envList = apiEnvMapper.selectByExample(example);
-            if (Objects.isNull(envList) || envList.isEmpty()) {
-                ApiEnv apiEnv = new ApiEnv();
-                apiEnv.setEnvName("默认环境");
-                apiEnv.setProjectId(project.getProjectID());
-                apiEnv.setEnvDesc("自动创建的默认环境");
-                apiEnv.setHttpDomain("http://127.0.0.1:8080");
-                apiEnv.setSysDefault(true);
-                apiEnvMapper.insert(apiEnv);
-            }
+            return rt >= 0;
         }
-        return ok;
+        return true;
     }
 
-    /**
-     * 获取项目信息
-     */
     @Override
-    public Result<Map<String, Object>> getProject(Integer projectID, Integer userId) {
+    public Result<Map<String, Object>> getProject(Integer projectID, String username) {
         Map<String, Object> map = new HashMap<String, Object>();
-        BusProject busProject = busProjectService.queryBusProjectById(projectID);
+        BusProject busProject = busProjectMapper.selectByPrimaryKey(projectID);
         if (busProject == null) {
-            Result.fail(CommonError.ProjectDoNotExist);
+            return Result.fail(CommonError.ProjectDoNotExist);
         }
         map.put("projectId", busProject.getId());
         map.put("projectName", busProject.getName());
@@ -484,19 +428,15 @@ public class ProjectServiceImpl implements ProjectService {
         map.put("projectUpdateTime", updateTime);
         map.put("desc", busProject.getDescription());
         map.put("apiCount", apiMapper.getApiCount(projectID));
-        map.put("memberCount", busProject.getMemberNum());
         map.put("isPublic", busProject.getIsPublic());
-        map.put("busGroupID", busProject.getBusGroupID());
+        map.put("busGroupID", busProject.getBusGroupId());
         Integer dayOffset = 1;
         map.put("logCount", projectOperationLogMapper.getLogCount(projectID, dayOffset));
 
-        redis.recordRecently10Projects(userId, projectID);
+        redis.recordRecently10Projects(username, projectID);
         return Result.success(map);
     }
 
-    /**
-     * 获取项目日志列表
-     */
     @Override
     public List<Map<String, Object>> getProjectLogList(Integer projectID, Integer page, Integer pageSize) {
         Integer dayOffset = 7;
@@ -508,72 +448,68 @@ public class ProjectServiceImpl implements ProjectService {
         }
     }
 
-    /**
-     * 获取项目日志列表
-     */
     @Override
     public int getProjectLogCount(Integer projectID, int dayOffset) {
         return projectOperationLogMapper.getLogCount(projectID, dayOffset);
     }
 
-    /**
-     * 获取接口数量
-     */
     @Override
     public int getApiNum(Integer projectID) {
         return apiMapper.getApiCount(projectID);
     }
 
     @Override
-    public Result<Boolean> createProjectGroup(ProjectGroupBo projectGroupBo,int userId) {
-        ProjectGroup projectGroup = new ProjectGroup();
+    public Result<Boolean> createProjectGroup(ProjectGroupBo projectGroupBo, String username) {
+        BusProjectGroup projectGroup = new BusProjectGroup();
 
-        BeanUtils.copyProperties(projectGroupBo, projectGroup);
-        projectGroup.setUserId(userId);
-        ProjectGroup projectGroupRt = busProjectService.createProjectGroup(projectGroup);
-        if (projectGroupRt == null) {
+        projectGroup.setGroupDesc(projectGroupBo.getGroupDesc());
+        projectGroup.setStatus(true);
+        projectGroup.setGroupName(projectGroupBo.getGroupName());
+        if (projectGroupBo.isPubGroup()){
+            projectGroup.setPubGroup(1);
+        }else {
+            projectGroup.setPubGroup(0);
+        }
+        int projectGroupId = busProjectGroupMapper.insert(projectGroup);
+        if (projectGroupId == 0) {
             return Result.fail(CommonError.UnknownError);
-        } else if ("ProjectGroupAlreadyExist".equals(projectGroupRt.getGroupDesc())) {
-            return Result.fail(CommonError.ProjectGroupAlreadyExist);
         }
         return Result.success(true);
     }
 
     @Override
     public Result<Boolean> updateProjectGroup(ProjectGroupBo projectGroupBo) {
-        ProjectGroup projectGroup = new ProjectGroup();
-        BeanUtils.copyProperties(projectGroupBo, projectGroup);
+        BusProjectGroup projectGroup = new BusProjectGroup();
+        projectGroup.setGroupName(projectGroupBo.getGroupName());
+        projectGroup.setGroupDesc(projectGroupBo.getGroupDesc());
         projectGroup.setGroupId(projectGroupBo.getGroupID());
-        Boolean ok = busProjectService.updateProjectGroup(projectGroup);
-        if (!ok) {
+        if (projectGroupBo.isPubGroup()){
+            projectGroup.setPubGroup(1);
+        }else {
+            projectGroup.setPubGroup(0);
+        }
+        if (busProjectGroupMapper.updateByPrimaryKey(projectGroup) > 0) {
             return Result.fail(CommonError.UnknownError);
         }
         return Result.success(true);
     }
 
     @Override
-    public List<ProjectGroup> getAllProjectGroup() {
-        return busProjectService.getAllProjectGroup();
+    public List<BusProjectGroup> getAllProjectGroup() {
+        BusProjectGroupExample example = new BusProjectGroupExample();
+        example.createCriteria().andGroupNameIsNotNull();
+        return busProjectGroupMapper.selectByExample(example);
     }
 
     @Override
-    public List<ProjectGroup> getAllAccessableProjectGroup(int accountId) {
-        return busProjectService.getAllAccessableProjectGroup(accountId);
-    }
-
-    @Override
-    public Result<ProjectGroup> getProjectGroupById(Integer id) {
-        ProjectGroup projectGroup = busProjectService.getProjectGroupById(id);
+    public Result<BusProjectGroup> getProjectGroupById(Integer id) {
+        BusProjectGroup projectGroup = busProjectGroupMapper.selectByPrimaryKey(id);
         return Result.success(projectGroup);
     }
 
     @Override
     public Result<Boolean> deleteProjectGroup(Integer projectGroupId, String userName) {
-        com.xiaomi.youpin.hermes.bo.Result<Boolean> result = busProjectService.deleteProjectGroup(projectGroupId, userName);
-        if (result.getCode() != CommonError.Success.getCode()) {
-            return Result.fail(CommonError.valueOf(result.getMessage()));
-        }
-        //todo 删除项目
+        busProjectGroupMapper.deleteByPrimaryKey(projectGroupId);
         return Result.success(true);
     }
 

@@ -26,12 +26,33 @@ import java.util.Map;
 
 public class CodeCheckTest {
 
+    /**
+     * 检查代码和配置里面是否含有IP
+     */
+    @Test
+    public void testCheckIP() {
+        CodeCheck codeCheck = new CodeCheck();
+        Map<String, List<CheckResult>> map = codeCheck.check("/Users/zhangping17/code/dubbo-demo/springboot-nacos-client-demo");
+        map.entrySet().stream().forEach(it ->  {
+            System.out.println(it.getKey());
+            it.getValue().stream().forEach(it1->System.out.println(it1));
+            System.out.println("\n");
+        });
+    }
+
+    /**
+     * 测试代码中是否有明文password
+     */
+    @Test
+    public void testCheckPassword() {
+        CodeCheck codeCheck = new CodeCheck();
+        codeCheck.check("/Users/zhangzhiyong/IdeaProjects/new_opensource/mone/jcommon/codecheck/src/test/java/com/xiaomi/youpin/codecheck/test/code");
+    }
+
 
     @Test
     public void testCode() {
-
         String path = "/tmp/miapimanager";
-
         CodeCheck codeCheck = new CodeCheck();
         Map<String, List<CheckResult>> map = codeCheck.check(path);
         map.entrySet().stream().forEach(it ->  {
@@ -43,9 +64,7 @@ public class CodeCheckTest {
 
     @Test
     public void testDoc() {
-
         String path = "/tmp/niuke";
-
         DocCheck codeCheck = new DocCheck();
         Map<String, String> map = codeCheck.getDoc(path);
         map.entrySet().stream().forEach(it ->  {

@@ -33,9 +33,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.caucho</groupId>
-            <artifactId>hessian</artifactId>
-            <version>4.0.65</version>
+            <groupId>com.alibaba</groupId>
+            <artifactId>hessian-lite</artifactId>
+            <version>3.2.13</version>
         </dependency>
 
         <dependency>
@@ -50,13 +50,17 @@
             <version>4.1.48.Final</version>
         </dependency>
 
-
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>api</artifactId>
             <version>1.4-SNAPSHOT</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.msgpack</groupId>
+            <artifactId>msgpack-core</artifactId>
+            <version>0.9.3</version>
+        </dependency>
 
     </dependencies>
 

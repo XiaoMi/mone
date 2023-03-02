@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.xiaomi.miapi.mapper.ApiHistoryRecordMapper">
-  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.common.pojo.ApiHistoryRecord">
+  <resultMap id="BaseResultMap" type="com.xiaomi.miapi.pojo.ApiHistoryRecord">
     <id column="id" jdbcType="INTEGER" property="id" />
     <result column="project_id" jdbcType="INTEGER" property="projectId" />
     <result column="group_id" jdbcType="INTEGER" property="groupId" />
@@ -12,7 +12,7 @@
     <result column="update_msg" jdbcType="VARCHAR" property="updateMsg" />
     <result column="is_now" jdbcType="BIT" property="isNow" />
   </resultMap>
-  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.miapi.common.pojo.ApiHistoryRecord">
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.miapi.pojo.ApiHistoryRecord">
     <result column="api_histiry_json" jdbcType="LONGVARCHAR" property="apiHistiryJson" />
   </resultMap>
   <sql id="Example_Where_Clause">
@@ -80,7 +80,7 @@
   <sql id="Blob_Column_List">
     api_histiry_json
   </sql>
-  <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.ApiHistoryRecordExample" resultMap="ResultMapWithBLOBs">
+  <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.miapi.pojo.ApiHistoryRecordExample" resultMap="ResultMapWithBLOBs">
     select
     <if test="distinct">
       distinct
@@ -96,7 +96,7 @@
       order by ${orderByClause}
     </if>
   </select>
-  <select id="selectByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiHistoryRecordExample" resultMap="BaseResultMap">
+  <select id="selectByExample" parameterType="com.xiaomi.miapi.pojo.ApiHistoryRecordExample" resultMap="BaseResultMap">
     select
     <if test="distinct">
       distinct
@@ -122,13 +122,13 @@
     delete from api_history_record
     where id = #{id,jdbcType=INTEGER}
   </delete>
-  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiHistoryRecordExample">
+  <delete id="deleteByExample" parameterType="com.xiaomi.miapi.pojo.ApiHistoryRecordExample">
     delete from api_history_record
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
     </if>
   </delete>
-  <insert id="insert" parameterType="com.xiaomi.miapi.common.pojo.ApiHistoryRecord">
+  <insert id="insert" parameterType="com.xiaomi.miapi.pojo.ApiHistoryRecord">
     <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
       SELECT LAST_INSERT_ID()
     </selectKey>
@@ -141,7 +141,7 @@
       #{updateMsg,jdbcType=VARCHAR}, #{isNow,jdbcType=BIT}, #{apiHistiryJson,jdbcType=LONGVARCHAR}
       )
   </insert>
-  <insert id="insertSelective" parameterType="com.xiaomi.miapi.common.pojo.ApiHistoryRecord">
+  <insert id="insertSelective" parameterType="com.xiaomi.miapi.pojo.ApiHistoryRecord">
     <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
       SELECT LAST_INSERT_ID()
     </selectKey>
@@ -205,7 +205,7 @@
       </if>
     </trim>
   </insert>
-  <select id="countByExample" parameterType="com.xiaomi.miapi.common.pojo.ApiHistoryRecordExample" resultType="java.lang.Long">
+  <select id="countByExample" parameterType="com.xiaomi.miapi.pojo.ApiHistoryRecordExample" resultType="java.lang.Long">
     select count(*) from api_history_record
     <if test="_parameter != null">
       <include refid="Example_Where_Clause" />
@@ -280,7 +280,7 @@
       <include refid="Update_By_Example_Where_Clause" />
     </if>
   </update>
-  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.common.pojo.ApiHistoryRecord">
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.miapi.pojo.ApiHistoryRecord">
     update api_history_record
     <set>
       <if test="projectId != null">
@@ -313,7 +313,7 @@
     </set>
     where id = #{id,jdbcType=INTEGER}
   </update>
-  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.miapi.common.pojo.ApiHistoryRecord">
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.miapi.pojo.ApiHistoryRecord">
     update api_history_record
     set project_id = #{projectId,jdbcType=INTEGER},
       group_id = #{groupId,jdbcType=INTEGER},
@@ -326,7 +326,7 @@
       api_histiry_json = #{apiHistiryJson,jdbcType=LONGVARCHAR}
     where id = #{id,jdbcType=INTEGER}
   </update>
-  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.common.pojo.ApiHistoryRecord">
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.miapi.pojo.ApiHistoryRecord">
     update api_history_record
     set project_id = #{projectId,jdbcType=INTEGER},
       group_id = #{groupId,jdbcType=INTEGER},

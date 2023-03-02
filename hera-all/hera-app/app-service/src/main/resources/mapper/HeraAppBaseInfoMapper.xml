@@ -1,0 +1,646 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaomi.mone.app.dao.HeraAppBaseInfoMapper">
+    <resultMap id="BaseResultMap" type="com.xiaomi.mone.app.model.HeraAppBaseInfo">
+        <id column="id" jdbcType="INTEGER" property="id" />
+        <result column="bind_id" jdbcType="VARCHAR" property="bindId" />
+        <result column="bind_type" jdbcType="INTEGER" property="bindType" />
+        <result column="app_name" jdbcType="VARCHAR" property="appName" />
+        <result column="app_cname" jdbcType="VARCHAR" property="appCname" />
+        <result column="app_type" jdbcType="INTEGER" property="appType" />
+        <result column="app_language" jdbcType="VARCHAR" property="appLanguage" />
+        <result column="platform_type" jdbcType="INTEGER" property="platformType" />
+        <result column="app_sign_id" jdbcType="VARCHAR" property="appSignId" />
+        <result column="iam_tree_id" jdbcType="INTEGER" property="iamTreeId" />
+        <result column="status" jdbcType="INTEGER" property="status" />
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+        <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    </resultMap>
+    <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="com.xiaomi.mone.app.model.HeraAppBaseInfo">
+        <result column="envs_map" jdbcType="LONGVARCHAR" property="envsMap" />
+    </resultMap>
+    <sql id="Example_Where_Clause">
+        <where>
+            <foreach collection="oredCriteria" item="criteria" separator="or">
+                <if test="criteria.valid">
+                    <trim prefix="(" prefixOverrides="and" suffix=")">
+                        <foreach collection="criteria.criteria" item="criterion">
+                            <choose>
+                                <when test="criterion.noValue">
+                                    and ${criterion.condition}
+                                </when>
+                                <when test="criterion.singleValue">
+                                    and ${criterion.condition} #{criterion.value}
+                                </when>
+                                <when test="criterion.betweenValue">
+                                    and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                                </when>
+                                <when test="criterion.listValue">
+                                    and ${criterion.condition}
+                                    <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                                        #{listItem}
+                                    </foreach>
+                                </when>
+                            </choose>
+                        </foreach>
+                    </trim>
+                </if>
+            </foreach>
+        </where>
+    </sql>
+    <sql id="Update_By_Example_Where_Clause">
+        <where>
+            <foreach collection="example.oredCriteria" item="criteria" separator="or">
+                <if test="criteria.valid">
+                    <trim prefix="(" prefixOverrides="and" suffix=")">
+                        <foreach collection="criteria.criteria" item="criterion">
+                            <choose>
+                                <when test="criterion.noValue">
+                                    and ${criterion.condition}
+                                </when>
+                                <when test="criterion.singleValue">
+                                    and ${criterion.condition} #{criterion.value}
+                                </when>
+                                <when test="criterion.betweenValue">
+                                    and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                                </when>
+                                <when test="criterion.listValue">
+                                    and ${criterion.condition}
+                                    <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                                        #{listItem}
+                                    </foreach>
+                                </when>
+                            </choose>
+                        </foreach>
+                    </trim>
+                </if>
+            </foreach>
+        </where>
+    </sql>
+    <sql id="Base_Column_List">
+        id, bind_id, bind_type, app_name, app_cname, app_type, app_language, platform_type,
+    app_sign_id, iam_tree_id, status, create_time, update_time
+    </sql>
+    <sql id="Blob_Column_List">
+        envs_map
+    </sql>
+    <select id="selectByExampleWithBLOBs" parameterType="com.xiaomi.mone.app.model.HeraAppBaseInfoExample" resultMap="ResultMapWithBLOBs">
+        select
+        <if test="distinct">
+            distinct
+        </if>
+        <include refid="Base_Column_List" />
+        ,
+        <include refid="Blob_Column_List" />
+        from hera_app_base_info
+        <if test="_parameter != null">
+            <include refid="Example_Where_Clause" />
+        </if>
+        <if test="orderByClause != null">
+            order by ${orderByClause}
+        </if>
+        <if test="limit != null and limit >= 0">
+            limit #{offset} , #{limit}
+        </if>
+    </select>
+
+    <resultMap id="HeraAppBaseInfoParticipantResult" type="com.xiaomi.mone.app.api.model.HeraAppBaseInfoParticipant">
+        <id column="id" jdbcType="INTEGER" property="id" />
+        <result column="bind_id" jdbcType="VARCHAR" property="appId" />
+        <result column="bind_type" jdbcType="INTEGER" property="bindType" />
+        <result column="app_name" jdbcType="VARCHAR" property="appName" />
+        <result column="app_cname" jdbcType="VARCHAR" property="appCname" />
+        <result column="app_type" jdbcType="INTEGER" property="appType" />
+        <result column="app_language" jdbcType="VARCHAR" property="appLanguage" />
+        <result column="envs_map" jdbcType="LONGVARCHAR" property="envsMapping" />
+        <result column="platform_type" jdbcType="INTEGER" property="platformType" />
+        <result column="iam_tree_id" jdbcType="INTEGER" property="iamTreeId" />
+        <result column="status" jdbcType="INTEGER" property="status" />
+        <result column="participant" jdbcType="INTEGER" property="participant" />
+    </resultMap>
+
+    <!--<resultMap extends="BaseResultMap" id="HeraAppBaseInfoParticipantResult" type="com.xiaomi.mone.app.api.model.HeraAppBaseInfoParticipant">
+      <result column="envs_map" jdbcType="LONGVARCHAR" property="envsMap" />
+      <result column="participant" jdbcType="INTEGER" property="participant" />
+    </resultMap>-->
+
+    <select id="countByParticipant" parameterType="com.xiaomi.mone.app.api.model.HeraAppBaseQuery" resultType="java.lang.Long">
+        select count(1)  from hera_app_base_info app
+        <if test="myParticipant != null">
+            INNER JOIN
+        </if>
+
+        <if test="myParticipant == null">
+            LEFT JOIN
+        </if>
+
+        (
+        select count(1) as rnum,
+        role.app_id,
+        role.app_platform,
+        user
+        from hera_app_role role
+        GROUP BY app_id,app_platform,user HAVING `user`=#{participant}
+        ) as r
+        on r.app_id=app.bind_id and r.app_platform=app.platform_type
+        where 1=1
+        <if test="appName != null">
+            and app.app_name like concat('%',#{appName},'%')
+        </if>
+
+        <if test="platformType != null">
+            and app.platform_type=#{platformType}
+        </if>
+
+
+    </select>
+
+    <select id="selectByParticipant" parameterType="com.xiaomi.mone.app.api.model.HeraAppBaseQuery" resultMap="HeraAppBaseInfoParticipantResult">
+        select
+        app.id,
+        app.bind_id,
+        app.app_name,
+        app.app_cname,
+        app.iam_tree_id,
+        app.bind_type,
+        app.platform_type,
+        app.app_type,
+        app.app_language,
+        app.envs_map,
+        app.status,
+        IFNULL(r.rnum,0) as participant
+        from
+        hera_app_base_info app
+        <if test="myParticipant != null">
+            INNER JOIN
+        </if>
+        <if test="myParticipant == null">
+            LEFT JOIN
+        </if>
+
+
+        (
+        select count(1) as rnum,role.app_id,role.app_platform,user
+        from hera_app_role role
+        GROUP BY app_id,app_platform,user
+        HAVING `user`=#{participant}
+        ) as r
+        on r.app_id=app.bind_id and r.app_platform=app.platform_type
+        where 1=1
+        <if test="appName != null">
+            and app.app_name like concat('%',#{appName},'%')
+        </if>
+
+        <if test="platformType != null">
+            and app.platform_type=#{platformType}
+        </if>
+
+        ORDER BY app.id desc
+        <if test="limit != null and limit >= 0">
+            limit #{offset} , #{limit}
+        </if>
+    </select>
+    <select id="selectByExample" parameterType="com.xiaomi.mone.app.model.HeraAppBaseInfoExample" resultMap="BaseResultMap">
+        select
+        <if test="distinct">
+            distinct
+        </if>
+        <include refid="Base_Column_List" />
+        from hera_app_base_info
+        <if test="_parameter != null">
+            <include refid="Example_Where_Clause" />
+        </if>
+        <if test="orderByClause != null">
+            order by ${orderByClause}
+        </if>
+        <if test="limit != null and limit >= 0">
+            limit #{offset} , #{limit}
+        </if>
+    </select>
+    <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="ResultMapWithBLOBs">
+        select
+        <include refid="Base_Column_List" />
+        ,
+        <include refid="Blob_Column_List" />
+        from hera_app_base_info
+        where id = #{id,jdbcType=INTEGER}
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+        delete from hera_app_base_info
+        where id = #{id,jdbcType=INTEGER}
+    </delete>
+    <delete id="deleteByExample" parameterType="com.xiaomi.mone.app.model.HeraAppBaseInfoExample">
+        delete from hera_app_base_info
+        <if test="_parameter != null">
+            <include refid="Example_Where_Clause" />
+        </if>
+    </delete>
+    <insert id="insert" parameterType="com.xiaomi.mone.app.model.HeraAppBaseInfo">
+        <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+            SELECT LAST_INSERT_ID()
+        </selectKey>
+        insert into hera_app_base_info (bind_id, bind_type, app_name,
+        app_cname, app_type, app_language,
+        platform_type, app_sign_id, iam_tree_id,
+        status, create_time, update_time,
+        envs_map)
+        values (#{bindId,jdbcType=VARCHAR}, #{bindType,jdbcType=INTEGER}, #{appName,jdbcType=VARCHAR},
+        #{appCname,jdbcType=VARCHAR}, #{appType,jdbcType=INTEGER}, #{appLanguage,jdbcType=VARCHAR},
+        #{platformType,jdbcType=INTEGER}, #{appSignId,jdbcType=VARCHAR}, #{iamTreeId,jdbcType=INTEGER},
+        #{status,jdbcType=INTEGER}, #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP},
+        #{envsMap,jdbcType=LONGVARCHAR})
+    </insert>
+    <insert id="insertSelective" parameterType="com.xiaomi.mone.app.model.HeraAppBaseInfo">
+        <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+            SELECT LAST_INSERT_ID()
+        </selectKey>
+        insert into hera_app_base_info
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="bindId != null">
+                bind_id,
+            </if>
+            <if test="bindType != null">
+                bind_type,
+            </if>
+            <if test="appName != null">
+                app_name,
+            </if>
+            <if test="appCname != null">
+                app_cname,
+            </if>
+            <if test="appType != null">
+                app_type,
+            </if>
+            <if test="appLanguage != null">
+                app_language,
+            </if>
+            <if test="platformType != null">
+                platform_type,
+            </if>
+            <if test="appSignId != null">
+                app_sign_id,
+            </if>
+            <if test="iamTreeId != null">
+                iam_tree_id,
+            </if>
+            <if test="status != null">
+                status,
+            </if>
+            <if test="createTime != null">
+                create_time,
+            </if>
+            <if test="updateTime != null">
+                update_time,
+            </if>
+            <if test="envsMap != null">
+                envs_map,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="bindId != null">
+                #{bindId,jdbcType=VARCHAR},
+            </if>
+            <if test="bindType != null">
+                #{bindType,jdbcType=INTEGER},
+            </if>
+            <if test="appName != null">
+                #{appName,jdbcType=VARCHAR},
+            </if>
+            <if test="appCname != null">
+                #{appCname,jdbcType=VARCHAR},
+            </if>
+            <if test="appType != null">
+                #{appType,jdbcType=INTEGER},
+            </if>
+            <if test="appLanguage != null">
+                #{appLanguage,jdbcType=VARCHAR},
+            </if>
+            <if test="platformType != null">
+                #{platformType,jdbcType=INTEGER},
+            </if>
+            <if test="appSignId != null">
+                #{appSignId,jdbcType=VARCHAR},
+            </if>
+            <if test="iamTreeId != null">
+                #{iamTreeId,jdbcType=INTEGER},
+            </if>
+            <if test="status != null">
+                #{status,jdbcType=INTEGER},
+            </if>
+            <if test="createTime != null">
+                #{createTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="updateTime != null">
+                #{updateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="envsMap != null">
+                #{envsMap,jdbcType=LONGVARCHAR},
+            </if>
+        </trim>
+    </insert>
+    <select id="countByExample" parameterType="com.xiaomi.mone.app.model.HeraAppBaseInfoExample" resultType="java.lang.Long">
+        select count(*) from hera_app_base_info
+        <if test="_parameter != null">
+            <include refid="Example_Where_Clause" />
+        </if>
+    </select>
+    <update id="updateByExampleSelective" parameterType="map">
+        update hera_app_base_info
+        <set>
+            <if test="record.id != null">
+                id = #{record.id,jdbcType=INTEGER},
+            </if>
+            <if test="record.bindId != null">
+                bind_id = #{record.bindId,jdbcType=VARCHAR},
+            </if>
+            <if test="record.bindType != null">
+                bind_type = #{record.bindType,jdbcType=INTEGER},
+            </if>
+            <if test="record.appName != null">
+                app_name = #{record.appName,jdbcType=VARCHAR},
+            </if>
+            <if test="record.appCname != null">
+                app_cname = #{record.appCname,jdbcType=VARCHAR},
+            </if>
+            <if test="record.appType != null">
+                app_type = #{record.appType,jdbcType=INTEGER},
+            </if>
+            <if test="record.appLanguage != null">
+                app_language = #{record.appLanguage,jdbcType=VARCHAR},
+            </if>
+            <if test="record.platformType != null">
+                platform_type = #{record.platformType,jdbcType=INTEGER},
+            </if>
+            <if test="record.appSignId != null">
+                app_sign_id = #{record.appSignId,jdbcType=VARCHAR},
+            </if>
+            <if test="record.iamTreeId != null">
+                iam_tree_id = #{record.iamTreeId,jdbcType=INTEGER},
+            </if>
+            <if test="record.status != null">
+                status = #{record.status,jdbcType=INTEGER},
+            </if>
+            <if test="record.createTime != null">
+                create_time = #{record.createTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="record.updateTime != null">
+                update_time = #{record.updateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="record.envsMap != null">
+                envs_map = #{record.envsMap,jdbcType=LONGVARCHAR},
+            </if>
+        </set>
+        <if test="_parameter != null">
+            <include refid="Update_By_Example_Where_Clause" />
+        </if>
+    </update>
+    <update id="updateByExampleWithBLOBs" parameterType="map">
+        update hera_app_base_info
+        set id = #{record.id,jdbcType=INTEGER},
+        bind_id = #{record.bindId,jdbcType=VARCHAR},
+        bind_type = #{record.bindType,jdbcType=INTEGER},
+        app_name = #{record.appName,jdbcType=VARCHAR},
+        app_cname = #{record.appCname,jdbcType=VARCHAR},
+        app_type = #{record.appType,jdbcType=INTEGER},
+        app_language = #{record.appLanguage,jdbcType=VARCHAR},
+        platform_type = #{record.platformType,jdbcType=INTEGER},
+        app_sign_id = #{record.appSignId,jdbcType=VARCHAR},
+        iam_tree_id = #{record.iamTreeId,jdbcType=INTEGER},
+        status = #{record.status,jdbcType=INTEGER},
+        create_time = #{record.createTime,jdbcType=TIMESTAMP},
+        update_time = #{record.updateTime,jdbcType=TIMESTAMP},
+        envs_map = #{record.envsMap,jdbcType=LONGVARCHAR}
+        <if test="_parameter != null">
+            <include refid="Update_By_Example_Where_Clause" />
+        </if>
+    </update>
+    <update id="updateByExample" parameterType="map">
+        update hera_app_base_info
+        set id = #{record.id,jdbcType=INTEGER},
+        bind_id = #{record.bindId,jdbcType=VARCHAR},
+        bind_type = #{record.bindType,jdbcType=INTEGER},
+        app_name = #{record.appName,jdbcType=VARCHAR},
+        app_cname = #{record.appCname,jdbcType=VARCHAR},
+        app_type = #{record.appType,jdbcType=INTEGER},
+        app_language = #{record.appLanguage,jdbcType=VARCHAR},
+        platform_type = #{record.platformType,jdbcType=INTEGER},
+        app_sign_id = #{record.appSignId,jdbcType=VARCHAR},
+        iam_tree_id = #{record.iamTreeId,jdbcType=INTEGER},
+        status = #{record.status,jdbcType=INTEGER},
+        create_time = #{record.createTime,jdbcType=TIMESTAMP},
+        update_time = #{record.updateTime,jdbcType=TIMESTAMP}
+        <if test="_parameter != null">
+            <include refid="Update_By_Example_Where_Clause" />
+        </if>
+    </update>
+    <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.mone.app.model.HeraAppBaseInfo">
+        update hera_app_base_info
+        <set>
+            <if test="bindId != null">
+                bind_id = #{bindId,jdbcType=VARCHAR},
+            </if>
+            <if test="bindType != null">
+                bind_type = #{bindType,jdbcType=INTEGER},
+            </if>
+            <if test="appName != null">
+                app_name = #{appName,jdbcType=VARCHAR},
+            </if>
+            <if test="appCname != null">
+                app_cname = #{appCname,jdbcType=VARCHAR},
+            </if>
+            <if test="appType != null">
+                app_type = #{appType,jdbcType=INTEGER},
+            </if>
+            <if test="appLanguage != null">
+                app_language = #{appLanguage,jdbcType=VARCHAR},
+            </if>
+            <if test="platformType != null">
+                platform_type = #{platformType,jdbcType=INTEGER},
+            </if>
+            <if test="appSignId != null">
+                app_sign_id = #{appSignId,jdbcType=VARCHAR},
+            </if>
+            <if test="iamTreeId != null">
+                iam_tree_id = #{iamTreeId,jdbcType=INTEGER},
+            </if>
+            <if test="status != null">
+                status = #{status,jdbcType=INTEGER},
+            </if>
+            <if test="createTime != null">
+                create_time = #{createTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="updateTime != null">
+                update_time = #{updateTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="envsMap != null">
+                envs_map = #{envsMap,jdbcType=LONGVARCHAR},
+            </if>
+        </set>
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+    <update id="updateByPrimaryKeyWithBLOBs" parameterType="com.xiaomi.mone.app.model.HeraAppBaseInfo">
+        update hera_app_base_info
+        set bind_id = #{bindId,jdbcType=VARCHAR},
+            bind_type = #{bindType,jdbcType=INTEGER},
+            app_name = #{appName,jdbcType=VARCHAR},
+            app_cname = #{appCname,jdbcType=VARCHAR},
+            app_type = #{appType,jdbcType=INTEGER},
+            app_language = #{appLanguage,jdbcType=VARCHAR},
+            platform_type = #{platformType,jdbcType=INTEGER},
+            app_sign_id = #{appSignId,jdbcType=VARCHAR},
+            iam_tree_id = #{iamTreeId,jdbcType=INTEGER},
+            status = #{status,jdbcType=INTEGER},
+            create_time = #{createTime,jdbcType=TIMESTAMP},
+            update_time = #{updateTime,jdbcType=TIMESTAMP},
+            envs_map = #{envsMap,jdbcType=LONGVARCHAR}
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+    <update id="updateByPrimaryKey" parameterType="com.xiaomi.mone.app.model.HeraAppBaseInfo">
+        update hera_app_base_info
+        set bind_id = #{bindId,jdbcType=VARCHAR},
+            bind_type = #{bindType,jdbcType=INTEGER},
+            app_name = #{appName,jdbcType=VARCHAR},
+            app_cname = #{appCname,jdbcType=VARCHAR},
+            app_type = #{appType,jdbcType=INTEGER},
+            app_language = #{appLanguage,jdbcType=VARCHAR},
+            platform_type = #{platformType,jdbcType=INTEGER},
+            app_sign_id = #{appSignId,jdbcType=VARCHAR},
+            iam_tree_id = #{iamTreeId,jdbcType=INTEGER},
+            status = #{status,jdbcType=INTEGER},
+            create_time = #{createTime,jdbcType=TIMESTAMP},
+            update_time = #{updateTime,jdbcType=TIMESTAMP}
+        where id = #{id,jdbcType=INTEGER}
+    </update>
+    <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+        insert into hera_app_base_info
+        (bind_id, bind_type, app_name, app_cname, app_type, app_language, platform_type,
+        app_sign_id, iam_tree_id, status, create_time, update_time, envs_map)
+        values
+        <foreach collection="list" item="item" separator=",">
+            (#{item.bindId,jdbcType=VARCHAR}, #{item.bindType,jdbcType=INTEGER}, #{item.appName,jdbcType=VARCHAR},
+            #{item.appCname,jdbcType=VARCHAR}, #{item.appType,jdbcType=INTEGER}, #{item.appLanguage,jdbcType=VARCHAR},
+            #{item.platformType,jdbcType=INTEGER}, #{item.appSignId,jdbcType=VARCHAR}, #{item.iamTreeId,jdbcType=INTEGER},
+            #{item.status,jdbcType=INTEGER}, #{item.createTime,jdbcType=TIMESTAMP}, #{item.updateTime,jdbcType=TIMESTAMP},
+            #{item.envsMap,jdbcType=LONGVARCHAR})
+        </foreach>
+    </insert>
+    <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
+        insert into hera_app_base_info (
+        <foreach collection="selective" item="column" separator=",">
+            ${column.escapedColumnName}
+        </foreach>
+        )
+        values
+        <foreach collection="list" item="item" separator=",">
+            (
+            <foreach collection="selective" item="column" separator=",">
+                <if test="'bind_id'.toString() == column.value">
+                    #{item.bindId,jdbcType=VARCHAR}
+                </if>
+                <if test="'bind_type'.toString() == column.value">
+                    #{item.bindType,jdbcType=INTEGER}
+                </if>
+                <if test="'app_name'.toString() == column.value">
+                    #{item.appName,jdbcType=VARCHAR}
+                </if>
+                <if test="'app_cname'.toString() == column.value">
+                    #{item.appCname,jdbcType=VARCHAR}
+                </if>
+                <if test="'app_type'.toString() == column.value">
+                    #{item.appType,jdbcType=INTEGER}
+                </if>
+                <if test="'app_language'.toString() == column.value">
+                    #{item.appLanguage,jdbcType=VARCHAR}
+                </if>
+                <if test="'platform_type'.toString() == column.value">
+                    #{item.platformType,jdbcType=INTEGER}
+                </if>
+                <if test="'app_sign_id'.toString() == column.value">
+                    #{item.appSignId,jdbcType=VARCHAR}
+                </if>
+                <if test="'iam_tree_id'.toString() == column.value">
+                    #{item.iamTreeId,jdbcType=INTEGER}
+                </if>
+                <if test="'status'.toString() == column.value">
+                    #{item.status,jdbcType=INTEGER}
+                </if>
+                <if test="'create_time'.toString() == column.value">
+                    #{item.createTime,jdbcType=TIMESTAMP}
+                </if>
+                <if test="'update_time'.toString() == column.value">
+                    #{item.updateTime,jdbcType=TIMESTAMP}
+                </if>
+                <if test="'envs_map'.toString() == column.value">
+                    #{item.envsMap,jdbcType=LONGVARCHAR}
+                </if>
+            </foreach>
+            )
+        </foreach>
+    </insert>
+
+    <resultMap id="queryAppResultMap" type="com.xiaomi.mone.app.api.response.AppBaseInfo">
+        <id column="id" jdbcType="INTEGER" property="id" />
+        <result column="bindId" jdbcType="VARCHAR" property="bindId" />
+        <result column="bindType" jdbcType="INTEGER" property="bindType" />
+        <result column="appName" jdbcType="VARCHAR" property="appName" />
+        <result column="appCname" jdbcType="VARCHAR" property="appCname" />
+        <result column="appType" jdbcType="INTEGER" property="appType" />
+        <result column="platformType" jdbcType="INTEGER" property="platformType" />
+        <result column="treeIds" jdbcType="ARRAY" property="treeIds" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+        <result column="nodeIPs" jdbcType="ARRAY" property="nodeIPs" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
+    </resultMap>
+    <select id="queryAppInfoWithLog" resultMap="queryAppResultMap">
+        SELECT
+            hb.id AS id,
+            hb.bind_id AS bindId,
+            hb.app_name AS appName,
+            hb.app_cname AS appCname,
+            hb.app_type AS appType,
+            hb.platform_type AS platformType,
+            he.tree_ids AS treeIds,
+            he.node_ips AS nodeIPs
+        FROM
+            hera_app_base_info hb
+            LEFT JOIN hera_app_excess_info he ON hb.id = he.app_base_id
+        <where>
+            `status` = 0
+            <if test="appName != null and appName != ''">
+                AND hb.app_name LIKE concat('%',#{appName},'%')
+            </if>
+            <if test="type != null">
+                AND hb.platform_type = #{type}
+            </if>
+        </where>
+    </select>
+
+    <select id="countNormalData" resultType="java.lang.Long">
+        SELECT
+            count(*)
+        FROM
+            hera_app_base_info
+        WHERE
+            `status` = 0
+    </select>
+
+    <select id="queryByIds" resultMap="queryAppResultMap">
+        SELECT
+        hb.id AS id,
+        hb.bind_id AS bindId,
+        hb.app_name AS appName,
+        hb.app_cname AS appCname,
+        hb.app_type AS appType,
+        hb.platform_type AS platformType,
+        he.tree_ids AS treeIds,
+        he.node_ips AS nodeIPs
+        FROM
+        hera_app_base_info hb
+        LEFT JOIN hera_app_excess_info he ON hb.id = he.app_base_id
+        <where>
+            hb.id in
+            <foreach collection="list" index="index" item="item" open="(" separator="," close=")">
+                #{item}
+            </foreach>
+        and `status` = 0
+        </where>
+    </select>
+</mapper>

@@ -2,13 +2,9 @@ package com.xiaomi.miapi.controller;
 
 import com.xiaomi.miapi.service.impl.LoginService;
 import com.xiaomi.miapi.util.SessionAccount;
-import com.xiaomi.miapi.common.pojo.IndexInfo;
+import com.xiaomi.miapi.pojo.IndexInfo;
 import com.xiaomi.miapi.service.ApiIndexService;
-import com.xiaomi.miapi.common.Consts;
 import com.xiaomi.miapi.common.Result;
-import com.xiaomi.miapi.common.exception.CommonError;
-import com.xiaomi.youpin.hermes.service.BusProjectService;
-import org.apache.dubbo.config.annotation.Reference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,37 +20,28 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 接口索引分组控制器
+ * @author dongzhenxing
+ * @date 2023/02/08
+ * deal with api index request
  */
 @Controller
 @RequestMapping("/ApiIndex")
 public class ApiIndexController {
-
-
     @Autowired
     private LoginService loginService;
 
     @Autowired
     private ApiIndexService apiIndexService;
 
-    @Reference(check = false, group = "${ref.hermes.service.group}")
-    private BusProjectService busProjectService;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ApiIndexController.class);
 
-    /**
-     * 将接口拉入某个索引组
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/addApiToIndex", method = RequestMethod.POST)
     public Result<Boolean> addApiToIndex(HttpServletRequest request,
                                          HttpServletResponse response,
                                          String apiIDs,
-                                         Integer indexID,
-                                         Integer projectID
+                                         Integer indexID
     ) throws IOException {
         SessionAccount account = loginService.getAccountFromSession(request);
 
@@ -63,32 +50,15 @@ public class ApiIndexController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.addApiIndex] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-
-        if (!busProjectService.isMember(Consts.PROJECT_NAME, projectID.longValue(), account.getUsername())) {
-            response.sendError(401, "不是该项目成员");
-            return null;
-        } else {
-            return apiIndexService.batchGroupApis(apiIDs, indexID, account.getUsername());
-        }
+        return apiIndexService.batchGroupApis(apiIDs, indexID, account.getUsername());
     }
 
-    /**
-     * 将接口从某个索引组移除
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/removeApiFromIndex", method = RequestMethod.POST)
     public Result<Boolean> removeApiFromIndex(HttpServletRequest request,
-                                         HttpServletResponse response,
-                                         Integer apiID,
-                                         Integer indexID,
-                                         Integer projectID
+                                              HttpServletResponse response,
+                                              Integer apiID,
+                                              Integer indexID
     ) throws IOException {
         SessionAccount account = loginService.getAccountFromSession(request);
 
@@ -97,25 +67,9 @@ public class ApiIndexController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.removeApiFromIndex] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-
-        if (!busProjectService.isMember(Consts.PROJECT_NAME, projectID.longValue(), account.getUsername())) {
-            response.sendError(401, "不是该项目成员");
-            return null;
-        } else {
-            return apiIndexService.removeApiFromIndex(apiID, indexID, account.getUsername());
-        }
+        return apiIndexService.removeApiFromIndex(apiID, indexID, account.getUsername());
     }
 
-    /**
-     * 创建索引组
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/addIndex", method = RequestMethod.POST)
     public Result<Integer> addIndex(HttpServletRequest request,
@@ -132,23 +86,9 @@ public class ApiIndexController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.addApiIndex] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        if (!busProjectService.isMember(Consts.PROJECT_NAME, projectID.longValue(), account.getUsername())) {
-            response.sendError(401, "不是该项目成员");
-            return null;
-        }
-        return apiIndexService.addIndex(projectID, indexName, description,indexDoc, account.getUsername());
+        return apiIndexService.addIndex(projectID, indexName, description, indexDoc, account.getUsername());
     }
 
-    /**
-     * 修改某个索引组名
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/editIndex", method = RequestMethod.POST)
     public Result<Integer> editIndex(HttpServletRequest request,
@@ -156,7 +96,6 @@ public class ApiIndexController {
                                      Integer indexID,
                                      String description,
                                      String indexName,
-                                     Integer projectID,
                                      String indexDoc
     ) throws IOException {
         SessionAccount account = loginService.getAccountFromSession(request);
@@ -166,24 +105,9 @@ public class ApiIndexController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN && account.getRole() != Consts.ROLE_WORK) {
-            LOGGER.warn("[ProjectController.editIndex] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
-        if (!busProjectService.isMember(Consts.PROJECT_NAME, projectID.longValue(), account.getUsername())) {
-            response.sendError(401, "不是该项目成员");
-            return null;
-        }
-
-        return apiIndexService.editIndex(indexName, indexID, description,indexDoc, account.getUsername());
+        return apiIndexService.editIndex(indexName, indexID, description, indexDoc, account.getUsername());
     }
 
-    /**
-     * 删除索引组
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/deleteIndex", method = RequestMethod.POST)
     public Result<Boolean> deleteIndex(HttpServletRequest request,
@@ -197,20 +121,10 @@ public class ApiIndexController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (account.getRole() != Consts.ROLE_ADMIN) {
-            LOGGER.warn("[ProjectController.deleteIndex] not authorized to create project");
-            return Result.fail(CommonError.UnAuthorized);
-        }
 
         return apiIndexService.deleteIndex(indexID, account.getUsername());
     }
 
-    /**
-     * 获取索引组列表
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/getIndexList", method = RequestMethod.POST)
     public Result<List<IndexInfo>> getIndexList(HttpServletRequest request,
@@ -224,35 +138,19 @@ public class ApiIndexController {
             response.sendError(401, "未登录或者无权限");
             return null;
         }
-        if (!busProjectService.isMember(Consts.PROJECT_NAME, projectID.longValue(), account.getUsername())) {
-            response.sendError(401, "不是该项目成员");
-            return null;
-        } else {
-            return apiIndexService.getIndexList(projectID);
-        }
+        return apiIndexService.getIndexList(projectID);
     }
 
-    /**
-     * 具体集合API页面数据
-     *
-     * @param request
-     * @return
-     */
     @ResponseBody
     @RequestMapping(value = "/getIndexPageInfo", method = RequestMethod.POST)
-    public Result<List<Map<String,Object>>> getIndexPageInfo(HttpServletRequest request,
-                                                       HttpServletResponse response,
-                                                       Integer projectID, String indexIDs
+    public Result<List<Map<String, Object>>> getIndexPageInfo(HttpServletRequest request,
+                                                              HttpServletResponse response, String indexIDs
     ) throws IOException {
         SessionAccount account = loginService.getAccountFromSession(request);
 
         if (null == account) {
             LOGGER.warn("[ApiIndexController.getIndexPageInfo] current user not have valid account info in session");
             response.sendError(401, "未登录或者无权限");
-            return null;
-        }
-        if (!busProjectService.isMember(Consts.PROJECT_NAME, projectID.longValue(), account.getUsername())) {
-            response.sendError(401, "不是该项目成员");
             return null;
         }
         return apiIndexService.getIndexPageInfo(indexIDs);
