@@ -37,6 +37,8 @@ public class ProviderMap implements Serializable {
 
     private SidecarPlugin plugin;
 
+    private Task task;
+
     public void refresh(Function function, String name, SidecarPlugin plugin) {
         this.function = function;
         this.name = name;
@@ -50,7 +52,9 @@ public class ProviderMap implements Serializable {
             it.getValue().start("");
         });
 
-        Executors.newSingleThreadScheduledExecutor().schedule(new Task(), 5, TimeUnit.SECONDS);
+        this.task = new Task(true);
+
+        Executors.newSingleThreadScheduledExecutor().schedule(this.task, 5, TimeUnit.SECONDS);
     }
 
 
@@ -70,8 +74,13 @@ public class ProviderMap implements Serializable {
 
     class Task implements Runnable {
 
-        @Override
-        public void run() {
+        private boolean schedule = true;
+
+        public Task(boolean schedule) {
+            this.schedule = schedule;
+        }
+
+        public synchronized void runOnce() {
             Safe.runAndLog(() -> {
                 Set<Pair> set = new HashSet<>((List<Pair>) function.apply(name));
                 log.info("{} sidecar num:{} old num:{}", name, set.size(), clientMap.size());
@@ -100,8 +109,16 @@ public class ProviderMap implements Serializable {
                         clientMap.remove(client.address());
                     });
                 }
+
             });
-            Executors.newSingleThreadScheduledExecutor().schedule(new Task(), 5, TimeUnit.SECONDS);
+        }
+
+        @Override
+        public void run() {
+            runOnce();
+            if (schedule) {
+                Executors.newSingleThreadScheduledExecutor().schedule(this, 5, TimeUnit.SECONDS);
+            }
         }
     }
 

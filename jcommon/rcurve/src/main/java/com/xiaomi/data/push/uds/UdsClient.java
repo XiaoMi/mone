@@ -117,6 +117,8 @@ public class UdsClient implements IClient<UdsCommand> {
             }
             CommonUtils.sleep(2);
             start(path);
+        } finally {
+            log.info("client close host:{} port:{}", this.host, this.port);
         }
     }
 
@@ -180,6 +182,12 @@ public class UdsClient implements IClient<UdsCommand> {
     public void shutdown() {
         log.info("client shutdown:{}", this.channel);
         this.shutdown = true;
+        SafeRun.run(() -> {
+            if (null != this.channel && this.channel.isOpen()) {
+                log.info("close channel:{}", this.channel);
+                this.channel.close();
+            }
+        });
     }
 
     @Override

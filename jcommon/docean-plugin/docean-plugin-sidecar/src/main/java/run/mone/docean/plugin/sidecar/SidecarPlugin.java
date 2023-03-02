@@ -35,6 +35,7 @@ import com.xiaomi.youpin.docean.common.Pair;
 import com.xiaomi.youpin.docean.common.StringUtils;
 import com.xiaomi.youpin.docean.plugin.IPlugin;
 import com.xiaomi.youpin.docean.plugin.config.Config;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.cglib.proxy.Enhancer;
 import run.mone.api.IClient;
@@ -82,6 +83,7 @@ public class SidecarPlugin implements IPlugin {
 
     private IClient client;
 
+    @Getter
     private ConcurrentHashMap<String, ProviderMap> clientMap = new ConcurrentHashMap<>();
 
 
