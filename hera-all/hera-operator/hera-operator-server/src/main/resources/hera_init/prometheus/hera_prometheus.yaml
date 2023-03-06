@@ -1,0 +1,265 @@
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: prometheus
+  namespace: hera-namespace
+  labels:
+    app: prometheus
+    kubernetes.io/cluster-service: "true"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus
+  labels:
+    kubernetes.io/cluster-service: "true"
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+      - nodes/metrics
+      - services
+      - endpoints
+      - pods
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+  - nonResourceURLs:
+      - "/metrics"
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus
+  labels:
+    kubernetes.io/cluster-service: "true"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: hera-namespace
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: prometheus-pv
+  labels:
+    k8s-app: prometheus
+spec:
+  capacity:
+    storage: 10Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /home/work/prometheus_hera_namespace_pv
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - replace your correct node name
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: prometheus-hera-namespace
+  namespace: hera-namespace
+  labels:
+    k8s-app: prometheus
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 8Gi
+  storageClassName: local-storage
+  selector:
+    matchLabels:
+      k8s-app: prometheus
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    name: prometheus-deployment
+  name: prometheus
+  namespace: hera-namespace
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      serviceAccountName: prometheus
+      securityContext:
+        runAsUser: 0
+      imagePullSecrets:
+        - name: mione-opensource-credential
+      containers:
+        - image: prom/prometheus:v2.37.2
+          name: prometheus
+          command:
+            - "/bin/prometheus"
+          args:
+            - "--config.file=/prometheus/prometheus.yml"
+            - "--storage.tsdb.path=/prometheus"
+            - "--storage.tsdb.retention=24h"
+            - "--web.enable-lifecycle"
+            - "--web.enable-admin-api"
+          ports:
+            - containerPort: 9090
+              protocol: TCP
+          volumeMounts:
+            - mountPath: "/prometheus"
+              name: data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 100Mi
+            limits:
+              cpu: 500m
+              memory: 2500Mi
+
+        - name: prometheus-agent
+          image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:prometheus-agent-1.0.12
+          lifecycle:
+            postStart:
+              exec:
+                command: ["/bin/bash", "-c", "rm -f /prometheus/prometheus.yml > /dev/null 2>&1 && rm -f /prometheus/alert.rules > /dev/null 2>&1 && cat /prometheus/configMap/prometheus.yml > /prometheus/prometheus.yml && cat /prometheus/alert_configmap/alert.rules > /prometheus/alert.rules"]
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          volumeMounts:
+            - mountPath: "/prometheus"
+              name: data
+            - mountPath: "/prometheus/configMap"
+              name: prometheus-config
+            - mountPath: "/prometheus/alert_configmap"
+              name: prometheus-alertfile
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: prometheus-hera-namespace
+        - name: prometheus-config
+          configMap:
+            name: prometheus-config
+        - name: prometheus-alertfile
+          configMap:
+            name: prometheus-alertfile
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-agent
+  namespace: hera-namespace
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: prometheus
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: node-viewer-role
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - get
+      - list
+      - watch
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: node-viewer-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: node-viewer-role
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: hera-namespace
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: hera-namespace
+data:
+  prometheus.yml: |
+    # my global config
+    global:
+      scrape_interval: 15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+      evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+      # scrape_timeout is set to the global default (10s).
+
+    # Alertmanager configuration
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets:
+                - alertmanager:9093
+
+    # Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+    rule_files:
+      - "/prometheus/alert.rules"
+
+    # A scrape configuration containing exactly one endpoint to scrape:
+    # Here it's Prometheus itself.
+    scrape_configs:
+      # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+      - job_name: "prometheus"
+        
+        # metrics_path defaults to '/metrics'
+        # scheme defaults to 'http'.
+        
+        static_configs:
+          - targets: [ "localhost:9090" ]
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-alertfile
+  namespace: hera-namespace
+data:
+  alert.rules: |
+    groups:
+    - name: example
+      rules:
+      - alert: HighRequestLatency
+        expr: job:request_latency_seconds:mean5m{job="myjob"} > 0.5
+        for: 10m
+        labels:
+          severity: page
+        annotations:
+          summary: High request latency

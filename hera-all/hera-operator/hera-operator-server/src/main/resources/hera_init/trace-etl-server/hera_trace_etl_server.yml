@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trace-etl-server
+  namespace: hera-namespace
+  labels:
+    app: trace-etl-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trace-etl-server
+  template:
+    metadata:
+      labels:
+        app: trace-etl-server
+    spec:
+      containers:
+      - name: trace-etl-server-container
+        image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:trace-etl-server-v9
+        ports:
+        - containerPort: 4446
+        resources:
+          limits:
+            cpu: '500m'
+            memory: 2Gi

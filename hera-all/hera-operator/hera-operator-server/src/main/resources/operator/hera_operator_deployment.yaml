@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: hera-op-srv
+  namespace: hera-namespace
+  labels:
+    app: mi-tpc
+spec:
+  type: NodePort
+  ports:
+    - protocol: TCP
+      name: hera-operator-port
+      port: 8998
+      targetPort: hera-8998
+      nodePort: 30998
+  selector:
+    app: hera-operator
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hera-op-nginx
+  namespace: hera-namespace
+spec:
+  ports:
+    - port: 80
+      targetPort: 7001
+      protocol: TCP
+  selector:
+    app-fe: hera-operator-fe
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hera-operator-deployment
+  namespace: hera-namespace
+spec:
+  selector:
+    matchLabels:
+      app: hera-operator
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: hera-operator
+        app-fe: hera-operator-fe
+    spec:
+      imagePullSecrets:
+      - name: mione-opensource-credential
+      containers:
+        - name: hera-operator
+          image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:hera-operator-v5.1
+          ports:
+            - containerPort: 8998
+              name: hera-8998
+        - name: hera-operator-fe
+          image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:hera-operator-fe-v1.6
+          ports:
+            - containerPort: 7001
+              name: hera-7001
+      serviceAccountName: admin-mone

@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tpc-nginx-fe
+  namespace: hera-namespace
+  labels:
+    app: tpc-nginx-fe
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tpc-nginx-fe
+  template:
+    metadata:
+      labels:
+        app: tpc-nginx-fe
+    spec:
+      containers:
+      - name: tpc-nginx-fe-container
+        image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:tpc-nginx-v7
+        resources:
+          limits:
+            cpu: '200m'
+            memory: 1Gi
+
