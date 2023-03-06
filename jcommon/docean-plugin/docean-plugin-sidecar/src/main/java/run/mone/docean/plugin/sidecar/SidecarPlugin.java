@@ -55,6 +55,7 @@ import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -368,26 +369,38 @@ public class SidecarPlugin implements IPlugin {
         return "0.0.1:sidecar_plugin:2022-11-18";
     }
 
-    public synchronized IClient getClient(String name) {
+    private ConcurrentHashMap<String, Object> lockMap = new ConcurrentHashMap<>();
+
+    public IClient getClient(String name) {
         if (null == this.DiscoveryFunction) {
             return null;
         }
-        ProviderMap providerList = this.clientMap.get(name);
-        List<IClient> list = null;
-        if (null == providerList) {
-            providerList = new ProviderMap();
-            providerList.refresh(this.DiscoveryFunction, name, this);
-            this.clientMap.put(name, providerList);
-        }
-        list = new ArrayList<>(providerList.getClientMap().values());
-        int n = list.size();
-        if (n == 1) {
-            return list.get(0);
-        }
-        if (n == 0) {
-            return null;
-        }
 
-        return list.get(ThreadLocalRandom.current().nextInt(n));
+        Object obj = lockMap.compute(name, (k, v) -> {
+            if (v == null) {
+                return new Object();
+            }
+            return v;
+        });
+
+        synchronized (obj) {
+            ProviderMap providerList = this.clientMap.get(name);
+            List<IClient> list = null;
+            if (null == providerList) {
+                providerList = new ProviderMap();
+                providerList.refresh(this.DiscoveryFunction, name, this);
+                this.clientMap.put(name, providerList);
+            }
+            list = new ArrayList<>(providerList.getClientMap().values());
+            int n = list.size();
+            if (n == 1) {
+                return list.get(0);
+            }
+            if (n == 0) {
+                return null;
+            }
+
+            return list.get(ThreadLocalRandom.current().nextInt(n));
+        }
     }
 }
