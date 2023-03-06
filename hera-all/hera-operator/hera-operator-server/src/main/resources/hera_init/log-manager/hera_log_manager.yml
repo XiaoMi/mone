@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-manager
+  namespace: hera-namespace
+  labels:
+    app: log-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log-manager
+  template:
+    metadata:
+      labels:
+        app: log-manager
+    spec:
+      containers:
+      - name: log-manager-container
+        image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:log-manager-v19
+        resources:
+          limits:
+            cpu: '500m'
+            memory: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: log-manager
+  namespace: hera-namespace
+  labels:
+    app: log-manager
+spec:
+  ports:
+    - port: 7788
+      targetPort: 7788
+      protocol: TCP
+  selector:
+    app: log-manager
+  clusterIP: None

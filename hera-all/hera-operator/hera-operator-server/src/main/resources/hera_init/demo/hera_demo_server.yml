@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    name: hera-demo-server
+  name: hera-demo-server
+  namespace: hera-namespace
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: hera-demo-server
+  template:
+    metadata:
+      labels:
+        app: hera-demo-server
+    spec:
+      imagePullSecrets:
+      - name: mione-opensource-credential
+      containers:
+      - image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:hera-demo-server-v3
+        name: hera-demo-server
+        env:
+          - name: host.ip
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: status.podIP
+          - name: node.ip
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: status.hostIP
+          - name: MIONE_LOG_PATH
+            value: /home/work/log/hera-demo-server
+          - name: mione.app.name
+            value: 1-hera-demo-server
+          - name: TESLA_HOST
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: status.podIP
+          - name: hera.buildin.k8s
+            value: '1'
+          - name: MIONE_PROJECT_ENV_NAME
+            value: dev
+          - name: JAVAAGENT_PROMETHEUS_PORT
+            value: '55433'
+          - name: MIONE_PROJECT_ENV_ID
+            value: '1'
+        ports:
+        - containerPort: 9995
+          protocol: TCP
+        volumeMounts:
+          - name: log-path
+            mountPath: /home/work/log
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 500m
+            memory: 2500Mi
+
+      - name: log-agent
+        image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:log-agent-v7
+        volumeMounts:
+        - mountPath: "/home/work/log"
+          name: log-path
+        resources:
+          limits:
+            cpu: '300m'
+            memory: 1Gi
+      volumes:
+      - name: log-path
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hera-demo-server
+  namespace: hera-namespace
+spec:
+  ports:
+    - port: 9995
+      targetPort: 9995
+      protocol: TCP
+  selector:
+    app: hera-demo-server
