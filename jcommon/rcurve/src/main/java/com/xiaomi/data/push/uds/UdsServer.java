@@ -161,6 +161,9 @@ public class UdsServer implements IServer<UdsCommand> {
 
 
     private void delPath() {
+        if (null == this.path || this.path.trim().equals("")) {
+            return;
+        }
         SafeRun.run(() -> {
             if (Files.exists(Paths.get(this.path))) {
                 Files.delete(Paths.get((this.path)));
