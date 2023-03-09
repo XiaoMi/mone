@@ -76,6 +76,7 @@
         <module>rpc-codes</module>
         <module>mybatis-plugins</module>
         <module>processor</module>
+        <module>openai</module>
     </modules>
 
 
