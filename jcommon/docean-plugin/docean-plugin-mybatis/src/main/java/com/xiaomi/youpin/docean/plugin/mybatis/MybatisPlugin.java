@@ -16,6 +16,7 @@
 
 package com.xiaomi.youpin.docean.plugin.mybatis;
 
+import com.github.pagehelper.PageInterceptor;
 import com.google.common.base.Splitter;
 import com.google.common.base.Stopwatch;
 import com.xiaomi.youpin.docean.Aop;
@@ -32,6 +33,7 @@ import com.xiaomi.youpin.docean.plugin.mybatis.interceptor.InterceptorFunction;
 import com.xiaomi.youpin.docean.plugin.mybatis.interceptor.TransactionalInterceptor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.plugin.Interceptor;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
@@ -39,10 +41,7 @@ import org.apache.ibatis.session.SqlSessionFactory;
 import javax.sql.DataSource;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -61,7 +60,10 @@ public class MybatisPlugin implements IPlugin {
 
     public static final String MYBATIS_MAPPER_NAME_LIST = "mybatisMapperNameList";
 
+    private static final String MYBATIS_PAGE_HELPER = "mybatisPageHelper";
+
     private boolean serverLess = false;
+
 
     @SneakyThrows
     @Override
@@ -93,6 +95,16 @@ public class MybatisPlugin implements IPlugin {
                 InterceptorForQryAndUpdate interceptor = new InterceptorForQryAndUpdate(function);
                 interceptor.setDatasourceConfig(config);
                 bean.setPlugins(new Interceptor[]{interceptor});
+            }
+
+            String pageOpen = System.getenv(MYBATIS_PAGE_HELPER);
+            if (StringUtils.isNotEmpty(pageOpen) && Boolean.TRUE.toString().equals(pageOpen)) {
+                //开启pageHelper插件
+                Interceptor[] interceptors = bean.getPlugins();
+                List<Interceptor> interceptorList = interceptors == null ? new ArrayList<>() : Arrays.asList(interceptors);
+                PageInterceptor pageInterceptor = new PageInterceptor();
+                interceptorList.add(pageInterceptor);
+                bean.setPlugins(interceptorList.stream().toArray(Interceptor[]::new));
             }
 
             ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
