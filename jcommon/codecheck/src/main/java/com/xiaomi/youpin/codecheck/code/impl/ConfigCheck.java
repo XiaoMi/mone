@@ -3,27 +3,16 @@ package com.xiaomi.youpin.codecheck.code.impl;
 import com.xiaomi.youpin.codecheck.CommonUtils;
 import com.xiaomi.youpin.codecheck.po.CheckResult;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
-import org.springframework.core.io.InputStreamResource;
-import org.springframework.core.io.Resource;
-import org.springframework.util.CollectionUtils;
-
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author zhangping17
  */
 @Slf4j
 public class ConfigCheck {
-
-    private final static String PREFIX_PROPERTIES = ".properties";
-    private final static String PREFIX_YML = ".yml";
-    private final static String PREFIX_YAML = ".yaml";
     private final static String PREFIX_JAR = ".jar";
     private final static String PREFIX_CLASS = ".class";
     private final static String PREFIX_JAVA = ".java";
@@ -49,12 +38,8 @@ public class ConfigCheck {
         Map<String, List<CheckResult>> mapRes = new HashMap<>();
         for (File file : files){
             List<CheckResult> checkResults = new ArrayList<>();
-            Properties properties = new Properties();
-            if (file.getName().endsWith(PREFIX_PROPERTIES)){
-                properties = getProperties(file);
-            } else if (file.getName().endsWith(PREFIX_YML) || file.getName().endsWith(PREFIX_YAML)){
-                properties = getPropertiesOfYml(file);
-            } else if (!file.getName().contains(".")) {
+            // property,yml文件之所以不用Properties和snakeyaml库来解析，是因为这些库读的数据不会包括注释掉的行
+            if (!file.getName().contains(".")) {
                 continue;
             } else {
                 try {
@@ -66,41 +51,10 @@ public class ConfigCheck {
                     e.printStackTrace();
                 }
             }
-            for (Map.Entry entry : properties.entrySet()){
-                if(true == CommonUtils.hasIPv4(entry.getValue().toString())){
-                    checkResults.add(CheckResult.getErrorRes("file name: " + file.getPath(), DESC_1, CHINA_DESC_1));
-                    break;
-                }
-            }
-            if (!CollectionUtils.isEmpty(checkResults)){
+            if (checkResults != null && !checkResults.isEmpty()){
                 mapRes.put(file.getPath(), checkResults);
             }
         }
         return mapRes;
-    }
-
-    public Properties getProperties(File file) {
-        Properties properties = new Properties();
-        try {
-            InputStream inStream = new FileInputStream(file);
-            properties.load(inStream);
-        } catch (Exception e){
-            log.error("propertiesCheck fail, path:{},", file.getPath(), e);
-        }
-        return properties;
-    }
-
-    public Properties getPropertiesOfYml(File file) {
-        Properties properties = new Properties();
-        try {
-            InputStream inputStream = new FileInputStream(file);
-            YamlPropertiesFactoryBean yamlPropertiesFactoryBean = new YamlPropertiesFactoryBean();
-            Resource resource = new InputStreamResource(inputStream);
-            yamlPropertiesFactoryBean.setResources(resource);
-            properties = yamlPropertiesFactoryBean.getObject();
-        } catch (FileNotFoundException e) {
-            log.error("ymlCheck fail, path:{},", file.getPath(), e);
-        }
-        return properties;
     }
 }
