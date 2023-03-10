@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: hera-demo-client-container
-        image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:hera-demo-client-v2
+        image: herahub/opensource-pub:hera-demo-client-v1
         env:
           - name: host.ip
             valueFrom:
@@ -44,6 +44,8 @@ spec:
             value: dev
           - name: JAVAAGENT_PROMETHEUS_PORT
             value: '55433'
+          - name: PROMETHEUS_PORT
+            value: '55423'
           - name: MIONE_PROJECT_ENV_ID
             value: '2'
           - name: APPLICATION
@@ -59,7 +61,7 @@ spec:
             memory: 2Gi
 
       - name: log-agent
-        image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:log-agent-v7
+        image: herahub/opensource-pub:log-agent-v1
         volumeMounts:
         - mountPath: "/home/work/log"
           name: log-path

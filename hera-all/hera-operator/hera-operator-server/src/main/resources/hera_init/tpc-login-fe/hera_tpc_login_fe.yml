@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: tpclogin-nginx-fe-container
-        image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:tpclogin-nginx-v3
+        image: herahub/opensource-pub:tpclogin-nginx-v1
         resources:
           limits:
             cpu: '200m'

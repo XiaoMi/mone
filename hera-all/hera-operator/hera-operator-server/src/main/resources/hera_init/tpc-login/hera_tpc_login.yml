@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: mi-tcplogin-container
-        image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:mi-tpclogin-v23
+        image: herahub/opensource-pub:mi-tpclogin-v1
         resources:
           limits:
             cpu: '500m'

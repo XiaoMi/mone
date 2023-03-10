@@ -19,7 +19,7 @@ spec:
       imagePullSecrets:
       - name: mione-opensource-credential
       containers:
-      - image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:hera-demo-server-v3
+      - image: herahub/opensource-pub:hera-demo-server-v1
         name: hera-demo-server
         env:
           - name: host.ip
@@ -64,7 +64,7 @@ spec:
             memory: 2500Mi
 
       - name: log-agent
-        image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:log-agent-v7
+        image: herahub/opensource-pub:log-agent-v1
         volumeMounts:
         - mountPath: "/home/work/log"
           name: log-path

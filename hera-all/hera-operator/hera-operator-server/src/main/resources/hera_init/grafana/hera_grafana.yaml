@@ -88,15 +88,15 @@ data:
     # as separate properties or as on string using the url property.
 
     # Either "mysql", "postgres" or "sqlite3", it's your choice
-    type = mysql
-    host = mone-db-all:3306
-    name = mione_hera_grafana
+    type = sqlite3
+    host = 127.0.0.1:3306
+    name = grafana
     user = root
     # If the password contains # or ; you have to wrap it with triple quotes. Ex """#password;"""
-    password = Mone_123456
+    password = 
     # Use either URL or the previous fields to configure the database
     # Example: mysql://user:secret@host:port/database
-    url = mysql://root:Mone_123456@mone-db-all:3306/mione_hera_grafana
+    url = 
 
     # Max idle conn setting default is 2
     max_idle_conn = 2
@@ -126,7 +126,7 @@ data:
     server_cert_name =
 
     # For "sqlite3" only, path relative to data_path setting
-    path = grafana.db
+    path = /etc/grafana.db
 
     # For "sqlite3" only. cache mode setting used for connecting to the database
     cache_mode = private
@@ -570,7 +570,7 @@ data:
     [auth.generic_oauth]
     name = TPC
     icon = signin
-    enabled = true
+    enabled = false
     allow_sign_up = true
     client_id = grafana
     client_secret = bd2de9d16abbc5d400277349dd3db5f0
@@ -1687,7 +1687,8 @@ spec:
         app: grafana
     spec:
       securityContext:
-        fsGroup: 472
+        fsGroup: 0
+        runAsUser: 0
         supplementalGroups:
           - 0
       containers:

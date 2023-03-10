@@ -67,7 +67,7 @@ spec:
     spec:
       containers:
       - name: trace-etl-es-container
-        image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:trace-etl-es-v5
+        image: herahub/opensource-pub:trace-etl-es-v1
         env:
           - name: MONE_CONTAINER_S_POD_NAME
             valueFrom:

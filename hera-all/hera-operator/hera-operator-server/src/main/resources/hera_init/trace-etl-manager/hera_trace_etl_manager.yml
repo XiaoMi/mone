@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: trace-etl-manager-container
-        image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:trace-etl-manager-v5
+        image: herahub/opensource-pub:trace-etl-manager-v1
         resources:
           limits:
             cpu: '500m'

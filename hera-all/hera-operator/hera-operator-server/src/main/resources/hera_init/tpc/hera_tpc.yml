@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: mi-tpc-container
-        image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:mi-tpc-v27
+        image: herahub/opensource-pub:mi-tpc-v1
         resources:
           limits:
             cpu: '500m'

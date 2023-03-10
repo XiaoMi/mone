@@ -38,7 +38,7 @@ spec:
             type: ''
       containers:
         - name: cadvisor
-          image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:cadvisor-v0.42.0
+          image: herahub/opensource-pub:cadvisor-v0.42.0
           args:
             - '--port=5195'
             - '--housekeeping_interval=10s'

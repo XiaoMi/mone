@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: log-stream-container
-        image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:log-stream-v10
+        image: herahub/opensource-pub:log-stream-v1
         env:
           - name: MONE_CONTAINER_S_POD_NAME
             valueFrom:
