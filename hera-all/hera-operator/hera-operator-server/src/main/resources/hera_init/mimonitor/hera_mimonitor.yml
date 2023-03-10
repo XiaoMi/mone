@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: mimonitor-container
-        image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:mimonitor-v23
+        image: herahub/opensource-pub:mimonitor-v1
         resources:
           limits:
             cpu: '500m'

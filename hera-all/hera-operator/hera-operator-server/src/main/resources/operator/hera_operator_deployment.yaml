@@ -50,12 +50,12 @@ spec:
       - name: mione-opensource-credential
       containers:
         - name: hera-operator
-          image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:hera-operator-v5.1
+          image: herahub/opensource-pub:hera-operator-v2
           ports:
             - containerPort: 8998
               name: hera-8998
         - name: hera-operator-fe
-          image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:hera-operator-fe-v1.6
+          image: herahub/opensource-pub:hera-operator-fe-v1
           ports:
             - containerPort: 7001
               name: hera-7001

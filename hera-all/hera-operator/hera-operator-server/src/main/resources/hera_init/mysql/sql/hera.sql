@@ -35,7 +35,6 @@ CREATE TABLE `hera_trace_etl_config`
 
 -- mimonitor
 
-DROP TABLE IF EXISTS `alert_group`;
 CREATE TABLE `alert_group`
 (
     `id`          bigint(20) NOT NULL AUTO_INCREMENT,
@@ -54,7 +53,6 @@ CREATE TABLE `alert_group`
 -- ----------------------------
 -- Table structure for alert_group_member
 -- ----------------------------
-DROP TABLE IF EXISTS `alert_group_member`;
 CREATE TABLE `alert_group_member`
 (
     `id`             bigint(20) NOT NULL AUTO_INCREMENT,
@@ -74,7 +72,6 @@ CREATE TABLE `alert_group_member`
 -- ----------------------------
 -- Table structure for app_alarm_rule
 -- ----------------------------
-DROP TABLE IF EXISTS `app_alarm_rule`;
 CREATE TABLE `app_alarm_rule`
 (
     `id`          int(11) NOT NULL AUTO_INCREMENT,
@@ -112,7 +109,6 @@ CREATE TABLE `app_alarm_rule`
 -- ----------------------------
 -- Table structure for app_alarm_rule_template
 -- ----------------------------
-DROP TABLE IF EXISTS `app_alarm_rule_template`;
 CREATE TABLE `app_alarm_rule_template`
 (
     `id`            int(11) NOT NULL AUTO_INCREMENT,
@@ -132,7 +128,6 @@ CREATE TABLE `app_alarm_rule_template`
 -- ----------------------------
 -- Table structure for app_alarm_strategy
 -- ----------------------------
-DROP TABLE IF EXISTS `app_alarm_strategy`;
 CREATE TABLE `app_alarm_strategy`
 (
     `id`            int(11) NOT NULL AUTO_INCREMENT,
@@ -161,7 +156,6 @@ CREATE TABLE `app_alarm_strategy`
 -- ----------------------------
 -- Table structure for app_capacity_auto_adjust
 -- ----------------------------
-DROP TABLE IF EXISTS `app_capacity_auto_adjust`;
 CREATE TABLE `app_capacity_auto_adjust`
 (
     `id`            int(11) NOT NULL AUTO_INCREMENT,
@@ -182,7 +176,6 @@ CREATE TABLE `app_capacity_auto_adjust`
 -- ----------------------------
 -- Table structure for app_capacity_auto_adjust_record
 -- ----------------------------
-DROP TABLE IF EXISTS `app_capacity_auto_adjust_record`;
 CREATE TABLE `app_capacity_auto_adjust_record`
 (
     `id`           int(11) NOT NULL AUTO_INCREMENT,
@@ -202,7 +195,6 @@ CREATE TABLE `app_capacity_auto_adjust_record`
 -- ----------------------------
 -- Table structure for app_grafana_mapping
 -- ----------------------------
-DROP TABLE IF EXISTS `app_grafana_mapping`;
 CREATE TABLE `app_grafana_mapping`
 (
     `id`          int(10) unsigned NOT NULL AUTO_INCREMENT,
@@ -219,7 +211,6 @@ CREATE TABLE `app_grafana_mapping`
 -- ----------------------------
 -- Table structure for app_monitor
 -- ----------------------------
-DROP TABLE IF EXISTS `app_monitor`;
 CREATE TABLE `app_monitor`
 (
     `id`             int(11) NOT NULL AUTO_INCREMENT,
@@ -243,7 +234,6 @@ CREATE TABLE `app_monitor`
 -- ----------------------------
 -- Table structure for app_quality_market
 -- ----------------------------
-DROP TABLE IF EXISTS `app_quality_market`;
 CREATE TABLE `app_quality_market`
 (
     `id`           int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '自动递增id',
@@ -262,7 +252,6 @@ CREATE TABLE `app_quality_market`
 -- ----------------------------
 -- Table structure for app_scrape_job
 -- ----------------------------
-DROP TABLE IF EXISTS `app_scrape_job`;
 CREATE TABLE `app_scrape_job`
 (
     `id`          int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '自增id',
@@ -282,7 +271,6 @@ CREATE TABLE `app_scrape_job`
 -- ----------------------------
 -- Table structure for app_service_market
 -- ----------------------------
-DROP TABLE IF EXISTS `app_service_market`;
 CREATE TABLE `app_service_market`
 (
     `id`           int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '自增id',
@@ -304,7 +292,6 @@ CREATE TABLE `app_service_market`
 -- ----------------------------
 -- Table structure for app_tesla_alarm_rule
 -- ----------------------------
-DROP TABLE IF EXISTS `app_tesla_alarm_rule`;
 CREATE TABLE `app_tesla_alarm_rule`
 (
     `id`          int(11) NOT NULL AUTO_INCREMENT,
@@ -328,7 +315,6 @@ CREATE TABLE `app_tesla_alarm_rule`
 -- ----------------------------
 -- Table structure for app_tesla_feishu_mapping
 -- ----------------------------
-DROP TABLE IF EXISTS `app_tesla_feishu_mapping`;
 CREATE TABLE `app_tesla_feishu_mapping`
 (
     `id`              int(11) NOT NULL AUTO_INCREMENT,
@@ -345,7 +331,6 @@ CREATE TABLE `app_tesla_feishu_mapping`
 -- ----------------------------
 -- Table structure for hera_app_base_info
 -- ----------------------------
-DROP TABLE IF EXISTS `hera_app_base_info`;
 CREATE TABLE `hera_app_base_info`  (
        `id` int NOT NULL AUTO_INCREMENT,
        `bind_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '绑定的id',
@@ -370,7 +355,6 @@ CREATE TABLE `hera_app_base_info`  (
 -- ----------------------------
 -- Table structure for hera_app_excess_info
 -- ----------------------------
-DROP TABLE IF EXISTS `hera_app_excess_info`;
 CREATE TABLE `hera_app_excess_info`  (
      `id` int NOT NULL AUTO_INCREMENT,
      `app_base_id` bigint NULL DEFAULT NULL,
@@ -386,7 +370,6 @@ CREATE TABLE `hera_app_excess_info`  (
 -- ----------------------------
 -- Table structure for hera_app_env
 -- ----------------------------
-DROP TABLE IF EXISTS `hera_app_env`;
 CREATE TABLE `hera_app_env`  (
      `id` bigint NOT NULL AUTO_INCREMENT,
      `hera_app_id` bigint NOT NULL COMMENT 'hera_app_base_info表的主键',
@@ -405,7 +388,6 @@ CREATE TABLE `hera_app_env`  (
 -- ----------------------------
 -- Table structure for hera_app_role
 -- ----------------------------
-DROP TABLE IF EXISTS `hera_app_role`;
 CREATE TABLE `hera_app_role`  (
   `id` int NOT NULL AUTO_INCREMENT,
   `app_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
@@ -423,7 +405,6 @@ CREATE TABLE `hera_app_role`  (
 -- ----------------------------
 -- Table structure for hera_oper_log
 -- ----------------------------
-DROP TABLE IF EXISTS `hera_oper_log`;
 CREATE TABLE `hera_oper_log`
 (
     `id`               bigint(11) NOT NULL AUTO_INCREMENT COMMENT 'id',
@@ -451,7 +432,6 @@ CREATE TABLE `hera_oper_log`
 -- ----------------------------
 -- Table structure for rules
 -- ----------------------------
-DROP TABLE IF EXISTS `rules`;
 CREATE TABLE `rules`
 (
     `rule_id`          int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '规则id',
@@ -474,7 +454,6 @@ CREATE TABLE `rules`
 -- ----------------------------
 -- Table structure for app_scrape_job
 -- ----------------------------
-DROP TABLE IF EXISTS `app_scrape_job`;
 CREATE TABLE `app_scrape_job`
 (
     `id`          int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '自增id',
@@ -495,7 +474,6 @@ CREATE TABLE `app_scrape_job`
 -- ----------------------------
 -- Table structure for rule_promql_template
 -- ----------------------------
-DROP TABLE IF EXISTS `rule_promql_template`;
 CREATE TABLE `rule_promql_template`
 (
     `id`          int(11) NOT NULL AUTO_INCREMENT,
@@ -515,7 +493,6 @@ CREATE TABLE `rule_promql_template`
 -- ----------------------------
 -- Table structure for app_monitor_config
 -- ----------------------------
-DROP TABLE IF EXISTS `app_monitor_config`;
 CREATE TABLE `app_monitor_config`
 (
     `id`          int          NOT NULL AUTO_INCREMENT,
@@ -532,7 +509,6 @@ CREATE TABLE `app_monitor_config`
 -- ----------------------------
 -- Table structure for mione_grafana_template
 -- ----------------------------
-DROP TABLE IF EXISTS `mione_grafana_template`;
 CREATE TABLE `mione_grafana_template`
 (
     `id`            int(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '自增id',
@@ -558,7 +534,6 @@ FOREIGN_KEY_CHECKS = 1;
 -- ----------------------------
 -- Table structure for alert
 -- ----------------------------
-DROP TABLE IF EXISTS `alert`;
 CREATE TABLE `alert`
 (
     `id`             bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -587,7 +562,6 @@ CREATE TABLE `alert`
 -- ----------------------------
 -- Table structure for alert_condition
 -- ----------------------------
-DROP TABLE IF EXISTS `alert_condition`;
 CREATE TABLE `alert_condition`
 (
     `id`              bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -607,7 +581,6 @@ CREATE TABLE `alert_condition`
 -- ----------------------------
 -- Table structure for alert_log
 -- ----------------------------
-DROP TABLE IF EXISTS `alert_log`;
 CREATE TABLE `alert_log`
 (
     `id`          bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -631,7 +604,6 @@ CREATE TABLE `alert_log`
 -- ----------------------------
 -- Table structure for alert_rule
 -- ----------------------------
-DROP TABLE IF EXISTS `alert_rule`;
 CREATE TABLE `alert_rule`
 (
     `id`       bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -648,7 +620,6 @@ CREATE TABLE `alert_rule`
 -- ----------------------------
 -- Table structure for milog_analyse_dashboard
 -- ----------------------------
-DROP TABLE IF EXISTS `milog_analyse_dashboard`;
 CREATE TABLE `milog_analyse_dashboard`
 (
     `id`          bigint(20) NOT NULL AUTO_INCREMENT,
@@ -665,7 +636,6 @@ CREATE TABLE `milog_analyse_dashboard`
 -- ----------------------------
 -- Table structure for milog_analyse_dashboard_graph_ref
 -- ----------------------------
-DROP TABLE IF EXISTS `milog_analyse_dashboard_graph_ref`;
 CREATE TABLE `milog_analyse_dashboard_graph_ref`
 (
     `id`           bigint(20) NOT NULL AUTO_INCREMENT,
@@ -679,7 +649,6 @@ CREATE TABLE `milog_analyse_dashboard_graph_ref`
 -- ----------------------------
 -- Table structure for milog_analyse_graph
 -- ----------------------------
-DROP TABLE IF EXISTS `milog_analyse_graph`;
 CREATE TABLE `milog_analyse_graph`
 (
     `id`          bigint(20) NOT NULL AUTO_INCREMENT,
@@ -699,7 +668,6 @@ CREATE TABLE `milog_analyse_graph`
 -- ----------------------------
 -- Table structure for milog_analyse_graph_type
 -- ----------------------------
-DROP TABLE IF EXISTS `milog_analyse_graph_type`;
 CREATE TABLE `milog_analyse_graph_type`
 (
     `id`        bigint(20) NOT NULL AUTO_INCREMENT,
@@ -713,7 +681,6 @@ CREATE TABLE `milog_analyse_graph_type`
 -- ----------------------------
 -- Table structure for milog_app_middleware_rel
 -- ----------------------------
-DROP TABLE IF EXISTS `milog_app_middleware_rel`;
 CREATE TABLE `milog_app_middleware_rel`
 (
     `id`            bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
@@ -731,7 +698,6 @@ CREATE TABLE `milog_app_middleware_rel`
 -- ----------------------------
 -- Table structure for milog_app_topic_rel
 -- ----------------------------
-DROP TABLE IF EXISTS `milog_app_topic_rel`;
 CREATE TABLE `milog_app_topic_rel`
 (
     `id`          bigint(20) NOT NULL AUTO_INCREMENT,
@@ -755,7 +721,6 @@ CREATE TABLE `milog_app_topic_rel`
 -- ----------------------------
 -- Table structure for milog_es_cluster
 -- ----------------------------
-DROP TABLE IF EXISTS `milog_es_cluster`;
 CREATE TABLE `milog_es_cluster`
 (
     `id`           bigint(20) NOT NULL AUTO_INCREMENT,
@@ -783,7 +748,6 @@ CREATE TABLE `milog_es_cluster`
 -- ----------------------------
 -- Table structure for milog_es_index
 -- ----------------------------
-DROP TABLE IF EXISTS `milog_es_index`;
 CREATE TABLE `milog_es_index`
 (
     `id`         bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
@@ -796,7 +760,6 @@ CREATE TABLE `milog_es_index`
 -- ----------------------------
 -- Table structure for milog_log_count
 -- ----------------------------
-DROP TABLE IF EXISTS `milog_log_count`;
 CREATE TABLE `milog_log_count`
 (
     `id`       bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -810,7 +773,6 @@ CREATE TABLE `milog_log_count`
 -- ----------------------------
 -- Table structure for milog_log_num_alert
 -- ----------------------------
-DROP TABLE IF EXISTS `milog_log_num_alert`;
 CREATE TABLE `milog_log_num_alert`
 (
     `id`         bigint(20) NOT NULL AUTO_INCREMENT,
@@ -827,7 +789,6 @@ CREATE TABLE `milog_log_num_alert`
 -- ----------------------------
 -- Table structure for milog_log_process
 -- ----------------------------
-DROP TABLE IF EXISTS `milog_log_process`;
 CREATE TABLE `milog_log_process`
 (
     `id`              bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键Id',
@@ -845,7 +806,6 @@ CREATE TABLE `milog_log_process`
 -- ----------------------------
 -- Table structure for milog_log_search_save
 -- ----------------------------
-DROP TABLE IF EXISTS `milog_log_search_save`;
 CREATE TABLE `milog_log_search_save`
 (
     `id`          bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键Id',
@@ -870,7 +830,6 @@ CREATE TABLE `milog_log_search_save`
 -- ----------------------------
 -- Table structure for milog_log_template
 -- ----------------------------
-DROP TABLE IF EXISTS `milog_log_template`;
 CREATE TABLE `milog_log_template` (
   `id` bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
   `ctime` bigint DEFAULT NULL COMMENT '创建时间',
@@ -886,7 +845,6 @@ CREATE TABLE `milog_log_template` (
 -- ----------------------------
 -- Table structure for milog_log_template_detail
 -- ----------------------------
-DROP TABLE IF EXISTS `milog_log_template_detail`;
 CREATE TABLE `milog_log_template_detail`
 (
     `id`              bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
@@ -901,7 +859,6 @@ CREATE TABLE `milog_log_template_detail`
 -- ----------------------------
 -- Table structure for milog_logstail
 -- ----------------------------
-DROP TABLE IF EXISTS `milog_logstail`;
 CREATE TABLE `milog_logstail`
 (
     `id`                bigint(20) NOT NULL AUTO_INCREMENT,
@@ -937,7 +894,6 @@ CREATE TABLE `milog_logstail`
 -- ----------------------------
 -- Table structure for milog_logstore
 -- ----------------------------
-DROP TABLE IF EXISTS `milog_logstore`;
 CREATE TABLE `milog_logstore`
 (
     `id`               bigint(20) NOT NULL AUTO_INCREMENT,
@@ -963,7 +919,6 @@ CREATE TABLE `milog_logstore`
 -- ----------------------------
 -- Table structure for milog_matrix_esinfo
 -- ----------------------------
-DROP TABLE IF EXISTS `milog_matrix_esinfo`;
 CREATE TABLE `milog_matrix_esinfo`
 (
     `id`          bigint(20) NOT NULL AUTO_INCREMENT,
@@ -977,7 +932,6 @@ CREATE TABLE `milog_matrix_esinfo`
 -- ----------------------------
 -- Table structure for milog_middleware_config
 -- ----------------------------
-DROP TABLE IF EXISTS `milog_middleware_config`;
 CREATE TABLE `milog_middleware_config` (
    `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
    `type` smallint(6) NOT NULL COMMENT '配置 1. rocketmq 2.talos',
@@ -1005,7 +959,6 @@ CREATE TABLE `milog_middleware_config` (
 -- ----------------------------
 -- Table structure for milog_region_zone
 -- ----------------------------
-DROP TABLE IF EXISTS `milog_region_zone`;
 CREATE TABLE `milog_region_zone`
 (
     `id`             bigint(20) NOT NULL AUTO_INCREMENT,
@@ -1023,7 +976,6 @@ CREATE TABLE `milog_region_zone`
 -- ----------------------------
 -- Table structure for milog_space
 -- ----------------------------
-DROP TABLE IF EXISTS `milog_space`;
 CREATE TABLE `milog_space`
 (
     `id`             bigint(20) NOT NULL AUTO_INCREMENT,
@@ -1044,7 +996,6 @@ CREATE TABLE `milog_space`
 -- ----------------------------
 -- Table structure for milog_store_space_auth
 -- ----------------------------
-DROP TABLE IF EXISTS `milog_store_space_auth`;
 CREATE TABLE `milog_store_space_auth`
 (
     `id`       bigint(20) NOT NULL AUTO_INCREMENT,
@@ -1059,7 +1010,6 @@ CREATE TABLE `milog_store_space_auth`
 
 -- ----------------------------
 -- prometheus-agent
-DROP TABLE IF EXISTS `prometheus_alert`;
 CREATE TABLE `prometheus_alert`
 (
     `id`              int                                                            NOT NULL AUTO_INCREMENT COMMENT 'alert id',
@@ -1091,7 +1041,6 @@ CREATE TABLE `prometheus_alert`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 
-DROP TABLE IF EXISTS `scrape_config`;
 CREATE TABLE `scrape_config`
 (
     `id`           int unsigned NOT NULL AUTO_INCREMENT,
@@ -1116,7 +1065,6 @@ CREATE TABLE `scrape_config`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 
-DROP TABLE IF EXISTS `silence`;
 CREATE TABLE `silence`
 (
     `id`           int                                                           NOT NULL AUTO_INCREMENT COMMENT 'silence id',
@@ -1134,7 +1082,6 @@ CREATE TABLE `silence`
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 COLLATE=utf8mb3_unicode_ci;
 
 
-DROP TABLE IF EXISTS `silence_matcher`;
 CREATE TABLE `silence_matcher`
 (
     `silence_id` int                                                           NOT NULL COMMENT 'silence id',

@@ -211,7 +211,7 @@ public class HeraResourceEventHandler implements ResourceEventHandler<HeraBootst
     private void block2checkStatus(ObjectMeta objectMeta) throws InterruptedException {
         String namespace = objectMeta.getNamespace();
 
-        for (int i = 0; i < 7; i++) {
+        for (int i = 0; i < 15; i++) {
             boolean ready = true;
             DeploymentList deploymentList = deploymentClient.inNamespace(namespace).list();
             List<Deployment> list = deploymentList.getItems();
@@ -237,7 +237,7 @@ public class HeraResourceEventHandler implements ResourceEventHandler<HeraBootst
             }
         }
 
-        throw new RuntimeException("deployment not ready, after retry 6 times, break");
+        throw new RuntimeException("deployment not ready, after retry 15 times, break");
     }
 
 //    private void initResource(String action) {

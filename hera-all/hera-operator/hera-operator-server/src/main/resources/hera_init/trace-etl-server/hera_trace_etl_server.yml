@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: trace-etl-server-container
-        image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:trace-etl-server-v9
+        image: herahub/opensource-pub:trace-etl-server-v1
         ports:
         - containerPort: 4446
         resources:

@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: log-manager-container
-        image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:log-manager-v19
+        image: herahub/opensource-pub:log-manager-v1
         resources:
           limits:
             cpu: '500m'

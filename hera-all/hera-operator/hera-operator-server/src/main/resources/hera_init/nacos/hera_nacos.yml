@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: nacos-container
-        image: prod-mione-opensource-registry.cn-beijing.cr.aliyuncs.com/prod-mione-opensource/prod-mione-opensource:mone-nacos-mysql-v0.0.1
+        image: herahub/opensource-pub:mone-nacos-mysql-v1
         env:
           - name: db.url.0
             value: 'jdbc:mysql://mone-db-all:3306/nacos_standalone?characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true'
