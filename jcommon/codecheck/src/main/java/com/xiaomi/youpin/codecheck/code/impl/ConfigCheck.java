@@ -29,7 +29,7 @@ public class ConfigCheck {
             add(PREFIX_JAVA);
             add(PREFIX_ORI);
         }});
-
+        
         mapRes = check(fileList);
         return mapRes;
     }
