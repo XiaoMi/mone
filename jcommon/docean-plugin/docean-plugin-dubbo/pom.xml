@@ -18,9 +18,10 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.dubbo</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>dubbo</artifactId>
-            <version>2.7.0-mone-SNAPSHOT</version>
+            <version>2.7.12-mone-v8-SNAPSHOT</version>
+            <scope>provided</scope>
         </dependency>
 
 

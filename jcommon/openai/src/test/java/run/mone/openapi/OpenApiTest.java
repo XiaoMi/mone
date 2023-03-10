@@ -27,7 +27,7 @@ public class OpenApiTest {
 //        Proxy proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress("127.0.0.1", 7890));
         //日志输出可以不添加
         HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(new OpenAILogger());
-        httpLoggingInterceptor.setLevel(HttpLoggingInterceptor.Level.NONE);
+        httpLoggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
         OpenAiClient openAiClient = OpenAiClient.builder()
                 .apiKey(System.getenv("open_api_key"))
                 .connectTimeout(50)
@@ -37,7 +37,7 @@ public class OpenApiTest {
 //                .proxy(proxy)
                 .apiHost("https://api.openai.com/")
                 .build();
-        CompletionResponse completions = openAiClient.completions("阳光下的罪恶这部小说讲的是什么?");
+        CompletionResponse completions = openAiClient.completions("三国里最厉害的武将是谁?");
         Arrays.stream(completions.getChoices()).forEach(System.out::println);
     }
 
