@@ -93,10 +93,11 @@ public class CodeCheck implements Serializable {
                 res.put(it.getPath(), checkResultList);
             }
 
-            Pair<Integer, CheckResult> javaDocRes = JavaDocReader.check(it.getPath());
-            if (javaDocRes.getKey() > CheckResult.INFO) {
-                res.put(it.getPath(),  Lists.newArrayList(javaDocRes.getRight()));
-            }
+            //todo doc这里会打印一些符号找不到的信息，线注释掉
+//            Pair<Integer, CheckResult> javaDocRes = JavaDocReader.check(it.getPath());
+//            if (javaDocRes.getKey() > CheckResult.INFO) {
+//                res.put(it.getPath(),  Lists.newArrayList(javaDocRes.getRight()));
+//            }
         });
 
         //pom.xml校验
