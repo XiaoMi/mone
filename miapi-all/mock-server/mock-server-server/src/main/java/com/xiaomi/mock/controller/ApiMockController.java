@@ -42,10 +42,8 @@ public class ApiMockController {
         JsonElement paramsJson = null;
         if ("GET".equals(context.getMethod())) {
             if (context.getParams().getAsJsonObject().size() == 0) {
-                //没传参数
                 paramsMd5 = Md5Utils.getMD5("");
             } else {
-                //带参数
                 List<FormBo> list = new ArrayList<>();
                 JsonObject object = context.getParams().getAsJsonObject();
                 object.entrySet().forEach(entry -> {
@@ -54,7 +52,7 @@ public class ApiMockController {
                     bo.setParamValue(entry.getValue().getAsString());
                     list.add(bo);
                 });
-                //排序
+                //sort the params
                 list.sort(Comparator.comparing(FormBo::getParamKey));
 
                 List<Map<String, Object>> mapList = new ArrayList<>();
@@ -70,12 +68,10 @@ public class ApiMockController {
         } else if ("POST".equals(context.getMethod())) {
             //POST
             if (context.getParams() != null) {
-                //带参数
                 paramsStr = context.getParams().toString();
                 paramsMd5 = Md5Utils.getMD5(paramsStr);
                 paramsJson = context.getParams();
             } else {
-                //不带参数
                 paramsMd5 = Md5Utils.getMD5("");
             }
             return apiMockService.getMockDataByProxyUrl(context.getPath(), paramsMd5,headers,paramsJson);
@@ -94,10 +90,8 @@ public class ApiMockController {
 
         if ("GET".equals(context.getMethod())) {
             if (context.getParams().getAsJsonObject().size() == 0) {
-                //没传参数
                 paramsMd5 = Md5Utils.getMD5("");
             } else {
-                //带参数
                 List<FormBo> list = new ArrayList<>();
                 JsonObject object = context.getParams().getAsJsonObject();
                 object.entrySet().forEach(entry -> {
@@ -106,7 +100,6 @@ public class ApiMockController {
                     bo.setParamValue(entry.getValue().getAsString());
                     list.add(bo);
                 });
-                //排序
                 list.sort(Comparator.comparing(FormBo::getParamKey));
 
                 List<Map<String, Object>> mapList = new ArrayList<>();
@@ -121,11 +114,9 @@ public class ApiMockController {
         } else if ("POST".equals(context.getMethod())) {
             //POST
             if (context.getParams() != null) {
-                //带参数
                 paramsStr = context.getParams().toString();
                 paramsMd5 = Md5Utils.getMD5(paramsStr);
             } else {
-                //不带参数
                 paramsMd5 = Md5Utils.getMD5("");
             }
             return apiMockService.getMockDataByApi(context.getPath(), paramsMd5,null,null);
@@ -155,10 +146,8 @@ public class ApiMockController {
 
         if ("GET".equals(context.getMethod())) {
             if (context.getParams().getAsJsonObject().size() == 0) {
-                //没传参数
                 paramsMd5 = Md5Utils.getMD5("");
             } else {
-                //带参数
                 paramsStr = context.getParams().toString();
                 paramsMd5 = Md5Utils.getMD5(paramsStr);
             }
@@ -166,11 +155,9 @@ public class ApiMockController {
         } else if ("POST".equals(context.getMethod())) {
             //POST
             if (context.getParams() != null) {
-                //带参数
                 paramsStr = context.getParams().toString();
                 paramsMd5 = Md5Utils.getMD5(paramsStr);
             } else {
-                //不带参数
                 paramsMd5 = Md5Utils.getMD5("");
             }
             return apiMockService.getMockDataByApi(context.getPath(), paramsMd5,null,null);
@@ -194,10 +181,8 @@ public class ApiMockController {
 
         if ("GET".equals(context.getMethod())) {
             if (context.getParams().getAsJsonObject().size() == 0) {
-                //没传参数
                 paramsMd5 = Md5Utils.getMD5("");
             } else {
-                //带参数
                 List<FormBo> list = new ArrayList<>();
                 JsonObject object = context.getParams().getAsJsonObject();
                 object.entrySet().forEach(entry -> {
@@ -206,7 +191,6 @@ public class ApiMockController {
                     bo.setParamValue(entry.getValue().getAsString());
                     list.add(bo);
                 });
-                //排序
                 list.sort(Comparator.comparing(FormBo::getParamKey));
 
                 List<Map<String, Object>> mapList = new ArrayList<>();
@@ -221,11 +205,9 @@ public class ApiMockController {
         } else if ("POST".equals(context.getMethod())) {
             //POST
             if (context.getParams() != null) {
-                //带参数
                 paramsStr = context.getParams().toString();
                 paramsMd5 = Md5Utils.getMD5(paramsStr);
             } else {
-                //不带参数
                 paramsMd5 = Md5Utils.getMD5("");
             }
             return apiMockService.getMockDataByApi(context.getPath(), paramsMd5,null,null);

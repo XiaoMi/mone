@@ -27,7 +27,7 @@ CREATE TABLE `hera_trace_etl_config` (
 `create_user` varchar(32) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '创建人',
 `update_user` varchar(32) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '修改人',
 PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 ```
 
 （2）RocketMQ

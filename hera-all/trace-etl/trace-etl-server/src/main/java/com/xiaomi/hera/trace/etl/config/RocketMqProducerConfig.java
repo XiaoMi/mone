@@ -1,5 +1,6 @@
 package com.xiaomi.hera.trace.etl.config;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.xiaomi.hera.trace.etl.mq.rocketmq.ClientMessageQueue;
 import com.xiaomi.hera.trace.etl.mq.rocketmq.RocketMqProducer;
 import org.apache.rocketmq.client.exception.MQClientException;
@@ -16,7 +17,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RocketMqProducerConfig {
 
-    @Value("${mq.rocketmq.nameseraddr}")
+    @NacosValue("${mq.rocketmq.nameseraddr}")
     private String nameSrvAddr;
 
     @Value("${mq.rocketmq.es.topic}")

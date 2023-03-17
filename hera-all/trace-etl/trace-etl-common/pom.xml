@@ -28,7 +28,7 @@
 
         <dependency>
             <groupId>run.mone</groupId>
-            <artifactId>prometheus-client</artifactId>
+            <artifactId>prometheus-trace-etl</artifactId>
             <version>0.0.5-SNAPSHOT</version>
         </dependency>
 
