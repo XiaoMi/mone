@@ -1,5 +1,6 @@
 package com.xiaomi.hera.trace.etl.consumer;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.xiaomi.hera.trace.etl.mq.rocketmq.ClientMessageQueue;
 import com.xiaomi.hera.trace.etl.mq.rocketmq.RocketMqProducer;
 import com.xiaomi.hera.trace.etl.util.ThriftUtil;
@@ -31,7 +32,7 @@ public class ConsumerService {
     @Value("${mq.rocketmq.consumer.group}")
     private String group;
 
-    @Value("${mq.rocketmq.nameseraddr}")
+    @NacosValue("${mq.rocketmq.nameseraddr}")
     private String nameSerAddr;
 
     @Value("${mq.rocketmq.server.topic}")
