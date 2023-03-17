@@ -283,7 +283,14 @@ public class SidecarPlugin implements IPlugin {
             Set<UdsProcessor> processorSet = ioc.getBeans(UdsProcessor.class);
             processorSet.stream().filter(it -> it.side().equals(SideType.server)).forEach(it -> server.putProcessor(it));
             if (grpc) {
-                new Thread(() -> this.grpcServer.start(this.sideCarGrpcServerPort)).start();
+                new Thread(() -> {
+                    String port = sideCarGrpcServerPort;
+                    Config config = ioc.getBean(Config.class);
+                    if (config != null && !StringUtils.isEmpty(config.get("biz_grpc_server_addr", ""))) {
+                        port = config.get("biz_grpc_server_addr", "").split(":")[1];
+                    }
+                    this.grpcServer.start(port);
+                }).start();
             }
             Consumer<RpcServerInfo> consumer = ioc.getBean("regConsumer");
             if (Optional.ofNullable(consumer).isPresent()) {
