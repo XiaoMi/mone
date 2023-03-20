@@ -126,6 +126,25 @@ public class OpenApiTest {
         Arrays.stream(completions.getChoices()).forEach(System.out::println);
     }
 
+    @Test
+    public void testListModels() {
+        Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyAddr, 65522));
+        HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(new OpenAILogger());
+        httpLoggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+        OpenAiClient openAiClient = OpenAiClient.builder()
+                .apiKey(System.getenv("open_api_key"))
+                .connectTimeout(50)
+                .writeTimeout(50)
+                .readTimeout(50)
+                .interceptor(Arrays.asList(httpLoggingInterceptor))
+                .proxy(proxy)
+                .apiHost("https://api.openai.com/")
+                .build();
+        openAiClient.models().forEach(it->{
+            System.out.println(it.getID());
+        });
+    }
+
 
     static class FakeDnsResolver implements DnsResolver {
         @Override
@@ -210,4 +229,5 @@ public class OpenApiTest {
         String text = array.getJSONObject(0).getString("text");
         System.out.println(text);
     }
+    //ai openapi 中 的 Fine-tunes 作用是什么?可以用来干什么
 }
