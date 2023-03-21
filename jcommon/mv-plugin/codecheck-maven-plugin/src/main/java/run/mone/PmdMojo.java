@@ -35,8 +35,7 @@ import java.util.Map;
  * @author zhangping17
  */
 @Mojo( name = "pmd", defaultPhase = LifecyclePhase.VALIDATE )
-public class PmdMojo extends AbstractMojo
-{
+public class PmdMojo extends AbstractMojo {
     /**
      * Location of the file.
      */
