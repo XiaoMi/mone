@@ -63,6 +63,7 @@ public class JarCheckMojo extends AbstractMojo {
         log.info("=============================begin jarcheck：" +project.getName()+ "=============================");
         ClassLoader classLoader = getClassLoader(this.project);
         if (classLoader == null) {
+            log.info("=============================end jarcheck：" +project.getName()+ "=============================");
             return;
         }
         List<String> classNames = getClassNames();
@@ -70,7 +71,13 @@ public class JarCheckMojo extends AbstractMojo {
             log.info("=============================end jarcheck：" +project.getName()+ "=============================");
             return;
         }
-        Class dubboAnno = classLoader.loadClass(dubboReference);
+        Class dubboAnno = null;
+        try {
+            dubboAnno = classLoader.loadClass(dubboReference);
+        } catch (Exception e) {
+            log.info("=============================end jarcheck：" +project.getName()+ "=============================");
+            return;
+        }
         Set<Class<?>> classSet = new HashSet<>();
         for (String className : classNames) {
             Class cl = classLoader.loadClass(className);
