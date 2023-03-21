@@ -6,8 +6,7 @@ plugins {
 }
 
 dependencies {
-  implementation "io.opentelemetry.myself:opentelemetry-exporter-jaeger-myself:0.1.0-20220816.023241-9"
-  implementation "io.opentelemetry.myself:opentelemetry-exporter-talos-myself:0.1.0-20211217.025409-14"
+  implementation "run.mone:opentelemetry-exporter-jaeger"
   implementation "run.mone:opentelemetry-exporter-otlp"
   implementation "run.mone:opentelemetry-exporter-otlp-metrics"
 

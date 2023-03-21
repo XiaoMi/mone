@@ -48,6 +48,9 @@ final class MetricExporterConfiguration {
   private static final String NODE_IP = System.getenv("node.ip");
   private static final String ENV_ID = System.getenv("MIONE_PROJECT_ENV_ID");
   private static final String ENV_DEFAULT = "default_env";
+  private static final String LOG_AGENT_PORT = "55435";
+  private static final String LOG_AGENT_NACOS_KET = "prometheus_server_10010_log_agent";
+  private static final String LOG_AGENT_ENV_ID = "1";
 
   static void configureExporter(
       String name, ConfigProperties config, SdkMeterProvider meterProvider) {
@@ -182,7 +185,8 @@ final class MetricExporterConfiguration {
       }
     }
     String nacosAddr = config.getString("otel.exporter.prometheus.nacos.addr");
-    registNacos(javaagentPrometheusPort, nacosAddr);
+    registJvmNacos(javaagentPrometheusPort, nacosAddr);
+    registLogAgentNacos(nacosAddr);
 
     PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
     if ("1".equals(BUILDIN_K8S)) {
@@ -215,7 +219,7 @@ final class MetricExporterConfiguration {
     }).start();
   }
 
-  private static void registNacos(String prometheusPort, String nacosServerAddr) {
+  private static void registJvmNacos(String prometheusPort, String nacosServerAddr) {
     try {
       String appName = "prometheus_server_" + applicationName;
       NacosNamingService nacosNamingService = new NacosNamingService(nacosServerAddr);
@@ -227,7 +231,7 @@ final class MetricExporterConfiguration {
       if (StringUtils.isNotEmpty(ENV_ID)) {
         map.put("env_id", ENV_ID);
       }
-      if (StringUtils.isNotEmpty(projectEnv)){
+      if (StringUtils.isNotEmpty(projectEnv)) {
         map.put("env_name", projectEnv);
       }
       instance.setMetadata(map);
@@ -237,6 +241,33 @@ final class MetricExporterConfiguration {
         logger.log(Level.INFO, "nacos shutdown hook deregister instance");
         try {
           nacosNamingService.deregisterInstance(appName, instance);
+        } catch (Exception e) {
+          logger.log(Level.WARNING, "nacos shutdown hook error : " + e.getMessage());
+        }
+      }));
+    } catch (Exception e) {
+      throw new ConfigurationException(
+          "Prometheus export regist nacos exception: " + e.getMessage());
+    }
+  }
+
+  private static void registLogAgentNacos(String nacosAddr) {
+    try {
+      NacosNamingService nacosNamingService = new NacosNamingService(nacosAddr);
+      Instance instance = new Instance();
+      instance.setIp(serverIp);
+      instance.setPort(55256);
+      Map<String, String> map = new HashMap<>();
+      map.put("javaagent_prometheus_port", LOG_AGENT_PORT);
+      map.put("env_id", LOG_AGENT_ENV_ID);
+      map.put("env_name", ENV_DEFAULT);
+      instance.setMetadata(map);
+      nacosNamingService.registerInstance(LOG_AGENT_NACOS_KET, instance);
+      // deregister
+      Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        logger.log(Level.INFO, "nacos shutdown hook deregister instance");
+        try {
+          nacosNamingService.deregisterInstance(LOG_AGENT_NACOS_KET, instance);
         } catch (Exception e) {
           logger.log(Level.WARNING, "nacos shutdown hook error : " + e.getMessage());
         }
