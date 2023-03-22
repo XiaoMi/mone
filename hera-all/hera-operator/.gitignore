@@ -18,5 +18,6 @@ nohup*
 *.swp
 *.pyc
 .sbtserver*
+.java-version
 /hera-operator-service/target/
 /hera-operator-server/target/
