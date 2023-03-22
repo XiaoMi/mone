@@ -18,6 +18,8 @@ package com.xiaomi.youpin.docean.common;
 
 import lombok.Data;
 
+import java.util.Objects;
+
 /**
  * @author goodjava@qq.com
  * @date 2020/6/24
@@ -40,4 +42,16 @@ public class Pair<K, V> {
         return new Pair<>(key, value);
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Pair<?, ?> pair = (Pair<?, ?>) o;
+        return Objects.equals(key, pair.key) && Objects.equals(value, pair.value);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(key, value);
+    }
 }

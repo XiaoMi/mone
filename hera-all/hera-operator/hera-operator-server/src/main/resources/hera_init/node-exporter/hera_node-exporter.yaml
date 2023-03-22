@@ -1,0 +1,79 @@
+kind: DaemonSet
+apiVersion: apps/v1
+metadata:
+  name: node-exporter
+  namespace: hera-namespace
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: exporter
+      app.kubernetes.io/name: node-exporter
+      app.kubernetes.io/part-of: kube-prometheus
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app.kubernetes.io/component: exporter
+        app.kubernetes.io/name: node-exporter
+        app.kubernetes.io/part-of: kube-prometheus
+        app.kubernetes.io/version: 1.2.2
+    spec:
+      volumes:
+        - name: sys
+          hostPath:
+            path: /sys
+            type: ''
+        - name: root
+          hostPath:
+            path: /
+            type: ''
+      containers:
+        - name: node-exporter
+          image: prom/node-exporter:v1.2.2
+          args:
+            - '--path.sysfs=/host/sys'
+            - '--path.rootfs=/host/root'
+            - '--no-collector.wifi'
+            - '--no-collector.hwmon'
+            - '--collector.filesystem.ignored-mount-points=^/(dev|proc|sys|var/lib/docker/.+|var/lib/kubelet/pods/.+)($|/)'
+            - '--collector.netclass.ignored-devices=^(veth.*|[a-f0-9]{15})$'
+            - '--collector.netdev.device-exclude=^(veth.*|[a-f0-9]{15})$'
+            - '--no-collector.ipvs'
+            - '--web.listen-address=:9101'
+          ports:
+            - name: http
+              hostPort: 9101
+              containerPort: 9101
+              protocol: TCP
+          resources:
+            limits:
+              cpu: 250m
+              memory: 400Mi
+            requests:
+              cpu: 102m
+              memory: 180Mi
+          volumeMounts:
+            - name: sys
+              readOnly: true
+              mountPath: /host/sys
+              mountPropagation: HostToContainer
+            - name: root
+              readOnly: true
+              mountPath: /host/root
+              mountPropagation: HostToContainer
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: IfNotPresent
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        kubernetes.io/os: linux
+      hostNetwork: true
+      hostPID: true
+      securityContext:
+        runAsUser: 65534
+        runAsNonRoot: true
+      schedulerName: default-scheduler
+      tolerations:
+        - operator: Exists

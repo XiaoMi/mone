@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hera-demo-client
+  namespace: hera-namespace
+  labels:
+    app: hera-demo-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hera-demo-client
+  template:
+    metadata:
+      labels:
+        app: hera-demo-client
+    spec:
+      containers:
+      - name: hera-demo-client-container
+        image: herahub/opensource-pub:hera-demo-client-v1
+        env:
+          - name: host.ip
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: status.podIP
+          - name: node.ip
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: status.hostIP
+          - name: MIONE_LOG_PATH
+            value: /home/work/log/hera-demo-client
+          - name: mione.app.name
+            value: 2-hera-demo-client
+          - name: TESLA_HOST
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: status.podIP
+          - name: hera.buildin.k8s
+            value: '1'
+          - name: MIONE_PROJECT_ENV_NAME
+            value: dev
+          - name: JAVAAGENT_PROMETHEUS_PORT
+            value: '55433'
+          - name: PROMETHEUS_PORT
+            value: '55423'
+          - name: MIONE_PROJECT_ENV_ID
+            value: '2'
+          - name: APPLICATION
+            value: 2_hera_demo_client
+          - name: serverEnv
+            value: dev
+        volumeMounts:
+          - name: log-path
+            mountPath: /home/work/log
+        resources:
+          limits:
+            cpu: '500m'
+            memory: 2Gi
+
+      - name: log-agent
+        image: herahub/opensource-pub:log-agent-v1
+        volumeMounts:
+        - mountPath: "/home/work/log"
+          name: log-path
+        resources:
+          limits:
+            cpu: '300m'
+            memory: 1Gi
+      volumes:
+      - name: log-path
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hera-demo-client
+  namespace: hera-namespace
+  labels:
+    app: hera-demo-client
+spec:
+  ports:
+    - port: 8085
+      targetPort: 8085
+      protocol: TCP
+  selector:
+    app: hera-demo-client
+  clusterIP: None

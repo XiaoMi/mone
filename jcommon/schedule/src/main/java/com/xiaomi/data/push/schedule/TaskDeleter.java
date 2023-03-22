@@ -43,7 +43,7 @@ public class TaskDeleter implements PushService {
     }
 
     public int deleteTaskById(int id) {
-        TaskExample example = new TaskExample();
+        //TaskExample example = new TaskExample();
         int len = this.taskMapper.deleteByPrimaryKey(id);
         log.info("delete task id:{},len:{}",id,len);
         return len;

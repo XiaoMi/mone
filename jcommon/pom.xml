@@ -62,7 +62,6 @@
         <module>mv-plugin</module>
         <module>teambition</module>
         <module>spider</module>
-        <module>umami</module>
         <module>disruptor</module>
         <module>pool</module>
         <module>raft</module>
@@ -76,6 +75,7 @@
         <module>rpc-codes</module>
         <module>mybatis-plugins</module>
         <module>processor</module>
+        <module>openai</module>
     </modules>
 
 

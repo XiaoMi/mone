@@ -25,9 +25,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.dubbo</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>dubbo</artifactId>
-            <version>2.7.0-mone-serverless-SNAPSHOT</version>
+            <version>2.7.0-mone-serverless-v14-SNAPSHOT</version>
         </dependency>
 
 
@@ -41,12 +41,6 @@
             <groupId>com.alibaba</groupId>
             <artifactId>dubbo-registry-nacos</artifactId>
             <version>0.0.2-youpin-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.dubbo</groupId>
-            <artifactId>dubbo</artifactId>
-            <version>2.7.0-mone-serverless-SNAPSHOT</version>
         </dependency>
 
 

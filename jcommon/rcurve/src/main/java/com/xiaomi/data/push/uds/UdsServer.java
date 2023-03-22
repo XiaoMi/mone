@@ -22,6 +22,7 @@ import com.xiaomi.data.push.uds.context.TraceContext;
 import com.xiaomi.data.push.uds.context.TraceEvent;
 import com.xiaomi.data.push.uds.context.UdsServerContext;
 import com.xiaomi.data.push.uds.handler.UdsServerHandler;
+import com.xiaomi.data.push.uds.po.RpcServerInfo;
 import com.xiaomi.data.push.uds.po.UdsCommand;
 import com.xiaomi.data.push.uds.processor.UdsProcessor;
 import io.netty.bootstrap.ServerBootstrap;
@@ -39,7 +40,9 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Optional;
 import java.util.concurrent.*;
+import java.util.function.Consumer;
 
 /**
  * @author goodjava@qq.com
@@ -70,6 +73,14 @@ public class UdsServer implements IServer<UdsCommand> {
 
     private String path;
 
+    @Setter
+    private String name;
+
+    @Setter
+    private boolean reg;
+
+    private Consumer<RpcServerInfo> regConsumer;
+
     public static ConcurrentHashMap<Long, CompletableFuture<UdsCommand>> reqMap = new ConcurrentHashMap<>();
 
 
@@ -77,7 +88,7 @@ public class UdsServer implements IServer<UdsCommand> {
     }
 
     public void putProcessor(UdsProcessor processor) {
-        this.processorMap.put(processor.cmd(), Pair.of(processor, ExecutorServiceUtils.creatThreadPool(processor.poolSize(),this.pool)));
+        this.processorMap.put(processor.cmd(), Pair.of(processor, ExecutorServiceUtils.creatThreadPool(processor.poolSize(), this.pool)));
     }
 
 
@@ -107,10 +118,31 @@ public class UdsServer implements IServer<UdsCommand> {
             SocketAddress s = this.remote ? new InetSocketAddress(this.host, this.port) : new DomainSocketAddress(path);
             ChannelFuture f = b.bind(s);
             log.info("bind:{}", this.remote ? this.host + ":" + this.port : path);
+
+            if (Optional.ofNullable(this.regConsumer).isPresent()) {
+                RpcServerInfo si = this.getServerInfo();
+                log.info("reg server :{}", si);
+                this.regConsumer.accept(si);
+            }
+
             f.channel().closeFuture().sync();
         } catch (Throwable ex) {
             log.error(ex.getMessage(), ex);
         }
+    }
+
+    @Override
+    public RpcServerInfo getServerInfo() {
+        RpcServerInfo si = new RpcServerInfo();
+        String host = this.host;
+        int port = this.port;
+        String name = this.name;
+        boolean reg = this.reg;
+        si.setHost(host);
+        si.setPort(port);
+        si.setName(name);
+        si.setReg(reg);
+        return si;
     }
 
     @Override
@@ -129,6 +161,9 @@ public class UdsServer implements IServer<UdsCommand> {
 
 
     private void delPath() {
+        if (null == this.path || this.path.trim().equals("")) {
+            return;
+        }
         SafeRun.run(() -> {
             if (Files.exists(Paths.get(this.path))) {
                 Files.delete(Paths.get((this.path)));
@@ -171,4 +206,8 @@ public class UdsServer implements IServer<UdsCommand> {
         }
     }
 
+    @Override
+    public void setRegConsumer(Consumer<RpcServerInfo> regConsumer) {
+        this.regConsumer = regConsumer;
+    }
 }

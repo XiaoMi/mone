@@ -22,6 +22,7 @@ import com.xiaomi.data.push.uds.UdsServer;
 import com.xiaomi.data.push.uds.codes.GsonCodes;
 import com.xiaomi.data.push.uds.context.NetListener;
 import com.xiaomi.data.push.uds.context.UdsClientContext;
+import com.xiaomi.data.push.uds.po.RpcServerInfo;
 import com.xiaomi.data.push.uds.processor.SideType;
 import com.xiaomi.data.push.uds.processor.UdsProcessor;
 import com.xiaomi.mone.grpc.GrpcClient;
@@ -30,27 +31,41 @@ import com.xiaomi.mone.grpc.GrpcServer;
 import com.xiaomi.mone.grpc.context.GrpcServerContext;
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.DOceanPlugin;
+import com.xiaomi.youpin.docean.common.Pair;
 import com.xiaomi.youpin.docean.common.StringUtils;
 import com.xiaomi.youpin.docean.plugin.IPlugin;
 import com.xiaomi.youpin.docean.plugin.config.Config;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.cglib.proxy.Enhancer;
 import run.mone.api.IClient;
 import run.mone.api.IServer;
 import run.mone.docean.plugin.sidecar.anno.MeshReference;
+import run.mone.docean.plugin.sidecar.bo.Ping;
+import run.mone.docean.plugin.sidecar.bo.ProviderMap;
+import run.mone.docean.plugin.sidecar.bo.SideCarApp;
 import run.mone.docean.plugin.sidecar.interceptor.CallMethodInterceptor;
+import run.mone.docean.plugin.sidecar.service.SideCarInfoService;
 import run.mone.docean.plugin.sidecar.state.client.ClientFsm;
+import run.mone.docean.plugin.sidecar.state.client.ConnectState;
+import run.mone.docean.plugin.sidecar.state.client.InitState;
+import run.mone.docean.plugin.sidecar.state.client.PingState;
 
 import java.lang.annotation.Annotation;
-import java.util.Arrays;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * @Author goodjava@qq.com
  * @Date 2021/1/24 20:31
  * <p>
- * 支持2种协议  uds<Tcp> 和 grpc
+ * 支持3种协议  uds grpc tcp
+ * 主要用来做sidecar间的通信
+ * 支持 1:1 n:m 通信模式
  */
 @DOceanPlugin
 @Slf4j
@@ -62,7 +77,21 @@ public class SidecarPlugin implements IPlugin {
 
     private boolean openClientGroup;
 
+    /**
+     * 开启多tcp client 模式 (网关的m:n模型)
+     */
+    private boolean openTcpClientGroup;
+
     private IClient client;
+
+    @Getter
+    private ConcurrentHashMap<String, ProviderMap> clientMap = new ConcurrentHashMap<>();
+
+
+    /**
+     * 用来发现服务的function
+     */
+    private Function DiscoveryFunction;
 
     /**
      * uds 或者 tcp 服务器
@@ -95,6 +124,8 @@ public class SidecarPlugin implements IPlugin {
 
     private String groupConfig = "";
 
+    private String tcpGroupConfig = "";
+
     /**
      * uds 是否开启remote模式(其实就是tcp模式)
      */
@@ -103,6 +134,8 @@ public class SidecarPlugin implements IPlugin {
     private String host;
 
     private int port;
+
+    private int serverPort = 7777;
 
 
     @Override
@@ -113,8 +146,11 @@ public class SidecarPlugin implements IPlugin {
             return;
         }
         this.openServer = Boolean.valueOf(config.get("sidecarServer", "false"));
+        this.serverPort = Integer.valueOf(config.get("serverPort", "7777"));
         this.openClient = Boolean.valueOf(config.get("sidecarClient", "false"));
 
+        this.openTcpClientGroup = Boolean.valueOf(config.get("openTcpClientGroup", "false"));
+        this.tcpGroupConfig = config.get("tcpGroupConfig", "");
 
         this.openClientGroup = Boolean.valueOf(config.get("openClientGroup", "false"));
         this.groupConfig = config.get("sidecarGroupConfig", "");
@@ -152,7 +188,7 @@ public class SidecarPlugin implements IPlugin {
         if (this.remote) {
             udsServer.setRemote(true);
             udsServer.setHost("0.0.0.0");
-            udsServer.setPort(7777);
+            udsServer.setPort(this.serverPort);
         }
         this.server = udsServer;
         ioc.putBean("sideCarServer", this.server);
@@ -180,6 +216,64 @@ public class SidecarPlugin implements IPlugin {
         return udsClient;
     }
 
+    /**
+     * 需要每个client上挂一个状态机
+     *
+     * @param address
+     * @return
+     */
+    public IClient createTcpClient(Pair<String, Integer> address) {
+        UdsClient udsClient = new UdsClient(String.valueOf(System.currentTimeMillis()));
+        udsClient.setRemote(true);
+        udsClient.setHost(address.getKey());
+        udsClient.setPort(address.getValue());
+
+        new Thread(() -> udsClient.start("")).start();
+
+        String app = "app_" + UUID.randomUUID();
+
+        ClientFsm fsm = new ClientFsm();
+        fsm.setClient(udsClient);
+
+        PingState pingState = new PingState();
+        InitState initState = new InitState();
+        ConnectState connectState = new ConnectState();
+
+        pingState.setFsm(fsm);
+        pingState.setClient(udsClient);
+        pingState.setApp(app);
+        pingState.setConnectState(connectState);
+        pingState.setDisableLog("true");
+
+        initState.setFsm(fsm);
+        initState.setClient(udsClient);
+        initState.setApp(app);
+        initState.setPingState(pingState);
+        initState.setSideCarInfoService(new SideCarInfoService() {
+            @Override
+            public SideCarApp getSideCarApp() {
+                SideCarApp app = new SideCarApp();
+                app.setUtime(System.currentTimeMillis());
+                return app;
+            }
+
+            @Override
+            public Ping getPingData() {
+                return new Ping();
+            }
+        });
+
+        connectState.setFsm(fsm);
+        connectState.setClient(udsClient);
+        connectState.setApp(app);
+        connectState.setInitState(initState);
+
+        fsm.setState(connectState);
+        fsm.execute();
+
+        return udsClient;
+    }
+
 
     @Override
     public boolean start(Ioc ioc) {
@@ -189,7 +283,18 @@ public class SidecarPlugin implements IPlugin {
             Set<UdsProcessor> processorSet = ioc.getBeans(UdsProcessor.class);
             processorSet.stream().filter(it -> it.side().equals(SideType.server)).forEach(it -> server.putProcessor(it));
             if (grpc) {
-                new Thread(() -> this.grpcServer.start(this.sideCarGrpcServerPort)).start();
+                new Thread(() -> {
+                    String port = sideCarGrpcServerPort;
+                    Config config = ioc.getBean(Config.class);
+                    if (config != null && !StringUtils.isEmpty(config.get("biz_grpc_server_addr", ""))) {
+                        port = config.get("biz_grpc_server_addr", "").split(":")[1];
+                    }
+                    this.grpcServer.start(port);
+                }).start();
+            }
+            Consumer<RpcServerInfo> consumer = ioc.getBean("regConsumer");
+            if (Optional.ofNullable(consumer).isPresent()) {
+                server.setRegConsumer(consumer);
             }
             new Thread(() -> server.start(path)).start();
         }
@@ -204,11 +309,36 @@ public class SidecarPlugin implements IPlugin {
             log.info("side car client start finish");
         }
         if (openClientGroup) {
+
+            ioc.putBean("", new SideCarInfoService() {
+
+                @Override
+                public SideCarApp getSideCarApp() {
+                    SideCarApp app = new SideCarApp();
+                    return null;
+                }
+
+                @Override
+                public Ping getPingData() {
+                    return new Ping();
+                }
+            });
+
             Arrays.stream(groupConfig.split(";")).forEach(it -> {
                 GrpcClient c = new GrpcClient();
                 c.start(it);
                 group.getClients().put(c.getApp(), c);
             });
+        }
+
+        if (openTcpClientGroup) {
+            Function f = ioc.getBean("sidecarDiscoveryFunction");
+            if (null != f) {
+                this.DiscoveryFunction = f;
+                Arrays.stream(tcpGroupConfig.split(";")).forEach(it -> {
+                    getClient(it);
+                });
+            }
         }
 
         /**
@@ -244,5 +374,40 @@ public class SidecarPlugin implements IPlugin {
     @Override
     public String version() {
         return "0.0.1:sidecar_plugin:2022-11-18";
+    }
+
+    private ConcurrentHashMap<String, Object> lockMap = new ConcurrentHashMap<>();
+
+    public IClient getClient(String name) {
+        if (null == this.DiscoveryFunction) {
+            return null;
+        }
+
+        Object obj = lockMap.compute(name, (k, v) -> {
+            if (v == null) {
+                return new Object();
+            }
+            return v;
+        });
+
+        synchronized (obj) {
+            ProviderMap providerList = this.clientMap.get(name);
+            List<IClient> list = null;
+            if (null == providerList) {
+                providerList = new ProviderMap();
+                providerList.refresh(this.DiscoveryFunction, name, this);
+                this.clientMap.put(name, providerList);
+            }
+            list = new ArrayList<>(providerList.getClientMap().values());
+            int n = list.size();
+            if (n == 1) {
+                return list.get(0);
+            }
+            if (n == 0) {
+                return null;
+            }
+
+            return list.get(ThreadLocalRandom.current().nextInt(n));
+        }
     }
 }

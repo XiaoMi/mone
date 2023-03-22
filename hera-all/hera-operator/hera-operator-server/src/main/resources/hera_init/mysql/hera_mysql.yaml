@@ -1,0 +1,96 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: hera-mysql-pv
+spec:
+  capacity:
+    storage: 10Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: hera-mysql-local-storage
+  local:
+    path: /opt/hera_pv/hera_mysql
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - replace your correct node name
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: hera-mysql-local-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pv-claim
+  namespace: hera-namespace
+  labels:
+    app: mone
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  storageClassName: hera-mysql-local-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mone-db-all
+  namespace: hera-namespace
+  labels:
+    app: mone
+spec:
+  ports:
+    - port: 3306
+  selector:
+    app: mone
+    tier: mysql
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mone-mysql
+  namespace: hera-namespace
+  labels:
+    app: mone
+spec:
+  selector:
+    matchLabels:
+      app: mone
+      tier: mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mone
+        tier: mysql
+    spec:
+      containers:
+        - image: mariadb:latest
+          name: mysql
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              value: 'Mone_123456'
+          ports:
+            - containerPort: 3306
+              name: mysql
+          volumeMounts:
+            - name: mysql-persistent-storage
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: mysql-persistent-storage
+          persistentVolumeClaim:
+            claimName: mysql-pv-claim

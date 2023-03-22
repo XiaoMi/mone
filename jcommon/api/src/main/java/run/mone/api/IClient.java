@@ -37,8 +37,20 @@ public interface IClient<C extends RpcCommand> {
 
     ConcurrentHashMap<String, UdsProcessor<C, C>> getProcessorMap();
 
-    default void putProcessor(UdsProcessor processor){
+    default void putProcessor(UdsProcessor processor) {
 
+    }
+
+    default void shutdown() {
+
+    }
+
+    default Address address() {
+        return null;
+    }
+
+    default boolean isShutdown() {
+        return false;
     }
 
 

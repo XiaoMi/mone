@@ -28,21 +28,21 @@ public abstract class ReconcileResourceEventHandler<T extends HasMetadata> imple
         }
         this.reconcile(t1.getMetadata());
     }
-
+    // implementation
     abstract public void reconcile(ObjectMeta meta);
-
+    // predicated for all event
     public boolean predicated(T t) {
         return true;
     }
-
+    // predicated for update event
     public boolean updatePredicated(T oldObj, T newObj) {
         return true;
     }
-
+    // predicated for add event
     public boolean addPredicated(T t) {
         return true;
     }
-
+    // predicated for deelte event
     public boolean deletePredicated(T t) {
         return true;
     }

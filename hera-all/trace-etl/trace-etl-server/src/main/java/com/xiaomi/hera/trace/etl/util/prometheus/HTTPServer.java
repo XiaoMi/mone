@@ -203,6 +203,9 @@ public class HTTPServer {
         }
 
         private boolean filterRequest(HttpExchange exchange){
+            if(StringUtils.isEmpty(ua)){
+                return true;
+            }
             // 按照UA过滤安全部扫描请求
             Headers requestHeaders = exchange.getRequestHeaders();
             if(requestHeaders != null && requestHeaders.size() > 0) {

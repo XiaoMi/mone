@@ -34,19 +34,17 @@ public class DockerLimit {
     private Long mem;
 
     /**
-     * 10-1000  默认是500
+     * 10-1000  default 500
      */
     private Integer blkioWeight;
 
-
     /**
-     * 不绑定cpu
+     * Not binding to a specific CPU
      */
     private boolean useCpus;
 
-
     /**
-     * cpu 的数量,可以是0.1
+     * The number of CPUs can be 0.1
      */
     private float cpuNum;
 

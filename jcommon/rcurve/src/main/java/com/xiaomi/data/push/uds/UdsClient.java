@@ -36,6 +36,7 @@ import io.netty.handler.codec.LengthFieldPrepender;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import run.mone.api.Address;
 import run.mone.api.IClient;
 
 import java.net.InetSocketAddress;
@@ -54,6 +55,8 @@ public class UdsClient implements IClient<UdsCommand> {
 
     @Getter
     private volatile Channel channel;
+
+    private volatile boolean shutdown;
 
     private final String id;
 
@@ -101,15 +104,21 @@ public class UdsClient implements IClient<UdsCommand> {
                         }
                     });
             ChannelFuture f = b.connect(remote ? new InetSocketAddress(this.host, this.port) : new DomainSocketAddress(path));
-            this.channel = f.sync().channel();
+            this.channel = f.channel();
+            f.sync();
         } catch (Throwable ex) {
             UdsClientContext.ins().exceptionCaught(ex);
-            log.error("start error:{}", ex.getMessage());
+            log.error("start error:{} restart", ex.getMessage());
             if (null != group) {
                 group.shutdownGracefully();
             }
+            if (shutdown) {
+                return;
+            }
             CommonUtils.sleep(2);
             start(path);
+        } finally {
+            log.info("client close host:{} port:{}", this.host, this.port);
         }
     }
 
@@ -129,7 +138,7 @@ public class UdsClient implements IClient<UdsCommand> {
         try {
             CompletableFuture<UdsCommand> future = new CompletableFuture<>();
             reqMap.put(req.getId(), future);
-            Channel channel = UdsClientContext.ins().channel.get();
+            Channel channel = this.channel;
             if (null == channel || !channel.isOpen()) {
                 log.warn("client channel is close");
                 throw new UdsException("client channel is close");
@@ -169,4 +178,28 @@ public class UdsClient implements IClient<UdsCommand> {
         }
     }
 
+    @Override
+    public void shutdown() {
+        log.info("client shutdown:{}", this.channel);
+        this.shutdown = true;
+        SafeRun.run(() -> {
+            if (null != this.channel && this.channel.isOpen()) {
+                log.info("close channel:{}", this.channel);
+                this.channel.close();
+            }
+        });
+    }
+
+    @Override
+    public Address address() {
+        Address address = new Address();
+        address.setIp(this.host);
+        address.setPort(this.port);
+        return address;
+    }
+
+    @Override
+    public boolean isShutdown() {
+        return this.shutdown;
+    }
 }

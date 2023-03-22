@@ -1,0 +1,4 @@
+FROM openjdk:8-jre
+COPY ./trace-etl-server-1.0.0-SNAPSHOT.jar /home/work/trace-etl-server-1.0.0-SNAPSHOT.jar
+EXPOSE 4446
+ENTRYPOINT ["java","-jar","-Duser.timezone=Asia/Shanghai","/home/work/trace-etl-server-1.0.0-SNAPSHOT.jar","&&","tail","-f","/dev/null"]
