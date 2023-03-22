@@ -115,7 +115,7 @@ public class CacheAop {
             }).collect(Collectors.joining("__"));
         }
 
-        Class returnType = method.getReturnType();
+ 		//Class returnType = method.getReturnType();
         String key = cache.key();
         if (cache.key().equals("")) {
             key = packageName + "_" + method.getName();
