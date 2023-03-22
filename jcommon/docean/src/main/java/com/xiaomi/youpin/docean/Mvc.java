@@ -21,7 +21,10 @@ import com.google.gson.JsonElement;
 import com.xiaomi.youpin.docean.anno.RequestMapping;
 import com.xiaomi.youpin.docean.bo.Bean;
 import com.xiaomi.youpin.docean.bo.MvcConfig;
-import com.xiaomi.youpin.docean.common.*;
+import com.xiaomi.youpin.docean.common.MethodInvoker;
+import com.xiaomi.youpin.docean.common.MutableObject;
+import com.xiaomi.youpin.docean.common.NamedThreadFactory;
+import com.xiaomi.youpin.docean.common.Safe;
 import com.xiaomi.youpin.docean.config.HttpServerConfig;
 import com.xiaomi.youpin.docean.exception.DoceanException;
 import com.xiaomi.youpin.docean.listener.event.Event;
@@ -70,7 +73,8 @@ public class Mvc {
 
     private void setConfig(Ioc ioc) {
         this.mvcConfig.setAllowCross(Boolean.valueOf(ioc.getBean(MvcConst.ALLOW_CROSS_DOMAIN, MvcConst.FALSE)));
-        this.mvcConfig.setDownload(Boolean.valueOf(ioc.getBean(MvcConst.MVC_DOWNLOAD, MvcConst.FALSE)));Boolean.valueOf(ioc.getBean(MvcConst.RESPONSE_ORIGINAL_VALUE, MvcConst.FALSE));
+        this.mvcConfig.setDownload(Boolean.valueOf(ioc.getBean(MvcConst.MVC_DOWNLOAD, MvcConst.FALSE)));
+        Boolean.valueOf(ioc.getBean(MvcConst.RESPONSE_ORIGINAL_VALUE, MvcConst.FALSE));
         this.mvcConfig.setUseCglib(Boolean.valueOf(ioc.getBean(MvcConst.CGLIB, MvcConst.TRUE)));
         this.mvcConfig.setResponseOriginalValue(Boolean.valueOf(ioc.getBean(MvcConst.RESPONSE_ORIGINAL_VALUE, MvcConst.FALSE)));
         this.mvcConfig.setPoolSize(Integer.valueOf(ioc.getBean(MvcConst.MVC_POOL_SIZE, String.valueOf(MvcConst.DEFAULT_MVC_POOL_SIZE))));
@@ -173,11 +177,11 @@ public class Mvc {
 
             if (data instanceof MvcResult) {
                 MvcResult<String> mr = (MvcResult) data;
-                //使用akka处理
+                // use akka to handle
                 if (mr.getCode() == -999) {
                     return;
                 }
-                //需要跳转(302)
+                // need to jump (302)
                 if (mr.getCode() == HttpResponseStatus.FOUND.code()) {
                     FullHttpResponse response302 = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.FOUND);
                     response302.headers().set(HttpHeaderNames.CONTENT_LENGTH, 0);
@@ -188,13 +192,13 @@ public class Mvc {
                     return;
                 }
             }
-            //直接返回构造的结果
+            // directly returns the result of the construction
             if (data instanceof FullHttpResponse) {
                 FullHttpResponse res = (FullHttpResponse) data;
                 response.getCtx().writeAndFlush(HttpResponseUtils.create(res));
                 return;
             }
-            // 获取配置是否返回没有包装的值
+            // get whether the configuration returns an unwrapped value
             if (this.mvcConfig.isResponseOriginalValue()) {
                 if (data instanceof String) {
                     response.writeAndFlush(context, (String) data);
@@ -218,7 +222,7 @@ public class Mvc {
     }
 
     /**
-     * 解析参数
+     * parsing parameters
      *
      * @param method
      * @param arguments
