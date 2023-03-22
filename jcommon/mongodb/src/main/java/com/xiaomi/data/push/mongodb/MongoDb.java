@@ -142,7 +142,7 @@ public class MongoDb {
         cat.before(null);
         try {
             MongoCollection<Document> collection = this.getCollection(collectionName);
-            MongoCursor<Document> cursor = collection.find().iterator();
+            //MongoCursor<Document> cursor = collection.find().iterator();
             List<Document> res = new ArrayList<>();
             for (Document cur : collection.find()) {
                 res.add(cur);
