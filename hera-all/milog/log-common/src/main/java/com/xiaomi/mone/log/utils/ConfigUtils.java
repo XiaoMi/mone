@@ -19,8 +19,11 @@ public class ConfigUtils {
 
     public static String getConfigValue(String propertyKey) {
         String propertyValue = "";
+        propertyValue = System.getenv(propertyKey);
         try {
-            propertyValue = System.getProperty(propertyKey);
+            if(StringUtils.isBlank(propertyValue)) {
+                propertyValue = System.getProperty(propertyKey);
+            }
         } catch (Exception e) {
             log.error("get system param error,propertyKey:{}", propertyKey, e);
         }
