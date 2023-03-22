@@ -93,6 +93,7 @@ public class ElasticCloud {
                 "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
             dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
 
+            URI uri = new URI(url);
             LinkedListMultimap<String, String> headers = LinkedListMultimap.create();
             headers.put("content-type", "application/json; charset=utf-8");
             headers.put("date", dateFormat.format(new Date()));
