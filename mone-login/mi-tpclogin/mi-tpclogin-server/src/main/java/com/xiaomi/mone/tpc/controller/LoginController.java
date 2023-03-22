@@ -93,7 +93,7 @@ public class LoginController {
 
 
     /**
-     * C端调用拦截
+     * 客户端调用拦截
      * @param authToken
      * @param fullInfo
      * @return

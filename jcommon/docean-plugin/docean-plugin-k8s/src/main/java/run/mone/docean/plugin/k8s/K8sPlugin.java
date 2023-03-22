@@ -71,7 +71,7 @@ public class K8sPlugin implements IPlugin {
     }
 
     /**
-     * 自定义资源
+     * custom resources definitions
      */
     private List<Crd> crdList = new ArrayList<>();
 
@@ -108,7 +108,7 @@ public class K8sPlugin implements IPlugin {
         ioc.putBean(KubernetesClient.class.getName(), client);
         Config config = ioc.getBean(Config.class);
         String customResourceStr = config.get("crd", "");
-        //自定义资源
+        // custom resources
         if (StringUtils.isNotEmpty(customResourceStr)) {
             crdList = Arrays.stream(customResourceStr.split(";")).map(it -> {
                 String[] array = it.split(":");
