@@ -3,6 +3,7 @@ package com.xiaomi.mone.log.manager.model.dto;
 import lombok.Data;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 @Data
@@ -13,7 +14,7 @@ public class LogDataDTO {
     private String lineNumber;
     private String ip;
     private String timestamp;
-    private Map<String, Object> highlight;
+    private Map<String, List<String>> highlight;
 
     public void setValue(String key, Object value) {
         logOfKV.put(key, value);
