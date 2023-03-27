@@ -51,3 +51,13 @@ kubectl delete ns hera-namespace
 ```
 4. 重新进行hera系统的部署，从部署operator开始，不再赘述。
 
+## 重新部署es
+- 默认的es部署没有绑定pv，重启之后初始化阶段由operator创建的索引模板会丢失。
+- 首先强烈建议给es绑定pv，可以参考mysql的默认配置。
+- 可以通过执行下面的命令来重新创建索引模板。
+```yaml
+sh indexTemplate.sh
+```
+- indexTemplate.sh在当前目录下，执行方式有两种选项：
+1. 默认es的服务类型是clusterIp，需要在同名字空间下的某个pod内执行。
+2. 也可以给es暴露NodePort服务，在集群外执行，把脚本中的elasticsearch:9200做相应修改。
