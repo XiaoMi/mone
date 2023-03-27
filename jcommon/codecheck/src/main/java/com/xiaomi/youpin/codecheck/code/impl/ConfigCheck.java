@@ -44,8 +44,11 @@ public class ConfigCheck {
             } else {
                 try {
                     String content = new String(Files.readAllBytes(Paths.get(file.getAbsolutePath())));
-                    if(true == CommonUtils.hasIPv4(content.toString())){
-                        checkResults.add(CheckResult.getErrorRes("file name: " + file.getPath(), DESC_1, CHINA_DESC_1));
+                    List<String> ips = CommonUtils.hasIP(content.toString());
+                    if(!ips.isEmpty()){
+                        if (!file.getPath().endsWith("pom.xml")) {
+                            checkResults.add(CheckResult.getErrorRes("file name: " + file.getPath(), DESC_1, CHINA_DESC_1+":"+String.join(",",ips)));
+                        }
                     }
                 } catch (IOException e) {
                     e.printStackTrace();

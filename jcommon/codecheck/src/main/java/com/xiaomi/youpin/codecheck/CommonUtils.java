@@ -21,6 +21,7 @@ import com.xiaomi.youpin.codecheck.po.CheckResult;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -193,5 +194,18 @@ public class CommonUtils {
         Pattern p = Pattern.compile(pattern);
         Matcher m = p.matcher(content);
         return m.find();
+    }
+
+    public static List<String> hasIP(String content){
+        List<String> ips = new ArrayList<>();
+        String pattern = "\\d+[\\.]\\d+[\\.]\\d+[\\.]\\d+";
+        Pattern p = Pattern.compile(pattern);
+        Matcher m = p.matcher(content);
+        while (m.find()) {
+            if (!"127.0.0.1".equals(m.group())) {
+                ips.add(m.group());
+            }
+        }
+        return ips;
     }
 }
