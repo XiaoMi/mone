@@ -140,7 +140,7 @@ public class EsClient {
     public void insertDocJson(String index, String jsonString) throws IOException {
         IndexRequest indexRequest = new IndexRequest(index, "_doc", UUID.randomUUID().toString()).source(jsonString, XContentType.JSON);
         indexRequest.opType(DocWriteRequest.OpType.CREATE);
-        IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
+       // IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
     }
 
     public void insertDocAsyn(String index, Map<String, Object> data, ActionListener<IndexResponse> listener) {

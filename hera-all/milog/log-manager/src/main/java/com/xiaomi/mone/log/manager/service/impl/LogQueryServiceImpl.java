@@ -1,5 +1,7 @@
 package com.xiaomi.mone.log.manager.service.impl;
 
+import cn.hutool.core.date.StopWatch;
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.xiaomi.mone.es.EsClient;
 import com.xiaomi.mone.log.api.model.dto.TraceLogDTO;
@@ -19,6 +21,7 @@ import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
 import com.xiaomi.mone.log.manager.model.vo.LogContextQuery;
 import com.xiaomi.mone.log.manager.model.vo.LogQuery;
 import com.xiaomi.mone.log.manager.model.vo.RegionTraceLogQuery;
+import com.xiaomi.mone.log.manager.service.EsDataBaseService;
 import com.xiaomi.mone.log.manager.service.LogQueryService;
 import com.xiaomi.mone.log.parse.LogParser;
 import com.xiaomi.youpin.docean.anno.Service;
@@ -26,16 +29,15 @@ import com.xiaomi.youpin.docean.common.StringUtils;
 import com.xiaomi.youpin.docean.plugin.es.EsService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
-import org.elasticsearch.search.fetch.subphase.highlight.HighlightField;
 import run.mone.excel.ExportExcel;
 
 import javax.annotation.Resource;
@@ -43,13 +45,15 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.xiaomi.mone.log.manager.common.utils.ManagerUtil.getKeyColonPrefix;
+import static com.xiaomi.mone.log.manager.common.utils.ManagerUtil.getKeyList;
 import static org.elasticsearch.search.sort.SortOrder.ASC;
 import static org.elasticsearch.search.sort.SortOrder.DESC;
 
 @Slf4j
 @Service
 @com.xiaomi.youpin.docean.plugin.dubbo.anno.Service(interfaceClass = LogDataService.class)
-public class LogQueryServiceImpl implements LogQueryService, LogDataService {
+public class LogQueryServiceImpl implements LogQueryService, LogDataService, EsDataBaseService {
 
     @Resource
     private LogstoreDao logstoreDao;
@@ -88,34 +92,39 @@ public class LogQueryServiceImpl implements LogQueryService, LogDataService {
      * @return
      */
     @Override
-    public Result<LogDTO> logQuery(LogQuery logQuery) throws Exception {
+    public Result<LogDTO> logQuery(LogQuery logQuery) {
+        String logInfo = String.format("queryText:%s, user:%s, logQuery:%s", logQuery.getFullTextSearch(), MoneUserContext.getCurrentUser().getUser(), logQuery);
+        log.info("query simple param:{}", logInfo);
+
         SearchRequest searchRequest = null;
+        StopWatch stopWatch = new StopWatch("HERA-LOG-QUERY");
         try {
-            MilogLogStoreDO milogLogstoreDO = logstoreDao.getByName(logQuery.getLogstore());
-            if (milogLogstoreDO == null) {
+            stopWatch.start("before-query");
+            MilogLogStoreDO logStore = logstoreDao.getByName(logQuery.getLogstore());
+            if (logStore == null) {
                 log.warn("[EsDataService.logQuery] not find logstore:[{}]", logQuery.getLogstore());
                 return Result.failParam("找不到[" + logQuery.getLogstore() + "]对应的数据");
             }
-            EsService esService = esCluster.getEsService(milogLogstoreDO.getEsClusterId());
-            String esIndexName = milogLogstoreDO.getEsIndex();
+            EsService esService = esCluster.getEsService(logStore.getEsClusterId());
+            String esIndexName = logStore.getEsIndex();
             if (esService == null || StringUtils.isEmpty(esIndexName)) {
                 log.warn("[EsDataService.logQuery] logstroe:[{}]配置异常", logQuery.getLogstore());
                 return Result.failParam("logstroe配置异常");
             }
-            List<String> keyList = getKeyList(milogLogstoreDO);
+            List<String> keyList = getKeyList(logStore.getKeyList(), logStore.getColumnTypeList());
             // 构建查询参数
-            BoolQueryBuilder boolQueryBuilder = searchLog.getQueryBuilder(logQuery, keyList);
+            BoolQueryBuilder boolQueryBuilder = searchLog.getQueryBuilder(logQuery, getKeyColonPrefix(logStore.getKeyList()));
             SearchSourceBuilder builder = new SearchSourceBuilder();
             builder.query(boolQueryBuilder);
             LogDTO dto = new LogDTO();
-            // 统计
-            CountRequest countRequest = new CountRequest();
-            countRequest.indices(esIndexName);
-            countRequest.source(builder);
-            Long total = esService.count(countRequest);
-            dto.setTotal(total);
+            stopWatch.stop();
+
             // 查询
+            stopWatch.start("bool-query");
             builder.sort(logQuery.getSortKey(), logQuery.getAsc() ? ASC : DESC);
+//            if ("cn".equals(milogLogstoreDO.getMachineRoom())) {
+//                builder.sort(LogParser.esKeyMap_lineNumber, logQuery.getAsc() ? ASC : DESC);
+//            }
             // 分页
             if (logQuery.getBeginSortValue() != null && logQuery.getBeginSortValue().length != 0) {
                 builder.searchAfter(logQuery.getBeginSortValue());
@@ -126,34 +135,46 @@ public class LogQueryServiceImpl implements LogQueryService, LogDataService {
             builder.timeout(TimeValue.timeValueMinutes(1L));
             searchRequest = new SearchRequest(esIndexName);
             searchRequest.source(builder);
+            dto.setSourceBuilder(builder);
             SearchResponse searchResponse = esService.search(searchRequest);
-            SearchHit[] hits = searchResponse.getHits().getHits();
-            if (hits == null || hits.length == 0) {
-                return Result.success(dto);
+            stopWatch.stop();
+            if (stopWatch.getLastTaskTimeMillis() > 7 * 1000) {
+                log.warn("##LONG-COST-QUERY##{} cost:{} ms, msg:{}", stopWatch.getLastTaskName(), stopWatch.getLastTaskTimeMillis(), logInfo);
             }
-            List<LogDataDTO> logDataList = new ArrayList<>();
-            LogDataDTO logData;
-            for (SearchHit hit : hits) {
-                logData = hit2DTO(hit, keyList);
-                // 封装高亮
-                Map<String, Object> highlinghtMap = new HashMap<>();
-                Map<String, HighlightField> highlightFields = hit.getHighlightFields();
-                if (highlightFields != null && !highlightFields.isEmpty()) {
-                    Collection<HighlightField> HighlightFieldCollection = highlightFields.values();
-                    for (HighlightField highlightField : HighlightFieldCollection) {
-                        highlinghtMap.put(highlightField.getName(), highlightField.getFragments()[0].string());
-                    }
-                }
-                logData.setHighlight(highlinghtMap);
-                logDataList.add(logData);
+
+            //结果转换
+            stopWatch.start("after-query");
+            transformSearchResponse(searchResponse, dto, keyList);
+
+            stopWatch.stop();
+            if (stopWatch.getTotalTimeMillis() > 15 * 1000) {
+                log.warn("##LONG-COST-QUERY##{} cost:{} ms, msg:{}", "gt15s", stopWatch.getLastTaskTimeMillis(), logInfo);
             }
-            dto.setThisSortValue(hits[hits.length - 1].getSortValues());
-            dto.setLogDataDTOList(logDataList);
+
             return Result.success(dto);
-        } catch (Exception e) {
-            log.error("日志查询错误，日志搜索报错:[{}],logQuery:[{}],searchRequest:[{}],user:[{}]", e, logQuery, searchRequest, MoneUserContext.getCurrentUser());
-            return Result.failParam("系统错误，请重试");
+        } catch (ElasticsearchStatusException e) {
+            log.error("日志查询错误，日志搜索报错, 错误类型[{}], logQuery:[{}], searchRequest:[{}], user:[{}]", e.status(), logQuery, searchRequest, MoneUserContext.getCurrentUser(), e);
+            return Result.failParam("ES资源权限配置错误，请检查用户名密码或Token");
+        } catch (Throwable e) {
+            log.error("日志查询错误，日志搜索报错,logQuery:[{}],searchRequest:[{}],user:[{}]", logQuery, searchRequest, MoneUserContext.getCurrentUser(), e);
+            return Result.failParam("搜索词输入错误，请检查");
         }
+    }
+
+    private void transformSearchResponse(SearchResponse searchResponse, final LogDTO logDTO, List<String> keyList) {
+        SearchHit[] hits = searchResponse.getHits().getHits();
+        if (hits == null || hits.length == 0) {
+            return;
+        }
+        List<LogDataDTO> logDataList = Lists.newArrayList();
+        for (SearchHit hit : hits) {
+            LogDataDTO logData = hit2DTO(hit, keyList);
+            // 封装高亮
+            logData.setHighlight(getHightlinghtMap(hit));
+            logDataList.add(logData);
+        }
+        logDTO.setThisSortValue(hits[hits.length - 1].getSortValues());
+        logDTO.setLogDataDTOList(logDataList);
     }
 
     // 高亮
@@ -172,34 +193,37 @@ public class LogQueryServiceImpl implements LogQueryService, LogDataService {
     @Override
     public Result<EsStatisticResult> EsStatistic(LogQuery logQuery) {
         try {
-            EsStatisticResult ret = new EsStatisticResult();
-            ret.setName(constractEsStatisticRet(logQuery));
-            MilogLogStoreDO logstore = logstoreDao.getByName(logQuery.getLogstore());
-            if (logstore == null) {
+            EsStatisticResult result = new EsStatisticResult();
+            result.setName(constractEsStatisticRet(logQuery));
+            MilogLogStoreDO logStore = logstoreDao.getByName(logQuery.getLogstore());
+            if (logStore == null) {
                 return new Result<>(CommonError.UnknownError.getCode(), "not found logstore", null);
             }
-            List<String> keyList = this.getKeyList(logstore);
             // get interval
-            String interval = esHistogramInterval(logQuery.getEndTime() - logQuery.getStartTime());
-            EsService esService = esCluster.getEsService(logstore.getEsClusterId());
-            String esIndex = logstore.getEsIndex();
+            String interval = searchLog.esHistogramInterval(logQuery.getEndTime() - logQuery.getStartTime());
+            EsService esService = esCluster.getEsService(logStore.getEsClusterId());
+            String esIndex = logStore.getEsIndex();
             if (esService == null || StringUtils.isEmpty(esIndex)) {
-                return Result.failParam("logstore或tail配置异常");
+                return Result.failParam("logStore或tail配置异常");
             }
             if (!StringUtils.isEmpty(interval)) {
-                BoolQueryBuilder builder = searchLog.getQueryBuilder(logQuery, keyList);
-                EsClient.EsRet esRet = esService.dateHistogram(esIndex, interval, logQuery.getStartTime(), logQuery.getEndTime(), builder);
-                ret.setCounts(esRet.getCounts());
-                ret.setTimestamps(esRet.getTimestamps());
-                return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage(), ret);
+                BoolQueryBuilder queryBuilder = searchLog.getQueryBuilder(logQuery, getKeyColonPrefix(logStore.getKeyList()));
+                EsClient.EsRet esRet = esService.dateHistogram(esIndex, interval, logQuery.getStartTime(), logQuery.getEndTime(), queryBuilder);
+                result.setCounts(esRet.getCounts());
+                result.setTimestamps(esRet.getTimestamps());
+                result.setQueryBuilder(queryBuilder);
+                result.calTotalCounts();
+                return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage(), result);
             } else {
                 return new Result<>(CommonError.UnknownError.getCode(), "The minimum time interval is 10s", null);
             }
+        } catch (ElasticsearchStatusException e) {
+            log.error("日志查询错误，日志柱状图统计报错:[{}], 错误类型[{}], logQuery:[{}], user:[{}]", e, e.status(), logQuery, MoneUserContext.getCurrentUser(), e);
+            return Result.failParam("ES资源权限配置错误，请检查用户名密码或Token");
         } catch (Exception e) {
-            log.error("日志查询错误，日志柱状图统计报错[{}],logQuery:[{}],user:[{}]", e, logQuery, MoneUserContext.getCurrentUser());
-            return Result.failParam("系统错误，请重试");
+            log.error("日志查询错误，日志柱状图统计报错[{}],logQuery:[{}],user:[{}]", e, logQuery, MoneUserContext.getCurrentUser(), e);
+            return Result.failParam("搜索词输入错误，请检查");
         }
-
     }
 
     private String constractEsStatisticRet(LogQuery logquery) {
@@ -284,13 +308,13 @@ public class LogQueryServiceImpl implements LogQueryService, LogDataService {
             if (searchLog.isLegalParam(logContextQuery) == false) {
                 return Result.failParam("必要参数缺失");
             }
-            MilogLogStoreDO milogLogstoreDO = logstoreDao.getByName(logContextQuery.getLogstore());
-            if (milogLogstoreDO.getEsClusterId() == null || StringUtils.isEmpty(milogLogstoreDO.getEsIndex())) {
+            MilogLogStoreDO logStore = logstoreDao.getByName(logContextQuery.getLogstore());
+            if (logStore.getEsClusterId() == null || StringUtils.isEmpty(logStore.getEsIndex())) {
                 return Result.failParam("store 配置异常");
             }
-            EsService esService = esCluster.getEsService(milogLogstoreDO.getEsClusterId());
-            String esIndexName = milogLogstoreDO.getEsIndex();
-            List<String> keyList = this.getKeyList(milogLogstoreDO);
+            EsService esService = esCluster.getEsService(logStore.getEsClusterId());
+            String esIndexName = logStore.getEsIndex();
+            List<String> keyList = getKeyList(logStore.getKeyList(), logStore.getColumnTypeList());
             LogDTO dto = new LogDTO();
             List<LogDataDTO> logDataList = new ArrayList<>();
             int times = 1, pageSize = logContextQuery.getPageSize();
@@ -366,19 +390,6 @@ public class LogQueryServiceImpl implements LogQueryService, LogDataService {
         logData.setTimestamp(ferry.get(LogParser.esKeyMap_timestamp) == null ? "" : String.valueOf(ferry.get(LogParser.esKeyMap_timestamp)));
         logData.setLogOfString(new Gson().toJson(logData.getLogOfKV()));
         return logData;
-    }
-
-    private List<String> getKeyList(MilogLogStoreDO milogLogstoreDO) {
-        String[] keyDescripArray = milogLogstoreDO.getKeyList().split(",");
-        String[] keyTypeArray = milogLogstoreDO.getColumnTypeList().split(",");
-        List<String> keyList = new ArrayList<>();
-        for (int i = 0; i < keyDescripArray.length; i++) {
-            if (!"keyword".equals(keyTypeArray[i]) && !"text".equals(keyTypeArray[i])) {
-                continue;
-            }
-            keyList.add(keyDescripArray[i].split(":")[0]);
-        }
-        return keyList;
     }
 
     public void logExport(LogQuery logQuery) throws Exception {
