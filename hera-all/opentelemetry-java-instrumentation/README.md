@@ -20,14 +20,35 @@
 
 来使用阿里的国内镜像仓库，加快依赖文件的下载速度
 
-3、将项目导入idea之后，需要配置该项目对应的idea内部的gradle：
+3、添加本地环境变量，`GRADLE_USER_HOME=${gradle安装目录}`，然后将${gradle安装目录}/bin目录加入到PATH中。
+加入之后，可以在任意位置执行`gradle -v`查看环境变量是否生效
+
+4、将项目导入idea之后，需要配置该项目对应的idea内部的gradle：
 `Gradle user home`：需要配置gradle依赖的下载位置
 `Use gradle from`：需要选择 'gradle-wrapper.properties'file
 `Gradle JVM`：需要选择自己安装的jdk11的目录
 
-4、在idea gradle工具栏中执行`Reload All Gradle Projects`，等待gradle下载依赖文件，这个过程对于首次导入来说，可能会花费30-60分钟的时间
+5、可以通过设置Maven，加速依赖导入。设置idea Build Tools----Maven的`Maven home path`为常用的Maven目录，
+将`User setting files`设置为常用的Maven settings.xml，将`Local repository`设置为常用的Maven repository。通过这些配置，gradle可以使用已有的Maven依赖，加快项目导入速度。
 
-5、在项目根目录执行`./gradlew assemble`进行构建。构建成功后，会在`javaagent`模块下的`build/libs`目录下生成`opentelemetry-javaagent-0.1.0-SNAPSHOT-all.jar`，这个jar文件就是最终的探针。
+6、检查opentelemetry-java-instrumentation目录下是否有.git文件夹，如果没有，需要从父目录copy一份，或者在opentelemetry-java-instrumentation目录下执行git init初始化一份.git文件。这是因为探针中的很多gradle插件需要用到git做版本控制。
+
+7、在idea gradle工具栏中执行`Reload All Gradle Projects`，等待gradle下载依赖文件，这个过程对于首次导入来说，可能会花费30-60分钟的时间
+
+8、在项目根目录执行`./gradlew assemble`进行构建。构建成功后，会在`javaagent`模块下的`build/libs`目录下生成`opentelemetry-javaagent-${version}-all.jar`，这个jar文件就是最终的探针。
+
+### *可能出现的问题
+1、出现ClassNotFound、找不到符号、找不到包等等这些，都是因为依赖没有下载全，需要再次点击Reload All Gradle Projects，会继续下载。
+
+2、可能会出现Deprecated Gradle features were used in this build, making it incompatible with Gradle 8.0，这种错误信息，这只是gradle的版本过期警告，并不影响。
+
+3、Make sure Gradle is running on a JDK, not JRE。这时，需要确认本地环境变量是否有JDK。
+
+4、找不到符号：classpathLoader(toolingRuntime, ClassLoader.getPlatformClassLoader(), project)。这时，需要确认本地环境变量里的JDK版本是否为jdk11，可以输入命令java -version确认。
+
+5、使用https的Maven仓库地址。如果出现类似于这种提示`Using insecure protocols with repositories...to redirect to a secure protocol (like HTTPS) or allow insecure protocols`，请将本地gradle安装目录下咱们新建的init.d文件中的仓库地址改为https
+
+6、执行gradlew assemble时，报错：Could not find opentelemetry-sdk-extension-jaeger-remote-sampler-1.15.0.jar (io.opentelemetry:opentelemetry-sdk-extension-jaeger-remote-sampler:1.15.0)，类似的找不到jar包的错误，可以把build.gradle.kts中的allprojects下的maven.aliyun.com的仓库地址注释掉，重新执行gradlew assemble
 
 ## 运行依赖
 ### 环境变量
