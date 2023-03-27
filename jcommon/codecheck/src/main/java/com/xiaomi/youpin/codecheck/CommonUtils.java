@@ -202,7 +202,7 @@ public class CommonUtils {
         Pattern p = Pattern.compile(pattern);
         Matcher m = p.matcher(content);
         while (m.find()) {
-            if (!"127.0.0.1".equals(m.group())) {
+            if (!"127.0.0.1".equals(m.group()) && !"0.0.0.0".equals(m.group())) {
                 ips.add(m.group());
             }
         }
