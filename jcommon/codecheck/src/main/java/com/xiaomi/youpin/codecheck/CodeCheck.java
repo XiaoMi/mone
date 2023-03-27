@@ -69,17 +69,23 @@ public class CodeCheck implements Serializable {
 
 
     public Map<String, List<CheckResult>> check(String path) {
+        return check(path, true);
+    }
+
+    public Map<String, List<CheckResult>> check(String path, boolean checkFile) {
         Map<String, List<CheckResult>> res = new HashMap<>();
 
         if (path == null || path.equals("")) {
             return res;
         }
 
-        //yml等配置文件校验
-        ConfigCheck ipCheck = new ConfigCheck();
-        Map<String, List<CheckResult>> configCheckMap = ipCheck.configCheck(path);
-        if (!configCheckMap.isEmpty() && configCheckMap.size() > 0) {
-            res.putAll(configCheckMap);
+        if (checkFile) {
+            //yml等配置文件校验
+            ConfigCheck ipCheck = new ConfigCheck();
+            Map<String, List<CheckResult>> configCheckMap = ipCheck.configCheck(path);
+            if (!configCheckMap.isEmpty() && configCheckMap.size() > 0) {
+                res.putAll(configCheckMap);
+            }
         }
 
         //xxx.java校验
