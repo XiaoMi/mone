@@ -42,15 +42,25 @@ public class PmdMojo extends AbstractMojo {
     @Parameter(defaultValue = "${basedir}")
     private File outputDirectory;
 
+    /**
+     * 是否检测配置文件，默认为true
+     */
+    @Parameter(property = "check.config" ,defaultValue = "true")
+    private Boolean checkConfigurationFile;
+
     private final static String level = "[ERROR]";
 
-    public void execute() throws MojoExecutionException
-    {
+    public void execute() throws MojoExecutionException {
         getLog().info("=============================begin codecheck=============================");
         CodeCheck codeCheck = new CodeCheck();
         Map<String, List<CheckResult>> map = null;
         try {
-            map = codeCheck.check(outputDirectory.getPath());
+            if (checkConfigurationFile != null && !checkConfigurationFile) {
+                map = codeCheck.check(outputDirectory.getPath(), false);
+            } else {
+                map = codeCheck.check(outputDirectory.getPath(), true);
+            }
+
         } catch (Exception e) {
             getLog().error(e);
         }
