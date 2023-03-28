@@ -28,6 +28,10 @@ public class Constant {
 
     public static final String COMMON_MESSAGE = "common";
 
+    public static final String STREAM_CONTAINER_POD_NAME_KEY = "MONE_CONTAINER_S_POD_NAME";
+
+    public static final String DEFAULT_STREAM_SERVER_NAME = "hera_log_stream";
+
     public static final String HAS_CREATED_MESSAGE = "This name has been used!";
     /**
      * 操作符=
