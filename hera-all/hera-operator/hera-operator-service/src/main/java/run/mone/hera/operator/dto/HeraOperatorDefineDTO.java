@@ -32,4 +32,9 @@ public class HeraOperatorDefineDTO implements Serializable {
 
     HeraObjectMeta heraMeta;
 
+    /**
+     * customResource has been created
+     */
+    Boolean crExists;
+
 }
