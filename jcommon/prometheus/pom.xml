@@ -19,7 +19,6 @@
 		<module>prometheus-redis</module>
         <module>prometheus-starter</module>
 		<module>prometheus-metrics</module>
-		<module>prometheus-metrics</module>
 		<module>prometheus-trace-etl</module>
     </modules>
 
