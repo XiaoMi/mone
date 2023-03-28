@@ -1,9 +1,9 @@
-package com.xiaomi.youpin.prometheus.all.client;
+package com.xiaomi.youpin.prometheus.client;
 
-import com.xiaomi.youpin.prometheus.all.client.binder.ClassLoaderMetricsReduced;
-import com.xiaomi.youpin.prometheus.all.client.binder.JvmGcMetricsReduced;
-import com.xiaomi.youpin.prometheus.all.client.binder.JvmMemoryMetricsReduced;
-import com.xiaomi.youpin.prometheus.all.client.binder.JvmThreadMetricsReduced;
+import com.xiaomi.youpin.prometheus.client.binder.ClassLoaderMetricsReduced;
+import com.xiaomi.youpin.prometheus.client.binder.JvmGcMetricsReduced;
+import com.xiaomi.youpin.prometheus.client.binder.JvmMemoryMetricsReduced;
+import com.xiaomi.youpin.prometheus.client.binder.JvmThreadMetricsReduced;
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmGcMetrics;
 import io.micrometer.core.instrument.binder.jvm.JvmMemoryMetrics;
@@ -16,7 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.HashMap;
 
 /**
- * @author zhangxiaowei6
+ * @author zhangxiaowei
  */
 @Slf4j
 public class Metrics {
@@ -27,6 +27,7 @@ public class Metrics {
      */
     public static final String GROUP = "group";
     public static final String SERVICE = "service";
+    public static final String LABEL_TRACE_ID = "traceId";
     public static final String APPLICATION = "application";
 
     private static class LazyHolder {
@@ -62,7 +63,7 @@ public class Metrics {
     }
 
 
-    //get singleton instance
+    //获取唯一可用的对象
     public static Metrics getInstance() {
         return LazyHolder.ins;
     }

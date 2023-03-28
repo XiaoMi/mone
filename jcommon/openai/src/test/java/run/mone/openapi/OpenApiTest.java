@@ -10,6 +10,7 @@ import com.unfbx.chatgpt.entity.chat.ChatCompletion;
 import com.unfbx.chatgpt.entity.chat.Message;
 import com.unfbx.chatgpt.entity.completions.Completion;
 import com.unfbx.chatgpt.entity.completions.CompletionResponse;
+import com.unfbx.chatgpt.entity.images.ImageResponse;
 import com.unfbx.chatgpt.interceptor.OpenAILogger;
 import io.reactivex.Single;
 import io.reactivex.SingleObserver;
@@ -229,5 +230,25 @@ public class OpenApiTest {
         String text = array.getJSONObject(0).getString("text");
         System.out.println(text);
     }
-    //ai openapi 中 的 Fine-tunes 作用是什么?可以用来干什么
+
+    @Test
+    public void testGenImage() {
+        Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyAddr, 65522));
+        HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(new OpenAILogger());
+        httpLoggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
+        OpenAiClient openAiClient = OpenAiClient.builder()
+                .apiKey(System.getenv("open_api_key"))
+                .connectTimeout(50)
+                .writeTimeout(50)
+                .readTimeout(50)
+                .interceptor(Arrays.asList(httpLoggingInterceptor))
+//                .proxy(proxy)
+                .apiHost("https://api.openai.com/")
+                .build();
+
+        ImageResponse res = openAiClient.genImages("青蛙");
+        res.getData().forEach(it->{
+            System.out.println(it);
+        });
+    }
 }
