@@ -62,7 +62,7 @@ public class Metrics {
     }
 
 
-    //获取唯一可用的对象
+    //get singleton instance
     public static Metrics getInstance() {
         return LazyHolder.ins;
     }

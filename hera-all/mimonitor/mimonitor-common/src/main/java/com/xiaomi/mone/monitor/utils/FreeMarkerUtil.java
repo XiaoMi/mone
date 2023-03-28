@@ -12,8 +12,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * AesUtil.java
- *
  * @author gaoxihui
  * @date 2021/7/7 8:11 下午
  */
@@ -27,10 +25,12 @@ public class FreeMarkerUtil {
      */
     private static Template getTemplate(String name, String pathPrefix) throws IOException {
         Configuration cfg = new Configuration();
-        cfg.setClassForTemplateLoading(FreeMarkerUtil.class, pathPrefix); //设置模板文件的目录
+        cfg.setClassForTemplateLoading(FreeMarkerUtil.class, pathPrefix); //Set the directory of the template files.
         cfg.setDefaultEncoding("UTF-8");       //Set the default charset of the template files
-        Template temp = cfg.getTemplate(name); //在模板文件目录中寻找名为"name"的模板文件
-        return temp; //此时FreeMarker就会到类路径下的"pathPrefix"文件夹中寻找名为"name"的模板文件
+        Template temp = cfg.getTemplate(name); //Search for the template file named "name" in the template file directory.
+
+        return temp; //At this point, FreeMarker will look for a template file named "name" in the "pathPrefix" folder under the classpath.
+
     }
 
 
