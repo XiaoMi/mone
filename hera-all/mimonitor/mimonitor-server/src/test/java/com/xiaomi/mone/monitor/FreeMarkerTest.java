@@ -18,7 +18,7 @@ public class FreeMarkerTest {
 
     @Test
     public void testGrafanaInterfaceList() {
-        String grafanaDomain = "http://10.38.163.244:3000";
+        String grafanaDomain = "xxx";
         Map<String,Object> map = new HashMap<>();
         map.put("dubboProviderOverview",grafanaDomain + dubboProviderOverview);
         map.put("dubboConsumerOverview",grafanaDomain + dubboConsumerOverview);
