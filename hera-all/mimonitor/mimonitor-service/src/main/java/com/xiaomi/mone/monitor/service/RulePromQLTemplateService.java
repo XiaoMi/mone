@@ -5,6 +5,7 @@
  */
 package com.xiaomi.mone.monitor.service;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.xiaomi.mone.monitor.bo.RulePromQLTemplateInfo;
 import com.xiaomi.mone.monitor.bo.RulePromQLTemplateParam;
 import com.xiaomi.mone.monitor.dao.RulePromQLTemplateDao;
@@ -34,9 +35,9 @@ public class RulePromQLTemplateService {
     @Autowired
     private RulePromQLTemplateDao rulePromQLTemplateDao;
 
-    @Value("${prometheus.url}")
+    @NacosValue(value = "${prometheus.url}",autoRefreshed = true)
     private String prometheusUrl;
-    @Value("${prometheus.check.url}")
+    @NacosValue(value = "${prometheus.check.url}",autoRefreshed = true)
     private String prometheusCheckUrl;
 
     /**

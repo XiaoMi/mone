@@ -126,7 +126,7 @@ data:
     server_cert_name =
 
     # For "sqlite3" only, path relative to data_path setting
-    path = /etc/grafana.db
+    path = /var/lib/grafana/grafana.db
 
     # For "sqlite3" only. cache mode setting used for connecting to the database
     cache_mode = private

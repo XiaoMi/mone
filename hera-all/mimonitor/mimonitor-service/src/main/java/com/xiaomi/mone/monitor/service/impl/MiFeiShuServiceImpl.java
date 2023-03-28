@@ -22,9 +22,9 @@ public class MiFeiShuServiceImpl implements MiFeiShuService {
 
     private FeiShu feiShu;
 
-    @Value("${feishu.monitor.appId}")
+    @NacosValue(value = "${feishu.monitor.appId}",autoRefreshed = true)
     private String appId;
-    @NacosValue("${feishu.monitor.appSecret:noconfig}")
+    @NacosValue(value = "${feishu.monitor.appSecret:noconfig}",autoRefreshed = true)
     private String appSecret;
 
     @PostConstruct

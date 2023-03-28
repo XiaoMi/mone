@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  *
  * @author zhanggaofeng1
  */
-@Component
+//@Component
 public class RedisHelper {
 
     private final Logger logger = LoggerFactory.getLogger(RedisHelper.class);

@@ -17,5 +17,5 @@ nohup*
 *.pyc
 .sbtserver*
 *.iml
-
+mimonitor-server/src/main/resources/application-opensource.properties
 mimonitor-server/src/main/resources/application-dev.properties

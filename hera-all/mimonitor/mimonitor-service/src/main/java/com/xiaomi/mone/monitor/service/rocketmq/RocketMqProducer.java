@@ -25,8 +25,6 @@ public class RocketMqProducer {
     @Value("${rocketmq.tag.hera.app}")
     private String heraAppTag;
 
-    @Value("${rocketmq.group.hera.app}")
-    private String consumerGroup;
 
     @Autowired
     @Qualifier("defaultMQProducer")

@@ -167,6 +167,7 @@ public class AppAlarmService {
             ruleData.setIncludeServices(param.getIncludeServices());
             ruleData.setExceptServices(param.getExceptServices());
             ruleData.setAlertMembers(param.getAlertMembers());
+            ruleData.setAtMembers(param.getAtMembers());
 
             ruleData.setIncludeFunctions(param.getIncludeFunctions());
             ruleData.setExceptFunctions(param.getExceptFunctions());
@@ -177,7 +178,7 @@ public class AppAlarmService {
             AppAlarmRule rule = new AppAlarmRule();
             BeanUtils.copyProperties(ruleData,rule);
             StringBuilder cname = new StringBuilder();
-            cname.append(param.getIamId());
+            cname.append(param.getProjectId());
             if (param.getStrategyType().intValue() == AlarmStrategyType.PAOMQL.getCode()) {
                 if(rule.getMetricType() == null){
                     rule.setMetricType(AlarmRuleMetricType.customer_promql.getCode());
@@ -429,7 +430,11 @@ public class AppAlarmService {
          */
         if(!nullToEmpty(alarmStrategy.getAlertTeam()).equals(nullToEmpty(param.getAlertTeam()))
                 ||!nullToEmpty(alarmStrategy.getAlertMembers()).equals(nullToEmpty(String.join(",", param.getAlertMembers())))
-                ||!nullToEmpty(alarmStrategy.getEnvs()).equals(nullToEmpty(param.convertEnvs()))){
+                ||!nullToEmpty(alarmStrategy.getAtMembers()).equals(nullToEmpty(String.join(",", param.getAtMembers() == null ? new ArrayList<>() : param.getAtMembers() )))
+                ||!nullToEmpty(alarmStrategy.getEnvs()).equals(nullToEmpty(param.convertEnvs()))
+                ||!nullToEmpty(alarmStrategy.getDesc()).equals(nullToEmpty(param.getStrategyDesc()))){
+
+            alarmStrategy.setDesc(param.getStrategyDesc());
 
             List<AlarmRuleData> updateRules = alarmRuleDatas.stream().filter(t -> t.getId() != null).collect(Collectors.toList());
 
@@ -451,6 +456,7 @@ public class AppAlarmService {
                     ruleData.setExceptFunctions(param.getExceptFunctions());
 
                     ruleData.setAlertMembers(param.getAlertMembers());
+                    ruleData.setAtMembers(param.getAtMembers());
                     ruleData.setRemark(param.getStrategyDesc());
 
                     Result result = editAlarmRule(ruleData, alarmStrategy, appMonitor, param.getUser());

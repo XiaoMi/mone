@@ -29,7 +29,7 @@ public class IdmMoneUserDetailService implements MoneUserDetailService {
 
     @Value("${idm.url:noconfig}")
     private String BASE_IDM_URL;
-    @Value("${idm.app.id}")
+    @Value("${idm.app.id:noconfig}")
     private String IDM_APP_ID;
     @NacosValue("${idm.app.key:noconfig}")
     private String IDM_APP_KEY;

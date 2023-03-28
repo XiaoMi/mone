@@ -11,7 +11,9 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 
-/**AesUtil.java
+/**
+ * AesUtil.java
+ *
  * @author gaoxihui
  * @date 2021/7/7 8:11 下午
  */
@@ -20,6 +22,7 @@ public class FreeMarkerUtil {
 
     /**
      * 获取指定目录下的模板文件
+     *
      * @param name       模板文件的名称
      * @param pathPrefix 模板文件的目录
      */
@@ -34,11 +37,12 @@ public class FreeMarkerUtil {
 
     /**
      * 根据模板文件输出内容到控制台
+     *
      * @param name       模板文件的名称
      * @param pathPrefix 模板文件的目录
      * @param rootMap    模板的数据模型
      */
-    public static String getContent(String pathPrefix, String name, Map<String,Object> rootMap) throws TemplateException, IOException{
+    public static String getContent(String pathPrefix, String name, Map<String, Object> rootMap) throws TemplateException, IOException {
         StringWriter writer = new StringWriter();
         getTemplate(name, pathPrefix).process(rootMap, writer);
         String jsonStr = writer.toString();
@@ -46,18 +50,26 @@ public class FreeMarkerUtil {
         return returnData.toString();
     }
 
+    public static String getContentExceptJson(String pathPrefix, String name, Map<String, Object> rootMap) throws TemplateException, IOException {
+        StringWriter writer = new StringWriter();
+        getTemplate(name, pathPrefix).process(rootMap, writer);
+        String str = writer.toString();
+        return str;
+    }
+
 
     /**
      * 根据模板文件输出内容到指定的文件中
+     *
      * @param name       模板文件的名称
      * @param pathPrefix 模板文件的目录
      * @param rootMap    模板的数据模型
      * @param file       内容的输出文件
      */
-    public static void printFile(String pathPrefix, String name,Map<String,Object> rootMap, File file) throws TemplateException, IOException{
+    public static void printFile(String pathPrefix, String name, Map<String, Object> rootMap, File file) throws TemplateException, IOException {
         Writer out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"));
         getTemplate(name, pathPrefix).process(rootMap, out); //将模板文件内容以UTF-8编码输出到相应的流中
-        if(null != out){
+        if (null != out) {
             out.close();
         }
     }
@@ -79,6 +91,14 @@ public class FreeMarkerUtil {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static String getTemplateStr(String pathPrefix, String name) throws IOException {
+        Configuration cfg = new Configuration();
+        cfg.setClassForTemplateLoading(FreeMarkerUtil.class, pathPrefix); //设置模板文件的目录
+        cfg.setDefaultEncoding("UTF-8");       //Set the default charset of the template files
+        Template temp = cfg.getTemplate(name); //在模板文件目录中寻找名为"name"的模板文件
+        return temp.toString();
     }
 
 }
