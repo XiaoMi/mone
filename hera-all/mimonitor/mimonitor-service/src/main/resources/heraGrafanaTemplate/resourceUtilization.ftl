@@ -31,7 +31,7 @@
 "panels": [
 {
 "aliasColors": {
-"192.168.200.241:9100_Total": "dark-red",
+"localhost:9100_Total": "dark-red",
 "Idle - Waiting for something to happen": "#052B51",
 "guest": "#9AC48A",
 "idle": "#052B51",
@@ -200,7 +200,7 @@
 },
 {
 "aliasColors": {
-"192.168.200.241:9100_总内存": "dark-red",
+"localhost:9100_总内存": "dark-red",
 "内存_Avaliable": "#6ED0E0",
 "内存_Cached": "#EF843C",
 "内存_Free": "#629E51",

@@ -21,10 +21,9 @@ public class FreeMarkerUtil {
 
 
     /**
-     * 获取指定目录下的模板文件
-     *
-     * @param name       模板文件的名称
-     * @param pathPrefix 模板文件的目录
+     * Get template files under the specified directory
+     * @param name       The name of the template file
+     * @param pathPrefix The directory of the template file
      */
     private static Template getTemplate(String name, String pathPrefix) throws IOException {
         Configuration cfg = new Configuration();
@@ -36,11 +35,10 @@ public class FreeMarkerUtil {
 
 
     /**
-     * 根据模板文件输出内容到控制台
-     *
-     * @param name       模板文件的名称
-     * @param pathPrefix 模板文件的目录
-     * @param rootMap    模板的数据模型
+     * Output content to the console based on the template file.
+     * @param name       The name of the template file.
+     * @param pathPrefix The directory of the template file.
+     * @param rootMap    The data model of the template.
      */
     public static String getContent(String pathPrefix, String name, Map<String, Object> rootMap) throws TemplateException, IOException {
         StringWriter writer = new StringWriter();
@@ -59,12 +57,11 @@ public class FreeMarkerUtil {
 
 
     /**
-     * 根据模板文件输出内容到指定的文件中
-     *
-     * @param name       模板文件的名称
-     * @param pathPrefix 模板文件的目录
-     * @param rootMap    模板的数据模型
-     * @param file       内容的输出文件
+     * Output content to a specified file based on a template file.
+     * @param name       The name of the template file.
+     * @param pathPrefix The directory of the template file.
+     * @param rootMap    The data model of the template.
+     * @param file       The output file for the content.
      */
     public static void printFile(String pathPrefix, String name, Map<String, Object> rootMap, File file) throws TemplateException, IOException {
         Writer out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"));

@@ -1143,8 +1143,8 @@
 {
 "current": {
 "selected": false,
-"text": "10.53.128.150",
-"value": "10.53.128.150"
+"text": "localhost",
+"value": "localhost"
 },
 "datasource": {
 "type": "prometheus",

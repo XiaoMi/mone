@@ -609,7 +609,7 @@
 },
 {
 "aliasColors": {
-"192.168.200.241:9100_Total": "dark-red",
+"localhost:9100_Total": "dark-red",
 "Idle - Waiting for something to happen": "#052B51",
 "guest": "#9AC48A",
 "idle": "#052B51",
@@ -775,7 +775,7 @@
 },
 {
 "aliasColors": {
-"192.168.200.241:9100_总内存": "dark-red",
+"localhost:9100_总内存": "dark-red",
 "内存_Avaliable": "#6ED0E0",
 "内存_Cached": "#EF843C",
 "内存_Free": "#629E51",
@@ -2123,7 +2123,7 @@
 },
 {
 "aliasColors": {
-"192.168.200.241:9100_Total": "dark-red",
+"localhost:9100_Total": "dark-red",
 "Idle - Waiting for something to happen": "#052B51",
 "guest": "#9AC48A",
 "idle": "#052B51",
@@ -2301,7 +2301,7 @@
 },
 {
 "aliasColors": {
-"192.168.200.241:9100_总内存": "dark-red",
+"localhost:9100_总内存": "dark-red",
 "使用率": "yellow",
 "内存_Avaliable": "#6ED0E0",
 "内存_Cached": "#EF843C",
@@ -2542,8 +2542,8 @@
 },
 {
 "aliasColors": {
-"192.168.10.227:9100_em1_in下载": "super-light-green",
-"192.168.10.227:9100_em1_out上传": "dark-blue"
+"localhost:9100_em1_in下载": "super-light-green",
+"localhost:9100_em1_out上传": "dark-blue"
 },
 "bars": false,
 "dashLength": 10,
@@ -3602,7 +3602,7 @@
 },
 {
 "aliasColors": {
-"192.168.200.241:9100_TCP_alloc": "semi-dark-blue",
+"localhost:9100_TCP_alloc": "semi-dark-blue",
 "TCP": "#6ED0E0",
 "TCP_alloc": "blue"
 },
@@ -3850,11 +3850,11 @@
 },
 {
 "aliasColors": {
-"filefd_192.168.200.241:9100": "super-light-green",
-"switches_192.168.200.241:9100": "semi-dark-red",
-"使用的文件描述符_10.118.72.128:9100": "red",
-"每秒上下文切换次数_10.118.71.245:9100": "yellow",
-"每秒上下文切换次数_10.118.72.128:9100": "yellow"
+"filefd_localhost:9100": "super-light-green",
+"switches_localhost:9100": "semi-dark-red",
+"使用的文件描述符_localhost:9100": "red",
+"每秒上下文切换次数_localhost:9100": "yellow",
+"每秒上下文切换次数_localhost:9100": "yellow"
 },
 "bars": false,
 "dashLength": 10,
@@ -4108,8 +4108,8 @@
 "allFormat": "glob",
 "current": {
 "selected": false,
-"text": "10.53.128.150",
-"value": "10.53.128.150"
+"text": "localhost",
+"value": "localhost"
 },
 "datasource": {
 "type": "prometheus",
