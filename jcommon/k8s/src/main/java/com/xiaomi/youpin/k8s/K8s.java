@@ -36,7 +36,8 @@ public class K8s {
                 client = ClientBuilder.standard().build();
             }
         } catch (Exception e) {
-            client = null;
+            //Client build failure throws an exception
+            throw new RuntimeException(e);
         } finally {
             Configuration.setDefaultApiClient(client);
 //            client.setDebugging(true);
@@ -51,7 +52,8 @@ public class K8s {
                 client = ClientBuilder.standard().build();
             }
         } catch (Exception e) {
-            client = null;
+            //Client build failure throws an exception
+            throw new RuntimeException(e);
         } finally {
             Configuration.setDefaultApiClient(client);
             // client.setDebugging(true);
@@ -66,7 +68,8 @@ public class K8s {
                 client = ClientBuilder.standard().build();
             }
         } catch (Exception e) {
-            client = null;
+            //Client build failure throws an exception
+            throw new RuntimeException(e);
         } finally {
             Configuration.setDefaultApiClient(client);
             // client.setDebugging(true);
