@@ -19,12 +19,24 @@ package com.xiaomi.youpin.codecheck;
 import com.xiaomi.youpin.codecheck.po.CheckResult;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class CommonUtils {
+
+    /**
+     * IP白名单
+     */
+    private static Set<String> ipWhite = new HashSet(){{
+        add("127.0.0.1");
+        add("0.0.0.0");
+    }};
+
+    public static void addIpWhite(List<String> ips) {
+        ips.forEach(ip -> ipWhite.add(ip));
+    }
+
     /**
      * 比较版本号的大小,前者大则返回一个正数,后者大返回一个负数,相等则返回0
      *
@@ -193,5 +205,18 @@ public class CommonUtils {
         Pattern p = Pattern.compile(pattern);
         Matcher m = p.matcher(content);
         return m.find();
+    }
+
+    public static List<String> hasIP(String content){
+        List<String> ips = new ArrayList<>();
+        String pattern = "\\d+[\\.]\\d+[\\.]\\d+[\\.]\\d+";
+        Pattern p = Pattern.compile(pattern);
+        Matcher m = p.matcher(content);
+        while (m.find()) {
+            if (!ipWhite.contains(m.group())) {
+                ips.add(m.group());
+            }
+        }
+        return ips;
     }
 }
