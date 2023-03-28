@@ -19,5 +19,7 @@ nohup*
 *.pyc
 .sbtserver*
 .java-version
+license-list
 /hera-operator-service/target/
 /hera-operator-server/target/
+*/src/license/
