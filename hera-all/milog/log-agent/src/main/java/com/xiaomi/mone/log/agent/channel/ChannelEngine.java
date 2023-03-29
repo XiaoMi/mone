@@ -54,7 +54,11 @@ import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
 
 import java.text.NumberFormat;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
@@ -362,11 +366,18 @@ public class ChannelEngine {
         }
         if (CollectionUtils.isNotEmpty(channelServiceList)) {
             for (ChannelService c : channelServiceList) {
-                try {
-                    c.stopFile(filePrefixList);
-                } catch (Exception e) {
-                    log.warn("stopFile exception", e);
-                }
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        TimeUnit.MINUTES.sleep(6L);
+                    } catch (InterruptedException e) {
+                        log.error("stopChannelFile TimeUnit.MINUTES.sleep error,instanceId:{}", c.instanceId(), e);
+                    }
+                    try {
+                        c.stopFile(filePrefixList);
+                    } catch (Exception e) {
+                        log.warn("stopFile exception", e);
+                    }
+                });
             }
         }
     }

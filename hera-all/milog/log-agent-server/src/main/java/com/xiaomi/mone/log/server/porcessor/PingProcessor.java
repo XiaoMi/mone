@@ -14,9 +14,8 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.mone.log.manager.porcessor;
+package com.xiaomi.mone.log.server.porcessor;
 
-import com.google.gson.Gson;
 import com.xiaomi.data.push.context.AgentContext;
 import com.xiaomi.data.push.rpc.RpcCmd;
 import com.xiaomi.data.push.rpc.common.RemotingHelper;
@@ -24,9 +23,8 @@ import com.xiaomi.data.push.rpc.netty.AgentChannel;
 import com.xiaomi.data.push.rpc.netty.NettyRequestProcessor;
 import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
 import com.xiaomi.mone.log.api.model.meta.AppLogMeta;
-import com.xiaomi.mone.log.api.model.meta.LogCollectMeta;
 import com.xiaomi.mone.log.api.model.vo.PingReq;
-import com.xiaomi.mone.log.manager.common.Version;
+import com.xiaomi.mone.log.server.common.Version;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -35,6 +33,8 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+
+import static com.xiaomi.mone.log.common.Constant.GSON;
 
 /**
  * @Author goodjava@qq.com
@@ -45,29 +45,29 @@ public class PingProcessor implements NettyRequestProcessor {
 
     public static Map<String, Long> agentHeartTimeStampMap = new ConcurrentHashMap<>(1024);
 
+    private static Version version = new Version();
+
     @Override
     public RemotingCommand processRequest(ChannelHandlerContext channelHandlerContext, RemotingCommand remotingCommand) {
         final String remoteAddress = RemotingHelper.parseChannelRemoteAddr(channelHandlerContext.channel());
         RemotingCommand response = RemotingCommand.createResponseCommand(RpcCmd.pingRes);
         String body = new String(remotingCommand.getBody());
-        PingReq pr = new Gson().fromJson(body, PingReq.class);
+        PingReq pr = GSON.fromJson(body, PingReq.class);
 
         AgentChannel ch = AgentContext.ins().map.get(remoteAddress);
         if (null != ch) {
             ch.setIp(pr.getIp());
         }
-        response.setBody(new Version().toString().getBytes());
-        AppLogMeta meta = new AppLogMeta();
-        response.setBody(new Gson().toJson(meta).getBytes());
-
+        response.setBody(version.toString().getBytes());
         if (null != pr && StringUtils.isNotBlank(pr.getIp())) {
             agentHeartTimeStampMap.put(pr.getIp(), Instant.now().toEpochMilli());
         }
 
         if (pr.getMessage().equals("load")) {
-            LogCollectMeta lcm = new LogCollectMeta();
+            AppLogMeta meta = new AppLogMeta();
             meta.setAppName("log-manager");
             meta.setAppId(ThreadLocalRandom.current().nextLong());
+            response.setBody(GSON.toJson(meta).getBytes());
         }
 
         return response;

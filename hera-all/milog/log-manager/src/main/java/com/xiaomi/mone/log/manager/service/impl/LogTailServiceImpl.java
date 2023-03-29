@@ -12,6 +12,7 @@ import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.exception.CommonError;
 import com.xiaomi.mone.log.manager.common.Utils;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
+import com.xiaomi.mone.log.manager.common.validation.HeraConfigValid;
 import com.xiaomi.mone.log.manager.dao.*;
 import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
 import com.xiaomi.mone.log.manager.model.bo.MlogParseParam;
@@ -40,8 +41,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-import static com.xiaomi.mone.log.common.Constant.DEFAULT_CONSUMER_GROUP;
-import static com.xiaomi.mone.log.common.Constant.DEFAULT_TAIL_SEPARATOR;
+import static com.xiaomi.mone.log.common.Constant.*;
 import static com.xiaomi.mone.log.manager.common.Utils.getKeyValueList;
 import static com.xiaomi.mone.log.manager.service.path.LogPathMapping.LOG_PATH_PREFIX;
 
@@ -99,6 +99,9 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     private HeraAppServiceImpl heraAppService;
     @Resource
     private HeraAppEnvServiceImpl heraAppEnvService;
+
+    @Resource
+    private HeraConfigValid heraConfigValid;
 
     Gson gson = new Gson();
     private static final String MIS_LOGPATH_PREFIX = "/home/work/logs";
@@ -176,15 +179,20 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     @Override
     public Result<MilogTailDTO> newMilogLogTail(MilogLogtailParam param) {
         // 参数校验
-        String errorMsg = verifyMilogLogtailParam(param);
+        String errorMsg = heraConfigValid.verifyLogTailParam(param);
         if (StringUtils.isNotEmpty(errorMsg)) {
             return new Result<>(CommonError.ParamsError.getCode(), errorMsg);
         }
         MilogLogStoreDO milogLogStore = logstoreDao.queryById(param.getStoreId());
-        if (milogLogStore == null) {
+        if (null != milogLogStore) {
+            if (heraConfigValid.checkTailNameSame(param.getTail(), null, milogLogStore.getMachineRoom())) {
+                return new Result<>(CommonError.ParamsError.getCode(), "别名重复，请确定后提交");
+            }
+            String valueList = IndexUtils.getNumberValueList(milogLogStore.getKeyList(), param.getValueList());
+            param.setValueList(valueList);
+        } else {
             return new Result<>(CommonError.ParamsError.getCode(), "logStore不存在");
         }
-
         // 参数处理
         handleMqTailParam(param);
         /*** 处理value list */
@@ -858,6 +866,21 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         return Result.success("解析错误 请核对配置信息");
     }
 
+    public Result<Object> parseExample(MlogParseParam mlogParseParam) {
+        String checkMsg = heraConfigValid.checkParseExampleParam(mlogParseParam);
+        if (StringUtils.isNotEmpty(checkMsg)) {
+            return Result.failParam(checkMsg);
+        }
+        try {
+            LogParser logParser = LogParserFactory.getLogParser(mlogParseParam.getParseType(), "", "", mlogParseParam.getParseScript());
+            List<String> parsedLog = logParser.parseLogData(mlogParseParam.getMsg());
+            return Result.success(parsedLog);
+        } catch (Exception e) {
+            log.info("解析配置信息错误：配置信息：{}", GSON.toJson(mlogParseParam), e);
+        }
+        return Result.success("解析错误 请核对配置信息");
+    }
+
     private String checkParseParam(MlogParseParam mlogParseParam) {
         StringBuilder sb = new StringBuilder();
         if (null == mlogParseParam.getStoreId()) {
@@ -1005,10 +1028,6 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
 
     @Override
     public BaseMilogRpcConsumerService queryConsumerService(String source) {
-//        if (Objects.equals(ProjectSourceEnum.YOUPIN_SOURCE.getSource(), source)) {
-//            return youPinMilogRpcConsumerService;
-//        }
-//        return chinaMilogRpcConsumerService;
         return null;
     }
 

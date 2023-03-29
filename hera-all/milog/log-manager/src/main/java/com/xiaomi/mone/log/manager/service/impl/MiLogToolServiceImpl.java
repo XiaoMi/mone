@@ -129,9 +129,7 @@ public class MiLogToolServiceImpl implements MiLogToolService {
         }
         List<MilogLogStoreDO> logStoreDOS = storeDOS.stream().filter(milogLogStoreDO -> {
             LogTypeEnum logTypeEnum = LogTypeEnum.type2enum(milogLogStoreDO.getLogType());
-            if (logTypeEnum != LogTypeEnum.OPENTELEMETRY &&
-                    logTypeEnum != LogTypeEnum.LOKI_APP_LOG &&
-                    logTypeEnum != LogTypeEnum.MATRIX_ES_LOG) {
+            if (logTypeEnum != LogTypeEnum.OPENTELEMETRY) {
                 return true;
             }
             return false;

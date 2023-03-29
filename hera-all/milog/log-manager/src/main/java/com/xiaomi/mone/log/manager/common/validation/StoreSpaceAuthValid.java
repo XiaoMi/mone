@@ -1,4 +1,4 @@
-package com.xiaomi.mone.log.manager.service.validation;
+package com.xiaomi.mone.log.manager.common.validation;
 
 import com.google.common.collect.Lists;
 import com.xiaomi.mone.log.manager.dao.LogstoreDao;

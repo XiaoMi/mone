@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 @Controller
-public class HeraLogConfigController {
+public class MilogConfigController {
 
     @Resource
     private LogSpaceServiceImpl logSpaceService;
@@ -298,6 +298,17 @@ public class HeraLogConfigController {
     @RequestMapping(path = "/milog/logtail/parse/test")
     public Result<Object> parseScriptTest(@RequestParam(value = "param") MlogParseParam mlogParseParam) {
         return logTailService.parseScriptTest(mlogParseParam);
+    }
+
+    /**
+     * 根据示例解析出索引内容
+     *
+     * @param mlogParseParam
+     * @return
+     */
+    @RequestMapping(path = "/milog/logtail/parse/example")
+    public Result<Object> parseExample(@RequestParam(value = "param") MlogParseParam mlogParseParam) {
+        return logTailService.parseExample(mlogParseParam);
     }
 
     /**
