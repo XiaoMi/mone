@@ -27,11 +27,9 @@ import com.xiaomi.youpin.codecheck.code.impl.set.LongVariableAvoidNoneL;
 import com.xiaomi.youpin.codecheck.code.impl.youpin.DubboMethodMustReturnResultRule;
 import com.xiaomi.youpin.codecheck.code.impl.youpin.DubboProNeedHealthMethod;
 import com.xiaomi.youpin.codecheck.code.impl.youpin.IPRule;
-import com.xiaomi.youpin.codecheck.docCheck.JavaDocReader;
 import com.xiaomi.youpin.codecheck.po.CheckResult;
 import com.xiaomi.youpin.codecheck.pomCheck.PomCheck;
 import com.xiaomi.youpin.codecheck.visitor.SourceVisitor;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.File;
 import java.io.Serializable;
