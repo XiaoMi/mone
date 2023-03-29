@@ -138,7 +138,7 @@ public class TestController {
     public String testIsOk() {
         ConfigPushData configPushData = new ConfigPushData();
         configPushData.setId(1L);
-        ConfigService configService = MultipleNacosConfig.nacosConfigMap.get("127.0.0.1:80");
+        ConfigService configService = MultipleNacosConfig.getConfigService("127.0.0.1:80");
         spaceConfigNacosProvider.setConfigService(configService);
         spaceConfigNacosProvider.getConfig("2");
         return "ok";

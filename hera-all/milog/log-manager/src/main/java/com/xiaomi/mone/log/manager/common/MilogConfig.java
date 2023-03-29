@@ -38,6 +38,13 @@ public class MilogConfig {
         return nacosNaming;
     }
 
+    public static NacosNaming buildNacosNaming(String nacosAddress) {
+        NacosNaming nacosNaming = new NacosNaming();
+        nacosNaming.setServerAddr(nacosAddress);
+        nacosNaming.init();
+        return nacosNaming;
+    }
+
     @Bean
     public Gson gson() {
         return new Gson();

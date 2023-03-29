@@ -71,6 +71,8 @@ public class Constant {
 
     public static final String UNDERLINE_SYMBOL = "_";
 
+    public static final String STRIKETHROUGH_SYMBOL = "-";
+
     public static final String ES_INDEX_PREFIX = "milog_";
 
     public static final String LOG_STORE = "log-store";
