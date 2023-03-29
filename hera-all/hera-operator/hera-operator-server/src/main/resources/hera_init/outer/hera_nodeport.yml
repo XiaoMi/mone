@@ -8,7 +8,7 @@ spec:
     - port: 80
       targetPort: 7001
       protocol: TCP
-      nodePort: 31000
+      nodePort: 32000
   selector:
     app: hera-nginx-fe
   type: NodePort
@@ -24,7 +24,7 @@ spec:
     - port: 80
       targetPort: 7001
       protocol: TCP
-      nodePort: 31001
+      nodePort: 32001
   selector:
     app: tpc-nginx-fe
   type: NodePort
@@ -40,7 +40,7 @@ spec:
     - port: 80
       targetPort: 7001
       protocol: TCP
-      nodePort: 31002
+      nodePort: 32002
   selector:
     app: tpclogin-nginx-fe
   type: NodePort
@@ -53,10 +53,10 @@ metadata:
   namespace: hera-namespace
 spec:
   ports:
-    - port: 3000
+    - port: 80
       targetPort: 3000
       protocol: TCP
-      nodePort: 31003
+      nodePort: 32003
   selector:
     app: grafana
   type: NodePort
@@ -73,9 +73,9 @@ spec:
   type: NodePort
   ports:
     - name: http
-      port: 9093
+      port: 80
       targetPort: 9093
-      nodePort: 31004
+      nodePort: 32004
   selector:
     k8s-app: alertmanager
 
@@ -87,10 +87,10 @@ metadata:
   namespace: hera-namespace
 spec:
   ports:
-    - port: 9090
+    - port: 80
       targetPort: 9090
       protocol: TCP
-      nodePort: 31006
+      nodePort: 32005
   selector:
     app: prometheus
   type: NodePort

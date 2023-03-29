@@ -40,12 +40,19 @@ public class FreeMarkerUtil {
      * @param pathPrefix The directory of the template file.
      * @param rootMap    The data model of the template.
      */
-    public static String getContent(String pathPrefix, String name, Map<String,Object> rootMap) throws TemplateException, IOException{
+    public static String getContent(String pathPrefix, String name, Map<String, Object> rootMap) throws TemplateException, IOException {
         StringWriter writer = new StringWriter();
         getTemplate(name, pathPrefix).process(rootMap, writer);
         String jsonStr = writer.toString();
         JsonObject returnData = new JsonParser().parse(jsonStr).getAsJsonObject();//先将模板文件转为json对象，再转为json字符串
         return returnData.toString();
+    }
+
+    public static String getContentExceptJson(String pathPrefix, String name, Map<String, Object> rootMap) throws TemplateException, IOException {
+        StringWriter writer = new StringWriter();
+        getTemplate(name, pathPrefix).process(rootMap, writer);
+        String str = writer.toString();
+        return str;
     }
 
 
@@ -56,10 +63,10 @@ public class FreeMarkerUtil {
      * @param rootMap    The data model of the template.
      * @param file       The output file for the content.
      */
-    public static void printFile(String pathPrefix, String name,Map<String,Object> rootMap, File file) throws TemplateException, IOException{
+    public static void printFile(String pathPrefix, String name, Map<String, Object> rootMap, File file) throws TemplateException, IOException {
         Writer out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"));
         getTemplate(name, pathPrefix).process(rootMap, out); //将模板文件内容以UTF-8编码输出到相应的流中
-        if(null != out){
+        if (null != out) {
             out.close();
         }
     }
@@ -81,6 +88,14 @@ public class FreeMarkerUtil {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public static String getTemplateStr(String pathPrefix, String name) throws IOException {
+        Configuration cfg = new Configuration();
+        cfg.setClassForTemplateLoading(FreeMarkerUtil.class, pathPrefix); //设置模板文件的目录
+        cfg.setDefaultEncoding("UTF-8");       //Set the default charset of the template files
+        Template temp = cfg.getTemplate(name); //在模板文件目录中寻找名为"name"的模板文件
+        return temp.toString();
     }
 
 }

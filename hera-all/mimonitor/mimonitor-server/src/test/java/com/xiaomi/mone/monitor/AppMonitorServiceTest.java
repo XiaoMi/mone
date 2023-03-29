@@ -10,7 +10,6 @@ import com.xiaomi.mone.monitor.dao.model.AppMonitor;
 import com.xiaomi.mone.monitor.dao.model.GrafanaTemplate;
 import com.xiaomi.mone.monitor.dao.model.HeraAppBaseInfo;
 import com.xiaomi.mone.monitor.dao.model.HeraAppRole;
-import com.xiaomi.mone.monitor.service.helper.RedisHelper;
 import com.xiaomi.mone.monitor.service.impl.MiFeiShuServiceImpl;
 import com.xiaomi.mone.monitor.service.impl.AAImpl;
 import com.xiaomi.mone.monitor.service.kubernetes.CapacityAdjustMessageService;
@@ -81,15 +80,15 @@ public class AppMonitorServiceTest {
     @Autowired
     AAImpl aa;
 
-    @Autowired
-    RedisHelper redisHelper;
+//    @Autowired
+//    RedisHelper redisHelper;
 
-    @Test
-    public void testRedis(){
-        redisHelper.set("aaccc","value",10000000);
-        String aaccc = redisHelper.get("aaccc", String.class);
-        System.out.println(aaccc);
-    }
+//    @Test
+//    public void testRedis(){
+//        redisHelper.set("aaccc","value",10000000);
+//        String aaccc = redisHelper.get("aaccc", String.class);
+//        System.out.println(aaccc);
+//    }
 
     @Test
     public void testAppMovePlat(){

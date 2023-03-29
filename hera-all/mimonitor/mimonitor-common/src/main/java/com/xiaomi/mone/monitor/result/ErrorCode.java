@@ -41,7 +41,11 @@ public enum ErrorCode {
     FAIL_TO_DELETE_RULE_IN_DB(1023,"删除报警规则数据失败"),
 
     INVALID_USER(4001,"用户身份无效"),
-    NO_DATA_FOUND(4004,"数据未找到");
+    NO_DATA_FOUND(4004,"数据未找到"),
+
+    API_KEY_CREATE_FAIL(5001,"Grafana api key创建失败，请检查传入的Grafana用户名及密码"),
+    DATASOURCE_CREATE_FAIL(5002,"Grafana datasource创建失败"),
+    FOLDER_CREATE_FAIL(5003,"Grafana folder创建失败");
 
     private int code;
     private String message;

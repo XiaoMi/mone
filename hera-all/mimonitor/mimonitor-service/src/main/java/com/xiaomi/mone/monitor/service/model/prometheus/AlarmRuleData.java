@@ -109,6 +109,8 @@ public class AlarmRuleData implements Serializable {
 
     private List<String> alertMembers;//报警人员列表
 
+    private List<String> atMembers;
+
     private String alarmCallbackUrl;
 
     List<AlarmAlertTeamData> alertTeams;

@@ -39,8 +39,8 @@ public class ComputeTimerService {
 
     @Autowired
     PrometheusService prometheusService;
-    @Autowired
-    private RedisHelper redisHelper;
+//    @Autowired
+//    private RedisHelper redisHelper;
     @Autowired
     private AlertHelper alertHelper;
 
@@ -104,11 +104,12 @@ public class ComputeTimerService {
     public AppAlarmData getAppAlarmData(ProjectInfo project, Long startTime, Long endTime, String timeDurarion) {
         String appName = new StringBuilder().append(project.getId()).append("_").append(project.getName().replaceAll("-","_")).toString();
 
-        AppAlarmData data = redisHelper.getAppAlarmData(appName);
-        if (data != null) {
-            log.info("ComputeTimerServiceV2.getAppAlarmData cache-result appName={}, data={}", appName, data);
-            return data;
-        }
+        AppAlarmData data = null;
+//        AppAlarmData data = redisHelper.getAppAlarmData(appName);
+//        if (data != null) {
+//            log.info("ComputeTimerServiceV2.getAppAlarmData cache-result appName={}, data={}", appName, data);
+//            return data;
+//        }
 
         AppAlarmData.AppAlarmDataBuilder dataBuilder = AppAlarmData.builder();
         dataBuilder.id(project.getId()).name(project.getName()).iamTreeId(project.getIamTreeId());
@@ -150,7 +151,7 @@ public class ComputeTimerService {
             calExceptionTotal(data);
             calSlowQueryTotal(data);
             log.info("ComputeTimerServiceV2.getAppAlarmData new-result appName={}, data={}", appName, data);
-            redisHelper.setAppAlarmData(appName, data);
+//            redisHelper.setAppAlarmData(appName, data);
         } catch (Exception e) {
             log.error("ComputeTimerServiceV2.getAppAlarmData error! appName={}", appName, e);
         }
@@ -192,56 +193,56 @@ public class ComputeTimerService {
 
                     break;
 
-                case grpc :
-                    // grpc请求异常统计
-                    Result<PageData> grpcServerExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.grpcServerError.getCode(), null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
-                    dataBuilder.grpcServerErrorNum(countRecordMetric(grpcServerExceptions));
-
-                    Result<PageData> grpcClientExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.grpcClientError.getCode(), null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
-                    dataBuilder.grpcClientErrorNum(countRecordMetric(grpcClientExceptions));
-
-                    Result<PageData> grpcClientSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.grpcClientSlowQuery.getCode(), null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
-                    dataBuilder.grpcClientSlowQueryNum(countRecordMetric(grpcClientSlowQuery));
-
-                    Result<PageData> grpcServerSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.grpcServerSlowQuery.getCode(), null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
-                    dataBuilder.grpcServerSlowQueryNum(countRecordMetric(grpcServerSlowQuery));
-
-                    break;
-
-                case apus :
-
-                    // apus请求异常统计
-                    Result<PageData> apusServerExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.apusServerError.getCode(), null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
-                    dataBuilder.apusServerErrorNum(countRecordMetric(apusServerExceptions));
-
-                    Result<PageData> apusClientExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.apusClientError.getCode(), null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
-                    dataBuilder.apusClientErrorNum(countRecordMetric(apusClientExceptions));
-
-                    Result<PageData> apusClientSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.apusClientSlowQuery.getCode(), null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
-                    dataBuilder.apusClientErrorNum(countRecordMetric(apusClientSlowQuery));
-
-                    Result<PageData> apusServerSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.apusServerSlowQuery.getCode(), null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
-                    dataBuilder.apusServerSlowQueryNum(countRecordMetric(apusServerSlowQuery));
-
-                    break;
-
-
-                case thrift :
-
-                    // thrift请求异常统计
-                    Result<PageData> thriftServerExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.thriftServerError.getCode(), null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
-                    dataBuilder.thriftServerErrorNum(countRecordMetric(thriftServerExceptions));
-
-                    Result<PageData> thriftClientExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.thriftClientError.getCode(), null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
-                    dataBuilder.thriftClientErrorNum(countRecordMetric(thriftClientExceptions));
-
-                    Result<PageData> thriftClientSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.thriftClientSlowQuery.getCode(),  null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
-                    dataBuilder.thriftClientSlowQueryNum(countRecordMetric(thriftClientSlowQuery));
-
-                    Result<PageData> thriftServerSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.thriftServerSlowQuery.getCode(),  null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
-                    dataBuilder.thriftServerSlowQueryNum(countRecordMetric(thriftServerSlowQuery));
-
-                    break;
+//                case grpc :
+//                    // grpc请求异常统计
+//                    Result<PageData> grpcServerExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.grpcServerError.getCode(), null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
+//                    dataBuilder.grpcServerErrorNum(countRecordMetric(grpcServerExceptions));
+//
+//                    Result<PageData> grpcClientExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.grpcClientError.getCode(), null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
+//                    dataBuilder.grpcClientErrorNum(countRecordMetric(grpcClientExceptions));
+//
+//                    Result<PageData> grpcClientSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.grpcClientSlowQuery.getCode(), null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
+//                    dataBuilder.grpcClientSlowQueryNum(countRecordMetric(grpcClientSlowQuery));
+//
+//                    Result<PageData> grpcServerSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.grpcServerSlowQuery.getCode(), null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
+//                    dataBuilder.grpcServerSlowQueryNum(countRecordMetric(grpcServerSlowQuery));
+//
+//                    break;
+//
+//                case apus :
+//
+//                    // apus请求异常统计
+//                    Result<PageData> apusServerExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.apusServerError.getCode(), null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
+//                    dataBuilder.apusServerErrorNum(countRecordMetric(apusServerExceptions));
+//
+//                    Result<PageData> apusClientExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.apusClientError.getCode(), null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
+//                    dataBuilder.apusClientErrorNum(countRecordMetric(apusClientExceptions));
+//
+//                    Result<PageData> apusClientSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.apusClientSlowQuery.getCode(), null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
+//                    dataBuilder.apusClientErrorNum(countRecordMetric(apusClientSlowQuery));
+//
+//                    Result<PageData> apusServerSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.apusServerSlowQuery.getCode(), null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
+//                    dataBuilder.apusServerSlowQueryNum(countRecordMetric(apusServerSlowQuery));
+//
+//                    break;
+//
+//
+//                case thrift :
+//
+//                    // thrift请求异常统计
+//                    Result<PageData> thriftServerExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.thriftServerError.getCode(), null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
+//                    dataBuilder.thriftServerErrorNum(countRecordMetric(thriftServerExceptions));
+//
+//                    Result<PageData> thriftClientExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.thriftClientError.getCode(), null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
+//                    dataBuilder.thriftClientErrorNum(countRecordMetric(thriftClientExceptions));
+//
+//                    Result<PageData> thriftClientSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.thriftClientSlowQuery.getCode(),  null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
+//                    dataBuilder.thriftClientSlowQueryNum(countRecordMetric(thriftClientSlowQuery));
+//
+//                    Result<PageData> thriftServerSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.thriftServerSlowQuery.getCode(),  null, appName, MetricSuffix._total.name(), startTime, endTime, null, timeDurarion);
+//                    dataBuilder.thriftServerSlowQueryNum(countRecordMetric(thriftServerSlowQuery));
+//
+//                    break;
 
                 case db :
                     // db请求异常统计
@@ -321,51 +322,51 @@ public class ComputeTimerService {
                     getDurarion(MetricKind.MetricType.dubbo_provider_exception,metricType,param));
             dataBuilder.dubboPExceptionNum(countRecordMetric(dubboPExceptions));
 
-            // grpc
-            Result<PageData> grpcServerExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.grpcServerError.getCode(),
-                    getLable(MetricKind.MetricType.grpc_server_exception,metricType,param), appName, MetricSuffix._total.name(),
-                    getSTime(MetricKind.MetricType.grpc_server_exception,metricType,param),
-                    getETime(MetricKind.MetricType.grpc_server_exception,metricType,param), null,
-                    getDurarion(MetricKind.MetricType.grpc_server_exception,metricType,param));
-            dataBuilder.grpcServerErrorNum(countRecordMetric(grpcServerExceptions));
-
-            // grpc
-            Result<PageData> grpcClientExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.grpcClientError.getCode(),
-                    getLable(MetricKind.MetricType.grpc_client_exception,metricType,param), appName, MetricSuffix._total.name(),
-                    getSTime(MetricKind.MetricType.grpc_client_exception,metricType,param),
-                    getETime(MetricKind.MetricType.grpc_client_exception,metricType,param), null,
-                    getDurarion(MetricKind.MetricType.grpc_client_exception,metricType,param));
-            dataBuilder.grpcClientErrorNum(countRecordMetric(grpcClientExceptions));
-
-            // apus
-            Result<PageData> apusServerExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.apusServerError.getCode(),
-                    getLable(MetricKind.MetricType.apus_server_exception,metricType,param), appName, MetricSuffix._total.name(),
-                    getSTime(MetricKind.MetricType.apus_server_exception,metricType,param),
-                    getETime(MetricKind.MetricType.apus_server_exception,metricType,param), null,
-                    getDurarion(MetricKind.MetricType.apus_server_exception,metricType,param));
-            dataBuilder.apusServerErrorNum(countRecordMetric(apusServerExceptions));
-
-            Result<PageData> apusClientExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.apusClientError.getCode(),
-                    getLable(MetricKind.MetricType.apus_client_exception,metricType,param), appName, MetricSuffix._total.name(),
-                    getSTime(MetricKind.MetricType.apus_client_exception,metricType,param),
-                    getETime(MetricKind.MetricType.apus_client_exception,metricType,param), null,
-                    getDurarion(MetricKind.MetricType.apus_client_exception,metricType,param));
-            dataBuilder.apusClientErrorNum(countRecordMetric(apusClientExceptions));
-
-            // thrift
-            Result<PageData> thriftServerExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.thriftServerError.getCode(),
-                    getLable(MetricKind.MetricType.thrift_server_exception,metricType,param), appName, MetricSuffix._total.name(),
-                    getSTime(MetricKind.MetricType.thrift_server_exception,metricType,param),
-                    getETime(MetricKind.MetricType.thrift_server_exception,metricType,param), null,
-                    getDurarion(MetricKind.MetricType.thrift_server_exception,metricType,param));
-            dataBuilder.thriftServerErrorNum(countRecordMetric(thriftServerExceptions));
-
-            Result<PageData> thriftClientExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.thriftClientError.getCode(),
-                    getLable(MetricKind.MetricType.thrift_client_exception,metricType,param), appName, MetricSuffix._total.name(),
-                    getSTime(MetricKind.MetricType.thrift_client_exception,metricType,param),
-                    getETime(MetricKind.MetricType.thrift_client_exception,metricType,param), null,
-                    getDurarion(MetricKind.MetricType.thrift_client_exception,metricType,param));
-            dataBuilder.thriftClientErrorNum(countRecordMetric(thriftClientExceptions));
+//            // grpc
+//            Result<PageData> grpcServerExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.grpcServerError.getCode(),
+//                    getLable(MetricKind.MetricType.grpc_server_exception,metricType,param), appName, MetricSuffix._total.name(),
+//                    getSTime(MetricKind.MetricType.grpc_server_exception,metricType,param),
+//                    getETime(MetricKind.MetricType.grpc_server_exception,metricType,param), null,
+//                    getDurarion(MetricKind.MetricType.grpc_server_exception,metricType,param));
+//            dataBuilder.grpcServerErrorNum(countRecordMetric(grpcServerExceptions));
+//
+//            // grpc
+//            Result<PageData> grpcClientExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.grpcClientError.getCode(),
+//                    getLable(MetricKind.MetricType.grpc_client_exception,metricType,param), appName, MetricSuffix._total.name(),
+//                    getSTime(MetricKind.MetricType.grpc_client_exception,metricType,param),
+//                    getETime(MetricKind.MetricType.grpc_client_exception,metricType,param), null,
+//                    getDurarion(MetricKind.MetricType.grpc_client_exception,metricType,param));
+//            dataBuilder.grpcClientErrorNum(countRecordMetric(grpcClientExceptions));
+//
+//            // apus
+//            Result<PageData> apusServerExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.apusServerError.getCode(),
+//                    getLable(MetricKind.MetricType.apus_server_exception,metricType,param), appName, MetricSuffix._total.name(),
+//                    getSTime(MetricKind.MetricType.apus_server_exception,metricType,param),
+//                    getETime(MetricKind.MetricType.apus_server_exception,metricType,param), null,
+//                    getDurarion(MetricKind.MetricType.apus_server_exception,metricType,param));
+//            dataBuilder.apusServerErrorNum(countRecordMetric(apusServerExceptions));
+//
+//            Result<PageData> apusClientExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.apusClientError.getCode(),
+//                    getLable(MetricKind.MetricType.apus_client_exception,metricType,param), appName, MetricSuffix._total.name(),
+//                    getSTime(MetricKind.MetricType.apus_client_exception,metricType,param),
+//                    getETime(MetricKind.MetricType.apus_client_exception,metricType,param), null,
+//                    getDurarion(MetricKind.MetricType.apus_client_exception,metricType,param));
+//            dataBuilder.apusClientErrorNum(countRecordMetric(apusClientExceptions));
+//
+//            // thrift
+//            Result<PageData> thriftServerExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.thriftServerError.getCode(),
+//                    getLable(MetricKind.MetricType.thrift_server_exception,metricType,param), appName, MetricSuffix._total.name(),
+//                    getSTime(MetricKind.MetricType.thrift_server_exception,metricType,param),
+//                    getETime(MetricKind.MetricType.thrift_server_exception,metricType,param), null,
+//                    getDurarion(MetricKind.MetricType.thrift_server_exception,metricType,param));
+//            dataBuilder.thriftServerErrorNum(countRecordMetric(thriftServerExceptions));
+//
+//            Result<PageData> thriftClientExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.thriftClientError.getCode(),
+//                    getLable(MetricKind.MetricType.thrift_client_exception,metricType,param), appName, MetricSuffix._total.name(),
+//                    getSTime(MetricKind.MetricType.thrift_client_exception,metricType,param),
+//                    getETime(MetricKind.MetricType.thrift_client_exception,metricType,param), null,
+//                    getDurarion(MetricKind.MetricType.thrift_client_exception,metricType,param));
+//            dataBuilder.thriftClientErrorNum(countRecordMetric(thriftClientExceptions));
 
 
             // db请求异常统计
@@ -409,51 +410,51 @@ public class ComputeTimerService {
 
 
 
-            // grpc
-            Result<PageData> grpcServerSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.grpcServerSlowQuery.getCode(),
-                    getLable(MetricKind.MetricType.grpc_server_slow_query,metricType,param), appName, MetricSuffix._total.name(),
-                    getSTime(MetricKind.MetricType.grpc_server_slow_query,metricType,param),
-                    getETime(MetricKind.MetricType.grpc_server_slow_query,metricType,param), null,
-                    getDurarion(MetricKind.MetricType.grpc_server_slow_query,metricType,param));
-            dataBuilder.grpcServerSlowQueryNum(countRecordMetric(grpcServerSlowQuery));
-
-            // grpc
-            Result<PageData> grpcClientSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.grpcClientSlowQuery.getCode(),
-                    getLable(MetricKind.MetricType.grpc_client_slow_query,metricType,param), appName, MetricSuffix._total.name(),
-                    getSTime(MetricKind.MetricType.grpc_client_slow_query,metricType,param),
-                    getETime(MetricKind.MetricType.grpc_client_slow_query,metricType,param), null,
-                    getDurarion(MetricKind.MetricType.grpc_client_slow_query,metricType,param));
-            dataBuilder.grpcClientSlowQueryNum(countRecordMetric(grpcClientSlowQuery));
-
-            // apus
-            Result<PageData> apusServerSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.apusServerSlowQuery.getCode(),
-                    getLable(MetricKind.MetricType.apus_server_slow_query,metricType,param), appName, MetricSuffix._total.name(),
-                    getSTime(MetricKind.MetricType.apus_server_slow_query,metricType,param),
-                    getETime(MetricKind.MetricType.apus_server_slow_query,metricType,param), null,
-                    getDurarion(MetricKind.MetricType.apus_server_slow_query,metricType,param));
-            dataBuilder.apusServerSlowQueryNum(countRecordMetric(apusServerSlowQuery));
-
-            Result<PageData> apusClientSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.apusClientSlowQuery.getCode(),
-                    getLable(MetricKind.MetricType.apus_client_slow_query,metricType,param), appName, MetricSuffix._total.name(),
-                    getSTime(MetricKind.MetricType.apus_client_slow_query,metricType,param),
-                    getETime(MetricKind.MetricType.apus_client_slow_query,metricType,param), null,
-                    getDurarion(MetricKind.MetricType.apus_client_slow_query,metricType,param));
-            dataBuilder.apusClientSlowQueryNum(countRecordMetric(apusClientSlowQuery));
-
-            // thrift
-            Result<PageData> thriftServerSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.thriftServerSlowQuery.getCode(),
-                    getLable(MetricKind.MetricType.thrift_server_slow_query,metricType,param), appName, MetricSuffix._total.name(),
-                    getSTime(MetricKind.MetricType.thrift_server_slow_query,metricType,param),
-                    getETime(MetricKind.MetricType.thrift_server_slow_query,metricType,param), null,
-                    getDurarion(MetricKind.MetricType.thrift_server_slow_query,metricType,param));
-            dataBuilder.thriftServerSlowQueryNum(countRecordMetric(thriftServerSlowQuery));
-
-            Result<PageData> thriftClientSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.thriftClientSlowQuery.getCode(),
-                    getLable(MetricKind.MetricType.thrift_client_slow_query,metricType,param), appName, MetricSuffix._total.name(),
-                    getSTime(MetricKind.MetricType.thrift_client_slow_query,metricType,param),
-                    getETime(MetricKind.MetricType.thrift_client_slow_query,metricType,param), null,
-                    getDurarion(MetricKind.MetricType.thrift_client_slow_query,metricType,param));
-            dataBuilder.thriftClientSlowQueryNum(countRecordMetric(thriftClientSlowQuery));
+//            // grpc
+//            Result<PageData> grpcServerSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.grpcServerSlowQuery.getCode(),
+//                    getLable(MetricKind.MetricType.grpc_server_slow_query,metricType,param), appName, MetricSuffix._total.name(),
+//                    getSTime(MetricKind.MetricType.grpc_server_slow_query,metricType,param),
+//                    getETime(MetricKind.MetricType.grpc_server_slow_query,metricType,param), null,
+//                    getDurarion(MetricKind.MetricType.grpc_server_slow_query,metricType,param));
+//            dataBuilder.grpcServerSlowQueryNum(countRecordMetric(grpcServerSlowQuery));
+//
+//            // grpc
+//            Result<PageData> grpcClientSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.grpcClientSlowQuery.getCode(),
+//                    getLable(MetricKind.MetricType.grpc_client_slow_query,metricType,param), appName, MetricSuffix._total.name(),
+//                    getSTime(MetricKind.MetricType.grpc_client_slow_query,metricType,param),
+//                    getETime(MetricKind.MetricType.grpc_client_slow_query,metricType,param), null,
+//                    getDurarion(MetricKind.MetricType.grpc_client_slow_query,metricType,param));
+//            dataBuilder.grpcClientSlowQueryNum(countRecordMetric(grpcClientSlowQuery));
+//
+//            // apus
+//            Result<PageData> apusServerSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.apusServerSlowQuery.getCode(),
+//                    getLable(MetricKind.MetricType.apus_server_slow_query,metricType,param), appName, MetricSuffix._total.name(),
+//                    getSTime(MetricKind.MetricType.apus_server_slow_query,metricType,param),
+//                    getETime(MetricKind.MetricType.apus_server_slow_query,metricType,param), null,
+//                    getDurarion(MetricKind.MetricType.apus_server_slow_query,metricType,param));
+//            dataBuilder.apusServerSlowQueryNum(countRecordMetric(apusServerSlowQuery));
+//
+//            Result<PageData> apusClientSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.apusClientSlowQuery.getCode(),
+//                    getLable(MetricKind.MetricType.apus_client_slow_query,metricType,param), appName, MetricSuffix._total.name(),
+//                    getSTime(MetricKind.MetricType.apus_client_slow_query,metricType,param),
+//                    getETime(MetricKind.MetricType.apus_client_slow_query,metricType,param), null,
+//                    getDurarion(MetricKind.MetricType.apus_client_slow_query,metricType,param));
+//            dataBuilder.apusClientSlowQueryNum(countRecordMetric(apusClientSlowQuery));
+//
+//            // thrift
+//            Result<PageData> thriftServerSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.thriftServerSlowQuery.getCode(),
+//                    getLable(MetricKind.MetricType.thrift_server_slow_query,metricType,param), appName, MetricSuffix._total.name(),
+//                    getSTime(MetricKind.MetricType.thrift_server_slow_query,metricType,param),
+//                    getETime(MetricKind.MetricType.thrift_server_slow_query,metricType,param), null,
+//                    getDurarion(MetricKind.MetricType.thrift_server_slow_query,metricType,param));
+//            dataBuilder.thriftServerSlowQueryNum(countRecordMetric(thriftServerSlowQuery));
+//
+//            Result<PageData> thriftClientSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.thriftClientSlowQuery.getCode(),
+//                    getLable(MetricKind.MetricType.thrift_client_slow_query,metricType,param), appName, MetricSuffix._total.name(),
+//                    getSTime(MetricKind.MetricType.thrift_client_slow_query,metricType,param),
+//                    getETime(MetricKind.MetricType.thrift_client_slow_query,metricType,param), null,
+//                    getDurarion(MetricKind.MetricType.thrift_client_slow_query,metricType,param));
+//            dataBuilder.thriftClientSlowQueryNum(countRecordMetric(thriftClientSlowQuery));
 
 
             data = dataBuilder.build();

@@ -1,5 +1,6 @@
 package com.xiaomi.mone.monitor.service;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.gson.Gson;
 import com.xiaomi.mone.monitor.bo.PlatFormType;
 import com.xiaomi.mone.monitor.bo.serviceMarketType;
@@ -27,10 +28,11 @@ public class ServiceMarketService {
     @Value("${server.type}")
     private String env;
 
-    //测试mione 服务大盘url
-    public static final String MIONE_STAGING_SERVICE_MARKET_GRAFANA_URL = "http://xx";
+    @NacosValue(value = "${grafana.domain}",autoRefreshed = true)
+    private String grafanaDomain;
+
     //线上mione 服务大盘url
-    public static final String MIONE_ONLINE_SERVICE_MARKET_GRAFANA_URL = "https://xx";
+    public static final String MIONE_ONLINE_SERVICE_MARKET_GRAFANA_URL = "/d/hera-serviceMarket/hera-fu-wu-da-pan?orgId=1";
 
     //增
     public Result createMarket(String user, String marketName, String belongTeam,String serviceList,String remark,Integer serviceType) {
@@ -71,24 +73,7 @@ public class ServiceMarketService {
     //获取大盘grafanaUrl
     public String getServiceMarketGrafana(Integer serviceType) {
         log.info("ServiceMarketService.getServiceMarketGrafana serviceType: {},env : {}", serviceType,env);
-        switch (serviceType) {
-            case 0:
-                if (env.equals("staging") || env.equals("dev")) {
-                    return MIONE_STAGING_SERVICE_MARKET_GRAFANA_URL;
-                } else if (env.equals("online")) {
-                    return MIONE_ONLINE_SERVICE_MARKET_GRAFANA_URL;
-                } else {
-                    return "";
-                }
-            default:
-                if (env.equals("staging") || env.equals("dev")) {
-                    return MIONE_STAGING_SERVICE_MARKET_GRAFANA_URL;
-                } else if (env.equals("online")) {
-                    return MIONE_ONLINE_SERVICE_MARKET_GRAFANA_URL;
-                } else {
-                    return "";
-                }
-        }
+        return grafanaDomain + MIONE_ONLINE_SERVICE_MARKET_GRAFANA_URL;
     }
 
     //查列表

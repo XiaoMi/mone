@@ -66,8 +66,8 @@ public class CapacityService {
                     Thread.sleep(1000);
                 }
                 MoneSpec consume = capacityAdjustMessageService.consume();
-                log.info("CapacityService#consumeMessage : {}",consume);
                 if(consume != null){
+                    log.info("CapacityService#consumeMessage : {}",consume);
                     capacityAdjustWithRecord(consume);
                 }
             }

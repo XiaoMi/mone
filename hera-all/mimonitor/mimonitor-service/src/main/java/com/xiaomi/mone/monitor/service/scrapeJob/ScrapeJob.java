@@ -11,4 +11,5 @@ public interface ScrapeJob {
     public Result delScrapeJob(Integer jobId,String identifyId, String user);
 
     public Result  queryScrapeJob(Integer jobId, String identifyId, String user);
+    public Result  queryScrapeJobByName(String name, String identifyId, String user);
 }

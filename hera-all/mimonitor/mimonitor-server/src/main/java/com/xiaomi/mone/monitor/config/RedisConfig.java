@@ -18,8 +18,8 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
  *
  * @author zhanggaofeng1
  */
-@Configuration
-@ConditionalOnClass(RedisTemplate.class)
+//@Configuration
+//@ConditionalOnClass(RedisTemplate.class)
 public class RedisConfig {
 
     @Bean

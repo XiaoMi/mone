@@ -1,5 +1,6 @@
 package com.xiaomi.mone.monitor.service;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.gson.*;
 import com.xiaomi.mone.monitor.bo.AppType;
 import com.xiaomi.mone.monitor.dao.model.GrafanaTemplate;
@@ -51,7 +52,7 @@ public class GrafanaService {
     /**
      * grafana基础panelId （更新基础模板需要加在这里）
      */
-    private static final Integer[] PANEL_IDS = new Integer[]{110, 148, 152, 112, 116, 118, 150, 122, 120, 126, 124, 130, 128, 132, 134, 136, 138, 140, 142, 144, 146, 52, 56, 58, 60, 66, 95, 96, 50, 82, 68, 78, 74, 76, 102, 104, 106, 146, 159,163,168,169,170,171,172,173,174}; //159为自定义指标目录
+    private static final Integer[] PANEL_IDS = new Integer[]{110, 148, 152, 112, 116, 118, 150, 122, 120, 126, 124, 130, 128, 132, 134, 136, 138, 140, 142, 144, 146, 52, 56, 58, 60, 66, 95, 96, 50, 82, 68, 78, 74, 76, 102, 104, 106, 146, 159, 163, 168, 169, 170, 171, 172, 173, 174}; //159为自定义指标目录
 
     /**
      * grafana自定义目录ID
@@ -59,35 +60,41 @@ public class GrafanaService {
     private static final int DIY_FOLDER_ID = 159;
     private final Gson gson = new Gson();
 
-    @Value("${grafana.prometheus.datasource}")
+    @NacosValue(value = "${grafana.prometheus.datasource}", autoRefreshed = true)
     private String dataSource;
 
-    @Value("${grafana.address}")
+    @NacosValue(value = "${grafana.address}", autoRefreshed = true)
     private String grafanaAddress;
 
-    @Value("${grafana.api.key}")
+    @NacosValue(value = "${grafana.domain}",autoRefreshed = true)
+    private String grafanaDomain;
+
+    @NacosValue(value = "${grafana.api.key}", autoRefreshed = true)
     private String grafanaApiKey;
 
-    @Value("${grafana.folder.id}")
+    @NacosValue(value = "${grafana.folder.id}", autoRefreshed = true)
     private String grafanaFolderId;
 
-    @Value("${grafana.folder.uid}")
+    @NacosValue(value = "${grafana.folder.uid}", autoRefreshed = true)
     private String grafanaFolderUid;
 
-    @Value("${grafana.version.url}")
+    @NacosValue(value = "${grafana.version.url}", autoRefreshed = true)
     private String grafanaVersionUrl;
 
-    @Value("${grafana.checkDashboard.url}")
+    @NacosValue(value = "${grafana.checkDashboard.url}", autoRefreshed = true)
     private String grafanaCheckUrl;
 
-    @Value("${grafana.container.url}")
+    @NacosValue(value = "${grafana.container.url}", autoRefreshed = true)
     private String grafanaContainerUrl;
 
-    @Value("${grafana.host.url}")
+    @NacosValue(value = "${grafana.host.url}", autoRefreshed = true)
     private String grafanaHostUrl;
 
-    @Value("${grafana.createDashboard.url}")
+    @NacosValue(value = "${grafana.createDashboard.url}", autoRefreshed = true)
     private String getGrafanaCreateDashboardUrl;
+
+    @NacosValue(value = "${prometheusUid}", autoRefreshed = true)
+    private String prometheusUid;
 
     public void setFolderData(String area) {
         log.info("grafana setFolderData begin");
@@ -102,13 +109,13 @@ public class GrafanaService {
     public void setContainerAndHostUrl(String area) {
         switch (area) {
             case "Hera":
-                ContainerAndHostUrl.put(CONTAINER_URL, grafanaAddress + grafanaContainerUrl + "${__data.fields.jumpIp.text}");
-                ContainerAndHostUrl.put(HOST_URL, grafanaAddress + grafanaHostUrl + "${__data.fields.jumpIp.text}");
+                ContainerAndHostUrl.put(CONTAINER_URL, grafanaDomain + grafanaContainerUrl + "${__data.fields.jumpIp.text}");
+                ContainerAndHostUrl.put(HOST_URL, grafanaDomain + grafanaHostUrl + "${__data.fields.jumpIp.text}");
                 break;
         }
     }
 
-    public String requestGrafana(String serverType,String appName,String area){
+    public String requestGrafana(String serverType, String appName, String area) {
         return "";
     }
 
@@ -122,7 +129,7 @@ public class GrafanaService {
             Map<String, String> map = beforeRequestGrafana(area, title);
             String containerName = map.get("containerName");
             title = map.get("title");
-            String tmp = innerRequestGrafanaStr(area, title, containerName,group, template,title);
+            String tmp = innerRequestGrafanaStr(area, title, containerName, group, template, title);
             List<GrafanaResponse> grafanaResponseList = new ArrayList<>();
             GrafanaResponse grafanaResponse = new Gson().fromJson(tmp, GrafanaResponse.class);
             grafanaResponseList.add(grafanaResponse);
@@ -130,15 +137,15 @@ public class GrafanaService {
             mutiGrafanaResponse.setMessage("success");
             mutiGrafanaResponse.setCode(0);
             mutiGrafanaResponse.setUrl(grafanaResponse.getUrl());
-        }catch (Exception e){
-            log.error("requestGrafanaTemplate error",e);
+        } catch (Exception e) {
+            log.error("requestGrafanaTemplate error", e);
             mutiGrafanaResponse.setMessage(e.getMessage());
             mutiGrafanaResponse.setCode(-1);
         }
         return mutiGrafanaResponse;
     }
 
-    public Map<String,String> beforeRequestGrafana(String area ,String title) {
+    public Map<String, String> beforeRequestGrafana(String area, String title) {
         //设置grafana目录
         setFolderData(area);
         //设置grafana容器和物理机跳转链接
@@ -148,7 +155,7 @@ public class GrafanaService {
             log.error("Wrong title parameter passed in {}", title);
         }
         //检测中划线
-        Map<String,String> map = new HashMap<>();
+        Map<String, String> map = new HashMap<>();
         if (title.contains("-")) {
             //如果是中划线 服务名变为下划线，容器名保持不变
             containerName = title.split("_", 2)[1];
@@ -157,12 +164,12 @@ public class GrafanaService {
             //如果不是中划线,服务名和容器不变
             containerName = title.split("_", 2)[1];
         }
-        map.put("title",title);
-        map.put("containerName",containerName);
+        map.put("title", title);
+        map.put("containerName", containerName);
         return map;
     }
 
-    public String innerRequestGrafanaStr(String area,String title,String containerName,String group,GrafanaTemplate template,String application) {
+    public String innerRequestGrafanaStr(String area, String title, String containerName, String group, GrafanaTemplate template, String application) {
         String folderId = grafanaFolderData.get("id");
         String folderUid = grafanaFolderData.get("uid");
         String grafanaUrl = grafanaAddress;
@@ -170,11 +177,11 @@ public class GrafanaService {
         if (grafanaUrl == null || grafanaApiKey == null) {
             log.error("Incoming environment exception, server is {} url is {} ", title, grafanaUrl);
         }
-        Map<String, Object> map = getTemplateVariables(folderId, group, title, folderUid, grafanaUrl, containerName,area,application);
+        Map<String, Object> map = getTemplateVariables(folderId, group, title, folderUid, grafanaUrl, containerName, area, application);
         try {
             //获取工程路径
             String temp = template.getTemplate();
-            String data = FreeMarkerUtil.freemarkerProcess(map,template.getTemplate());
+            String data = FreeMarkerUtil.freemarkerProcess(map, template.getTemplate());
             URL url = new URL(grafanaUrl + getGrafanaCreateDashboardUrl);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             PrintWriter out = null;
@@ -195,7 +202,7 @@ public class GrafanaService {
             //判断是否是已经生成过，生成过则panel进行替换,并再次请求
             String finalGrafanaStr = "";
             if (conn.getResponseCode() == 412) {
-                log.info("requestGrafana panel already created,second request begin appName:{}",title);
+                log.info("requestGrafana panel already created,second request begin appName:{}", title);
                 conn.disconnect();
                 String checkUrl = "";
                 String uid = title;
@@ -204,7 +211,7 @@ public class GrafanaService {
                     uid = title.substring(0, 40);
                 }
                 checkUrl = grafanaUrl + grafanaCheckUrl + uid;
-                String finalData = this.getFinalData(data, checkUrl, grafanaApiKey, "GET", title,template.getPanelIdList());
+                String finalData = this.getFinalData(data, checkUrl, grafanaApiKey, "GET", title, template.getPanelIdList());
                 finalGrafanaStr = innerRequestGrafana(finalData, grafanaUrl + getGrafanaCreateDashboardUrl, grafanaApiKey, "POST");
             } else {
                 //之前未生成过该图表，直接生成默认模板
@@ -228,7 +235,7 @@ public class GrafanaService {
             //接口返回正确格式结果，则请求grafana version api判断是否更新/创建成功
             String version = getDashboardLastVersion(dashboardId);
             JsonObject jsonObject = gson.fromJson(finalGrafanaStr, JsonObject.class);
-            jsonObject.addProperty("mimonitor_version",version);
+            jsonObject.addProperty("mimonitor_version", version);
             return jsonObject.toString();
         } catch (Exception e) {
             return e.getMessage();
@@ -236,10 +243,10 @@ public class GrafanaService {
     }
 
     //获取grafana模板变量
-    private Map<String, Object> getTemplateVariables(String folderId, String group, String title, String folderUid, String grafanaUrl, String containerName,String area,String application) {
+    private Map<String, Object> getTemplateVariables(String folderId, String group, String title, String folderUid, String grafanaUrl, String containerName, String area, String application) {
         Map<String, Object> map = new HashMap<>();
         map.put("env", group);
-        map.put("serviceName",HERA);
+        map.put("serviceName", HERA);
         map.put("title", title);
         map.put("folderId", folderId);
         map.put("folderUid", folderUid);
@@ -248,7 +255,8 @@ public class GrafanaService {
         map.put("containerUrl", ContainerAndHostUrl.get(CONTAINER_URL));
         map.put("hostUrl", ContainerAndHostUrl.get(HOST_URL));
         map.put("containerName", containerName);
-        map.put("application",application) ;
+        map.put("application", application);
+        map.put("prometheusUid", prometheusUid);
         int len = title.length();
         if (len > 40) {
             map.put("uid", title.substring(0, 40));
@@ -256,11 +264,12 @@ public class GrafanaService {
             map.put("uid", title);
         }
         map.put("jaeger_error_list_url", "x");
+        log.info("grafana.getTemplateVariables map:{}", gson.toJson(map));
         return map;
     }
 
     //替换基础panel保留用户自定义panel
-    private String getFinalData(String data, String url, String apiKey, String method, String title ,String panelIdList) {
+    private String getFinalData(String data, String url, String apiKey, String method, String title, String panelIdList) {
         String pastData = this.innerRequestGrafana("", url, apiKey, method);
         JsonObject jsonObject = gson.fromJson(data, JsonObject.class);
         JsonObject dashboard = jsonObject.get("dashboard").getAsJsonObject();
@@ -277,7 +286,7 @@ public class GrafanaService {
                 diyPanelGirdPosY = py.get("y").getAsInt();
             }
         }
-        this.getCustomPanels(pastData, panels, diyPanelGirdPosY, title,panelIdList);
+        this.getCustomPanels(pastData, panels, diyPanelGirdPosY, title, panelIdList);
         return jsonObject.toString();
     }
 
@@ -311,7 +320,7 @@ public class GrafanaService {
             }
             is.close();
             conn.disconnect();
-            log.info("innerRequestGrafana param url:{},apiKey:{},method:{}",url,apiKey,method);
+            log.info("innerRequestGrafana param url:{},apiKey:{},method:{}", url, apiKey, method);
             return finalStr;
         } catch (IOException e) {
             e.printStackTrace();
@@ -319,7 +328,7 @@ public class GrafanaService {
         }
     }
 
-    public void getCustomPanels(String grafanaStr, JsonArray basicPanels, int basicDiyPanelGirdPosY, String title ,String panelIdList) {
+    public void getCustomPanels(String grafanaStr, JsonArray basicPanels, int basicDiyPanelGirdPosY, String title, String panelIdList) {
         List<JsonObject> result = new ArrayList<>();
         JsonObject jsonObject = gson.fromJson(grafanaStr, JsonObject.class);
         JsonObject dashboard = jsonObject.get("dashboard").getAsJsonObject();
@@ -342,7 +351,7 @@ public class GrafanaService {
                 diyPanelGirdPosY = py.get("y").getAsInt();
             }
             switch (p.get("type").getAsString()) {
-                case  "row":
+                case "row":
                     JsonArray panels2 = p.get("panels").getAsJsonArray();
                     if (null == panels2 || panels2.size() == 0) {
                         continue;
@@ -386,23 +395,23 @@ public class GrafanaService {
             if ("success".equals(status)) {
                 return id;
             }
-        }catch (Exception e) {
-            log.error("create grafana dashboard err: {},param is: {}",e.toString(),jobJson);
+        } catch (Exception e) {
+            log.error("create grafana dashboard err: {},param is: {}", e.toString(), jobJson);
             return "";
         }
         return "";
     }
 
     private String getDashboardLastVersion(String dashboardId) {
-        String url =  grafanaAddress+ grafanaVersionUrl;
-        String finalUrl = url.replace("{dashboard_id}",dashboardId);
-        String versionJsonData = innerRequestGrafana(null,finalUrl,this.grafanaApiKey,"GET");
+        String url = grafanaAddress + grafanaVersionUrl;
+        String finalUrl = url.replace("{dashboard_id}", dashboardId);
+        String versionJsonData = innerRequestGrafana(null, finalUrl, this.grafanaApiKey, "GET");
         try {
-            JsonArray jsonArray = gson.fromJson(versionJsonData,JsonArray.class);
+            JsonArray jsonArray = gson.fromJson(versionJsonData, JsonArray.class);
             String version = jsonArray.get(0).getAsJsonObject().get("message").getAsString();
             return version;
-        }catch (Exception e) {
-            log.error("getDashboardLastVersion err :{}, returnData : {}",e.toString(),versionJsonData);
+        } catch (Exception e) {
+            log.error("getDashboardLastVersion err :{}, returnData : {}", e.toString(), versionJsonData);
             return "";
         }
     }

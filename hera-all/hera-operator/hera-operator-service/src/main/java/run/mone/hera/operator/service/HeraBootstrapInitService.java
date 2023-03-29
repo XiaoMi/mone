@@ -290,7 +290,6 @@ public class HeraBootstrapInitService {
                     .build();
             node_exporter.setDefaultYaml();
             List<Map<String, String>> node_exporterConnectionMapList = new ArrayList<>();
-            node_exporterConnectionMapList.add(kvMap("mione.k8s.node.port", "9100", "node-exporter的port"));
             node_exporter.setConnectionMapList(node_exporterConnectionMapList);
             resourceList.add(node_exporter);
 

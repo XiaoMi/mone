@@ -447,7 +447,7 @@ public class ESIndexConst {
             "}";
 
     public static final String LOG_APP_MULTIPLE_INDEX_MAPPING = "{\n" +
-            "  \"index_patterns\": [\""+LOG_APP_MULTIPLE_INDEX+"*\"],\n" +
+            "  \"index_patterns\": [\"" + LOG_APP_MULTIPLE_INDEX + "*\"],\n" +
             "  \"settings\": {\n" +
             "    \"index\": {\n" +
             "      \"lifecycle\": {\n" +
@@ -594,12 +594,12 @@ public class ESIndexConst {
             "      }\n" +
             "  },\n" +
             "  \"aliases\": {\n" +
-            "    \""+LOG_APP_MULTIPLE_INDEX+"\": {}\n" +
+            "    \"" + LOG_APP_MULTIPLE_INDEX + "\": {}\n" +
             "  }\n" +
             "}";
 
     public static final String LOG_APP_SINGLE_INDEX_MAPPING = "{\n" +
-            "  \"index_patterns\": [\""+LOG_APP_SINGLE_INDEX+"*\"],\n" +
+            "  \"index_patterns\": [\"" + LOG_APP_SINGLE_INDEX + "*\"],\n" +
             "  \"settings\": {\n" +
             "    \"index\": {\n" +
             "      \"lifecycle\": {\n" +
@@ -746,12 +746,12 @@ public class ESIndexConst {
             "      }\n" +
             "  },\n" +
             "  \"aliases\": {\n" +
-            "    \""+LOG_APP_SINGLE_INDEX+"\": {}\n" +
+            "    \"" + LOG_APP_SINGLE_INDEX + "\": {}\n" +
             "  }\n" +
             "}";
 
     public static final String LOG_APP_NGINX_INDEX_MAPPING = "{\n" +
-            "  \"index_patterns\": [\""+LOG_APP_NGINX_INDEX+"*\"],\n" +
+            "  \"index_patterns\": [\"" + LOG_APP_NGINX_INDEX + "*\"],\n" +
             "  \"settings\": {\n" +
             "    \"index\": {\n" +
             "      \"lifecycle\": {\n" +
@@ -898,12 +898,12 @@ public class ESIndexConst {
             "      }\n" +
             "  },\n" +
             "  \"aliases\": {\n" +
-            "    \""+LOG_APP_NGINX_INDEX+"\": {}\n" +
+            "    \"" + LOG_APP_NGINX_INDEX + "\": {}\n" +
             "  }\n" +
             "}";
 
     public static final String LOG_APP_OTHER_INDEX_MAPPING = "{\n" +
-            "  \"index_patterns\": [\""+LOG_APP_OTHER_INDEX+"*\"],\n" +
+            "  \"index_patterns\": [\"" + LOG_APP_OTHER_INDEX + "*\"],\n" +
             "  \"settings\": {\n" +
             "    \"index\": {\n" +
             "      \"lifecycle\": {\n" +
@@ -1050,7 +1050,7 @@ public class ESIndexConst {
             "      }\n" +
             "  },\n" +
             "  \"aliases\": {\n" +
-            "    \""+LOG_APP_OTHER_INDEX+"\": {}\n" +
+            "    \"" + LOG_APP_OTHER_INDEX + "\": {}\n" +
             "  }\n" +
             "}";
 
@@ -1072,6 +1072,14 @@ public class ESIndexConst {
     }
 
     public static void main(String[] args) {
-        System.out.println(DRIVER_JSON);
+        // update your es api address
+        String esApiAddr = "elasticsearch:9200";
+
+        for (String index : templates.keySet()) {
+            System.out.println("curl --location --request PUT 'http://" + esApiAddr + "/_template/" + index + "' \\\n" +
+                    "--header 'Content-type: application/json; charset=UTF-8' \\\n" +
+                    "--data-raw '" + templates.get(index).replaceAll("\\\n", "").replaceAll("\\\t", "").replaceAll(" ", "") + "'");
+            System.out.println("=============================================================");
+        }
     }
 }

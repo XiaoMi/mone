@@ -20,7 +20,7 @@ import java.util.List;
  */
 
 @Slf4j
-@Service(registry = "registryConfig",interfaceClass = AppCapacityAutoAdjustService.class, retries = 0,group = "${dubbo.group}")
+//@Service(registry = "registryConfig",interfaceClass = AppCapacityAutoAdjustService.class, retries = 0,group = "${dubbo.group}")
 public class AppCapacityAutoAdjustServiceImpl implements AppCapacityAutoAdjustService {
 
     @Autowired

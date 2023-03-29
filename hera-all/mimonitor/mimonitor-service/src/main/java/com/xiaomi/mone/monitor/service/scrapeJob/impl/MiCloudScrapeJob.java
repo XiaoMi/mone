@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 @Service(value="miCloudScrapeJob")
 public class MiCloudScrapeJob implements ScrapeJob {
 
-    @Value("${alarm.domain}")
+    @Value("${alarm.domain:}")
     private String alarmDomain;
 
     @NacosValue("${iam.ak:noconfig}")
@@ -65,5 +65,10 @@ public class MiCloudScrapeJob implements ScrapeJob {
         Request request = miCloudAlertManager.createRequest(HttpMethodName.GET, url.toString(), identifyId, user);
         Result<JsonElement> jsonObjectResult = miCloudAlertManager.executeRequest(request);
         return Result.success(jsonObjectResult.getData());
+    }
+
+    @Override
+    public Result queryScrapeJobByName(String name, String identifyId, String user) {
+        return Result.success("success");
     }
 }

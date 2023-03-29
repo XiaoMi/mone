@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
+
 import javax.servlet.http.HttpServletRequest;
 
 /**
@@ -24,13 +25,16 @@ public class GrafanaTemplateController {
     @Autowired
     GrafanaTemplateService grafanaTemplateService;
 
+    @Autowired
+    ScrapeJobController scrapeJobController;
+
     @PostMapping("/mimonitor/createTemplate")
-    public Result createTemplate(HttpServletRequest request,@RequestBody CreateTemplateParam param){
+    public Result createTemplate(HttpServletRequest request, @RequestBody CreateTemplateParam param) {
         if (!param.check()) {
-            log.info("createTemplate param error :{}",param);
+            log.info("createTemplate param error :{}", param);
             return Result.fail(ErrorCode.invalidParamError);
         }
-        String user = ScrapeJobController.checkUser(request);
+        String user = scrapeJobController.checkUser(request);
         if (StringUtils.isEmpty(user)) {
             return Result.fail(ErrorCode.ThisUserNotHaveAuth);
         }
@@ -38,8 +42,8 @@ public class GrafanaTemplateController {
     }
 
     @PostMapping("/mimonitor/deleteTemplate")
-    public Result deleteTemplate(HttpServletRequest request,Integer id){
-        String user = ScrapeJobController.checkUser(request);
+    public Result deleteTemplate(HttpServletRequest request, Integer id) {
+        String user = scrapeJobController.checkUser(request);
         if (StringUtils.isEmpty(user)) {
             return Result.fail(ErrorCode.ThisUserNotHaveAuth);
         }
@@ -48,7 +52,7 @@ public class GrafanaTemplateController {
 
     @GetMapping("/mimonitor/getTemplate")
     public Result getTemplate(HttpServletRequest request,Integer id){
-        String user = ScrapeJobController.checkUser(request);
+        String user = scrapeJobController.checkUser(request);
         if (StringUtils.isEmpty(user)) {
             return Result.fail(ErrorCode.ThisUserNotHaveAuth);
         }
@@ -56,12 +60,12 @@ public class GrafanaTemplateController {
     }
 
     @PostMapping("/mimonitor/updateTemplate")
-    public Result updateTemplate(HttpServletRequest request,@RequestBody CreateTemplateParam param){
+    public Result updateTemplate(HttpServletRequest request, @RequestBody CreateTemplateParam param) {
         if (!param.check()) {
-            log.info("updateTemplate param error :{}",param);
+            log.info("updateTemplate param error :{}", param);
             return Result.fail(ErrorCode.invalidParamError);
         }
-        String user = ScrapeJobController.checkUser(request);
+        String user = scrapeJobController.checkUser(request);
         if (StringUtils.isEmpty(user)) {
             return Result.fail(ErrorCode.ThisUserNotHaveAuth);
         }
@@ -69,8 +73,8 @@ public class GrafanaTemplateController {
     }
 
     @GetMapping("/mimonitor/listTemplate")
-    public Result listTemplate(HttpServletRequest request,Integer pageSize,Integer page){
-        String user = ScrapeJobController.checkUser(request);
+    public Result listTemplate(HttpServletRequest request, Integer pageSize, Integer page) {
+        String user = scrapeJobController.checkUser(request);
         if (StringUtils.isEmpty(user)) {
             return Result.fail(ErrorCode.ThisUserNotHaveAuth);
         }
@@ -81,6 +85,6 @@ public class GrafanaTemplateController {
         if (page == null || page == 0) {
             page = 1;
         }
-        return grafanaTemplateService.listGrafanaTemplate(pageSize,page);
+        return grafanaTemplateService.listGrafanaTemplate(pageSize, page);
     }
 }

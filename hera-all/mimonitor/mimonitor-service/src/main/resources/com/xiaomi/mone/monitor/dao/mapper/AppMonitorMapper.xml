@@ -230,7 +230,7 @@
 
   <select id="countAllMyAppDistinct" resultType="java.lang.Long">
 
-    select count(DISTINCT a.iam_tree_id) as totalNum
+    select count(DISTINCT a.project_id,a.app_source) as totalNum
     from app_monitor a
     where a.`status`=0 and (a.`owner`= #{userName} or a.`care_user`= #{userName})
 

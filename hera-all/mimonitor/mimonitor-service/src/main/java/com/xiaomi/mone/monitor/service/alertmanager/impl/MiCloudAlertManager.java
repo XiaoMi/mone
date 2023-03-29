@@ -59,13 +59,13 @@ public class MiCloudAlertManager implements AlertManager {
     public static final String alarm_alert_group = "/api/v1/alert-team";
     public static final String alarm_alert_group_list = "/api/v1/alert-team/list";
 
-    @Value("${alarm.domain}")
+    @NacosValue(value = "${alarm.domain:}",autoRefreshed = true)
     private String alarmDomain;
     @NacosValue("${iam.ak:noconfig}")
     private String cloudAk;
     @NacosValue("${iam.sk:noconfig}")
     private String cloudSk;
-    @Value("${prometheus.alarm.env:staging}")
+    @NacosValue(value = "${prometheus.alarm.env:staging}",autoRefreshed = true)
     private String prometheusAlarmEnv;
     public static final String alarm_staging_env = "staging";
     public static final String alarm_online_env = "production";

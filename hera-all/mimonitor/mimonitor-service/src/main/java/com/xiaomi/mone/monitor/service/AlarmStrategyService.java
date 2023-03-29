@@ -138,6 +138,10 @@ public class AlarmStrategyService {
             strategy.setAlertMembers(String.join(",", param.getAlertMembers()));
         }
 
+        if(!CollectionUtils.isEmpty(param.getAtMembers())){
+            strategy.setAtMembers(String.join(",", param.getAtMembers()));
+        }
+
 
         if (!appAlarmStrategyDao.insert(strategy)) {
             return null;
@@ -192,6 +196,7 @@ public class AlarmStrategyService {
         strategy.setEnvs(envs.toString());
 
         strategy.setAlertMembers(String.join(",", param.getAlertMembers()));
+        strategy.setAtMembers(String.join(",", param.getAtMembers() == null ? new ArrayList<>() : param.getAtMembers()));
 
         if (!appAlarmStrategyDao.updateById(strategy)) {
             return Result.fail(ErrorCode.unknownError);

@@ -40,16 +40,16 @@ import java.util.stream.Collectors;
 @Slf4j
 public class RocketMqHeraAppConsumer {
 
-    @Value("${rocketmq.consumer.topic}")
+    @NacosValue(value = "${rocketmq.topic.hera.app}",autoRefreshed = true)
     private String consumerTopic;
 
-    @Value("${rocketmq.consumer.tag}")
+    @NacosValue(value = "${rocketmq.tag.hera.app}",autoRefreshed = true)
     private String consumerTag;
 
-    @Value("${rocketmq.group}")
+    @NacosValue(value = "${rocketmq.group.hera.app}",autoRefreshed = true)
     private String consumerGroup;
 
-    @Value("${rocketmq.namesrv.addr}")
+    @NacosValue(value = "${rocketmq.namesrv.addr}",autoRefreshed = true)
     private String namesrvAddr;
 
     @NacosValue("${rocketmq.ak}")

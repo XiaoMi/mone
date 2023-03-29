@@ -49,16 +49,16 @@ public class DataSourceConfig {
     static final String PACKAGE = "com.xiaomi.mone.monitor.dao.mapper";
     static final String MAPPER_LOCATION = "classpath*:com/xiaomi/mone/monitor/dao/**/*.xml";
 
-    @Value("${spring.datasource.driverClassName}")
+    @NacosValue(value = "${spring.datasource.driverClassName}", autoRefreshed = true)
     private String driverClass;
 
-    @Value("${spring.datasource.default.initialPoolSize}")
+    @NacosValue(value = "${spring.datasource.default.initialPoolSize}", autoRefreshed = true)
     private Integer defaultInitialPoolSize;
 
-    @Value("${spring.datasource.default.maxPoolSize}")
+    @NacosValue(value = "${spring.datasource.default.maxPoolSize}", autoRefreshed = true)
     private Integer defaultMaxPoolSize;
 
-    @Value("${spring.datasource.default.minialPoolSize}")
+    @NacosValue(value = "${spring.datasource.default.minialPoolSize}", autoRefreshed = true)
     private Integer defaultMinPoolSize;
 
 
