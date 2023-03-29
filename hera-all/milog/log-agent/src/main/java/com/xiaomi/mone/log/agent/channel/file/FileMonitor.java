@@ -1,7 +1,6 @@
 package com.xiaomi.mone.log.agent.channel.file;
 
 import com.google.common.collect.Lists;
-import com.google.gson.Gson;
 import com.xiaomi.mone.file.LogFile;
 import com.xiaomi.youpin.docean.anno.Service;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +11,8 @@ import java.io.File;
 import java.util.List;
 import java.util.function.Consumer;
 
+import static com.xiaomi.mone.log.common.Constant.GSON;
+
 @Slf4j
 @Service
 public class FileMonitor implements FileWatcher {
@@ -21,7 +22,7 @@ public class FileMonitor implements FileWatcher {
         List<String> watchList = Lists.newArrayList(filePattern);
         // 默认 遍历文件 间隔时间 5s
         FileAlterationMonitor monitor = new FileAlterationMonitor(5000);
-        log.info("agent monitor files:{}", new Gson().toJson(watchList));
+        log.info("agent monitor files:{}", GSON.toJson(watchList));
         for (String watch : watchList) {
             FileAlterationObserver observer = new FileAlterationObserver(new File(watch));
             observer.addListener(new FileListener(consumer));

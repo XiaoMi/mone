@@ -49,7 +49,7 @@ public class LogCollectMeta implements Serializable {
      * 如果是k8s的时候，当前node的所有pod集合,专门用来处理opentelemetry日志，由于配置的*，会扫描到很多已经结束的
      * pod的日志文件，导致起很多线程而线程池满了后放入不了任务的问题
      * <p>
-     * 启动时为当前机器上全量存活的podName
+     * 启动时为当前机器上全量挂载了日志的podName
      * 运行过程中为删除的pod
      */
     private List<String> podNames;
@@ -58,4 +58,6 @@ public class LogCollectMeta implements Serializable {
      * 单个配置数据，默认该机器下的全量配置
      */
     private Boolean singleMetaData;
+
+    private String podType;
 }
