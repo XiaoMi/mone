@@ -11,12 +11,12 @@ import com.xiaomi.mone.log.manager.dao.MilogMiddlewareConfigDao;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogTailDo;
 import com.xiaomi.mone.log.manager.model.pojo.MilogMiddlewareConfig;
+import com.xiaomi.mone.log.manager.service.MilogStreamService;
 import com.xiaomi.mone.log.manager.service.nacos.MultipleNacosConfig;
 import com.xiaomi.mone.log.manager.service.nacos.impl.SpaceConfigNacosProvider;
 import com.xiaomi.mone.log.manager.service.nacos.impl.SpaceConfigNacosPublisher;
 import com.xiaomi.mone.log.manager.service.nacos.impl.StreamConfigNacosProvider;
 import com.xiaomi.mone.log.manager.service.nacos.impl.StreamConfigNacosPublisher;
-import com.xiaomi.mone.log.manager.service.MilogStreamService;
 import com.xiaomi.mone.log.model.LogtailConfig;
 import com.xiaomi.mone.log.model.MiLogStreamConfig;
 import com.xiaomi.mone.log.model.MilogSpaceData;
@@ -77,12 +77,12 @@ public class MilogStreamServiceImpl implements MilogStreamService {
         streamConfigNacosProvider = new StreamConfigNacosProvider();
         spaceConfigNacosProvider = new SpaceConfigNacosProvider();
         spaceConfigNacosPublisher = new SpaceConfigNacosPublisher();
-        for (Map.Entry<String, ConfigService> serviceEntry : MultipleNacosConfig.nacosConfigMap.entrySet()) {
-            ConfigService configService = serviceEntry.getValue();
+        for (String address : MultipleNacosConfig.getAllNachosAdders()) {
+            ConfigService configService = MultipleNacosConfig.getConfigService(address);
             streamConfigNacosProvider.setConfigService(configService);
             spaceConfigNacosProvider.setConfigService(configService);
             spaceConfigNacosPublisher.setConfigService(configService);
-            MilogMiddlewareConfig milogMiddlewareConfig = milogMiddlewareConfigDao.queryNacosRegionByNameServer(serviceEntry.getKey().trim());
+            MilogMiddlewareConfig milogMiddlewareConfig = milogMiddlewareConfigDao.queryNacosRegionByNameServer(address.trim());
             if (null != milogMiddlewareConfig) {
                 MiLogStreamConfig existConfig = streamConfigNacosProvider.getConfig(DEFAULT_APP_NAME);
                 Optional.ofNullable(existConfig).map(miLogStreamConfig -> {

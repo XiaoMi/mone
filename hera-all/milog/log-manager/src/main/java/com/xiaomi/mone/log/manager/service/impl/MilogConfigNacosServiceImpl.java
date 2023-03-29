@@ -9,7 +9,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.xiaomi.data.push.nacos.NacosNaming;
-import com.xiaomi.mone.log.api.enums.AppTypeEnum;
 import com.xiaomi.mone.log.api.enums.MiddlewareEnum;
 import com.xiaomi.mone.log.api.enums.OperateEnum;
 import com.xiaomi.mone.log.manager.common.Utils;
@@ -19,14 +18,13 @@ import com.xiaomi.mone.log.manager.model.pojo.*;
 import com.xiaomi.mone.log.manager.service.MilogConfigNacosService;
 import com.xiaomi.mone.log.manager.service.nacos.DynamicConfigProvider;
 import com.xiaomi.mone.log.manager.service.nacos.DynamicConfigPublisher;
+import com.xiaomi.mone.log.manager.service.nacos.FetchStreamMachineService;
 import com.xiaomi.mone.log.manager.service.nacos.MultipleNacosConfig;
-import com.xiaomi.mone.log.manager.service.nacos.impl.SpaceConfigNacosProvider;
-import com.xiaomi.mone.log.manager.service.nacos.impl.SpaceConfigNacosPublisher;
-import com.xiaomi.mone.log.manager.service.nacos.impl.StreamConfigNacosProvider;
-import com.xiaomi.mone.log.manager.service.nacos.impl.StreamConfigNacosPublisher;
+import com.xiaomi.mone.log.manager.service.nacos.impl.*;
 import com.xiaomi.mone.log.model.*;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.plugin.config.anno.Value;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.map.HashedMap;
@@ -47,10 +45,10 @@ import static com.xiaomi.mone.log.common.Constant.*;
 @Service
 public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
 
-    public static final String STREAM_PREFIX = "stream";
-    public static final String SPACE_PREFIX = "space";
-    public static Map<String, DynamicConfigPublisher> configPublisherMap = new HashedMap();
-    public static Map<String, DynamicConfigProvider> configProviderMap = new HashedMap();
+    private static Map<String, DynamicConfigPublisher> configPublisherMap = new HashedMap();
+    private static Map<String, DynamicConfigProvider> configProviderMap = new HashedMap();
+
+    private static Map<String, FetchStreamMachineService> streamServiceUniqueMap = new HashedMap();
 
     private StreamConfigNacosPublisher streamConfigNacosPublisher;
 
@@ -59,6 +57,8 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
     private SpaceConfigNacosPublisher spaceConfigNacosPublisher;
 
     private SpaceConfigNacosProvider spaceConfigNacosProvider;
+
+    private FetchStreamMachineService fetchStreamMachineService;
 
     @Resource
     private MilogMachineDao milogMachineDao;
@@ -105,10 +105,11 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
     public void publishStreamConfig(Long spaceId, Long tailId, Integer type, Integer projectTypeCode, String motorRoomEn) {
         //1.查询所有的stream的机器Ip--实时查询(接口调用)
         // rpc 调用
-        List<String> ipList = queryStreamMachineIps(AppTypeEnum.LOG_STREAM.getName());
-        log.info("查询到log-stream的机器列表：{}", new Gson().toJson(ipList));
+//        List<String> ipList = queryStreamMachineIps(AppTypeEnum.LOG_STREAM.getName());
+        List<String> mioneStreamIpList = fetchStreamMachineService.streamMachineUnique();
+        log.info("查询到log-stream的机器列表：{}", new Gson().toJson(mioneStreamIpList));
         //2.发送数据
-        streamConfigNacosPublisher.publish(DEFAULT_APP_NAME, dealStreamConfigByRule(ipList, spaceId, type, projectTypeCode));
+        streamConfigNacosPublisher.publish(DEFAULT_APP_NAME, dealStreamConfigByRule(mioneStreamIpList, spaceId, type, projectTypeCode));
     }
 
     /**
@@ -204,7 +205,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
     public void chooseCurrentEnvNacosSerevice(String motorRoomEn) {
         MilogMiddlewareConfig middlewareConfig = milogMiddlewareConfigDao.queryCurrentEnvNacos(motorRoomEn);
         if (null != middlewareConfig) {
-            ConfigService configService = MultipleNacosConfig.nacosConfigMap.get(middlewareConfig.getNameServer());
+            ConfigService configService = MultipleNacosConfig.getConfigService(middlewareConfig.getNameServer());
 
             spaceConfigNacosPublisher = (SpaceConfigNacosPublisher) configPublisherMap.get(SPACE_PREFIX + motorRoomEn);
             if (null == spaceConfigNacosPublisher) {
@@ -232,6 +233,12 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
                 streamConfigNacosProvider = new StreamConfigNacosProvider();
                 streamConfigNacosProvider.setConfigService(configService);
                 configProviderMap.put(STREAM_PREFIX + motorRoomEn, streamConfigNacosProvider);
+            }
+            fetchStreamMachineService = streamServiceUniqueMap.get(STREAM_PREFIX + motorRoomEn);
+            if (null == fetchStreamMachineService) {
+                NacosNaming nacosNaming = MultipleNacosConfig.getNacosNaming(middlewareConfig.getNameServer());
+                fetchStreamMachineService = new NacosFetchStreamMachineService(nacosNaming);
+                streamServiceUniqueMap.put(STREAM_PREFIX + motorRoomEn, fetchStreamMachineService);
             }
         } else {
             log.info("当前机房：{}没有nacos配置信息", motorRoomEn);
