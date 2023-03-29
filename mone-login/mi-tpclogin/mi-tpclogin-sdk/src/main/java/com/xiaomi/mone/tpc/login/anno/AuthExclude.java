@@ -1,7 +1,5 @@
 package com.xiaomi.mone.tpc.login.anno;
 
-import com.xiaomi.mone.tpc.login.enums.RpcTypeEnum;
-
 import java.lang.annotation.*;
 
 /**

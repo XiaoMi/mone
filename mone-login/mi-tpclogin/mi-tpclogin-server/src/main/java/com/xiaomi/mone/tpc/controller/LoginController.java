@@ -1,16 +1,19 @@
 package com.xiaomi.mone.tpc.controller;
 
-import com.xiaomi.mone.tpc.common.param.*;
-import com.xiaomi.mone.tpc.common.vo.EnumData;
-import com.xiaomi.mone.tpc.common.vo.LoginInfoVo;
-import com.xiaomi.mone.tpc.common.vo.ResponseCode;
-import com.xiaomi.mone.tpc.common.vo.ResultVo;
 import com.xiaomi.mone.tpc.login.LoginService;
+import com.xiaomi.mone.tpc.login.common.param.*;
+import com.xiaomi.mone.tpc.login.common.vo.EnumData;
+import com.xiaomi.mone.tpc.login.common.vo.LoginInfoVo;
+import com.xiaomi.mone.tpc.login.common.vo.ResponseCode;
+import com.xiaomi.mone.tpc.login.common.vo.ResultVo;
+import com.xiaomi.mone.tpc.login.util.Auth2Util;
+import com.xiaomi.mone.tpc.util.CookieUtil;
 import com.xiaomi.mone.tpc.login.util.TokenUtil;
 import com.xiaomi.mone.tpc.login.vo.AuthTokenVo;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 import com.xiaomi.mone.tpc.util.EnumUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,7 +21,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.Map;
 
@@ -42,10 +44,18 @@ public class LoginController {
     }
 
     @RequestMapping(value = "/code")
-    public ResultVo<AuthUserVo> code(@RequestParam(name = "code", required = true) String code, @RequestParam(name = "source", required = true) String source, @RequestParam(name = "pageUrl", required = true) String pageUrl, HttpServletRequest request, HttpServletResponse response) throws Throwable {
-        ResultVo<AuthUserVo> resultVo = loginService.code(code, source, pageUrl);
+    public ResultVo<AuthUserVo> code(@RequestParam(name = "code", required = true) String code,
+                                     @RequestParam(name = "source", required = true) String source,
+                                     @RequestParam(name = "pageUrl", required = true) String pageUrl,
+                                     @RequestParam(name = "state", required = false) String state,
+                                     @RequestParam(name = "vcode", required = false) String vcode) throws Throwable {
+        ResultVo<AuthUserVo> resultVo = loginService.code(code, source, vcode, state, pageUrl);
         if (resultVo.success()) {
-            TokenUtil.setCookieUrl(resultVo.getData(), pageUrl);
+            if (StringUtils.isBlank(vcode)) {
+                CookieUtil.setCookieUrl(resultVo.getData(), pageUrl);
+            } else {
+                Auth2Util.setCookieUrl(resultVo.getData(), pageUrl);
+            }
         }
         return resultVo;
     }
@@ -73,10 +83,14 @@ public class LoginController {
 
 
     @RequestMapping(value = "/session")
-    public ResultVo<AuthUserVo> session(@RequestBody LoginSessionParam param, HttpServletRequest request, HttpServletResponse response) throws Throwable {
+    public ResultVo<AuthUserVo> session(@RequestBody LoginSessionParam param) throws Throwable {
         ResultVo<AuthUserVo> resultVo = loginService.session(param);
         if (resultVo.success()) {
-            TokenUtil.setCookieUrl(resultVo.getData(), param.getPageUrl());
+            if (StringUtils.isBlank(param.getVcode())) {
+                CookieUtil.setCookieUrl(resultVo.getData(), param.getPageUrl());
+            } else {
+                Auth2Util.setCookieUrl(resultVo.getData(), param.getPageUrl());
+            }
         }
         return resultVo;
     }
@@ -93,7 +107,7 @@ public class LoginController {
 
 
     /**
-     * 客户端调用拦截
+     * C端调用拦截
      * @param authToken
      * @param fullInfo
      * @return

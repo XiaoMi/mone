@@ -1,5 +1,6 @@
 package com.xiaomi.mone.tpc.cache;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +20,7 @@ public class Cache {
 
     protected final Map<Integer, CacheService> map = Maps.newConcurrentMap();
 
-    @Value("${cache.type}")
+    @NacosValue("${cache.type:0}")
     private Integer cacheType;
     @Autowired
     private ApplicationContext applicationContext;
@@ -36,7 +37,7 @@ public class Cache {
             if (service == null) {
                 continue;
             }
-            map.put(service.cacheType, service);
+            map.put(service.curCacheType, service);
         }
     }
 
