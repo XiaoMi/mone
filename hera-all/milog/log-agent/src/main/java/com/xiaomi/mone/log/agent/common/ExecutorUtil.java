@@ -45,7 +45,7 @@ public class ExecutorUtil {
         return TP_EXECUTOR.submit(task);
     }
 
-    static class CustomThreadFactory implements ThreadFactory {
+    public static class CustomThreadFactory implements ThreadFactory {
 
         private String threadNamePrefix;
         private AtomicInteger count = new AtomicInteger(0);

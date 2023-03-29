@@ -30,6 +30,7 @@ import com.xiaomi.mone.log.agent.common.ExecutorUtil;
 import com.xiaomi.mone.log.agent.export.MsgExporter;
 import com.xiaomi.mone.log.agent.filter.FilterChain;
 import com.xiaomi.mone.log.agent.input.Input;
+import com.xiaomi.mone.log.api.enums.K8sPodTypeEnum;
 import com.xiaomi.mone.log.api.enums.LogTypeEnum;
 import com.xiaomi.mone.log.api.model.meta.FilterConf;
 import com.xiaomi.mone.log.api.model.msg.LineMessage;
@@ -37,7 +38,7 @@ import com.xiaomi.mone.log.common.Constant;
 import com.xiaomi.mone.log.common.PathUtils;
 import com.xiaomi.mone.log.utils.NetUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.time.Instant;
@@ -46,6 +47,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import static com.xiaomi.mone.log.common.Constant.SYMBOL_COMMA;
 import static com.xiaomi.mone.log.common.PathUtils.PATH_WILDCARD;
 import static com.xiaomi.mone.log.common.PathUtils.SEPARATOR;
 
@@ -104,6 +106,8 @@ public class ChannelServiceImpl implements ChannelService {
 
     private String logSplitExpress;
 
+    private String linePrefix;
+
     public ChannelServiceImpl(MsgExporter msgExporter, AgentMemoryService memoryService,
                               ChannelDefine channelDefine, FilterChain chain) {
         this.memoryService = memoryService;
@@ -137,6 +141,7 @@ public class ChannelServiceImpl implements ChannelService {
             for (String filePrefix : filePrefixList) {
                 if (filePath.startsWith(filePrefix)) {
                     entry.getValue().setStop(true);
+                    futureMap.get(filePath).cancel(false);
                     log.warn("channel:{} stop file:{} success", channelDefine.getChannelId(), filePath);
                     ChannelMemory.FileProgress fileProgress = fileProgressMap.get(filePath);
                     //刷新内存记录，防止agent重启，重新采集该文件
@@ -144,7 +149,6 @@ public class ChannelServiceImpl implements ChannelService {
                         fileProgress.setFinished(true);
                     }
                     it.remove();
-                    continue;
                 }
             }
         }
@@ -210,6 +214,7 @@ public class ChannelServiceImpl implements ChannelService {
 
         this.logPattern = input.getLogPattern();
         this.logSplitExpress = input.getLogSplitExpress();
+        this.linePrefix = input.getLinePrefix();
 
         String logType = channelDefine.getInput().getType();
         logTypeEnum = LogTypeEnum.name2enum(logType);
@@ -242,10 +247,10 @@ public class ChannelServiceImpl implements ChannelService {
     /**
      * 担心没采集完，延迟2min后停止(机器重启的时候且不是单个配置过来的时候执行)
      */
-    private void delayDeletionFinishedFile() {
+    @Override
+    public void delayDeletionFinishedFile() {
         List<String> usedFilePaths = channelDefine.getPodNames();
-        if (CollectionUtils.isNotEmpty(usedFilePaths) && LogTypeEnum.OPENTELEMETRY == logTypeEnum
-                && (null == channelDefine.getSingleMetaData() || !channelDefine.getSingleMetaData())) {
+        if (null != channelDefine.getSingleMetaData() && channelDefine.getSingleMetaData() && CollectionUtils.isNotEmpty(usedFilePaths) && LogTypeEnum.OPENTELEMETRY == logTypeEnum) {
             log.info("usedFilePaths:{},collecting filePaths:{}", gson.toJson(usedFilePaths), gson.toJson(logFileMap.keys()));
             Iterator<Map.Entry<String, LogFile>> entryIterator = logFileMap.entrySet().iterator();
             while (entryIterator.hasNext()) {
@@ -266,6 +271,7 @@ public class ChannelServiceImpl implements ChannelService {
                             fileProgress.setFinished(true);
                         }
                         fileEntry.getValue().setStop(true);
+                        futureMap.get(fileName).cancel(false);
                         entryIterator.remove();
                     });
                 }
@@ -381,6 +387,7 @@ public class ChannelServiceImpl implements ChannelService {
             fileProgress.setPointer(0L);
             fileProgress.setCurrentRowNum(0L);
             fileProgress.setUnixFileNode(ChannelUtil.buildUnixFileNode(pattern));
+            fileProgress.setPodType(channelDefine.getPodType());
             fileProgressMap.put(pattern, fileProgress);
         }
         channelMemory.setFileProgressMap(fileProgressMap);
@@ -420,11 +427,11 @@ public class ChannelServiceImpl implements ChannelService {
         });
 
         /**
-         * 采集最后一行数据内存中超3分钟没有发送的数据
+         * 采集最后一行数据内存中超 10s 没有发送的数据
          */
         lastFileLineScheduledFuture = ExecutorUtil.scheduleAtFixedRate(() -> {
             Long appendTime = mLog.getAppendTime();
-            if (null != appendTime && Instant.now().toEpochMilli() - appendTime > 3 * 60 * 1000) {
+            if (null != appendTime && Instant.now().toEpochMilli() - appendTime > 10 * 1000) {
                 String remainMsg = mLog.takeRemainMsg2();
                 if (null != remainMsg) {
                     synchronized (lock) {
@@ -433,7 +440,7 @@ public class ChannelServiceImpl implements ChannelService {
                     }
                 }
             }
-        }, 1, 1, TimeUnit.MINUTES);
+        }, 30, 30, TimeUnit.SECONDS);
         return listener;
     }
 
@@ -448,9 +455,8 @@ public class ChannelServiceImpl implements ChannelService {
         lineMessage.setProperties(LineMessage.KEY_COLLECT_TIMESTAMP, ct);
         String logType = channelDefine.getInput().getType();
         LogTypeEnum logTypeEnum = LogTypeEnum.name2enum(logType);
-        if (logTypeEnum == LogTypeEnum.OPENTELEMETRY) {
-            lineMessage.setProperties(LineMessage.KEY_MESSAGE_TYPE,
-                    String.valueOf(LogTypeEnum.OPENTELEMETRY.getType()));
+        if (null != logTypeEnum) {
+            lineMessage.setProperties(LineMessage.KEY_MESSAGE_TYPE, logTypeEnum.getType().toString());
         }
 
         ChannelMemory.FileProgress fileProgress = channelMemory.getFileProgressMap().get(pattern);
@@ -467,6 +473,7 @@ public class ChannelServiceImpl implements ChannelService {
             fileProgress.setFileMaxPointer(readResult.get().getFileMaxPointer());
         }
         fileProgress.setUnixFileNode(ChannelUtil.buildUnixFileNode(pattern));
+        fileProgress.setPodType(channelDefine.getPodType());
         lineMessageList.add(lineMessage);
 
         int batchSize = msgExporter.batchExportSize();
@@ -478,6 +485,9 @@ public class ChannelServiceImpl implements ChannelService {
 
     private void readFile(String patternCode, String ip, String filePath, Long channelId) {
         MLog mLog = new MLog();
+        if (StringUtils.isNotBlank(this.linePrefix)) {
+            mLog.setCustomLinePattern(this.linePrefix);
+        }
         String usedIp = StringUtils.isBlank(ip) ? NetUtil.getLocalIp() : ip;
 
         ReadListener listener = initFileReadListener(mLog, patternCode, usedIp, filePath);
@@ -490,6 +500,7 @@ public class ChannelServiceImpl implements ChannelService {
         }
         //判断文件是否存在
         if (FileUtil.exist(filePath)) {
+            stopOldCurrentFileThread(filePath);
             log.info("start to collect file,fileName:{}", filePath);
             logFileMap.put(filePath, logFile);
             Future<?> future = ExecutorUtil.submit(() -> {
@@ -505,15 +516,32 @@ public class ChannelServiceImpl implements ChannelService {
         }
     }
 
+    private void stopOldCurrentFileThread(String filePath) {
+        LogFile logFile = logFileMap.get(filePath);
+        if (null != logFile) {
+            logFile.setStop(true);
+        }
+        Future future = futureMap.get(filePath);
+        if (null != future) {
+            future.cancel(false);
+        }
+    }
+
     private LogFile getLogFile(String filePath, ReadListener listener, Map<String, ChannelMemory.FileProgress> fileProgressMap) {
         long pointer = 0L;
         long lineNumber = 0L;
         ChannelMemory.FileProgress fileProgress = fileProgressMap.get(filePath);
         if (fileProgress != null) {
             if (null != fileProgress.getFinished() && fileProgress.getFinished()) {
-                return null;
+                /**
+                 * k8s 中 stateful 的pod不用通过finished判断
+                 */
+                if (StringUtils.isNotBlank(channelDefine.getPodType()) &&
+                        K8sPodTypeEnum.valueOf(channelDefine.getPodType().toUpperCase()) == K8sPodTypeEnum.STATEFUL) {
+                } else {
+                    return null;
+                }
             }
-
             pointer = fileProgress.getPointer();
             lineNumber = fileProgress.getCurrentRowNum();
             //比较inode值是否变化，变化则从头开始读
@@ -570,12 +598,15 @@ public class ChannelServiceImpl implements ChannelService {
         memoryService.refreshMemory(channelMemory);
         // 停止任务
         if (null != scheduledFuture) {
-            scheduledFuture.cancel(true);
+            scheduledFuture.cancel(false);
         }
         if (null != lastFileLineScheduledFuture) {
-            lastFileLineScheduledFuture.cancel(true);
+            lastFileLineScheduledFuture.cancel(false);
         }
-        log.info("stop file monitor");
+        for (Future future : futureMap.values()) {
+            future.cancel(false);
+        }
+        log.info("stop file monitor,fileName:", logFileMap.keySet().stream().collect(Collectors.joining(SYMBOL_COMMA)));
         lineMessageList.clear();
     }
 

@@ -73,7 +73,7 @@ public class RmqExporter implements MsgExporter {
                     Message message;
                     if (OPENTELEMETRY_TYPE.equals(m.getProperties(LineMessage.KEY_MESSAGE_TYPE))) {
                         byte[] bytes = TraceUtil.toBytes(m.getMsgBody());
-                        if(bytes != null) {
+                        if (bytes != null) {
                             message = new Message();
                             message.setBody(bytes);
                         } else {
@@ -81,14 +81,15 @@ public class RmqExporter implements MsgExporter {
                         }
                     } else {
                         message = new Message();
-                        message.setTopic(this.rmqTopic);
                         message.setTags(m.getProperties(LineMessage.KEY_MQ_TOPIC_TAG));
                         message.setBody(gson.toJson(m).getBytes(StandardCharsets.UTF_8));
                     }
+                    message.setTopic(this.rmqTopic);
                     return message;
                 })
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
+
         try {
             //todo @shanwb 发送失败异常处理
             mqProducer.send(messages);

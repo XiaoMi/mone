@@ -24,6 +24,7 @@ import org.apache.thrift.protocol.TProtocolFactory;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Pattern;
 
 @Slf4j
 public class TraceUtil {
@@ -36,6 +37,7 @@ public class TraceUtil {
     private static final String TAG_KEY_HOST = "host.name";
     private static final Set<String> SPECIAL_TAG_KEYS = Sets.newHashSet(TAG_KEY_SPAN_KIND,
             TAG_KEY_SERVICE_NAME, TAG_KEY_IP, TAG_KEY_HOST);
+    private static Pattern EMPTY_PATTERN = Pattern.compile("\\r\\n");
 
     public static byte[] toBytes(String spanStr) {
         try {
@@ -53,7 +55,7 @@ public class TraceUtil {
 
     public static TSpanData toTSpanData(String spanStr) {
         String message;
-        spanStr = spanStr.replaceAll("\\r\\n", "");
+        spanStr = EMPTY_PATTERN.matcher(spanStr).replaceAll("");
         if (spanStr.contains(" ||| ")) {
             String[] messages = spanStr.split(" \\|\\|\\| ");
             message = messages[1];

@@ -1,8 +1,9 @@
 package com.xiaomi.mone.log.agent.channel.comparator;
 
-import com.google.gson.Gson;
 import com.xiaomi.mone.log.agent.input.Input;
 import lombok.extern.slf4j.Slf4j;
+
+import static com.xiaomi.mone.log.common.Constant.GSON;
 
 /**
  * @author wtt
@@ -47,6 +48,9 @@ public class InputSimilarComparator implements SimilarComparator<Input> {
             case "DOCKER":
                 isSimilar = baseSimilarCompare(newInput);
                 break;
+            case "ORIGIN_LOG":
+                isSimilar = baseSimilarCompare(newInput);
+                break;
             case "FREE":
                 isSimilar = baseSimilarCompare(newInput);
                 break;
@@ -57,13 +61,12 @@ public class InputSimilarComparator implements SimilarComparator<Input> {
     }
 
     private boolean baseSimilarCompare(Input newInput) {
-        Gson gson = new Gson();
         try {
             if (oldInput.equals(newInput)) {
                 return true;
             }
         } catch (Exception e) {
-            log.error("input compare error:new input:{},oldInput:{}", gson.toJson(newInput), gson.toJson(oldInput), e);
+            log.error("input compare error:new input:{},oldInput:{}", GSON.toJson(newInput), GSON.toJson(oldInput), e);
         }
         return false;
     }

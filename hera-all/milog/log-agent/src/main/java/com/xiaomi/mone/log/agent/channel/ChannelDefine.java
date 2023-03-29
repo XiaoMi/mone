@@ -53,7 +53,7 @@ public class ChannelDefine implements Serializable {
      */
     private List<FilterConf> filters;
     /**
-     * 只有当前机器为k8s且日志类型为opentelemetry类型日志时才有值，这个机器上存活的pod
+     * 只有当前机器为k8s且日志类型为opentelemetry类型日志时才有作用，这个机器上存活的pod
      */
     private List<String> podNames;
 
@@ -61,5 +61,7 @@ public class ChannelDefine implements Serializable {
      * 单个配置数据，默认该机器下的全量配置
      */
     private Boolean singleMetaData;
+
+    private String podType;
 
 }
