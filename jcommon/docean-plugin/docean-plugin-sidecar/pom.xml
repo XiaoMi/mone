@@ -38,9 +38,9 @@
         </dependency>
 
         <dependency>
-            <artifactId>youpin-infra-rpc</artifactId>
-            <groupId>com.xiaomi.youpin</groupId>
-            <version>1.28-SNAPSHOT</version>
+            <groupId>run.mone</groupId>
+            <artifactId>infra-result</artifactId>
+            <version>1.4-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
 
