@@ -5,7 +5,7 @@
     <parent>
         <artifactId>prometheus</artifactId>
         <groupId>run.mone</groupId>
-        <version>0.0.2-SNAPSHOT</version>
+        <version>0.0.5-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -22,9 +22,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.xiaomi.youpin</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>prometheus-client</artifactId>
-            <version>${prometheus-all.version}</version>
+            <version>0.0.5-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
 
