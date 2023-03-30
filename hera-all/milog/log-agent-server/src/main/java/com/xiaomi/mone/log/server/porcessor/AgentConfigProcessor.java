@@ -1,14 +1,16 @@
-package com.xiaomi.mone.log.manager.porcessor;
+package com.xiaomi.mone.log.server.porcessor;
 
-import com.google.gson.Gson;
 import com.xiaomi.data.push.rpc.netty.NettyRequestProcessor;
 import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
 import com.xiaomi.mone.log.api.model.meta.LogCollectMeta;
 import com.xiaomi.mone.log.common.Constant;
-import com.xiaomi.mone.log.manager.service.impl.AgentConfigServiceImpl;
+import com.xiaomi.mone.log.server.service.AgentConfigAcquirer;
+import com.xiaomi.mone.log.server.service.DefaultAgentConfigAcquirer;
 import com.xiaomi.youpin.docean.Ioc;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
+
+import static com.xiaomi.mone.log.common.Constant.GSON;
 
 /**
  * @author wtt
@@ -19,19 +21,17 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AgentConfigProcessor implements NettyRequestProcessor {
 
-    private Gson gson = new Gson();
-
     @Override
     public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request) throws Exception {
         RemotingCommand response = RemotingCommand.createResponseCommand(Constant.RPCCMD_AGENT_CONFIG_CODE);
         String ip = new String(request.getBody());
         log.info("agent start get metadata config，agent ip:{}", ip);
 
-        AgentConfigServiceImpl agentConfigService = Ioc.ins().getBean(AgentConfigServiceImpl.class);
+        AgentConfigAcquirer agentConfigService = Ioc.ins().getBean(DefaultAgentConfigAcquirer.class);
 
         LogCollectMeta logCollectMeta = agentConfigService.getLogCollectMetaFromManager(ip);
-        String responseInfo = gson.toJson(logCollectMeta);
-        log.info("agent start get metadata config info:{}", response);
+        String responseInfo = GSON.toJson(logCollectMeta);
+        log.info("agent start get metadata config info:{}", responseInfo);
         response.setBody(responseInfo.getBytes());
         return response;
     }

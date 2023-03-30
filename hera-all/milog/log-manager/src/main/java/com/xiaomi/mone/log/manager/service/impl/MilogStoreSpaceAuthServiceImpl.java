@@ -2,13 +2,13 @@ package com.xiaomi.mone.log.manager.service.impl;
 
 import com.xiaomi.mone.log.api.enums.OperateEnum;
 import com.xiaomi.mone.log.common.Constant;
+import com.xiaomi.mone.log.manager.common.validation.StoreSpaceAuthValid;
 import com.xiaomi.mone.log.manager.dao.MilogStoreSpaceAuthDao;
 import com.xiaomi.mone.log.manager.common.exception.MilogManageException;
 import com.xiaomi.mone.log.manager.model.bo.StoreSpaceAuth;
 import com.xiaomi.mone.log.manager.model.pojo.MilogStoreSpaceAuth;
 import com.xiaomi.mone.log.manager.service.BaseService;
 import com.xiaomi.mone.log.manager.service.MilogStoreSpaceAuthService;
-import com.xiaomi.mone.log.manager.service.validation.StoreSpaceAuthValid;
 import com.xiaomi.youpin.docean.anno.Service;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;

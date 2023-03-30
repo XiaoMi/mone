@@ -6,7 +6,9 @@ import org.apache.commons.lang3.time.DateParser;
 import org.apache.commons.lang3.time.FastDateFormat;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @Author: wtt
@@ -19,7 +21,7 @@ public interface LogParser {
     String LOG_SUFFFIX = "]";
     Integer TIME_STAMP_MILLI_LENGTH = 13;
 
-    Integer MESSAGE_MAX_SIZE = 25000;
+//    Integer MESSAGE_MAX_SIZE = 25000;
 
     DateParser dateFormat1 = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
     DateParser dateFormat2 = FastDateFormat.getInstance("yy-MM-dd HH:mm:ss");
@@ -68,6 +70,8 @@ public interface LogParser {
 
     Map<String, Object> parseSimple(String logData, Long collectStamp);
 
+    List<String> parseLogData(String logData) throws Exception;
+
     default void wrapMap(Map<String, Object> ret, LogParserData parserData, String ip,
                          Long lineNum, String fileName, Long collectStamp) {
         ret.putIfAbsent(esKeyMap_timestamp, null == collectStamp ? getTimestampFromString("", collectStamp) : collectStamp);
@@ -85,7 +89,7 @@ public interface LogParser {
      */
     default void checkMessageExist(Map<String, Object> ret, String originData) {
         if (!ret.containsKey(esKeyMap_MESSAGE)) {
-            ret.put(esKeyMap_MESSAGE, originData.length() > MESSAGE_MAX_SIZE ? originData.substring(0, MESSAGE_MAX_SIZE) : originData);
+            ret.put(esKeyMap_MESSAGE, originData);
             ret.remove(esKeyMap_logSource);
         }
     }
@@ -112,11 +116,31 @@ public interface LogParser {
         }
     }
 
+    default void validTimestamp(Map<String, Object> ret, String logData, Long collectStamp) {
+        /**
+         * 如果用户配置了解析 timestamp 字段，则校验时间格式是否正确，不正确就设为当前时间
+         */
+        if (ret.containsKey(esKeyMap_timestamp)) {
+            Long time = getTimestampFromString(ret.get(esKeyMap_timestamp).toString(), collectStamp);
+            ret.put(esKeyMap_timestamp, time);
+        }
+    }
+
     public static void main(String[] args) {
         LogParser logParser = new SeparatorLogParser();
         String msg = "[22-10-19 10:19:35] [mi.com.i18n.mi_com_i18n] [] [NOTICE] [923973969695] Controller[Registration] Action[Index] App_local[hk] sesion_server_init[0] newxmuuid[true] MiRedisProxy::_init[1|3536] MiRedisProxy::get[1|8014] GUESTID[XMGUEST-20CBCA55-2E94-1697-51DB-DC787EF9055A] HOSTNAME[sgp1-b2c-mishop-order-web03.alisgp] Request Finished";
         String timeStamp = StringUtils.substringBetween(msg, LOG_PREFIX, LOG_SUFFFIX);
         Long time = logParser.getTimestampFromString(timeStamp, Instant.now().toEpochMilli());
         System.out.println(time);
+    }
+
+    /**
+     * 字段配置错误校验
+     * 如果结果中有 key 对应的 value 为空，说明对应 key 没有提取出内容，那么就把完整日志保留
+     */
+    default void validRet(Map<String, Object> ret, String logData) {
+        if (ret.values().stream().filter(Objects::nonNull).map(String::valueOf).anyMatch(StringUtils::isEmpty)) {
+            ret.put(esKeyMap_logSource, logData);
+        }
     }
 }
