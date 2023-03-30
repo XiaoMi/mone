@@ -24,7 +24,7 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>prometheus-client</artifactId>
-            <version>0.0.5-SNAPSHOT</version>
+            <version>${prometheus-all.version}</version>
             <scope>provided</scope>
         </dependency>
 
