@@ -13,11 +13,11 @@ on:
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   releases-matrix:
-    name: Release Go Binary
+    name: Jcommon pacakge test
     runs-on: ubuntu-latest
     steps:
       - name: Setup Maven Action
-        uses: s4u/setup-maven-action@< version >
+        uses: s4u/setup-maven-action@v1.7.0
         with:
           java-version: 8
           #settings-properties: '[{"propertyName1": "propertyValue1"}, {"propertyName2": "propertyValue2"}]'
