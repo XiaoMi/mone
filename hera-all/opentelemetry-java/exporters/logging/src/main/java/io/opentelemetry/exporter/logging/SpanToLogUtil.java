@@ -6,6 +6,8 @@ import io.opentelemetry.api.internal.StringUtils;
 import io.opentelemetry.api.trace.SpanContext;
 import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.StatusCode;
+import io.opentelemetry.sdk.common.EnvOrJvmProperties;
+import io.opentelemetry.sdk.common.SystemCommon;
 import io.opentelemetry.sdk.internal.ThrottlingLogger;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.data.EventData;
@@ -26,9 +28,9 @@ public class SpanToLogUtil {
 
   private static final String split = " ### ";
   private static String hostName = "";
-  private static String ipv4Env = System.getenv("host.ip");
-  private static String env = System.getenv("MIONE_PROJECT_ENV_NAME");;
-  private static String envId = System.getenv("MIONE_PROJECT_ENV_ID");;
+  private static String ipv4Env = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_HOST_IP);
+  private static String env = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_NAME);
+  private static String envId = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_ID);
   private static final String FUNCTION_MODULE_KEY = "service.function.module";
   private static final String FUNCTION_NAME_KEY = "service.function.name";
   private static final String FUNCTION_ID_KEY = "service.function.id";
