@@ -16,7 +16,7 @@
     <dependencies>
 
         <dependency>
-            <groupId>com.xiaomi.youpin</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>aop</artifactId>
             <version>1.4-SNAPSHOT</version>
         </dependency>
@@ -36,7 +36,7 @@
 
 
         <dependency>
-            <groupId>com.xiaomi.youpin</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>health</artifactId>
             <version>1.4-SNAPSHOT</version>
         </dependency>
