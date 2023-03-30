@@ -31,7 +31,6 @@ import net.sf.cglib.reflect.FastMethod;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
@@ -130,6 +129,11 @@ public abstract class ReflectUtils {
     }
 
     public static Object invokeFastMethod(Object obj, Class clazz, String[] types, String methodName, Object[] params) {
+        InvokeMethodCallback callback = new DefaultInvokeMethodCallback();
+        return invokeFastMethod0(obj, clazz, types, methodName, params, callback);
+    }
+
+    public static Object invokeFastMethod0(Object obj, Class clazz, String[] types, String methodName, Object[] params, InvokeMethodCallback callback) {
         try {
             String key = clazz + "_" + methodName;
             if (null != types && types.length > 0) {
@@ -137,14 +141,20 @@ public abstract class ReflectUtils {
             }
             FastMethod m = methodCache.get(key);
             if (null != m) {
-                return m.invoke(obj, params);
+                callback.before(params);
+                Object res = m.invoke(obj, params);
+                callback.after(res);
+                return res;
             }
             Optional<Method> optional = getMethod2(clazz, types, methodName);
             if (optional.isPresent()) {
                 FastClass fastClass = FastClass.create(clazz);
                 FastMethod method = fastClass.getMethod(optional.get());
                 methodCache.putIfAbsent(key, method);
-                return method.invoke(obj, params);
+                callback.before(params);
+                Object res = method.invoke(obj, params);
+                callback.after(res);
+                return res;
             }
             throw new RuntimeException("function not found:" + methodName);
         } catch (Throwable ex) {
@@ -327,7 +337,18 @@ public abstract class ReflectUtils {
         return invokeMethod(req.getMethodName(), obj, req.getParamTypes(), req.getByteParams(), fun, true);
     }
 
+    public static Object invokeMethod(MethodReq req, Object obj, BiFunction<Class[], byte[][], Object[]> fun, InvokeMethodCallback callback) {
+        return invokeMethod0(req.getMethodName(), obj, req.getParamTypes(), req.getByteParams(), fun, true, callback);
+    }
+
     public static Object invokeMethod(String methodName, Object obj, String[] types, byte[][] paramArray, BiFunction<Class[], byte[][], Object[]> fun, boolean fast) {
+        return invokeMethod0(methodName, obj, types, paramArray, fun, fast, null);
+    }
+
+    public static Object invokeMethod0(String methodName, Object obj, String[] types, byte[][] paramArray, BiFunction<Class[], byte[][], Object[]> fun, boolean fast, InvokeMethodCallback callback) {
+        if (null == callback) {
+            callback = new DefaultInvokeMethodCallback();
+        }
         try {
             if (types.length > 0) {
                 Class[] clazzArray = Arrays.stream(types).map(i -> {
@@ -360,13 +381,19 @@ public abstract class ReflectUtils {
                 }).toArray(Class[]::new);
                 Object[] params = fun.apply(clazzArray, paramArray);
                 if (fast) {
-                    return invokeFastMethod(obj, obj.getClass(), types, methodName, params);
+                    return invokeFastMethod0(obj, obj.getClass(), types, methodName, params, callback);
                 }
                 Method method = obj.getClass().getMethod(methodName, clazzArray);
-                return method.invoke(obj, params);
+                callback.before(params);
+                Object res = method.invoke(obj, params);
+                callback.after(res);
+                return res;
             } else {
                 Method method = obj.getClass().getMethod(methodName);
-                return method.invoke(obj);
+                callback.before(null);
+                Object res = method.invoke(obj);
+                callback.after(res);
+                return res;
             }
         } catch (Throwable ex) {
             throw ExceptionUtils.getRuntimeException(ex);
