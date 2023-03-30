@@ -1,0 +1,25 @@
+# This is a basic workflow to help you get started with Actions
+
+name: CI
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  pull_request:
+    branches:
+    - master
+  
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  releases-matrix:
+    name: Release Go Binary
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Maven Action
+        uses: s4u/setup-maven-action@< version >
+        with:
+          java-version: 8
+          #settings-properties: '[{"propertyName1": "propertyValue1"}, {"propertyName2": "propertyValue2"}]'
+
+      - run: cat ~/.m2/settings.xml; echo "<?xml version="1.0" encoding="UTF-8"?><settings xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.1.0 http://maven.apache.org/xsd/settings-1.1.0.xsd" xmlns="http://maven.apache.org/SETTINGS/1.1.0"    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">  <profiles>    <profile>      <repositories>        <repository>          <id>aliyun</id>          <name>aliyun</name>          <url>https://maven.aliyun.com/repository/public</url>          <layout>default</layout>          <releases>             <enabled>true</enabled>          </releases>          <snapshots>             <enabled>true</enabled>          </snapshots>         </repository>         <repository>          <snapshots />          <id>ossrh</id>          <name>ossrh-snapshot</name>          <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>        </repository>      </repositories>      <pluginRepositories>        <pluginRepository>        <pluginRepository>            <id>aliyun</id>            <url>https://maven.aliyun.com/repository/public</url>            <releases>                <enabled>true</enabled>                <updatePolicy>always</updatePolicy>            </releases>            <snapshots>                <enabled>true</enabled>                <updatePolicy>always</updatePolicy>            </snapshots>        </pluginRepository>      </pluginRepositories>      <id>artifactory</id>    </profile>  </profiles>  <activeProfiles>    <activeProfile>artifactory</activeProfile>  </activeProfiles></settings>" > ~/.m2/settings.xml; cat ~/.m2/settings.xml;  cd jcommon; mvn -U clean package -Dmaven.test.skip=true
+        
