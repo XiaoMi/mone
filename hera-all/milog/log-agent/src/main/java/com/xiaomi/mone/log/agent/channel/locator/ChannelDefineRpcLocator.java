@@ -35,9 +35,10 @@ import com.xiaomi.mone.log.utils.NetUtil;
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.Component;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -78,7 +79,7 @@ public class ChannelDefineRpcLocator implements ChannelDefineLocator {
                 } else {
                     break;
                 }
-                if (count > 6) {
+                if (count > 11) {
                     break;
                 }
             }
@@ -86,16 +87,21 @@ public class ChannelDefineRpcLocator implements ChannelDefineLocator {
         } catch (Throwable ex) {
             log.error(String.format("【agent pull metadata config error】ip:%s", ip), ex);
         }
-        return null;
+        return Lists.newArrayList();
     }
 
     private LogCollectMeta getLogCollectMeta(String ip) {
-        RpcClient rpcClient = Ioc.ins().getBean(RpcClient.class);
-        RemotingCommand res = rpcClient.sendMessage(rpcClient.getServerAddrs(), Constant.RPCCMD_AGENT_CONFIG_CODE, ip, 30000);
-        String str = new String(res.getBody());
-        LogCollectMeta meta = GSON.fromJson(str, LogCollectMeta.class);
-        log.info("agent getChannelDefine finish:{}", str);
-        return meta;
+        try {
+            RpcClient rpcClient = Ioc.ins().getBean(RpcClient.class);
+            RemotingCommand res = rpcClient.sendMessage(rpcClient.getServerAddrs(), Constant.RPCCMD_AGENT_CONFIG_CODE, ip, 30000);
+            String str = new String(res.getBody(), StandardCharsets.UTF_8);
+            LogCollectMeta meta = GSON.fromJson(str, LogCollectMeta.class);
+            log.info("agent getChannelDefine finish:{}", str);
+            return meta;
+        } catch (Throwable e) {
+            log.error("getLogCollectMeta error,ip:{}", ip, e);
+        }
+        return null;
     }
 
     public static AgentTailConf logCollectMeta2ChannelDefines(LogCollectMeta logCollectMeta) {
@@ -107,6 +113,7 @@ public class ChannelDefineRpcLocator implements ChannelDefineLocator {
             channelDefine.setAppName(appLogMeta.getAppName());
             channelDefine.setPodNames(logCollectMeta.getPodNames());
             channelDefine.setSingleMetaData(logCollectMeta.getSingleMetaData());
+            channelDefine.setPodType(logCollectMeta.getPodType());
 
             List<LogPattern> logPatternList = appLogMeta.getLogPatternList();
             for (LogPattern logPattern : logPatternList) {
@@ -119,6 +126,7 @@ public class ChannelDefineRpcLocator implements ChannelDefineLocator {
                 input.setLogPattern(logPattern.getLogPattern());
                 input.setPatternCode(logPattern.getPatternCode());
                 input.setLogSplitExpress(logPattern.getLogSplitExpress());
+                input.setLinePrefix(logPattern.getFirstLineReg());
 
                 //output
                 Output output = null;

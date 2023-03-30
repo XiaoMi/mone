@@ -85,26 +85,6 @@
             <version>4.4</version>
         </dependency>
 
-        <!-- log appender -->
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>log</artifactId>
-            <version>1.6-SNAPSHOT</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.xiaomi.infra.galaxy</groupId>
-                    <artifactId>galaxy-talos-sdk</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.google.guava</groupId>
-                    <artifactId>guava</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.google.code.gson</groupId>
-                    <artifactId>gson</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
         <dependency>
             <groupId>org.apache.dubbo</groupId>
             <artifactId>dubbo</artifactId>

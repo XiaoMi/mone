@@ -21,7 +21,7 @@ public class ResourceUserSimple {
     /**
      * 资源列表是否初始化
      */
-    private Boolean initializedFlag;
+    private Boolean initializedFlag = false;
     /**
      * 没有初始化展示消息内容
      */
@@ -29,7 +29,7 @@ public class ResourceUserSimple {
     /**
      * 资源列表是否展示
      */
-    private Boolean showFlag;
+    private Boolean showFlag = false;
     /**
      * MQ资源列表展示后筛选列表
      */

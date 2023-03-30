@@ -46,6 +46,7 @@ public class AlarmStrategyInfo {
 
     private List<Integer> exceptFunctions;//不包含函数列表
     private List<String> alertMembers;//报警人员列表
+    private List<String> atMembers;//报警@人员列表
 
     public void convertEnvList(String json){
         if(StringUtils.isBlank(json)){

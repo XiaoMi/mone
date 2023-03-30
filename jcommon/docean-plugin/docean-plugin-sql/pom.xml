@@ -14,19 +14,19 @@
     <dependencies>
 
         <dependency>
-            <groupId>com.xiaomi.youpin</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>docean-plugin-api</artifactId>
             <version>1.4-SNAPSHOT</version>
         </dependency>
 
         <dependency>
-            <groupId>com.xiaomi.youpin</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>docean-plugin-datasource</artifactId>
             <version>1.4-SNAPSHOT</version>
         </dependency>
 
         <dependency>
-            <groupId>com.xiaomi.youpin</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>docean-plugin-config</artifactId>
             <version>1.4-SNAPSHOT</version>
         </dependency>

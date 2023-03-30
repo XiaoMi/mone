@@ -13,13 +13,13 @@ public enum ReqErrorMetrics {
     dubboConsumerError("dubboConsumerError","dubbo请求错误", AlarmPresetMetrics.dubbo_error_times,AlarmPresetMetrics.dubbo_availability),
     dubboProvider("dubboProviderError","dubboProvider请求错误", AlarmPresetMetrics.dubbo_provider_availability,AlarmPresetMetrics.dubbo_provider_error_times),
 
-    grpcServerError("grpcServerError","grpcServerError请求错误", AlarmPresetMetrics.grpc_server_error_times,AlarmPresetMetrics.grpc_server_availability),
-    apusServerError("apusServerError","apusServerError请求错误", AlarmPresetMetrics.apus_server_error_times,AlarmPresetMetrics.apus_server_availability),
-    thriftServerError("thriftServerError","thriftServerError请求错误", AlarmPresetMetrics.thrift_server_error_times,AlarmPresetMetrics.thrift_server_availability),
-
-    grpcClientError("grpcClientError","grpcClient请求错误", AlarmPresetMetrics.grpc_client_error_times,AlarmPresetMetrics.grpc_client_availability),
-    apusClientError("apusClientError","apusClient请求错误", AlarmPresetMetrics.apus_client_error_times,AlarmPresetMetrics.apus_client_availability),
-    thriftClientError("thriftClientError","thriftClient请求错误", AlarmPresetMetrics.thrift_client_error_times,AlarmPresetMetrics.thrift_client_availability),
+//    grpcServerError("grpcServerError","grpcServerError请求错误", AlarmPresetMetrics.grpc_server_error_times,AlarmPresetMetrics.grpc_server_availability),
+//    apusServerError("apusServerError","apusServerError请求错误", AlarmPresetMetrics.apus_server_error_times,AlarmPresetMetrics.apus_server_availability),
+//    thriftServerError("thriftServerError","thriftServerError请求错误", AlarmPresetMetrics.thrift_server_error_times,AlarmPresetMetrics.thrift_server_availability),
+//
+//    grpcClientError("grpcClientError","grpcClient请求错误", AlarmPresetMetrics.grpc_client_error_times,AlarmPresetMetrics.grpc_client_availability),
+//    apusClientError("apusClientError","apusClient请求错误", AlarmPresetMetrics.apus_client_error_times,AlarmPresetMetrics.apus_client_availability),
+//    thriftClientError("thriftClientError","thriftClient请求错误", AlarmPresetMetrics.thrift_client_error_times,AlarmPresetMetrics.thrift_client_availability),
     ;
     private String code;
     private String message;

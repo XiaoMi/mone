@@ -27,7 +27,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class JobService {
 
-    @Value("${alarm.domain}")
+    @Value("${alarm.domain:}")
     private String alarmDomain;
     @Value("${prometheus.alarm.env:staging}")
     private String prometheusAlarmEnv;
@@ -41,10 +41,6 @@ public class JobService {
     @Autowired
     ScrapeJobAdapt scrapeJobAdapt;
 
-    public static final String REGION_ONLINE = "xxx";
-    public static final String REGION_STAGING = "xxx";
-    public static final String ZONE_ONLINE = "xxx";
-    public static final String ZONE_STAGING = "xxx";
     public static final byte CREATE_JOB_FAIL = 0;
     public static final byte CREATE_JOB_SUCCESS = 1;
     public static final byte DELETED_JOB = 2;
@@ -52,8 +48,8 @@ public class JobService {
     private final Gson gson = new Gson();
 
     //创建prometheus抓取的job
-    public Result createJob(Integer iamId, String user, String jobJson,String jobDesc) {
-        if(iamId == null){
+    public Result createJob(Integer iamId, String user, String jobJson, String jobDesc) {
+        if (iamId == null) {
             iamId = alarmService.getDefaultIamId();
         }
         //检验传入的json合法性
@@ -66,7 +62,7 @@ public class JobService {
         try {
             JsonObject jsonObject = gson.fromJson(jobJson, JsonObject.class);
             Result result = scrapeJobAdapt.addScrapeJob(jsonObject, String.valueOf(iamId), user);
-            String data = (String) result.getData();
+            String data = String.valueOf(result.getData());
             //成不成功都入库
             //获取json中的job_name
             String jobName = jsonObject.get("job_name").getAsString();
@@ -86,32 +82,50 @@ public class JobService {
                 appScrapeJob.setData("fail");
             }
             int dbResult = appScrapeJobDao.insertScrapeJob(appScrapeJob);
-            log.info("AlarmService.createJob response:{},dbResult: {}",new Gson().toJson(result).toString(), dbResult);
+            log.info("AlarmService.createJob response:{},dbResult: {}", new Gson().toJson(result).toString(), dbResult);
             //return jsonObjectResult;
             return Result.success(new Gson().toJson(data));
         } catch (Exception e) {
-            log.error("AlarmService.createJob error : {}",e.toString());
+            log.error("AlarmService.createJob error : {}", e.toString());
             return Result.fail(ErrorCode.unknownError);
         }
     }
 
     //查看prometheus抓取的job
     public Result searchJob(Integer iamId, String user, int scrapeConfigId) {
-        if(iamId == null) {
+        if (iamId == null) {
             iamId = alarmService.getDefaultIamId();
         }
         AppScrapeJob job = appScrapeJobDao.searchScrapeJob(scrapeConfigId);
         //改成适配器模式
         Result result = scrapeJobAdapt.queryScrapeJob(Integer.parseInt(job.getData()), String.valueOf(iamId), user);
-        String data = (String) result.getData();
+        String data = String.valueOf(result.getData());
         log.info("JobService.searchJob,response:{}", new Gson().toJson(result).toString());
         //jsonObjectResult.getData().getAsString();
         return Result.success(job);
     }
 
+    //查看prometheus抓取的job
+    public Result searchJobByName(Integer iamId, String user, String scrapeConfigName) {
+        if (iamId == null) {
+            iamId = alarmService.getDefaultIamId();
+        }
+        //改成适配器模式
+        try {
+            Result result = scrapeJobAdapt.queryScrapeJobByName(scrapeConfigName, String.valueOf(iamId), user);
+            String data = String.valueOf(result.getData());
+            log.info("JobService.searchJob,response:{}", new Gson().toJson(result).toString());
+            //jsonObjectResult.getData().getAsString();
+            return Result.success(data);
+        } catch (Exception e) {
+            log.error("searchJobByName error :{}",e.getMessage());
+            return Result.fail(ErrorCode.unknownError);
+        }
+    }
+
     //更新prometheus抓取的job
-    public Result updateJob(Integer iamId, String user, String jobJson, int primaryId,String jobDesc) {
-        if(iamId == null) {
+    public Result updateJob(Integer iamId, String user, String jobJson, int primaryId, String jobDesc) {
+        if (iamId == null) {
             iamId = alarmService.getDefaultIamId();
         }
         //检验传入的json合法性
@@ -124,7 +138,7 @@ public class JobService {
         if (appScrapeJob == null) {
             return Result.fail(ErrorCode.CannotUpdateANonExistingJob);
         }
-        if ( !(appScrapeJob.getStatus() == CREATE_JOB_SUCCESS)) {
+        if (!(appScrapeJob.getStatus() == CREATE_JOB_SUCCESS)) {
             return Result.fail(ErrorCode.OnlyJobsThatHaveBeenCreatedSuccessfullyCanBeUpdated);
         }
         String scrapeConfigId = appScrapeJob.getData();
@@ -142,13 +156,13 @@ public class JobService {
         appScrapeJob.setJobJson(jobJson);
         appScrapeJob.setJobDesc(jobDesc);
         appScrapeJobDao.updateScrapeJob(appScrapeJob);
-       // return jsonObjectResult;
+        // return jsonObjectResult;
         return Result.success(new Gson().toJson(result.getData()).toString());
     }
 
     //删除prometheus抓取的job
     public Result deleteJob(Integer iamId, String user, int primaryId) {
-        if(iamId == null) {
+        if (iamId == null) {
             iamId = alarmService.getDefaultIamId();
         }
         //查库
@@ -167,24 +181,24 @@ public class JobService {
             }
             //修改为适配器模式
             Result result = scrapeJobAdapt.delScrapeJob(Integer.parseInt(scrapeTaskId), String.valueOf(iamId), user);
-            String data = (String) result.getData();
+            String data = String.valueOf(result.getData());
             log.info("JobService.deleteJob response:{}", new Gson().toJson(result).toString());
             //软删除,更新状态
-            if (result.getCode() != 0 || !result.getMessage().equals("success") ) {
+            if (result.getCode() != 0 || !result.getMessage().equals("success")) {
                 return Result.fail(ErrorCode.DeleteJobFail);
             }
             appScrapeJob.setStatus(DELETED_JOB);
             appScrapeJobDao.updateScrapeJob(appScrapeJob);
             return Result.success(new Gson().toJson(data).toString());
         } catch (Exception e) {
-            log.error("JobService.deleteJob fail error : {}",e.toString());
+            log.error("JobService.deleteJob fail error : {}", e.toString());
             return Result.fail(ErrorCode.DeleteJobFail);
         }
     }
 
     //查看prometheus抓取的job列表
-    public Result searchJobList(Integer iamId, String user, Integer pageSize,Integer pageNo) {
-        if(iamId == null) {
+    public Result searchJobList(Integer iamId, String user, Integer pageSize, Integer pageNo) {
+        if (iamId == null) {
             iamId = alarmService.getDefaultIamId();
         }
        /* String region = "";
@@ -209,7 +223,7 @@ public class JobService {
         pd.setPage(pageNo);
         pd.setPageSize(pageSize);
         pd.setTotal(appScrapeJobDao.getJobSuccessTotal());
-        pd.setList(appScrapeJobDao.searchScrapeJobList(pageSize,pageNo));
+        pd.setList(appScrapeJobDao.searchScrapeJobList(pageSize, pageNo));
         return Result.success(pd);
     }
 
@@ -226,21 +240,11 @@ public class JobService {
             if (StringUtils.isEmpty(jobName) || StringUtils.isEmpty(region) || StringUtils.isEmpty(zone) || StringUtils.isEmpty(env)) {
                 return "Missing some request parameters";
             }
-            if (prometheusAlarmEnv.equals(env) && prometheusAlarmEnv.equals("staging")) {
-                if (!REGION_STAGING.equals(region) || !ZONE_STAGING.equals(zone)) {
-                    return "staging region or zone or env error";
-                }
-            }
-            if (prometheusAlarmEnv.equals(env) && prometheusAlarmEnv.equals("production")) {
-                if (!REGION_ONLINE.equals(region) || !ZONE_ONLINE.equals(zone)) {
-                    return "online region or zone or env error";
-                }
-            }
             return "ok";
-            }catch (Exception e) {
+        } catch (Exception e) {
             String errStr = "prometheus job json not right, error is: " + e;
             log.error(errStr);
             return errStr;
         }
-   }
+    }
 }

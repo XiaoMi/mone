@@ -32,12 +32,11 @@ import com.xiaomi.youpin.docean.anno.RequestMapping;
 import com.xiaomi.youpin.docean.aop.EnhanceInterceptor;
 import com.xiaomi.youpin.docean.config.HttpServerConfig;
 import com.xiaomi.youpin.docean.mvc.DoceanHttpServer;
-import com.xiaomi.youpin.docean.plugin.nacos.NacosConfig;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.LinkedHashMap;
 
-import static com.xiaomi.mone.log.common.Constant.DEFAULT_GROUP_ID;
+import static com.xiaomi.mone.log.manager.common.utils.ManagerUtil.getConfigFromNanos;
 
 /**
  * @Author goodjava@qq.com
@@ -61,7 +60,7 @@ public class MiLogManagerBootstrap {
         ));
         rpcServer.init();
         rpcServer.start();
-        setConfigFromNacos();
+        getConfigFromNanos();
 
         LinkedHashMap<Class, EnhanceInterceptor> m = new LinkedHashMap<>();
         m.put(RequestMapping.class, new HttpRequestInterceptor());
@@ -77,12 +76,4 @@ public class MiLogManagerBootstrap {
         log.info("milog manager start finish");
     }
 
-    private static void setConfigFromNacos() {
-        NacosConfig nacosConfig = new NacosConfig();
-        nacosConfig.setDataId(Config.ins().get("nacos_config_dataid", ""));
-        nacosConfig.setGroup(Config.ins().get("nacos_config_group", DEFAULT_GROUP_ID));
-        nacosConfig.setServerAddr(Config.ins().get("nacos_config_server_addr", ""));
-        nacosConfig.init();
-        nacosConfig.forEach((k, v) -> Config.ins().set(k, v));
-    }
 }

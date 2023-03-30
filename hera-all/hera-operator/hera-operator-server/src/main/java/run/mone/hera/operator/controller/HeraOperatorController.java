@@ -26,7 +26,6 @@ import com.xiaomi.youpin.infra.rpc.errors.GeneralCodes;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
 import run.mone.hera.operator.bo.HeraBootstrap;
 import run.mone.hera.operator.bo.HeraResource;
 import run.mone.hera.operator.bo.HeraStatus;
@@ -69,7 +68,10 @@ public class HeraOperatorController {
     @RequestMapping(path = "/hera/operator/resource/get", method = "get", timeout = 5000L)
     public Result<HeraOperatorDefineDTO> getResource() {
         log.info("/hera/operator/resource/get call in");
-        return Result.success(heraBootstrapInitService.getResource());
+        HeraOperatorDefineDTO heraOperatorDefineDTO = heraBootstrapInitService.getResource();
+        heraOperatorDefineDTO.setCrExists(heraBootstrapInitService.crExists(heraOperatorDefineDTO.getHeraMeta().getNamespace()));
+
+        return Result.success(heraOperatorDefineDTO);
     }
 
 
@@ -86,19 +88,19 @@ public class HeraOperatorController {
             serviceMap.put("tpclogin-nginx", HoConstant.KEY_TPC_LOGIN_FE_URL);
             serviceMap.put("tpc-nginx", "hera.tpc.url");
             serviceMap.put("grafana", HoConstant.KEY_GRAFANA_URL);
-            serviceMap.put("alertmanager", "hera.alertmanager.url");
+            serviceMap.put("alertmanager", HoConstant.KEY_ALERTMANAGER_URL);
             serviceMap.put("prometheus", HoConstant.KEY_PROMETHEUS_URL);
-
 
             List<String> serviceNameList = new ArrayList<>((serviceMap.keySet()));
 
             String serviceType = "LoadBalancer";
             String serviceYamlPath = "/hera_init/outer/hera_lb.yml";
             List<io.fabric8.kubernetes.api.model.Service> serviceList = heraBootstrapInitService.createAndListService(serviceNameList, namespace, serviceYamlPath);
-            if (CollectionUtils.isEmpty(serviceList)) {
+            if (heraBootstrapInitService.checkLbServiceFailed(serviceList, serviceType)) {
+                log.warn("LoadBalancer type failed, change to NodePort type");
+                heraBootstrapInitService.deleteService(serviceNameList, namespace);
                 serviceType = "NodePort";
                 serviceYamlPath = "/hera_init/outer/hera_nodeport.yml";
-                //todo serviceNameList 改名
                 serviceList = heraBootstrapInitService.createAndListService(serviceNameList, namespace, serviceYamlPath);
             }
 
@@ -130,6 +132,8 @@ public class HeraOperatorController {
             return Result.fromException(e);
         }
     }
+
+
 
     private Map<String, String> kvMap(String key, String value, String remark) {
         Map<String, String> map = new HashMap<>();
@@ -202,7 +206,7 @@ public class HeraOperatorController {
             log.warn("hera operator status:{}", gson.toJson(deployStateDTOList));
 
             Optional<DeployStateDTO> optional = deployStateDTOList.stream().filter(d -> !d.getReady()).findAny();
-            if (optional.isPresent() || deployStateDTOList.size() < 10) {
+            if (optional.isPresent() || deployStateDTOList.size() < 19) {
                 operatorState.setStatus(1);
             } else {
                 operatorState.setStatus(0);

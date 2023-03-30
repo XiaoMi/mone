@@ -8,8 +8,8 @@ metadata:
 data:
   elasticsearch.yaml: |
     discovery.type: single-node
-    discovery.seed_hosts: ["localhost"]
-    network.host: localhost
+    discovery.seed_hosts: ["0.0.0.0"]
+    network.host: 0.0.0.0
     http.port: 9200
     xpack.security.enabled: false
 ---

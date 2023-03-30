@@ -71,5 +71,7 @@ public class HoConstant {
 
     public static final String KEY_PROMETHEUS_URL = "hera.prometheus.url";
 
+    public static final String KEY_ALERTMANAGER_URL = "hera.alertmanager.url";
+
     public static final String KEY_HERA_URL = "hera.homepage.url";
 }

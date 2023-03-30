@@ -65,4 +65,7 @@ public class AlarmStrategy {
     @Column("alert_members")
     private String alertMembers;
 
+    @Column("at_members")
+    private String atMembers;
+
 }

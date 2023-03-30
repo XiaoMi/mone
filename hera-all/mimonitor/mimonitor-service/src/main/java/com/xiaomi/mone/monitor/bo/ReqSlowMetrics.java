@@ -10,12 +10,12 @@ public enum ReqSlowMetrics {
     dubboConsumerSlowQuery("dubboConsumerSlowQuery","dubboConsumer慢请求", AlarmPresetMetrics.dubbo_slow_query),
     dubboProviderSlowQuery("dubboProviderSlowQuery","dubboProvider慢请求", AlarmPresetMetrics.dubbo_provider_slow_query),
 
-    grpcClientSlowQuery("grpcClientSlowQuery","grpcClient慢请求", AlarmPresetMetrics.grpc_client_slow_times),
-    grpcServerSlowQuery("grpcServerSlowQuery","grpcServer慢请求", AlarmPresetMetrics.grpc_server_slow_times),
-    thriftClientSlowQuery("thriftClientSlowQuery","gthriftClient慢请求", AlarmPresetMetrics.thrift_client_slow_times),
-    thriftServerSlowQuery("thriftServerSlowQuery","thriftServer慢请求", AlarmPresetMetrics.thrift_server_slow_times),
-    apusClientSlowQuery("apusClientSlowQuery","apustClient慢请求", AlarmPresetMetrics.apus_client_slow_times),
-    apusServerSlowQuery("apusServerSlowQuery","apustClient慢请求", AlarmPresetMetrics.thrift_server_slow_times),
+//    grpcClientSlowQuery("grpcClientSlowQuery","grpcClient慢请求", AlarmPresetMetrics.grpc_client_slow_times),
+//    grpcServerSlowQuery("grpcServerSlowQuery","grpcServer慢请求", AlarmPresetMetrics.grpc_server_slow_times),
+//    thriftClientSlowQuery("thriftClientSlowQuery","gthriftClient慢请求", AlarmPresetMetrics.thrift_client_slow_times),
+//    thriftServerSlowQuery("thriftServerSlowQuery","thriftServer慢请求", AlarmPresetMetrics.thrift_server_slow_times),
+//    apusClientSlowQuery("apusClientSlowQuery","apustClient慢请求", AlarmPresetMetrics.apus_client_slow_times),
+//    apusServerSlowQuery("apusServerSlowQuery","apustClient慢请求", AlarmPresetMetrics.thrift_server_slow_times),
     ;
     private String code;
     private String message;

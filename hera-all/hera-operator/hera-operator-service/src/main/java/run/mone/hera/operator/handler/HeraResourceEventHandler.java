@@ -210,7 +210,7 @@ public class HeraResourceEventHandler implements ResourceEventHandler<HeraBootst
     private void block2checkStatus(ObjectMeta objectMeta) throws InterruptedException {
         String namespace = objectMeta.getNamespace();
 
-        for (int i = 0; i < 15; i++) {
+        for (int i = 0; i < 100; i++) {
             boolean ready = true;
             DeploymentList deploymentList = deploymentClient.inNamespace(namespace).list();
             List<Deployment> list = deploymentList.getItems();

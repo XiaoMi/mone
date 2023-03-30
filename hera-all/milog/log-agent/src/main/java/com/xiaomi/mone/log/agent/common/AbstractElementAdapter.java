@@ -54,7 +54,6 @@ public class AbstractElementAdapter implements
                 clz = NginxInput.class;
                 break;
             case "OPENTELEMETRY":
-                //todo
                 clz = OpentelemetryInput.class;
                 break;
             case "DOCKER":
@@ -62,6 +61,9 @@ public class AbstractElementAdapter implements
                 break;
             case "FREE":
                 clz = FreeLogInput.class;
+                break;
+            case "ORIGIN_LOG":
+                clz = OriginLogInput.class;
                 break;
             /**以下是mq type**/
             case "rocketmq":
