@@ -19,9 +19,11 @@ package com.xiaomi.mone.log.manager.controller.interceptor;
 import com.xiaomi.hera.trace.context.TraceIdUtil;
 import com.xiaomi.mone.log.common.Config;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
+import com.xiaomi.mone.log.manager.domain.Tpc;
 import com.xiaomi.mone.tpc.login.filter.DoceanReqUserFilter;
 import com.xiaomi.mone.tpc.login.util.ConstUtil;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
+import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.Component;
 import com.xiaomi.youpin.docean.aop.AopContext;
 import com.xiaomi.youpin.docean.aop.EnhanceInterceptor;
@@ -53,13 +55,15 @@ public class HttpRequestInterceptor extends EnhanceInterceptor {
 
     public HttpRequestInterceptor() {
         doceanReqUserFilter = new DoceanReqUserFilter();
+        Config config = Config.ins();
         Map<String, String> map = new HashMap<>();
-        map.put(ConstUtil.logoutUrl, "/user-manage/login");
-        map.put(ConstUtil.loginUrl, "/user-manage/login");
-        map.put(ConstUtil.devMode, "true");
+        map.put(ConstUtil.devMode, "false");
         map.put(ConstUtil.innerAuth, "false");
-        map.put(ConstUtil.authTokenUrl, "http://127.0.0.1:8098/login/token/parse");
+        map.put(ConstUtil.authTokenUrl, config.get("auth_token_url", "http://127.0.0.1:8098/login/token/parse"));
         map.put(ConstUtil.ignoreUrl, "/alert/get");
+        map.put(ConstUtil.loginUrl, config.get("tpc_login_url", ""));
+        map.put(ConstUtil.logoutUrl, config.get("tpc_logout_url", ""));
+
         doceanReqUserFilter.init(map);
     }
 
@@ -87,10 +91,12 @@ public class HttpRequestInterceptor extends EnhanceInterceptor {
 
     private void saveUserInfoThreadLocal(MvcContext mvcContext) {
         if (!doceanReqUserFilter.doFilter(mvcContext)) {
-            throw new RuntimeException("用户信息读取失败");
+            return;
+//            throw new MilogManageException("please go to login");
         }
         AuthUserVo userVo = (AuthUserVo) mvcContext.session().getAttribute(ConstUtil.TPC_USER);
-        MoneUserContext.setCurrentUser(userVo);
+        Tpc tpc = Ioc.ins().getBean(Tpc.class);
+        MoneUserContext.setCurrentUser(userVo, tpc.isAdmin(userVo.getAccount(), userVo.getUserType()));
     }
 
     @Override

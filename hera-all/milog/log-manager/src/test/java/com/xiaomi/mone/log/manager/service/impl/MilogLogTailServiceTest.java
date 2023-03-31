@@ -2,6 +2,10 @@ package com.xiaomi.mone.log.manager.service.impl;
 
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
+import com.xiaomi.mone.log.api.enums.LogTypeEnum;
+import com.xiaomi.mone.log.manager.mapper.MilogLogTemplateMapper;
+import com.xiaomi.mone.log.manager.service.bind.LogTypeProcessor;
+import com.xiaomi.mone.log.manager.service.bind.LogTypeProcessorFactory;
 import com.xiaomi.youpin.docean.Ioc;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
@@ -23,11 +27,24 @@ public class MilogLogTailServiceTest {
 
     private Gson gson = new Gson();
     private LogTailServiceImpl milogLogtailService;
+    private LogTypeProcessorFactory logTypeProcessorFactory;
+    private MilogLogTemplateMapper milogLogTemplateMapper;
 
     @Before
     public void init() {
         Ioc.ins().init("com.xiaomi");
         milogLogtailService = Ioc.ins().getBean(LogTailServiceImpl.class);
+        logTypeProcessorFactory = Ioc.ins().getBean(LogTypeProcessorFactory.class);
+        milogLogTemplateMapper = Ioc.ins().getBean(MilogLogTemplateMapper.class);
+    }
+
+
+    @Test
+    public void testFactory() {
+        logTypeProcessorFactory.setMilogLogTemplateMapper(milogLogTemplateMapper);
+        LogTypeProcessor logTypeProcessor = logTypeProcessorFactory.getLogTypeProcessor();
+        boolean supportedConsume = logTypeProcessor.supportedConsume(LogTypeEnum.APP_LOG_MULTI);
+        log.info("supportedConsume:{}", supportedConsume);
     }
 
     @Test
@@ -35,7 +52,7 @@ public class MilogLogTailServiceTest {
         Ioc.ins().init("com.xiaomi");
         Long tailId = 620L;
         List<String> podList = Lists.newArrayList("127.0.0.1", "127.0.0.1");
-        milogLogtailService.k8sPodIpsSend(tailId, podList, Collections.EMPTY_LIST,1);
+        milogLogtailService.k8sPodIpsSend(tailId, podList, Collections.EMPTY_LIST, 1);
     }
 
     @Test

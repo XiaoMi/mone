@@ -1,8 +1,9 @@
 package com.xiaomi.mone.log.manager.service.impl;
 
+import com.xiaomi.mone.log.api.enums.FavouriteSearchEnum;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
-import com.xiaomi.mone.log.manager.model.convert.SearchSaveConvert;
+import com.xiaomi.mone.log.manager.convert.SearchSaveConvert;
 import com.xiaomi.mone.log.manager.mapper.MilogLogSearchSaveMapper;
 import com.xiaomi.mone.log.manager.model.dto.SearchSaveDTO;
 import com.xiaomi.mone.log.manager.model.page.PageInfo;
@@ -17,7 +18,7 @@ import java.util.List;
 
 /**
  * <p>
- *  服务实现类
+ * 服务实现类
  * </p>
  *
  * @author wanghaoyang
@@ -42,9 +43,28 @@ public class LogSearchSaveServiceImpl implements LogSearchSaveService {
     }
 
     public Result<Integer> save(SearchSaveInsertCmd cmd) {
-        if (isRepeatName(cmd.getStoreId(), cmd.getName())) {
-            return Result.failParam("名称不能重复");
+        if (cmd.getSort() == null) {
+            return Result.failParam("分类字段sort不能为空");
         }
+        switch (FavouriteSearchEnum.queryByCode(cmd.getSort())) {
+            case TEXT:
+                if (isRepeatName(cmd.getName())) {
+                    return Result.failParam("名称不能重复");
+                }
+                break;
+            case STORE:
+                Integer isMyFavouriteStore = logSearchSaveMapper.isMyFavouriteStore(MoneUserContext.getCurrentUser().getUser(), cmd.getStoreId());
+                if (isMyFavouriteStore >= 1) {
+                    return Result.failParam("已收藏");
+                }
+            case TAIL:
+                Integer isMyFavouriteTail = logSearchSaveMapper.isMyFavouriteTail(MoneUserContext.getCurrentUser().getUser(), cmd.getTailId());
+                if (isMyFavouriteTail >= 1) {
+                    return Result.failParam("已收藏");
+                }
+                break;
+        }
+
         MilogLogSearchSaveDO logSearchSaveDO = SearchSaveConvert.INSTANCE.toDO(cmd);
         long current = System.currentTimeMillis();
         logSearchSaveDO.setCreateTime(current);
@@ -52,6 +72,8 @@ public class LogSearchSaveServiceImpl implements LogSearchSaveService {
         String user = MoneUserContext.getCurrentUser().getUser();
         logSearchSaveDO.setCreator(user);
         logSearchSaveDO.setUpdater(user);
+        Integer maxOrder = logSearchSaveMapper.getMaxOrder(user, cmd.getSort());
+        logSearchSaveDO.setOrderNum(maxOrder == null ? 100 : maxOrder + 100);
         int insert = logSearchSaveMapper.insert(logSearchSaveDO);
         return Result.success(insert);
     }
@@ -61,11 +83,11 @@ public class LogSearchSaveServiceImpl implements LogSearchSaveService {
         if (milogLogSearchSaveDO == null) {
             return Result.failParam("找不到数据");
         }
-        if (!cmd.getName().equals(milogLogSearchSaveDO.getName()) && isRepeatName(cmd.getStoreId(), cmd.getName())) {
+        if (!cmd.getName().equals(milogLogSearchSaveDO.getName()) && isRepeatName(cmd.getName())) {
             return Result.failParam("名称不能重复");
         }
         milogLogSearchSaveDO.setName(cmd.getName());
-        milogLogSearchSaveDO.setParam(cmd.getParam());
+        milogLogSearchSaveDO.setQueryText(cmd.getQueryText());
         milogLogSearchSaveDO.setIsFixTime(cmd.getIsFixTime());
         milogLogSearchSaveDO.setStartTime(cmd.getStartTime());
         milogLogSearchSaveDO.setEndTime(cmd.getEndTime());
@@ -81,8 +103,8 @@ public class LogSearchSaveServiceImpl implements LogSearchSaveService {
         return Result.success(i);
     }
 
-    private boolean isRepeatName(Long storeId, String name) {
-        Long count = logSearchSaveMapper.countByStoreAndName(storeId, name);
+    private boolean isRepeatName(String name) {
+        Long count = logSearchSaveMapper.countByStoreAndName(name, MoneUserContext.getCurrentUser().getUser());
         return count >= 1;
     }
 

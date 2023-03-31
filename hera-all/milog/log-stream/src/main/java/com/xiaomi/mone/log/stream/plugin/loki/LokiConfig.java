@@ -112,7 +112,7 @@ public class LokiConfig {
             this.streamPushSendMaxTimeoutMs = defaultSendMaxTimeoutMs;
         }
 
-        this.pushUrl = Config.ins().get(configPropertiesPushUrlKey, "http://loki-staging.log.xiaomi.net/api/v1/loki/api/v1/push");
+        this.pushUrl = Config.ins().get(configPropertiesPushUrlKey, "http://127.0.0.1/api/v1/loki/api/v1/push");
         this.httpConnectTimeoutSecond = defaultHttpConnectTimeoutSecond;
         this.httpReadTimeoutSecond = defaultHttpReadTimeoutSecond;
         this.httpWriteTimeoutSecond = defaultHttpWriteTimeoutSecond;

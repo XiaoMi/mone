@@ -32,7 +32,7 @@ public class CustomLogParserTest {
         String valueList = "0,-1,16,-1,-1,-1,-1,-1,-1,1,2,3,4,5,6,7,8,9,10,11,13,12,17,14,15";
         String parseScript = "|";
         String logData = "";
-        String ip = "1.1.1.1";
+        String ip = "127.0.0.1";
         Long currentStamp = Instant.now().toEpochMilli();
         Integer parserType = LogParserFactory.LogParserEnum.SEPARATOR_PARSE.getCode();
         LogParser customParse = LogParserFactory.getLogParser(parserType, keyList, valueList, parseScript, topicName, tailName, tag, logStoreName);
@@ -51,7 +51,7 @@ public class CustomLogParserTest {
         String valueList = "0";
         String parseScript = "|";
         String logData = "";
-        String ip = "1.1.1.1";
+        String ip = "127.0.0.1";
         Long currentStamp = Instant.now().toEpochMilli();
         Integer parserType = LogParserFactory.LogParserEnum.CUSTOM_PARSE.getCode();
         LogParser customParse = LogParserFactory.getLogParser(parserType, keyList, valueList, parseScript, topicName, tailName, tag, logStoreName);

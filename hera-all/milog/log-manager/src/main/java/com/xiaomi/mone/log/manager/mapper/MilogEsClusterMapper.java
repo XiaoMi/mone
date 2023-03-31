@@ -1,7 +1,7 @@
 package com.xiaomi.mone.log.manager.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.xiaomi.mone.log.manager.model.pojo.LogEsClusterDO;
+import com.xiaomi.mone.log.manager.model.pojo.MilogEsClusterDO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -16,7 +16,7 @@ import java.util.List;
  * @since 2021-09-18
  */
 @Mapper
-public interface MilogEsClusterMapper extends BaseMapper<LogEsClusterDO> {
+public interface MilogEsClusterMapper extends BaseMapper<MilogEsClusterDO> {
 
     /**
      * 获取tag对应的ES 客户端
@@ -24,14 +24,14 @@ public interface MilogEsClusterMapper extends BaseMapper<LogEsClusterDO> {
      * @param tag
      * @return
      */
-    List<LogEsClusterDO> selectByTag(@Param("tag") String tag);
+    List<MilogEsClusterDO> selectByTag(@Param("tag") String tag);
 
     /**
      * 查找所有
      *
      * @return
      */
-    List<LogEsClusterDO> selectAll();
+    List<MilogEsClusterDO> selectAll();
 
     /**
      * 获取region对应的ES客户端
@@ -39,7 +39,7 @@ public interface MilogEsClusterMapper extends BaseMapper<LogEsClusterDO> {
      * @param region
      * @return
      */
-    LogEsClusterDO selectByRegion(@Param("region") String region);
+    MilogEsClusterDO selectByRegion(@Param("region") String region);
 
     /**
      * 获取area对应的ES客户端
@@ -47,7 +47,7 @@ public interface MilogEsClusterMapper extends BaseMapper<LogEsClusterDO> {
      * @param area
      * @return
      */
-    List<LogEsClusterDO> selectByArea(@Param("area") String area);
+    List<MilogEsClusterDO> selectByArea(@Param("area") String area);
 
-    List<LogEsClusterDO> selectByAlias(@Param("alias") String alias);
+    List<MilogEsClusterDO> selectByAlias(@Param("alias") String alias);
 }

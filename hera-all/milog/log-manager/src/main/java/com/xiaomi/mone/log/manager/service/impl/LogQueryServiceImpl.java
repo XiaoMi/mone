@@ -10,7 +10,7 @@ import com.xiaomi.mone.log.api.service.LogDataService;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.exception.CommonError;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
-import com.xiaomi.mone.log.manager.dao.LogstoreDao;
+import com.xiaomi.mone.log.manager.dao.MilogLogstoreDao;
 import com.xiaomi.mone.log.manager.domain.EsCluster;
 import com.xiaomi.mone.log.manager.domain.SearchLog;
 import com.xiaomi.mone.log.manager.domain.TraceLog;
@@ -45,6 +45,7 @@ import java.io.IOException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.xiaomi.mone.log.common.Constant.GSON;
 import static com.xiaomi.mone.log.manager.common.utils.ManagerUtil.getKeyColonPrefix;
 import static com.xiaomi.mone.log.manager.common.utils.ManagerUtil.getKeyList;
 import static org.elasticsearch.search.sort.SortOrder.ASC;
@@ -56,7 +57,7 @@ import static org.elasticsearch.search.sort.SortOrder.DESC;
 public class LogQueryServiceImpl implements LogQueryService, LogDataService, EsDataBaseService {
 
     @Resource
-    private LogstoreDao logstoreDao;
+    private MilogLogstoreDao logstoreDao;
 
     @Resource
     private EsCluster esCluster;
@@ -281,11 +282,12 @@ public class LogQueryServiceImpl implements LogQueryService, LogDataService, EsD
      * @return
      */
     @Override
-    public TraceLogDTO getTraceLog(TraceLogQuery logQuery) throws IOException {
+    public TraceLogDTO getTraceLog(TraceLogQuery logQuery) {
         try {
-            return traceLog.getTraceLog(logQuery.getTraceId(), "");
+            log.info("getTraceLog,param data:{}", GSON.toJson(logQuery));
+            return traceLog.getTraceLog(logQuery.getTraceId(), "", logQuery.getGenerationTime(), logQuery.getLevel());
         } catch (Exception e) {
-            log.error("日志查询错误，查询trace日志报错:[{}], logQuery:[{}], user:[{}]", e, logQuery, MoneUserContext.getCurrentUser());
+            log.error("日志查询错误，查询trace日志报错, logQuery:[{}]", e, GSON.toJson(logQuery), e);
             return TraceLogDTO.emptyData();
         }
     }
@@ -298,7 +300,7 @@ public class LogQueryServiceImpl implements LogQueryService, LogDataService, EsD
      */
     @Override
     public Result<TraceLogDTO> queryRegionTraceLog(RegionTraceLogQuery regionTraceLogQuery) throws IOException {
-        return Result.success(traceLog.getTraceLog(regionTraceLogQuery.getTraceId(), regionTraceLogQuery.getRegion()));
+        return Result.success(traceLog.getTraceLog(regionTraceLogQuery.getTraceId(), regionTraceLogQuery.getRegion(), "", ""));
     }
 
     @Override

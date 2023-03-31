@@ -26,11 +26,11 @@ public interface CommonRocketMqService {
 
     String rocketmqAddress = Config.ins().get("rocketmq_address", "");
 
-    String rocketmqAk = Config.ins().get("rocketmq_milog_ak", "");
+    String rocketmqAk = Config.ins().get("rocketmq_ak", "");
 
-    String rocketmqSk = Config.ins().get("rocketmq_milog_sk", "");
+    String rocketmqSk = Config.ins().get("rocketmq_sk", "");
 
-    String rocketmqNamesrvAddr = Config.ins().get("rocketmq_milog_namesrv_addr", "");
+    String rocketmqNamesrvAddr = Config.ins().get("rocketmq_namesrv_addr", "");
 
     String rocketmqOrgId = Config.ins().get("rocketmq_org_id", "");
 

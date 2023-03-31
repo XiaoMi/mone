@@ -8,8 +8,8 @@ import com.xiaomi.mone.log.manager.common.exception.MilogManageException;
 import com.xiaomi.mone.log.manager.mapper.MilogEsClusterMapper;
 import com.xiaomi.mone.log.manager.mapper.MilogEsIndexMapper;
 import com.xiaomi.mone.log.manager.model.dto.EsInfoDTO;
-import com.xiaomi.mone.log.manager.model.pojo.LogEsClusterDO;
-import com.xiaomi.mone.log.manager.model.pojo.LogEsIndexDO;
+import com.xiaomi.mone.log.manager.model.pojo.MilogEsClusterDO;
+import com.xiaomi.mone.log.manager.model.pojo.MilogEsIndexDO;
 import com.xiaomi.mone.log.manager.model.vo.CreateIndexTemplatePropertyCommand;
 import com.xiaomi.mone.log.manager.model.vo.CreateOrUpdateLogStoreCmd;
 import com.xiaomi.mone.log.manager.model.vo.UpdateIndexTemplateCommand;
@@ -27,6 +27,8 @@ import org.elasticsearch.client.indices.PutIndexTemplateRequest;
 import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.*;
+
+import static com.xiaomi.mone.log.manager.common.Utils.getRandomNum;
 
 @Service
 @Slf4j
@@ -181,7 +183,7 @@ public class EsIndexTemplate {
      * @return
      */
     public String getAreaTypeIndex(String area, Integer logType) {
-        LogEsClusterDO cluster = esCluster.getByArea4China(area);
+        MilogEsClusterDO cluster = esCluster.getByArea4China(area);
         if (cluster == null) {
             return "";
         }
@@ -194,7 +196,7 @@ public class EsIndexTemplate {
      * @return
      */
     public String getRegionTypeIndex(String region, Integer logType) {
-        LogEsClusterDO esClusterDO = esCluster.getByRegion(region);
+        MilogEsClusterDO esClusterDO = esCluster.getByRegion(region);
         if (esClusterDO == null) {
             return "";
         }
@@ -214,7 +216,7 @@ public class EsIndexTemplate {
         Map<String, Object> params = new HashMap<>();
         params.put("cluster_id", esClusterId);
         params.put("log_type", logType);
-        List<LogEsIndexDO> indexList = esIndexMapper.selectByMap(params);
+        List<MilogEsIndexDO> indexList = esIndexMapper.selectByMap(params);
         return indexChooseAlgo(indexList);
     }
 
@@ -224,7 +226,7 @@ public class EsIndexTemplate {
      * @param indexList
      * @return
      */
-    private String indexChooseAlgo(List<LogEsIndexDO> indexList) {
+    private String indexChooseAlgo(List<MilogEsIndexDO> indexList) {
         return randomChoose(indexList);
     }
 
@@ -234,7 +236,7 @@ public class EsIndexTemplate {
      * @param indexList
      * @return
      */
-    private String randomChoose(List<LogEsIndexDO> indexList) {
+    private String randomChoose(List<MilogEsIndexDO> indexList) {
         if (indexList == null || indexList.isEmpty()) {
             return "";
         }
@@ -249,7 +251,7 @@ public class EsIndexTemplate {
      * @return
      */
     public EsInfoDTO getEsInfo(String machineRoom, Integer logType) {
-        LogEsClusterDO cluster;
+        MilogEsClusterDO cluster;
         // 没有机房，按照国内的逻辑处理
         if (StringUtils.isEmpty(machineRoom)) {
             cluster = esCluster.getCurEsCluster();
@@ -264,17 +266,17 @@ public class EsIndexTemplate {
     }
 
     public EsInfoDTO getEsInfo(Long clusterId, Integer logType, String exIndex) {
-        QueryWrapper<LogEsIndexDO> queryWrapper = new QueryWrapper<LogEsIndexDO>()
+        QueryWrapper<MilogEsIndexDO> queryWrapper = new QueryWrapper<MilogEsIndexDO>()
                 .eq("cluster_id", clusterId)
                 .eq("log_type", logType);
-        List<LogEsIndexDO> milogEsIndexDOS = esIndexMapper.selectList(queryWrapper);
+        List<MilogEsIndexDO> milogEsIndexDOS = esIndexMapper.selectList(queryWrapper);
         if (CollectionUtils.isEmpty(milogEsIndexDOS)) {
-            LogEsClusterDO milogEsClusterDO = milogEsClusterMapper.selectById(clusterId);
+            MilogEsClusterDO milogEsClusterDO = milogEsClusterMapper.selectById(clusterId);
             throw new MilogManageException(String.format(
                     "ES:%s,日志类型:%s索引不存在,请先去资源管理页配置", milogEsClusterDO.getName(), LogTypeEnum.queryNameByType(logType)));
         }
         if (StringUtils.isNotEmpty(exIndex)) {
-            Optional<LogEsIndexDO> doOptional = milogEsIndexDOS.stream()
+            Optional<MilogEsIndexDO> doOptional = milogEsIndexDOS.stream()
                     .filter(indexDO -> Objects.equals(exIndex, indexDO.getIndexName()))
                     .findFirst();
             if (doOptional.isPresent()) {
@@ -283,6 +285,29 @@ public class EsIndexTemplate {
         }
         String indexName = indexChooseAlgo(milogEsIndexDOS);
         return new EsInfoDTO(clusterId, indexName);
+    }
+
+    public EsInfoDTO getEsInfoOtherDept(Long clusterId, Integer logType, String exIndex) {
+        QueryWrapper<MilogEsIndexDO> queryWrapper = new QueryWrapper<MilogEsIndexDO>()
+                .eq("cluster_id", clusterId)
+                .eq("log_type", logType);
+        List<MilogEsIndexDO> milogEsIndexDOS = esIndexMapper.selectList(queryWrapper);
+        if (CollectionUtils.isEmpty(milogEsIndexDOS)) {
+            MilogEsClusterDO milogEsClusterDO = milogEsClusterMapper.selectById(clusterId);
+            throw new MilogManageException(String.format(
+                    "ES:%s,日志类型:%s索引不存在,请先去资源管理页配置", milogEsClusterDO.getName(), LogTypeEnum.queryNameByType(logType)));
+        }
+        if (StringUtils.isNotEmpty(exIndex)) {
+            Optional<MilogEsIndexDO> doOptional = milogEsIndexDOS.stream()
+                    .filter(indexDO -> Objects.equals(exIndex, indexDO.getIndexName()))
+                    .findFirst();
+            if (doOptional.isPresent()) {
+                return new EsInfoDTO(doOptional.get().getClusterId(), exIndex);
+            }
+        }
+        // 随机选择一个
+        MilogEsIndexDO milogEsIndexDO = milogEsIndexDOS.get(getRandomNum(milogEsIndexDOS.size()));
+        return new EsInfoDTO(clusterId, milogEsIndexDO.getIndexName());
     }
 
 }

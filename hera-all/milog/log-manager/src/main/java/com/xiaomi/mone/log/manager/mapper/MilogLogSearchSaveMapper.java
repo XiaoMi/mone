@@ -1,14 +1,15 @@
 package com.xiaomi.mone.log.manager.mapper;
 
-import com.xiaomi.mone.log.manager.model.pojo.MilogLogSearchSaveDO;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.xiaomi.mone.log.manager.model.dto.SearchSaveDTO;
+import com.xiaomi.mone.log.manager.model.pojo.MilogLogSearchSaveDO;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
 
 /**
  * <p>
- *  Mapper 接口
+ * Mapper 接口
  * </p>
  *
  * @author wanghaoyang
@@ -20,7 +21,17 @@ public interface MilogLogSearchSaveMapper extends BaseMapper<MilogLogSearchSaveD
 
     Long countByStoreId(@Param(value = "storeId") Long storeId);
 
-    Long countByStoreAndName(@Param(value = "storeId") Long storeId, @Param(value = "name") String name);
+    Long countByStoreAndName(@Param(value = "name") String name, @Param(value = "creator") String creator);
 
     int removeById(@Param(value = "id") Long id);
+
+    List<SearchSaveDTO> selectByCreator(@Param(value = "creator") String creator, @Param(value = "sort") Integer sort);
+
+    Integer getMaxOrder(@Param(value = "creator") String creator, @Param(value = "sort") Integer sort);
+
+    Integer isMyFavouriteStore(@Param(value = "creator") String creator, @Param(value = "storeId") Long storeId);
+
+    Integer isMyFavouriteTail(@Param(value = "creator") String creator, @Param(value = "tailId") Long tailId);
+
+    List<MilogLogSearchSaveDO> getAll();
 }

@@ -23,21 +23,33 @@ public class MilogLogSearchSaveDO implements Serializable {
 
     private Long id;
 
-    private Long storeId;
-
     private String name;
 
-    private String param;
+    private Long spaceId;
+
+    private Long storeId;
+
+    private Long tailId;
+
+    private String queryText;
 
     /**
      * 1-保存了时间参数；0-没有保存
      */
     private Integer isFixTime;
 
+    private Long startTime;
+
+    private Long endTime;
+
     /**
      * 备注
      */
     private String common;
+
+    private Integer sort;
+
+    private Integer orderNum;
 
     private String creator;
 
@@ -46,9 +58,5 @@ public class MilogLogSearchSaveDO implements Serializable {
     private Long createTime;
 
     private Long updateTime;
-
-    private Long startTime;
-
-    private Long endTime;
 
 }

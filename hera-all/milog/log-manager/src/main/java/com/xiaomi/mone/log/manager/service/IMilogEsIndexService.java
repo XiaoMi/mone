@@ -1,6 +1,6 @@
 package com.xiaomi.mone.log.manager.service;
 
-import com.xiaomi.mone.log.manager.model.pojo.LogEsIndexDO;
+import com.xiaomi.mone.log.manager.model.pojo.MilogEsIndexDO;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
@@ -11,6 +11,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @author wanghaoyang
  * @since 2021-09-18
  */
-public interface IMilogEsIndexService extends IService<LogEsIndexDO> {
+public interface IMilogEsIndexService extends IService<MilogEsIndexDO> {
 
 }

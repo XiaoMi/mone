@@ -63,9 +63,9 @@ public class MilogDictionaryServiceImpl implements MilogDictionaryService {
     @Resource
     private MilogLogTailDao milogLogtailDao;
     @Resource
-    private LogstoreDao logstoreDao;
+    private MilogLogstoreDao logstoreDao;
     @Resource
-    private SpaceDao milogSpaceDao;
+    private MilogSpaceDao milogSpaceDao;
 
     @Value("$mis.url")
     private String misUrl;
@@ -343,11 +343,11 @@ public class MilogDictionaryServiceImpl implements MilogDictionaryService {
                     DictionaryDTO<Long> childDictionaryDTO = new DictionaryDTO<>();
                     childDictionaryDTO.setValue(middlewareConfig.getId());
                     childDictionaryDTO.setLabel(middlewareConfig.getAlias());
-                    if (MiddlewareEnum.ROCKETMQ.getCode().equals(middlewareConfig.getType())) {
-                        List<DictionaryDTO> existsTopic = rocketMqConfigService.queryExistsTopic(middlewareConfig.getAk(), middlewareConfig.getSk(),
-                                middlewareConfig.getNameServer(), middlewareConfig.getServiceUrl(), middlewareConfig.getAuthorization(), middlewareConfig.getOrgId(), middlewareConfig.getTeamId());
-                        childDictionaryDTO.setChildren(existsTopic);
-                    }
+//                    if (MiddlewareEnum.ROCKETMQ.getCode().equals(middlewareConfig.getType())) {
+//                        List<DictionaryDTO> existsTopic = rocketMqConfigService.queryExistsTopic(middlewareConfig.getAk(), middlewareConfig.getSk(),
+//                                middlewareConfig.getNameServer(), middlewareConfig.getServiceUrl(), middlewareConfig.getAuthorization(), middlewareConfig.getOrgId(), middlewareConfig.getTeamId());
+//                        childDictionaryDTO.setChildren(existsTopic);
+//                    }
                     return childDictionaryDTO;
                 }).collect(Collectors.toList()));
             }

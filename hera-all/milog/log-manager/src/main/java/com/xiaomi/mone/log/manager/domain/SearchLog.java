@@ -2,6 +2,7 @@ package com.xiaomi.mone.log.manager.domain;
 
 import com.xiaomi.mone.log.manager.model.vo.LogContextQuery;
 import com.xiaomi.mone.log.manager.model.vo.LogQuery;
+import com.xiaomi.mone.log.manager.service.statement.StatementMatchParseFactory;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.common.DoceanConfig;
 import com.xiaomi.youpin.docean.common.StringUtils;
@@ -11,9 +12,12 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 
+import javax.validation.constraints.NotNull;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,11 +26,26 @@ import java.util.List;
 public class SearchLog {
     /**
      * 获取查询参数
+     *
      * @param logQuery
      * @param keyList
      * @return
      */
-    public BoolQueryBuilder getQueryBuilder(LogQuery logQuery, List<String> keyList) throws Exception {
+    public BoolQueryBuilder getQueryBuilder(LogQuery logQuery, List<String> keyList) {
+        BoolQueryBuilder boolQueryBuilder = buildCommonBuilder(logQuery);
+        if (StringUtils.isEmpty(logQuery.getFullTextSearch())) {
+            return boolQueryBuilder;
+        }
+//        BoolQueryBuilder fullTextSearchBuilder = buildTextQuery(logQuery.getFullTextSearch(), keyList);
+        BoolQueryBuilder fullTextSearchBuilder = StatementMatchParseFactory.getStatementMatchParseQueryBuilder(logQuery.getFullTextSearch(), keyList);
+        if (fullTextSearchBuilder != null) {
+            boolQueryBuilder.filter(fullTextSearchBuilder);
+        }
+        return boolQueryBuilder;
+    }
+
+    @NotNull
+    private static BoolQueryBuilder buildCommonBuilder(LogQuery logQuery) {
         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
         boolQueryBuilder.filter(QueryBuilders.rangeQuery("timestamp").from(logQuery.getStartTime()).to(logQuery.getEndTime()));
         boolQueryBuilder.filter(QueryBuilders.termQuery("logstore", logQuery.getLogstore()));
@@ -40,20 +59,41 @@ public class SearchLog {
             tailQueryBuilder.minimumShouldMatch(1);
             boolQueryBuilder.filter(tailQueryBuilder);
         }
+        return boolQueryBuilder;
+    }
+
+    /**
+     * 获取 matrix es 数据的查询参数
+     *
+     * @param logQuery
+     * @param keyList
+     * @return
+     * @throws Exception
+     */
+    public BoolQueryBuilder getMatrixQueryBuilder(LogQuery logQuery, List<String> keyList) throws Exception {
+        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+        Instant fromStartUnixTimestamp = Instant.ofEpochMilli((logQuery.getStartTime()));
+        //申明时区，否则默认为UTC0时区
+        String startTime = fromStartUnixTimestamp.atZone(ZoneId.of("+08:00")).toString();
+        Instant fromEndUnixTimestamp = Instant.ofEpochMilli((logQuery.getEndTime()));
+        //申明时区，否则默认为UTC0时区
+        String endTime = fromEndUnixTimestamp.atZone(ZoneId.of("+08:00")).toString();
+        boolQueryBuilder.filter(QueryBuilders.rangeQuery("alpha_timestamp").from(startTime).to(endTime));
         if (StringUtils.isEmpty(logQuery.getFullTextSearch())) {
             return boolQueryBuilder;
         }
-        BoolQueryBuilder fullTextSearchBuilder = buildTextQuery(logQuery.getFullTextSearch(), keyList);
+//        BoolQueryBuilder fullTextSearchBuilder = buildTextQuery(logQuery.getFullTextSearch(), keyList);
+        BoolQueryBuilder fullTextSearchBuilder = StatementMatchParseFactory.getStatementMatchParseQueryBuilder(logQuery.getFullTextSearch(), keyList);
         if (fullTextSearchBuilder != null) {
             boolQueryBuilder.filter(fullTextSearchBuilder);
         }
         return boolQueryBuilder;
     }
 
-    private static BoolQueryBuilder buildTextQuery(String queryText, List<String> keyList) {
+    public static BoolQueryBuilder buildTextQuery(String querytext, List<String> keyList) {
         List<String> mustQueryTextList = new ArrayList<>();
         List<String> mustNotQueryTextList = new ArrayList<>();
-        queryAnalyse(queryText, mustQueryTextList, mustNotQueryTextList);
+        queryAnalyse(querytext, mustQueryTextList, mustNotQueryTextList);
         BoolQueryBuilder boolQueryBuilder = queryDispatchAndBuild(mustQueryTextList, mustNotQueryTextList, keyList);
         return boolQueryBuilder;
     }
@@ -64,75 +104,75 @@ public class SearchLog {
         boolean isGrantQuery;
         String queryText;
         int i = 0;
-        while(i < mustQueryTextList.size() + mustNotQueryTextList.size()) {
+        while (i < mustQueryTextList.size() + mustNotQueryTextList.size()) {
             isGrantQuery = i < mustQueryTextList.size();
             queryText = isGrantQuery ? mustQueryTextList.get(i) : mustNotQueryTextList.get(i - mustQueryTextList.size());
             i++;
+            // 特定关键词搜索
             if (queryText.startsWith("\"")) {
                 queryText = queryText.substring(1, queryText.length() - 1);
                 thisQueryBuilder = precisionQueryBuilder(queryText);
                 queryBuilder = isGrantQuery ? queryBuilder.must(thisQueryBuilder) : queryBuilder.mustNot(thisQueryBuilder);
                 continue;
             }
+            // k-v搜索
             if (queryText.contains(":")) {
                 int kvApartIndex = queryText.indexOf(":");
-                String key = queryText.substring(0, kvApartIndex);
-                String value = kvApartIndex == queryText.length() ? "" : queryText.substring(kvApartIndex + 1);
+                String key = queryText.substring(0, kvApartIndex).trim();
+                String value = kvApartIndex == queryText.length() ? "" : queryText.substring(kvApartIndex + 1).trim();
+                // k-v特定关键词搜索
                 if (value.startsWith("\"") && value.endsWith("\"")) {
                     value = value.substring(1, value.length() - 1);
                     thisQueryBuilder = kvPrecisionQueryBuilder(key, value);
                     queryBuilder = isGrantQuery ? queryBuilder.must(thisQueryBuilder) : queryBuilder.mustNot(thisQueryBuilder);
                     continue;
                 } else {
+                    // k-v普通搜索
                     thisQueryBuilder = kvMatchQueryBuilder(key, value);
                     queryBuilder = isGrantQuery ? queryBuilder.must(thisQueryBuilder) : queryBuilder.mustNot(thisQueryBuilder);
                     continue;
                 }
             }
+            // 分词搜索
             thisQueryBuilder = multiMatchQueryBuilder(queryText, keyList);
             queryBuilder = isGrantQuery ? queryBuilder.must(thisQueryBuilder) : queryBuilder.mustNot(thisQueryBuilder);
         }
         return queryBuilder;
     }
 
-    private static BoolQueryBuilder queryAnalyse(String queryText, List<String> mustQueryTextList, List<String> mustNotQueryTextList) {
-        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
+    private static void queryAnalyse(String querytext, List<String> mustQueryTextList, List<String> mustNotQueryTextList) {
         boolean isGrantQuery; // 判断搜索词是否加了not
         do {
+            querytext = querytext.trim();
             isGrantQuery = true;
             // 如果搜索词加了not 那not后的所有搜索条件都是not的逻辑
-            if (isGrantQuery && (queryText.toLowerCase().startsWith("not "))) {
+            if (isGrantQuery && (querytext.trim().toLowerCase().startsWith("not "))) {
                 isGrantQuery = false;
                 // 搜索语句去掉”not “
-                queryText = queryText.substring(4);
+                querytext = querytext.substring(4);
             }
-            int endIndex = getEndIndex(queryText);
-            String thisQuerytext = queryText.substring(0, endIndex);
+            int endIndex = getEndIndex(querytext);
+            String thisQuerytext = querytext.substring(0, endIndex);
             if (isGrantQuery) {
                 mustQueryTextList.add(thisQuerytext);
             } else {
                 mustNotQueryTextList.add(thisQuerytext);
             }
-            queryText = queryText.substring(endIndex);
+            querytext = querytext.substring(endIndex).trim();
             // 搜索语句去掉” and “
-            if (queryText.toLowerCase().startsWith(" and ")) {
-                queryText = queryText.substring(5);
+            if (querytext.toLowerCase().startsWith("and ")) {
+                querytext = querytext.substring(4);
             }
-        } while (StringUtils.isNotEmpty(queryText));
-
-        return boolQueryBuilder;
+        } while (StringUtils.isNotEmpty(querytext));
     }
 
     private static QueryBuilder kvMatchQueryBuilder(String key, String value) {
+        key = key.trim();
+        value = value.trim();
         if ("logLevel".equals(key) || "level".equals(key) && ("INFO".equalsIgnoreCase(value) || "WARN".equalsIgnoreCase(value))) {
             value = String.format("%-5s", value);
         }
-
-        if (isKeywordType(key)) {
-            return QueryBuilders.termQuery(key, value);
-        } else {
-            return QueryBuilders.matchQuery(key, value);
-        }
+        return QueryBuilders.matchQuery(key, value);
     }
 
     private static QueryBuilder multiMatchQueryBuilder(String querytext, List<String> keyList) {
@@ -147,36 +187,21 @@ public class SearchLog {
 
     // 正则表达式查询
     private static QueryBuilder regexpQuery(String querytext) {
-        return QueryBuilders.regexpQuery("message", querytext);
+        return QueryBuilders.regexpQuery("message", querytext.toLowerCase());
     }
 
     // 精准+前缀查询
-    private static QueryBuilder precisionQueryBuilder(String queryText) {
+    private static QueryBuilder precisionQueryBuilder(String querytext) {
         BoolQueryBuilder phraseQueryBuilder = QueryBuilders.boolQuery();
-        phraseQueryBuilder.should(QueryBuilders.matchPhrasePrefixQuery("message", queryText));
-        phraseQueryBuilder.should(QueryBuilders.termQuery("traceId", queryText));
+        phraseQueryBuilder.should(QueryBuilders.matchPhrasePrefixQuery("message", querytext));
+        phraseQueryBuilder.should(QueryBuilders.termQuery("traceId", querytext));
         phraseQueryBuilder.minimumShouldMatch(1);
         return phraseQueryBuilder;
     }
 
     // kv精确+前缀查询
     private static QueryBuilder kvPrecisionQueryBuilder(String key, String value) {
-        if (isKeywordType(key)) {
-            return QueryBuilders.termQuery(key, value);
-        } else {
-            return QueryBuilders.matchPhrasePrefixQuery(key, value);
-        }
-    }
-
-    //todo 基于mapping元数据进行判断
-    private static boolean isKeywordType(String key) {
-        if ("app".equalsIgnoreCase(key) || "appName".equalsIgnoreCase(key) ||
-            "code".equalsIgnoreCase(key) || "level".equalsIgnoreCase(key) || "logLevel".equalsIgnoreCase(key) ||
-            "threadName".equalsIgnoreCase(key) || "className".equalsIgnoreCase(key)) {
-            return true;
-        }
-
-        return false;
+        return QueryBuilders.matchPhrasePrefixQuery(key, value);
     }
 
     public static class QueryBuildChain {
@@ -226,7 +251,7 @@ public class SearchLog {
             return querytext.substring(1).indexOf("\"") + 2;
         }
         // 多条件查询
-        int endIndex = querytext.indexOf(" and ");
+        int endIndex = querytext.indexOf("and ");
         if (endIndex == -1 || querytext.substring(0, endIndex).contains("not ")) {
             endIndex = querytext.indexOf("not ");
         }
@@ -242,30 +267,6 @@ public class SearchLog {
             }
         }
         return endIndex;
-    }
-
-    public static void main(String[] args) throws Exception {
-        String s = "\"aa\"";
-        String s1 = "\"aa\" And \"bb5\"";
-        String s2 = "a:1 and b:2 and c:3";
-        String s3 = "aa:\"11 and 22\"";
-        String s4 = "a:1 and b:2 Not c:3 AND d:4";
-        String s5 = "NOT a:1";
-        String s6 = "a:1:3";
-        String s7 = "";
-
-        List<String> keyList = new ArrayList<>();
-        keyList.add("a");
-        keyList.add("b");
-        BoolQueryBuilder sqb = buildTextQuery(s, keyList);
-        BoolQueryBuilder s1qb = buildTextQuery(s1, keyList);
-        BoolQueryBuilder s2qb = buildTextQuery(s2, keyList);
-        BoolQueryBuilder s3qb = buildTextQuery(s3, keyList);
-        BoolQueryBuilder s4qb = buildTextQuery(s4, keyList);
-        BoolQueryBuilder s5qb = buildTextQuery(s5, keyList);
-        BoolQueryBuilder s6qb = buildTextQuery(s6, keyList);
-        BoolQueryBuilder s7qb = buildTextQuery(s7, keyList);
-        System.out.println("end");
     }
 
     public boolean isLegalParam(LogContextQuery param) {

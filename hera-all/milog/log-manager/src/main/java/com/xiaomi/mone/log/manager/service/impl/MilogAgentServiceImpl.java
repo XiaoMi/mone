@@ -11,6 +11,7 @@ import com.xiaomi.mone.log.api.enums.LogTypeEnum;
 import com.xiaomi.mone.log.api.enums.MiddlewareEnum;
 import com.xiaomi.mone.log.api.enums.OperateEnum;
 import com.xiaomi.mone.log.api.model.meta.*;
+import com.xiaomi.mone.log.api.model.vo.AgentLogProcessDTO;
 import com.xiaomi.mone.log.api.service.PublishConfigService;
 import com.xiaomi.mone.log.common.Constant;
 import com.xiaomi.mone.log.common.Result;
@@ -18,7 +19,6 @@ import com.xiaomi.mone.log.manager.common.Utils;
 import com.xiaomi.mone.log.manager.dao.*;
 import com.xiaomi.mone.log.manager.domain.LogProcess;
 import com.xiaomi.mone.log.manager.model.bo.MilogAgentIpParam;
-import com.xiaomi.mone.log.manager.model.dto.AgentLogProcessDTO;
 import com.xiaomi.mone.log.manager.model.dto.MotorRoomDTO;
 import com.xiaomi.mone.log.manager.model.dto.PodDTO;
 import com.xiaomi.mone.log.manager.model.pojo.*;
@@ -68,7 +68,7 @@ public class MilogAgentServiceImpl implements MilogAgentService {
     private MilogLogTailDao milogLogtailDao;
 
     @Resource
-    private LogstoreDao logstoreDao;
+    private MilogLogstoreDao logstoreDao;
 
     private Gson gson = Constant.GSON;
 

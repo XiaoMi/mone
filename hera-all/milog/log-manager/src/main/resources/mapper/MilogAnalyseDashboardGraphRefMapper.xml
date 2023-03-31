@@ -17,7 +17,7 @@
           AND graph_id = #{graphId}
     </delete>
 
-    <select id="getByDashboardId" resultType="com.xiaomi.mone.log.manager.model.pojo.LogDashboardGraphRefDO">
+    <select id="getByDashboardId" resultType="com.xiaomi.mone.log.manager.model.pojo.MilogAnalyseDashboardGraphRefDO">
         SELECT
             *
         FROM
@@ -34,7 +34,7 @@
             dashboard_id = #{dashboardId}
           AND graph_id = #{graphId}
     </select>
-    <select id="getRef" resultType="com.xiaomi.mone.log.manager.model.pojo.LogDashboardGraphRefDO">
+    <select id="getRef" resultType="com.xiaomi.mone.log.manager.model.pojo.MilogAnalyseDashboardGraphRefDO">
         SELECT
             *
         FROM

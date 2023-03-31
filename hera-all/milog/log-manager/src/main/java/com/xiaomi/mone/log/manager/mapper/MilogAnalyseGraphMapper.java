@@ -1,9 +1,9 @@
 package com.xiaomi.mone.log.manager.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.xiaomi.mone.log.manager.model.dto.DashboardGraphDTO;
 import com.xiaomi.mone.log.manager.model.dto.GraphDTO;
-import com.xiaomi.mone.log.manager.model.pojo.LogAnalyseGraphDO;
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.xiaomi.mone.log.manager.model.pojo.MilogAnalyseGraphDO;
 import com.xiaomi.mone.log.manager.model.vo.GraphQuery;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -12,14 +12,14 @@ import java.util.List;
 
 /**
  * <p>
- *  Mapper 接口
+ * Mapper 接口
  * </p>
  *
  * @author wanghaoyang
  * @since 2022-08-18
  */
 @Mapper
-public interface MilogAnalyseGraphMapper extends BaseMapper<LogAnalyseGraphDO> {
+public interface MilogAnalyseGraphMapper extends BaseMapper<MilogAnalyseGraphDO> {
 
     List<DashboardGraphDTO> getDashboardGraph(@Param(value = "dashboardId") Long dashboardId);
 

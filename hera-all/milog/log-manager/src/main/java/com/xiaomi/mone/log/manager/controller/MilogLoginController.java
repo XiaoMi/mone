@@ -1,6 +1,7 @@
 package com.xiaomi.mone.log.manager.controller;
 
 import cn.hutool.core.bean.BeanUtil;
+import com.xiaomi.mone.log.common.Config;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
 import com.xiaomi.mone.log.manager.model.vo.MilogUserVo;
@@ -43,6 +44,7 @@ public class MilogLoginController {
     @RequestMapping(path = "/milog/user/logout", method = "get")
     public Result<String> logOut(MvcContext mvcContext) {
         mvcContext.session().invalidate();
-        return Result.success("success");
+        MoneUserContext.clear();
+        return Result.success(Config.ins().get("tpc_logout_url", ""));
     }
 }
