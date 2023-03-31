@@ -86,6 +86,7 @@ public class CallMethodProcessor implements UdsProcessor<UdsCommand, UdsCommand>
             mr.setParamTypes(types);
             mr.setParams(paramArray);
             mr.setByteParams(req.getByteParams());
+            mr.setAttachments(req.getAttachments());
             beforeCallMethod(req, mr);
             return ReflectUtils.invokeMethod(mr, obj, (paramTypes, params) -> CovertUtils.convert(req.getSerializeType(), paramTypes, params), invokeMethodCallback);
         }, this.classLoaderFunction, response, req, (res) -> afterCallMethod(res));

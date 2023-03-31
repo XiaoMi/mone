@@ -16,6 +16,7 @@
 
 package com.xiaomi.youpin.docean.common;
 
+import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -34,6 +35,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
@@ -130,10 +132,10 @@ public abstract class ReflectUtils {
 
     public static Object invokeFastMethod(Object obj, Class clazz, String[] types, String methodName, Object[] params) {
         InvokeMethodCallback callback = new DefaultInvokeMethodCallback();
-        return invokeFastMethod0(obj, clazz, types, methodName, params, callback);
+        return invokeFastMethod0(Maps.newHashMap(), obj, clazz, types, methodName, params, callback);
     }
 
-    public static Object invokeFastMethod0(Object obj, Class clazz, String[] types, String methodName, Object[] params, InvokeMethodCallback callback) {
+    public static Object invokeFastMethod0(Map<String, String> attachments, Object obj, Class clazz, String[] types, String methodName, Object[] params, InvokeMethodCallback callback) {
         try {
             String key = clazz + "_" + methodName;
             if (null != types && types.length > 0) {
@@ -141,9 +143,9 @@ public abstract class ReflectUtils {
             }
             FastMethod m = methodCache.get(key);
             if (null != m) {
-                callback.before(params);
+                callback.before(attachments, params);
                 Object res = m.invoke(obj, params);
-                callback.after(res);
+                callback.after(attachments, res);
                 return res;
             }
             Optional<Method> optional = getMethod2(clazz, types, methodName);
@@ -151,9 +153,9 @@ public abstract class ReflectUtils {
                 FastClass fastClass = FastClass.create(clazz);
                 FastMethod method = fastClass.getMethod(optional.get());
                 methodCache.putIfAbsent(key, method);
-                callback.before(params);
+                callback.before(attachments, params);
                 Object res = method.invoke(obj, params);
-                callback.after(res);
+                callback.after(attachments, res);
                 return res;
             }
             throw new RuntimeException("function not found:" + methodName);
@@ -338,14 +340,14 @@ public abstract class ReflectUtils {
     }
 
     public static Object invokeMethod(MethodReq req, Object obj, BiFunction<Class[], byte[][], Object[]> fun, InvokeMethodCallback callback) {
-        return invokeMethod0(req.getMethodName(), obj, req.getParamTypes(), req.getByteParams(), fun, true, callback);
+        return invokeMethod0(req.getAttachments(), req.getMethodName(), obj, req.getParamTypes(), req.getByteParams(), fun, true, callback);
     }
 
     public static Object invokeMethod(String methodName, Object obj, String[] types, byte[][] paramArray, BiFunction<Class[], byte[][], Object[]> fun, boolean fast) {
-        return invokeMethod0(methodName, obj, types, paramArray, fun, fast, null);
+        return invokeMethod0(Maps.newHashMap(), methodName, obj, types, paramArray, fun, fast, null);
     }
 
-    public static Object invokeMethod0(String methodName, Object obj, String[] types, byte[][] paramArray, BiFunction<Class[], byte[][], Object[]> fun, boolean fast, InvokeMethodCallback callback) {
+    public static Object invokeMethod0(Map<String, String> attachments, String methodName, Object obj, String[] types, byte[][] paramArray, BiFunction<Class[], byte[][], Object[]> fun, boolean fast, InvokeMethodCallback callback) {
         if (null == callback) {
             callback = new DefaultInvokeMethodCallback();
         }
@@ -381,18 +383,18 @@ public abstract class ReflectUtils {
                 }).toArray(Class[]::new);
                 Object[] params = fun.apply(clazzArray, paramArray);
                 if (fast) {
-                    return invokeFastMethod0(obj, obj.getClass(), types, methodName, params, callback);
+                    return invokeFastMethod0(attachments, obj, obj.getClass(), types, methodName, params, callback);
                 }
                 Method method = obj.getClass().getMethod(methodName, clazzArray);
-                callback.before(params);
+                callback.before(attachments, params);
                 Object res = method.invoke(obj, params);
-                callback.after(res);
+                callback.after(attachments, res);
                 return res;
             } else {
                 Method method = obj.getClass().getMethod(methodName);
-                callback.before(null);
+                callback.before(attachments, null);
                 Object res = method.invoke(obj);
-                callback.after(res);
+                callback.after(attachments, res);
                 return res;
             }
         } catch (Throwable ex) {
