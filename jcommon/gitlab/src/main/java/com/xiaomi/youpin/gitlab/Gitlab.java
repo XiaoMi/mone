@@ -23,6 +23,7 @@ import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import com.xiaomi.data.push.client.HttpClientV2;
 import com.xiaomi.data.push.client.HttpClientV6;
+import com.xiaomi.data.push.client.bo.HttpResult;
 import com.xiaomi.youpin.gitlab.bo.*;
 import com.xiaomi.youpin.gitlab.exception.InvalidTokenException;
 import com.xiaomi.youpin.gitlab.exception.NotFoundException;
@@ -958,7 +959,7 @@ public class Gitlab {
             Map<String, String> headers = new HashMap<>();
             headers.put("Content-Type", "application/json");
             headers.put("PRIVATE-TOKEN", token);
-            HttpClientV6.HttpResult response = HttpClientV6.httpPost(url, headers, body, "UTF-8", 10000);
+            HttpResult response = HttpClientV6.httpPost(url, headers, body, "UTF-8", 10000);
             return new BaseResponse(response.code, response.content);
         } catch (Exception e) {
             log.error("createBranch {}", e.getMessage());
@@ -974,7 +975,7 @@ public class Gitlab {
         try {
             Map<String, String> headers = new HashMap<>();
             headers.put("PRIVATE-TOKEN", token);
-            HttpClientV6.HttpResult response = HttpClientV6.httpDelete(url, headers, Maps.newHashMap(), "UTF-8", 10000);
+            HttpResult response = HttpClientV6.httpDelete(url, headers, Maps.newHashMap(), "UTF-8", 10000);
             return new BaseResponse(response.code, response.content);
         } catch (Exception e) {
             log.error("deleteBranch {}" , e.getMessage());
@@ -994,7 +995,7 @@ public class Gitlab {
             Map<String, String> headers = new HashMap<>();
             headers.put("Content-Type", "application/json");
             headers.put("PRIVATE-TOKEN", token);
-            HttpClientV6.HttpResult response = HttpClientV6.httpPost(url, headers, body, "UTF-8", 10000);
+            HttpResult response = HttpClientV6.httpPost(url, headers, body, "UTF-8", 10000);
             return new BaseResponse(response.code, response.content);
         } catch (Exception e) {
             log.error("createMerge {}" , e.getMessage());
@@ -1012,7 +1013,7 @@ public class Gitlab {
             Map<String, String> headers = new HashMap<>();
             headers.put("Content-Type", "application/json");
             headers.put("PRIVATE-TOKEN", token);
-            HttpClientV6.HttpResult response = HttpClientV6.httpPut(url, headers, "", "UTF-8", 10000);
+            HttpResult response = HttpClientV6.httpPut(url, headers, "", "UTF-8", 10000);
             return new BaseResponse(response.code, response.content);
         } catch (Exception e) {
             log.error("error acceptMerge{}", e.getMessage());
@@ -1030,7 +1031,7 @@ public class Gitlab {
             Map<String, String> headers = new HashMap<>();
             headers.put("Content-Type", "application/json");
             headers.put("PRIVATE-TOKEN", token);
-            HttpClientV6.HttpResult response = HttpClientV6.httpPost(url, headers, body, "UTF-8", 5000);
+            HttpResult response = HttpClientV6.httpPost(url, headers, body, "UTF-8", 5000);
             log.info("addHook rsp {} {}", response.code, response.content);
             return new Gson().fromJson(response.content, GitWebhook.class);
         } catch (Exception e) {
@@ -1049,7 +1050,7 @@ public class Gitlab {
             Map<String, String> headers = new HashMap<>();
             headers.put("Content-Type", "application/json");
             headers.put("PRIVATE-TOKEN", token);
-            HttpClientV6.HttpResult response = HttpClientV6.httpPut(url, headers, body, "UTF-8", 5000);
+            HttpResult response = HttpClientV6.httpPut(url, headers, body, "UTF-8", 5000);
             log.info("editHook rsp {} {}", response.code, response.content);
             return new Gson().fromJson(response.content, GitWebhook.class);
         } catch (Exception e) {
@@ -1067,7 +1068,7 @@ public class Gitlab {
             Map<String, String> headers = new HashMap<>();
             headers.put("Content-Type", "application/json");
             headers.put("PRIVATE-TOKEN", token);
-            HttpClientV6.HttpResult response = HttpClientV6.httpDelete(url, headers, Maps.newHashMap(), "UTF-8", 5000);
+            HttpResult response = HttpClientV6.httpDelete(url, headers, Maps.newHashMap(), "UTF-8", 5000);
             log.info("deleteHook rsp {} {}", response.code, response.content);
             return true;
         } catch (Exception e) {
