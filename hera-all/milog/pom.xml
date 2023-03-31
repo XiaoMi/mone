@@ -14,6 +14,7 @@
         <module>log-stream</module>
         <module>log-api</module>
         <module>log-common</module>
+        <module>log-agent-server</module>
     </modules>
 
     <properties>

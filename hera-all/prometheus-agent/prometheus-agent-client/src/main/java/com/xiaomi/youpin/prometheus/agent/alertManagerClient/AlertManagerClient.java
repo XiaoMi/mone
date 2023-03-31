@@ -1,5 +1,6 @@
 package com.xiaomi.youpin.prometheus.agent.alertManagerClient;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.xiaomi.youpin.prometheus.agent.Commons;
 import com.xiaomi.youpin.prometheus.agent.client.Client;
 import com.xiaomi.youpin.prometheus.agent.entity.RuleAlertEntity;
@@ -29,15 +30,15 @@ import static com.xiaomi.youpin.prometheus.agent.Commons.HTTP_POST;
 @Slf4j
 public class AlertManagerClient implements Client {
 
-    @Value("${job.alertManager.reloadAddr}")
+    @NacosValue(value = "${job.alertManager.reloadAddr}", autoRefreshed = true)
     private String reloadAddr;
 
-    @Value("${job.alertManager.filePath}")
+    @NacosValue(value = "${job.alertManager.filePath}", autoRefreshed = true)
     private String filePath;
 
     private String backFilePath;
 
-    @Value("${job.alertManager.enabled}")
+    @NacosValue(value = "${job.alertManager.enabled}", autoRefreshed = true)
     private String enabled;
 
     //第一次GetLocalConfigs后置位true
@@ -104,6 +105,11 @@ public class AlertManagerClient implements Client {
             }
             log.info("AlertManagerClient start CompareAndReload");
             AlertManagerConfig ruleAlertConfig = getRuleAlertConfig(filePath);
+            if (ruleAlertConfig == null) {
+                //如果配置出现问题，直接结束
+                log.error("AlertManagerConfig null and return");
+                return;
+            }
             log.info("ruleAlertConfig: {}", ruleAlertConfig);
             List<Group> group = new ArrayList<>();
             for (Map.Entry<String, List<Rule>> entry : localRuleList.entrySet()) {
@@ -155,7 +161,7 @@ public class AlertManagerClient implements Client {
         return annotationMap;
     }
 
-    private AlertManagerConfig getRuleAlertConfig(String path) {
+    private synchronized AlertManagerConfig getRuleAlertConfig(String path) {
         log.info("AlertManagerClient getRuleAlertConfig path : {}", path);
         String content = FileUtil.LoadFile(path);
         AlertManagerConfig alertManagerConfig = YamlUtil.toObject(content, AlertManagerConfig.class);

@@ -1,13 +1,19 @@
 package com.xiaomi.youpin.prometheus.agent.service;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.alibaba.nacos.api.exception.NacosException;
 import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.alibaba.nacos.api.naming.pojo.ListView;
 import com.google.common.base.Stopwatch;
 import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import com.xiaomi.data.push.nacos.NacosNaming;
 import com.xiaomi.youpin.prometheus.agent.domain.Ips;
+import io.kubernetes.client.openapi.ApiClient;
+import io.kubernetes.client.openapi.ApiException;
+import io.kubernetes.client.openapi.apis.CoreV1Api;
+import io.kubernetes.client.openapi.models.V1NodeAddress;
+import io.kubernetes.client.openapi.models.V1NodeList;
+import io.kubernetes.client.util.Config;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,13 +67,13 @@ public class PrometheusIpService {
     @Value("${server.type}")
     private String serverType;
 
-    @Value("${mione.k8s.node.port}")
+    @NacosValue(value = "${mione.k8s.node.port}", autoRefreshed = true)
     private String machinePort;
 
-    @Value("${mione.k8s.container.port}")
+    @NacosValue(value = "${mione.k8s.container.port}", autoRefreshed = true)
     private String containerPort;
 
-    @Value("${jaeger_query_token}")
+    @NacosValue(value = "${jaeger_query_token}")
     private String jaegerQueryToken;
 
     @PostConstruct
@@ -248,22 +254,31 @@ public class PrometheusIpService {
 
 
     public List<Ips> getK8sNodeIp(String type) {
-        String url = "";
-        if ("dev".equals(serverType) || "staging".equals(serverType) || "mistaging".equals(serverType)) {
-            url = ST_K8S_NODE;
-        } else if ("online".equals(serverType) || "mionline".equals(serverType)) {
-            url = ONLINE_K8S_NODE;
-        } else {
+
+        List<String> res = new ArrayList<>();
+        V1NodeList nodes;
+        try {
+            ApiClient client = getClient();
+            if (client == null) {
+                return null;
+            }
+            nodes = new CoreV1Api(client).listNode(null, null, null, null, null, null, null, null, null);
+        } catch (ApiException e) {
+            log.error(e.getResponseBody());
             return null;
         }
-        String res = innerRequest(null, url, null, "GET");
-        JsonObject jsonObject = gson.fromJson(res, JsonObject.class);
-        int code = 0;
-        code = jsonObject.get("code").getAsInt();
-        if (code != 0) {
-            log.error("get feishu message error, code is {}", code);
-            return null;
-        }
+        nodes.getItems().forEach(it -> {
+            String info = it.getMetadata().getName();
+            for (V1NodeAddress n : it.getStatus().getAddresses()) {
+                if ("ExternalIP".equals(n.getType())) {
+                    info = n.getAddress();
+                } else if ("InternalIP".equals(n.getType())) {
+                    info = n.getAddress();
+                }
+            }
+            res.add(info);
+        });
+        log.info("getK8sNodeIp k8s node count:{}",res.size());
         List<String> result = new ArrayList<>();
         String port = "";
         if (type.equals("node")) {
@@ -274,9 +289,9 @@ public class PrometheusIpService {
             return null;
         }
         String finalPort = port;
-        jsonObject.get("data").getAsJsonArray().forEach(
+        res.forEach(
                 item -> {
-                    result.add(item.getAsString() + ":" + finalPort);
+                    result.add(item + ":" + finalPort);
                 });
         List<Ips> defaultResult = new ArrayList<>();
         Ips ips2 = new Ips();
@@ -326,5 +341,13 @@ public class PrometheusIpService {
         }
     }
 
+    private synchronized ApiClient getClient() {
+        try {
+            return Config.defaultClient();
+        } catch (IOException e) {
+            log.error("getClient error : {}",e.getMessage());
+            return null;
+        }
+    }
 
 }

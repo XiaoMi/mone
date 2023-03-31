@@ -51,11 +51,21 @@ public class RuleAlertDao extends BaseDao {
         return dbRes;
     }
 
+    public RuleAlertEntity GetRuleAlertByAlertName(String name) {
+        SqlExpressionGroup sqlExpr = Cnd.cri().where().andEquals("name", name).andIsNull("deleted_time").andEquals("enabled", 1);
+        Cnd cnd = Cnd.where(sqlExpr);
+        RuleAlertEntity dbRes = dao.fetch(RuleAlertEntity.class, cnd);
+        return dbRes;
+    }
+
     public String[] GetRuleAlertAtPeople(String name) {
         SqlExpressionGroup sqlExpr = Cnd.cri().where().andEquals("name", name).andIsNull("deleted_time").andEquals("enabled", 1);
         Cnd cnd = Cnd.where(sqlExpr);
         RuleAlertEntity dbRes = dao.fetch(RuleAlertEntity.class, cnd);
-        String[] peoples = dbRes.getAlertMember().split(",");
+        if (dbRes == null) {
+            return null;
+        }
+        String[] peoples = dbRes.getAlertAtPeople().split(",");
         return peoples;
     }
 

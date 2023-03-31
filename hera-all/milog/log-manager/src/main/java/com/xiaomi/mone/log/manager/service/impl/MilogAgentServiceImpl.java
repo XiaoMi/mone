@@ -1,19 +1,17 @@
 package com.xiaomi.mone.log.manager.service.impl;
 
-import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.xiaomi.data.push.context.AgentContext;
 import com.xiaomi.data.push.rpc.RpcServer;
 import com.xiaomi.data.push.rpc.netty.AgentChannel;
-import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
 import com.xiaomi.mone.app.api.response.AppBaseInfo;
 import com.xiaomi.mone.log.api.enums.LogTypeEnum;
 import com.xiaomi.mone.log.api.enums.MiddlewareEnum;
 import com.xiaomi.mone.log.api.enums.OperateEnum;
 import com.xiaomi.mone.log.api.model.meta.*;
-import com.xiaomi.mone.log.api.model.vo.LogCmd;
+import com.xiaomi.mone.log.api.service.PublishConfigService;
 import com.xiaomi.mone.log.common.Constant;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.manager.common.Utils;
@@ -33,6 +31,7 @@ import com.xiaomi.mone.log.manager.service.path.LogPathMappingFactory;
 import com.xiaomi.mone.log.utils.NetUtil;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.common.NamedThreadFactory;
+import com.xiaomi.youpin.docean.plugin.dubbo.anno.Reference;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -44,6 +43,7 @@ import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static com.xiaomi.mone.log.common.Constant.SYMBOL_COLON;
@@ -85,18 +85,23 @@ public class MilogAgentServiceImpl implements MilogAgentService {
     @Resource
     private LogTailServiceImpl logTailService;
 
-    private static final ThreadPoolExecutor THREADPOOL_EXECUTOR;
+    @Reference(interfaceClass = PublishConfigService.class, group = "$dubbo.env.group", check = false, timeout = 14000)
+    private PublishConfigService publishConfigService;
+
+    private static final ThreadPoolExecutor THREAD_POOL_EXECUTOR;
 
     private static final Integer K8S_DEPLOYED = 5;
 
     private static final String IGNORE_APP_NAME = "milog-agent";
 
+    private static final AtomicInteger COUNT_INCR = new AtomicInteger(0);
+
     static {
-        THREADPOOL_EXECUTOR = new ThreadPoolExecutor(6, 20,
+        THREAD_POOL_EXECUTOR = new ThreadPoolExecutor(6, 20,
                 1, TimeUnit.MINUTES, new ArrayBlockingQueue<>(200),
                 new NamedThreadFactory("coll-base-data-start", true),
                 new ThreadPoolExecutor.DiscardOldestPolicy());
-        THREADPOOL_EXECUTOR.allowCoreThreadTimeOut(true);
+        THREAD_POOL_EXECUTOR.allowCoreThreadTimeOut(true);
     }
 
     @Override
@@ -140,7 +145,7 @@ public class MilogAgentServiceImpl implements MilogAgentService {
         logCollectMeta.setPodNames(podNames);
         logCollectMeta.setSingleMetaData(true);
         log.info("{},this k8sip config data:{}", agentIp, gson.toJson(logCollectMeta));
-        List<String> ipAddress = new ArrayList<>(getAgentChannelMap().keySet());
+        List<String> ipAddress = publishConfigService.getAllAgentList();
         log.info("agent ip list:{}", gson.toJson(ipAddress));
         //2.下发配置
         sengConfigToAgent(agentIp, logCollectMeta);
@@ -154,37 +159,13 @@ public class MilogAgentServiceImpl implements MilogAgentService {
      * @param agentIp
      */
     private void sengConfigToAgent(final String agentIp, LogCollectMeta logCollectMeta) {
+        if (CollectionUtils.isEmpty(logCollectMeta.getAppLogMetaList()) || logCollectMeta.getAppLogMetaList()
+                .stream().allMatch(appLogMeta -> CollectionUtils.isEmpty(appLogMeta.getLogPatternList()))) {
+            return;
+        }
         // 放在线程池中 执行
-        THREADPOOL_EXECUTOR.execute(() -> {
-            int count = 1;
-            while (count < 10) {
-                Map<String, AgentChannel> logAgentMap = getAgentChannelMap();
-                String agentCurrentIp = queryCurrentDockerAgentIP(agentIp, logAgentMap);
-                if (logAgentMap.containsKey(agentCurrentIp)) {
-                    String sendStr = gson.toJson(logCollectMeta);
-                    if (CollectionUtils.isNotEmpty(logCollectMeta.getAppLogMetaList())) {
-                        RemotingCommand req = RemotingCommand.createRequestCommand(LogCmd.logReq);
-                        req.setBody(sendStr.getBytes());
-                        log.info("发送配置：agent ip:{},配置信息:{}", agentCurrentIp, sendStr);
-                        Stopwatch started = Stopwatch.createStarted();
-                        RemotingCommand res = rpcServer.sendMessage(logAgentMap.get(agentCurrentIp), req, 10000);
-                        started.stop();
-                        String response = new String(res.getBody());
-                        log.info("配置发送成功---->{},时长：{}s,agentIp:{}", response, started.elapsed().getSeconds(), agentCurrentIp);
-                        if (Objects.equals(response, "ok")) {
-                            break;
-                        }
-                    }
-                } else {
-                    log.info("当前agent ip没有连接，ip:{},配置数据：{}", agentIp, gson.toJson(logCollectMeta));
-                }
-                //重试策略-重试10次，每次休眠5s
-                try {
-                    TimeUnit.SECONDS.sleep(5L);
-                } catch (final InterruptedException ignored) {
-                }
-                count++;
-            }
+        THREAD_POOL_EXECUTOR.execute(() -> {
+            publishConfigService.sengConfigToAgent(agentIp, logCollectMeta);
         });
     }
 
@@ -256,15 +237,10 @@ public class MilogAgentServiceImpl implements MilogAgentService {
     }
 
     private void printMangerInfo() {
-        List<String> remoteAddress = Lists.newArrayList();
-        List<String> ipAddress = Lists.newArrayList();
-        AgentContext.ins().map.entrySet().forEach(agentChannelEntry -> {
-                    String key = agentChannelEntry.getKey();
-                    remoteAddress.add(key);
-                    ipAddress.add(StringUtils.substringBefore(key, SYMBOL_COLON));
-                }
-        );
-        log.info("连接的agent机器远程地址集合为:{}", gson.toJson(remoteAddress));
+        List<String> remoteAddress = publishConfigService.getAllAgentList();
+        if (COUNT_INCR.getAndIncrement() % 200 == 0) {
+            log.info("连接的agent机器远程地址集合为:{}", gson.toJson(remoteAddress));
+        }
     }
 
     public String queryNodeIpByPodIp(String ip) {
@@ -510,6 +486,7 @@ public class MilogAgentServiceImpl implements MilogAgentService {
         logPattern.setLogPattern(milogLogtailDo.getLogPath());
         logPattern.setLogSplitExpress(milogLogtailDo.getLogSplitExpress());
         logPattern.setFilters(milogLogtailDo.getFilter());
+        logPattern.setFirstLineReg(milogLogtailDo.getFirstLineReg());
         if (null != milogLogstoreDO && null != milogLogstoreDO.getLogType()) {
             logPattern.setLogType(milogLogstoreDO.getLogType());
             if (LogTypeEnum.NGINX.getType().equals(milogLogstoreDO.getLogType())) {

@@ -24,6 +24,8 @@ import com.xiaomi.data.push.uds.context.CallContext;
 import com.xiaomi.data.push.uds.context.ContextHolder;
 import com.xiaomi.data.push.uds.po.UdsCommand;
 import com.xiaomi.data.push.uds.processor.UdsProcessor;
+import com.xiaomi.youpin.docean.common.DefaultInvokeMethodCallback;
+import com.xiaomi.youpin.docean.common.InvokeMethodCallback;
 import com.xiaomi.youpin.docean.common.MethodReq;
 import com.xiaomi.youpin.docean.common.ReflectUtils;
 import lombok.Setter;
@@ -46,6 +48,12 @@ public class CallMethodProcessor implements UdsProcessor<UdsCommand, UdsCommand>
 
     @Setter
     private Function<String, ClassLoader> classLoaderFunction;
+
+    /**
+     * 执行函数的钩子类
+     */
+    @Setter
+    private InvokeMethodCallback invokeMethodCallback = new DefaultInvokeMethodCallback();
 
     /**
      * 异常转换function
@@ -78,8 +86,9 @@ public class CallMethodProcessor implements UdsProcessor<UdsCommand, UdsCommand>
             mr.setParamTypes(types);
             mr.setParams(paramArray);
             mr.setByteParams(req.getByteParams());
+            mr.setAttachments(req.getAttachments());
             beforeCallMethod(req, mr);
-            return ReflectUtils.invokeMethod(mr, obj, (paramTypes, params) -> CovertUtils.convert(req.getSerializeType(), paramTypes, params));
+            return ReflectUtils.invokeMethod(mr, obj, (paramTypes, params) -> CovertUtils.convert(req.getSerializeType(), paramTypes, params), invokeMethodCallback);
         }, this.classLoaderFunction, response, req, (res) -> afterCallMethod(res));
         Send.sendResponse(req.getChannel(), response);
         return null;
