@@ -1,5 +1,9 @@
 package com.xiaomi.youpin.docean.common;
 
+import net.sf.cglib.reflect.FastMethod;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.Map;
 
 /**
@@ -27,5 +31,28 @@ public class DefaultInvokeMethodCallback implements InvokeMethodCallback {
     @Override
     public void after(Map<String, String> map, Object res) {
 
+    }
+
+    @Override
+    public Object invoke(Method method, Object obj, Object[] params) {
+        try {
+            if (method.getParameterTypes() == null || method.getParameterTypes().length < 1) {
+                return method.invoke(obj);
+            }
+            return method.invoke(obj, params);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public Object fastInvoke(FastMethod method, Object obj, Object[] params) {
+        try {
+            return method.invoke(obj, params);
+        } catch (InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

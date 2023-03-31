@@ -143,9 +143,7 @@ public abstract class ReflectUtils {
             }
             FastMethod m = methodCache.get(key);
             if (null != m) {
-                callback.before(attachments, params);
-                Object res = m.invoke(obj, params);
-                callback.after(attachments, res);
+                Object res = callback.fastInvoke(m, obj, params);
                 return res;
             }
             Optional<Method> optional = getMethod2(clazz, types, methodName);
@@ -153,9 +151,7 @@ public abstract class ReflectUtils {
                 FastClass fastClass = FastClass.create(clazz);
                 FastMethod method = fastClass.getMethod(optional.get());
                 methodCache.putIfAbsent(key, method);
-                callback.before(attachments, params);
-                Object res = method.invoke(obj, params);
-                callback.after(attachments, res);
+                Object res = callback.fastInvoke(method, obj, params);
                 return res;
             }
             throw new RuntimeException("function not found:" + methodName);
@@ -386,15 +382,11 @@ public abstract class ReflectUtils {
                     return invokeFastMethod0(attachments, obj, obj.getClass(), types, methodName, params, callback);
                 }
                 Method method = obj.getClass().getMethod(methodName, clazzArray);
-                callback.before(attachments, params);
-                Object res = method.invoke(obj, params);
-                callback.after(attachments, res);
+                Object res = callback.invoke(method, obj, params);
                 return res;
             } else {
                 Method method = obj.getClass().getMethod(methodName);
-                callback.before(attachments, null);
-                Object res = method.invoke(obj);
-                callback.after(attachments, res);
+                Object res = callback.invoke(method, obj, null);
                 return res;
             }
         } catch (Throwable ex) {

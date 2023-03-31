@@ -1,5 +1,8 @@
 package com.xiaomi.youpin.docean.common;
 
+import net.sf.cglib.reflect.FastMethod;
+
+import java.lang.reflect.Method;
 import java.util.Map;
 
 /**
@@ -16,5 +19,7 @@ public interface InvokeMethodCallback {
 
     void after(Map<String, String> map, Object res);
 
+    Object invoke(Method method, Object obj, Object[] params);
 
+    Object fastInvoke(FastMethod method, Object obj, Object[] params);
 }
