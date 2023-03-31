@@ -3,16 +3,21 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
+    <groupId>run.mone</groupId>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>mi-tpclogin-sdk</artifactId>
-    <groupId>run.mone</groupId>
     <version>1.0.0-SNAPSHOT</version>
-
     <dependencies>
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>5.2.0.RELEASE</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.28</version>
+            <version>2.0.3</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -35,14 +40,7 @@
         <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-lang3</artifactId>
-            <version>3.8.1</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.aspectj</groupId>
-            <artifactId>aspectjrt</artifactId>
-            <version>1.9.4</version>
-            <scope>provided</scope>
+            <version>3.12.0</version>
         </dependency>
         <dependency>
             <groupId>org.aspectj</groupId>
@@ -51,9 +49,15 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.dubbo</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>dubbo</artifactId>
-            <version>2.7.0</version>
+            <version>2.7.12-mone-v8-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <artifactId>docean</artifactId>
+            <groupId>run.mone</groupId>
+            <version>1.4-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
@@ -117,16 +121,17 @@
         </plugins>
     </build>
 
+
+
     <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
         <repository>
             <id>ossrh</id>
             <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
     </distributionManagement>
-
 
 </project>
