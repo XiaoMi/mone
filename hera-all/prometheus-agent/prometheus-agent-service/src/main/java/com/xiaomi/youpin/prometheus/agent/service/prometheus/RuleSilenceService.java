@@ -1,5 +1,6 @@
 package com.xiaomi.youpin.prometheus.agent.service.prometheus;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.gson.Gson;
 import com.xiaomi.youpin.prometheus.agent.Impl.RuleAlertDao;
 import com.xiaomi.youpin.prometheus.agent.enums.ErrorCode;
@@ -24,7 +25,7 @@ public class RuleSilenceService {
     @Autowired
     RuleAlertDao ruleAlertDao;
 
-    @Value("${job.alertManager.Addr}")
+    @NacosValue(value = "${job.alertManager.Addr}", autoRefreshed = true)
     private String alertManagerAddr;
 
     private final Gson gson = new Gson();

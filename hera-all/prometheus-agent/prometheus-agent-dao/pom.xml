@@ -48,6 +48,11 @@
             <version>5.3.8</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>com.mchange</groupId>
+            <artifactId>c3p0</artifactId>
+            <version>0.9.5.2</version>
+        </dependency>
     </dependencies>
 
 

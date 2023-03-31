@@ -12,7 +12,7 @@ import javax.sql.DataSource;
 public class DaoConfig {
 
     @Bean
-    public Dao dao(@Qualifier("dataSource") DataSource masterDataSource) {
+    public Dao dao(@Qualifier("masterDataSource") DataSource masterDataSource) {
         NutDao dao = new NutDao(masterDataSource);
         return dao;
     }
