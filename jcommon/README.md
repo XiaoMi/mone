@@ -8,3 +8,38 @@
 + mifaas mainly depends on rcurve+docean+docean-plugin 
 + 支持Hera(可观测系统) Odin(Mesh系统) Tesla(网关) 等项目
 + Support for projects such as Hera (Observable System), Odin (Mesh System), Tesla (Gateway), etc.
++ 推荐maven设置(主要是国内用阿里的源)
+```
+<settings>
+
+    <interactiveMode>false</interactiveMode>
+
+   <mirrors>
+        <mirror>
+            <id>alimaven</id>
+            <name>aliyun maven</name>
+            <url>http://maven.aliyun.com/nexus/content/groups/public/</url>
+            <mirrorOf>central</mirrorOf>
+        </mirror>
+    </mirrors>
+
+
+    <profiles>
+        <profile>
+            <repositories>
+                <repository>
+                    <snapshots />
+                    <id>ossrh</id>
+                    <name>ossrh-snapshot</name>
+                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+                </repository>
+            </repositories>
+            <id>artifactory</id>
+        </profile>
+    </profiles>
+    <activeProfiles>
+        <activeProfile>artifactory</activeProfile>
+    </activeProfiles>
+    <proxies/>
+</settings>
+```

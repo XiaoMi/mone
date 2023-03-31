@@ -46,7 +46,7 @@
         <dependency>
             <groupId>org.nutz</groupId>
             <artifactId>nutz</artifactId>
-            <version>1.r.68-youpin-SNAPSHOT</version>
+            <version>1.r.67</version>
         </dependency>
 
         <dependency>
