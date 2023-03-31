@@ -1,9 +1,11 @@
 package com.xiaomi.youpin.prometheus.agent.service.prometheus;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.xiaomi.youpin.feishu.FeiShu;
 import com.xiaomi.youpin.prometheus.agent.Commons;
 import com.xiaomi.youpin.prometheus.agent.Impl.RuleAlertDao;
 import com.xiaomi.youpin.prometheus.agent.entity.RuleAlertEntity;
@@ -11,13 +13,23 @@ import com.xiaomi.youpin.prometheus.agent.enums.RuleAlertStatusEnum;
 import com.xiaomi.youpin.prometheus.agent.param.alert.RuleAlertParam;
 import com.xiaomi.youpin.prometheus.agent.result.Result;
 import com.xiaomi.youpin.prometheus.agent.enums.ErrorCode;
+import com.xiaomi.youpin.prometheus.agent.result.alertManager.AlertManagerFireResult;
+import com.xiaomi.youpin.prometheus.agent.result.alertManager.Alerts;
+import com.xiaomi.youpin.prometheus.agent.result.alertManager.GroupLabels;
+import com.xiaomi.youpin.prometheus.agent.service.FeishuService;
+import com.xiaomi.youpin.prometheus.agent.util.DateUtil;
+import com.xiaomi.youpin.prometheus.agent.util.FreeMarkerUtil;
 import com.xiaomi.youpin.prometheus.agent.vo.PageDataVo;
+import freemarker.template.TemplateException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.nutz.lang.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +38,14 @@ import java.util.Map;
 public class RuleAlertService {
     @Autowired
     RuleAlertDao dao;
+
+    @Autowired
+    private FeishuService feishuService;
+
+    @NacosValue(value = "${hera.alertmanager.url}", autoRefreshed = true)
+    private String silenceUrl;
+    @NacosValue(value = "${hera.alert.type}", autoRefreshed = true)
+    private String alertTYPE = "feishu";
 
     public static final Gson gson = new Gson();
 
@@ -36,7 +56,7 @@ public class RuleAlertService {
                 param.setPromCluster(Commons.DEFAULT_ALERT_PROM_CLUSTER);
             }
             RuleAlertEntity ruleAlertEntity = new RuleAlertEntity();
-            ruleAlertEntity.setName(param.getAlert());
+            ruleAlertEntity.setName(param.getAlert() + "-" + param.getCname());
             ruleAlertEntity.setCname(param.getCname());
             ruleAlertEntity.setExpr(param.getExpr());
             ruleAlertEntity.setLabels(transLabel2String(param.getLabels()));
@@ -45,17 +65,20 @@ public class RuleAlertService {
             ruleAlertEntity.setEnv(Strings.join(",", param.getEnv()));
             ruleAlertEntity.setEnabled(param.getEnabled() == null ? 1 : param.getEnabled());
             ruleAlertEntity.setPriority(transPriority2Integer(param.getPriority()));
-            ruleAlertEntity.setCreatedBy("xxx");  //TODO: 以后改造成真实用户
+            ruleAlertEntity.setCreatedBy(String.join(",", param.getAlert_member()));
             ruleAlertEntity.setCreatedTime(new Date());
             ruleAlertEntity.setUpdatedTime(new Date());
             ruleAlertEntity.setDeletedBy("");
             ruleAlertEntity.setPromCluster(param.getPromCluster());
             ruleAlertEntity.setStatus(RuleAlertStatusEnum.PENDING.getDesc());
             ruleAlertEntity.setType("0");
-            ruleAlertEntity.setAlertMember(Strings.join(",", param.getAlert_member()));
+            if (param.getAlert_member() != null) {
+                ruleAlertEntity.setAlertMember(Strings.join(",", param.getAlert_member()));
+            }
             ruleAlertEntity.setAlertAtPeople(Strings.join(",", param.getAlert_at_people()));
             ruleAlertEntity.setAlert_group(param.getGroup() == null ? "example" : param.getGroup());
 
+            log.info("RuleAlertService.CreateRuleAlert ruleAlertEntity:{}", gson.toJson(ruleAlertEntity));
             Long id = dao.CreateRuleAlert(ruleAlertEntity);
             log.info("RuleAlertService.CreateRuleAlert  res : {}", id);
             return Result.success(id);
@@ -95,6 +118,9 @@ public class RuleAlertService {
             }
             if (param.getAlert_member() != null) {
                 data.setAlertMember(Strings.join(",", param.getAlert_member()));
+            }
+            if (param.getAlert_at_people() != null) {
+                data.setAlertAtPeople(Strings.join(",", param.getAlert_at_people()));
             }
             data.setUpdatedTime(new Date());
 
@@ -157,29 +183,72 @@ public class RuleAlertService {
         }
     }
 
+    //TODO:通过不同模板 创建不同飞书卡片
+    //TODO:通过不同type，构造飞书、邮件等报警触达
     public Result SendAlert(String body) {
         JsonObject jsonObject = gson.fromJson(body, JsonObject.class);
-        JsonArray alerts = jsonObject.get("alerts").getAsJsonArray();
-        JsonObject groupLabels = jsonObject.get("groupLabels").getAsJsonObject();
-        String alertName = groupLabels.get("alertname").getAsString();
+        log.info("SendAlert jsonObject:{}", gson.toJson(jsonObject));
+        AlertManagerFireResult fireResult = gson.fromJson(body, AlertManagerFireResult.class);
+        //分type构建报警触达
+        switch (alertTYPE) {
+            case "feishu":
+                feishuReach(fireResult);
+                break;
+            default:
+                feishuReach(fireResult);
+        }
+        return Result.success("发送告警");
+    }
+
+    //飞书触达方式
+    public void feishuReach(AlertManagerFireResult fireResult) {
+        List<Alerts> alerts = fireResult.getAlerts();
+        GroupLabels groupLabels = fireResult.getGroupLabels();
+        String alertName = groupLabels.getAlertname();
         log.info("SendAlert begin send AlertName :{}", alertName);
-        String silenceUrl = jsonObject.get("externalURL").getAsString();
         //查表看负责人
         String[] principals = dao.GetRuleAlertAtPeople(alertName);
-        StringBuilder finalAlert = new StringBuilder();
-        finalAlert.append("报警名称: ").append(alertName).append("\r\n");
-        for (JsonElement element : alerts
-        ) {
-            //todo:整理数据
-            JsonObject singleAlert = element.getAsJsonObject();
-            // JsonObject annotations = singleAlert.get("annotations").getAsJsonObject();
-            // String summary = annotations.get("summary").getAsString();
-            // finalAlert.append(summary);
-            finalAlert.append("\r\n");
+        if (principals == null) {
+            log.info("SendAlert principals null alertName:{}", alertName);
+            return;
         }
-        finalAlert.append("报警静默请点击").append(silenceUrl).append("\r\n");
+        fireResult.getAlerts().stream().forEach(alert -> {
+            RuleAlertEntity ruleAlertEntity = dao.GetRuleAlertByAlertName(alert.getLabels().getAlertname());
+            int priority = ruleAlertEntity.getPriority();
+            Map<String, Object> map = new HashMap<>();
+            map.put("priority", "P" + String.valueOf(priority));
+            map.put("title", fireResult.getCommonAnnotations().getTitle());
+            map.put("alert_op", alert.getLabels().getAlert_op());
+            map.put("alert_value", alert.getLabels().getAlert_value());
+            map.put("application", alert.getLabels().getApplication());
+            //根据类别区分基础类、接口类、自定义类
+            String serviceName = fireResult.getCommonLabels().getServiceName();
+            try {
+                String content = "";
+                //获取priority
+                if (!StringUtils.isBlank(serviceName)) {
+                    //接口型
+                    map.put("ip", alert.getLabels().getServerIp());
+                    map.put("start_time", DateUtil.Time2YYMMdd(alert.getStartsAt().toString()));
+                    map.put("silence_url", silenceUrl);
+                    map.put("serviceName", alert.getLabels().getServiceName());
+                    map.put("methodName", alert.getLabels().getMethodName());
+                    content = FreeMarkerUtil.getContent("/feishu", "feishuInterfalCart.ftl", map);
+                } else {
+                    //基础型
+                    map.put("ip", alert.getLabels().getIp());
+                    map.put("start_time", DateUtil.Time2YYMMdd(alert.getStartsAt().toString()));
+                    map.put("silence_url", silenceUrl);
+                    map.put("pod", alert.getLabels().getPod());
+                    content = FreeMarkerUtil.getContent("/feishu", "feishuBasicCart.ftl", map);
+                }
+                feishuService.sendFeishu(content, principals, null, true);
+            } catch (Exception e) {
+                log.error("SendAlert.feishuReach error:{}", e);
+            }
+        });
+
         log.info("SendAlert success AlertName:{}", alertName);
-        return Result.success("发送告警：" + alertName);
     }
 
     //TODO: 提供给alertManagerClient使用的临时方法，以后需要重构

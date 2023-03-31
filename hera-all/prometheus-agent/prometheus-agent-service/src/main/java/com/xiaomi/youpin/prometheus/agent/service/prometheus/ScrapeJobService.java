@@ -3,6 +3,7 @@ package com.xiaomi.youpin.prometheus.agent.service.prometheus;
 import com.google.gson.Gson;
 import com.xiaomi.youpin.prometheus.agent.Impl.ScrapeConfigDao;
 import com.xiaomi.youpin.prometheus.agent.enums.ScrapeJobStatusEnum;
+import com.xiaomi.youpin.prometheus.agent.param.prometheus.Scrape_configs;
 import com.xiaomi.youpin.prometheus.agent.param.scrapeConfig.ScrapeConfigDetail;
 import com.xiaomi.youpin.prometheus.agent.result.Result;
 import com.xiaomi.youpin.prometheus.agent.entity.ScrapeConfigEntity;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 @Service
@@ -41,7 +43,7 @@ public class ScrapeJobService {
         scrapeConfigEntity.setStatus(ScrapeJobStatusEnum.PENDING.getDesc());
         Long id = dao.CreateScrapeConfig(scrapeConfigEntity);
         log.info("ScrapeJobService.CreateScrapeConfig  res : {}", id);
-        return Result.success(id);
+        return Result.success(String.valueOf(id));
     }
 
     public Result DeleteScrapeConfig(String id) {
@@ -55,6 +57,13 @@ public class ScrapeJobService {
         log.info("ScrapeJobService.GetScrapeConfig id : {}", id);
         ScrapeConfigEntity scrapeConfigEntity = dao.GetScrapeConfig(id);
         log.info("ScrapeJobService.GetScrapeConfig res : {}", gson.toJson(scrapeConfigEntity));
+        return Result.success(scrapeConfigEntity);
+    }
+
+    public Result GetScrapeConfigByName(String name) {
+        log.info("ScrapeJobService.GetScrapeConfigByName name : {}", name);
+        ScrapeConfigEntity scrapeConfigEntity = dao.GetScrapeConfigByName(name);
+        log.info("ScrapeJobService.GetScrapeConfigByName res : {}", gson.toJson(scrapeConfigEntity));
         return Result.success(scrapeConfigEntity);
     }
 
@@ -84,9 +93,30 @@ public class ScrapeJobService {
     }
 
     //TODO: 提供给prometheusClient使用的临时方法，以后需要重构
-    public List<ScrapeConfigEntity> getAllScrapeConfigList() {
-        List<ScrapeConfigEntity> scrapeConfigEntities = dao.GetAllScrapeConfigList();
+    public List<ScrapeConfigEntity> getAllScrapeConfigList(String status) {
+        List<ScrapeConfigEntity> scrapeConfigEntities = dao.GetAllScrapeConfigList(status);
         return scrapeConfigEntities;
+    }
+
+    public void setPendingScrapeConfig() {
+        List<ScrapeConfigEntity> allScrapeConfigList = getAllScrapeConfigList(ScrapeJobStatusEnum.SUCCESS.getDesc());
+        if (allScrapeConfigList.size() > 0) {
+            allScrapeConfigList.forEach(scrapeConfigEntity -> {
+                scrapeConfigEntity.setStatus(ScrapeJobStatusEnum.PENDING.getDesc());
+                dao.UpdateScrapeConfigList(String.valueOf(scrapeConfigEntity.getId()), scrapeConfigEntity);
+            });
+        }
+
+    }
+
+    public void updateAllScrapeConfigListStatus(String status, List<Scrape_configs> allConfigs) {
+        log.info("ScrapeJobService.updateScrapeConfigListStatus  status : {}", status);
+        AtomicInteger failNum = new AtomicInteger(allConfigs.size());
+        allConfigs.forEach(config -> {
+            int affectRow = dao.UpdateScrapeConfigListByJobName(config.getJob_name(), ScrapeJobStatusEnum.SUCCESS.getDesc());
+            failNum.addAndGet(-affectRow);
+        });
+        log.info("ScrapeJobService.updateScrapeConfigListStatus fail num:{}", failNum.get());
     }
 
     private ScrapeConfigParam beforeCreateJob(ScrapeConfigParam param) {

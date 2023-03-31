@@ -22,3 +22,4 @@ nohup*
 *.swp
 *.pyc
 .sbtserver*
+log.path_IS_UNDEFINED/

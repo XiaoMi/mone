@@ -37,6 +37,11 @@
             <artifactId>janino</artifactId>
             <version>3.0.8</version>
         </dependency>
+        <dependency>
+            <groupId>com.alibaba.spring</groupId>
+            <artifactId>spring-context-support</artifactId>
+            <version>1.0.11</version>
+        </dependency>
     </dependencies>
 
 
@@ -91,6 +96,18 @@
             <build>
                 <filters>
                     <filter>src/main/resources/config/opensource-outer.properties</filter>
+                </filters>
+            </build>
+        </profile>
+
+        <profile>
+            <id>dev</id>
+            <properties>
+                <profiles.active>dev</profiles.active>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/config/dev.properties</filter>
                 </filters>
             </build>
         </profile>

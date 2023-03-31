@@ -1,9 +1,11 @@
 package com.xiaomi.youpin.prometheus.agent.prometheusClient;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.gson.Gson;
 import com.xiaomi.youpin.prometheus.agent.Commons;
 import com.xiaomi.youpin.prometheus.agent.client.Client;
 import com.xiaomi.youpin.prometheus.agent.entity.ScrapeConfigEntity;
+import com.xiaomi.youpin.prometheus.agent.enums.ScrapeJobStatusEnum;
 import com.xiaomi.youpin.prometheus.agent.param.prometheus.PrometheusConfig;
 import com.xiaomi.youpin.prometheus.agent.param.prometheus.Scrape_configs;
 import com.xiaomi.youpin.prometheus.agent.param.scrapeConfig.ScrapeConfigDetail;
@@ -20,6 +22,7 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -31,18 +34,18 @@ import static com.xiaomi.youpin.prometheus.agent.Commons.HTTP_POST;
 @Service
 public class PrometheusClient implements Client {
 
-    @Value("${job.prometheus.healthAddr}")
+    @NacosValue(value = "${job.prometheus.healthAddr}", autoRefreshed = true)
     private String healthAddr;
 
-    @Value("${job.prometheus.reloadAddr}")
+    @NacosValue(value = "${job.prometheus.reloadAddr}", autoRefreshed = true)
     private String reloadAddr;
 
-    @Value("${job.prometheus.filePath}")
+    @NacosValue(value = "${job.prometheus.filePath}", autoRefreshed = true)
     private String filePath;
 
     private String backFilePath;
 
-    @Value("${job.prometheus.enabled}")
+    @NacosValue(value = "${job.prometheus.enabled}", autoRefreshed = true)
     private String enabled;
 
     //第一次GetLocalConfigs后置位true
@@ -63,6 +66,8 @@ public class PrometheusClient implements Client {
             String getHealthRes = Http.innerRequest("", healthAddr, HTTP_GET);
             log.info("PrometheusClient request health res :{}", getHealthRes);
             if (getHealthRes.equals("200")) {
+                //一期先不做状态管理，直接转为pending并reload
+                scrapeJobService.setPendingScrapeConfig();
                 GetLocalConfigs();
                 CompareAndReload();
             } else {
@@ -80,7 +85,7 @@ public class PrometheusClient implements Client {
         //30s一次从从db里获取所有pending的采集任务
         new ScheduledThreadPoolExecutor(1).scheduleAtFixedRate(() -> {
             log.info("PrometheusClient start GetLocalConfigs");
-            List<ScrapeConfigEntity> allScrapeConfigList = scrapeJobService.getAllScrapeConfigList();
+            List<ScrapeConfigEntity> allScrapeConfigList = scrapeJobService.getAllScrapeConfigList(ScrapeJobStatusEnum.PENDING.getDesc());
             //先清空上一次结果
             localConfigs.clear();
             allScrapeConfigList.forEach(item -> {
@@ -97,7 +102,7 @@ public class PrometheusClient implements Client {
                 sc.setHttp_sd_configs(detail.getHttp_sd_configs());
                 localConfigs.add(sc);
             });
-            log.info("PrometheusClient GetLocalConfigs done!");
+            log.info("PrometheusClient GetLocalConfigs done ,and jobNum :{}",localConfigs.size());
             firstInitSign = true;
         }, 0, 30, TimeUnit.SECONDS);
     }
@@ -107,7 +112,12 @@ public class PrometheusClient implements Client {
     public void CompareAndReload() {
 
         new ScheduledThreadPoolExecutor(1).scheduleAtFixedRate(() -> {
-            //如果有变动，调用reload接口，一期直接reload
+            if (localConfigs.size() <=0 ) {
+                //无pending的抓取job，直接返回
+                log.info("prometheus scrapeJob no need to reload");
+                return;
+            }
+            //如果有变动，调用reload接口
             //读取本地prometheus配置文件
             if (!firstInitSign) {
                 log.info("PrometheusClient CompareAndReload waiting..");
@@ -120,16 +130,24 @@ public class PrometheusClient implements Client {
                 log.error("prometheusConfig null and return");
                 return;
             }
+            //prometheus数据与待reload数据进行对比去重
+            List<Scrape_configs> promScrapeConfig = prometheusConfig.getScrape_configs();
+            HashSet<Scrape_configs> configSet = new HashSet<>(promScrapeConfig);
+            configSet.addAll(localConfigs);
+            ArrayList<Scrape_configs> configList = new ArrayList<>(configSet);
+            log.info("prometheusYMLJobNum: {},dbPEndingJobNum: {},after Deduplication JobNum: {}",promScrapeConfig.size(),localConfigs.size(),configSet.size());
             //替换scrapeConfig部分
-            prometheusConfig.setScrape_configs(localConfigs);
+            prometheusConfig.setScrape_configs(configList);
             //生成yaml 并覆盖配置
+            log.info("PrometheusClient write final config:{}",gson.toJson(prometheusConfig));
             writePrometheusConfig2Yaml(prometheusConfig);
             log.info("PrometheusClient request reload url :{}", reloadAddr);
             String getReloadRes = Http.innerRequest("", reloadAddr, HTTP_POST);
             log.info("PrometheusClient request reload res :{}", getReloadRes);
             if (getReloadRes.equals("200")) {
                 log.info("PrometheusClient request reload success");
-                //成功后，删除备份
+                //成功后，删除备份，并将数据写回数据库状态为success
+                scrapeJobService.updateAllScrapeConfigListStatus(ScrapeJobStatusEnum.SUCCESS.getDesc(),configList);
                 deleteBackConfig();
             } else {
                 //如果reload失败，用备份恢复配置
@@ -141,7 +159,7 @@ public class PrometheusClient implements Client {
 
     }
 
-    private PrometheusConfig getPrometheusConfig(String path) {
+    private synchronized PrometheusConfig getPrometheusConfig(String path) {
         log.info("PrometheusClient getPrometheusConfig path : {}", path);
         String content = FileUtil.LoadFile(path);
         PrometheusConfig prometheusConfig = YamlUtil.toObject(content, PrometheusConfig.class);

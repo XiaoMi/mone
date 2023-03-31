@@ -10,7 +10,7 @@ import java.io.Serializable;
 import java.util.Date;
 
 @ToString(callSuper = true)
-@Table("alert")
+@Table("prometheus_alert")
 @Data
 public class RuleAlertEntity implements Serializable {
     @Id
