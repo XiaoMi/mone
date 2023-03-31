@@ -150,12 +150,6 @@
             <version>1.4-SNAPSHOT</version>
         </dependency>
 
-        <dependency>
-            <groupId>io.github.tesla</groupId>
-            <artifactId>tesla-api</artifactId>
-            <version>1.0.4-SNAPSHOT</version>
-        </dependency>
-
 
     </dependencies>
 
