@@ -1,5 +1,6 @@
 package com.xiaomi.youpin.prometheus.agent.service.Impl;
 
+import afu.org.checkerframework.checker.oigj.qual.O;
 import com.xiaomi.youpin.prometheus.agent.Commons;
 import com.xiaomi.youpin.prometheus.agent.api.service.PrometheusScrapeJobService;
 import com.xiaomi.youpin.prometheus.agent.enums.ErrorCode;
@@ -32,6 +33,11 @@ public class PrometheusScrapeJobImpl implements PrometheusScrapeJobService {
     @Override
     public Result GetScrapeConfig(String id) {
         return scrapeJobService.GetScrapeConfig(id);
+    }
+
+    @Override
+    public Result GetScrapeConfigByName(String name) {
+        return scrapeJobService.GetScrapeConfigByName(name);
     }
 
     @Override

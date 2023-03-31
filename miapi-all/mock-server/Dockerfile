@@ -1,4 +1,4 @@
-FROM miserver
+FROM openjdk:8-jre
 MAINTAINER dongzhenxing@xiaomi.com
 RUN mkdir -p /home/work/mock-server/
 RUN mkdir -p /home/work/log/mock-server/

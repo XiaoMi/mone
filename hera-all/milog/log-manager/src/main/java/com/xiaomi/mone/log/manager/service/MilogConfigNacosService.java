@@ -8,6 +8,10 @@ package com.xiaomi.mone.log.manager.service;
  */
 public interface MilogConfigNacosService {
 
+    String STREAM_PREFIX = "stream";
+
+    String SPACE_PREFIX = "space";
+
     void publishStreamConfig(Long spaceId, Long tailId, Integer type, Integer projectType, String motorRoomEn);
 
     void publishNameSpaceConfig(String motorRoomEn, Long spaceId, Long storeId, Long tailId, Integer type, String changeType);

@@ -6,7 +6,7 @@ import org.apache.commons.lang3.StringUtils;
  * @author gaoxihui
  */
 public enum ResourceUsageMetrics {
-    dockerResourceUsage("dockerResourceUsage","docker资源利用率", "3",AlarmPresetMetrics.container_cpu_resource_use_rate, AlarmPresetMetrics.container_mem_resource_use_rate),
+//    dockerResourceUsage("dockerResourceUsage","docker资源利用率", "3",AlarmPresetMetrics.container_cpu_resource_use_rate, AlarmPresetMetrics.container_mem_resource_use_rate),
     k8sResourceUsage("k8sResourceUsage","k8s资源利用率", "4",AlarmPresetMetrics.k8s_cpu_resource_use_rate,AlarmPresetMetrics.k8s_mem_resource_use_rate,AlarmPresetMetrics.k8s_cpu_avg_use_rate),
     ;
     private String code;

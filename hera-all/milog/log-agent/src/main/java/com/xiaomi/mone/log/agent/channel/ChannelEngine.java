@@ -48,7 +48,7 @@ import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.plugin.config.Config;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
@@ -58,10 +58,13 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import static com.xiaomi.mone.log.common.Constant.GSON;
 
 /**
  * @author shanwb
@@ -86,7 +89,7 @@ public class ChannelEngine {
      */
     private List<ChannelDefine> channelDefineList = Lists.newArrayList();
 
-    private volatile List<ChannelService> channelServiceList;
+    private volatile List<ChannelService> channelServiceList = Lists.newArrayList();
     /**
      * 文件监听器
      */
@@ -94,7 +97,7 @@ public class ChannelEngine {
 
     private static byte[] lock = new byte[0];
 
-    private Gson gson = Constant.GSON;
+    private Gson gson = GSON;
 
     @Getter
     private volatile boolean initComplete;
@@ -194,8 +197,8 @@ public class ChannelEngine {
         if (CollectionUtils.isNotEmpty(failedChannelId)) {
             //处理从当前队列中摘掉
             for (Long delChannelId : failedChannelId) {
-                defineList.removeIf(channelDefine -> channelDefine.getChannelId().equals(delChannelId));
-                serviceList.removeIf(channelService -> ((ChannelServiceImpl) channelService).getChannelId().equals(delChannelId));
+                defineList.removeIf(channelDefine -> Objects.equals(delChannelId, channelDefine.getChannelId()));
+                serviceList.removeIf(channelService -> Objects.equals(delChannelId, ((ChannelServiceImpl) channelService).getChannelId()));
             }
         }
     }
@@ -226,6 +229,9 @@ public class ChannelEngine {
             FilterChain filterChain = new FilterChain();
             filterChain.loadFilterList(channelDefine.getFilters());
             filterChain.reset();
+            if (null == agentMemoryService) {
+                agentMemoryService = new AgentMemoryServiceImpl(com.xiaomi.mone.log.common.Config.ins().get("agent.memory.path", AgentMemoryService.DEFAULT_BASE_PATH));
+            }
             ChannelService channelService = new ChannelServiceImpl(exporter, agentMemoryService, channelDefine, filterChain);
             return channelService;
         } catch (Throwable e) {
@@ -266,7 +272,7 @@ public class ChannelEngine {
         }
     }
 
-    private MsgExporter exporterTrans(Output output) {
+    private MsgExporter exporterTrans(Output output) throws Exception {
         if (null == output) {
             return null;
         }
@@ -332,10 +338,18 @@ public class ChannelEngine {
                 }
                 // 删除的配置
                 deleteConfig(channelDefines, false);
+                // 处理opentelemetry日志监控多文件的问题
+                openlyLogMulFileMonitorClear();
             }
         } catch (Exception e) {
             log.error("refresh error,[config change],changed data:{},origin data:{}",
                     gson.toJson(channelDefines), gson.toJson(channelDefineList), e);
+        }
+    }
+
+    private void openlyLogMulFileMonitorClear() {
+        for (ChannelService channelService : this.channelServiceList) {
+            channelService.delayDeletionFinishedFile();
         }
     }
 
@@ -350,12 +364,20 @@ public class ChannelEngine {
         if (CollectionUtils.isEmpty(filePrefixList)) {
             return;
         }
-
-        for (ChannelService c : channelServiceList) {
-            try {
-                c.stopFile(filePrefixList);
-            } catch (Exception e) {
-                log.warn("stopFile exception", e);
+        if (CollectionUtils.isNotEmpty(channelServiceList)) {
+            for (ChannelService c : channelServiceList) {
+                CompletableFuture.runAsync(() -> {
+                    try {
+                        TimeUnit.MINUTES.sleep(6L);
+                    } catch (InterruptedException e) {
+                        log.error("stopChannelFile TimeUnit.MINUTES.sleep error,instanceId:{}", c.instanceId(), e);
+                    }
+                    try {
+                        c.stopFile(filePrefixList);
+                    } catch (Exception e) {
+                        log.warn("stopFile exception", e);
+                    }
+                });
             }
         }
     }
@@ -395,7 +417,7 @@ public class ChannelEngine {
         List<ChannelDefine> channelDefinesIntersection = intersection(channelDefines, channelDefineList);
         if (CollectionUtils.isNotEmpty(channelDefinesIntersection)) {
             List<ChannelDefine> changedDefines = Lists.newArrayList();
-            log.info("have exist config:{}", new Gson().toJson(channelDefineList));
+            log.info("have exist config:{}", GSON.toJson(channelDefineList));
             Iterator<ChannelDefine> iterator = channelDefinesIntersection.iterator();
             while (iterator.hasNext()) {
                 ChannelDefine newChannelDefine = iterator.next();
@@ -410,12 +432,6 @@ public class ChannelEngine {
                     SimilarComparator inputSimilarComparator = new InputSimilarComparator(oldChannelDefine.getInput());
                     SimilarComparator outputSimilarComparator = new OutputSimilarComparator(oldChannelDefine.getOutput());
                     FilterSimilarComparator filterSimilarComparator = new FilterSimilarComparator(oldChannelDefine.getFilters());
-                    // 将opentelemetry的老topic替换成新的，为了平滑过渡，不用过渡配置
-                    TalosOutput talosOutput = (TalosOutput) newChannelDefine.getOutput();
-                    if (opentelemetryTopicOld.equals(talosOutput.getTopic())) {
-                        talosOutput.setTopic(opentelemetryTopicNew);
-//                        log.info("set topic:{},newChannelDefine:{}", opentelemetryTopicNew, gson.toJson(newChannelDefine));
-                    }
                     if (appSimilarComparator.compare(newChannelDefine.getAppId())
                             && inputSimilarComparator.compare(newChannelDefine.getInput())
                             && outputSimilarComparator.compare(newChannelDefine.getOutput())) {
@@ -468,8 +484,6 @@ public class ChannelEngine {
                             if (channelDefine.getChannelId().equals(channelId)) {
                                 //删除mq
                                 Output output = channelDefine.getOutput();
-                                if (output.getOutputType().equals(Output.OUTPUT_TALOS)) {
-                                }
                                 if (output.getOutputType().equals(Output.OUTPUT_ROCKETMQ)) {
                                     RmqOutput rmqOutput = (RmqOutput) output;
                                     String nameSrvAddr = rmqOutput.getClusterInfo();
@@ -503,7 +517,7 @@ public class ChannelEngine {
         }
         List<Long> sourceIds = source.stream().map(ChannelDefine::getChannelId).collect(Collectors.toList());
         return origin.stream().filter(channelDefine -> !sourceIds.contains(
-                channelDefine.getChannelId()) && OperateEnum.DELETE_OPERATE != channelDefine.getOperateEnum())
+                        channelDefine.getChannelId()) && OperateEnum.DELETE_OPERATE != channelDefine.getOperateEnum())
                 .collect(Collectors.toList());
     }
 
@@ -522,7 +536,7 @@ public class ChannelEngine {
         }
         List<Long> finalSourceIds = sourceIds;
         return origin.stream().filter(channelDefine -> finalSourceIds.contains(
-                channelDefine.getChannelId()) && OperateEnum.DELETE_OPERATE != channelDefine.getOperateEnum())
+                        channelDefine.getChannelId()) && OperateEnum.DELETE_OPERATE != channelDefine.getOperateEnum())
                 .collect(Collectors.toList());
     }
 
@@ -541,7 +555,7 @@ public class ChannelEngine {
                         failedChannelId.add(channelDefine.getChannelId());
                     }
                     return channelService;
-                }).filter(channelService -> null != channelService)
+                }).filter(Objects::nonNull)
                 .collect(Collectors.toList());
         deleteFailedChannel(failedChannelId, definesIncrement, channelServices);
         List<Long> successChannelIds = channelStart(channelServices);
@@ -571,7 +585,7 @@ public class ChannelEngine {
             UpdateLogProcessCmd processCmd = assembleParam(channelStateList);
             RpcClient rpcClient = Ioc.ins().getBean(RpcClient.class);
             RemotingCommand req = RemotingCommand.createRequestCommand(Constant.RPCCMD_AGENT_CODE);
-            req.setBody(new Gson().toJson(processCmd).getBytes());
+            req.setBody(GSON.toJson(processCmd).getBytes());
             rpcClient.sendMessage(req);
             log.debug("send collect progress,data:{}", gson.toJson(processCmd));
         });

@@ -34,6 +34,10 @@ public class ScrapeJobAdapt implements ApplicationContextAware, InitializingBean
         return scrapeJob.queryScrapeJob(jobId,identifyId, user);
     }
 
+    public Result queryScrapeJobByName(String name, String identifyId, String user) {
+        return scrapeJob.queryScrapeJobByName(name,identifyId, user);
+    }
+
     @Override
     public void afterPropertiesSet() throws Exception {
 

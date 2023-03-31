@@ -8,10 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -69,37 +66,15 @@ public class CustomLogParser implements LogParser {
                 ret.put(esKeyMap_MESSAGE, logData);
                 return ret;
             }
-            int startIndex = 0;
+            List<String> logDataArray = parseLogData(logData);
             for (int i = 0; i < logPerComments.size(); i++) {
-                String parsedData = "";
-                List<String> list = mapPattern.get(i);
-                if (StringUtils.isNotEmpty(list.get(0)) && StringUtils.isNotEmpty(list.get(1))) {
-                    parsedData = StringUtils.substringBetween(logData, list.get(0), list.get(1));
-                } else {
-                    parsedData = logData;
+                if (i >= logDataArray.size()) {
+                    ret.put(logPerComments.get(i), "");
+                    continue;
                 }
-                if (null == parsedData) {
-                    ret.put(logPerComments.get(i), logData);
-                    break;
-                }
-                if (parsedData.length() > MESSAGE_MAX_SIZE) {
-                    parsedData = StringUtils.substring(parsedData, 0, MESSAGE_MAX_SIZE);
-                }
-                ret.put(logPerComments.get(i), parsedData);
-                if (i == logPerComments.size() - 1) {
-                    break;
-                }
-                if (StringUtils.isNotEmpty(list.get(0)) && StringUtils.isNotEmpty(list.get(1))) {
-                    startIndex = list.get(0).length() + parsedData.length() + list.get(1).length();
-                } else {
-                    startIndex = 0;
-                }
-                logData = StringUtils.substring(logData, startIndex).trim();
+                ret.put(logPerComments.get(i), logDataArray.get(i));
             }
             if (ret.values().stream().map(String::valueOf).anyMatch(StringUtils::isEmpty)) {
-                if (originLog.length() > MESSAGE_MAX_SIZE) {
-                    originLog = StringUtils.substring(originLog, 0, MESSAGE_MAX_SIZE);
-                }
                 ret.put(esKeyMap_logSource, originLog);
             }
             /**
@@ -115,7 +90,43 @@ public class CustomLogParser implements LogParser {
         return ret;
     }
 
-    private void parsePatter(String pattern) {
+    /**
+     * 根据解析脚本解析出的日志内容数组
+     *
+     * @param logData
+     * @return
+     */
+    @Override
+    public List<String> parseLogData(String logData) throws Exception {
+        parsePatter(parserData.getParseScript());
+        List<String> parsedLogs = new ArrayList<>();
+        int startIndex = 0;
+        for (int i = 0; i < mapPattern.size(); i++) {
+            String parsedData = "";
+            List<String> list = mapPattern.get(i);
+            if (StringUtils.isNotEmpty(list.get(0)) && StringUtils.isNotEmpty(list.get(1))) {
+                parsedData = StringUtils.substringBetween(logData, list.get(0), list.get(1));
+            } else {
+                parsedData = logData;
+            }
+            if (null == parsedData) {
+                break;
+            }
+//            if (parsedData.length() > MESSAGE_MAX_SIZE) {
+//                parsedData = StringUtils.substring(parsedData, 0, MESSAGE_MAX_SIZE);
+//            }
+            parsedLogs.add(parsedData);
+            if (StringUtils.isNotEmpty(list.get(0)) && StringUtils.isNotEmpty(list.get(1))) {
+                startIndex = list.get(0).length() + parsedData.length() + list.get(1).length();
+            } else {
+                startIndex = 0;
+            }
+            logData = StringUtils.substring(logData, startIndex).trim();
+        }
+        return parsedLogs;
+    }
+
+    public void parsePatter(String pattern) {
         mapPattern = new HashMap<>();
         String[] split = StringUtils.split(pattern, "-");
         for (int i = 0; i < split.length; i++) {

@@ -376,6 +376,7 @@ public class AppAlarmStrategyDao {
         info.setStrategyDesc(strategy.getDesc());
         info.convertEnvList(strategy.getEnvs());
         info.setAlertMembers(StringUtils.isBlank(strategy.getAlertMembers()) ? null : Arrays.asList(strategy.getAlertMembers().split(",")));
+        info.setAtMembers(StringUtils.isBlank(strategy.getAtMembers()) ? null : Arrays.asList(strategy.getAtMembers().split(",")));
         return info;
     }
 

@@ -2,13 +2,12 @@ package com.xiaomi.mone.monitor.service;
 
 import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.app.api.service.HeraAppService;
-import com.xiaomi.mone.monitor.bo.AlarmStrategyInfo;
-import com.xiaomi.mone.monitor.bo.AppViewType;
-import com.xiaomi.mone.monitor.bo.PlatFormType;
-import com.xiaomi.mone.monitor.bo.RuleStatusType;
+import com.xiaomi.mone.monitor.bo.*;
 import com.xiaomi.mone.monitor.dao.*;
 import com.xiaomi.mone.monitor.dao.model.*;
 import com.xiaomi.mone.monitor.result.ErrorCode;
@@ -19,6 +18,8 @@ import com.xiaomi.mone.monitor.service.model.prometheus.AlarmRuleData;
 import com.xiaomi.mone.monitor.service.model.prometheus.Metric;
 import com.xiaomi.mone.monitor.service.prometheus.AlarmService;
 import com.xiaomi.mone.monitor.service.prometheus.PrometheusService;
+import com.xiaomi.mone.monitor.utils.FreeMarkerUtil;
+import freemarker.template.TemplateException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.Reference;
@@ -28,9 +29,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -60,6 +60,18 @@ public class AppMonitorService {
 
     @NacosValue(value = "${resource.use.rate.nodata.url}",autoRefreshed = true)
     private String resourceUseRateNoDataUrl;
+
+    @NacosValue(value = "${grafana.domain}",autoRefreshed = true)
+    private String grafanaDomain;
+
+    private String resourceUrl = "/d/hera-resource-utilization/hera-k8szi-yuan-shi-yong-lu-da-pan?orgId=1&var-application=";
+
+    private String dubboProviderOverview = "/d/hera-dubboprovider-overview/hera-dubboproviderzong-lan?orgId=1&kiosk&theme=light";
+    private String dubboConsumerOverview = "/d/hera-dubboconsumer-overview/hera-dubboconsumerzong-lan?orgId=1&kiosk&theme=light";
+    private String dubboProviderMarket = "/d/Hera-DubboProviderMarket/hera-dubboproviderda-pan?orgId=1&kiosk&theme=light";
+    private String dubboConsumerMarket = "/d/Hera-DubboConsumerMarket/hera-dubboconsumerda-pan?orgId=1&kiosk&theme=light";
+    private String httpOverview = "/d/Hera-HTTPServer-overview/hera-httpserver-zong-lan?orgId=1&kiosk&theme=light";
+    private String httpMarket = "/d/Hera-HTTPServerMarket/hera-httpserverda-pan?orgId=1&kiosk&theme=light";
 
     @Autowired
     private AppGrafanaMappingDao appGrafanaMappingDao;
@@ -96,6 +108,8 @@ public class AppMonitorService {
 
     @Autowired
     AlarmService alarmService;
+
+    private static final Gson gson = new Gson();
 
 
     @Reference(registry = "registryConfig",check = false, interfaceClass = HeraAppService.class,group="${dubbo.group.heraapp}")
@@ -369,49 +383,16 @@ public class AppMonitorService {
 
 
     public Result getResourceUsageUrl(Integer appId,String appName){
+        //TODO:改造成直接返回k8s的grafana链接
+        return Result.success("");
+    }
 
-        StringBuffer buffer = new StringBuffer();
-        buffer.append(resourceUseRateUrl);
-
-        String appGitName = getAppGitName(appId,appName);
-        if(StringUtils.isNotBlank(appGitName)){
-            appName = appGitName;
-        }
-
-        StringBuilder builder = new StringBuilder();
-
-        builder.append("sum(container_cpu_usage_seconds_total{system='mione'")
-                .append(",name=~'").append(appName.trim()).append("-202.*").append("'")
-                .append(",container_label_PROJECT_ID='").append(appId).append("'")
-                .append("}) by (name)");
-        Result<PageData> pageDataResult = prometheusService.queryByMetric(builder.toString());
-        if(pageDataResult.getCode() != ErrorCode.success.getCode() || pageDataResult.getData() == null){
-            log.error("queryByMetric error! projectId :{},projectName:{}",appId,appName);
-            return Result.success(resourceUseRateNoDataUrl);
-        }
-
-
-
-        List<Metric> list = (List<Metric>) pageDataResult.getData().getList();
-        log.info("getContainerInstance param : appId:{}, projectName:{},result:{}",appId,appName,list);
-
-        if(CollectionUtils.isEmpty(list)){
-            log.info("getContainerInstance no data found! param : appId:{}, projectName:{},result:{}",appId,appName,list);
-            return Result.success(resourceUseRateNoDataUrl);
-        }
-
-//        Metric metric = list.stream().sorted((a1, a2) -> a2.getName().compareTo(a1.getName())).collect(Collectors.toList()).get(0);
-
-        List<String> collect = list.stream().map(t -> t.getName()).collect(Collectors.toList());
-        if(CollectionUtils.isEmpty(collect)){
-            return Result.success(resourceUseRateNoDataUrl);
-        }
-        for(String name : collect){
-            buffer.append("&var-name=").append(name);
-        }
-
-
-        return Result.success(buffer.toString());
+    public Result getResourceUsageUrlForK8s(Integer appId,String appName) {
+        //返回grafana资源利用率图表的链接
+        String application = String.valueOf(appId) + "_" + StringUtils.replace(appName, "-", "_");
+        String url = grafanaDomain + resourceUrl + application;
+        log.info("getResourceUsageUrlForK8s url:{}", url);
+        return Result.success(url);
     }
 
 
@@ -895,6 +876,32 @@ public class AppMonitorService {
                 int update = appMonitorDao.update(app);
                 log.info("wash baseId for app:{},result:{}",app.toString(),update);
             }
+        }
+    }
+
+    public Result grafanaInterfaceList() {
+        Map<String,Object> map = new HashMap<>();
+        map.put("dubboProviderOverview",grafanaDomain + dubboProviderOverview);
+        map.put("dubboConsumerOverview",grafanaDomain + dubboConsumerOverview);
+        map.put("dubboProviderMarket",grafanaDomain + dubboProviderMarket);
+        map.put("dubboConsumerMarket",grafanaDomain + dubboConsumerMarket);
+        map.put("httpOverview",grafanaDomain + httpOverview);
+        map.put("httpMarket",grafanaDomain + httpMarket);
+        try {
+            log.info("grafanaInterfaceList map:{}",map);
+            String data = FreeMarkerUtil.getContentExceptJson("/heraGrafanaTemplate", "grafanaInterfaceList.ftl",map);
+            JsonArray jsonElements = gson.fromJson(data, JsonArray.class);
+            log.info(jsonElements.toString());
+            List<GrafanaInterfaceRes> resList = new ArrayList<>();
+            jsonElements.forEach(it -> {
+                GrafanaInterfaceRes grafanaInterfaceRes = gson.fromJson(it, GrafanaInterfaceRes.class);
+                resList.add(grafanaInterfaceRes);
+            });
+            log.info("grafanaInterfaceList success! data:{}",resList);
+            return Result.success(resList);
+        } catch (Exception e) {
+            log.error("grafanaInterfaceList error! {}",e);
+            return Result.fail(ErrorCode.unknownError);
         }
     }
 

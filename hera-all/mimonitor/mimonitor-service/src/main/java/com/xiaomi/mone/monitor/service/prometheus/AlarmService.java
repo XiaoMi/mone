@@ -94,14 +94,12 @@ public class AlarmService {
     private static final String metric_count_suffix = "_count";
 
 
-    @Value("${alarm.domain}")
-    private String alarmDomain;
     @NacosValue("${iam.ak:noconfig}")
     private String cloudAk;
     @NacosValue("${iam.sk:noconfig}")
     private String cloudSk;
 
-    @Value("${prometheus.alarm.env:staging}")
+    @NacosValue(value = "${prometheus.alarm.env:staging}",autoRefreshed = true)
     private String prometheusAlarmEnv;
 
     @NacosValue(value = "${rule.evaluation.interval:20}",autoRefreshed = true)
@@ -608,16 +606,7 @@ public class AlarmService {
         exprBuilder.append("{system='mione',");
         exprBuilder.append("image!='',");
 
-        if(isK8s){
-
-            exprBuilder.append("container=~'").append(".*-").append(projectName).append("-.*")
-                    .append("|").append(projectId).append("-0").append("")
-                    .append("|").append(projectId).append("-0-.*").append("'");
-        }else{
-
-            exprBuilder.append("container_label_PROJECT_ID='").append(projectId).append("',");
-            exprBuilder.append("name=~'").append(projectName).append("-20.*'");
-        }
+        exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
 
         exprBuilder.append("}");
         exprBuilder.append("[1m]");
@@ -647,17 +636,9 @@ public class AlarmService {
         exprBuilder.append("rate(container_cpu_user_seconds_total{system='mione',");
 
         exprBuilder.append("image!='',");
+        exprBuilder.append("system='mione',");
 
-        if(isK8s){
-
-            exprBuilder.append("container=~'").append(".*-").append(projectName).append("-.*")
-                    .append("|").append(projectId).append("-0").append("")
-                    .append("|").append(projectId).append("-0-.*").append("'");
-        }else{
-
-            exprBuilder.append("container_label_PROJECT_ID='").append(projectId).append("',");
-            exprBuilder.append("name=~'").append(projectName).append("-20.*'");
-        }
+        exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
 
         exprBuilder.append("}[1m]) * 100");
         exprBuilder.append(op).append(value);
@@ -671,34 +652,14 @@ public class AlarmService {
             projectName = appGitName;
         }
 
-        String jobLabelValue = prometheusAlarmEnv.equals("production") ? "mione-online-china.*|mione-online-youpin.*" : "mione-staging-china.*|mione-staging-youpin.*";
+//        String jobLabelValue = prometheusAlarmEnv.equals("production") ? "mione-online-china.*|mione-online-youpin.*" : "mione-staging-china.*|mione-staging-youpin.*";
 
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("sum(irate(container_cpu_usage_seconds_total{");
-        exprBuilder.append("image!='',system='mione',");
-        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
-        if(projectName.equals("mimonitor")){
-            if(isK8s){
-                exprBuilder.append("name =~'k8s.*',");
-            }else{
-                exprBuilder.append("container_label_PROJECT_ID!='',name !~'k8s.*',");
-            }
-
-        }else{
-
-            if(isK8s){
-
-                exprBuilder.append("container=~'").append(".*-").append(projectName).append("-.*")
-                        .append("|").append(projectId).append("-0").append("")
-                        .append("|").append(projectId).append("-0-.*").append("'");
-            }else{
-
-                exprBuilder.append("container_label_PROJECT_ID='").append(projectId).append("',");
-                exprBuilder.append("name=~'").append(projectName).append("-20.*'");
-            }
-
-        }
-
+        exprBuilder.append("image!='',");
+        exprBuilder.append("system='mione',");
+        exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
+//        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
         exprBuilder.append("}[1d])) without (cpu) * 100");
         exprBuilder.append(op).append(value);
         log.info("getContainerCpuResourceAlarmExpr param: projectId:{}, projectName:{}, op:{},value:{}, return:{}",projectId, projectName, op,value, exprBuilder.toString());
@@ -715,36 +676,17 @@ public class AlarmService {
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("(sum(avg_over_time(container_memory_rss{");
 
-        exprBuilder.append("image!='',system='mione',");
+        exprBuilder.append("image!='',");
+        exprBuilder.append("system='mione',");
 
-        if(isK8s){
+        exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
 
-            exprBuilder.append("container=~'").append(".*-").append(projectName).append("-.*")
-                    .append("|").append(projectId).append("-0").append("")
-                    .append("|").append(projectId).append("-0-.*").append("'");
-        }else{
-
-            exprBuilder.append("container_label_PROJECT_ID='").append(projectId).append("',");
-            exprBuilder.append("name=~'").append(projectName).append("-20.*'");
-        }
-
-
-
-        exprBuilder.append("}[1m])) by (container_label_PROJECT_ID,ip,job,name,system,instance,id,pod,namespace,serverEnv) / ");
+        exprBuilder.append("}[1m])) by (application,ip,job,name,system,instance,id,pod,namespace,serverEnv) / ");
         exprBuilder.append("sum(avg_over_time(container_spec_memory_limit_bytes{");
-        exprBuilder.append("image!='',system='mione',");
+        exprBuilder.append("image!='',");
 
-        if(isK8s){
-
-            exprBuilder.append("container=~'").append(".*-").append(projectName).append("-.*")
-                    .append("|").append(projectId).append("-0").append("")
-                    .append("|").append(projectId).append("-0-.*").append("'");
-        }else{
-
-            exprBuilder.append("container_label_PROJECT_ID='").append(projectId).append("',");
-            exprBuilder.append("name=~'").append(projectName).append("-20.*'");
-        }
-        exprBuilder.append("}[1m])) by (container_label_PROJECT_ID,ip,job,name,system,instance,id,pod,namespace,serverEnv)) * 100");
+        exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
+        exprBuilder.append("}[1m])) by (application,ip,job,name,system,instance,id,pod,namespace,serverEnv)) * 100");
         exprBuilder.append(op).append(value);
         log.info("getContainerMemAlarmExpr param: projectId:{}, projectName:{}, op:{},value:{}, return:{}",projectId, projectName, op,value, exprBuilder.toString());
         return exprBuilder.toString();
@@ -757,61 +699,24 @@ public class AlarmService {
             projectName = appGitName;
         }
 
-        String jobLabelValue = prometheusAlarmEnv.equals("production") ? "mione-online-china.*|mione-online-youpin.*" : "mione-staging-china.*|mione-staging-youpin.*";
+//        String jobLabelValue = prometheusAlarmEnv.equals("production") ? "mione-online-china.*|mione-online-youpin.*" : "mione-staging-china.*|mione-staging-youpin.*";
 
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("(sum(avg_over_time(container_memory_rss{");
-        exprBuilder.append("image!='',system='mione',");
-        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
+        exprBuilder.append("image!='',");
+        exprBuilder.append("system='mione',");
 
-        if(projectName.equals("mimonitor")){
-            if(isK8s){
-                exprBuilder.append("name =~'k8s.*'");
-            }else{
-                exprBuilder.append("container_label_PROJECT_ID!='',name !~'k8s.*'");
-            }
-
-        }else{
-
-            if(isK8s){
-
-                exprBuilder.append("container=~'").append(".*-").append(projectName).append("-.*")
-                        .append("|").append(projectId).append("-0").append("")
-                        .append("|").append(projectId).append("-0-.*").append("'");
-            }else{
-
-                exprBuilder.append("container_label_PROJECT_ID='").append(projectId).append("',");
-                exprBuilder.append("name=~'").append(projectName).append("-20.*'");
-            }
-        }
-
-        exprBuilder.append("}[1d])) by (container_label_PROJECT_ID,ip,job,name,system,instance,id,serverEnv) / ");
+        exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
+//        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
+        exprBuilder.append("}[1d])) by (application,ip,job,name,system,instance,id,serverEnv) / ");
         exprBuilder.append("sum(avg_over_time(container_spec_memory_limit_bytes{");
-        exprBuilder.append("image!='',system='mione',");
-        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
+        exprBuilder.append("image!='',");
+        exprBuilder.append("system='mione',");
+//        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
 
-        if(projectName.equals("mimonitor")){
-            if(isK8s){
-                exprBuilder.append("name =~'k8s.*'");
-            }else{
-                exprBuilder.append("container_label_PROJECT_ID!='',name !~'k8s.*'");
-            }
+        exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
 
-        }else{
-
-            if(isK8s){
-
-                exprBuilder.append("container=~'").append(".*-").append(projectName).append("-.*")
-                        .append("|").append(projectId).append("-0").append("")
-                        .append("|").append(projectId).append("-0-.*").append("'");
-            }else{
-
-                exprBuilder.append("container_label_PROJECT_ID='").append(projectId).append("',");
-                exprBuilder.append("name=~'").append(projectName).append("-20.*'");
-            }
-        }
-
-        exprBuilder.append("}[1d])) by (container_label_PROJECT_ID,ip,job,name,system,instance,id,serverEnv)) * 100");
+        exprBuilder.append("}[1d])) by (application,ip,job,name,system,instance,id,serverEnv)) * 100");
         exprBuilder.append(op).append(value);
         log.info("getContainerMemReourceAlarmExpr param: projectId:{}, projectName:{}, op:{},value:{}, return:{}",projectId, projectName, op,value, exprBuilder.toString());
         return exprBuilder.toString();
@@ -820,27 +725,29 @@ public class AlarmService {
     public String getK8sCpuAvgUsageAlarmExpr(Integer projectId,String projectName,String op,double value){
 
 
-        String jobLabelValue = prometheusAlarmEnv.equals("production") ? "mione-online-china.*|mione-online-youpin.*" : "mione-staging-china.*|mione-staging-youpin.*";
+//        String jobLabelValue = prometheusAlarmEnv.equals("production") ? "mione-online-china.*|mione-online-youpin.*" : "mione-staging-china.*|mione-staging-youpin.*";
 
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("sum(irate(container_cpu_usage_seconds_total{");
         exprBuilder.append("image!='',system='mione',");
-        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
-        exprBuilder.append("container=~'").append(projectId).append("-0-.*").append("'");
+//        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
+        exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
+
         exprBuilder.append("}[1m])) without (cpu) * 100 ");
         exprBuilder.append("/");
         exprBuilder.append("(");
         exprBuilder.append("container_spec_cpu_quota{");
         exprBuilder.append("system='mione',");
-        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
-        exprBuilder.append("container=~'").append(projectId).append("-0-.*").append("'");
+//        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
+        exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
         exprBuilder.append("}");
         exprBuilder.append("/");
 
         exprBuilder.append("container_spec_cpu_period{");
         exprBuilder.append("system='mione',");
-        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
-        exprBuilder.append("container=~'").append(projectId).append("-0-.*").append("'");
+//        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
+//        exprBuilder.append("container=~'").append(projectId).append("-0-.*").append("'");
+        exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
         exprBuilder.append("}");
         exprBuilder.append(")");
 
@@ -858,17 +765,10 @@ public class AlarmService {
         }
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("count(sum_over_time(container_spec_memory_limit_bytes{");
-        exprBuilder.append("image!='',system='mione',");
-        if(isK8s){
+        exprBuilder.append("image!='',");
+        exprBuilder.append("system='mione',");
 
-            exprBuilder.append("container=~'").append(".*-").append(projectName).append("-.*")
-                    .append("|").append(projectId).append("-0").append("")
-                    .append("|").append(projectId).append("-0-.*").append("'");
-        }else{
-
-            exprBuilder.append("container_label_PROJECT_ID='").append(projectId).append("',");
-            exprBuilder.append("name=~'").append(projectName).append("-20.*'");
-        }
+        exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
 
         exprBuilder.append("}[2m])) by (system,job)");
         exprBuilder.append(op).append(value);
@@ -1304,6 +1204,11 @@ public class AlarmService {
             jsonObject.add("alert_member", array);
         }
 
+        if(!CollectionUtils.isEmpty(ruleData.getAtMembers())){
+            JsonArray array = new Gson().fromJson(JSON.toJSONString(ruleData.getAtMembers()), JsonArray.class);
+            jsonObject.add("alert_at_people", array);
+        }
+
         return alertServiceAdapt.addRule(jsonObject,String.valueOf(rule.getIamId()),user);
     }
 
@@ -1524,6 +1429,12 @@ public class AlarmService {
             JsonArray array = new Gson().fromJson(JSON.toJSONString(alertMembers), JsonArray.class);
             jsonObject.add("alert_member", array);
         }
+
+        JsonArray atMembersArray = new JsonArray();
+        if(!CollectionUtils.isEmpty(ruleData.getAtMembers())){
+            atMembersArray = new Gson().fromJson(JSON.toJSONString(ruleData.getAtMembers()), JsonArray.class);
+        }
+        jsonObject.add("alert_at_people", atMembersArray);
 
         return alertServiceAdapt.editRule(rule.getAlarmId(),jsonObject,String.valueOf(rule.getIamId()),user);
     }

@@ -59,6 +59,11 @@ public class AppMonitorController {
         return appMonitorService.getResourceUsageUrl(appId,appName);
     }
 
+    @GetMapping("/mimonitor/resourceUsagek8s")
+    public Result resourceUsagek8s(Integer appId,String appName) {
+        return appMonitorService.getResourceUsageUrlForK8s(appId,appName);
+    }
+
     @ResponseBody
     @GetMapping("/mimonitor/getAppType")
     public Result getAppType(Integer id){
@@ -422,5 +427,10 @@ public class AppMonitorController {
 
         appMonitorService.washBaseId();
         return Result.success("washBaseId OOOK!");
+    }
+
+    @GetMapping("/mimonitor/grafanaInterfaceList")
+    public Result grafanaInterfaceList() {
+        return appMonitorService.grafanaInterfaceList();
     }
 }

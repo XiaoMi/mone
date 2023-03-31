@@ -42,6 +42,7 @@ public interface ChannelService extends Closeable {
 
     /**
      * 停止指定的文件采集
+     *
      * @param filePrefixList
      */
     void stopFile(List<String> filePrefixList);
@@ -80,4 +81,9 @@ public interface ChannelService extends Closeable {
      * @return
      */
     List<MonitorFile> getMonitorPathList();
+
+    /**
+     * openteltry日志多文件结束clean
+     */
+    void delayDeletionFinishedFile();
 }

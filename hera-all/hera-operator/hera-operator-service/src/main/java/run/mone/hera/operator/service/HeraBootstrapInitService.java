@@ -1,19 +1,18 @@
 /*
- *  Copyright 2020 Xiaomi
+ * Copyright 2020 Xiaomi
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
-
 package run.mone.hera.operator.service;
 
 import com.google.common.base.Preconditions;
@@ -43,6 +42,10 @@ import java.io.*;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -274,7 +277,6 @@ public class HeraBootstrapInitService {
                     .build();
             cadvisor.setDefaultYaml();
             List<Map<String, String>> cadvisorConnectionMapList = new ArrayList<>();
-            cadvisorConnectionMapList.add(kvMap("mione.k8s.container.port", "5194", "cadvisor的port"));
             cadvisor.setConnectionMapList(cadvisorConnectionMapList);
             resourceList.add(cadvisor);
 
@@ -288,7 +290,6 @@ public class HeraBootstrapInitService {
                     .build();
             node_exporter.setDefaultYaml();
             List<Map<String, String>> node_exporterConnectionMapList = new ArrayList<>();
-            node_exporterConnectionMapList.add(kvMap("mione.k8s.node.port", "9100", "node-exporter的port"));
             node_exporter.setConnectionMapList(node_exporterConnectionMapList);
             resourceList.add(node_exporter);
 
@@ -544,6 +545,13 @@ public class HeraBootstrapInitService {
 
     }
 
+    public boolean crExists(String namespace) {
+        MixedOperation<HeraBootstrap, KubernetesResourceList<HeraBootstrap>, Resource<HeraBootstrap>> heraMixedOperation = kubernetesClient.resources(HeraBootstrap.class);
+        List<HeraBootstrap> crList = heraMixedOperation.list().getItems();
+
+        return CollectionUtils.isNotEmpty(crList);
+    }
+
     public HeraStatus createOrReplaceCr() {
         HeraBootstrap heraBootstrap = new HeraBootstrap();
         HeraStatus heraStatus = new HeraStatus();
@@ -594,6 +602,13 @@ public class HeraBootstrapInitService {
     }
 
 
+    public void deleteService(List<String> serviceNameList, String namespace) {
+        List<io.fabric8.kubernetes.api.model.Service> serviceList = listService(serviceNameList, namespace);
+        if (CollectionUtils.isNotEmpty(serviceList)) {
+            kubernetesClient.services().inNamespace(namespace).delete(serviceList);
+        }
+    }
+
     public List<io.fabric8.kubernetes.api.model.Service> createAndListService(List<String> serviceNameList, String namespace, String yamlPath) throws InterruptedException {
         List<io.fabric8.kubernetes.api.model.Service> serviceList = listService(serviceNameList, namespace);
         if (CollectionUtils.isEmpty(serviceList)) {
@@ -605,6 +620,41 @@ public class HeraBootstrapInitService {
 
         return listService(serviceNameList, namespace);
     }
+
+    public boolean checkLbServiceFailed(List<io.fabric8.kubernetes.api.model.Service> serviceList, String serviceType) {
+        if (CollectionUtils.isEmpty(serviceList)) {
+            return true;
+        }
+
+        Map<String, String> ipPortMap = getServiceIpPort(serviceList, serviceType);
+        if (ipPortMap.size() == serviceList.size()) {
+            return false;
+        }
+
+        for (io.fabric8.kubernetes.api.model.Service s : serviceList) {
+            String timestamp = s.getMetadata().getCreationTimestamp();
+
+            Long seconds = diffSeconds(timestamp) ;
+            //37秒还未成功判定为service创建失败
+            if (seconds > 37) {
+                log.warn("serviceType:{} create failed : cost too many time:{}s", serviceType, seconds);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private long diffSeconds(String timestamp) {
+        Instant instant = Instant.parse(timestamp);
+        ZonedDateTime utcDateTime = ZonedDateTime.ofInstant(instant, ZoneId.of("UTC"));
+        ZonedDateTime beijingDateTime = utcDateTime.withZoneSameInstant(ZoneId.of("Asia/Shanghai"));
+        ZonedDateTime currentDateTime = ZonedDateTime.now(ZoneId.of("Asia/Shanghai"));
+        long diffSeconds = currentDateTime.toEpochSecond() - beijingDateTime.toEpochSecond();
+
+        return diffSeconds;
+    }
+
 
     private List<io.fabric8.kubernetes.api.model.Service> listService(List<String> serviceNameList, String namespace) {
         ServiceList serviceList = kubernetesClient.services().inNamespace(namespace).list();
@@ -619,7 +669,7 @@ public class HeraBootstrapInitService {
         if ("NodePort".equals(serviceType)) {
             List<Node> nodeList = kubernetesClient.nodes().list().getItems();
             Optional<NodeAddress> nodeAddress = nodeList.get(0).getStatus().getAddresses().stream()
-                    .filter(address -> "internalIP".equals(address.getType())).findAny();
+                    .filter(address -> "InternalIP".equals(address.getType())).findAny();
             if(!nodeAddress.isPresent()) {
                 throw new RuntimeException("cluster node have no internalIP");
             }

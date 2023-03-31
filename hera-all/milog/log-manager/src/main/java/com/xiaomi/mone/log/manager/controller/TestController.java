@@ -24,6 +24,7 @@ import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
 import com.xiaomi.mone.log.api.model.meta.AppLogMeta;
 import com.xiaomi.mone.log.api.model.meta.LogCollectMeta;
 import com.xiaomi.mone.log.api.model.vo.LogCmd;
+import com.xiaomi.mone.log.api.service.PublishConfigService;
 import com.xiaomi.mone.log.common.Constant;
 import com.xiaomi.mone.log.manager.common.Result;
 import com.xiaomi.mone.log.manager.common.Version;
@@ -46,6 +47,7 @@ import com.xiaomi.youpin.docean.anno.RequestParam;
 import com.xiaomi.youpin.docean.mvc.ContextHolder;
 import com.xiaomi.youpin.docean.mvc.MvcContext;
 import com.xiaomi.youpin.docean.plugin.config.anno.Value;
+import com.xiaomi.youpin.docean.plugin.dubbo.anno.Reference;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.acl.common.AclClientRPCHook;
@@ -71,6 +73,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
+import static com.xiaomi.mone.log.manager.user.MoneUserDetailService.GSON;
+
 /**
  * @Author goodjava@qq.com
  * @Date 2021/6/24 16:15
@@ -91,6 +95,9 @@ public class TestController {
 
     @Resource
     private SpaceConfigNacosProvider spaceConfigNacosProvider;
+
+    @Reference(interfaceClass = PublishConfigService.class, group = "$dubbo.env.group", check = false, timeout = 14000)
+    private PublishConfigService publishConfigService;
 
     @Resource
     private RpcServer rpcServer;
@@ -138,7 +145,7 @@ public class TestController {
     public String testIsOk() {
         ConfigPushData configPushData = new ConfigPushData();
         configPushData.setId(1L);
-        ConfigService configService = MultipleNacosConfig.nacosConfigMap.get("127.0.0.1:80");
+        ConfigService configService = MultipleNacosConfig.getConfigService("127.0.0.1:80");
         spaceConfigNacosProvider.setConfigService(configService);
         spaceConfigNacosProvider.getConfig("2");
         return "ok";
@@ -146,14 +153,8 @@ public class TestController {
 
     @RequestMapping(path = "/test/push/config", method = "get")
     public String testConfigPush() {
-        AppLogMeta appLogMeta = new AppLogMeta();
-        RemotingCommand req = RemotingCommand.createRequestCommand(LogCmd.logReq);
-        req.setBody(new Gson().toJson(appLogMeta).getBytes());
-        AgentContext.ins().map.forEach((k, v) -> {
-            RemotingCommand res = rpcServer.sendMessage(v, req);
-            log.info("---->{}", new String(res.getBody()));
-        });
-        return "ok";
+        List<String> allAgentList = publishConfigService.getAllAgentList();
+        return GSON.toJson(allAgentList);
     }
 
 

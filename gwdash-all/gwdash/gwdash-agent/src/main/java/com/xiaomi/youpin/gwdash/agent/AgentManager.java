@@ -83,7 +83,7 @@ public class AgentManager {
 
 //        rpcServer = new RpcServer(nacosAddrs, "zzy");
 
-        //注册处理器
+        //register processor
         rpcServer.setProcessorList(Lists.newArrayList(
                 new Pair<>(RpcCmd.pingReq, new GwPingProcessor(this.machineManagementService, this.projectDeploymentService)),
                 new Pair<>(AgentCmd.shellRes, new ShellProcessor()),
@@ -92,7 +92,7 @@ public class AgentManager {
                 new Pair<>(AgentCmd.notifyMsgReq, new NotifyMsgProcessor(dataHubService))
         ));
 
-        //注册周期任务
+        //register task
         Task task = new GetClientInfoTask(rpcServer);
 
         rpcServer.setTasks(Lists.newArrayList(
@@ -104,7 +104,7 @@ public class AgentManager {
     }
 
     /**
-     * 发给所有客户端
+     * send to all clients
      *
      * @param code
      * @param body
@@ -117,7 +117,7 @@ public class AgentManager {
 
 
     /**
-     * 发给指定客户端
+     * Sent to the specified client
      *
      * @param address
      * @param code
@@ -135,7 +135,7 @@ public class AgentManager {
     }
 
     /**
-     * 发给指定客户端
+     * Sent to the specified client
      *
      * @param address
      * @param code
@@ -154,7 +154,7 @@ public class AgentManager {
     }
 
     /**
-     * 获取带端口号的地址
+     * Gets the address with the port number
      *
      * @param ip
      * @return

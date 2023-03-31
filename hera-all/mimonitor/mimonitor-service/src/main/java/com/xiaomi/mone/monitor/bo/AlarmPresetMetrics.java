@@ -17,12 +17,12 @@ public enum AlarmPresetMetrics {
     /**
      * 系统指标
      */
-    container_cpu_use_rate("container_cpu_use_rate","容器机CPU使用率", MetricsUnit.UNIT_PERCENT, SendAlertGroupKey.APP_INSTANCE, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic),
-    container_cpu_average_load("container_cpu_average_load","容器负载", MetricsUnit.UNIT_NULL, SendAlertGroupKey.APP_INSTANCE, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic),
-    container_mem_use_rate("container_mem_use_rate","容器机内存使用率",MetricsUnit.UNIT_PERCENT, SendAlertGroupKey.APP_INSTANCE, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic),
-    container_count_monitor("container_count_monitor","容器数量",MetricsUnit.UNIT_TAI, SendAlertGroupKey.APP, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic),
-//    app_restart_monitor("app_restart_monitor","应用重启",MetricsUnit.UNIT_TAI, SendAlertGroupKey.APP_INSTANCE, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic),
-    app_crash_monitor("app_crash_monitor","应用宕机",MetricsUnit.UNIT_TAI, SendAlertGroupKey.APP_INSTANCE, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic,true),
+//    container_cpu_use_rate("container_cpu_use_rate","容器机CPU使用率", MetricsUnit.UNIT_PERCENT, SendAlertGroupKey.APP_INSTANCE, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic),
+//    container_cpu_average_load("container_cpu_average_load","容器负载", MetricsUnit.UNIT_NULL, SendAlertGroupKey.APP_INSTANCE, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic),
+//    container_mem_use_rate("container_mem_use_rate","容器机内存使用率",MetricsUnit.UNIT_PERCENT, SendAlertGroupKey.APP_INSTANCE, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic),
+//    container_count_monitor("container_count_monitor","容器数量",MetricsUnit.UNIT_TAI, SendAlertGroupKey.APP, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic),
+////    app_restart_monitor("app_restart_monitor","应用重启",MetricsUnit.UNIT_TAI, SendAlertGroupKey.APP_INSTANCE, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic),
+//    app_crash_monitor("app_crash_monitor","应用宕机",MetricsUnit.UNIT_TAI, SendAlertGroupKey.APP_INSTANCE, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic,true),
 
     k8s_container_cpu_use_rate("k8s_container_cpu_use_rate","k8s容器机CPU使用率", MetricsUnit.UNIT_PERCENT, SendAlertGroupKey.APP_INSTANCE, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic),
     k8s_container_cpu_average_load("k8s_container_cpu_average_load","k8s容器负载", MetricsUnit.UNIT_NULL, SendAlertGroupKey.APP_INSTANCE, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic),
@@ -30,8 +30,8 @@ public enum AlarmPresetMetrics {
     k8s_container_count_monitor("k8s_container_count_monitor","k8s容器数量",MetricsUnit.UNIT_TAI, SendAlertGroupKey.APP, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic),
 
     //资源利用率报警
-    container_cpu_resource_use_rate("container_cpu_resource_use_rate","容器CPU资源利用率（1d）", MetricsUnit.UNIT_PERCENT, SendAlertGroupKey.APP_INSTANCE, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic),
-    container_mem_resource_use_rate("container_mem_resource_use_rate","容器内存资源利用率（1d）", MetricsUnit.UNIT_PERCENT, SendAlertGroupKey.APP_INSTANCE, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic),
+//    container_cpu_resource_use_rate("container_cpu_resource_use_rate","容器CPU资源利用率（1d）", MetricsUnit.UNIT_PERCENT, SendAlertGroupKey.APP_INSTANCE, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic),
+//    container_mem_resource_use_rate("container_mem_resource_use_rate","容器内存资源利用率（1d）", MetricsUnit.UNIT_PERCENT, SendAlertGroupKey.APP_INSTANCE, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic),
     k8s_cpu_resource_use_rate("k8s_cpu_resource_use_rate","k8s容器CPU资源利用率（1d）", MetricsUnit.UNIT_PERCENT, SendAlertGroupKey.APP_INSTANCE, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic),
     k8s_mem_resource_use_rate("k8s_mem_resource_use_rate","k8s容器内存资源利用率（1d）", MetricsUnit.UNIT_PERCENT, SendAlertGroupKey.APP_INSTANCE, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic),
 
@@ -81,7 +81,7 @@ public enum AlarmPresetMetrics {
     /**
      * grpc server（grpc调入）
      */
-    grpc_server_error_times("grpc_server_error_times","grpc调入异常数",
+    /*grpc_server_error_times("grpc_server_error_times","grpc调入异常数",
             "grpcServerError","grpcServer","grpcServerSlowQuery","grpcServerTimeCost",
             MetricsUnit.UNIT_COUNT, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.error_times),
 
@@ -101,9 +101,9 @@ public enum AlarmPresetMetrics {
             "grpcServerError","grpcServer","grpcServerSlowQuery","grpcServerTimeCost",
             MetricsUnit.UNIT_MS,SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.time_cost),
 
-    /**
+    *//**
      * grpc client（grpc调出）
-     */
+     *//*
     grpc_client_error_times("grpc_client_error_times","grpc调出异常数",
             "grpcClientError","grpcClient","grpcClientSlowQuery","grpcClientTimeCost",
             MetricsUnit.UNIT_COUNT,SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.error_times),
@@ -125,9 +125,9 @@ public enum AlarmPresetMetrics {
             MetricsUnit.UNIT_MS, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.time_cost),
 
 
-    /**
+    *//**
      * apus server（apus调入）
-     */
+     *//*
     apus_server_error_times("apus_server_error_times","apus调入异常数",
             "apusServerError","apusServer","apusServerSlowQuery","apusServerTimeCost",
             MetricsUnit.UNIT_COUNT, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.error_times),
@@ -148,9 +148,9 @@ public enum AlarmPresetMetrics {
             "apusServerError","apusServer","apusServerSlowQuery","apusServerTimeCost",
             MetricsUnit.UNIT_MS, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.time_cost),
 
-    /**
+    *//**
      * apus client（apus调出）
-     */
+     *//*
     apus_client_error_times("apus_client_error_times","apus调出异常数",
             "apusClientError","apusClient","apustClientSlowQuery","apusClientTimeCost",
             MetricsUnit.UNIT_COUNT, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.error_times),
@@ -172,9 +172,9 @@ public enum AlarmPresetMetrics {
             MetricsUnit.UNIT_MS, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.time_cost),
 
 
-    /**
+    *//**
      * thrift server（thrift调入）
-     */
+     *//*
     thrift_server_error_times("thrift_server_error_times","thrift调入异常数",
             "thriftServerError","thriftServer","thriftServerSlowQuery","thriftServerTimeCost",
             MetricsUnit.UNIT_COUNT, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.error_times),
@@ -196,9 +196,9 @@ public enum AlarmPresetMetrics {
             MetricsUnit.UNIT_MS, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.time_cost),
 
 
-    /**
+    *//**
      * thrift client（thrift调出）
-     */
+     *//*
     thrift_client_error_times("thrift_client_error_times","thrift调出异常数",
             "thriftClientError","thriftClient","thriftClientSlowQuery","thriftClientTimeCost",
             MetricsUnit.UNIT_COUNT, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.error_times),
@@ -217,16 +217,16 @@ public enum AlarmPresetMetrics {
 
     thrift_client_time_cost("thrift_client_time_cost","thrift调出平均耗时",
             "thriftClientError","thriftClient","thriftClientSlowQuery","thriftClientTimeCost",
-            MetricsUnit.UNIT_MS, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.time_cost),
+            MetricsUnit.UNIT_MS, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.time_cost),*/
 
 
     /**
      * 业务指标-db
      */
-    db_error_times("db_error_times","DB异常数", MetricsUnit.UNIT_COUNT, SendAlertGroupKey.APP_SQL_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.error_times),
-    db_availability("db_availability","DB可用性", MetricsUnit.UNIT_PERCENT, SendAlertGroupKey.APP_SQL_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.availability),
+    db_error_times("db_error_times","mysql异常数", MetricsUnit.UNIT_COUNT, SendAlertGroupKey.APP_SQL_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.error_times),
+    db_availability("db_availability","mysql可用性", MetricsUnit.UNIT_PERCENT, SendAlertGroupKey.APP_SQL_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.availability),
 //    db_avg_time_cost("db_avg_time_cost","DB平均响应时间"),
-    db_slow_query("db_slow_query","DB慢查询数", MetricsUnit.UNIT_COUNT, SendAlertGroupKey.APP_SQL_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.slow_times);
+    db_slow_query("db_slow_query","mysql慢查询数", MetricsUnit.UNIT_COUNT, SendAlertGroupKey.APP_SQL_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.slow_times);
 
 
 

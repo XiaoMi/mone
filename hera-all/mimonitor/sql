@@ -202,7 +202,7 @@ CREATE TABLE `app_quality_market` (
  `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '自动递增id',
  `market_name` varchar(255) NOT NULL DEFAULT '' COMMENT '大盘名称',
  `creator` varchar(100) DEFAULT '' COMMENT '创建者',
- `service_list` varchar(16383) DEFAULT NULL COMMENT '应用列表 ; 号分割多个',
+ `service_list` TEXT DEFAULT NULL COMMENT '应用列表分号分割多个',
  `last_updater` varchar(100) DEFAULT '' COMMENT '上一次更新人',
  `remark` varchar(255) DEFAULT '' COMMENT '备注',
  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
@@ -240,7 +240,7 @@ CREATE TABLE `app_service_market` (
  `market_name` varchar(150) NOT NULL DEFAULT '' COMMENT '大盘名称',
  `belong_team` varchar(150) NOT NULL DEFAULT '' COMMENT '所属团队',
  `creator` varchar(50) DEFAULT '' COMMENT '创建者',
- `service_list` varchar(16383) DEFAULT '' COMMENT '应用列表 ; 号分割多个',
+ `service_list` TEXT COMMENT '应用列表分号分割多个',
  `last_updater` varchar(50) DEFAULT '' COMMENT '上一次更新人',
  `remark` varchar(255) DEFAULT '' COMMENT '备注',
  `service_type` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '服务类别',
@@ -295,24 +295,24 @@ CREATE TABLE `app_tesla_feishu_mapping` (
 -- ----------------------------
 DROP TABLE IF EXISTS `hera_app_base_info`;
 CREATE TABLE `hera_app_base_info` (
- `id` int(11) NOT NULL AUTO_INCREMENT,
- `bind_id` varchar(50) NOT NULL COMMENT '绑定的id',
- `bind_type` int(3) NOT NULL COMMENT '绑定类型(0 appId 1 iamTreeId)',
- `app_name` varchar(255) NOT NULL COMMENT '应用名称',
- `app_cname` varchar(255) DEFAULT NULL COMMENT '应用中文名称',
- `app_type` int(3) NOT NULL COMMENT '应用类型-关联指标监控模版（0业务应用 1主机应用）',
- `app_language` varchar(30) DEFAULT NULL COMMENT '语言类型',
- `platform_type` int(3) NOT NULL COMMENT '平台类型',
- `app_sign_id` varchar(60) DEFAULT NULL COMMENT '应用指标唯一性标识',
- `iam_tree_id` int(11) NOT NULL COMMENT 'iam_tree_id(报警接口必须)',
- `envs_map` text DEFAULT NULL COMMENT '环境列表',
- `auto_capacity` int(3) DEFAULT NULL COMMENT '自动扩容 1是，0否',
- `status` int(3) DEFAULT NULL COMMENT '状态',
- `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
- `update_time` timestamp NULL DEFAULT NULL COMMENT '更新时间',
- PRIMARY KEY (`id`),
- KEY `idx_app_name` (`app_name`),
- UNIQUE KEY `idx_uniqe_app` (`bind_id`,`platform_type`)
+  `id` int NOT NULL AUTO_INCREMENT,
+  `bind_id` varchar(50) COLLATE utf8mb4_bin NOT NULL COMMENT '绑定的id',
+  `bind_type` int NOT NULL COMMENT '绑定类型(0 appId 1 iamTreeId)',
+  `app_name` varchar(255) COLLATE utf8mb4_bin NOT NULL COMMENT '应用名称',
+  `app_cname` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '应用中文名称',
+  `app_type` int NOT NULL COMMENT '应用类型-关联指标监控模版（0业务应用 1主机应用）',
+  `app_language` varchar(30) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '语言类型',
+  `platform_type` int NOT NULL COMMENT '平台类型',
+  `app_sign_id` varchar(60) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '应用指标唯一性标识',
+  `iam_tree_id` int DEFAULT NULL COMMENT 'iam_tree_id(报警接口必须)',
+  `envs_map` text COLLATE utf8mb4_bin COMMENT '环境列表',
+  `auto_capacity` int DEFAULT NULL COMMENT '自动扩容 1是，0否',
+  `status` int DEFAULT NULL COMMENT '状态',
+  `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` timestamp NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_uniqe_app` (`bind_id`,`platform_type`),
+  KEY `idx_app_name` (`app_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 DROP TABLE IF EXISTS `hera_app_role`;
@@ -433,3 +433,26 @@ CREATE TABLE `app_monitor_config` (
  `update_time` timestamp NULL DEFAULT NULL,
  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+
+-- ----------------------------
+-- Table structure for mione_grafana_template
+-- ----------------------------
+DROP TABLE IF EXISTS `mione_grafana_template`;
+CREATE TABLE `mione_grafana_template` (
+  `id` int(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '自增id',
+  `name` varchar(64) NOT NULL DEFAULT '' COMMENT '模板名字',
+  `template` longtext DEFAULT NULL COMMENT '模板json',
+  `platform` int(11) DEFAULT NULL COMMENT '平台',
+  `language` int(11) DEFAULT NULL COMMENT '语言',
+  `app_type` int(11) DEFAULT NULL COMMENT '应用类型',
+  `panel_id_list` text DEFAULT NULL COMMENT '图表id列表',
+  `url_param` text DEFAULT NULL COMMENT 'url参数',
+  `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` tinyint(1) DEFAULT '0' COMMENT '0未删除1删除',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin AUTO_INCREMENT=30001;
+
+SET FOREIGN_KEY_CHECKS = 1;

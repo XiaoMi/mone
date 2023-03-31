@@ -37,11 +37,10 @@ public abstract class Input {
     /**
      * 日志路径格式
      * 当前支持 单文件、多文件、目录层级通配模式
-     *
+     * <p>
      * 单文件: /home/work/log/xxapp/server.log
      * 多文件: /home/work/log/neo-logs/(cxx01|cxx022)/server.log
      * 目录层级通配:/home/work/log/xxapp/ * /server.log
-     *
      */
     private String logPattern;
 
@@ -51,5 +50,9 @@ public abstract class Input {
     private String patternCode;
 
     private String logSplitExpress;
+    /**
+     * 用户自定义的行首正则，默认是""
+     */
+    private String linePrefix;
 
 }

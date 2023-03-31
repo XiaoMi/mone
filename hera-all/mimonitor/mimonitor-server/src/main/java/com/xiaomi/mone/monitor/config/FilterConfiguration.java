@@ -37,13 +37,13 @@ public class FilterConfiguration {
     @NacosValue("${aegis.mione.public.domain.key:noconfig}")
     private String mionePublicDomain;
 
-    @Value("${token.parse.url}")
+    @NacosValue(value = "${token.parse.url}",autoRefreshed = true)
     private String tokenParseUrl;
     @Value("${inner.auth}")
     private String innerAuth;
     @Value("${dev.mode}")
     private String devMode;
-    @Value("${login.url}")
+    @NacosValue(value = "${login.url}",autoRefreshed = true)
     private String loginUrl;
 
     @Bean

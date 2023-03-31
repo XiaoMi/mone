@@ -49,6 +49,8 @@ public class MiLogAgentBootstrap {
                 Integer.parseInt(Config.ins().get("port", "9799")),
                 new Version() + ":" + serviceName + ":" + nacosAddr);
         final RpcClient client = new RpcClient(nacosAddr, serviceName);
+        //即使没有服务信息,也使用老的注册信息(容错处理)
+        client.setClearServerAddr(false);
         client.setReconnection(false);
         client.setClientInfo(clientInfo);
         client.start();

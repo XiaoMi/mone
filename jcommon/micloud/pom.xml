@@ -14,7 +14,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.xiaomi.youpin</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>http</artifactId>
             <version>1.4-SNAPSHOT</version>
         </dependency>

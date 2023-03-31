@@ -4,7 +4,7 @@
  Source Server         : milog
  Source Server Type    : MySQL
  Source Server Version : 50725
- Source Host           : 10.38.163.57:4100
+ Source Host           : 127.0.0.1:4100
  Source Schema         : milog
 
  Target Server Type    : MySQL

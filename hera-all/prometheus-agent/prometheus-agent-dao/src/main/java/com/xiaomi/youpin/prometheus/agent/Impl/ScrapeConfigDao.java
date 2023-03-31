@@ -2,6 +2,7 @@ package com.xiaomi.youpin.prometheus.agent.Impl;
 
 import com.xiaomi.youpin.prometheus.agent.entity.ScrapeConfigEntity;
 import com.xiaomi.youpin.prometheus.agent.enums.ErrorCode;
+import com.xiaomi.youpin.prometheus.agent.enums.ScrapeJobStatusEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.util.cri.SqlExpressionGroup;
@@ -40,6 +41,13 @@ public class ScrapeConfigDao extends BaseDao {
         return dbRes;
     }
 
+    public ScrapeConfigEntity GetScrapeConfigByName(String name) {
+        SqlExpressionGroup sqlExpr = Cnd.cri().where().andEquals("job_name", name).andIsNull("deleted_time");
+        Cnd cnd = Cnd.where(sqlExpr);
+        ScrapeConfigEntity dbRes = dao.fetch(ScrapeConfigEntity.class, cnd);
+        return dbRes;
+    }
+
     public List<ScrapeConfigEntity> GetScrapeConfigList(Integer pageSize, Integer pageNo) {
         SqlExpressionGroup sqlExpr = Cnd.cri().where().andIsNull("deleted_time");
         Cnd cnd = Cnd.where(sqlExpr);
@@ -47,8 +55,9 @@ public class ScrapeConfigDao extends BaseDao {
         return datas;
     }
 
-    public List<ScrapeConfigEntity> GetAllScrapeConfigList() {
-        SqlExpressionGroup sqlExpr = Cnd.cri().where().andIsNull("deleted_time");
+    public List<ScrapeConfigEntity> GetAllScrapeConfigList(String status) {
+        //获取pending状态且已删除的数据
+        SqlExpressionGroup sqlExpr = Cnd.cri().where().andIsNull("deleted_time");//.andEquals("status", status);
         Cnd cnd = Cnd.where(sqlExpr);
         List<ScrapeConfigEntity> datas = dao.query(ScrapeConfigEntity.class, cnd.desc("id"));
         return datas;
@@ -63,7 +72,6 @@ public class ScrapeConfigDao extends BaseDao {
 
     public String UpdateScrapeConfigList(String id, ScrapeConfigEntity entity) {
         SqlExpressionGroup sqlExpr = Cnd.cri().where().andEquals("id", id).andIsNull("deleted_time");
-        ;
         Cnd cnd = Cnd.where(sqlExpr);
         try {
             ScrapeConfigEntity data = dao.fetch(ScrapeConfigEntity.class, cnd);
@@ -75,6 +83,21 @@ public class ScrapeConfigDao extends BaseDao {
             return String.valueOf(update);
         } catch (Exception e) {
             return e.getMessage();
+        }
+    }
+
+    public int UpdateScrapeConfigListByJobName(String jobName, String status) {
+        SqlExpressionGroup sqlExpr = Cnd.cri().where().andEquals("job_name", jobName).andIsNull("deleted_time");
+        Cnd cnd = Cnd.where(sqlExpr);
+        try {
+            ScrapeConfigEntity data = dao.fetch(ScrapeConfigEntity.class, cnd);
+            data.setStatus(status);
+            //更新
+            int update = dao.updateIgnoreNull(data);
+            return update;
+        } catch (Exception e) {
+            log.error("ScrapeConfigDao UpdateScrapeConfigListByJobName error:{}", e.getMessage());
+            return 0;
         }
     }
 }

@@ -5,6 +5,7 @@
  */
 package com.xiaomi.mone.monitor.service.helper;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.xiaomi.mone.monitor.bo.*;
@@ -38,7 +39,7 @@ public class AlertHelper {
     private final long FIVE_MINUTES = 10 * 60 * 1000L * 1000L;//微妙
     @Autowired
     private AlarmService alarmService;
-    @Value("${hera.url}")
+    @NacosValue(value = "${hera.url}",autoRefreshed = true)
     private String heraUrl;
 
 

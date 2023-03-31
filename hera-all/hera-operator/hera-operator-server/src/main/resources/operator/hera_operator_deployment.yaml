@@ -50,12 +50,13 @@ spec:
       - name: mione-opensource-credential
       containers:
         - name: hera-operator
-          image: herahub/opensource-pub:hera-operator-v2
+          image: herahub/opensource-pub:hera-operator-v6
           ports:
             - containerPort: 8998
               name: hera-8998
+          imagePullPolicy: Always
         - name: hera-operator-fe
-          image: herahub/opensource-pub:hera-operator-fe-v1
+          image: herahub/opensource-pub:hera-operator-fe-v2
           ports:
             - containerPort: 7001
               name: hera-7001

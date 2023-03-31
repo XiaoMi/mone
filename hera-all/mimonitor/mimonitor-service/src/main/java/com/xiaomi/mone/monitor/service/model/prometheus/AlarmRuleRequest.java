@@ -37,6 +37,7 @@ public class AlarmRuleRequest implements Serializable {
     private List<String> includeFunctions;//包含函数列表
     private List<String> exceptFunctions;//不包含函数列表
     private List<String> alertMembers;//报警人员列表
+    private List<String> atMembers;//报警@人员列表
     private List<AlarmRuleData> alarmRules;
     private String user;//但前操作人
 

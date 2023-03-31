@@ -17,6 +17,7 @@ package run.mone;
  */
 
 import com.xiaomi.youpin.codecheck.CodeCheck;
+import com.xiaomi.youpin.codecheck.CommonUtils;
 import com.xiaomi.youpin.codecheck.po.CheckResult;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.plugin.AbstractMojo;
@@ -27,31 +28,44 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author zhangping17
  */
 @Mojo( name = "pmd", defaultPhase = LifecyclePhase.VALIDATE )
-public class PmdMojo extends AbstractMojo
-{
+public class PmdMojo extends AbstractMojo {
     /**
      * Location of the file.
      */
     @Parameter(defaultValue = "${basedir}")
     private File outputDirectory;
 
+    /**
+     * 是否检测配置文件，默认为true
+     */
+    @Parameter(property = "check.config" ,defaultValue = "true")
+    private Boolean checkConfigurationFile;
+
+    @Parameter
+    private String[] ipWhite;
+
     private final static String level = "[ERROR]";
 
-    public void execute() throws MojoExecutionException
-    {
+    public void execute() throws MojoExecutionException {
         getLog().info("=============================begin codecheck=============================");
         CodeCheck codeCheck = new CodeCheck();
         Map<String, List<CheckResult>> map = null;
         try {
-            map = codeCheck.check(outputDirectory.getPath());
+            if (ipWhite != null) {
+                CommonUtils.addIpWhite(Arrays.asList(ipWhite));
+            }
+            if (checkConfigurationFile != null && !checkConfigurationFile) {
+                map = codeCheck.check(outputDirectory.getPath(), false);
+            } else {
+                map = codeCheck.check(outputDirectory.getPath(), true);
+            }
+
         } catch (Exception e) {
             getLog().error(e);
         }

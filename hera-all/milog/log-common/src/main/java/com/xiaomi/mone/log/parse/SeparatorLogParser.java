@@ -4,10 +4,7 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -49,26 +46,26 @@ public class SeparatorLogParser implements LogParser {
 
             int maxLength = Arrays.stream(values).filter(s -> !s.equals("-1")).collect(Collectors.toList()).size();
 
-            String[] logArray = StringUtils.splitByWholeSeparatorPreserveAllTokens(logData, parserData.getParseScript(), maxLength);
+            List<String> logArray = parseLogData(logData, maxLength);
             if (0 == maxLength) {
                 ret.put(esKeyMap_MESSAGE, logData);
                 return ret;
             }
-            if (values.length == 1 && logArray.length == 1 && maxLength == 1) {
+            if (values.length == 1 && logArray.size() == 1 && maxLength == 1) {
                 String[] ktSplit = keysAndTypes[0].split(":");
                 String keysAndType = ktSplit[0];
-                ret.put(keysAndType, logArray);
+                ret.put(keysAndType, logArray.get(0));
                 return ret;
             }
 
             int count = 0;
-            int valuecount = 0;
+            int valueCount = 0;
             /**
              * 正常解析
              */
             for (int i = 0; i < keysAndTypes.length; i++) {
                 String[] kTsplit = keysAndTypes[i].split(":");
-                if (kTsplit.length != 2) {
+                if (kTsplit.length != 2 || i >= values.length) {
                     continue;
                 }
                 if (kTsplit[0].equals(esKeyMap_topic)) {
@@ -96,17 +93,14 @@ public class SeparatorLogParser implements LogParser {
                 try {
                     num = new Integer(values[i]);
                     if (num == -1) {
-                        valuecount++;
+                        valueCount++;
                         continue;
                     }
                 } catch (Exception e) {
                     continue;
                 }
-                if (num < logArray.length && num > -1) {
-                    value = logArray[num];
-//                    if (StringUtils.startsWith(value, LOG_PREFIX) && StringUtils.endsWith(value, LOG_SUFFFIX)) {
-//                        value = value.substring(1, value.length() - 1);
-//                    }
+                if (num < logArray.size() && num > -1) {
+                    value = logArray.get(num);
                 } else {
                     value = "";
                 }
@@ -114,9 +108,6 @@ public class SeparatorLogParser implements LogParser {
                     Long time = getTimestampFromString(value, collectStamp);
                     ret.put(esKeyMap_timestamp, time);
                 } else {
-                    if (value.length() > MESSAGE_MAX_SIZE) {
-                        value = StringUtils.substring(value, 0, MESSAGE_MAX_SIZE);
-                    }
                     ret.put(kTsplit[0], value);
                 }
             }
@@ -126,9 +117,6 @@ public class SeparatorLogParser implements LogParser {
              * esKeyMap_topic,esKeyMap_tag,esKeyMap_logstoreName,esKeyMap_logSource 对用户不可见，即不存在于values，logArray
              */
             if (ret.values().stream().filter(Objects::nonNull).map(String::valueOf).anyMatch(StringUtils::isEmpty)) {
-                if (logData.length() > MESSAGE_MAX_SIZE) {
-                    logData = StringUtils.substring(logData, 0, MESSAGE_MAX_SIZE);
-                }
                 ret.put(esKeyMap_logSource, logData);
             }
         } catch (Exception e) {
@@ -136,4 +124,15 @@ public class SeparatorLogParser implements LogParser {
         }
         return ret;
     }
+
+    @Override
+    public List<String> parseLogData(String logData) {
+        return parseLogData(logData, -1);
+    }
+
+    private List<String> parseLogData(String logData, Integer maxLength) {
+        String[] logArray = StringUtils.splitByWholeSeparatorPreserveAllTokens(logData, parserData.getParseScript(), maxLength);
+        return Arrays.stream(logArray).collect(Collectors.toList());
+    }
+
 }

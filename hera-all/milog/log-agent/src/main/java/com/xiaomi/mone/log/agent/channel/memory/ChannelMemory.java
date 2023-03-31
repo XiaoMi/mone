@@ -86,6 +86,10 @@ public class ChannelMemory implements Serializable {
          * - 停止采集的，如果文件不存在，也会删除掉该memory记录
          */
         private Boolean finished;
+        /**
+         * 只有当部署在k8s上时才有值
+         */
+        private String podType;
 
     }
 

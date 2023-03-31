@@ -950,7 +950,7 @@ public class Gitlab {
         if (StringUtils.isEmpty(projectId) || StringUtils.isEmpty(branchName) || StringUtils.isEmpty(ref) || StringUtils.isEmpty(token)) {
             return new BaseResponse(-1, "createBranch参数无效");
         }
-        GitlabBranch branch = new GitlabBranch();
+    //    GitlabBranch branch = new GitlabBranch();
         String url = GIT_API_URL + "projects/" + projectId + "/repository/branches";
         try {
             String body = "{\"id\": \"%s\",\"branch\": \"%s\",\"ref\": \"%s\"}";
@@ -986,7 +986,7 @@ public class Gitlab {
         if (StringUtils.isEmpty(projectId) || StringUtils.isEmpty(sourceBranch) || StringUtils.isEmpty(targetBranch)) {
             return null;
         }
-        GitlabMerge merge = new GitlabMerge();
+      //  GitlabMerge merge = new GitlabMerge();
         String url = GIT_API_URL + "projects/" + projectId + "/merge_requests";
         try {
             String body = "{\"id\": \"%s\",\"source_branch\": \"%s\",\"target_branch\": \"%s\",\"title\": \"%s\"}";
@@ -1006,7 +1006,7 @@ public class Gitlab {
         if (StringUtils.isEmpty(projectId) || StringUtils.isEmpty(iid) || StringUtils.isEmpty(token)) {
             return null;
         }
-        GitlabMerge merge = new GitlabMerge();
+   //     GitlabMerge merge = new GitlabMerge();
         String url = GIT_API_URL + "projects/" + projectId + "/merge_requests/" + iid + "/merge";
         try {
             Map<String, String> headers = new HashMap<>();

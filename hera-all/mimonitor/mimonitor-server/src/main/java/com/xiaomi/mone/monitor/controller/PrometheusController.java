@@ -13,7 +13,6 @@ import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.AppAlarmService;
 import com.xiaomi.mone.monitor.service.HeraBaseInfoService;
 import com.xiaomi.mone.monitor.service.es.EsService;
-import com.xiaomi.mone.monitor.service.helper.RedisHelper;
 import com.xiaomi.mone.monitor.service.model.PageData;
 import com.xiaomi.mone.monitor.service.model.prometheus.MetricDetailQuery;
 import com.xiaomi.mone.monitor.service.model.prometheus.MiLogQuery;
@@ -284,11 +283,11 @@ public class PrometheusController {
         return prometheusService.queryDubboServiceList(serviceName,lastTime,type);
     }
 
-    @GetMapping("/api-manual/redis/switch")
-    public Result redisSwitch(String value) {
-        RedisHelper.redisSwitch = value;
-        return Result.success("ok!");
-    }
+//    @GetMapping("/api-manual/redis/switch")
+//    public Result redisSwitch(String value) {
+//        RedisHelper.redisSwitch = value;
+//        return Result.success("ok!");
+//    }
 
     @GetMapping("/api/prometheus/oracle")
     public Result oracle(String mode,String type){

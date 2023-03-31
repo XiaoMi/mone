@@ -126,12 +126,18 @@ public class DefaultFileMonitorListener implements FileMonitorListener {
 
     @Override
     public void removeChannelService(ChannelService channelService) {
-        pathChannelServiceMap.remove(channelService.getMonitorPathList());
-        List<MonitorFile> monitorPathList = channelService.getMonitorPathList();
-        List<String> newMonitorDirectories = newMonitorDirectories(monitorPathList);
-        for (String watchDirectory : newMonitorDirectories) {
-            pathList.remove(watchDirectory);
-            scheduledFutureMap.get(watchDirectory).cancel(true);
+        try {
+            pathChannelServiceMap.remove(channelService.getMonitorPathList());
+            List<MonitorFile> monitorPathList = channelService.getMonitorPathList();
+            List<String> newMonitorDirectories = newMonitorDirectories(monitorPathList);
+            for (String watchDirectory : newMonitorDirectories) {
+                pathList.remove(watchDirectory);
+                if (scheduledFutureMap.containsKey(watchDirectory)) {
+                    scheduledFutureMap.get(watchDirectory).cancel(true);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("removeChannelService file listener,monitorPathList:{}", gson.toJson(channelService.getMonitorPathList()), e);
         }
     }
 

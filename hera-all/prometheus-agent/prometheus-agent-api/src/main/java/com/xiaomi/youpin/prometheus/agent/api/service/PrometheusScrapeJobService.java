@@ -13,5 +13,6 @@ public interface PrometheusScrapeJobService {
     Result DeleteScrapeConfig(String id);
     Result UpdateScrapeConfig(String id, ScrapeConfigParam entity);
     Result GetScrapeConfig(String id);
+    Result GetScrapeConfigByName(String name);
     Result GetScrapeConfigList(Integer page_size,Integer page_no);
 }

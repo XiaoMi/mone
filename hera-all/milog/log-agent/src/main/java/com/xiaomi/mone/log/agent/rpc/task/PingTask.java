@@ -16,18 +16,19 @@
 
 package com.xiaomi.mone.log.agent.rpc.task;
 
-import com.google.gson.Gson;
 import com.xiaomi.data.push.rpc.RpcClient;
 import com.xiaomi.data.push.rpc.RpcCmd;
 import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
 import com.xiaomi.data.push.task.Task;
-import com.xiaomi.mone.log.utils.NetUtil;
 import com.xiaomi.mone.log.api.model.meta.AppLogMeta;
 import com.xiaomi.mone.log.api.model.vo.PingReq;
+import com.xiaomi.mone.log.utils.NetUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static com.xiaomi.mone.log.common.Constant.GSON;
 
 /**
  * look:zhangzhiyong1
@@ -62,7 +63,7 @@ public class PingTask extends Task {
                     ping.setMessage("ping:" + System.currentTimeMillis());
                 }
                 RemotingCommand req = RemotingCommand.createRequestCommand(RpcCmd.pingReq);
-                req.setBody(new Gson().toJson(ping).getBytes());
+                req.setBody(GSON.toJson(ping).getBytes());
 
                 client.sendMessage(client.getServerAddrs(), req, responseFuture -> {
                     if (null == responseFuture.getResponseCommand()) {
@@ -70,7 +71,7 @@ public class PingTask extends Task {
                     }
                     String body = new String(responseFuture.getResponseCommand().getBody());
                     if (!load.get()) {
-                        AppLogMeta alm = new Gson().fromJson(body, AppLogMeta.class);
+                        AppLogMeta alm = GSON.fromJson(body, AppLogMeta.class);
                         load.set(true);
                         log.info("load config finish:{}", alm);
                     }

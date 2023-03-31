@@ -16,6 +16,7 @@
 
 package com.xiaomi.hera.trace.etl.manager.config;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.github.pagehelper.PageInterceptor;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import lombok.extern.slf4j.Slf4j;
@@ -56,13 +57,13 @@ public class DataSourceConfig {
     @Value("${spring.datasource.default.minialPoolSize}")
     private Integer defaultMinPoolSize;
 
-    @Value(value = "${spring.datasource.username}")
+    @NacosValue("${spring.datasource.username}")
     private String dataSourceUserName;
 
-    @Value("${spring.datasource.url}")
+    @NacosValue("${spring.datasource.url}")
     private String dataSourceUrl;
 
-    @Value("${spring.datasource.password}")
+    @NacosValue("${spring.datasource.password}")
     private String dataSourcePasswd;
 
     @Value("${server.type}")

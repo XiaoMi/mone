@@ -1,5 +1,6 @@
 package com.xiaomi.youpin.prometheus.agent.config;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.common.collect.Maps;
 import org.apache.dubbo.config.ApplicationConfig;
 import org.apache.dubbo.config.ProtocolConfig;
@@ -17,7 +18,7 @@ public class DubboConfiguration {
     @Value("${server.port}")
     private String httpGateWayPort;
 
-    @Value("${dubbo.registry.address}")
+    @NacosValue("${dubbo.registry.address}")
     private String regAddress;
 
     @Bean

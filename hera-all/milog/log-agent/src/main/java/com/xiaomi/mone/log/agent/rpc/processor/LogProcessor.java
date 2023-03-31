@@ -1,6 +1,5 @@
 package com.xiaomi.mone.log.agent.rpc.processor;
 
-import com.google.gson.Gson;
 import com.xiaomi.data.push.rpc.netty.NettyRequestProcessor;
 import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
 import com.xiaomi.mone.log.agent.channel.ChannelDefine;
@@ -12,11 +11,13 @@ import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.Component;
 import io.netty.channel.ChannelHandlerContext;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections.CollectionUtils;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+
+import static com.xiaomi.mone.log.common.Constant.GSON;
 
 /**
  * @author goodjava@qq.com
@@ -25,17 +26,15 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class LogProcessor implements NettyRequestProcessor {
 
-    private Gson gson = new Gson();
-
     @Override
     public RemotingCommand processRequest(ChannelHandlerContext channelHandlerContext, RemotingCommand remotingCommand) throws Exception {
         LogCollectMeta req = remotingCommand.getReq(LogCollectMeta.class);
 
-        log.info("logCollect config req:{}", gson.toJson(req));
+        log.info("logCollect config req:{}", GSON.toJson(req));
 
         RemotingCommand response = RemotingCommand.createResponseCommand(LogCmd.logRes);
         response.setBody("ok".getBytes());
-        log.info("【config change】receive data：{}", gson.toJson(req));
+        log.info("【config change】receive data：{}", GSON.toJson(req));
         metaConfigEffect(req);
         log.info("config change success");
         return response;
@@ -64,8 +63,12 @@ public class LogProcessor implements NettyRequestProcessor {
         }
         if (CollectionUtils.isNotEmpty(req.getAppLogMetaList())) {
             reFreshFuture = CompletableFuture.runAsync(() -> {
-                List<ChannelDefine> channelDefines = ChannelDefineRpcLocator.agentTail2ChannelDefine(ChannelDefineRpcLocator.logCollectMeta2ChannelDefines(req));
-                channelEngine.refresh(channelDefines);
+                try {
+                    List<ChannelDefine> channelDefines = ChannelDefineRpcLocator.agentTail2ChannelDefine(ChannelDefineRpcLocator.logCollectMeta2ChannelDefines(req));
+                    channelEngine.refresh(channelDefines);
+                } catch (Exception e) {
+                    log.error("refresh config error,req:{}", GSON.toJson(req), e);
+                }
             });
         }
         if (CollectionUtils.isNotEmpty(req.getPodNames())) {

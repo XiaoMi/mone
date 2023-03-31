@@ -1,6 +1,7 @@
 # K8s操作库
-# 目前建议使用docean(docean里边有一个k8s plugin,都已经封装好了)
-
+# K8s operation library k8s operator lib
+# 目前建议使用docean(docean里边有一个k8s plugin,都已经封装好了),建议使用(docean-plugin -> docean-plugin-k8s)
+# It is currently recommended to use Docean (Docean has a built-in k8s plugin, which is already well-packaged), recommended to use (docean-plugin -> docean-plugin-k8s)
 提供了使用Java代码操作K8S集群的方法。
 
 

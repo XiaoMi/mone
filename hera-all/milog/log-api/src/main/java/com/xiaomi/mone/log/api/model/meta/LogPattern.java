@@ -58,6 +58,11 @@ public class LogPattern implements Serializable {
     private String logSplitExpress;
 
     /**
+     * 行首正则
+     */
+    private String firstLineReg;
+
+    /**
      * 每个pathCode对应不同的mq tag；
      * 由app + logPath 组合生成，用于消息隔离
      */
