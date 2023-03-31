@@ -114,7 +114,7 @@ public class OpenApiTest {
         HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(new OpenAILogger());
         httpLoggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
         OpenAiClient openAiClient = OpenAiClient.builder()
-                .apiKey(System.getenv("open_api_key"))
+                .apiKey("")
                 .connectTimeout(50)
                 .writeTimeout(50)
                 .readTimeout(50)
