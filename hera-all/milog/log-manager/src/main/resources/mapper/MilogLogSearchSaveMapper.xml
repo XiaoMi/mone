@@ -35,7 +35,73 @@
         FROM
             milog_log_search_save
         WHERE
-            store_id = #{storeId}
-        AND name = #{name}
+            name = #{name}
+          AND creator = #{creator}
+    </select>
+
+    <select id="selectByCreator" resultType="com.xiaomi.mone.log.manager.model.dto.SearchSaveDTO">
+        SELECT
+            *,
+            GROUP_CONCAT( DISTINCT CASE WHEN t.tail IS NULL THEN '' ELSE t.tail END ) tailName,
+            GROUP_CONCAT( DISTINCT CASE WHEN t.tail IS NULL THEN '' ELSE app_name END ) appName
+        FROM
+            (
+                SELECT
+                    save.*,
+                    save.query_text queryText,
+                    space.space_name spaceName,
+                    store.logstoreName storeName,
+                    tail.tail tail,
+                    tail.app_name app_name
+                FROM
+                    milog_log_search_save save
+                        LEFT JOIN milog_space space ON save.space_id = space.id
+                    LEFT JOIN milog_logstore store ON save.store_id = store.id
+                    LEFT JOIN milog_logstail tail ON FIND_IN_SET( tail.id, save.tail_id )
+                WHERE
+                    save.creator = #{creator}
+                  AND sort = #{sort}
+                ORDER BY
+                    save.order_num ASC
+            ) t
+        GROUP BY
+            t.id
+    </select>
+
+    <select id="getMaxOrder" resultType="java.lang.Integer">
+        SELECT
+            max(order_num)
+        FROM
+            milog_log_search_save
+        WHERE
+            creator = #{creator}
+          AND sort = #{sort}
+    </select>
+    <select id="isMyFavouriteStore" resultType="java.lang.Integer">
+        SELECT
+            count(1)
+        FROM
+            milog_log_search_save
+        WHERE
+            creator = #{creator}
+          AND store_id = #{storeId}
+          AND sort = 3
+    </select>
+    <select id="isMyFavouriteTail" resultType="java.lang.Integer">
+        SELECT
+            count(1)
+        FROM
+            milog_log_search_save
+        WHERE
+            creator = #{creator}
+          AND tail_id = #{tailId}
+          AND sort = 2
+    </select>
+
+    <select id="getAll" resultType="com.xiaomi.mone.log.manager.model.pojo.MilogLogSearchSaveDO">
+        SELECT
+            *
+        FROM
+            milog_log_search_save
     </select>
 </mapper>

@@ -1,11 +1,12 @@
 package com.xiaomi.mone.log.manager.model.pojo;
 
-import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
-import java.io.Serializable;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+
+import java.io.Serializable;
 
 /**
  * <p>
@@ -19,8 +20,6 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = false)
 @TableName("milog_log_template")
 public class MilogLogTemplateDO implements Serializable {
-
-    private static final long serialVersionUID = 1L;
 
     /**
      * 主键Id
@@ -48,10 +47,15 @@ public class MilogLogTemplateDO implements Serializable {
      */
     private Integer type;
 
+    private String supportArea;
+
     /**
      * 排序
      */
     private Integer orderCol;
-
+    /**
+     * 是否自持消费，1.支持
+     */
+    private Integer supportedConsume;
 
 }

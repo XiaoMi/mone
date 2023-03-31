@@ -18,12 +18,8 @@ package com.xiaomi.mone.log.manager.controller;
 
 import com.alibaba.nacos.api.config.ConfigService;
 import com.google.gson.Gson;
-import com.xiaomi.data.push.context.AgentContext;
 import com.xiaomi.data.push.rpc.RpcServer;
-import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
-import com.xiaomi.mone.log.api.model.meta.AppLogMeta;
 import com.xiaomi.mone.log.api.model.meta.LogCollectMeta;
-import com.xiaomi.mone.log.api.model.vo.LogCmd;
 import com.xiaomi.mone.log.api.service.PublishConfigService;
 import com.xiaomi.mone.log.common.Constant;
 import com.xiaomi.mone.log.manager.common.Result;
@@ -32,9 +28,9 @@ import com.xiaomi.mone.log.manager.dao.MilogAppTopicRelDao;
 import com.xiaomi.mone.log.manager.dao.MilogRegionAvailableZoneDao;
 import com.xiaomi.mone.log.manager.model.bo.RegionZoneBo;
 import com.xiaomi.mone.log.manager.model.pojo.ConfigPushData;
-import com.xiaomi.mone.log.manager.model.pojo.LogSpaceDO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogAppTopicRelDO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogRegionAvailableZoneDO;
+import com.xiaomi.mone.log.manager.model.pojo.MilogSpaceDO;
 import com.xiaomi.mone.log.manager.service.impl.AgentConfigServiceImpl;
 import com.xiaomi.mone.log.manager.service.impl.MilogAgentServiceImpl;
 import com.xiaomi.mone.log.manager.service.nacos.MultipleNacosConfig;
@@ -83,11 +79,11 @@ import static com.xiaomi.mone.log.manager.user.MoneUserDetailService.GSON;
 @Controller
 public class TestController {
 
-    @Value(value = "$rocketmq_milog_namesrv_addr")
+    @Value(value = "$rocketmq_namesrv_addr")
     private String address;
-    @Value(value = "$rocketmq_milog_ak")
+    @Value(value = "$rocketmq_ak")
     private String ak;
-    @Value(value = "$rocketmq_milog_sk")
+    @Value(value = "$rocketmq_sk")
     private String sk;
 
     @Resource
@@ -127,7 +123,7 @@ public class TestController {
         IntStream.range(0, 100).forEach(value -> {
             log.info("hhhahfasfsd,{}", value);
         });
-        return "ok:" + dao.fetch(LogSpaceDO.class);
+        return "ok:" + dao.fetch(MilogSpaceDO.class);
     }
 
     @RequestMapping(path = "/test/file/inode", method = "get")
@@ -138,7 +134,7 @@ public class TestController {
         BasicFileAttributes bfa = Files.readAttributes(files.toPath(), BasicFileAttributes.class);
         Object o = bfa.fileKey();
         log.info("file inode:{}", o);
-        return "ok:" + dao.fetch(LogSpaceDO.class);
+        return "ok:" + dao.fetch(MilogSpaceDO.class);
     }
 
     @RequestMapping(path = "/get/nacos/ok", method = "get")
@@ -285,8 +281,8 @@ public class TestController {
                 milogRegionAvailableZoneDO.setZoneNameEN(innerClass.getZone_name_en());
                 milogRegionAvailableZoneDO.setCtime(Instant.now().toEpochMilli());
                 milogRegionAvailableZoneDO.setUtime(Instant.now().toEpochMilli());
-                milogRegionAvailableZoneDO.setCreator(Constant.DEFAULT_OERATOR);
-                milogRegionAvailableZoneDO.setUpdater(Constant.DEFAULT_OERATOR);
+                milogRegionAvailableZoneDO.setCreator(Constant.DEFAULT_OPERATOR);
+                milogRegionAvailableZoneDO.setUpdater(Constant.DEFAULT_OPERATOR);
                 regionAvailableZoneDao.insert(milogRegionAvailableZoneDO);
             }
         });

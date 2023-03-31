@@ -42,7 +42,7 @@ public interface LogTailService {
 
     Result<Void> deleteMilogLogTail(Long id);
 
-    void sendMessageOnDelete(MilogLogTailDo mt);
+    void sendMessageOnDelete(MilogLogTailDo mt, MilogLogStoreDO logStoreDO);
 
     Result<List<MapDTO>> getAppInfoByName(String appName, Integer type);
 

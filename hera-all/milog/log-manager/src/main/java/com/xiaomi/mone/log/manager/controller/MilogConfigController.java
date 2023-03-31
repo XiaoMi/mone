@@ -1,21 +1,22 @@
 package com.xiaomi.mone.log.manager.controller;
 
+import com.xiaomi.mone.log.api.model.vo.TailLogProcessDTO;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.manager.domain.Tpc;
+import com.xiaomi.mone.log.manager.model.MilogSpaceParam;
 import com.xiaomi.mone.log.manager.model.bo.BatchQueryParam;
 import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
-import com.xiaomi.mone.log.manager.model.bo.CreateOrUpdateSpaceCmd;
 import com.xiaomi.mone.log.manager.model.bo.MlogParseParam;
 import com.xiaomi.mone.log.manager.model.dto.*;
 import com.xiaomi.mone.log.manager.model.page.PageInfo;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
-import com.xiaomi.mone.log.manager.model.vo.CreateOrUpdateLogStoreCmd;
+import com.xiaomi.mone.log.manager.model.vo.LogStoreParam;
 import com.xiaomi.mone.log.manager.model.vo.QuickQueryVO;
 import com.xiaomi.mone.log.manager.service.HeralogHomePageService;
-import com.xiaomi.mone.log.manager.service.impl.LogTailServiceImpl;
-import com.xiaomi.mone.log.manager.service.impl.LogSpaceServiceImpl;
 import com.xiaomi.mone.log.manager.service.impl.LogProcessServiceImpl;
+import com.xiaomi.mone.log.manager.service.impl.LogSpaceServiceImpl;
 import com.xiaomi.mone.log.manager.service.impl.LogStoreServiceImpl;
+import com.xiaomi.mone.log.manager.service.impl.LogTailServiceImpl;
 import com.xiaomi.youpin.docean.anno.Controller;
 import com.xiaomi.youpin.docean.anno.RequestMapping;
 import com.xiaomi.youpin.docean.anno.RequestParam;
@@ -52,7 +53,7 @@ public class MilogConfigController {
      */
 
     @RequestMapping(path = "/milog/space/new")
-    public Result<String> newMilogSpace(CreateOrUpdateSpaceCmd cmd) {
+    public Result<String> newMilogSpace(MilogSpaceParam cmd) {
         return logSpaceService.newMilogSpace(cmd);
     }
 
@@ -79,7 +80,7 @@ public class MilogConfigController {
     }
 
     @RequestMapping(path = "/milog/space/update")
-    public Result<String> updateMilogSpace(@RequestParam("param") CreateOrUpdateSpaceCmd param) {
+    public Result<String> updateMilogSpace(@RequestParam("param") MilogSpaceParam param) {
         return logSpaceService.updateMilogSpace(param);
     }
 
@@ -88,7 +89,7 @@ public class MilogConfigController {
      */
 
     @RequestMapping(path = "/milog/store/new")
-    public Result<String> newLogStore(@RequestParam("param") CreateOrUpdateLogStoreCmd param) {
+    public Result<String> newLogStore(@RequestParam("param") LogStoreParam param) {
         return logStoreService.newLogStore(param);
     }
 

@@ -27,12 +27,7 @@ public class TpcTest {
         AuthUserVo authUserVo = new AuthUserVo();
         authUserVo.setAccount("zhangsan29");
         authUserVo.setUserType(UserTypeEnum.CAS_TYPE.getCode());
-        MoneUserContext.setCurrentUser(authUserVo);
-    }
-
-    @Test
-    public void testHandleRemoteTpcId() {
-        tpc.handleRemoteTpcId("logger");
+        MoneUserContext.setCurrentUser(authUserVo, true);
     }
 
 }

@@ -110,8 +110,8 @@ public class UserTest {
                 milogRegionAvailableZoneDO.setZoneNameEN(innerClass.getZone_name_en());
                 milogRegionAvailableZoneDO.setCtime(Instant.now().toEpochMilli());
                 milogRegionAvailableZoneDO.setUtime(Instant.now().toEpochMilli());
-                milogRegionAvailableZoneDO.setCreator(Constant.DEFAULT_OERATOR);
-                milogRegionAvailableZoneDO.setUpdater(Constant.DEFAULT_OERATOR);
+                milogRegionAvailableZoneDO.setCreator(Constant.DEFAULT_OPERATOR);
+                milogRegionAvailableZoneDO.setUpdater(Constant.DEFAULT_OPERATOR);
                 regionAvailableZoneDao.insert(milogRegionAvailableZoneDO);
             }
         });

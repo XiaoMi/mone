@@ -1,6 +1,5 @@
 package com.xiaomi.mone.log.manager.dao;
 
-import com.xiaomi.mone.log.manager.model.bo.StoreSpaceAuth;
 import com.xiaomi.mone.log.manager.model.pojo.MilogStoreSpaceAuth;
 import com.xiaomi.youpin.docean.anno.Service;
 import org.apache.commons.collections.CollectionUtils;
@@ -49,5 +48,9 @@ public class MilogStoreSpaceAuthDao {
 
     public List<MilogStoreSpaceAuth> queryStoreIdsBySpaceId(Long spaceId) {
         return dao.query(MilogStoreSpaceAuth.class, Cnd.where("space_id", EQUAL_OPERATE, spaceId).orderBy("ctime", "desc"));
+    }
+
+    public List<MilogStoreSpaceAuth> queryBySpaceId(List<Long> spaceIdList) {
+        return dao.query(MilogStoreSpaceAuth.class, Cnd.where("space_id", "in", spaceIdList).orderBy("ctime", "desc"));
     }
 }

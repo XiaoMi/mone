@@ -17,21 +17,19 @@ import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
 import com.xiaomi.mone.log.manager.common.helper.MilogAccessHelper;
 import com.xiaomi.mone.log.manager.dao.*;
 import com.xiaomi.mone.log.manager.domain.Tpc;
+import com.xiaomi.mone.log.manager.model.MilogSpaceParam;
 import com.xiaomi.mone.log.manager.model.bo.AccessMilogParam;
 import com.xiaomi.mone.log.manager.model.bo.AppTopicParam;
-import com.xiaomi.mone.log.manager.model.bo.CreateOrUpdateSpaceCmd;
 import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
-import com.xiaomi.mone.log.manager.model.convert.UserConvert;
 import com.xiaomi.mone.log.manager.model.dto.*;
 import com.xiaomi.mone.log.manager.model.page.PageInfo;
 import com.xiaomi.mone.log.manager.model.pojo.*;
 import com.xiaomi.mone.log.manager.model.vo.AccessMiLogVo;
-import com.xiaomi.mone.log.manager.model.vo.CreateOrUpdateLogStoreCmd;
 import com.xiaomi.mone.log.manager.model.vo.LogPathTopicVo;
+import com.xiaomi.mone.log.manager.model.vo.LogStoreParam;
 import com.xiaomi.mone.log.manager.service.BaseService;
 import com.xiaomi.mone.log.manager.service.MilogAppTopicService;
 import com.xiaomi.mone.log.manager.service.RocketMqService;
-import com.xiaomi.mone.tpc.login.util.UserUtil;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.plugin.config.anno.Value;
 import com.xiaomi.youpin.docean.plugin.dubbo.anno.Reference;
@@ -74,21 +72,21 @@ public class MilogAppTopicServiceImpl extends BaseService implements MilogAppTop
     @Resource
     private MilogLogTailDao milogLogtailDao;
     @Resource
-    private LogstoreDao logstoreDao;
+    private MilogLogstoreDao logstoreDao;
     @Resource
     private LogStoreServiceImpl logStoreService;
     @Resource
-    private SpaceDao milogSpaceDao;
+    private MilogSpaceDao milogSpaceDao;
     @Resource
-    private LogSpaceServiceImpl logSpaceService;
+    private LogSpaceServiceImpl milogSpaceService;
     @Resource
     private LogTailServiceImpl logTailService;
-    @Resource
-    private MilogAppMiddlewareRelDao milogAppMiddlewareRelDao;
     @Resource
     private MilogMiddlewareConfigDao milogMiddlewareConfigDao;
     @Resource
     private MilogAgentServiceImpl milogAgentService;
+    @Resource
+    private MilogAppMiddlewareRelDao milogAppMiddlewareRelDao;
 
     @Resource
     private MilogAccessHelper milogAccessHelper;
@@ -336,7 +334,7 @@ public class MilogAppTopicServiceImpl extends BaseService implements MilogAppTop
         // 2.处理应用信息
         MilogAppTopicRelDO topicRelDO = handleMilogAppTopicRel(milogParam);
         //3.handle space
-        LogSpaceDO spaceDO = handleMilogSpace(milogParam.getSpaceName(), milogParam.getAppCreator());
+        MilogSpaceDO spaceDO = handleMilogSpace(milogParam.getSpaceName(), milogParam.getAppCreator());
         //4.handle store
         MilogLogStoreDO logStoreDO = handleMilogStore(spaceDO.getId(), milogParam);
         //5.handle tail
@@ -411,8 +409,8 @@ public class MilogAppTopicServiceImpl extends BaseService implements MilogAppTop
     }
 
 
-    private CreateOrUpdateLogStoreCmd buildLogStoreParam(Long spaceId, String storeName, String machineRoom) {
-        return CreateOrUpdateLogStoreCmd.builder()
+    private LogStoreParam buildLogStoreParam(Long spaceId, String storeName, String machineRoom) {
+        return LogStoreParam.builder()
                 .spaceId(spaceId)
                 .logstoreName(storeName)
                 .storePeriod(7)
@@ -456,19 +454,19 @@ public class MilogAppTopicServiceImpl extends BaseService implements MilogAppTop
         return ProjectSourceEnum.ONE_SOURCE.getSource();
     }
 
-    private LogSpaceDO handleMilogSpace(String spaceName, String creator) {
-        List<LogSpaceDO> milogSpaceDOS = milogSpaceDao.queryBySpaceName(spaceName);
+    private MilogSpaceDO handleMilogSpace(String spaceName, String creator) {
+        List<MilogSpaceDO> milogSpaceDOS = milogSpaceDao.queryBySpaceName(spaceName);
         if (CollectionUtils.isNotEmpty(milogSpaceDOS)) {
             return milogSpaceDOS.get(milogSpaceDOS.size() - 1);
         } else {
-            LogSpaceDO spaceDO = logSpaceService.buildMiLogSpace(
-                    CreateOrUpdateSpaceCmd.builder()
+            MilogSpaceDO spaceDO = milogSpaceService.buildMiLogSpace(
+                    MilogSpaceParam.builder()
                             .spaceName(spaceName)
                             .description(String.format(DEFAULT_SPACE_DESC, spaceName))
                             .build(), creator);
-            spaceDO.setCreator(DEFAULT_OERATOR);
+            spaceDO.setCreator(DEFAULT_OPERATOR);
             spaceDO = milogSpaceDao.insert(spaceDO);
-            tpc.saveSpacePerm(spaceDO, UserConvert.INSTANCE.userAdapter(UserUtil.parseFullAccount(creator)));
+            tpc.saveSpacePerm(spaceDO, creator);
             return spaceDO;
         }
     }

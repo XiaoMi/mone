@@ -221,14 +221,6 @@ public class MilogLogTailDao {
         return access;
     }
 
-    public List<MilogLogTailDo> getAll(String source) {
-        Sql sql = Sqls.queryEntity("SELECT ml.* FROM milog_logstail ml LEFT JOIN milog_app_topic_rel mt ON ml.app_id = mt.app_id WHERE mt.source = @source");
-        sql.setEntity(dao.getEntity(MilogLogTailDo.class));
-        sql.params().set("source", source);
-        dao.execute(sql);
-        return sql.getList(MilogLogTailDo.class);
-    }
-
     public String queryTailNameByAppIdAndName(String appId, String ip) {
         Sql sql = Sqls.queryString("SELECT tail FROM milog_logstail WHERE app_id=@appId and JSON_CONTAINS(ips, '[\"" + ip + "\"]');");
         sql.params().set("appId", appId);

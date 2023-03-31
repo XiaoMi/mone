@@ -1,8 +1,8 @@
 package com.xiaomi.mone.log.manager.controller;
 
+import com.xiaomi.mone.log.api.model.vo.AgentLogProcessDTO;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.manager.model.bo.MilogAgentIpParam;
-import com.xiaomi.mone.log.manager.model.dto.AgentLogProcessDTO;
 import com.xiaomi.mone.log.manager.service.impl.MilogAgentServiceImpl;
 import com.xiaomi.youpin.docean.anno.Controller;
 import com.xiaomi.youpin.docean.anno.RequestMapping;

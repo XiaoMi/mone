@@ -2,7 +2,7 @@ package com.xiaomi.mone.log.manager.common.validation;
 
 import com.xiaomi.mone.log.api.enums.MachineRegionEnum;
 import com.xiaomi.mone.log.api.enums.ProjectTypeEnum;
-import com.xiaomi.mone.log.manager.dao.LogstoreDao;
+import com.xiaomi.mone.log.manager.dao.MilogLogstoreDao;
 import com.xiaomi.mone.log.manager.dao.MilogLogTailDao;
 import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
 import com.xiaomi.mone.log.manager.model.bo.MlogParseParam;
@@ -29,7 +29,7 @@ public class HeraConfigValid {
     private static final String MIS_LOGPATH_PREFIX = "/home/work/logs";
 
     @Resource
-    private LogstoreDao milogLogstoreDao;
+    private MilogLogstoreDao milogLogstoreDao;
 
     @Resource
     private MilogLogTailDao milogLogtailDao;

@@ -5,16 +5,16 @@ import com.xiaomi.mone.log.manager.model.dto.LogStoreDTO;
 import com.xiaomi.mone.log.manager.model.dto.MapDTO;
 import com.xiaomi.mone.log.manager.model.dto.MenuDTO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
-import com.xiaomi.mone.log.manager.model.vo.CreateOrUpdateLogStoreCmd;
+import com.xiaomi.mone.log.manager.model.vo.LogStoreParam;
 
 import java.util.List;
 import java.util.Map;
 
 public interface LogStoreService {
 
-    Result<String> newLogStore(CreateOrUpdateLogStoreCmd cmd);
+    Result<String> newLogStore(LogStoreParam cmd);
 
-    MilogLogStoreDO buildLogStoreEsInfo(CreateOrUpdateLogStoreCmd cmd, String creator);
+    MilogLogStoreDO buildLogStoreEsInfo(LogStoreParam cmd, String creator);
 
     Result<LogStoreDTO> getLogStoreById(Long id);
 
@@ -26,7 +26,7 @@ public interface LogStoreService {
 
     Result<List<MilogLogStoreDO>> getLogStoreByIds(List<Long> ids);
 
-    Result<String> updateLogStore(CreateOrUpdateLogStoreCmd cmd);
+    Result<String> updateLogStore(LogStoreParam cmd);
 
     Result<Void> deleteLogStore(Long id);
 
