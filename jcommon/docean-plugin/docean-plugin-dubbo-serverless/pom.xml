@@ -27,7 +27,7 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>dubbo</artifactId>
-            <version>2.7.0-mone-serverless-v14-SNAPSHOT</version>
+            <version>2.7.0-mone-serverless-v15-SNAPSHOT</version>
         </dependency>
 
 
