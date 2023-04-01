@@ -22,4 +22,35 @@ public class MethodCode implements Serializable {
 
     private Class returnType;
 
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public void setCode(String code) {
+        this.code = code;
+    }
+
+    public List<Pair<Class, String>> getParamList() {
+        return paramList;
+    }
+
+    public void setParamList(List<Pair<Class, String>> paramList) {
+        this.paramList = paramList;
+    }
+
+    public Class getReturnType() {
+        return returnType;
+    }
+
+    public void setReturnType(Class returnType) {
+        this.returnType = returnType;
+    }
 }
