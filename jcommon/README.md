@@ -1,3 +1,5 @@
++ 第一个不依赖小米库可以编译过的版本:2023-04-02
++ The first version that can be compiled without relying on the Xiaomi library: 2023-04-02 
 + 类似于谷歌的guava,提供一些组内经常使用的库
 + Similar to Google's Guava, it provides some internally used libraries 
 + jcommon　是Mone开发团队在开发过程中抽象的一套Java基础库，包含了日志，缓存，rpc框架，多线程多个模块。
@@ -8,7 +10,7 @@
 + mifaas mainly depends on rcurve+docean+docean-plugin 
 + 支持Hera(可观测系统) Odin(Mesh系统) Tesla(网关) 等项目
 + Support for projects such as Hera (Observable System), Odin (Mesh System), Tesla (Gateway), etc.
-+ 推荐maven设置(主要是国内用阿里的源)
++ 推荐maven设置(主要是国内用阿里的源),阿里的那个可以不设置,阿里的主要是用来提速
 ```
 <settings>
 
