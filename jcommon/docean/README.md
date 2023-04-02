@@ -1,6 +1,8 @@
 # 概述
-* 基于Netty的轻量级微服务开发框架。
-* 特点: 符合Java标准、轻量级、没有无用的库、内存占用少、快速服务请求、可维护性高
+* 一个轻量级微服务开发框架。可以嵌入spring框架
+* A lightweight microservices development framework. It can be embedded into the Spring framework. 
+* 特点: 符合Java标准、轻量级、没有无用的库、内存占用少、快速服务请求、可维护性高 支持plugin扩展
+* Features: Compliant with Java standards, lightweight, no unnecessary libraries, low memory footprint, fast service requests, high maintainability, and supports plugin extensions.
 * 支持IOC、AOP，提供mysql、dubbo、redis、nacos、rocketmq、sentinel等插件
 * 使用说明：
 新创建的java项目只需要引入一下两个依赖：
