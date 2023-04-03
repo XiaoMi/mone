@@ -17,7 +17,7 @@ import com.xiaomi.mone.tpc.common.vo.UserVo;
 import com.xiaomi.mone.tpc.login.util.UserUtil;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 import com.xiaomi.youpin.prometheus.agent.api.service.PrometheusAlertService;
-import com.xiaomi.youpin.prometheus.agent.param.RuleAlertParam;
+import com.xiaomi.youpin.prometheus.agent.param.alert.RuleAlertParam;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.Reference;
 import org.springframework.stereotype.Service;
