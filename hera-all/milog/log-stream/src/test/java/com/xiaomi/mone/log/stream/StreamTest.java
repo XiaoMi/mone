@@ -1,9 +1,6 @@
 package com.xiaomi.mone.log.stream;
 
-import com.xiaomi.infra.galaxy.rpc.thrift.Credential;
-import com.xiaomi.infra.galaxy.rpc.thrift.UserType;
 import com.xiaomi.mone.log.stream.plugin.mq.talos.TalosConfig;
-import libthrift091.TException;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -25,7 +22,7 @@ public class StreamTest {
 
 
     @Test
-    public void testTalos() throws TException, IOException {
+    public void testTalos() throws  IOException {
         TalosConfig config = new TalosConfig();
         config.setConsumerGroup("talosConsumerGroup");
         config.setClientPrefix("logSystem-");
@@ -33,11 +30,6 @@ public class StreamTest {
         pros.setProperty("galaxy.talos.service.endpoint", "http://127.0.0.1");
 //        TalosConsumerConfig consumerConfig = new TalosConsumerConfig(pros);
 //        config.setConsumerConfig(consumerConfig);
-        Credential credential = new Credential();
-        credential.setSecretKeyId("")
-                .setSecretKey("")
-                .setType(UserType.DEV_XIAOMI);
-        config.setCredential(credential);
         config.setTopicName("");
 //        new TalosConsumer(config.getConsumerGroup(), config.getConsumerConfig(),
 //                config.getCredential(), config.getTopicName(), new RmqSinkJob.TalosMessageProcessorFactory(new RmqSinkJob()),
