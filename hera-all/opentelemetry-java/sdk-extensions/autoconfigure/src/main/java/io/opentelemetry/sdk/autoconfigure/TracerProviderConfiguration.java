@@ -45,7 +45,7 @@ final class TracerProviderConfiguration {
       configurer.configure(tracerProviderBuilder);
     }
 
-    String exporterName = config.getString(EnvOrJvmProperties.JVM_OTEL_TRACES_EXPORTER);
+    String exporterName = config.getString(EnvOrJvmProperties.JVM_OTEL_TRACES_EXPORTER.getKey());
     if (exporterName == null) {
       exporterName = "otlp";
     }

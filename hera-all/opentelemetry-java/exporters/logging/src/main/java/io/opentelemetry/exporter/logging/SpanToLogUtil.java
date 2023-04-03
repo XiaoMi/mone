@@ -28,9 +28,9 @@ public class SpanToLogUtil {
 
   private static final String split = " ### ";
   private static String hostName = "";
-  private static String ipv4Env = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_HOST_IP);
-  private static String env = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_NAME);
-  private static String envId = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_ID);
+  private static String ipv4Env = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_HOST_IP.getKey());
+  private static final String env = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_NAME.getKey());
+  private static String envId = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_ID.getKey());
   private static final String FUNCTION_MODULE_KEY = "service.function.module";
   private static final String FUNCTION_NAME_KEY = "service.function.name";
   private static final String FUNCTION_ID_KEY = "service.function.id";
@@ -40,9 +40,6 @@ public class SpanToLogUtil {
   static final String KEY_HERACONTEXT = "span.hera_context";
 
   static {
-    if (StringUtils.isNullOrEmpty(env)) {
-      env = DEFAULT_ENV;
-    }
     if(envId == null){
       envId = "";
     }
