@@ -48,11 +48,27 @@
             <version>1.0-SNAPSHOT</version>
         </dependency>
 
+
+        <dependency>
+            <groupId>org.apache.thrift</groupId>
+            <artifactId>libthrift</artifactId>
+            <version>0.14.1</version>
+        </dependency>
+
+
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>hera-tspandata</artifactId>
             <version>1.0-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>org.apache.thrift</artifactId>
+                    <groupId>thrift</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
+
+
 
 
         <dependency>

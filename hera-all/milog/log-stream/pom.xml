@@ -26,9 +26,16 @@
 
         <dependency>
             <groupId>org.apache.rocketmq</groupId>
+            <artifactId>rocketmq-acl</artifactId>
+            <version>4.9.4</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.rocketmq</groupId>
             <artifactId>rocketmq-client</artifactId>
             <version>4.9.4</version>
             <exclusions>
+
                 <exclusion>
                     <groupId>org.slf4j</groupId>
                     <artifactId>slf4j-simple</artifactId>
@@ -47,7 +54,7 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>docean-plugin-rocketmq</artifactId>
-            <version>1.4-SNAPSHOT</version>
+            <version>1.4.1-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <artifactId>httpclient</artifactId>

@@ -1,0 +1,73 @@
+# This is a basic workflow to help you get started with Actions
+
+name: hera test
+
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  pull_request:
+    paths:
+    - 'hera-all/**'
+  workflow_dispatch:
+  
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  check-build:
+    name: hera test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Setup Maven Action
+        uses: s4u/setup-maven-action@v1.7.0
+        with:
+          java-version: 8
+          #settings-properties: '[{"propertyName1": "propertyValue1"}, {"propertyName2": "propertyValue2"}]'
+
+      - run: echo '<settings>    <interactiveMode>false</interactiveMode>    <profiles>        <profile>            <repositories>                <repository>                    <snapshots />                    <id>ossrh</id>                    <name>ossrh-snapshot</name>                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>                </repository>            </repositories>            <id>artifactory</id>        </profile>    </profiles>    <activeProfiles>        <activeProfile>artifactory</activeProfile>    </activeProfiles>    <servers>        <server>            <id>github</id>            <username>${env.GITHUB_ACTOR}</username>            <password>${env.GITHUB_TOKEN}</password>        </server>    </servers>    <mirrors/>    <proxies/></settings>' > ~/.m2/settings.xml
+
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            hera-app:
+              - 'hera-all/hera-app/**'
+            hera-operator:
+              - 'hera-all/hera-operator/**'
+            hera-tspandata:
+              - 'hera-all/hera-tspandata/**'
+            milog:
+              - 'hera-all/milog/**'
+            mimonitor:
+              - 'hera-all/mimonitor/**'
+            opentelemetry-java:
+              - 'hera-all/opentelemetry-java/**'
+            opentelemetry-java-instrumentation:
+              - 'hera-all/opentelemetry-java-instrumentation/**'
+            prometheus-agent:
+              - 'hera-all/prometheus-agent/**'
+            prometheus-starter-all:
+              - 'hera-all/prometheus-starter-all/**'
+            trace-etl:
+              - 'hera-all/trace-etl/**'
+        # run only if some file in 'src' folder was changed
+      - if: steps.changes.outputs.hera-app == 'true' || github.event == 'workflow_dispatch'
+        run: cd hera-all/hera-app; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
+      - if: steps.changes.outputs.hera-operator == 'true' || github.event == 'workflow_dispatch'
+        run: cd hera-all/hera-operator; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
+      - if: steps.changes.outputs.hera-tspandata == 'true' || github.event == 'workflow_dispatch'
+        run: cd hera-all/hera-tspandata; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
+      - if: steps.changes.outputs.milog == 'true' || github.event == 'workflow_dispatch'
+        run: cd hera-all/milog; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
+      - if: steps.changes.outputs.mimonitor == 'true' || github.event == 'workflow_dispatch'
+        run: cd hera-all/mimonitor; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..\
+      - if: steps.changes.outputs.opentelemetry-java == 'true' || github.event == 'workflow_dispatch'
+        run: cd hera-all/opentelemetry-java; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
+      - if: steps.changes.outputs.opentelemetry-java-instrumentation == 'true' || github.event == 'workflow_dispatch'
+        run: cd hera-all/opentelemetry-java-instrumentation; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
+      - if: steps.changes.outputs.prometheus-agent == 'true' || github.event == 'workflow_dispatch'
+        run: cd hera-all/prometheus-agent; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
+      - if: steps.changes.outputs.prometheus-starter-all == 'true' || github.event == 'workflow_dispatch'
+        run: cd hera-all/prometheus-starter-all; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
+      - if: steps.changes.outputs.trace-etl == 'true' || github.event == 'workflow_dispatch'
+        run: cd hera-all/trace-etl; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
