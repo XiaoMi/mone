@@ -55,12 +55,6 @@
         </dependency>
 
         <dependency>
-            <artifactId>thrift</artifactId>
-            <groupId>org.apache.thrift</groupId>
-            <version>0.5.0-mdf2.0.9</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.apache.rocketmq</groupId>
             <artifactId>rocketmq-client</artifactId>
             <version>${rocketmq-version}</version>
