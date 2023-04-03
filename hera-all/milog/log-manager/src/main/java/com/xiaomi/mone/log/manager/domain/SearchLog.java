@@ -50,10 +50,10 @@ public class SearchLog {
         return boolQueryBuilder;
     }
 
-    private static BoolQueryBuilder buildTextQuery(String querytext, List<String> keyList) {
+    private static BoolQueryBuilder buildTextQuery(String queryText, List<String> keyList) {
         List<String> mustQueryTextList = new ArrayList<>();
         List<String> mustNotQueryTextList = new ArrayList<>();
-        queryAnalyse(querytext, mustQueryTextList, mustNotQueryTextList);
+        queryAnalyse(queryText, mustQueryTextList, mustNotQueryTextList);
         BoolQueryBuilder boolQueryBuilder = queryDispatchAndBuild(mustQueryTextList, mustNotQueryTextList, keyList);
         return boolQueryBuilder;
     }
@@ -95,30 +95,30 @@ public class SearchLog {
         return queryBuilder;
     }
 
-    private static BoolQueryBuilder queryAnalyse(String querytext, List<String> mustQueryTextList, List<String> mustNotQueryTextList) {
+    private static BoolQueryBuilder queryAnalyse(String queryText, List<String> mustQueryTextList, List<String> mustNotQueryTextList) {
         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
         boolean isGrantQuery; // 判断搜索词是否加了not
         do {
             isGrantQuery = true;
             // 如果搜索词加了not 那not后的所有搜索条件都是not的逻辑
-            if (isGrantQuery && (querytext.toLowerCase().startsWith("not "))) {
+            if (isGrantQuery && (queryText.toLowerCase().startsWith("not "))) {
                 isGrantQuery = false;
                 // 搜索语句去掉”not “
-                querytext = querytext.substring(4);
+                queryText = queryText.substring(4);
             }
-            int endIndex = getEndIndex(querytext);
-            String thisQuerytext = querytext.substring(0, endIndex);
+            int endIndex = getEndIndex(queryText);
+            String thisQuerytext = queryText.substring(0, endIndex);
             if (isGrantQuery) {
                 mustQueryTextList.add(thisQuerytext);
             } else {
                 mustNotQueryTextList.add(thisQuerytext);
             }
-            querytext = querytext.substring(endIndex);
+            queryText = queryText.substring(endIndex);
             // 搜索语句去掉” and “
-            if (querytext.toLowerCase().startsWith(" and ")) {
-                querytext = querytext.substring(5);
+            if (queryText.toLowerCase().startsWith(" and ")) {
+                queryText = queryText.substring(5);
             }
-        } while (StringUtils.isNotEmpty(querytext));
+        } while (StringUtils.isNotEmpty(queryText));
 
         return boolQueryBuilder;
     }
@@ -127,7 +127,12 @@ public class SearchLog {
         if ("logLevel".equals(key) || "level".equals(key) && ("INFO".equalsIgnoreCase(value) || "WARN".equalsIgnoreCase(value))) {
             value = String.format("%-5s", value);
         }
-        return QueryBuilders.matchQuery(key, value);
+
+        if (isKeywordType(key)) {
+            return QueryBuilders.termQuery(key, value);
+        } else {
+            return QueryBuilders.matchQuery(key, value);
+        }
     }
 
     private static QueryBuilder multiMatchQueryBuilder(String querytext, List<String> keyList) {
@@ -146,17 +151,32 @@ public class SearchLog {
     }
 
     // 精准+前缀查询
-    private static QueryBuilder precisionQueryBuilder(String querytext) {
+    private static QueryBuilder precisionQueryBuilder(String queryText) {
         BoolQueryBuilder phraseQueryBuilder = QueryBuilders.boolQuery();
-        phraseQueryBuilder.should(QueryBuilders.matchPhrasePrefixQuery("message", querytext));
-        phraseQueryBuilder.should(QueryBuilders.termQuery("traceId", querytext));
+        phraseQueryBuilder.should(QueryBuilders.matchPhrasePrefixQuery("message", queryText));
+        phraseQueryBuilder.should(QueryBuilders.termQuery("traceId", queryText));
         phraseQueryBuilder.minimumShouldMatch(1);
         return phraseQueryBuilder;
     }
 
     // kv精确+前缀查询
     private static QueryBuilder kvPrecisionQueryBuilder(String key, String value) {
-        return QueryBuilders.matchPhrasePrefixQuery(key, value);
+        if (isKeywordType(key)) {
+            return QueryBuilders.termQuery(key, value);
+        } else {
+            return QueryBuilders.matchPhrasePrefixQuery(key, value);
+        }
+    }
+
+    //todo 基于mapping元数据进行判断
+    private static boolean isKeywordType(String key) {
+        if ("app".equalsIgnoreCase(key) || "appName".equalsIgnoreCase(key) ||
+            "code".equalsIgnoreCase(key) || "level".equalsIgnoreCase(key) || "logLevel".equalsIgnoreCase(key) ||
+            "threadName".equalsIgnoreCase(key) || "className".equalsIgnoreCase(key)) {
+            return true;
+        }
+
+        return false;
     }
 
     public static class QueryBuildChain {
