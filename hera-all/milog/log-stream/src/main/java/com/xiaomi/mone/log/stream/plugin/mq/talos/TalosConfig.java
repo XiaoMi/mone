@@ -1,6 +1,5 @@
 package com.xiaomi.mone.log.stream.plugin.mq.talos;
 
-import com.xiaomi.infra.galaxy.rpc.thrift.Credential;
 import lombok.Data;
 
 /**
@@ -17,7 +16,6 @@ public class TalosConfig {
     private String consumerGroup;
     private String clientPrefix;
     //    private TalosConsumerConfig consumerConfig;
-    private Credential credential;
     private String topicName;
     private String tag;
     private boolean isCommonTag;
