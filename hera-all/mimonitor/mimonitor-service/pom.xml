@@ -20,6 +20,12 @@
 
         <dependency>
             <groupId>run.mone</groupId>
+            <artifactId>common</artifactId>
+            <version>1.7.2-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>run.mone</groupId>
             <artifactId>app-api</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
