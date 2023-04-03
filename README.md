@@ -142,6 +142,6 @@ limitations under the License.
 
 If you are using [XiaoMi/mone](https://github.com/w1zirn/mone) and think that it helps you or want to contribute code for mone, please add your company to the user list to let us know your needs.
 
-|![xiao mi](https://s02.mifile.cn/assets/static/image/logo-mi2.png)|
-| :---: |
+|![xiao mi](https://s02.mifile.cn/assets/static/image/logo-mi2.png)|![auchosaur games](readme/image/auchosaur_games.png)|
+| :---: | :---: |
 
