@@ -61,3 +61,20 @@ sh indexTemplate.sh
 - indexTemplate.sh在当前目录下，执行方式有两种选项：
 1. 默认es的服务类型是clusterIp，需要在同名字空间下的某个pod内执行。
 2. 也可以给es暴露NodePort服务，在集群外执行，把脚本中的elasticsearch:9200做相应修改。
+
+## 如何接入hostnetwork模式的应用
+如果不得以必须为Pod指定hostNetwork，这样的应用也是可以接入hera的，但是需要注意下面几点：
+1. 首先与普通的Pod相比，指定了hostNetwork为true之后就不能以clusterIp访问集群内的svc了。
+2. 需要为nacos暴露NodePort/LoadBalance类型的服务。
+3. 需要修改探针的启动参数中nacos的地址，比如
+```yaml
+-Dotel.exporter.prometheus.nacos.addr=节点ip:NodePort端口
+```
+4. 需要修改log-agent连接nacos的地址，这可以通过指定env实现，比如
+```yaml
+  env:
+    - name: nacosAddr
+      value: 节点ip:NodePort端口
+```
+5. 需要为rocketmq-name-server暴露NodePort/LoadBalance类型的服务。
+6. 需要在hera系统->日志服务->资源管理下编辑rocketmq资源，将mq地址修改为第5步中修改成的可访问地址。

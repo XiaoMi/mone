@@ -108,7 +108,7 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>docean-plugin-mybatis</artifactId>
-            <version>1.4.3-less-SNAPSHOT</version>
+            <version>1.4-SNAPSHOT</version>
         </dependency>
 
 

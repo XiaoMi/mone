@@ -20,6 +20,12 @@
             <version>1.4-SNAPSHOT</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>fastjson</artifactId>
+            <version>1.2.77</version>
+        </dependency>
+
 
         <dependency>
             <groupId>org.apache.rocketmq</groupId>
