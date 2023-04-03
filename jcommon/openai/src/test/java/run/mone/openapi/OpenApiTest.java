@@ -246,7 +246,7 @@ public class OpenApiTest {
                 .apiHost("https://api.openai.com/")
                 .build();
 
-        ImageResponse res = openAiClient.genImages("青蛙");
+        ImageResponse res = openAiClient.genImages("三亚土拨鼠");
         res.getData().forEach(it->{
             System.out.println(it);
         });
