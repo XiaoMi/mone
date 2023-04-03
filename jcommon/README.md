@@ -11,6 +11,7 @@
 + 支持Hera(可观测系统) Odin(Mesh系统) Tesla(网关) 等项目
 + Support for projects such as Hera (Observable System), Odin (Mesh System), Tesla (Gateway), etc.
 + 推荐maven设置(主要是国内用阿里的源),阿里的那个可以不设置,阿里的主要是用来提速
+
 ```
 <settings>
 
