@@ -76,6 +76,7 @@
         <module>mybatis-plugins</module>
         <module>processor</module>
         <module>openai</module>
+        <module>excel</module>
     </modules>
 
 

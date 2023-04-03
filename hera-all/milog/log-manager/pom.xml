@@ -127,9 +127,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.nutz</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>nutz</artifactId>
-            <version>1.r.68-youpin-SNAPSHOT</version>
+            <version>1.r.68-open-SNAPSHOT</version>
         </dependency>
         <!-- 内部依赖 -->
         <dependency>
@@ -141,7 +141,7 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>docean-plugin-rocketmq</artifactId>
-            <version>1.4-SNAPSHOT</version>
+            <version>1.4.1-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -176,11 +176,11 @@
             <artifactId>mapstruct</artifactId>
             <version>${mapstruct.version}</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.mapstruct</groupId>-->
-<!--            <artifactId>mapstruct-jdk8</artifactId>-->
-<!--            <version>${mapstruct.version}</version>-->
-<!--        </dependency>-->
+        <!--        <dependency>-->
+        <!--            <groupId>org.mapstruct</groupId>-->
+        <!--            <artifactId>mapstruct-jdk8</artifactId>-->
+        <!--            <version>${mapstruct.version}</version>-->
+        <!--        </dependency>-->
         <dependency>
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct-processor</artifactId>
