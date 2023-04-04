@@ -14,35 +14,18 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.youpin.docean.test;
-
-import com.xiaomi.youpin.docean.common.Loadable;
+package com.xiaomi.youpin.docean.common;
 
 /**
- * @Author goodjava@qq.com
- * @Date 2021/1/29 15:22
+ * @author shanwb
+ * @date 2023-04-04
  */
-public class M implements Loadable {
+public interface Loadable {
 
+    /**
+     * name of loadable extension
+     * @return
+     */
+    String name();
 
-    public int sum(int a, int b) {
-        return a + b;
-    }
-
-    public String hi(String a) {
-        return a;
-    }
-
-    public String hi() {
-        return "hi";
-    }
-
-    public String hi(String a, String b) {
-        return a + b;
-    }
-
-    @Override
-    public String name() {
-        return "M";
-    }
 }
