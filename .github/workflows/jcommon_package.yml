@@ -16,8 +16,6 @@ jobs:
     name: Jcommon test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
       - name: Setup Maven Action
         uses: s4u/setup-maven-action@v1.7.0
         with:
