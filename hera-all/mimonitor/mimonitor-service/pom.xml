@@ -19,6 +19,12 @@
     <dependencies>
 
         <dependency>
+            <artifactId>fastjson</artifactId>
+            <groupId>com.alibaba</groupId>
+            <version>2.0.25</version>
+        </dependency>
+
+        <dependency>
             <groupId>run.mone</groupId>
             <artifactId>common</artifactId>
             <version>1.7.2-SNAPSHOT</version>
