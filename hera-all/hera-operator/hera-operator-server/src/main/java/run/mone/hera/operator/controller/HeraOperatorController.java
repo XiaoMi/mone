@@ -26,6 +26,7 @@ import com.xiaomi.youpin.infra.rpc.errors.GeneralCodes;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import run.mone.hera.operator.bo.HeraBootstrap;
 import run.mone.hera.operator.bo.HeraResource;
 import run.mone.hera.operator.bo.HeraStatus;
@@ -95,13 +96,16 @@ public class HeraOperatorController {
 
             String serviceType = "LoadBalancer";
             String serviceYamlPath = "/hera_init/outer/hera_lb.yml";
-            List<io.fabric8.kubernetes.api.model.Service> serviceList = heraBootstrapInitService.createAndListService(serviceNameList, namespace, serviceYamlPath);
+            List<io.fabric8.kubernetes.api.model.Service> serviceList = heraBootstrapInitService.createAndListService(serviceNameList, namespace, serviceYamlPath, serviceType);
             if (heraBootstrapInitService.checkLbServiceFailed(serviceList, serviceType)) {
-                log.warn("LoadBalancer type failed, change to NodePort type");
-                heraBootstrapInitService.deleteService(serviceNameList, namespace);
+                if (CollectionUtils.isNotEmpty(serviceList)) {
+                    log.warn("LoadBalancer type failed, change to NodePort type");
+                    heraBootstrapInitService.deleteService(serviceNameList, namespace, serviceType);
+                }
+
                 serviceType = "NodePort";
                 serviceYamlPath = "/hera_init/outer/hera_nodeport.yml";
-                serviceList = heraBootstrapInitService.createAndListService(serviceNameList, namespace, serviceYamlPath);
+                serviceList = heraBootstrapInitService.createAndListService(serviceNameList, namespace, serviceYamlPath, serviceType);
             }
 
             Map<String, String> ipPortMap = heraBootstrapInitService.getServiceIpPort(serviceList, serviceType);
