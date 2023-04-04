@@ -7,7 +7,7 @@ import io.opentelemetry.sdk.common.SystemCommon;
 @SuppressWarnings({"PrivateConstructorForUtilityClass","CatchingUnchecked"})
 public class LogFileNameUtil {
 
-  public static final String LOGPATH_PROPERTY_NAME = EnvOrJvmProperties.JVM_OTEL_EXPORTER_LOG_PATH_PREFIX;
+  public static final String LOGPATH_PROPERTY_NAME = EnvOrJvmProperties.JVM_OTEL_EXPORTER_LOG_PATH_PREFIX.getKey();
   private static final String LOG_PATH_SUFFIX = "/trace/";
   private static final String LOG_FILE_NAME = "trace.log";
 
@@ -16,7 +16,7 @@ public class LogFileNameUtil {
   }
 
   public static String getLogPath(){
-    String logPathPrefixStr = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_MIONE_LOG_PATH);
+    String logPathPrefixStr = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_MIONE_LOG_PATH.getKey());
     if(StringUtils.isNullOrEmpty(logPathPrefixStr)) {
       String logPathPrefix = System.getProperty(LOGPATH_PROPERTY_NAME);
       if (StringUtils.isNullOrEmpty(logPathPrefix)) {
@@ -32,8 +32,8 @@ public class LogFileNameUtil {
    * get service name without project id
    */
   public static String getServiceName(){
-    String applicationName = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.JVM_OTEL_RESOURCE_ATTRIBUTES) == null ? "none":
-        SystemCommon.getEnvOrProperties(EnvOrJvmProperties.JVM_OTEL_RESOURCE_ATTRIBUTES).split("=")[1];
+    String applicationName = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.JVM_OTEL_RESOURCE_ATTRIBUTES.getKey()) == null ? "none":
+        SystemCommon.getEnvOrProperties(EnvOrJvmProperties.JVM_OTEL_RESOURCE_ATTRIBUTES.getKey()).split("=")[1];
     // 删除mione中生成的项目名id
     int i = applicationName.indexOf("-");
     if (i >= 0) {

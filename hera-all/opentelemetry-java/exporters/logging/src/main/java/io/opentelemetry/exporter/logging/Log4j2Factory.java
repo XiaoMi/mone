@@ -17,9 +17,9 @@ import org.apache.logging.log4j.core.config.builder.impl.DefaultConfigurationBui
 @SuppressWarnings({"unused","rawtypes","SystemOut","unchecked","PrivateConstructorForUtilityClass"})
 public class Log4j2Factory {
 
-  public static final String IS_ASYNC_PROPERTY_NAME = EnvOrJvmProperties.JVM_OTEL_EXPORTER_LOG_ISASYNC;
-  public static final String LOG_INTERVAL_PROPERTY_NAME = EnvOrJvmProperties.JVM_OTEL_EXPORTER_LOG_INTERVAL;
-  public static final String LOG_DELETE_AGE_PROPERTY_NAME = EnvOrJvmProperties.JVM_OTEL_EXPORTER_LOG_DELETE_AGE;
+  public static final String IS_ASYNC_PROPERTY_NAME = EnvOrJvmProperties.JVM_OTEL_EXPORTER_LOG_ISASYNC.getKey();
+  public static final String LOG_INTERVAL_PROPERTY_NAME = EnvOrJvmProperties.JVM_OTEL_EXPORTER_LOG_INTERVAL.getKey();
+  public static final String LOG_DELETE_AGE_PROPERTY_NAME = EnvOrJvmProperties.JVM_OTEL_EXPORTER_LOG_DELETE_AGE.getKey();
 
   public static Logger getLogger() {
     Configuration config = createConfiguration("TraceConfiguration");

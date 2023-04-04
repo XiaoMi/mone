@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: log-manager-container
-        image: herahub/opensource-pub:log-manager-v1
+        image: herahub/opensource-pub:log-manager-v2
         resources:
           limits:
             cpu: '500m'

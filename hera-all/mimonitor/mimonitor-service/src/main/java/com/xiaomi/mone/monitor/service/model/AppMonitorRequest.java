@@ -1,12 +1,9 @@
 package com.xiaomi.mone.monitor.service.model;
 
-import com.google.common.collect.Lists;
-import com.google.gson.Gson;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 
 /**

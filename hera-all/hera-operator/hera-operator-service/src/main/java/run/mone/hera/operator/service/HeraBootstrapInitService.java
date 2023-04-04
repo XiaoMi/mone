@@ -315,6 +315,17 @@ public class HeraBootstrapInitService {
             logManager.setDefaultYaml();
             resourceList.add(logManager);
 
+            HeraResource logAgentServer = HeraResource.builder()
+                    .needCreate(true)
+                    .required(true)
+                    .defaultYamlPath("/hera_init/log-agent-server/hera_log_agent-server.yml")
+                    .resourceType(ResourceTypeEnum.HERA_APP.getTypeName())
+                    .resourceName("hera-log-agent-server")
+                    .remark("load log-agent-server")
+                    .build();
+            logAgentServer.setDefaultYaml();
+            resourceList.add(logAgentServer);
+
             HeraResource logStream = HeraResource.builder()
                     .needCreate(true)
                     .required(true)

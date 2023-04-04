@@ -63,7 +63,7 @@ public final class OpenTelemetrySdkAutoConfiguration {
 
     SdkMeterProvider meterProvider = meterProviderBuilder.buildAndRegisterGlobal();
 
-    String exporterName = config.getString(EnvOrJvmProperties.JVM_OTEL_METRICS_EXPORTER);
+    String exporterName = config.getString(EnvOrJvmProperties.JVM_OTEL_METRICS_EXPORTER.getKey());
     MetricExporterConfiguration.configureExporter(exporterName, config, meterProvider);
   }
 
