@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: log-stream-container
-        image: herahub/opensource-pub:log-stream-v1
+        image: herahub/opensource-pub:log-stream-v2
         env:
           - name: MONE_CONTAINER_S_POD_NAME
             valueFrom:
