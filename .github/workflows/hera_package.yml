@@ -38,10 +38,6 @@ jobs:
               - 'hera-all/milog/**'
             mimonitor:
               - 'hera-all/mimonitor/**'
-            opentelemetry-java:
-              - 'hera-all/opentelemetry-java/**'
-            opentelemetry-java-instrumentation:
-              - 'hera-all/opentelemetry-java-instrumentation/**'
             prometheus-agent:
               - 'hera-all/prometheus-agent/**'
             prometheus-starter-all:
@@ -59,10 +55,6 @@ jobs:
         run: cd hera-all/milog; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
       - if: always() && steps.changes.outputs.mimonitor == 'true' || github.event == 'workflow_dispatch'
         run: cd hera-all/mimonitor; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..\
-      - if: always() && steps.changes.outputs.opentelemetry-java == 'true' || github.event == 'workflow_dispatch'
-        run: cd hera-all/opentelemetry-java; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
-      - if: always() && steps.changes.outputs.opentelemetry-java-instrumentation == 'true' || github.event == 'workflow_dispatch'
-        run: cd hera-all/opentelemetry-java-instrumentation; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
       - if: always() && steps.changes.outputs.prometheus-agent == 'true' || github.event == 'workflow_dispatch'
         run: cd hera-all/prometheus-agent; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
       - if: always() && steps.changes.outputs.prometheus-starter-all == 'true' || github.event == 'workflow_dispatch'

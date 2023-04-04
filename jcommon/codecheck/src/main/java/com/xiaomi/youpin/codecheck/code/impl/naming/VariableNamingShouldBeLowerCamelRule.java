@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
 
 public class VariableNamingShouldBeLowerCamelRule extends VariableCheck {
     private static final String DESC = "Variable names should be named using the lowerCamelCase ";
-    private static final String CHINA_DESC = "变量名应使用lowerCamelCase风格";
+    private static final String CHINA_DESC = "Variable names should be named using the lowerCamelCase";
     private static final Pattern PATTERN = Pattern.compile("^([a-z][a-z0-9]?)+([A-Z]([a-z0-9])+)?$");
 
     @Override

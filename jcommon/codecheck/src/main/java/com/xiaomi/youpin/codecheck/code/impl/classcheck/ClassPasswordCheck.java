@@ -43,7 +43,7 @@ public class ClassPasswordCheck extends ClassCheck {
 
     private String className;
 
-    private String message = " 有设置明文密码的操作,密码是:";
+    private String message = "There is a password in plaintext in the code, and the password is:";
 
     private Set<String> methodNames = Sets.newHashSet("password", "setPwd");
 
