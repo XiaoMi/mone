@@ -14,7 +14,7 @@ import java.util.List;
  */
 public class IPRule extends CompilationCheck {
     private static final String DESC = "file should avoid IP addresses";
-    private static final String CHINA_DESC = "文件内容应该避免包含ip地址";
+    private static final String CHINA_DESC = "file should avoid IP addresses";
 
     @Override
     public Pair<Integer, CheckResult> _check(CompilationUnitTree compilationUnitTree) {

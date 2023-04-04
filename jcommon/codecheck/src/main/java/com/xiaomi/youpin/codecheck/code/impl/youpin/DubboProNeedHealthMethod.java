@@ -28,7 +28,7 @@ import java.util.List;
 
 public class DubboProNeedHealthMethod extends CompilationCheck {
     private static final String DESC = "dubbo project should better have health interface";
-    private static final String CHINA_DESC = "dubbo项目需要加health健康监测接口";
+    private static final String CHINA_DESC = "dubbo project should better have health interface";
 
     @Override
     public Pair<Integer, CheckResult> _check(CompilationUnitTree compilationUnitTree) {
