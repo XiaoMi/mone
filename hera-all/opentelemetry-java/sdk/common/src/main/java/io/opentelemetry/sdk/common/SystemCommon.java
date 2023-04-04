@@ -8,4 +8,6 @@ public final class SystemCommon {
     }
     return result;
   }
+
+  private SystemCommon(){}
 }
