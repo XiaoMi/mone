@@ -19,7 +19,7 @@ public class ConfigCheck {
     private final static String PREFIX_ORI = ".original";
 
     private static final String DESC_1 = "file should avoid IP addresses";
-    private static final String CHINA_DESC_1 = "文件内容应该避免包含ip地址";
+    private static final String CHINA_DESC_1 = "file should avoid IP addresses";
 
     public Map<String, List<CheckResult>> configCheck(String path){
         Map<String, List<CheckResult>> mapRes = new HashMap<>();
