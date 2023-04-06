@@ -16,6 +16,7 @@
 
 package com.xiaomi.mone.log.manager.controller.interceptor;
 
+import com.google.common.collect.Sets;
 import com.xiaomi.hera.trace.context.TraceIdUtil;
 import com.xiaomi.mone.log.common.Config;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
@@ -31,16 +32,16 @@ import com.xiaomi.youpin.docean.mvc.ContextHolder;
 import com.xiaomi.youpin.docean.mvc.MvcContext;
 import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Resource;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.xiaomi.mone.log.common.Constant.SYMBOL_COMMA;
+import static com.xiaomi.mone.log.manager.common.ManagerConstant.SPACE_PAGE_URL;
+import static com.xiaomi.mone.log.manager.common.ManagerConstant.TPC_HOME_URL_HEAD;
 
 /**
  * @Author goodjava@qq.com
@@ -71,10 +72,13 @@ public class HttpRequestInterceptor extends EnhanceInterceptor {
 
     private String filterUrls = Config.ins().get("filter_urls", Strings.EMPTY);
 
+    private static final Set<String> TPC_HEADERS_URLS = Sets.newHashSet();
+
     private List<String> filterUrlList;
 
     {
         filterUrlList = Arrays.stream(filterUrls.split(SYMBOL_COMMA)).distinct().collect(Collectors.toList());
+        TPC_HEADERS_URLS.add(SPACE_PAGE_URL);
     }
 
     @Override
@@ -101,10 +105,17 @@ public class HttpRequestInterceptor extends EnhanceInterceptor {
 
     @Override
     public Object after(AopContext context, Method method, Object res) {
-        MvcContext mvcContext = ContextHolder.getContext().get();
-        mvcContext.getHeaders().put("traceId", TraceIdUtil.traceId());
+        solveResHeaders();
         clearThreadLocal();
         return super.after(context, method, res);
+    }
+
+    private void solveResHeaders() {
+        MvcContext mvcContext = ContextHolder.getContext().get();
+        mvcContext.getResHeaders().put("traceId", TraceIdUtil.traceId() == null ? StringUtils.EMPTY : TraceIdUtil.traceId());
+        if (TPC_HEADERS_URLS.contains(mvcContext.getPath())) {
+            mvcContext.getResHeaders().put(TPC_HOME_URL_HEAD, Config.ins().get(TPC_HOME_URL_HEAD, "https://127.0.0.1"));
+        }
     }
 
     @Override
