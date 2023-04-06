@@ -715,6 +715,14 @@ public class HeraBootstrapInitService {
         return ipPortMap;
     }
 
+    public String getServiceType(List<io.fabric8.kubernetes.api.model.Service> serviceList) {
+        for (io.fabric8.kubernetes.api.model.Service service : serviceList) {
+            ServiceSpec serviceSpec = service.getSpec();
+            String type = serviceSpec.getType();
+            return type;
+        }
+        return "";
+    }
 
     private Map<String, String> kvMap(String key, String value, String remark) {
         return this.kvMap(key, value, remark, "1");

@@ -106,6 +106,12 @@ public class HeraOperatorController {
                 serviceType = "NodePort";
                 serviceYamlPath = "/hera_init/outer/hera_nodeport.yml";
                 serviceList = heraBootstrapInitService.createAndListService(serviceNameList, namespace, serviceYamlPath, serviceType);
+            } else {
+                String currentType = heraBootstrapInitService.getServiceType(serviceList);
+                if ("NodePort".equals(currentType)) {
+                    log.warn("NodePort type finish");
+                    serviceType = "NodePort";
+                }
             }
 
             Map<String, String> ipPortMap = heraBootstrapInitService.getServiceIpPort(serviceList, serviceType);
