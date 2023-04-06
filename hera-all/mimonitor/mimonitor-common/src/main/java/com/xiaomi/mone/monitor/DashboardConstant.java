@@ -14,7 +14,7 @@ public class DashboardConstant {
     public static final String GRAFANA_API_KEY_ROLE = "Admin";
     public static final String GRAFANA_USER_NAME = "admin";
     public static final String GRAFANA_PASSWORD = "admin";
-    public static final String GRAFANA_DATASOURCE_URL = "http://prometheus:9090";
+    public static final String GRAFANA_DATASOURCE_URL = "http://prometheus";
     public static final String GRAFANA_DATASOURCE_NAME = "Prometheus";
     public static final String GRAFANA_DATASOURCE_TYPE = "prometheus";
 
