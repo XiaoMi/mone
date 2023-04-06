@@ -4,10 +4,10 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.xiaomi.mone.log.api.model.vo.ResourceUserSimple;
 import com.xiaomi.mone.log.manager.mapper.MilogEsClusterMapper;
 import com.xiaomi.mone.log.manager.model.dto.EsInfoDTO;
-import com.xiaomi.mone.log.manager.model.pojo.LogEsClusterDO;
+import com.xiaomi.mone.log.manager.model.pojo.MilogEsClusterDO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogMiddlewareConfig;
-import com.xiaomi.mone.log.manager.model.vo.CreateOrUpdateLogStoreCmd;
+import com.xiaomi.mone.log.manager.model.vo.LogStoreParam;
 import com.xiaomi.mone.log.manager.service.impl.MilogMiddlewareConfigServiceImpl;
 import com.xiaomi.youpin.docean.anno.Service;
 import org.apache.commons.lang3.StringUtils;
@@ -32,12 +32,12 @@ public class LogStore {
     /**
      * es资源绑定
      */
-    public void storeResourceBinding(MilogLogStoreDO ml, CreateOrUpdateLogStoreCmd cmd) {
+    public void storeResourceBinding(MilogLogStoreDO ml, LogStoreParam cmd) {
         ResourceUserSimple resourceUserConfig = resourceConfigService.userResourceList(cmd.getMachineRoom(), cmd.getLogType());
         if (resourceUserConfig.getInitializedFlag()) {
             //选择es集群
             if (null == cmd.getEsResourceId()) {
-                List<LogEsClusterDO> esClusterDOS = milogEsClusterMapper.selectList(Wrappers.lambdaQuery());
+                List<MilogEsClusterDO> esClusterDOS = milogEsClusterMapper.selectList(Wrappers.lambdaQuery());
                 cmd.setEsResourceId(esClusterDOS.get(esClusterDOS.size() - 1).getId());
             }
             EsInfoDTO esInfo = esIndexTemplate.getEsInfo(cmd.getEsResourceId(), cmd.getLogType(), null);

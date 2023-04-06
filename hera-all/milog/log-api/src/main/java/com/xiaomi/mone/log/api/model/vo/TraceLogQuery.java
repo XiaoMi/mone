@@ -9,6 +9,8 @@ public class TraceLogQuery implements Serializable {
     private Long appId;
     private String ip;
     private String traceId;
+    private String generationTime;
+    private String level;
     // 最大返回数据条数
     private Integer total = 1000;
     // es查询过期时间（毫秒）

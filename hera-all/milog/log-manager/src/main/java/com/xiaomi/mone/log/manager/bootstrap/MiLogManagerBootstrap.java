@@ -28,6 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.LinkedHashMap;
 
+import static com.xiaomi.mone.log.manager.common.utils.ManagerUtil.getConfigFromNanos;
+
 /**
  * @Author goodjava@qq.com
  * @Date 2021/6/24 11:29
@@ -37,6 +39,7 @@ public class MiLogManagerBootstrap {
 
 
     public static void main(String[] args) throws InterruptedException {
+        getConfigFromNanos();
 
         LinkedHashMap<Class, EnhanceInterceptor> m = new LinkedHashMap<>();
         m.put(RequestMapping.class, new HttpRequestInterceptor());

@@ -49,7 +49,7 @@ public class MioneRocketMqConsumer extends RocketMqConsumer {
 
         try {
             consumer.start();
-        } catch (MQClientException e) {
+        } catch (Exception e) {
             log.error("订阅创建项目时的RocketMq客户端启动异常", e);
         }
     }

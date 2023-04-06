@@ -3,7 +3,7 @@
 
 <mapper namespace="com.xiaomi.mone.log.manager.mapper.MilogAnalyseDashboardMapper">
 
-    <select id="getByStoreId" resultType="com.xiaomi.mone.log.manager.model.pojo.LogAnalyseDashboardDO">
+    <select id="getByStoreId" resultType="com.xiaomi.mone.log.manager.model.pojo.MilogAnalyseDashboardDO">
         SELECT
             *
         FROM

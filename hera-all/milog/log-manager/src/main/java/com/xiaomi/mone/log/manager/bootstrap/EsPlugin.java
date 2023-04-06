@@ -2,7 +2,7 @@ package com.xiaomi.mone.log.manager.bootstrap;
 
 import com.xiaomi.mone.log.common.Constant;
 import com.xiaomi.mone.log.manager.mapper.MilogEsClusterMapper;
-import com.xiaomi.mone.log.manager.model.pojo.LogEsClusterDO;
+import com.xiaomi.mone.log.manager.model.pojo.MilogEsClusterDO;
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.DOceanPlugin;
 import com.xiaomi.youpin.docean.plugin.IPlugin;
@@ -22,17 +22,17 @@ public class EsPlugin implements IPlugin {
     @Override
     public void init() {
         log.info("es init start");
-        List<LogEsClusterDO> esClusterList = milogEsClusterMapper.selectAll();
+        List<MilogEsClusterDO> esClusterList = milogEsClusterMapper.selectAll();
         if (esClusterList == null || esClusterList.isEmpty()) {
             log.warn("no es client");
             return;
         }
-        for (LogEsClusterDO cluster : esClusterList) {
+        for (MilogEsClusterDO cluster : esClusterList) {
             buildEsClient(cluster);
         }
     }
 
-    public void buildEsClient(LogEsClusterDO cluster) {
+    public void buildEsClient(MilogEsClusterDO cluster) {
         try {
             EsService esService;
             switch (cluster.getConWay()) {

@@ -3,8 +3,8 @@ package com.xiaomi.mone.log.manager.service;
 import com.xiaomi.mone.log.api.enums.OperateEnum;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
 import com.xiaomi.mone.log.manager.model.BaseCommon;
-import com.xiaomi.mone.log.manager.model.bo.CreateOrUpdateSpaceCmd;
-import com.xiaomi.mone.log.manager.model.pojo.LogSpaceDO;
+import com.xiaomi.mone.log.manager.model.MilogSpaceParam;
+import com.xiaomi.mone.log.manager.model.pojo.MilogSpaceDO;
 
 /**
  * @author wtt
@@ -14,7 +14,14 @@ import com.xiaomi.mone.log.manager.model.pojo.LogSpaceDO;
  */
 public class BaseService {
 
-    public void wrapMilogSpace(LogSpaceDO ms, CreateOrUpdateSpaceCmd param, String source) {
+    public void wrapMilogSpace(MilogSpaceDO ms, MilogSpaceParam param) {
+        ms.setSpaceName(param.getSpaceName());
+        ms.setTenantId(param.getTenantId());
+        ms.setSource(MoneUserContext.getCurrentUser().getZone());
+        ms.setDescription(param.getDescription());
+    }
+
+    public void wrapMilogSpace(MilogSpaceDO ms, MilogSpaceParam param, String source) {
         ms.setSpaceName(param.getSpaceName());
         ms.setTenantId(param.getTenantId());
         ms.setSource(source);

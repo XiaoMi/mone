@@ -1,13 +1,12 @@
 package com.xiaomi.mone.log.manager.service.impl;
 
+import com.xiaomi.mone.log.api.model.vo.TailLogProcessDTO;
 import com.xiaomi.mone.log.api.model.vo.UpdateLogProcessCmd;
 import com.xiaomi.mone.log.api.service.LogProcessService;
-import com.xiaomi.mone.log.common.Config;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.manager.dao.MilogLogTailDao;
 import com.xiaomi.mone.log.manager.domain.LogProcess;
 import com.xiaomi.mone.log.manager.mapper.MilogLogProcessMapper;
-import com.xiaomi.mone.log.manager.model.dto.TailLogProcessDTO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogProcessDOMybatis;
 import com.xiaomi.youpin.docean.anno.Service;
 import lombok.extern.slf4j.Slf4j;

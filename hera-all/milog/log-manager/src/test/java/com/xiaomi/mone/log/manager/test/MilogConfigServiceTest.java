@@ -2,7 +2,7 @@ package com.xiaomi.mone.log.manager.test;
 
 import com.google.gson.Gson;
 import com.xiaomi.mone.log.common.Result;
-import com.xiaomi.mone.log.manager.model.bo.CreateOrUpdateSpaceCmd;
+import com.xiaomi.mone.log.manager.model.MilogSpaceParam;
 import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
 import com.xiaomi.mone.log.manager.model.dto.MilogAppEnvDTO;
 import com.xiaomi.mone.log.manager.service.impl.LogSpaceServiceImpl;
@@ -28,7 +28,7 @@ public class MilogConfigServiceTest {
     public void testCreateNameSpace() {
         Ioc.ins().init("com.xiaomi");
         LogSpaceServiceImpl milogSpaceService = Ioc.ins().getBean(LogSpaceServiceImpl.class);
-        CreateOrUpdateSpaceCmd ms = new CreateOrUpdateSpaceCmd();
+        MilogSpaceParam ms = new MilogSpaceParam();
         ms.setSpaceName("上山打老虎楼");
         ms.setDescription("我是测试人员啊");
         milogSpaceService.newMilogSpace(ms);

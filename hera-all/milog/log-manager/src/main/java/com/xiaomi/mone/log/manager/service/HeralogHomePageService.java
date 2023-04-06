@@ -5,8 +5,7 @@ import com.xiaomi.mone.app.api.response.AppBaseInfo;
 import com.xiaomi.mone.log.common.Config;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.exception.CommonError;
-import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
-import com.xiaomi.mone.log.manager.dao.LogstoreDao;
+import com.xiaomi.mone.log.manager.dao.MilogLogstoreDao;
 import com.xiaomi.mone.log.manager.dao.MilogLogTailDao;
 import com.xiaomi.mone.log.manager.dao.MilogStoreSpaceAuthDao;
 import com.xiaomi.mone.log.manager.model.dto.MapDTO;
@@ -36,7 +35,7 @@ public class HeralogHomePageService {
     private HeraAppServiceImpl heraAppService;
 
     @Resource
-    private LogstoreDao milogLogstoreDao;
+    private MilogLogstoreDao milogLogstoreDao;
 
     @Resource
     private MilogStoreSpaceAuthDao milogStoreSpaceAuthDao;
@@ -65,9 +64,7 @@ public class HeralogHomePageService {
     public Result<List<UnAccessAppDTO>> unAccessAppList() {
         List<AppBaseInfo> appBaseInfos = heraAppService.queryAllExistsApp();
         Map<Integer, String> appMap = appBaseInfos.stream().collect(Collectors.toMap(AppBaseInfo::getId, AppBaseInfo::getAppName));
-        List<MilogLogTailDo> tails = milogLogtailDao.getAll(MoneUserContext.getCurrentUser().getZone());
-        List<Long> hasAccessAppId = tails.stream().map(MilogLogTailDo::getMilogAppId)
-                .collect(Collectors.toList());
+        List<Integer> hasAccessAppId = milogLogtailDao.queryAllAppId();
         ArrayList<UnAccessAppDTO> list = new ArrayList<>();
         for (Map.Entry<Integer, String> app : appMap.entrySet()) {
             if (!hasAccessAppId.contains(app.getKey())) {

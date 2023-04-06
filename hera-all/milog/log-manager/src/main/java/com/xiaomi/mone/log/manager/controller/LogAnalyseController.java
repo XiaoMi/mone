@@ -6,7 +6,7 @@ import com.xiaomi.mone.log.manager.model.dto.GraphDTO;
 import com.xiaomi.mone.log.manager.model.dto.GraphTypeDTO;
 import com.xiaomi.mone.log.manager.model.dto.LogAnalyseDataDTO;
 import com.xiaomi.mone.log.manager.model.vo.*;
-import com.xiaomi.mone.log.manager.service.impl.LogAnalyseServiceImpl;
+import com.xiaomi.mone.log.manager.service.impl.LogAnalyseService;
 import com.xiaomi.youpin.docean.anno.Controller;
 import com.xiaomi.youpin.docean.anno.RequestMapping;
 import com.xiaomi.youpin.docean.anno.RequestParam;
@@ -17,7 +17,7 @@ import java.util.List;
 @Controller
 public class LogAnalyseController {
     @Resource
-    private LogAnalyseServiceImpl logAnalyseService;
+    private LogAnalyseService logAnalyseService;
 
     @RequestMapping(path = "/log/analyse/show")
     public Result<DashboardDTO> logQuery(LogAnalyseQuery logAnalyseQuery) throws Exception {
@@ -40,8 +40,8 @@ public class LogAnalyseController {
     }
 
     @RequestMapping(path = "/log/analyse/key", method = "get")
-    public Result<List<String>> supportKye(@RequestParam("storeId") Long storeId) throws Exception {
-        return logAnalyseService.supportKye(storeId);
+    public Result<List<String>> supportKey(@RequestParam("storeId") Long storeId) throws Exception {
+        return logAnalyseService.supportKey(storeId);
     }
 
     @RequestMapping(path = "/log/analyse/ref")

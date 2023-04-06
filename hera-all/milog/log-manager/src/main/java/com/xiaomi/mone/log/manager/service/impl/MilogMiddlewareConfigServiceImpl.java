@@ -21,7 +21,7 @@ import com.xiaomi.mone.log.manager.bootstrap.EsPlugin;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
 import com.xiaomi.mone.log.manager.common.exception.MilogManageException;
 import com.xiaomi.mone.log.manager.common.validation.ResourceValidation;
-import com.xiaomi.mone.log.manager.dao.LogstoreDao;
+import com.xiaomi.mone.log.manager.dao.MilogLogstoreDao;
 import com.xiaomi.mone.log.manager.dao.MilogAppMiddlewareRelDao;
 import com.xiaomi.mone.log.manager.dao.MilogMiddlewareConfigDao;
 import com.xiaomi.mone.log.manager.domain.LogTail;
@@ -84,7 +84,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     @Resource
     private MilogEsIndexMapper milogEsIndexMapper;
     @Resource
-    private LogstoreDao logstoreDao;
+    private MilogLogstoreDao logstoreDao;
     @Resource
     private LogStoreServiceImpl logStoreService;
     @Resource
@@ -245,13 +245,13 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
                                  ResourcePage resourcePage) {
         Long count = 0L;
         if (MiddlewareEnum.ELASTICSEARCH.getCode().equals(resourcePage.getResourceCode())) {
-            PageDTO page = new PageDTO<LogEsClusterDO>(resourcePage.getPage(), resourcePage.getPageSize());
+            PageDTO page = new PageDTO<MilogEsClusterDO>(resourcePage.getPage(), resourcePage.getPageSize());
             Wrapper queryWrapper = generateEsQueryWrapper(resourcePage);
 
-            PageDTO<LogEsClusterDO> esClusterPage = milogEsClusterMapper.selectPage(
+            PageDTO<MilogEsClusterDO> esClusterPage = milogEsClusterMapper.selectPage(
                     page, queryWrapper);
             List<MilogMiddlewareConfig> configEsList = esClusterPage.getRecords().stream()
-                    .map(LogEsClusterDO::miLogEsResourceToConfig)
+                    .map(MilogEsClusterDO::miLogEsResourceToConfig)
                     .collect(Collectors.toList());
             milogMiddlewareConfigs.addAll(configEsList);
 
@@ -261,7 +261,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     }
 
     private Wrapper generateEsQueryWrapper(ResourcePage resourcePage) {
-        QueryWrapper queryWrapper = new QueryWrapper<LogEsClusterDO>();
+        QueryWrapper queryWrapper = new QueryWrapper<MilogEsClusterDO>();
         if (null != resourcePage.getRegionEnCode()) {
             queryWrapper.eq("area", resourcePage.getRegionEnCode());
         }
@@ -349,7 +349,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     }
 
     private void synchronousEsResourceLabel(Long id) {
-        List<LogEsClusterDO> esClusterDOS = Lists.newArrayList();
+        List<MilogEsClusterDO> esClusterDOS = Lists.newArrayList();
         if (null != id) {
             esClusterDOS.add(milogEsClusterMapper.selectById(id));
         }
@@ -396,10 +396,10 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     @NotNull
     public List<MilogMiddlewareConfig> getESConfigs(String regionCode) {
         QueryWrapper queryWrapper = new QueryWrapper<>().eq("area", regionCode);
-        List<LogEsClusterDO> esClusterDOS = milogEsClusterMapper
+        List<MilogEsClusterDO> esClusterDOS = milogEsClusterMapper
                 .selectList(queryWrapper);
         List<MilogMiddlewareConfig> middlewareConfigEss = esClusterDOS.stream()
-                .map(LogEsClusterDO::miLogEsResourceToConfig)
+                .map(MilogEsClusterDO::miLogEsResourceToConfig)
                 .collect(Collectors.toList());
         return middlewareConfigEss;
     }
@@ -412,18 +412,17 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
         List<MilogMiddlewareConfig> milogMiddlewareConfigs = milogMiddlewareConfigDao.queryByResourceCode(MiddlewareEnum.ROCKETMQ.getCode(), regionCode);
         List<MilogMiddlewareConfig> middlewareMqConfigs = queryCurrentMaxDeptConfig(milogMiddlewareConfigs);
 
-        List<LogEsClusterDO> esClusterDOS = milogEsClusterMapper.selectList(Wrappers.lambdaQuery());
+        List<MilogEsClusterDO> esClusterDOS = milogEsClusterMapper.selectList(Wrappers.lambdaQuery());
         List<MilogMiddlewareConfig> middlewareConfigEss = esClusterDOS.stream()
                 .map(logEsClusterDO -> {
-                    MilogMiddlewareConfig milogMiddlewareConfig = LogEsClusterDO.miLogEsResourceToConfig(logEsClusterDO);
-                    milogMiddlewareConfig.setIsDefault(YES);
+                    MilogMiddlewareConfig milogMiddlewareConfig = MilogEsClusterDO.miLogEsResourceToConfig(logEsClusterDO);
                     return milogMiddlewareConfig;
                 })
                 .collect(Collectors.toList());
 
         List<MilogMiddlewareConfig> middlewareEsConfigs = queryCurrentMaxDeptConfig(middlewareConfigEss);
 
-        List<LogEsIndexDO> milogEsIndexDOS = Lists.newArrayList();
+        List<MilogEsIndexDO> milogEsIndexDOS = Lists.newArrayList();
         if (CollectionUtils.isNotEmpty(middlewareEsConfigs)) {
             milogEsIndexDOS = queryMilogEsIndex(middlewareEsConfigs.stream().map(MilogMiddlewareConfig::getId).collect(Collectors.toList()), logTypeCode);
         }
@@ -447,7 +446,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
         return Boolean.FALSE;
     }
 
-    private List<LogEsIndexDO> queryMilogEsIndex(List<Long> clusterIds, Integer logTyCode) {
+    private List<MilogEsIndexDO> queryMilogEsIndex(List<Long> clusterIds, Integer logTyCode) {
         QueryWrapper queryWrapper = new QueryWrapper<>();
         queryWrapper.in("cluster_id", clusterIds);
         queryWrapper.eq("log_type", logTyCode);
@@ -455,14 +454,10 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     }
 
     public List<MilogMiddlewareConfig> queryCurrentMaxDeptConfig(List<MilogMiddlewareConfig> milogMiddlewareConfigs) {
-//        UseDetailInfo.DeptDescriptor maxDeptDescriptor = currentUserMaxDept();
-//        String userDeptComb = String.format("%s:%s->%s:%s", DEPT_LEVEL_PREFIX,
-//                maxDeptDescriptor.getLevel(), DEPT_NAME_PREFIX, maxDeptDescriptor.getDeptName());
-//        List<MilogMiddlewareConfig> middlewareConfigs = milogMiddlewareConfigs.stream()
-//                .filter(milogMiddlewareConfig -> milogMiddlewareConfig.getLabels()
-//                        .contains(userDeptComb))
-//                .collect(Collectors.toList());
-        return milogMiddlewareConfigs.stream().filter(milogMiddlewareConfig -> Objects.equals(YES, milogMiddlewareConfig.getIsDefault())).collect(Collectors.toList());
+        if (MoneUserContext.getCurrentUser().getIsAdmin()) {
+            return milogMiddlewareConfigs.stream().filter(milogMiddlewareConfig -> Objects.equals(YES, milogMiddlewareConfig.getIsDefault())).collect(Collectors.toList());
+        }
+        return milogMiddlewareConfigs.stream().filter(milogMiddlewareConfig -> !Objects.equals(YES, milogMiddlewareConfig.getIsDefault())).collect(Collectors.toList());
     }
 
     private UseDetailInfo.DeptDescriptor currentUserMaxDept() {
@@ -480,14 +475,10 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
      * @param configResource
      */
     private boolean queryResourceShowStatus(ResourceUserSimple configResource) {
-//        List<UseDetailInfo.DeptDescriptor> deptDescriptors = queryUserDeptTreeInfo(MoneUserContext.getCurrentUser().getUser());
-//        Optional<UseDetailInfo.DeptDescriptor> descriptorOptional = deptDescriptors.stream()
-//                .filter(deptDescriptor ->
-//                        RESOURCE_DEFAULT_INITIALIZED_DEPT.contains(deptDescriptor.getDeptName())).findAny();
-//        if (descriptorOptional.isPresent()) {
-//            configResource.setShowFlag(Boolean.FALSE);
-//            return Boolean.FALSE;
-//        }
+        if (MoneUserContext.getCurrentUser().getIsAdmin()) {
+            configResource.setShowFlag(Boolean.FALSE);
+            return false;
+        }
         configResource.setShowFlag(Boolean.TRUE);
         return Boolean.TRUE;
     }
@@ -535,11 +526,11 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     }
 
     private ResourceInfo wrapEsResourceInfo(Long id) {
-        LogEsClusterDO esClusterDO = milogEsClusterMapper.selectById(id);
+        MilogEsClusterDO esClusterDO = milogEsClusterMapper.selectById(id);
         if (null != esClusterDO) {
-            List<LogEsIndexDO> milogEsIndexDOS = milogEsIndexMapper.selectList(new QueryWrapper<LogEsIndexDO>().eq("cluster_id", esClusterDO.getId()));
+            List<MilogEsIndexDO> milogEsIndexDOS = milogEsIndexMapper.selectList(new QueryWrapper<MilogEsIndexDO>().eq("cluster_id", esClusterDO.getId()));
             List<EsIndexVo> multipleEsIndex = milogEsIndexDOS.stream()
-                    .map(LogEsIndexDO::getLogType)
+                    .map(MilogEsIndexDO::getLogType)
                     .distinct()
                     .sorted(Integer::compareTo)
                     .map(getIntegerEsIndexVoFunction(milogEsIndexDOS))
@@ -551,7 +542,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     }
 
     @NotNull
-    private Function<Integer, EsIndexVo> getIntegerEsIndexVoFunction(List<LogEsIndexDO> milogEsIndexDOS) {
+    private Function<Integer, EsIndexVo> getIntegerEsIndexVoFunction(List<MilogEsIndexDO> milogEsIndexDOS) {
         return logTypeCode -> {
             EsIndexVo esIndexVo = new EsIndexVo();
             esIndexVo.setLogTypeCode(logTypeCode);
@@ -559,7 +550,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
             List<String> esIndexList = milogEsIndexDOS.stream()
                     .filter(milogEsIndexDO -> Objects.equals(
                             logTypeCode, milogEsIndexDO.getLogType()))
-                    .map(LogEsIndexDO::getIndexName)
+                    .map(MilogEsIndexDO::getIndexName)
                     .collect(Collectors.toList());
             esIndexVo.setEsIndexList(esIndexList);
             return esIndexVo;
@@ -578,7 +569,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
         milogMiddlewareConfigDao.updateMiddlewareConfig(milogMiddlewareConfig);
     }
 
-    private void updateEsResourceLabel(LogEsClusterDO clusterDO) {
+    private void updateEsResourceLabel(MilogEsClusterDO clusterDO) {
         List<String> labels = clusterDO.getLabels();
         if (StringUtils.isBlank(clusterDO.getUpdater()) &&
                 StringUtils.isBlank(clusterDO.getCreator())) {
@@ -597,7 +588,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
 
         if (CollectionUtils.isNotEmpty(existLabels)) {
             List<String> userLabelList = existLabels.stream().filter(label ->
-                    !label.startsWith(DEPT_LEVEL_PREFIX) || !label.contains(DEPT_NAME_PREFIX))
+                            !label.startsWith(DEPT_LEVEL_PREFIX) || !label.contains(DEPT_NAME_PREFIX))
                     .collect(Collectors.toList());
             resourceDeptLabels.addAll(userLabelList);
         }
@@ -636,13 +627,18 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
         /**
          * 目前默认共用一个配置
          */
-        milogMiddlewareConfig.setIsDefault(YES);
+        if (MoneUserContext.getCurrentUser().getIsAdmin()) {
+            milogMiddlewareConfig.setIsDefault(YES);
+        }
         milogMiddlewareConfigDao.addMiddlewareConfig(milogMiddlewareConfig);
     }
 
     private void addEsResourceInfo(MiLogResource miLogResource) {
-        LogEsClusterDO esClusterDO = LogEsClusterDO.miLogEsResourceToConfig(miLogResource);
+        MilogEsClusterDO esClusterDO = MilogEsClusterDO.miLogEsResourceToConfig(miLogResource);
         wrapBaseCommon(esClusterDO, OperateEnum.ADD_OPERATE);
+        if (MoneUserContext.getCurrentUser().getIsAdmin()) {
+            esClusterDO.setIsDefault(YES);
+        }
         milogEsClusterMapper.insert(esClusterDO);
 
         addEsIndex(esClusterDO.getId(), miLogResource.getMultipleEsIndex());
@@ -652,12 +648,12 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
 
     private void checkAlias(MiLogResource resource, OperateEnum operateEnum) {
         if (MiddlewareEnum.ELASTICSEARCH.getCode().equals(resource.getResourceCode())) {
-            List<LogEsClusterDO> logEsClusterDOS = milogEsClusterMapper.selectByAlias(resource.getAlias());
+            List<MilogEsClusterDO> logEsClusterDOS = milogEsClusterMapper.selectByAlias(resource.getAlias());
             if (operateEnum == OperateEnum.ADD_OPERATE && CollectionUtils.isNotEmpty(logEsClusterDOS)) {
                 throw new MilogManageException("alias has exists,please refill");
             }
             if (operateEnum == OperateEnum.UPDATE_OPERATE && CollectionUtils.isNotEmpty(logEsClusterDOS)) {
-                LogEsClusterDO logEsClusterDO = logEsClusterDOS.get(logEsClusterDOS.size() - 1);
+                MilogEsClusterDO logEsClusterDO = logEsClusterDOS.get(logEsClusterDOS.size() - 1);
                 if (!Objects.equals(resource.getId(), logEsClusterDO.getId())) {
                     throw new MilogManageException("alias has exists,please refill");
                 }
@@ -679,14 +675,14 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     }
 
     private void addEsIndex(Long esClusterId, List<EsIndexVo> multipleEsIndex) {
-        List<LogEsIndexDO> milogEsIndexDOS = Lists.newArrayList();
+        List<MilogEsIndexDO> milogEsIndexDOS = Lists.newArrayList();
         if (CollectionUtils.isNotEmpty(multipleEsIndex)) {
             for (EsIndexVo esIndexVo : multipleEsIndex) {
                 milogEsIndexDOS.addAll(
-                        LogEsIndexDO.essIndexVoToIndexDO(esClusterId, esIndexVo));
+                        MilogEsIndexDO.essIndexVoToIndexDO(esClusterId, esIndexVo));
             }
         }
-        for (LogEsIndexDO milogEsIndexDO : milogEsIndexDOS) {
+        for (MilogEsIndexDO milogEsIndexDO : milogEsIndexDOS) {
             milogEsIndexMapper.insert(milogEsIndexDO);
         }
     }
@@ -703,8 +699,11 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
         if (MiddlewareEnum.ELASTICSEARCH.getCode().equals(miLogResource.getResourceCode())) {
             boolean changed = authenticationInChanged(milogEsClusterMapper.selectById(miLogResource.getId()), miLogResource);
             checkEsAddressPortOperate(miLogResource);
-            LogEsClusterDO esClusterDO = LogEsClusterDO.miLogEsResourceToConfig(miLogResource);
+            MilogEsClusterDO esClusterDO = MilogEsClusterDO.miLogEsResourceToConfig(miLogResource);
             esClusterDO.setId(miLogResource.getId());
+            if (MoneUserContext.getCurrentUser().getIsAdmin()) {
+                esClusterDO.setIsDefault(YES);
+            }
             milogEsClusterMapper.updateById(esClusterDO);
             handleEsIndexStore(miLogResource, esClusterDO.getId(), changed);
             //修改es客户端信息
@@ -722,7 +721,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
         milogMiddlewareConfigDao.updateMiddlewareConfig(milogMiddlewareConfig);
     }
 
-    private boolean authenticationInChanged(LogEsClusterDO clusterDO, MiLogResource miLogResource) {
+    private boolean authenticationInChanged(MilogEsClusterDO clusterDO, MiLogResource miLogResource) {
         if (!Objects.equals(clusterDO.getConWay(), miLogResource.getConWay())) {
             return true;
         }
@@ -767,42 +766,42 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     }
 
     private void doHandleEsIndexByLogType(Long esClusterId, Integer logTypeCode, List<String> esIndexList) {
-        List<LogEsIndexDO> addExIndexDo;
-        List<LogEsIndexDO> delExIndexDo = Lists.newArrayList();
+        List<MilogEsIndexDO> addExIndexDo;
+        List<MilogEsIndexDO> delExIndexDo = Lists.newArrayList();
         QueryWrapper queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("cluster_id", esClusterId);
         queryWrapper.eq("log_type", logTypeCode);
-        List<LogEsIndexDO> existEsIndexDO = milogEsIndexMapper.selectList(queryWrapper);
+        List<MilogEsIndexDO> existEsIndexDO = milogEsIndexMapper.selectList(queryWrapper);
         if (CollectionUtils.isEmpty(existEsIndexDO)) {
             addExIndexDo = esIndexList.stream()
                     .map(indexName -> getMilogEsIndexDO(esClusterId, logTypeCode, indexName))
                     .collect(Collectors.toList());
         } else {
-            for (LogEsIndexDO milogEsIndexDO : existEsIndexDO) {
+            for (MilogEsIndexDO milogEsIndexDO : existEsIndexDO) {
                 if (!esIndexList.contains(milogEsIndexDO.getIndexName())) {
                     delExIndexDo.add(milogEsIndexDO);
                 }
             }
-            List<String> existIndexes = existEsIndexDO.stream().map(LogEsIndexDO::getIndexName).collect(Collectors.toList());
+            List<String> existIndexes = existEsIndexDO.stream().map(MilogEsIndexDO::getIndexName).collect(Collectors.toList());
             addExIndexDo = esIndexList.stream().filter(indexName -> !existIndexes.contains(indexName))
                     .map(indexName -> getMilogEsIndexDO(esClusterId, logTypeCode, indexName))
                     .collect(Collectors.toList());
         }
         if (CollectionUtils.isNotEmpty(delExIndexDo)) {
-            milogEsIndexMapper.deleteBatchIds(delExIndexDo.stream().map(LogEsIndexDO::getId).collect(Collectors.toList()));
+            milogEsIndexMapper.deleteBatchIds(delExIndexDo.stream().map(MilogEsIndexDO::getId).collect(Collectors.toList()));
         }
         addExIndex(addExIndexDo);
     }
 
-    private void addExIndex(List<LogEsIndexDO> addExIndexDo) {
-        for (LogEsIndexDO milogEsIndexDO : addExIndexDo) {
+    private void addExIndex(List<MilogEsIndexDO> addExIndexDo) {
+        for (MilogEsIndexDO milogEsIndexDO : addExIndexDo) {
             milogEsIndexMapper.insert(milogEsIndexDO);
         }
     }
 
     @NotNull
-    private LogEsIndexDO getMilogEsIndexDO(Long esClusterId, Integer logTypeCode, String indexName) {
-        LogEsIndexDO milogEsIndexDO = new LogEsIndexDO();
+    private MilogEsIndexDO getMilogEsIndexDO(Long esClusterId, Integer logTypeCode, String indexName) {
+        MilogEsIndexDO milogEsIndexDO = new MilogEsIndexDO();
         milogEsIndexDO.setClusterId(esClusterId);
         milogEsIndexDO.setLogType(logTypeCode);
         milogEsIndexDO.setIndexName(indexName);
@@ -814,12 +813,14 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
         milogMiddlewareConfig.setCtime(existConfig.getCtime());
         milogMiddlewareConfig.setCreator(existConfig.getCreator());
         wrapBaseCommon(milogMiddlewareConfig, OperateEnum.UPDATE_OPERATE);
-        milogMiddlewareConfig.setIsDefault(Constant.YES.intValue());
+        if (MoneUserContext.getCurrentUser().getIsAdmin()) {
+            milogMiddlewareConfig.setIsDefault(Constant.YES.intValue());
+        }
         milogMiddlewareConfig.setId(resourceId);
     }
 
     private void deleteEsIndex(Long esClusterId) {
-        QueryWrapper<LogEsIndexDO> deleteWrapper = new QueryWrapper<>();
+        QueryWrapper<MilogEsIndexDO> deleteWrapper = new QueryWrapper<>();
         deleteWrapper.eq("cluster_id", esClusterId);
         milogEsIndexMapper.delete(deleteWrapper);
     }

@@ -1,6 +1,6 @@
 package com.xiaomi.mone.log.stream;
 
-import com.beust.jcommander.internal.Lists;
+import com.google.common.collect.Lists;
 import com.xiaomi.mone.log.stream.compensate.RocketMqMessageConsume;
 import com.xiaomi.mone.log.stream.compensate.RocketMqMessageProduct;
 import lombok.extern.slf4j.Slf4j;

@@ -387,16 +387,17 @@ CREATE TABLE `milog_log_search_save`  (
 -- Table structure for milog_log_template
 -- ----------------------------
 DROP TABLE IF EXISTS `milog_log_template`;
-CREATE TABLE `milog_log_template`  (
-  `id` bigint(0) NOT NULL AUTO_INCREMENT COMMENT '主键',
-  `ctime` bigint(0) NULL DEFAULT NULL COMMENT '创建时间',
-  `utime` bigint(0) NULL DEFAULT NULL COMMENT '更新时间',
-  `template_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '日志模板名称\r\n',
-  `type` int(0) NULL DEFAULT NULL COMMENT '日志模板类型0-自定义日志;1-app;2-nginx',
-  `support_area` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '支持机房',
-  `order_col` int(0) NULL DEFAULT NULL COMMENT '排序',
-  PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 10 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = Dynamic;
+CREATE TABLE `milog_log_template` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
+  `ctime` bigint(20) DEFAULT NULL COMMENT '创建时间',
+  `utime` bigint(20) DEFAULT NULL COMMENT '更新时间',
+  `template_name` varchar(255) NOT NULL COMMENT '日志模板名称',
+  `type` int(11) DEFAULT NULL COMMENT '日志模板类型0-自定义日志,1-app;2-nginx',
+  `support_area` varchar(255) DEFAULT NULL COMMENT '支持机房',
+  `order_col` int(11) DEFAULT NULL COMMENT '排序',
+  `supported_consume` smallint(2) NOT NULL DEFAULT '1' COMMENT '是否支持消费，默认支持1',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 -- ----------------------------
 -- Records of milog_log_template
@@ -452,6 +453,7 @@ CREATE TABLE `milog_logstail`  (
   `filter` json NULL COMMENT 'filter配置\r\n',
   `en_es_index` json NULL COMMENT 'mis应用索引配置',
   `deploy_way` int(0) NULL DEFAULT NULL COMMENT '部署方式：1-mione; 2-miline; 3-k8s',
+  `first_line_reg` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '自定义行首正则'
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 90115 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = Dynamic;
 

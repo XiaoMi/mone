@@ -58,8 +58,8 @@ public class MatrixEsClient extends EsClient {
     }
 
     @Override
-    public EsClient.EsRet dateHistogram(String indexName, String interval, long startTime, long endTime, BoolQueryBuilder builder) throws IOException {
-        EsClient.EsRet esRet = new EsClient.EsRet();
+    public EsRet dateHistogram(String indexName, String interval, long startTime, long endTime, BoolQueryBuilder builder) throws IOException {
+        EsRet esRet = new EsRet();
         AggregationBuilder aggregationBuilder = ((DateHistogramAggregationBuilder)((DateHistogramAggregationBuilder)((DateHistogramAggregationBuilder) AggregationBuilders.dateHistogram("dateHistogram").minDocCount(0L).fixedInterval(new DateHistogramInterval(interval)).field("alpha_timestamp")).timeZone(TimeZone.getTimeZone("GMT+8").toZoneId())).format("yyyy-MM-dd HH:mm:ss")).extendedBounds(new LongBounds(startTime, endTime));
         SearchRequest searchRequest = new SearchRequest();
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();

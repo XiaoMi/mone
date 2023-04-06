@@ -4,7 +4,7 @@ import com.alibaba.nacos.api.config.ConfigService;
 import com.google.common.collect.Lists;
 import com.xiaomi.mone.log.api.enums.MachineRegionEnum;
 import com.xiaomi.mone.log.common.Result;
-import com.xiaomi.mone.log.manager.dao.LogstoreDao;
+import com.xiaomi.mone.log.manager.dao.MilogLogstoreDao;
 import com.xiaomi.mone.log.manager.dao.MilogLogTailDao;
 import com.xiaomi.mone.log.manager.dao.MilogMachineDao;
 import com.xiaomi.mone.log.manager.dao.MilogMiddlewareConfigDao;
@@ -53,7 +53,7 @@ public class MilogStreamServiceImpl implements MilogStreamService {
     @Resource
     private MilogMachineDao milogMachineDao;
     @Resource
-    private LogstoreDao milogLogstoreDao;
+    private MilogLogstoreDao milogLogstoreDao;
     @Resource
     private MilogLogTailDao milogLogtailDao;
     @Resource

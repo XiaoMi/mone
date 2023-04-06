@@ -13,6 +13,8 @@ public class LogAnalyseDataPreQuery implements Serializable {
 
     private Integer typeCode;
 
+    private String graphParam;
+
     private Long startTime;
 
     private Long endTime;

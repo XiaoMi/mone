@@ -1,7 +1,7 @@
 package com.xiaomi.mone.log.manager.mapper;
 
-import com.xiaomi.mone.log.manager.model.pojo.LogDashboardGraphRefDO;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.xiaomi.mone.log.manager.model.pojo.MilogAnalyseDashboardGraphRefDO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -9,16 +9,16 @@ import java.util.List;
 
 /**
  * <p>
- *  Mapper 接口
+ * Mapper 接口
  * </p>
  *
  * @author wanghaoyang
  * @since 2022-08-18
  */
 @Mapper
-public interface MilogAnalyseDashboardGraphRefMapper extends BaseMapper<LogDashboardGraphRefDO> {
+public interface MilogAnalyseDashboardGraphRefMapper extends BaseMapper<MilogAnalyseDashboardGraphRefDO> {
 
-    List<LogDashboardGraphRefDO> getByDashboardId(@Param(value = "dashboardId") Long dashboardId);
+    List<MilogAnalyseDashboardGraphRefDO> getByDashboardId(@Param(value = "dashboardId") Long dashboardId);
 
     void deleteGraphRef(@Param(value = "graphId") Long graphId);
 
@@ -26,5 +26,5 @@ public interface MilogAnalyseDashboardGraphRefMapper extends BaseMapper<LogDashb
 
     int delRef(@Param(value = "dashboardId") Long dashboardId, @Param(value = "graphId") Long graphId);
 
-    LogDashboardGraphRefDO getRef(@Param(value = "dashboardId") Long dashboardId, @Param(value = "graphId") Long graphId);
+    MilogAnalyseDashboardGraphRefDO getRef(@Param(value = "dashboardId") Long dashboardId, @Param(value = "graphId") Long graphId);
 }
