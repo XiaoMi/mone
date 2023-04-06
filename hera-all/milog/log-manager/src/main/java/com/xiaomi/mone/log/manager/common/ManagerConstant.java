@@ -12,6 +12,10 @@ import java.util.List;
  */
 public class ManagerConstant {
 
+    public static final String TPC_HOME_URL_HEAD = "tpc_home_url_head";
+
+    public static final String SPACE_PAGE_URL = "/milog/space/getbypage";
+
     public static final String DEPT_LEVEL_PREFIX = "部门级别";
 
     public static final String DEPT_NAME_PREFIX = "部门名";
