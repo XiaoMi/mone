@@ -613,15 +613,14 @@ public class HeraBootstrapInitService {
     }
 
 
-    public void deleteService(List<String> serviceNameList, String namespace, String serviceType) {
-        List<io.fabric8.kubernetes.api.model.Service> serviceList = listService(serviceNameList, namespace, serviceType);
+    public void deleteService(List<String> serviceNameList, String namespace) {
+        List<io.fabric8.kubernetes.api.model.Service> serviceList = listService(serviceNameList, namespace);
         if (CollectionUtils.isNotEmpty(serviceList)) {
             kubernetesClient.services().inNamespace(namespace).delete(serviceList);
         }
     }
 
-    public List<io.fabric8.kubernetes.api.model.Service> createAndListService(List<String> serviceNameList, String namespace, String yamlPath, String serviceType) throws InterruptedException {
-        //按名称过滤service
+    public List<io.fabric8.kubernetes.api.model.Service> createAndListService(List<String> serviceNameList, String namespace, String yamlPath) throws InterruptedException {
         List<io.fabric8.kubernetes.api.model.Service> serviceList = listService(serviceNameList, namespace);
         if (CollectionUtils.isEmpty(serviceList)) {
             String yaml = FileUtils.readResourceFile(yamlPath);
@@ -629,8 +628,8 @@ public class HeraBootstrapInitService {
         }
 
         TimeUnit.SECONDS.sleep(1);
-        //按名称+类型 过滤service
-        return listService(serviceNameList, namespace, serviceType);
+
+        return listService(serviceNameList, namespace);
     }
 
     public boolean checkLbServiceFailed(List<io.fabric8.kubernetes.api.model.Service> serviceList, String serviceType) {
@@ -672,13 +671,6 @@ public class HeraBootstrapInitService {
         ServiceList serviceList = kubernetesClient.services().inNamespace(namespace).list();
         return serviceList.getItems().stream()
                 .filter(s -> serviceNameList.contains(s.getMetadata().getName()))
-                .collect(Collectors.toList());
-    }
-    private List<io.fabric8.kubernetes.api.model.Service> listService(List<String> serviceNameList, String namespace, String serviceType) {
-        ServiceList serviceList = kubernetesClient.services().inNamespace(namespace).list();
-        return serviceList.getItems().stream()
-                .filter(s -> serviceNameList.contains(s.getMetadata().getName()))
-                .filter(s -> serviceType.equalsIgnoreCase(s.getSpec().getType()))
                 .collect(Collectors.toList());
     }
 
