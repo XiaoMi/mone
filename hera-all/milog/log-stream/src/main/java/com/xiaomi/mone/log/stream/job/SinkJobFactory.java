@@ -3,21 +3,16 @@ package com.xiaomi.mone.log.stream.job;
 import com.google.gson.Gson;
 import com.xiaomi.mone.es.EsProcessor;
 import com.xiaomi.mone.log.api.enums.MiddlewareEnum;
-import com.xiaomi.mone.log.common.Config;
 import com.xiaomi.mone.log.common.Constant;
-import com.xiaomi.mone.log.model.EsInfo;
 import com.xiaomi.mone.log.parse.LogParser;
 import com.xiaomi.mone.log.parse.LogParserFactory;
+import com.xiaomi.mone.log.stream.job.extension.SinkJob;
 import com.xiaomi.mone.log.stream.job.impl.RocketMqSinkJob;
-import com.xiaomi.mone.log.stream.job.impl.TalosSinkJob;
 import com.xiaomi.mone.log.stream.plugin.es.EsPlugin;
 import com.xiaomi.mone.log.stream.plugin.mq.rocketmq.RocketmqConfig;
 import com.xiaomi.mone.log.stream.plugin.mq.rocketmq.RocketmqPlugin;
-import com.xiaomi.mone.log.stream.plugin.mq.talos.TalosConfig;
-import com.xiaomi.mone.log.stream.plugin.mq.talos.TalosMqPlugin;
 import com.xiaomi.mone.log.stream.sink.SinkChain;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
 
 /**

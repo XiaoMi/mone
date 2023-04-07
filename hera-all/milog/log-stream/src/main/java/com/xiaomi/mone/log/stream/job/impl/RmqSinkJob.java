@@ -1,6 +1,5 @@
 package com.xiaomi.mone.log.stream.job.impl;
 
-import com.xiaomi.mone.log.stream.job.SinkJob;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
