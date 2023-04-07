@@ -16,8 +16,9 @@
 
 package com.xiaomi.data.push.hessian;
 
-import com.caucho.hessian.io.HessianInput;
-import com.caucho.hessian.io.HessianOutput;
+
+import com.alibaba.com.caucho.hessian.io.HessianInput;
+import com.alibaba.com.caucho.hessian.io.HessianOutput;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
