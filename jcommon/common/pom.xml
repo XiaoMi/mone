@@ -119,13 +119,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>hessian-lite</artifactId>
-            <version>3.2.13</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
             <groupId>run.mone</groupId>
             <artifactId>crypto</artifactId>
             <version>1.4-SNAPSHOT</version>
