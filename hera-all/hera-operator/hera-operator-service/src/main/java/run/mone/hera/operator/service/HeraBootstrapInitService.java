@@ -628,7 +628,7 @@ public class HeraBootstrapInitService {
             k8sUtilBean.applyYaml(yaml, namespace, "add");
         }
 
-        TimeUnit.SECONDS.sleep(1);
+        TimeUnit.SECONDS.sleep(2);
         //按名称+类型 过滤service
         return listService(serviceNameList, namespace, serviceType);
     }
@@ -693,6 +693,9 @@ public class HeraBootstrapInitService {
                 throw new RuntimeException("cluster node have no internalIP");
             }
             nodePortIP = nodeAddress.get().getAddress();
+            if (StringUtils.isBlank(nodePortIP)) {
+                throw new RuntimeException("cluster node get null [NodePort] IP");
+            }
         }
 
         for (io.fabric8.kubernetes.api.model.Service service : serviceList) {
