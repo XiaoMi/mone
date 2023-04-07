@@ -45,6 +45,7 @@ public class RpcTest {
         ChannelDefineRpcLocator channelDefineRpcLocator = Ioc.ins().getBean(ChannelDefineRpcLocator.class);
         List<ChannelDefine> logCollectMetaFromManager = channelDefineRpcLocator.getChannelDefine("127.0.0.1");
         System.out.println(new Gson().toJson(logCollectMetaFromManager));
+        Assert.assertNotNull(logCollectMetaFromManager);
 
     }
 
@@ -56,6 +57,7 @@ public class RpcTest {
         List<LineMessage> cloneList = messageList.stream().map(message -> ObjectUtil.clone(message)).collect(Collectors.toList());
 //        List<LineMessage> cloneList = messageList.stream().collect(Collectors.toList());
         log.info("返回数据：{}", cloneList);
+        Assert.assertNotNull(cloneList);
     }
 
 
