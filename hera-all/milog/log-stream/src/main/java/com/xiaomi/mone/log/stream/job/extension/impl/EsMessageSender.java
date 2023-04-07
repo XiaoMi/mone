@@ -1,6 +1,7 @@
-package com.xiaomi.mone.log.stream.job;
+package com.xiaomi.mone.log.stream.job.extension.impl;
 
 import com.xiaomi.mone.es.EsProcessor;
+import com.xiaomi.mone.log.stream.job.extension.MessageSender;
 import com.xiaomi.mone.log.utils.DateUtils;
 
 import java.util.Map;

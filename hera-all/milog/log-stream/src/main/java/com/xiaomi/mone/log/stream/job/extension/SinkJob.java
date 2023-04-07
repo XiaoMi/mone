@@ -1,4 +1,4 @@
-package com.xiaomi.mone.log.stream.job;
+package com.xiaomi.mone.log.stream.job.extension;
 
 public interface SinkJob {
 

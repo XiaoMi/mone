@@ -1,4 +1,4 @@
-package com.xiaomi.mone.log.stream.util;
+package com.xiaomi.mone.log.stream.common.util;
 
 import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.google.common.collect.Maps;
