@@ -1,5 +1,6 @@
 package com.xiaomi.mone.log.manager.model.dto;
 
+import com.xiaomi.mone.log.api.model.vo.AgentLogProcessDTO;
 import lombok.Data;
 
 import java.util.List;

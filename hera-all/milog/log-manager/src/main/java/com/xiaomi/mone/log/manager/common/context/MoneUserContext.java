@@ -1,6 +1,6 @@
 package com.xiaomi.mone.log.manager.common.context;
 
-import com.xiaomi.mone.log.manager.model.convert.UserConvert;
+import com.xiaomi.mone.log.manager.convert.UserConvert;
 import com.xiaomi.mone.log.manager.user.MoneUser;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 
@@ -14,9 +14,9 @@ public class MoneUserContext {
 
     private static ThreadLocal<MoneUser> currentUserHolder = new ThreadLocal<>();
 
-    public static void setCurrentUser(AuthUserVo user) {
+    public static void setCurrentUser(AuthUserVo user, Boolean isAdmin) {
         MoneUser moneUser = UserConvert.INSTANCE.userAdapter(user);
-        moneUser.setIsAdmin(true);
+        moneUser.setIsAdmin(isAdmin);
         currentUserHolder.set(moneUser);
     }
 

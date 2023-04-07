@@ -6,9 +6,9 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-import static com.xiaomi.mone.log.common.Constant.DEFAULT_TAGS;
-import static com.xiaomi.mone.log.common.Constant.UNDERLINE_SYMBOL;
+import static com.xiaomi.mone.log.common.Constant.*;
 
 @Slf4j
 public class Utils {
@@ -130,5 +130,16 @@ public class Utils {
 
     public static Integer getRandomNum(Integer right) {
         return ThreadLocalRandom.current().nextInt(right);
+    }
+
+
+    public static List<String> generateCommonTagTopicName(String orgId) {
+        return IntStream.range(0, COMMON_MQ_SUFFIX.size()).mapToObj(value -> {
+            String suffix = COMMON_MQ_SUFFIX.get(value);
+            if (StringUtils.isNotBlank(orgId)) {
+                return String.format("%s_%s_%s", COMMON_MQ_PREFIX, orgId, suffix);
+            }
+            return String.format("%s_%s", COMMON_MQ_PREFIX, suffix);
+        }).collect(Collectors.toList());
     }
 }

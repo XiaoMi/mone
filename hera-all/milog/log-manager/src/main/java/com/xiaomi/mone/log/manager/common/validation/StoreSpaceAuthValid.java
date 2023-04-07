@@ -1,11 +1,11 @@
 package com.xiaomi.mone.log.manager.common.validation;
 
 import com.google.common.collect.Lists;
-import com.xiaomi.mone.log.manager.dao.LogstoreDao;
-import com.xiaomi.mone.log.manager.dao.SpaceDao;
+import com.xiaomi.mone.log.manager.dao.MilogLogstoreDao;
+import com.xiaomi.mone.log.manager.dao.MilogSpaceDao;
 import com.xiaomi.mone.log.manager.model.bo.StoreSpaceAuth;
-import com.xiaomi.mone.log.manager.model.pojo.LogSpaceDO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
+import com.xiaomi.mone.log.manager.model.pojo.MilogSpaceDO;
 import com.xiaomi.youpin.docean.anno.Component;
 import lombok.extern.slf4j.Slf4j;
 
@@ -26,10 +26,10 @@ import static com.xiaomi.mone.log.common.Constant.SYMBOL_COMMA;
 public class StoreSpaceAuthValid {
 
     @Resource
-    private LogstoreDao milogLogstoreDao;
+    private MilogLogstoreDao milogLogstoreDao;
 
     @Resource
-    private SpaceDao milogSpaceDao;
+    private MilogSpaceDao milogSpaceDao;
 
     public String validParam(StoreSpaceAuth storeSpaceAuth) {
         List<String> errorInfos = Lists.newArrayList();
@@ -51,7 +51,7 @@ public class StoreSpaceAuthValid {
         if (null == milogLogStoreDO) {
             errorInfos.add("store信息不存在，请检查是否正确");
         }
-        LogSpaceDO milogSpaceDO = milogSpaceDao.queryById(storeSpaceAuth.getSpaceId());
+        MilogSpaceDO milogSpaceDO = milogSpaceDao.queryById(storeSpaceAuth.getSpaceId());
         if (null == milogSpaceDO) {
             errorInfos.add("space信息不存在，请检查是否正确");
         }

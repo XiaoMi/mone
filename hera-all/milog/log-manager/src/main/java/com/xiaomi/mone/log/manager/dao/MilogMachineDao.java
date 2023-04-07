@@ -2,9 +2,9 @@ package com.xiaomi.mone.log.manager.dao;
 
 import com.xiaomi.mone.log.api.enums.AppTypeEnum;
 import com.xiaomi.mone.log.common.Constant;
-import com.xiaomi.mone.log.manager.model.pojo.LogSpaceDO;
-import com.xiaomi.mone.log.manager.model.pojo.MiLogMachine;
 import com.xiaomi.mone.log.manager.model.bo.MachineQueryParam;
+import com.xiaomi.mone.log.manager.model.pojo.MiLogMachine;
+import com.xiaomi.mone.log.manager.model.pojo.MilogSpaceDO;
 import com.xiaomi.youpin.docean.anno.Service;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -49,7 +49,7 @@ public class MilogMachineDao {
 
     public Integer queryMachinePageCount(MachineQueryParam param) {
 
-        return dao.count(LogSpaceDO.class, assembleParam(param));
+        return dao.count(MilogSpaceDO.class, assembleParam(param));
     }
 
     private Cnd assembleParam(MachineQueryParam param) {

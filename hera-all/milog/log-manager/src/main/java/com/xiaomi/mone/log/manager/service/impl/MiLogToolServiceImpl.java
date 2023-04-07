@@ -44,10 +44,10 @@ public class MiLogToolServiceImpl implements MiLogToolService {
     private MilogLogTailDao milogLogtailDao;
 
     @Resource
-    private LogstoreDao logstoreDao;
+    private MilogLogstoreDao logstoreDao;
 
     @Resource
-    private SpaceDao milogSpaceDao;
+    private MilogSpaceDao milogSpaceDao;
 
     @Resource
     private MilogConfigNacosServiceImpl milogConfigNacosService;
@@ -217,7 +217,7 @@ public class MiLogToolServiceImpl implements MiLogToolService {
         logTailSendLokiVo.setTailId(sendTailId);
         MilogLogTailDo logtailDo = milogLogtailDao.queryById(sendTailId);
         logTailSendLokiVo.setTailName(logtailDo.getTail());
-        LogSpaceDO milogSpace = milogSpaceDao.queryById(logtailDo.getSpaceId());
+        MilogSpaceDO milogSpace = milogSpaceDao.queryById(logtailDo.getSpaceId());
         logTailSendLokiVo.setSpaceId(logtailDo.getSpaceId());
         logTailSendLokiVo.setSpaceName(milogSpace.getSpaceName());
         MilogLogStoreDO logstoreDO = logstoreDao.queryById(logtailDo.getStoreId());

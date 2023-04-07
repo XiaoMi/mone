@@ -24,7 +24,6 @@ import com.xiaomi.mone.log.manager.service.nacos.impl.*;
 import com.xiaomi.mone.log.model.*;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.plugin.config.anno.Value;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.map.HashedMap;
@@ -64,7 +63,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
     private MilogMachineDao milogMachineDao;
 
     @Resource
-    private LogstoreDao logstoreDao;
+    private MilogLogstoreDao logstoreDao;
 
     @Resource
     private MilogAppTopicRelDao milogAppTopicRelDao;
@@ -76,7 +75,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
     private EsCluster esCluster;
 
     @Resource
-    private SpaceDao milogSpaceDao;
+    private MilogSpaceDao milogSpaceDao;
 
     @Resource
     private MilogAppMiddlewareRelDao milogAppMiddlewareRelDao;
@@ -347,7 +346,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
         if (null != milogLogstore) {
             sinkConfig.setLogstoreName(milogLogstore.getLogstoreName());
             sinkConfig.setKeyList(Utils.parse2KeyAndTypeList(milogLogstore.getKeyList(), milogLogstore.getColumnTypeList()));
-            LogEsClusterDO esInfo = esCluster.getById(milogLogstore.getEsClusterId());
+            MilogEsClusterDO esInfo = esCluster.getById(milogLogstore.getEsClusterId());
             sinkConfig.setEsIndex(milogLogstore.getEsIndex());
             sinkConfig.setEsInfo(buildEsInfo(esInfo));
         }
@@ -355,7 +354,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
         return sinkConfig;
     }
 
-    private EsInfo buildEsInfo(LogEsClusterDO clusterDO) {
+    private EsInfo buildEsInfo(MilogEsClusterDO clusterDO) {
         if (Objects.equals(ES_CONWAY_PWD, clusterDO.getConWay())) {
             return new EsInfo(clusterDO.getId(), clusterDO.getAddr(), clusterDO.getUser(), clusterDO.getPwd());
         }

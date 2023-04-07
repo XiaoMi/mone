@@ -4,6 +4,7 @@
 * 特点: 符合Java标准、轻量级、没有无用的库、内存占用少、快速服务请求、可维护性高 支持plugin扩展
 * Features: Compliant with Java standards, lightweight, no unnecessary libraries, low memory footprint, fast service requests, high maintainability, and supports plugin extensions.
 * 支持IOC、AOP，提供mysql、dubbo、redis、nacos、rocketmq、sentinel等插件
+* Supports IOC and AOP, offers plugins for MySQL, Dubbo, Redis, Nacos, RocketMQ, Sentinel, and more.
 * 使用说明：
 新创建的java项目只需要引入一下两个依赖：
 *         <dependency>
@@ -34,5 +35,4 @@
         }
   }
 启动Bootstrap类即可运行server。
-* 对于提供http接口的项目，docean中提供与spring保持一致的注解例如:@Controller、@RequestMapping等
-* 主要作者: 文榜 丁佩 张志勇 刘玉冲 张秀华 丁涛 志东 振兴
+* 主要作者(Main author): 文榜 丁佩 张志勇 丁涛 志东 振兴

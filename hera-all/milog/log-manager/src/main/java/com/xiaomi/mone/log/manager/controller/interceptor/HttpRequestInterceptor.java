@@ -16,12 +16,15 @@
 
 package com.xiaomi.mone.log.manager.controller.interceptor;
 
+import com.google.common.collect.Sets;
 import com.xiaomi.hera.trace.context.TraceIdUtil;
 import com.xiaomi.mone.log.common.Config;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
+import com.xiaomi.mone.log.manager.domain.Tpc;
 import com.xiaomi.mone.tpc.login.filter.DoceanReqUserFilter;
 import com.xiaomi.mone.tpc.login.util.ConstUtil;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
+import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.Component;
 import com.xiaomi.youpin.docean.aop.AopContext;
 import com.xiaomi.youpin.docean.aop.EnhanceInterceptor;
@@ -29,16 +32,16 @@ import com.xiaomi.youpin.docean.mvc.ContextHolder;
 import com.xiaomi.youpin.docean.mvc.MvcContext;
 import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Resource;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.xiaomi.mone.log.common.Constant.SYMBOL_COMMA;
+import static com.xiaomi.mone.log.manager.common.ManagerConstant.SPACE_PAGE_URL;
+import static com.xiaomi.mone.log.manager.common.ManagerConstant.TPC_HOME_URL_HEAD;
 
 /**
  * @Author goodjava@qq.com
@@ -53,13 +56,15 @@ public class HttpRequestInterceptor extends EnhanceInterceptor {
 
     public HttpRequestInterceptor() {
         doceanReqUserFilter = new DoceanReqUserFilter();
+        Config config = Config.ins();
         Map<String, String> map = new HashMap<>();
-        map.put(ConstUtil.logoutUrl, "/user-manage/login");
-        map.put(ConstUtil.loginUrl, "/user-manage/login");
-        map.put(ConstUtil.devMode, "true");
+        map.put(ConstUtil.devMode, "false");
         map.put(ConstUtil.innerAuth, "false");
-        map.put(ConstUtil.authTokenUrl, "http://127.0.0.1:8098/login/token/parse");
+        map.put(ConstUtil.authTokenUrl, config.get("auth_token_url", "http://127.0.0.1:8098/login/token/parse"));
         map.put(ConstUtil.ignoreUrl, "/alert/get");
+        map.put(ConstUtil.loginUrl, config.get("tpc_login_url", ""));
+        map.put(ConstUtil.logoutUrl, config.get("tpc_logout_url", ""));
+
         doceanReqUserFilter.init(map);
     }
 
@@ -67,10 +72,13 @@ public class HttpRequestInterceptor extends EnhanceInterceptor {
 
     private String filterUrls = Config.ins().get("filter_urls", Strings.EMPTY);
 
+    private static final Set<String> TPC_HEADERS_URLS = Sets.newHashSet();
+
     private List<String> filterUrlList;
 
     {
         filterUrlList = Arrays.stream(filterUrls.split(SYMBOL_COMMA)).distinct().collect(Collectors.toList());
+        TPC_HEADERS_URLS.add(SPACE_PAGE_URL);
     }
 
     @Override
@@ -87,18 +95,27 @@ public class HttpRequestInterceptor extends EnhanceInterceptor {
 
     private void saveUserInfoThreadLocal(MvcContext mvcContext) {
         if (!doceanReqUserFilter.doFilter(mvcContext)) {
-            throw new RuntimeException("用户信息读取失败");
+            return;
+//            throw new MilogManageException("please go to login");
         }
         AuthUserVo userVo = (AuthUserVo) mvcContext.session().getAttribute(ConstUtil.TPC_USER);
-        MoneUserContext.setCurrentUser(userVo);
+        Tpc tpc = Ioc.ins().getBean(Tpc.class);
+        MoneUserContext.setCurrentUser(userVo, tpc.isAdmin(userVo.getAccount(), userVo.getUserType()));
     }
 
     @Override
     public Object after(AopContext context, Method method, Object res) {
-        MvcContext mvcContext = ContextHolder.getContext().get();
-        mvcContext.getHeaders().put("traceId", TraceIdUtil.traceId());
+        solveResHeaders();
         clearThreadLocal();
         return super.after(context, method, res);
+    }
+
+    private void solveResHeaders() {
+        MvcContext mvcContext = ContextHolder.getContext().get();
+        mvcContext.getResHeaders().put("traceId", TraceIdUtil.traceId() == null ? StringUtils.EMPTY : TraceIdUtil.traceId());
+        if (TPC_HEADERS_URLS.contains(mvcContext.getPath())) {
+            mvcContext.getResHeaders().put(TPC_HOME_URL_HEAD, Config.ins().get(TPC_HOME_URL_HEAD, "https://127.0.0.1"));
+        }
     }
 
     @Override

@@ -14,6 +14,7 @@ import com.xiaomi.mone.log.manager.common.Utils;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
 import com.xiaomi.mone.log.manager.common.validation.HeraConfigValid;
 import com.xiaomi.mone.log.manager.dao.*;
+import com.xiaomi.mone.log.manager.mapper.MilogLogTemplateMapper;
 import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
 import com.xiaomi.mone.log.manager.model.bo.MlogParseParam;
 import com.xiaomi.mone.log.manager.model.dto.*;
@@ -23,6 +24,8 @@ import com.xiaomi.mone.log.manager.model.vo.QuickQueryVO;
 import com.xiaomi.mone.log.manager.service.BaseMilogRpcConsumerService;
 import com.xiaomi.mone.log.manager.service.BaseService;
 import com.xiaomi.mone.log.manager.service.LogTailService;
+import com.xiaomi.mone.log.manager.service.bind.LogTypeProcessor;
+import com.xiaomi.mone.log.manager.service.bind.LogTypeProcessorFactory;
 import com.xiaomi.mone.log.manager.service.env.HeraEnvIpService;
 import com.xiaomi.mone.log.manager.service.env.HeraEnvIpServiceFactory;
 import com.xiaomi.mone.log.manager.service.nacos.impl.StreamConfigNacosProvider;
@@ -56,10 +59,10 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     private MilogLogTailDao milogLogtailDao;
 
     @Resource
-    private LogstoreDao logstoreDao;
+    private MilogLogstoreDao logstoreDao;
 
     @Resource
-    private SpaceDao milogSpaceDao;
+    private MilogSpaceDao milogSpaceDao;
 
     @Resource
     private MilogConfigNacosServiceImpl milogConfigNacosServiceImpl;
@@ -99,12 +102,24 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     private HeraAppServiceImpl heraAppService;
     @Resource
     private HeraAppEnvServiceImpl heraAppEnvService;
-
+    @Resource
+    private MilogLogTemplateMapper milogLogTemplateMapper;
     @Resource
     private HeraConfigValid heraConfigValid;
 
     Gson gson = new Gson();
     private static final String MIS_LOGPATH_PREFIX = "/home/work/logs";
+
+
+    @Resource
+    private LogTypeProcessorFactory logTypeProcessorFactory;
+
+    private LogTypeProcessor logTypeProcessor;
+
+    public void init() {
+        logTypeProcessorFactory.setMilogLogTemplateMapper(milogLogTemplateMapper);
+        logTypeProcessor = logTypeProcessorFactory.getLogTypeProcessor();
+    }
 
     private static boolean filterNameEmpty(MilogLogTailDo milogLogTailDo) {
         return StringUtils.isNotBlank(milogLogTailDo.getTail());
@@ -206,6 +221,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
 
         MilogLogTailDo mt = buildLogTailDo(param, milogLogStore, appBaseInfo, MoneUserContext.getCurrentUser().getUser());
         MilogLogTailDo milogLogtailDo = milogLogtailDao.newMilogLogtail(mt);
+        boolean supportedConsume = logTypeProcessor.supportedConsume(LogTypeEnum.type2enum(milogLogStore.getLogType()));
         try {
             if (null != milogLogtailDo) {
                 if (ProjectTypeEnum.MIONE_TYPE.getCode().intValue() == param.getAppType().intValue()) {
@@ -214,9 +230,8 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
                             milogLogtailDo.getId(), param.getMilogAppId(),
                             null == param.getMiddlewareConfigId() ? milogLogStore.getMqResourceId() : param.getMiddlewareConfigId(),
                             param.getTopicName(), param.getBatchSendSize());
-                    List<Integer> logTypesNotConsume = Arrays.stream(logTypeMqNotConsume.split(",")).map(Integer::valueOf).collect(Collectors.toList());
                     /** 创建完tail后同步信息**/
-                    sendMessageOnCreate(param, mt, param.getMilogAppId(), logTypesNotConsume.contains(milogLogStore.getLogType()));
+                    sendMessageOnCreate(param, mt, param.getMilogAppId(), supportedConsume);
                 }
                 MilogTailDTO ret = new MilogTailDTO();
                 ret.setId(mt.getId());
@@ -239,9 +254,8 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     public void sengMessageNewTail(MilogLogtailParam param, MilogLogTailDo milogLogtailDo, MilogLogStoreDO milogLogStore) {
         // tail创建成功 绑定和中间件的关系
         milogAppMiddlewareRelService.bindingTailConfigRel(milogLogtailDo.getId(), param.getMilogAppId(), param.getMiddlewareConfigId(), param.getTopicName());
-        List<Integer> logTypesNotConsume = Arrays.stream(logTypeMqNotConsume.split(",")).map(Integer::valueOf).collect(Collectors.toList());
         /** 创建完tail后同步信息**/
-        sendMessageOnCreate(param, milogLogtailDo, param.getMilogAppId(), logTypesNotConsume.contains(milogLogStore.getLogType()));
+        sendMessageOnCreate(param, milogLogtailDo, param.getMilogAppId(), logTypeProcessor.supportedConsume(LogTypeEnum.type2enum(milogLogStore.getLogType())));
     }
 
     @Override
@@ -283,7 +297,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
      * @param param
      * @param mt
      */
-    private void sendMessageOnCreate(MilogLogtailParam param, MilogLogTailDo mt, Long milogAppId, boolean notSendStream) {
+    private void sendMessageOnCreate(MilogLogtailParam param, MilogLogTailDo mt, Long milogAppId, boolean supportedConsume) {
 //        MilogMiddlewareConfig config = milogAppMiddlewareRelService.queryMiddlewareConfig(param.getMiddlewareConfigId());
         /**
          * 创建consumerGroup-开源不需要
@@ -296,7 +310,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         /**
          * 发送最终配置信息---log-stream-- 查看日志模板类型，如果是opentelemetry日志，只发送mq不消费
          */
-        if (!notSendStream) {
+        if (supportedConsume) {
             sengMessageToStream(mt, OperateEnum.ADD_OPERATE.getCode());
         }
     }
@@ -460,8 +474,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
 
     @Override
     public void updateSendMsg(MilogLogTailDo milogLogtailDo, List<String> oldIps) {
-        MilogLogStoreDO logstoreDO = logstoreDao.queryById(milogLogtailDo.getStoreId());
-        List<Integer> logTypesNotConsume = Arrays.stream(logTypeMqNotConsume.split(",")).map(Integer::valueOf).collect(Collectors.toList());
+        MilogLogStoreDO logStoreDO = logstoreDao.queryById(milogLogtailDo.getStoreId());
         /**
          * 同步log-agent
          */
@@ -469,7 +482,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         /**
          * 同步 log-stream 如果是opentelemetry日志，只发送mq不消费
          */
-        if (!logTypesNotConsume.contains(logstoreDO.getLogType())) {
+        if (logTypeProcessor.supportedConsume(LogTypeEnum.type2enum(logStoreDO.getLogType()))) {
 //            List<MilogAppMiddlewareRel> middlewareRels = milogAppMiddlewareRelDao.queryByCondition(milogLogtailDo.getMilogAppId(), null, milogLogtailDo.getId());
 //            createConsumerGroup(milogLogtailDo.getSpaceId(), milogLogtailDo.getStoreId(), milogLogtailDo.getId(), milogMiddlewareConfigDao.queryById(middlewareRels.get(0).getMiddlewareId()), milogLogtailDo.getMilogAppId(), false);
             sengMessageToStream(milogLogtailDo, OperateEnum.UPDATE_OPERATE.getCode());
@@ -494,7 +507,8 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
             return new Result<>(CommonError.ParamsError.getCode(), "tail 不存在");
         }
         if (milogLogtailDao.deleteMilogLogtail(id)) {
-            CompletableFuture.runAsync(() -> sendMessageOnDelete(milogLogtailDo));
+            MilogLogStoreDO logStoreDO = logstoreDao.queryById(milogLogtailDo.getStoreId());
+            CompletableFuture.runAsync(() -> sendMessageOnDelete(milogLogtailDo, logStoreDO));
             return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage());
         } else {
             log.warn("[MilogLogtailService.deleteMilogLogtail] delete MilogLogtail err,id:{}", id);
@@ -503,26 +517,9 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     }
 
     @Override
-    public void sendMessageOnDelete(MilogLogTailDo mt) {
+    public void sendMessageOnDelete(MilogLogTailDo mt, MilogLogStoreDO logStoreDO) {
         log.info("发送删除配置信息：mt:{}", gson.toJson(mt));
-        List<MilogAppMiddlewareRel> milogAppMiddlewareRels = milogAppMiddlewareRelDao.queryByCondition(mt.getMilogAppId(), null, mt.getId());
-        milogAppMiddlewareRels.forEach(middlewareRel -> {
-            MilogMiddlewareConfig middlewareConfig = milogMiddlewareConfigDao.queryById(middlewareRel.getMiddlewareId());
-            MilogLogStoreDO logstoreDO = logstoreDao.queryById(mt.getStoreId());
-
-            List<Integer> logTypesNotConsume = Arrays.stream(logTypeMqNotConsume.split(",")).map(Integer::valueOf).collect(Collectors.toList());
-
-            if (!logTypesNotConsume.contains(logstoreDO.getLogType())) {
-                sengMessageToStream(mt, OperateEnum.DELETE_OPERATE.getCode());
-                /*** 删除consumerGroup */
-                if (MiddlewareEnum.ROCKETMQ.getCode().equals(middlewareConfig.getType())) {
-                    rocketMqConfigService.deleteSubscribeGroup(middlewareConfig.getServiceUrl(),
-                            middlewareConfig.getAuthorization(), middlewareConfig.getOrgId(),
-                            mt.getSpaceId(), mt.getStoreId(), mt.getId());
-                }
-            }
-        });
-
+        delMqConfigResource(mt, logStoreDO);
         /**
          * 发送配置信息---log-agent
          */
@@ -531,6 +528,11 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
          * 删除关系
          */
         milogAppMiddlewareRelDao.deleteRel(mt.getMilogAppId(), mt.getId());
+    }
+
+    private void delMqConfigResource(MilogLogTailDo mt, MilogLogStoreDO logStoreDO) {
+        List<MilogAppMiddlewareRel> milogAppMiddlewareRels = milogAppMiddlewareRelDao.queryByCondition(mt.getMilogAppId(), null, mt.getId());
+        logTypeProcessor.supportedConsume(LogTypeEnum.type2enum(logStoreDO.getLogType()));
     }
 
     @Override
@@ -750,12 +752,12 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
             neoAppInfos.forEach(regionDTO ->
                     regionDTO.getZoneDTOList()
                             .stream().forEach(zoneDTO -> {
-                        String zoneNameEN = zoneDTO.getZoneNameEN();
-                        MachineRegionEnum machineInfoByZone = MachineRegionEnum.queryMchineRegionByZone(zoneNameEN);
-                        if (null != machineInfoByZone && machineInfoByZone == machineRoom) {
-                            podDTOList.addAll(zoneDTO.getPodDTOList());
-                        }
-                    }));
+                                String zoneNameEN = zoneDTO.getZoneNameEN();
+                                MachineRegionEnum machineInfoByZone = MachineRegionEnum.queryMchineRegionByZone(zoneNameEN);
+                                if (null != machineInfoByZone && machineInfoByZone == machineRoom) {
+                                    podDTOList.addAll(zoneDTO.getPodDTOList());
+                                }
+                            }));
         }
         return podDTOList;
     }
@@ -924,7 +926,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
                             //更新tail
                             milogLogtailDo.setIps(changedMachines);
                             milogLogtailDo.setUtime(Instant.now().toEpochMilli());
-                            milogLogtailDo.setUpdater(Constant.DEFAULT_OERATOR);
+                            milogLogtailDo.setUpdater(Constant.DEFAULT_OPERATOR);
                             milogLogtailDao.update(milogLogtailDo);
                         }
                     });
@@ -952,7 +954,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         List<QuickQueryVO> quickQueryVOS = Lists.newArrayList();
         if (CollectionUtils.isNotEmpty(milogLogTailDos)) {
             quickQueryVOS = milogLogTailDos.stream().map(
-                    LogTailServiceImpl::applyQueryVO)
+                            LogTailServiceImpl::applyQueryVO)
                     .collect(Collectors.toList());
             wrapStoreSpaceName(quickQueryVOS);
         }
@@ -967,7 +969,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         List<Long> spaceIds = quickQueryVOS.stream()
                 .map(QuickQueryVO::getSpaceId)
                 .collect(Collectors.toList());
-        List<LogSpaceDO> milogSpaceDOS = milogSpaceDao.queryByIds(spaceIds);
+        List<MilogSpaceDO> milogSpaceDOS = milogSpaceDao.queryByIds(spaceIds);
         quickQueryVOS.stream().map(quickQueryVO -> {
             milogLogStoreDOS.stream()
                     .filter(milogLogsSoreDO -> Objects.equals(quickQueryVO.getStoreId(), milogLogsSoreDO.getId()))

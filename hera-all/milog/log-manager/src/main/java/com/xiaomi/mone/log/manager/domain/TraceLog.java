@@ -1,46 +1,57 @@
 package com.xiaomi.mone.log.manager.domain;
 
+import cn.hutool.core.date.DateTime;
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.google.gson.Gson;
 import com.xiaomi.mone.log.api.model.dto.TraceLogDTO;
 import com.xiaomi.mone.log.common.Constant;
 import com.xiaomi.mone.log.manager.mapper.MilogEsIndexMapper;
-import com.xiaomi.mone.log.manager.model.pojo.LogEsIndexDO;
+import com.xiaomi.mone.log.manager.model.pojo.MilogEsIndexDO;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.common.StringUtils;
 import com.xiaomi.youpin.docean.plugin.es.EsService;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Resource;
 import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
 public class TraceLog {
+    private static final String TIME_STAMP = "timestamp";
     @Resource
     private EsCluster esCluster;
 
     @Resource
     private MilogEsIndexMapper esIndexMapper;
 
-    public TraceLogDTO getTraceLog(String traceId, String region) throws IOException {
+    public TraceLogDTO getTraceLog(String traceId, String region, String generationTime, String level) throws IOException {
         if (StringUtils.isEmpty(traceId)) {
             return null;
         }
         SearchSourceBuilder qb = new SearchSourceBuilder();
-        qb.query(QueryBuilders.termQuery("traceId", traceId));
-        List<LogEsIndexDO> indexList;
-        if (StringUtils.isEmpty(region)) { // region为空查询国内所有region
+        BoolQueryBuilder queryBuilder = getBoolQueryBuilder(traceId, generationTime, level);
+        qb.query(queryBuilder);
+        List<MilogEsIndexDO> indexList;
+        if (StringUtils.isEmpty(region)) {
+            // region为空查询国内所有region
             indexList = esIndexMapper.selectAreaIndexList("cn");
         } else {
             indexList = esIndexMapper.selectRegionIndexList(region);
@@ -48,9 +59,31 @@ public class TraceLog {
         if (indexList == null || indexList.isEmpty()) {
             return TraceLogDTO.emptyData();
         }
+        List<ClusterIndexVO> clusterIndexVOS = indexList.stream()
+                .map(MilogEsIndexDO::toClusterIndexVO).distinct().collect(Collectors.toList());
+        return EsAsyncSearch(clusterIndexVOS, qb);
+    }
+
+    @NotNull
+    private BoolQueryBuilder getBoolQueryBuilder(String traceId, String generationTime, String level) {
+        BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
+        queryBuilder.filter(QueryBuilders.termQuery("traceId", traceId));
+        if (StringUtils.isNotBlank(level)) {
+            queryBuilder.filter(QueryBuilders.termQuery("level", level));
+        }
+        if (StringUtils.isNotEmpty(generationTime)) {
+            long time = new DateTime(generationTime).getTime();
+            long startTime = time - TimeUnit.HOURS.toMillis(1);
+            long endTime = time + TimeUnit.HOURS.toMillis(1);
+            queryBuilder.filter(QueryBuilders.rangeQuery("timestamp").from(startTime).to(endTime));
+        }
+        return queryBuilder;
+    }
+
+    public TraceLogDTO EsAsyncSearch(List<ClusterIndexVO> indexList, SearchSourceBuilder qb) {
         CountDownLatch countDownLatch = new CountDownLatch(indexList.size());
         AsyncSearchObj asyncSearchObj = new AsyncSearchObj(countDownLatch);
-        for (LogEsIndexDO esIndexDO : indexList) {
+        for (ClusterIndexVO esIndexDO : indexList) {
             EsService esService = esCluster.getEsService(esIndexDO.getClusterId());
             if (esService == null) {
                 countDownLatch.countDown();
@@ -62,21 +95,46 @@ public class TraceLog {
             esService.searchAsync(searchRequest, asyncSearchObj.getListenerStack().pop());
         }
         try {
-            countDownLatch.await(5, TimeUnit.SECONDS);
+            countDownLatch.await(10, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            e.printStackTrace();
-            log.error("日志查询错误, 查询trace日志报错 countdownlatch timeout, error is [{}]", e.getMessage());
+            log.error("日志查询错误, 查询trace日志报错 countdownlatch timeout, error is [{}]", e.getMessage(), e);
         }
-        return new TraceLogDTO(asyncSearchObj.getLogSet());
+        Set<String> logSet = asyncSearchObj.getLogSet();
+        return new TraceLogDTO(sortedLogWithTime(logSet));
+    }
+
+    @Nullable
+    private Set<String> sortedLogWithTime(Set<String> logSet) {
+        if (CollectionUtils.isNotEmpty(logSet)) {
+            logSet = logSet.stream().sorted((o1, o2) -> {
+                try {
+                    JSONObject obj1 = JSON.parseObject(String.valueOf(o1));
+                    JSONObject obj2 = JSON.parseObject(String.valueOf(o2));
+                    if (obj1.getLong(TIME_STAMP) == null) {
+                        return 1;
+                    }
+                    if (obj2.getLong(TIME_STAMP) == null) {
+                        return -1;
+                    }
+                    return obj2.getLong(TIME_STAMP).compareTo(obj1.getLong(TIME_STAMP));
+                } catch (Exception e) {
+                    log.error("compare exception", e);
+                }
+                return 0;
+            }).collect(Collectors.toCollection(LinkedHashSet::new));
+        }
+        return logSet;
     }
 
     @Data
     private class AsyncSearchObj {
         private Set<String> logSet;
         private Stack<ActionListener<SearchResponse>> listenerStack = new Stack<>();
+
         public AsyncSearchObj(CountDownLatch countDownLatch) {
             this.logSet = Collections.synchronizedSet(new TreeSet<>(new Comparator<String>() {
                 Gson gson = new Gson();
+
                 @Override
                 public int compare(String o1, String o2) {
                     if (gson.fromJson(o1, Map.class).get("timestamp") == null) {
@@ -109,6 +167,7 @@ public class TraceLog {
                         }
                         countDownLatch.countDown();
                     }
+
                     @Override
                     public void onFailure(Exception e) {
                         countDownLatch.countDown();

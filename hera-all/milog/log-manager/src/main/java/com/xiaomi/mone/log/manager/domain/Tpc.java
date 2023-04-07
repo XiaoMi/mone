@@ -2,9 +2,9 @@ package com.xiaomi.mone.log.manager.domain;
 
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
 import com.xiaomi.mone.log.manager.common.exception.MilogManageException;
-import com.xiaomi.mone.log.manager.dao.SpaceDao;
-import com.xiaomi.mone.log.manager.model.bo.CreateOrUpdateSpaceCmd;
-import com.xiaomi.mone.log.manager.model.pojo.LogSpaceDO;
+import com.xiaomi.mone.log.manager.dao.MilogSpaceDao;
+import com.xiaomi.mone.log.manager.model.MilogSpaceParam;
+import com.xiaomi.mone.log.manager.model.pojo.MilogSpaceDO;
 import com.xiaomi.mone.log.manager.user.IdmMoneUserDetailService;
 import com.xiaomi.mone.log.manager.user.MoneUser;
 import com.xiaomi.mone.tpc.api.service.NodeFacade;
@@ -26,11 +26,13 @@ import javax.annotation.Resource;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static com.xiaomi.mone.log.common.Constant.GSON;
+
 @Service
 @Slf4j
 public class Tpc {
     @Resource
-    private SpaceDao milogSpaceDao;
+    private MilogSpaceDao milogSpaceDao;
 
     @Reference(interfaceClass = NodeFacade.class, group = "$tpc_dubbo_group", check = false, version = "1.0", timeout = 10000)
     private NodeFacade tpcService;
@@ -52,6 +54,19 @@ public class Tpc {
     @Resource
     IDMDept idmDept;
 
+    public boolean isAdmin(String account, Integer userType) {
+        handleRemoteTpcId(tpcNodeCode, account, userType);
+        NodeQryParam param = new NodeQryParam();
+        param.setAccount(account);
+        param.setUserType(userType);
+        param.setId(tpcPId);
+        param.setType(NodeTypeEnum.PRO_TYPE.getCode());
+        Result<NodeVo> nodeVoResult = tpcService.get(param);
+        NodeVo node = nodeVoResult.getData();
+        log.info("get user isAdmin,param:{},result:{}", GSON.toJson(param), GSON.toJson(node));
+        return node.isCurrentMgr() || node.isTopMgr() || node.isParentMgr();
+    }
+
     public List<Long> getUserPermSpaceId() {
         Result<PageDataVo<NodeVo>> res = getUserPermSpace(null, 1, 100);
         if (res == null || res.getData() == null || res.getData().getList() == null) {
@@ -62,7 +77,11 @@ public class Tpc {
 
     public Result<PageDataVo<NodeVo>> getUserPermSpace(String spaceName, Integer page, Integer pageSize) {
         MoneUser currentUser = MoneUserContext.getCurrentUser();
-        handleRemoteTpcId(tpcNodeCode);
+        if (null == currentUser) {
+            log.info("user not login");
+            throw new MilogManageException("please go to login");
+        }
+        handleRemoteTpcId(tpcNodeCode, currentUser.getUser(), currentUser.getUserType());
         NodeQryParam param = new NodeQryParam();
         param.setPager(true);
         param.setPage(page);
@@ -83,12 +102,12 @@ public class Tpc {
     /**
      * set tpc id from tpc server
      */
-    public void handleRemoteTpcId(String tpcNodeCode) {
-        if (org.apache.commons.lang3.StringUtils.isEmpty(tpcNodeCode)) {
+    public void handleRemoteTpcId(String tpcNodeCode, String account, Integer userType) {
+        if (StringUtils.isEmpty(tpcNodeCode)) {
             throw new MilogManageException("tpc_node_code is empty,please check config file");
         }
         if (null == tpcPId) {
-            Result<NodeVo> nodeVoResult = tpcService.getByNodeCode(getNodeParam());
+            Result<NodeVo> nodeVoResult = tpcService.getByNodeCode(getNodeParam(account, userType));
             tpcPId = nodeVoResult.getData().getId();
         }
         if (null == tpcPId) {
@@ -96,38 +115,37 @@ public class Tpc {
         }
     }
 
-    private NodeQryParam getNodeParam() {
-        MoneUser moneUser = MoneUserContext.getCurrentUser();
+    private NodeQryParam getNodeParam(String account, Integer userType) {
         NodeQryParam nodeParam = new NodeQryParam();
-        nodeParam.setAccount(moneUser.getUser());
-        nodeParam.setUserType(moneUser.getUserType());
+        nodeParam.setAccount(account);
+        nodeParam.setUserType(userType);
         nodeParam.setType(NodeTypeEnum.PRO_TYPE.getCode());
         nodeParam.setNodeCode(tpcNodeCode);
         return nodeParam;
     }
 
-    public boolean hasPerm(MoneUser user, Long sapceId) {
+    public boolean hasPerm(MoneUser user, Long spaceId) {
         NodeQryParam param = new NodeQryParam();
         param.setAccount(user.getUser());
         param.setUserType(user.getUserType());
-        param.setOutId(sapceId);
+        param.setOutId(spaceId);
         param.setOutIdType(OutIdTypeEnum.SPACE.getCode());
-        com.xiaomi.youpin.infra.rpc.Result<NodeVo> nodeVoResult = tpcService.getByOutId(param);
+        Result<NodeVo> nodeVoResult = tpcService.getByOutId(param);
         NodeVo node = nodeVoResult.getData();
         return node.isTopMgr() || node.isParentMgr() || node.isCurrentMgr();
     }
 
-    public Result saveSpacePerm(LogSpaceDO spaceDO, MoneUser user) {
+    public Result saveSpacePerm(MilogSpaceDO spaceDO, String accout) {
         NodeAddParam nodeAddParam = new NodeAddParam();
-        handleRemoteTpcId(tpcNodeCode);
+        handleRemoteTpcId(tpcNodeCode, accout, UserTypeEnum.CAS_TYPE.getCode());
         nodeAddParam.setParentNodeId(tpcPId);
         nodeAddParam.setType(NodeTypeEnum.PRO_SUB_GROUP.getCode());
         nodeAddParam.setNodeName(spaceDO.getSpaceName());
         nodeAddParam.setDesc(spaceDO.getDescription());
         nodeAddParam.setOutId(spaceDO.getId());
         nodeAddParam.setOutIdType(OutIdTypeEnum.SPACE.getCode());
-        nodeAddParam.setAccount(user.getUser());
-        nodeAddParam.setUserType(user.getUserType());
+        nodeAddParam.setAccount(accout);
+        nodeAddParam.setUserType(UserTypeEnum.CAS_TYPE.getCode());
 
         return tpcService.add(nodeAddParam);
     }
@@ -141,14 +159,14 @@ public class Tpc {
         return tpcService.delete(delete);
     }
 
-    public Result updateSpaceTpc(CreateOrUpdateSpaceCmd param, MoneUser user) {
+    public Result updateSpaceTpc(MilogSpaceParam param, String accout) {
         NodeEditParam edit = new NodeEditParam();
         edit.setNodeName(param.getSpaceName());
         edit.setDesc(param.getDescription());
         edit.setOutId(param.getId());
         edit.setOutIdType(OutIdTypeEnum.SPACE.getCode());
-        edit.setAccount(user.getUser());
-        edit.setUserType(user.getUserType());
+        edit.setAccount(accout);
+        edit.setUserType(UserTypeEnum.CAS_TYPE.getCode());
         return tpcService.edit(edit);
     }
 

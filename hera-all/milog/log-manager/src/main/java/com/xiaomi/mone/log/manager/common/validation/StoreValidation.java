@@ -2,7 +2,10 @@ package com.xiaomi.mone.log.manager.common.validation;
 
 import com.google.common.collect.Lists;
 import com.xiaomi.mone.log.api.model.vo.ResourceUserSimple;
+import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
+import com.xiaomi.mone.log.manager.common.exception.MilogManageException;
 import com.xiaomi.mone.log.manager.model.vo.CreateOrUpdateLogStoreCmd;
+import com.xiaomi.mone.log.manager.model.vo.LogStoreParam;
 import com.xiaomi.mone.log.manager.service.impl.MilogMiddlewareConfigServiceImpl;
 import com.xiaomi.youpin.docean.anno.Component;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +29,10 @@ public class StoreValidation {
     @Resource
     private MilogMiddlewareConfigServiceImpl milogMiddlewareConfigService;
 
-    public String logStoreParamValid(CreateOrUpdateLogStoreCmd param) {
+    public String logStoreParamValid(LogStoreParam param) {
+        if (null == MoneUserContext.getCurrentUser()) {
+            throw new MilogManageException("please go to login");
+        }
         List<String> errorInfos = Lists.newArrayList();
         if (null == param.getSpaceId()) {
             errorInfos.add("space信息 不能为空");

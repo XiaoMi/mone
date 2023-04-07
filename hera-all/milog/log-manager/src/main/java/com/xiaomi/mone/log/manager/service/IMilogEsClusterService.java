@@ -1,6 +1,6 @@
 package com.xiaomi.mone.log.manager.service;
 
-import com.xiaomi.mone.log.manager.model.pojo.LogEsClusterDO;
+import com.xiaomi.mone.log.manager.model.pojo.MilogEsClusterDO;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
@@ -11,6 +11,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @author wanghaoyang
  * @since 2021-09-18
  */
-public interface IMilogEsClusterService extends IService<LogEsClusterDO> {
+public interface IMilogEsClusterService extends IService<MilogEsClusterDO> {
 
 }

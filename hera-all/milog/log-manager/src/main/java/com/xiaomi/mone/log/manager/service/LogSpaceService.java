@@ -1,12 +1,12 @@
 package com.xiaomi.mone.log.manager.service;
 
 import com.xiaomi.mone.log.common.Result;
-import com.xiaomi.mone.log.manager.model.bo.CreateOrUpdateSpaceCmd;
+import com.xiaomi.mone.log.manager.model.MilogSpaceParam;
 import com.xiaomi.mone.log.manager.model.dto.MapDTO;
 import com.xiaomi.mone.log.manager.model.dto.MilogSpaceDTO;
 import com.xiaomi.mone.log.manager.model.dto.SpacePermTreeDTO;
 import com.xiaomi.mone.log.manager.model.page.PageInfo;
-import com.xiaomi.mone.log.manager.model.pojo.LogSpaceDO;
+import com.xiaomi.mone.log.manager.model.pojo.MilogSpaceDO;
 
 import java.util.List;
 
@@ -18,7 +18,7 @@ public interface LogSpaceService {
      * @param cmd
      * @return
      */
-    Result<String> newMilogSpace(CreateOrUpdateSpaceCmd cmd);
+    Result<String> newMilogSpace(MilogSpaceParam cmd);
 
     /**
      * getById
@@ -38,7 +38,7 @@ public interface LogSpaceService {
      */
     Result<PageInfo<MilogSpaceDTO>> getMilogSpaceByPage(String spaceName, Integer page, Integer pagesize);
 
-    
+
     Result<List<MapDTO<String, Long>>> getMilogSpaces();
 
     /**
@@ -47,7 +47,7 @@ public interface LogSpaceService {
      * @param param
      * @return
      */
-    Result<String> updateMilogSpace(CreateOrUpdateSpaceCmd cmd);
+    Result<String> updateMilogSpace(MilogSpaceParam cmd);
 
     Result<String> deleteMilogSpace(Long id);
 
@@ -60,5 +60,5 @@ public interface LogSpaceService {
 
     Result<String> setSpacePermission(Long spaceId, String permDeptIds);
 
-    LogSpaceDO buildMiLogSpace(CreateOrUpdateSpaceCmd cmd, String appCreator);
+    MilogSpaceDO buildMiLogSpace(MilogSpaceParam cmd, String appCreator);
 }

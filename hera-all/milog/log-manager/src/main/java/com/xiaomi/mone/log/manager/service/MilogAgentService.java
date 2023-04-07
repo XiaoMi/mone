@@ -1,8 +1,8 @@
 package com.xiaomi.mone.log.manager.service;
 
+import com.xiaomi.mone.log.api.model.vo.AgentLogProcessDTO;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.manager.model.bo.MilogAgentIpParam;
-import com.xiaomi.mone.log.manager.model.dto.AgentLogProcessDTO;
 
 import java.util.List;
 

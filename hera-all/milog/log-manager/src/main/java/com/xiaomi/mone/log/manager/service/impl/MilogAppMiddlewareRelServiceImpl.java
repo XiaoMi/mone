@@ -4,10 +4,10 @@ import com.xiaomi.mone.app.api.response.AppBaseInfo;
 import com.xiaomi.mone.log.api.enums.MiddlewareEnum;
 import com.xiaomi.mone.log.manager.common.Utils;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
+import com.xiaomi.mone.log.manager.common.exception.MilogManageException;
 import com.xiaomi.mone.log.manager.dao.MilogAppMiddlewareRelDao;
 import com.xiaomi.mone.log.manager.dao.MilogLogTailDao;
 import com.xiaomi.mone.log.manager.dao.MilogMiddlewareConfigDao;
-import com.xiaomi.mone.log.manager.common.exception.MilogManageException;
 import com.xiaomi.mone.log.manager.model.pojo.MilogAppMiddlewareRel;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogTailDo;
 import com.xiaomi.mone.log.manager.model.pojo.MilogMiddlewareConfig;
@@ -20,6 +20,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Resource;
 import java.time.Instant;
+import java.util.List;
 
 import static com.xiaomi.mone.log.common.Constant.DEFAULT_CONSUMER_GROUP;
 
@@ -95,6 +96,10 @@ public class MilogAppMiddlewareRelServiceImpl implements MilogAppMiddlewareRelSe
         MilogLogTailDo logTailDo = milogLogtailDao.queryById(id);
         MilogMiddlewareConfig wareConfig = milogMiddlewareConfigDao.queryById(middleWareId);
         if (null != wareConfig) {
+            if (StringUtils.isEmpty(topicName)) {
+                List<String> commonTagTopicNames = Utils.generateCommonTagTopicName(StringUtils.EMPTY);
+                topicName = commonTagTopicNames.get(Utils.getRandomNum(commonTagTopicNames.size()));
+            }
             MilogAppMiddlewareRel.Config config = new MilogAppMiddlewareRel.Config();
             config.setTopic(topicName);
             config.setPartitionCnt(1);
