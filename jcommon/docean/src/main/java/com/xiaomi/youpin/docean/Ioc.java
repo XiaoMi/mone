@@ -56,12 +56,11 @@ import java.util.stream.Collectors;
 
 /**
  * @author goodjava@qq.com
- * @date 2020/6/20
  */
 @Slf4j
 public class Ioc {
 
-    private ConcurrentHashMap<String, Bean> beans = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Bean> beans = new ConcurrentHashMap<>();
 
     private final List<Class<? extends Annotation>> scanAnno = Lists.newArrayList(Component.class, Service.class, Controller.class);
 

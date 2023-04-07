@@ -16,7 +16,6 @@
 
 package com.xiaomi.data.push.cache;
 
-import com.caucho.hessian.io.HessianProtocolException;
 import com.google.common.cache.CacheBuilder;
 import com.google.gson.Gson;
 import com.xiaomi.data.push.action.ActionContext;
@@ -24,7 +23,6 @@ import com.xiaomi.data.push.action.ActionInfo;
 import com.xiaomi.data.push.annotation.Cache;
 import com.xiaomi.data.push.annotation.CacheType;
 import com.xiaomi.data.push.common.TraceId;
-import com.xiaomi.data.push.hessian.HessianUtils;
 import com.xiaomi.data.push.redis.Redis;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
@@ -134,7 +132,6 @@ public class CacheAop {
                 byte[] value = redis.getBytes(key);
                 if (null != value) {
                     logger.info("cache_aop traceId:{} finish get from cache(reids) key:{}", traceId, key);
-                    return HessianUtils.read(value);
                 }
             }
 
@@ -146,20 +143,16 @@ public class CacheAop {
                 }
             } else if (cache.cacheType().equals(CacheType.Redis)) {
                 if (null != key && null != result) {
-                    redis.set(key, HessianUtils.write(result), cache.time());
                 }
             }
 
             return result;
-        } catch (HessianProtocolException e) {
+        } catch (Throwable e) {
             logger.warn("cache_aop finish key:{} error:{}", key, e.getMessage());
             if (null != key && cache.cacheType().equals(CacheType.Redis)) {
                 redis.del(key);
             }
             return joinPoint.proceed();
-        } catch (Throwable throwable) {
-            logger.warn("cache_aop finish key:{} error:{}", key, throwable.getMessage());
-            throw throwable;
         }
     }
 
