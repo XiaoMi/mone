@@ -2,6 +2,7 @@ package com.xiaomi.mone.log.agent;
 
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
@@ -31,6 +32,7 @@ public class FileInodeTest {
             System.out.println("attr.fileKey():" + attr.fileKey()
                     + " attr.creationTime:" + attr.creationTime()
                     + " attr.lastModifiedTime:" + attr.lastModifiedTime());
+            Assert.assertNotNull(basicview);
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
         }
