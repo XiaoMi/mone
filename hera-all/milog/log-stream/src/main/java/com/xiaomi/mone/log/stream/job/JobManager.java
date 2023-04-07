@@ -6,7 +6,9 @@ import com.xiaomi.mone.log.model.EsInfo;
 import com.xiaomi.mone.log.model.LogtailConfig;
 import com.xiaomi.mone.log.model.MilogSpaceData;
 import com.xiaomi.mone.log.model.SinkConfig;
+import com.xiaomi.mone.log.stream.common.LogStreamConstants;
 import com.xiaomi.mone.log.stream.job.extension.SinkJob;
+import com.xiaomi.mone.log.stream.job.extension.SinkJobProvider;
 import com.xiaomi.mone.log.stream.sink.SinkChain;
 import com.xiaomi.youpin.docean.Ioc;
 import lombok.Data;
@@ -99,7 +101,12 @@ public class JobManager {
             sinkJobConfig.setLogTailId(logtailConfig.getLogtailId());
             sinkJobConfig.setLogStoreId(logStoreId);
             sinkJobConfig.setLogSpaceId(logSpaceId);
-            SinkJob instanceSinkJobEs = SinkJobFactory.instanceSinkJobEs(sinkJobConfig);
+
+            String sinkProviderBean = sinkJobConfig.getMqType() + LogStreamConstants.sinkJobProviderBeanSuffix;
+            SinkJobProvider sinkJobProvider = Ioc.ins().getBean(sinkProviderBean);
+            SinkJob instanceSinkJobEs = sinkJobProvider.getSinkJob(sinkJobConfig);
+
+            //SinkJob instanceSinkJobEs = SinkJobFactory.instanceSinkJobEs(sinkJobConfig);
 //            SinkJob sinkJobBackUp = SinkJobFactory.instanceSinkJobBackUp(sinkJobConfig);
             if (instanceSinkJobEs.start()) {
                 jobs.putIfAbsent(logtailConfig.getLogtailId(), Lists.newArrayList());

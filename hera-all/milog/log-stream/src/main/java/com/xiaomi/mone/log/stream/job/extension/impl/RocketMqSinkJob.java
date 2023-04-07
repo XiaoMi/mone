@@ -1,4 +1,4 @@
-package com.xiaomi.mone.log.stream.job.impl;
+package com.xiaomi.mone.log.stream.job.extension.impl;
 
 import com.xiaomi.mone.log.api.enums.MiddlewareEnum;
 import com.xiaomi.mone.log.stream.exception.StreamException;
