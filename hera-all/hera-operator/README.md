@@ -5,6 +5,7 @@ MoneOperator用于一键部署和更新整个Mone系统。
 + "nacos-mone-b2c-srv" service：nacos产品访问: http://nodePort:32188/
 + "mi-tpc" service：tpc产品访问: http://nodePort:32197/
 
+
 # 使用说明
 + 作用初始化mione
 + 这个crd的实质就是创建若干个deployment和service
