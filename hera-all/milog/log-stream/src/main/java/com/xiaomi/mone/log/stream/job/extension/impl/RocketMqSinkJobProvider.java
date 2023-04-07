@@ -20,6 +20,9 @@ import com.xiaomi.mone.es.EsProcessor;
 import com.xiaomi.mone.log.parse.LogParser;
 import com.xiaomi.mone.log.parse.LogParserFactory;
 import com.xiaomi.mone.log.stream.common.SinkJobEnum;
+import com.xiaomi.mone.log.stream.compensate.MqMessageDTO;
+import com.xiaomi.mone.log.stream.compensate.MqMessageProduct;
+import com.xiaomi.mone.log.stream.compensate.RocketMqMessageProduct;
 import com.xiaomi.mone.log.stream.job.*;
 import com.xiaomi.mone.log.stream.job.extension.MessageSender;
 import com.xiaomi.mone.log.stream.job.extension.SinkJob;
@@ -31,6 +34,8 @@ import com.xiaomi.mone.log.stream.sink.SinkChain;
 import com.xiaomi.youpin.docean.anno.Service;
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
 import com.xiaomi.mone.log.stream.common.LogStreamConstants;
+
+import java.util.function.Consumer;
 
 /**
  * @author shanwb
@@ -44,8 +49,10 @@ public class RocketMqSinkJobProvider implements SinkJobProvider {
         SinkJob sinkJob = null;
         SinkJobEnum jobType = SinkJobEnum.valueOf(sinkJobConfig.getJobType());
 
-        EsProcessor esProcessor = EsPlugin.getEsProcessor(sinkJobConfig.getEsInfo());
-        MessageSender esMessageSender = new EsMessageSender(esProcessor, sinkJobConfig.getIndex());
+        MqMessageProduct mqMessageProduct = new RocketMqMessageProduct();
+        EsMessageSender esMessageSender = new EsMessageSender(sinkJobConfig.getIndex(), mqMessageProduct);
+        EsProcessor esProcessor = EsPlugin.getEsProcessor(sinkJobConfig.getEsInfo(), mqMessageDTO -> esMessageSender.compensateSend(mqMessageDTO));
+        esMessageSender.setEsProcessor(esProcessor);
 
         SinkChain sinkChain = sinkJobConfig.getSinkChain();
         LogParser logParser = LogParserFactory.getLogParser(
