@@ -123,6 +123,7 @@
             <groupId>com.caucho</groupId>
             <artifactId>hessian</artifactId>
             <version>4.0.51</version>
+            <scope>provided</scope>
         </dependency>
 
 
