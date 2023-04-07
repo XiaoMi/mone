@@ -41,7 +41,6 @@
         <module>sre</module>
         <module>mistarter</module>
         <module>health</module>
-        <module>mignite</module>
         <module>docean</module>
         <module>rcurve</module>
         <module>micloud</module>
