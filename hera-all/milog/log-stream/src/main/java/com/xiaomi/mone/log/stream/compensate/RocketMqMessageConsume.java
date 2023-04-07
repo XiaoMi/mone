@@ -19,6 +19,7 @@ import org.apache.rocketmq.remoting.RPCHook;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static com.xiaomi.mone.log.common.Constant.GSON;
 import static org.apache.rocketmq.common.consumer.ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET;
@@ -105,7 +106,8 @@ public class RocketMqMessageConsume implements MqMessageConsume {
                     hashMap.put(LogParser.esKeyMap_timestamp, Instant.now().toEpochMilli());
                 }
                 log.info("mq索引时间戳数据：{},当前时间戳：{}", timestampObject, Instant.now().toEpochMilli());
-                EsProcessor esProcessor = EsPlugin.getEsProcessor(mqMessageDTO.getEsInfo());
+                EsProcessor esProcessor = EsPlugin.getEsProcessor(mqMessageDTO.getEsInfo(),
+                        mqMessageDTO1 -> log.error("compensate msg store failed, data size:{}", mqMessageDTO1.getCompensateMqDTOS().size()));
                 esProcessor.bulkInsert(esIndex, hashMap);
             });
         }

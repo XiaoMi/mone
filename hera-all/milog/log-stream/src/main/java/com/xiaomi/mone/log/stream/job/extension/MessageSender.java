@@ -1,5 +1,7 @@
 package com.xiaomi.mone.log.stream.job.extension;
 
+import com.xiaomi.mone.log.stream.compensate.MqMessageDTO;
+
 import java.util.Map;
 
 /**
@@ -11,4 +13,8 @@ import java.util.Map;
 public interface MessageSender {
 
     Boolean send(Map<String, Object> data) throws Exception;
+
+
+    boolean compensateSend(MqMessageDTO compensateMsg);
+
 }
