@@ -1,9 +1,9 @@
-package com.xiaomi.mone.log.stream.job.impl;
+package com.xiaomi.mone.log.stream.job.extension.impl;
 
 import com.xiaomi.mone.log.api.enums.MiddlewareEnum;
 import com.xiaomi.mone.log.stream.exception.StreamException;
 import com.xiaomi.mone.log.stream.job.LogDataTransfer;
-import com.xiaomi.mone.log.stream.job.SinkJob;
+import com.xiaomi.mone.log.stream.job.extension.SinkJob;
 import com.xiaomi.mone.log.stream.plugin.mq.rocketmq.RocketmqConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;

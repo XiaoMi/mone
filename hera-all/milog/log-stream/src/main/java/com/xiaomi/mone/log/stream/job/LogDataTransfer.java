@@ -4,6 +4,8 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.xiaomi.mone.log.api.model.msg.LineMessage;
 import com.xiaomi.mone.log.common.Constant;
 import com.xiaomi.mone.log.parse.LogParser;
+import com.xiaomi.mone.log.stream.common.SinkJobEnum;
+import com.xiaomi.mone.log.stream.job.extension.MessageSender;
 import com.xiaomi.mone.log.stream.sink.SinkChain;
 import lombok.Getter;
 import lombok.Setter;
@@ -11,7 +13,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.Instant;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static com.xiaomi.mone.log.common.Constant.COUNT_NUM;

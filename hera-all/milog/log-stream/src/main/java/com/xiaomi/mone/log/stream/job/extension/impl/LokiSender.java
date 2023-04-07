@@ -1,5 +1,7 @@
-package com.xiaomi.mone.log.stream.job;
+package com.xiaomi.mone.log.stream.job.extension.impl;
 
+import com.xiaomi.mone.log.stream.job.LogConfig;
+import com.xiaomi.mone.log.stream.job.extension.MessageSender;
 import com.xiaomi.mone.log.stream.plugin.loki.LokiClient;
 import com.xiaomi.mone.log.stream.plugin.loki.impl.HttpLokiClient;
 

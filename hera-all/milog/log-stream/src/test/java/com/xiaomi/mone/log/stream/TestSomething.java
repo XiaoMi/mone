@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.xiaomi.mone.log.api.model.msg.LineMessage;
 import com.xiaomi.mone.log.parse.LogParser;
 import com.xiaomi.mone.log.parse.LogParserFactory;
-import com.xiaomi.mone.log.stream.job.impl.RmqSinkJob;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
@@ -71,7 +70,7 @@ public class TestSomething {
         String keyList = "timestamp:date,level:keyword,traceId:keyword,threadName:text,className:text,line:text,appName:text,code:text,message:keyword,logstore:keyword,logsource:keyword,mqtopic:keyword,mqtag:keyword,logip:text,tail:keyword\",";
         String valueList = "0,3,-1,2,-1,-1,1,4,5,-1";
         String parseScript = "[%s]-[%s]-[%s]-[%s]-[%s]-%s";
-        RmqSinkJob rmqSinkJob = new RmqSinkJob();
+        //RmqSinkJob rmqSinkJob = new RmqSinkJob();
         Integer parserType = LogParserFactory.LogParserEnum.CUSTOM_PARSE.getCode();
 
         LogParser customParse = LogParserFactory.getLogParser(parserType, keyList, valueList, parseScript, topicName, tailName, tag, logStoreName);
