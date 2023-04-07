@@ -6,7 +6,6 @@ import com.xiaomi.mone.es.EsProcessor;
 import com.xiaomi.mone.log.common.Config;
 import com.xiaomi.mone.log.model.EsInfo;
 import com.xiaomi.mone.log.stream.compensate.MqMessageDTO;
-import com.xiaomi.mone.log.stream.compensate.MqMessageProduct;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.plugin.es.EsProcessorConf;
 import com.xiaomi.youpin.docean.plugin.es.EsService;
@@ -22,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 @Slf4j
 @Service
@@ -31,10 +31,6 @@ public class EsPlugin {
     private static ConcurrentHashMap<String, EsService> esServiceMap = new ConcurrentHashMap<>();
 
     private static ConcurrentHashMap<String, EsProcessor> esProcessorMap = new ConcurrentHashMap<>();
-    /**
-     * es Write message failed Compensator
-     */
-    private static MqMessageProduct mqMessageDispose;
 
     public static boolean InitEsConfig() {
         EsConfig config = new EsConfig();
@@ -55,11 +51,11 @@ public class EsPlugin {
         return true;
     }
 
-    public static EsProcessor getEsProcessor(EsInfo esInfo) {
-        return getEsProcessor(esInfo, EsPlugin.esConfig);
+    public static EsProcessor getEsProcessor(EsInfo esInfo, Consumer<MqMessageDTO> onFailedConsumer) {
+        return getEsProcessor(esInfo, EsPlugin.esConfig, onFailedConsumer);
     }
 
-    public static synchronized EsProcessor getEsProcessor(EsInfo esInfo, EsConfig config) {
+    public static synchronized EsProcessor getEsProcessor(EsInfo esInfo, EsConfig config, Consumer<MqMessageDTO> onFailedConsumer) {
         EsProcessor esProcessor = esProcessorMap.get(cacheKey(esInfo));
         if (esProcessor == null) {
             EsService esService = esServiceMap.get(cacheKey(esInfo));
@@ -132,7 +128,8 @@ public class EsPlugin {
                             });
                     MqMessageDTO.setCompensateMqDTOS(compensateMqDTOS);
                     //消息发送到mq中消费
-                    mqMessageDispose.product(MqMessageDTO);
+                    //mqMessageDispose.product(MqMessageDTO);
+                    onFailedConsumer.accept(MqMessageDTO);
                 }
             }));
             esProcessorMap.put(cacheKey(esInfo), esProcessor);
