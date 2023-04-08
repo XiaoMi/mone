@@ -14,9 +14,8 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.mone.log.agent.export;
+package com.xiaomi.mone.log.agent.output;
 
-import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
@@ -25,30 +24,37 @@ import java.io.Serializable;
  * @author shanwb
  * @date 2021-07-20
  */
-@Data
 @EqualsAndHashCode
-public class RmqOutput extends Output implements Serializable {
+public abstract class Output implements Serializable {
+
     /**
-     * mq填：namesrv_addr
+     * rocketmq、talos
      */
-    private String clusterInfo;
+    private String type;
 
-    private String producerGroup;
+    private String tag;
 
-    private String orgId;
-
-    private String ak;
-
-    private String sk;
-
-    private String topic;
-
-    private Integer partitionCnt;
-
-    private Integer batchExportSize;
-
-    @Override
-    public String getEndpoint() {
-        return clusterInfo;
+    public String getOutputType() {
+        return type;
     }
+
+    public void setOutputType(String outputType) {
+        this.type = outputType;
+    }
+
+    public String getTag() {
+        return tag;
+    }
+
+    public void setTag(String tag) {
+        this.tag = tag;
+    }
+
+    /**
+     * getEndpoint
+     * @return
+     */
+    public abstract String getEndpoint();
+
+    public abstract String getServiceName();
 }
