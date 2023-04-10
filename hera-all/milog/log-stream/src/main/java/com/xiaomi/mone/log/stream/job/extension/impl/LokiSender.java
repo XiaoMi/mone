@@ -1,5 +1,6 @@
 package com.xiaomi.mone.log.stream.job.extension.impl;
 
+import com.xiaomi.mone.log.stream.compensate.MqMessageDTO;
 import com.xiaomi.mone.log.stream.job.LogConfig;
 import com.xiaomi.mone.log.stream.job.extension.MessageSender;
 import com.xiaomi.mone.log.stream.plugin.loki.LokiClient;
@@ -31,5 +32,10 @@ public class LokiSender implements MessageSender {
                     logConfig.getLogStoreId(), logConfig.getLogSpaceId()), logConfig.getLogSpaceId().toString());
         }
         return true;
+    }
+
+    @Override
+    public boolean compensateSend(MqMessageDTO compensateMsg) {
+        return false;
     }
 }
