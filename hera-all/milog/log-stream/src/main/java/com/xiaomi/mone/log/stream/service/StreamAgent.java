@@ -1,5 +1,6 @@
 package com.xiaomi.mone.log.stream.service;
 
+import com.alibaba.nacos.client.config.utils.SnapShotSwitch;
 import com.xiaomi.mone.log.stream.compensate.MqMessageConsume;
 import com.xiaomi.mone.log.stream.compensate.RocketMqMessageConsume;
 import com.xiaomi.mone.log.stream.config.ConfigManager;
@@ -11,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Resource;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static java.lang.Boolean.FALSE;
 
 @Service
 @Slf4j
@@ -26,6 +29,7 @@ public class StreamAgent {
         try {
             log.info("start");
             if (EsPlugin.InitEsConfig()) {
+                SnapShotSwitch.setIsSnapShot(FALSE);
                 configManager.listenMilogStreamConfig();
                 /**
                  * start compensate mq msg job
