@@ -22,7 +22,11 @@ import com.google.gson.Gson;
 import com.xiaomi.data.push.common.SafeRun;
 import com.xiaomi.data.push.rpc.RpcClient;
 import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
-import com.xiaomi.mone.log.agent.channel.comparator.*;
+import com.xiaomi.mone.log.agent.channel.comparator.AppSimilarComparator;
+import com.xiaomi.mone.log.agent.channel.comparator.FilterSimilarComparator;
+import com.xiaomi.mone.log.agent.channel.comparator.InputSimilarComparator;
+import com.xiaomi.mone.log.agent.channel.comparator.OutputSimilarComparator;
+import com.xiaomi.mone.log.agent.channel.comparator.SimilarComparator;
 import com.xiaomi.mone.log.agent.channel.listener.DefaultFileMonitorListener;
 import com.xiaomi.mone.log.agent.channel.listener.FileMonitorListener;
 import com.xiaomi.mone.log.agent.channel.locator.ChannelDefineJsonLocator;
@@ -31,14 +35,11 @@ import com.xiaomi.mone.log.agent.channel.locator.ChannelDefineRpcLocator;
 import com.xiaomi.mone.log.agent.channel.memory.AgentMemoryService;
 import com.xiaomi.mone.log.agent.channel.memory.AgentMemoryServiceImpl;
 import com.xiaomi.mone.log.agent.common.ExecutorUtil;
-import com.xiaomi.mone.log.agent.exception.AgentException;
 import com.xiaomi.mone.log.agent.export.MsgExporter;
-import com.xiaomi.mone.log.agent.export.Output;
-import com.xiaomi.mone.log.agent.export.RmqOutput;
-import com.xiaomi.mone.log.agent.export.TalosOutput;
-import com.xiaomi.mone.log.agent.export.impl.RmqExporter;
+import com.xiaomi.mone.log.agent.factory.OutPutServiceFactory;
 import com.xiaomi.mone.log.agent.filter.FilterChain;
 import com.xiaomi.mone.log.agent.input.Input;
+import com.xiaomi.mone.log.agent.output.Output;
 import com.xiaomi.mone.log.api.enums.OperateEnum;
 import com.xiaomi.mone.log.api.model.vo.UpdateLogProcessCmd;
 import com.xiaomi.mone.log.common.Constant;
@@ -50,8 +51,6 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.rocketmq.client.exception.MQClientException;
-import org.apache.rocketmq.client.producer.DefaultMQProducer;
 
 import java.text.NumberFormat;
 import java.util.Arrays;
@@ -59,7 +58,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -77,8 +75,6 @@ public class ChannelEngine {
     /**
      * 按nameSrvAddr 初始化MQProducer
      */
-    private ConcurrentHashMap<String, DefaultMQProducer> producerMap;
-
     //private ConcurrentHashMap<String, TalosProducer> talosProducerMap;
 
     private AgentMemoryService agentMemoryService;
@@ -102,18 +98,11 @@ public class ChannelEngine {
     @Getter
     private volatile boolean initComplete;
 
-    private String opentelemetryTopicOld;
-    private String opentelemetryTopicNew;
-
-
     public void init() {
         List<Long> failedChannelId = Lists.newArrayList();
         try {
             Config config = Ioc.ins().getBean(Config.class.getName());
             String memoryBasePath = config.get("agent.memory.path", AgentMemoryService.DEFAULT_BASE_PATH);
-            opentelemetryTopicOld = config.get("talos.opentelemetry.topic.old", null);
-            opentelemetryTopicNew = config.get("talos.opentelemetry.topic.new", null);
-            producerMap = new ConcurrentHashMap<>(128);
             //talosProducerMap = new ConcurrentHashMap<>(512);
 
             channelDefineLocator = getChannelDefineLocator(config);
@@ -255,64 +244,16 @@ public class ChannelEngine {
 
     private void preCheckOutput(Output output) {
         Preconditions.checkArgument(StringUtils.isNotBlank(output.getOutputType()), "outputType can not be null");
-        switch (output.getOutputType()) {
-            case Output.OUTPUT_ROCKETMQ:
-                RmqOutput rmqOutput = (RmqOutput) output;
-                Preconditions.checkArgument(null != rmqOutput.getClusterInfo(), "rmqOutput.getClusterInfo can not be null");
-                Preconditions.checkArgument(null != rmqOutput.getTopic(), "rmqOutput.getTopic can not be null");
-                Preconditions.checkArgument(null != rmqOutput.getProducerGroup(), "rmqOutput.getProducerGroup can not be null");
-                break;
-            case Output.OUTPUT_TALOS:
-                TalosOutput talosOutput = (TalosOutput) output;
-                Preconditions.checkArgument(null != talosOutput.getClusterInfo(), "talosOutput.getClusterInfo can not be null");
-                Preconditions.checkArgument(null != talosOutput.getTopic(), "talosOutput.getTopic can not be null");
-                break;
-            default:
-                break;
-        }
+        OutPutServiceFactory.getOutPutService(output.getServiceName()).preCheckOutput(output);
     }
 
     private MsgExporter exporterTrans(Output output) throws Exception {
         if (null == output) {
             return null;
         }
-
-        String outputType = output.getOutputType();
-        switch (outputType) {
-            case Output.OUTPUT_ROCKETMQ:
-                RmqOutput rmqOutput = (RmqOutput) output;
-                String nameSrvAddr = rmqOutput.getClusterInfo();
-                DefaultMQProducer mqProducer = producerMap.get(nameSrvAddr);
-                if (null == mqProducer) {
-                    mqProducer = initMqProducer(rmqOutput);
-                    producerMap.put(String.valueOf(nameSrvAddr), mqProducer);
-                }
-
-                RmqExporter rmqExporter = new RmqExporter(mqProducer);
-                rmqExporter.setRmqTopic(rmqOutput.getTopic());
-                rmqExporter.setBatchSize(rmqOutput.getBatchExportSize());
-
-                return rmqExporter;
-            case Output.OUTPUT_TALOS:
-                return null;
-            default:
-                break;
-        }
-        return null;
+        return OutPutServiceFactory.getOutPutService(output.getServiceName()).exporterTrans(output);
     }
 
-    private DefaultMQProducer initMqProducer(RmqOutput rmqOutput) {
-        DefaultMQProducer producer = null;
-        producer = new DefaultMQProducer(rmqOutput.getProducerGroup() + "x", true);
-        producer.setNamesrvAddr(rmqOutput.getClusterInfo());
-        try {
-            producer.start();
-            return producer;
-        } catch (MQClientException e) {
-            log.error("ChannelBootstrap.initMqProducer error, RocketmqConfig: {}", rmqOutput, e);
-            throw new AgentException("initMqProducer exception", e);
-        }
-    }
 
     /**
      * 刷新配置(增量配置和全量配置来时刷新已经存在的配置)
@@ -484,11 +425,7 @@ public class ChannelEngine {
                             if (channelDefine.getChannelId().equals(channelId)) {
                                 //删除mq
                                 Output output = channelDefine.getOutput();
-                                if (output.getOutputType().equals(Output.OUTPUT_ROCKETMQ)) {
-                                    RmqOutput rmqOutput = (RmqOutput) output;
-                                    String nameSrvAddr = rmqOutput.getClusterInfo();
-//                                    producerMap.remove(nameSrvAddr);
-                                }
+                                OutPutServiceFactory.getOutPutService(output.getServiceName()).removeMQ(output);
                                 return true;
                             }
                             return false;

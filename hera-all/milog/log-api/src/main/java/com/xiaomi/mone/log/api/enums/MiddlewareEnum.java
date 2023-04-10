@@ -13,19 +13,22 @@ import java.util.Arrays;
 @Getter
 public enum MiddlewareEnum {
 
-    ROCKETMQ(1, "rocketmq"),
-    NCOS(3, "nacos"),
-    LOKI(6, "loki"),
-    ELASTICSEARCH(4, "elasticsearch"),
-    HDFS(5, "hdfs"),
+    ROCKETMQ(1, "rocketmq", "RocketMQService"),
+    NCOS(3, "nacos" ,""),
+    LOKI(6, "loki", ""),
+    ELASTICSEARCH(4, "elasticsearch",""),
+    HDFS(5, "hdfs",""),
     ;
 
     private final Integer code;
     private final String name;
 
-    MiddlewareEnum(Integer code, String name) {
+    private final String serviceName;
+
+    MiddlewareEnum(Integer code, String name, String serviceName) {
         this.code = code;
         this.name = name;
+        this.serviceName = serviceName;
     }
 
     public static MiddlewareEnum queryByCode(Integer code) {
