@@ -62,9 +62,10 @@ public class EsPlugin {
             if (esService == null) {
                 if (StringUtils.isNotBlank(esInfo.getUser()) && StringUtils.isNotBlank(esInfo.getPwd())) {
                     esService = new EsService(esInfo.getAddr(), esInfo.getUser(), esInfo.getPwd());
-                }
-                if (StringUtils.isNotBlank(esInfo.getToken())) {
+                } else if (StringUtils.isNotBlank(esInfo.getToken())) {
                     esService = new EsService(esInfo.getAddr(), esInfo.getToken(), esInfo.getCatalog(), esInfo.getDatabase());
+                } else {
+                    esService = new EsService(esInfo.getAddr(), esInfo.getUser(), esInfo.getPwd());
                 }
                 esServiceMap.put(cacheKey(esInfo), esService);
             }
