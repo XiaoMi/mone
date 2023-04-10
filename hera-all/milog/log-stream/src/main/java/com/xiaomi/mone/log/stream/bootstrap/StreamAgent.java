@@ -1,5 +1,6 @@
 package com.xiaomi.mone.log.stream.bootstrap;
 
+import com.alibaba.nacos.client.config.utils.SnapShotSwitch;
 import com.xiaomi.mone.log.stream.config.ConfigManager;
 import com.xiaomi.mone.log.stream.config.MilogConfigListener;
 import com.xiaomi.mone.log.stream.job.JobManager;
@@ -9,6 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Resource;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static java.lang.Boolean.FALSE;
 
 @Service
 @Slf4j
@@ -24,6 +27,7 @@ public class StreamAgent {
         try {
             log.info("start");
             if (EsPlugin.InitEsConfig()) {
+                SnapShotSwitch.setIsSnapShot(FALSE);
                 configManager.listenMilogStreamConfig();
             } else {
                 System.exit(1);

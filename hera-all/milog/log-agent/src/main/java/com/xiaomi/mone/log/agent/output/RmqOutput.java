@@ -14,24 +14,33 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.mone.log.agent.export;
+package com.xiaomi.mone.log.agent.output;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
+import java.io.Serializable;
+
 /**
  * @author shanwb
- * @date 2021-08-09
+ * @date 2021-07-20
  */
 @Data
 @EqualsAndHashCode
-public class TalosOutput extends Output{
+public class RmqOutput extends Output implements Serializable {
+
+    public static final String OUTPUT_ROCKETMQ = "rocketmq";
+
+    private String serviceName = "RocketMQService";
+
     /**
-     * talos填：
+     * mq填：namesrv_addr
      */
     private String clusterInfo;
 
     private String producerGroup;
+
+    private String orgId;
 
     private String ak;
 

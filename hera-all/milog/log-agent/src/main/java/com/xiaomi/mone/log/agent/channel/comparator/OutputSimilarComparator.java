@@ -1,8 +1,7 @@
 package com.xiaomi.mone.log.agent.channel.comparator;
 
-import com.xiaomi.mone.log.agent.export.Output;
-import com.xiaomi.mone.log.agent.export.RmqOutput;
-import com.xiaomi.mone.log.agent.export.TalosOutput;
+import com.xiaomi.mone.log.agent.factory.OutPutServiceFactory;
+import com.xiaomi.mone.log.agent.output.Output;
 
 /**
  * @author wtt
@@ -26,43 +25,7 @@ public class OutputSimilarComparator implements SimilarComparator<Output> {
         if (oldOutput == newOutput) {
             return true;
         }
-        boolean isSimilar = false;
-        String type = newOutput.getOutputType();
-        switch (type) {
-            case Output.OUTPUT_ROCKETMQ:
-                isSimilar = mqSimilarCompare(newOutput);
-                break;
-            case Output.OUTPUT_TALOS:
-                isSimilar = talosSimilarCompare(newOutput);
-                break;
-            default:
-                break;
-        }
-        return isSimilar;
-    }
-
-    private boolean mqSimilarCompare(Output newOutput) {
-        if (!oldOutput.getOutputType().equals(newOutput.getOutputType())) {
-            return false;
-        }
-        RmqOutput newRmqOutput = (RmqOutput) newOutput;
-        RmqOutput oldRmqOutput = (RmqOutput) oldOutput;
-        if (newRmqOutput.equals(oldRmqOutput)) {
-            return true;
-        }
-        return false;
-    }
-
-    private boolean talosSimilarCompare(Output newOutput) {
-        if (!oldOutput.getOutputType().equals(newOutput.getOutputType())) {
-            return false;
-        }
-        TalosOutput newTalosOutput = (TalosOutput) newOutput;
-        TalosOutput oldTalosOutput = (TalosOutput) oldOutput;
-        if (newTalosOutput.equals(oldTalosOutput)) {
-            return true;
-        }
-        return false;
+        return OutPutServiceFactory.getOutPutService(newOutput.getServiceName()).compare(oldOutput, newOutput);
     }
 
 }
