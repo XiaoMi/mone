@@ -7,9 +7,11 @@ import com.google.common.collect.Lists;
 import com.unfbx.chatgpt.OpenAiClient;
 import com.unfbx.chatgpt.OpenAiStreamClient;
 import com.unfbx.chatgpt.entity.chat.ChatCompletion;
+import com.unfbx.chatgpt.entity.chat.ChatCompletionResponse;
 import com.unfbx.chatgpt.entity.chat.Message;
 import com.unfbx.chatgpt.entity.completions.Completion;
 import com.unfbx.chatgpt.entity.completions.CompletionResponse;
+import com.unfbx.chatgpt.entity.edits.Edit;
 import com.unfbx.chatgpt.entity.images.ImageResponse;
 import com.unfbx.chatgpt.interceptor.OpenAILogger;
 import io.reactivex.Single;
@@ -43,6 +45,7 @@ import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.net.*;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -104,6 +107,57 @@ public class OpenApiTest {
             }
         });
         System.in.read();
+    }
+
+    @Test
+    public void testCreateEdit() {
+        client().edit(Edit.builder().input("zzy new").model("text-davinci-edit-001").instruction("zzy new").build());
+    }
+
+
+
+    private OpenAiClient client() {
+        Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyAddr, 65522));
+        HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(new OpenAILogger());
+        OpenAiClient openAiClient = OpenAiClient.builder()
+                .apiKey(System.getenv("open_api_key"))
+                .connectTimeout(50)
+                .writeTimeout(50)
+                .readTimeout(50)
+                .interceptor(Arrays.asList(httpLoggingInterceptor))
+                .apiHost("https://api.openai.com/")
+                .proxy(proxy)
+                .build();
+        return openAiClient;
+    }
+
+
+
+    @Test
+    public void testMessage() {
+        Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyAddr, 65522));
+        HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(new OpenAILogger());
+        OpenAiClient openAiClient = OpenAiClient.builder()
+                .apiKey(System.getenv("open_api_key"))
+                .connectTimeout(50)
+                .writeTimeout(50)
+                .readTimeout(50)
+                .interceptor(Arrays.asList(httpLoggingInterceptor))
+                .apiHost("https://api.openai.com/")
+                .proxy(proxy)
+                .build();
+        List<Message> list = Lists.newArrayList(
+                Message.builder().role(Message.Role.SYSTEM).content("根据注释获取api信息").build(),
+                Message.builder().role(Message.Role.ASSISTANT).content("你好！有什么我可以帮助您的吗？").build(),
+                Message.builder().role(Message.Role.USER).content("我给你一些api和注释的信息,请你记住.他们的格式是 注释:负责人:服务名:api").build(),
+                Message.builder().role(Message.Role.USER).content("获取用户信息:zzy:UserService:User getUser(String id)").build(),
+                Message.builder().role(Message.Role.USER).content("删除用户信息:zzy:UserService:void delUser(String id)").build(),
+                Message.builder().role(Message.Role.USER).content("请告诉我获取用户信息的相关信息").build()
+        );
+        ChatCompletion chatCompletion = ChatCompletion.builder().messages(list).build();
+
+        ChatCompletionResponse completions = openAiClient.chatCompletion(chatCompletion);
+        completions.getChoices().forEach(System.out::println);
     }
 
 
