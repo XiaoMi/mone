@@ -1,4 +1,4 @@
-package com.xiaomi.mone.log.stream.compensate;
+package com.xiaomi.mone.log.stream.job.extension;
 
 /**
  * @author wtt
@@ -6,7 +6,7 @@ package com.xiaomi.mone.log.stream.compensate;
  * @description
  * @date 2022/1/13 14:29
  */
-public interface MqMessageConsume {
+public interface CompensateMsgConsume {
     /**
      * compensate mq message
      *

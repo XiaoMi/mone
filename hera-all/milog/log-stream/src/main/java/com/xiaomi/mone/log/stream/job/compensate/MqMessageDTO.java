@@ -1,4 +1,4 @@
-package com.xiaomi.mone.log.stream.compensate;
+package com.xiaomi.mone.log.stream.job.compensate;
 
 import com.xiaomi.mone.log.model.EsInfo;
 import lombok.Data;

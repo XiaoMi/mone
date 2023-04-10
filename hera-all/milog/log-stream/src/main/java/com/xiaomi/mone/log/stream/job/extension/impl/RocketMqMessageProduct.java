@@ -1,10 +1,12 @@
-package com.xiaomi.mone.log.stream.compensate;
+package com.xiaomi.mone.log.stream.job.extension.impl;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.xiaomi.mone.log.common.Config;
 import com.xiaomi.mone.log.common.Constant;
 import com.xiaomi.mone.log.stream.exception.StreamException;
+import com.xiaomi.mone.log.stream.job.compensate.MqMessageDTO;
+import com.xiaomi.mone.log.stream.job.extension.MqMessageProduct;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;

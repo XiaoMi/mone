@@ -1,7 +1,5 @@
-package com.xiaomi.mone.log.stream.service;
+package com.xiaomi.mone.log.stream.bootstrap;
 
-import com.xiaomi.mone.log.stream.compensate.MqMessageConsume;
-import com.xiaomi.mone.log.stream.compensate.RocketMqMessageConsume;
 import com.xiaomi.mone.log.stream.config.ConfigManager;
 import com.xiaomi.mone.log.stream.config.MilogConfigListener;
 import com.xiaomi.mone.log.stream.job.JobManager;
@@ -27,10 +25,6 @@ public class StreamAgent {
             log.info("start");
             if (EsPlugin.InitEsConfig()) {
                 configManager.listenMilogStreamConfig();
-                /**
-                 * start compensate mq msg job
-                 */
-                startCompensateMq();
             } else {
                 System.exit(1);
             }
@@ -38,12 +32,6 @@ public class StreamAgent {
         } catch (Exception e) {
             log.error("服务初始化异常", e);
         }
-
-    }
-
-    private void startCompensateMq() {
-        MqMessageConsume talosMqMessageConsume = new RocketMqMessageConsume();
-        talosMqMessageConsume.consume();
     }
 
     private void graceShutdown() {

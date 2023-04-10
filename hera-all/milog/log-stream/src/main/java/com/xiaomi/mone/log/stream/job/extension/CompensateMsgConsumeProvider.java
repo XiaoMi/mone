@@ -14,16 +14,14 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.mone.log.stream.common;
+package com.xiaomi.mone.log.stream.job.extension;
 
 /**
  * @author shanwb
- * @date 2023-04-07
+ * @date 2023-04-10
  */
-public class LogStreamConstants {
+public interface CompensateMsgConsumeProvider {
 
-    public static final String sinkJobProviderBeanSuffix = "SinkJobProvider";
-
-    public static final String compensateMsgConsumeProviderBeanSuffix = "CmcProvider";
+    CompensateMsgConsume getCompensateMsgConsume();
 
 }

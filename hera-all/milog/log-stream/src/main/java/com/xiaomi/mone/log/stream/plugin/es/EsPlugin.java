@@ -5,7 +5,7 @@ import com.google.gson.Gson;
 import com.xiaomi.mone.es.EsProcessor;
 import com.xiaomi.mone.log.common.Config;
 import com.xiaomi.mone.log.model.EsInfo;
-import com.xiaomi.mone.log.stream.compensate.MqMessageDTO;
+import com.xiaomi.mone.log.stream.job.compensate.MqMessageDTO;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.plugin.es.EsProcessorConf;
 import com.xiaomi.youpin.docean.plugin.es.EsService;
