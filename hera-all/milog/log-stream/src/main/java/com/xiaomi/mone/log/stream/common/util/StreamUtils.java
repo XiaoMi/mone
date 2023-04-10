@@ -15,8 +15,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
 
-import static com.xiaomi.mone.log.common.Constant.DEFAULT_GROUP_ID;
-import static com.xiaomi.mone.log.common.Constant.STREAM_CONTAINER_POD_NAME_KEY;
+import static com.xiaomi.mone.log.common.Constant.*;
 
 /**
  * @author wtt
@@ -76,11 +75,10 @@ public class StreamUtils {
     public static String getCurrentMachineMark() {
         String containerPodName = System.getenv(STREAM_CONTAINER_POD_NAME_KEY);
         if (StringUtils.isNotBlank(containerPodName)) {
-            return containerPodName;
+            return org.apache.commons.lang3.StringUtils.substringAfterLast(containerPodName, STRIKETHROUGH_SYMBOL);
         }
         return getLocalIp();
     }
-
 
     public static void getConfigFromNacos() {
         NacosConfig nacosConfig = new NacosConfig();
