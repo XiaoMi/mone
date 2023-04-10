@@ -32,15 +32,15 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class StreamCompensateTask {
 
-    @Value("${hera.stream.compensate.enable:false}")
+    @Value("${hera.stream.compensate.enable}")
     private String compensateEnable;
 
-    @Value("${hera.stream.compensate.mq:rocketmq}")
+    @Value("${hera.stream.compensate.mq}")
     private String compensateMqType;
 
     public void init() {
         try {
-            log.info("StreamCompensateTask go to start");
+            log.info("StreamCompensateTask go to start, enable:{}, mqType:{}", compensateEnable, compensateMqType);
 
             if ("true".equalsIgnoreCase(compensateEnable)) {
                 String compensateMsgConsumeProviderBean = compensateMqType + LogStreamConstants.compensateMsgConsumeProviderBeanSuffix;
