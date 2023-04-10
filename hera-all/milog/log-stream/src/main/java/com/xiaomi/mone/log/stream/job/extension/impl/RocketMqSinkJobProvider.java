@@ -20,11 +20,8 @@ import com.xiaomi.mone.es.EsProcessor;
 import com.xiaomi.mone.log.parse.LogParser;
 import com.xiaomi.mone.log.parse.LogParserFactory;
 import com.xiaomi.mone.log.stream.common.SinkJobEnum;
-import com.xiaomi.mone.log.stream.compensate.MqMessageDTO;
-import com.xiaomi.mone.log.stream.compensate.MqMessageProduct;
-import com.xiaomi.mone.log.stream.compensate.RocketMqMessageProduct;
+import com.xiaomi.mone.log.stream.job.extension.MqMessageProduct;
 import com.xiaomi.mone.log.stream.job.*;
-import com.xiaomi.mone.log.stream.job.extension.MessageSender;
 import com.xiaomi.mone.log.stream.job.extension.SinkJob;
 import com.xiaomi.mone.log.stream.job.extension.SinkJobProvider;
 import com.xiaomi.mone.log.stream.plugin.es.EsPlugin;
@@ -34,8 +31,6 @@ import com.xiaomi.mone.log.stream.sink.SinkChain;
 import com.xiaomi.youpin.docean.anno.Service;
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
 import com.xiaomi.mone.log.stream.common.LogStreamConstants;
-
-import java.util.function.Consumer;
 
 /**
  * @author shanwb

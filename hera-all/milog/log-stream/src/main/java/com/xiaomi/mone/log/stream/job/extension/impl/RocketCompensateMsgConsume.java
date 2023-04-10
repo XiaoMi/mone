@@ -1,10 +1,12 @@
-package com.xiaomi.mone.log.stream.compensate;
+package com.xiaomi.mone.log.stream.job.extension.impl;
 
 import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
 import com.xiaomi.mone.es.EsProcessor;
 import com.xiaomi.mone.log.common.Config;
 import com.xiaomi.mone.log.parse.LogParser;
+import com.xiaomi.mone.log.stream.job.compensate.MqMessageDTO;
+import com.xiaomi.mone.log.stream.job.extension.CompensateMsgConsume;
 import com.xiaomi.mone.log.stream.plugin.es.EsPlugin;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -19,7 +21,6 @@ import org.apache.rocketmq.remoting.RPCHook;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.function.Consumer;
 
 import static com.xiaomi.mone.log.common.Constant.GSON;
 import static org.apache.rocketmq.common.consumer.ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET;
@@ -31,7 +32,7 @@ import static org.apache.rocketmq.common.consumer.ConsumeFromWhere.CONSUME_FROM_
  * @date 2022/11/15 15:56
  */
 @Slf4j
-public class RocketMqMessageConsume implements MqMessageConsume {
+public class RocketCompensateMsgConsume implements CompensateMsgConsume {
 
 
     @Override
