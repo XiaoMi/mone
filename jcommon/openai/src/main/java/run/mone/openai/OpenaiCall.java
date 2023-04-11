@@ -15,7 +15,6 @@ import org.apache.commons.math3.linear.RealVector;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
-import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,7 +55,7 @@ public class OpenaiCall {
         return builer.build();
     }
 
-    private static double[] getValue(String apiKey, String q) {
+    public static double[] getEmbeddings(String apiKey, String q) {
         EmbeddingResponse res = client(apiKey).embeddings(q);
         List<BigDecimal> list = res.getData().get(0).getEmbedding();
         double[] d = list.stream().mapToDouble(it -> it.doubleValue()).toArray();
@@ -86,7 +85,7 @@ public class OpenaiCall {
 
     public static String call(String apiKey, String context, String prompt, List<D> list) {
         List<C> result = new ArrayList<>();
-        double[] value = getValue(apiKey, prompt);
+        double[] value = getEmbeddings(apiKey, prompt);
         for (int i = 0; i < list.size(); i++) {
             double[] qq = list.get(i).getValue();
             double v = cosineSimilarity(value, qq);
