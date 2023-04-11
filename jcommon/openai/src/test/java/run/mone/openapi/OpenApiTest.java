@@ -4,6 +4,8 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.unfbx.chatgpt.OpenAiClient;
 import com.unfbx.chatgpt.OpenAiStreamClient;
 import com.unfbx.chatgpt.entity.chat.ChatCompletion;
@@ -12,15 +14,20 @@ import com.unfbx.chatgpt.entity.chat.Message;
 import com.unfbx.chatgpt.entity.completions.Completion;
 import com.unfbx.chatgpt.entity.completions.CompletionResponse;
 import com.unfbx.chatgpt.entity.edits.Edit;
+import com.unfbx.chatgpt.entity.embeddings.EmbeddingResponse;
+import com.unfbx.chatgpt.entity.embeddings.Item;
 import com.unfbx.chatgpt.entity.images.ImageResponse;
 import com.unfbx.chatgpt.interceptor.OpenAILogger;
 import io.reactivex.Single;
 import io.reactivex.SingleObserver;
 import io.reactivex.disposables.Disposable;
+import lombok.Data;
 import lombok.SneakyThrows;
 import okhttp3.logging.HttpLoggingInterceptor;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
+import org.apache.commons.math3.linear.ArrayRealVector;
+import org.apache.commons.math3.linear.RealVector;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -38,15 +45,24 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.EntityUtils;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
+import run.mone.openai.OpenaiCall;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.net.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * @author goodjava@qq.com
@@ -55,6 +71,8 @@ import java.util.concurrent.TimeUnit;
 public class OpenApiTest {
 
     private static String proxyAddr = System.getenv("open_api_proxy");
+
+    private Gson gson = new Gson();
 
     @SneakyThrows
     int sum(int a, int b) {
@@ -115,7 +133,6 @@ public class OpenApiTest {
     }
 
 
-
     private OpenAiClient client() {
         Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyAddr, 65522));
         HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(new OpenAILogger());
@@ -132,20 +149,9 @@ public class OpenApiTest {
     }
 
 
-
     @Test
     public void testMessage() {
-        Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyAddr, 65522));
-        HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(new OpenAILogger());
-        OpenAiClient openAiClient = OpenAiClient.builder()
-                .apiKey(System.getenv("open_api_key"))
-                .connectTimeout(50)
-                .writeTimeout(50)
-                .readTimeout(50)
-                .interceptor(Arrays.asList(httpLoggingInterceptor))
-                .apiHost("https://api.openai.com/")
-                .proxy(proxy)
-                .build();
+        OpenAiClient openAiClient = client();
         List<Message> list = Lists.newArrayList(
                 Message.builder().role(Message.Role.SYSTEM).content("根据注释获取api信息").build(),
                 Message.builder().role(Message.Role.ASSISTANT).content("你好！有什么我可以帮助您的吗？").build(),
@@ -155,27 +161,157 @@ public class OpenApiTest {
                 Message.builder().role(Message.Role.USER).content("请告诉我获取用户信息的相关信息").build()
         );
         ChatCompletion chatCompletion = ChatCompletion.builder().messages(list).build();
-
         ChatCompletionResponse completions = openAiClient.chatCompletion(chatCompletion);
+        completions.getChoices().forEach(System.out::println);
+    }
+
+    @Test
+    public void testContext() {
+        String q = "获取用户信息的相关信息";
+        OpenAiClient openAiClient = client();
+        String context = "我有一些api信息.信息是用':'隔开的,他们的格式是 注释:负责人:服务名:api.信息如下.获取用户信息:zzy:UserService:User getUser(String id).删除用户信息:zzy:UserService:void delUser(String id)\r\n" +
+                "根据这些情况,我想知道:";
+        List<Message> list = Lists.newArrayList(
+                Message.builder().role(Message.Role.USER).content(context + q).build()
+        );
+        ChatCompletion chatCompletion = ChatCompletion.builder().messages(list).build();
+        ChatCompletionResponse completions = openAiClient.chatCompletion(chatCompletion);
+        completions.getChoices().forEach(System.out::println);
+    }
+
+    @Test
+    public void testContext2() {
+        OpenaiCall.call("我提供一个操作指南.内容的格式是命令->cmd.打开电视:open tv,播放音乐:start music,打开浏览器:open chrome.\r\n" +
+                "我现在给你命令,请你给我cmd.我的命令是:%s","播放音乐");
+    }
+
+
+    @Data
+    class C implements Comparable<C> {
+        private int id;
+        private String content;
+        private double v;
+
+        @Override
+        public int compareTo(@NotNull C o) {
+            return this.v - o.v > 0 ? -1 : 1;
+        }
+    }
+
+    @Test
+    public void testSaveEmbedding() throws IOException {
+        OpenAiClient client = client();
+        AtomicInteger i = new AtomicInteger();
+
+        list.stream().forEach(s -> {
+            EmbeddingResponse res = client.embeddings(s);
+            List<Item> data = res.getData();
+            System.out.println(data + ":" + data.size());
+            double[] array = data.get(0).getEmbedding().stream().mapToDouble(it -> it.doubleValue()).toArray();
+            System.out.println(Arrays.toString(array));
+            String str = gson.toJson(array);
+            try {
+                Files.write(Paths.get("/tmp/v" + (i.incrementAndGet())), str.getBytes());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    @SneakyThrows
+    @Test
+    public void testQEmbedding() {
+        OpenAiClient client = client();
+        String q = "查询用户信息";
+        EmbeddingResponse res = client.embeddings(q);
+        List<BigDecimal> list = res.getData().get(0).getEmbedding();
+        double[] d = list.stream().mapToDouble(it -> it.doubleValue()).toArray();
+        System.out.println(Arrays.toString(d));
+        Files.write(Paths.get("/tmp/q"), gson.toJson(d).getBytes());
+    }
+
+
+    private double[] getValue(String q) {
+        OpenAiClient client = client();
+        EmbeddingResponse res = client.embeddings(q);
+        List<BigDecimal> list = res.getData().get(0).getEmbedding();
+        double[] d = list.stream().mapToDouble(it -> it.doubleValue()).toArray();
+        return d;
+    }
+
+    private List<String> list = Lists.newArrayList("获取用户信息:zzy:UserService:User getUser(String id)", "查询数据库信息:zzy:UserService:void delUser(String id)");
+
+    @SneakyThrows
+    private List<OpenaiCall.D> getDlist() {
+        Type typeOfT = new TypeToken<double[]>() {
+        }.getType();
+        List<OpenaiCall.D> l = new ArrayList<>();
+        for (int i = 1; i <= 2; i++) {
+            String c = new String(Files.readAllBytes(Paths.get("/tmp/v" + i)));
+            double[] cc = gson.fromJson(c, typeOfT);
+            OpenaiCall.D o = OpenaiCall.D.builder().value(cc).content(list.get(i - 1)).build();
+            l.add(o);
+        }
+        return l;
+    }
+
+
+    @SneakyThrows
+    @Test
+    public void testEmbedding2() {
+        Type typeOfT = new TypeToken<double[]>() {
+        }.getType();
+        String question = "获取User信息";
+        double[] qq = getValue(question);
+        System.out.println(qq);
+        List<C> l = new ArrayList<>();
+        for (int i = 1; i <= 2; i++) {
+            String c = new String(Files.readAllBytes(Paths.get("/tmp/v" + i)));
+            double[] cc = gson.fromJson(c, typeOfT);
+            double v = cosineSimilarity(cc, qq);
+            System.out.println(v);
+            C o = new C();
+            o.setContent(list.get(i - 1));
+            o.setId(i - 1);
+            o.setV(v);
+            l.add(o);
+        }
+        l = l.stream().sorted().collect(Collectors.toList());
+        System.out.println(l);
+        OpenAiClient client = client();
+        String context = "我有一些api信息.信息是用':'隔开的.他们的格式是 注释:负责人:服务名:api.信息如下." + l.get(0).getContent() + "\r\n" +
+                "根据这些情况,我想知道:" + question;
+        System.out.println(context);
+
+        List<Message> list = Lists.newArrayList(
+                Message.builder().role(Message.Role.USER).content(context + question).build()
+        );
+        ChatCompletion chatCompletion = ChatCompletion.builder().messages(list).build();
+        ChatCompletionResponse completions = client.chatCompletion(chatCompletion);
         completions.getChoices().forEach(System.out::println);
     }
 
 
     @Test
+    public void testCosineSimilarity() {
+        double[] vectorA = {1, 2, 3};
+        double[] vectorB = {4, 5, 6};
+        // 计算余弦相似度
+        double cosineSimilarity = cosineSimilarity(vectorA, vectorB);
+        // 输出余弦相似度
+        System.out.println("Cosine similarity: " + cosineSimilarity);
+    }
+
+    public static double cosineSimilarity(double[] vectorA, double[] vectorB) {
+        RealVector a = new ArrayRealVector(vectorA);
+        RealVector b = new ArrayRealVector(vectorB);
+        return a.cosine(b);
+    }
+
+
+    @Test
     public void test1() {
-        Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyAddr, 65522));
-        //日志输出可以不添加
-        HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(new OpenAILogger());
-        httpLoggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-        OpenAiClient openAiClient = OpenAiClient.builder()
-                .apiKey(System.getenv("open_api_key"))
-                .connectTimeout(50)
-                .writeTimeout(50)
-                .readTimeout(50)
-                .interceptor(Arrays.asList(httpLoggingInterceptor))
-                .proxy(proxy)
-                .apiHost("https://api.openai.com/")
-                .build();
+        OpenAiClient openAiClient = client();
         Completion completion = Completion.builder().prompt("调用chatgpt openapi 如何返回中文").build();
         CompletionResponse completions = openAiClient.completions(completion);
         Arrays.stream(completions.getChoices()).forEach(System.out::println);
@@ -183,19 +319,8 @@ public class OpenApiTest {
 
     @Test
     public void testListModels() {
-        Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyAddr, 65522));
-        HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(new OpenAILogger());
-        httpLoggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-        OpenAiClient openAiClient = OpenAiClient.builder()
-                .apiKey(System.getenv("open_api_key"))
-                .connectTimeout(50)
-                .writeTimeout(50)
-                .readTimeout(50)
-                .interceptor(Arrays.asList(httpLoggingInterceptor))
-                .proxy(proxy)
-                .apiHost("https://api.openai.com/")
-                .build();
-        openAiClient.models().forEach(it->{
+        OpenAiClient openAiClient = client();
+        openAiClient.models().forEach(it -> {
             System.out.println(it.getID());
         });
     }
@@ -287,22 +412,16 @@ public class OpenApiTest {
 
     @Test
     public void testGenImage() {
-        Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyAddr, 65522));
-        HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(new OpenAILogger());
-        httpLoggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY);
-        OpenAiClient openAiClient = OpenAiClient.builder()
-                .apiKey(System.getenv("open_api_key"))
-                .connectTimeout(50)
-                .writeTimeout(50)
-                .readTimeout(50)
-                .interceptor(Arrays.asList(httpLoggingInterceptor))
-//                .proxy(proxy)
-                .apiHost("https://api.openai.com/")
-                .build();
-
+        OpenAiClient openAiClient = client();
         ImageResponse res = openAiClient.genImages("三亚土拨鼠");
-        res.getData().forEach(it->{
+        res.getData().forEach(it -> {
             System.out.println(it);
         });
+    }
+
+    @Test
+    public void testCall() {
+        String res = OpenaiCall.call("我有一些api信息.信息是用':'隔开的.他们的格式是 注释:负责人:服务名:api.信息如下:%s.\r\n根据上边的内容,我想知道:%s的相关信息", "getUser()", getDlist());
+        System.out.println(res);
     }
 }
