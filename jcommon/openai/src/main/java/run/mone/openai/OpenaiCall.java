@@ -105,7 +105,6 @@ public class OpenaiCall {
 
 
     public static String call(String context, String prompt) {
-        String q = "获取用户信息的相关信息";
         OpenAiClient openAiClient = client();
         String content = String.format(context, prompt);
         List<Message> list = Lists.newArrayList(
@@ -113,8 +112,7 @@ public class OpenaiCall {
         );
         ChatCompletion chatCompletion = ChatCompletion.builder().messages(list).build();
         ChatCompletionResponse completions = openAiClient.chatCompletion(chatCompletion);
-        completions.getChoices().forEach(System.out::println);
-        return "ok";
+        return completions.getChoices().get(0).getMessage().getContent();
     }
 
 

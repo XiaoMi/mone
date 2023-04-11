@@ -181,8 +181,9 @@ public class OpenApiTest {
 
     @Test
     public void testContext2() {
-        OpenaiCall.call("我提供一个操作指南.内容的格式是命令->cmd.打开电视:open tv,播放音乐:start music,打开浏览器:open chrome.\r\n" +
+        String res = OpenaiCall.call("我提供一个操作指南.内容的格式是命令->cmd.打开电视:open tv,播放音乐:start music,打开浏览器:open chrome.\r\n" +
                 "我现在给你命令,请你给我cmd.我的命令是:%s","播放音乐");
+        System.out.println(res);
     }
 
 
