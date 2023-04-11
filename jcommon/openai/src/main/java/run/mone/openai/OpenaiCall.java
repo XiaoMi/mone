@@ -17,8 +17,6 @@ import org.jetbrains.annotations.NotNull;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -39,17 +37,18 @@ public class OpenaiCall {
         }
         HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(new OpenAILogger());
 
+        String key = System.getenv("open_api_key");
+        if (null != apiKey) {
+            key = apiKey;
+        }
+
         OpenAiClient.Builder builer = OpenAiClient.builder()
-                .apiKey(System.getenv("open_api_key"))
+                .apiKey(key)
                 .connectTimeout(50)
                 .writeTimeout(50)
                 .readTimeout(50)
                 .interceptor(Arrays.asList(httpLoggingInterceptor))
                 .apiHost("https://api.openai.com/");
-
-        if (null != apiKey) {
-            builer.apiKey(apiKey);
-        }
 
         if (null != proxy) {
             builer.proxy(proxy);
