@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 public class OpenaiCall {
 
 
-    private static OpenAiClient client() {
+    private static OpenAiClient client(String apiKey) {
         String proxyAddr = System.getenv("open_api_proxy");
         Proxy proxy = null;
         if (null != proxyAddr && proxyAddr.length() > 0) {
@@ -46,14 +46,19 @@ public class OpenaiCall {
                 .readTimeout(50)
                 .interceptor(Arrays.asList(httpLoggingInterceptor))
                 .apiHost("https://api.openai.com/");
+
+        if (null != apiKey) {
+            builer.apiKey(apiKey);
+        }
+
         if (null != proxy) {
             builer.proxy(proxy);
         }
         return builer.build();
     }
 
-    private static double[] getValue(String q) {
-        EmbeddingResponse res = client().embeddings(q);
+    private static double[] getValue(String apiKey, String q) {
+        EmbeddingResponse res = client(apiKey).embeddings(q);
         List<BigDecimal> list = res.getData().get(0).getEmbedding();
         double[] d = list.stream().mapToDouble(it -> it.doubleValue()).toArray();
         return d;
@@ -80,9 +85,9 @@ public class OpenaiCall {
         private String id;
     }
 
-    public static String call(String context, String prompt, List<D> list) {
+    public static String call(String apiKey, String context, String prompt, List<D> list) {
         List<C> result = new ArrayList<>();
-        double[] value = getValue(prompt);
+        double[] value = getValue(apiKey, prompt);
         for (int i = 0; i < list.size(); i++) {
             double[] qq = list.get(i).getValue();
             double v = cosineSimilarity(value, qq);
@@ -93,7 +98,7 @@ public class OpenaiCall {
             result.add(o);
         }
         List<C> l = result.stream().sorted().collect(Collectors.toList());
-        OpenAiClient client = client();
+        OpenAiClient client = client(apiKey);
         String content = String.format(context, l.get(0).getContent(), prompt);
         List<Message> messages = Lists.newArrayList(
                 Message.builder().role(Message.Role.USER).content(content).build()
@@ -104,8 +109,8 @@ public class OpenaiCall {
     }
 
 
-    public static String call(String context, String prompt) {
-        OpenAiClient openAiClient = client();
+    public static String call(String apiKey, String context, String prompt) {
+        OpenAiClient openAiClient = client(apiKey);
         String content = String.format(context, prompt);
         List<Message> list = Lists.newArrayList(
                 Message.builder().role(Message.Role.USER).content(content).build()

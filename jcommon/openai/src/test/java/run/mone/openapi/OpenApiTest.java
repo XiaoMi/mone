@@ -181,8 +181,8 @@ public class OpenApiTest {
 
     @Test
     public void testContext2() {
-        String res = OpenaiCall.call("我提供一个操作指南.内容的格式是命令->cmd.打开电视:open tv,播放音乐:start music,打开浏览器:open chrome.\r\n" +
-                "我现在给你命令,请你给我cmd.我的命令是:%s","播放音乐");
+        String res = OpenaiCall.call(null, "我提供一个操作指南.内容的格式是命令->cmd.打开电视:open tv,播放音乐:start music,打开浏览器:open chrome.\r\n" +
+                "我现在给你命令,请你给我cmd.我的命令是:%s", "播放音乐");
         System.out.println(res);
     }
 
@@ -422,7 +422,7 @@ public class OpenApiTest {
 
     @Test
     public void testCall() {
-        String res = OpenaiCall.call("我有一些api信息.信息是用':'隔开的.他们的格式是 注释:负责人:服务名:api.信息如下:%s.\r\n根据上边的内容,我想知道:%s的相关信息", "getUser()", getDlist());
+        String res = OpenaiCall.call(null, "我有一些api信息.信息是用':'隔开的.他们的格式是 注释:负责人:服务名:api.信息如下:%s.\r\n根据上边的内容,我想知道:%s的相关信息", "getUser()", getDlist());
         System.out.println(res);
     }
 }
