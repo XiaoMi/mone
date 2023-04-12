@@ -425,4 +425,17 @@ public class OpenApiTest {
         String res = OpenaiCall.call(null, "我有一些api信息.信息是用':'隔开的.他们的格式是 注释:负责人:服务名:api.信息如下:%s.\r\n根据上边的内容,我想知道:%s的相关信息", "getUser()", getDlist(), true);
         System.out.println(res);
     }
+
+
+    /**
+     * 测试通过投喂的filter代码生成想要生成的代码
+     */
+    @SneakyThrows
+    @Test
+    public void testCreateFilter() {
+        String str = new String(Files.readAllBytes(Paths.get("/tmp/filter")));
+        String req = new String(Files.readAllBytes(Paths.get("/tmp/filter_req")));
+        String res = OpenaiCall.call(null, str + "+\r\n" + "%s", req);
+        System.out.println(res);
+    }
 }
