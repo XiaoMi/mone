@@ -160,15 +160,15 @@
         </dependency>
 
         <dependency>
-            <groupId>org.nutz</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>nutz</artifactId>
-            <version>1.r.68-youpin-SNAPSHOT</version>
+            <version>1.r.68-open-SNAPSHOT</version>
         </dependency>
 
         <dependency>
-            <groupId>run.mone</groupId>
+            <groupId>org.nutz</groupId>
             <artifactId>nutz-integration-spring</artifactId>
-            <version>1.r.68-open-SNAPSHOT</version>
+            <version>1.r.68.v20191031</version>
             <exclusions>
                 <exclusion>
                     <artifactId>spring-context</artifactId>
