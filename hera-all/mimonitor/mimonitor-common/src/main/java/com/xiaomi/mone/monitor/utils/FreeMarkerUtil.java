@@ -12,6 +12,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * AesUtil.java
+ *
  * @author gaoxihui
  * @date 2021/7/7 8:11 下午
  */
@@ -19,26 +21,26 @@ public class FreeMarkerUtil {
 
 
     /**
-     * Get template files under the specified directory
-     * @param name       The name of the template file
-     * @param pathPrefix The directory of the template file
+     * 获取指定目录下的模板文件
+     *
+     * @param name       模板文件的名称
+     * @param pathPrefix 模板文件的目录
      */
     private static Template getTemplate(String name, String pathPrefix) throws IOException {
         Configuration cfg = new Configuration();
-        cfg.setClassForTemplateLoading(FreeMarkerUtil.class, pathPrefix); //Set the directory of the template files.
+        cfg.setClassForTemplateLoading(FreeMarkerUtil.class, pathPrefix); //设置模板文件的目录
         cfg.setDefaultEncoding("UTF-8");       //Set the default charset of the template files
-        Template temp = cfg.getTemplate(name); //Search for the template file named "name" in the template file directory.
-
-        return temp; //At this point, FreeMarker will look for a template file named "name" in the "pathPrefix" folder under the classpath.
-
+        Template temp = cfg.getTemplate(name); //在模板文件目录中寻找名为"name"的模板文件
+        return temp; //此时FreeMarker就会到类路径下的"pathPrefix"文件夹中寻找名为"name"的模板文件
     }
 
 
     /**
-     * Output content to the console based on the template file.
-     * @param name       The name of the template file.
-     * @param pathPrefix The directory of the template file.
-     * @param rootMap    The data model of the template.
+     * 根据模板文件输出内容到控制台
+     *
+     * @param name       模板文件的名称
+     * @param pathPrefix 模板文件的目录
+     * @param rootMap    模板的数据模型
      */
     public static String getContent(String pathPrefix, String name, Map<String, Object> rootMap) throws TemplateException, IOException {
         StringWriter writer = new StringWriter();
@@ -57,11 +59,12 @@ public class FreeMarkerUtil {
 
 
     /**
-     * Output content to a specified file based on a template file.
-     * @param name       The name of the template file.
-     * @param pathPrefix The directory of the template file.
-     * @param rootMap    The data model of the template.
-     * @param file       The output file for the content.
+     * 根据模板文件输出内容到指定的文件中
+     *
+     * @param name       模板文件的名称
+     * @param pathPrefix 模板文件的目录
+     * @param rootMap    模板的数据模型
+     * @param file       内容的输出文件
      */
     public static void printFile(String pathPrefix, String name, Map<String, Object> rootMap, File file) throws TemplateException, IOException {
         Writer out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"));

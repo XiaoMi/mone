@@ -24,7 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 @RestController
 public class MiddlewareController {
 
-    @Autowired
+   /* @Autowired
     MiddleWareService middleWareService;
 
     @ResponseBody
@@ -47,5 +47,5 @@ public class MiddlewareController {
             log.error("MiddlewareController.middleWareList Error" + e.getMessage(),e);
             return Result.fail(ErrorCode.unknownError);
         }
-    }
+    }*/
 }

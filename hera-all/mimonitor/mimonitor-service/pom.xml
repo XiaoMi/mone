@@ -19,18 +19,6 @@
     <dependencies>
 
         <dependency>
-            <artifactId>fastjson</artifactId>
-            <groupId>com.alibaba</groupId>
-            <version>2.0.25</version>
-        </dependency>
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>common</artifactId>
-            <version>1.7.2-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
             <groupId>run.mone</groupId>
             <artifactId>app-api</artifactId>
             <version>1.0-SNAPSHOT</version>
@@ -100,6 +88,12 @@
             <groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-spring-context</artifactId>
             <version>0.2.2-RC1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.alibaba.spring</groupId>
+                    <artifactId>spring-context-support</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -166,9 +160,9 @@
         </dependency>
 
         <dependency>
-            <groupId>run.mone</groupId>
+            <groupId>org.nutz</groupId>
             <artifactId>nutz</artifactId>
-            <version>1.r.68-open-SNAPSHOT</version>
+            <version>1.r.68-youpin-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -288,9 +282,9 @@
                         <version>8.0.20</version>
                     </dependency>
                     <dependency>
-                        <groupId>run.mone</groupId>
+                        <groupId>com.xiaomi.youpin</groupId>
                         <artifactId>common</artifactId>
-                        <version>1.7.2-SNAPSHOT</version>
+                        <version>1.4-SNAPSHOT</version>
                     </dependency>
                     <dependency>
                         <groupId>com.itfsw</groupId>

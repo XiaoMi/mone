@@ -38,7 +38,7 @@ public class GrafanaTemplateController {
         if (StringUtils.isEmpty(user)) {
             return Result.fail(ErrorCode.ThisUserNotHaveAuth);
         }
-        return  grafanaTemplateService.createGrafanaTemplate(param);
+        return grafanaTemplateService.createGrafanaTemplate(param);
     }
 
     @PostMapping("/mimonitor/deleteTemplate")
@@ -51,7 +51,7 @@ public class GrafanaTemplateController {
     }
 
     @GetMapping("/mimonitor/getTemplate")
-    public Result getTemplate(HttpServletRequest request,Integer id){
+    public Result getTemplate(HttpServletRequest request, Integer id) {
         String user = scrapeJobController.checkUser(request);
         if (StringUtils.isEmpty(user)) {
             return Result.fail(ErrorCode.ThisUserNotHaveAuth);
@@ -69,7 +69,7 @@ public class GrafanaTemplateController {
         if (StringUtils.isEmpty(user)) {
             return Result.fail(ErrorCode.ThisUserNotHaveAuth);
         }
-        return  grafanaTemplateService.updateGrafanaTemplate(param);
+        return grafanaTemplateService.updateGrafanaTemplate(param);
     }
 
     @GetMapping("/mimonitor/listTemplate")
