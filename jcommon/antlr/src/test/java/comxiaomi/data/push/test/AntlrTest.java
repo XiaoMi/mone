@@ -23,6 +23,7 @@ import com.google.gson.JsonObject;
 import com.xiaomi.data.push.antlr.expr.Expr;
 import com.xiaomi.data.push.antlr.json.Json;
 import lombok.Data;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -49,15 +50,12 @@ public class AntlrTest {
     public void testAntlr() {
         Map<String, Object> m = new HashMap<>();
         m.put("name", "zzy");
-
         Bean bean = new Bean(1, "lucy");
         m.put("lucy", bean);
-
-
         String res = Expr.result(m, "result{name}");
         System.out.println(res);
-
         System.out.println(Expr.result(m, "result{lucy}.name"));
+        Assert.assertEquals("lucy", Expr.result(m, "result{lucy}.name"));
     }
 
     @Test
@@ -71,6 +69,7 @@ public class AntlrTest {
     public void testParam2() {
         String v2 = "{\"code\":0,\"message\":\"ok\",\"data\":{\"goodId\":16666,\"goodName\":\"小米手机\",\"goodPrice\":1999.0},\"traceId\":null,\"attachments\":null}";
         System.out.println(Expr.params(v2, "params.json().get(data).get(goodId).getAsInt()"));
+        Assert.assertEquals(16666,Expr.params(v2, "params.json().get(data).get(goodId).getAsInt()"));
     }
 
     @Test
@@ -92,20 +91,10 @@ public class AntlrTest {
     @Test
     public void testAntlr2() {
         String str = "{\"name\":\"zzy\",\"ids\":[1,2,3,4]}";
-
-//        JsonObject jo = new Gson().fromJson(str,JsonObject.class);
-//        String name = jo.get("name").getAsString();
-//        System.out.println(name);
-//
-//        int v = jo.getAsJsonArray("ids").get(2).getAsInt();
-//        System.out.println(v);
-
-
         Object res = Expr.params(str, "params.json().get(name:string).getAsString()");
         System.out.println(res);
         res = Expr.params(str, "params.json().get(ids:string).get(2:int).getAsInt()");
         System.out.println(res);
-
     }
 
 
@@ -189,11 +178,9 @@ public class AntlrTest {
     @Test
     public void test4() {
         String v = "{\"code\":0,\"info\":\"ok\",\"desc\":\"成功\",\"data\":{\"order_id\":\"5221015445001044\"}}";
-//        Object r4 = Expr.params(v, "params.toMap(){data}");
         Object r5 = Expr.params(v, "params.toMap(){data}{order_id}");
         System.out.println(r5);
     }
-
 
 
 }

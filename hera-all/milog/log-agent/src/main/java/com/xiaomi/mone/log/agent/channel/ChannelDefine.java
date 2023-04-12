@@ -16,7 +16,7 @@
 
 package com.xiaomi.mone.log.agent.channel;
 
-import com.xiaomi.mone.log.agent.export.Output;
+import com.xiaomi.mone.log.agent.output.Output;
 import com.xiaomi.mone.log.agent.input.Input;
 import com.xiaomi.mone.log.api.enums.OperateEnum;
 import com.xiaomi.mone.log.api.model.meta.FilterConf;

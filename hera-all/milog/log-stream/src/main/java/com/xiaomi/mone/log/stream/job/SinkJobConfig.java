@@ -1,6 +1,7 @@
 package com.xiaomi.mone.log.stream.job;
 
 import com.xiaomi.mone.log.model.EsInfo;
+import com.xiaomi.mone.log.stream.common.SinkJobEnum;
 import com.xiaomi.mone.log.stream.sink.SinkChain;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,4 +34,8 @@ public class SinkJobConfig extends LogConfig {
     private String tail;
     private EsInfo esInfo;
     private Integer parseType;
+    /**
+     * @see SinkJobEnum#name()
+     */
+    private String jobType;
 }

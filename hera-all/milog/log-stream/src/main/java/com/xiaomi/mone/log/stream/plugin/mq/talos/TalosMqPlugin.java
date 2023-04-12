@@ -1,6 +1,6 @@
 package com.xiaomi.mone.log.stream.plugin.mq.talos;
 
-import com.xiaomi.mone.log.stream.job.SinkJobEnum;
+import com.xiaomi.mone.log.stream.common.SinkJobEnum;
 import com.xiaomi.mone.log.stream.plugin.mq.MQPlugin;
 import com.xiaomi.youpin.docean.anno.Service;
 import lombok.extern.slf4j.Slf4j;

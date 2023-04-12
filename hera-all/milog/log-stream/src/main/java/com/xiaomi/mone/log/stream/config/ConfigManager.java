@@ -2,13 +2,11 @@ package com.xiaomi.mone.log.stream.config;
 
 import com.alibaba.nacos.api.config.listener.Listener;
 import com.google.gson.Gson;
-import com.xiaomi.mone.log.common.Config;
-import com.xiaomi.mone.log.common.NetUtils;
 import com.xiaomi.mone.log.model.MiLogStreamConfig;
 import com.xiaomi.mone.log.model.MilogSpaceData;
+import com.xiaomi.mone.log.stream.common.util.StreamUtils;
 import com.xiaomi.mone.log.stream.exception.StreamException;
 import com.xiaomi.youpin.docean.anno.Service;
-import com.xiaomi.youpin.docean.common.NamedThreadFactory;
 import com.xiaomi.youpin.docean.common.StringUtils;
 import com.xiaomi.youpin.docean.plugin.nacos.NacosConfig;
 import lombok.Getter;
@@ -19,7 +17,8 @@ import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 import static com.xiaomi.mone.log.common.Constant.*;
@@ -47,11 +46,6 @@ public class ConfigManager {
      */
     private ConcurrentHashMap<Long, MilogSpaceData> milogSpaceDataMap = new ConcurrentHashMap<>();
 
-
-    private final ExecutorService pool = new ThreadPoolExecutor(1, 1, 10, TimeUnit.SECONDS,
-            new ArrayBlockingQueue<>(1), new NamedThreadFactory("milog-nacos-config-update", true),
-            new ThreadPoolExecutor.DiscardOldestPolicy());
-
     private Gson gson = new Gson();
 
     /**
@@ -62,25 +56,25 @@ public class ConfigManager {
     public void initStream() throws StreamException {
         log.debug("[initStream} nacos dataId:{},group:{}", spaceDataId, DEFAULT_GROUP_ID);
         String streamConfigStr = nacosConfig.getConfigStr(spaceDataId, DEFAULT_GROUP_ID, DEFAULT_TIME_OUT_MS);
-        MiLogStreamConfig milogStreamConfig = null;
+        MiLogStreamConfig milogStreamConfig;
         try {
             if (StringUtils.isNotEmpty(streamConfigStr) && !NULLVALUE.equals(streamConfigStr)) {
-                milogStreamConfig = new Gson().fromJson(streamConfigStr, MiLogStreamConfig.class);
+                milogStreamConfig = GSON.fromJson(streamConfigStr, MiLogStreamConfig.class);
             } else {
                 log.warn("[ConfigManager.initConfigManager] Nacos configuration [dataID:{},group:{}]not found,exit initConfigManager", spaceDataId, DEFAULT_GROUP_ID);
                 return;
             }
-            String localIp = getLocalIp();
+            String uniqueMark = StreamUtils.getCurrentMachineMark();
             Map<String, Map<Long, String>> config = milogStreamConfig.getConfig();
-            if (config.containsKey(localIp)) {
-                Map<Long, String> milogStreamDataMap = config.get(localIp);
-                log.info("[ConfigManager.initConfigManager] localIP:{},data:{}", localIp, gson.toJson(milogStreamDataMap));
+            if (config.containsKey(uniqueMark)) {
+                Map<Long, String> milogStreamDataMap = config.get(uniqueMark);
+                log.info("[ConfigManager.initConfigManager] uniqueMark:{},data:{}", uniqueMark, gson.toJson(milogStreamDataMap));
                 for (Long spaceId : milogStreamDataMap.keySet()) {
                     final String dataId = milogStreamDataMap.get(spaceId);
                     // init spaceData config
                     String milogSpaceDataStr = nacosConfig.getConfigStr(dataId, DEFAULT_GROUP_ID, DEFAULT_TIME_OUT_MS);
                     if (StringUtils.isNotEmpty(milogSpaceDataStr)) {
-                        MilogSpaceData milogSpaceData = new Gson().fromJson(milogSpaceDataStr, MilogSpaceData.class);
+                        MilogSpaceData milogSpaceData = GSON.fromJson(milogSpaceDataStr, MilogSpaceData.class);
                         if (null != milogSpaceData) {
                             milogSpaceDataMap.put(spaceId, milogSpaceData);
                         }
@@ -88,28 +82,18 @@ public class ConfigManager {
                     MilogSpaceData milogSpaceData = milogSpaceDataMap.get(spaceId);
                     if (null != milogSpaceData) {
                         MilogConfigListener configListener = new MilogConfigListener(spaceId, dataId, DEFAULT_GROUP_ID, milogSpaceData, nacosConfig);
-                        configListener.OnMessage();
                         addListener(spaceId, configListener);
                     }
                     log.info("[ConfigManager.initStream] added log config listener for spaceId:{},dataId:{}", spaceId, dataId);
                 }
             } else {
-                log.info("server start current not contain space config,currentIP:{}", localIp);
+                log.info("server start current not contain space config,uniqueMark:{}", uniqueMark);
             }
         } catch (Exception e) {
             log.error("[ConfigManager.initStream] initStream exec err", e);
         }
     }
 
-    private String getLocalIp() {
-        String localIp = Config.ins().get("localIp", "");
-        String tmpLocalIp = System.getenv("TESLA_HOST") == null ? NetUtils.getLocalHost() : System.getenv("TESLA_HOST");
-        log.info("localIP:{},{}", localIp, tmpLocalIp);
-        if (StringUtils.isNotEmpty(localIp)) {
-            return localIp;
-        }
-        return tmpLocalIp;
-    }
 
     public void addListener(Long spaceId, MilogConfigListener listener) {
         listeners.put(spaceId, listener);
@@ -119,21 +103,21 @@ public class ConfigManager {
         nacosConfig.addListener(spaceDataId, DEFAULT_GROUP_ID, new Listener() {
             @Override
             public Executor getExecutor() {
-                return pool;
+                return null;
             }
 
             @Override
             public void receiveConfigInfo(String spaceStr) {
 
                 try {
-                    MiLogStreamConfig milogStreamConfig = new Gson().fromJson(spaceStr, MiLogStreamConfig.class);
-                    String localIp = getLocalIp();
-                    log.info("【监听namespace】收到了配置请求：{},localIp:{}", gson.toJson(milogStreamConfig), localIp);
+                    MiLogStreamConfig milogStreamConfig = GSON.fromJson(spaceStr, MiLogStreamConfig.class);
+                    String uniqueMark = StreamUtils.getCurrentMachineMark();
+                    log.info("【监听namespace】收到了配置请求：{},uniqueMark:{}", gson.toJson(milogStreamConfig), uniqueMark);
                     if (null != milogStreamConfig) {
                         Map<String, Map<Long, String>> config = milogStreamConfig.getConfig();
                         if (null != config) {
-                            if (config.containsKey(localIp)) {
-                                Map<Long, String> dataIdMap = config.get(localIp);
+                            if (config.containsKey(uniqueMark)) {
+                                Map<Long, String> dataIdMap = config.get(uniqueMark);
                                 // 删除旧的dataId监听，停止它下边dataId
                                 stopUnusefulListenerAndJob(dataIdMap);
                                 // 新增新的配置监听
@@ -235,14 +219,13 @@ public class ConfigManager {
                 String milogSpaceDataStr = nacosConfig.getConfigStr(dataId, DEFAULT_GROUP_ID, DEFAULT_TIME_OUT_MS);
                 MilogSpaceData milogSpaceData;
                 if (StringUtils.isNotEmpty(milogSpaceDataStr)) {
-                    milogSpaceData = new Gson().fromJson(milogSpaceDataStr, MilogSpaceData.class);
+                    milogSpaceData = GSON.fromJson(milogSpaceDataStr, MilogSpaceData.class);
                 } else {
                     milogSpaceData = new MilogSpaceData();
                 }
                 milogSpaceDataMap.put(spaceId, milogSpaceData);
                 // Listen configuration
                 MilogConfigListener configListener = new MilogConfigListener(spaceId, dataId, DEFAULT_GROUP_ID, milogSpaceData, nacosConfig);
-                configListener.OnMessage();
                 addListener(spaceId, configListener);
             }
         });

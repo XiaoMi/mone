@@ -33,7 +33,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static com.xiaomi.mone.log.common.Constant.DEFAULT_STREAM_SERVER_NAME;
-import static com.xiaomi.mone.log.stream.util.StreamUtils.*;
+import static com.xiaomi.mone.log.stream.common.util.StreamUtils.*;
 
 @Slf4j
 public class MiLogStreamBootstrap {

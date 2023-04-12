@@ -23,7 +23,7 @@ import com.google.gson.reflect.TypeToken;
 import com.xiaomi.mone.log.agent.channel.ChannelDefine;
 import com.xiaomi.mone.log.agent.common.AbstractElementAdapter;
 import com.xiaomi.mone.log.agent.channel.conf.AgentTailConf;
-import com.xiaomi.mone.log.agent.export.Output;
+import com.xiaomi.mone.log.agent.output.Output;
 import com.xiaomi.mone.log.agent.input.Input;
 import lombok.extern.slf4j.Slf4j;
 

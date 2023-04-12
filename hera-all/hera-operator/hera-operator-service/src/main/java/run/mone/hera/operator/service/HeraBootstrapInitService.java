@@ -628,7 +628,7 @@ public class HeraBootstrapInitService {
             k8sUtilBean.applyYaml(yaml, namespace, "add");
         }
 
-        TimeUnit.SECONDS.sleep(1);
+        TimeUnit.SECONDS.sleep(2);
         //按名称+类型 过滤service
         return listService(serviceNameList, namespace, serviceType);
     }
@@ -674,6 +674,7 @@ public class HeraBootstrapInitService {
                 .filter(s -> serviceNameList.contains(s.getMetadata().getName()))
                 .collect(Collectors.toList());
     }
+
     private List<io.fabric8.kubernetes.api.model.Service> listService(List<String> serviceNameList, String namespace, String serviceType) {
         ServiceList serviceList = kubernetesClient.services().inNamespace(namespace).list();
         return serviceList.getItems().stream()
@@ -693,6 +694,9 @@ public class HeraBootstrapInitService {
                 throw new RuntimeException("cluster node have no internalIP");
             }
             nodePortIP = nodeAddress.get().getAddress();
+            if (StringUtils.isBlank(nodePortIP)) {
+                throw new RuntimeException("cluster node get null [NodePort] IP");
+            }
         }
 
         for (io.fabric8.kubernetes.api.model.Service service : serviceList) {
@@ -714,7 +718,14 @@ public class HeraBootstrapInitService {
 
         return ipPortMap;
     }
-
+    public String getServiceType(List<io.fabric8.kubernetes.api.model.Service> serviceList) {
+        for (io.fabric8.kubernetes.api.model.Service service : serviceList) {
+            ServiceSpec serviceSpec = service.getSpec();
+            String type = serviceSpec.getType();
+            return type;
+        }
+        return "";
+    }
 
     private Map<String, String> kvMap(String key, String value, String remark) {
         return this.kvMap(key, value, remark, "1");

@@ -48,7 +48,7 @@ spec:
             memory: 2Gi
 
       - name: log-agent
-        image: herahub/opensource-pub:log-agent-v2
+        image: herahub/opensource-pub:log-agent-v3
         volumeMounts:
         - mountPath: "/home/work/log"
           name: log-path

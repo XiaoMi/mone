@@ -175,7 +175,7 @@ public class HeraResourceEventHandler implements ResourceEventHandler<HeraBootst
             }
 
             // mimonitor 配置初始化，为了防止mimonitor没有完全启动，所以这里需要在启动之后，再去进行初始化
-            initMimonitor();
+            //initMimonitor();
             HeraStatus heraStatus = new HeraStatus();
             heraStatus.setStatus(HeraStatus.STATUS_SUCCESS);
             heraStatus.setMsg("success");
@@ -192,20 +192,20 @@ public class HeraResourceEventHandler implements ResourceEventHandler<HeraBootst
         }
     }
 
-    private void initMimonitor() {
-        String mimonitorUrl = "http://mimonitor:8099/api/grafanaResources/create";
-        try {
-            HttpClientV6.post(mimonitorUrl, "", null,10000);
-        }catch(Throwable t){
-            log.error("init mimonitor error : ",t);
-            try {
-                TimeUnit.SECONDS.sleep(30);
-                HttpClientV6.post(mimonitorUrl, "", null,10000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
+//    private void initMimonitor() {
+//        String mimonitorUrl = "http://mimonitor:8099/api/grafanaResources/create";
+//        try {
+//            HttpClientV6.post(mimonitorUrl, "", null,10000);
+//        }catch(Throwable t){
+//            log.error("init mimonitor error : ",t);
+//            try {
+//                TimeUnit.SECONDS.sleep(30);
+//                HttpClientV6.post(mimonitorUrl, "", null,10000);
+//            } catch (InterruptedException e) {
+//                throw new RuntimeException(e);
+//            }
+//        }
+//    }
 
     private void block2checkStatus(ObjectMeta objectMeta) throws InterruptedException {
         String namespace = objectMeta.getNamespace();

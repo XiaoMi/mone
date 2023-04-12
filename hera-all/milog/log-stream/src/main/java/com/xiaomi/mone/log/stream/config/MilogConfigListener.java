@@ -9,19 +9,21 @@ import com.xiaomi.mone.log.model.MilogSpaceData;
 import com.xiaomi.mone.log.model.SinkConfig;
 import com.xiaomi.mone.log.stream.job.JobManager;
 import com.xiaomi.youpin.docean.anno.Component;
-import com.xiaomi.youpin.docean.common.NamedThreadFactory;
 import com.xiaomi.youpin.docean.common.StringUtils;
 import com.xiaomi.youpin.docean.plugin.nacos.NacosConfig;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.Executor;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
+
+import static com.xiaomi.mone.log.common.Constant.GSON;
 
 @Component
 @Slf4j
@@ -46,36 +48,14 @@ public class MilogConfigListener {
     private Map<Long, LogtailConfig> oldLogTailConfigMap = new HashMap<>();
     private Map<Long, SinkConfig> oldSinkConfigMap = new HashMap<>();
 
-    private final static ExecutorService pool = new ThreadPoolExecutor(1, 1, 10, TimeUnit.SECONDS,
-            new ArrayBlockingQueue<>(1), new NamedThreadFactory("milog-nacos-config_space_update", true),
-            new ThreadPoolExecutor.DiscardOldestPolicy());
-
-    public void OnMessage() {
-        this.listener = new Listener() {
-            @Override
-            public Executor getExecutor() {
-                return pool;
-            }
-
-            @Override
-            public void receiveConfigInfo(String dataValue) {
-                try {
-                    log.info("【监听tail】收到了配置请求：{},已经存在的配置:storeMap:{},tailMap:{}", dataValue, gson.toJson(oldSinkConfigMap), gson.toJson(oldLogTailConfigMap));
-                    if (StringUtils.isNotEmpty(dataValue) && !Constant.NULLVALUE.equals(dataValue)) {
-                        MilogSpaceData newMilogSpaceData = new Gson().fromJson(dataValue, MilogSpaceData.class);
-                        if (null == newMilogSpaceData || CollectionUtils.isEmpty(newMilogSpaceData.getSpaceConfig())) {
-                            log.error("【监听tail】收到的配置错误，dataId:{},spaceId:{}", dataId, milogSpaceData.getMilogSpaceId());
-                            return;
-                        }
-                        handleNacosConfigDataJob(newMilogSpaceData);
-                    } else {
-                        stopAllJobClear();
-                    }
-                } catch (Exception e) {
-                    log.error(String.format("【监听tail】异常,dataId:%s", dataId), e);
-                }
-            }
-        };
+    public MilogConfigListener(Long spaceId, String dataId, String group, MilogSpaceData milogSpaceData, NacosConfig nacosConfig) {
+        this.spaceId = spaceId;
+        this.dataId = dataId;
+        this.group = group;
+        this.milogSpaceData = milogSpaceData;
+        this.nacosConfig = nacosConfig;
+        this.jobManager = new JobManager();
+        this.listener = getListener(dataId, milogSpaceData);
         nacosConfig.addListener(dataId, group, listener);
     }
 
@@ -145,11 +125,12 @@ public class MilogConfigListener {
     private void compareOldTailIdJobStop(SinkConfig sinkConfig) {
         List<Long> newIds = sinkConfig.getLogtailConfigs().stream().map(LogtailConfig::getLogtailId).collect(Collectors.toList());
         List<Long> oldIds = Lists.newArrayList();
-        if (oldSinkConfigMap.containsKey((sinkConfig.getLogstoreId()))) {
+        if (oldSinkConfigMap.containsKey(sinkConfig.getLogstoreId())) {
             oldIds = oldSinkConfigMap.get(sinkConfig.getLogstoreId()).getLogtailConfigs().stream().map(LogtailConfig::getLogtailId).collect(Collectors.toList());
         }
         List<Long> collect = oldIds.stream().filter(tailId -> !newIds.contains(tailId)).collect(Collectors.toList());
         if (CollectionUtils.isNotEmpty(collect)) {
+            log.info("newIds:{},oldIds:{},collect:{}", gson.toJson(newIds), gson.toJson(oldIds), gson.toJson(collect));
             for (Long tailId : collect) {
                 stopOldJobPerTail(oldLogTailConfigMap.get(tailId), sinkConfig);
             }
@@ -249,13 +230,33 @@ public class MilogConfigListener {
         oldLogTailConfigMap.put(logTailConfig.getLogtailId(), logTailConfig);
     }
 
-    public MilogConfigListener(Long spaceId, String dataId, String group, MilogSpaceData milogSpaceData, NacosConfig nacosConfig) {
-        this.spaceId = spaceId;
-        this.dataId = dataId;
-        this.group = group;
-        this.milogSpaceData = milogSpaceData;
-        this.nacosConfig = nacosConfig;
-        this.jobManager = new JobManager();
+    @NotNull
+    private Listener getListener(String dataId, MilogSpaceData milogSpaceData) {
+        return new Listener() {
+            @Override
+            public Executor getExecutor() {
+                return null;
+            }
+
+            @Override
+            public void receiveConfigInfo(String dataValue) {
+                try {
+                    log.info("【监听tail】收到了配置请求：{},已经存在的配置:storeMap:{},tailMap:{}", dataValue, gson.toJson(oldSinkConfigMap), gson.toJson(oldLogTailConfigMap));
+                    if (StringUtils.isNotEmpty(dataValue) && !Constant.NULLVALUE.equals(dataValue)) {
+                        MilogSpaceData newMilogSpaceData = GSON.fromJson(dataValue, MilogSpaceData.class);
+                        if (null == newMilogSpaceData || CollectionUtils.isEmpty(newMilogSpaceData.getSpaceConfig())) {
+                            log.error("【监听tail】收到的配置错误，dataId:{},spaceId:{}", dataId, milogSpaceData.getMilogSpaceId());
+                            return;
+                        }
+                        handleNacosConfigDataJob(newMilogSpaceData);
+                    } else {
+                        stopAllJobClear();
+                    }
+                } catch (Exception e) {
+                    log.error(String.format("【监听tail】异常,dataId:%s", dataId), e);
+                }
+            }
+        };
     }
 
     public void shutdown() {
