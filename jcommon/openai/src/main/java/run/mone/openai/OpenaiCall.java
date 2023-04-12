@@ -83,6 +83,15 @@ public class OpenaiCall {
         private String id;
     }
 
+    /**
+     *
+     * @param apiKey  chatgpt key
+     * @param context 上下文
+     * @param prompt  提示词
+     * @param list
+     * @param call
+     * @return
+     */
     public static String call(String apiKey, String context, String prompt, List<D> list, boolean call) {
         List<C> result = new ArrayList<>();
         double[] value = getEmbeddings(apiKey, prompt);
@@ -98,11 +107,9 @@ public class OpenaiCall {
         List<C> l = result.stream().sorted().collect(Collectors.toList());
         OpenAiClient client = client(apiKey);
         String content = String.format(context, l.get(0).getContent(), prompt);
-
         if (!call) {
             return content;
         }
-
         List<Message> messages = Lists.newArrayList(
                 Message.builder().role(Message.Role.USER).content(content).build()
         );
