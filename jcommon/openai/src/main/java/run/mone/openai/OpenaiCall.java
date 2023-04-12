@@ -15,6 +15,7 @@ import org.apache.commons.math3.linear.RealVector;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
+import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,7 +33,7 @@ public class OpenaiCall {
         String proxyAddr = System.getenv("open_api_proxy");
         Proxy proxy = null;
         if (null != proxyAddr && proxyAddr.length() > 0) {
-//            proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyAddr, 65522));
+            proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyAddr, 65522));
         }
         HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(new OpenAILogger());
 
@@ -43,9 +44,9 @@ public class OpenaiCall {
 
         OpenAiClient.Builder builer = OpenAiClient.builder()
                 .apiKey(key)
-                .connectTimeout(50)
-                .writeTimeout(50)
-                .readTimeout(50)
+                .connectTimeout(5000)
+                .writeTimeout(5000)
+                .readTimeout(5000)
                 .interceptor(Arrays.asList(httpLoggingInterceptor))
                 .apiHost("https://api.openai.com/");
 
