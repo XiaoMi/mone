@@ -1,7 +1,7 @@
 package com.xiaomi.mone.log.manager.service;
 
-import com.xiaomi.mone.log.manager.model.pojo.MilogEsIndexDO;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.xiaomi.mone.log.manager.model.pojo.MilogEsIndexDO;
 
 /**
  * <p>

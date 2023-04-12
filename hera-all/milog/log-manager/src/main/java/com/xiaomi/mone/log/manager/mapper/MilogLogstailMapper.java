@@ -1,7 +1,7 @@
 package com.xiaomi.mone.log.manager.mapper;
 
-import com.xiaomi.mone.log.manager.model.pojo.MilogLogstailDO;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.xiaomi.mone.log.manager.model.pojo.MilogLogstailDO;
 
 import java.util.List;
 import java.util.Map;

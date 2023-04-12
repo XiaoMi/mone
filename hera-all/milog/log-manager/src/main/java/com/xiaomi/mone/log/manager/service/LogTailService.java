@@ -38,8 +38,6 @@ public interface LogTailService {
 
     Result<Void> updateMilogLogTail(MilogLogtailParam param);
 
-    void updateSendMsg(MilogLogTailDo milogLogtailDo, List<String> oldIps);
-
     Result<Void> deleteMilogLogTail(Long id);
 
     void sendMessageOnDelete(MilogLogTailDo mt, MilogLogStoreDO logStoreDO);
@@ -67,8 +65,6 @@ public interface LogTailService {
 
     MilogTailDTO milogLogtailDO2DTO(MilogLogTailDo milogLogtailDo);
 
-    Result<List<SimpleAppEnvDTO>> getRegionZonesByAppId(Long milogAppId, String machineRoom);
-
     List<PodDTO> regionDTOTransferSimpleAppDTOs(List<RegionDTO> neoAppInfos, MachineRegionEnum
             machineRoom);
 
@@ -82,23 +78,7 @@ public interface LogTailService {
 
     Result<Object> parseScriptTest(MlogParseParam mlogParseParam);
 
-    void handleK8sTopicTail(K8sMachineChangeDTO machineChangeDTO);
-
-    void k8sPodIpsSend(Long tailId, List<String> podIps, List<String> podNamePrefix, Integer appType);
-
     Result<List<QuickQueryVO>> quickQueryByApp(Long milogAppId);
-
-    /**
-     * 比较机器列表并发送消息
-     * 1.找到配置的log-agent的机器列表
-     * 2.查询到最新的
-     * 比较最新的是否比库中的多
-     * 如果多，修改库，发送消息
-     * 否则只修改库
-     */
-    void casOttMachines(String source);
-
-    BaseMilogRpcConsumerService queryConsumerService(String source);
 
     void machineIpChange(HeraEnvIpVo heraEnvIpVo);
 }

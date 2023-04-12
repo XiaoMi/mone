@@ -9,8 +9,6 @@ package com.xiaomi.mone.log.manager.service;
 public interface MilogAppMiddlewareRelService {
     void bindingTailConfigRel(Long tailId, Long milogAppId, Long configId, String topicName);
 
-    void bindingMisAppTailConfigRel(Long tailId, Long milogAppId, String motorRoomEn);
-
     void defaultBindingAppTailConfigRel(Long id, Long milogAppId, Long middleWareId, String topicName, Integer batchSendSize);
 
 }

@@ -5,36 +5,28 @@ import com.xiaomi.mone.log.api.enums.ProjectSourceEnum;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.exception.CommonError;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
-import com.xiaomi.mone.log.manager.convert.SpacePermTreeConvert;
 import com.xiaomi.mone.log.manager.dao.MilogLogstoreDao;
 import com.xiaomi.mone.log.manager.dao.MilogSpaceDao;
-import com.xiaomi.mone.log.manager.domain.IDMDept;
-import com.xiaomi.mone.log.manager.domain.Space;
 import com.xiaomi.mone.log.manager.domain.Tpc;
 import com.xiaomi.mone.log.manager.model.MilogSpaceParam;
-import com.xiaomi.mone.log.manager.model.cache.IDMDeptCache;
+import com.xiaomi.mone.log.manager.model.convert.MilogSpaceConvert;
 import com.xiaomi.mone.log.manager.model.dto.MapDTO;
 import com.xiaomi.mone.log.manager.model.dto.MilogSpaceDTO;
-import com.xiaomi.mone.log.manager.model.dto.SpacePermTreeDTO;
 import com.xiaomi.mone.log.manager.model.page.PageInfo;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogSpaceDO;
 import com.xiaomi.mone.log.manager.service.BaseService;
 import com.xiaomi.mone.log.manager.service.LogSpaceService;
-import com.xiaomi.mone.log.manager.user.IdmMoneUserDetailService;
-import com.xiaomi.mone.log.manager.user.UseDetailInfo;
 import com.xiaomi.mone.tpc.common.vo.NodeVo;
 import com.xiaomi.mone.tpc.common.vo.PageDataVo;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.common.StringUtils;
 import com.xiaomi.youpin.docean.plugin.db.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections.CollectionUtils;
 
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -47,16 +39,10 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
     private MilogLogstoreDao milogLogstoreDao;
 
     @Resource
-    private IdmMoneUserDetailService userService;
+    private TpcSpaceAuthService spaceAuthService;
 
     @Resource
-    Tpc tpc;
-
-    @Resource
-    IDMDept idmDept;
-
-    @Resource
-    Space space;
+    private Tpc tpc;
 
     /**
      * 新建
@@ -79,7 +65,7 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
         if (dbDO.getId() == null) {
             return Result.failParam("space未保存成功，请重试");
         }
-        com.xiaomi.youpin.infra.rpc.Result tpcResult = tpc.saveSpacePerm(dbDO, MoneUserContext.getCurrentUser().getUser());
+        com.xiaomi.youpin.infra.rpc.Result tpcResult = spaceAuthService.saveSpacePerm(dbDO, MoneUserContext.getCurrentUser().getUser());
         if (tpcResult == null || tpcResult.getCode() != 0) {
             milogSpaceDao.deleteMilogSpace(dbDO.getId());
             log.error("新建space未关联权限系统,space:[{}], tpcResult:[{}]", dbDO, tpcResult);
@@ -123,11 +109,13 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
      * @return
      */
     public Result<PageInfo<MilogSpaceDTO>> getMilogSpaceByPage(String spaceName, Integer page, Integer pagesize) {
-        return Result.success(space.getMilogSpaceByPage(spaceName, page, pagesize));
+        com.xiaomi.youpin.infra.rpc.Result<PageDataVo<NodeVo>> userPermSpacePage = spaceAuthService.getUserPermSpace(spaceName, page, pagesize);
+        PageInfo<MilogSpaceDTO> spaceDTOPageInfo = MilogSpaceConvert.INSTANCE.fromTpcPage(userPermSpacePage.getData());
+        return Result.success(spaceDTOPageInfo);
     }
 
     public Result<List<MapDTO<String, Long>>> getMilogSpaces() {
-        com.xiaomi.youpin.infra.rpc.Result<PageDataVo<NodeVo>> tpcRes = tpc.getUserPermSpace(null, 1, Integer.MAX_VALUE);
+        com.xiaomi.youpin.infra.rpc.Result<PageDataVo<NodeVo>> tpcRes = spaceAuthService.getUserPermSpace("", 1, Integer.MAX_VALUE);
         if (tpcRes.getCode() != 0) {
             return Result.fail(CommonError.UNAUTHORIZED);
         }
@@ -166,7 +154,7 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
         wrapMilogSpace(milogSpace, param);
         wrapBaseCommon(milogSpace, OperateEnum.UPDATE_OPERATE);
         if (milogSpaceDao.update(milogSpace)) {
-            com.xiaomi.youpin.infra.rpc.Result tpcResult = this.tpc.updateSpaceTpc(param, MoneUserContext.getCurrentUser().getUser());
+            com.xiaomi.youpin.infra.rpc.Result tpcResult = spaceAuthService.updateSpaceTpc(param, MoneUserContext.getCurrentUser().getUser());
             if (tpcResult == null || tpcResult.getCode() != 0) {
                 log.error("修改space未关联权限系统,space:[{}], tpcResult:[{}]", milogSpace, tpcResult);
                 return Result.success("修改space未关联权限系统，请联系服务端效能组");
@@ -195,7 +183,7 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
             return new Result<>(CommonError.ParamsError.getCode(), "该space 下存在store，无法删除", "");
         }
         if (milogSpaceDao.deleteMilogSpace(id)) {
-            com.xiaomi.youpin.infra.rpc.Result tpcResult = tpc.deleteSpaceTpc(id, MoneUserContext.getCurrentUser());
+            com.xiaomi.youpin.infra.rpc.Result tpcResult = spaceAuthService.deleteSpaceTpc(id, MoneUserContext.getCurrentUser().getUser(), MoneUserContext.getCurrentUser().getUserType());
             if (tpcResult == null || tpcResult.getCode() != 0) {
                 log.error("删除space未关联权限系统,space:[{}], tpcResult:[{}]", milogSpace, tpcResult);
                 return Result.failParam("删除space未关联权限系统，请联系服务端效能组");
@@ -207,59 +195,6 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
         }
     }
 
-    /**
-     * 刷新sapce的部门ID字段
-     */
-    public void refreshSpaceDeptId() {
-        try {
-            List<MilogSpaceDO> spacelist = milogSpaceDao.getAll();
-            String limitDeptId;
-            for (MilogSpaceDO milogSpace : spacelist) {
-                limitDeptId = getUserThreeDeptId(milogSpace.getCreator());
-                if (!StringUtils.isEmpty(limitDeptId) && !limitDeptId.contains(milogSpace.getPermDeptId())) {
-                    if (milogSpace.getPermDeptId().split("\\,").length > 1) {
-                        limitDeptId = milogSpace.getPermDeptId() + "," + limitDeptId;
-                    }
-                    milogSpace.setPermDeptId(limitDeptId);
-                    milogSpaceDao.update(milogSpace);
-                    log.info("[MilogSpaceService.refreshSpaceDeptId] milogspace[{}]deptId已修改", milogSpace);
-                }
-            }
-        } catch (Exception e) {
-            log.error("[MilogSpaceService.refreshSpaceDeptId] has exception {}", e.getMessage());
-        }
-    }
-
-    // 获取查看space权限的部门ID
-    private String getUserThreeDeptId(String userName) {
-        UseDetailInfo user = userService.queryUserByUserName(userName);
-        if (user == null) {
-            return null;
-        }
-        List<UseDetailInfo.DeptDescriptor> deptList = user.getFullDeptDescriptorList();
-
-        List<UseDetailInfo.DeptDescriptor> collect = deptList.stream().filter(dpet -> "3".equals(dpet.getLevel())).collect(Collectors.toList());
-        if (CollectionUtils.isEmpty(collect)) {
-            collect = deptList.stream().filter(dpet -> "2".equals(dpet.getLevel())).collect(Collectors.toList());
-        }
-        if (CollectionUtils.isEmpty(collect)) {
-            collect = deptList.stream().filter(dpet -> "1".equals(dpet.getLevel())).collect(Collectors.toList());
-        }
-        return collect.isEmpty() ? null : collect.get(0).getDeptId();
-    }
-
-    public Result<SpacePermTreeDTO> getSpacecPermission(Long spaceId) {
-        if (spaceId == null) {
-            return Result.fail(CommonError.ParamsError);
-        }
-        MilogSpaceDO space = milogSpaceDao.getMilogSpaceById(spaceId);
-        SpacePermTreeDTO dto = new SpacePermTreeDTO();
-        dto.setCheckId(space.getPermDeptId());
-        dto.setCreateDeptId(space.getCreateDeptId());
-        IDMDeptCache deptCache = idmDept.getDeptCache();
-        dto.setTreeData(SpacePermTreeConvert.INSTANCE.fromCache(deptCache));
-        return Result.success(dto);
-    }
 
     public Result<String> setSpacePermission(Long spaceId, String permDeptIds) {
         if (spaceId == null || StringUtils.isEmpty(permDeptIds)) {

@@ -1,8 +1,6 @@
 package com.xiaomi.mone.log.manager.model.pojo;
 
-import lombok.Builder;
 import lombok.Data;
-import lombok.experimental.Tolerate;
 import org.nutz.dao.entity.annotation.*;
 
 @Table("milog_log_agent")

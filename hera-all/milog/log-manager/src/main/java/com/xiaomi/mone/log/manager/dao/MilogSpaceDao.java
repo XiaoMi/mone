@@ -1,7 +1,7 @@
 package com.xiaomi.mone.log.manager.dao;
 
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
-import com.xiaomi.mone.log.manager.convert.MilogSpaceConvert;
+import com.xiaomi.mone.log.manager.model.convert.MilogSpaceConvert;
 import com.xiaomi.mone.log.manager.model.dto.MilogSpaceDTO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogSpaceDO;
 import com.xiaomi.mone.log.manager.user.MoneUser;

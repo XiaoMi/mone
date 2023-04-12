@@ -5,7 +5,6 @@ import com.xiaomi.mone.log.manager.common.exception.MilogManageException;
 import com.xiaomi.mone.log.manager.dao.MilogSpaceDao;
 import com.xiaomi.mone.log.manager.model.MilogSpaceParam;
 import com.xiaomi.mone.log.manager.model.pojo.MilogSpaceDO;
-import com.xiaomi.mone.log.manager.user.IdmMoneUserDetailService;
 import com.xiaomi.mone.log.manager.user.MoneUser;
 import com.xiaomi.mone.tpc.api.service.NodeFacade;
 import com.xiaomi.mone.tpc.api.service.NodeUserFacade;
@@ -48,12 +47,6 @@ public class Tpc {
 
     private Long tpcPId;
 
-    @Resource
-    IdmMoneUserDetailService userDetailService;
-
-    @Resource
-    IDMDept idmDept;
-
     public boolean isAdmin(String account, Integer userType) {
         handleRemoteTpcId(tpcNodeCode, account, userType);
         NodeQryParam param = new NodeQryParam();
@@ -63,7 +56,7 @@ public class Tpc {
         param.setType(NodeTypeEnum.PRO_TYPE.getCode());
         Result<NodeVo> nodeVoResult = tpcService.get(param);
         NodeVo node = nodeVoResult.getData();
-        log.info("get user isAdmin,param:{},result:{}", GSON.toJson(param), GSON.toJson(node));
+        log.debug("get user isAdmin,param:{},result:{}", GSON.toJson(param), GSON.toJson(node));
         return node.isCurrentMgr() || node.isTopMgr() || node.isParentMgr();
     }
 
@@ -150,12 +143,12 @@ public class Tpc {
         return tpcService.add(nodeAddParam);
     }
 
-    public Result deleteSpaceTpc(Long id, MoneUser user) {
+    public Result deleteSpaceTpc(Long id, String account, Integer userType) {
         NodeDeleteParam delete = new NodeDeleteParam();
         delete.setOutId(id);
         delete.setOutIdType(OutIdTypeEnum.SPACE.getCode());
-        delete.setAccount(user.getUser());
-        delete.setUserType(user.getUserType());
+        delete.setAccount(account);
+        delete.setUserType(userType);
         return tpcService.delete(delete);
     }
 

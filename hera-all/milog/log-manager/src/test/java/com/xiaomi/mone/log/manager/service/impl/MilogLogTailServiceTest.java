@@ -11,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -52,7 +51,7 @@ public class MilogLogTailServiceTest {
         Ioc.ins().init("com.xiaomi");
         Long tailId = 620L;
         List<String> podList = Lists.newArrayList("127.0.0.1", "127.0.0.1");
-        milogLogtailService.k8sPodIpsSend(tailId, podList, Collections.EMPTY_LIST, 1);
+//        milogLogtailService.k8sPodIpsSend(tailId, podList, Collections.EMPTY_LIST, 1);
     }
 
     @Test
@@ -62,9 +61,4 @@ public class MilogLogTailServiceTest {
         System.out.println(list);
     }
 
-
-    @Test
-    public void test_casOttMachines() {
-        milogLogtailService.casOttMachines("china");
-    }
 }

@@ -1,6 +1,9 @@
 package com.xiaomi.mone.log.manager.model.dto;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * @author wtt
