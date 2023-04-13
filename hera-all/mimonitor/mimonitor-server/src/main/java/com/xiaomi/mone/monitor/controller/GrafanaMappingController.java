@@ -84,5 +84,18 @@ public class GrafanaMappingController {
         return Result.success("success");
     }
 
+    @GetMapping("/mimonitor/testGrafanaCreate")
+    public Result testGrafanaCreate(String appId, String appName){
+
+        HeraAppBaseInfo baseInfo = new HeraAppBaseInfo();
+        baseInfo.setBindId(appId);   //
+        baseInfo.setAppName(appName);   //
+        baseInfo.setAppType(0);   //
+        baseInfo.setPlatformType(0);  //
+        baseInfo.setAppLanguage("java");
+        appGrafanaMappingService.createTmpByAppBaseInfo(baseInfo);
+        return Result.success("ok");
+    }
+
 
 }

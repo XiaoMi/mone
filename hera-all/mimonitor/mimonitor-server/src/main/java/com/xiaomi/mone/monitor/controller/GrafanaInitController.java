@@ -74,7 +74,7 @@ public class GrafanaInitController {
     public Result createDashboard() {
         DashboardDTO dataSourceDTO = new DashboardDTO();
         if (StringUtils.isBlank(dataSourceDTO.getPrometheusDatasource())) {
-            dataSourceDTO.setPrometheusDatasource(DashboardConstant.GRAFANA_DATASOURCE_URL);
+            dataSourceDTO.setPrometheusDatasource(prometheusUrl);
         }
         if (StringUtils.isBlank(dataSourceDTO.getUsername())) {
             dataSourceDTO.setUsername(DashboardConstant.GRAFANA_USER_NAME);

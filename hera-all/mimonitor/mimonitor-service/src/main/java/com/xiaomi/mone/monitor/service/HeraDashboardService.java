@@ -34,7 +34,6 @@ public class HeraDashboardService {
 
     @Autowired
     GrafanaTemplateDao grafanaTemplateDao;
-
     @Autowired
     JobService jobService;
 

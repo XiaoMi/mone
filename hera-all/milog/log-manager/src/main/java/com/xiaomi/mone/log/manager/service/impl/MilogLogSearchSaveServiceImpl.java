@@ -4,20 +4,26 @@ import com.xiaomi.mone.log.api.enums.FavouriteSearchEnum;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.exception.CommonError;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
-import com.xiaomi.mone.log.manager.convert.SearchSaveConvert;
 import com.xiaomi.mone.log.manager.dao.MilogLogstoreDao;
 import com.xiaomi.mone.log.manager.dao.MilogStoreSpaceAuthDao;
-import com.xiaomi.mone.log.manager.domain.Space;
 import com.xiaomi.mone.log.manager.domain.Store;
 import com.xiaomi.mone.log.manager.mapper.MilogLogSearchSaveMapper;
-import com.xiaomi.mone.log.manager.model.dto.*;
+import com.xiaomi.mone.log.manager.model.convert.MilogSpaceConvert;
+import com.xiaomi.mone.log.manager.model.convert.SearchSaveConvert;
+import com.xiaomi.mone.log.manager.model.dto.MilogSpaceDTO;
+import com.xiaomi.mone.log.manager.model.dto.SearchSaveDTO;
+import com.xiaomi.mone.log.manager.model.dto.SpaceTreeFavouriteDTO;
+import com.xiaomi.mone.log.manager.model.dto.StoreTreeDTO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogSearchSaveDO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
 import com.xiaomi.mone.log.manager.model.vo.SearchSaveInsertCmd;
 import com.xiaomi.mone.log.manager.model.vo.SearchSaveUpdateCmd;
 import com.xiaomi.mone.log.manager.service.IMilogLogSearchSaveService;
+import com.xiaomi.mone.tpc.common.vo.NodeVo;
+import com.xiaomi.mone.tpc.common.vo.PageDataVo;
 import com.xiaomi.youpin.docean.anno.Service;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 
 import javax.annotation.Resource;
 import java.util.*;
@@ -25,7 +31,7 @@ import java.util.stream.Collectors;
 
 /**
  * <p>
- *  服务实现类
+ * 服务实现类
  * </p>
  *
  * @author wanghaoyang
@@ -48,13 +54,16 @@ public class MilogLogSearchSaveServiceImpl implements IMilogLogSearchSaveService
     private MilogLogSearchSaveMapper searchSaveMapper;
 
     @Resource
-    private Space space;
+    private TpcSpaceAuthService spaceAuthService;
 
     @Resource
     private Store store;
 
-    public Result<List<SearchSaveDTO>> list(Integer sort) {
+    public Result<List<SearchSaveDTO>> list(Long storeId, Integer sort) {
         List<SearchSaveDTO> list = logSearchSaveMapper.selectByCreator(MoneUserContext.getCurrentUser().getUser(), sort);
+        if (CollectionUtils.isNotEmpty(list) && null != storeId) {
+            list = list.stream().filter(searchSaveDTO -> Objects.equals(storeId, searchSaveDTO.getStoreId())).collect(Collectors.toList());
+        }
         return Result.success(list);
     }
 
@@ -67,7 +76,7 @@ public class MilogLogSearchSaveServiceImpl implements IMilogLogSearchSaveService
             return Result.failParam("分类字段sort不能为空");
         }
         switch (FavouriteSearchEnum.queryByCode(cmd.getSort())) {
-            case TEXT :
+            case TEXT:
                 if (isRepeatName(cmd.getName())) {
                     return Result.failParam("名称不能重复");
                 }
@@ -145,10 +154,10 @@ public class MilogLogSearchSaveServiceImpl implements IMilogLogSearchSaveService
         }
         Map<String, Object> paramMap = new HashMap<>();
         switch (FavouriteSearchEnum.queryByCode(sort)) {
-            case STORE :
+            case STORE:
                 paramMap.put("store_id", id);
                 break;
-            case TAIL :
+            case TAIL:
                 paramMap.put("tail_id", id);
                 break;
             default:
@@ -161,7 +170,13 @@ public class MilogLogSearchSaveServiceImpl implements IMilogLogSearchSaveService
     }
 
     public Result<List<SpaceTreeFavouriteDTO>> storeTree() {
-        List<MilogSpaceDTO> spaceDTOList = space.getMilogSpaceByPage("", 0, Integer.MAX_VALUE).getList();
+        List<SpaceTreeFavouriteDTO> dtoList = new ArrayList<>();
+        com.xiaomi.youpin.infra.rpc.Result<PageDataVo<NodeVo>> userPermSpacePage = spaceAuthService.getUserPermSpace("", 0, Integer.MAX_VALUE);
+        List<MilogSpaceDTO> spaceDTOList = MilogSpaceConvert.INSTANCE.fromTpcPage(userPermSpacePage.getData()).getList();
+//        List<MilogSpaceDTO> spaceDTOList = space.getMilogSpaceByPage("", 0, Integer.MAX_VALUE).getList();
+        if (CollectionUtils.isEmpty(spaceDTOList)) {
+            return Result.success(dtoList);
+        }
         List<Long> spaceIdList = spaceDTOList.stream().map(MilogSpaceDTO::getId).collect(Collectors.toList());
         List<MilogLogStoreDO> storeList = store.getStoreList(spaceIdList);
         Map<Long, List<MilogLogStoreDO>> spaceStoreMap = new HashMap<>();
@@ -181,7 +196,6 @@ public class MilogLogSearchSaveServiceImpl implements IMilogLogSearchSaveService
         if (favouriteList != null && !favouriteList.isEmpty()) {
             favouriteStoreIdSet = favouriteList.stream().map(SearchSaveDTO::getStoreId).collect(Collectors.toSet());
         }
-        List<SpaceTreeFavouriteDTO> dtoList = new ArrayList<>();
         SpaceTreeFavouriteDTO dto;
         List<MilogLogStoreDO> storeFerryList;
         List<StoreTreeDTO> children;

@@ -17,11 +17,8 @@ public interface MilogDictionaryService {
 
     Result<Map<Integer,List<DictionaryDTO<?>>>> queryDictionaryList(MilogDictionaryParam codes);
 
-    Result<String> synchronousMisApp(String serviceName);
-
     Result<String> downLoadFile();
 
     Result<String> fixLogTailMilogAppId(String appName);
 
-    Result<String> synchronousRadarApp(String s);
 }

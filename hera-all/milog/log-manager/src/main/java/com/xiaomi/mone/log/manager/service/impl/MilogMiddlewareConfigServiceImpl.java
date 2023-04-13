@@ -15,17 +15,15 @@ import com.xiaomi.mone.log.api.model.vo.EsIndexVo;
 import com.xiaomi.mone.log.api.model.vo.ResourceInfo;
 import com.xiaomi.mone.log.api.model.vo.ResourceUserSimple;
 import com.xiaomi.mone.log.api.model.vo.ValueKeyObj;
-import com.xiaomi.mone.log.common.Constant;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.manager.bootstrap.EsPlugin;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
 import com.xiaomi.mone.log.manager.common.exception.MilogManageException;
 import com.xiaomi.mone.log.manager.common.validation.ResourceValidation;
-import com.xiaomi.mone.log.manager.dao.MilogLogstoreDao;
 import com.xiaomi.mone.log.manager.dao.MilogAppMiddlewareRelDao;
+import com.xiaomi.mone.log.manager.dao.MilogLogstoreDao;
 import com.xiaomi.mone.log.manager.dao.MilogMiddlewareConfigDao;
 import com.xiaomi.mone.log.manager.domain.LogTail;
-import com.xiaomi.mone.log.manager.domain.Tpc;
 import com.xiaomi.mone.log.manager.mapper.MilogEsClusterMapper;
 import com.xiaomi.mone.log.manager.mapper.MilogEsIndexMapper;
 import com.xiaomi.mone.log.manager.model.bo.MiddlewareAddParam;
@@ -36,9 +34,8 @@ import com.xiaomi.mone.log.manager.model.page.PageInfo;
 import com.xiaomi.mone.log.manager.model.pojo.*;
 import com.xiaomi.mone.log.manager.service.BaseService;
 import com.xiaomi.mone.log.manager.service.MilogMiddlewareConfigService;
-import com.xiaomi.mone.log.manager.user.IdmMoneUserDetailService;
-import com.xiaomi.mone.log.manager.user.UseDetailInfo;
-import com.xiaomi.mone.tpc.common.enums.UserTypeEnum;
+import com.xiaomi.mone.log.manager.service.extension.resource.ResourceExtensionService;
+import com.xiaomi.mone.log.manager.service.extension.resource.ResourceExtensionServiceFactory;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.common.StringUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -72,11 +69,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     @Resource
     private MilogMiddlewareConfigDao milogMiddlewareConfigDao;
     @Resource
-    private RocketMqConfigService mqConfigService;
-    @Resource
     private MilogAppMiddlewareRelDao milogAppMiddlewareRelDao;
-    @Resource
-    private IdmMoneUserDetailService moneUserDetailService;
     @Resource
     private ResourceValidation resourceValidation;
     @Resource
@@ -86,23 +79,16 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     @Resource
     private MilogLogstoreDao logstoreDao;
     @Resource
-    private LogStoreServiceImpl logStoreService;
-    @Resource
     private EsPlugin esPlugin;
-    @Resource
-    private Tpc tpc;
     @Resource
     private LogTail logTail;
 
+    private ResourceExtensionService resourceExtensionService;
+
     List<Integer> accurateTypes = Arrays.asList(MiddlewareEnum.ROCKETMQ.getCode());
 
-    private static boolean test(String label) {
-        for (String defaultLabel : RESOURCE_DEFAULT_INITIALIZED_DEPT) {
-            if (label.contains(defaultLabel)) {
-                return true;
-            }
-        }
-        return false;
+    public void init() {
+        resourceExtensionService = ResourceExtensionServiceFactory.getResourceExtensionService();
     }
 
     @Override
@@ -216,6 +202,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
         Long esResourceTotal = queryEsResource(milogMiddlewareConfigs, resourcePage);
 
 //        milogMiddlewareConfigs = userShowAuthority(milogMiddlewareConfigs);
+        milogMiddlewareConfigs = resourceExtensionService.userShowAuthority(milogMiddlewareConfigs);
         List<ResourceInfo> resourceInfos = milogMiddlewareConfigs.stream()
                 .map(MilogMiddlewareConfig::configToResourceVO)
                 .collect(Collectors.toList());
@@ -268,27 +255,8 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
         if (StringUtils.isNotBlank(resourcePage.getAliasName())) {
             queryWrapper.like("name", resourcePage.getAliasName());
         }
+        resourceExtensionService.filterEsQueryWrapper(queryWrapper);
         return queryWrapper;
-    }
-
-    /**
-     * 只展示当前用户一级部门下的
-     */
-    private List<MilogMiddlewareConfig> userShowAuthority(List<MilogMiddlewareConfig> milogMiddlewareConfigs) {
-        if (MoneUserContext.getCurrentUser().getIsAdmin()) {
-            return milogMiddlewareConfigs;
-        }
-        UseDetailInfo.DeptDescriptor deptDescriptor = currentUserMaxDept();
-        String userDeptComb = String.format("%s:%s->%s:%s", DEPT_LEVEL_PREFIX,
-                deptDescriptor.getLevel(), DEPT_NAME_PREFIX, deptDescriptor.getDeptName());
-        return milogMiddlewareConfigs.stream()
-                .filter(milogMiddlewareConfig -> {
-                    if (CollectionUtils.isNotEmpty(milogMiddlewareConfig.getLabels()) &&
-                            milogMiddlewareConfig.getLabels().contains(userDeptComb)) {
-                        return Boolean.TRUE;
-                    }
-                    return Boolean.FALSE;
-                }).collect(Collectors.toList());
     }
 
     @Override
@@ -379,8 +347,14 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
         }
         ResourceUserSimple resourceUserSimple = new ResourceUserSimple();
 
+        if (resourceExtensionService.userResourceListPre(logTypeCode)) {
+            resourceUserSimple.setInitializedFlag(Boolean.TRUE);
+            resourceUserSimple.setShowFlag(Boolean.FALSE);
+            return resourceUserSimple;
+        }
+
         final Boolean initializedStatus = queryResourceInitialized(resourceUserSimple, regionCode, logTypeCode);
-        final boolean showStatus = queryResourceShowStatus(resourceUserSimple);
+        final boolean showStatus = resourceExtensionService.resourceShowStatusFlag(resourceUserSimple);
 
         if (initializedStatus && showStatus) {
 
@@ -410,7 +384,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     private Boolean queryResourceInitialized(ResourceUserSimple configResource, String regionCode,
                                              Integer logTypeCode) {
         List<MilogMiddlewareConfig> milogMiddlewareConfigs = milogMiddlewareConfigDao.queryByResourceCode(MiddlewareEnum.ROCKETMQ.getCode(), regionCode);
-        List<MilogMiddlewareConfig> middlewareMqConfigs = queryCurrentMaxDeptConfig(milogMiddlewareConfigs);
+        List<MilogMiddlewareConfig> middlewareMqConfigs = resourceExtensionService.currentUserConfigFilter(milogMiddlewareConfigs);
 
         List<MilogEsClusterDO> esClusterDOS = milogEsClusterMapper.selectList(Wrappers.lambdaQuery());
         List<MilogMiddlewareConfig> middlewareConfigEss = esClusterDOS.stream()
@@ -420,16 +394,14 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
                 })
                 .collect(Collectors.toList());
 
-        List<MilogMiddlewareConfig> middlewareEsConfigs = queryCurrentMaxDeptConfig(middlewareConfigEss);
+        List<MilogMiddlewareConfig> middlewareEsConfigs = resourceExtensionService.currentUserConfigFilter(middlewareConfigEss);
 
         List<MilogEsIndexDO> milogEsIndexDOS = Lists.newArrayList();
         if (CollectionUtils.isNotEmpty(middlewareEsConfigs)) {
             milogEsIndexDOS = queryMilogEsIndex(middlewareEsConfigs.stream().map(MilogMiddlewareConfig::getId).collect(Collectors.toList()), logTypeCode);
         }
 
-        if (CollectionUtils.isNotEmpty(middlewareMqConfigs) &&
-                CollectionUtils.isNotEmpty(middlewareEsConfigs) &&
-                CollectionUtils.isNotEmpty(milogEsIndexDOS)) {
+        if (resourceExtensionService.resourceNotRequiredInit(logTypeCode, middlewareMqConfigs, middlewareEsConfigs, milogEsIndexDOS)) {
             configResource.setInitializedFlag(Boolean.TRUE);
             return Boolean.TRUE;
         }
@@ -453,37 +425,6 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
         return milogEsIndexMapper.selectList(queryWrapper);
     }
 
-    public List<MilogMiddlewareConfig> queryCurrentMaxDeptConfig(List<MilogMiddlewareConfig> milogMiddlewareConfigs) {
-        if (MoneUserContext.getCurrentUser().getIsAdmin()) {
-            return milogMiddlewareConfigs.stream().filter(milogMiddlewareConfig -> Objects.equals(YES, milogMiddlewareConfig.getIsDefault())).collect(Collectors.toList());
-        }
-        return milogMiddlewareConfigs.stream().filter(milogMiddlewareConfig -> !Objects.equals(YES, milogMiddlewareConfig.getIsDefault())).collect(Collectors.toList());
-    }
-
-    private UseDetailInfo.DeptDescriptor currentUserMaxDept() {
-        List<UseDetailInfo.DeptDescriptor> deptDescriptors = queryUserDeptTreeInfo(
-                MoneUserContext.getCurrentUser().getUser());
-        UseDetailInfo.DeptDescriptor maxDeptDescriptor = deptDescriptors.stream()
-                .filter(deptDescriptor -> Objects.equals(
-                        USER_DEPT_MAX_DEFAULT_LEVEL, deptDescriptor.getLevel())).findAny().get();
-        return maxDeptDescriptor;
-    }
-
-    /**
-     * 查询当前用户的资源是否展示
-     *
-     * @param configResource
-     */
-    private boolean queryResourceShowStatus(ResourceUserSimple configResource) {
-        if (MoneUserContext.getCurrentUser().getIsAdmin()) {
-            configResource.setShowFlag(Boolean.FALSE);
-            return false;
-        }
-        configResource.setShowFlag(Boolean.TRUE);
-        return Boolean.TRUE;
-    }
-
-
     /**
      * 查询当前用户的三级部门下的资源列表
      *
@@ -491,7 +432,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
      */
     private void queryCurrentUserResourceList(ResourceUserSimple configResource,
                                               List<MilogMiddlewareConfig> milogMiddlewareConfigs, MiddlewareEnum middlewareEnum) {
-        milogMiddlewareConfigs = queryCurrentMaxDeptConfig(milogMiddlewareConfigs);
+        milogMiddlewareConfigs = resourceExtensionService.currentUserConfigFilter(milogMiddlewareConfigs);
         List valueKeyObjs = milogMiddlewareConfigs.stream()
                 .map(milogMiddlewareConfig -> new ValueKeyObj(
                         milogMiddlewareConfig.getId(), milogMiddlewareConfig.getAlias()))
@@ -518,7 +459,8 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     @Override
     public MilogMiddlewareConfig queryMiddlewareConfigDefault(String regionCode) {
         List<MilogMiddlewareConfig> milogMiddlewareConfigs = milogMiddlewareConfigDao.queryByResourceCode(MiddlewareEnum.ROCKETMQ.getCode(), regionCode);
-        List<MilogMiddlewareConfig> middlewareMqConfigs = queryCurrentMaxDeptConfig(milogMiddlewareConfigs);
+        List<MilogMiddlewareConfig> middlewareMqConfigs = resourceExtensionService.currentUserConfigFilter(milogMiddlewareConfigs);
+
         if (CollectionUtils.isNotEmpty(middlewareMqConfigs)) {
             return middlewareMqConfigs.get(middlewareMqConfigs.size() - 1);
         }
@@ -584,8 +526,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     }
 
     private List<String> generateResourceLabels(String updaterUId, List<String> existLabels) {
-        List<String> resourceDeptLabels = generateResourceDeptLabels(updaterUId, UserTypeEnum.EMAIL.getCode());
-
+        List<String> resourceDeptLabels = resourceExtensionService.generateResourceLabels(updaterUId);
         if (CollectionUtils.isNotEmpty(existLabels)) {
             List<String> userLabelList = existLabels.stream().filter(label ->
                             !label.startsWith(DEPT_LEVEL_PREFIX) || !label.contains(DEPT_NAME_PREFIX))
@@ -604,41 +545,32 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
      * @param miLogResource
      */
     private void addResource(MiLogResource miLogResource) {
-        List<String> resourceDeptLabels = generateResourceDeptLabels(MoneUserContext.getCurrentUser().getUser(), MoneUserContext.getCurrentUser().getUserType());
+        List<String> resourceDeptLabels = resourceExtensionService.generateResourceLabels(MoneUserContext.getCurrentUser().getUser());
         resourceDeptLabels.addAll(miLogResource.getLabels());
         miLogResource.setLabels(resourceDeptLabels);
+        resourceExtensionService.addResourcePreProcessing(resourceDeptLabels, miLogResource);
 
         if (MiddlewareEnum.ELASTICSEARCH.getCode().equals(miLogResource.getResourceCode())) {
             checkEsAddressPortOperate(miLogResource);
             addEsResourceInfo(miLogResource);
             return;
         }
-        /**
-         * 迁移到一个store创建一个topic
-         */
-        mqConfigService.createCommonTagTopic(miLogResource.getAk(), miLogResource.getSk(), miLogResource.getClusterName(),
-                miLogResource.getServiceUrl(), StringUtils.EMPTY, miLogResource.getOrgId(),
-                miLogResource.getBrokerName());
+
+        resourceExtensionService.addResourceMiddleProcessing(miLogResource);
 
         MilogMiddlewareConfig milogMiddlewareConfig = MilogMiddlewareConfig
                 .miLogMqResourceToConfig(miLogResource);
 
         wrapBaseCommon(milogMiddlewareConfig, OperateEnum.ADD_OPERATE);
-        /**
-         * 目前默认共用一个配置
-         */
-        if (MoneUserContext.getCurrentUser().getIsAdmin()) {
-            milogMiddlewareConfig.setIsDefault(YES);
-        }
+
+        resourceExtensionService.addResourcePostProcessing(milogMiddlewareConfig);
         milogMiddlewareConfigDao.addMiddlewareConfig(milogMiddlewareConfig);
     }
 
     private void addEsResourceInfo(MiLogResource miLogResource) {
         MilogEsClusterDO esClusterDO = MilogEsClusterDO.miLogEsResourceToConfig(miLogResource);
         wrapBaseCommon(esClusterDO, OperateEnum.ADD_OPERATE);
-        if (MoneUserContext.getCurrentUser().getIsAdmin()) {
-            esClusterDO.setIsDefault(YES);
-        }
+        resourceExtensionService.addEsResourcePreProcessing(esClusterDO);
         milogEsClusterMapper.insert(esClusterDO);
 
         addEsIndex(esClusterDO.getId(), miLogResource.getMultipleEsIndex());
@@ -701,9 +633,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
             checkEsAddressPortOperate(miLogResource);
             MilogEsClusterDO esClusterDO = MilogEsClusterDO.miLogEsResourceToConfig(miLogResource);
             esClusterDO.setId(miLogResource.getId());
-            if (MoneUserContext.getCurrentUser().getIsAdmin()) {
-                esClusterDO.setIsDefault(YES);
-            }
+            resourceExtensionService.addEsResourcePreProcessing(esClusterDO);
             milogEsClusterMapper.updateById(esClusterDO);
             handleEsIndexStore(miLogResource, esClusterDO.getId(), changed);
             //修改es客户端信息
@@ -813,9 +743,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
         milogMiddlewareConfig.setCtime(existConfig.getCtime());
         milogMiddlewareConfig.setCreator(existConfig.getCreator());
         wrapBaseCommon(milogMiddlewareConfig, OperateEnum.UPDATE_OPERATE);
-        if (MoneUserContext.getCurrentUser().getIsAdmin()) {
-            milogMiddlewareConfig.setIsDefault(Constant.YES.intValue());
-        }
+        resourceExtensionService.addResourcePostProcessing(milogMiddlewareConfig);
         milogMiddlewareConfig.setId(resourceId);
     }
 
@@ -838,30 +766,8 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
                 !Objects.equals(miLogResource.getServiceUrl(), config.getServiceUrl()) ||
                 !Objects.equals(miLogResource.getOrgId(), config.getOrgId()) ||
                 !Objects.equals(miLogResource.getTeamId(), config.getTeamId())) {
-            mqConfigService.createCommonTagTopic(miLogResource.getAk(), miLogResource.getSk(), StringUtils.EMPTY,
-                    miLogResource.getServiceUrl(), StringUtils.EMPTY, miLogResource.getOrgId(),
-                    miLogResource.getBrokerName());
+            resourceExtensionService.addResourceMiddleProcessing(miLogResource);
         }
-    }
-
-    /**
-     * 打资源的部门标签,
-     *
-     * @return
-     */
-    private List<String> generateResourceDeptLabels(String account, Integer userType) {
-//        OrgInfoVo orgInfo = tpc.getOrg(account, userType);
-//        if (StringUtils.isEmpty(orgInfo.getIdPath())) {
-//            return new ArrayList<>();
-//        }
-//        return Arrays.asList(orgInfo.getIdPath().split(",").clone());
-        return Lists.newArrayList();
-    }
-
-    private List<UseDetailInfo.DeptDescriptor> queryUserDeptTreeInfo(String miID) {
-        UseDetailInfo useDetailInfo = moneUserDetailService.queryUser(moneUserDetailService.queryUserUIdByUserName(miID));
-        List<UseDetailInfo.DeptDescriptor> fullDeptDescrList = useDetailInfo.getFullDeptDescriptorList();
-        return fullDeptDescrList;
     }
 
     private void baseMiddlewareConfigAssemble(MiddlewareAddParam param, MilogMiddlewareConfig middlewareConfig) {

@@ -1,24 +1,18 @@
 package com.xiaomi.mone.log.agent.rpc.processor.service;
 
 import cn.hutool.core.util.ObjectUtil;
-import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.xiaomi.mone.log.agent.channel.ChannelDefine;
-import com.xiaomi.mone.log.agent.channel.ChannelEngine;
 import com.xiaomi.mone.log.agent.channel.locator.ChannelDefineRpcLocator;
-import com.xiaomi.mone.log.agent.export.TalosOutput;
 import com.xiaomi.mone.log.api.model.msg.LineMessage;
 import com.xiaomi.youpin.docean.Ioc;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * @author wtt

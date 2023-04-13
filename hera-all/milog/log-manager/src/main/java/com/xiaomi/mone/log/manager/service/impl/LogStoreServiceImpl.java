@@ -6,12 +6,10 @@ import com.google.common.collect.Lists;
 import com.xiaomi.mone.log.api.enums.LogTypeEnum;
 import com.xiaomi.mone.log.api.enums.MachineRegionEnum;
 import com.xiaomi.mone.log.api.enums.OperateEnum;
-import com.xiaomi.mone.log.api.model.vo.ResourceUserSimple;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.exception.CommonError;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
 import com.xiaomi.mone.log.manager.common.validation.StoreValidation;
-import com.xiaomi.mone.log.manager.convert.MilogLogstoreConvert;
 import com.xiaomi.mone.log.manager.dao.MilogLogTailDao;
 import com.xiaomi.mone.log.manager.dao.MilogLogstoreDao;
 import com.xiaomi.mone.log.manager.dao.MilogMiddlewareConfigDao;
@@ -20,6 +18,7 @@ import com.xiaomi.mone.log.manager.domain.LogStore;
 import com.xiaomi.mone.log.manager.domain.LogTail;
 import com.xiaomi.mone.log.manager.mapper.MilogEsClusterMapper;
 import com.xiaomi.mone.log.manager.mapper.MilogEsIndexMapper;
+import com.xiaomi.mone.log.manager.model.convert.MilogLogstoreConvert;
 import com.xiaomi.mone.log.manager.model.dto.EsInfoDTO;
 import com.xiaomi.mone.log.manager.model.dto.LogStoreDTO;
 import com.xiaomi.mone.log.manager.model.dto.MapDTO;
@@ -31,6 +30,10 @@ import com.xiaomi.mone.log.manager.model.pojo.MilogMiddlewareConfig;
 import com.xiaomi.mone.log.manager.model.vo.LogStoreParam;
 import com.xiaomi.mone.log.manager.service.BaseService;
 import com.xiaomi.mone.log.manager.service.LogStoreService;
+import com.xiaomi.mone.log.manager.service.extension.resource.ResourceExtensionService;
+import com.xiaomi.mone.log.manager.service.extension.resource.ResourceExtensionServiceFactory;
+import com.xiaomi.mone.log.manager.service.extension.store.StoreExtensionService;
+import com.xiaomi.mone.log.manager.service.extension.store.StoreExtensionServiceFactory;
 import com.xiaomi.youpin.docean.anno.Service;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -82,6 +85,18 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
     @Resource
     private LogTail logTail;
 
+    private StoreExtensionService storeExtensionService;
+
+    private ResourceExtensionService resourceExtensionService;
+
+    /**
+     * init method
+     */
+    public void init() {
+        storeExtensionService = StoreExtensionServiceFactory.getStoreExtensionService();
+        resourceExtensionService = ResourceExtensionServiceFactory.getResourceExtensionService();
+    }
+
     @Override
     public Result<String> newLogStore(LogStoreParam cmd) {
         if (null != cmd.getId()) {
@@ -100,65 +115,20 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
             return new Result<>(CommonError.UnknownError.getCode(), "存在同名storeName", "");
         }
 
-        MilogLogStoreDO ml = MilogLogstoreConvert.INSTANCE.fromCommad(cmd);
-
-        deptStoreResourceBinding(ml, cmd, OperateEnum.ADD_OPERATE);
-
-        wrapBaseCommon(ml, OperateEnum.ADD_OPERATE);
-
-        ml = logstoreDao.insert(ml);
-        if (ml != null) {
+        MilogLogStoreDO storeDO = MilogLogstoreConvert.INSTANCE.fromCommad(cmd);
+        wrapBaseCommon(storeDO, OperateEnum.ADD_OPERATE);
+        // 绑定资源
+        storeExtensionService.storeResourceBinding(storeDO, cmd, OperateEnum.ADD_OPERATE);
+        // 存储
+        boolean res = logstoreDao.newMilogLogStore(storeDO);
+        if (res == true) {
+            storeExtensionService.postProcessing(storeDO, cmd);
             return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage());
         } else {
             log.warn("[MilogLogstoreService.newMilogLogstore] creator MilogLogstore err,logstoreName:{}", cmd.getLogstoreName());
             return new Result<>(CommonError.UnknownError.getCode(), CommonError.UnknownError.getMessage());
         }
-    }
 
-    private void deptStoreResourceBinding(MilogLogStoreDO ml, LogStoreParam command, OperateEnum operateEnum) {
-        if ((OperateEnum.ADD_OPERATE == operateEnum || null == command.getEsResourceId()) ||
-                OperateEnum.UPDATE_OPERATE == operateEnum && null != command.getEsResourceId()) {
-            chinaDeptStoreResourceBinding(ml, command);
-        }
-        // 要么，就去进行其他部门的绑定。如：是新增，但 es_resource_id 不为空的情况
-        otherDeptStoreResourceBinding(ml, command);
-    }
-
-    private void chinaDeptStoreResourceBinding(MilogLogStoreDO ml, LogStoreParam command) {
-        ResourceUserSimple resourceUserConfig = resourceConfigService.userResourceList(command.getMachineRoom(), command.getLogType());
-        if (resourceUserConfig.getInitializedFlag() && !resourceUserConfig.getShowFlag()) {
-            // get esIndex
-            if (StringUtils.isNotEmpty(command.getEsIndex()) && null != command.getEsResourceId()) {
-                ml.setEsClusterId(command.getEsResourceId());
-                ml.setEsIndex(command.getEsIndex());
-            } else {
-                EsInfoDTO esInfo = esIndexTemplate.getEsInfo(command.getMachineRoom(), command.getLogType());
-                command.setEsIndex(esInfo.getIndex());
-                ml.setEsClusterId(esInfo.getClusterId());
-                ml.setEsIndex(esInfo.getIndex());
-            }
-            if (null != command.getMqResourceId()) {
-                ml.setMqResourceId(command.getMqResourceId());
-            } else {
-                MilogMiddlewareConfig milogMiddlewareConfig = milogMiddlewareConfigDao.queryDefaultMqMiddlewareConfigMotorRoom(ml.getMachineRoom());
-                ml.setMqResourceId(milogMiddlewareConfig.getId());
-            }
-        }
-    }
-
-    private void otherDeptStoreResourceBinding(MilogLogStoreDO ml, LogStoreParam command) {
-        ResourceUserSimple resourceUserConfig = resourceConfigService.userResourceList(command.getMachineRoom(), command.getLogType());
-        if (resourceUserConfig.getInitializedFlag() && resourceUserConfig.getShowFlag()) {
-            if (StringUtils.isNotEmpty(command.getEsIndex()) && null != command.getEsResourceId()) {
-                ml.setEsClusterId(command.getEsResourceId());
-                ml.setEsIndex(command.getEsIndex());
-            } else {
-                EsInfoDTO esInfo = esIndexTemplate.getEsInfoOtherDept(command.getEsResourceId(), command.getLogType(), null);
-                command.setEsIndex(esInfo.getIndex());
-                ml.setEsClusterId(esInfo.getClusterId());
-                ml.setEsIndex(esInfo.getIndex());
-            }
-        }
     }
 
     @Override
@@ -170,13 +140,6 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
         ml.setEsClusterId(esInfo.getClusterId());
         wrapBaseCommon(ml, OperateEnum.ADD_OPERATE, creator);
         return ml;
-    }
-
-    private void storeResourceBinding(MilogLogStoreDO ml, LogStoreParam cmd, OperateEnum operateEnum) {
-        if (operateEnum == OperateEnum.UPDATE_OPERATE && StringUtils.isNotEmpty(ml.getEsIndex())) {
-            return;
-        }
-        logStore.storeResourceBinding(ml, cmd);
     }
 
     @Override
@@ -244,10 +207,10 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
         ml.setCtime(milogLogstoreDO.getCtime());
         ml.setCreator(milogLogstoreDO.getCreator());
         // 选择对应的索引
-        storeResourceBinding(ml, param, OperateEnum.UPDATE_OPERATE);
+        storeExtensionService.storeResourceBinding(ml, param, OperateEnum.UPDATE_OPERATE);
         wrapBaseCommon(ml, OperateEnum.UPDATE_OPERATE);
         boolean updateRes = logstoreDao.updateMilogLogStore(ml);
-        if (updateRes == true) {
+        if (updateRes && storeExtensionService.sendConfigSwitch(param)) {
             //查看是否有tail 如果有重新发送配置信息（nacos 和 agent）
             logTail.handleStoreTail(milogLogstoreDO.getId());
             return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage());
@@ -307,7 +270,7 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
         }
         //查询当前用户所属的部门下的es信息
         List<MilogMiddlewareConfig> middlewareConfigEs = milogMiddlewareConfigService.getESConfigs(regionCode);
-        middlewareConfigEs = milogMiddlewareConfigService.queryCurrentMaxDeptConfig(middlewareConfigEs);
+        middlewareConfigEs = resourceExtensionService.currentUserConfigFilter(middlewareConfigEs);
         List<MenuDTO<Long, String>> menuDTOS = middlewareConfigEs.stream().map(config -> {
             MenuDTO<Long, String> menuDTO = new MenuDTO<>();
             menuDTO.setKey(config.getId());
@@ -319,11 +282,8 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
     }
 
     private List<MenuDTO<Long, String>> getExIndexByLogType(Long clusterId, Integer logTypeCode) {
-        QueryWrapper queryWrapper = new QueryWrapper<>()
-                .eq("cluster_id", clusterId)
-                .eq("log_type", logTypeCode);
-        List<MilogEsIndexDO> esIndexDOS = milogEsIndexMapper
-                .selectList(queryWrapper);
+        QueryWrapper queryWrapper = new QueryWrapper<>().eq("cluster_id", clusterId).eq("log_type", logTypeCode);
+        List<MilogEsIndexDO> esIndexDOS = milogEsIndexMapper.selectList(queryWrapper);
         if (CollectionUtils.isNotEmpty(esIndexDOS)) {
             return esIndexDOS.stream().map(indexDO -> {
                 MenuDTO<Long, String> menuDTO = new MenuDTO<>();

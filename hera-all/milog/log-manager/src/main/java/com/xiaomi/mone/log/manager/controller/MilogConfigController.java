@@ -2,7 +2,6 @@ package com.xiaomi.mone.log.manager.controller;
 
 import com.xiaomi.mone.log.api.model.vo.TailLogProcessDTO;
 import com.xiaomi.mone.log.common.Result;
-import com.xiaomi.mone.log.manager.domain.Tpc;
 import com.xiaomi.mone.log.manager.model.MilogSpaceParam;
 import com.xiaomi.mone.log.manager.model.bo.BatchQueryParam;
 import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
@@ -44,9 +43,6 @@ public class MilogConfigController {
 
     @Resource
     private LogProcessServiceImpl logProcessService;
-
-    @Resource
-    Tpc tpc;
 
     /**
      * ********* milogSpace **********
@@ -229,18 +225,6 @@ public class MilogConfigController {
     public Result<List<MilogAppEnvDTO>> getEnInfosByAppId(@RequestParam(value = "milogAppId") Long milogAppId,
                                                           @RequestParam(value = "deployWay") Integer deployWay) {
         return logTailService.getEnInfosByAppId(milogAppId, deployWay);
-    }
-
-    /**
-     * 获取mis应用的机房信息
-     *
-     * @param milogAppId
-     * @return
-     */
-    @RequestMapping(path = "/milog/project/mis/zone/appId", method = "get")
-    public Result<List<SimpleAppEnvDTO>> getRegionZonesByAppId(@RequestParam(value = "milogAppId") Long milogAppId,
-                                                               @RequestParam(value = "machineRoom") String machineRoom) {
-        return logTailService.getRegionZonesByAppId(milogAppId, machineRoom);
     }
 
     /**

@@ -55,7 +55,7 @@ public class FilterConfiguration {
         String value = aegisSdkHera+","+aegisSdkLog + "," + mionePublicDomain;
         registrationBean.addInitParameter(ConstUtil.CAS_PUBLIC_KEY, value);
         registrationBean.addInitParameter(ConstUtil.authTokenUrl, tokenParseUrl);
-        registrationBean.addInitParameter(ConstUtil.ignoreUrl, "js/*,/api/*,/alert/*,/manual/*,/prometheus/queryIncrease,/prometheus/detail,/prometheus/logInfo,/prometheus/getTeslaError,/alertGroup/test,/mimonitor/alarmUnHealthSendFeishu,/mimonitor/alarmResourceUtilization,/mimonitor/alarmUnHealthSendFeishu");
+        registrationBean.addInitParameter(ConstUtil.ignoreUrl, "js/*,/api/*,/alert/*,/manual/*,/prometheus/queryIncrease,/prometheus/detail,/prometheus/logInfo,/prometheus/getTeslaError,/alertGroup/test,/mimonitor/alarmUnHealthSendFeishu,/mimonitor/alarmResourceUtilization,/mimonitor/alarmUnHealthSendFeishu,/mimonitor/testGrafanaCreate");
         registrationBean.addInitParameter(ConstUtil.devMode,devMode);
         registrationBean.addInitParameter(ConstUtil.loginUrl,loginUrl);
         registrationBean.setOrder(0);

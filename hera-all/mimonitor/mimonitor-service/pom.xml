@@ -63,7 +63,7 @@
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
         </dependency>
-        
+
         <!--模块引用-->
         <dependency>
             <groupId>run.mone</groupId>

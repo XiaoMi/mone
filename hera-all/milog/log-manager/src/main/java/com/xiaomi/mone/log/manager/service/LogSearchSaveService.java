@@ -1,8 +1,5 @@
 package com.xiaomi.mone.log.manager.service;
 
-import com.xiaomi.mone.log.manager.model.pojo.MilogLogSearchSaveDO;
-import com.baomidou.mybatisplus.extension.service.IService;
-
 /**
  * <p>
  *  服务类

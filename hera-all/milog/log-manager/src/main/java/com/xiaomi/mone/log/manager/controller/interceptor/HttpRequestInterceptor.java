@@ -58,7 +58,7 @@ public class HttpRequestInterceptor extends EnhanceInterceptor {
         doceanReqUserFilter = new DoceanReqUserFilter();
         Config config = Config.ins();
         Map<String, String> map = new HashMap<>();
-        map.put(ConstUtil.devMode, "false");
+        map.put(ConstUtil.devMode, config.get("tpc.devMode", "false"));
         map.put(ConstUtil.innerAuth, "false");
         map.put(ConstUtil.authTokenUrl, config.get("auth_token_url", "http://127.0.0.1:8098/login/token/parse"));
         map.put(ConstUtil.ignoreUrl, "/alert/get");
@@ -69,6 +69,7 @@ public class HttpRequestInterceptor extends EnhanceInterceptor {
     }
 
     private static final Integer MAX_LENGTH = 3000;
+
 
     private String filterUrls = Config.ins().get("filter_urls", Strings.EMPTY);
 
