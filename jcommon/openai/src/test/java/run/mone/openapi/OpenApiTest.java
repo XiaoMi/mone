@@ -404,7 +404,7 @@ public class OpenApiTest {
         String str = new String(Files.readAllBytes(Paths.get("/tmp/filter")));
         String req = new String(Files.readAllBytes(Paths.get("/tmp/filter_req")));
         Stopwatch sw = Stopwatch.createStarted();
-        String res = OpenaiCall.callWithHttpClient(System.getenv("open_api_key"), str + "+\r\n" + req, false);
+        String res = OpenaiCall.callWithHttpClient(System.getenv("open_api_key"), str + "+\r\n" + req, System.getenv("open_api_proxy"));
         System.out.println(res);
         System.out.println(sw.elapsed(TimeUnit.SECONDS));
     }

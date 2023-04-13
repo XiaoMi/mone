@@ -13,6 +13,7 @@ import com.unfbx.chatgpt.interceptor.OpenAILogger;
 import lombok.Builder;
 import lombok.Data;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.logging.HttpLoggingInterceptor;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
@@ -46,6 +47,7 @@ import java.util.stream.Collectors;
  * @author goodjava@qq.com
  * @date 2023/4/11 14:37
  */
+@Slf4j
 public class OpenaiCall {
 
     private static String proxyAddr = System.getenv("open_api_proxy");
@@ -153,11 +155,12 @@ public class OpenaiCall {
     }
 
     @SneakyThrows
-    public static String callWithHttpClient(String apiKey, String prompt, boolean proxy) {
+    public static String callWithHttpClient(String apiKey, String prompt, String proxy) {
         HttpClientBuilder builer = HttpClients.custom();
         HttpClientContext context = HttpClientContext.create();
-        if (proxy) {
-            InetSocketAddress addr = new InetSocketAddress(proxyAddr, 65522);
+        if (null != proxy) {
+            log.info("call open api use proxy");
+            InetSocketAddress addr = new InetSocketAddress(proxy, 65522);
             context.setAttribute("socks.address", addr);
             Registry<ConnectionSocketFactory> reg = RegistryBuilder.<ConnectionSocketFactory>create()
                     .register("http", new MyConnectionSocketFactory())
