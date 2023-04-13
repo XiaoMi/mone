@@ -46,7 +46,6 @@ class DubboTracer extends RpcServerTracer<RpcInvocation> {
             .setAttribute(SemanticAttributes.RPC_SYSTEM, "dubbo");
     DubboHelper.prepareSpan(spanBuilder, interfaceName, methodName);
     NetPeerAttributes.INSTANCE.setNetPeer(spanBuilder, RpcContext.getContext().getRemoteAddress());
-    setRpcServerName(spanBuilder, url);
     return withClientSpan(parentContext, spanBuilder.startSpan());
   }
 
@@ -68,16 +67,4 @@ class DubboTracer extends RpcServerTracer<RpcInvocation> {
     return DubboExtractAdapter.GETTER;
   }
 
-  public void setRpcServerName(SpanBuilder spanBuilder, URL url){
-    if(url == null) {
-      spanBuilder.setAttribute(RPC_SERVER_NAME, "");
-    }else{
-      String appName = url.getParameter("serverApplicationName");
-      if (null == appName || appName.equals("")) {
-        String interfaceName = url.getParameter(Constants.INTERFACE_KEY);
-        appName = interfaceName.substring(0, interfaceName.lastIndexOf('.'));
-      }
-      spanBuilder.setAttribute(RPC_SERVER_NAME, appName);
-    }
-  }
 }
