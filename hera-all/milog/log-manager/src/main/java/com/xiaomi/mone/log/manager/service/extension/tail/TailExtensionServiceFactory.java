@@ -18,7 +18,7 @@ public class TailExtensionServiceFactory {
     private static String factualServiceName;
 
     public static TailExtensionService getTailExtensionService() {
-        factualServiceName = Config.ins().get("store.extension.service", DEFAULT_TAIL_EXTENSION_SERVICE_KEY);
+        factualServiceName = Config.ins().get("tail.extension.service", DEFAULT_TAIL_EXTENSION_SERVICE_KEY);
         log.info("TailExtensionServiceFactory factualServiceName:{}", factualServiceName);
         return Ioc.ins().getBean(factualServiceName);
     }

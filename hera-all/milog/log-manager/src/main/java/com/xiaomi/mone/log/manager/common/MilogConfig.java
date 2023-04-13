@@ -7,6 +7,7 @@ import com.xiaomi.data.push.nacos.NacosNaming;
 import com.xiaomi.mone.log.common.Config;
 import com.xiaomi.youpin.docean.anno.Bean;
 import com.xiaomi.youpin.docean.anno.Configuration;
+import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
 
 import java.util.concurrent.TimeUnit;
@@ -20,10 +21,7 @@ import java.util.concurrent.TimeUnit;
 @Configuration
 public class MilogConfig {
 
-    private String serverAddr = Config.ins().get("nacosAddr", "");
     private String defaultNacosAddres = Config.ins().get("defaultNacosAddres", "");
-
-    private String nameSpace;
 
     @Bean
     public ConfigService nacosConfigService() throws Exception {
@@ -32,10 +30,7 @@ public class MilogConfig {
 
     @Bean
     public NacosNaming nacosNaming() {
-        NacosNaming nacosNaming = new NacosNaming();
-        nacosNaming.setServerAddr(serverAddr);
-        nacosNaming.init();
-        return nacosNaming;
+        return buildNacosNaming(defaultNacosAddres);
     }
 
     public static NacosNaming buildNacosNaming(String nacosAddress) {
@@ -44,6 +39,7 @@ public class MilogConfig {
         nacosNaming.init();
         return nacosNaming;
     }
+
 
     @Bean
     public Gson gson() {
@@ -56,7 +52,7 @@ public class MilogConfig {
                 .connectTimeout(60 * 1000, TimeUnit.MILLISECONDS)
                 .readTimeout(5 * 60 * 1000, TimeUnit.MILLISECONDS)
                 .writeTimeout(5 * 60 * 1000, TimeUnit.MILLISECONDS)
+                .connectionPool(new ConnectionPool(10, 5, TimeUnit.MINUTES))
                 .build();
     }
-
 }
