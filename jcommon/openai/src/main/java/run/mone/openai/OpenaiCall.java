@@ -158,7 +158,10 @@ public class OpenaiCall {
     public static String callWithHttpClient(String apiKey, String prompt, String proxy) {
         HttpClientBuilder builer = HttpClients.custom();
         HttpClientContext context = HttpClientContext.create();
-        if (null != proxy) {
+        if (null == proxy) {
+            proxy = System.getenv("open_api_proxy");
+        }
+        if (null != proxy && proxy.length() > 0) {
             log.info("call open api use proxy");
             InetSocketAddress addr = new InetSocketAddress(proxy, 65522);
             context.setAttribute("socks.address", addr);
