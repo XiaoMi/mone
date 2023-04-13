@@ -45,6 +45,13 @@ public class FreeMarkerUtil {
         return returnData.toString();
     }
 
+    public static String getContentExceptJson(String pathPrefix, String name, Map<String, Object> rootMap) throws TemplateException, IOException {
+        StringWriter writer = new StringWriter();
+        getTemplate(name, pathPrefix).process(rootMap, writer);
+        String str = writer.toString();
+        return str;
+    }
+
 
     /**
      * 根据模板文件输出内容到指定的文件中
