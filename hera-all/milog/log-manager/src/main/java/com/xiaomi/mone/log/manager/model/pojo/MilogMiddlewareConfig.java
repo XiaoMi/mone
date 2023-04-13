@@ -91,6 +91,21 @@ public class MilogMiddlewareConfig extends BaseCommon implements Serializable {
     @Comment("标签列表")
     private List<String> labels;
 
+    @Column(value = "token")
+    @ColDefine(type = ColType.VARCHAR, width = 255)
+    @Comment("token")
+    private String token;
+
+    @Column(value = "dt_catalog")
+    @ColDefine(type = ColType.VARCHAR, width = 255)
+    @Comment("catalog")
+    private String dtCatalog;
+
+    @Column(value = "dt_database")
+    @ColDefine(type = ColType.VARCHAR, width = 255)
+    @Comment("database")
+    private String dtDatabase;
+
     private String clusterName;
 
 

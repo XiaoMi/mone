@@ -75,22 +75,6 @@ public class MilogAppMiddlewareRelServiceImpl implements MilogAppMiddlewareRelSe
     }
 
     @Override
-    public void bindingMisAppTailConfigRel(Long tailId, Long milogAppId, String motorRoomEn) {
-        // mis应用一个app对应多个配置文件
-        AppBaseInfo appBaseInfo = heraAppService.queryById(milogAppId);
-        MilogMiddlewareConfig wareConfig = milogMiddlewareConfigDao.queryDefaultMqMiddlewareConfigMotorRoom(motorRoomEn);
-        if (null != wareConfig) {
-            instantiateMqConfigSubClass(MiddlewareEnum.queryByCode(wareConfig.getType()));
-            MilogAppMiddlewareRel.Config config = mqConfigService.generateConfig(wareConfig.getAk(),
-                    wareConfig.getSk(), wareConfig.getNameServer(), wareConfig.getServiceUrl(),
-                    wareConfig.getAuthorization(), wareConfig.getOrgId(), wareConfig.getTeamId(), Long.valueOf(appBaseInfo.getBindId()), appBaseInfo.getAppName(), appBaseInfo.getPlatformName(), tailId);
-            handleTailMqRel(tailId, milogAppId, wareConfig, config);
-        } else {
-            log.error("当前机房没有配置MQ配置信息，请配置机房下消息配置信息,机房：{}", motorRoomEn);
-        }
-    }
-
-    @Override
     public void defaultBindingAppTailConfigRel(Long id, Long milogAppId,
                                                Long middleWareId, String topicName, Integer batchSendSize) {
         MilogLogTailDo logTailDo = milogLogtailDao.queryById(id);

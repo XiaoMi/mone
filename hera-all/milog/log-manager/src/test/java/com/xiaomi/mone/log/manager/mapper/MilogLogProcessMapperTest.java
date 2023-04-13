@@ -2,7 +2,6 @@ package com.xiaomi.mone.log.manager.mapper;
 
 import com.google.common.collect.Lists;
 import com.xiaomi.mone.log.manager.dao.MilogLogTailDao;
-import com.xiaomi.mone.log.manager.model.pojo.MilogLogNumAlertDO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogProcessDOMybatis;
 import com.xiaomi.youpin.docean.Ioc;
 import lombok.extern.slf4j.Slf4j;

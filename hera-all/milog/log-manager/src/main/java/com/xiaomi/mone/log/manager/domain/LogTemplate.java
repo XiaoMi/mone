@@ -2,8 +2,6 @@ package com.xiaomi.mone.log.manager.domain;
 
 import com.xiaomi.youpin.docean.anno.Service;
 
-import javax.annotation.Resource;
-
 @Service
 public class LogTemplate {
 

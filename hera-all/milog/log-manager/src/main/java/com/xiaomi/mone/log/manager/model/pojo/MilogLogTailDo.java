@@ -140,6 +140,11 @@ public class MilogLogTailDo extends BaseCommon {
     @Comment("部署方式：1-mione; 2-miline;")
     private Integer deployWay;
 
+    @Column(value = "deploy_space")
+    @ColDefine(type = ColType.VARCHAR, width = 1024)
+    @Comment("matrix 服务对应的部署空间")
+    private String deploySpace;
+
     @Column(value = "first_line_reg")
     @ColDefine(type = ColType.VARCHAR, width = 1024)
     @Comment("行首正则匹配表达式")

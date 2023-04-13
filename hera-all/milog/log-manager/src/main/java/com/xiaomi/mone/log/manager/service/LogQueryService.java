@@ -4,15 +4,11 @@ import com.xiaomi.mone.log.api.model.dto.TraceLogDTO;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.manager.model.dto.EsStatisticResult;
 import com.xiaomi.mone.log.manager.model.dto.LogDTO;
-import com.xiaomi.mone.log.manager.model.dto.LogtailCollectTopDTO;
-import com.xiaomi.mone.log.manager.model.dto.LogtailCollectTrendDTO;
 import com.xiaomi.mone.log.manager.model.vo.LogContextQuery;
 import com.xiaomi.mone.log.manager.model.vo.LogQuery;
 import com.xiaomi.mone.log.manager.model.vo.RegionTraceLogQuery;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
 
 public interface LogQueryService {
 

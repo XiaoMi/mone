@@ -2,8 +2,6 @@ package com.xiaomi.mone.log.manager.model.dto;
 
 import lombok.Data;
 
-import java.util.List;
-
 @Data
 public class LogTemplateDTO {
     private Long value;

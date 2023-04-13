@@ -1,7 +1,7 @@
 package com.xiaomi.mone.log.manager.mapper;
 
-import com.xiaomi.mone.log.manager.model.pojo.MilogLogTemplateDO;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.xiaomi.mone.log.manager.model.pojo.MilogLogTemplateDO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 

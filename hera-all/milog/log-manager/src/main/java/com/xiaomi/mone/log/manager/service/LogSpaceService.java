@@ -4,7 +4,6 @@ import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.manager.model.MilogSpaceParam;
 import com.xiaomi.mone.log.manager.model.dto.MapDTO;
 import com.xiaomi.mone.log.manager.model.dto.MilogSpaceDTO;
-import com.xiaomi.mone.log.manager.model.dto.SpacePermTreeDTO;
 import com.xiaomi.mone.log.manager.model.page.PageInfo;
 import com.xiaomi.mone.log.manager.model.pojo.MilogSpaceDO;
 
@@ -44,19 +43,12 @@ public interface LogSpaceService {
     /**
      * 更新
      *
-     * @param param
+     * @param cmd
      * @return
      */
     Result<String> updateMilogSpace(MilogSpaceParam cmd);
 
     Result<String> deleteMilogSpace(Long id);
-
-    /**
-     * 刷新sapce的部门ID字段
-     */
-    void refreshSpaceDeptId();
-
-    Result<SpacePermTreeDTO> getSpacecPermission(Long spaceId);
 
     Result<String> setSpacePermission(Long spaceId, String permDeptIds);
 

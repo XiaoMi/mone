@@ -3,7 +3,6 @@ package com.xiaomi.mone.log.manager.controller;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.manager.model.dto.LogTemplateDTO;
 import com.xiaomi.mone.log.manager.model.dto.LogTemplateDetailDTO;
-import com.xiaomi.mone.log.manager.service.impl.EsIndexTemplateServiceImpl;
 import com.xiaomi.mone.log.manager.service.impl.LogTemplateServiceImpl;
 import com.xiaomi.youpin.docean.anno.Controller;
 import com.xiaomi.youpin.docean.anno.RequestMapping;

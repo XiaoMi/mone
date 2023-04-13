@@ -4,7 +4,6 @@ import com.google.common.collect.Lists;
 import com.xiaomi.mone.log.api.model.vo.ResourceUserSimple;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
 import com.xiaomi.mone.log.manager.common.exception.MilogManageException;
-import com.xiaomi.mone.log.manager.model.vo.CreateOrUpdateLogStoreCmd;
 import com.xiaomi.mone.log.manager.model.vo.LogStoreParam;
 import com.xiaomi.mone.log.manager.service.impl.MilogMiddlewareConfigServiceImpl;
 import com.xiaomi.youpin.docean.anno.Component;
