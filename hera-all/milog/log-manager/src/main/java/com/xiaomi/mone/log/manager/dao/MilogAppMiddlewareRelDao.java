@@ -9,10 +9,12 @@ import org.apache.commons.collections.CollectionUtils;
 import org.nutz.dao.Chain;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.Sqls;
+import org.nutz.dao.entity.Record;
 import org.nutz.dao.impl.NutDao;
 import org.nutz.dao.sql.Sql;
 
 import javax.annotation.Resource;
+import java.util.LinkedList;
 import java.util.List;
 
 import static com.xiaomi.mone.log.common.Constant.EQUAL_OPERATE;
@@ -118,4 +120,19 @@ public class MilogAppMiddlewareRelDao {
         milogAppMiddlewareRelService.bindingTailConfigRel(tailId, milogAppId, middlewareConfigId, topicName);
     }
 
+    public List<MilogAppMiddlewareRel> getAppRelByLimit(int offset, int rows) {
+        String sqlString = String.format("select * from milog_app_middleware_rel limit %d,%d", offset, rows);
+        Sql sql = Sqls.queryEntity(sqlString);
+        sql.setEntity(dao.getEntity(MilogAppMiddlewareRel.class));
+        dao.execute(sql);
+        return sql.getList(MilogAppMiddlewareRel.class);
+    }
+
+    public Integer queryCountByTopicName(String topicName) {
+        Sql sql = Sqls.queryRecord("SELECT count(1) as count FROM `milog_app_middleware_rel` where config ->'$.topic' = @topicName");
+        sql.params().set("topicName", topicName);
+        LinkedList<Record> records = (LinkedList<Record>) dao.execute(sql).getResult();
+        int access = records.get(0).getInt("count");
+        return access;
+    }
 }

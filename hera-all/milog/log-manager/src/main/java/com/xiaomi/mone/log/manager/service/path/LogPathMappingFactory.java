@@ -17,16 +17,11 @@ public class LogPathMappingFactory {
 
     @Resource
     private MoneLogPathMapping moneLogPathMapping;
-    @Resource
-    private MilineK8sLogPathMapping milineK8sLogPathMapping;
 
     public LogPathMapping queryLogPathMappingByAppType(Integer code) {
         if (Objects.equals(ProjectTypeEnum.MIONE_TYPE.getCode(), code)) {
             return moneLogPathMapping;
         }
-//        if (Objects.equals(ProjectTypeEnum.MILE_TYPE.getCode(), code)) {
-//            return milineK8sLogPathMapping;
-//        }
         return null;
     }
 }

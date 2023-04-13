@@ -1,6 +1,6 @@
 package com.xiaomi.mone.log.manager.common.context;
 
-import com.xiaomi.mone.log.manager.convert.UserConvert;
+import com.xiaomi.mone.log.manager.model.convert.UserConvert;
 import com.xiaomi.mone.log.manager.user.MoneUser;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 

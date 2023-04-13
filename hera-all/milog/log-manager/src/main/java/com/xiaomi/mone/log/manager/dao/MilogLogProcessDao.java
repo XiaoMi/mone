@@ -4,9 +4,7 @@ import com.xiaomi.mone.log.api.model.vo.UpdateLogProcessCmd;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogProcessDO;
 import com.xiaomi.youpin.docean.anno.Service;
 import org.nutz.dao.Cnd;
-import org.nutz.dao.Sqls;
 import org.nutz.dao.impl.NutDao;
-import org.nutz.dao.sql.Sql;
 
 import javax.annotation.Resource;
 import java.util.List;

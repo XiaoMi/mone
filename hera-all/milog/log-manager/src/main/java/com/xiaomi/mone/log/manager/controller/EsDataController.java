@@ -27,12 +27,12 @@ public class EsDataController {
     private EsIndexTemplateServiceImpl esIndexTemplateService;
 
     @Resource
-    LogCountServiceImpl logCountService;
+    private LogCountServiceImpl logCountService;
 
     @Resource
-    MilogLogSearchSaveServiceImpl searchSaveService;
+    private MilogLogSearchSaveServiceImpl searchSaveService;
 
-    @RequestMapping(path = "/es/updateIndexTemplate", method = "get")
+    @RequestMapping(path = "/es/updateIndexTemplate", method = "POST")
     public Boolean updateIndexTemplate(@RequestParam(value = "updateIndexTemplateCommand") UpdateIndexTemplateCommand updateIndexTemplateCommand) throws IOException {
         return esIndexTemplateService.updateIndexTemplate(updateIndexTemplateCommand);
     }
@@ -188,8 +188,9 @@ public class EsDataController {
      * @throws IOException
      */
     @RequestMapping(path = "/log/save/list", method = "get")
-    public Result<List<SearchSaveDTO>> searchSavelList(@RequestParam(value = "sort") Integer sort) {
-        return searchSaveService.list(sort);
+    public Result<List<SearchSaveDTO>> searchSavelList(@RequestParam(value = "storeId") Long storeId,
+                                                       @RequestParam(value = "sort") Integer sort) {
+        return searchSaveService.list(storeId,sort);
     }
 
     /**

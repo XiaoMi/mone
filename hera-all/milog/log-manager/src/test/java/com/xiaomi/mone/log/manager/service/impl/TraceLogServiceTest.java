@@ -1,6 +1,5 @@
 package com.xiaomi.mone.log.manager.service.impl;
 
-import com.google.common.collect.Maps;
 import com.xiaomi.mone.es.EsClient;
 import com.xiaomi.mone.log.api.model.dto.TraceLogDTO;
 import com.xiaomi.mone.log.api.model.vo.TraceLogQuery;
@@ -16,7 +15,6 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 public class TraceLogServiceTest {
     @Test
