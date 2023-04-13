@@ -27,9 +27,9 @@
             </dependency>
 
             <dependency>
-                <groupId>org.nutz</groupId>
+                <groupId>run.mone</groupId>
                 <artifactId>nutz</artifactId>
-                <version>1.r.68-youpin-SNAPSHOT</version>
+                <version>1.r.68-v1-SNAPSHOT</version>
             </dependency>
             <dependency>
                 <groupId>org.nutz</groupId>
@@ -95,18 +95,5 @@
 
         </plugins>
     </build>
-
-
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
-
 
 </project>

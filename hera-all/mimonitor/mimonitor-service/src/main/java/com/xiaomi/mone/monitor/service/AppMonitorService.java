@@ -572,7 +572,7 @@ public class AppMonitorService {
      * @param appMonitor
      */
     private void createGrafana(AppMonitor appMonitor) {
-        if (appMonitor.getAppSource() == null || appMonitor.getAppSource() == 0) {
+        if (appMonitor.getAppSource() == null) {
             return;
         }
         StringBuilder appName = new StringBuilder();
