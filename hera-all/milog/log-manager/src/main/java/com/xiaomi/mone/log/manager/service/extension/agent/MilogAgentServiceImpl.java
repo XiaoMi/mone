@@ -1,7 +1,6 @@
 package com.xiaomi.mone.log.manager.service.extension.agent;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.xiaomi.data.push.context.AgentContext;
 import com.xiaomi.data.push.rpc.netty.AgentChannel;
@@ -18,17 +17,13 @@ import com.xiaomi.mone.log.manager.common.Utils;
 import com.xiaomi.mone.log.manager.dao.*;
 import com.xiaomi.mone.log.manager.domain.LogProcess;
 import com.xiaomi.mone.log.manager.model.bo.MilogAgentIpParam;
-import com.xiaomi.mone.log.manager.model.dto.MotorRoomDTO;
-import com.xiaomi.mone.log.manager.model.dto.PodDTO;
 import com.xiaomi.mone.log.manager.model.pojo.*;
-import com.xiaomi.mone.log.manager.model.vo.LogAgentListBo;
 import com.xiaomi.mone.log.manager.service.env.HeraEnvIpService;
 import com.xiaomi.mone.log.manager.service.env.HeraEnvIpServiceFactory;
 import com.xiaomi.mone.log.manager.service.impl.HeraAppServiceImpl;
 import com.xiaomi.mone.log.manager.service.impl.LogTailServiceImpl;
 import com.xiaomi.mone.log.manager.service.path.LogPathMapping;
 import com.xiaomi.mone.log.manager.service.path.LogPathMappingFactory;
-import com.xiaomi.mone.log.utils.NetUtil;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.common.NamedThreadFactory;
 import com.xiaomi.youpin.docean.plugin.dubbo.anno.Reference;
@@ -36,7 +31,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Resource;
 import java.util.*;
@@ -130,23 +124,6 @@ public class MilogAgentServiceImpl implements MilogAgentService {
         return Result.success("success");
     }
 
-    public Result<String> configIssueAgentK8s(Long tailId, String agentIp,
-                                              List<LogAgentListBo> logAgentListBos, List<String> podNames) {
-        if (StringUtils.isEmpty(agentIp)) {
-            return Result.failParam("agentIp不能为空");
-        }
-        // 1.查询该agent机器下下全量的配置
-        LogCollectMeta logCollectMeta = queryMilogAgentConfigK8s(tailId, agentIp, logAgentListBos);
-        logCollectMeta.setPodNames(podNames);
-        logCollectMeta.setSingleMetaData(true);
-        log.info("{},this k8sip config data:{}", agentIp, gson.toJson(logCollectMeta));
-        List<String> ipAddress = publishConfigService.getAllAgentList();
-        log.info("agent ip list:{}", gson.toJson(ipAddress));
-        //2.下发配置
-        sengConfigToAgent(agentIp, logCollectMeta);
-        return Result.success("success");
-    }
-
     /**
      * 下发配置到指定的ip
      *
@@ -162,26 +139,6 @@ public class MilogAgentServiceImpl implements MilogAgentService {
         THREAD_POOL_EXECUTOR.execute(() -> {
             publishConfigService.sengConfigToAgent(agentIp, logCollectMeta);
         });
-    }
-
-    @Nullable
-    private String queryCurrentDockerAgentIP(String agentIp, Map<String, AgentChannel> logAgentMap) {
-        if (Objects.equals(agentIp, NetUtil.getLocalIp())) {
-            //for docker 处理当前机器上有agent
-            final String tempIp = agentIp;
-            List<String> ipList = getAgentChannelMap().keySet()
-                    .stream().filter(ip -> ip.startsWith("172"))
-                    .collect(Collectors.toList());
-            Optional<String> optionalS = ipList.stream()
-                    .filter(ip -> Objects.equals(logAgentMap.get(ip).getIp(), tempIp))
-                    .findFirst();
-            if (optionalS.isPresent()) {
-                String correctIp = optionalS.get();
-                log.info("origin ip:{},set agent ip:{}", agentIp, correctIp);
-                agentIp = correctIp;
-            }
-        }
-        return agentIp;
     }
 
     /**
@@ -283,62 +240,17 @@ public class MilogAgentServiceImpl implements MilogAgentService {
         List<AppBaseInfo> appBaseInfos = Lists.newArrayList();
         List<MilogLogTailDo> logTailDos = milogLogtailDao.queryByIp(agentIp);
         if (CollectionUtils.isNotEmpty(logTailDos)) {
-            appBaseInfos = heraAppService.queryByIds(logTailDos.stream().map(MilogLogTailDo::getMilogAppId).collect(Collectors.toList()));
+            appBaseInfos = heraAppService.queryByIds(
+                    logTailDos.stream().map(MilogLogTailDo::getMilogAppId)
+                            .distinct()
+                            .collect(Collectors.toList())
+            );
         }
         logCollectMeta.setAppLogMetaList(appBaseInfos.stream()
                 .map(appBaseInfo -> assembleSingleConfig(appBaseInfo.getId().longValue(), queryLogPattern(appBaseInfo.getId().longValue(), agentIp, appBaseInfo.getPlatformType())))
                 .filter(appLogMeta -> CollectionUtils.isNotEmpty(appLogMeta.getLogPatternList()))
                 .collect(Collectors.toList()));
         return logCollectMeta;
-    }
-
-    public LogCollectMeta queryMilogAgentConfigK8s(Long tailId, String agentIp, List<LogAgentListBo> logAgentListBos) {
-        LogCollectMeta logCollectMeta = buildLogCollectMeta(agentIp);
-        List<Long> appIds = Lists.newArrayList();
-        appIds.add(milogLogtailDao.queryById(tailId).getMilogAppId());
-
-        logCollectMeta.setAppLogMetaList(appIds.stream()
-                .map(appId -> assembleSingleConfig(appId, queryLogPattern(tailId, logAgentListBos)))
-                .collect(Collectors.toList()));
-        return logCollectMeta;
-    }
-
-    public LogCollectMeta queryMilogAgentConfigK8s(String agentIp, List<LogAgentListBo> podIps) {
-        LogCollectMeta logCollectMeta = buildLogCollectMeta(agentIp);
-        Map<MilogLogTailDo, List<LogAgentListBo>> milogLogtailDoListMap = wrapTailAndAgentRel(podIps);
-        List<MilogLogTailDo> logtailDoList = milogLogtailDoListMap.keySet().stream().collect(Collectors.toList());
-        Map<MilogAppTopicRelDO, List<MilogLogTailDo>> appTopicRelListMap = warpAppAdnTailRel(logtailDoList);
-
-        List<MilogAppTopicRelDO> milogAppTopicRels = appTopicRelListMap.keySet().stream().collect(Collectors.toList());
-
-        logCollectMeta.setAppLogMetaList(milogAppTopicRels.stream()
-                .map(milogAppTopicRel -> assembleSingleConfig(milogAppTopicRel.getId(), queryLogPattern(appTopicRelListMap.get(milogAppTopicRel), milogLogtailDoListMap)))
-                .filter(appLogMeta -> CollectionUtils.isNotEmpty(appLogMeta.getLogPatternList()))
-                .collect(Collectors.toList()));
-        return logCollectMeta;
-    }
-
-    private Map<MilogAppTopicRelDO, List<MilogLogTailDo>> warpAppAdnTailRel(List<MilogLogTailDo> logtailDoList) {
-        Map<MilogAppTopicRelDO, List<MilogLogTailDo>> appTopicRelListMap = Maps.newHashMap();
-        logtailDoList.forEach(milogLogtailDo -> {
-            MilogAppTopicRelDO appTopicRel = milogAppTopicRelDao.queryById(milogLogtailDo.getMilogAppId());
-            appTopicRelListMap.putIfAbsent(appTopicRel, Lists.newArrayList());
-            appTopicRelListMap.get(appTopicRel).add(milogLogtailDo);
-        });
-        return appTopicRelListMap;
-    }
-
-    private Map<MilogLogTailDo, List<LogAgentListBo>> wrapTailAndAgentRel(List<LogAgentListBo> podIps) {
-        Map<LogAgentListBo, List<MilogLogTailDo>> listBoListMap = Maps.newConcurrentMap();
-        Map<MilogLogTailDo, List<LogAgentListBo>> logTailDoListMap = Maps.newConcurrentMap();
-        podIps.parallelStream().forEach(logAgentBo -> listBoListMap.put(logAgentBo, milogLogtailDao.queryByIp(logAgentBo.getPodIP())));
-        for (Map.Entry<LogAgentListBo, List<MilogLogTailDo>> entry : listBoListMap.entrySet()) {
-            entry.getValue().forEach(miLogLogTailDo -> {
-                logTailDoListMap.putIfAbsent(miLogLogTailDo, Lists.newArrayList());
-                logTailDoListMap.get(miLogLogTailDo).add(entry.getKey());
-            });
-        }
-        return logTailDoListMap;
     }
 
     private LogCollectMeta buildLogCollectMeta(String agentIp) {
@@ -401,35 +313,6 @@ public class MilogAgentServiceImpl implements MilogAgentService {
         mqConfig.setBatchSendSize(config.getBatchSendSize());
     }
 
-    private List<LogPattern> queryLogPattern(List<MilogLogTailDo> milogLogtailDos, Map<MilogLogTailDo, List<LogAgentListBo>> milogLogtailDoListMap) {
-        List<LogPattern> logPatternList = Lists.newArrayList();
-        for (MilogLogTailDo milogLogtailDo : milogLogtailDos) {
-            logPatternList.addAll(queryLogPattern(milogLogtailDo.getId(), milogLogtailDoListMap.get(milogLogtailDo)));
-        }
-        return logPatternList;
-    }
-
-    private List<LogPattern> queryLogPattern(Long tailId, List<LogAgentListBo> logAgentListBos) {
-        MilogLogTailDo logTailDo = milogLogtailDao.queryById(tailId);
-        if (null != logTailDo) {
-            LogPattern logPattern = generateLogPattern(logTailDo);
-            try {
-                LogPathMapping logPathMapping = logPathMappingFactory.queryLogPathMappingByAppType(logTailDo.getAppType());
-                HeraEnvIpService heraEnvIpService = heraEnvIpServiceFactory.getHeraEnvIpServiceByAppType(logTailDo.getAppType());
-                logPattern.setLogPattern(logPathMapping.getLogPath(logTailDo.getLogPath(), logAgentListBos));
-                logPattern.setLogSplitExpress(logPathMapping.getLogPath(logTailDo.getLogSplitExpress(), logAgentListBos));
-                logPattern.setIps(heraEnvIpService.queryActualIps(logTailDo.getIps()));
-            } catch (Exception e) {
-                log.error("assemble log path data error:", e);
-            }
-            //设置mq配置
-            MQConfig mqConfig = decorateMQConfig(logTailDo);
-            logPattern.setMQConfig(mqConfig);
-            return Lists.newArrayList(logPattern);
-        }
-        return Collections.emptyList();
-    }
-
     private List<LogPattern> queryLogPattern(Long milogAppId, String agentIp, Integer type) {
         List<MilogLogTailDo> milogLogtailDos = milogLogtailDao.queryByAppIdAgentIp(milogAppId, agentIp);
         if (CollectionUtils.isNotEmpty(milogLogtailDos)) {
@@ -442,7 +325,7 @@ public class MilogAgentServiceImpl implements MilogAgentService {
                 try {
                     logPattern.setLogPattern(logPathMapping.getLogPath(milogLogtailDo.getLogPath(), null));
                     logPattern.setLogSplitExpress(logPathMapping.getLogPath(milogLogtailDo.getLogSplitExpress(), null));
-                    logPattern.setIps(heraEnvIpService.queryActualIps(milogLogtailDo.getIps()));
+                    logPattern.setIps(heraEnvIpService.queryActualIps(milogLogtailDo.getIps(), agentIp));
                 } catch (Exception e) {
                     log.error("assemble log path data error:", e);
                 }
@@ -474,46 +357,4 @@ public class MilogAgentServiceImpl implements MilogAgentService {
         logPattern.setPatternCode(tag);
         return logPattern;
     }
-
-    public String generateMisTailLogPath(String logPath, String agentIp, List<MotorRoomDTO> motorRooms) {
-        if (StringUtils.isBlank(logPath)) {
-            return StringUtils.EMPTY;
-        }
-        String logPathPrefix = "/home/work/logs";
-        String logPathMiddle = "/neo-logs/";
-        String logPathSuffix = StringUtils.substringAfter(logPath, logPathPrefix);
-        String nodeNames = motorRooms.stream()
-                .flatMap(motorRoomDTO -> motorRoomDTO.getPodDTOList().stream())
-                .filter(podDTO -> StringUtils.equalsIgnoreCase(agentIp, podDTO.getNodeIP()))
-                .sorted(Comparator.comparing(PodDTO::getPodIP))
-                .map(PodDTO::getPodName).collect(Collectors.joining("|"));
-        return new StringBuilder().append(logPathPrefix)
-                .append(logPathMiddle)
-                .append(String.format(nodeNames.split("\\|").length > 1 ? "(%s)" : "%s", nodeNames))
-                .append(logPathSuffix).toString();
-    }
-
-    public List<String> generateMisTailIps(String agentIp, List<MotorRoomDTO> motorRooms) {
-        if (StringUtils.isBlank(agentIp)) {
-            return Collections.EMPTY_LIST;
-        }
-        return motorRooms.stream().flatMap(motorRoomDTO -> motorRoomDTO.getPodDTOList().stream())
-                .filter(podDTO -> Objects.equals(agentIp, podDTO.getNodeIP()))
-                .map(PodDTO::getPodIP)
-                .sorted()
-                .collect(Collectors.toList());
-    }
-
-
-    public List<String> generateK8sTailIps(String agentIp, List<LogAgentListBo> agentListBos) {
-        if (StringUtils.isBlank(agentIp)) {
-            return Collections.EMPTY_LIST;
-        }
-        return agentListBos.stream()
-                .filter(podDTO -> Objects.equals(agentIp, podDTO.getAgentIP()))
-                .map(LogAgentListBo::getPodIP)
-                .sorted()
-                .collect(Collectors.toList());
-    }
-
 }

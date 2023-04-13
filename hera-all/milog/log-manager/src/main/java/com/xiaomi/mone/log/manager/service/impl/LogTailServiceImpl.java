@@ -45,6 +45,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static com.xiaomi.mone.log.common.Constant.*;
+import static com.xiaomi.mone.log.common.Constant.DEFAULT_JOB_OPERATOR;
 import static com.xiaomi.mone.log.manager.common.Utils.getKeyValueList;
 
 @Slf4j
@@ -869,7 +870,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
 
     @Override
     public void machineIpChange(HeraEnvIpVo heraEnvIpVo) {
-        List<MilogLogTailDo> logTailDos = milogLogtailDao.queryByMilogAppAndEnvId(heraEnvIpVo.getHeraAppId(), heraEnvIpVo.getEnvId());
+        List<MilogLogTailDo> logTailDos = milogLogtailDao.queryByMilogAppAndEnvId(heraEnvIpVo.getHeraAppId(), heraEnvIpVo.getId());
         if (CollectionUtils.isNotEmpty(logTailDos)) {
             log.info("动态扩容当前环境下的配置，heraAppEnvVo:{}，logTailDos:{}",
                     gson.toJson(heraEnvIpVo), gson.toJson(logTailDos));
@@ -879,7 +880,9 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
                 if (!CollectionUtils.isEqualCollection(exitIps, newIps)) {
                     //1.修改配置
                     milogLogtailDo.setIps(newIps);
-                    milogLogtailDao.update(milogLogtailDo);
+                    milogLogtailDo.setUtime(Instant.now().toEpochMilli());
+                    milogLogtailDo.setUpdater(DEFAULT_JOB_OPERATOR);
+                    milogLogtailDao.updateIps(milogLogtailDo);
                     //2.发送消息
                     compareIpToHandle(exitIps, newIps);
                 }
