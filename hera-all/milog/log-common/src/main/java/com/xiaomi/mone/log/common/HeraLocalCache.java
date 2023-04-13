@@ -48,7 +48,7 @@ public class HeraLocalCache {
 
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
             try {
-                log.info("HeraLocalCache status:{}", localCache.stats().toString());
+                log.debug("HeraLocalCache status:{}", localCache.stats().toString());
             } catch (Exception ex) {
                 //ignore
             }

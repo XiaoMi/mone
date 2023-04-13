@@ -21,11 +21,12 @@ public interface HeraEnvIpService {
     List<LogAgentListBo> queryInfoByNodeIp(String nodeIp);
 
     Map<String, List<LogAgentListBo>> queryAgentIpByPodIps(List<String> podIps);
+
     /**
      * 根据pode Ip查询node ip
      *
      * @param ips
      * @return
      */
-    List<String> queryActualIps(List<String> ips);
+    List<String> queryActualIps(List<String> ips, String agentIp);
 }
