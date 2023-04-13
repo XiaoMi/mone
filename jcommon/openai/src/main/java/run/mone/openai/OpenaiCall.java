@@ -1,5 +1,8 @@
 package run.mone.openai;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
 import com.unfbx.chatgpt.OpenAiClient;
 import com.unfbx.chatgpt.entity.chat.ChatCompletion;
@@ -9,10 +12,27 @@ import com.unfbx.chatgpt.entity.embeddings.EmbeddingResponse;
 import com.unfbx.chatgpt.interceptor.OpenAILogger;
 import lombok.Builder;
 import lombok.Data;
+import lombok.SneakyThrows;
 import okhttp3.logging.HttpLoggingInterceptor;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.config.Registry;
+import org.apache.http.config.RegistryBuilder;
+import org.apache.http.conn.socket.ConnectionSocketFactory;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.ssl.SSLContexts;
+import org.apache.http.util.EntityUtils;
 import org.jetbrains.annotations.NotNull;
+import run.mone.openai.net.FakeDnsResolver;
+import run.mone.openai.net.MyConnectionSocketFactory;
+import run.mone.openai.net.MySSLConnectionSocketFactory;
 
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
@@ -27,6 +47,8 @@ import java.util.stream.Collectors;
  * @date 2023/4/11 14:37
  */
 public class OpenaiCall {
+
+    private static String proxyAddr = System.getenv("open_api_proxy");
 
 
     private static OpenAiClient client(String apiKey) {
@@ -85,7 +107,6 @@ public class OpenaiCall {
     }
 
     /**
-     *
      * @param apiKey  chatgpt key
      * @param context 上下文
      * @param prompt  提示词
@@ -129,6 +150,50 @@ public class OpenaiCall {
         ChatCompletion chatCompletion = ChatCompletion.builder().messages(list).build();
         ChatCompletionResponse completions = openAiClient.chatCompletion(chatCompletion);
         return completions.getChoices().get(0).getMessage().getContent();
+    }
+
+    @SneakyThrows
+    public static String callWithHttpClient(String apiKey, String prompt, boolean proxy) {
+        HttpClientBuilder builer = HttpClients.custom();
+        HttpClientContext context = HttpClientContext.create();
+        if (proxy) {
+            InetSocketAddress addr = new InetSocketAddress(proxyAddr, 65522);
+            context.setAttribute("socks.address", addr);
+            Registry<ConnectionSocketFactory> reg = RegistryBuilder.<ConnectionSocketFactory>create()
+                    .register("http", new MyConnectionSocketFactory())
+                    .register("https", new MySSLConnectionSocketFactory(SSLContexts.createSystemDefault()))
+                    .build();
+            PoolingHttpClientConnectionManager cm = new PoolingHttpClientConnectionManager(reg, new FakeDnsResolver());
+            builer.setConnectionManager(cm);
+        }
+        CloseableHttpClient client = builer.build();
+        try {
+            HttpPost request = new HttpPost("https://api.openai.com/v1/completions");
+            request.addHeader("Content-Type", "application/json");
+            request.addHeader("Authorization", "Bearer " + apiKey);
+
+            JSONObject requestBody = new JSONObject();
+            requestBody.put("model", "text-davinci-003");
+            requestBody.put("prompt", prompt);
+            requestBody.put("max_tokens", 2000);
+            requestBody.put("temperature", 0);
+            requestBody.put("top_p", 1);
+            requestBody.put("frequency_penalty", 0.0);
+
+            StringEntity requestEntity = new StringEntity(requestBody.toString(), "utf8");
+            request.setEntity(requestEntity);
+
+            HttpResponse response = client.execute(request, context);
+            String responseString = EntityUtils.toString(response.getEntity());
+            System.out.println(responseString);
+
+            JSONObject obj = JSON.parseObject(responseString, JSONObject.class);
+            JSONArray array = obj.getJSONArray("choices");
+            String text = array.getJSONObject(0).getString("text");
+            return text;
+        } finally {
+            client.close();
+        }
     }
 
 
