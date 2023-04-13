@@ -3,11 +3,13 @@ package run.mone.processor.common;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.stmt.Statement;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
+import lombok.SneakyThrows;
 
 import javax.lang.model.element.Modifier;
 import java.io.File;
@@ -21,16 +23,25 @@ import java.util.Optional;
  */
 public abstract class CodeUtils {
 
+    @SneakyThrows
+    public static String getClassName(String code) {
+        JavaParser javaParser = new JavaParser();
+        CompilationUnit cu = javaParser.parse(code).getResult().get();
+        PackageDeclaration a = cu.getPackageDeclaration().get();
+        return (cu.getType(0).getName().getIdentifier());
+    }
+
     /**
      * 可以根据已有的代码生成新的代码
-     * @param filePath  已有代码路径
-     * @param className 要修改的类
-     * @param addMethodList 添加的代码片段
-     * @param modifyMethodList  修改已有的代码
-     * @param importList  需要import的类
+     *
+     * @param filePath         已有代码路径
+     * @param className        要修改的类
+     * @param addMethodList    添加的代码片段
+     * @param modifyMethodList 修改已有的代码
+     * @param importList       需要import的类
      * @return
      */
-    public static String modifyCode(String filePath, String className, List<MethodCode> addMethodList, List<MethodCode> modifyMethodList, List<String>importList) {
+    public static String modifyCode(String filePath, String className, List<MethodCode> addMethodList, List<MethodCode> modifyMethodList, List<String> importList) {
         File file = new File(filePath);
         try {
             JavaParser javaParser = new JavaParser();
@@ -44,16 +55,16 @@ public abstract class CodeUtils {
                         .addModifiers(Modifier.PUBLIC)
                         .returns(it.getReturnType())
                         .addCode(it.getCode());
-                it.getParamList().forEach(p->{
-                    builder.addParameter(p.getKey(),p.getValue());
+                it.getParamList().forEach(p -> {
+                    builder.addParameter(p.getKey(), p.getValue());
                 });
                 MethodSpec newMethod = builder.build();
                 classOrInterface.addMember(javaParser.parseBodyDeclaration(newMethod.toString()).getResult().get());
             });
             //add import
-            importList.forEach(i-> cu.addImport(i));
+            importList.forEach(i -> cu.addImport(i));
             //modify method
-            modifyMethodList.forEach(mm->{
+            modifyMethodList.forEach(mm -> {
                 Optional<MethodDeclaration> methodOptional = classOrInterface.getMethodsByName(mm.getName()).stream().findFirst();
                 if (methodOptional.isPresent()) {
                     MethodDeclaration method = methodOptional.get();
