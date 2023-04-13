@@ -3,6 +3,7 @@ package run.mone.processor.test;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.stmt.Statement;
@@ -61,6 +62,18 @@ public class JavaPoetTest {
         String code = CodeUtils.modifyCode(path, "Run", Lists.newArrayList(addMethod), Lists.newArrayList(modifyMethod), Lists.newArrayList("java.util.Map", "java.lang.reflect.Field"));
         System.out.println(code);
     }
+
+
+    @SneakyThrows
+    @Test
+    public void testParse() {
+        JavaParser javaParser = new JavaParser();
+        CompilationUnit cu = javaParser.parse(new File("/tmp/e")).getResult().get();
+        PackageDeclaration a = cu.getPackageDeclaration().get();
+        System.out.println(a.getName());
+        System.out.println(cu.getType(0).getName().getIdentifier());
+    }
+
 
     @Test
     public void test0() {
