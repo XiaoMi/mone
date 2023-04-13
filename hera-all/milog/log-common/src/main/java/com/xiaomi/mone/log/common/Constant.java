@@ -52,6 +52,8 @@ public class Constant {
 
     public static final String DEFAULT_OPERATOR = "system";
 
+    public static final String DEFAULT_JOB_OPERATOR = "job";
+
     public static final String LOG_MANAGE_PREFIX = "log_manage_";
     public static final String LOG_MANAGE_GWDASH_TOKEN = "gwdash_token";
 
