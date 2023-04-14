@@ -116,7 +116,7 @@ public class OpenaiCall {
      * @param call
      * @return
      */
-    public static String call(String apiKey, String context, String prompt, List<D> list, boolean call) {
+    public static String call(String apiKey, String context, String prompt, List<D> list, boolean call, int num) {
         List<C> result = new ArrayList<>();
         double[] value = getEmbeddings(apiKey, prompt);
         for (int i = 0; i < list.size(); i++) {
@@ -128,12 +128,13 @@ public class OpenaiCall {
             o.setV(v);
             result.add(o);
         }
-        List<C> l = result.stream().sorted().collect(Collectors.toList());
-        OpenAiClient client = client(apiKey);
-        String content = String.format(context, l.get(0).getContent(), prompt);
+        List<C> l = result.stream().sorted().limit(num).collect(Collectors.toList());
+        //直接拿到近似的,不再发到openai询问答案了
         if (!call) {
-            return content;
+            return l.stream().map(it -> it.getContent()).collect(Collectors.joining("\r\n"));
         }
+        String content = String.format(context, l.get(0).getContent(), prompt);
+        OpenAiClient client = client(apiKey);
         List<Message> messages = Lists.newArrayList(
                 Message.builder().role(Message.Role.USER).content(content).build()
         );

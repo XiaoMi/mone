@@ -381,7 +381,7 @@ public class OpenApiTest {
 
     @Test
     public void testCall() {
-        String res = OpenaiCall.call(null, "我有一些api信息.信息是用':'隔开的.他们的格式是 注释:负责人:服务名:api.信息如下:%s.\r\n根据上边的内容,我想知道:%s的相关信息", "getUser()", getDlist(), true);
+        String res = OpenaiCall.call(null, "我有一些api信息.信息是用':'隔开的.他们的格式是 注释:负责人:服务名:api.信息如下:%s.\r\n根据上边的内容,我想知道:%s的相关信息", "User", getDlist(), false, 1);
         System.out.println(res);
     }
 
