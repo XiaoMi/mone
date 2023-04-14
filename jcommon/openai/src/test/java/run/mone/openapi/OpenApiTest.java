@@ -3,6 +3,7 @@ package run.mone.openapi;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -49,6 +50,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Test;
 import run.mone.openai.OpenaiCall;
+import run.mone.openai.net.FakeDnsResolver;
+import run.mone.openai.net.MyConnectionSocketFactory;
+import run.mone.openai.net.MySSLConnectionSocketFactory;
 
 import javax.net.ssl.SSLContext;
 import java.io.IOException;
@@ -327,51 +331,6 @@ public class OpenApiTest {
     }
 
 
-    static class FakeDnsResolver implements DnsResolver {
-        @Override
-        public InetAddress[] resolve(String host) throws UnknownHostException {
-            // Return some fake DNS record for every request, we won't be using it
-            return new InetAddress[]{InetAddress.getByAddress(new byte[]{1, 1, 1, 1})};
-        }
-    }
-
-    // HttpClient 支持socks5代理的自定义类
-    static class MyConnectionSocketFactory extends PlainConnectionSocketFactory {
-        @Override
-        public Socket createSocket(final HttpContext context) throws IOException {
-            InetSocketAddress socksaddr = (InetSocketAddress) context.getAttribute("socks.address");
-            Proxy proxy = new Proxy(Proxy.Type.SOCKS, socksaddr);
-            return new Socket(proxy);
-        }
-
-        @Override
-        public Socket connectSocket(int connectTimeout, Socket socket, HttpHost host, InetSocketAddress remoteAddress,
-                                    InetSocketAddress localAddress, HttpContext context) throws IOException {
-            InetSocketAddress unresolvedRemote = InetSocketAddress.createUnresolved(host.getHostName(), remoteAddress.getPort());
-            return super.connectSocket(connectTimeout, socket, host, unresolvedRemote, localAddress, context);
-        }
-    }
-
-    static class MySSLConnectionSocketFactory extends SSLConnectionSocketFactory {
-        public MySSLConnectionSocketFactory(final SSLContext sslContext) {
-            super(sslContext);
-        }
-
-        @Override
-        public Socket createSocket(final HttpContext context) throws IOException {
-            InetSocketAddress socksaddr = (InetSocketAddress) context.getAttribute("socks.address");
-            Proxy proxy = new Proxy(Proxy.Type.SOCKS, socksaddr);
-            return new Socket(proxy);
-        }
-
-        @Override
-        public Socket connectSocket(int connectTimeout, Socket socket, HttpHost host, InetSocketAddress remoteAddress,
-                                    InetSocketAddress localAddress, HttpContext context) throws IOException {
-            InetSocketAddress unresolvedRemote = InetSocketAddress.createUnresolved(host.getHostName(), remoteAddress.getPort());
-            return super.connectSocket(connectTimeout, socket, host, unresolvedRemote, localAddress, context);
-        }
-    }
-
     @SneakyThrows
     @Test
     public void test2() {
@@ -422,7 +381,7 @@ public class OpenApiTest {
 
     @Test
     public void testCall() {
-        String res = OpenaiCall.call(null, "我有一些api信息.信息是用':'隔开的.他们的格式是 注释:负责人:服务名:api.信息如下:%s.\r\n根据上边的内容,我想知道:%s的相关信息", "getUser()", getDlist(), true);
+        String res = OpenaiCall.call(null, "我有一些api信息.信息是用':'隔开的.他们的格式是 注释:负责人:服务名:api.信息如下:%s.\r\n根据上边的内容,我想知道:%s的相关信息", "User", getDlist(), false, 1);
         System.out.println(res);
     }
 
@@ -438,4 +397,17 @@ public class OpenApiTest {
         String res = OpenaiCall.call(null, str + "+\r\n" + "%s", req);
         System.out.println(res);
     }
+
+    @Test
+    @SneakyThrows
+    public void testCreateFilter2() {
+        String str = new String(Files.readAllBytes(Paths.get("/tmp/filter")));
+        String req = new String(Files.readAllBytes(Paths.get("/tmp/filter_req")));
+        Stopwatch sw = Stopwatch.createStarted();
+        String res = OpenaiCall.callWithHttpClient(System.getenv("open_api_key"), str + "+\r\n" + req, System.getenv("open_api_proxy"));
+        System.out.println(res);
+        System.out.println(sw.elapsed(TimeUnit.SECONDS));
+    }
+
+
 }
