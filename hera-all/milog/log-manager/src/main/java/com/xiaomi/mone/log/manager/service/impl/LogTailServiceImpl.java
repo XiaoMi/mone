@@ -328,19 +328,16 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     }
 
     private void decorateMilogTailDTO(MilogTailDTO milogTailDTO) {
-        MilogAppTopicRelDO milogAppTopicRel = milogAppTopicRelDao.queryById(milogTailDTO.getMilogAppId());
-        if (null == milogAppTopicRel) {
-            log.error("当前查询应用错误：{}", gson.toJson(milogTailDTO));
-            return;
-        }
-        milogTailDTO.setSource(milogAppTopicRel.getSource());
-        List<MilogAppMiddlewareRel> milogAppMiddlewareRels = milogAppMiddlewareRelDao.queryByCondition(milogAppTopicRel.getId(), null, milogTailDTO.getId());
-        if (CollectionUtils.isEmpty(milogAppMiddlewareRels)) {
-            return;
-        }
-        MilogAppMiddlewareRel milogAppMiddlewareRel = milogAppMiddlewareRels.get(0);
-        MilogMiddlewareConfig config = milogMiddlewareConfigDao.queryById(milogAppMiddlewareRel.getMiddlewareId());
-        milogTailDTO.setMiddlewareConfig(Arrays.asList(Long.valueOf(config.getType()), config.getId(), milogAppMiddlewareRel.getConfig().getTopic()));
+        Optional<AppBaseInfo> optionalAppBaseInfo = Optional.ofNullable(heraAppService.queryById(milogTailDTO.getMilogAppId()));
+        optionalAppBaseInfo.ifPresent(appBaseInfo -> {
+            milogTailDTO.setSource(appBaseInfo.getPlatformType().toString());
+            List<MilogAppMiddlewareRel> milogAppMiddlewareRels = milogAppMiddlewareRelDao.queryByCondition(milogTailDTO.getMilogAppId(), null, milogTailDTO.getId());
+            if (CollectionUtils.isNotEmpty(milogAppMiddlewareRels)) {
+                MilogAppMiddlewareRel milogAppMiddlewareRel = milogAppMiddlewareRels.get(0);
+                MilogMiddlewareConfig config = milogMiddlewareConfigDao.queryById(milogAppMiddlewareRel.getMiddlewareId());
+                milogTailDTO.setMiddlewareConfig(Arrays.asList(Long.valueOf(config.getType()), config.getId(), milogAppMiddlewareRel.getConfig().getTopic()));
+            }
+        });
     }
 
     @Override

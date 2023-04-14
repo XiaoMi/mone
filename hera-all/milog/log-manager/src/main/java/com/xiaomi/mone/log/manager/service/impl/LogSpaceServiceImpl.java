@@ -27,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -52,26 +53,38 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
      */
     @Override
     public Result<String> newMilogSpace(MilogSpaceParam param) {
-        if (null == param || StringUtils.isBlank(param.getSpaceName())) {
-            return new Result<>(CommonError.ParamsError.getCode(), "参数错误");
+        if (Objects.isNull(param) || StringUtils.isBlank(param.getSpaceName())) {
+            return Result.failParam("参数错误");
         }
-        if (milogSpaceDao.verifyExistByName(param.getSpaceName())) {
-            return new Result<>(CommonError.UnknownError.getCode(), "存在同名spaceName", "");
+
+        String spaceName = param.getSpaceName();
+        if (milogSpaceDao.verifyExistByName(spaceName)) {
+            return Result.failParam("存在同名spaceName");
         }
-        MilogSpaceDO ms = new MilogSpaceDO();
-        wrapMilogSpace(ms, param);
-        wrapBaseCommon(ms, OperateEnum.ADD_OPERATE);
-        MilogSpaceDO dbDO = milogSpaceDao.newMilogSpace(ms);
-        if (dbDO.getId() == null) {
+
+        MilogSpaceDO milogSpaceDO = wrapMilogSpaceDO(param);
+        wrapBaseCommon(milogSpaceDO, OperateEnum.ADD_OPERATE);
+
+        MilogSpaceDO dbDO = milogSpaceDao.newMilogSpace(milogSpaceDO);
+        if (Objects.isNull(dbDO.getId())) {
             return Result.failParam("space未保存成功，请重试");
         }
+
         com.xiaomi.youpin.infra.rpc.Result tpcResult = spaceAuthService.saveSpacePerm(dbDO, MoneUserContext.getCurrentUser().getUser());
         if (tpcResult == null || tpcResult.getCode() != 0) {
             milogSpaceDao.deleteMilogSpace(dbDO.getId());
             log.error("新建space未关联权限系统,space:[{}], tpcResult:[{}]", dbDO, tpcResult);
             return Result.failParam("space未关联权限系统");
         }
+
         return Result.success();
+    }
+
+    private MilogSpaceDO wrapMilogSpaceDO(MilogSpaceParam param) {
+        MilogSpaceDO milogSpaceDO = new MilogSpaceDO();
+        milogSpaceDO.setSpaceName(param.getSpaceName());
+        milogSpaceDO.setDescription(param.getDescription());
+        return milogSpaceDO;
     }
 
     /**
