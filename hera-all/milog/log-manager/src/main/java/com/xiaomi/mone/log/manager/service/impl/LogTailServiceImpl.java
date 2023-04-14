@@ -500,6 +500,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
                 MapDTO mapDTO = new MapDTO();
                 mapDTO.setLabel(String.format("%s_%s", response.getPlatformName(), response.getAppName()));
                 mapDTO.setValue(response.getId());
+                mapDTO.setKey(response.getBindId());
                 return mapDTO;
             }).collect(Collectors.toList());
         }
