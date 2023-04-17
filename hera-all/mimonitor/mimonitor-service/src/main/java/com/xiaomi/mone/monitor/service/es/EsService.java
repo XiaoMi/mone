@@ -85,9 +85,11 @@ public class EsService {
     @PostConstruct
     public void init() {
 
+        //todo esClient 扩展为不同实现
+
         esClient = new EsClient(esAddress,esUserName,esPassWord);
 
-        cloudPlatformClient = new EsClient(cloudPlatformAddress,cloudPlatformUser,cloudPlatformPwd);
+        cloudPlatformClient = new EsClient(esAddress,esUserName,esPassWord);
     }
 
     public EsClient getEsClient() {
