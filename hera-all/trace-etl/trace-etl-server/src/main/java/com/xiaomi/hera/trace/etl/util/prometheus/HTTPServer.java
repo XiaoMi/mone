@@ -49,7 +49,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -60,7 +59,7 @@ public class HTTPServer {
 
     @Value("${prometheus.http.server.port}")
     private int port;
-    @Value("${prometheus.token}")
+    @NacosValue(value = "${prometheus.token}")
     private String token;
     @Value("${security.scanner.ua}")
     private String ua;
