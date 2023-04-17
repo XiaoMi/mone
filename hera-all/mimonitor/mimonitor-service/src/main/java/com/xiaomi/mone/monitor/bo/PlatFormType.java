@@ -11,14 +11,15 @@ import java.util.List;
  */
 public enum PlatFormType {
     open(0,"open","open",PlatForm.open,"开源组",0),
-//    china(0,"china","china",PlatForm.mione,"中国区",0),
-//    informationDept(1,"informationDept","china",PlatForm.informationDept,"信息部",1),
-//    youpin(2,"youpin","youpin",PlatForm.mione,"有品",0),
-//    deployment(6,"deployment","cloud",PlatForm.cloud,"云平台(deployment)",6),
-//    mice(7,"mice","cloud",PlatForm.cloud,"云平台(mice)",7),
-//    matrix(8,"matrix","cloud",PlatForm.cloud,"云平台(matrix)",8),
-//    ocean(9,"ocean","cloud",PlatForm.cloud,"云平台(ocean)",9),
-//    neo(10,"neo","cloud",PlatForm.cloud,"云平台(neo)",10),
+    //china原值为0，待拆分
+    china(110,"china","china",PlatForm.mione,"中国区",0),
+    informationDept(1,"informationDept","china",PlatForm.informationDept,"信息部",1),
+    youpin(2,"youpin","youpin",PlatForm.mione,"有品",0),
+    deployment(6,"deployment","cloud",PlatForm.cloud,"云平台(deployment)",6),
+    mice(7,"mice","cloud",PlatForm.cloud,"云平台(mice)",7),
+    matrix(8,"matrix","cloud",PlatForm.cloud,"云平台(matrix)",8),
+    ocean(9,"ocean","cloud",PlatForm.cloud,"云平台(ocean)",9),
+    neo(10,"neo","cloud",PlatForm.cloud,"云平台(neo)",10),
     ;
 
     private Integer code;
