@@ -50,4 +50,6 @@ public interface AlertManager {
     Result<JsonObject> editAlertGroup(String user, long id, String name, String note, String chatId, List<Long> memberIds);
 
     Result<JsonObject> deleteAlertGroup(String user, long id);
+
+    Integer getDefaultIamId();
 }
