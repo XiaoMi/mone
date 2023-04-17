@@ -23,5 +23,6 @@ public class AlertGroupQryInfo implements Serializable  {
     private long createdTime;
     private String type;
     private long relId;
+    private List<String> members;
 
 }

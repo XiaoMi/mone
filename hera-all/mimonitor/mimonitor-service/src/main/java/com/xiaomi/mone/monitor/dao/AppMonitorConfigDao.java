@@ -52,7 +52,8 @@ public class AppMonitorConfigDao {
             status = status_;
         }
 
-        AppMonitorConfigExample.Criteria ca = example.createCriteria().andStatusEqualTo(status);
+        AppMonitorConfigExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(status);
 
         if(projectId != null){
             ca.andProjectIdEqualTo(projectId);
@@ -89,7 +90,8 @@ public class AppMonitorConfigDao {
             status = status_;
         }
 
-        AppMonitorConfigExample.Criteria ca = example.createCriteria().andStatusEqualTo(status);
+        AppMonitorConfigExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(status);
 
         if(projectId != null){
             ca.andProjectIdEqualTo(projectId);

@@ -14,5 +14,7 @@ public class MiLogQuery implements Serializable {
     private Long projectId;
     private String serverIp;
     private String traceId;
+    private String generationTime;
+    private String level;
 
 }

@@ -24,7 +24,8 @@ public class AppTeslaAlarmRuleDao {
 
     public Long count(String name,String teslaGroupName,Integer type,String remark){
         AppTeslaAlarmRuleExample example = new AppTeslaAlarmRuleExample();
-        AppTeslaAlarmRuleExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        AppTeslaAlarmRuleExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(0);
 
         if (StringUtils.isNotBlank(teslaGroupName)){
             ca.andTeslaGroupEqualTo( teslaGroupName);
@@ -54,7 +55,8 @@ public class AppTeslaAlarmRuleDao {
         example.setLimit(pageSize);
         example.setOrderByClause("id desc");
 
-        AppTeslaAlarmRuleExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        AppTeslaAlarmRuleExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(0);
 
         if (StringUtils.isNotBlank(teslaGroupName)){
             ca.andTeslaGroupEqualTo( teslaGroupName);

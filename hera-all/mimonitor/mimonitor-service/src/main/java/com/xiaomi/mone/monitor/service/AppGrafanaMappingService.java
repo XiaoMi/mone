@@ -66,6 +66,8 @@ public class AppGrafanaMappingService {
     public static  final String OLD_ST_GRAFANA_DOMAIN = "http://xxx";
     public static  final String OLD_ONLINE_GRAFANA_DOMAIN = "http://xxx";
 
+//    @Reference(registry = "registryConfig",check = false, interfaceClass = FaasFuncManagerService.class,group="${dubbo.group.mifaass}",version = "1.0")
+//    FaasFuncManagerService faasFuncManagerService;
 
     public AppGrafanaMappingService(){
         executor = Executors.newSingleThreadExecutor();
@@ -124,6 +126,17 @@ public class AppGrafanaMappingService {
 //        });
 //    }
 
+//    public List<String> getFaasFunctionList(Integer projectId){
+//        com.xiaomi.youpin.infra.rpc.Result<List<FaasFuncBO>> result = faasFuncManagerService.list(Long.valueOf(projectId));
+//        log.info("getFaasFunctionList.result:{}",new Gson().toJson(result));
+//        if(result == null || CollectionUtils.isEmpty(result.getData())){
+//            return Lists.newArrayList();
+//        }
+//
+//        return result.getData().stream().map(t->{
+//            return t.getFuncName();
+//        }).collect(Collectors.toList());
+//    }
 
     public void exeReloadTemplateBase(Integer pSize){
 
@@ -197,6 +210,11 @@ public class AppGrafanaMappingService {
             }
             template.setLanguage(langUageCode);
 
+            //python模板只有一份deployment部署  枚举为6
+            if (baseInfo.getAppLanguage().equals("python")) {
+                template.setPlatform(6);
+            }
+
             List<GrafanaTemplate> search = grafanaTemplateDao.search(template);
             if(CollectionUtils.isEmpty(search)){
                 log.error("createTmpByAppBaseInfo,no template config found! baseInfo:{}",new Gson().toJson(baseInfo));
@@ -210,10 +228,16 @@ public class AppGrafanaMappingService {
 
             List<String> funcList = new ArrayList<>();
 
+//            if(AppType.serverless.getCode().equals(baseInfo.getAppType())){
+//                funcList = getFaasFunctionList(Integer.valueOf(baseInfo.getBindId()));
+//            }
             MutiGrafanaResponse mutiGrafanaResponse = grafanaService.requestGrafanaTemplate(serverType, baseInfo.getBindId() + "_" + baseInfo.getAppName(), grafanaDirByCode, search.get(0), funcList);
 
             log.info("createTmpByAppBaseInfo response info : {}",mutiGrafanaResponse);
-
+            if (mutiGrafanaResponse.getCode() == -2) {
+                log.info("createGrafana {} in blackList",baseInfo.getBindId() + "_" + baseInfo.getAppName());
+                return;
+            }
 
             log.info("grafanaMappingService.createTmpByAppBaseInfo success appName : {}, version:{},area : {}, returnUrl :{}"
                     ,baseInfo.getAppName(),mutiGrafanaResponse.getData().get(0).getMimonitor_version(),grafanaDirByCode,mutiGrafanaResponse);

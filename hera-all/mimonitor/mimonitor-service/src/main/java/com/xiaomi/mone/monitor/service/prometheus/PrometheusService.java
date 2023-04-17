@@ -52,6 +52,8 @@ public class PrometheusService {
     private static final int CHINA_GROUP_ORACLE = 0;
     private static final double LOAD_THRESHOLD_ORACLE = 0.7;
 
+    private final Gson gson = new Gson();
+
 
     @Autowired
     RestTemplateService restTemplateService;
@@ -490,6 +492,7 @@ public class PrometheusService {
 
         StringBuilder promQL = new StringBuilder(env)
 //                .append(UNDER_LINE).append(projectName)
+                //todo 兼容两个版本的变量 ：METRIC_JEAGER_SIGN
                 .append(UNDER_LINE).append(METRIC_HERA_SIGN)
                 .append(UNDER_LINE).append(source)
                 .append(metricSuffix == null ? "" : metricSuffix);
@@ -547,6 +550,7 @@ public class PrometheusService {
         StringBuilder promQL = new StringBuilder(env)
 //                .append(UNDER_LINE).append(projectId)
 //                .append(UNDER_LINE).append(projectName)
+                //todo 兼容两个版本的变量 ：METRIC_JEAGER_SIGN
                 .append(UNDER_LINE).append(METRIC_HERA_SIGN)
                 .append(UNDER_LINE).append(source)
                 .append(metricSuffix == null ? "" : metricSuffix);
@@ -625,6 +629,7 @@ public class PrometheusService {
         StringBuilder promQL = new StringBuilder(env)
 //                .append(UNDER_LINE).append(projectId)
 //                .append(UNDER_LINE).append(projectName)
+                //todo 兼容两个版本的变量 ：METRIC_JEAGER_SIGN
                 .append(UNDER_LINE).append(METRIC_HERA_SIGN)
                 .append(UNDER_LINE).append(source)
                 .append(metricSuffix == null ? "" : metricSuffix);
@@ -996,8 +1001,9 @@ public class PrometheusService {
     }
 
     //根据传入的服务名，获取对应的该服务的service列表
-    public Result queryDubboServiceList(String serviceName, String lastTime, String type) {
+    public Result queryDubboServiceList(String serviceName, String type,String startTime, String endTime) {
         //sum(sum_over_time(staging_jaeger_dubboProviderCount_count{application="221_maitian"}[30m]))by (serviceName)
+        log.info("queryDubboServiceList serviceName:{},type :{},startTime:{},endTime:{}",serviceName,type,startTime,endTime);
         //指标名称替换
         String prometheusEnv = "staging";
         if ("online".equals(env)) {
@@ -1006,28 +1012,58 @@ public class PrometheusService {
         String query = "";
         switch (type) {
             case "http":
-                query = "sum(sum_over_time(" + prometheusEnv + "_jaeger_aopTotalMethodCount_total{application=\"" + serviceName + "\"}[" + lastTime + "])) by (methodName)";
+                query = "sum(sum_over_time(" + prometheusEnv + "_jaeger_aopTotalMethodCount_total{application=\"" + serviceName + "\"}[30s])) by (methodName)";
                 break;
             case "dubboConsumer":
-                query = "sum(sum_over_time("+ prometheusEnv +"_jaeger_dubboBisTotalCount_total{application=\"" + serviceName + "\"}["+ lastTime +"])) by (serviceName)";
+                query = "sum(sum_over_time("+ prometheusEnv +"_jaeger_dubboBisTotalCount_total{application=\"" + serviceName + "\"}[30s])) by (serviceName)";
+                break;
+            case "dubbo":
+                query = "sum(sum_over_time(" + prometheusEnv + "_jaeger_dubboProviderCount_count{application=\"" + serviceName + "\"}[30s]))by (serviceName)";
+                break;
+            case "grpcServer":
+                query = "sum(sum_over_time(" + prometheusEnv + "_jaeger_grpcServer_total{application=\"" + serviceName + "\"}[30s]))by (serviceName)";
+                break;
+            case "grpcClient":
+                query = "sum(sum_over_time(" + prometheusEnv + "_jaeger_grpcClient_total{application=\"" + serviceName + "\"}[30s]))by (serviceName)";
+                break;
+            case "thriftServer":
+                query = "sum(sum_over_time(" + prometheusEnv + "_jaeger_thriftServer_total{application=\"" + serviceName + "\"}[30s]))by (serviceName)";
+                break;
+            case "thriftClient":
+                query = "sum(sum_over_time(" + prometheusEnv + "_jaeger_thriftClient_total{application=\"" + serviceName + "\"}[30s]))by (serviceName)";
+                break;
+            case "apusClient":
+                query = "sum(sum_over_time(" + prometheusEnv + "_jaeger_apusClient_total{application=\"" + serviceName + "\"}[30s]))by (serviceName)";
+                break;
+            case "apusServer":
+                query = "sum(sum_over_time(" + prometheusEnv + "_jaeger_apusServer_total{application=\"" + serviceName + "\"}[30s]))by (serviceName)";
                 break;
             default:
-                query = "sum(sum_over_time(" + prometheusEnv + "_jaeger_dubboProviderCount_count{application=\"" + serviceName + "\"}[" + lastTime + "]))by (serviceName)";
+                query = "sum(sum_over_time(" + prometheusEnv + "_jaeger_dubboProviderCount_count{application=\"" + serviceName + "\"}[30s]))by (serviceName)";
         }
         log.info("PrometheusService.queryDubboServiceList query : {}", query);
-        return queryDubboServiceListByPrometheus(query, type);
+        return queryDubboServiceListByPrometheus(query, type,startTime,endTime);
         // return Result.success(0);
     }
 
 
-    private Result queryDubboServiceListByPrometheus(String metric, String type) {
+    private Result queryDubboServiceListByPrometheus(String metric, String type,String startTime, String endTime) {
         Map<String, Object> map = new HashMap<>();
         map.put(P_QUERY, metric);  //指标参数
-        map.put(P_TIME, System.currentTimeMillis() / 1000L);
+     //   map.put(P_TIME, System.currentTimeMillis() / 1000L);
+        //step 1h = 15 2h = 2* 15
+        Long multi = (Long.parseLong(endTime) - Long.parseLong(startTime)) / 3600;
+        if (multi < 1 ) {
+            multi = 1L;
+        }
+        map.put(P_STEP,multi * 15);
+        map.put(P_START,startTime);
+        map.put(P_END,endTime);
+        log.info("queryDubboServiceListByPrometheus map :{},url :{},promql :{}",gson.toJson(map),prometheusUrl + URI_QUERY_RANGE,metric);
         try {
-            String data = restTemplateService.getHttpM(completeQueryUrl(prometheusUrl, URI_QUERY_MOMENT), map);
+            String data = restTemplateService.getHttpM(completeQueryUrl(prometheusUrl, URI_QUERY_RANGE), map);
             MetricResponseVector metricResult = new Gson().fromJson(data, MetricResponseVector.class);
-            System.out.println(metricResult);
+            //System.out.println(metricResult);
             if (metricResult == null || !"success".equals(metricResult.getStatus())) {
                 return Result.fail(ErrorCode.success);
             }
@@ -1128,7 +1164,9 @@ public class PrometheusService {
                         moneSpec.setSetReplicas(CountExpectedInstance(instanceNum, "normal",res.getMaxInstance()));
                         //发送消息
                         capacityAdjustMessageService.product(moneSpec);
-                        log.info("container : {} ,pipeline: {} 扩容mq为: {},queue size : {}",container, pipelineId, moneSpec.toString(),capacityAdjustMessageService.queueSize());
+//                        capacityService.capacityAdjustWithRecord(moneSpec);
+//                        AppCapacityAutoAdjust byId = appCapacityAutoAdjustDao.getById(res.getId());
+//                        log.info("container : {} ,pipeline: {} 扩容mq为: {},queue size : {},AppCapacityAutoAdjust:{}",container, pipelineId, moneSpec.toString(),capacityAdjustMessageService.queueSize(),byId.toString());
                     } else {
                         log.info("container : {} ,pipeline: {},不需要扩容了 podRealLoad : {} ", container, pipelineId, podRealLoad);
                     }

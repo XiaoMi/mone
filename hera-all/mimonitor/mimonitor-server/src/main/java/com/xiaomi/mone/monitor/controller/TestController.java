@@ -5,7 +5,6 @@ import com.xiaomi.mone.monitor.dao.model.AppGrafanaMapping;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.AA;
 import com.xiaomi.mone.monitor.service.AppMonitorService;
-import com.xiaomi.mone.monitor.service.FeishuService;
 import com.xiaomi.mone.monitor.service.GrafanaService;
 import com.xiaomi.mone.monitor.service.model.AppMonitorRequest;
 import com.xiaomi.mone.monitor.service.model.PageData;
@@ -39,9 +38,6 @@ public class TestController {
 
     @Autowired
     private GrafanaService grafanaImpl;
-
-    @Autowired
-    private FeishuService feishuService;
 
 
     @GetMapping("/test")

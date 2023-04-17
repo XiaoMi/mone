@@ -90,7 +90,7 @@ public class AppServiceMarketDao {
     //获取list
     public List<AppServiceMarket> SearchAppServiceMarketList(int pageNo,int pageSize,String creator,String marketName,String serviceName) {
         AppServiceMarketExample aje = new AppServiceMarketExample();
-        aje.setOrderByClause("id desc");
+        aje.setOrderByClause("create_time desc");
         aje.setLimit(pageSize);
         aje.setOffset((pageNo-1) * pageSize);
         AppServiceMarketExample.Criteria ca  = aje.createCriteria();

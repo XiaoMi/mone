@@ -46,7 +46,8 @@ public class AppMonitorDao {
 
     public Long getDataTotal(AppMonitor appMonitor,String ownerName,String careUser){
         AppMonitorExample example = new AppMonitorExample();
-        AppMonitorExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        AppMonitorExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(0);
 
 
         if (StringUtils.isNotBlank(appMonitor.getProjectName())){
@@ -97,7 +98,8 @@ public class AppMonitorDao {
         AppMonitorExample example = new AppMonitorExample();
         example.setOrderByClause("id desc");
         example.setLimit(1);
-        AppMonitorExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        AppMonitorExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(0);
         ca.andProjectIdEqualTo(projectId);
         if (StringUtils.isNotBlank(projectName)) {
             ca.andProjectNameEqualTo(projectName);
@@ -118,7 +120,8 @@ public class AppMonitorDao {
         AppMonitorExample example = new AppMonitorExample();
         example.setOrderByClause("id desc");
 
-        AppMonitorExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        AppMonitorExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(0);
         ca.andIamTreeIdEqualTo(aimTreeId);
 
         List<AppMonitor> appMonitors = appMonitorMapper.selectByExample(example);
@@ -134,7 +137,8 @@ public class AppMonitorDao {
 
     public Long getDataTotalByOr(String appName,String userName,String careUser){
         AppMonitorExample example = new AppMonitorExample();
-        AppMonitorExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        AppMonitorExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(0);
         if (StringUtils.isNotBlank(appName)){
             ca.andProjectNameLike("%" + appName + "%");
         }
@@ -142,14 +146,14 @@ public class AppMonitorDao {
             ca.andOwnerEqualTo(userName);
         }
 
-        AppMonitorExample.Criteria ca1 = example.createCriteria().andStatusEqualTo(0);
+        AppMonitorExample.Criteria ca1 = example.createCriteria();
+        ca1.andStatusEqualTo(0);
         if (StringUtils.isNotBlank(appName)){
-            ca1.andProjectNameLike(appName);
+            ca1.andProjectNameLike("%" + appName + "%");
         }
         if (StringUtils.isNotBlank(userName)){
             ca1.andCareUserEqualTo(userName);
         }
-
         example.or(ca1);
 
         return appMonitorMapper.countByExample(example);
@@ -160,25 +164,27 @@ public class AppMonitorDao {
         AppMonitorExample example = new AppMonitorExample();
         example.setOffset((page-1) * pageSize);
         example.setLimit(pageSize);
-        example.setOrderByClause("id desc");
 
-        AppMonitorExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        AppMonitorExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(0);
         if (StringUtils.isNotBlank(appName)){
-            ca.andProjectNameLike(appName);
+            ca.andProjectNameLike("%" + appName + "%");
         }
         if (StringUtils.isNotBlank(userName)){
             ca.andOwnerEqualTo(userName);
         }
 
-        AppMonitorExample.Criteria ca1 = example.createCriteria().andStatusEqualTo(0);
+        AppMonitorExample.Criteria ca1 = example.createCriteria();
+        ca1.andStatusEqualTo(0);
         if (StringUtils.isNotBlank(appName)){
-            ca1.andProjectNameLike(appName);
+            ca1.andProjectNameLike("%" + appName + "%");
         }
         if (StringUtils.isNotBlank(userName)){
             ca1.andCareUserEqualTo(userName);
         }
 
         example.or(ca1);
+        example.setOrderByClause("owner DESC,id desc");
 
         return appMonitorMapper.selectByExample(example);
 
@@ -187,7 +193,8 @@ public class AppMonitorDao {
     public List<AppMonitor> getAllApps(Integer page, Integer pageSize){
 
         AppMonitorExample example = new AppMonitorExample();
-        AppMonitorExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        AppMonitorExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(0);
         example.setOffset((page-1) * pageSize);
         example.setLimit(pageSize);
         example.setOrderByClause("id asc");
@@ -200,7 +207,8 @@ public class AppMonitorDao {
 
         AppMonitorExample example = new AppMonitorExample();
 
-        AppMonitorExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        AppMonitorExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(0);
         if (projectId != null){
             ca.andProjectIdEqualTo(projectId);
         }
@@ -213,7 +221,8 @@ public class AppMonitorDao {
             ca.andAppSourceEqualTo(appSource);
         }
 
-        AppMonitorExample.Criteria ca1 = example.createCriteria().andStatusEqualTo(0);
+        AppMonitorExample.Criteria ca1 = example.createCriteria();
+        ca.andStatusEqualTo(0);
         if (projectId != null){
             ca1.andProjectIdEqualTo(projectId);
         }
@@ -236,7 +245,8 @@ public class AppMonitorDao {
 
         AppMonitorExample example = new AppMonitorExample();
 
-        AppMonitorExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        AppMonitorExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(0);
         if (projectId != null){
             ca.andProjectIdEqualTo(projectId);
         }
@@ -270,7 +280,8 @@ public class AppMonitorDao {
         example.setOrderByClause("id desc");
 
 
-        AppMonitorExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        AppMonitorExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(0);
         ca.andOwnerEqualTo(userName);
 
         if (StringUtils.isNotBlank(appMonitor.getProjectName())){
@@ -300,7 +311,8 @@ public class AppMonitorDao {
         example.setLimit(pageSize);
         example.setOrderByClause("id desc");
 
-        AppMonitorExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        AppMonitorExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(0);
         ca.andCareUserEqualTo(userName);
 
         if (StringUtils.isNotBlank(appName)){

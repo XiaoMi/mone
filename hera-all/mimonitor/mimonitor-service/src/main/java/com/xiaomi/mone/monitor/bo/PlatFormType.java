@@ -10,7 +10,15 @@ import java.util.List;
  * @date 2021/12/2 5:27 下午
  */
 public enum PlatFormType {
-    open(0,"open","open",PlatForm.open,"开源组",0)
+    open(0,"open","open",PlatForm.open,"开源组",0),
+    china(0,"china","china",PlatForm.mione,"中国区",0),
+    informationDept(1,"informationDept","china",PlatForm.informationDept,"信息部",1),
+    youpin(2,"youpin","youpin",PlatForm.mione,"有品",0),
+    deployment(6,"deployment","cloud",PlatForm.cloud,"云平台(deployment)",6),
+    mice(7,"mice","cloud",PlatForm.cloud,"云平台(mice)",7),
+    matrix(8,"matrix","cloud",PlatForm.cloud,"云平台(matrix)",8),
+    ocean(9,"ocean","cloud",PlatForm.cloud,"云平台(ocean)",9),
+    neo(10,"neo","cloud",PlatForm.cloud,"云平台(neo)",10),
     ;
 
     private Integer code;
@@ -19,6 +27,9 @@ public enum PlatFormType {
     private PlatForm platForm;
     private String desc;
     private Integer marketCode;
+
+    private static List<Integer> cloudPlatCodes = Lists.newArrayList(PlatFormType.deployment.getCode(),
+            PlatFormType.mice.getCode(),PlatFormType.matrix.getCode(),PlatFormType.ocean.getCode(),PlatFormType.neo.getCode());
 
 
     PlatFormType(Integer code, String name, String grafanaDir,PlatForm platForm,String desc,Integer marketCode) {
@@ -129,7 +140,10 @@ public enum PlatFormType {
     }
 
     public static boolean isCloudPlatForm(Integer code){
-        return false;
+        if(code == null){
+            return false;
+        }
+        return cloudPlatCodes.contains(code);
     }
 
 }

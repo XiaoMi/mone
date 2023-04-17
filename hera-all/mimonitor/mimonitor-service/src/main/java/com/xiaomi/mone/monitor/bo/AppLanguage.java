@@ -8,7 +8,9 @@ import org.apache.commons.lang3.StringUtils;
  */
 public enum AppLanguage {
     java(0, "java"),
-    go(1, "golang");
+    go(1, "golang"),
+    python(2,"python"),
+    php(3,"php");
     private int code;
     private String message;
 

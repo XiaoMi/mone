@@ -16,36 +16,46 @@ import lombok.Data;
 @Builder
 public class AppAlarmData {
 
+    private Long startTime;
+    private Long endTime;
     private Long id;
     private String name;
     private Long iamTreeId;
-    private Integer httpExceptionNum;
-    private Integer httpClientExceptionNum;
-    private Integer dubboExceptionNum;
-    private Integer dubboPExceptionNum;
-    private Integer sqlExceptionNum;
-    private Integer redisExceptionNum;
-    private Integer dubboCSlowQueryNum;
-    private Integer dubboProviderSlowQueryNum;
+    private volatile Integer httpExceptionNum;
+    private volatile Integer httpClientExceptionNum;
+    private volatile Integer httpSlowNum;
+    private volatile Integer httpClientSlowNum;
+    private volatile Integer dubboExceptionNum;
+    private volatile Integer dubboPExceptionNum;
+    private volatile Integer sqlExceptionNum;
+    private volatile Integer sqlSlowNum;
+    private volatile Integer oracleExceptionNum;
+    private volatile Integer oracleSlowNum;
+    private volatile Integer redisExceptionNum;
+    private volatile Integer redisSlowNum;
+    private volatile Integer esExceptionNum;
+    private volatile Integer esSlowNum;
+    private volatile Integer dubboCSlowQueryNum;
+    private volatile Integer dubboProviderSlowQueryNum;
 
-    private Integer grpcServerErrorNum;
-    private Integer grpcClientErrorNum;
-    private Integer apusServerErrorNum;
-    private Integer apusClientErrorNum;
-    private Integer thriftServerErrorNum;
-    private Integer thriftClientErrorNum;
+    private volatile Integer grpcServerErrorNum;
+    private volatile Integer grpcClientErrorNum;
+    private volatile Integer apusServerErrorNum;
+    private volatile Integer apusClientErrorNum;
+    private volatile Integer thriftServerErrorNum;
+    private volatile Integer thriftClientErrorNum;
 
-    private Integer grpcClientSlowQueryNum;
-    private Integer grpcServerSlowQueryNum;
-    private Integer thriftClientSlowQueryNum;
-    private Integer thriftServerSlowQueryNum;
-    private Integer apusClientSlowQueryNum;
-    private Integer apusServerSlowQueryNum;
+    private volatile Integer grpcClientSlowQueryNum;
+    private volatile Integer grpcServerSlowQueryNum;
+    private volatile Integer thriftClientSlowQueryNum;
+    private volatile Integer thriftServerSlowQueryNum;
+    private volatile Integer apusClientSlowQueryNum;
+    private volatile Integer apusServerSlowQueryNum;
 
-    private Integer sqlSlowQueryNum;
-    private Integer alertTotal;
-    private Integer exceptionTotal;
-    private Integer slowTotal;
-    private Integer logExceptionNum;
+    private volatile Integer sqlSlowQueryNum;
+    private volatile Integer alertTotal;
+    private volatile Integer exceptionTotal;
+    private volatile Integer slowTotal;
+    private volatile Integer logExceptionNum;
 
 }

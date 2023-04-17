@@ -75,9 +75,12 @@ public class HeraBaseInfoDao {
         HeraAppBaseInfoExample example = new HeraAppBaseInfoExample();
 
         //默认查询未删除的数据
-        HeraAppBaseInfoExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        HeraAppBaseInfoExample.Criteria ca = example.createCriteria();
+
         if(baseInfo.getStatus() != null){
-            ca = example.createCriteria().andStatusEqualTo(baseInfo.getStatus());
+            ca.andStatusEqualTo(baseInfo.getStatus());
+        }else{
+            ca.andStatusEqualTo(0);
         }
 
         if(baseInfo.getBindId() != null){
@@ -139,9 +142,11 @@ public class HeraBaseInfoDao {
         HeraAppBaseInfoExample example = new HeraAppBaseInfoExample();
 
         //默认查询未删除的数据
-        HeraAppBaseInfoExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        HeraAppBaseInfoExample.Criteria ca = example.createCriteria();
         if(baseInfo.getStatus() != null){
             ca.andStatusEqualTo(baseInfo.getStatus());
+        }else{
+            ca.andStatusEqualTo(0);
         }
 
         if(baseInfo.getBindId() != null){
@@ -193,6 +198,35 @@ public class HeraBaseInfoDao {
 
     }
 
+    public List<HeraAppBaseInfo> queryNoCtime(Integer pageCount,Integer pageNum){
+
+        if(pageCount == null || pageCount.intValue() <=0){
+            pageCount = 1;
+        }
+        if(pageNum == null || pageNum.intValue() <=0){
+            pageNum = 10;
+        }
+
+        HeraAppBaseInfoExample example = new HeraAppBaseInfoExample();
+
+        //默认查询未删除的数据
+        HeraAppBaseInfoExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(0);
+        ca.andCreateTimeIsNull();
+
+        example.setOffset((pageCount-1) * pageNum);
+        example.setLimit(pageNum);
+        example.setOrderByClause("id desc");
+
+        try {
+            return heraAppBaseInfoMapper.selectByExampleWithBLOBs(example);
+        } catch (Exception e) {
+            log.error("HeraBaseInfoDao#queryNoCtime error!" + e.getMessage(),e);
+            return null;
+        }
+
+    }
+
 
     public HeraAppBaseInfo getById(Integer id){
 
@@ -215,6 +249,8 @@ public class HeraBaseInfoDao {
         heraAppBaseInfo.setUpdateTime(new Date());
         heraAppBaseInfo.setStatus(0);
 
+        heraAppBaseInfo.setAppSignId(heraAppBaseInfo.getBindId() + "-" + heraAppBaseInfo.getPlatformType());
+
         try {
             int affected = heraAppBaseInfoMapper.insert(heraAppBaseInfo);
             if (affected < 1) {
@@ -234,6 +270,10 @@ public class HeraBaseInfoDao {
             return 0;
         }
         heraAppBaseInfo.setUpdateTime(new Date());
+        if(heraAppBaseInfo.getBindId() != null && heraAppBaseInfo.getPlatformType() != null){
+            heraAppBaseInfo.setAppSignId(heraAppBaseInfo.getBindId() + "-" + heraAppBaseInfo.getPlatformType());
+        }
+
 
         try {
             int affected = heraAppBaseInfoMapper.updateByPrimaryKeyWithBLOBs(heraAppBaseInfo);
@@ -241,8 +281,34 @@ public class HeraBaseInfoDao {
                 log.warn("[HeraBaseInfoDao.update] failed to update heraAppBaseInfo: {}", heraAppBaseInfo.toString());
                 return 0;
             }
+            log.info("Dao update heraAppBaseInfo success!heraAppBaseInfo:{}",heraAppBaseInfo);
         } catch (Exception e) {
             log.error("[HeraBaseInfoDao.update] failed to update heraAppBaseInfo: {}, err: {}", heraAppBaseInfo.toString(), e);
+            return 0;
+        }
+        return 1;
+    }
+
+    public int updateSelective(HeraAppBaseInfo heraAppBaseInfo) {
+
+        if (null == heraAppBaseInfo) {
+            log.error("[HeraBaseInfoDao.updateSelective] null heraAppBaseInfo");
+            return 0;
+        }
+        heraAppBaseInfo.setUpdateTime(new Date());
+        if(heraAppBaseInfo.getBindId() != null && heraAppBaseInfo.getPlatformType() != null){
+            heraAppBaseInfo.setAppSignId(heraAppBaseInfo.getBindId() + "-" + heraAppBaseInfo.getPlatformType());
+        }
+
+
+        try {
+            int affected = heraAppBaseInfoMapper.updateByPrimaryKeySelective(heraAppBaseInfo);
+            if (affected < 1) {
+                log.warn("[HeraBaseInfoDao.updateSelective] failed to update heraAppBaseInfo: {}", heraAppBaseInfo.toString());
+                return 0;
+            }
+        } catch (Exception e) {
+            log.error("[HeraBaseInfoDao.updateSelective] failed to update heraAppBaseInfo: {}, err: {}", heraAppBaseInfo.toString(), e);
             return 0;
         }
         return 1;

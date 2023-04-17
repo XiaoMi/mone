@@ -72,14 +72,16 @@ public class AppAlarmRuleDao {
 
     public Long getDataTotal(){
         AppAlarmRuleExample example = new AppAlarmRuleExample();
-        AppAlarmRuleExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        AppAlarmRuleExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(0);
 
         return appAlarmRuleMapper.countByExample(example);
     }
 
     public List<AppAlarmRule> queryTeslaRules(){
         AppAlarmRuleExample example = new AppAlarmRuleExample();
-        AppAlarmRuleExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        AppAlarmRuleExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(0);
         ca.andAlarmIdIsNotNull();
         ca.andAlertIn(Lists.newArrayList("china_intranet_tesla_p99_time_cost","tesla_intranet_availability","tesla_outnet_availability"));
         example.setOffset(0);

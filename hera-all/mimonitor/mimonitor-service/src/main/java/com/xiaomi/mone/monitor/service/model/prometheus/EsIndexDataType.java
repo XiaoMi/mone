@@ -20,5 +20,7 @@ public enum EsIndexDataType {
     mq_producer,
 
     redis,
-    mysql;
+    oracle,
+    mysql,
+    elasticsearch;
 }

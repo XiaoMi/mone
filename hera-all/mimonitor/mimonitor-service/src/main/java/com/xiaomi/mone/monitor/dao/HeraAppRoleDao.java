@@ -16,6 +16,7 @@
 
 package com.xiaomi.mone.monitor.dao;
 
+import com.xiaomi.mone.monitor.dao.mapper.HeraAppBaseInfoMapper;
 import com.xiaomi.mone.monitor.dao.mapper.HeraAppRoleMapper;
 import com.xiaomi.mone.monitor.dao.model.*;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -53,9 +55,11 @@ public class HeraAppRoleDao {
         HeraAppRoleExample example = new HeraAppRoleExample();
 
         //默认查询未删除的数据
-        HeraAppRoleExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        HeraAppRoleExample.Criteria ca = example.createCriteria();
         if(heraAppRole.getStatus() != null){
             ca.andStatusEqualTo(heraAppRole.getStatus());
+        }else{
+            ca.andStatusEqualTo(0);
         }
 
         if(StringUtils.isNotEmpty(heraAppRole.getAppId())){
@@ -96,9 +100,11 @@ public class HeraAppRoleDao {
         HeraAppRoleExample example = new HeraAppRoleExample();
 
         //默认查询未删除的数据
-        HeraAppRoleExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        HeraAppRoleExample.Criteria ca = example.createCriteria();
         if(heraAppRole.getStatus() != null){
             ca.andStatusEqualTo(heraAppRole.getStatus());
+        }else{
+            ca.andStatusEqualTo(0);
         }
 
         if(StringUtils.isNotEmpty(heraAppRole.getAppId())){
@@ -142,8 +148,8 @@ public class HeraAppRoleDao {
 
         for(Integer platForm : platTypes){
             //默认查询未删除的数据
-            HeraAppRoleExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
-
+            HeraAppRoleExample.Criteria ca = example.createCriteria();
+            ca.andStatusEqualTo(0);
             ca.andAppIdEqualTo(appId);
 
             ca.andAppPlatformEqualTo(platForm);

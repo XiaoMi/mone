@@ -333,6 +333,7 @@ public class AlarmController {
             log.error("AlarmController.alertTeamQuery param : {} ,exception :{}", param,e.getMessage(),e);
             return Result.fail(ErrorCode.unknownError);
         }
+//        return alarmService.searchAlertTeam("", "", "", "", "", 16360, "gaoxihui", 1, 10);
     }
 
 
