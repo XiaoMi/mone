@@ -205,4 +205,9 @@ public class AlertManagerImpl implements AlertManager {
     public Result<JsonObject> deleteAlertGroup(String user, long id) {
         return null;
     }
+
+    @Override
+    public Integer getDefaultIamId(){
+        return 0;
+    }
 }

@@ -130,4 +130,8 @@ public class AlertServiceAdapt implements ApplicationContextAware,InitializingBe
 
         this.applicationContext = applicationContext;
     }
+
+    public Integer getDefaultIamId() {
+        return alertManager.getDefaultIamId();
+    }
 }
