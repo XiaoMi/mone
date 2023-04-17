@@ -20,6 +20,8 @@ import java.util.Map;
 public class MetricDetailQuery implements Serializable {
 
     private static final String domain = "domain";
+    //TODO 兼容两个版本的变量值（jaegerquery、hera），需要抽取适配变量
+    private static final String domain_jaeger_value = "jaegerquery";
     private static final String domain_hera_value = "hera";
     private static final String domain_cloud_platform_value = "mitelemetry";
     private static final String domain_tesla_value_china = "china_tesla";
@@ -93,7 +95,8 @@ public class MetricDetailQuery implements Serializable {
      */
     public Map<String,String> convertEsParam(){
         Map<String,String> map = new HashMap<>();
-
+        //TODO 兼容两个版本的变量值，需要抽取适配变量，兼容开源的domain_hera_value
+        //map.put(domain, appSource == null ? domain_jaeger_value : PlatFormType.isCodeBlondToPlatForm(appSource, PlatForm.cloud)  ? domain_cloud_platform_value : domain_jaeger_value);
         map.put(domain,  domain_hera_value);
 
         map.put(serviceName_,projectId + "_" + projectName.replaceAll("-","_"));
@@ -123,7 +126,9 @@ public class MetricDetailQuery implements Serializable {
             map.put(url_,serviceName + "/" + methodName);
         }
 
-        if(EsIndexDataType.mysql.name().equals(type)){
+        if(EsIndexDataType.mysql.name().equals(type)
+                || EsIndexDataType.oracle.name().equals(type)
+                || EsIndexDataType.elasticsearch.name().equals(type)){
             map.put(dataSource_,dataSource);
             map.put(url_,sql);
         }

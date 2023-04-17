@@ -14,6 +14,9 @@ import com.xiaomi.mone.monitor.service.model.prometheus.Metric;
 import com.xiaomi.mone.monitor.service.model.prometheus.MetricDetail;
 import com.xiaomi.mone.monitor.service.model.prometheus.MetricDetailQuery;
 import com.xiaomi.mone.monitor.service.prometheus.PrometheusService;
+import com.xiaomi.mone.monitor.bo.PlatFormType;
+import com.xiaomi.mone.monitor.bo.PlatForm;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
@@ -52,27 +55,39 @@ public class EsService {
     @NacosValue("${es.password}")
     private String esPassWord;
 
-    @NacosValue(value = "${es.query.timeout}",autoRefreshed = true)
-    private Long esQueryTimeOut;
+    @Value("${es.cloud.platform.address:novalue}")
+    private String cloudPlatformAddress;
 
-    @NacosValue(value = "${es.middleware.info.index}",autoRefreshed = true)
+    @Value("${es.cloud.platform.username:novalue}")
+    private String cloudPlatformUser;
+
+    @NacosValue("${es.cloud.platform.password:novalue}")
+    private String cloudPlatformPwd;
+
+    private EsClient cloudPlatformClient;
+
+    @Value("${es.middleware.info.index:novalue}")
     String middlewareIndex;
+
+    @Value("${es.query.timeout:1000}")
+    private Long esQueryTimeOut;
 
     private EsClient esClient;
 
     @Autowired
     private ProjectHelper projectHelper;
 
+    private static SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd");
+
     @Autowired
     PrometheusService prometheusService;
-
-    private static SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd");
 
     @PostConstruct
     public void init() {
 
         esClient = new EsClient(esAddress,esUserName,esPassWord);
 
+        cloudPlatformClient = new EsClient(cloudPlatformAddress,cloudPlatformUser,cloudPlatformPwd);
     }
 
     public EsClient getEsClient() {
@@ -141,13 +156,13 @@ public class EsService {
 
         CountRequest countRequest = new CountRequest(index);
         countRequest.source(sqb);
-        Long count = esClient.count(countRequest);
+        Long count = PlatFormType.isCodeBlondToPlatForm(param.getAppSource(), PlatForm.cloud) ? cloudPlatformClient.count(countRequest) : esClient.count(countRequest);
 
         sqb.from((page-1)*pageSize).size(pageSize).timeout(new TimeValue(esQueryTimeOut));
         sqb = sqb.sort("timestamp", SortOrder.DESC);
 
         request.source(sqb);
-        SearchResponse sr = esClient.search(request);
+        SearchResponse sr = PlatFormType.isCodeBlondToPlatForm(param.getAppSource(), PlatForm.cloud) ? cloudPlatformClient.search(request) :esClient.search(request);
 
         log.info("Es query index : {},labels : {}, result : {}" , index,labels,sr);
 
@@ -172,8 +187,11 @@ public class EsService {
                 ||EsIndexDataType.apus_server.name().equals(param.getType())
                 ||EsIndexDataType.redis.name().equals(param.getType())
                 ) ?
-                param.getMethodName() : "mysql".equals(param.getType()) ?
-                param.getSqlMethod() : "NO-Data";
+                param.getMethodName()
+                    : (EsIndexDataType.mysql.name().equals(param.getType())||
+                       EsIndexDataType.oracle.name().equals(param.getType()) ||
+                       EsIndexDataType.elasticsearch.name().equals(param.getType())) ?
+                       param.getSqlMethod() : "NO-Data";
 
 
         Map map = new HashMap();
@@ -185,7 +203,7 @@ public class EsService {
         map.put("serviceName",param.getServiceName());
         map.put("area",param.getArea());
         map.put("serverEnv",param.getServerEnv());
-        if("mysql".equals(param.getType())){
+        if(EsIndexDataType.mysql.name().equals(param.getType()) || EsIndexDataType.oracle.name().equals(param.getType())){
             map.put("sql",param.getSql());
             map.put("dataSource",param.getDataSource());
         }

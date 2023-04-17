@@ -114,7 +114,9 @@ public class AppAlarmStrategyDao {
             StringBuilder sqlB = new StringBuilder();
             sqlB.append("select an.id").append(",an.iamId").append(",an.appId").append(",an.appName").append(",an.strategy_type")
                     .append(",an.strategy_name").append(",an.desc").append(",an.creater").append(",an.status").append(",an.alert_team")
-                    .append(",an.create_time").append(",an.update_time").append(",an.group3").append(",an.group4").append(",an.group5").append(",an.envs,an.alert_members");
+                    .append(",an.create_time").append(",an.update_time").append(",an.group3").append(",an.group4").append(",an.group5")
+                    .append(",an.envs,an.alert_members,at_members");
+
             if(strategy.getStrategyType() != null && strategy.getStrategyType().equals(AlarmStrategyType.TESLA.getCode())){
                 sqlB.append(",an.creater as owner  from app_alarm_strategy an where 1=1 ");
                 if(!userConfigService.isAdmin(user)){
@@ -144,6 +146,8 @@ public class AppAlarmStrategyDao {
                 }
             }else{
                 sqlB.append(",app.owner").append(" from ")
+                        //TODO 这里要做个兼容内网的逻辑
+                        //.append("app_alarm_strategy an left join app_monitor app on an.appId=app.project_id and an.iamId=app.iam_tree_id").append(" where app.status=0 ");
                         .append("app_alarm_strategy an left join app_monitor app on an.appId=app.project_id").append(" where app.status=0 ");
                         if(filterOwner != null && filterOwner){
                             sqlB.append(" and app.owner=").append("@user");
@@ -239,6 +243,8 @@ public class AppAlarmStrategyDao {
                         info.convertEnvList(envs);
                         String alertMembers = rs.getString("alert_members");
                         info.setAlertMembers(StringUtils.isBlank(alertMembers) ? null :  Arrays.asList(alertMembers.split(",")));
+                        String atMembers = rs.getString("at_members");
+                        info.setAtMembers(StringUtils.isBlank(atMembers) ? null :  Arrays.asList(atMembers.split(",")));
 
                         list.add(info);
                     }
@@ -269,7 +275,8 @@ public class AppAlarmStrategyDao {
             StringBuilder sqlB = new StringBuilder();
             sqlB.append("select an.id").append(",an.iamId").append(",an.appId").append(",an.appName").append(",an.strategy_type")
                     .append(",an.strategy_name").append(",an.desc").append(",an.creater").append(",an.status").append(",an.alert_team")
-                    .append(",an.create_time").append(",an.update_time").append(",an.group3").append(",an.group4").append(",an.group5").append(",an.envs,an.alert_members");
+                    .append(",an.create_time").append(",an.update_time").append(",an.group3").append(",an.group4").append(",an.group5")
+                    .append(",an.envs,an.alert_members,at_members");
 
             sqlB.append(" from ")
                     .append("app_alarm_strategy an ").append(" where 1=1 ");
@@ -343,6 +350,8 @@ public class AppAlarmStrategyDao {
                         info.convertEnvList(envs);
                         String alertMembers = rs.getString("alert_members");
                         info.setAlertMembers(StringUtils.isBlank(alertMembers) ? null :  Arrays.asList(alertMembers.split(",")));
+                        String atMembers = rs.getString("at_members");
+                        info.setAtMembers(StringUtils.isBlank(atMembers) ? null :  Arrays.asList(atMembers.split(",")));
 
                         list.add(info);
                     }

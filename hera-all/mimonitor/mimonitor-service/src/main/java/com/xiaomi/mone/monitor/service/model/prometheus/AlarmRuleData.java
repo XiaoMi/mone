@@ -75,6 +75,10 @@ public class AlarmRuleData implements Serializable {
 
     private String teslaUrls;
 
+    private Integer basicNum;
+
+    private String teslaPreviewEnv;
+
     private String excludeTeslaUrls;
 
     private String includeMethods;
@@ -90,6 +94,10 @@ public class AlarmRuleData implements Serializable {
     private String exceptDubboServices;
 
     private String alarmDetailUrl;
+
+    private String includeHttpDomains;
+
+    private String exceptHttpDomains;
 
     private List<String> includeEnvs;//包含环境列表
 
@@ -109,7 +117,7 @@ public class AlarmRuleData implements Serializable {
 
     private List<String> alertMembers;//报警人员列表
 
-    private List<String> atMembers;
+    private List<String> atMembers;//@人员列表
 
     private String alarmCallbackUrl;
 
@@ -121,53 +129,53 @@ public class AlarmRuleData implements Serializable {
                 return;
             }
 
-            JsonObject jsonEnv = new Gson().fromJson(json,JsonObject.class);
-            if(jsonEnv.has("includeEnvs")){
-                String includeEnvsStr = jsonEnv.get("includeEnvs").getAsString();
-                this.setIncludeEnvs(Arrays.asList(includeEnvsStr.split(",")));
-            }
-            if(jsonEnv.has("exceptEnvs")){
-                String exceptEnvsStr = jsonEnv.get("exceptEnvs").getAsString();
-                this.setExceptEnvs(Arrays.asList(exceptEnvsStr.split(",")));
-            }
-            if(jsonEnv.has("includeServices")){
-                String includeServices = jsonEnv.get("includeServices").getAsString();
-                this.setIncludeServices(Arrays.asList(includeServices.split(",")));
-            }
-            if(jsonEnv.has("exceptServices")){
-                String exceptServices = jsonEnv.get("exceptServices").getAsString();
-                this.setExceptServices(Arrays.asList(exceptServices.split(",")));
-            }
+        JsonObject jsonEnv = new Gson().fromJson(json, JsonObject.class);
+        if (jsonEnv.has("includeEnvs")) {
+            String includeEnvsStr = jsonEnv.get("includeEnvs").getAsString();
+            this.setIncludeEnvs(Arrays.asList(includeEnvsStr.split(",")));
+        }
+        if (jsonEnv.has("exceptEnvs")) {
+            String exceptEnvsStr = jsonEnv.get("exceptEnvs").getAsString();
+            this.setExceptEnvs(Arrays.asList(exceptEnvsStr.split(",")));
+        }
+        if (jsonEnv.has("includeServices")) {
+            String includeServices = jsonEnv.get("includeServices").getAsString();
+            this.setIncludeServices(Arrays.asList(includeServices.split(",")));
+        }
+        if (jsonEnv.has("exceptServices")) {
+            String exceptServices = jsonEnv.get("exceptServices").getAsString();
+            this.setExceptServices(Arrays.asList(exceptServices.split(",")));
+        }
 
-            if(jsonEnv.has("includeModules")){
-                String includeModules = jsonEnv.get("includeModules").getAsString();
-                this.setIncludeModules(Arrays.asList(includeModules.split(",")));
-            }
+        if (jsonEnv.has("includeModules")) {
+            String includeModules = jsonEnv.get("includeModules").getAsString();
+            this.setIncludeModules(Arrays.asList(includeModules.split(",")));
+        }
 
-            if(jsonEnv.has("exceptModules")){
-                String exceptModules = jsonEnv.get("exceptModules").getAsString();
-                this.setExceptModules(Arrays.asList(exceptModules.split(",")));
-            }
+        if (jsonEnv.has("exceptModules")) {
+            String exceptModules = jsonEnv.get("exceptModules").getAsString();
+            this.setExceptModules(Arrays.asList(exceptModules.split(",")));
+        }
 
-            if(jsonEnv.has("includeFunctions")){
-                String includeFunctions = jsonEnv.get("includeFunctions").getAsString();
-                this.setIncludeFunctions(Arrays.asList(includeFunctions.split(",")));
-            }
+        if (jsonEnv.has("includeFunctions")) {
+            String includeFunctions = jsonEnv.get("includeFunctions").getAsString();
+            this.setIncludeFunctions(Arrays.asList(includeFunctions.split(",")));
+        }
 
-            if(jsonEnv.has("exceptFunctions")){
-                String exceptFunctions = jsonEnv.get("exceptFunctions").getAsString();
-                this.setExceptFunctions(Arrays.asList(exceptFunctions.split(",")));
-            }
+        if (jsonEnv.has("exceptFunctions")) {
+            String exceptFunctions = jsonEnv.get("exceptFunctions").getAsString();
+            this.setExceptFunctions(Arrays.asList(exceptFunctions.split(",")));
+        }
 
     }
 
-    public void convertLabels(){
+    public void convertLabels() {
 
-        if(StringUtils.isBlank(labels)){
+        if (StringUtils.isBlank(labels)) {
             return;
         }
 
-        JsonObject json = new Gson().fromJson(labels,JsonObject.class);
+        JsonObject json = new Gson().fromJson(labels, JsonObject.class);
 
         this.setIncludeMethods(json.has("includeMethods") ? json.get("includeMethods").getAsString() : null);
         this.setExceptMethods(json.has("exceptMethods") ? json.get("exceptMethods").getAsString() : null);
@@ -184,9 +192,18 @@ public class AlarmRuleData implements Serializable {
 
         this.setTeslaUrls(json.has("teslaUrls") ? json.get("teslaUrls").getAsString() : null);
 
+        this.setBasicNum(json.has("basicNum") ? json.get("basicNum").getAsInt() : null);
+
         this.setExcludeTeslaUrls(json.has("excludeTeslaUrls") ? json.get("excludeTeslaUrls").getAsString() : null);
 
         this.setAlarmCallbackUrl(json.has("alarmCallbackUrl") ? json.get("alarmCallbackUrl").getAsString() : null);
+
+        this.setTeslaPreviewEnv(json.has("teslaPreviewEnv") ? json.get("teslaPreviewEnv").getAsString() : null);
+
+        this.setIncludeHttpDomains(json.has("includeHttpDomains") ? json.get("includeHttpDomains").getAsString() : null);
+
+        this.setExceptHttpDomains(json.has("exceptHttpDomains") ? json.get("exceptHttpDomains").getAsString() : null);
+
     }
 
 

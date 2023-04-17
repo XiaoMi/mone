@@ -9,6 +9,8 @@ public enum AppendLabelType {
     http_except_uri,
     http_include_errorCode,
     http_except_errorCode,
+    http_client_inclue_domain,
+    http_client_excpet_domain,
     dubbo_include_method,
     dubbo_except_method,
     dubbo_include_service,

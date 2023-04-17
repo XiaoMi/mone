@@ -195,7 +195,7 @@ public class AlarmStrategyService {
 
         strategy.setEnvs(envs.toString());
 
-        strategy.setAlertMembers(String.join(",", param.getAlertMembers()));
+        strategy.setAlertMembers(String.join(",", param.getAlertMembers() == null ? new ArrayList<>() : param.getAlertMembers()));
         strategy.setAtMembers(String.join(",", param.getAtMembers() == null ? new ArrayList<>() : param.getAtMembers()));
 
         if (!appAlarmStrategyDao.updateById(strategy)) {

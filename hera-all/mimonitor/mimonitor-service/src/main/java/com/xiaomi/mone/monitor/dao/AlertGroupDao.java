@@ -19,6 +19,7 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Repository
@@ -27,6 +28,30 @@ public class AlertGroupDao {
 
     @Autowired
     private Dao dao;
+
+    public List<AlertGroup> getByIds(List<Long> ids, boolean needMember) {
+        SqlExpressionGroup sqlExpr = Cnd.cri().where().andInList("id", ids);
+        List<AlertGroup> agList = dao.query(AlertGroup.class, Cnd.where(sqlExpr));
+        if (CollectionUtils.isEmpty(agList) || !needMember) {
+            return agList;
+        }
+        sqlExpr = Cnd.cri().where().andInList("alert_group_id", agList.stream().map(AlertGroup::getId).collect(Collectors.toList()));
+        List<AlertGroupMember> agmList = dao.query(AlertGroupMember.class, Cnd.where(sqlExpr));
+        if (!CollectionUtils.isEmpty(agmList)) {
+            Map<Long, AlertGroup> agMap = agList.stream().collect(Collectors.toMap(ag -> ag.getId(), ag -> ag));
+            agmList.stream().forEach(agm -> {
+                AlertGroup ag = agMap.get(agm.getAlertGroupId());
+                if (ag == null) {
+                    return;
+                }
+                if (ag.getMembers() == null) {
+                    ag.setMembers(new ArrayList<>());
+                }
+                ag.getMembers().add(agm);
+            });
+        }
+        return agList;
+    }
 
     public AlertGroup getById(long id) {
         AlertGroup ag = dao.fetch(AlertGroup.class, id);

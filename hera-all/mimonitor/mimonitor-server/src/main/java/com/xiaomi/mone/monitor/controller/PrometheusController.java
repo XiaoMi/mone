@@ -171,6 +171,16 @@ public class PrometheusController {
     }
 
     @ResponseBody
+    @PostMapping("/prometheus/httpClientDomainList")
+    public Result<List<String>> httpClientDomainList(@RequestBody PromQueryRangeParam param){
+
+        List<String> httpClientDomainList = alarmService.getHttpClientServerDomain(param.getProjectId(),param.getProjectName());
+        log.info("httpClientDomainList param:{},httpClientDomainList:{}",param,httpClientDomainList);
+
+        return Result.success(!CollectionUtils.isEmpty(httpClientDomainList) ? httpClientDomainList.stream().distinct().collect(Collectors.toList()) : httpClientDomainList);
+    }
+
+    @ResponseBody
     @PostMapping("/prometheus/serverEnvList")
     public Result<Map> serverEnvList(@RequestBody PromQueryRangeParam param){
 
@@ -210,9 +220,14 @@ public class PrometheusController {
     public Result<PageData> logInfo(@RequestBody MiLogQuery param){
 
         TraceLogQuery query = new TraceLogQuery(param.getProjectId(),param.getServerIp(),param.getTraceId());
+//        query.setGenerationTime(param.getGenerationTime());
+//        query.setLevel(param.getLevel());
         try {
             PageData pd = new PageData();
             TraceLogDTO traceLog = logDataService.getTraceLog(query);
+
+            log.info("getTraceLog param : {},result:{}",param,traceLog.toString());
+
             Set<String> dataList = traceLog.getDataList();
             if(CollectionUtils.isEmpty(dataList)){
                 return Result.success(pd);
@@ -270,17 +285,17 @@ public class PrometheusController {
         return prometheusService.getServiceQps(serviceName,type);
     }
 
-    //获取dubbo服务的service列表  (type = http/dubbo/dubboConsumer)
+    //获取dubbo服务的service列表  (type = http/dubbo/dubboConsumer/grpcServer/grpcClient/thriftServer/thriftClient/apusClient/apusServer)
     @GetMapping("/api/prometheus/getDubboServiceList")
-    public Result getDubboServiceList(String serviceName,String lastTime,String type) {
-        if (StringUtils.isEmpty(serviceName) || StringUtils.isEmpty(lastTime)) {
+    public Result getDubboServiceList(String serviceName,String type,String startTime,String endTime) {
+        if (StringUtils.isEmpty(serviceName) || StringUtils.isEmpty(startTime) || StringUtils.isEmpty(endTime) || Long.parseLong(startTime) > Long.parseLong(endTime)) {
             return Result.fail(ErrorCode.success);
         }
         //默认dubbo
         if (StringUtils.isEmpty(type)) {
             type = "dubbo";
         }
-        return prometheusService.queryDubboServiceList(serviceName,lastTime,type);
+        return prometheusService.queryDubboServiceList(serviceName,type,startTime,endTime);
     }
 
 //    @GetMapping("/api-manual/redis/switch")

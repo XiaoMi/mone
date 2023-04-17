@@ -42,9 +42,11 @@ public class AppCapacityAutoAdjustDao {
         AppCapacityAutoAdjustExample example = new AppCapacityAutoAdjustExample();
 
         //默认查询未删除的数据
-        AppCapacityAutoAdjustExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        AppCapacityAutoAdjustExample.Criteria ca = example.createCriteria();
         if(appCapacityAutoAdjust.getStatus() != null){
-            ca = example.createCriteria().andStatusEqualTo(appCapacityAutoAdjust.getStatus());
+            ca.andStatusEqualTo(appCapacityAutoAdjust.getStatus());
+        }else{
+            ca.andStatusEqualTo(0);
         }
 
         if(appCapacityAutoAdjust.getAutoCapacity() != null){
@@ -82,9 +84,11 @@ public class AppCapacityAutoAdjustDao {
 
         AppCapacityAutoAdjustExample example = new AppCapacityAutoAdjustExample();
         //默认查询未删除的数据
-        AppCapacityAutoAdjustExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        AppCapacityAutoAdjustExample.Criteria ca = example.createCriteria();
         if(appCapacityAutoAdjust.getStatus() != null){
-            ca = example.createCriteria().andStatusEqualTo(appCapacityAutoAdjust.getStatus());
+            ca.andStatusEqualTo(appCapacityAutoAdjust.getStatus());
+        }else{
+            ca.andStatusEqualTo(0);//默认查询有效的
         }
 
         if(appCapacityAutoAdjust.getAutoCapacity() != null){

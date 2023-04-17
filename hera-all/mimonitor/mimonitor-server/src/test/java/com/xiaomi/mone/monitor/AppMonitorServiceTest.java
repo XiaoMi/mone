@@ -10,10 +10,8 @@ import com.xiaomi.mone.monitor.dao.model.AppMonitor;
 import com.xiaomi.mone.monitor.dao.model.GrafanaTemplate;
 import com.xiaomi.mone.monitor.dao.model.HeraAppBaseInfo;
 import com.xiaomi.mone.monitor.dao.model.HeraAppRole;
-import com.xiaomi.mone.monitor.service.impl.MiFeiShuServiceImpl;
 import com.xiaomi.mone.monitor.service.impl.AAImpl;
 import com.xiaomi.mone.monitor.service.kubernetes.CapacityAdjustMessageService;
-import com.xiaomi.mone.monitor.service.kubernetes.CapacityService;
 import com.xiaomi.mone.monitor.dao.model.*;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.AppGrafanaMappingService;
@@ -61,39 +59,10 @@ public class AppMonitorServiceTest {
     GrafanaTemplateDao grafanaTemplateDao;
 
     @Autowired
-    CapacityService capacityService;
-
-    @Autowired
     CapacityAdjustMessageService capacityAdjustMessageService;
 
     @Autowired
     AppCapacityAutoAdjustDao appCapacityAutoAdjustDao;
-
-    @Autowired
-    MiFeiShuServiceImpl feiShuService;
-
-    @Test
-    public void testFs(){
-        feiShuService.batchSendMsg(Lists.newArrayList("aaa","bbb"),"hello,msg from hera fs...");
-    }
-
-    @Autowired
-    AAImpl aa;
-
-//    @Autowired
-//    RedisHelper redisHelper;
-
-//    @Test
-//    public void testRedis(){
-//        redisHelper.set("aaccc","value",10000000);
-//        String aaccc = redisHelper.get("aaccc", String.class);
-//        System.out.println(aaccc);
-//    }
-
-    @Test
-    public void testAppMovePlat(){
-        aa.appPlatMove(150634,2,270653,0,19159,"hera-test-v1");
-    }
 
     @Test
     public void test11111(){
@@ -101,15 +70,6 @@ public class AppMonitorServiceTest {
         autoQuery.setStatus(0);         //0表示开启状态
         autoQuery.setAutoCapacity(1);  //开启自动扩容的
         List<AppCapacityAutoAdjust> result = appCapacityAutoAdjustDao.query(autoQuery, null, null);
-        System.out.println(new Gson().toJson(result));
-    }
-
-    @Test
-    public void testCapacityAdustQuery(){
-        CapacityAdjustRecordRequest request = new CapacityAdjustRecordRequest();
-        request.setAppId(91102);
-        System.out.println(new Gson().toJson(request));
-        Result result = capacityService.listCapacityAdjustRecord(request);
         System.out.println(new Gson().toJson(result));
     }
 
@@ -137,10 +97,8 @@ public class AppMonitorServiceTest {
         moneSpec.init();
         param.setMoneSpec(moneSpec);
         param.init(11);
-
-
-        String s = capacityService.capacityAdjust(param);
-        System.out.println("result===" + s);
+//        String s = capacityService.capacityAdjust(param);
+//        System.out.println("result===" + s);
     }
 
     @Test
@@ -278,17 +236,6 @@ public class AppMonitorServiceTest {
         app.setEnvMapping("");
         Result<String> stringResult = appMonitorService.createWithBaseInfo(app,"");
         System.out.println(new Gson().toJson(stringResult));
-    }
-
-    @Test
-    public void testNumSearch(){
-        ProjectInfo info = new ProjectInfo();
-        info.setName("");
-        info.setId(0L);
-        info.setIamTreeId(0L);
-        AppAlarmData appAlarmData = computeTimerService.getAppAlarmData(info, 1641019434l, 1641537834l, "518400s");
-
-        System.out.println(new Gson().toJson(Result.success(appAlarmData)));
     }
 
 

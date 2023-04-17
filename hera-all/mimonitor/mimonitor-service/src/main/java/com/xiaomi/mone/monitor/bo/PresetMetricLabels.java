@@ -7,6 +7,7 @@ package com.xiaomi.mone.monitor.bo;
 public enum PresetMetricLabels {
     http_uri("methodName"),
     http_error_code("errorCode"),
+    http_client_server_domain("serviceName"),
     dubbo_method("methodName"),
     dubbo_service("serviceName");
 

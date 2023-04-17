@@ -13,6 +13,7 @@ import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.AppMonitorService;
 import com.xiaomi.mone.monitor.service.alertmanager.AlertServiceAdapt;
+import com.xiaomi.mone.monitor.service.helper.AlertUrlHelper;
 import com.xiaomi.mone.monitor.service.model.PageData;
 import com.xiaomi.mone.monitor.service.model.prometheus.AlarmRuleData;
 import com.xiaomi.mone.monitor.service.model.prometheus.Metric;
@@ -39,9 +40,11 @@ public class AlarmService {
     private static final String http_error_metric = "httpError";
     private static final String http_client_error_metric = "httpClientError";//http client 错误数
     private static final String db_error_metric = "dbError";
+    private static final String oracle_error_metric = "oracleError";
     private static final String dubbo_consumer_error_metric = "dubboConsumerError";
     private static final String dubbo_provider_error_metric = "dubboProviderError";
     private static final String redis_error_metric = "redisError";
+    private static final String es_error_metric = "elasticsearchClientError";
 
     /**
      * 业务慢查询指标
@@ -51,7 +54,9 @@ public class AlarmService {
     private static final String dubbo_consumer_slow_query_metric = "dubboConsumerSlowQuery";
     private static final String dubbo_provider_slow_query_metric = "dubboProviderSlowQuery";
     private static final String db_slow_query_metric = "dbSlowQuery";
+    private static final String oracle_slow_query_metric = "oracleSlowQuery";
     private static final String redis_slow_query_metric = "redisSlowQuery";
+    private static final String es_slow_query_metric = "esSlowQuery";
 
 
     /**
@@ -75,6 +80,8 @@ public class AlarmService {
     //db
     private static final String db_avalible_success_metric = "sqlSuccessCount";
     private static final String db_avalible_total_metric = "sqlTotalCount";
+    private static final String oracle_avalible_total_metric = "oracleTotalCount";
+    private static final String es_avalible_total_metric = "elasticsearchClient";
 
 
     /**
@@ -102,7 +109,10 @@ public class AlarmService {
     @NacosValue(value = "${prometheus.alarm.env:staging}",autoRefreshed = true)
     private String prometheusAlarmEnv;
 
-    @NacosValue(value = "${rule.evaluation.interval:20}",autoRefreshed = true)
+    @Value("${server.type}")
+    private String serverType;
+
+    @NacosValue(value = "${rule.evaluation.interval:30}",autoRefreshed = true)
     private Integer evaluationInterval;
 
     @NacosValue(value = "${rule.evaluation.duration:30}",autoRefreshed = true)
@@ -126,7 +136,10 @@ public class AlarmService {
     @NacosValue(value = "${tesla.alert.time.cost.url:noconfig}",autoRefreshed = true)
     private String teslaAlertTimeCostnetUrl;
 
-    @NacosValue(value = "${tesla.increase.duration:5m}",autoRefreshed = true)
+    @NacosValue(value = "${resource.use.rate.url}",autoRefreshed = true)
+    private String resourceUseRateUrl;
+
+    @NacosValue(value = "${tesla.increase.duration}",autoRefreshed = true)
     private String teslaIncreaseDuration;
 
     @Value("${alert.manager.env:staging}")
@@ -140,6 +153,9 @@ public class AlarmService {
 
     @Autowired
     AlertServiceAdapt alertServiceAdapt;
+
+    @Autowired
+    private AlertUrlHelper alertUrlHelper;
 
 
     public String getExpr(AppAlarmRule rule,String scrapeIntervel,AlarmRuleData ruleData, AppMonitor app){
@@ -159,6 +175,12 @@ public class AlarmService {
             exceptLabels = getLabels(ruleData, AppendLabelType.http_except_uri);
             Map<String, String> httpExceptErrorCode = getLabels(ruleData, AppendLabelType.http_except_errorCode);
             exceptLabels.putAll(httpExceptErrorCode);
+
+            Map<String, String> httpClientIncludeDomains = getLabels(ruleData, AppendLabelType.http_client_inclue_domain);
+            includLabels.putAll(httpClientIncludeDomains);
+
+            Map<String, String> httpClientExcludeDomains = getLabels(ruleData, AppendLabelType.http_client_excpet_domain);
+            exceptLabels.putAll(httpClientExcludeDomains);
         }
 
         if(MetricLabelKind.dubboType(rule.getAlert())){
@@ -184,6 +206,8 @@ public class AlarmService {
                 return getPresetMetricCostAlarm(http_method_time_count,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels, scrapeIntervel,null, rule.getOp(),rule.getValue());
             case "http_availability":
                 return getAvailableRate(http_error_metric,http_avalible_total_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,avalible_duration_time,null,rule.getOp(),rule.getValue());
+            case "http_slow_query":
+                return getPresetMetricErrorAlarm(http_slow_query_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,scrapeIntervel,null,rule.getOp(),rule.getValue());
             case "http_client_availability":
                 return getAvailableRate(http_client_error_metric,http_client_method_total_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,avalible_duration_time,null,rule.getOp(),rule.getValue());
             case "http_client_error_times" :
@@ -192,6 +216,8 @@ public class AlarmService {
                 return getPresetMetricCostAlarm(http_client_method_time_count,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels, scrapeIntervel,null, rule.getOp(),rule.getValue());
             case "http_client_qps" :
                 return getPresetMetricQpsAlarm(http_client_method_total_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix, scrapeIntervel,null,rule.getOp(),rule.getValue());
+            case "http_client_slow_query":
+                return getPresetMetricErrorAlarm(http_client_slow_query_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,scrapeIntervel,null,rule.getOp(),rule.getValue());
             case "dubbo_error_times" :
                 return getPresetMetricErrorAlarm(dubbo_consumer_error_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,scrapeIntervel,null,rule.getOp(),rule.getValue());
             case "dubbo_provider_error_times" :
@@ -218,6 +244,24 @@ public class AlarmService {
                 return getPresetMetricErrorAlarm(db_slow_query_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,scrapeIntervel,null,rule.getOp(),rule.getValue());
             case "db_availability":
                 return getAvailableRate(db_error_metric,db_avalible_total_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,avalible_duration_time,null,rule.getOp(),rule.getValue());
+            case "oracle_error_times":
+                return getPresetMetricErrorAlarm(oracle_error_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,scrapeIntervel,null,rule.getOp(),rule.getValue());
+            case "oracle_slow_query":
+                return getPresetMetricErrorAlarm(oracle_slow_query_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,scrapeIntervel,null,rule.getOp(),rule.getValue());
+            case "oracle_availability":
+                return getAvailableRate(oracle_error_metric,oracle_avalible_total_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,avalible_duration_time,null,rule.getOp(),rule.getValue());
+
+            case "redis_error_times":
+                return getPresetMetricErrorAlarm(redis_error_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,scrapeIntervel,null,rule.getOp(),rule.getValue());
+            case "redis_slow_query":
+                return getPresetMetricErrorAlarm(redis_slow_query_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,scrapeIntervel,null,rule.getOp(),rule.getValue());
+
+            case "es_error_times":
+                return getPresetMetricErrorAlarm(es_error_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,scrapeIntervel,null,rule.getOp(),rule.getValue());
+            case "es_slow_query":
+                return getPresetMetricErrorAlarm(es_slow_query_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,scrapeIntervel,null,rule.getOp(),rule.getValue());
+            case "es_availability":
+                return getAvailableRate(es_error_metric,es_avalible_total_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,avalible_duration_time,null,rule.getOp(),rule.getValue());
             case "container_cpu_use_rate":
                 return getContainerCpuAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),false);
             case "container_cpu_average_load":
@@ -235,6 +279,8 @@ public class AlarmService {
                 return getContainerCpuResourceAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),false);
             case "container_mem_resource_use_rate":
                 return getContainerMemReourceAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),false);
+            case "container_disk_use_rate":
+                return getContainerDiskReourceAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),false);
 
             case "k8s_container_cpu_use_rate":
                 return getContainerCpuAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),true);
@@ -383,13 +429,21 @@ public class AlarmService {
             stringBuilder.append(",url!~'").append(teslaLabels).append("'");
         }
 
-        stringBuilder.append("}[").append(teslaIncreaseDuration).append("])) by (system,le,");
+        if(StringUtils.isNotBlank(rule.getTeslaPreviewEnv())){
+            if(("true".equals(rule.getTeslaPreviewEnv()) || "false".equals(rule.getTeslaPreviewEnv()))){
+                stringBuilder.append(",ispreview='").append(rule.getTeslaPreviewEnv()).append("'");
+            }else{
+                log.error("TeslaPreviewEnv value error! : {}",rule.getTeslaPreviewEnv());
+            }
+        }
+
+        stringBuilder.append("}[").append(teslaIncreaseDuration).append("])) by (job,system,le,");
 
         if(StringUtils.isNotBlank(rule.getTeslaGroup()) || StringUtils.isNotBlank(rule.getTeslaUrls()) || StringUtils.isNotBlank(rule.getExcludeTeslaUrls())){
             stringBuilder.append("url,");
         }
 
-        stringBuilder.append("group,instance,ip))) ");
+        stringBuilder.append("group,instance,ip,ispreview))) ");
 
         stringBuilder.append(rule.getOp());
         stringBuilder.append(rule.getValue());
@@ -426,15 +480,23 @@ public class AlarmService {
             stringBuilder.append(",url!~'").append(teslaLabels).append("'");
         }
 
+        if(StringUtils.isNotBlank(rule.getTeslaPreviewEnv())){
+            if(("true".equals(rule.getTeslaPreviewEnv()) || "false".equals(rule.getTeslaPreviewEnv()))){
+                stringBuilder.append(",ispreview='").append(rule.getTeslaPreviewEnv()).append("'");
+            }else{
+                log.error("TeslaPreviewEnv value error! : {}",rule.getTeslaPreviewEnv());
+            }
+        }
+
         stringBuilder.append("}[")
                 .append(teslaIncreaseDuration)
-                .append("])>0) by (system,");
+                .append("])>0) by (job,system,");
 
         if(StringUtils.isNotBlank(rule.getTeslaGroup()) || StringUtils.isNotBlank(rule.getTeslaUrls()) || StringUtils.isNotBlank(rule.getExcludeTeslaUrls())){
             stringBuilder.append("url,");
         }
 
-        stringBuilder.append("group,instance,ip) / sum(increase(").append(metricInfo.getTotalCallMetric()).append("{");
+        stringBuilder.append("group,instance,ip,ispreview) / sum(increase(").append(metricInfo.getTotalCallMetric()).append("{");
 
         stringBuilder.append("job='").append(metricInfo.getJobName()).append("'");
 
@@ -450,13 +512,25 @@ public class AlarmService {
             stringBuilder.append(",url!~'").append(teslaLabels).append("'");
         }
 
+        if(StringUtils.isNotBlank(rule.getTeslaPreviewEnv())){
+            if(("true".equals(rule.getTeslaPreviewEnv()) || "false".equals(rule.getTeslaPreviewEnv()))){
+                stringBuilder.append(",ispreview='").append(rule.getTeslaPreviewEnv()).append("'");
+            }else{
+                log.error("TeslaPreviewEnv value error! : {}",rule.getTeslaPreviewEnv());
+            }
+        }
+
         stringBuilder.append("}[")
-                .append(teslaIncreaseDuration).append("])>0) by (system,");
+                .append(teslaIncreaseDuration).append("]) > ");
+
+        stringBuilder.append(rule.getBasicNum() == null ? 0 : rule.getBasicNum());
+
+        stringBuilder.append(") by (job,system,");
 
         if(StringUtils.isNotBlank(rule.getTeslaGroup())  || StringUtils.isNotBlank(rule.getTeslaUrls()) || StringUtils.isNotBlank(rule.getExcludeTeslaUrls())){
             stringBuilder.append("url,");
         }
-        stringBuilder.append("group,instance,ip))),0) * 100 ");
+        stringBuilder.append("group,instance,ip,ispreview))),0) * 100 ");
 
 
         stringBuilder.append(rule.getOp());
@@ -479,6 +553,12 @@ public class AlarmService {
                 return map;
             case http_except_errorCode :
                 fillLabels(map, PresetMetricLabels.http_error_code.getLabelName(),ruleData.getExceptErrorCodes().replaceAll("4xx","4.*").replaceAll("5xx","5.*"));
+                return map;
+            case http_client_inclue_domain :
+                fillLabels(map, PresetMetricLabels.http_client_server_domain.getLabelName(),ruleData.getIncludeHttpDomains());
+                return map;
+            case http_client_excpet_domain :
+                fillLabels(map, PresetMetricLabels.http_client_server_domain.getLabelName(),ruleData.getExceptHttpDomains());
                 return map;
             case dubbo_include_method :
                 fillLabels(map, PresetMetricLabels.dubbo_method.getLabelName(),ruleData.getIncludeMethods());
@@ -582,9 +662,9 @@ public class AlarmService {
         StringBuilder expBuilder = new StringBuilder();
         expBuilder
                 .append("clamp_min((1-(")
-                .append("sum(sum_over_time(").append(errorMetricComplete).append("))").append(" by (application,system,serverIp,serviceName,methodName,sqlMethod,service,serverEnv,functionModule,functionName)")
+                .append("sum(sum_over_time(").append(errorMetricComplete).append("))").append(" by (application,system,serverIp,serviceName,methodName,sqlMethod,service,serverEnv,sql,dataSource,functionModule,functionName)")
                 .append("/")
-                .append("sum(sum_over_time(").append(totalMetricComplate).append("))").append(" by (application,system,serverIp,serviceName,methodName,sqlMethod,service,serverEnv,functionModule,functionName)")
+                .append("sum(sum_over_time(").append(totalMetricComplate).append("))").append(" by (application,system,serverIp,serviceName,methodName,sqlMethod,service,serverEnv,sql,dataSource,functionModule,functionName)")
                 .append(")),0) * 100")
                 .append(op).append(value);
 
@@ -606,7 +686,7 @@ public class AlarmService {
         exprBuilder.append("{system='mione',");
         exprBuilder.append("image!='',");
 
-        exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
+        exprBuilder.append("application='").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'");
 
         exprBuilder.append("}");
         exprBuilder.append("[1m]");
@@ -638,7 +718,7 @@ public class AlarmService {
         exprBuilder.append("image!='',");
         exprBuilder.append("system='mione',");
 
-        exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
+        exprBuilder.append("application='").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'");
 
         exprBuilder.append("}[1m]) * 100");
         exprBuilder.append(op).append(value);
@@ -658,7 +738,7 @@ public class AlarmService {
         exprBuilder.append("sum(irate(container_cpu_usage_seconds_total{");
         exprBuilder.append("image!='',");
         exprBuilder.append("system='mione',");
-        exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
+        exprBuilder.append("application='").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'");
 //        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
         exprBuilder.append("}[1d])) without (cpu) * 100");
         exprBuilder.append(op).append(value);
@@ -679,13 +759,13 @@ public class AlarmService {
         exprBuilder.append("image!='',");
         exprBuilder.append("system='mione',");
 
-        exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
+        exprBuilder.append("application='").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'");
 
         exprBuilder.append("}[1m])) by (application,ip,job,name,system,instance,id,pod,namespace,serverEnv) / ");
         exprBuilder.append("sum(avg_over_time(container_spec_memory_limit_bytes{");
         exprBuilder.append("image!='',");
 
-        exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
+        exprBuilder.append("application='").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'");
         exprBuilder.append("}[1m])) by (application,ip,job,name,system,instance,id,pod,namespace,serverEnv)) * 100");
         exprBuilder.append(op).append(value);
         log.info("getContainerMemAlarmExpr param: projectId:{}, projectName:{}, op:{},value:{}, return:{}",projectId, projectName, op,value, exprBuilder.toString());
@@ -706,7 +786,18 @@ public class AlarmService {
         exprBuilder.append("image!='',");
         exprBuilder.append("system='mione',");
 
-        exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
+        if(projectName.equals("mimonitor")){
+            if(isK8s){
+                exprBuilder.append("name =~'k8s.*'");
+            }else{
+                exprBuilder.append("container_label_PROJECT_ID!='',name !~'k8s.*'");
+            }
+
+        }else{
+            exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
+        }
+
+
 //        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
         exprBuilder.append("}[1d])) by (application,ip,job,name,system,instance,id,serverEnv) / ");
         exprBuilder.append("sum(avg_over_time(container_spec_memory_limit_bytes{");
@@ -714,11 +805,37 @@ public class AlarmService {
         exprBuilder.append("system='mione',");
 //        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
 
-        exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
+        if(projectName.equals("mimonitor")){
+            if(isK8s){
+                exprBuilder.append("name =~'k8s.*'");
+            }else{
+                exprBuilder.append("container_label_PROJECT_ID!='',name !~'k8s.*'");
+            }
 
-        exprBuilder.append("}[1d])) by (application,ip,job,name,system,instance,id,serverEnv)) * 100");
+        }else {
+            exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
+        }
+
+        exprBuilder.append("}[1d])) by (container_label_PROJECT_ID,application,ip,job,name,system,instance,id,serverEnv)) * 100");
         exprBuilder.append(op).append(value);
         log.info("getContainerMemReourceAlarmExpr param: projectId:{}, projectName:{}, op:{},value:{}, return:{}",projectId, projectName, op,value, exprBuilder.toString());
+        return exprBuilder.toString();
+    }
+
+    public String getContainerDiskReourceAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s){
+
+        String appGitName = appMonitorService.getAppGitName(projectId, projectName);
+        if(StringUtils.isNotBlank(appGitName)){
+            projectName = appGitName;
+        }
+
+        StringBuilder exprBuilder = new StringBuilder();
+        exprBuilder.append("clamp_max(sum(container_fs_usage_bytes{");
+        exprBuilder.append("system='mione',");
+        exprBuilder.append("application='").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'");
+        exprBuilder.append("}) by (application,name,ip,serverEnv)/10737418240 ,1) * 100  ");
+        exprBuilder.append(op).append(value);
+        log.info("getContainerDiskReourceAlarmExpr param: projectId:{}, projectName:{}, op:{},value:{}, return:{}",projectId, projectName, op,value, exprBuilder.toString());
         return exprBuilder.toString();
     }
 
@@ -789,7 +906,7 @@ public class AlarmService {
         exprBuilder.append("time() - container_last_seen{");
         exprBuilder.append("system='mione',");
         exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
-        exprBuilder.append("}").append(" > 120");
+        exprBuilder.append("}").append(" > 360");
 
         log.info("getAppCrashAlarmExpr param: projectId:{}, projectName:{},  return:{}",projectId, projectName, exprBuilder.toString());
         return exprBuilder.toString();
@@ -874,13 +991,49 @@ public class AlarmService {
         return list;
     }
 
+    public List<String> getHttpClientServerDomain(Integer projectId, String projectName){
+
+        List<Metric> metrics = listHttpMetric(projectId, projectName);
+        if(CollectionUtils.isEmpty(metrics)){
+            log.error("getHttpClientServerDomain no data found! projectId :{},projectName:{}",projectId,projectName);
+            return null;
+        }
+
+        List<String> result = new ArrayList<>();
+        for(Metric metric : metrics){
+            result.add(metric.getServiceName());
+        }
+
+        return result;
+    }
+
+    private List<Metric> listHttpMetric(Integer projectId,String projectName){
+        projectName = projectName.replaceAll("-","_");
+
+        StringBuilder builder = new StringBuilder();
+        builder.append(serverType);
+        builder.append("_jaeger_aopClientTotalMethodCount_total{application=\"")
+                .append(projectId).append("_").append(projectName)
+                .append("\"").append(",serviceName!=''}");
+        Result<PageData> pageDataResult = prometheusService.queryByMetric(builder.toString());
+        if(pageDataResult.getCode() != ErrorCode.success.getCode() || pageDataResult.getData() == null){
+            log.error("queryByMetric error! projectId :{},projectName:{}",projectId,projectName);
+            return null;
+        }
+
+        List<Metric> list = (List<Metric>) pageDataResult.getData().getList();
+        log.info("listHttpMetric param projectName:{},result:{}",projectName,list.size());
+
+        return list;
+    }
+
     private String getPresetMetricErrorAlarm(String sourceMetric,Integer projectId,String projectName,Map includeLabels,Map exceptLabels,String metricSuffix,String duration,String offset,String op,Float value){
         String s = prometheusService.completeMetricForAlarm(sourceMetric, includeLabels,exceptLabels, projectId,projectName, metricSuffix,  duration, null);
 
         StringBuilder expBuilder = new StringBuilder();
         expBuilder.append("sum(")
                 .append("sum_over_time").append("(").append(s).append(")")
-                .append(") by (application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,service,serverEnv,functionModule,functionName)")
+                .append(") by (application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,service,serverEnv,sql,dataSource,functionModule,functionName)")
                 .append(op).append(value);
 
 
@@ -935,7 +1088,7 @@ public class AlarmService {
         exprBuilder.append("max_over_time(jvm_threads_live_threads");
         exprBuilder.append("{");
         exprBuilder.append("application=").append("'").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'").append(",");
-        exprBuilder.append("ip!=").append("''");
+        exprBuilder.append("serverIp!=").append("''");
         exprBuilder.append("}[1m])");
         exprBuilder.append(op).append(value);
         log.info("getJvmThreadAlarmExpr param: projectId:{}, projectName:{}, return:{}",projectId, projectName, exprBuilder.toString());
@@ -950,7 +1103,7 @@ public class AlarmService {
             exprBuilder.append("action=~'end of major GC|endofminorGC',");
         }
         exprBuilder.append("application=").append("'").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'").append(",");
-        exprBuilder.append("ip!=").append("''");
+        exprBuilder.append("serverIp!=").append("''");
         exprBuilder.append("}[1m])");
         exprBuilder.append(op).append(value);
         log.info("getJvmThreadAlarmExpr param: projectId:{}, projectName:{}, return:{}",projectId, projectName, exprBuilder.toString());
@@ -1049,75 +1202,13 @@ public class AlarmService {
          * labels
          */
         JsonObject labels = new JsonObject();
-        if(rule.getAlert().endsWith("_intranet_tesla_availability") || rule.getAlert().endsWith("_staging_tesla_availability")){
-
-            if(rule.getAlert().startsWith("mihome_")){
-                //米家社区兼容
-                labels.addProperty("detailRedirectUrl",teslaAlertIntranetGrafanaUrl);
-                labels.addProperty("paramType","normal");
-                JsonObject json = new JsonObject();
-                json.addProperty("from","${alarmTime}-5min");
-                json.addProperty("to","${alarmTime}+5min");
-                json.addProperty("var-url","${url}");
-                json.addProperty("var-group","${group}");
-//                json.addProperty("var-Node","${ip}");
-                jsonSummary.addProperty("paramMapping",json.toString());
-            }else{
-                log.info("rule.getAlert() ===== {},teslaAlertIntranetUrl:{}",rule.getAlert(),teslaAlertIntranetUrl);
-                labels.addProperty("detailRedirectUrl",teslaAlertIntranetUrl);
-                labels.addProperty("paramType","tesla");
-            }
-
-        }
-
-        if(rule.getAlert().endsWith("_outnet_tesla_availability")){
-
-            if(rule.getAlert().startsWith("mihome_")){
-                //米家社区兼容
-                labels.addProperty("detailRedirectUrl",teslaAlertOutnetGrafanaUrl);
-                labels.addProperty("paramType","normal");
-                JsonObject json = new JsonObject();
-                json.addProperty("from","${alarmTime}-5min");
-                json.addProperty("to","${alarmTime}+5min");
-                json.addProperty("var-url","${url}");
-                json.addProperty("var-group","${group}");
-//                json.addProperty("var-Node","${ip}");
-                jsonSummary.addProperty("paramMapping",json.toString());
-            }else{
-                log.info("rule.getAlert() ===== {},teslaAlertOutnetUrl:{}",rule.getAlert(),teslaAlertOutnetUrl);
-                labels.addProperty("detailRedirectUrl",teslaAlertOutnetUrl);
-                labels.addProperty("paramType","tesla");
-            }
-
-        }
-
-        if (rule.getAlert().endsWith("_tesla_p99_time_cost")) {
-
-            labels.addProperty("detailRedirectUrl", teslaAlertTimeCostnetUrl);
-            labels.addProperty("paramType", "tesla");
-
-        }
-
-//        if(rule.getAlert().equals("container_cpu_resource_use_rate") || rule.getAlert().equals("container_mem_resource_use_rate") ){
-//            log.info("rule.getAlert() ===== {},resourceUseRateUrl:{}",rule.getAlert(),resourceUseRateUrl);
-//            labels.addProperty("detailRedirectUrl",resourceUseRateUrl);
-//            labels.addProperty("paramType","normal");
-//            JsonObject json = new JsonObject();
-//            json.addProperty("from","${alarmTime}-5min");
-//            json.addProperty("to","${alarmTime}+5min");
-//            json.addProperty("var-name","${name}");
-//            //添加到annotations属性
-//            jsonSummary.addProperty("paramMapping",json.toString());
-//        }
-
-
-
         labels.addProperty("exceptViewLables","detailRedirectUrl.paramType");
-
         if(StringUtils.isNotBlank(ruleData.getAlarmDetailUrl())){
             labels.addProperty("detailRedirectUrl",ruleData.getAlarmDetailUrl());
             labels.addProperty("paramType","customerPromql");
         }
+
+        alertUrlHelper.buildDetailRedirectUrl(user, app, rule.getAlert(), jsonSummary, labels);
 
         labels.addProperty("send_interval",rule.getSendInterval());
         labels.addProperty("app_iam_id",String.valueOf(rule.getIamId()));
@@ -1132,7 +1223,29 @@ public class AlarmService {
             labels.addProperty("alert_op",rule.getOp());
         }
         //报警阈值
-        if (rule.getValue() != null) {
+        if(rule.getMetricType() == AlarmRuleMetricType.customer_promql.getCode()){
+
+            String ruleExpr = ruleData.getExpr();
+            int a = ruleExpr.lastIndexOf(">") > 0 ? ruleExpr.lastIndexOf(">") :
+                    ruleExpr.lastIndexOf("<") > 0 ? ruleExpr.lastIndexOf("<") :
+                    ruleExpr.lastIndexOf("=") > 0 ? ruleExpr.lastIndexOf("=") :
+                    ruleExpr.lastIndexOf(">=") > 0 ? ruleExpr.lastIndexOf(">=") :
+                    ruleExpr.lastIndexOf("<=") > 0 ? ruleExpr.lastIndexOf("<=") :
+                    ruleExpr.lastIndexOf("!=") > 0 ? ruleExpr.lastIndexOf("!=") :
+                    -1;
+            log.info("add customer_promql ruleExpr :{},a:{}",ruleExpr,a);
+
+            String value = "0.0";
+            if (a > 0) {
+                try {
+                    value = ruleExpr.substring(a + 1).trim();
+                } catch (NumberFormatException e) {
+                    log.error(e.getMessage() + "ruleExpr : {} ; a : {}", ruleExpr, a, e);
+                }
+            }
+            labels.addProperty("alert_value",value);
+
+        }else if (rule.getValue() != null) {
             labels.addProperty("alert_value",rule.getValue().toString());
         }
         // 数据次数
@@ -1286,60 +1399,14 @@ public class AlarmService {
          * labels
          */
         JsonObject labels = new JsonObject();
-        if(rule.getAlert().endsWith("_intranet_tesla_availability") || rule.getAlert().endsWith("_staging_tesla_availability")){
-
-            if(rule.getAlert().startsWith("mihome_")){
-                //米家社区兼容
-                labels.addProperty("detailRedirectUrl",teslaAlertIntranetGrafanaUrl);
-                labels.addProperty("paramType","normal");
-                JsonObject json = new JsonObject();
-                json.addProperty("from","${alarmTime}-5min");
-                json.addProperty("to","${alarmTime}+5min");
-                json.addProperty("var-url","${url}");
-                json.addProperty("var-group","${group}");
-//                json.addProperty("var-Node","${ip}");
-                jsonSummary.addProperty("paramMapping",json.toString());
-            }else{
-                log.info("rule.getAlert() ===== {},teslaAlertIntranetUrl:{}",rule.getAlert(),teslaAlertIntranetUrl);
-                labels.addProperty("detailRedirectUrl",teslaAlertIntranetUrl);
-                labels.addProperty("paramType","tesla");
-            }
-
-        }
-
-        if(rule.getAlert().endsWith("_outnet_tesla_availability")){
-
-            if(rule.getAlert().startsWith("mihome_")){
-                //米家社区兼容
-                labels.addProperty("detailRedirectUrl",teslaAlertOutnetGrafanaUrl);
-                labels.addProperty("paramType","normal");
-                JsonObject json = new JsonObject();
-                json.addProperty("from","${alarmTime}-5min");
-                json.addProperty("to","${alarmTime}+5min");
-                json.addProperty("var-url","${url}");
-                json.addProperty("var-group","${group}");
-//                json.addProperty("var-Node","${ip}");
-                jsonSummary.addProperty("paramMapping",json.toString());
-            }else{
-                log.info("rule.getAlert() ===== {},teslaAlertOutnetUrl:{}",rule.getAlert(),teslaAlertOutnetUrl);
-                labels.addProperty("detailRedirectUrl",teslaAlertOutnetUrl);
-                labels.addProperty("paramType","tesla");
-            }
-
-        }
-
-        if(rule.getAlert().endsWith("_tesla_p99_time_cost")){
-            log.info("rule.getAlert() ===== {},teslaAlertTimeCostnetUrl:{}",rule.getAlert(),teslaAlertTimeCostnetUrl);
-            labels.addProperty("detailRedirectUrl",teslaAlertTimeCostnetUrl);
-            labels.addProperty("paramType","tesla");
-        }
-
         labels.addProperty("exceptViewLables","detailRedirectUrl.paramType");
 
         if(StringUtils.isNotBlank(ruleData.getAlarmDetailUrl())){
             labels.addProperty("detailRedirectUrl",ruleData.getAlarmDetailUrl());
             labels.addProperty("paramType","customerPromql");
         }
+
+        alertUrlHelper.buildDetailRedirectUrl(user, app, rule.getAlert(), jsonSummary, labels);
 
         labels.addProperty("send_interval",rule.getSendInterval());
         labels.addProperty("app_iam_id",String.valueOf(rule.getIamId()));
@@ -1353,8 +1420,31 @@ public class AlarmService {
         if (StringUtils.isNotBlank(rule.getOp())) {
             labels.addProperty("alert_op",rule.getOp());
         }
+
         //报警阈值
-        if (rule.getValue() != null) {
+        if(rule.getMetricType() == AlarmRuleMetricType.customer_promql.getCode()){
+
+            String ruleExpr = ruleData.getExpr();
+            int a = ruleExpr.lastIndexOf(">") > 0 ? ruleExpr.lastIndexOf(">") :
+                    ruleExpr.lastIndexOf("<") > 0 ? ruleExpr.lastIndexOf("<") :
+                            ruleExpr.lastIndexOf("=") > 0 ? ruleExpr.lastIndexOf("=") :
+                                    ruleExpr.lastIndexOf(">=") > 0 ? ruleExpr.lastIndexOf(">=") :
+                                            ruleExpr.lastIndexOf("<=") > 0 ? ruleExpr.lastIndexOf("<=") :
+                                                    ruleExpr.lastIndexOf("!=") > 0 ? ruleExpr.lastIndexOf("!=") :
+                                                            -1;
+            log.info("edit customer_promql ruleExpr :{},a:{}",ruleExpr,a);
+
+            String value = "0.0";
+            if (a > 0) {
+                try {
+                    value = ruleExpr.substring(a + 1).trim();
+                } catch (NumberFormatException e) {
+                    log.error(e.getMessage() + "ruleExpr : {} ; a : {}", ruleExpr, a, e);
+                }
+            }
+            labels.addProperty("alert_value",value);
+
+        }else if (rule.getValue() != null) {
             labels.addProperty("alert_value",rule.getValue().toString());
         }
 
@@ -1425,10 +1515,13 @@ public class AlarmService {
             jsonObject.add("alert_team", array);
         }
 
+
+        JsonArray membersArray = new JsonArray();
         if(!CollectionUtils.isEmpty(alertMembers)){
-            JsonArray array = new Gson().fromJson(JSON.toJSONString(alertMembers), JsonArray.class);
-            jsonObject.add("alert_member", array);
+            membersArray = new Gson().fromJson(JSON.toJSONString(alertMembers), JsonArray.class);
         }
+        jsonObject.add("alert_member", membersArray);
+
 
         JsonArray atMembersArray = new JsonArray();
         if(!CollectionUtils.isEmpty(ruleData.getAtMembers())){
@@ -1438,6 +1531,35 @@ public class AlarmService {
 
         return alertServiceAdapt.editRule(rule.getAlarmId(),jsonObject,String.valueOf(rule.getIamId()),user);
     }
+
+    public Result<JsonElement>  getAlarmRuleRemote(Integer alarmId,Integer iamId,String user){
+        /*Request request = createRequest(HttpMethodName.GET, alarmDomain + AlarmService.alarm_rule_alert_uri+"/" + alarmId, iamId, user);
+        System.out.println("request" + new Gson().toJson(request).toString());
+
+        JsonObject jsonObject = new JsonObject();
+        request.setBody(jsonObject.toString());
+        Result<JsonElement> jsonObjectResult = executeRequest(request);
+
+        return jsonObjectResult;*/
+        return null;
+    }
+
+    public Result updateAlarm(Integer alarmId,Integer iamId,String user,String body){
+
+        /*StringBuilder url = new StringBuilder(alarmDomain).append(AlarmService.alarm_rule_alert_uri).append("/").append(alarmId);
+
+        Request request = createRequest(HttpMethodName.PUT, url.toString(), iamId, user);
+
+        request.setBody(body);
+
+        Result<JsonElement> jsonObjectResult = executeRequest(request);
+
+        log.info("AlarmService.updateAlarm request : {},response:{}", new Gson().toJson(request).toString(),new Gson().toJson(jsonObjectResult).toString());
+
+        return jsonObjectResult;*/
+        return null;
+    }
+
 
     public Result deleteRule(Integer alarmId,Integer iamId, String user){
         return alertServiceAdapt.delRule(alarmId,String.valueOf(iamId),user);
@@ -1540,7 +1662,90 @@ public class AlarmService {
     public Result<JsonObject> getEventById(String user, Integer treeId, String eventId) {
         return alertServiceAdapt.getEventById(user,treeId,eventId);
     }
+    public Result<PageData> searchUser(String user, String searchName, int pageNo, int pageSize) {
+        /*StringBuilder reqUrl = new StringBuilder();
+        reqUrl.append(alarmDomain);
+        reqUrl.append(AlarmService.alarm_user_search).append("?page_no=").append(pageNo).append("&").append("page_size=").append(pageSize);
+        if (StringUtils.isNotBlank(searchName)) {
+            reqUrl.append("&name=").append(searchName);
+        }
+        Request request = createRequest(HttpMethodName.GET, reqUrl.toString(), getDefaultIamId(), user);
+        Result<PageData> result = queryList(request);
+        log.info("AlarmService.searchUser result={}", result);
+        return result;*/
+        return null;
+    }
 
+    public Result<JsonObject> createAlertGroup(String user, String name, String note, String chatId, List<Long> memberIds) {
+        /*Request request = createRequest(HttpMethodName.POST, alarmDomain + AlarmService.alarm_alert_group, getDefaultIamId(), user);
+        JsonObject params = new JsonObject();
+        params.addProperty("name", name);
+        params.addProperty("note", note);
+        if (StringUtils.isNotBlank(chatId)) {
+            params.addProperty("chat_id", chatId);
+        }
+        JsonArray memberList = new JsonArray();
+        for (Long memberId : memberIds) {
+            memberList.add(memberId);
+        }
+        params.add("members", memberList);
+        request.setBody(params.toString());
+        return exeRequest(request);*/
+
+        return null;
+    }
+
+    public Result<JsonObject> editAlertGroup(String user, long id, String name, String note, String chatId, List<Long> memberIds) {
+        /*StringBuilder reqUrl = new StringBuilder();
+        reqUrl.append(alarmDomain).append(AlarmService.alarm_alert_group).append("/").append(id);
+        Request request = createRequest(HttpMethodName.PUT, reqUrl.toString(), getDefaultIamId(), user);
+        JsonObject params = new JsonObject();
+        params.addProperty("name", name);
+        params.addProperty("note", note);
+        if (StringUtils.isNotBlank(chatId)) {
+            params.addProperty("chat_id", chatId);
+        }
+        JsonArray memberIdList = new JsonArray();
+        for (Long memberId : memberIds) {
+            memberIdList.add(memberId);
+        }
+        params.add("members", memberIdList);
+        request.setBody(params.toString());
+        return exeRequest(request);*/
+
+        return null;
+    }
+
+    public Result<JsonObject> deleteAlertGroup(String user, long id) {
+        /*StringBuilder reqUrl = new StringBuilder();
+        reqUrl.append(alarmDomain).append(AlarmService.alarm_alert_group).append("/").append(id);
+        Request request = createRequest(HttpMethodName.DELETE, reqUrl.toString(), getDefaultIamId(), user);
+        return exeRequest(request);*/
+        return null;
+    }
+
+    public Result<JsonObject> getAlertGroup(String user, long id) {
+        /*StringBuilder reqUrl = new StringBuilder();
+        reqUrl.append(alarmDomain).append(AlarmService.alarm_alert_group).append("/").append(id);
+        Request request = createRequest(HttpMethodName.GET, reqUrl.toString(), getDefaultIamId(), user);
+        return exeRequest(request);*/
+        return null;
+    }
+
+    public Result<PageData> getAlertGroupPageData(String user, String name, int pageNo, int pageSize) {
+        /*StringBuilder reqUrl = new StringBuilder();
+        reqUrl.append(alarmDomain).append(AlarmService.alarm_alert_group_list).append("?page_no=").append(pageNo)
+                .append("&page_size=").append(pageSize);
+        if (StringUtils.isNotBlank(user)) {
+            reqUrl.append("&member=").append(user);
+        }
+        if (StringUtils.isNotBlank(name)) {
+            reqUrl.append("&name=").append(name);
+        }
+        Request request = createRequest(HttpMethodName.GET, reqUrl.toString(), getDefaultIamId(), user);
+        return queryList(request);*/
+        return null;
+    }
 
      public Result<JsonObject> resolvedEvent(String user, Integer treeId, String alertName, String comment, Long startTime, Long endTime) {
         return alertServiceAdapt.resolvedEvent(user,treeId,alertName,comment,startTime,endTime);

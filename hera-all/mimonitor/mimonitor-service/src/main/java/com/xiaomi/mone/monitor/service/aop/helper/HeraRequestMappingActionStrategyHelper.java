@@ -63,7 +63,10 @@ public class HeraRequestMappingActionStrategyHelper {
         }
         AppAlarmRule rulequery = new AppAlarmRule();
         rulequery.setStatus(0);
-//        rulequery.setIamId(strategy.getIamId());
+        //兼容内网带有iamId的逻辑
+        if(strategy.getIamId() != null){
+            rulequery.setIamId(strategy.getIamId());
+        }
         rulequery.setStrategyId(strategy.getId());
         List<AppAlarmRule> rules = appAlarmRuleDao.query(rulequery, 0, Integer.MAX_VALUE);
         return Pair.of(strategy, rules);

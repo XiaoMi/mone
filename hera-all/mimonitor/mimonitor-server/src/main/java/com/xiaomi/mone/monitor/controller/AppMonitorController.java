@@ -14,7 +14,6 @@ import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.AppMonitorService;
 import com.xiaomi.mone.monitor.service.ComputeTimerService;
 import com.xiaomi.mone.monitor.service.HeraBaseInfoService;
-import com.xiaomi.mone.monitor.service.kubernetes.CapacityService;
 import com.xiaomi.mone.monitor.service.model.*;
 import com.xiaomi.mone.monitor.service.model.redis.AppAlarmData;
 import com.xiaomi.mone.tpc.login.util.UserUtil;
@@ -45,14 +44,12 @@ public class AppMonitorController {
     ComputeTimerService computeTimerService;
     @Autowired
     HeraBaseInfoService heraBaseInfoService;
-    @Autowired
-    CapacityService capacityService;
 
-    @ResponseBody
-    @PostMapping("/mimonitor/capacityAdjustRecord")
-    public Result selectAppAlarmHealth(@RequestBody CapacityAdjustRecordRequest request){
-        return capacityService.listCapacityAdjustRecord(request);
-    }
+//    @ResponseBody
+//    @PostMapping("/mimonitor/capacityAdjustRecord")
+//    public Result selectAppAlarmHealth(@RequestBody CapacityAdjustRecordRequest request){
+//        return capacityService.listCapacityAdjustRecord(request);
+//    }
 
     @GetMapping("/mimonitor/resourceUsage")
     public Result getResourceUsageUrl(Integer appId,String appName) {

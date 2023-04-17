@@ -90,6 +90,17 @@ public class AlertGroupService {
     }
 
     /**
+     * 告警组查询通过id列表
+     * @param user
+     * @param ids
+     * @return
+     */
+    public Result<List<AlertGroupInfo>> queryByIds(String user, List<Long> ids) {
+        List<AlertGroup> agList = alertGroupDao.getByIds(ids, true);
+        return Result.success(alertHelper.buildAlertGroupInfoList(user, agList));
+    }
+
+    /**
      * 告警组同步
      * @param user
      * @param type
@@ -188,7 +199,7 @@ public class AlertGroupService {
      */
     public Result alertGroupEdit(String user, AlertGroupParam param) {
         AlertGroup ag = alertGroupDao.getById(param.getId());
-        if (ag == null || !user.equals(ag.getCreater())) {
+        if (ag == null) {
             return Result.fail(ErrorCode.NoOperPermission);
         }
         Result result = alertServiceAdapt.editAlertGroup(user, ag.getRelId(), param.getName(), param.getNote(), param.getChatId(), param.getMemberIds());
@@ -220,7 +231,7 @@ public class AlertGroupService {
      */
     public Result alertGroupDelete(String user, AlertGroupParam param) {
         AlertGroup ag = alertGroupDao.getById(param.getId());
-        if (ag == null || !user.equals(ag.getCreater())) {
+        if (ag == null) {
             return Result.fail(ErrorCode.NoOperPermission);
         }
         Result<JsonObject> resultData = alertServiceAdapt.getAlertGroup(user, ag.getRelId());

@@ -6,5 +6,8 @@ package com.xiaomi.mone.monitor.bo;
  */
 public enum PlatForm {
     open,
+    mione,
+    informationDept,
+    cloud,
     ;
 }

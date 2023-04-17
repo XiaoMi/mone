@@ -71,7 +71,8 @@ public class AppGrafanaMappingDao {
     public AppGrafanaMapping getByAppName(String appName){
 
             AppGrafanaMappingExample example = new AppGrafanaMappingExample();
-            AppGrafanaMappingExample.Criteria ca = example.createCriteria().andAppNameEqualTo(appName);
+            AppGrafanaMappingExample.Criteria ca = example.createCriteria();
+            ca.andAppNameEqualTo(appName);
             List<AppGrafanaMapping> appGrafanaMappings= appGrafanaMappingMapper.selectByExample(example);
             if(appGrafanaMappings.size()>0){
                 return appGrafanaMappings.get(0);

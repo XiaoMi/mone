@@ -71,7 +71,172 @@ public class AppAlarmService {
     @Value("${alert.manager.env:staging}")
     private String alertManagerEnv;
 
+//    @Reference(registry = "registryConfig",check = false, interfaceClass = FaasFuncManagerService.class,group="${dubbo.group.mifaass}",version = "1.0")
+//    FaasFuncManagerService faasFuncManagerService;
 
+    @Deprecated
+    public void alarmRuleSwitchPlat(AppAlarmRule oldRule,Integer newProjectId,Integer newIamId,String oldProjectName,String newProjectName){
+
+        Result<JsonElement>  alarmRuleRemote = alarmService.getAlarmRuleRemote(oldRule.getAlarmId(), oldRule.getProjectId(), oldRule.getCreater());
+        if(!alarmRuleRemote.isSuccess()){
+            log.error("appPlatMove update get remote rule fail!oldRule:{},newProjectId:{},newIamId:{},newProjectName:{}",oldRule,newProjectId,newIamId,newProjectName);
+            return;
+        }
+        JsonElement remoteRule = alarmRuleRemote.getData();
+
+        if(remoteRule == null){
+            log.error("appPlatMove update no remote rule found!oldRule:{},newProjectId:{},newIamId:{},newProjectName:{}",oldRule,newProjectId,newIamId,newProjectName);
+            return;
+        }
+
+
+        JsonObject asJsonObject = remoteRule.getAsJsonObject();
+
+        /**
+         * 表达式中的projectId、projectName替换
+         */
+        String expr = asJsonObject.get("expr").getAsString();
+
+        String oldApplication = oldRule.getProjectId() + "_" + oldProjectName.replaceAll("-","_");
+        String newApplication = newProjectId + "_" + newProjectName.replaceAll("-","_");
+        String newExpr = expr.replace(oldApplication,newApplication);
+        asJsonObject.remove("expr");
+        asJsonObject.addProperty("expr",newExpr);
+
+
+        /**
+         * 替换iamId
+         */
+        asJsonObject.remove("tree_id");
+        asJsonObject.addProperty("tree_id",newIamId);
+
+
+        /**
+         * labels内容替换
+         */
+
+        JsonObject labels = asJsonObject.getAsJsonObject("labels");
+        labels.remove("project_id");
+        labels.addProperty("project_id",newProjectId);
+        labels.remove("project_name");
+        labels.addProperty("project_name",newProjectName);
+        labels.remove("app_iam_id");
+        labels.addProperty("app_iam_id",newIamId);
+
+        Result result = alarmService.updateAlarm(oldRule.getAlarmId(), oldRule.getIamId(), oldRule.getCreater(), asJsonObject.toString());
+
+        log.info("alarmRuleSwitchPlat updateAlarm request body:{},response{}",asJsonObject.toString(),new Gson().toJson(result));
+        if(result.isSuccess()){
+
+        }
+
+    }
+
+//    public Result queryFunctionList(Integer projectId){
+//
+//        ArrayList<ModuleInfo> functionList = Lists.newArrayList();
+//        com.xiaomi.youpin.infra.rpc.Result<List<FaasFuncBO>> result = faasFuncManagerService.list(Long.valueOf(projectId));
+//
+//        log.info("queryFunctionList projectId:{}, result:{}",projectId,new Gson().toJson(result));
+//        if(result == null || CollectionUtils.isEmpty(result.getData())){
+//            return Result.success(functionList);
+//        }
+//
+//        result.getData().forEach(t->{
+//
+//            ModuleInfo moduleInfo = new ModuleInfo(t.getModule(),t.getId(),t.getFuncName());
+//
+//            functionList.add(moduleInfo);
+//        });
+//
+//        return Result.success(functionList);
+//    }
+
+
+    public Result queryRulesByAppName(String appName, String userName, Integer page, Integer pageSize){
+
+        if(page == null){
+            page = 1;
+        }
+        if(pageSize == null){
+            pageSize = 10;
+        }
+        PageData pd = new PageData();
+        pd.setPage(page);
+        pd.setPageSize(pageSize);
+
+        Long aLong = appAlarmRuleDao.countAlarmRuleByAppName(userName, appName);
+        pd.setTotal(aLong);
+
+        List<AppWithAlarmRules> resultList = appAlarmRuleDao.queryRulesByAppName(userName,appName,page,pageSize);
+        if(!CollectionUtils.isEmpty(resultList)){
+            for(AppWithAlarmRules appWithAlarmRule : resultList){
+                List<AppAlarmRule> alarmRules = appWithAlarmRule.getAlarmRules();
+
+                appWithAlarmRule.setMetricMap(AlarmPresetMetrics.getEnumMap());
+                appWithAlarmRule.setCheckDataMap(AlarmCheckDataCount.getEnumMap());
+                appWithAlarmRule.setSendIntervalMap(AlarmSendInterval.getEnumMap());
+
+
+                AppAlarmRule rule = new AppAlarmRule();
+                rule.setIamId(appWithAlarmRule.getIamId());
+                rule.setStatus(0);
+                List<AppAlarmRule> rules = appAlarmRuleDao.query(rule, 0, Integer.MAX_VALUE);
+                appWithAlarmRule.setAlarmRules(rules);
+                if(!CollectionUtils.isEmpty(rules)){
+                    AppAlarmRule rule1 = rules.get(0);
+                    appWithAlarmRule.setCreater(rule1.getCreater());
+                    appWithAlarmRule.setLastUpdateTime(rule1.getUpdateTime());
+                    appWithAlarmRule.setRuleStatus(rule1.getRuleStatus());
+                }
+            }
+
+        }
+
+//        Result<PageData<List<AppMonitor>>> appsResult = appMonitorService.listMyApp(appName, userName, page, pageSize);
+//        if(appsResult.getData() == null || CollectionUtils.isEmpty(appsResult.getData().getList())){
+//            pd.setTotal(0l);
+//            return Result.success(pd);
+//        }
+//
+//        pd.setTotal(appsResult.getData().getTotal());
+//
+//        List<AppMonitor> list = appsResult.getData().getList();
+//
+//        List<AppWithAlarmRules> resultList = new ArrayList<>();
+//
+//        for(AppMonitor app : list){
+//
+//            log.info("queryRulesByAppName : app id :{},appname:{},iamTreeId:{}",app.getId(),app.getProjectName(),app.getIamTreeId());
+//            AppWithAlarmRules appAlarmRuleList = new AppWithAlarmRules();
+//            appAlarmRuleList.setAppName(app.getProjectName());
+//            appAlarmRuleList.setIamId(app.getIamTreeId());
+//            appAlarmRuleList.setProjectId(app.getProjectId());
+//
+//            AppAlarmRule rule = new AppAlarmRule();
+//            rule.setIamId(app.getIamTreeId());
+//            rule.setStatus(0);
+//            List<AppAlarmRule> rules = appAlarmRuleDao.query(rule, 0, Integer.MAX_VALUE);
+//
+//            appAlarmRuleList.setAlarmRules(rules);
+//            if(!CollectionUtils.isEmpty(rules)){
+//                AppAlarmRule rule1 = rules.get(0);
+//                appAlarmRuleList.setCreater(rule1.getCreater());
+//                appAlarmRuleList.setLastUpdateTime(rule1.getUpdateTime());
+//                appAlarmRuleList.setRuleStatus(rule1.getRuleStatus());
+//                appAlarmRuleList.setMetricMap(AlarmPresetMetrics.getEnumMap());
+//                appAlarmRuleList.setCheckDataMap(AlarmCheckDataCount.getEnumMap());
+//                appAlarmRuleList.setSendIntervalMap(AlarmSendInterval.getEnumMap());
+//
+//            }
+//            resultList.add(appAlarmRuleList);
+//        }
+
+        pd.setList(resultList);
+
+        return Result.success(pd);
+
+    }
 
     public Result queryNoRulesConfig(String appName, String userName, Integer page, Integer pageSize){
 
@@ -96,6 +261,42 @@ public class AppAlarmService {
 
     }
 
+//    public Result queryRulesByIamId(Integer iamId, String userName){
+//
+//
+//        AppMonitor appMonitor = appMonitorService.getByIamTreeId(iamId);
+//
+//        log.info("queryRulesByIamId appMonitor :{}",appMonitor.toString());
+//
+//        AppWithAlarmRules appAlarmRuleList = new AppWithAlarmRules();
+//        appAlarmRuleList.setAppName(appMonitor.getProjectName());
+//        appAlarmRuleList.setIamId(iamId);
+//        appAlarmRuleList.setProjectId(appMonitor.getProjectId());
+//
+//        AppAlarmRule rule = new AppAlarmRule();
+//        rule.setIamId(appMonitor.getIamTreeId());
+//        rule.setStatus(0);
+//        List<AppAlarmRule> rules = appAlarmRuleDao.query(rule, 0, Integer.MAX_VALUE);
+//
+//        appAlarmRuleList.setAlarmRules(rules);
+////        if(!CollectionUtils.isEmpty(rules)){
+////
+////            appAlarmRuleList.setAlarmRule(rules.get(0));
+////        }
+//
+//        if(!CollectionUtils.isEmpty(rules)){
+//            AppAlarmRule rule1 = rules.get(0);
+//            appAlarmRuleList.setCreater(rule1.getCreater());
+//            appAlarmRuleList.setLastUpdateTime(rule1.getUpdateTime());
+//            appAlarmRuleList.setRuleStatus(rule1.getRuleStatus());
+//            appAlarmRuleList.setMetricMap(AlarmPresetMetrics.getEnumMap());
+//            appAlarmRuleList.setCheckDataMap(AlarmCheckDataCount.getEnumMap());
+//            appAlarmRuleList.setSendIntervalMap(AlarmSendInterval.getEnumMap());
+//            appAlarmRuleList.setRemark(rule1.getRemark());
+//
+//        }
+//        return Result.success(appAlarmRuleList);
+//    }
 
     public Integer getAlarmConfigNumByTeslaGroup(String group){
         AppAlarmRule rule = new AppAlarmRule();
@@ -178,7 +379,7 @@ public class AppAlarmService {
             AppAlarmRule rule = new AppAlarmRule();
             BeanUtils.copyProperties(ruleData,rule);
             StringBuilder cname = new StringBuilder();
-            cname.append(param.getProjectId());
+            cname.append(param.getIamId() != null ? param.getIamId() : param.getProjectId());
             if (param.getStrategyType().intValue() == AlarmStrategyType.PAOMQL.getCode()) {
                 if(rule.getMetricType() == null){
                     rule.setMetricType(AlarmRuleMetricType.customer_promql.getCode());
@@ -215,7 +416,14 @@ public class AppAlarmService {
             rule.setCreater(param.getUser());
             rule.setRuleStatus(RuleStatusType.active.getCode());
 
-            rule.setRemark(StringUtils.isBlank(rule.getRemark()) ? param.getStrategyDesc() : rule.getRemark());
+            String remark = null;
+            if(rule.getMetricType() == AlarmRuleMetricType.customer_promql.getCode()){
+                remark = StringUtils.isBlank(rule.getRemark()) ? param.getStrategyDesc() : rule.getRemark();
+            }else{
+                remark = param.getStrategyDesc();
+            }
+            rule.setRemark(remark);
+
             rule.setCreateTime(new Date());
             rule.setUpdateTime(new Date());
             rule.setStrategyId(param.getStrategyId());
@@ -406,7 +614,6 @@ public class AppAlarmService {
             log.error("the strategy is not exist!param:{}",param.toString());
             return Result.fail(ErrorCode.nonExistentStrategy);
         }
-        alarmStrategy.setDesc(param.getStrategyDesc());
 
 
         /**
@@ -513,7 +720,17 @@ public class AppAlarmService {
 
         rule.setLabels(ruleData.getLabels());
 
-        rule.setRemark(alarmStrategy.getDesc());
+        /**
+         * 兼容自定义报警单条填写描述信息
+         */
+        String remark = null;
+        if(rule.getMetricType() == AlarmRuleMetricType.customer_promql.getCode()){
+            remark = StringUtils.isNotBlank(ruleData.getRemark()) ? ruleData.getRemark(): alarmStrategy.getDesc();
+        }else{
+            remark = alarmStrategy.getDesc();
+        }
+        rule.setRemark(remark);
+
         rule.setUpdateTime(new Date());
 
         Result result = alarmService.editRule(rule,ruleData,app,user);
@@ -543,7 +760,9 @@ public class AppAlarmService {
     public Result deleteRulesByIamId(Integer iamId, Integer strategyId, String user){
         AppAlarmRule rulequery = new AppAlarmRule();
         rulequery.setStatus(0);
-//        rulequery.setIamId(iamId);
+        if(iamId != null){
+            rulequery.setIamId(iamId);
+        }
         rulequery.setStrategyId(strategyId);
         List<AppAlarmRule> delRules = appAlarmRuleDao.query(rulequery, 0, Integer.MAX_VALUE);
         if(CollectionUtils.isEmpty(delRules)){
@@ -588,7 +807,9 @@ public class AppAlarmService {
 
         AppAlarmRule rulequery = new AppAlarmRule();
         rulequery.setStatus(0);
-//        rulequery.setIamId(iamId);
+        if(iamId != null){
+            rulequery.setIamId(iamId);
+        }
         rulequery.setStrategyId(strategyId);
         List<AppAlarmRule> delRules = appAlarmRuleDao.query(rulequery, 0, Integer.MAX_VALUE);
         if(CollectionUtils.isEmpty(delRules)){

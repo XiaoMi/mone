@@ -59,14 +59,21 @@ public enum MetricKind {
     public enum MetricType{
 
         http_exception("httpException","http异常","http"),
+        http_slow("httpSlow","http慢查询","http"),
         http_client_exception("httpClientException","httpClient异常","http"),
+        http_client_slow_query("httpClientSlow","httpClient慢查询","http"),
         dubbo_consumer_exception("dubboConsumerExcption","dubboConsumer异常","dubbo"),
         dubbo_provider_exception("dubboProviderExcption","dubboProvider异常","dubbo"),
         dubbo_consumer_slow_query("dubboConsumerSlow","dubboConsumer慢查询","dubbo"),
         dubbo_provider_slow_query("dubboProviderSlow","dubboProvider慢查询","dubbo"),
         db_exception("dbException","db异常","db"),
         db_slow_query("dbSlow","db慢查询","db"),
+        oracle_exception("oracleException","oracle异常","db"),
+        oracle_slow_query("oracleSlow","oracle慢查询","db"),
+        es_exception("esException","es异常","db"),
+        es_slow_query("esSlow","es慢查询","db"),
         redis_exception("redisException","redis异常","redis"),
+        redis_slow("redisSlow","redis慢查询","redis"),
 
 
         grpc_server_exception("grpcServerError","grpcServer异常","grpc"),

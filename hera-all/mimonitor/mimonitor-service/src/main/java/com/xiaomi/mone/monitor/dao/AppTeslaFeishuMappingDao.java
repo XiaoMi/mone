@@ -24,7 +24,8 @@ public class AppTeslaFeishuMappingDao {
 
     public Long count(String teslaGroup,String feishuGid,String remark){
         AppTeslaFeishuMappingExample example = new AppTeslaFeishuMappingExample();
-        AppTeslaFeishuMappingExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        AppTeslaFeishuMappingExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(0);
 
         if (StringUtils.isNotBlank(teslaGroup)){
             ca.andTeslaGroupLike("%" + teslaGroup + "%");
@@ -50,7 +51,9 @@ public class AppTeslaFeishuMappingDao {
         example.setLimit(pageSize);
         example.setOrderByClause("id desc");
 
-        AppTeslaFeishuMappingExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        AppTeslaFeishuMappingExample.Criteria ca = example.createCriteria();
+
+        ca.andStatusEqualTo(0);
 
         if (StringUtils.isNotBlank(teslaGroup)){
             ca.andTeslaGroupLike("%" + teslaGroup + "%");

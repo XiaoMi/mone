@@ -369,7 +369,8 @@ public class AlertHelper {
         agInfo.setMembers(buildUserInfoList(ag.getMembers()));
         agInfo.setType(ag.getType());
         agInfo.setRelId(ag.getRelId());
-        if (user.equals(ag.getCreater())) {
+        if (user != null && agInfo.getMembers() != null &&
+                agInfo.getMembers().stream().filter(m -> user.equals(m.getName())).findAny().isPresent()) {
             agInfo.setDelete(true);
             agInfo.setEdit(true);
         }
