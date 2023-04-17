@@ -18,6 +18,7 @@ import com.unfbx.chatgpt.entity.edits.Edit;
 import com.unfbx.chatgpt.entity.embeddings.EmbeddingResponse;
 import com.unfbx.chatgpt.entity.embeddings.Item;
 import com.unfbx.chatgpt.entity.images.ImageResponse;
+import com.unfbx.chatgpt.entity.whisper.WhisperResponse;
 import com.unfbx.chatgpt.interceptor.OpenAILogger;
 import io.reactivex.Single;
 import io.reactivex.SingleObserver;
@@ -48,6 +49,7 @@ import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.EntityUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 import org.junit.Test;
 import run.mone.openai.OpenaiCall;
 import run.mone.openai.net.FakeDnsResolver;
@@ -55,6 +57,7 @@ import run.mone.openai.net.MyConnectionSocketFactory;
 import run.mone.openai.net.MySSLConnectionSocketFactory;
 
 import javax.net.ssl.SSLContext;
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
@@ -377,6 +380,15 @@ public class OpenApiTest {
         res.getData().forEach(it -> {
             System.out.println(it);
         });
+    }
+
+    @Test
+    public void testSpeechToText() {
+        OpenAiClient openAiClient = client();
+        WhisperResponse res = openAiClient.speechToTextTranscriptions(new File("/tmp/ghsy.mp3"));
+        String text = res.getText();
+        System.out.println(text);
+        Assert.assertTrue(text.length() > 0);
     }
 
     @Test
