@@ -22,9 +22,8 @@ import com.xiaomi.data.push.rpc.RpcClient;
 import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
 import com.xiaomi.mone.log.agent.channel.ChannelDefine;
 import com.xiaomi.mone.log.agent.channel.conf.AgentTailConf;
-import com.xiaomi.mone.log.agent.export.Output;
-import com.xiaomi.mone.log.agent.export.RmqOutput;
-import com.xiaomi.mone.log.agent.export.TalosOutput;
+import com.xiaomi.mone.log.agent.factory.OutPutServiceFactory;
+import com.xiaomi.mone.log.agent.output.Output;
 import com.xiaomi.mone.log.agent.filter.FilterTrans;
 import com.xiaomi.mone.log.agent.input.AppLogInput;
 import com.xiaomi.mone.log.api.enums.LogTypeEnum;
@@ -134,14 +133,7 @@ public class ChannelDefineRpcLocator implements ChannelDefineLocator {
                     String typeName = logPattern.getMQConfig().getType();
                     MiddlewareEnum middlewareEnum = MiddlewareEnum.queryByName(typeName);
                     if (null != middlewareEnum) {
-                        switch (middlewareEnum) {
-                            case ROCKETMQ:
-                                output = config2rmqOutput(logPattern.getMQConfig(), logPattern);
-                                break;
-                            default:
-                                output = config2TalosOutput(logPattern.getMQConfig());
-                                break;
-                        }
+                        output = OutPutServiceFactory.getOutPutService(middlewareEnum.getServiceName()).configOutPut(logPattern);
                     }
                 }
                 // filter
@@ -163,33 +155,6 @@ public class ChannelDefineRpcLocator implements ChannelDefineLocator {
         agentTailConf.setAgentDefine(logCollectMeta.getAgentDefine());
         log.info("agent build metadata config:{}", GSON.toJson(agentTailConf));
         return agentTailConf;
-    }
-
-    private static RmqOutput config2rmqOutput(MQConfig mqConfig, LogPattern logPattern) {
-        RmqOutput output = new RmqOutput();
-        output.setOutputType(Output.OUTPUT_ROCKETMQ);
-        output.setClusterInfo(mqConfig.getClusterInfo());
-        output.setProducerGroup(mqConfig.getProducerGroup());
-        output.setAk(mqConfig.getAk());
-        output.setSk(mqConfig.getSk());
-        output.setTopic(mqConfig.getTopic());
-        output.setPartitionCnt(mqConfig.getPartitionCnt());
-        output.setTag(mqConfig.getTag());
-        output.setProducerGroup(DEFAULT_CONSUMER_GROUP + (null == logPattern.getPatternCode() ? "" : logPattern.getPatternCode()));
-        return output;
-    }
-
-    private static TalosOutput config2TalosOutput(MQConfig mqConfig) {
-        TalosOutput output = new TalosOutput();
-        output.setOutputType(Output.OUTPUT_TALOS);
-        output.setClusterInfo(mqConfig.getClusterInfo());
-        output.setProducerGroup(mqConfig.getProducerGroup());
-        output.setAk(mqConfig.getAk());
-        output.setSk(mqConfig.getSk());
-        output.setTopic(mqConfig.getTopic());
-        output.setTag(mqConfig.getTag());
-        output.setBatchExportSize(mqConfig.getBatchSendSize());
-        return output;
     }
 
     /**

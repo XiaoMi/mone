@@ -5,7 +5,7 @@ import com.google.gson.Gson;
 import com.xiaomi.mone.es.EsProcessor;
 import com.xiaomi.mone.log.common.Config;
 import com.xiaomi.mone.log.model.EsInfo;
-import com.xiaomi.mone.log.stream.compensate.MqMessageDTO;
+import com.xiaomi.mone.log.stream.job.compensate.MqMessageDTO;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.plugin.es.EsProcessorConf;
 import com.xiaomi.youpin.docean.plugin.es.EsService;
@@ -62,9 +62,10 @@ public class EsPlugin {
             if (esService == null) {
                 if (StringUtils.isNotBlank(esInfo.getUser()) && StringUtils.isNotBlank(esInfo.getPwd())) {
                     esService = new EsService(esInfo.getAddr(), esInfo.getUser(), esInfo.getPwd());
-                }
-                if (StringUtils.isNotBlank(esInfo.getToken())) {
+                } else if (StringUtils.isNotBlank(esInfo.getToken())) {
                     esService = new EsService(esInfo.getAddr(), esInfo.getToken(), esInfo.getCatalog(), esInfo.getDatabase());
+                } else {
+                    esService = new EsService(esInfo.getAddr(), esInfo.getUser(), esInfo.getPwd());
                 }
                 esServiceMap.put(cacheKey(esInfo), esService);
             }

@@ -1,6 +1,6 @@
 package com.xiaomi.mone.log.stream.job.extension;
 
-import com.xiaomi.mone.log.stream.compensate.MqMessageDTO;
+import com.xiaomi.mone.log.stream.job.compensate.MqMessageDTO;
 
 import java.util.Map;
 

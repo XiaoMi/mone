@@ -1,8 +1,6 @@
 package com.xiaomi.mone.log.manager.model.pojo;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 /**
  * @author wtt

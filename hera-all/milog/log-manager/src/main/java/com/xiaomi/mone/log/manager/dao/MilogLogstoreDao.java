@@ -30,7 +30,7 @@ public class MilogLogstoreDao {
     @Resource
     private NutDao dao;
 
-    public boolean newMilogLogstore(MilogLogStoreDO ml) {
+    public boolean newMilogLogStore(MilogLogStoreDO ml) {
         MilogLogStoreDO ret = dao.insert(ml);
         if (ret == null) {
             return false;

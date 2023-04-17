@@ -1,5 +1,7 @@
 package com.xiaomi.mone.log.manager.model;
+
 import lombok.Data;
+
 import java.io.Serializable;
 
 @Data

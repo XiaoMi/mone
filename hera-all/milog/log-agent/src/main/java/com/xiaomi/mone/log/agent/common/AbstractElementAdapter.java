@@ -17,9 +17,9 @@
 package com.xiaomi.mone.log.agent.common;
 
 import com.google.gson.*;
-import com.xiaomi.mone.log.agent.export.RmqOutput;
-import com.xiaomi.mone.log.agent.export.TalosOutput;
+import com.xiaomi.mone.log.agent.output.RmqOutput;
 import com.xiaomi.mone.log.agent.input.*;
+import lombok.SneakyThrows;
 
 import java.lang.reflect.Type;
 
@@ -70,13 +70,18 @@ public class AbstractElementAdapter implements
                 clz = RmqOutput.class;
                 break;
             case "talos":
-                clz = TalosOutput.class;
+                clz = getClassForName();
                 break;
             default:
                 break;
         }
 
         return jsonDeserializationContext.deserialize(jsonElement, clz);
+    }
+
+    @SneakyThrows
+    public Class getClassForName() {
+        return Class.forName("com.xiaomi.mone.log.agent.output.TalosOutput");
     }
 
     @Override

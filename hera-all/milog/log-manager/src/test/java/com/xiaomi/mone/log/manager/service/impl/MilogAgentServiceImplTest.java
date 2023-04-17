@@ -3,11 +3,14 @@ package com.xiaomi.mone.log.manager.service.impl;
 import com.google.gson.Gson;
 import com.xiaomi.mone.log.api.model.meta.LogCollectMeta;
 import com.xiaomi.mone.log.api.service.AgentConfigService;
+import com.xiaomi.mone.log.manager.service.extension.agent.MilogAgentServiceImpl;
 import com.xiaomi.youpin.docean.Ioc;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
 import java.util.Arrays;
+
+import static com.xiaomi.mone.log.manager.common.utils.ManagerUtil.getConfigFromNanos;
 
 @Slf4j
 public class MilogAgentServiceImplTest {
@@ -44,6 +47,7 @@ public class MilogAgentServiceImplTest {
 
     @Test
     public void process1() {
+        getConfigFromNanos();
         Ioc.ins().init("com.xiaomi");
         AgentConfigService agentConfigService = Ioc.ins().getBean(AgentConfigServiceImpl.class);
         LogCollectMeta logCollectMeta = agentConfigService.getLogCollectMetaFromManager("127.0.0.1");

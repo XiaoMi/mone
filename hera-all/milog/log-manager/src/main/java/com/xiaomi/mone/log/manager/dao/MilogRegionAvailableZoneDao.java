@@ -3,7 +3,6 @@ package com.xiaomi.mone.log.manager.dao;
 import com.xiaomi.mone.log.manager.model.pojo.MilogRegionAvailableZoneDO;
 import com.xiaomi.youpin.docean.anno.Service;
 import lombok.extern.slf4j.Slf4j;
-import org.nutz.dao.Chain;
 import org.nutz.dao.Cnd;
 import org.nutz.dao.impl.NutDao;
 

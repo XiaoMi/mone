@@ -21,7 +21,7 @@ public class MilogLoginController {
 
 
     /**
-     * 获取用户信息--米盾登录后才会有
+     * 获取用户信息--登录后才会有
      *
      * @return
      */

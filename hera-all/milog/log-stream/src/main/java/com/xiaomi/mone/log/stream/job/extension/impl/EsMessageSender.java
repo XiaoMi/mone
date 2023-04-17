@@ -1,8 +1,8 @@
 package com.xiaomi.mone.log.stream.job.extension.impl;
 
 import com.xiaomi.mone.es.EsProcessor;
-import com.xiaomi.mone.log.stream.compensate.MqMessageDTO;
-import com.xiaomi.mone.log.stream.compensate.MqMessageProduct;
+import com.xiaomi.mone.log.stream.job.compensate.MqMessageDTO;
+import com.xiaomi.mone.log.stream.job.extension.MqMessageProduct;
 import com.xiaomi.mone.log.stream.job.extension.MessageSender;
 import com.xiaomi.mone.log.utils.DateUtils;
 

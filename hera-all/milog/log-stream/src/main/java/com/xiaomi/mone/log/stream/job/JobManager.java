@@ -2,11 +2,13 @@ package com.xiaomi.mone.log.stream.job;
 
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
+import com.xiaomi.mone.log.api.enums.MiddlewareEnum;
 import com.xiaomi.mone.log.model.EsInfo;
 import com.xiaomi.mone.log.model.LogtailConfig;
 import com.xiaomi.mone.log.model.MilogSpaceData;
 import com.xiaomi.mone.log.model.SinkConfig;
 import com.xiaomi.mone.log.stream.common.LogStreamConstants;
+import com.xiaomi.mone.log.stream.common.SinkJobEnum;
 import com.xiaomi.mone.log.stream.job.extension.SinkJob;
 import com.xiaomi.mone.log.stream.job.extension.SinkJobProvider;
 import com.xiaomi.mone.log.stream.sink.SinkChain;
@@ -97,10 +99,14 @@ public class JobManager {
                     .sinkChain(this.getSinkChain())
                     .tail(logtailConfig.getTail())
                     .esInfo(esInfo)
-                    .parseType(logtailConfig.getParseType()).build();
+                    .parseType(logtailConfig.getParseType())
+                    .mqType(MiddlewareEnum.ROCKETMQ.getName())
+                    .jobType(SinkJobEnum.NORMAL_JOB.name())
+                    .build();
             sinkJobConfig.setLogTailId(logtailConfig.getLogtailId());
             sinkJobConfig.setLogStoreId(logStoreId);
             sinkJobConfig.setLogSpaceId(logSpaceId);
+            log.warn("##sinkJobConfig##:{}", gson.toJson(sinkJobConfig));
 
             String sinkProviderBean = sinkJobConfig.getMqType() + LogStreamConstants.sinkJobProviderBeanSuffix;
             SinkJobProvider sinkJobProvider = Ioc.ins().getBean(sinkProviderBean);

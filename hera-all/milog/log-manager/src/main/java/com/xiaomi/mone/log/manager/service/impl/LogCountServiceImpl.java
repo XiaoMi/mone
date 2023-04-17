@@ -16,6 +16,7 @@ import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.common.StringUtils;
 import com.xiaomi.youpin.docean.plugin.es.EsService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -52,6 +53,7 @@ public class LogCountServiceImpl implements LogCountService {
 
     /**
      * 日志收集排行
+     *
      * @return
      */
     @Override
@@ -61,8 +63,9 @@ public class LogCountServiceImpl implements LogCountService {
 
     /**
      * 日志收集趋势
-     * @return
+     *
      * @param tailId
+     * @return
      */
     @Override
     public Result<List<LogtailCollectTrendDTO>> collectTrend(Long tailId) {
@@ -132,42 +135,49 @@ public class LogCountServiceImpl implements LogCountService {
         String esIndex;
         List<Map<String, Object>> tailList = logtailMapper.getAllTailForCount();
         for (Map<String, Object> tail : tailList) {
-            esIndex = String.valueOf(tail.get("es_index"));
-            if (StringUtils.isEmpty(esIndex) || tail.get("es_cluster_id") == null) {
-                total = 0l;
-                esIndex = "";
-            } else {
-                esService = esCluster.getEsService(Long.parseLong(String.valueOf(tail.get("es_cluster_id"))));
-                if (esService == null) {
-                    log.warn("统计日志warn,tail:{}日志未统计，es客户端未生成", tail);
-                    continue;
+            try {
+                esIndex = String.valueOf(tail.get("es_index"));
+                if (StringUtils.isEmpty(esIndex) || tail.get("es_cluster_id") == null) {
+                    total = 0l;
+                    esIndex = "";
+                } else {
+                    esService = esCluster.getEsService(Long.parseLong(String.valueOf(tail.get("es_cluster_id"))));
+                    if (esService == null) {
+                        log.warn("统计日志warn,tail:{}日志未统计，es客户端未生成", tail);
+                        continue;
+                    }
+                    SearchSourceBuilder builder = new SearchSourceBuilder();
+                    BoolQueryBuilder boolQueryBuilder = new BoolQueryBuilder();
+                    boolQueryBuilder.filter(QueryBuilders.termQuery("tail", tail.get("tail")));
+                    boolQueryBuilder.filter(QueryBuilders.rangeQuery("timestamp").from(thisDayFirstMillisecond).to(thisDayFirstMillisecond + DateUtils.dayms - 1));
+                    builder.query(boolQueryBuilder);
+                    // 统计
+                    CountRequest countRequest = new CountRequest();
+                    countRequest.indices(esIndex);
+                    countRequest.source(builder);
+                    total = esService.count(countRequest);
                 }
-                SearchSourceBuilder builder = new SearchSourceBuilder();
-                BoolQueryBuilder boolQueryBuilder = new BoolQueryBuilder();
-                boolQueryBuilder.filter(QueryBuilders.termQuery("tail", tail.get("tail")));
-                boolQueryBuilder.filter(QueryBuilders.rangeQuery("timestamp").from(thisDayFirstMillisecond).to(thisDayFirstMillisecond + DateUtils.dayms - 1));
-                builder.query(boolQueryBuilder);
-                // 统计
-                CountRequest countRequest = new CountRequest();
-                countRequest.indices(esIndex);
-                countRequest.source(builder);
-                total = esService.count(countRequest);
+                logCountDO = new LogCountDO();
+                logCountDO.setTailId(Long.parseLong(String.valueOf(tail.get("id"))));
+                logCountDO.setEsIndex(esIndex);
+                logCountDO.setNumber(total);
+                logCountDO.setDay(thisDay);
+                logCountDOList.add(logCountDO);
+            } catch (Exception e) {
+                log.error("collectLogCount error,thisDay:{}", thisDay, e);
             }
-            logCountDO = new LogCountDO();
-            logCountDO.setTailId(Long.parseLong(String.valueOf(tail.get("id"))));
-            logCountDO.setEsIndex(esIndex);
-            logCountDO.setNumber(total);
-            logCountDO.setDay(thisDay);
-            logCountDOList.add(logCountDO);
         }
-        Long res = logCountMapper.batchInsert(logCountDOList);
+        long res = 0;
+        if (CollectionUtils.isNotEmpty(logCountDOList)) {
+            res = logCountMapper.batchInsert(logCountDOList);
+        }
         log.info("统计日志结束,应统计{}行，共统计{}行", tailList.size(), res);
     }
 
     @Override
     public boolean isLogtailCountDone(String day) {
-        Long logtailCountDone = logCountMapper.isLogtailCountDone(day);
-        return !(logtailCountDone == 0L);
+        Long logTailCountDone = logCountMapper.isLogtailCountDone(day);
+        return !Objects.equals(logTailCountDone, 0L);
     }
 
     @Override
@@ -193,11 +203,11 @@ public class LogCountServiceImpl implements LogCountService {
         format.setMaximumFractionDigits(2);
         format.setMinimumFractionDigits(2);
         if (number >= 100000000) {
-            return format.format((float)number / 100000000) + "亿";
+            return format.format((float) number / 100000000) + "亿";
         } else if (number >= 1000000) {
-            return format.format((float)number / 1000000) + "百万";
-        } else if(number >= 10000) {
-            return format.format((float)number / 10000) + "万";
+            return format.format((float) number / 1000000) + "百万";
+        } else if (number >= 10000) {
+            return format.format((float) number / 10000) + "万";
         } else {
             return number + "条";
         }
@@ -232,6 +242,9 @@ public class LogCountServiceImpl implements LogCountService {
     @Override
     public void collectSpaceTrend() {
         List<Map<String, Object>> spaceTrendList = logCountMapper.collectSpaceTrend(DateUtils.getDaysAgo(7), DateUtils.getDaysAgo(1));
+        if (CollectionUtils.isEmpty(spaceTrendList)) {
+            return;
+        }
         Map<Long, List<SpaceCollectTrendDTO>> cache = new HashMap<>();
         List<SpaceCollectTrendDTO> dtoList = new ArrayList<>();
         SpaceCollectTrendDTO dto;

@@ -6,7 +6,6 @@ import com.xiaomi.mone.log.manager.model.dto.DictionaryDTO;
 import com.xiaomi.mone.log.manager.service.impl.MilogDictionaryServiceImpl;
 import com.xiaomi.youpin.docean.anno.Controller;
 import com.xiaomi.youpin.docean.anno.RequestMapping;
-import com.xiaomi.youpin.docean.anno.RequestParam;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -29,25 +28,4 @@ public class MilogDictionaryController {
         return milogDictionaryService.queryDictionaryList(codes);
     }
 
-
-    @RequestMapping(path = "/milog/sync/mis/app", method = "get")
-    public Result<String> synchronousMisApp(@RequestParam("serviceName") String serviceName) {
-        return milogDictionaryService.synchronousMisApp(serviceName);
-    }
-
-    @RequestMapping(path = "/milog/sync/radar/app", method = "get")
-    public Result<String> synchronousRadarApp(@RequestParam("serviceName") String serviceName) {
-        return milogDictionaryService.synchronousRadarApp(serviceName);
-    }
-
-    @RequestMapping(path = "/milog/down/file", method = "get")
-    public Result<String> downLoadFile() {
-        return milogDictionaryService.downLoadFile();
-    }
-
-
-    @RequestMapping(path = "/milog/fix/tail/milog/appId", method = "get")
-    public Result<String> fixLogTailMilogAppId(@RequestParam("appName") String appName) {
-        return milogDictionaryService.fixLogTailMilogAppId(appName);
-    }
 }

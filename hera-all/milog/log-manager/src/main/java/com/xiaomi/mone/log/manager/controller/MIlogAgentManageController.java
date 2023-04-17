@@ -3,18 +3,22 @@ package com.xiaomi.mone.log.manager.controller;
 import com.xiaomi.mone.log.api.model.vo.AgentLogProcessDTO;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.manager.model.bo.MilogAgentIpParam;
-import com.xiaomi.mone.log.manager.service.impl.MilogAgentServiceImpl;
+import com.xiaomi.mone.log.manager.service.extension.agent.MilogAgentService;
+import com.xiaomi.mone.log.manager.service.extension.agent.MilogAgentServiceFactory;
 import com.xiaomi.youpin.docean.anno.Controller;
 import com.xiaomi.youpin.docean.anno.RequestMapping;
 import com.xiaomi.youpin.docean.anno.RequestParam;
 
-import javax.annotation.Resource;
 import java.util.List;
 
 @Controller
 public class MIlogAgentManageController {
-    @Resource
-    private MilogAgentServiceImpl milogAgentService;
+
+    private MilogAgentService milogAgentService;
+
+    public void init() {
+        milogAgentService = MilogAgentServiceFactory.getAgentExtensionService();
+    }
 
     /**
      * 日志收集进度
@@ -45,12 +49,12 @@ public class MIlogAgentManageController {
     /**
      * 部署
      *
-     * @param
+     * @param agentIpParam
      * @return
      */
     //TODO 待完成
     @RequestMapping(path = "/milog/agent/deployee")
-    public Result<String> agentDeploy(@RequestParam("ip") MilogAgentIpParam agentIpParam) {
+    public Result<String> agentDeploy(@RequestParam("ips") MilogAgentIpParam agentIpParam) {
         return null;
     }
 

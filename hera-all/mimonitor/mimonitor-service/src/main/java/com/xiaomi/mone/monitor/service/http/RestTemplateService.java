@@ -1,16 +1,25 @@
 package com.xiaomi.mone.monitor.service.http;
 
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.nacos.client.logger.json.JSONObject;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
@@ -24,7 +33,7 @@ public class RestTemplateService {
     @Autowired
     RestTemplate restTemplate;
 
-    public String getHttp(String url, JSONObject param){
+    public String getHttp(String url,JSONObject param){
         log.info("RestTemplateService.getHttp url:{}, param:{}",url,param);
         String result = null;
         try {

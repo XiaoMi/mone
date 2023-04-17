@@ -22,8 +22,8 @@ package com.xiaomi.mone.log.stream.common;
  */
 public class LogStreamConstants {
 
-
     public static final String sinkJobProviderBeanSuffix = "SinkJobProvider";
 
+    public static final String compensateMsgConsumeProviderBeanSuffix = "CmcProvider";
 
 }
