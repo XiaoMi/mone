@@ -18,7 +18,7 @@ public class ResourceExtensionServiceFactory {
     private static String factualServiceName;
 
     public static ResourceExtensionService getResourceExtensionService() {
-        factualServiceName = Config.ins().get("store.resource.service", DEFAULT_RESOURCE_EXTENSION_SERVICE_KEY);
+        factualServiceName = Config.ins().get("resource.extension.service", DEFAULT_RESOURCE_EXTENSION_SERVICE_KEY);
         log.info("ResourceExtensionServiceFactory factualServiceName:{}", factualServiceName);
         return Ioc.ins().getBean(factualServiceName);
     }

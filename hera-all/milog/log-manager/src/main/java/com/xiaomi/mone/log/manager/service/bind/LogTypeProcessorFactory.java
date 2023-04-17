@@ -33,20 +33,26 @@ public class LogTypeProcessorFactory {
     public LogTypeProcessor getLogTypeProcessor() {
         if (SPI_LOG_MAP.isEmpty()) {
             Class<?> logTypeProcessor = getTypeProcessor(LogTypeProcessor.class);
-            if (Objects.equals(logTypeProcessor.getName(), ConfigLogTypeProcessor.class.getName())) {
-                SPI_LOG_MAP.putIfAbsent(logTypeProcessor.getClass().getName(), new ConfigLogTypeProcessor(config));
-            }
-            if (Objects.equals(logTypeProcessor.getName(), DataSourceLogTypeProcessor.class.getName())) {
-                if (null == milogLogTemplateMapper) {
-                    throw new MilogManageException("logTemplateMapper is null");
-                }
-                SPI_LOG_MAP.putIfAbsent(logTypeProcessor.getClass().getName(), new DataSourceLogTypeProcessor(milogLogTemplateMapper));
-            }
+            LogTypeProcessor processor = createLogTypeProcessor(logTypeProcessor, config, milogLogTemplateMapper);
+            SPI_LOG_MAP.putIfAbsent(logTypeProcessor.getClass().getName(), processor);
         }
         if (SPI_LOG_MAP.isEmpty()) {
             throw new MilogManageException("LogTypeProcessor not exist");
         }
         return SPI_LOG_MAP.values().stream().findAny().get();
+    }
+
+    private LogTypeProcessor createLogTypeProcessor(Class<?> logTypeProcessor, Config config, MilogLogTemplateMapper milogLogTemplateMapper) {
+        if (Objects.equals(logTypeProcessor.getName(), ConfigLogTypeProcessor.class.getName())) {
+            return new ConfigLogTypeProcessor(config);
+        }
+        if (Objects.equals(logTypeProcessor.getName(), DataSourceLogTypeProcessor.class.getName())) {
+            if (null == milogLogTemplateMapper) {
+                throw new MilogManageException("logTemplateMapper is null");
+            }
+            return new DataSourceLogTypeProcessor(milogLogTemplateMapper);
+        }
+        throw new MilogManageException("Unknown LogTypeProcessor class: " + logTypeProcessor.getName());
     }
 
     @Nullable

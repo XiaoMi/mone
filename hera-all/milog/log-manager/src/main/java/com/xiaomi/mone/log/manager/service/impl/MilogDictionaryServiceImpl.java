@@ -54,7 +54,7 @@ public class MilogDictionaryServiceImpl implements MilogDictionaryService {
     private DictionaryExtensionService dictionaryExtensionService;
 
     public void init() {
-        dictionaryExtensionService = DictionaryExtensionServiceFactory.getAgentExtensionService();
+        dictionaryExtensionService = DictionaryExtensionServiceFactory.getDictionaryExtensionService();
     }
 
     /**

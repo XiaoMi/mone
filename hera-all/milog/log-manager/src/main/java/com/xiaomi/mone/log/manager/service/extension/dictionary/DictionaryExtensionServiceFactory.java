@@ -17,8 +17,8 @@ public class DictionaryExtensionServiceFactory {
 
     private static String factualServiceName;
 
-    public static DictionaryExtensionService getAgentExtensionService() {
-        factualServiceName = Config.ins().get("agent.extension.service", DEFAULT_DICTIONARY_EXTENSION_SERVICE_KEY);
+    public static DictionaryExtensionService getDictionaryExtensionService() {
+        factualServiceName = Config.ins().get("directory.extension.service", DEFAULT_DICTIONARY_EXTENSION_SERVICE_KEY);
         log.info("DictionaryExtensionServiceFactory factualServiceName:{}", factualServiceName);
         return Ioc.ins().getBean(factualServiceName);
     }
