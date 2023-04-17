@@ -1,0 +1,5 @@
+FROM openjdk:8-jre
+
+COPY ./mimonitor-server-1.0-SNAPSHOT.jar /home/work/mimonitor-server-1.0-SNAPSHOT.jar
+
+ENTRYPOINT ["java","-XX:+PrintReferenceGC","-XX:+PrintGCDetails","-XX:+PrintGCDateStamps","-XX:+PrintHeapAtGC","-Xloggc:/home/work/log/gc.log","-Duser.timezone=Asia/Shanghai","-XX:+HeapDumpOnOutOfMemoryError","-XX:HeapDumpPath=/home/rocksdb/dum/oom.dump","-jar","/home/work/mimonitor-server-1.0-SNAPSHOT.jar","&&","tail","-f","/dev/null"]
