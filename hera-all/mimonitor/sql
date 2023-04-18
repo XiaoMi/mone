@@ -309,7 +309,6 @@ CREATE TABLE `hera_app_base_info` (
   `iam_tree_id` int DEFAULT NULL COMMENT 'iam_tree_id(报警接口必须)',
   `tree_id` int(11) DEFAULT NULL COMMENT '节点树ID',
   `tree_type` int(2) DEFAULT NULL COMMENT '节点树类型',
-  `iam_tree_id` int DEFAULT NULL COMMENT 'iam_tree_id(报警接口必须)',
   `envs_map` text COLLATE utf8mb4_bin COMMENT '环境列表',
   `auto_capacity` int DEFAULT NULL COMMENT '自动扩容 1是，0否',
   `status` int DEFAULT NULL COMMENT '状态',
