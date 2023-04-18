@@ -2,6 +2,7 @@ package com.xiaomi.mone.monitor.service;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
+import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.monitor.bo.AppLanguage;
 import com.xiaomi.mone.monitor.bo.AppType;
 import com.xiaomi.mone.monitor.bo.PlatFormType;
@@ -11,7 +12,6 @@ import com.xiaomi.mone.monitor.dao.GrafanaTemplateDao;
 import com.xiaomi.mone.monitor.dao.model.AppGrafanaMapping;
 import com.xiaomi.mone.monitor.dao.model.AppMonitor;
 import com.xiaomi.mone.monitor.dao.model.GrafanaTemplate;
-import com.xiaomi.mone.monitor.dao.model.HeraAppBaseInfo;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.model.GrafanaResponse;
@@ -144,7 +144,7 @@ public class AppGrafanaMappingService {
             log.info("exeReloadTemplateBase start running!! pSize:" + pSize);
 
             try {
-                HeraAppBaseInfo baseInfoCondition = new HeraAppBaseInfo();
+                HeraAppBaseInfoModel baseInfoCondition = new HeraAppBaseInfoModel();
                 Long total = heraBaseInfoService.count(baseInfoCondition);
                 log.info("AppGrafanaMappingService.exeReloadTemplateBase data totalNum ====== {}", total);
                 if (total == null || total.intValue() == 0) {
@@ -156,8 +156,8 @@ public class AppGrafanaMappingService {
 
                 for (int i = 0; i < pageCount; i++) {
                     int offset = i + 1;
-                    List<HeraAppBaseInfo> list = heraBaseInfoService.query(baseInfoCondition, offset, pSize);
-                    for (HeraAppBaseInfo heraAppBaseInfo : list) {
+                    List<HeraAppBaseInfoModel> list = heraBaseInfoService.query(baseInfoCondition, offset, pSize);
+                    for (HeraAppBaseInfoModel heraAppBaseInfo : list) {
 
                         try {
                             this.createTmpByAppBaseInfo(heraAppBaseInfo);
@@ -186,7 +186,7 @@ public class AppGrafanaMappingService {
     }
 
     public void reloadTmpByAppId(Integer id) {
-        HeraAppBaseInfo baseInfo = heraBaseInfoService.getById(id);
+        HeraAppBaseInfoModel baseInfo = heraBaseInfoService.getById(id);
         if (baseInfo == null) {
             log.error("reloadTmpByAppId no data found id:{}", id);
             return;
@@ -194,7 +194,7 @@ public class AppGrafanaMappingService {
         createTmpByAppBaseInfo(baseInfo);
     }
 
-    public void createTmpByAppBaseInfo(HeraAppBaseInfo baseInfo) {
+    public void createTmpByAppBaseInfo(HeraAppBaseInfoModel baseInfo) {
         GrafanaTemplate template = new GrafanaTemplate();
         template.setAppType(baseInfo.getAppType());
         template.setPlatform(baseInfo.getPlatformType());
@@ -316,11 +316,11 @@ public class AppGrafanaMappingService {
             log.info("AppGrafanaMappingService#getGrafanaUrlByAppName by appName : {} ,return : {}", appName, mapping.getGrafanaUrl());
 
 
-            HeraAppBaseInfo heraAppBaseInfo = new HeraAppBaseInfo();
+            HeraAppBaseInfoModel heraAppBaseInfo = new HeraAppBaseInfoModel();
             heraAppBaseInfo.setBindId(bindId);
             heraAppBaseInfo.setAppName(appNameBase);
 
-            List<HeraAppBaseInfo> query = heraBaseInfoService.query(heraAppBaseInfo, null, null);
+            List<HeraAppBaseInfoModel> query = heraBaseInfoService.query(heraAppBaseInfo, null, null);
             if (CollectionUtils.isEmpty(query) || query.get(0).getAppType() == null) {
                 log.error("no appType found for appName:{},has set default type by businessType type", appName);
                 appType = AppType.businessType.getMessage();

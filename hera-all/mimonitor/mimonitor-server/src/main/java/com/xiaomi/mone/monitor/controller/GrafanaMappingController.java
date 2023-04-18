@@ -1,7 +1,7 @@
 package com.xiaomi.mone.monitor.controller;
 
+import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.monitor.bo.PlatFormType;
-import com.xiaomi.mone.monitor.dao.model.HeraAppBaseInfo;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.AppGrafanaMappingService;
@@ -54,7 +54,7 @@ public class GrafanaMappingController {
         log.info("GrafanaMappingController.createGrafanaUrlByBaseInfo request appId:{},appName:{},plat{},appType:{},language:{}",
                 appId,appName,plat,appType,language);
 
-        HeraAppBaseInfo baseInfo = new HeraAppBaseInfo();
+        HeraAppBaseInfoModel baseInfo = new HeraAppBaseInfoModel();
         baseInfo.setBindId(appId + "");
         baseInfo.setAppName(appName);
         baseInfo.setPlatformType(PlatFormType.getCodeByGrafanaDir(plat));
@@ -87,7 +87,7 @@ public class GrafanaMappingController {
     @GetMapping("/mimonitor/testGrafanaCreate")
     public Result testGrafanaCreate(String appId, String appName){
 
-        HeraAppBaseInfo baseInfo = new HeraAppBaseInfo();
+        HeraAppBaseInfoModel baseInfo = new HeraAppBaseInfoModel();
         baseInfo.setBindId(appId);   //
         baseInfo.setAppName(appName);   //
         baseInfo.setAppType(0);   //

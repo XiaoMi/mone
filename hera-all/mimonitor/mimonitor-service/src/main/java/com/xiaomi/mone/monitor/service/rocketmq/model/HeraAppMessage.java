@@ -1,8 +1,8 @@
 package com.xiaomi.mone.monitor.service.rocketmq.model;
 
 import com.google.gson.JsonObject;
+import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.monitor.dao.model.AppMonitor;
-import com.xiaomi.mone.monitor.dao.model.HeraAppBaseInfo;
 import lombok.Data;
 import lombok.ToString;
 import org.springframework.beans.BeanUtils;
@@ -49,9 +49,9 @@ public class HeraAppMessage implements Serializable {
         return appMonitor;
     }
 
-    public HeraAppBaseInfo baseInfo(){
+    public HeraAppBaseInfoModel baseInfo(){
 
-        HeraAppBaseInfo heraAppBaseInfo = new HeraAppBaseInfo();
+        HeraAppBaseInfoModel heraAppBaseInfo = new HeraAppBaseInfoModel();
 
         heraAppBaseInfo.setBindId(String.valueOf(this.getId()));
         heraAppBaseInfo.setBindType(this.getBindType());

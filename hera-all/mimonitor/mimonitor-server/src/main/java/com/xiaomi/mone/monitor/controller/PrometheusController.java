@@ -1,13 +1,11 @@
 package com.xiaomi.mone.monitor.controller;
 
+import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.log.api.model.dto.TraceLogDTO;
 import com.xiaomi.mone.log.api.model.vo.TraceLogQuery;
 import com.xiaomi.mone.log.api.service.LogDataService;
-import com.xiaomi.mone.monitor.bo.PlatForm;
-import com.xiaomi.mone.monitor.bo.PlatFormType;
 import com.xiaomi.mone.monitor.controller.model.PromQueryRangeParam;
 import com.xiaomi.mone.monitor.controller.model.TimeUnit;
-import com.xiaomi.mone.monitor.dao.model.HeraAppBaseInfo;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.AppAlarmService;
@@ -199,7 +197,7 @@ public class PrometheusController {
             String esIndexName = esIndex;
 
             if(param.getAppSource() == null){
-                HeraAppBaseInfo byBindIdAndName = heraBaseInfoService.getByBindIdAndName(String.valueOf(param.getProjectId()), param.getProjectName());
+                HeraAppBaseInfoModel byBindIdAndName = heraBaseInfoService.getByBindIdAndName(String.valueOf(param.getProjectId()), param.getProjectName());
                 if(byBindIdAndName != null){
                     log.info("metric detail param no app source found! reset by db value : {},param:{}",byBindIdAndName.getPlatformType(),param);
                     param.setAppSource(byBindIdAndName.getPlatformType());

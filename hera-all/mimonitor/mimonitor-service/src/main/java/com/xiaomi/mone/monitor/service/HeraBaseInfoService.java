@@ -9,7 +9,6 @@ import com.xiaomi.mone.monitor.bo.AlertGroupParam;
 import com.xiaomi.mone.monitor.bo.PlatFormType;
 import com.xiaomi.mone.monitor.bo.UserInfo;
 import com.xiaomi.mone.monitor.dao.HeraAppRoleDao;
-import com.xiaomi.mone.monitor.dao.model.HeraAppBaseInfo;
 import com.xiaomi.mone.monitor.dao.model.HeraAppRole;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
@@ -97,7 +96,7 @@ public class HeraBaseInfoService {
 
     public String getArea(String bindId, Integer plat, String serverEnv) {
 
-        HeraAppBaseInfo appBaseInfo = this.getAppByBindId(bindId, plat);
+        HeraAppBaseInfoModel appBaseInfo = this.getAppByBindId(bindId, plat);
 
         log.info("getArea#appBaseInfo :{},", appBaseInfo.toString());
 
@@ -140,13 +139,13 @@ public class HeraBaseInfoService {
 
     }
 
-    public HeraAppBaseInfo getById(Integer id) {
+    public HeraAppBaseInfoModel getById(Integer id) {
         return this.getByIdRemote(id);
     }
 
     public void deleAppById(Integer id) {
 
-        HeraAppBaseInfo app = this.getById(id);
+        HeraAppBaseInfoModel baseInfoModel = this.getById(id);
 
         Integer integer = this.deleteByIdRemote(id);
         if (integer.intValue() > 0) {
@@ -157,7 +156,7 @@ public class HeraBaseInfoService {
 
 
         HeraAppRole role = new HeraAppRole();
-        role.setAppId(app.getBindId());
+        role.setAppId(baseInfoModel.getBindId());
         List<HeraAppRole> roles = heraAppRoleDao.query(role, 1, 1000);
         if (!CollectionUtils.isEmpty(roles)) {
             for (HeraAppRole roleTmp : roles) {
@@ -178,17 +177,17 @@ public class HeraBaseInfoService {
             return;
         }
 
-        HeraAppBaseInfo query = new HeraAppBaseInfo();
+        HeraAppBaseInfoModel query = new HeraAppBaseInfoModel();
         query.setBindId(bindId);
         query.setPlatformType(plat);
 
-        List<HeraAppBaseInfo> list = this.query(query, null, null);
+        List<HeraAppBaseInfoModel> list = this.query(query, null, null);
 
         if (CollectionUtils.isEmpty(list)) {
             log.info("deleAppByBindIdAndPlat no data found! bindId:{},plat:{}", bindId, plat);
         }
 
-        for (HeraAppBaseInfo baseInfo : list) {
+        for (HeraAppBaseInfoModel baseInfo : list) {
             Integer integer = hearAppService.delById(baseInfo.getId());
             if (integer.intValue() > 0) {
                 log.info("deleAppByBindIdAndPlat success!baseInfo:{}", new Gson().toJson(baseInfo));
@@ -199,17 +198,17 @@ public class HeraBaseInfoService {
 
     }
 
-    public HeraAppBaseInfo getByBindIdAndName(String bindId, String appName) {
+    public HeraAppBaseInfoModel getByBindIdAndName(String bindId, String appName) {
         if (StringUtils.isBlank(bindId) || StringUtils.isBlank(appName)) {
             log.error("getByBindIdAndName invalid param,bindId:{},appName:{}", bindId, appName);
             return null;
         }
 
-        HeraAppBaseInfo query = new HeraAppBaseInfo();
+        HeraAppBaseInfoModel query = new HeraAppBaseInfoModel();
         query.setBindId(bindId);
         query.setAppName(appName);
 
-        List<HeraAppBaseInfo> list = this.query(query, null, null);
+        List<HeraAppBaseInfoModel> list = this.query(query, null, null);
 
         if (CollectionUtils.isEmpty(list)) {
             log.info("HeraAppBaseInfo#getByBindIdAndName no data found,bindId:{}", bindId);
@@ -220,18 +219,18 @@ public class HeraBaseInfoService {
 
     }
 
-    public HeraAppBaseInfo getAppByBindId(String bindId, Integer platFromType) {
+    public HeraAppBaseInfoModel getAppByBindId(String bindId, Integer platFromType) {
 
         if (StringUtils.isBlank(bindId)) {
             log.error("invalid param,bindId:{}", bindId);
             return null;
         }
 
-        HeraAppBaseInfo query = new HeraAppBaseInfo();
+        HeraAppBaseInfoModel query = new HeraAppBaseInfoModel();
         query.setBindId(bindId);
         query.setPlatformType(platFromType);
 
-        List<HeraAppBaseInfo> list = this.query(query, null, null);
+        List<HeraAppBaseInfoModel> list = this.query(query, null, null);
 
         if (CollectionUtils.isEmpty(list)) {
             log.info("HeraAppBaseInfo#getAppByBindId no data found,bindId:{}", bindId);
@@ -282,56 +281,38 @@ public class HeraBaseInfoService {
         return Result.success(pageData);
     }
 
-    public Long count(HeraAppBaseInfo baseInfo) {
+    public Long count(HeraAppBaseInfoModel baseInfo) {
 
         return this.countRemote(baseInfo);
     }
 
-    public List<HeraAppBaseInfo> query(HeraAppBaseInfo baseInfo, Integer pageCount, Integer pageNum) {
+    public List<HeraAppBaseInfoModel> query(HeraAppBaseInfoModel baseInfo, Integer pageCount, Integer pageNum) {
         return this.queryRemote(baseInfo, pageCount, pageNum);
     }
 
-    public List<HeraAppBaseInfo> queryRemote(HeraAppBaseInfo baseInfo, Integer pageCount, Integer pageNum) {
+    public List<HeraAppBaseInfoModel> queryRemote(HeraAppBaseInfoModel baseInfo, Integer pageCount, Integer pageNum) {
 
-        List<HeraAppBaseInfo> listResult = new ArrayList<>();
-
-        HeraAppBaseInfoModel query = new HeraAppBaseInfoModel();
-        BeanUtils.copyProperties(baseInfo, query);
-
-        List<HeraAppBaseInfoModel> list = hearAppService.query(query, null, null);
-        if (CollectionUtils.isEmpty(list)) {
-            return listResult;
+        List<HeraAppBaseInfoModel> baseInfoModels = hearAppService.query(baseInfo, null, null);
+        if (CollectionUtils.isEmpty(baseInfoModels)) {
+            return Lists.newArrayList();
         }
 
-        list.forEach(t -> {
-            HeraAppBaseInfo info = new HeraAppBaseInfo();
-            BeanUtils.copyProperties(t, info);
-            listResult.add(info);
-        });
-
-        return listResult;
+        return baseInfoModels;
 
     }
 
-    public Long countRemote(HeraAppBaseInfo baseInfo) {
-
-        HeraAppBaseInfoModel query = new HeraAppBaseInfoModel();
-        BeanUtils.copyProperties(baseInfo, query);
-
-        return hearAppService.count(query);
+    public Long countRemote(HeraAppBaseInfoModel baseInfo) {
+        return hearAppService.count(baseInfo);
 
     }
 
-    public HeraAppBaseInfo getByIdRemote(Integer id) {
-        HeraAppBaseInfoModel byId = hearAppService.getById(id);
-        if (byId == null) {
+    public HeraAppBaseInfoModel getByIdRemote(Integer id) {
+        HeraAppBaseInfoModel baseInfoModel = hearAppService.getById(id);
+        if (baseInfoModel == null) {
             return null;
         }
 
-        HeraAppBaseInfo info = new HeraAppBaseInfo();
-        BeanUtils.copyProperties(byId, info);
-
-        return info;
+        return baseInfoModel;
     }
 
     public int deleteByIdRemote(Integer id) {
@@ -378,7 +359,7 @@ public class HeraBaseInfoService {
     }
 
 
-    public int create(HeraAppBaseInfo heraAppBaseInfo) {
+    public int insertOrUpdate(HeraAppBaseInfoModel heraAppBaseInfo) {
         if (null == heraAppBaseInfo) {
             log.error("[HeraBaseInfoDao.create] null heraAppBaseInfo");
             return 0;
@@ -391,7 +372,7 @@ public class HeraBaseInfoService {
         heraAppBaseInfo.setAppSignId(heraAppBaseInfo.getBindId() + "-" + heraAppBaseInfo.getPlatformType());
 
         try {
-            int affected = hearAppService.insertOrUpdate(heraAppBaseInfoToModel(heraAppBaseInfo));
+            int affected = hearAppService.insertOrUpdate(heraAppBaseInfo);
             if (affected < 1) {
                 log.warn("[HeraBaseInfoDao.create] failed to insert heraAppBaseInfo: {}", heraAppBaseInfo.toString());
                 return 0;
@@ -403,9 +384,4 @@ public class HeraBaseInfoService {
         return 1;
     }
 
-    private HeraAppBaseInfoModel heraAppBaseInfoToModel(HeraAppBaseInfo heraAppBaseInfo) {
-        HeraAppBaseInfoModel baseInfoModel = new HeraAppBaseInfoModel();
-        BeanUtils.copyProperties(heraAppBaseInfo, baseInfoModel);
-        return baseInfoModel;
-    }
 }
