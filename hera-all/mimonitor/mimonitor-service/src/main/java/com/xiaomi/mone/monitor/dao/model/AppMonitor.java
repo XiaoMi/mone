@@ -18,6 +18,10 @@ public class AppMonitor {
 
     private Integer iamTreeId;
 
+    private Integer treeId;
+
+    private Integer treeType;
+
     private String projectName;
 
     private String owner;
@@ -45,6 +49,22 @@ public class AppMonitor {
     private Integer appSource;//0 开源
 
     private Integer baseInfoId;//基础信息id
+
+    public Integer getTreeId() {
+        return treeId;
+    }
+
+    public void setTreeId(Integer treeId) {
+        this.treeId = treeId;
+    }
+
+    public Integer getTreeType() {
+        return treeType;
+    }
+
+    public void setTreeType(Integer treeType) {
+        this.treeType = treeType;
+    }
 
     public Integer getId() {
         return id;

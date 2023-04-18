@@ -12,6 +12,8 @@
     <result column="platform_type" jdbcType="INTEGER" property="platformType" />
     <result column="app_sign_id" jdbcType="VARCHAR" property="appSignId" />
     <result column="iam_tree_id" jdbcType="INTEGER" property="iamTreeId" />
+    <result column="tree_id" jdbcType="INTEGER" property="treeId" />
+    <result column="tree_type" jdbcType="INTEGER" property="treeType" />
     <result column="status" jdbcType="INTEGER" property="status" />
     <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
     <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
@@ -79,7 +81,7 @@
   </sql>
   <sql id="Base_Column_List">
     id, bind_id, bind_type, app_name, app_cname, app_type, app_language, platform_type, 
-    app_sign_id, iam_tree_id, status, create_time, update_time
+    app_sign_id, iam_tree_id,tree_id,tree_type, status, create_time, update_time
   </sql>
   <sql id="Blob_Column_List">
     envs_map
@@ -115,6 +117,8 @@
     <result column="envs_map" jdbcType="LONGVARCHAR" property="envsMapping" />
     <result column="platform_type" jdbcType="INTEGER" property="platformType" />
     <result column="iam_tree_id" jdbcType="INTEGER" property="iamTreeId" />
+    <result column="tree_id" jdbcType="INTEGER" property="treeId" />
+    <result column="tree_type" jdbcType="INTEGER" property="treeType" />
     <result column="status" jdbcType="INTEGER" property="status" />
     <result column="participant" jdbcType="INTEGER" property="participant" />
   </resultMap>
@@ -162,6 +166,8 @@
     app.app_name,
     app.app_cname,
     app.iam_tree_id,
+    app.tree_id,
+    app.tree_type,
     app.bind_type,
     app.platform_type,
     app.app_type,
@@ -241,13 +247,13 @@
     </selectKey>
     insert into hera_app_base_info (bind_id, bind_type, app_name, 
       app_cname, app_type, app_language, 
-      platform_type, app_sign_id, iam_tree_id, 
+      platform_type, app_sign_id, iam_tree_id, tree_id, tree_type,
       status, create_time, update_time,
       envs_map)
     values (#{bindId,jdbcType=VARCHAR}, #{bindType,jdbcType=INTEGER}, #{appName,jdbcType=VARCHAR}, 
       #{appCname,jdbcType=VARCHAR}, #{appType,jdbcType=INTEGER}, #{appLanguage,jdbcType=VARCHAR}, 
-      #{platformType,jdbcType=INTEGER}, #{appSignId,jdbcType=VARCHAR}, #{iamTreeId,jdbcType=INTEGER}, 
-      #{status,jdbcType=INTEGER}, #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP},
+      #{platformType,jdbcType=INTEGER}, #{appSignId,jdbcType=VARCHAR}, #{iamTreeId,jdbcType=INTEGER}, #{treeId,jdbcType=INTEGER},#{treeType,jdbcType=INTEGER},
+    #{status,jdbcType=INTEGER}, #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP},
       #{envsMap,jdbcType=LONGVARCHAR})
   </insert>
   <insert id="insertSelective" parameterType="com.xiaomi.mone.monitor.dao.model.HeraAppBaseInfo">
@@ -282,6 +288,12 @@
       </if>
       <if test="iamTreeId != null">
         iam_tree_id,
+      </if>
+      <if test="treeId != null">
+        tree_id,
+      </if>
+      <if test="treeType != null">
+        tree_type,
       </if>
       <if test="status != null">
         status,
@@ -323,6 +335,12 @@
       </if>
       <if test="iamTreeId != null">
         #{iamTreeId,jdbcType=INTEGER},
+      </if>
+      <if test="treeId != null">
+        #{treeId,jdbcType=INTEGER},
+      </if>
+      <if test="treeType != null">
+        #{treeType,jdbcType=INTEGER},
       </if>
       <if test="status != null">
         #{status,jdbcType=INTEGER},
@@ -377,6 +395,12 @@
       <if test="record.iamTreeId != null">
         iam_tree_id = #{record.iamTreeId,jdbcType=INTEGER},
       </if>
+      <if test="record.treeId != null">
+        tree_id = #{record.treeId,jdbcType=INTEGER},
+      </if>
+      <if test="record.treeType != null">
+        tree_type = #{record.treeType,jdbcType=INTEGER},
+      </if>
       <if test="record.status != null">
         status = #{record.status,jdbcType=INTEGER},
       </if>
@@ -406,6 +430,8 @@
       platform_type = #{record.platformType,jdbcType=INTEGER},
       app_sign_id = #{record.appSignId,jdbcType=VARCHAR},
       iam_tree_id = #{record.iamTreeId,jdbcType=INTEGER},
+      tree_id = #{record.treeId,jdbcType=INTEGER},
+      tree_type = #{record.treeType,jdbcType=INTEGER},
       status = #{record.status,jdbcType=INTEGER},
       create_time = #{record.createTime,jdbcType=TIMESTAMP},
       update_time = #{record.updateTime,jdbcType=TIMESTAMP},
@@ -426,6 +452,8 @@
       platform_type = #{record.platformType,jdbcType=INTEGER},
       app_sign_id = #{record.appSignId,jdbcType=VARCHAR},
       iam_tree_id = #{record.iamTreeId,jdbcType=INTEGER},
+      tree_id = #{record.treeId,jdbcType=INTEGER},
+      tree_type = #{record.treeType,jdbcType=INTEGER},
       status = #{record.status,jdbcType=INTEGER},
       create_time = #{record.createTime,jdbcType=TIMESTAMP},
       update_time = #{record.updateTime,jdbcType=TIMESTAMP}
@@ -463,6 +491,12 @@
       <if test="iamTreeId != null">
         iam_tree_id = #{iamTreeId,jdbcType=INTEGER},
       </if>
+      <if test="typeId != null">
+        tree_id = #{typeId,jdbcType=INTEGER},
+      </if>
+      <if test="treeType != null">
+        tree_type = #{treeType,jdbcType=INTEGER},
+      </if>
       <if test="status != null">
         status = #{status,jdbcType=INTEGER},
       </if>
@@ -489,6 +523,8 @@
       platform_type = #{platformType,jdbcType=INTEGER},
       app_sign_id = #{appSignId,jdbcType=VARCHAR},
       iam_tree_id = #{iamTreeId,jdbcType=INTEGER},
+      tree_id = #{treeId,jdbcType=INTEGER},
+      tree_type = #{treeType,jdbcType=INTEGER},
       status = #{status,jdbcType=INTEGER},
       create_time = #{createTime,jdbcType=TIMESTAMP},
       update_time = #{updateTime,jdbcType=TIMESTAMP},
@@ -506,6 +542,8 @@
       platform_type = #{platformType,jdbcType=INTEGER},
       app_sign_id = #{appSignId,jdbcType=VARCHAR},
       iam_tree_id = #{iamTreeId,jdbcType=INTEGER},
+      tree_id = #{treeId,jdbcType=INTEGER},
+      tree_type = #{treeType,jdbcType=INTEGER},
       status = #{status,jdbcType=INTEGER},
       create_time = #{createTime,jdbcType=TIMESTAMP},
       update_time = #{updateTime,jdbcType=TIMESTAMP}
@@ -514,13 +552,13 @@
   <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
     insert into hera_app_base_info
     (bind_id, bind_type, app_name, app_cname, app_type, app_language, platform_type, 
-      app_sign_id, iam_tree_id, status, create_time, update_time, envs_map)
+      app_sign_id, iam_tree_id, tree_id, tree_type, status, create_time, update_time, envs_map)
     values
     <foreach collection="list" item="item" separator=",">
       (#{item.bindId,jdbcType=VARCHAR}, #{item.bindType,jdbcType=INTEGER}, #{item.appName,jdbcType=VARCHAR}, 
         #{item.appCname,jdbcType=VARCHAR}, #{item.appType,jdbcType=INTEGER}, #{item.appLanguage,jdbcType=VARCHAR}, 
-        #{item.platformType,jdbcType=INTEGER}, #{item.appSignId,jdbcType=VARCHAR}, #{item.iamTreeId,jdbcType=INTEGER}, 
-        #{item.status,jdbcType=INTEGER}, #{item.createTime,jdbcType=TIMESTAMP}, #{item.updateTime,jdbcType=TIMESTAMP},
+        #{item.platformType,jdbcType=INTEGER}, #{item.appSignId,jdbcType=VARCHAR}, #{item.iamTreeId,jdbcType=INTEGER}, #{item.treeId,jdbcType=INTEGER}, #{item.treeType,jdbcType=INTEGER},
+      #{item.status,jdbcType=INTEGER}, #{item.createTime,jdbcType=TIMESTAMP}, #{item.updateTime,jdbcType=TIMESTAMP},
         #{item.envsMap,jdbcType=LONGVARCHAR})
     </foreach>
   </insert>
@@ -560,6 +598,12 @@
         </if>
         <if test="'iam_tree_id'.toString() == column.value">
           #{item.iamTreeId,jdbcType=INTEGER}
+        </if>
+        <if test="'tree_id'.toString() == column.value">
+          #{item.treeId,jdbcType=INTEGER}
+        </if>
+        <if test="'tree_type'.toString() == column.value">
+          #{item.treeType,jdbcType=INTEGER}
         </if>
         <if test="'status'.toString() == column.value">
           #{item.status,jdbcType=INTEGER}

@@ -5,6 +5,8 @@
     <id column="id" jdbcType="INTEGER" property="id" />
     <result column="project_id" jdbcType="INTEGER" property="projectId" />
     <result column="iam_tree_id" jdbcType="INTEGER" property="iamTreeId" />
+    <result column="tree_id" jdbcType="INTEGER" property="treeId" />
+    <result column="tree_type" jdbcType="INTEGER" property="treeType" />
     <result column="project_name" jdbcType="VARCHAR" property="projectName" />
     <result column="owner" jdbcType="VARCHAR" property="owner" />
     <result column="care_user" jdbcType="VARCHAR" property="careUser" />
@@ -284,12 +286,12 @@
     <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
       SELECT LAST_INSERT_ID()
     </selectKey>
-    insert into app_monitor (project_id, iam_tree_id, project_name, 
+    insert into app_monitor (project_id, iam_tree_id,tree_id,tree_type, project_name,
       owner, care_user, alarm_level, 
       total_alarm, exception_num, slow_query_num, 
       status, create_time, update_time, app_source,base_info_id
       )
-    values (#{projectId,jdbcType=INTEGER}, #{iamTreeId,jdbcType=INTEGER}, #{projectName,jdbcType=VARCHAR}, 
+    values (#{projectId,jdbcType=INTEGER}, #{iamTreeId,jdbcType=INTEGER},#{treeId,jdbcType=INTEGER},#{treeType,jdbcType=INTEGER}, #{projectName,jdbcType=VARCHAR},
       #{owner,jdbcType=VARCHAR}, #{careUser,jdbcType=VARCHAR}, #{alarmLevel,jdbcType=INTEGER}, 
       #{totalAlarm,jdbcType=INTEGER}, #{exceptionNum,jdbcType=INTEGER}, #{slowQueryNum,jdbcType=INTEGER}, 
       #{status,jdbcType=INTEGER}, #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP}, #{appSource,jdbcType=INTEGER}, #{baseInfoId,jdbcType=INTEGER}
@@ -306,6 +308,12 @@
       </if>
       <if test="iamTreeId != null">
         iam_tree_id,
+      </if>
+      <if test="treeId != null">
+        tree_id,
+      </if>
+      <if test="treeType != null">
+        tree_type,
       </if>
       <if test="projectName != null">
         project_name,
@@ -350,6 +358,12 @@
       </if>
       <if test="iamTreeId != null">
         #{iamTreeId,jdbcType=INTEGER},
+      </if>
+      <if test="treeId != null">
+        #{treeId,jdbcType=INTEGER},
+      </if>
+      <if test="treeType != null">
+        #{treeType,jdbcType=INTEGER},
       </if>
       <if test="projectName != null">
         #{projectName,jdbcType=VARCHAR},
@@ -407,6 +421,12 @@
       <if test="record.iamTreeId != null">
         iam_tree_id = #{record.iamTreeId,jdbcType=INTEGER},
       </if>
+      <if test="record.treeId != null">
+        tree_id = #{record.treeId,jdbcType=INTEGER},
+      </if>
+      <if test="record.treeType != null">
+        tree_type = #{record.treeType,jdbcType=INTEGER},
+      </if>
       <if test="record.projectName != null">
         project_name = #{record.projectName,jdbcType=VARCHAR},
       </if>
@@ -453,6 +473,8 @@
     set id = #{record.id,jdbcType=INTEGER},
       project_id = #{record.projectId,jdbcType=INTEGER},
       iam_tree_id = #{record.iamTreeId,jdbcType=INTEGER},
+      tree_id = #{record.treeId,jdbcType=INTEGER},
+      tree_type = #{record.treeType,jdbcType=INTEGER},
       project_name = #{record.projectName,jdbcType=VARCHAR},
       owner = #{record.owner,jdbcType=VARCHAR},
       care_user = #{record.careUser,jdbcType=VARCHAR},
@@ -477,6 +499,12 @@
       </if>
       <if test="iamTreeId != null">
         iam_tree_id = #{iamTreeId,jdbcType=INTEGER},
+      </if>
+      <if test="treeId != null">
+        tree_id = #{treeId,jdbcType=INTEGER},
+      </if>
+      <if test="treeType != null">
+        tree_type = #{treeType,jdbcType=INTEGER},
       </if>
       <if test="projectName != null">
         project_name = #{projectName,jdbcType=VARCHAR},
@@ -521,6 +549,8 @@
     update app_monitor
     set project_id = #{projectId,jdbcType=INTEGER},
       iam_tree_id = #{iamTreeId,jdbcType=INTEGER},
+      tree_id = #{treeId,jdbcType=INTEGER},
+      tree_type = #{treeType,jdbcType=INTEGER},
       project_name = #{projectName,jdbcType=VARCHAR},
       owner = #{owner,jdbcType=VARCHAR},
       care_user = #{careUser,jdbcType=VARCHAR},
@@ -537,11 +567,11 @@
   </update>
   <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
     insert into app_monitor
-    (project_id, iam_tree_id, project_name, owner, care_user, alarm_level, total_alarm, 
+    (project_id, iam_tree_id,tree_id,tree_type, project_name, owner, care_user, alarm_level, total_alarm,
       exception_num, slow_query_num, status, create_time, update_time, app_source,base_info_id)
     values
     <foreach collection="list" item="item" separator=",">
-      (#{item.projectId,jdbcType=INTEGER}, #{item.iamTreeId,jdbcType=INTEGER}, #{item.projectName,jdbcType=VARCHAR}, 
+      (#{item.projectId,jdbcType=INTEGER}, #{item.iamTreeId,jdbcType=INTEGER},#{item.treeId,jdbcType=INTEGER},#{item.treeType,jdbcType=INTEGER}, #{item.projectName,jdbcType=VARCHAR},
         #{item.owner,jdbcType=VARCHAR}, #{item.careUser,jdbcType=VARCHAR}, #{item.alarmLevel,jdbcType=INTEGER}, 
         #{item.totalAlarm,jdbcType=INTEGER}, #{item.exceptionNum,jdbcType=INTEGER}, #{item.slowQueryNum,jdbcType=INTEGER}, 
         #{item.status,jdbcType=INTEGER}, #{item.createTime,jdbcType=TIMESTAMP}, #{item.updateTime,jdbcType=TIMESTAMP}, #{item.appSource,jdbcType=INTEGER},#{item.baseInfoId,jdbcType=INTEGER}
@@ -563,6 +593,12 @@
         </if>
         <if test="'iam_tree_id'.toString() == column.value">
           #{item.iamTreeId,jdbcType=INTEGER}
+        </if>
+        <if test="'tree_id'.toString() == column.value">
+          #{item.treeId,jdbcType=INTEGER}
+        </if>
+        <if test="'treeType'.toString() == column.value">
+          #{item.treeType,jdbcType=INTEGER}
         </if>
         <if test="'project_name'.toString() == column.value">
           #{item.projectName,jdbcType=VARCHAR}
