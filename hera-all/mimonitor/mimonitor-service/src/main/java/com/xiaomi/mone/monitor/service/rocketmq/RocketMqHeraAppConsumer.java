@@ -3,9 +3,9 @@ package com.xiaomi.mone.monitor.service.rocketmq;
 import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.app.api.model.HeraAppMqInfo;
 import com.xiaomi.mone.monitor.dao.HeraAppRoleDao;
-import com.xiaomi.mone.monitor.dao.model.HeraAppBaseInfo;
 import com.xiaomi.mone.monitor.dao.model.HeraAppRole;
 import com.xiaomi.mone.monitor.service.AppGrafanaMappingService;
 import com.xiaomi.mone.monitor.service.AppMonitorService;
@@ -135,7 +135,7 @@ public class RocketMqHeraAppConsumer {
             if (heraAppMessage.getData() == null) {
                 return;
             }
-            HeraAppBaseInfo heraApp = gson.fromJson(gson.toJson(heraAppMessage.getData().getAfterAppBaseInfo()), HeraAppBaseInfo.class);
+            HeraAppBaseInfoModel heraApp = gson.fromJson(gson.toJson(heraAppMessage.getData().getAfterAppBaseInfo()), HeraAppBaseInfoModel.class);
             appGrafanaMappingService.createTmpByAppBaseInfo(heraApp);
 
 //            if (heraAppMessage.getDelete() != null && heraAppMessage.getDelete().intValue() ==1) {
@@ -170,25 +170,24 @@ public class RocketMqHeraAppConsumer {
         }
     }
 
-    private HeraAppBaseInfo saveOrUpdateHeraApp(HeraAppBaseInfo heraAppBaseInfo) {
-        HeraAppBaseInfo queryInfo = new HeraAppBaseInfo();
+    private HeraAppBaseInfoModel saveOrUpdateHeraApp(HeraAppBaseInfoModel heraAppBaseInfo) {
+        HeraAppBaseInfoModel queryInfo = new HeraAppBaseInfoModel();
         queryInfo.setBindId(heraAppBaseInfo.getBindId());
         queryInfo.setPlatformType(heraAppBaseInfo.getPlatformType());
         queryInfo.setStatus(0);
-        List<HeraAppBaseInfo> query = heraBaseInfoService.query(queryInfo, null, null);
+        List<HeraAppBaseInfoModel> query = heraBaseInfoService.query(queryInfo, null, null);
         if (CollectionUtils.isEmpty(query)) {
-            heraBaseInfoService.create(heraAppBaseInfo);
+            heraBaseInfoService.insertOrUpdate(heraAppBaseInfo);
             log.info("create heraAppBaseInfo by rocketMq success,heraAppBaseInfo:{}", heraAppBaseInfo);
             return null;
         } else {
             if (query.size() > 1) {
                 log.error("duplicate heraBaseInfo : {}", new Gson().toJson(query));
             }
-            HeraAppBaseInfo heraAppBaseInfo1 = query.get(0);
+            HeraAppBaseInfoModel heraAppBaseInfo1 = query.get(0);
             heraAppBaseInfo.setId(heraAppBaseInfo1.getId());
             heraAppBaseInfo.setStatus(0);
-//            heraBaseInfoDao.update(heraAppBaseInfo);
-            heraBaseInfoService.create(heraAppBaseInfo);
+            heraBaseInfoService.insertOrUpdate(heraAppBaseInfo);
             log.info("update heraAppBaseInfo by rocketMq success,heraAppBaseInfo:{}", heraAppBaseInfo);
             return heraAppBaseInfo1;
         }
