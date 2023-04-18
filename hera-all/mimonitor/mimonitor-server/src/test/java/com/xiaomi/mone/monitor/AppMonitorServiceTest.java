@@ -1,16 +1,14 @@
 package com.xiaomi.mone.monitor;
 
-import com.google.common.collect.Lists;
 import com.google.gson.Gson;
+import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.monitor.bootstrap.MiMonitorBootstrap;
 import com.xiaomi.mone.monitor.dao.AppCapacityAutoAdjustDao;
 import com.xiaomi.mone.monitor.dao.GrafanaTemplateDao;
 import com.xiaomi.mone.monitor.dao.HeraAppRoleDao;
 import com.xiaomi.mone.monitor.dao.model.AppMonitor;
 import com.xiaomi.mone.monitor.dao.model.GrafanaTemplate;
-import com.xiaomi.mone.monitor.dao.model.HeraAppBaseInfo;
 import com.xiaomi.mone.monitor.dao.model.HeraAppRole;
-import com.xiaomi.mone.monitor.service.impl.AAImpl;
 import com.xiaomi.mone.monitor.service.kubernetes.CapacityAdjustMessageService;
 import com.xiaomi.mone.monitor.dao.model.*;
 import com.xiaomi.mone.monitor.result.Result;
@@ -130,7 +128,7 @@ public class AppMonitorServiceTest {
     @Test
     public void testGrafanaCreate(){
 
-        HeraAppBaseInfo baseInfo = new HeraAppBaseInfo();
+        HeraAppBaseInfoModel baseInfo = new HeraAppBaseInfoModel();
         baseInfo.setBindId("");   //
         baseInfo.setAppName("");   //
         baseInfo.setAppType(0);   //

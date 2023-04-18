@@ -1,10 +1,9 @@
 package com.xiaomi.mone.monitor.service.model;
 
+import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.monitor.dao.model.AppMonitor;
-import com.xiaomi.mone.monitor.dao.model.HeraAppBaseInfo;
 import lombok.Data;
 import lombok.ToString;
-import org.apache.dubbo.common.utils.CollectionUtils;
 import org.springframework.beans.BeanUtils;
 
 import java.io.Serializable;
@@ -47,9 +46,9 @@ public class AppMonitorModel implements Serializable {
         return appMonitor;
     }
 
-    public HeraAppBaseInfo baseInfo(){
+    public HeraAppBaseInfoModel baseInfo(){
 
-        HeraAppBaseInfo heraAppBaseInfo = new HeraAppBaseInfo();
+        HeraAppBaseInfoModel heraAppBaseInfo = new HeraAppBaseInfoModel();
 
         heraAppBaseInfo.setBindId(String.valueOf(this.getProjectId()));
         heraAppBaseInfo.setBindType(this.getBindType());

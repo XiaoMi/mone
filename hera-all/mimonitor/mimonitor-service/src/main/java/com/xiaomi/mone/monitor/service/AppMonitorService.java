@@ -133,11 +133,11 @@ public class AppMonitorService {
             return;
         }
 
-        HeraAppBaseInfo baseInfo = new HeraAppBaseInfo();
+        HeraAppBaseInfoModel baseInfo = new HeraAppBaseInfoModel();
         baseInfo.setBindId(String.valueOf(OProjectId));
         baseInfo.setPlatformType(OPlat);
 
-        List<HeraAppBaseInfo> query = heraBaseInfoService.query(baseInfo, null, null);
+        List<HeraAppBaseInfoModel> query = heraBaseInfoService.query(baseInfo, null, null);
         if (CollectionUtils.isEmpty(query)) {
             log.info("appPlatMove nodata found!OProjectId:{},OPlat:{},NProjectId:{},Nplat:{},NprojectName:{}", OProjectId, OPlat, NProjectId, Nplat, NprojectName);
             return;
@@ -148,7 +148,7 @@ public class AppMonitorService {
         }
 
 
-        HeraAppBaseInfo heraAppBaseInfo = query.get(0);
+        HeraAppBaseInfoModel heraAppBaseInfo = query.get(0);
 
         String oldProjectName = heraAppBaseInfo.getAppName();
 
@@ -158,7 +158,7 @@ public class AppMonitorService {
         heraAppBaseInfo.setBindId(String.valueOf(NProjectId));
         heraAppBaseInfo.setAppName(NprojectName);
 
-        int update = heraBaseInfoService.create(heraAppBaseInfo);
+        int update = heraBaseInfoService.insertOrUpdate(heraAppBaseInfo);
         if (update < 1) {
             log.error("appPlatMove update heraBaseInfo fail!OProjectId:{},OPlat:{},NProjectId:{},Nplat:{},NprojectName:{}", OProjectId, OPlat, NProjectId, Nplat, NprojectName);
         }
@@ -924,7 +924,7 @@ public class AppMonitorService {
 
     public Result<String> createWithBaseInfo(AppMonitorModel appMonitorModel, String user) {
 
-        HeraAppBaseInfo heraAppBaseInfo = appMonitorModel.baseInfo();
+        HeraAppBaseInfoModel heraAppBaseInfo = appMonitorModel.baseInfo();
         Integer baseInfoId = createBaseInfo(heraAppBaseInfo);
         if (baseInfoId == null) {
             log.error("createBaseInfo fail!heraAppBaseInfo:{}", heraAppBaseInfo);
@@ -958,20 +958,20 @@ public class AppMonitorService {
 
     }
 
-    public Integer createBaseInfo(HeraAppBaseInfo heraAppBaseInfo) {
+    public Integer createBaseInfo(HeraAppBaseInfoModel heraAppBaseInfo) {
 
-        HeraAppBaseInfo queryCondition = new HeraAppBaseInfo();
+        HeraAppBaseInfoModel queryCondition = new HeraAppBaseInfoModel();
         queryCondition.setBindId(heraAppBaseInfo.getBindId());
         queryCondition.setPlatformType(heraAppBaseInfo.getPlatformType());
 
-        List<HeraAppBaseInfo> query = heraBaseInfoService.query(queryCondition, 1, 10);
+        List<HeraAppBaseInfoModel> query = heraBaseInfoService.query(queryCondition, 1, 10);
 
         if (!CollectionUtils.isEmpty(query)) {
             log.info("createBaseInfo HeraAppBaseInfo has exist!heraAppBaseInfo:{},query Result:{}", heraAppBaseInfo, new Gson().toJson(query));
             return query.get(0).getId();
         }
 
-        int i = heraBaseInfoService.create(heraAppBaseInfo);
+        int i = heraBaseInfoService.insertOrUpdate(heraAppBaseInfo);
 
         if (i <= 0) {
             return null;
@@ -1079,12 +1079,12 @@ public class AppMonitorService {
             return;
         }
 
-        HeraAppBaseInfo heraAppBaseInfo = new HeraAppBaseInfo();
+        HeraAppBaseInfoModel heraAppBaseInfo = new HeraAppBaseInfoModel();
         heraAppBaseInfo.setBindId(appMonitor.getProjectId() + "");
         heraAppBaseInfo.setPlatformType(appMonitor.getAppSource());
 
-        List<HeraAppBaseInfo> query = heraBaseInfoService.query(heraAppBaseInfo, null, null);
-        HeraAppBaseInfo baseInfo = CollectionUtils.isEmpty(query) ? null : query.get(0);
+        List<HeraAppBaseInfoModel> query = heraBaseInfoService.query(heraAppBaseInfo, null, null);
+        HeraAppBaseInfoModel baseInfo = CollectionUtils.isEmpty(query) ? null : query.get(0);
         if (baseInfo == null) {
             log.error("no base data found for app : {},stop generate grafana url", appMonitor.getProjectName());
             return;
@@ -1422,10 +1422,10 @@ public class AppMonitorService {
             List<AppMonitor> allApps = appMonitorDao.getAllApps(i, pageSize);
             for (AppMonitor app : allApps) {
 
-                HeraAppBaseInfo queryCondition = new HeraAppBaseInfo();
+                HeraAppBaseInfoModel queryCondition = new HeraAppBaseInfoModel();
                 queryCondition.setBindId(String.valueOf(app.getProjectId()));
                 queryCondition.setPlatformType(app.getAppSource());
-                List<HeraAppBaseInfo> appBase = heraBaseInfoService.query(queryCondition, 1, 1);
+                List<HeraAppBaseInfoModel> appBase = heraBaseInfoService.query(queryCondition, 1, 1);
 
                 if (CollectionUtils.isEmpty(appBase)) {
                     log.info("washBaseId no HeraAppBaseInfo found for app:{}", app.toString());
