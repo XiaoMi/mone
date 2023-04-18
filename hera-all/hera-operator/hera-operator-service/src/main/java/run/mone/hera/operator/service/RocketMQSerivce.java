@@ -49,19 +49,28 @@ public class RocketMQSerivce {
             "mone_hera_staging_trace_etl_es"};
 
     public void createTopic(String namesrvAddr) {
+        DefaultMQPushConsumer consumer = null;
+        MQClientInstance mqClientInstance = null;
         try {
-            DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("initGroup");
+            consumer = new DefaultMQPushConsumer("initGroup");
             consumer.setNamesrvAddr(namesrvAddr);
             ClientConfig clientConfig = consumer.cloneClientConfig();
-            MQClientInstance mqClientInstance = new MQClientInstance(clientConfig, 0, consumer.buildMQClientId());
+            mqClientInstance = new MQClientInstance(clientConfig, 0, consumer.buildMQClientId());
             mqClientInstance.start();
             MQClientAPIImpl mqClientAPIImpl = mqClientInstance.getMQClientAPIImpl();
             // 创建topic
-            for (String topic : topics){
+            for (String topic : topics) {
                 createTopic(mqClientAPIImpl, topic);
-        }
+            }
         } catch (Throwable t) {
             log.error("create rocketMQ topic error", t);
+        }finally {
+            if(consumer != null){
+                consumer.shutdown();
+            }
+            if(mqClientInstance != null){
+                mqClientInstance.shutdown();
+            }
         }
     }
 

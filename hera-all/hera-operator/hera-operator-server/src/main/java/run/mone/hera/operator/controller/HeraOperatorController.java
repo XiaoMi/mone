@@ -24,7 +24,6 @@ import com.xiaomi.youpin.infra.rpc.Result;
 import com.xiaomi.youpin.infra.rpc.errors.ExceptionHelper;
 import com.xiaomi.youpin.infra.rpc.errors.GeneralCodes;
 import io.fabric8.kubernetes.api.model.ObjectMeta;
-import io.fabric8.kubernetes.client.KubernetesClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import run.mone.hera.operator.bo.HeraBootstrap;
@@ -32,12 +31,17 @@ import run.mone.hera.operator.bo.HeraResource;
 import run.mone.hera.operator.bo.HeraStatus;
 import run.mone.hera.operator.common.HoConstant;
 import run.mone.hera.operator.common.ResourceTypeEnum;
-import run.mone.hera.operator.dto.*;
-import run.mone.hera.operator.service.ESService;
+import run.mone.hera.operator.dto.DeployStateDTO;
+import run.mone.hera.operator.dto.HeraOperatorDefineDTO;
+import run.mone.hera.operator.dto.OperatorStateDTO;
+import run.mone.hera.operator.dto.ServiceCheckResource;
 import run.mone.hera.operator.service.HeraBootstrapInitService;
-import run.mone.hera.operator.service.NacosService;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.Semaphore;
 
 
@@ -54,17 +58,7 @@ public class HeraOperatorController {
     private Semaphore semaphore = new Semaphore(1);
 
     @javax.annotation.Resource
-    private KubernetesClient kubernetesClient;
-
-    @javax.annotation.Resource
-    private ESService esService;
-
-    @javax.annotation.Resource
     private HeraBootstrapInitService heraBootstrapInitService;
-
-    @javax.annotation.Resource
-    private NacosService nacosService;
-
 
     @RequestMapping(path = "/hera/operator/resource/get", method = "get", timeout = 5000L)
     public Result<HeraOperatorDefineDTO> getResource() {
@@ -87,7 +81,7 @@ public class HeraOperatorController {
             Map<String, String> serviceMap = new HashMap<>();
             serviceMap.put("hera-nginx", HoConstant.KEY_HERA_URL);
             serviceMap.put("tpclogin-nginx", HoConstant.KEY_TPC_LOGIN_FE_URL);
-            serviceMap.put("tpc-nginx", "hera.tpc.url");
+            serviceMap.put("tpc-nginx", HoConstant.KEY_HERA_TPC_URL);
             serviceMap.put("grafana", HoConstant.KEY_GRAFANA_URL);
             serviceMap.put("alertmanager", HoConstant.KEY_ALERTMANAGER_URL);
             serviceMap.put("prometheus", HoConstant.KEY_PROMETHEUS_URL);

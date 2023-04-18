@@ -41,7 +41,7 @@ public class NacosService {
             for (File file : files) {
                 String name = file.getName();
                 String[] split = name.substring(0, name.indexOf(".properties")).split("_#_");
-                configService.publishConfig(split[0], split[1], FileUtils.fileToString(file));
+                configService.publishConfig(split[0], split[1], FileUtils.fileToStringReadLine(file));
             }
         } catch (Throwable t) {
             log.error("publish nacos config error", t);

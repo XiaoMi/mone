@@ -74,4 +74,8 @@ public class HoConstant {
     public static final String KEY_ALERTMANAGER_URL = "hera.alertmanager.url";
 
     public static final String KEY_HERA_URL = "hera.homepage.url";
+
+    public static final String KEY_HERA_TPC_URL = "hera.tpc.url";
+
+
 }

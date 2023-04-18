@@ -43,6 +43,7 @@ public enum ResourceTypeEnum {
 
     HERA_FE(12, "HeraFe", 11),
 
+    HERA_WEBHOOK(13, "HeraWebhook", 12),
 
     OTHER(99, "Other", 19)
     ;

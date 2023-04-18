@@ -32,9 +32,6 @@ public class FileUtils {
         try (InputStream is = FileUtils.class.getResourceAsStream(relativeClassPath);
              BufferedReader reader = new BufferedReader(new InputStreamReader(is))) {
 
-            if (relativeClassPath.contains("grafana")) {
-                System.out.println("available byte length : " + is.available());
-            }
             StringBuilder sb = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) {
@@ -48,14 +45,17 @@ public class FileUtils {
         }
     }
 
-    public static String fileToString(File file) throws IOException {
+    public static String fileToStringReadLine(File file) {
         StringBuilder sb = new StringBuilder();
         String line;
-        BufferedReader reader = new BufferedReader(new FileReader(file));
-        while ((line = reader.readLine()) != null) {
-            sb.append(line).append(System.lineSeparator());
+        try(BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            while ((line = reader.readLine()) != null) {
+                sb.append(line).append(System.lineSeparator());
+            }
+            return sb.toString();
+        }catch (IOException e){
+            throw new RuntimeException(e);
         }
-        return sb.toString();
     }
 }
 
