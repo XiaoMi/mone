@@ -5,7 +5,6 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.xiaomi.mone.app.api.model.HeraAppMqInfo;
 import com.xiaomi.mone.monitor.dao.HeraAppRoleDao;
-import com.xiaomi.mone.monitor.dao.HeraBaseInfoDao;
 import com.xiaomi.mone.monitor.dao.model.HeraAppBaseInfo;
 import com.xiaomi.mone.monitor.dao.model.HeraAppRole;
 import com.xiaomi.mone.monitor.service.AppGrafanaMappingService;
@@ -24,7 +23,6 @@ import org.apache.rocketmq.common.consumer.ConsumeFromWhere;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -40,16 +38,16 @@ import java.util.stream.Collectors;
 @Slf4j
 public class RocketMqHeraAppConsumer {
 
-    @NacosValue(value = "${rocketmq.topic.hera.app}",autoRefreshed = true)
+    @NacosValue(value = "${rocketmq.topic.hera.app}", autoRefreshed = true)
     private String consumerTopic;
 
-    @NacosValue(value = "${rocketmq.tag.hera.app}",autoRefreshed = true)
+    @NacosValue(value = "${rocketmq.tag.hera.app}", autoRefreshed = true)
     private String consumerTag;
 
-    @NacosValue(value = "${rocketmq.group.hera.app}",autoRefreshed = true)
+    @NacosValue(value = "${rocketmq.group.hera.app}", autoRefreshed = true)
     private String consumerGroup;
 
-    @NacosValue(value = "${rocketmq.namesrv.addr}",autoRefreshed = true)
+    @NacosValue(value = "${rocketmq.namesrv.addr}", autoRefreshed = true)
     private String namesrvAddr;
 
     @NacosValue("${rocketmq.ak}")
@@ -59,9 +57,6 @@ public class RocketMqHeraAppConsumer {
     private String sk;
 
     private DefaultMQPushConsumer heraAppMQPushConsumer;
-
-    @Autowired
-    HeraBaseInfoDao heraBaseInfoDao;
 
     @Autowired
     HeraAppRoleDao heraAppRoleDao;
@@ -84,7 +79,7 @@ public class RocketMqHeraAppConsumer {
 
         try {
             boolean b = rocketMqStartedStatus.compareAndSet(false, true);
-            if(!b){
+            if (!b) {
                 log.error("RocketMqHeraAppConsumer.heraAppMQPushConsumer start failed, it has started!!");
                 return;
             }
@@ -104,15 +99,15 @@ public class RocketMqHeraAppConsumer {
             heraAppMQPushConsumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);
             heraAppMQPushConsumer.setMessageModel(MessageModel.CLUSTERING);
 
-            heraAppMQPushConsumer.subscribe(consumerTopic,consumerTag);
-            heraAppMQPushConsumer.registerMessageListener((MessageListenerOrderly)(list, consumeOrderlyContext) -> {
+            heraAppMQPushConsumer.subscribe(consumerTopic, consumerTag);
+            heraAppMQPushConsumer.registerMessageListener((MessageListenerOrderly) (list, consumeOrderlyContext) -> {
                 try {
                     list.stream().forEach(it -> {
                         log.info("RocketMqHeraAppConsumer# heraAppMQPushConsumer received message : MsgId: {}, Topic: {} Tags:{}", it.getMsgId(), it.getTopic(), it.getTags());
                         consumeMessage(it);
                     });
                 } catch (Exception e) {
-                    log.info("RocketMqHeraAppConsumer# heraAppMQPushConsumer message error: {}", e.getMessage(),e);
+                    log.info("RocketMqHeraAppConsumer# heraAppMQPushConsumer message error: {}", e.getMessage(), e);
                 }
 
                 return ConsumeOrderlyStatus.SUCCESS;
@@ -125,7 +120,7 @@ public class RocketMqHeraAppConsumer {
             log.info("RocketMqHeraAppConsumer# heraAppMQPushConsumer has started!!");
 
         } catch (MQClientException e) {
-            log.error("RocketMqHeraAppConsumer# heraAppMQPushConsumer start error: {}" , e.getMessage(),e);
+            log.error("RocketMqHeraAppConsumer# heraAppMQPushConsumer start error: {}", e.getMessage(), e);
             throw e;
         }
     }
@@ -134,8 +129,9 @@ public class RocketMqHeraAppConsumer {
         log.info("RocketMqHeraAppConsumer# consumeMessage: {} {}", message.getMsgId(), new String(message.getBody()));
         try {
             Gson gson = new Gson();
-            RocketMqReceiver<HeraAppMqInfo> heraAppMessage = gson.fromJson(new String(message.getBody()), new TypeToken<RocketMqReceiver<HeraAppMqInfo>>(){}.getType());
-            log.info("RocketMqHeraAppConsumer# consumeMessage convert heraAppMessage : {}",heraAppMessage.toString());
+            RocketMqReceiver<HeraAppMqInfo> heraAppMessage = gson.fromJson(new String(message.getBody()), new TypeToken<RocketMqReceiver<HeraAppMqInfo>>() {
+            }.getType());
+            log.info("RocketMqHeraAppConsumer# consumeMessage convert heraAppMessage : {}", heraAppMessage.toString());
             if (heraAppMessage.getData() == null) {
                 return;
             }
@@ -174,33 +170,34 @@ public class RocketMqHeraAppConsumer {
         }
     }
 
-    private HeraAppBaseInfo saveOrUpdateHeraApp(HeraAppBaseInfo heraAppBaseInfo){
+    private HeraAppBaseInfo saveOrUpdateHeraApp(HeraAppBaseInfo heraAppBaseInfo) {
         HeraAppBaseInfo queryInfo = new HeraAppBaseInfo();
         queryInfo.setBindId(heraAppBaseInfo.getBindId());
         queryInfo.setPlatformType(heraAppBaseInfo.getPlatformType());
         queryInfo.setStatus(0);
         List<HeraAppBaseInfo> query = heraBaseInfoService.query(queryInfo, null, null);
-        if(CollectionUtils.isEmpty(query)){
-            heraBaseInfoDao.create(heraAppBaseInfo);
-            log.info("create heraAppBaseInfo by rocketMq success,heraAppBaseInfo:{}",heraAppBaseInfo);
+        if (CollectionUtils.isEmpty(query)) {
+            heraBaseInfoService.create(heraAppBaseInfo);
+            log.info("create heraAppBaseInfo by rocketMq success,heraAppBaseInfo:{}", heraAppBaseInfo);
             return null;
-        }else{
-            if(query.size() > 1){
-                log.error("duplicate heraBaseInfo : {}",new Gson().toJson(query));
+        } else {
+            if (query.size() > 1) {
+                log.error("duplicate heraBaseInfo : {}", new Gson().toJson(query));
             }
             HeraAppBaseInfo heraAppBaseInfo1 = query.get(0);
             heraAppBaseInfo.setId(heraAppBaseInfo1.getId());
             heraAppBaseInfo.setStatus(0);
-            heraBaseInfoDao.update(heraAppBaseInfo);
-            log.info("update heraAppBaseInfo by rocketMq success,heraAppBaseInfo:{}",heraAppBaseInfo);
+//            heraBaseInfoDao.update(heraAppBaseInfo);
+            heraBaseInfoService.create(heraAppBaseInfo);
+            log.info("update heraAppBaseInfo by rocketMq success,heraAppBaseInfo:{}", heraAppBaseInfo);
             return heraAppBaseInfo1;
         }
     }
 
-    private void saveOrUpdateHeraAppRole(List<String> members,String appId,Integer platFormType){
+    private void saveOrUpdateHeraAppRole(List<String> members, String appId, Integer platFormType) {
 
-        log.info("saveOrUpdateHeraAppRole appId:{},platFormType:{},members:{}",appId,platFormType,members);
-        if(CollectionUtils.isEmpty(members)){
+        log.info("saveOrUpdateHeraAppRole appId:{},platFormType:{},members:{}", appId, platFormType, members);
+        if (CollectionUtils.isEmpty(members)) {
             return;
         }
 
@@ -213,7 +210,7 @@ public class RocketMqHeraAppConsumer {
 
         List<HeraAppRole> query = heraAppRoleDao.query(role, null, 2000);
 
-        if(CollectionUtils.isEmpty(query)){
+        if (CollectionUtils.isEmpty(query)) {
 
             List<HeraAppRole> roles = members.stream().filter(a -> org.apache.commons.lang3.StringUtils.isNotBlank(a)).map(t -> {
                 HeraAppRole r = new HeraAppRole();
@@ -234,8 +231,8 @@ public class RocketMqHeraAppConsumer {
          * 删除本次参数不包含的成员（需先进行此步骤）
          */
         List<HeraAppRole> delRoles = query.stream().filter(t -> !members.contains(t.getUser())).collect(Collectors.toList());
-        if(CollectionUtils.isNotEmpty(delRoles)){
-            delRoles.forEach(t->{
+        if (CollectionUtils.isNotEmpty(delRoles)) {
+            delRoles.forEach(t -> {
                 heraAppRoleDao.delById(t.getId());
             });
         }
@@ -244,12 +241,12 @@ public class RocketMqHeraAppConsumer {
         /**
          * 添加本次新增的成员
          */
-        members.removeAll(query.stream().map(t-> t.getUser()).collect(Collectors.toList()));
+        members.removeAll(query.stream().map(t -> t.getUser()).collect(Collectors.toList()));
 
-        if(CollectionUtils.isNotEmpty(members)){
+        if (CollectionUtils.isNotEmpty(members)) {
             members.forEach(t -> {
 
-                if(!StringUtils.isBlank(t)){
+                if (!StringUtils.isBlank(t)) {
                     HeraAppRole roleAdd = new HeraAppRole();
                     roleAdd.setRole(0);
                     roleAdd.setAppId(appId);
@@ -261,9 +258,6 @@ public class RocketMqHeraAppConsumer {
 
             });
         }
-
-
-
 
 
     }

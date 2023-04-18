@@ -29,7 +29,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -48,16 +51,16 @@ public class AppMonitorService {
     @Value("${server.type}")
     private String serverType;
 
-    @NacosValue(value = "${resource.use.rate.url}",autoRefreshed = true)
+    @NacosValue(value = "${resource.use.rate.url}", autoRefreshed = true)
     private String resourceUseRateUrl;
 
-    @NacosValue(value = "${resource.use.rate.url.k8s:nocinfig}",autoRefreshed = true)
+    @NacosValue(value = "${resource.use.rate.url.k8s:nocinfig}", autoRefreshed = true)
     private String resourceUseRateUrlk8s;
 
-    @NacosValue(value = "${resource.use.rate.nodata.url}",autoRefreshed = true)
+    @NacosValue(value = "${resource.use.rate.nodata.url}", autoRefreshed = true)
     private String resourceUseRateNoDataUrl;
 
-    @NacosValue(value = "${grafana.domain}",autoRefreshed = true)
+    @NacosValue(value = "${grafana.domain}", autoRefreshed = true)
     private String grafanaDomain;
 
     private String resourceUrl = "/d/hera-resource-utilization/hera-k8szi-yuan-shi-yong-lu-da-pan?orgId=1&var-application=";
@@ -71,9 +74,6 @@ public class AppMonitorService {
 
     @Autowired
     private AppGrafanaMappingDao appGrafanaMappingDao;
-    
-    @Autowired
-    HeraBaseInfoDao heraBaseInfoDao;
 
     @Autowired
     HeraBaseInfoService heraBaseInfoService;
@@ -110,7 +110,7 @@ public class AppMonitorService {
 
     @Autowired
     AppAlarmStrategyDao strategyDao;
-    
+
     @Autowired
     AppAlarmRuleDao ruleDao;
 
@@ -120,16 +120,16 @@ public class AppMonitorService {
     private static final Gson gson = new Gson();
 
 
-    @Reference(registry = "registryConfig",check = false, interfaceClass = HeraAppService.class,group="${dubbo.group.heraapp}")
+    @Reference(registry = "registryConfig", check = false, interfaceClass = HeraAppService.class, group = "${dubbo.group.heraapp}")
     HeraAppService hearAppService;
 
-    public void appPlatMove(Integer OProjectId,Integer OPlat,Integer NProjectId,Integer Nplat,Integer newIamId,String NprojectName,Boolean rebuildRule){
+    public void appPlatMove(Integer OProjectId, Integer OPlat, Integer NProjectId, Integer Nplat, Integer newIamId, String NprojectName, Boolean rebuildRule) {
 
 
-        log.info("appPlatMove OProjectId:{},OPlat:{},NProjectId:{},Nplat:{},NprojectName:{}",OProjectId,OPlat,NProjectId,Nplat,NprojectName);
+        log.info("appPlatMove OProjectId:{},OPlat:{},NProjectId:{},Nplat:{},NprojectName:{}", OProjectId, OPlat, NProjectId, Nplat, NprojectName);
 
-        if(OProjectId == null || OPlat == null || NProjectId == null || Nplat == null || StringUtils.isBlank(NprojectName)){
-            log.error("appPlatMove has invalid param! OProjectId:{},OPlat:{},NProjectId:{},Nplat:{},NprojectName:{}",OProjectId,OPlat,NProjectId,Nplat,NprojectName);
+        if (OProjectId == null || OPlat == null || NProjectId == null || Nplat == null || StringUtils.isBlank(NprojectName)) {
+            log.error("appPlatMove has invalid param! OProjectId:{},OPlat:{},NProjectId:{},Nplat:{},NprojectName:{}", OProjectId, OPlat, NProjectId, Nplat, NprojectName);
             return;
         }
 
@@ -138,12 +138,12 @@ public class AppMonitorService {
         baseInfo.setPlatformType(OPlat);
 
         List<HeraAppBaseInfo> query = heraBaseInfoService.query(baseInfo, null, null);
-        if(CollectionUtils.isEmpty(query)){
-            log.info("appPlatMove nodata found!OProjectId:{},OPlat:{},NProjectId:{},Nplat:{},NprojectName:{}",OProjectId,OPlat,NProjectId,Nplat,NprojectName);
+        if (CollectionUtils.isEmpty(query)) {
+            log.info("appPlatMove nodata found!OProjectId:{},OPlat:{},NProjectId:{},Nplat:{},NprojectName:{}", OProjectId, OPlat, NProjectId, Nplat, NprojectName);
             return;
         }
-        if(query.size() > 1){
-            log.info("appPlatMove more than one data found!OProjectId:{},OPlat:{},NProjectId:{},Nplat:{},NprojectName:{}",OProjectId,OPlat,NProjectId,Nplat,NprojectName);
+        if (query.size() > 1) {
+            log.info("appPlatMove more than one data found!OProjectId:{},OPlat:{},NProjectId:{},Nplat:{},NprojectName:{}", OProjectId, OPlat, NProjectId, Nplat, NprojectName);
             return;
         }
 
@@ -158,7 +158,7 @@ public class AppMonitorService {
         heraAppBaseInfo.setBindId(String.valueOf(NProjectId));
         heraAppBaseInfo.setAppName(NprojectName);
 
-        int update = heraBaseInfoDao.update(heraAppBaseInfo);
+        int update = heraBaseInfoService.create(heraAppBaseInfo);
         if (update < 1) {
             log.error("appPlatMove update heraBaseInfo fail!OProjectId:{},OPlat:{},NProjectId:{},Nplat:{},NprojectName:{}", OProjectId, OPlat, NProjectId, Nplat, NprojectName);
         }
@@ -197,16 +197,16 @@ public class AppMonitorService {
         }
 
 
-        if(rebuildRule){
+        if (rebuildRule) {
             AlarmStrategy strategy = new AlarmStrategy();
             strategy.setAppId(OProjectId);
             strategy.setAppName(oldProjectName);
             PageData<List<AlarmStrategyInfo>> listPageData = strategyDao.searchByCondNoUser(strategy, 1, 1000, null, null);
             List<AlarmStrategyInfo> list = listPageData.getList();
-            if(!CollectionUtils.isEmpty(list)){
+            if (!CollectionUtils.isEmpty(list)) {
                 list.forEach(t -> {
                     List<AppAlarmRule> rules = ruleDao.selectByStrategyId(t.getId());
-                    for(AppAlarmRule rule : rules){
+                    for (AppAlarmRule rule : rules) {
                         /**
                          * 1、app的projectId、Name、iamId都更新好
                          * 2、rule的iamId
@@ -259,7 +259,7 @@ public class AppMonitorService {
                         rule.setCname(cname.toString());
 
                         AlarmRuleData ruleData = new AlarmRuleData();
-                        BeanUtils.copyProperties(rule,ruleData);
+                        BeanUtils.copyProperties(rule, ruleData);
                         ruleData.setLabels(rule.getLabels());
                         ruleData.convertLabels();
 
@@ -269,11 +269,11 @@ public class AppMonitorService {
                         ruleData.setExceptServices(t.getExceptServices());
                         ruleData.setAlertMembers(t.getAlertMembers());
 
-                        if(!CollectionUtils.isEmpty(t.getIncludeFunctions())){
+                        if (!CollectionUtils.isEmpty(t.getIncludeFunctions())) {
                             ruleData.setIncludeFunctions(t.getIncludeFunctions().stream().map(String::valueOf).collect(Collectors.toList()));
                         }
 
-                        if(!CollectionUtils.isEmpty(t.getExceptFunctions())){
+                        if (!CollectionUtils.isEmpty(t.getExceptFunctions())) {
                             ruleData.setExceptFunctions(t.getExceptFunctions().stream().map(String::valueOf).collect(Collectors.toList()));
                         }
 
@@ -282,8 +282,8 @@ public class AppMonitorService {
 
 
                         Result result1 = alarmService.addRule(app, rule, rule.getCreater(), ruleData);
-                        if(!result1.isSuccess()){
-                            log.error("appPlatMove add new rule fail!rule{}",rule.toString());
+                        if (!result1.isSuccess()) {
+                            log.error("appPlatMove add new rule fail!rule{}", rule.toString());
                             return;
                         }
 
@@ -291,23 +291,22 @@ public class AppMonitorService {
                         Integer alarmId = data.getAsJsonObject().get("id").getAsInt();
                         rule.setAlarmId(alarmId);
 
-                        if(rule.getRuleStatus().equals(RuleStatusType.pause.getCode())){
+                        if (rule.getRuleStatus().equals(RuleStatusType.pause.getCode())) {
                             Result result = alarmService.enabledRule(alarmId, RuleStatusType.pause.getCode(), rule.getIamId(), rule.getCreater());
-                            if(!result.isSuccess()){
-                                log.error("appPlatMove pause rule fail!rule{}",rule.toString());
+                            if (!result.isSuccess()) {
+                                log.error("appPlatMove pause rule fail!rule{}", rule.toString());
                             }
                         }
 
 
-
                         Result result = alarmService.deleteRule(oldAlarmId, oldIamId, rule.getCreater());
-                        if(!result.isSuccess()){
-                            log.error("appPlatMove del old rule fail!rule{}",rule.toString());
+                        if (!result.isSuccess()) {
+                            log.error("appPlatMove del old rule fail!rule{}", rule.toString());
                         }
 
                         int i = ruleDao.updateByIdSelective(rule);
-                        if(i < 1){
-                            log.error("appPlatMove update rule db fail! rule{}",rule.toString());
+                        if (i < 1) {
+                            log.error("appPlatMove update rule db fail! rule{}", rule.toString());
                         }
 
                     }
@@ -318,8 +317,8 @@ public class AppMonitorService {
                     strategyUp.setAppName(NprojectName);
                     strategyUp.setIamId(newIamId);
                     boolean b = strategyDao.updateById(strategyUp);
-                    if(!b){
-                        log.error("appPlatMove update strategy fail! oldP:{},new:{}",t.toString(),strategyUp.toString());
+                    if (!b) {
+                        log.error("appPlatMove update strategy fail! oldP:{},new:{}", t.toString(), strategyUp.toString());
                     }
 
                 });
@@ -327,16 +326,15 @@ public class AppMonitorService {
         }
 
 
-
     }
 
 
-    public Result selectAppAlarmHealth(AlarmHealthQuery query){
+    public Result selectAppAlarmHealth(AlarmHealthQuery query) {
         try {
             List<AlarmHealthResult> alarmHealthResults = appMonitorDao.selectAppHealth(query);
-            if(!CollectionUtils.isEmpty(alarmHealthResults)){
+            if (!CollectionUtils.isEmpty(alarmHealthResults)) {
 
-                for(AlarmHealthResult alarmHealth : alarmHealthResults){
+                for (AlarmHealthResult alarmHealth : alarmHealthResults) {
                     /**
                      * 基础指标得分
                      */
@@ -344,7 +342,7 @@ public class AppMonitorService {
                             (alarmHealth.getCpuLoad().intValue() > 0 ? 2 : 0) +
                             (alarmHealth.getMemUseRate().intValue() > 0 ? 2 : 0) +
                             (alarmHealth.getContainerNum().intValue() > 0 ? 2 : 0) +
-                            (alarmHealth.getJvmThread().intValue() > 0 ? 1: 0) +
+                            (alarmHealth.getJvmThread().intValue() > 0 ? 1 : 0) +
                             (alarmHealth.getJvmGc().intValue() > 0 ? 1 : 0)
                     );
 
@@ -354,13 +352,13 @@ public class AppMonitorService {
                     alarmHealth.setInterfaceMetricScore((alarmHealth.getHttpServerAvailability().intValue() > 0 ? 2 : 0) +
                             (alarmHealth.getHttpServerQps().intValue() > 0 ? 1 : 0) +
                             (alarmHealth.getHttpServerTimeCost().intValue() > 0 ? 1 : 0) +
-                            (alarmHealth.getHttpClientAvailability().intValue() > 0 ? 1: 0) +
+                            (alarmHealth.getHttpClientAvailability().intValue() > 0 ? 1 : 0) +
                             (alarmHealth.getHttpClientQps().intValue() > 0 ? 1 : 0) +
                             (alarmHealth.getHttpClientTimeCost().intValue() > 0 ? 1 : 0) +
-                            (alarmHealth.getDubboProviderAvailability().intValue() > 0 ? 2 : 0 )+
-                            (alarmHealth.getDubboProviderQps().intValue() > 0 ? 1 : 0 )+
+                            (alarmHealth.getDubboProviderAvailability().intValue() > 0 ? 2 : 0) +
+                            (alarmHealth.getDubboProviderQps().intValue() > 0 ? 1 : 0) +
                             (alarmHealth.getDubboProviderTimeCost().intValue() > 0 ? 1 : 0) +
-                            (alarmHealth.getDubboProviderSlowQuery().intValue() > 0 ? 1 : 0 )+
+                            (alarmHealth.getDubboProviderSlowQuery().intValue() > 0 ? 1 : 0) +
                             (alarmHealth.getDubboConsumerAvailability().intValue() > 0 ? 1 : 0) +
                             (alarmHealth.getDubboConsumerQps().intValue() > 0 ? 1 : 0) +
                             (alarmHealth.getDubboConsumerTimeCost().intValue() > 0 ? 1 : 0) +
@@ -377,7 +375,7 @@ public class AppMonitorService {
             }
             return Result.success(alarmHealthResults);
         } catch (Exception e) {
-            log.error("selectAppAlarmHealth Error!{}",e.getMessage(),e);
+            log.error("selectAppAlarmHealth Error!{}", e.getMessage(), e);
             return Result.fail(ErrorCode.unknownError);
         }
     }
@@ -522,7 +520,7 @@ public class AppMonitorService {
 //        }
 //    }
 
-    public String getAppGitName(Integer appId,String appName){
+    public String getAppGitName(Integer appId, String appName) {
 
         return null;
 //        if(appId == null){
@@ -555,13 +553,13 @@ public class AppMonitorService {
     }
 
 
-    public Result getResourceUsageUrl(Integer appId,String appName){
+    public Result getResourceUsageUrl(Integer appId, String appName) {
 
         StringBuffer buffer = new StringBuffer();
         buffer.append(resourceUseRateUrl);
 
-        String appGitName = getAppGitName(appId,appName);
-        if(StringUtils.isNotBlank(appGitName)){
+        String appGitName = getAppGitName(appId, appName);
+        if (StringUtils.isNotBlank(appGitName)) {
             appName = appGitName;
         }
 
@@ -572,28 +570,27 @@ public class AppMonitorService {
                 .append(",container_label_PROJECT_ID='").append(appId).append("'")
                 .append("}) by (name)");
         Result<PageData> pageDataResult = prometheusService.queryByMetric(builder.toString());
-        if(pageDataResult.getCode() != ErrorCode.success.getCode() || pageDataResult.getData() == null){
-            log.error("queryByMetric error! projectId :{},projectName:{}",appId,appName);
+        if (pageDataResult.getCode() != ErrorCode.success.getCode() || pageDataResult.getData() == null) {
+            log.error("queryByMetric error! projectId :{},projectName:{}", appId, appName);
             return Result.success(resourceUseRateNoDataUrl);
         }
 
 
-
         List<Metric> list = (List<Metric>) pageDataResult.getData().getList();
-        log.info("getContainerInstance param : appId:{}, projectName:{},result:{}",appId,appName,list);
+        log.info("getContainerInstance param : appId:{}, projectName:{},result:{}", appId, appName, list);
 
-        if(CollectionUtils.isEmpty(list)){
-            log.info("getContainerInstance no data found! param : appId:{}, projectName:{},result:{}",appId,appName,list);
+        if (CollectionUtils.isEmpty(list)) {
+            log.info("getContainerInstance no data found! param : appId:{}, projectName:{},result:{}", appId, appName, list);
             return Result.success(resourceUseRateNoDataUrl);
         }
 
 //        Metric metric = list.stream().sorted((a1, a2) -> a2.getName().compareTo(a1.getName())).collect(Collectors.toList()).get(0);
 
         List<String> collect = list.stream().map(t -> t.getName()).collect(Collectors.toList());
-        if(CollectionUtils.isEmpty(collect)){
+        if (CollectionUtils.isEmpty(collect)) {
             return Result.success(resourceUseRateNoDataUrl);
         }
-        for(String name : collect){
+        for (String name : collect) {
             buffer.append("&var-name=").append(name);
         }
 
@@ -601,7 +598,7 @@ public class AppMonitorService {
         return Result.success(buffer.toString());
     }
 
-    public Result getResourceUsageUrlForK8s(Integer appId,String appName) {
+    public Result getResourceUsageUrlForK8s(Integer appId, String appName) {
         //返回grafana资源利用率图表的链接
         String application = String.valueOf(appId) + "_" + StringUtils.replace(appName, "-", "_");
         String url = grafanaDomain + resourceUrl + application;
@@ -805,13 +802,13 @@ public class AppMonitorService {
 //        return Arrays.asList(new Gson().fromJson(new Gson().toJson(list),ProjectInfo[].class));
 //    }
 
-    public Result<PageData> getProjectInfos(String userName,String appName,Integer page,Integer pageSize){
+    public Result<PageData> getProjectInfos(String userName, String appName, Integer page, Integer pageSize) {
 
-        if(page == null){
+        if (page == null) {
             page = 1;
         }
 
-        if(pageSize == null){
+        if (pageSize == null) {
             pageSize = 10;
         }
 
@@ -828,12 +825,12 @@ public class AppMonitorService {
         List<HeraAppBaseInfoModel> query = hearAppService.query(model, page, pageSize);
 
         List list = new ArrayList<ProjectInfo>();
-        if(CollectionUtils.isEmpty(query)){
+        if (CollectionUtils.isEmpty(query)) {
             pd.setList(list);
             return Result.success(pd);
         }
 
-        query.forEach(t->{
+        query.forEach(t -> {
             ProjectInfo info = new ProjectInfo();
             info.setId(Long.valueOf(t.getBindId()));
             info.setName(t.getAppName());
@@ -925,12 +922,12 @@ public class AppMonitorService {
 //    }
 
 
-    public Result<String> createWithBaseInfo(AppMonitorModel appMonitorModel,String user){
+    public Result<String> createWithBaseInfo(AppMonitorModel appMonitorModel, String user) {
 
         HeraAppBaseInfo heraAppBaseInfo = appMonitorModel.baseInfo();
         Integer baseInfoId = createBaseInfo(heraAppBaseInfo);
-        if(baseInfoId == null){
-            log.error("createBaseInfo fail!heraAppBaseInfo:{}",heraAppBaseInfo);
+        if (baseInfoId == null) {
+            log.error("createBaseInfo fail!heraAppBaseInfo:{}", heraAppBaseInfo);
             return Result.fail(ErrorCode.unknownError);
         }
 
@@ -945,14 +942,14 @@ public class AppMonitorService {
             log.error("AppMonitorController.createWithBaseInfo 用户{}添加项目{}，参数不合法", user, appMonitor);
             return Result.fail(ErrorCode.invalidParamError);
         }
-        if(StringUtils.isNotBlank(appMonitor.getOwner()) && appMonitor.getOwner().equals("yes")){
+        if (StringUtils.isNotBlank(appMonitor.getOwner()) && appMonitor.getOwner().equals("yes")) {
             appMonitor.setOwner(user);
-        }else{
+        } else {
             appMonitor.setCareUser(user);
         }
 
         Result<String> result = create(appMonitor);
-        if(!result.isSuccess()){
+        if (!result.isSuccess()) {
             log.error("AppMonitorController.addApp fail! user:{},appMonitorModel:{}", user, appMonitorModel);
             return Result.fail(ErrorCode.invalidParamError);
         }
@@ -961,7 +958,7 @@ public class AppMonitorService {
 
     }
 
-    public Integer createBaseInfo(HeraAppBaseInfo heraAppBaseInfo){
+    public Integer createBaseInfo(HeraAppBaseInfo heraAppBaseInfo) {
 
         HeraAppBaseInfo queryCondition = new HeraAppBaseInfo();
         queryCondition.setBindId(heraAppBaseInfo.getBindId());
@@ -969,31 +966,31 @@ public class AppMonitorService {
 
         List<HeraAppBaseInfo> query = heraBaseInfoService.query(queryCondition, 1, 10);
 
-        if(!CollectionUtils.isEmpty(query)){
-            log.info("createBaseInfo HeraAppBaseInfo has exist!heraAppBaseInfo:{},query Result:{}",heraAppBaseInfo,new Gson().toJson(query));
+        if (!CollectionUtils.isEmpty(query)) {
+            log.info("createBaseInfo HeraAppBaseInfo has exist!heraAppBaseInfo:{},query Result:{}", heraAppBaseInfo, new Gson().toJson(query));
             return query.get(0).getId();
         }
 
-        int i = heraBaseInfoDao.create(heraAppBaseInfo);
+        int i = heraBaseInfoService.create(heraAppBaseInfo);
 
-        if(i <= 0){
+        if (i <= 0) {
             return null;
         }
 
         return heraAppBaseInfo.getId();
     }
 
-    public Result<String> create(AppMonitor appMonitor){
+    public Result<String> create(AppMonitor appMonitor) {
 
-        if(appMonitor == null){
+        if (appMonitor == null) {
             log.error("AppMonitorService.create param is null");
             return Result.fail(ErrorCode.invalidParamError);
         }
-        if(appMonitor.getProjectId() == null || StringUtils.isEmpty(appMonitor.getProjectName())){
+        if (appMonitor.getProjectId() == null || StringUtils.isEmpty(appMonitor.getProjectName())) {
             log.error("AppMonitorService.create param is avalid! projectId or projectName is empty!");
             return Result.fail(ErrorCode.invalidParamError);
         }
-        if(StringUtils.isEmpty(appMonitor.getOwner()) && StringUtils.isEmpty(appMonitor.getCareUser()) ){
+        if (StringUtils.isEmpty(appMonitor.getOwner()) && StringUtils.isEmpty(appMonitor.getCareUser())) {
             log.error("AppMonitorService.create param is avalid! owner and careUser can not both null at same time!");
             return Result.fail(ErrorCode.invalidParamError);
         }
@@ -1003,22 +1000,22 @@ public class AppMonitorService {
          */
         AppViewType viewType = AppViewType.MyApp;
         String userName = appMonitor.getOwner();
-        if(StringUtils.isEmpty(appMonitor.getOwner())){
+        if (StringUtils.isEmpty(appMonitor.getOwner())) {
             viewType = AppViewType.MyCareApp;
             userName = appMonitor.getCareUser();
         }
         AppMonitor app = appMonitorDao.getMyApp(appMonitor.getProjectId(), appMonitor.getIamTreeId(), userName, viewType);
-        if(app != null){
-            log.info("AppMonitorService.create update Data appMonitor : {}",appMonitor);
+        if (app != null) {
+            log.info("AppMonitorService.create update Data appMonitor : {}", appMonitor);
             //如果指定的projectId，userName，viewType已经存在，则更新一下项目名称即可，无需重复创建数据！
             app.setProjectName(appMonitor.getProjectName());
             app.setBaseInfoId(appMonitor.getBaseInfoId());
             int update = appMonitorDao.update(app);
             if (update > 0) {
-                log.info("AppMonitorService.create update Data success appMonitor : {}",appMonitor);
+                log.info("AppMonitorService.create update Data success appMonitor : {}", appMonitor);
                 return Result.success(null);
-            }else{
-                log.info("AppMonitorService.create database update Data failed appMonitor : {}",appMonitor);
+            } else {
+                log.info("AppMonitorService.create database update Data failed appMonitor : {}", appMonitor);
                 return Result.fail(ErrorCode.unknownError);
             }
         }
@@ -1032,9 +1029,9 @@ public class AppMonitorService {
         } else {
             app = appMonitorDao.getMyApp(appMonitor.getProjectId(), appMonitor.getIamTreeId(), userName, AppViewType.MyCareApp);
             if (app != null) {
-            //清除已经关注的数据
+                //清除已经关注的数据
                 Result<String> delResult = this.delete(app.getId());
-                if(delResult.getCode() != ErrorCode.success.getCode()){
+                if (delResult.getCode() != ErrorCode.success.getCode()) {
                     return delResult;
                 }
             }
@@ -1043,15 +1040,15 @@ public class AppMonitorService {
             int i = appMonitorDao.create(appMonitor);
             if (i > 0) {
                 createGrafana(appMonitor);
-                log.info("AppMonitorService.create success appMonitor : {}",appMonitor);
-                return new Result<>(ErrorCode.success.getCode(), ErrorCode.success.getMessage(),null);
-            }else{
-                log.info("AppMonitorService.create database create data failed appMonitor : {}",appMonitor);
+                log.info("AppMonitorService.create success appMonitor : {}", appMonitor);
+                return new Result<>(ErrorCode.success.getCode(), ErrorCode.success.getMessage(), null);
+            } else {
+                log.info("AppMonitorService.create database create data failed appMonitor : {}", appMonitor);
                 return Result.fail(ErrorCode.unknownError);
             }
 
         } catch (Exception e) {
-            log.error("AppMonitorService.create error" + e.getMessage(),e);
+            log.error("AppMonitorService.create error" + e.getMessage(), e);
             return Result.fail(ErrorCode.unknownError);
         }
 
@@ -1059,6 +1056,7 @@ public class AppMonitorService {
 
     /**
      * 创建grafana图表
+     *
      * @param appMonitor
      */
     private void createGrafana(AppMonitor appMonitor) {
@@ -1066,7 +1064,7 @@ public class AppMonitorService {
             return;
         }
         StringBuilder appName = new StringBuilder();
-        appName.append(appMonitor.getProjectId()).append("_").append(appMonitor.getProjectName().replace('.','_'));
+        appName.append(appMonitor.getProjectId()).append("_").append(appMonitor.getProjectName().replace('.', '_'));
 
         String area = PlatFormType.open.getGrafanaDirByCode(appMonitor.getAppSource());
 
@@ -1076,8 +1074,8 @@ public class AppMonitorService {
         //String area = PlatFormType.china.getGrafanaDirByCode(appMonitor.getAppSource());
 
 
-        if(StringUtils.isBlank(area)){
-            log.error("invalid grafana area!appMonitor:{}",appMonitor);
+        if (StringUtils.isBlank(area)) {
+            log.error("invalid grafana area!appMonitor:{}", appMonitor);
             return;
         }
 
@@ -1087,8 +1085,8 @@ public class AppMonitorService {
 
         List<HeraAppBaseInfo> query = heraBaseInfoService.query(heraAppBaseInfo, null, null);
         HeraAppBaseInfo baseInfo = CollectionUtils.isEmpty(query) ? null : query.get(0);
-        if(baseInfo == null){
-            log.error("no base data found for app : {},stop generate grafana url",appMonitor.getProjectName());
+        if (baseInfo == null) {
+            log.error("no base data found for app : {},stop generate grafana url", appMonitor.getProjectName());
             return;
         }
 
@@ -1097,22 +1095,22 @@ public class AppMonitorService {
     }
 
 
-    public Result<String> delete(Integer id){
+    public Result<String> delete(Integer id) {
 
-        if(id == null){
+        if (id == null) {
             log.error("AppMonitorService.delete error param id is null!");
             return Result.fail(ErrorCode.invalidParamError);
         }
 
         AppMonitor app = appMonitorDao.getById(id);
-        if(app == null){
-            log.error("AppMonitorService.delete error cannot find data by id : {}",id);
+        if (app == null) {
+            log.error("AppMonitorService.delete error cannot find data by id : {}", id);
             return Result.fail(ErrorCode.invalidParamError);
         }
 
         app.setStatus(1);
         int update = appMonitorDao.update(app);
-        if(update < 1){
+        if (update < 1) {
             log.error("AppMonitorService.delete error delete database failed!");
             return Result.fail(ErrorCode.unknownError);
         }
@@ -1121,22 +1119,22 @@ public class AppMonitorService {
 
     }
 
-    public Result<String> deleteByUser(Integer projectId,Integer appSource,String userName){
+    public Result<String> deleteByUser(Integer projectId, Integer appSource, String userName) {
 
 
         try {
             List<AppMonitor> apps = appMonitorDao.getMyOwnerOrCareAppById(projectId, appSource, userName);
 
-            if(CollectionUtils.isEmpty(apps)){
-                log.error("AppMonitorService.deleteByUser error cannot find data,projectId : {}",projectId);
+            if (CollectionUtils.isEmpty(apps)) {
+                log.error("AppMonitorService.deleteByUser error cannot find data,projectId : {}", projectId);
                 return Result.fail(ErrorCode.unknownError);
             }
 
-            for(AppMonitor app : apps){
+            for (AppMonitor app : apps) {
                 app.setStatus(1);
                 int update = appMonitorDao.update(app);
-                if(update < 1){
-                    log.error("AppMonitorService.deleteByUser error delete database failed!app:{}",app);
+                if (update < 1) {
+                    log.error("AppMonitorService.deleteByUser error delete database failed!app:{}", app);
                     return Result.fail(ErrorCode.unknownError);
                 }
             }
@@ -1144,14 +1142,14 @@ public class AppMonitorService {
             return Result.success(null);
 
         } catch (Exception e) {
-            log.error("deleteByUser error!" + e.getMessage(),e);
+            log.error("deleteByUser error!" + e.getMessage(), e);
             return Result.fail(ErrorCode.unknownError);
         }
     }
 
-    public Result<PageData<List<AppMonitor>>> listApp(String appName, String userName, Integer page, Integer pageSize_){
+    public Result<PageData<List<AppMonitor>>> listApp(String appName, String userName, Integer page, Integer pageSize_) {
 
-        if(StringUtils.isEmpty(userName)){
+        if (StringUtils.isEmpty(userName)) {
             log.error("AppMonitorService.listApp param is invalid userName is empty!");
             return Result.fail(ErrorCode.invalidParamError);
         }
@@ -1159,11 +1157,11 @@ public class AppMonitorService {
         Integer pageNum = page;
         Integer pageSize = pageSize_;
 
-        if(pageNum == null || pageNum.intValue() < 1){
+        if (pageNum == null || pageNum.intValue() < 1) {
             pageNum = 1;
         }
 
-        if(pageSize == null){
+        if (pageSize == null) {
             pageSize = 10;
         }
 
@@ -1176,25 +1174,25 @@ public class AppMonitorService {
             Long dataTotal = appMonitorDao.getDataTotalByOr(appName, userName, userName);
             pd.setTotal(dataTotal);
 
-            if(dataTotal != null && dataTotal.intValue() > 0){
+            if (dataTotal != null && dataTotal.intValue() > 0) {
                 List<AppMonitor> apps = appMonitorDao.getMyOwnerOrCareApp(appName, userName, pageNum, pageSize);
                 pd.setList(apps);
             }
 
-            log.info("AppMonitorService.listApp success! param  appName : {}, userName : {},result Count : {} ",appName,userName,dataTotal);
+            log.info("AppMonitorService.listApp success! param  appName : {}, userName : {},result Count : {} ", appName, userName, dataTotal);
 
-            return new Result<>(ErrorCode.success.getCode(), ErrorCode.success.getMessage(),pd);
+            return new Result<>(ErrorCode.success.getCode(), ErrorCode.success.getMessage(), pd);
 
         } catch (Exception e) {
-            log.error("AppMonitorService.listApp error" + e.getMessage(),e);
+            log.error("AppMonitorService.listApp error" + e.getMessage(), e);
             return Result.fail(ErrorCode.unknownError);
         }
 
     }
 
-    public Result<PageData<List<AppMonitor>>> listAppDistinct( String userName, String appName,Integer page, Integer pageSize_){
+    public Result<PageData<List<AppMonitor>>> listAppDistinct(String userName, String appName, Integer page, Integer pageSize_) {
 
-        if(StringUtils.isEmpty(userName)){
+        if (StringUtils.isEmpty(userName)) {
             log.error("AppMonitorService.listAppDistinct param is invalid userName is empty!");
             return Result.fail(ErrorCode.invalidParamError);
         }
@@ -1202,11 +1200,11 @@ public class AppMonitorService {
         Integer pageNum = page;
         Integer pageSize = pageSize_;
 
-        if(pageNum == null || pageNum.intValue() < 1){
+        if (pageNum == null || pageNum.intValue() < 1) {
             pageNum = 1;
         }
 
-        if(pageSize == null){
+        if (pageSize == null) {
             pageSize = 10;
         }
 
@@ -1219,26 +1217,26 @@ public class AppMonitorService {
             Long dataTotal = appMonitorDao.countAllMyAppDistinct(userName, appName);
             pd.setTotal(dataTotal);
 
-            if(dataTotal != null && dataTotal.intValue() > 0){
-                List<AppMonitor> apps = appMonitorDao.getAllMyAppDistinct(userName,appName, pageNum, pageSize);
+            if (dataTotal != null && dataTotal.intValue() > 0) {
+                List<AppMonitor> apps = appMonitorDao.getAllMyAppDistinct(userName, appName, pageNum, pageSize);
                 pd.setList(apps);
 //                initAppAlarmData(apps);
             }
 
-            log.info("AppMonitorService.listAppDistinct success! param  appName : {}, userName : {},result Count : {} ",appName,userName,dataTotal);
+            log.info("AppMonitorService.listAppDistinct success! param  appName : {}, userName : {},result Count : {} ", appName, userName, dataTotal);
 
-            return new Result<>(ErrorCode.success.getCode(), ErrorCode.success.getMessage(),pd);
+            return new Result<>(ErrorCode.success.getCode(), ErrorCode.success.getMessage(), pd);
 
         } catch (Exception e) {
-            log.error("AppMonitorService.listAppDistinct error" + e.getMessage(),e);
+            log.error("AppMonitorService.listAppDistinct error" + e.getMessage(), e);
             return Result.fail(ErrorCode.unknownError);
         }
 
     }
 
-    public Result<PageData<List<AppMonitor>>> listMyApp(AppMonitor appMonitor, String userName, Integer page, Integer pageSize_){
+    public Result<PageData<List<AppMonitor>>> listMyApp(AppMonitor appMonitor, String userName, Integer page, Integer pageSize_) {
 
-        if(StringUtils.isEmpty(userName)){
+        if (StringUtils.isEmpty(userName)) {
             log.error("AppMonitorService.listMyApp param is invalid userName is empty!");
             return Result.fail(ErrorCode.invalidParamError);
         }
@@ -1246,11 +1244,11 @@ public class AppMonitorService {
         Integer pageNum = page;
         Integer pageSize = pageSize_;
 
-        if(pageNum == null || pageNum.intValue() < 1){
+        if (pageNum == null || pageNum.intValue() < 1) {
             pageNum = 1;
         }
 
-        if(pageSize == null){
+        if (pageSize == null) {
             pageSize = 10;
         }
 
@@ -1263,17 +1261,17 @@ public class AppMonitorService {
             Long dataTotal = appMonitorDao.getDataTotal(appMonitor, userName, null);
             pd.setTotal(dataTotal);
 
-            log.info("AppMonitorService.listMyApp success! param  appName : {}, userName : {},result Count : {} ",appMonitor.getProjectName(),userName,dataTotal);
+            log.info("AppMonitorService.listMyApp success! param  appName : {}, userName : {},result Count : {} ", appMonitor.getProjectName(), userName, dataTotal);
 
-            if(dataTotal != null && dataTotal.intValue() > 0){
+            if (dataTotal != null && dataTotal.intValue() > 0) {
                 List<AppMonitor> myCareApp = appMonitorDao.getMyOwnerApp(appMonitor, userName, pageNum, pageSize);
                 pd.setList(myCareApp);
             }
 
-            return new Result<>(ErrorCode.success.getCode(), ErrorCode.success.getMessage(),pd);
+            return new Result<>(ErrorCode.success.getCode(), ErrorCode.success.getMessage(), pd);
 
         } catch (Exception e) {
-            log.error("AppMonitorService.listMyApp error" + e.getMessage(),e);
+            log.error("AppMonitorService.listMyApp error" + e.getMessage(), e);
             return Result.fail(ErrorCode.unknownError);
         }
 
@@ -1281,18 +1279,19 @@ public class AppMonitorService {
 
     /**
      * 查询我拥有的或关注的项目列表
+     *
      * @param user
      * @param param
      * @return
      */
-    public Result<PageData<List<AppMonitor>>> myAndCareAppList(String user, AppMonitorRequest param){
+    public Result<PageData<List<AppMonitor>>> myAndCareAppList(String user, AppMonitorRequest param) {
         PageData<List<AppMonitor>> pageData = appMonitorDao.getMyAndCareAppList(user, param.getAppName(), param.getPage(), param.getPageSize(), param.isNeedPage());
         return Result.success(pageData);
     }
 
-    public Result<PageData<List<AppMonitor>>> listMyCareApp(String appName, String careUser, Integer page, Integer pageSize_){
+    public Result<PageData<List<AppMonitor>>> listMyCareApp(String appName, String careUser, Integer page, Integer pageSize_) {
 
-        if(StringUtils.isEmpty(careUser)){
+        if (StringUtils.isEmpty(careUser)) {
             log.error("AppMonitorService.listMyCareApp param is invalid careUser is empty!");
             return Result.fail(ErrorCode.invalidParamError);
         }
@@ -1300,11 +1299,11 @@ public class AppMonitorService {
         Integer pageNum = page;
         Integer pageSize = pageSize_;
 
-        if(pageNum == null || pageNum.intValue() < 1){
+        if (pageNum == null || pageNum.intValue() < 1) {
             pageNum = 1;
         }
 
-        if(pageSize == null){
+        if (pageSize == null) {
             pageSize = 10;
         }
 
@@ -1319,28 +1318,28 @@ public class AppMonitorService {
             Long dataTotal = appMonitorDao.getDataTotal(appMonitor, null, careUser);
             pd.setTotal(dataTotal);
 
-            log.info("AppMonitorService.listMyCareApp success! param  appName : {}, careUser : {},result Count : {} ",appName,careUser,dataTotal);
+            log.info("AppMonitorService.listMyCareApp success! param  appName : {}, careUser : {},result Count : {} ", appName, careUser, dataTotal);
 
-            if(dataTotal != null && dataTotal.intValue() > 0){
+            if (dataTotal != null && dataTotal.intValue() > 0) {
                 List<AppMonitor> myCareApp = appMonitorDao.getMyCareApp(appName, careUser, pageNum, pageSize);
                 pd.setList(myCareApp);
             }
 
-            return new Result<>(ErrorCode.success.getCode(), ErrorCode.success.getMessage(),pd);
+            return new Result<>(ErrorCode.success.getCode(), ErrorCode.success.getMessage(), pd);
 
         } catch (Exception e) {
-            log.error("AppMonitorService.listMyCareApp error" + e.getMessage(),e);
+            log.error("AppMonitorService.listMyCareApp error" + e.getMessage(), e);
             return Result.fail(ErrorCode.unknownError);
         }
 
     }
 
-    public AppMonitor getByIamTreeId(Integer aimTreeId){
+    public AppMonitor getByIamTreeId(Integer aimTreeId) {
 
         try {
             return appMonitorDao.getByIamTreeId(aimTreeId);
         } catch (Exception e) {
-            log.error("AppMonitorService.getByIamTreeId error! {}",e.getMessage(),e);
+            log.error("AppMonitorService.getByIamTreeId error! {}", e.getMessage(), e);
             return null;
         }
     }
@@ -1409,47 +1408,47 @@ public class AppMonitorService {
 //
 //    }
 
-    public void washBaseId(){
+    public void washBaseId() {
         Integer pageSize = 100;
         Integer page = 0;
 
         Long dataTotalL = appMonitorDao.getDataTotal(new AppMonitor(), null, null);
-        log.info("washBaseId totalNum:{}",dataTotalL);
+        log.info("washBaseId totalNum:{}", dataTotalL);
         Integer dataTotal = dataTotalL.intValue();
         page = dataTotal % pageSize == 0 ? (dataTotal / pageSize) : (dataTotal / pageSize + 1);
 
-        for(int i=1;i<=page;i++){
+        for (int i = 1; i <= page; i++) {
 
             List<AppMonitor> allApps = appMonitorDao.getAllApps(i, pageSize);
-            for(AppMonitor app : allApps){
+            for (AppMonitor app : allApps) {
 
                 HeraAppBaseInfo queryCondition = new HeraAppBaseInfo();
                 queryCondition.setBindId(String.valueOf(app.getProjectId()));
                 queryCondition.setPlatformType(app.getAppSource());
                 List<HeraAppBaseInfo> appBase = heraBaseInfoService.query(queryCondition, 1, 1);
 
-                if(CollectionUtils.isEmpty(appBase)){
-                    log.info("washBaseId no HeraAppBaseInfo found for app:{}",app.toString());
+                if (CollectionUtils.isEmpty(appBase)) {
+                    log.info("washBaseId no HeraAppBaseInfo found for app:{}", app.toString());
                     continue;
                 }
                 app.setBaseInfoId(appBase.get(0).getId());
                 int update = appMonitorDao.update(app);
-                log.info("wash baseId for app:{},result:{}",app.toString(),update);
+                log.info("wash baseId for app:{},result:{}", app.toString(), update);
             }
         }
     }
 
     public Result grafanaInterfaceList() {
-        Map<String,Object> map = new HashMap<>();
-        map.put("dubboProviderOverview",grafanaDomain + dubboProviderOverview);
-        map.put("dubboConsumerOverview",grafanaDomain + dubboConsumerOverview);
-        map.put("dubboProviderMarket",grafanaDomain + dubboProviderMarket);
-        map.put("dubboConsumerMarket",grafanaDomain + dubboConsumerMarket);
-        map.put("httpOverview",grafanaDomain + httpOverview);
-        map.put("httpMarket",grafanaDomain + httpMarket);
+        Map<String, Object> map = new HashMap<>();
+        map.put("dubboProviderOverview", grafanaDomain + dubboProviderOverview);
+        map.put("dubboConsumerOverview", grafanaDomain + dubboConsumerOverview);
+        map.put("dubboProviderMarket", grafanaDomain + dubboProviderMarket);
+        map.put("dubboConsumerMarket", grafanaDomain + dubboConsumerMarket);
+        map.put("httpOverview", grafanaDomain + httpOverview);
+        map.put("httpMarket", grafanaDomain + httpMarket);
         try {
-            log.info("grafanaInterfaceList map:{}",map);
-            String data = FreeMarkerUtil.getContentExceptJson("/heraGrafanaTemplate", "grafanaInterfaceList.ftl",map);
+            log.info("grafanaInterfaceList map:{}", map);
+            String data = FreeMarkerUtil.getContentExceptJson("/heraGrafanaTemplate", "grafanaInterfaceList.ftl", map);
             JsonArray jsonElements = gson.fromJson(data, JsonArray.class);
             log.info(jsonElements.toString());
             List<GrafanaInterfaceRes> resList = new ArrayList<>();
@@ -1457,10 +1456,10 @@ public class AppMonitorService {
                 GrafanaInterfaceRes grafanaInterfaceRes = gson.fromJson(it, GrafanaInterfaceRes.class);
                 resList.add(grafanaInterfaceRes);
             });
-            log.info("grafanaInterfaceList success! data:{}",resList);
+            log.info("grafanaInterfaceList success! data:{}", resList);
             return Result.success(resList);
         } catch (Exception e) {
-            log.error("grafanaInterfaceList error! {}",e);
+            log.error("grafanaInterfaceList error! {}", e);
             return Result.fail(ErrorCode.unknownError);
         }
     }
