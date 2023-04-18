@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static com.xiaomi.mone.app.common.Constant.GSON;
+
 /**
  * @author wtt
  * @version 1.0
@@ -128,6 +130,26 @@ public class HeraAppServiceImpl implements HeraAppService {
     @Override
     public List<HeraAppBaseInfoParticipant> queryByParticipant(HeraAppBaseQuery query) {
         return heraAppBaseInfoService.queryByParticipant(query);
+    }
+
+    @Override
+    public Integer insertOrUpdate(HeraAppBaseInfoModel baseInfo) {
+        HeraAppBaseInfo appBaseInfo = generateHeraAppBaseInfo(baseInfo);
+        // update
+        if (null != baseInfo.getBindId()) {
+            return heraAppBaseInfoMapper.updateByPrimaryKey(appBaseInfo);
+        }
+        return heraAppBaseInfoMapper.insert(appBaseInfo);
+    }
+
+    private HeraAppBaseInfo generateHeraAppBaseInfo(HeraAppBaseInfoModel appBaseInfoModel) {
+        HeraAppBaseInfo heraAppBaseInfo = new HeraAppBaseInfo();
+        try {
+            BeanUtils.copyProperties(appBaseInfoModel, heraAppBaseInfo);
+        } catch (Exception e) {
+            log.error("getById copyProperties error,ori:{}", GSON.toJson(appBaseInfoModel), e);
+        }
+        return heraAppBaseInfo;
     }
 
     @Override
