@@ -5,6 +5,7 @@
  */
 package com.xiaomi.mone.monitor.service.helper;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.gson.JsonObject;
 import com.xiaomi.mone.monitor.bo.*;
 import com.xiaomi.mone.monitor.dao.model.AppMonitor;
@@ -24,16 +25,16 @@ import java.util.Map;
 @Component
 public class AlertUrlHelper {
 
-    @Value("${hera.dash.url}")
+    @NacosValue(value = "${hera.dash.url}" ,autoRefreshed = true)
     private String heraDashUrl;
 
-    @Value("${hera.dash.tesla.url}")
+    @NacosValue(value = "${hera.dash.tesla.url}",autoRefreshed = true)
     private String heraDashTeslaUrl;
 
-    @Value("${cn.grafana.url}")
+    @NacosValue(value = "${cn.grafana.url}",autoRefreshed = true)
     private String cnGrafanaUrl;
 
-    @Value("${cn.grafana.disk_rate.url}")
+    @NacosValue(value = "${cn.grafana.disk_rate.url}",autoRefreshed = true)
     private String cnGrafanaDiskRateUrl;
 
 
