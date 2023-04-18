@@ -16,16 +16,15 @@
 
 package com.xiaomi.mone.monitor.dao;
 
-import com.xiaomi.mone.monitor.dao.mapper.HeraAppBaseInfoMapper;
 import com.xiaomi.mone.monitor.dao.mapper.HeraAppRoleMapper;
-import com.xiaomi.mone.monitor.dao.model.*;
+import com.xiaomi.mone.monitor.dao.model.HeraAppRole;
+import com.xiaomi.mone.monitor.dao.model.HeraAppRoleExample;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Repository;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
@@ -36,45 +35,45 @@ public class HeraAppRoleDao {
     @Resource
     private HeraAppRoleMapper heraAppRoleMapper;
 
-    public Integer delById(Integer id){
-        if(id == null){
+    public Integer delById(Integer id) {
+        if (id == null) {
             log.error("HeraAppRoleDao.delById invalid param,id is null");
         }
 
         try {
             return heraAppRoleMapper.deleteByPrimaryKey(id);
         } catch (Exception e) {
-            log.error("HeraAppRoleDao.delById error!{}",e.getMessage(),e);
+            log.error("HeraAppRoleDao.delById error!{}", e.getMessage(), e);
             return 0;
         }
     }
 
-    public Long count(HeraAppRole heraAppRole){
+    public Long count(HeraAppRole heraAppRole) {
 
 
         HeraAppRoleExample example = new HeraAppRoleExample();
 
         //默认查询未删除的数据
         HeraAppRoleExample.Criteria ca = example.createCriteria();
-        if(heraAppRole.getStatus() != null){
+        if (heraAppRole.getStatus() != null) {
             ca.andStatusEqualTo(heraAppRole.getStatus());
-        }else{
+        } else {
             ca.andStatusEqualTo(0);
         }
 
-        if(StringUtils.isNotEmpty(heraAppRole.getAppId())){
+        if (StringUtils.isNotEmpty(heraAppRole.getAppId())) {
             ca.andAppIdEqualTo(heraAppRole.getAppId());
         }
 
-        if(heraAppRole.getAppPlatform() != null){
+        if (heraAppRole.getAppPlatform() != null) {
             ca.andAppPlatformEqualTo(heraAppRole.getAppPlatform());
         }
 
-        if(StringUtils.isNotEmpty(heraAppRole.getUser())){
+        if (StringUtils.isNotEmpty(heraAppRole.getUser())) {
             ca.andUserEqualTo(heraAppRole.getUser());
         }
 
-        if(heraAppRole.getRole() != null){
+        if (heraAppRole.getRole() != null) {
             ca.andRoleEqualTo(heraAppRole.getRole());
         }
 
@@ -82,18 +81,18 @@ public class HeraAppRoleDao {
         try {
             return heraAppRoleMapper.countByExample(example);
         } catch (Exception e) {
-            log.error("HeraAppRoleDao#count error!" + e.getMessage(),e);
+            log.error("HeraAppRoleDao#count error!" + e.getMessage(), e);
             return null;
         }
 
     }
 
-    public List<HeraAppRole> query(HeraAppRole heraAppRole,Integer pageCount,Integer pageNum){
+    public List<HeraAppRole> query(HeraAppRole heraAppRole, Integer pageCount, Integer pageNum) {
 
-        if(pageCount == null || pageCount.intValue() <=0){
+        if (pageCount == null || pageCount.intValue() <= 0) {
             pageCount = 1;
         }
-        if(pageNum == null || pageNum.intValue() <=0){
+        if (pageNum == null || pageNum.intValue() <= 0) {
             pageNum = 10;
         }
 
@@ -101,52 +100,52 @@ public class HeraAppRoleDao {
 
         //默认查询未删除的数据
         HeraAppRoleExample.Criteria ca = example.createCriteria();
-        if(heraAppRole.getStatus() != null){
+        if (heraAppRole.getStatus() != null) {
             ca.andStatusEqualTo(heraAppRole.getStatus());
-        }else{
+        } else {
             ca.andStatusEqualTo(0);
         }
 
-        if(StringUtils.isNotEmpty(heraAppRole.getAppId())){
+        if (StringUtils.isNotEmpty(heraAppRole.getAppId())) {
             ca.andAppIdEqualTo(heraAppRole.getAppId());
         }
 
-        if(heraAppRole.getAppPlatform() != null){
+        if (heraAppRole.getAppPlatform() != null) {
             ca.andAppPlatformEqualTo(heraAppRole.getAppPlatform());
         }
 
-        if(StringUtils.isNotEmpty(heraAppRole.getUser())){
+        if (StringUtils.isNotEmpty(heraAppRole.getUser())) {
             ca.andUserEqualTo(heraAppRole.getUser());
         }
 
-        if(heraAppRole.getRole() != null){
+        if (heraAppRole.getRole() != null) {
             ca.andRoleEqualTo(heraAppRole.getRole());
         }
 
-        example.setOffset((pageCount-1) * pageNum);
+        example.setOffset((pageCount - 1) * pageNum);
         example.setLimit(pageNum);
 
         try {
             return heraAppRoleMapper.selectByExample(example);
         } catch (Exception e) {
-            log.error("HeraAppRoleDao#query error!" + e.getMessage(),e);
+            log.error("HeraAppRoleDao#query error!" + e.getMessage(), e);
             return null;
         }
 
     }
 
-    public List<HeraAppRole> queryByPlatTypes(String appId,List<Integer> platTypes,Integer pageCount,Integer pageNum){
+    public List<HeraAppRole> queryByPlatTypes(String appId, List<Integer> platTypes, Integer pageCount, Integer pageNum) {
 
-        if(pageCount == null || pageCount.intValue() <=0){
+        if (pageCount == null || pageCount.intValue() <= 0) {
             pageCount = 1;
         }
-        if(pageNum == null || pageNum.intValue() <=0){
+        if (pageNum == null || pageNum.intValue() <= 0) {
             pageNum = 10;
         }
 
         HeraAppRoleExample example = new HeraAppRoleExample();
 
-        for(Integer platForm : platTypes){
+        for (Integer platForm : platTypes) {
             //默认查询未删除的数据
             HeraAppRoleExample.Criteria ca = example.createCriteria();
             ca.andStatusEqualTo(0);
@@ -157,13 +156,13 @@ public class HeraAppRoleDao {
             example.or(ca);
         }
 
-        example.setOffset((pageCount-1) * pageNum);
+        example.setOffset((pageCount - 1) * pageNum);
         example.setLimit(pageNum);
 
         try {
             return heraAppRoleMapper.selectByExample(example);
         } catch (Exception e) {
-            log.error("HeraAppRoleDao#queryByPlatTypes error!" + e.getMessage(),e);
+            log.error("HeraAppRoleDao#queryByPlatTypes error!" + e.getMessage(), e);
             return null;
         }
 

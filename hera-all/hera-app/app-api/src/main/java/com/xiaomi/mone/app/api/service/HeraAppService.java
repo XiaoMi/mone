@@ -31,6 +31,8 @@ public interface HeraAppService {
 
     List<HeraAppBaseInfoParticipant> queryByParticipant(HeraAppBaseQuery query);
 
+    Integer insertOrUpdate(HeraAppBaseInfoModel baseInfo);
+
     Long count(HeraAppBaseInfoModel baseInfo);
 
     List<HeraAppBaseInfoModel> query(HeraAppBaseInfoModel baseInfo, Integer pageCount, Integer pageNum);

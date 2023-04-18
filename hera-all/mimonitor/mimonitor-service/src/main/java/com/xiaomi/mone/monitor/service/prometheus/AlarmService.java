@@ -139,7 +139,7 @@ public class AlarmService {
     @NacosValue(value = "${resource.use.rate.url}",autoRefreshed = true)
     private String resourceUseRateUrl;
 
-    @NacosValue(value = "${tesla.increase.duration}",autoRefreshed = true)
+    @NacosValue(value = "${tesla.increase.duration:5m}",autoRefreshed = true)
     private String teslaIncreaseDuration;
 
     @Value("${alert.manager.env:staging}")
