@@ -1,16 +1,9 @@
 package com.xiaomi.mone.monitor.dao.model;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import lombok.Data;
-import lombok.ToString;
-import org.springframework.format.annotation.DateTimeFormat;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 
-@ToString
-@Data
 public class AppMonitor {
     private Integer id;
 
@@ -18,33 +11,31 @@ public class AppMonitor {
 
     private Integer iamTreeId;
 
+    private Integer iamTreeType;
+
     private String projectName;
+
+    private Integer appSource;
 
     private String owner;
 
     private String careUser;
-    @Deprecated
-    private Integer alarmLevel = 0;
-    @Deprecated
-    private Integer totalAlarm = 0;
-    @Deprecated
-    private Integer exceptionNum = 0;
-    @Deprecated
-    private Integer slowQueryNum = 0;
+
+    private Integer alarmLevel;
+
+    private Integer totalAlarm;
+
+    private Integer exceptionNum;
+
+    private Integer slowQueryNum;
 
     private Integer status;
 
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
+    private Integer baseInfoId;
+
     private Date createTime;
 
-    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date updateTime;
-
-    private Integer appSource;//0 开源
-
-    private Integer baseInfoId;//基础信息id
 
     public Integer getId() {
         return id;
@@ -70,12 +61,28 @@ public class AppMonitor {
         this.iamTreeId = iamTreeId;
     }
 
+    public Integer getIamTreeType() {
+        return iamTreeType;
+    }
+
+    public void setIamTreeType(Integer iamTreeType) {
+        this.iamTreeType = iamTreeType;
+    }
+
     public String getProjectName() {
         return projectName;
     }
 
     public void setProjectName(String projectName) {
         this.projectName = projectName == null ? null : projectName.trim();
+    }
+
+    public Integer getAppSource() {
+        return appSource;
+    }
+
+    public void setAppSource(Integer appSource) {
+        this.appSource = appSource;
     }
 
     public String getOwner() {
@@ -134,6 +141,14 @@ public class AppMonitor {
         this.status = status;
     }
 
+    public Integer getBaseInfoId() {
+        return baseInfoId;
+    }
+
+    public void setBaseInfoId(Integer baseInfoId) {
+        this.baseInfoId = baseInfoId;
+    }
+
     public Date getCreateTime() {
         return createTime;
     }
@@ -154,7 +169,9 @@ public class AppMonitor {
         id("id", "id", "INTEGER", false),
         projectId("project_id", "projectId", "INTEGER", false),
         iamTreeId("iam_tree_id", "iamTreeId", "INTEGER", false),
+        iamTreeType("iam_tree_type", "iamTreeType", "INTEGER", false),
         projectName("project_name", "projectName", "VARCHAR", false),
+        appSource("app_source", "appSource", "INTEGER", false),
         owner("owner", "owner", "VARCHAR", false),
         careUser("care_user", "careUser", "VARCHAR", false),
         alarmLevel("alarm_level", "alarmLevel", "INTEGER", false),
@@ -162,10 +179,9 @@ public class AppMonitor {
         exceptionNum("exception_num", "exceptionNum", "INTEGER", false),
         slowQueryNum("slow_query_num", "slowQueryNum", "INTEGER", false),
         status("status", "status", "INTEGER", false),
+        baseInfoId("base_info_id", "baseInfoId", "INTEGER", false),
         createTime("create_time", "createTime", "TIMESTAMP", false),
-        updateTime("update_time", "updateTime", "TIMESTAMP", false),
-        appSource("app_source", "appSource", "INTEGER", false),
-        baseInfoId("base_info_id", "baseInfoId", "INTEGER", false);
+        updateTime("update_time", "updateTime", "TIMESTAMP", false);
 
         private static final String BEGINNING_DELIMITER = "\"";
 
