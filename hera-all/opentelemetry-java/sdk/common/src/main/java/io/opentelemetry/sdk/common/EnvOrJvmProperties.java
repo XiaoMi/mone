@@ -24,6 +24,7 @@ public class EnvOrJvmProperties {
   public static final HeraJavaagentConfig ENV_MIONE_LOG_PATH = new HeraJavaagentConfig("MIONE_LOG_PATH", HeraJavaagentConfigType.ENV);
   public static final HeraJavaagentConfig ENV_JAVAAGENT_PROMETHEUS_PORT = new HeraJavaagentConfig("JAVAAGENT_PROMETHEUS_PORT", HeraJavaagentConfigType.ENV, "55433");
   public static final HeraJavaagentConfig ENV_HERA_BUILD_K8S = new HeraJavaagentConfig("hera.buildin.k8s", HeraJavaagentConfigType.ENV,"1");
+  public static final HeraJavaagentConfig MIONE_PROJECT_NAME = new HeraJavaagentConfig("MIONE_PROJECT_NAME", HeraJavaagentConfigType.ENV, "none");
   public static final HeraJavaagentConfig ENV_MIONE_PROJECT_ENV_NAME = new HeraJavaagentConfig("MIONE_PROJECT_ENV_NAME", HeraJavaagentConfigType.ENV, "default");
   public static final HeraJavaagentConfig ENV_MIONE_PROJECT_ENV_ID = new HeraJavaagentConfig("MIONE_PROJECT_ENV_ID", HeraJavaagentConfigType.ENV);
   public static final HeraJavaagentConfig ENV_APPLICATION = new HeraJavaagentConfig("application", HeraJavaagentConfigType.ENV);

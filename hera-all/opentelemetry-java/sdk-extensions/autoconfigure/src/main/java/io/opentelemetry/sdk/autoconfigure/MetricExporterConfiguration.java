@@ -58,6 +58,8 @@ final class MetricExporterConfiguration {
       applicationName = config.getString(EnvOrJvmProperties.JVM_OTEL_RESOURCE_ATTRIBUTES.getKey());
       if (StringUtils.isNotEmpty(applicationName)) {
         applicationName = applicationName.split("=")[1];
+      }else{
+        applicationName = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.MIONE_PROJECT_NAME.getKey()) == null ? EnvOrJvmProperties.MIONE_PROJECT_NAME.getDefaultValue() : SystemCommon.getEnvOrProperties(EnvOrJvmProperties.MIONE_PROJECT_NAME.getKey());
       }
     // 替换项目名称中的-为_
     applicationName = applicationName.replaceAll("-", "_");

@@ -560,7 +560,7 @@ subprojects {
                         version = versionParts.joinToString("-")
                     }
                     groupId = "run.mone"
-                    version = "0.1.0-opensource-SNAPSHOT"
+                    version = "0.3.0-opensource-SNAPSHOT"
                     afterEvaluate {
                         // not available until evaluated.
                         artifactId = the<BasePluginConvention>().archivesBaseName
