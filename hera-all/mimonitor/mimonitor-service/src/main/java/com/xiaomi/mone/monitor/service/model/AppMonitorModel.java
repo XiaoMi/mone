@@ -22,6 +22,8 @@ public class AppMonitorModel implements Serializable {
 
     private Integer iamTreeId;
 
+    private Integer iamTreeType;
+
     private String projectName;
 
     private String projectCName;
