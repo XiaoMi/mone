@@ -119,8 +119,8 @@ public class GrafanaServiceExtensionImpl implements GrafanaServiceExtension {
                 ContainerAndHostUrl.put(HOST_URL, grafanaDomain + grafanaHostUrl + "${__data.fields.jumpIp.text}");
                 break;
             default:
-                grafanaFolderData.put(ID, grafanaFolderId);
-                grafanaFolderData.put(UID, grafanaFolderUid);
+                ContainerAndHostUrl.put(CONTAINER_URL, grafanaDomain + grafanaContainerUrl + "${__data.fields.jumpIp.text}");
+                ContainerAndHostUrl.put(HOST_URL, grafanaDomain + grafanaHostUrl + "${__data.fields.jumpIp.text}");
                 break;
         }
     }
