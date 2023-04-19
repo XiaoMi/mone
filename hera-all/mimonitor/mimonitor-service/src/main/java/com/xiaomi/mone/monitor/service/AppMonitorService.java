@@ -11,6 +11,7 @@ import com.xiaomi.mone.monitor.dao.*;
 import com.xiaomi.mone.monitor.dao.model.*;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
+import com.xiaomi.mone.monitor.service.api.AppMonitorServiceExtension;
 import com.xiaomi.mone.monitor.service.model.AppMonitorModel;
 import com.xiaomi.mone.monitor.service.model.AppMonitorRequest;
 import com.xiaomi.mone.monitor.service.model.PageData;
@@ -116,6 +117,9 @@ public class AppMonitorService {
 
     @Autowired
     AlarmService alarmService;
+
+    @Autowired
+    AppMonitorServiceExtension appMonitorServiceExtension;
 
     private static final Gson gson = new Gson();
 
@@ -599,68 +603,7 @@ public class AppMonitorService {
     }
 
     public Result getResourceUsageUrlForK8s(Integer appId, String appName) {
-        //返回grafana资源利用率图表的链接
-        String application = String.valueOf(appId) + "_" + StringUtils.replace(appName, "-", "_");
-        String url = grafanaDomain + resourceUrl + application;
-        log.info("getResourceUsageUrlForK8s url:{}", url);
-        return Result.success(url);
-
-        //原逻辑对比
-//        StringBuffer result = new StringBuffer();
-//        result.append(resourceUseRateUrlk8s);
-//
-//
-//        if(serverType.equals("online")){
-//            List<PipelineDeployDto> deployDtos = milogProviderService.qryProjectContainerInfo(Long.valueOf(appId), Arrays.asList(PipelineTypeEnum.K8S.getCode()), "online");
-//            if(CollectionUtils.isEmpty(deployDtos)){
-//                log.info("getResourceUsageUrlForK8s no data found!appId:{},appName:{}",appId,appName);
-//                return Result.success(resourceUseRateNoDataUrl);
-//            }
-//
-//            for(PipelineDeployDto dto : deployDtos){
-//                result.append("&var-name=").append(dto.getContainerName());
-//            }
-//            return Result.success(result.toString());
-//        }
-//
-//        String appGitName = getAppGitName(appId, appName);
-//        if(StringUtils.isNotBlank(appGitName)){
-//            appName = appGitName;
-//        }
-//
-//        StringBuilder builder = new StringBuilder();
-//        builder.append("sum(container_cpu_usage_seconds_total{system='mione',")
-//                .append("container=~'").append(".*-").append(appName).append("-.*")
-//                .append("|").append(appId).append("-0").append("")
-//                .append("|").append(appId).append("-0-.*").append("'")
-//                .append("}) by (container)");
-//        Result<PageData> pageDataResult = prometheusService.queryByMetric(builder.toString());
-//        if(pageDataResult.getCode() != ErrorCode.success.getCode() || pageDataResult.getData() == null){
-//            log.error("queryByMetric for K8s error! projectId :{},projectName:{}",appId,appName);
-//            return Result.success(resourceUseRateNoDataUrl);
-//        }
-//
-//
-//
-//        List<Metric> list = (List<Metric>) pageDataResult.getData().getList();
-//        log.info("getContainerInstance for K8s param : appId:{}, projectName:{},result:{}",appId,appName,list);
-//
-//        if(CollectionUtils.isEmpty(list)){
-//            log.info("getContainerInstance for K8s no data found! param : appId:{}, projectName:{},result:{}",appId,appName,list);
-//            return Result.success(resourceUseRateNoDataUrl);
-//        }
-//
-//
-//        List<String> k8sContainerNames = list.stream().map(t -> t.getContainer()).collect(Collectors.toList());
-//        if(CollectionUtils.isEmpty(k8sContainerNames)){
-//            return Result.success(resourceUseRateNoDataUrl);
-//        }
-//
-//        for(String name : k8sContainerNames){
-//            result.append("&var-name=").append(name);
-//        }
-//
-//        return Result.success(result.toString());
+        return appMonitorServiceExtension.getResourceUsageUrlForK8s(appId, appName);
     }
 
 //    public Result getEnvByProjectId(Integer projectId,Integer appSource){
