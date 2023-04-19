@@ -85,7 +85,8 @@ public class JobManager {
     private void startConsumerJob(String type, String ak, String sk, String clusterInfo, LogtailConfig
             logtailConfig, String keyList, String logStoreName, String esIndex, EsInfo esInfo, Long logStoreId, Long logSpaceId) {
         try {
-            SinkJobConfig sinkJobConfig = SinkJobConfig.builder().mqType(type)
+            SinkJobConfig sinkJobConfig = SinkJobConfig.builder()
+                    .mqType(type)
                     .ak(ak)
                     .sk(sk)
                     .clusterInfo(clusterInfo)
@@ -100,7 +101,6 @@ public class JobManager {
                     .tail(logtailConfig.getTail())
                     .esInfo(esInfo)
                     .parseType(logtailConfig.getParseType())
-                    .mqType(MiddlewareEnum.ROCKETMQ.getName())
                     .jobType(SinkJobEnum.NORMAL_JOB.name())
                     .build();
             sinkJobConfig.setLogTailId(logtailConfig.getLogtailId());
