@@ -1136,7 +1136,7 @@ public class AlarmService {
 
 
         jsonObject.addProperty("for", rule.getForTime());
-        jsonObject.addProperty("For", rule.getForTime());
+        jsonObject.addProperty("forTime", rule.getForTime());
 
 
         StringBuilder title = new StringBuilder().append(app.getProjectName());
@@ -1356,7 +1356,7 @@ public class AlarmService {
          */
         if(StringUtils.isNotBlank(rule.getForTime())){
             jsonObject.addProperty("for", rule.getForTime());
-            jsonObject.addProperty("For", rule.getForTime());
+            jsonObject.addProperty("forTime", rule.getForTime());
         }
 
         /**
@@ -1533,31 +1533,11 @@ public class AlarmService {
     }
 
     public Result<JsonElement>  getAlarmRuleRemote(Integer alarmId,Integer iamId,String user){
-        /*Request request = createRequest(HttpMethodName.GET, alarmDomain + AlarmService.alarm_rule_alert_uri+"/" + alarmId, iamId, user);
-        System.out.println("request" + new Gson().toJson(request).toString());
-
-        JsonObject jsonObject = new JsonObject();
-        request.setBody(jsonObject.toString());
-        Result<JsonElement> jsonObjectResult = executeRequest(request);
-
-        return jsonObjectResult;*/
-        return null;
+        return alertServiceAdapt.getAlarmRuleRemote(alarmId,iamId,user);
     }
 
     public Result updateAlarm(Integer alarmId,Integer iamId,String user,String body){
-
-        /*StringBuilder url = new StringBuilder(alarmDomain).append(AlarmService.alarm_rule_alert_uri).append("/").append(alarmId);
-
-        Request request = createRequest(HttpMethodName.PUT, url.toString(), iamId, user);
-
-        request.setBody(body);
-
-        Result<JsonElement> jsonObjectResult = executeRequest(request);
-
-        log.info("AlarmService.updateAlarm request : {},response:{}", new Gson().toJson(request).toString(),new Gson().toJson(jsonObjectResult).toString());
-
-        return jsonObjectResult;*/
-        return null;
+        return alertServiceAdapt.updateAlarm(alarmId,iamId,user,body);
     }
 
 
@@ -1661,90 +1641,6 @@ public class AlarmService {
 
     public Result<JsonObject> getEventById(String user, Integer treeId, String eventId) {
         return alertServiceAdapt.getEventById(user,treeId,eventId);
-    }
-    public Result<PageData> searchUser(String user, String searchName, int pageNo, int pageSize) {
-        /*StringBuilder reqUrl = new StringBuilder();
-        reqUrl.append(alarmDomain);
-        reqUrl.append(AlarmService.alarm_user_search).append("?page_no=").append(pageNo).append("&").append("page_size=").append(pageSize);
-        if (StringUtils.isNotBlank(searchName)) {
-            reqUrl.append("&name=").append(searchName);
-        }
-        Request request = createRequest(HttpMethodName.GET, reqUrl.toString(), getDefaultIamId(), user);
-        Result<PageData> result = queryList(request);
-        log.info("AlarmService.searchUser result={}", result);
-        return result;*/
-        return null;
-    }
-
-    public Result<JsonObject> createAlertGroup(String user, String name, String note, String chatId, List<Long> memberIds) {
-        /*Request request = createRequest(HttpMethodName.POST, alarmDomain + AlarmService.alarm_alert_group, getDefaultIamId(), user);
-        JsonObject params = new JsonObject();
-        params.addProperty("name", name);
-        params.addProperty("note", note);
-        if (StringUtils.isNotBlank(chatId)) {
-            params.addProperty("chat_id", chatId);
-        }
-        JsonArray memberList = new JsonArray();
-        for (Long memberId : memberIds) {
-            memberList.add(memberId);
-        }
-        params.add("members", memberList);
-        request.setBody(params.toString());
-        return exeRequest(request);*/
-
-        return null;
-    }
-
-    public Result<JsonObject> editAlertGroup(String user, long id, String name, String note, String chatId, List<Long> memberIds) {
-        /*StringBuilder reqUrl = new StringBuilder();
-        reqUrl.append(alarmDomain).append(AlarmService.alarm_alert_group).append("/").append(id);
-        Request request = createRequest(HttpMethodName.PUT, reqUrl.toString(), getDefaultIamId(), user);
-        JsonObject params = new JsonObject();
-        params.addProperty("name", name);
-        params.addProperty("note", note);
-        if (StringUtils.isNotBlank(chatId)) {
-            params.addProperty("chat_id", chatId);
-        }
-        JsonArray memberIdList = new JsonArray();
-        for (Long memberId : memberIds) {
-            memberIdList.add(memberId);
-        }
-        params.add("members", memberIdList);
-        request.setBody(params.toString());
-        return exeRequest(request);*/
-
-        return null;
-    }
-
-    public Result<JsonObject> deleteAlertGroup(String user, long id) {
-        /*StringBuilder reqUrl = new StringBuilder();
-        reqUrl.append(alarmDomain).append(AlarmService.alarm_alert_group).append("/").append(id);
-        Request request = createRequest(HttpMethodName.DELETE, reqUrl.toString(), getDefaultIamId(), user);
-        return exeRequest(request);*/
-        return null;
-    }
-
-    public Result<JsonObject> getAlertGroup(String user, long id) {
-        /*StringBuilder reqUrl = new StringBuilder();
-        reqUrl.append(alarmDomain).append(AlarmService.alarm_alert_group).append("/").append(id);
-        Request request = createRequest(HttpMethodName.GET, reqUrl.toString(), getDefaultIamId(), user);
-        return exeRequest(request);*/
-        return null;
-    }
-
-    public Result<PageData> getAlertGroupPageData(String user, String name, int pageNo, int pageSize) {
-        /*StringBuilder reqUrl = new StringBuilder();
-        reqUrl.append(alarmDomain).append(AlarmService.alarm_alert_group_list).append("?page_no=").append(pageNo)
-                .append("&page_size=").append(pageSize);
-        if (StringUtils.isNotBlank(user)) {
-            reqUrl.append("&member=").append(user);
-        }
-        if (StringUtils.isNotBlank(name)) {
-            reqUrl.append("&name=").append(name);
-        }
-        Request request = createRequest(HttpMethodName.GET, reqUrl.toString(), getDefaultIamId(), user);
-        return queryList(request);*/
-        return null;
     }
 
      public Result<JsonObject> resolvedEvent(String user, Integer treeId, String alertName, String comment, Long startTime, Long endTime) {
