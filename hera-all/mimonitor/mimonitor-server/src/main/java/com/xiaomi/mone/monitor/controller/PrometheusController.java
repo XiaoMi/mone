@@ -10,6 +10,7 @@ import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.AppAlarmService;
 import com.xiaomi.mone.monitor.service.HeraBaseInfoService;
+import com.xiaomi.mone.monitor.service.es.EsExtensionService;
 import com.xiaomi.mone.monitor.service.es.EsService;
 import com.xiaomi.mone.monitor.service.model.PageData;
 import com.xiaomi.mone.monitor.service.model.prometheus.MetricDetailQuery;
@@ -23,7 +24,11 @@ import org.apache.dubbo.config.annotation.Reference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
@@ -50,8 +55,8 @@ public class PrometheusController {
     @Autowired
     EsService esService;
 
-    @Value("${esIndex}")
-    String esIndex;
+    @Autowired
+    private EsExtensionService esExtensionService;
 
     @Autowired
     AppAlarmService appAlarmService;
@@ -194,7 +199,6 @@ public class PrometheusController {
         log.info("PrometheusController detail param : {}",param);
 
         try {
-            String esIndexName = esIndex;
 
             if(param.getAppSource() == null){
                 HeraAppBaseInfoModel byBindIdAndName = heraBaseInfoService.getByBindIdAndName(String.valueOf(param.getProjectId()), param.getProjectName());
@@ -206,7 +210,7 @@ public class PrometheusController {
                 }
             }
 
-            return esService.query(esIndexName, param, param.getPage(), param.getPageSize());
+            return esService.query(esExtensionService.getIndex(), param, param.getPage(), param.getPageSize());
         } catch (Exception e) {
             log.error("PrometheusController.detail Error" + e.getMessage(),e);
             return Result.fail(ErrorCode.unknownError);
