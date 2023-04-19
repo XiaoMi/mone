@@ -57,6 +57,14 @@ public class AlertServiceAdapt implements ApplicationContextAware,InitializingBe
         return alertManager.queryRuels(params,identifyId,user);
     }
 
+    public Result<JsonElement>  getAlarmRuleRemote(Integer alarmId,Integer iamId,String user){
+        return alertManager.getAlarmRuleRemote(alarmId,iamId,user);
+    }
+
+    public Result updateAlarm(Integer alarmId,Integer iamId,String user,String body){
+        return alertManager.updateAlarm(alarmId,iamId,user,body);
+    }
+
     public Result<JsonElement> addAlarmGroup(JsonObject params, String iamId, String user){
         return alertManager.addAlarmGroup(params,iamId,user);
     }
