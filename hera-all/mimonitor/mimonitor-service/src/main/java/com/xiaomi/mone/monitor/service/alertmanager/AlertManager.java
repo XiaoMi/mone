@@ -25,6 +25,10 @@ public interface AlertManager {
 
     public Result  queryRuels(JsonObject params, String identifyId, String user);
 
+    public Result<JsonElement>  getAlarmRuleRemote(Integer alarmId,Integer iamId,String user);
+
+    public Result updateAlarm(Integer alarmId,Integer iamId,String user,String body);
+
     Result<JsonElement> addAlarmGroup(JsonObject params, String identifyId, String user);
 
     Result<JsonElement> searchAlarmGroup(String alarmGroup,String identifyId,String user);

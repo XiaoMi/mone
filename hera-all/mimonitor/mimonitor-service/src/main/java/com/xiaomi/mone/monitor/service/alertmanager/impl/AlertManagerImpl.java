@@ -6,6 +6,8 @@ import com.google.gson.JsonObject;
 import com.xiaomi.mone.monitor.bo.UserInfo;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.alertmanager.AlertManager;
+import com.xiaomi.mone.monitor.service.alertmanager.client.Request;
+import com.xiaomi.mone.monitor.service.alertmanager.client.model.HttpMethodName;
 import com.xiaomi.mone.monitor.service.model.PageData;
 import com.xiaomi.mone.tpc.api.service.UserFacade;
 import com.xiaomi.mone.tpc.common.enums.UserStatusEnum;
@@ -109,6 +111,14 @@ public class AlertManagerImpl implements AlertManager {
 
     @Override
     public Result queryRuels(JsonObject params, String identifyId, String user) {
+        return null;
+    }
+
+    public Result<JsonElement>  getAlarmRuleRemote(Integer alarmId,Integer iamId,String user){
+        return null;
+    }
+
+    public Result updateAlarm(Integer alarmId,Integer iamId,String user,String body){
         return null;
     }
 
