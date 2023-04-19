@@ -141,7 +141,7 @@ public class OpenApiTest {
 
 
     private OpenAiClient client() {
-        Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyAddr, 65522));
+//        Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyAddr, 65522));
         HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(new OpenAILogger());
         OpenAiClient openAiClient = OpenAiClient.builder()
                 .apiKey(System.getenv("open_api_key"))
@@ -150,7 +150,7 @@ public class OpenApiTest {
                 .readTimeout(50)
                 .interceptor(Arrays.asList(httpLoggingInterceptor))
                 .apiHost("https://api.openai.com/")
-                .proxy(proxy)
+//                .proxy(proxy)
                 .build();
         return openAiClient;
     }
