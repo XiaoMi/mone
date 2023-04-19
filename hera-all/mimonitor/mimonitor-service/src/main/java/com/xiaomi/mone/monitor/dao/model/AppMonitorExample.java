@@ -305,6 +305,66 @@ public class AppMonitorExample {
             return (Criteria) this;
         }
 
+        public Criteria andIamTreeTypeIsNull() {
+            addCriterion("iam_tree_type is null");
+            return (Criteria) this;
+        }
+
+        public Criteria andIamTreeTypeIsNotNull() {
+            addCriterion("iam_tree_type is not null");
+            return (Criteria) this;
+        }
+
+        public Criteria andIamTreeTypeEqualTo(Integer value) {
+            addCriterion("iam_tree_type =", value, "iamTreeType");
+            return (Criteria) this;
+        }
+
+        public Criteria andIamTreeTypeNotEqualTo(Integer value) {
+            addCriterion("iam_tree_type <>", value, "iamTreeType");
+            return (Criteria) this;
+        }
+
+        public Criteria andIamTreeTypeGreaterThan(Integer value) {
+            addCriterion("iam_tree_type >", value, "iamTreeType");
+            return (Criteria) this;
+        }
+
+        public Criteria andIamTreeTypeGreaterThanOrEqualTo(Integer value) {
+            addCriterion("iam_tree_type >=", value, "iamTreeType");
+            return (Criteria) this;
+        }
+
+        public Criteria andIamTreeTypeLessThan(Integer value) {
+            addCriterion("iam_tree_type <", value, "iamTreeType");
+            return (Criteria) this;
+        }
+
+        public Criteria andIamTreeTypeLessThanOrEqualTo(Integer value) {
+            addCriterion("iam_tree_type <=", value, "iamTreeType");
+            return (Criteria) this;
+        }
+
+        public Criteria andIamTreeTypeIn(List<Integer> values) {
+            addCriterion("iam_tree_type in", values, "iamTreeType");
+            return (Criteria) this;
+        }
+
+        public Criteria andIamTreeTypeNotIn(List<Integer> values) {
+            addCriterion("iam_tree_type not in", values, "iamTreeType");
+            return (Criteria) this;
+        }
+
+        public Criteria andIamTreeTypeBetween(Integer value1, Integer value2) {
+            addCriterion("iam_tree_type between", value1, value2, "iamTreeType");
+            return (Criteria) this;
+        }
+
+        public Criteria andIamTreeTypeNotBetween(Integer value1, Integer value2) {
+            addCriterion("iam_tree_type not between", value1, value2, "iamTreeType");
+            return (Criteria) this;
+        }
+
         public Criteria andProjectNameIsNull() {
             addCriterion("project_name is null");
             return (Criteria) this;
@@ -317,11 +377,6 @@ public class AppMonitorExample {
 
         public Criteria andProjectNameEqualTo(String value) {
             addCriterion("project_name =", value, "projectName");
-            return (Criteria) this;
-        }
-
-        public Criteria andAppSourceEqualTo(Integer value) {
-            addCriterion("app_source =", value, "appSource");
             return (Criteria) this;
         }
 
@@ -377,6 +432,66 @@ public class AppMonitorExample {
 
         public Criteria andProjectNameNotBetween(String value1, String value2) {
             addCriterion("project_name not between", value1, value2, "projectName");
+            return (Criteria) this;
+        }
+
+        public Criteria andAppSourceIsNull() {
+            addCriterion("app_source is null");
+            return (Criteria) this;
+        }
+
+        public Criteria andAppSourceIsNotNull() {
+            addCriterion("app_source is not null");
+            return (Criteria) this;
+        }
+
+        public Criteria andAppSourceEqualTo(Integer value) {
+            addCriterion("app_source =", value, "appSource");
+            return (Criteria) this;
+        }
+
+        public Criteria andAppSourceNotEqualTo(Integer value) {
+            addCriterion("app_source <>", value, "appSource");
+            return (Criteria) this;
+        }
+
+        public Criteria andAppSourceGreaterThan(Integer value) {
+            addCriterion("app_source >", value, "appSource");
+            return (Criteria) this;
+        }
+
+        public Criteria andAppSourceGreaterThanOrEqualTo(Integer value) {
+            addCriterion("app_source >=", value, "appSource");
+            return (Criteria) this;
+        }
+
+        public Criteria andAppSourceLessThan(Integer value) {
+            addCriterion("app_source <", value, "appSource");
+            return (Criteria) this;
+        }
+
+        public Criteria andAppSourceLessThanOrEqualTo(Integer value) {
+            addCriterion("app_source <=", value, "appSource");
+            return (Criteria) this;
+        }
+
+        public Criteria andAppSourceIn(List<Integer> values) {
+            addCriterion("app_source in", values, "appSource");
+            return (Criteria) this;
+        }
+
+        public Criteria andAppSourceNotIn(List<Integer> values) {
+            addCriterion("app_source not in", values, "appSource");
+            return (Criteria) this;
+        }
+
+        public Criteria andAppSourceBetween(Integer value1, Integer value2) {
+            addCriterion("app_source between", value1, value2, "appSource");
+            return (Criteria) this;
+        }
+
+        public Criteria andAppSourceNotBetween(Integer value1, Integer value2) {
+            addCriterion("app_source not between", value1, value2, "appSource");
             return (Criteria) this;
         }
 
@@ -817,6 +932,66 @@ public class AppMonitorExample {
 
         public Criteria andStatusNotBetween(Integer value1, Integer value2) {
             addCriterion("status not between", value1, value2, "status");
+            return (Criteria) this;
+        }
+
+        public Criteria andBaseInfoIdIsNull() {
+            addCriterion("base_info_id is null");
+            return (Criteria) this;
+        }
+
+        public Criteria andBaseInfoIdIsNotNull() {
+            addCriterion("base_info_id is not null");
+            return (Criteria) this;
+        }
+
+        public Criteria andBaseInfoIdEqualTo(Integer value) {
+            addCriterion("base_info_id =", value, "baseInfoId");
+            return (Criteria) this;
+        }
+
+        public Criteria andBaseInfoIdNotEqualTo(Integer value) {
+            addCriterion("base_info_id <>", value, "baseInfoId");
+            return (Criteria) this;
+        }
+
+        public Criteria andBaseInfoIdGreaterThan(Integer value) {
+            addCriterion("base_info_id >", value, "baseInfoId");
+            return (Criteria) this;
+        }
+
+        public Criteria andBaseInfoIdGreaterThanOrEqualTo(Integer value) {
+            addCriterion("base_info_id >=", value, "baseInfoId");
+            return (Criteria) this;
+        }
+
+        public Criteria andBaseInfoIdLessThan(Integer value) {
+            addCriterion("base_info_id <", value, "baseInfoId");
+            return (Criteria) this;
+        }
+
+        public Criteria andBaseInfoIdLessThanOrEqualTo(Integer value) {
+            addCriterion("base_info_id <=", value, "baseInfoId");
+            return (Criteria) this;
+        }
+
+        public Criteria andBaseInfoIdIn(List<Integer> values) {
+            addCriterion("base_info_id in", values, "baseInfoId");
+            return (Criteria) this;
+        }
+
+        public Criteria andBaseInfoIdNotIn(List<Integer> values) {
+            addCriterion("base_info_id not in", values, "baseInfoId");
+            return (Criteria) this;
+        }
+
+        public Criteria andBaseInfoIdBetween(Integer value1, Integer value2) {
+            addCriterion("base_info_id between", value1, value2, "baseInfoId");
+            return (Criteria) this;
+        }
+
+        public Criteria andBaseInfoIdNotBetween(Integer value1, Integer value2) {
+            addCriterion("base_info_id not between", value1, value2, "baseInfoId");
             return (Criteria) this;
         }
 
