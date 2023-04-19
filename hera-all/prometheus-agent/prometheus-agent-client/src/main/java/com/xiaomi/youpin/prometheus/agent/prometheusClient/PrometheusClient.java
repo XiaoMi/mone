@@ -84,26 +84,31 @@ public class PrometheusClient implements Client {
     public void GetLocalConfigs() {
         //30s一次从从db里获取所有pending的采集任务
         new ScheduledThreadPoolExecutor(1).scheduleAtFixedRate(() -> {
-            log.info("PrometheusClient start GetLocalConfigs");
-            List<ScrapeConfigEntity> allScrapeConfigList = scrapeJobService.getAllScrapeConfigList(ScrapeJobStatusEnum.PENDING.getDesc());
-            //先清空上一次结果
-            localConfigs.clear();
-            allScrapeConfigList.forEach(item -> {
-                ScrapeConfigDetail detail = gson.fromJson(item.getBody(), ScrapeConfigDetail.class);
-                Scrape_configs sc = new Scrape_configs();
-                sc.setRelabel_configs(detail.getRelabel_configs());
-                sc.setMetric_relabel_configs(detail.getMetric_relabel_configs());
-                sc.setStatic_configs(detail.getStatic_configs());
-                sc.setJob_name(detail.getJob_name());
-                sc.setParams(detail.getParams());
-                sc.setMetrics_path(detail.getMetrics_path());
-                sc.setHonor_labels(detail.isHonor_labels());
-                sc.setHttp_sd_configs(detail.getHttp_sd_configs());
-                sc.setHttp_sd_configs(detail.getHttp_sd_configs());
-                localConfigs.add(sc);
-            });
-            log.info("PrometheusClient GetLocalConfigs done ,and jobNum :{}",localConfigs.size());
-            firstInitSign = true;
+            try {
+
+                log.info("PrometheusClient start GetLocalConfigs");
+                List<ScrapeConfigEntity> allScrapeConfigList = scrapeJobService.getAllScrapeConfigList(ScrapeJobStatusEnum.PENDING.getDesc());
+                //先清空上一次结果
+                localConfigs.clear();
+                allScrapeConfigList.forEach(item -> {
+                    ScrapeConfigDetail detail = gson.fromJson(item.getBody(), ScrapeConfigDetail.class);
+                    Scrape_configs sc = new Scrape_configs();
+                    sc.setRelabel_configs(detail.getRelabel_configs());
+                    sc.setMetric_relabel_configs(detail.getMetric_relabel_configs());
+                    sc.setStatic_configs(detail.getStatic_configs());
+                    sc.setJob_name(detail.getJob_name());
+                    sc.setParams(detail.getParams());
+                    sc.setMetrics_path(detail.getMetrics_path());
+                    sc.setHonor_labels(detail.isHonor_labels());
+                    sc.setHttp_sd_configs(detail.getHttp_sd_configs());
+                    sc.setHttp_sd_configs(detail.getHttp_sd_configs());
+                    localConfigs.add(sc);
+                });
+                log.info("PrometheusClient GetLocalConfigs done ,and jobNum :{}", localConfigs.size());
+                firstInitSign = true;
+            } catch (Exception e) {
+                log.error("PrometheusClient GetLocalConfigs error :{}", e.getMessage());
+            }
         }, 0, 30, TimeUnit.SECONDS);
     }
 
@@ -112,48 +117,53 @@ public class PrometheusClient implements Client {
     public void CompareAndReload() {
 
         new ScheduledThreadPoolExecutor(1).scheduleAtFixedRate(() -> {
-            if (localConfigs.size() <=0 ) {
-                //无pending的抓取job，直接返回
-                log.info("prometheus scrapeJob no need to reload");
-                return;
-            }
-            //如果有变动，调用reload接口
-            //读取本地prometheus配置文件
-            if (!firstInitSign) {
-                log.info("PrometheusClient CompareAndReload waiting..");
-                return;
-            }
-            log.info("PrometheusClient start CompareAndReload");
-            PrometheusConfig prometheusConfig = getPrometheusConfig(filePath);
-            if (prometheusConfig == null) {
-                //如果配置出现问题，直接结束
-                log.error("prometheusConfig null and return");
-                return;
-            }
-            //prometheus数据与待reload数据进行对比去重
-            List<Scrape_configs> promScrapeConfig = prometheusConfig.getScrape_configs();
-            HashSet<Scrape_configs> configSet = new HashSet<>(promScrapeConfig);
-            configSet.addAll(localConfigs);
-            ArrayList<Scrape_configs> configList = new ArrayList<>(configSet);
-            log.info("prometheusYMLJobNum: {},dbPEndingJobNum: {},after Deduplication JobNum: {}",promScrapeConfig.size(),localConfigs.size(),configSet.size());
-            //替换scrapeConfig部分
-            prometheusConfig.setScrape_configs(configList);
-            //生成yaml 并覆盖配置
-            log.info("PrometheusClient write final config:{}",gson.toJson(prometheusConfig));
-            writePrometheusConfig2Yaml(prometheusConfig);
-            log.info("PrometheusClient request reload url :{}", reloadAddr);
-            String getReloadRes = Http.innerRequest("", reloadAddr, HTTP_POST);
-            log.info("PrometheusClient request reload res :{}", getReloadRes);
-            if (getReloadRes.equals("200")) {
-                log.info("PrometheusClient request reload success");
-                //成功后，删除备份，并将数据写回数据库状态为success
-                scrapeJobService.updateAllScrapeConfigListStatus(ScrapeJobStatusEnum.SUCCESS.getDesc(),configList);
-                deleteBackConfig();
-            } else {
-                //如果reload失败，用备份恢复配置
-                log.info("PrometheusClient request reload fail and begin rollback config");
-                boolean rollbackRes = restoreConfiguration(backFilePath, filePath);
-                log.info("PrometheusClient request reload fail and rollbackRes: {}", rollbackRes);
+            try {
+
+                if (localConfigs.size() <= 0) {
+                    //无pending的抓取job，直接返回
+                    log.info("prometheus scrapeJob no need to reload");
+                    return;
+                }
+                //如果有变动，调用reload接口
+                //读取本地prometheus配置文件
+                if (!firstInitSign) {
+                    log.info("PrometheusClient CompareAndReload waiting..");
+                    return;
+                }
+                log.info("PrometheusClient start CompareAndReload");
+                PrometheusConfig prometheusConfig = getPrometheusConfig(filePath);
+                if (prometheusConfig == null || prometheusConfig.getScrape_configs().size() == 0 || prometheusConfig.getGlobal() == null) {
+                    //如果配置出现问题，直接结束
+                    log.error("prometheusConfig null and return");
+                    return;
+                }
+                //prometheus数据与待reload数据进行对比去重
+                List<Scrape_configs> promScrapeConfig = prometheusConfig.getScrape_configs();
+                HashSet<Scrape_configs> configSet = new HashSet<>(promScrapeConfig);
+                configSet.addAll(localConfigs);
+                ArrayList<Scrape_configs> configList = new ArrayList<>(configSet);
+                log.info("prometheusYMLJobNum: {},dbPEndingJobNum: {},after Deduplication JobNum: {}", promScrapeConfig.size(), localConfigs.size(), configSet.size());
+                //替换scrapeConfig部分
+                prometheusConfig.setScrape_configs(configList);
+                //生成yaml 并覆盖配置
+                log.info("PrometheusClient write final config:{}", gson.toJson(prometheusConfig));
+                writePrometheusConfig2Yaml(prometheusConfig);
+                log.info("PrometheusClient request reload url :{}", reloadAddr);
+                String getReloadRes = Http.innerRequest("", reloadAddr, HTTP_POST);
+                log.info("PrometheusClient request reload res :{}", getReloadRes);
+                if (getReloadRes.equals("200")) {
+                    log.info("PrometheusClient request reload success");
+                    //成功后，删除备份，并将数据写回数据库状态为success
+                    scrapeJobService.updateAllScrapeConfigListStatus(ScrapeJobStatusEnum.SUCCESS.getDesc(), configList);
+                    deleteBackConfig();
+                } else {
+                    //如果reload失败，用备份恢复配置
+                    log.info("PrometheusClient request reload fail and begin rollback config");
+                    boolean rollbackRes = restoreConfiguration(backFilePath, filePath);
+                    log.info("PrometheusClient request reload fail and rollbackRes: {}", rollbackRes);
+                }
+            } catch (Exception e) {
+                log.error("PrometheusClient CompareAndReload error :{}", e.getMessage());
             }
         }, 0, 30, TimeUnit.SECONDS);
 

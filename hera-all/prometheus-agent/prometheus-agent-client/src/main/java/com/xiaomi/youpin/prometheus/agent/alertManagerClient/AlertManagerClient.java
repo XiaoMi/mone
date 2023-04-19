@@ -1,6 +1,7 @@
 package com.xiaomi.youpin.prometheus.agent.alertManagerClient;
 
 import com.alibaba.nacos.api.config.annotation.NacosValue;
+import com.google.gson.Gson;
 import com.xiaomi.youpin.prometheus.agent.Commons;
 import com.xiaomi.youpin.prometheus.agent.client.Client;
 import com.xiaomi.youpin.prometheus.agent.entity.RuleAlertEntity;
@@ -49,6 +50,8 @@ public class AlertManagerClient implements Client {
 
     private Map<String, List<Rule>> localRuleList = new HashMap<>();
 
+    private static final Gson gson = new Gson();
+
     @PostConstruct
     public void init() {
         backFilePath = filePath + ".bak";
@@ -64,31 +67,36 @@ public class AlertManagerClient implements Client {
     public void GetLocalConfigs() {
         //定时请求数据库查找所有pending状态的未删除的alert
         new ScheduledThreadPoolExecutor(1).scheduleAtFixedRate(() -> {
-            log.info("AlertManagerClient start GetLocalConfigs");
-            List<RuleAlertEntity> allRuleAlertList = ruleAlertService.GetAllRuleAlertList();
-            //先清空上一次结果
-            localRuleList.clear();
-            allRuleAlertList.forEach(item -> {
-                //加上group分组
-                String tmpGroup = item.getAlert_group();
-                Rule rule = new Rule();
-                rule.setAlert(item.getName());
-                rule.setAnnotations(transAnnotation2Map(item.getAnnotation()));
-                rule.setLabels(transLabel2Map(item.getLabels()));
-                rule.setExpr(item.getExpr());
-                rule.setFor(item.getAlertFor());
+            try {
+                log.info("AlertManagerClient start GetLocalConfigs");
+                List<RuleAlertEntity> allRuleAlertList = ruleAlertService.GetAllRuleAlertList();
+                //先清空上一次结果
+                localRuleList.clear();
+                log.info("AlertManagerClient GetLocalConfigs allRuleAlertList: {}", allRuleAlertList);
+                allRuleAlertList.forEach(item -> {
+                    //加上group分组
+                    String tmpGroup = item.getAlert_group();
+                    Rule rule = new Rule();
+                    rule.setAlert(item.getName());
+                    rule.setAnnotations(transAnnotation2Map(item.getAnnotation()));
+                    rule.setLabels(transLabel2Map(item.getLabels()));
+                    rule.setExpr(item.getExpr());
+                    rule.setFor(item.getAlertFor());
 
-                if (localRuleList.containsKey(tmpGroup)) {
-                    localRuleList.get(tmpGroup).add(rule);
-                } else {
-                    List<Rule> rules = new ArrayList<>();
-                    localRuleList.put(tmpGroup, rules);
-                    localRuleList.get(tmpGroup).add(rule);
-                }
+                    if (localRuleList.containsKey(tmpGroup)) {
+                        localRuleList.get(tmpGroup).add(rule);
+                    } else {
+                        List<Rule> rules = new ArrayList<>();
+                        localRuleList.put(tmpGroup, rules);
+                        localRuleList.get(tmpGroup).add(rule);
+                    }
 
-            });
-            log.info("AlertManagerClient GetLocalConfigs done!");
-            firstInitSign = true;
+                });
+                log.info("AlertManagerClient GetLocalConfigs done!");
+                firstInitSign = true;
+            } catch (Exception e) {
+                log.error("AlertManagerClient GetLocalConfigs error:{}", e.getMessage());
+            }
         }, 0, 30, TimeUnit.SECONDS);
     }
 
@@ -99,41 +107,47 @@ public class AlertManagerClient implements Client {
         new ScheduledThreadPoolExecutor(1).scheduleAtFixedRate(() -> {
             //如果有变动，调用reload接口，一期直接reload
             //读取本地rule配置文件
-            if (!firstInitSign) {
-                log.info("AlertManagerClient CompareAndReload waiting..");
-                return;
-            }
-            log.info("AlertManagerClient start CompareAndReload");
-            AlertManagerConfig ruleAlertConfig = getRuleAlertConfig(filePath);
-            if (ruleAlertConfig == null) {
-                //如果配置出现问题，直接结束
-                log.error("AlertManagerConfig null and return");
-                return;
-            }
-            log.info("ruleAlertConfig: {}", ruleAlertConfig);
-            List<Group> group = new ArrayList<>();
-            for (Map.Entry<String, List<Rule>> entry : localRuleList.entrySet()) {
-                Group tmpGroup = new Group();
-                tmpGroup.setName(entry.getKey());
-                tmpGroup.setRules(entry.getValue());
-                group.add(tmpGroup);
-            }
-            ruleAlertConfig.setGroups(group);
-            writeAlertManagerConfig2Yaml(ruleAlertConfig);
+            try {
+                if (!firstInitSign) {
+                    log.info("AlertManagerClient CompareAndReload waiting..");
+                    return;
+                }
+                log.info("AlertManagerClient start CompareAndReload");
+                AlertManagerConfig ruleAlertConfig = getRuleAlertConfig(filePath);
+                if (ruleAlertConfig == null || ruleAlertConfig.getGroups().size() == 0) {
+                    //如果配置出现问题，直接结束
+                    log.error("AlertManagerConfig null and return");
+                    return;
+                }
+                log.info("ruleAlertConfig: {}", ruleAlertConfig);
+                log.info("localrulelist: {}", localRuleList);
 
-            log.info("AlertManagerClient request reload url :{}", reloadAddr);
-            String getReloadRes = Http.innerRequest("", reloadAddr, HTTP_POST);
-            log.info("AlertManagerClient request reload res :{}", getReloadRes);
-            if (getReloadRes.equals("200")) {
-                log.info("AlertManagerClient request reload success");
-                //成功后，删除备份
-                deleteBackConfig();
-            } else {
-                //如果reload失败，用备份恢复配置
-                log.info("AlertManagerClient request reload fail and begin rollback config");
-                boolean rollbackRes = restoreConfiguration(backFilePath, filePath);
-                log.info("AlertManagerClient request reload fail and rollbackRes: {}", rollbackRes);
+                List<Group> group = new ArrayList<>();
+                for (Map.Entry<String, List<Rule>> entry : localRuleList.entrySet()) {
+                    Group tmpGroup = new Group();
+                    tmpGroup.setName(entry.getKey());
+                    tmpGroup.setRules(entry.getValue());
+                    group.add(tmpGroup);
+                }
+                ruleAlertConfig.setGroups(group);
+                writeAlertManagerConfig2Yaml(ruleAlertConfig);
 
+                log.info("AlertManagerClient request reload url :{}", reloadAddr);
+                String getReloadRes = Http.innerRequest("", reloadAddr, HTTP_POST);
+                log.info("AlertManagerClient request reload res :{}", getReloadRes);
+                if (getReloadRes.equals("200")) {
+                    log.info("AlertManagerClient request reload success");
+                    //成功后，删除备份
+                    deleteBackConfig();
+                } else {
+                    //如果reload失败，用备份恢复配置
+                    log.info("AlertManagerClient request reload fail and begin rollback config");
+                    boolean rollbackRes = restoreConfiguration(backFilePath, filePath);
+                    log.info("AlertManagerClient request reload fail and rollbackRes: {}", rollbackRes);
+
+                }
+            } catch (Exception e) {
+                log.error("AlertManagerClient CompareAndReload error: {}", e);
             }
 
         }, 0, 30, TimeUnit.SECONDS);
@@ -143,21 +157,27 @@ public class AlertManagerClient implements Client {
     private Map<String, String> transLabel2Map(String labels) {
         //按,分割后,再按=分割
         Map<String, String> labelMap = new HashMap<>();
-        Arrays.stream(labels.split(",")).forEach(item -> {
-            String[] split = item.split("=");
-            labelMap.put(split[0], split[1]);
-        });
-        return labelMap;
+        try {
+            Arrays.stream(labels.split(",")).forEach(item -> {
+                String[] split = item.split("=");
+                labelMap.put(split[0], split[1]);
+            });
+            return labelMap;
+        }catch (Exception e){
+            log.error("AlertManagerClient transLabel2Map error: {}", e);
+            return labelMap;
+        }
+
     }
 
     //将annotationString转换成map
     private Map<String, String> transAnnotation2Map(String annotations) {
-        //按,分割后,再按=分割
-        Map<String, String> annotationMap = new HashMap<>();
-        Arrays.stream(annotations.split(",")).forEach(item -> {
-            String[] split = item.split("=");
-            annotationMap.put(split[0], split[1]);
-        });
+        Map annotationMap = gson.fromJson(annotations, Map.class);
+//        Map<String, String> annotationMap = new HashMap<>();
+//        Arrays.stream(annotations.split(",")).forEach(item -> {
+//            String[] split = item.split("=");
+//            annotationMap.put(split[0], split[1]);
+//        });
         return annotationMap;
     }
 

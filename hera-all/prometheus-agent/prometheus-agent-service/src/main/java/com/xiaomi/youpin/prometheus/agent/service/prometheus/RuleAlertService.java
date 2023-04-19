@@ -64,7 +64,7 @@ public class RuleAlertService {
             ruleAlertEntity.setExpr(param.getExpr());
             ruleAlertEntity.setLabels(transLabel2String(param.getLabels()));
             ruleAlertEntity.setAnnotation(transAnnotation2String(param.getAnnotations()));
-            ruleAlertEntity.setAlertFor(param.getFor());
+            ruleAlertEntity.setAlertFor(param.getForTime());
             ruleAlertEntity.setEnv(Strings.join(",", param.getEnv()));
             ruleAlertEntity.setEnabled(param.getEnabled() == null ? 1 : param.getEnabled());
             ruleAlertEntity.setPriority(transPriority2Integer(param.getPriority()));
@@ -104,8 +104,8 @@ public class RuleAlertService {
             if (param.getExpr() != null) {
                 data.setExpr(param.getExpr());
             }
-            if (param.getFor() != null) {
-                data.setAlertFor(param.getFor());
+            if (param.getForTime() != null) {
+                data.setAlertFor(param.getForTime());
             }
             if (param.getLabels() != null) {
                 data.setLabels(transLabel2String(param.getLabels()));
@@ -208,6 +208,7 @@ public class RuleAlertService {
 
     //TODO: 提供给alertManagerClient使用的临时方法，以后需要重构
     public List<RuleAlertEntity> GetAllRuleAlertList() {
+        log.info("RuleAlertService.GetAllRuleAlertList");
         List<RuleAlertEntity> list = dao.GetAllRuleAlertList();
         return list;
     }
@@ -215,27 +216,38 @@ public class RuleAlertService {
     //将labelmap转换成string
     private String transLabel2String(Map<String, String> labels) {
         String res = "";
-        for (Map.Entry<String, String> entry : labels.entrySet()) {
-            res += entry.getKey() + "=" + entry.getValue() + ",";
+        try {
+            for (Map.Entry<String, String> entry : labels.entrySet()) {
+                res += entry.getKey() + "=" + entry.getValue() + ",";
+            }
+            return res.substring(0, res.length() - 1);
+        } catch (Exception e) {
+            log.error("transLabel2String error:{}", e.getMessage());
+            return "";
         }
-        return res.substring(0, res.length() - 1);
     }
 
-    //将annotationMap转换成string
+    //将annotationMap转换成json string
     private String transAnnotation2String(Map<String, String> annotations) {
-        String res = "";
-        for (Map.Entry<String, String> entry : annotations.entrySet()) {
-            res += entry.getKey() + "=" + entry.getValue() + ",";
-        }
-        return res.substring(0, res.length() - 1);
+        return gson.toJson(annotations);
+//        String res = "";
+//        for (Map.Entry<String, String> entry : annotations.entrySet()) {
+//            res += entry.getKey() + "=" + entry.getValue() + ",";
+//        }
+//        return res.substring(0, res.length() - 1);
     }
 
     private int transPriority2Integer(String priority) {
-        String[] ps = priority.split("P");
-        if (ps.length == 2) {
-            return Integer.parseInt(ps[1]);
-        } else {
-            //默认P2
+        try {
+            String[] ps = priority.split("P");
+            if (ps.length == 2) {
+                return Integer.parseInt(ps[1]);
+            } else {
+                //默认P2
+                return 2;
+            }
+        } catch (Exception e) {
+            log.error("transPriority2Integer error:{}", e.getMessage());
             return 2;
         }
     }
