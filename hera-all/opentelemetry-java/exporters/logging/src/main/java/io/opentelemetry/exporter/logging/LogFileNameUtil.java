@@ -32,8 +32,11 @@ public class LogFileNameUtil {
    * get service name without project id
    */
   public static String getServiceName(){
-    String applicationName = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.JVM_OTEL_RESOURCE_ATTRIBUTES.getKey()) == null ? "none":
+    String applicationName = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.JVM_OTEL_RESOURCE_ATTRIBUTES.getKey()) == null ? SystemCommon.getEnvOrProperties(EnvOrJvmProperties.MIONE_PROJECT_NAME.getKey()):
         SystemCommon.getEnvOrProperties(EnvOrJvmProperties.JVM_OTEL_RESOURCE_ATTRIBUTES.getKey()).split("=")[1];
+    if(applicationName == null){
+      applicationName = EnvOrJvmProperties.MIONE_PROJECT_NAME.getDefaultValue();
+    }
     // 删除mione中生成的项目名id
     int i = applicationName.indexOf("-");
     if (i >= 0) {
