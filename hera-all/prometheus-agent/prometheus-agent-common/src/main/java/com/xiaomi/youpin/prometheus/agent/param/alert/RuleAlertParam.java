@@ -12,7 +12,7 @@ public class RuleAlertParam extends BaseParam {
     private String alert;
     private String cname;
     private String expr;
-    private String For;
+    private String forTime;
     private Map<String,String> labels;
     private Map<String,String> annotations;
     private String group;

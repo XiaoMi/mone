@@ -20,7 +20,7 @@
 },
 "type": "primary",
 "multi_url": {
-"url": "${silence_url}",
+"url": "http://${silence_url}",
 "pc_url": "",
 "android_url": "",
 "ios_url": ""
