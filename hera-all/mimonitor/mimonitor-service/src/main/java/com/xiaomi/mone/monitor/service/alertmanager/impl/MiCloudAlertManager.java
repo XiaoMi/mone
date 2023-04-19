@@ -143,6 +143,33 @@ public class MiCloudAlertManager implements AlertManager {
         return jsonObjectResult;
     }
 
+    public Result<JsonElement>  getAlarmRuleRemote(Integer alarmId,Integer iamId,String user){
+        Request request = createRequest(HttpMethodName.GET, alarmDomain + alarm_rule_alert_uri+"/" + alarmId, iamId, user);
+
+        JsonObject jsonObject = new JsonObject();
+        request.setBody(jsonObject.toString());
+        Result<JsonElement> jsonObjectResult = executeRequest(request);
+
+        log.info("MiCloudAlertManager.getAlarmRuleRemote request : {},response:{}", new Gson().toJson(request).toString(),new Gson().toJson(jsonObjectResult).toString());
+
+        return jsonObjectResult;
+    }
+
+    public Result updateAlarm(Integer alarmId,Integer iamId,String user,String body){
+
+        StringBuilder url = new StringBuilder(alarmDomain).append(alarm_rule_alert_uri).append("/").append(alarmId);
+
+        Request request = createRequest(HttpMethodName.PUT, url.toString(), iamId, user);
+
+        request.setBody(body);
+
+        Result<JsonElement> jsonObjectResult = executeRequest(request);
+
+        log.info("MiCloudAlertManager.updateAlarm request : {},response:{}", new Gson().toJson(request).toString(),new Gson().toJson(jsonObjectResult).toString());
+
+        return jsonObjectResult;
+    }
+
     @Override
     public Result<JsonElement> addAlarmGroup(JsonObject params, String iamId, String user) {
         StringBuilder url = new StringBuilder(alarmDomain).append(MiCloudAlertManager.alarm_rule_group_uri);
