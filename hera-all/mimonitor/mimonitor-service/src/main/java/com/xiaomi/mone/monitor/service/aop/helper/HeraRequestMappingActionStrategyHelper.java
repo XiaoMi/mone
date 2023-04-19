@@ -63,7 +63,7 @@ public class HeraRequestMappingActionStrategyHelper {
         }
         AppAlarmRule rulequery = new AppAlarmRule();
         rulequery.setStatus(0);
-        //兼容内网带有iamId的逻辑
+        // if iam_tree_id exists
         if(strategy.getIamId() != null){
             rulequery.setIamId(strategy.getIamId());
         }
