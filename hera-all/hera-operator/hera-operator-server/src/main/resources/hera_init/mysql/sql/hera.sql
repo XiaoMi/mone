@@ -216,6 +216,7 @@ CREATE TABLE `app_monitor`
     `id`             int(11) NOT NULL AUTO_INCREMENT,
     `project_id`     int(11) DEFAULT NULL COMMENT '项目id',
     `iam_tree_id`    int(11) DEFAULT NULL COMMENT 'iamTreeId',
+    `iam_tree_type`  int(3) DEFAULT NULL COMMENT 'iam类型，0:TPC、1:米IAM',
     `project_name`   varchar(255) DEFAULT NULL COMMENT '项目名称',
     `app_source`     int(8) DEFAULT '0' COMMENT 'app来源 0-开源',
     `owner`          varchar(30)  DEFAULT NULL COMMENT '所属者',
