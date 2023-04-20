@@ -431,4 +431,17 @@ public class AppMonitorController {
     public Result grafanaInterfaceList() {
         return appMonitorService.grafanaInterfaceList();
     }
+
+    @GetMapping("/mimonitor/listapp/iamId")
+    public Result listAppByIAMId(Integer iamId, Integer iamType){
+        log.info("AppMonitorController.listAppByIAMId param : iamId : "+iamId+" iamType : "+iamType);
+        AuthUserVo userInfo = UserUtil.getUser();
+        if (userInfo == null) {
+            log.info("AppMonitorController.listAppByIAMId request info error no user info found! ");
+            return Result.fail(ErrorCode.unknownError);
+        }
+
+       String userName = userInfo.genFullAccount();
+        return appMonitorService.selectByIAMId(iamId,iamType,userName);
+    }
 }

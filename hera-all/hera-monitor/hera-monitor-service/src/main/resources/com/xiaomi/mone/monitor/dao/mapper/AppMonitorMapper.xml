@@ -263,6 +263,19 @@
   <select id="selectByGroupBy" parameterType="java.lang.Integer" resultMap="BaseResultMap">
     select iam_tree_id, project_id, project_name from app_monitor where status=0 group by iam_tree_id, project_id, project_name order by project_id desc limit #{offset}, #{limit}
   </select>
+
+  <select id="selectByIAMId" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from app_monitor
+    where iam_tree_id = #{iamId, jdbcType=INTEGER}
+    and iam_tree_type = #{iamType, jdbcType=INTEGER}
+    and status = 0
+    <if test="userName != null">
+      and owner = #{userName, jdbcType=VARCHAR}
+    </if>
+  </select>
+
   <select id="selectTreeIdByOwnerOrCareUser" parameterType="java.lang.String" resultType="java.lang.Integer">
     select iam_tree_id from app_monitor where status=0 and (care_user=#{userName,jdbcType=VARCHAR} OR owner=#{userName,jdbcType=VARCHAR}) limit 100
   </select>

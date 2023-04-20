@@ -1380,4 +1380,13 @@ public class AppMonitorService {
         return appMonitorServiceExtension.grafanaInterfaceList();
     }
 
+    public Result selectByIAMId(Integer iamId, Integer iamType, String userName){
+        try {
+            List<AppMonitor> appMonitors = appMonitorDao.selectByIAMId(iamId, iamType, userName);
+            return Result.success(appMonitors);
+        }catch (Throwable t){
+            log.error("select by iamId error : ",t);
+            return Result.fail(ErrorCode.unknownError);
+        }
+    }
 }
