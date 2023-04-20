@@ -65,15 +65,6 @@ public class AppMonitorService {
     @NacosValue(value = "${grafana.domain}", autoRefreshed = true)
     private String grafanaDomain;
 
-    private String resourceUrl = "/d/hera-resource-utilization/hera-k8szi-yuan-shi-yong-lu-da-pan?orgId=1&var-application=";
-
-    private String dubboProviderOverview = "/d/hera-dubboprovider-overview/hera-dubboproviderzong-lan?orgId=1&kiosk&theme=light";
-    private String dubboConsumerOverview = "/d/hera-dubboconsumer-overview/hera-dubboconsumerzong-lan?orgId=1&kiosk&theme=light";
-    private String dubboProviderMarket = "/d/Hera-DubboProviderMarket/hera-dubboproviderda-pan?orgId=1&kiosk&theme=light";
-    private String dubboConsumerMarket = "/d/Hera-DubboConsumerMarket/hera-dubboconsumerda-pan?orgId=1&kiosk&theme=light";
-    private String httpOverview = "/d/Hera-HTTPServer-overview/hera-httpserver-zong-lan?orgId=1&kiosk&theme=light";
-    private String httpMarket = "/d/Hera-HTTPServerMarket/hera-httpserverda-pan?orgId=1&kiosk&theme=light";
-
     @Autowired
     private AppGrafanaMappingDao appGrafanaMappingDao;
 
@@ -1386,29 +1377,7 @@ public class AppMonitorService {
     }
 
     public Result grafanaInterfaceList() {
-        Map<String, Object> map = new HashMap<>();
-        map.put("dubboProviderOverview", grafanaDomain + dubboProviderOverview);
-        map.put("dubboConsumerOverview", grafanaDomain + dubboConsumerOverview);
-        map.put("dubboProviderMarket", grafanaDomain + dubboProviderMarket);
-        map.put("dubboConsumerMarket", grafanaDomain + dubboConsumerMarket);
-        map.put("httpOverview", grafanaDomain + httpOverview);
-        map.put("httpMarket", grafanaDomain + httpMarket);
-        try {
-            log.info("grafanaInterfaceList map:{}", map);
-            String data = FreeMarkerUtil.getContentExceptJson("/heraGrafanaTemplate", "grafanaInterfaceList.ftl", map);
-            JsonArray jsonElements = gson.fromJson(data, JsonArray.class);
-            log.info(jsonElements.toString());
-            List<GrafanaInterfaceRes> resList = new ArrayList<>();
-            jsonElements.forEach(it -> {
-                GrafanaInterfaceRes grafanaInterfaceRes = gson.fromJson(it, GrafanaInterfaceRes.class);
-                resList.add(grafanaInterfaceRes);
-            });
-            log.info("grafanaInterfaceList success! data:{}", resList);
-            return Result.success(resList);
-        } catch (Exception e) {
-            log.error("grafanaInterfaceList error! {}", e);
-            return Result.fail(ErrorCode.unknownError);
-        }
+        return appMonitorServiceExtension.grafanaInterfaceList();
     }
 
 }
