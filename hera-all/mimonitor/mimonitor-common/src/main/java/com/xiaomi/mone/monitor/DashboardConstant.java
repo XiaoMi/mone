@@ -31,4 +31,9 @@ public class DashboardConstant {
 
     public static final String DEFAULT_MIMONITOR_NACOS_CONFIG = "mimonitor_open_config";
     public static final String DEFAULT_MIMONITOR_NACOS_GROUP = "DEFAULT_GROUP";
+
+    public static final String EXCEPTION_TRACE_DOMAIN_JAEGER = "jaegerquery";
+
+    public static final String EXCEPTION_TRACE_DOMAIN_HERA = "hera";
+
 }

@@ -1,7 +1,5 @@
 package com.xiaomi.mone.monitor.service.model.prometheus;
 
-import com.xiaomi.mone.monitor.bo.PlatForm;
-import com.xiaomi.mone.monitor.bo.PlatFormType;
 import lombok.Data;
 import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
@@ -20,12 +18,7 @@ import java.util.Map;
 public class MetricDetailQuery implements Serializable {
 
     private static final String domain = "domain";
-    //TODO 兼容两个版本的变量值（jaegerquery、hera），需要抽取适配变量
-    private static final String domain_jaeger_value = "jaegerquery";
-    private static final String domain_hera_value = "hera";
-    private static final String domain_cloud_platform_value = "mitelemetry";
-    private static final String domain_tesla_value_china = "china_tesla";
-    private static final String domain_tesla_value_youpin = "youpin-tesla";
+
     private static final Long tesla_projectId = 1l;
 
     private static final String host_ = "host";
@@ -93,11 +86,9 @@ public class MetricDetailQuery implements Serializable {
      * //TODO 添加子类别（区分慢查询/异常 等待丁涛）、sql（对应url），errorCode，耗时-duration
      * @return
      */
-    public Map<String,String> convertEsParam(){
+    public Map<String,String> convertEsParam(String exceptionTraceDomain){
         Map<String,String> map = new HashMap<>();
-        //TODO 兼容两个版本的变量值，需要抽取适配变量，兼容开源的domain_hera_value
-        //map.put(domain, appSource == null ? domain_jaeger_value : PlatFormType.isCodeBlondToPlatForm(appSource, PlatForm.cloud)  ? domain_cloud_platform_value : domain_jaeger_value);
-        map.put(domain,  domain_hera_value);
+        map.put(domain,  exceptionTraceDomain);
 
         map.put(serviceName_,projectId + "_" + projectName.replaceAll("-","_"));
         map.put(host_,serverIp);
