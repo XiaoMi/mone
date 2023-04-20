@@ -14,8 +14,6 @@ import com.xiaomi.mone.monitor.service.model.prometheus.Metric;
 import com.xiaomi.mone.monitor.service.model.prometheus.MetricDetail;
 import com.xiaomi.mone.monitor.service.model.prometheus.MetricDetailQuery;
 import com.xiaomi.mone.monitor.service.prometheus.PrometheusService;
-import com.xiaomi.mone.monitor.bo.PlatFormType;
-import com.xiaomi.mone.monitor.bo.PlatForm;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -26,14 +24,12 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.*;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
-import org.elasticsearch.search.collapse.CollapseBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.*;
