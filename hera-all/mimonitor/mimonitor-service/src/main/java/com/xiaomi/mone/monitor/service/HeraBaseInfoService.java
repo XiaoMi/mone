@@ -7,7 +7,6 @@ import com.xiaomi.mone.app.api.model.HeraAppRoleModel;
 import com.xiaomi.mone.app.api.service.HeraAppService;
 import com.xiaomi.mone.monitor.bo.AlertGroupParam;
 import com.xiaomi.mone.monitor.bo.PlatForm;
-import com.xiaomi.mone.monitor.bo.PlatFormType;
 import com.xiaomi.mone.monitor.bo.UserInfo;
 import com.xiaomi.mone.monitor.dao.HeraAppRoleDao;
 import com.xiaomi.mone.monitor.dao.model.HeraAppRole;
