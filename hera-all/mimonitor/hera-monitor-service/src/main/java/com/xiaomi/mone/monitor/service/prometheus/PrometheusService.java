@@ -3,6 +3,7 @@ package com.xiaomi.mone.monitor.service.prometheus;
 import com.google.gson.Gson;
 import com.xiaomi.mone.monitor.dao.AppCapacityAutoAdjustDao;
 import com.xiaomi.mone.monitor.dao.model.AppCapacityAutoAdjust;
+import com.xiaomi.mone.monitor.service.impl.PrometheusServiceImpl;
 import com.xiaomi.mone.monitor.service.kubernetes.CapacityAdjustMessageService;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
@@ -53,6 +54,9 @@ public class PrometheusService {
     private static final double LOAD_THRESHOLD_ORACLE = 0.7;
 
     private final Gson gson = new Gson();
+
+    @Autowired
+    private PrometheusServiceImpl prometheusServiceImpl;
 
 
     @Autowired
@@ -1002,48 +1006,7 @@ public class PrometheusService {
 
     //根据传入的服务名，获取对应的该服务的service列表
     public Result queryDubboServiceList(String serviceName, String type,String startTime, String endTime) {
-        //sum(sum_over_time(staging_jaeger_dubboProviderCount_count{application="221_maitian"}[30m]))by (serviceName)
-        log.info("queryDubboServiceList serviceName:{},type :{},startTime:{},endTime:{}",serviceName,type,startTime,endTime);
-        //指标名称替换
-        String prometheusEnv = "staging";
-        if ("online".equals(env)) {
-            prometheusEnv = "online";
-        }
-        String query = "";
-        switch (type) {
-            case "http":
-                query = "sum(sum_over_time(" + prometheusEnv + "_jaeger_aopTotalMethodCount_total{application=\"" + serviceName + "\"}[30s])) by (methodName)";
-                break;
-            case "dubboConsumer":
-                query = "sum(sum_over_time("+ prometheusEnv +"_jaeger_dubboBisTotalCount_total{application=\"" + serviceName + "\"}[30s])) by (serviceName)";
-                break;
-            case "dubbo":
-                query = "sum(sum_over_time(" + prometheusEnv + "_jaeger_dubboProviderCount_count{application=\"" + serviceName + "\"}[30s]))by (serviceName)";
-                break;
-            case "grpcServer":
-                query = "sum(sum_over_time(" + prometheusEnv + "_jaeger_grpcServer_total{application=\"" + serviceName + "\"}[30s]))by (serviceName)";
-                break;
-            case "grpcClient":
-                query = "sum(sum_over_time(" + prometheusEnv + "_jaeger_grpcClient_total{application=\"" + serviceName + "\"}[30s]))by (serviceName)";
-                break;
-            case "thriftServer":
-                query = "sum(sum_over_time(" + prometheusEnv + "_jaeger_thriftServer_total{application=\"" + serviceName + "\"}[30s]))by (serviceName)";
-                break;
-            case "thriftClient":
-                query = "sum(sum_over_time(" + prometheusEnv + "_jaeger_thriftClient_total{application=\"" + serviceName + "\"}[30s]))by (serviceName)";
-                break;
-            case "apusClient":
-                query = "sum(sum_over_time(" + prometheusEnv + "_jaeger_apusClient_total{application=\"" + serviceName + "\"}[30s]))by (serviceName)";
-                break;
-            case "apusServer":
-                query = "sum(sum_over_time(" + prometheusEnv + "_jaeger_apusServer_total{application=\"" + serviceName + "\"}[30s]))by (serviceName)";
-                break;
-            default:
-                query = "sum(sum_over_time(" + prometheusEnv + "_jaeger_dubboProviderCount_count{application=\"" + serviceName + "\"}[30s]))by (serviceName)";
-        }
-        log.info("PrometheusService.queryDubboServiceList query : {}", query);
-        return queryDubboServiceListByPrometheus(query, type,startTime,endTime);
-        // return Result.success(0);
+        return prometheusServiceImpl.queryDubboServiceList(serviceName, type, startTime, endTime);
     }
 
 

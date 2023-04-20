@@ -7,4 +7,6 @@ import com.xiaomi.mone.monitor.result.Result;
  */
 public interface AppMonitorServiceExtension {
     Result getResourceUsageUrlForK8s(Integer appId, String appName);
+
+    Result grafanaInterfaceList();
 }
