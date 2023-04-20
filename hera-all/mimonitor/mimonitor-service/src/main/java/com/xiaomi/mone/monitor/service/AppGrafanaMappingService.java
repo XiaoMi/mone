@@ -14,6 +14,7 @@ import com.xiaomi.mone.monitor.dao.model.AppMonitor;
 import com.xiaomi.mone.monitor.dao.model.GrafanaTemplate;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
+import com.xiaomi.mone.monitor.service.extension.PlatFormTypeExtensionService;
 import com.xiaomi.mone.monitor.service.model.GrafanaResponse;
 import com.xiaomi.mone.monitor.service.model.MutiGrafanaResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -50,6 +51,9 @@ public class AppGrafanaMappingService {
 
     @Autowired
     HeraBaseInfoService heraBaseInfoService;
+
+    @Autowired
+    PlatFormTypeExtensionService platFormTypeExtensionService;
 
 
     @Value("${server.type}")
@@ -221,7 +225,7 @@ public class AppGrafanaMappingService {
 
             Optional<Integer> platformType = Optional.ofNullable(baseInfo.getPlatformType());
             //找不到平台类型，默认放在open下
-            String grafanaDirByCode = platformType.isPresent() ? PlatFormType.getGrafanaDirByCode(platformType.get()) : PlatFormType.open.getGrafanaDir();
+            String grafanaDirByCode = platformType.isPresent() ? platFormTypeExtensionService.getGrafanaDirByTypeCode(platformType.get()) : PlatFormType.open.getGrafanaDir();
 
 
             List<String> funcList = new ArrayList<>();

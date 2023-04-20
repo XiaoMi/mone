@@ -2,6 +2,7 @@ package com.xiaomi.mone.monitor.controller;
 
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
+import com.xiaomi.mone.monitor.service.extension.PlatFormTypeExtensionService;
 import com.xiaomi.mone.monitor.service.model.prometheus.CreateTemplateParam;
 import com.xiaomi.mone.monitor.service.prometheus.GrafanaTemplateService;
 import lombok.extern.slf4j.Slf4j;
@@ -28,9 +29,12 @@ public class GrafanaTemplateController {
     @Autowired
     ScrapeJobController scrapeJobController;
 
+    @Autowired
+    PlatFormTypeExtensionService platFormTypeExtensionService;
+
     @PostMapping("/mimonitor/createTemplate")
     public Result createTemplate(HttpServletRequest request, @RequestBody CreateTemplateParam param) {
-        if (!param.check()) {
+        if (!param.check() || !platFormTypeExtensionService.checkTypeCode(param.getPlatform())) {
             log.info("createTemplate param error :{}", param);
             return Result.fail(ErrorCode.invalidParamError);
         }
