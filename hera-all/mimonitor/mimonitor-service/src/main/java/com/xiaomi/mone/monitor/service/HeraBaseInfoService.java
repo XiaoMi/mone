@@ -6,12 +6,13 @@ import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.app.api.model.HeraAppRoleModel;
 import com.xiaomi.mone.app.api.service.HeraAppService;
 import com.xiaomi.mone.monitor.bo.AlertGroupParam;
-import com.xiaomi.mone.monitor.bo.PlatFormType;
+import com.xiaomi.mone.monitor.bo.PlatForm;
 import com.xiaomi.mone.monitor.bo.UserInfo;
 import com.xiaomi.mone.monitor.dao.HeraAppRoleDao;
 import com.xiaomi.mone.monitor.dao.model.HeraAppRole;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
+import com.xiaomi.mone.monitor.service.extension.PlatFormTypeExtensionService;
 import com.xiaomi.mone.monitor.service.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -41,6 +42,9 @@ public class HeraBaseInfoService {
 
     @Reference(registry = "registryConfig", check = false, interfaceClass = HeraAppService.class, group = "${dubbo.group.heraapp}")
     HeraAppService hearAppService;
+
+    @Autowired
+    PlatFormTypeExtensionService platFormTypeExtensionService;
 
     public Result addRole(HeraAppRoleModel model) {
         Integer integer = hearAppService.addRole(model);
@@ -100,7 +104,7 @@ public class HeraBaseInfoService {
 
         log.info("getArea#appBaseInfo :{},", appBaseInfo.toString());
 
-        if (PlatFormType.isCloudPlatForm(appBaseInfo.getPlatformType())) {
+        if (platFormTypeExtensionService.belongPlatForm(appBaseInfo.getPlatformType(), PlatForm.miCloud)) {
             String envsMap = appBaseInfo.getEnvsMap();
             if (StringUtils.isBlank(envsMap)) {
                 return null;

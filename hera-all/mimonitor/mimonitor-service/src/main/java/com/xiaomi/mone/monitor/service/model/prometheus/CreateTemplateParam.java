@@ -2,13 +2,11 @@ package com.xiaomi.mone.monitor.service.model.prometheus;
 
 import com.xiaomi.mone.monitor.bo.AppLanguage;
 import com.xiaomi.mone.monitor.bo.AppType;
-import com.xiaomi.mone.monitor.bo.PlatFormType;
 import lombok.Data;
 import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
-import java.util.Map;
 
 /**
  * @author zhangxiaowei6
@@ -27,10 +25,6 @@ public class CreateTemplateParam  implements Serializable {
     private String panelIdList;
 
     public boolean check() {
-        if (PlatFormType.getEnum(platform) == null) {
-            return false;
-        }
-
         if (AppLanguage.getEnum(language) == null) {
             return false;
         }

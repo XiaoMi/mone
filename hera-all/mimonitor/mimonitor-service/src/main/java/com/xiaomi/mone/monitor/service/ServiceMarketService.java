@@ -1,14 +1,12 @@
 package com.xiaomi.mone.monitor.service;
 
 import com.alibaba.nacos.api.config.annotation.NacosValue;
-import com.google.gson.Gson;
-import com.xiaomi.mone.monitor.bo.PlatFormType;
-import com.xiaomi.mone.monitor.bo.serviceMarketType;
 import com.xiaomi.mone.monitor.dao.AppServiceMarketDao;
 import com.xiaomi.mone.monitor.dao.model.AppServiceMarket;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.api.ServiceMarketExtension;
+import com.xiaomi.mone.monitor.service.extension.PlatFormTypeExtensionService;
 import com.xiaomi.mone.monitor.service.model.PageData;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -35,12 +33,15 @@ public class ServiceMarketService {
     @Autowired
     ServiceMarketExtension serviceMarketExtension;
 
+    @Autowired
+    PlatFormTypeExtensionService platFormTypeExtensionService;
+
     //线上mione 服务大盘url
     public static final String MIONE_ONLINE_SERVICE_MARKET_GRAFANA_URL = "/d/hera-serviceMarket/hera-fu-wu-da-pan?orgId=1";
 
     //增
     public Result createMarket(String user, String marketName, String belongTeam, String serviceList, String remark, Integer serviceType) {
-        serviceType = PlatFormType.getMarketType(serviceType);
+        serviceType = platFormTypeExtensionService.getMarketType(serviceType);
         try {
             //按;切分serviceList
             String[] services = serviceList.split(";");
@@ -94,7 +95,7 @@ public class ServiceMarketService {
 
     //改
     public Result updateMarket(String user, int id, String serviceList, String marketName, String remark, String belongTeam, int serviceType) {
-        serviceType = PlatFormType.getMarketType(serviceType);
+        serviceType = platFormTypeExtensionService.getMarketType(serviceType);
         try {
             //查库是否有该记录
             AppServiceMarket appServiceMarket = appServiceMarketDao.SearchAppServiceMarket(id);
