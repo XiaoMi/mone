@@ -14,4 +14,10 @@ public interface EsExtensionService {
     EsClient getEsClient(Integer appSource);
 
     Result queryMiddlewareInstance(DbInstanceQuery param, Integer page, Integer pageSize, Long esQueryTimeout) throws IOException;
+
+    /**
+     * The domain of the abnormal trace, is used for querying related trace lists for metrics
+     * @return
+     */
+    String getExceptionTraceDomain();
 }

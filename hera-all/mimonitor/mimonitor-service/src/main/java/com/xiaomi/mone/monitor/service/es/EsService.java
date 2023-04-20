@@ -60,8 +60,8 @@ public class EsService {
 
     public Result query(String index, MetricDetailQuery param, Integer page, Integer pageSize) throws IOException {
 
-
-        Map<String, String> labels = param.convertEsParam();
+        String exceptionTraceDomain = esExtensionService.getExceptionTraceDomain();
+        Map<String, String> labels = param.convertEsParam(exceptionTraceDomain);
 
         if (StringUtils.isEmpty(index)) {
             log.error("EsService.query error! esIndex is empty!");

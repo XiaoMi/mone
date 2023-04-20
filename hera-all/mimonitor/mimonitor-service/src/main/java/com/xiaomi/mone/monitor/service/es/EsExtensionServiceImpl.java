@@ -2,6 +2,7 @@ package com.xiaomi.mone.monitor.service.es;
 
 import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.xiaomi.mone.es.EsClient;
+import com.xiaomi.mone.monitor.DashboardConstant;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.api.EsExtensionService;
 import com.xiaomi.mone.monitor.service.model.middleware.DbInstanceQuery;
@@ -53,5 +54,10 @@ public class EsExtensionServiceImpl implements EsExtensionService {
     @Override
     public Result queryMiddlewareInstance(DbInstanceQuery param, Integer page, Integer pageSize, Long esQueryTimeout) throws IOException {
         return null;
+    }
+
+    @Override
+    public String getExceptionTraceDomain() {
+        return DashboardConstant.EXCEPTION_TRACE_DOMAIN_HERA;
     }
 }

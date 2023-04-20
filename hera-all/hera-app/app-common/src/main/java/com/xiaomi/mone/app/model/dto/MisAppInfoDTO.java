@@ -1,7 +1,6 @@
 package com.xiaomi.mone.app.model.dto;
 
 import lombok.Data;
-import org.omg.PortableInterceptor.INACTIVE;
 
 import java.util.LinkedHashMap;
 import java.util.List;

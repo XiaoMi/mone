@@ -6,7 +6,10 @@ import lombok.Data;
 public class SearchSaveInsertCmd {
     private Long spaceId;
     private Long storeId;
-    private Long tailId;
+    /**
+     * 多个以,分割
+     */
+    private String tailId;
     private String name;
     private String queryText;
     private Long startTime;
