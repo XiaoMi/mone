@@ -146,15 +146,16 @@ public class AppAlarmStrategyDao {
                 }
             }else{
                 sqlB.append(",app.owner").append(" from ")
-                        //TODO 这里要做个兼容内网的逻辑
-                        //.append("app_alarm_strategy an left join app_monitor app on an.appId=app.project_id and an.iamId=app.iam_tree_id").append(" where app.status=0 ");
-                        .append("app_alarm_strategy an left join app_monitor app on an.appId=app.project_id").append(" where app.status=0 ");
-                        if(filterOwner != null && filterOwner){
+                        .append("app_alarm_strategy an " +
+                                    "left join app_monitor app" +
+                                        " on an.appId=app.project_id" +
+                                        " and an.iamId=app.iam_tree_id")
+                        .append(" where app.status=0 ");
+                        if (filterOwner != null && filterOwner) {
                             sqlB.append(" and app.owner=").append("@user");
-                        }else{
+                        } else {
                             sqlB.append(" and (app.owner=").append("@user").append(" or app.care_user=").append("@user").append(")");
                         }
-
             }
 
             if (strategy.getStatus() != null) {

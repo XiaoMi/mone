@@ -9,4 +9,5 @@ public class GrafanaInterfaceRes {
     private String appParamName;
     private String url;
     private boolean timeRangeP;
+    private String type;
 }

@@ -5,6 +5,7 @@ import com.xiaomi.mone.monitor.bo.PlatFormType;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.AppGrafanaMappingService;
+import com.xiaomi.mone.monitor.service.extension.PlatFormTypeExtensionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,6 +22,9 @@ public class GrafanaMappingController {
 
     @Autowired
     AppGrafanaMappingService appGrafanaMappingService;
+
+    @Autowired
+    PlatFormTypeExtensionService platFormTypeExtensionService;
 
     @GetMapping("/mimonitor/getGrafanaUrlByAppName")
     public Result getGrafanaUrlByAppName(String appName){

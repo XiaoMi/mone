@@ -1,10 +1,7 @@
 package com.xiaomi.mone.monitor.service;
 
-import com.xiaomi.mone.monitor.bo.PlatFormType;
 import com.xiaomi.mone.monitor.dao.AppQualityMarketDao;
-import com.xiaomi.mone.monitor.dao.AppServiceMarketDao;
 import com.xiaomi.mone.monitor.dao.model.AppQualityMarket;
-import com.xiaomi.mone.monitor.dao.model.AppServiceMarket;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.model.PageData;

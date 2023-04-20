@@ -2,7 +2,6 @@ package com.xiaomi.mone.monitor.service.model.prometheus;
 
 import com.xiaomi.mone.monitor.bo.AppLanguage;
 import com.xiaomi.mone.monitor.bo.AppType;
-import com.xiaomi.mone.monitor.bo.PlatFormType;
 import lombok.Data;
 import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
