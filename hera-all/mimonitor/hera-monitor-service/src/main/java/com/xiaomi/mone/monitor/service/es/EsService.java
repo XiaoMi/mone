@@ -3,7 +3,7 @@ package com.xiaomi.mone.monitor.service.es;
 import com.google.gson.Gson;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.api.EsExtensionService;
-import com.xiaomi.mone.monitor.service.helper.ProjectHelper;
+import com.xiaomi.mone.monitor.service.extension.ProjectHelperExtensionService;
 import com.xiaomi.mone.monitor.service.model.PageData;
 import com.xiaomi.mone.monitor.service.model.middleware.DbInstanceQuery;
 import com.xiaomi.mone.monitor.service.model.prometheus.EsIndexDataType;
@@ -11,7 +11,6 @@ import com.xiaomi.mone.monitor.service.model.prometheus.Metric;
 import com.xiaomi.mone.monitor.service.model.prometheus.MetricDetail;
 import com.xiaomi.mone.monitor.service.model.prometheus.MetricDetailQuery;
 import com.xiaomi.mone.monitor.service.prometheus.PrometheusService;
-
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
@@ -44,7 +43,7 @@ public class EsService {
     private Long esQueryTimeOut;
 
     @Autowired
-    private ProjectHelper projectHelper;
+    private ProjectHelperExtensionService projectHelper;
 
     private static SimpleDateFormat sdf = new SimpleDateFormat("yyyy.MM.dd");
 
