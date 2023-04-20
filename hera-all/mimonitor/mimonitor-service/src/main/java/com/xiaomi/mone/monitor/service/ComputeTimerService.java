@@ -1,19 +1,13 @@
 package com.xiaomi.mone.monitor.service;
 
 import com.google.common.collect.Lists;
-import com.xiaomi.mone.monitor.bo.ReqErrorMetrics;
-import com.xiaomi.mone.monitor.bo.ReqSlowMetrics;
-import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
+import com.xiaomi.mone.monitor.service.api.ComputeTimerServiceExtension;
 import com.xiaomi.mone.monitor.service.helper.AlertHelper;
-import com.xiaomi.mone.monitor.service.helper.RedisHelper;
 import com.xiaomi.mone.monitor.service.model.AppMonitorRequest;
-import com.xiaomi.mone.monitor.service.model.PageData;
 import com.xiaomi.mone.monitor.service.model.ProjectInfo;
-import com.xiaomi.mone.monitor.service.model.prometheus.Metric;
 import com.xiaomi.mone.monitor.service.model.prometheus.MetricKind;
 import com.xiaomi.mone.monitor.service.model.redis.AppAlarmData;
-import com.xiaomi.mone.monitor.service.prometheus.MetricSuffix;
 import com.xiaomi.mone.monitor.service.prometheus.PrometheusService;
 import com.xiaomi.mone.monitor.utils.CommonUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -23,8 +17,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.PreDestroy;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -45,6 +45,9 @@ public class ComputeTimerService {
 //    private RedisHelper redisHelper;
     @Autowired
     private AlertHelper alertHelper;
+
+    @Autowired
+    private ComputeTimerServiceExtension computeTimerServiceExtension;
 
     public ComputeTimerService() {
         executor = new ThreadPoolExecutor(10, 50, 5, TimeUnit.MINUTES, new LinkedBlockingQueue(100),
@@ -154,147 +157,7 @@ public class ComputeTimerService {
     }
 
     private void computByMetricType(AppMonitorRequest param, String appName,MetricKind metricKind, AppAlarmData.AppAlarmDataBuilder dataBuilder,Long startTime, Long endTime, String timeDurarion, Long step){
-        try {
-            //当前页面
-            MetricKind.MetricType curMetricType = null;
-            if (param != null) {
-                curMetricType = MetricKind.getMetricTypeByCode(param.getMetricType());
-            }
-            switch (metricKind){
-                case http:
-
-                    // http请求异常统计
-                    Result<PageData> httpExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.httpError.getCode(),getLable(MetricKind.MetricType.http_exception, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.httpExceptionNum(countRecordMetric(httpExceptions));
-
-                    // httpClient请求异常统计
-                    Result<PageData> httpClientExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.httpClientError.getCode(), getLable(MetricKind.MetricType.http_client_exception, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.httpClientExceptionNum(countRecordMetric(httpClientExceptions));
-
-                    // http请求慢查询统计
-                    Result<PageData> httpSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.httpSlowQuery.getCode(),getLable(MetricKind.MetricType.http_slow, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.httpSlowNum(countRecordMetric(httpSlowQuery));
-
-                    // httpClient请求慢查询统计
-                    Result<PageData> httpClientSlowQuerys = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.httpClientSlowQuery.getCode(), getLable(MetricKind.MetricType.http_client_slow_query, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.httpClientSlowNum(countRecordMetric(httpClientSlowQuerys));
-
-                    break;
-
-                case dubbo:
-
-                    // dubbo请求异常统计
-                    Result<PageData> dubboExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.dubboConsumerError.getCode(), getLable(MetricKind.MetricType.dubbo_consumer_exception, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.dubboExceptionNum(countRecordMetric(dubboExceptions));
-                    // dubbo请求异常统计
-                    Result<PageData> dubboPExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.dubboProvider.getCode(), getLable(MetricKind.MetricType.dubbo_provider_exception, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.dubboPExceptionNum(countRecordMetric(dubboPExceptions));
-                    // dubbo consumer慢请求统计
-                    Result<PageData> dubboConsumerSlowQuerys = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.dubboConsumerSlowQuery.getCode(), getLable(MetricKind.MetricType.dubbo_consumer_slow_query, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.dubboCSlowQueryNum(countRecordMetric(dubboConsumerSlowQuerys));
-                    log.info("projectName:{},dubboConsumerSlowQuerys:{}",appName,dubboConsumerSlowQuerys);
-                    // dubbo provider慢请求统计
-                    Result<PageData> dubboProviderSlowQuerys = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.dubboProviderSlowQuery.getCode(), getLable(MetricKind.MetricType.dubbo_provider_slow_query, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.dubboProviderSlowQueryNum(countRecordMetric(dubboProviderSlowQuerys));
-                    log.info("projectName:{},dubboProviderSlowQuerys:{}",appName,dubboProviderSlowQuerys);
-
-                    break;
-
-                case grpc :
-                    // grpc请求异常统计
-                    Result<PageData> grpcServerExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.grpcServerError.getCode(), getLable(MetricKind.MetricType.grpc_server_exception, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.grpcServerErrorNum(countRecordMetric(grpcServerExceptions));
-
-                    Result<PageData> grpcClientExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.grpcClientError.getCode(), getLable(MetricKind.MetricType.grpc_client_exception, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.grpcClientErrorNum(countRecordMetric(grpcClientExceptions));
-
-                    Result<PageData> grpcClientSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.grpcClientSlowQuery.getCode(), getLable(MetricKind.MetricType.grpc_client_slow_query, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.grpcClientSlowQueryNum(countRecordMetric(grpcClientSlowQuery));
-
-                    Result<PageData> grpcServerSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.grpcServerSlowQuery.getCode(), getLable(MetricKind.MetricType.grpc_server_slow_query, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.grpcServerSlowQueryNum(countRecordMetric(grpcServerSlowQuery));
-
-                    break;
-
-                case apus :
-
-                    // apus请求异常统计
-                    Result<PageData> apusServerExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.apusServerError.getCode(), getLable(MetricKind.MetricType.apus_server_exception, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.apusServerErrorNum(countRecordMetric(apusServerExceptions));
-
-                    Result<PageData> apusClientExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.apusClientError.getCode(), getLable(MetricKind.MetricType.apus_client_exception, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.apusClientErrorNum(countRecordMetric(apusClientExceptions));
-
-                    Result<PageData> apusClientSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.apusClientSlowQuery.getCode(), getLable(MetricKind.MetricType.apus_client_slow_query, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.apusClientErrorNum(countRecordMetric(apusClientSlowQuery));
-
-                    Result<PageData> apusServerSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.apusServerSlowQuery.getCode(), getLable(MetricKind.MetricType.apus_server_slow_query, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.apusServerSlowQueryNum(countRecordMetric(apusServerSlowQuery));
-
-                    break;
-
-
-                case thrift :
-
-                    // thrift请求异常统计
-                    Result<PageData> thriftServerExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.thriftServerError.getCode(), getLable(MetricKind.MetricType.thrift_server_exception, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.thriftServerErrorNum(countRecordMetric(thriftServerExceptions));
-
-                    Result<PageData> thriftClientExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.thriftClientError.getCode(), getLable(MetricKind.MetricType.thrift_client_exception, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.thriftClientErrorNum(countRecordMetric(thriftClientExceptions));
-
-                    Result<PageData> thriftClientSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.thriftClientSlowQuery.getCode(),  getLable(MetricKind.MetricType.thrift_client_slow_query, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.thriftClientSlowQueryNum(countRecordMetric(thriftClientSlowQuery));
-
-                    Result<PageData> thriftServerSlowQuery = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.thriftServerSlowQuery.getCode(),  getLable(MetricKind.MetricType.thrift_server_slow_query, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.thriftServerSlowQueryNum(countRecordMetric(thriftServerSlowQuery));
-
-                    break;
-
-                case db :
-                    // mysql请求异常统计
-                    Result<PageData> sqlExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.dbError.getCode(), getLable(MetricKind.MetricType.db_exception, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.sqlExceptionNum(countRecordMetric(sqlExceptions));
-                    // mysql慢请求统计
-                    Result<PageData> sqlSlowQuerys = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.dbSlowQuery.getCode(), getLable(MetricKind.MetricType.db_slow_query, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.sqlSlowQueryNum(countRecordMetric(sqlSlowQuerys));
-
-                    // oracle请求异常统计
-                    Result<PageData> oracleExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.oracleException.getCode(), getLable(MetricKind.MetricType.oracle_exception, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.oracleExceptionNum(countRecordMetric(oracleExceptions));
-
-                    // oracle慢请求统计
-                    Result<PageData> oracleSlowQuerys = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.oracleSlow.getCode(), getLable(MetricKind.MetricType.oracle_slow_query, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.oracleSlowNum(countRecordMetric(oracleSlowQuerys));
-                    log.info("projectName:{},sqlSlowQuerys:{},oracleSlowQuerys:{}",appName,sqlSlowQuerys,oracleSlowQuerys);
-
-                    // es请求异常统计
-                    Result<PageData> esExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.esException.getCode(), getLable(MetricKind.MetricType.es_exception, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.esExceptionNum(countRecordMetric(esExceptions));
-
-                    // es慢请求统计
-                    Result<PageData> esSlowQuerys = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.esSlow.getCode(), getLable(MetricKind.MetricType.es_slow_query, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.esSlowNum(countRecordMetric(esSlowQuerys));
-
-                    break;
-
-                case redis :
-                    // redis请求异常统计
-                    Result<PageData> redisExceptions = prometheusService.queryRangeSumOverTime(ReqErrorMetrics.redisError.getCode(), getLable(MetricKind.MetricType.redis_exception, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.redisExceptionNum(countRecordMetric(redisExceptions));
-
-                    Result<PageData> redisSlowQuerys = prometheusService.queryRangeSumOverTime(ReqSlowMetrics.redisSlow.getCode(), getLable(MetricKind.MetricType.redis_slow, curMetricType, param), appName, MetricSuffix._total.name(), startTime, endTime, step, timeDurarion);
-                    dataBuilder.redisSlowNum(countRecordMetric(redisSlowQuerys));
-                    break;
-
-                default:
-                    log.error("invalid metric kind assign! metricType:{}",metricKind);
-                    break;
-
-            }
-        } catch (Exception e) {
-            log.error("ComputeTimerServiceV2.getAppAlarmData error! appName={}", appName, e);
-        }
+        computeTimerServiceExtension.computByMetricType(param, appName, metricKind, dataBuilder, startTime, endTime, timeDurarion, step);
     }
 
     public AppAlarmData countAppMetricData(AppMonitorRequest param) {
@@ -305,49 +168,6 @@ public class ComputeTimerService {
         return getAppAlarmData(project, startTime, endTime, step + "s", step, param);
     }
 
-
-    private Map<String,String> getLable(MetricKind.MetricType metricTypeTarget,MetricKind.MetricType metricTypeParam,AppMonitorRequest param){
-        if(metricTypeTarget == null || metricTypeParam == null || param == null){
-            return null;
-        }
-        return metricTypeTarget == metricTypeParam ? getLabelByMetricType(param.getMetricType(), param.getMethodName()) : null;
-    }
-
-    private Map<String,String> getLabelByMetricType(String metricType,String methodName){
-        if(StringUtils.isBlank(metricType)){
-            return null;
-        }
-        MetricKind metricKind = MetricKind.getByMetricType(metricType);
-        return getLabelByMetricKind(metricKind,methodName);
-    }
-
-    private Map<String,String> getLabelByMetricKind(MetricKind metricKind,String methodName){
-        if(metricKind == null){
-            return null;
-        }
-        Map<String,String> labels = new HashMap<>();
-        labels.put(metricKind.getLebelName(),methodName);
-        return labels;
-    }
-
-    private Integer countRecordMetric(Result<PageData> result) {
-        if (ErrorCode.success.getCode() != result.getCode()) {
-            log.error("ComputeTimerService.countRecordMetric error! result : {}", result.toString());
-            return 0;
-        }
-        PageData data = result.getData();
-        List<Metric> metrics = (List<Metric>) data.getList();
-        if (CollectionUtils.isEmpty(metrics)) {
-            return 0;
-        }
-
-        Integer ret = 0;
-        for (Metric metric : metrics) {
-            ret++ ;
-        }
-        log.info("ComputeTimerService.countRecordMetric ret : {}", ret);
-        return ret;
-    }
 
     /**
      * 计算异常总数

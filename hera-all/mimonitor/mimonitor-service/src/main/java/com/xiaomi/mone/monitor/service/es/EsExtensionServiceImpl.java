@@ -4,7 +4,9 @@ import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.xiaomi.mone.es.EsClient;
 import com.xiaomi.mone.monitor.DashboardConstant;
 import com.xiaomi.mone.monitor.result.Result;
+import com.xiaomi.mone.monitor.service.api.EsExtensionService;
 import com.xiaomi.mone.monitor.service.model.middleware.DbInstanceQuery;
+import com.xiaomi.mone.monitor.service.model.prometheus.MetricDetailQuery;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +20,7 @@ import java.io.IOException;
  */
 @Service
 @ConditionalOnProperty(name = "service.selector.property", havingValue = "outer")
-public class EsExtensionServiceImpl implements EsExtensionService{
+public class EsExtensionServiceImpl implements EsExtensionService {
 
     @NacosValue(value = "${es.address}",autoRefreshed = true)
     private String esAddress;
@@ -40,7 +42,7 @@ public class EsExtensionServiceImpl implements EsExtensionService{
     }
 
     @Override
-    public String getIndex() {
+    public String getIndex(MetricDetailQuery param) {
         return esIndex;
     }
 
