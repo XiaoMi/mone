@@ -10,6 +10,7 @@ import com.xiaomi.mone.monitor.service.aop.action.HeraRequestMappingActionRuleDe
 import com.xiaomi.mone.monitor.service.aop.action.HeraRequestMappingActionRuleEdit;
 import com.xiaomi.mone.monitor.service.aop.action.HeraRequestMappingActionStrategyAdd;
 import com.xiaomi.mone.monitor.service.aop.action.HeraRequestMappingActionStrategyEdit;
+import com.xiaomi.mone.monitor.service.api.AlarmPresetMetricsService;
 import com.xiaomi.mone.monitor.service.model.PageData;
 import com.xiaomi.mone.monitor.service.model.prometheus.*;
 import com.xiaomi.mone.monitor.service.prometheus.AlarmService;
@@ -45,6 +46,8 @@ public class AlarmController {
     @Autowired
     UserConfigService userConfigService;
 
+    @Autowired
+    private AlarmPresetMetricsService alarmPresetMetricsService;
 
 
     @ResponseBody
@@ -52,7 +55,7 @@ public class AlarmController {
     public Result alarmSelectDataInfo(){
         Map<String,List> map = new HashMap<>();
         map.put("alarmLevels",AlarmAlertLevel.getEnumList());
-        map.put("presetMetrics",AlarmPresetMetrics.getEnumList());
+        map.put("presetMetrics",alarmPresetMetricsService.getEnumList());
         map.put("checkDataCount",AlarmCheckDataCount.getEnumList());
         map.put("sendInterval",AlarmSendInterval.getEnumList());
         return Result.success(map);
@@ -345,7 +348,7 @@ public class AlarmController {
     @ResponseBody
     @GetMapping("/alarm/presetMetrics")
     public Result<Map<String, String>> presetMetrics(){
-        return Result.success(AlarmPresetMetrics.getEnumMap());
+        return Result.success(alarmPresetMetricsService.getEnumMap());
     }
     @ResponseBody
     @GetMapping("/alarm/checkDataCount")
