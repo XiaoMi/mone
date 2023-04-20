@@ -427,5 +427,8 @@ public class AppMonitorDao {
         return appMonitorMapper.selectAlarmHealth(query);
     }
 
+    public List<AppMonitor> selectByIAMId(Integer iamId, Integer iamType, String userName){
+        return appMonitorMapper.selectByIAMId(iamId,iamType,userName);
+    }
 
 }

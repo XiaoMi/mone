@@ -28,6 +28,8 @@ public interface AppMonitorMapper {
 
     List<AppMonitor> selectByGroupBy(@Param("offset") Integer offset, @Param("limit") Integer limit);
 
+    List<AppMonitor> selectByIAMId(@Param("iamId") Integer iamId, @Param("iamType") Integer iamType, @Param("userName") String userName);
+
     List<Integer> selectTreeIdByOwnerOrCareUser(@Param("userName") String userName);
 
     AppMonitor selectByPrimaryKey(Integer id);
