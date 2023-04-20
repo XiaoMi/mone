@@ -11,7 +11,12 @@ import com.google.gson.JsonObject;
 import com.xiaomi.mone.monitor.bo.*;
 import com.xiaomi.mone.monitor.dao.model.AlertGroup;
 import com.xiaomi.mone.monitor.dao.model.AlertGroupMember;
+import com.xiaomi.mone.monitor.pojo.ReqErrorMetricsPOJO;
+import com.xiaomi.mone.monitor.pojo.ReqSlowMetricsPOJO;
 import com.xiaomi.mone.monitor.result.Result;
+import com.xiaomi.mone.monitor.service.api.AlertHelperExtension;
+import com.xiaomi.mone.monitor.service.api.ReqErrorMetricsService;
+import com.xiaomi.mone.monitor.service.api.ReqSlowMetricsService;
 import com.xiaomi.mone.monitor.service.model.PageData;
 import com.xiaomi.mone.monitor.service.prometheus.AlarmService;
 import com.xiaomi.mone.monitor.utils.CommonUtil;
@@ -20,6 +25,7 @@ import org.apache.catalina.User;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -39,6 +45,12 @@ public class AlertHelper {
     private final long FIVE_MINUTES = 10 * 60 * 1000L * 1000L;//微妙
     @Autowired
     private AlarmService alarmService;
+    @Autowired
+    private AlertHelperExtension alertHelperExtension;
+    @Autowired
+    private ReqErrorMetricsService reqErrorMetricsService;
+    @Autowired
+    private ReqSlowMetricsService reqSlowMetricsService;
     @NacosValue(value = "${hera.url}",autoRefreshed = true)
     private String heraUrl;
 
@@ -180,13 +192,13 @@ public class AlertHelper {
                     if (StringUtils.isNotBlank(history.getMethodName())) {
                         url.append("&method_name=").append(history.getMethodName());
                     }
-            ReqErrorMetrics errMetrics = ReqErrorMetrics.getErrorMetricsByMetrics(history.getAlertName());
+            ReqErrorMetricsPOJO errMetrics = reqErrorMetricsService.getErrorMetricsByMetrics(history.getAlertName());
             if (errMetrics != null) {
                 url.append("&activeTab=exception").append("&metric=").append(errMetrics.getCode());
                 history.setDetailedUrl(url.toString());
                 return;
             }
-            ReqSlowMetrics slowMetrics = ReqSlowMetrics.getSlowMetricsByMetric(history.getAlertName());
+            ReqSlowMetricsPOJO slowMetrics = reqSlowMetricsService.getSlowMetricsByMetric(history.getAlertName());
             if (slowMetrics != null) {
                 url.append("&activeTab=slowQuery").append("&metric=").append(slowMetrics.getCode());
                 history.setDetailedUrl(url.toString());
@@ -259,20 +271,7 @@ public class AlertHelper {
     }
 
     private void buildAlertContent(StringBuilder content, JsonObject data) {
-        if (!data.has("alert_key") || !data.has("alert_op") || !data.has("alert_value")) {
-            return;
-        }
-        AlarmPresetMetrics metrics = AlarmPresetMetrics.getByCode(data.get("alert_key").getAsString());
-        if (metrics == null) {
-            return;
-        }
-        content.append(metrics.getMessage()).append(" ")
-                .append(data.get("alert_op").getAsString()).append(" ")
-                .append(data.get("alert_value").getAsString());
-        if (MetricsUnit.UNIT_PERCENT.equals(metrics.getUnit())) {
-            content.append("%");
-        }
-        content.append(", ");
+        alertHelperExtension.buildAlertContent(content, data);
     }
 
     private String buildDurationTime(JsonObject data) {

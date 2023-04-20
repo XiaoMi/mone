@@ -10,7 +10,7 @@ import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.AppAlarmService;
 import com.xiaomi.mone.monitor.service.HeraBaseInfoService;
-import com.xiaomi.mone.monitor.service.es.EsExtensionService;
+import com.xiaomi.mone.monitor.service.api.EsExtensionService;
 import com.xiaomi.mone.monitor.service.es.EsService;
 import com.xiaomi.mone.monitor.service.model.PageData;
 import com.xiaomi.mone.monitor.service.model.prometheus.MetricDetailQuery;
@@ -210,7 +210,7 @@ public class PrometheusController {
                 }
             }
 
-            return esService.query(esExtensionService.getIndex(), param, param.getPage(), param.getPageSize());
+            return esService.query(esExtensionService.getIndex(param), param, param.getPage(), param.getPageSize());
         } catch (Exception e) {
             log.error("PrometheusController.detail Error" + e.getMessage(),e);
             return Result.fail(ErrorCode.unknownError);
