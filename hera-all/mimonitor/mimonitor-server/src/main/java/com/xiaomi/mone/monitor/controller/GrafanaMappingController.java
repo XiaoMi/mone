@@ -61,7 +61,7 @@ public class GrafanaMappingController {
         HeraAppBaseInfoModel baseInfo = new HeraAppBaseInfoModel();
         baseInfo.setBindId(appId + "");
         baseInfo.setAppName(appName);
-        baseInfo.setPlatformType(PlatFormType.getCodeByGrafanaDir(plat));
+        baseInfo.setPlatformType(PlatFormType.getCodeByName(plat));
         baseInfo.setAppType(appType);
         baseInfo.setAppLanguage(language);
 
