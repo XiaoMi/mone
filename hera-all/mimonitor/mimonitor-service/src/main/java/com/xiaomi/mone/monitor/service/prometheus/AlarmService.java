@@ -10,8 +10,6 @@ import com.xiaomi.mone.monitor.bo.AlarmRuleMetricType;
 import com.xiaomi.mone.monitor.bo.AppendLabelType;
 import com.xiaomi.mone.monitor.bo.PresetMetricLabels;
 import com.xiaomi.mone.monitor.bo.ResourceUsageMetrics;
-import com.xiaomi.mone.monitor.bo.TeslaMetricGroup;
-import com.xiaomi.mone.monitor.bo.TeslaMetricInfo;
 import com.xiaomi.mone.monitor.dao.model.AppAlarmRule;
 import com.xiaomi.mone.monitor.dao.model.AppMonitor;
 import com.xiaomi.mone.monitor.pojo.AlarmPresetMetricsPOJO;
@@ -25,6 +23,7 @@ import com.xiaomi.mone.monitor.service.api.AlarmPresetMetricsService;
 import com.xiaomi.mone.monitor.service.api.MetricsLabelKindService;
 import com.xiaomi.mone.monitor.service.api.ReqErrorMetricsService;
 import com.xiaomi.mone.monitor.service.api.ReqSlowMetricsService;
+import com.xiaomi.mone.monitor.service.api.TeslaService;
 import com.xiaomi.mone.monitor.service.helper.AlertUrlHelper;
 import com.xiaomi.mone.monitor.service.model.PageData;
 import com.xiaomi.mone.monitor.service.model.prometheus.AlarmRuleData;
@@ -157,9 +156,6 @@ public class AlarmService {
     @NacosValue(value = "${resource.use.rate.url}",autoRefreshed = true)
     private String resourceUseRateUrl;
 
-    @NacosValue(value = "${tesla.increase.duration:5m}",autoRefreshed = true)
-    private String teslaIncreaseDuration;
-
     @Value("${alert.manager.env:staging}")
     private String alertManagerEnv;
 
@@ -186,6 +182,9 @@ public class AlarmService {
 
     @Autowired
     private ReqSlowMetricsService reqSlowMetricsService;
+
+    @Autowired
+    private TeslaService teslaService;
 
 
     public String getExpr(AppAlarmRule rule,String scrapeIntervel,AlarmRuleData ruleData, AppMonitor app){
@@ -403,169 +402,12 @@ public class AlarmService {
     @Value("${server.type}")
     private String env;
 
-    private String getTeslaLabels(String uris){
-        if(StringUtils.isBlank(uris)){
-            return null;
-        }
-
-        StringBuilder builder = new StringBuilder();
-        String[] urls = uris.split(",");
-        for(String url : urls){
-            url = url.replace("/mtop/","");
-            if(url.indexOf("/") == 0 ){
-                //去掉开头的/，指标的label中url不是以/开头的
-                url = url.substring(1);
-            }
-
-            if(StringUtils.isNotBlank(url)){
-                builder.append(url).append("|");
-            }
-
-        }
-
-        String urlsMatch = builder.toString();
-        if(StringUtils.isNotBlank(urlsMatch)){
-            urlsMatch = urlsMatch.substring(0,urlsMatch.length()-1);
-        }
-
-        return urlsMatch;
-    }
-
     public String getTeslaTimeCost4P99(AlarmRuleData rule){
-
-        TeslaMetricInfo metricInfo = TeslaMetricGroup.TeslaMetrics.getMetricInfoByCode(rule.getAlert());
-        if(metricInfo == null){
-            log.error("getTeslaTimeCost4P99# no metric info found! alert:{}",rule.getAlert());
-            return null;
-        }
-
-        StringBuilder stringBuilder = new StringBuilder();
-
-        stringBuilder.append("(histogram_quantile(0.99,sum(rate(").append(metricInfo.getTimeBucketMetric()).append("{");
-        stringBuilder.append("job='").append(metricInfo.getJobName()).append("'");
-
-        if(StringUtils.isNotBlank(rule.getTeslaGroup())){
-            //tesla group config
-            stringBuilder.append(",group=~'").append(rule.getTeslaGroup().replaceAll("/mtop","").replaceAll("/","")).append("'");
-        }
-
-        if(StringUtils.isNotBlank(rule.getTeslaUrls())){
-
-            String teslaLabels = getTeslaLabels(rule.getTeslaUrls());
-            stringBuilder.append(",url=~'").append(teslaLabels).append("'");
-
-        }else if(StringUtils.isNotBlank(rule.getExcludeTeslaUrls())){
-            String teslaLabels = getTeslaLabels(rule.getExcludeTeslaUrls());
-            stringBuilder.append(",url!~'").append(teslaLabels).append("'");
-        }
-
-        if(StringUtils.isNotBlank(rule.getTeslaPreviewEnv())){
-            if(("true".equals(rule.getTeslaPreviewEnv()) || "false".equals(rule.getTeslaPreviewEnv()))){
-                stringBuilder.append(",ispreview='").append(rule.getTeslaPreviewEnv()).append("'");
-            }else{
-                log.error("TeslaPreviewEnv value error! : {}",rule.getTeslaPreviewEnv());
-            }
-        }
-
-        stringBuilder.append("}[").append(teslaIncreaseDuration).append("])) by (job,system,le,");
-
-        if(StringUtils.isNotBlank(rule.getTeslaGroup()) || StringUtils.isNotBlank(rule.getTeslaUrls()) || StringUtils.isNotBlank(rule.getExcludeTeslaUrls())){
-            stringBuilder.append("url,");
-        }
-
-        stringBuilder.append("group,instance,ip,ispreview))) ");
-
-        stringBuilder.append(rule.getOp());
-        stringBuilder.append(rule.getValue());
-        return stringBuilder.toString();
+        return teslaService.getTeslaTimeCost4P99(rule);
     }
 
     public String getTeslaAvailability(AlarmRuleData rule){
-
-        TeslaMetricInfo metricInfo = TeslaMetricGroup.TeslaMetrics.getMetricInfoByCode(rule.getAlert());
-        if(metricInfo == null){
-            log.error("getTeslaAvailability# no metric info found! alert:{}",rule.getAlert());
-            return null;
-        }
-
-        StringBuilder stringBuilder = new StringBuilder();
-
-        stringBuilder.append("clamp_min(");
-
-        stringBuilder.append("(1- (sum(increase(").append(metricInfo.getErrorCallMetric()).append("{");
-
-        stringBuilder.append("job='").append(metricInfo.getJobName()).append("'");
-
-        if(StringUtils.isNotBlank(rule.getTeslaGroup())){
-            stringBuilder.append(",group=~'").append(rule.getTeslaGroup().replaceAll("/mtop","").replaceAll("/","")).append("'");
-        }
-
-        if(StringUtils.isNotBlank(rule.getTeslaUrls())){
-
-            String teslaLabels = getTeslaLabels(rule.getTeslaUrls());
-            stringBuilder.append(",url=~'").append(teslaLabels).append("'");
-
-        }else if(StringUtils.isNotBlank(rule.getExcludeTeslaUrls())){
-            String teslaLabels = getTeslaLabels(rule.getExcludeTeslaUrls());
-            stringBuilder.append(",url!~'").append(teslaLabels).append("'");
-        }
-
-        if(StringUtils.isNotBlank(rule.getTeslaPreviewEnv())){
-            if(("true".equals(rule.getTeslaPreviewEnv()) || "false".equals(rule.getTeslaPreviewEnv()))){
-                stringBuilder.append(",ispreview='").append(rule.getTeslaPreviewEnv()).append("'");
-            }else{
-                log.error("TeslaPreviewEnv value error! : {}",rule.getTeslaPreviewEnv());
-            }
-        }
-
-        stringBuilder.append("}[")
-                .append(teslaIncreaseDuration)
-                .append("])>0) by (job,system,");
-
-        if(StringUtils.isNotBlank(rule.getTeslaGroup()) || StringUtils.isNotBlank(rule.getTeslaUrls()) || StringUtils.isNotBlank(rule.getExcludeTeslaUrls())){
-            stringBuilder.append("url,");
-        }
-
-        stringBuilder.append("group,instance,ip,ispreview) / sum(increase(").append(metricInfo.getTotalCallMetric()).append("{");
-
-        stringBuilder.append("job='").append(metricInfo.getJobName()).append("'");
-
-        if(StringUtils.isNotBlank(rule.getTeslaGroup())){
-            stringBuilder.append(",group=~'").append(rule.getTeslaGroup().replaceAll("/mtop","").replaceAll("/","")).append("'");
-        }
-        if(StringUtils.isNotBlank(rule.getTeslaUrls())){
-            String teslaLabels = getTeslaLabels(rule.getTeslaUrls());
-            stringBuilder.append(",url=~'").append(teslaLabels).append("'");
-
-        }else if(StringUtils.isNotBlank(rule.getExcludeTeslaUrls())){
-            String teslaLabels = getTeslaLabels(rule.getExcludeTeslaUrls());
-            stringBuilder.append(",url!~'").append(teslaLabels).append("'");
-        }
-
-        if(StringUtils.isNotBlank(rule.getTeslaPreviewEnv())){
-            if(("true".equals(rule.getTeslaPreviewEnv()) || "false".equals(rule.getTeslaPreviewEnv()))){
-                stringBuilder.append(",ispreview='").append(rule.getTeslaPreviewEnv()).append("'");
-            }else{
-                log.error("TeslaPreviewEnv value error! : {}",rule.getTeslaPreviewEnv());
-            }
-        }
-
-        stringBuilder.append("}[")
-                .append(teslaIncreaseDuration).append("]) > ");
-
-        stringBuilder.append(rule.getBasicNum() == null ? 0 : rule.getBasicNum());
-
-        stringBuilder.append(") by (job,system,");
-
-        if(StringUtils.isNotBlank(rule.getTeslaGroup())  || StringUtils.isNotBlank(rule.getTeslaUrls()) || StringUtils.isNotBlank(rule.getExcludeTeslaUrls())){
-            stringBuilder.append("url,");
-        }
-        stringBuilder.append("group,instance,ip,ispreview))),0) * 100 ");
-
-
-        stringBuilder.append(rule.getOp());
-        stringBuilder.append(rule.getValue());
-        return stringBuilder.toString();
+        return teslaService.getTeslaAvailability(rule);
     }
 
 
@@ -1175,13 +1017,7 @@ public class AlarmService {
             title.append("&").append(metrics.getMessage());
         } else {
             //check tesla metrics
-            TeslaMetricGroup.TeslaMetrics metricByCode = TeslaMetricGroup.TeslaMetrics.getMetricByCode(rule.getAlert());
-            if(metricByCode != null){
-                title.append("&").append(metricByCode.getMessage());
-            }else{
-                title.append("&").append(rule.getAlert());
-            }
-
+            teslaService.checkTeslaMetrics(title, rule.getAlert());
         }
         JsonObject jsonSummary = new JsonObject();
         jsonSummary.addProperty("title", title.toString());
@@ -1398,12 +1234,7 @@ public class AlarmService {
             title.append("&").append(metrics.getMessage());
         } else {
             //check tesla metrics
-            TeslaMetricGroup.TeslaMetrics metricByCode = TeslaMetricGroup.TeslaMetrics.getMetricByCode(rule.getAlert());
-            if(metricByCode != null){
-                title.append("&").append(metricByCode.getMessage());
-            }else{
-                title.append("&").append(rule.getAlert());
-            }
+            teslaService.checkTeslaMetrics(title, rule.getAlert());
 
         }
         JsonObject jsonSummary = new JsonObject();
