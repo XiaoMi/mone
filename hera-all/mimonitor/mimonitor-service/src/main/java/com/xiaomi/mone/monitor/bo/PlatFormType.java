@@ -97,10 +97,10 @@ public enum PlatFormType {
 //        return null;
 //    }
 
-    public static Integer getCodeByGrafanaDir(String grafanaDir){
+    public static Integer getCodeByName(String name){
         PlatFormType[] values = PlatFormType.values();
         for(PlatFormType value : values){
-            if(value.getGrafanaDir().equals(grafanaDir)){
+            if(value.getName().equals(name)){
                 return value.getCode();
             }
         }
