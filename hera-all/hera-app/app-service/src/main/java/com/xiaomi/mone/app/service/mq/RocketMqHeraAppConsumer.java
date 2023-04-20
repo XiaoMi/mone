@@ -27,6 +27,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -162,6 +163,7 @@ public class RocketMqHeraAppConsumer {
             HeraAppBaseInfo heraAppBaseInfo1 = query.get(0);
             heraAppBaseInfo.setId(heraAppBaseInfo1.getId());
             heraAppBaseInfo.setStatus(0);
+            heraAppBaseInfo.setUpdateTime(new Date());
             heraBaseInfoDao.update(heraAppBaseInfo);
             log.info("update heraAppBaseInfo by rocketMq success,heraAppBaseInfo:{}", heraAppBaseInfo);
             return heraAppBaseInfo1;
