@@ -17,6 +17,7 @@ import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.extension.PlatFormTypeExtensionService;
 import com.xiaomi.mone.monitor.service.model.GrafanaResponse;
 import com.xiaomi.mone.monitor.service.model.MutiGrafanaResponse;
+import com.xiaomi.mone.monitor.service.serverless.ServerLessService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +55,9 @@ public class AppGrafanaMappingService {
 
     @Autowired
     PlatFormTypeExtensionService platFormTypeExtensionService;
+
+    @Autowired
+    private ServerLessService serverLessService;
 
 
     @Value("${server.type}")
@@ -230,9 +234,10 @@ public class AppGrafanaMappingService {
 
             List<String> funcList = new ArrayList<>();
 
-//            if(AppType.serverless.getCode().equals(baseInfo.getAppType())){
-//                funcList = getFaasFunctionList(Integer.valueOf(baseInfo.getBindId()));
-//            }
+            if(AppType.serverless.getCode().equals(baseInfo.getAppType())){
+                funcList = serverLessService.getFaasFunctionList(Integer.valueOf(baseInfo.getBindId()));
+            }
+            
             MutiGrafanaResponse mutiGrafanaResponse = grafanaService.requestGrafanaTemplate(serverType, baseInfo.getBindId() + "_" + baseInfo.getAppName(), grafanaDirByCode, search.get(0), funcList);
 
             log.info("createTmpByAppBaseInfo response info : {}", mutiGrafanaResponse);
