@@ -19,13 +19,13 @@
     <dependencies>
         <dependency>
             <groupId>run.mone</groupId>
-            <artifactId>mimonitor-service</artifactId>
+            <artifactId>hera-monitor-service</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>run.mone</groupId>
-            <artifactId>mimonitor-common</artifactId>
+            <artifactId>hera-monitor-common</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
 
