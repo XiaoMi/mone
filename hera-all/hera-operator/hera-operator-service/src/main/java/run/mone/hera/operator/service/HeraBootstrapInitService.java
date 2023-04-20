@@ -18,7 +18,17 @@ package run.mone.hera.operator.service;
 import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.xiaomi.youpin.docean.anno.Service;
-import io.fabric8.kubernetes.api.model.*;
+import io.fabric8.kubernetes.api.model.ContainerStatus;
+import io.fabric8.kubernetes.api.model.KubernetesResourceList;
+import io.fabric8.kubernetes.api.model.LoadBalancerIngress;
+import io.fabric8.kubernetes.api.model.LoadBalancerStatus;
+import io.fabric8.kubernetes.api.model.Node;
+import io.fabric8.kubernetes.api.model.NodeAddress;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.PodList;
+import io.fabric8.kubernetes.api.model.ServiceList;
+import io.fabric8.kubernetes.api.model.ServiceSpec;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentList;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -29,7 +39,12 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.ibatis.jdbc.ScriptRunner;
-import run.mone.hera.operator.bo.*;
+import run.mone.hera.operator.bo.HeraBootstrap;
+import run.mone.hera.operator.bo.HeraObjectMeta;
+import run.mone.hera.operator.bo.HeraResource;
+import run.mone.hera.operator.bo.HeraSpec;
+import run.mone.hera.operator.bo.HeraStatus;
+import run.mone.hera.operator.bo.PropConf;
 import run.mone.hera.operator.common.FileUtils;
 import run.mone.hera.operator.common.HoConstant;
 import run.mone.hera.operator.common.K8sUtilBean;
@@ -38,15 +53,23 @@ import run.mone.hera.operator.dto.DeployStateDTO;
 import run.mone.hera.operator.dto.HeraOperatorDefineDTO;
 import run.mone.hera.operator.dto.PodStateDTO;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.Reader;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -391,6 +414,17 @@ public class HeraBootstrapInitService {
                     .build();
             traceEtlServer.setDefaultYaml();
             resourceList.add(traceEtlServer);
+
+            HeraResource heraWebhook = HeraResource.builder()
+                    .needCreate(true)
+                    .required(true)
+                    .defaultYamlPath("/hera_init/webhook/hera_webhook_server.yaml")
+                    .resourceType(ResourceTypeEnum.HERA_WEBHOOK.getTypeName())
+                    .resourceName("hera-webhook")
+                    .remark("load hera-webhook")
+                    .build();
+            heraWebhook.setDefaultYaml();
+            resourceList.add(heraWebhook);
 
             HeraResource demoServer = HeraResource.builder()
                     .needCreate(true)
@@ -771,5 +805,4 @@ public class HeraBootstrapInitService {
             }
         }
     }
-
 }
