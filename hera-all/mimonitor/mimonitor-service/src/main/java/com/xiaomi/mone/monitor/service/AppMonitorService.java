@@ -12,6 +12,7 @@ import com.xiaomi.mone.monitor.dao.model.*;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.api.AppMonitorServiceExtension;
+import com.xiaomi.mone.monitor.service.extension.PlatFormTypeExtensionService;
 import com.xiaomi.mone.monitor.service.model.AppMonitorModel;
 import com.xiaomi.mone.monitor.service.model.AppMonitorRequest;
 import com.xiaomi.mone.monitor.service.model.PageData;
@@ -111,6 +112,9 @@ public class AppMonitorService {
 
     @Autowired
     AppMonitorServiceExtension appMonitorServiceExtension;
+
+    @Autowired
+    PlatFormTypeExtensionService platFormTypeExtensionService;
 
     private static final Gson gson = new Gson();
 
@@ -1000,7 +1004,7 @@ public class AppMonitorService {
         StringBuilder appName = new StringBuilder();
         appName.append(appMonitor.getProjectId()).append("_").append(appMonitor.getProjectName().replace('.', '_'));
 
-        String area = PlatFormType.open.getGrafanaDirByCode(appMonitor.getAppSource());
+        String area = platFormTypeExtensionService.getGrafanaDirByTypeCode(appMonitor.getAppSource());
 
         /**
          * todo 旧逻辑对比
