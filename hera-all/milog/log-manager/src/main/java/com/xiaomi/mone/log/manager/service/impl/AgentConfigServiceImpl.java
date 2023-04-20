@@ -37,6 +37,9 @@ public class AgentConfigServiceImpl implements AgentConfigService {
         log.info("getLogCollectMetaFromManager begin:{}", ip);
         try {
             long begin = System.currentTimeMillis();
+            if (null == milogAgentService) {
+                init();
+            }
             LogCollectMeta logCollectMeta = milogAgentService.getLogCollectMetaFromManager(ip);
             log.info("getLogCollectMetaFromManager end:{} {} {}", ip, new Gson().toJson(logCollectMeta), (System.currentTimeMillis() - begin));
             return logCollectMeta;
