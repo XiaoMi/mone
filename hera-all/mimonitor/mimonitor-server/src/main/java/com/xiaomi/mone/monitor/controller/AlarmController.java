@@ -361,17 +361,4 @@ public class AlarmController {
         return Result.success(AlarmSendInterval.getEnumMap());
     }
 
-    @ResponseBody
-    @GetMapping("/alarm/tesla/metric")
-    public Result<List<TeslaMetricRule>> teslaMetric(){
-
-        if(StringUtils.isBlank(env)){
-            env = "staging";
-            log.error("env is blank,set default value is staging");
-        }
-
-        return Result.success(TeslaMetricGroup.getEnumList(env));
-    }
-
-
 }
