@@ -17,6 +17,7 @@ import java.util.List;
 public class AlarmRuleRequest implements Serializable {
 
     private Integer iamId;
+    private Integer iamType;
     private Integer projectId;
     private Integer ruleTemplateId;
     @Deprecated
