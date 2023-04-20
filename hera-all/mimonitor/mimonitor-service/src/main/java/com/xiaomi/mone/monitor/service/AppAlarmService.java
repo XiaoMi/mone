@@ -15,6 +15,7 @@ import com.xiaomi.mone.monitor.dao.model.AppMonitor;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.aop.context.HeraRequestMappingContext;
+import com.xiaomi.mone.monitor.service.api.AlarmPresetMetricsService;
 import com.xiaomi.mone.monitor.service.model.PageData;
 import com.xiaomi.mone.monitor.service.model.prometheus.*;
 import com.xiaomi.mone.monitor.service.prometheus.AlarmService;
@@ -53,6 +54,9 @@ public class AppAlarmService {
 
     @Autowired
     private AlarmStrategyService alarmStrategyService;
+
+    @Autowired
+    private AlarmPresetMetricsService alarmPresetMetricsService;
 
 
     @NacosValue("${rule.evaluation.interval:20}")
@@ -173,7 +177,7 @@ public class AppAlarmService {
             for(AppWithAlarmRules appWithAlarmRule : resultList){
                 List<AppAlarmRule> alarmRules = appWithAlarmRule.getAlarmRules();
 
-                appWithAlarmRule.setMetricMap(AlarmPresetMetrics.getEnumMap());
+                appWithAlarmRule.setMetricMap(alarmPresetMetricsService.getEnumMap());
                 appWithAlarmRule.setCheckDataMap(AlarmCheckDataCount.getEnumMap());
                 appWithAlarmRule.setSendIntervalMap(AlarmSendInterval.getEnumMap());
 

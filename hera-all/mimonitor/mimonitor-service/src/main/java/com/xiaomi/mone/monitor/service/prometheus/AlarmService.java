@@ -6,13 +6,25 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.xiaomi.mone.monitor.bo.*;
+import com.xiaomi.mone.monitor.bo.AlarmRuleMetricType;
+import com.xiaomi.mone.monitor.bo.AppendLabelType;
+import com.xiaomi.mone.monitor.bo.PresetMetricLabels;
+import com.xiaomi.mone.monitor.bo.ResourceUsageMetrics;
+import com.xiaomi.mone.monitor.bo.TeslaMetricGroup;
+import com.xiaomi.mone.monitor.bo.TeslaMetricInfo;
 import com.xiaomi.mone.monitor.dao.model.AppAlarmRule;
 import com.xiaomi.mone.monitor.dao.model.AppMonitor;
+import com.xiaomi.mone.monitor.pojo.AlarmPresetMetricsPOJO;
+import com.xiaomi.mone.monitor.pojo.ReqErrorMetricsPOJO;
+import com.xiaomi.mone.monitor.pojo.ReqSlowMetricsPOJO;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.AppMonitorService;
 import com.xiaomi.mone.monitor.service.alertmanager.AlertServiceAdapt;
+import com.xiaomi.mone.monitor.service.api.AlarmPresetMetricsService;
+import com.xiaomi.mone.monitor.service.api.MetricsLabelKindService;
+import com.xiaomi.mone.monitor.service.api.ReqErrorMetricsService;
+import com.xiaomi.mone.monitor.service.api.ReqSlowMetricsService;
 import com.xiaomi.mone.monitor.service.helper.AlertUrlHelper;
 import com.xiaomi.mone.monitor.service.model.PageData;
 import com.xiaomi.mone.monitor.service.model.prometheus.AlarmRuleData;
@@ -24,7 +36,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * @author gaoxihui
@@ -157,6 +175,18 @@ public class AlarmService {
     @Autowired
     private AlertUrlHelper alertUrlHelper;
 
+    @Autowired
+    private AlarmPresetMetricsService alarmPresetMetricsService;
+
+    @Autowired
+    private MetricsLabelKindService metricsLabelKindService;
+
+    @Autowired
+    private ReqErrorMetricsService reqErrorMetricsService;
+
+    @Autowired
+    private ReqSlowMetricsService reqSlowMetricsService;
+
 
     public String getExpr(AppAlarmRule rule,String scrapeIntervel,AlarmRuleData ruleData, AppMonitor app){
 
@@ -167,7 +197,7 @@ public class AlarmService {
         Map<String, String> includLabels = new HashMap<>();
         Map<String, String> exceptLabels = new HashMap<>();
 
-        if(MetricLabelKind.httpType(rule.getAlert())){
+        if(metricsLabelKindService.httpType(rule.getAlert())){
             includLabels = getLabels(ruleData, AppendLabelType.http_include_uri);
             Map<String, String> httpIncludeErrorCode = getLabels(ruleData, AppendLabelType.http_include_errorCode);
             includLabels.putAll(httpIncludeErrorCode);
@@ -183,7 +213,7 @@ public class AlarmService {
             exceptLabels.putAll(httpClientExcludeDomains);
         }
 
-        if(MetricLabelKind.dubboType(rule.getAlert())){
+        if(metricsLabelKindService.dubboType(rule.getAlert())){
             includLabels = getLabels(ruleData, AppendLabelType.dubbo_include_method);
             Map<String, String> httpIncludeErrorCode = getLabels(ruleData, AppendLabelType.dubbo_include_service);
             includLabels.putAll(httpIncludeErrorCode);
@@ -324,7 +354,7 @@ public class AlarmService {
                 }
 
 
-                AlarmPresetMetrics presetMetric = AlarmPresetMetrics.getByCode(rule.getAlert());
+                AlarmPresetMetricsPOJO presetMetric = alarmPresetMetricsService.getByCode(rule.getAlert());
                 if(presetMetric == null){
                     log.error("no metric found for code :{},ruleData:{},app{}",rule.getAlert(),ruleData,app);
                     return null;
@@ -1027,7 +1057,7 @@ public class AlarmService {
         return list;
     }
 
-    private String getPresetMetricErrorAlarm(String sourceMetric,Integer projectId,String projectName,Map includeLabels,Map exceptLabels,String metricSuffix,String duration,String offset,String op,Float value){
+    public String getPresetMetricErrorAlarm(String sourceMetric,Integer projectId,String projectName,Map includeLabels,Map exceptLabels,String metricSuffix,String duration,String offset,String op,Float value){
         String s = prometheusService.completeMetricForAlarm(sourceMetric, includeLabels,exceptLabels, projectId,projectName, metricSuffix,  duration, null);
 
         StringBuilder expBuilder = new StringBuilder();
@@ -1140,7 +1170,7 @@ public class AlarmService {
 
 
         StringBuilder title = new StringBuilder().append(app.getProjectName());
-        AlarmPresetMetrics metrics = AlarmPresetMetrics.getByCode(rule.getAlert());
+        AlarmPresetMetricsPOJO metrics = alarmPresetMetricsService.getByCode(rule.getAlert());
         if (metrics != null) {
             title.append("&").append(metrics.getMessage());
         } else {
@@ -1256,13 +1286,13 @@ public class AlarmService {
         } else {
             labels.addProperty("calert",rule.getAlert());
         }
-        ReqErrorMetrics errMetrics = ReqErrorMetrics.getErrorMetricsByMetrics(rule.getAlert());
+        ReqErrorMetricsPOJO errMetrics = reqErrorMetricsService.getErrorMetricsByMetrics(rule.getAlert());
         if (errMetrics != null) {
             //错误指标标记
             labels.addProperty("metrics_flag","1");
             labels.addProperty("metrics",errMetrics.getCode());
         }
-        ReqSlowMetrics slowMetrics = ReqSlowMetrics.getSlowMetricsByMetric(rule.getAlert());
+        ReqSlowMetricsPOJO slowMetrics = reqSlowMetricsService.getSlowMetricsByMetric(rule.getAlert());
         if (slowMetrics != null) {
             //慢指标标记
             labels.addProperty("metrics_flag","2");
@@ -1363,7 +1393,7 @@ public class AlarmService {
          * annotations
          */
         StringBuilder title = new StringBuilder().append(app.getProjectName());
-        AlarmPresetMetrics metrics = AlarmPresetMetrics.getByCode(rule.getAlert());
+        AlarmPresetMetricsPOJO metrics = alarmPresetMetricsService.getByCode(rule.getAlert());
         if (metrics != null) {
             title.append("&").append(metrics.getMessage());
         } else {
@@ -1455,13 +1485,13 @@ public class AlarmService {
             labels.addProperty("calert",rule.getAlert());
         }
 
-        ReqErrorMetrics errMetrics = ReqErrorMetrics.getErrorMetricsByMetrics(rule.getAlert());
+        ReqErrorMetricsPOJO errMetrics = reqErrorMetricsService.getErrorMetricsByMetrics(rule.getAlert());
         if (errMetrics != null) {
             //错误指标标记
             labels.addProperty("metrics_flag","1");
             labels.addProperty("metrics",errMetrics.getCode());
         }
-        ReqSlowMetrics slowMetrics = ReqSlowMetrics.getSlowMetricsByMetric(rule.getAlert());
+        ReqSlowMetricsPOJO slowMetrics = reqSlowMetricsService.getSlowMetricsByMetric(rule.getAlert());
         if (slowMetrics != null) {
             //慢指标标记
             labels.addProperty("metrics_flag","2");

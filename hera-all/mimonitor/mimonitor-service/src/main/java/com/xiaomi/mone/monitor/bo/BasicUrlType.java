@@ -1,9 +1,6 @@
 package com.xiaomi.mone.monitor.bo;
 
 import com.google.gson.JsonObject;
-import org.apache.commons.lang3.StringUtils;
-
-import java.util.Map;
 
 /**
  * @author zgf
@@ -85,33 +82,7 @@ public enum BasicUrlType {
             json.addProperty("serverEnv","${serverEnv}");
             return json;
         }
-    },
-    hera_dash_tesla_ip("hera_dash_tesla_ip"){
-        @Override
-        public JsonObject getReqJsonObject() {
-            JsonObject json = new JsonObject();
-            json.addProperty("from","${alarmTime}");
-            json.addProperty("to","${alarmTime}");
-            json.addProperty("range-min","10");
-            json.addProperty("var-job","${job}");
-            json.addProperty("var-Node","${ip}");
-            json.addProperty("var-group","${group}");
-            return json;
-        }
-    },
-    hera_dash_tesla_sip("hera_dash_tesla_sip"){
-        @Override
-        public JsonObject getReqJsonObject() {
-            JsonObject json = new JsonObject();
-            json.addProperty("from","${alarmTime}");
-            json.addProperty("to","${alarmTime}");
-            json.addProperty("range-min","10");
-            json.addProperty("var-job","${job}");
-            json.addProperty("var-Node","${serverIp}");
-            json.addProperty("var-group","${group}");
-            return json;
-        }
-    },
+    }
     ;
     private String name;
 
@@ -125,52 +96,6 @@ public enum BasicUrlType {
 
     public JsonObject getReqJsonObject() {
         return null;
-    }
-
-    /**
-     * 构建大盘连接
-     * @param url
-     * @param metric
-     * @return
-     */
-    public String buildUrl(String url, AlarmPresetMetrics metric) {
-        return buildUrl(url, metric, null);
-    }
-
-    /**
-     * 构建大盘连接
-     * @param url
-     * @param params
-     * @param metric
-     * @return
-     */
-    public String buildUrl(String url, AlarmPresetMetrics metric, Map<String, Object> params) {
-        if (StringUtils.isBlank(url)) {
-            return null;
-        }
-        StringBuilder urlB = new StringBuilder();
-        urlB.append(url);
-        int pod = url.lastIndexOf('?');
-        if (pod < 0) {
-            urlB.append("?");
-        } else {
-            urlB.append("&");
-        }
-        if (params != null && !params.isEmpty()) {
-            params.entrySet().stream().forEach(entry -> {
-                urlB.append(entry.getKey()).append("=").append(entry.getValue()).append("&");
-            });
-        }
-        if (StringUtils.isNotBlank(metric.getEnv())) {
-            urlB.append("var-env=").append(metric.getEnv()).append("&");
-        }
-        if (StringUtils.isNotBlank(metric.getDomain())) {
-            urlB.append("var-domain=").append(metric.getDomain()).append("&");
-        }
-        if (StringUtils.isNotBlank(metric.getViewPanel())) {
-            urlB.append("viewPanel=").append(metric.getViewPanel()).append("&");
-        }
-        return urlB.substring(0, urlB.length() - 1);
     }
 
 }
