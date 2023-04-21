@@ -25,13 +25,17 @@ public interface HeraAppService {
 
     AppBaseInfo queryByAppId(Long appId, Integer type);
 
+    AppBaseInfo queryByAppIdPlatFormType(String bindId, Integer platformTypeCode);
+
+    AppBaseInfo queryByIamTreeId(Long iamTreeId, String bingId, Integer platformType);
+
     Long countByParticipant(HeraAppBaseQuery query);
 
     List<HeraAppBaseInfoParticipant> queryByParticipant(HeraAppBaseQuery query);
 
     Long count(HeraAppBaseInfoModel baseInfo);
 
-    List<HeraAppBaseInfoModel> query(HeraAppBaseInfoModel baseInfo,Integer pageCount,Integer pageNum);
+    List<HeraAppBaseInfoModel> query(HeraAppBaseInfoModel baseInfo, Integer pageCount, Integer pageNum);
 
     HeraAppBaseInfoModel getById(Integer id);
 
