@@ -4,7 +4,14 @@ import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.xiaomi.mone.monitor.bo.*;
+import com.xiaomi.mone.monitor.bo.AlarmCheckDataCount;
+import com.xiaomi.mone.monitor.bo.AlarmRuleMetricType;
+import com.xiaomi.mone.monitor.bo.AlarmRuleTemplateType;
+import com.xiaomi.mone.monitor.bo.AlarmRuleType;
+import com.xiaomi.mone.monitor.bo.AlarmSendInterval;
+import com.xiaomi.mone.monitor.bo.AlarmStrategyType;
+import com.xiaomi.mone.monitor.bo.AppViewType;
+import com.xiaomi.mone.monitor.bo.RuleStatusType;
 import com.xiaomi.mone.monitor.dao.AppAlarmRuleDao;
 import com.xiaomi.mone.monitor.dao.AppAlarmRuleTemplateDao;
 import com.xiaomi.mone.monitor.dao.AppMonitorDao;
@@ -16,8 +23,14 @@ import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.aop.context.HeraRequestMappingContext;
 import com.xiaomi.mone.monitor.service.api.AlarmPresetMetricsService;
+import com.xiaomi.mone.monitor.service.api.AppAlarmServiceExtension;
 import com.xiaomi.mone.monitor.service.model.PageData;
-import com.xiaomi.mone.monitor.service.model.prometheus.*;
+import com.xiaomi.mone.monitor.service.model.prometheus.AlarmRuleData;
+import com.xiaomi.mone.monitor.service.model.prometheus.AlarmRuleRequest;
+import com.xiaomi.mone.monitor.service.model.prometheus.AlarmRuleTemplateRequest;
+import com.xiaomi.mone.monitor.service.model.prometheus.AlarmTemplateResponse;
+import com.xiaomi.mone.monitor.service.model.prometheus.AppAlarmRuleTemplateQuery;
+import com.xiaomi.mone.monitor.service.model.prometheus.AppWithAlarmRules;
 import com.xiaomi.mone.monitor.service.prometheus.AlarmService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -27,7 +40,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -58,6 +75,9 @@ public class AppAlarmService {
     @Autowired
     private AlarmPresetMetricsService alarmPresetMetricsService;
 
+    @Autowired
+    private AppAlarmServiceExtension appAlarmServiceExtension;
+
 
     @NacosValue("${rule.evaluation.interval:20}")
     private Integer evaluationInterval;
@@ -75,21 +95,19 @@ public class AppAlarmService {
     @Value("${alert.manager.env:staging}")
     private String alertManagerEnv;
 
-//    @Reference(registry = "registryConfig",check = false, interfaceClass = FaasFuncManagerService.class,group="${dubbo.group.mifaass}",version = "1.0")
-//    FaasFuncManagerService faasFuncManagerService;
 
     @Deprecated
-    public void alarmRuleSwitchPlat(AppAlarmRule oldRule,Integer newProjectId,Integer newIamId,String oldProjectName,String newProjectName){
+    public void alarmRuleSwitchPlat(AppAlarmRule oldRule, Integer newProjectId, Integer newIamId, String oldProjectName, String newProjectName) {
 
-        Result<JsonElement>  alarmRuleRemote = alarmService.getAlarmRuleRemote(oldRule.getAlarmId(), oldRule.getProjectId(), oldRule.getCreater());
-        if(!alarmRuleRemote.isSuccess()){
-            log.error("appPlatMove update get remote rule fail!oldRule:{},newProjectId:{},newIamId:{},newProjectName:{}",oldRule,newProjectId,newIamId,newProjectName);
+        Result<JsonElement> alarmRuleRemote = alarmService.getAlarmRuleRemote(oldRule.getAlarmId(), oldRule.getProjectId(), oldRule.getCreater());
+        if (!alarmRuleRemote.isSuccess()) {
+            log.error("appPlatMove update get remote rule fail!oldRule:{},newProjectId:{},newIamId:{},newProjectName:{}", oldRule, newProjectId, newIamId, newProjectName);
             return;
         }
         JsonElement remoteRule = alarmRuleRemote.getData();
 
-        if(remoteRule == null){
-            log.error("appPlatMove update no remote rule found!oldRule:{},newProjectId:{},newIamId:{},newProjectName:{}",oldRule,newProjectId,newIamId,newProjectName);
+        if (remoteRule == null) {
+            log.error("appPlatMove update no remote rule found!oldRule:{},newProjectId:{},newIamId:{},newProjectName:{}", oldRule, newProjectId, newIamId, newProjectName);
             return;
         }
 
@@ -101,18 +119,18 @@ public class AppAlarmService {
          */
         String expr = asJsonObject.get("expr").getAsString();
 
-        String oldApplication = oldRule.getProjectId() + "_" + oldProjectName.replaceAll("-","_");
-        String newApplication = newProjectId + "_" + newProjectName.replaceAll("-","_");
-        String newExpr = expr.replace(oldApplication,newApplication);
+        String oldApplication = oldRule.getProjectId() + "_" + oldProjectName.replaceAll("-", "_");
+        String newApplication = newProjectId + "_" + newProjectName.replaceAll("-", "_");
+        String newExpr = expr.replace(oldApplication, newApplication);
         asJsonObject.remove("expr");
-        asJsonObject.addProperty("expr",newExpr);
+        asJsonObject.addProperty("expr", newExpr);
 
 
         /**
          * 替换iamId
          */
         asJsonObject.remove("tree_id");
-        asJsonObject.addProperty("tree_id",newIamId);
+        asJsonObject.addProperty("tree_id", newIamId);
 
 
         /**
@@ -121,48 +139,32 @@ public class AppAlarmService {
 
         JsonObject labels = asJsonObject.getAsJsonObject("labels");
         labels.remove("project_id");
-        labels.addProperty("project_id",newProjectId);
+        labels.addProperty("project_id", newProjectId);
         labels.remove("project_name");
-        labels.addProperty("project_name",newProjectName);
+        labels.addProperty("project_name", newProjectName);
         labels.remove("app_iam_id");
-        labels.addProperty("app_iam_id",newIamId);
+        labels.addProperty("app_iam_id", newIamId);
 
         Result result = alarmService.updateAlarm(oldRule.getAlarmId(), oldRule.getIamId(), oldRule.getCreater(), asJsonObject.toString());
 
-        log.info("alarmRuleSwitchPlat updateAlarm request body:{},response{}",asJsonObject.toString(),new Gson().toJson(result));
-        if(result.isSuccess()){
+        log.info("alarmRuleSwitchPlat updateAlarm request body:{},response{}", asJsonObject.toString(), new Gson().toJson(result));
+        if (result.isSuccess()) {
 
         }
 
     }
 
-//    public Result queryFunctionList(Integer projectId){
-//
-//        ArrayList<ModuleInfo> functionList = Lists.newArrayList();
-//        com.xiaomi.youpin.infra.rpc.Result<List<FaasFuncBO>> result = faasFuncManagerService.list(Long.valueOf(projectId));
-//
-//        log.info("queryFunctionList projectId:{}, result:{}",projectId,new Gson().toJson(result));
-//        if(result == null || CollectionUtils.isEmpty(result.getData())){
-//            return Result.success(functionList);
-//        }
-//
-//        result.getData().forEach(t->{
-//
-//            ModuleInfo moduleInfo = new ModuleInfo(t.getModule(),t.getId(),t.getFuncName());
-//
-//            functionList.add(moduleInfo);
-//        });
-//
-//        return Result.success(functionList);
-//    }
+    public Result queryFunctionList(Integer projectId) {
+        return appAlarmServiceExtension.queryFunctionList(projectId);
+    }
 
 
-    public Result queryRulesByAppName(String appName, String userName, Integer page, Integer pageSize){
+    public Result queryRulesByAppName(String appName, String userName, Integer page, Integer pageSize) {
 
-        if(page == null){
+        if (page == null) {
             page = 1;
         }
-        if(pageSize == null){
+        if (pageSize == null) {
             pageSize = 10;
         }
         PageData pd = new PageData();
@@ -172,9 +174,9 @@ public class AppAlarmService {
         Long aLong = appAlarmRuleDao.countAlarmRuleByAppName(userName, appName);
         pd.setTotal(aLong);
 
-        List<AppWithAlarmRules> resultList = appAlarmRuleDao.queryRulesByAppName(userName,appName,page,pageSize);
-        if(!CollectionUtils.isEmpty(resultList)){
-            for(AppWithAlarmRules appWithAlarmRule : resultList){
+        List<AppWithAlarmRules> resultList = appAlarmRuleDao.queryRulesByAppName(userName, appName, page, pageSize);
+        if (!CollectionUtils.isEmpty(resultList)) {
+            for (AppWithAlarmRules appWithAlarmRule : resultList) {
                 List<AppAlarmRule> alarmRules = appWithAlarmRule.getAlarmRules();
 
                 appWithAlarmRule.setMetricMap(alarmPresetMetricsService.getEnumMap());
@@ -187,7 +189,7 @@ public class AppAlarmService {
                 rule.setStatus(0);
                 List<AppAlarmRule> rules = appAlarmRuleDao.query(rule, 0, Integer.MAX_VALUE);
                 appWithAlarmRule.setAlarmRules(rules);
-                if(!CollectionUtils.isEmpty(rules)){
+                if (!CollectionUtils.isEmpty(rules)) {
                     AppAlarmRule rule1 = rules.get(0);
                     appWithAlarmRule.setCreater(rule1.getCreater());
                     appWithAlarmRule.setLastUpdateTime(rule1.getUpdateTime());
@@ -242,12 +244,12 @@ public class AppAlarmService {
 
     }
 
-    public Result queryNoRulesConfig(String appName, String userName, Integer page, Integer pageSize){
+    public Result queryNoRulesConfig(String appName, String userName, Integer page, Integer pageSize) {
 
-        if(page == null){
+        if (page == null) {
             page = 1;
         }
-        if(pageSize == null){
+        if (pageSize == null) {
             pageSize = 10;
         }
         PageData pd = new PageData();
@@ -257,7 +259,7 @@ public class AppAlarmService {
         Long aLong = appAlarmRuleDao.countAppNoAlarmRulesConfig(userName, appName);
         pd.setTotal(aLong);
 
-        List<AppWithAlarmRules> resultList = appAlarmRuleDao.queryAppNoAlarmRulesConfig(userName,appName,page,pageSize);
+        List<AppWithAlarmRules> resultList = appAlarmRuleDao.queryAppNoAlarmRulesConfig(userName, appName, page, pageSize);
 
         pd.setList(resultList);
 
@@ -265,42 +267,9 @@ public class AppAlarmService {
 
     }
 
-//    public Result queryRulesByIamId(Integer iamId, String userName){
-//
-//
-//        AppMonitor appMonitor = appMonitorService.getByIamTreeId(iamId);
-//
-//        log.info("queryRulesByIamId appMonitor :{}",appMonitor.toString());
-//
-//        AppWithAlarmRules appAlarmRuleList = new AppWithAlarmRules();
-//        appAlarmRuleList.setAppName(appMonitor.getProjectName());
-//        appAlarmRuleList.setIamId(iamId);
-//        appAlarmRuleList.setProjectId(appMonitor.getProjectId());
-//
-//        AppAlarmRule rule = new AppAlarmRule();
-//        rule.setIamId(appMonitor.getIamTreeId());
-//        rule.setStatus(0);
-//        List<AppAlarmRule> rules = appAlarmRuleDao.query(rule, 0, Integer.MAX_VALUE);
-//
-//        appAlarmRuleList.setAlarmRules(rules);
-////        if(!CollectionUtils.isEmpty(rules)){
-////
-////            appAlarmRuleList.setAlarmRule(rules.get(0));
-////        }
-//
-//        if(!CollectionUtils.isEmpty(rules)){
-//            AppAlarmRule rule1 = rules.get(0);
-//            appAlarmRuleList.setCreater(rule1.getCreater());
-//            appAlarmRuleList.setLastUpdateTime(rule1.getUpdateTime());
-//            appAlarmRuleList.setRuleStatus(rule1.getRuleStatus());
-//            appAlarmRuleList.setMetricMap(AlarmPresetMetrics.getEnumMap());
-//            appAlarmRuleList.setCheckDataMap(AlarmCheckDataCount.getEnumMap());
-//            appAlarmRuleList.setSendIntervalMap(AlarmSendInterval.getEnumMap());
-//            appAlarmRuleList.setRemark(rule1.getRemark());
-//
-//        }
-//        return Result.success(appAlarmRuleList);
-//    }
+    public Result queryRulesByIamId(Integer iamId, String userName){
+        return appAlarmServiceExtension.queryRulesByIamId(iamId, userName);
+    }
 
     public Integer getAlarmConfigNumByTeslaGroup(String group){
         AppAlarmRule rule = new AppAlarmRule();
