@@ -1,5 +1,6 @@
 package com.xiaomi.mone.app.config;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.xiaomi.mone.app.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.exception.MQClientException;
@@ -21,7 +22,7 @@ public class RocketMqConfig {
     @Value("${rocket.mq.producer.group}")
     private String producerGroup;
 
-    @Value("${rocket.mq.srvAddr}")
+    @NacosValue(value = "${rocket.mq.srvAddr}", autoRefreshed = true)
     private String nameSrvAddr;
 
     @Bean
