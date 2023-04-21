@@ -13,6 +13,7 @@ import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.AppMonitorService;
 import com.xiaomi.mone.monitor.service.ComputeTimerService;
 import com.xiaomi.mone.monitor.service.HeraBaseInfoService;
+import com.xiaomi.mone.monitor.service.api.AppMonitorServiceExtension;
 import com.xiaomi.mone.monitor.service.extension.PlatFormTypeExtensionService;
 import com.xiaomi.mone.monitor.service.model.*;
 import com.xiaomi.mone.monitor.service.model.redis.AppAlarmData;
@@ -46,6 +47,9 @@ public class AppMonitorController {
     HeraBaseInfoService heraBaseInfoService;
 
     @Autowired
+    AppMonitorServiceExtension appMonitorServiceExtension;
+
+    @Autowired
     private PlatFormTypeExtensionService platFormTypeExtensionService;
 
 //    @ResponseBody
@@ -56,7 +60,7 @@ public class AppMonitorController {
 
     @GetMapping("/mimonitor/resourceUsage")
     public Result getResourceUsageUrl(Integer appId, String appName) {
-        return appMonitorService.getResourceUsageUrl(appId, appName);
+        return appMonitorServiceExtension.getResourceUsageUrl(appId, appName);
     }
 
     @GetMapping("/mimonitor/resourceUsagek8s")
