@@ -108,6 +108,11 @@ public class AlertManagerClient implements Client {
             //如果有变动，调用reload接口，一期直接reload
             //读取本地rule配置文件
             try {
+                //如果localRuleList为空，说明数据库中为空记录，直接返回
+                if (localRuleList.size() == 0) {
+                    log.info("localRuleList is empty and no need reload");
+                    return;
+                }
                 if (!firstInitSign) {
                     log.info("AlertManagerClient CompareAndReload waiting..");
                     return;

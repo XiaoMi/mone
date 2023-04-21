@@ -1,5 +1,6 @@
 package com.xiaomi.mone.app.service.mq;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.gson.Gson;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.app.api.service.HeraAppService;
@@ -50,15 +51,15 @@ public class RocketMqHeraAppConsumer {
     @Value("${rocket.mq.producer.group}")
     private String consumerGroup;
 
-    @Value("${rocket.mq.srvAddr}")
+    @NacosValue(value = "${rocket.mq.srvAddr}", autoRefreshed = true)
     private String namesrvAddr;
 
     //默认为空，根据需要配置
-    @Value("${rocketmq.ak:}")
+    @NacosValue(value = "${rocketmq.ak}", autoRefreshed = true)
     private String ak;
 
     //默认为空，根据需要配置
-    @Value("${rocketmq.sk:}")
+    @NacosValue(value = "${rocketmq.sk}", autoRefreshed = true)
     private String sk;
 
     private DefaultMQPushConsumer heraAppMQPushConsumer;
