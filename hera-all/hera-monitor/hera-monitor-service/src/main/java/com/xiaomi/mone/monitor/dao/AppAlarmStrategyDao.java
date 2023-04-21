@@ -148,8 +148,8 @@ public class AppAlarmStrategyDao {
                 sqlB.append(",app.owner").append(" from ")
                         .append("app_alarm_strategy an " +
                                     "left join app_monitor app" +
-                                        " on an.appId=app.project_id" +
-                                        " and an.iamId=app.iam_tree_id")
+                                        " on an.appId=app.project_id")
+                                        //" and an.iamId=app.iam_tree_id")
                         .append(" where app.status=0 ");
                         if (filterOwner != null && filterOwner) {
                             sqlB.append(" and app.owner=").append("@user");
