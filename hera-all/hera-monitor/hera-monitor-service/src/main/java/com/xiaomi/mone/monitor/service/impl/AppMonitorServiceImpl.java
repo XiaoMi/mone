@@ -87,4 +87,10 @@ public class AppMonitorServiceImpl implements AppMonitorServiceExtension {
         return null;
     }
 
+
+    @Override
+    public Result getResourceUsageUrl(Integer appId, String appName) {
+        return null;
+    }
+
 }

@@ -9,7 +9,10 @@ import java.util.List;
  * @author zhangxiaowei6
  */
 public interface AppMonitorServiceExtension {
+
     Result getResourceUsageUrlForK8s(Integer appId, String appName);
+
+    Result getResourceUsageUrl(Integer appId, String appName) ;
 
     Result grafanaInterfaceList();
 
