@@ -407,14 +407,8 @@ public class AppAlarmService {
                 return Result.fail(ErrorCode.unknownError);
             }
 
-            if("openSource".equals(alertManagerEnv)){
-                Double alarmId = (Double) result.getData();
-                rule.setAlarmId(alarmId == null ? null : alarmId.intValue());
-            }else{
-                JsonElement data = (JsonElement) result.getData();
-                Integer alarmId = data.getAsJsonObject().get("id").getAsInt();
-                rule.setAlarmId(alarmId);
-            }
+            Integer alarmId = appAlarmServiceExtension.getAlarmIdByResult(result);
+            rule.setAlarmId(alarmId);
 
 
             int i = appAlarmRuleDao.create(rule);
