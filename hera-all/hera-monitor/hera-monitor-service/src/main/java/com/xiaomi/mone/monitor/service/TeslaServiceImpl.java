@@ -1,5 +1,6 @@
 package com.xiaomi.mone.monitor.service;
 
+import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.api.TeslaService;
 import com.xiaomi.mone.monitor.service.model.prometheus.AlarmRuleData;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -26,6 +27,11 @@ public class TeslaServiceImpl implements TeslaService {
     @Override
     public void checkTeslaMetrics(StringBuilder title, String alert) {
 
+    }
+
+    @Override
+    public Result getTeslaAlarmHealthByUser(String user) {
+        return null;
     }
 
 }
