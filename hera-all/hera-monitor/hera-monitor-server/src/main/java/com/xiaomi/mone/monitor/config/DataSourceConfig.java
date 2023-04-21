@@ -61,15 +61,6 @@ public class DataSourceConfig {
     @NacosValue(value = "${spring.datasource.default.minialPoolSize}", autoRefreshed = true)
     private Integer defaultMinPoolSize;
 
-    @NacosValue(value = "${intra.spring.datasource.url}", autoRefreshed = true)
-    private String intraDataSourceUrl;
-
-    @NacosValue(value = "${intra.spring.datasource.username}", autoRefreshed = true)
-    private String intraDataSourceUserName;
-
-    @NacosValue(value = "${intra.spring.datasource.password}", autoRefreshed = true)
-    private String intraDataSourcePasswd;
-
     @NacosValue(value = "${spring.datasource.username}", autoRefreshed = true)
     private String dataSourceUserName;
 
@@ -91,15 +82,9 @@ public class DataSourceConfig {
 
         ComboPooledDataSource dataSource = new ComboPooledDataSource();
         dataSource.setDriverClass(driverClass);
-        if (serverType.contains("intra")) {
-            dataSource.setJdbcUrl(intraDataSourceUrl);
-            dataSource.setUser(intraDataSourceUserName);
-            dataSource.setPassword(intraDataSourcePasswd);
-        } else {
-            dataSource.setJdbcUrl(dataSourceUrl);
-            dataSource.setUser(dataSourceUserName);
-            dataSource.setPassword(dataSourcePasswd);
-        }
+        dataSource.setJdbcUrl(dataSourceUrl);
+        dataSource.setUser(dataSourceUserName);
+        dataSource.setPassword(dataSourcePasswd);
         dataSource.setInitialPoolSize(defaultInitialPoolSize);
         dataSource.setMaxPoolSize(defaultMaxPoolSize);
         dataSource.setMinPoolSize(defaultMinPoolSize);

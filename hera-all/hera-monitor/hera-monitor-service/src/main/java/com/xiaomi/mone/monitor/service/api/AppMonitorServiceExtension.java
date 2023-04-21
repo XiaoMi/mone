@@ -1,5 +1,6 @@
 package com.xiaomi.mone.monitor.service.api;
 
+import com.xiaomi.mone.monitor.dao.model.AppMonitor;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.model.ProjectInfo;
 
@@ -19,4 +20,6 @@ public interface AppMonitorServiceExtension {
     Result initAppsByUsername(String userName);
 
     List<ProjectInfo> getAppsByUserName(String username);
+
+    Boolean checkCreateParam(AppMonitor appMonitor);
 }

@@ -434,8 +434,7 @@ public class AppMonitorService {
         //TODO mione项目添加默认iamTreeId
         //需要兼容内网判断 appMonitor.getIamTreeId() == null 的逻辑
         //if (appMonitor.getIamTreeId() == null || appMonitor.getProjectId() == null || StringUtils.isBlank(appMonitor.getProjectName())) {
-
-        if (appMonitor.getProjectId() == null || StringUtils.isBlank(appMonitor.getProjectName())) {
+        if (appMonitorServiceExtension.checkCreateParam(appMonitor)) {
             log.error("AppMonitorController.createWithBaseInfo 用户{}添加项目{}，参数不合法", user, appMonitor);
             return Result.fail(ErrorCode.invalidParamError);
         }
