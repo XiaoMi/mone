@@ -2,16 +2,27 @@ package com.xiaomi.mone.monitor.service;
 
 import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.app.api.service.HeraAppService;
-import com.xiaomi.mone.monitor.bo.*;
-import com.xiaomi.mone.monitor.dao.*;
-import com.xiaomi.mone.monitor.dao.model.*;
+import com.xiaomi.mone.monitor.bo.AlarmStrategyInfo;
+import com.xiaomi.mone.monitor.bo.AppViewType;
+import com.xiaomi.mone.monitor.bo.RuleStatusType;
+import com.xiaomi.mone.monitor.dao.AppAlarmRuleDao;
+import com.xiaomi.mone.monitor.dao.AppAlarmStrategyDao;
+import com.xiaomi.mone.monitor.dao.AppGrafanaMappingDao;
+import com.xiaomi.mone.monitor.dao.AppMonitorDao;
+import com.xiaomi.mone.monitor.dao.HeraAppRoleDao;
+import com.xiaomi.mone.monitor.dao.model.AlarmHealthQuery;
+import com.xiaomi.mone.monitor.dao.model.AlarmHealthResult;
+import com.xiaomi.mone.monitor.dao.model.AlarmStrategy;
+import com.xiaomi.mone.monitor.dao.model.AppAlarmRule;
+import com.xiaomi.mone.monitor.dao.model.AppMonitor;
+import com.xiaomi.mone.monitor.dao.model.HeraAppRole;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.api.AppMonitorServiceExtension;
+import com.xiaomi.mone.monitor.service.api.TeslaService;
 import com.xiaomi.mone.monitor.service.extension.PlatFormTypeExtensionService;
 import com.xiaomi.mone.monitor.service.model.AppMonitorModel;
 import com.xiaomi.mone.monitor.service.model.AppMonitorRequest;
@@ -21,7 +32,6 @@ import com.xiaomi.mone.monitor.service.model.prometheus.AlarmRuleData;
 import com.xiaomi.mone.monitor.service.model.prometheus.Metric;
 import com.xiaomi.mone.monitor.service.prometheus.AlarmService;
 import com.xiaomi.mone.monitor.service.prometheus.PrometheusService;
-import com.xiaomi.mone.monitor.utils.FreeMarkerUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.Reference;
@@ -32,9 +42,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -77,12 +85,10 @@ public class AppMonitorService {
     @Autowired
     AppAlarmService appAlarmService;
 
-//    @Reference(registry = "registryConfig",check = false, interfaceClass = IGatewayOpenApi.class,group="${dubbo.group.gateway}")
-//    IGatewayOpenApi iGatewayOpenApi;
-//
-//    @Reference(registry = "registryConfig",check = false, interfaceClass = GwdashApiService.class,group="${dubbo.group}")
-//    GwdashApiService gwdashApiService;
-//
+    @Autowired
+    private TeslaService teslaService;
+
+
 //    @Reference(registry = "registryConfigYoupin",check = false, interfaceClass = GwdashApiService.class,group="${dubbo.group.youpin}")
 //    GwdashApiService gwdashApiServiceYP;
 //
@@ -624,67 +630,13 @@ public class AppMonitorService {
 //
 //    }
 
-//    public Result initAppsByUsername(String userName){
-//        if(StringUtils.isEmpty(userName)){
-//            log.info("AppMonitorService.initAppsByUsername error!param userName is empty!");
-//            return Result.fail(ErrorCode.invalidParamError);
-//        }
-//
-//        try {
-//
-//            List<ProjectInfo> apps = this.getAppsByUserName(userName);
-//            if (CollectionUtils.isEmpty(apps)) {
-//                log.info("AppMonitorService.initAppsByUsername success! no init apps found! userName : {}", userName);
-//                return Result.success(null);
-//            }
-//
-//            for (ProjectInfo projectInfo : apps) {
-//                AppMonitor appMonitor = new AppMonitor();
-//                appMonitor.setProjectId(projectInfo.getId().intValue());
-//                appMonitor.setProjectName(projectInfo.getName());
-//                appMonitor.setOwner(userName);
-//                Result<String> stringResult = this.create(appMonitor);
-//                if (ErrorCode.success.getCode() == stringResult.getCode()) {
-//                    log.info("AppMonitorService.initAppsByUsername success! app : {}", appMonitor.toString());
-//                } else {
-//                    log.error("AppMonitorService.initAppsByUsername failed! app : {}", appMonitor.toString());
-//                }
-//            }
-//        } catch (Exception e) {
-//            log.error("AppMonitorService.initAppsByUsername error : {}", e.getMessage());
-//            return Result.fail(ErrorCode.unknownError);
-//        }
-//
-//        return Result.success(null);
-//
-//    }
+    public Result initAppsByUsername(String userName){
+        return appMonitorServiceExtension.initAppsByUsername(userName);
+    }
 
-//    public List<ProjectInfo> getAppsByUserName(String username){
-//       com.xiaomi.youpin.infra.rpc.Result<Map<String, Object>> result = gwdashApiService.getAppsByUserName(username,null,false,0,0);
-//        log.info("AppMonitorService.getAppsByUsername param username : {},result : {}",username,new Gson().toJson(result));
-//        if(result.getCode() != 0){
-//            log.error("AppMonitorService.getAppsByUsername error! param username : {}, result : {}",username,new Gson().toJson(result));
-//            return null;
-//        }
-//
-//        Map<String, Object> data = result.getData();
-//        if(CollectionUtils.isEmpty(data)){
-//            log.info("AppMonitorService.getAppsByUsername no map data found param username : {}",username);
-//            return new ArrayList<ProjectInfo>();
-//        }
-//
-//        Integer total = (Integer) data.get("total");
-//        log.info("AppMonitorService.getAppsByUsername username : {}, data total : {}",username,total);
-//
-//        List list = (List) data.get("list");
-//
-//        if(CollectionUtils.isEmpty(list)){
-//            log.info("AppMonitorService.getAppsByUsername no data found param username : {}",username);
-//            return new ArrayList<ProjectInfo>();
-//        }
-//
-//        return Arrays.asList(new Gson().fromJson(new Gson().toJson(list),ProjectInfo[].class));
-//    }
+    public List<ProjectInfo> getAppsByUserName(String username){
+        return appMonitorServiceExtension.getAppsByUserName(username);
+    }
 
 //    public List<ProjectInfo> getAppsByName(String appName){
 //       com.xiaomi.youpin.infra.rpc.Result<Map<String, Object>> result = gwdashApiService.getAppsByUserName(null,appName,true,0,50);
@@ -1006,12 +958,6 @@ public class AppMonitorService {
 
         String area = platFormTypeExtensionService.getGrafanaDirByTypeCode(appMonitor.getAppSource());
 
-        /**
-         * todo 旧逻辑对比
-         */
-        //String area = PlatFormType.china.getGrafanaDirByCode(appMonitor.getAppSource());
-
-
         if (StringUtils.isBlank(area)) {
             log.error("invalid grafana area!appMonitor:{}", appMonitor);
             return;
@@ -1282,69 +1228,9 @@ public class AppMonitorService {
         }
     }
 
-//    public Result getTeslaAlarmHealthByUser(String user){
-//        try {
-//            Result<PageData> teslaGroupByUserName = this.getTeslaGroupByUserName(user);
-//
-//            List<TeslaAlarmHealthResult> list = new ArrayList<>();
-//
-//            if(teslaGroupByUserName == null || CollectionUtils.isEmpty((List)teslaGroupByUserName.getData().getList())){
-//                return Result.success(list);
-//            }
-//            List<TeslaApiGroupInfo> myGroups = (List<TeslaApiGroupInfo>) teslaGroupByUserName.getData().getList();
-//            for(TeslaApiGroupInfo groupInfo : myGroups){
-//                TeslaAlarmHealthResult teslaHealth = new TeslaAlarmHealthResult();
-//                teslaHealth.setGroupName(groupInfo.getName());
-//                teslaHealth.setBaseUrl(groupInfo.getBaseUrl());
-//                Integer alarmConfigNumByTeslaGroup = appAlarmService.getAlarmConfigNumByTeslaGroup(groupInfo.getBaseUrl());
-//                teslaHealth.setAlarmNum(alarmConfigNumByTeslaGroup);
-//                list.add(teslaHealth);
-//            }
-//
-//            return Result.success(list);
-//
-//        } catch (Exception e) {
-//            log.error("getTeslaAlarmHealthByUser error!{}",e.getMessage(),e);
-//            return Result.fail(ErrorCode.unknownError);
-//        }
-//    }
-//
-//    public Result<PageData> getTeslaGroupByUserName(String username){
-//
-//        List<TeslaApiGroupInfo> listAll = null;
-//        PageData pd = new PageData();
-//
-//        com.xiaomi.youpin.infra.rpc.Result<Map<String,Object>> result = iGatewayOpenApi.getApiGroupsByUserName(username,"1");
-//        log.info("AppMonitorService.getTeslaGroupByUserName param username : {},result : {}",username,new Gson().toJson(result));
-//        if(result.getCode() != 0){
-//            log.error("AppMonitorService.getTeslaGroupByUserName error! param username : {}, result : {}",username,new Gson().toJson(result));
-//            return Result.success(pd);
-//        }
-//
-//        Map<String,Object> data = result.getData();
-//        if(CollectionUtils.isEmpty(data)){
-//            log.info("AppMonitorService.getTeslaGroupByUserName no data found param username : {}",username);
-//            pd.setTotal(0l);
-//            return Result.success(pd);
-//        }
-//
-//        Object apiGroups = data.get("apiGroups");
-//        List<Integer> myGids = ((List<String>) data.get("myGids")).stream().map(Integer::parseInt).collect(Collectors.toList());
-//
-//        listAll = Arrays.asList(new Gson().fromJson(new Gson().toJson(apiGroups), TeslaApiGroupInfo[].class));
-//
-//        List<TeslaApiGroupInfo> myGroups = listAll.stream().filter(gid -> myGids.contains(gid.getGid())).collect(Collectors.toList());
-//
-//
-//        Map map = new HashMap();
-//        map.put("allGroups",listAll);
-//        pd.setSummary(map);
-//
-//        pd.setTotal(CollectionUtils.isEmpty(myGroups) ? 0l : Long.valueOf(myGroups.size()));
-//        pd.setList(myGroups);
-//        return Result.success(pd);
-//
-//    }
+    public Result getTeslaAlarmHealthByUser(String user){
+        return teslaService.getTeslaAlarmHealthByUser(user);
+    }
 
     public void washBaseId() {
         Integer pageSize = 100;
