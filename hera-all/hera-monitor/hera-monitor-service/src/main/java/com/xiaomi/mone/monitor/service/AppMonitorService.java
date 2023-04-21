@@ -8,17 +8,8 @@ import com.xiaomi.mone.app.api.service.HeraAppService;
 import com.xiaomi.mone.monitor.bo.AlarmStrategyInfo;
 import com.xiaomi.mone.monitor.bo.AppViewType;
 import com.xiaomi.mone.monitor.bo.RuleStatusType;
-import com.xiaomi.mone.monitor.dao.AppAlarmRuleDao;
-import com.xiaomi.mone.monitor.dao.AppAlarmStrategyDao;
-import com.xiaomi.mone.monitor.dao.AppGrafanaMappingDao;
-import com.xiaomi.mone.monitor.dao.AppMonitorDao;
-import com.xiaomi.mone.monitor.dao.HeraAppRoleDao;
-import com.xiaomi.mone.monitor.dao.model.AlarmHealthQuery;
-import com.xiaomi.mone.monitor.dao.model.AlarmHealthResult;
-import com.xiaomi.mone.monitor.dao.model.AlarmStrategy;
-import com.xiaomi.mone.monitor.dao.model.AppAlarmRule;
-import com.xiaomi.mone.monitor.dao.model.AppMonitor;
-import com.xiaomi.mone.monitor.dao.model.HeraAppRole;
+import com.xiaomi.mone.monitor.dao.*;
+import com.xiaomi.mone.monitor.dao.model.*;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.api.AppMonitorServiceExtension;
@@ -29,7 +20,6 @@ import com.xiaomi.mone.monitor.service.model.AppMonitorRequest;
 import com.xiaomi.mone.monitor.service.model.PageData;
 import com.xiaomi.mone.monitor.service.model.ProjectInfo;
 import com.xiaomi.mone.monitor.service.model.prometheus.AlarmRuleData;
-import com.xiaomi.mone.monitor.service.model.prometheus.Metric;
 import com.xiaomi.mone.monitor.service.prometheus.AlarmService;
 import com.xiaomi.mone.monitor.service.prometheus.PrometheusService;
 import lombok.extern.slf4j.Slf4j;
@@ -87,13 +77,6 @@ public class AppMonitorService {
 
     @Autowired
     private TeslaService teslaService;
-
-
-//    @Reference(registry = "registryConfigYoupin",check = false, interfaceClass = GwdashApiService.class,group="${dubbo.group.youpin}")
-//    GwdashApiService gwdashApiServiceYP;
-//
-//    @Reference(registry = "registryConfig",check = false, interfaceClass = MilogProviderService.class,version = "1.0",group="${dubbo.group.miline}",timeout = 5000)
-//    MilogProviderService milogProviderService;
 
     @Autowired
     PrometheusService prometheusService;
@@ -329,8 +312,6 @@ public class AppMonitorService {
                 });
             }
         }
-
-
     }
 
 
@@ -385,250 +366,9 @@ public class AppMonitorService {
         }
     }
 
-
-//    //用于给应用报警不健康的服务发送定时飞书
-//    public Result selectAllAppAlarmHealth(String token){
-//        String createUrl = getAlarmCreateUrl();
-//        String envStr = "";
-//        if(!StringUtils.isNotBlank(token) || !token.equals(FEISHU_ALARM_TOKEN)){
-//            return  Result.fail(ErrorCode.invalidParamError);
-//        }
-//        if (serverType.equals("staging") || serverType.equals("dev")) {
-//            envStr = "staging";
-//        } else if (serverType.equals("online")) {
-//            envStr = "online";
-//        }
-//        if ( !envStr.equals("online")) {
-//            //测试不发飞书，线上发飞书
-//            return Result.success("测试环境不发送飞书");
-//        }
-//        ThreadPoolExecutor executor = new ThreadPoolExecutor(10, 50, 5, TimeUnit.MINUTES, new LinkedBlockingQueue(100),
-//                (Runnable r) -> new Thread(r, "compute-execute-thread-v2"), new ThreadPoolExecutor.CallerRunsPolicy());
-//        try {
-//            String finalEnvStr1 = envStr;
-//            executor.execute(() -> {
-//            AlarmHealthQuery query = new AlarmHealthQuery();
-//                List<AlarmHealthResult> alarmHealthResults = appMonitorDao.selectAppHealth(query);
-//            String finalEnvStr = finalEnvStr1;
-//            alarmHealthResults.forEach(result -> {
-//                if (result.getAppId() == null) {
-//                    //空的跳过
-//                    return;
-//                }
-//                //筛选不合格的报警并发送飞书
-//                String baseContent = "[P1][Hera][应用健康度不达标]\n您在" + finalEnvStr +"环境的应用" + result.getAppName() + "没有配置基础指标报警,因此报警健康度为不合格，请在Hera中进行配置，感谢您的配合,配置链接：" + createUrl;
-//                String appContent = "[P1][Hera][应用健康度不达标]\n您在" + finalEnvStr + "环境的应用" + result.getAppName() + "没有配置接口指标报警,因此报警健康度为不合格，请在Hera中进行配置，感谢您的配合,配置链接：" + createUrl;
-//                if (result.getBaseAlarmNum() == 0){
-//                    String[] owner = new String[]{result.getOwner()};
-//                    feishuService.sendFeishu(baseContent,owner,null);
-//                }
-//                if (result.getAppAlarmNum() == 0){
-//                    String[] owner = new String[]{result.getOwner()};
-//                    feishuService.sendFeishu(appContent,owner,null);
-//                }
-//            });
-//            });
-//            return Result.success("发送飞书成功");
-//        } catch (Exception e) {
-//            log.error("selectAppAlarmHealth Error!{}",e.getMessage(),e);
-//            return Result.fail(ErrorCode.unknownError);
-//        }
-//    }
-//
-//    //改造成飞书卡片形式
-//    public Result selectAllResourceUtilizationUnhealthy(String token){
-//        String envStr = "";
-//        if(!StringUtils.isNotBlank(token) || !token.equals(FEISHU_ALARM_TOKEN)){
-//            return  Result.fail(ErrorCode.invalidParamError);
-//        }
-//
-//        if (serverType.equals("staging") || serverType.equals("dev")) {
-//            envStr = "staging";
-//        } else if (serverType.equals("online")) {
-//            envStr = "online";
-//        }
-//       /* if ( !envStr.equals("online")) {
-//            //测试不发飞书，线上发飞书
-//            return Result.success("测试环境不发送飞书");
-//        }*/
-//        ThreadPoolExecutor executor = new ThreadPoolExecutor(10, 50, 5, TimeUnit.MINUTES, new LinkedBlockingQueue(100),
-//                (Runnable r) -> new Thread(r, "compute-execute-thread-v2"), new ThreadPoolExecutor.CallerRunsPolicy());
-//        try{
-//            Map<String, Object> map = new HashMap<>();
-//            map.put("env",envStr);
-//            String finalEnvStr1 = envStr;
-//            String domain = grafanaDomain.split("://")[1];
-//            executor.execute(() -> {
-//                List<ResourceUsageMessage> cpuUsageData = resourceUsageService.getCpuUsageData();
-//                List<ResourceUsageMessage> memUsageData = resourceUsageService.getMemUsageData();
-//               // log.info("cpuUsageData is: {}" ,cpuUsageData);
-//               // log.info("memUsageData is: {}" ,memUsageData);
-//                String finalEnvStr = finalEnvStr1;
-//                cpuUsageData.forEach(cpuUsage -> {
-//                    if (cpuUsage.getProjectId() == null || cpuUsage.getProjectId().equals("")){
-//                        return;
-//                    }
-//                    map.put("application",cpuUsage.getProjectName());
-//                    String ip = String.format(domain +  "/d/khkvf66Gk/zhong-guo-qu-onlinerong-qi-jian-kong?orgId=1&refresh=10s&viewPanel=2&var-Node=%s&var-total_instance=295&var-name=All", cpuUsage.getIp());
-//                    map.put("ipAddr",ip);
-//                    map.put("ip",cpuUsage.getIp());
-//                    map.put("type","CPU");
-//                    String content = "";
-//                    try {
-//                        content = FreeMarkerUtil.getContent("/", "feishu_resource_alert.ftl", map);
-//                    } catch (Exception e) {
-//                        log.error("FreeMarkerUtil.getContent Error!{}",e.getMessage(),e);
-//                    }
-//                    //TODO:上线测试后去除if判断
-//                    //if (cpuUsage.getMembers().contains("zhangxiaowei6")){
-//                        String[] owner = cpuUsage.getMembers().toArray(new String[0]);
-//                        feishuService.sendFeishu(content,owner,null,true);
-//                  //  }
-//                });
-//                memUsageData.forEach(memUsage -> {
-//                    if (memUsage.getProjectId() == null || memUsage.getProjectId().equals("")){
-//                        return;
-//                    }
-//                    map.put("application",memUsage.getProjectName());
-//                    String ip = String.format(domain + "/d/khkvf66Gk/zhong-guo-qu-onlinerong-qi-jian-kong?orgId=1&refresh=10s&var-Node=%s&var-total_instance=295&var-name=All&var-pod=&viewPanel=11", memUsage.getIp());
-//                    map.put("ipAddr",ip);
-//                    map.put("ip",memUsage.getIp());
-//                    map.put("type","内存");
-//                    String content = "";
-//                    try {
-//                        content = FreeMarkerUtil.getContent("/", "feishu_resource_alert.ftl", map);
-//                    } catch (Exception e) {
-//                        log.error("FreeMarkerUtil.getContent Error!{}",e.getMessage(),e);
-//                    }
-//                    //TODO:上线测试后去除if判断
-//                   // if (memUsage.getMembers().contains("zhangxiaowei6")){
-//                        String[] owner = memUsage.getMembers().toArray(new String[0]);
-//                        feishuService.sendFeishu(content,owner,null,true);
-//                 //   }
-//                });
-//            });
-//
-//        } catch(Exception e){
-//            log.error("selectAllResourceUtilizationUnhealthy Error!{}",e.getMessage(),e);
-//            return Result.fail(ErrorCode.unknownError);
-//        }
-//        return Result.success("发送资源使用率低的飞书成功");
-//    }
-
-//    private String getAlarmCreateUrl() {
-//        if (serverType.equals("dev") || serverType.equals("staging")) {
-//            return STAGING_HERA_ALARM_CREATE;
-//        } else if (serverType.equals("online")) {
-//            return ONLINE_HERA_ALARM_CREATE;
-//        } else {
-//            return STAGING_HERA_ALARM_CREATE;
-//        }
-//    }
-
-    public String getAppGitName(Integer appId, String appName) {
-
-        return null;
-//        if(appId == null){
-//            return null;
-//        }
-//        String gitName = null;
-//        List<ProjectInfo> appInfos = this.getAppsByName(appName);
-//        List<ProjectInfo> appYpInfos = this.getAppsByNameYp(appName);
-//        if(CollectionUtils.isEmpty(appInfos) && CollectionUtils.isEmpty(appYpInfos) ){
-//            //Todo 后续改成按id查询的
-//            log.error("getAppGitName no data found for app:{}",appName);
-//        }else{
-//
-//            for(ProjectInfo appInfo : appInfos){
-//                if(appInfo.getId().intValue() == appId.intValue()){
-//                    gitName = appInfo.getGitName();
-//                    break;
-//                }
-//            }
-//
-//            for(ProjectInfo appInfo : appYpInfos){
-//                if(appInfo.getId().intValue() == appId.intValue()){
-//                    gitName = appInfo.getGitName();
-//                    break;
-//                }
-//            }
-//        }
-//
-//        return gitName;
-    }
-
-
-    public Result getResourceUsageUrl(Integer appId, String appName) {
-
-        StringBuffer buffer = new StringBuffer();
-        buffer.append(resourceUseRateUrl);
-
-        String appGitName = getAppGitName(appId, appName);
-        if (StringUtils.isNotBlank(appGitName)) {
-            appName = appGitName;
-        }
-
-        StringBuilder builder = new StringBuilder();
-
-        builder.append("sum(container_cpu_usage_seconds_total{system='mione'")
-                .append(",name=~'").append(appName.trim()).append("-202.*").append("'")
-                .append(",container_label_PROJECT_ID='").append(appId).append("'")
-                .append("}) by (name)");
-        Result<PageData> pageDataResult = prometheusService.queryByMetric(builder.toString());
-        if (pageDataResult.getCode() != ErrorCode.success.getCode() || pageDataResult.getData() == null) {
-            log.error("queryByMetric error! projectId :{},projectName:{}", appId, appName);
-            return Result.success(resourceUseRateNoDataUrl);
-        }
-
-
-        List<Metric> list = (List<Metric>) pageDataResult.getData().getList();
-        log.info("getContainerInstance param : appId:{}, projectName:{},result:{}", appId, appName, list);
-
-        if (CollectionUtils.isEmpty(list)) {
-            log.info("getContainerInstance no data found! param : appId:{}, projectName:{},result:{}", appId, appName, list);
-            return Result.success(resourceUseRateNoDataUrl);
-        }
-
-//        Metric metric = list.stream().sorted((a1, a2) -> a2.getName().compareTo(a1.getName())).collect(Collectors.toList()).get(0);
-
-        List<String> collect = list.stream().map(t -> t.getName()).collect(Collectors.toList());
-        if (CollectionUtils.isEmpty(collect)) {
-            return Result.success(resourceUseRateNoDataUrl);
-        }
-        for (String name : collect) {
-            buffer.append("&var-name=").append(name);
-        }
-
-
-        return Result.success(buffer.toString());
-    }
-
     public Result getResourceUsageUrlForK8s(Integer appId, String appName) {
         return appMonitorServiceExtension.getResourceUsageUrlForK8s(appId, appName);
     }
-
-//    public Result getEnvByProjectId(Integer projectId,Integer appSource){
-//        if(projectId == null || appSource == null){
-//            log.error("getEnvByProjectId param error! projectId : {},appSource:{}",projectId,appSource);
-//            return Result.fail(ErrorCode.invalidParamError);
-//        }
-//
-//        GwdashApiService gwdashApiServiceExe = PlatFormType.china.getCode().equals(appSource) ? gwdashApiService : PlatFormType.youpin.getCode().equals(appSource) ? gwdashApiServiceYP : null;
-//        if(gwdashApiServiceExe == null){
-//            log.error("getEnvByProjectId appSource error! appSource value is : {}",appSource);
-//            return Result.fail(ErrorCode.UNKNOWN_TYPE);
-//        }
-//
-//        com.xiaomi.youpin.infra.rpc.Result<List<ProjectEnvBo>> envsRes = gwdashApiServiceExe.getProjectEnvListByProjectId(Long.valueOf(projectId));
-//
-//        if(envsRes == null || envsRes.getCode() != 0){
-//            log.error("getEnvByProjectId error! result : {}",new Gson().toJson(envsRes));
-//            return Result.fail(ErrorCode.unknownError);
-//        }
-//
-//        return Result.success(envsRes.getData());
-//
-//    }
 
     public Result initAppsByUsername(String userName){
         return appMonitorServiceExtension.initAppsByUsername(userName);
@@ -637,60 +377,6 @@ public class AppMonitorService {
     public List<ProjectInfo> getAppsByUserName(String username){
         return appMonitorServiceExtension.getAppsByUserName(username);
     }
-
-//    public List<ProjectInfo> getAppsByName(String appName){
-//       com.xiaomi.youpin.infra.rpc.Result<Map<String, Object>> result = gwdashApiService.getAppsByUserName(null,appName,true,0,50);
-//        log.info("AppMonitorService.getAppsByName param appName : {},result : {}",appName,new Gson().toJson(result));
-//        if(result.getCode() != 0){
-//            log.error("AppMonitorService.getAppsByName error! param appName : {}, result : {}",appName,new Gson().toJson(result));
-//            return null;
-//        }
-//
-//        Map<String, Object> data = result.getData();
-//        if(CollectionUtils.isEmpty(data)){
-//            log.info("AppMonitorService.getAppsByName no map data found param appName : {}",appName);
-//            return new ArrayList<ProjectInfo>();
-//        }
-//
-//        Integer total = (Integer) data.get("total");
-//        log.info("AppMonitorService.getAppsByName appName : {}, data total : {}",appName,total);
-//
-//        List list = (List) data.get("list");
-//
-//        if(CollectionUtils.isEmpty(list)){
-//            log.info("AppMonitorService.getAppsByName no data found param appName : {}",appName);
-//            return new ArrayList<ProjectInfo>();
-//        }
-//
-//        return Arrays.asList(new Gson().fromJson(new Gson().toJson(list),ProjectInfo[].class));
-//    }
-//
-//    public List<ProjectInfo> getAppsByNameYp(String appName){
-//       com.xiaomi.youpin.infra.rpc.Result<Map<String, Object>> result = gwdashApiServiceYP.getAppsByUserName(null,appName,true,0,50);
-//        log.info("AppMonitorService.getAppsByName(youpin) param appName : {},result : {}",appName,new Gson().toJson(result));
-//        if(result.getCode() != 0){
-//            log.error("AppMonitorService.getAppsByName(youpin) error! param appName : {}, result : {}",appName,new Gson().toJson(result));
-//            return null;
-//        }
-//
-//        Map<String, Object> data = result.getData();
-//        if(CollectionUtils.isEmpty(data)){
-//            log.info("AppMonitorService.getAppsByName(youpin) no map data found param appName : {}",appName);
-//            return new ArrayList<ProjectInfo>();
-//        }
-//
-//        Integer total = (Integer) data.get("total");
-//        log.info("AppMonitorService.getAppsByName(youpin) appName : {}, data total : {}",appName,total);
-//
-//        List list = (List) data.get("list");
-//
-//        if(CollectionUtils.isEmpty(list)){
-//            log.info("AppMonitorService.getAppsByName(youpin) no data found param appName : {}",appName);
-//            return new ArrayList<ProjectInfo>();
-//        }
-//
-//        return Arrays.asList(new Gson().fromJson(new Gson().toJson(list),ProjectInfo[].class));
-//    }
 
     public Result<PageData> getProjectInfos(String userName, String appName, Integer page, Integer pageSize) {
 
@@ -724,93 +410,14 @@ public class AppMonitorService {
             ProjectInfo info = new ProjectInfo();
             info.setId(Long.valueOf(t.getBindId()));
             info.setName(t.getAppName());
-//            info.setIamTreeId(); //iamTreeId后续不再提供
+            info.setIamTreeId(t.getIamTreeId() != null ? Long.valueOf(t.getIamTreeId()) : t.getIamTreeId());
             list.add(info);
         });
 
         pd.setList(list);
-
-        //todo 旧逻辑对比
-//        boolean isShowAll = StringUtils.isBlank(userName) ? true : false;
-//
-//        log.info("AppMonitorService.getProjectInfos param appName : {},page : {},pageSize : {}",appName,page,pageSize);
-//        com.xiaomi.youpin.infra.rpc.Result<Map<String, Object>> result = gwdashApiService.getAppsByUserName(userName,appName,isShowAll,page,pageSize);
-//        log.info("AppMonitorService.getProjectInfos param appName : {},result : {}",appName,new Gson().toJson(result));
-//        if(result.getCode() != 0){
-//            log.error("AppMonitorService.getProjectInfos error! param appName : {}, result : {}",appName,new Gson().toJson(result));
-//            return null;
-//        }
-//
-//        Map<String, Object> data = result.getData();
-//        if(CollectionUtils.isEmpty(data)){
-//            log.error("AppMonitorService.getProjectInfos no map data found param appName : {}",appName);
-//            return Result.fail(ErrorCode.unknownError);
-//        }
-//
-//        Integer total = (Integer) data.get("total");
-//        log.info("AppMonitorService.getProjectInfos appName : {}, data total : {}",appName,total);
-//        pd.setTotal(total.longValue());
-//
-//        List list = (List) data.get("list");
-//
-//        if(CollectionUtils.isEmpty(list)){
-//            log.info("AppMonitorService.getProjectInfos no data found param appName : {}",appName);
-//            pd.setList(new ArrayList<ProjectInfo>());
-//        }else{
-//            pd.setList(Arrays.asList(new Gson().fromJson(new Gson().toJson(list),ProjectInfo[].class)));
-//        }
-
-
         return Result.success(pd);
 
     }
-
-//    public Result<PageData> getYPProjectInfos(String userName,String appName,Integer page,Integer pageSize){
-//
-//        if(page == null){
-//            page = 1;
-//        }
-//
-//        if(pageSize == null){
-//            pageSize = 10;
-//        }
-//
-//        PageData pd = new PageData();
-//        pd.setPage(page);
-//        pd.setPageSize(pageSize);
-//
-//        boolean isShowAll = StringUtils.isBlank(userName) ? true : false;
-//
-//        log.info("AppMonitorService.getYPProjectInfos param appName : {},page : {},pageSize : {}",appName,page,pageSize);
-//        com.xiaomi.youpin.infra.rpc.Result<Map<String, Object>> result = gwdashApiServiceYP.getAppsByUserName(userName,appName,isShowAll,page,pageSize);
-//        log.info("AppMonitorService.getYPProjectInfos param appName : {},result : {}",appName,new Gson().toJson(result));
-//        if(result.getCode() != 0){
-//            log.error("AppMonitorService.getYPProjectInfos error! param appName : {}, result : {}",appName,new Gson().toJson(result));
-//            return Result.success(pd);
-//        }
-//
-//        Map<String, Object> data = result.getData();
-//        if(CollectionUtils.isEmpty(data)){
-//            log.error("AppMonitorService.getYPProjectInfos no map data found param appName : {}",appName);
-//            return Result.fail(ErrorCode.unknownError);
-//        }
-//
-//        Integer total = (Integer) data.get("total");
-//        log.info("AppMonitorService.getYPProjectInfos appName : {}, data total : {}",appName,total);
-//        pd.setTotal(total.longValue());
-//
-//        List list = (List) data.get("list");
-//
-//        if(CollectionUtils.isEmpty(list)){
-//            log.info("AppMonitorService.getYPProjectInfos no data found param appName : {}",appName);
-//            pd.setList(new ArrayList<ProjectInfo>());
-//        }else{
-//            pd.setList(Arrays.asList(new Gson().fromJson(new Gson().toJson(list),ProjectInfo[].class)));
-//        }
-//
-//        return Result.success(pd);
-//    }
-
 
     public Result<String> createWithBaseInfo(AppMonitorModel appMonitorModel, String user) {
 

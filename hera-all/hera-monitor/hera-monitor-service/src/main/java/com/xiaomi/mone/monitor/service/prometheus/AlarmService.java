@@ -549,10 +549,6 @@ public class AlarmService {
 
     public String getContainerLoadAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s){
 
-        String appGitName = appMonitorService.getAppGitName(projectId, projectName);
-        if(StringUtils.isNotBlank(appGitName)){
-            projectName = appGitName;
-        }
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("avg_over_time(container_cpu_load_average_10s");
         exprBuilder.append("{system='mione',");
@@ -579,11 +575,6 @@ public class AlarmService {
      */
     public String getContainerCpuAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s){
 
-        String appGitName = appMonitorService.getAppGitName(projectId, projectName);
-        if(StringUtils.isNotBlank(appGitName)){
-            projectName = appGitName;
-        }
-
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("rate(container_cpu_user_seconds_total{system='mione',");
 
@@ -598,11 +589,6 @@ public class AlarmService {
         return exprBuilder.toString();
     }
     public String getContainerCpuResourceAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s){
-
-        String appGitName = appMonitorService.getAppGitName(projectId, projectName);
-        if(StringUtils.isNotBlank(appGitName)){
-            projectName = appGitName;
-        }
 
 //        String jobLabelValue = prometheusAlarmEnv.equals("production") ? "mione-online-china.*|mione-online-youpin.*" : "mione-staging-china.*|mione-staging-youpin.*";
 
@@ -619,11 +605,6 @@ public class AlarmService {
     }
 
     public String getContainerMemAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s){
-
-        String appGitName = appMonitorService.getAppGitName(projectId, projectName);
-        if(StringUtils.isNotBlank(appGitName)){
-            projectName = appGitName;
-        }
 
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("(sum(avg_over_time(container_memory_rss{");
@@ -645,11 +626,6 @@ public class AlarmService {
     }
 
     public String getContainerMemReourceAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s){
-
-        String appGitName = appMonitorService.getAppGitName(projectId, projectName);
-        if(StringUtils.isNotBlank(appGitName)){
-            projectName = appGitName;
-        }
 
 //        String jobLabelValue = prometheusAlarmEnv.equals("production") ? "mione-online-china.*|mione-online-youpin.*" : "mione-staging-china.*|mione-staging-youpin.*";
 
@@ -695,11 +671,6 @@ public class AlarmService {
     }
 
     public String getContainerDiskReourceAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s){
-
-        String appGitName = appMonitorService.getAppGitName(projectId, projectName);
-        if(StringUtils.isNotBlank(appGitName)){
-            projectName = appGitName;
-        }
 
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("clamp_max(sum(container_fs_usage_bytes{");
@@ -748,10 +719,6 @@ public class AlarmService {
 
     public String getContainerCountAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s){
 
-        String appGitName = appMonitorService.getAppGitName(projectId, projectName);
-        if(StringUtils.isNotBlank(appGitName)){
-            projectName = appGitName;
-        }
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("count(sum_over_time(container_spec_memory_limit_bytes{");
         exprBuilder.append("image!='',");
