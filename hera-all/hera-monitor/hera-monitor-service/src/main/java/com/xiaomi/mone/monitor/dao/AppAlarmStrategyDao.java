@@ -198,6 +198,9 @@ public class AppAlarmStrategyDao {
                 pageData.setTotal(0L);
                 return pageData;
             }
+
+            log.info("searchByCond# sql:{}",sql);
+
             pageData.setTotal(totalCount);
             sql.setPager(new Pager(page, pageSize));
             sql.setCallback(new SqlCallback() {
