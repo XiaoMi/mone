@@ -17,4 +17,9 @@ public class AppGrafanaMappingServiceExtensionImpl implements AppGrafanaMappingS
     public void setPlatFormByLanguage(GrafanaTemplate template, String appLanguage) {
 
     }
+
+    @Override
+    public void dealRequestGrafanaTemplateCode(Integer code, String bindId, String appName) {
+
+    }
 }

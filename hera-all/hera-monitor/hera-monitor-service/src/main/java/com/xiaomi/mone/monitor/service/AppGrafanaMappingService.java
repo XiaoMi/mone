@@ -242,10 +242,8 @@ public class AppGrafanaMappingService {
             MutiGrafanaResponse mutiGrafanaResponse = grafanaService.requestGrafanaTemplate(serverType, baseInfo.getBindId() + "_" + baseInfo.getAppName(), grafanaDirByCode, search.get(0), funcList);
 
             log.info("createTmpByAppBaseInfo response info : {}", mutiGrafanaResponse);
-            if (mutiGrafanaResponse.getCode() == -2) {
-                log.info("createGrafana {} in blackList", baseInfo.getBindId() + "_" + baseInfo.getAppName());
-                return;
-            }
+
+            appGrafanaMappingServiceExtension.dealRequestGrafanaTemplateCode(mutiGrafanaResponse.getCode(), baseInfo.getBindId(), baseInfo.getAppName());
 
             log.info("grafanaMappingService.createTmpByAppBaseInfo success appName : {}, version:{},area : {}, returnUrl :{}"
                     , baseInfo.getAppName(), mutiGrafanaResponse.getData().get(0).getMimonitor_version(), grafanaDirByCode, mutiGrafanaResponse);
