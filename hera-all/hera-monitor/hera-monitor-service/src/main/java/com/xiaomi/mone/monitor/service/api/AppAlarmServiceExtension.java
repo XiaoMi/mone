@@ -6,4 +6,6 @@ public interface AppAlarmServiceExtension {
     Result queryFunctionList(Integer projectId);
 
     Result queryRulesByIamId(Integer iamId, String userName);
+
+    Integer getAlarmIdByResult(Result result);
 }

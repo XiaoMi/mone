@@ -4,9 +4,11 @@ import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.xiaomi.mone.monitor.bo.GrafanaInterfaceRes;
+import com.xiaomi.mone.monitor.dao.model.AppMonitor;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.api.AppMonitorServiceExtension;
+import com.xiaomi.mone.monitor.service.model.ProjectInfo;
 import com.xiaomi.mone.monitor.utils.FreeMarkerUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -74,6 +76,31 @@ public class AppMonitorServiceImpl implements AppMonitorServiceExtension {
             log.error("grafanaInterfaceList error! {}", e);
             return Result.fail(ErrorCode.unknownError);
         }
+    }
+
+    @Override
+    public Result initAppsByUsername(String userName) {
+        return null;
+    }
+
+    @Override
+    public List<ProjectInfo> getAppsByUserName(String username) {
+        return null;
+    }
+
+    @Override
+    public Boolean checkCreateParam(AppMonitor appMonitor) {
+
+        if(appMonitor.getProjectId() == null || StringUtils.isBlank(appMonitor.getProjectName())){
+            return false;
+        }
+        return true;
+    }
+
+
+    @Override
+    public Result getResourceUsageUrl(Integer appId, String appName) {
+        return null;
     }
 
 }

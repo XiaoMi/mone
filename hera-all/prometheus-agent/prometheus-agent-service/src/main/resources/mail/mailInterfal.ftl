@@ -42,5 +42,8 @@
     <p><strong>methodName：</strong>${methodName}</p>
     <p><strong>开始时间：</strong>${start_time}</p>
 </div>
+<p class="container" style="text-align:center;">
+    <a href="http://${silence_url}" style="background-color:#4CAF50; color:white; padding:10px 20px; border:none; border-radius:5px; text-decoration:none;">报警静默</a>
+</p>
 </body>
 </html>

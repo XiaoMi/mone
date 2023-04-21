@@ -20,9 +20,6 @@ public class DubboConfiguration {
         @Value("${dubbo.registry.address}")
         private String regAddress;
 
-//        @Value("${dubbo.registry.address.youpin}")
-//        private String regAddressYoupin;
-
         @Bean
         public ApplicationConfig applicationConfig() {
         ApplicationConfig applicationConfig = new ApplicationConfig();
@@ -37,13 +34,6 @@ public class DubboConfiguration {
         registryConfig.setDefault(true);
         return registryConfig;
     }
-
-//        @Bean
-//        public RegistryConfig registryConfigYoupin() {
-//        RegistryConfig registryConfig = new RegistryConfig();
-//        registryConfig.setAddress(regAddressYoupin);
-//        return registryConfig;
-//    }
 
         @Bean
         public ProtocolConfig protocolConfig() {
