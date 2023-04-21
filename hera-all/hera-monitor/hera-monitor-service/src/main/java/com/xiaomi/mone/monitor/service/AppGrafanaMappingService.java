@@ -14,6 +14,7 @@ import com.xiaomi.mone.monitor.dao.model.AppMonitor;
 import com.xiaomi.mone.monitor.dao.model.GrafanaTemplate;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
+import com.xiaomi.mone.monitor.service.api.AppGrafanaMappingServiceExtension;
 import com.xiaomi.mone.monitor.service.extension.PlatFormTypeExtensionService;
 import com.xiaomi.mone.monitor.service.model.GrafanaResponse;
 import com.xiaomi.mone.monitor.service.model.MutiGrafanaResponse;
@@ -58,6 +59,9 @@ public class AppGrafanaMappingService {
 
     @Autowired
     private ServerLessService serverLessService;
+
+    @Autowired
+    private AppGrafanaMappingServiceExtension appGrafanaMappingServiceExtension;
 
 
     @Value("${server.type}")
@@ -216,10 +220,7 @@ public class AppGrafanaMappingService {
             }
             template.setLanguage(langUageCode);
 
-            //python模板只有一份deployment部署  枚举为6
-            if (baseInfo.getAppLanguage().equals("python")) {
-                template.setPlatform(6);
-            }
+            appGrafanaMappingServiceExtension.setPlatFormByLanguage(template,baseInfo.getAppLanguage());
 
             List<GrafanaTemplate> search = grafanaTemplateDao.search(template);
             if (CollectionUtils.isEmpty(search)) {
@@ -241,10 +242,8 @@ public class AppGrafanaMappingService {
             MutiGrafanaResponse mutiGrafanaResponse = grafanaService.requestGrafanaTemplate(serverType, baseInfo.getBindId() + "_" + baseInfo.getAppName(), grafanaDirByCode, search.get(0), funcList);
 
             log.info("createTmpByAppBaseInfo response info : {}", mutiGrafanaResponse);
-            if (mutiGrafanaResponse.getCode() == -2) {
-                log.info("createGrafana {} in blackList", baseInfo.getBindId() + "_" + baseInfo.getAppName());
-                return;
-            }
+
+            appGrafanaMappingServiceExtension.dealRequestGrafanaTemplateCode(mutiGrafanaResponse.getCode(), baseInfo.getBindId(), baseInfo.getAppName());
 
             log.info("grafanaMappingService.createTmpByAppBaseInfo success appName : {}, version:{},area : {}, returnUrl :{}"
                     , baseInfo.getAppName(), mutiGrafanaResponse.getData().get(0).getMimonitor_version(), grafanaDirByCode, mutiGrafanaResponse);
