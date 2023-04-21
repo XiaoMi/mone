@@ -3,6 +3,7 @@ package com.xiaomi.mone.monitor.service;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
+import com.xiaomi.mone.app.api.model.HeraAppBaseInfoParticipant;
 import com.xiaomi.mone.app.api.model.HeraAppRoleModel;
 import com.xiaomi.mone.app.api.service.HeraAppService;
 import com.xiaomi.mone.monitor.bo.AlertGroupParam;
