@@ -12,7 +12,7 @@ import com.xiaomi.mone.monitor.dao.AppCapacityAutoAdjustRecordDao;
 import com.xiaomi.mone.monitor.dao.AppMonitorDao;
 import com.xiaomi.mone.monitor.dao.model.*;
 import com.xiaomi.mone.monitor.result.Result;
-import com.xiaomi.mone.monitor.service.extension.ProjectHelperExtensionService;
+import com.xiaomi.mone.monitor.service.helper.ProjectHelper;
 import com.xiaomi.mone.tpc.api.service.UserOrgFacade;
 import com.xiaomi.mone.tpc.common.enums.UserTypeEnum;
 import com.xiaomi.mone.tpc.common.param.NullParam;
@@ -40,7 +40,7 @@ public class AppMonitorDaoTest {
     AppMonitorDao appMonitorDao;
 
     @Autowired
-    private ProjectHelperExtensionService projectHelper;
+    private ProjectHelper projectHelper;
 
     @Autowired
     AppCapacityAutoAdjustDao appCapacityAutoAdjustDao;
