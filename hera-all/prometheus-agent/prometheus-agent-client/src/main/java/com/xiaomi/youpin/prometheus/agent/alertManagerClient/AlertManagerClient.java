@@ -119,11 +119,6 @@ public class AlertManagerClient implements Client {
                 }
                 log.info("AlertManagerClient start CompareAndReload");
                 AlertManagerConfig ruleAlertConfig = getRuleAlertConfig(filePath);
-                if (ruleAlertConfig == null || ruleAlertConfig.getGroups().size() == 0) {
-                    //如果配置出现问题，直接结束
-                    log.error("AlertManagerConfig null and return");
-                    return;
-                }
                 log.info("ruleAlertConfig: {}", ruleAlertConfig);
                 log.info("localrulelist: {}", localRuleList);
 
