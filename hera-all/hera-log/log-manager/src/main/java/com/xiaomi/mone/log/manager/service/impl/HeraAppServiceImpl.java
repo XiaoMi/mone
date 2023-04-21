@@ -1,5 +1,7 @@
 package com.xiaomi.mone.log.manager.service.impl;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoParticipant;
 import com.xiaomi.mone.app.api.model.HeraAppBaseQuery;
@@ -8,8 +10,11 @@ import com.xiaomi.mone.log.manager.service.HeraAppService;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.plugin.dubbo.anno.Reference;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wtt
@@ -21,8 +26,18 @@ import java.util.List;
 @Service
 public class HeraAppServiceImpl implements HeraAppService {
 
-    @Reference(interfaceClass = com.xiaomi.mone.app.api.service.HeraAppService.class, group = "$dubbo.env.group", check = false)
+    @Reference(interfaceClass = com.xiaomi.mone.app.api.service.HeraAppService.class, group = "$dubbo.env.group", check = false, timeout = 5000)
     private com.xiaomi.mone.app.api.service.HeraAppService heraAppService;
+
+    private static final Cache<Long, AppBaseInfo> CACHE_LOCAL = CacheBuilder.newBuilder()
+            .maximumSize(100)
+            .expireAfterWrite(3, TimeUnit.MINUTES)
+            .build();
+
+    private static final Cache<String, List<AppBaseInfo>> CACHE_LOCAL_IDS = CacheBuilder.newBuilder()
+            .maximumSize(50)
+            .expireAfterWrite(5, TimeUnit.MINUTES)
+            .build();
 
     @Override
     public List<AppBaseInfo> queryAppInfoWithLog(String appName, Integer type) {
@@ -36,17 +51,42 @@ public class HeraAppServiceImpl implements HeraAppService {
 
     @Override
     public AppBaseInfo queryById(Long id) {
-        return heraAppService.queryById(id);
+        AppBaseInfo appBaseInfo = CACHE_LOCAL.getIfPresent(id);
+        if (null == appBaseInfo) {
+            appBaseInfo = heraAppService.queryById(id);
+            if (null != appBaseInfo) {
+                CACHE_LOCAL.put(id, appBaseInfo);
+            }
+        }
+        return appBaseInfo;
     }
 
     @Override
     public List<AppBaseInfo> queryByIds(List<Long> ids) {
-        return heraAppService.queryByIds(ids);
+        String key = StringUtils.join(ids, ",");
+        List<AppBaseInfo> appBaseInfos = CACHE_LOCAL_IDS.getIfPresent(key);
+        if (CollectionUtils.isEmpty(appBaseInfos)) {
+            appBaseInfos = heraAppService.queryByIds(ids);
+            if (CollectionUtils.isNotEmpty(appBaseInfos)) {
+                CACHE_LOCAL_IDS.put(key, appBaseInfos);
+            }
+        }
+        return appBaseInfos;
     }
 
     @Override
     public AppBaseInfo queryByAppId(Long appId, Integer type) {
         return heraAppService.queryByAppId(appId, type);
+    }
+
+    @Override
+    public AppBaseInfo queryByAppIdPlatFormType(String bindId, Integer platformTypeCode) {
+        return heraAppService.queryByAppIdPlatFormType(bindId, platformTypeCode);
+    }
+
+    @Override
+    public AppBaseInfo queryByIamTreeId(Long iamTreeId, String bingId, Integer platformType) {
+        return heraAppService.queryByIamTreeId(iamTreeId, bingId, platformType);
     }
 
     @Override

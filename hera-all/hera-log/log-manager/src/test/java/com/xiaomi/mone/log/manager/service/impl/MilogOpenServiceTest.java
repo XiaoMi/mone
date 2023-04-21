@@ -19,7 +19,7 @@ public class MilogOpenServiceTest {
     public void testHaveAccess() {
         Ioc.ins().init("com.xiaomi");
         MilogOpenServiceImpl milogOpenService = Ioc.ins().getBean(MilogOpenServiceImpl.class);
-        MontorAppDTO montorAppDTO = milogOpenService.queryHaveAccessMilog(17465L);
+        MontorAppDTO montorAppDTO = milogOpenService.queryHaveAccessMilog(17465L, "", null);
         System.out.println("返回值:" + gson.toJson(montorAppDTO));
     }
 

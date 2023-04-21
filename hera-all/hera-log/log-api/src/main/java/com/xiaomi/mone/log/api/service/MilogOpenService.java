@@ -17,7 +17,7 @@ public interface MilogOpenService {
      * @param iamTreeId
      * @return
      */
-    MontorAppDTO queryHaveAccessMilog(Long iamTreeId);
+    MontorAppDTO queryHaveAccessMilog(Long iamTreeId, String bingId, Integer platformType);
 
     /**
      * 查询接入的spaceId 最后一个

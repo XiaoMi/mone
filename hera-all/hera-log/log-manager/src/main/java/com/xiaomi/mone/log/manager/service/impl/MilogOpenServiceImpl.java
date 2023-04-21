@@ -1,20 +1,19 @@
 package com.xiaomi.mone.log.manager.service.impl;
 
 import com.google.gson.Gson;
+import com.xiaomi.mone.app.api.response.AppBaseInfo;
 import com.xiaomi.mone.log.api.enums.DeployWayEnum;
-import com.xiaomi.mone.log.api.enums.ProjectSourceEnum;
 import com.xiaomi.mone.log.api.enums.ProjectTypeEnum;
 import com.xiaomi.mone.log.api.model.bo.MiLogMoneTransfer;
 import com.xiaomi.mone.log.api.model.dto.MontorAppDTO;
 import com.xiaomi.mone.log.api.model.vo.MiLogMoneEnv;
 import com.xiaomi.mone.log.api.service.MilogOpenService;
-import com.xiaomi.mone.log.manager.common.exception.MilogManageException;
-import com.xiaomi.mone.log.manager.common.validation.OpenSourceValid;
-import com.xiaomi.mone.log.manager.dao.MilogAppTopicRelDao;
 import com.xiaomi.mone.log.manager.dao.MilogLogTailDao;
-import com.xiaomi.mone.log.manager.model.pojo.MilogAppTopicRelDO;
+import com.xiaomi.mone.log.manager.common.exception.MilogManageException;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogTailDo;
+import com.xiaomi.mone.log.manager.common.validation.OpenSourceValid;
 import com.xiaomi.youpin.docean.plugin.dubbo.anno.Service;
+import joptsimple.internal.Strings;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -35,33 +34,33 @@ import java.util.stream.Collectors;
 public class MilogOpenServiceImpl implements MilogOpenService {
 
     @Resource
-    private MilogAppTopicRelDao milogAppTopicRelDao;
-
-    @Resource
     private MilogLogTailDao milogLogtailDao;
 
     @Resource
     private OpenSourceValid openSourceValid;
 
     @Resource
+    private HeraAppServiceImpl heraAppService;
+
+    @Resource
     private Gson gson;
 
 
     @Override
-    public MontorAppDTO queryHaveAccessMilog(Long iamTreeId) {
+    public MontorAppDTO queryHaveAccessMilog(Long iamTreeId, String bingId, Integer platformType) {
         MontorAppDTO montorAppDTO = new MontorAppDTO();
         if (null == iamTreeId) {
             return montorAppDTO;
         }
-        MilogAppTopicRelDO appTopicRel = milogAppTopicRelDao.queryByIamTreeId(iamTreeId);
-        if (null == appTopicRel) {
+        AppBaseInfo appBaseInfo = heraAppService.queryByIamTreeId(iamTreeId, bingId, platformType);
+        if (null == appBaseInfo) {
             return montorAppDTO;
         }
-        List<MilogLogTailDo> milogLogtailDos = milogLogtailDao.queryByAppId(appTopicRel.getId());
-        if (CollectionUtils.isNotEmpty(milogLogtailDos)) {
-            montorAppDTO.setAppId(appTopicRel.getAppId());
-            montorAppDTO.setAppName(appTopicRel.getAppName());
-            montorAppDTO.setSource(appTopicRel.getSource());
+        List<MilogLogTailDo> logTailDos = milogLogtailDao.getLogTailByMilogAppId(appBaseInfo.getId().longValue());
+        if (CollectionUtils.isNotEmpty(logTailDos)) {
+            montorAppDTO.setAppId(Long.valueOf(appBaseInfo.getBindId()));
+            montorAppDTO.setAppName(appBaseInfo.getAppName());
+            montorAppDTO.setSource(appBaseInfo.getPlatformName());
             montorAppDTO.setIsAccess(true);
         }
         return montorAppDTO;
@@ -69,11 +68,11 @@ public class MilogOpenServiceImpl implements MilogOpenService {
 
     @Override
     public Long querySpaceIdByIamTreeId(Long iamTreeId) {
-        MilogAppTopicRelDO appTopicRel = milogAppTopicRelDao.queryByIamTreeId(iamTreeId);
-        if (null == appTopicRel) {
+        AppBaseInfo appBaseInfo = heraAppService.queryByIamTreeId(iamTreeId, Strings.EMPTY, null);
+        if (null == appBaseInfo) {
             return null;
         }
-        List<MilogLogTailDo> milogLogtailDos = milogLogtailDao.queryByAppId(appTopicRel.getId());
+        List<MilogLogTailDo> milogLogtailDos = milogLogtailDao.getLogTailByMilogAppId(appBaseInfo.getId().longValue());
         if (CollectionUtils.isEmpty(milogLogtailDos)) {
             return null;
         }
@@ -93,19 +92,9 @@ public class MilogOpenServiceImpl implements MilogOpenService {
         handleMilogAppInfo(logMoneEnv, miLogMoneTransfer);
         //2.修改tail
         handleMilogAppTail(logMoneEnv, miLogMoneTransfer);
-        //3.修改应用的来源
-        handleAppSource(logMoneEnv, miLogMoneTransfer);
+        //3.修改应用的来源-迁移后不需要
+//        handleAppSource(logMoneEnv, miLogMoneTransfer);
         return miLogMoneTransfer;
-    }
-
-    private void handleAppSource(MiLogMoneEnv logMoneEnv, MiLogMoneTransfer miLogMoneTransfer) {
-        MilogAppTopicRelDO appTopicRelDO = milogAppTopicRelDao.queryById(miLogMoneTransfer.getMilogAppId());
-        if (Objects.equals(1, logMoneEnv.getRollback())) {
-            appTopicRelDO.setSource(ProjectSourceEnum.TWO_SOURCE.getSource());
-        } else {
-            appTopicRelDO.setSource(ProjectSourceEnum.ONE_SOURCE.getSource());
-        }
-        milogAppTopicRelDao.update(appTopicRelDO);
     }
 
     private void handleMilogAppTail(MiLogMoneEnv logMoneEnv, MiLogMoneTransfer miLogMoneTransfer) {
@@ -133,21 +122,15 @@ public class MilogOpenServiceImpl implements MilogOpenService {
 
     private void handleMilogAppInfo(MiLogMoneEnv logMoneEnv, MiLogMoneTransfer miLogMoneTransfer) {
         //1.根据旧ID查找应用
-        MilogAppTopicRelDO milogAppTopicRel = milogAppTopicRelDao.queryByAppId(logMoneEnv.getOldAppId(), ProjectTypeEnum.MIONE_TYPE.getCode());
-        if (null == milogAppTopicRel) {
-            milogAppTopicRel = milogAppTopicRelDao.queryByAppId(logMoneEnv.getNewAppId(), ProjectTypeEnum.MIONE_TYPE.getCode());
-            if (null == milogAppTopicRel) {
+        AppBaseInfo appBaseInfo = heraAppService.queryByAppId(logMoneEnv.getNewAppId(), ProjectTypeEnum.MIONE_TYPE.getCode());
+        if (null == appBaseInfo) {
+            // 兼容
+            appBaseInfo = heraAppService.queryByAppId(logMoneEnv.getNewAppId(), 20);
+            if (null == appBaseInfo) {
                 throw new MilogManageException("应用不存在");
             }
         }
-        if (!Objects.equals(milogAppTopicRel.getAppId(), logMoneEnv.getNewAppId()) ||
-                !Objects.equals(milogAppTopicRel.getAppName(), logMoneEnv.getNewAppName())) {
-            milogAppTopicRel.setAppId(logMoneEnv.getNewAppId());
-            milogAppTopicRel.setAppName(logMoneEnv.getNewAppName());
-            milogAppTopicRelDao.update(milogAppTopicRel);
-        }
-
-        miLogMoneTransfer.setMilogAppId(milogAppTopicRel.getId());
+        miLogMoneTransfer.setMilogAppId(appBaseInfo.getId().longValue());
         miLogMoneTransfer.setAppId(logMoneEnv.getNewAppId());
         miLogMoneTransfer.setAppName(logMoneEnv.getNewAppName());
     }
