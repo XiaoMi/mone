@@ -164,6 +164,7 @@
         app.app_name,
         app.app_cname,
         app.iam_tree_id,
+        app.iam_tree_type,
         app.bind_type,
         app.platform_type,
         app.app_type,
