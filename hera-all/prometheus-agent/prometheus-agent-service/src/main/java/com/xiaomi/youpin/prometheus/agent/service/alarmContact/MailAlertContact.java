@@ -5,6 +5,7 @@ import com.xiaomi.youpin.prometheus.agent.Impl.RuleAlertDao;
 import com.xiaomi.youpin.prometheus.agent.entity.RuleAlertEntity;
 import com.xiaomi.youpin.prometheus.agent.result.alertManager.AlertManagerFireResult;
 import com.xiaomi.youpin.prometheus.agent.result.alertManager.Alerts;
+import com.xiaomi.youpin.prometheus.agent.result.alertManager.CommonLabels;
 import com.xiaomi.youpin.prometheus.agent.result.alertManager.GroupLabels;
 import com.xiaomi.youpin.prometheus.agent.util.DateUtil;
 import com.xiaomi.youpin.prometheus.agent.util.FreeMarkerUtil;
@@ -14,6 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.lang.reflect.Field;
 import java.util.*;
 
 /**
@@ -53,30 +55,38 @@ public class MailAlertContact extends BaseAlertContact {
             map.put("alert_op", alert.getLabels().getAlert_op());
             map.put("alert_value", alert.getLabels().getAlert_value());
             map.put("application", alert.getLabels().getApplication());
-            //Distinguish between basic classes, interface classes, and custom classes based on categories
-            String serviceName = fireResult.getCommonLabels().getServiceName();
+            map.put("silence_url", silenceUrl);
+            CommonLabels commonLabels = fireResult.getCommonLabels();
             try {
-                String content = "";
-                //get priority
-                if (!StringUtils.isBlank(serviceName)) {
-                    //接口型
-                    map.put("ip", alert.getLabels().getServerIp());
-                    map.put("start_time", DateUtil.Time2YYMMdd(alert.getStartsAt().toString()));
-                    map.put("silence_url", silenceUrl);
-                    map.put("serviceName", alert.getLabels().getServiceName());
-                    map.put("methodName", alert.getLabels().getMethodName());
-                    content = FreeMarkerUtil.getContentExceptJson("/mail", "mailInterfal.ftl", map);
-                } else {
-                    //基础型
-                    map.put("ip", alert.getLabels().getIp());
-                    map.put("start_time", DateUtil.Time2YYMMdd(alert.getStartsAt().toString()));
-                    map.put("silence_url", silenceUrl);
-                    map.put("pod", alert.getLabels().getPod());
-                    content = FreeMarkerUtil.getContentExceptJson("/mail", "mailBasic.ftl", map);
+                Class clazz = commonLabels.getClass();
+                Field[] fields = clazz.getDeclaredFields();
+                StringBuilder sb = new StringBuilder();
+                for (Field field : fields) {
+                    field.setAccessible(true);
+                    String fieldName = field.getName();
+                    if ("priority".equals(fieldName) || "title".equals(fieldName) || "alert_op".equals(fieldName) ||
+                            "alert_value".equals(fieldName) || "application".equals(fieldName) ||
+                            "system".equals(fieldName) || "exceptViewLables".equals(fieldName) ||
+                            "app_iam_id".equals(fieldName) || "metrics_flag".equals(fieldName)) {
+                        continue;
+                    }
+                    Object fieldValue = null;
+                    try {
+                        fieldValue = field.get(commonLabels);
+                        if (fieldValue == null) {
+                            continue;
+                        }
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
+                    sb.append("<p><strong>").append(fieldName).append("</strong>: ").append(fieldValue).append("</p>");
                 }
+                String content = sb.toString();
+                map.put("content", content);
+                String freeMarkerRes = FreeMarkerUtil.getContentExceptJson("/mail", "mailCart.ftl", map);
                 String title = String.format("[%s][Hera]  %s %s %s", priorityStr, fireResult.getCommonAnnotations().getTitle(), alert.getLabels().getAlert_op(), alert.getLabels().getAlert_value());
                 //send mail
-                mailUtil.sendMailToUserArray(new ArrayList<>(Arrays.asList(principals)), title, content);
+                mailUtil.sendMailToUserArray(new ArrayList<>(Arrays.asList(principals)), title, freeMarkerRes);
             } catch (Exception e) {
                 log.error("SendAlert.mailReach error:{}", e);
             }
