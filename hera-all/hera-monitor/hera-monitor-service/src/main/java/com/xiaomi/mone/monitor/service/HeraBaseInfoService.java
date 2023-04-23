@@ -251,6 +251,7 @@ public class HeraBaseInfoService {
         role.setAppId(appId);
         role.setAppPlatform(platForm);
         List<HeraAppRole> roles = heraAppRoleDao.query(role, 1, 1000);
+        log.info("HeraBaseInfoService#getAppMembersByAppId appId:{}, platForm:{},result:{}",appId,platForm,new Gson().toJson(roles));
 
         PageData<Object> pageData = new PageData<>();
         pageData.setTotal(0l);
@@ -275,6 +276,7 @@ public class HeraBaseInfoService {
         for (String userName : members) {
             param.setName(userName);
             Result<PageData<List<UserInfo>>> pageDataResult = alertGroupService.userSearch(user, param);
+            log.info("alertGroupService#userSearch userName:{}, result:{}",userName,new Gson().toJson(pageDataResult));
             if (pageDataResult.getData().getTotal().intValue() > 0) {
                 userList.addAll(pageDataResult.getData().getList().stream().filter(t -> userName.equals(t.getName())).collect(Collectors.toList()));
             }
