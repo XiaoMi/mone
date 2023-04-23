@@ -175,6 +175,7 @@ public class AlertManagerImpl implements AlertManager {
         param.setAccount(userVo.getAccount());
         param.setUserType(userVo.getUserType());
         param.setStatus(UserStatusEnum.ENABLE.getCode());
+        param.setPager(true);
 
         AuthUserVo userVoSearch = UserUtil.parseFullAccount(searchName);
         param.setUserAcc(userVoSearch == null ? null : userVoSearch.getAccount());
