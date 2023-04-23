@@ -15,6 +15,8 @@ import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.extension.PlatFormTypeExtensionService;
 import com.xiaomi.mone.monitor.service.model.*;
+import com.xiaomi.mone.tpc.login.util.UserUtil;
+import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.Reference;
@@ -277,8 +279,13 @@ public class HeraBaseInfoService {
             param.setName(userName);
             Result<PageData<List<UserInfo>>> pageDataResult = alertGroupService.userSearch(user, param);
             log.info("alertGroupService#userSearch userName:{}, result:{}",userName,new Gson().toJson(pageDataResult));
+
+            AuthUserVo userVoSearch = UserUtil.parseFullAccount(userName);
+
+            String compUser = userVoSearch == null ? userName : StringUtils.isBlank(userVoSearch.getAccount()) ? userName : userVoSearch.getAccount();
+
             if (pageDataResult.getData().getTotal().intValue() > 0) {
-                userList.addAll(pageDataResult.getData().getList().stream().filter(t -> userName.equals(t.getName())).collect(Collectors.toList()));
+                userList.addAll(pageDataResult.getData().getList().stream().filter(t -> compUser.equals(t.getName())).collect(Collectors.toList()));
             }
         }
 
