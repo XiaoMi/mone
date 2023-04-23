@@ -3,6 +3,7 @@ package com.xiaomi.mone.monitor.service.prometheus;
 import com.google.gson.Gson;
 import com.xiaomi.mone.monitor.dao.AppCapacityAutoAdjustDao;
 import com.xiaomi.mone.monitor.dao.model.AppCapacityAutoAdjust;
+import com.xiaomi.mone.monitor.service.extension.MetricsExtensionService;
 import com.xiaomi.mone.monitor.service.impl.PrometheusServiceImpl;
 import com.xiaomi.mone.monitor.service.kubernetes.CapacityAdjustMessageService;
 import com.xiaomi.mone.monitor.result.ErrorCode;
@@ -67,6 +68,9 @@ public class PrometheusService {
 
     @Autowired
     CapacityAdjustMessageService capacityAdjustMessageService;
+
+    @Autowired
+    MetricsExtensionService metricsExtensionService;
 
     @Value("${prometheus.url}")
     private String prometheusUrl;
@@ -496,8 +500,7 @@ public class PrometheusService {
 
         StringBuilder promQL = new StringBuilder(env)
 //                .append(UNDER_LINE).append(projectName)
-                //todo 兼容两个版本的变量 ：METRIC_JEAGER_SIGN
-                .append(UNDER_LINE).append(METRIC_HERA_SIGN)
+                .append(UNDER_LINE).append(metricsExtensionService.getMetricsPrefix())
                 .append(UNDER_LINE).append(source)
                 .append(metricSuffix == null ? "" : metricSuffix);
 
@@ -633,8 +636,7 @@ public class PrometheusService {
         StringBuilder promQL = new StringBuilder(env)
 //                .append(UNDER_LINE).append(projectId)
 //                .append(UNDER_LINE).append(projectName)
-                //todo 兼容两个版本的变量 ：METRIC_JEAGER_SIGN
-                .append(UNDER_LINE).append(METRIC_HERA_SIGN)
+                .append(UNDER_LINE).append(metricsExtensionService.getMetricsPrefix())
                 .append(UNDER_LINE).append(source)
                 .append(metricSuffix == null ? "" : metricSuffix);
 

@@ -36,4 +36,6 @@ public class DashboardConstant {
 
     public static final String EXCEPTION_TRACE_DOMAIN_HERA = "hera";
 
+    public static final String HERA_METRICS_PREFIX = "hera";
+
 }

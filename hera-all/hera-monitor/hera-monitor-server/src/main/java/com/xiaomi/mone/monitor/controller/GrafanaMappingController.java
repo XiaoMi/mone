@@ -1,7 +1,6 @@
 package com.xiaomi.mone.monitor.controller;
 
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
-import com.xiaomi.mone.monitor.bo.PlatFormType;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.AppGrafanaMappingService;
@@ -61,7 +60,7 @@ public class GrafanaMappingController {
         HeraAppBaseInfoModel baseInfo = new HeraAppBaseInfoModel();
         baseInfo.setBindId(appId + "");
         baseInfo.setAppName(appName);
-        baseInfo.setPlatformType(PlatFormType.getCodeByName(plat));
+        baseInfo.setPlatformType(platFormTypeExtensionService.getTypeCodeByName(plat));
         baseInfo.setAppType(appType);
         baseInfo.setAppLanguage(language);
 

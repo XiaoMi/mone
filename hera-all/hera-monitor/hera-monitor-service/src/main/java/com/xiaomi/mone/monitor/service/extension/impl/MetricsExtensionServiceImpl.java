@@ -14,29 +14,24 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.mone.monitor.service.extension;
+package com.xiaomi.mone.monitor.service.extension.impl;
 
-import com.xiaomi.mone.monitor.bo.Pair;
-import com.xiaomi.mone.monitor.bo.PlatForm;
-
-import java.util.List;
+import com.xiaomi.mone.monitor.DashboardConstant;
+import com.xiaomi.mone.monitor.service.extension.MetricsExtensionService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Service;
 
 /**
  * @author shanwb
- * @date 2023-04-20
+ * @date 2023-04-23
  */
-public interface PlatFormTypeExtensionService {
+@Service
+@ConditionalOnProperty(name = "service.selector.property", havingValue = "outer")
+public class MetricsExtensionServiceImpl implements MetricsExtensionService {
 
-    boolean belongPlatForm(Integer typeCode, PlatForm platForm);
-
-    Integer getMarketType(Integer typeCode);
-
-    List<Pair>  getPlatFormTypeDescList();
-
-    String getGrafanaDirByTypeCode(Integer typeCode);
-
-    boolean checkTypeCode(Integer typeCode);
-
-    Integer getTypeCodeByName(String typeName);
+    @Override
+    public String getMetricsPrefix() {
+        return DashboardConstant.HERA_METRICS_PREFIX;
+    }
 
 }
