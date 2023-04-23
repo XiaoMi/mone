@@ -173,7 +173,9 @@ public class AlertManagerImpl implements AlertManager {
         param.setAccount(userVo.getAccount());
         param.setUserType(userVo.getUserType());
         param.setStatus(UserStatusEnum.ENABLE.getCode());
-        param.setUserAcc(searchName);
+
+        AuthUserVo userVoSearch = UserUtil.parseFullAccount(searchName);
+        param.setUserAcc(userVoSearch.getAccount());
         //暂时只支持邮箱账号
         param.setType(UserTypeEnum.EMAIL.getCode());
         com.xiaomi.youpin.infra.rpc.Result<PageDataVo<UserVo>> userResult =  userFacade.list(param);
