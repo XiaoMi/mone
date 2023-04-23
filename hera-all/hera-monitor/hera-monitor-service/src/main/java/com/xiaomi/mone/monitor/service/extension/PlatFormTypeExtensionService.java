@@ -37,4 +37,6 @@ public interface PlatFormTypeExtensionService {
 
     boolean checkTypeCode(Integer typeCode);
 
+    Integer getTypeCodeByName(String typeName);
+
 }
