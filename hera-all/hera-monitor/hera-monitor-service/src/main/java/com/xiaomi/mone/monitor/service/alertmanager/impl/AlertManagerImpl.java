@@ -42,6 +42,8 @@ public class AlertManagerImpl implements AlertManager {
     @Reference(registry = "registryConfig",check = false, interfaceClass = UserFacade.class,group="${dubbo.group.tpc}", version = "1.0")
     private UserFacade userFacade;
 
+    private static Gson gson = new Gson();
+
     @Override
     public Result addRule(JsonObject param,String identifyId,  String user) {
 
@@ -175,10 +177,11 @@ public class AlertManagerImpl implements AlertManager {
         param.setStatus(UserStatusEnum.ENABLE.getCode());
 
         AuthUserVo userVoSearch = UserUtil.parseFullAccount(searchName);
-        param.setUserAcc(userVoSearch.getAccount());
+        param.setUserAcc(userVoSearch == null ? null : userVoSearch.getAccount());
         //暂时只支持邮箱账号
         param.setType(UserTypeEnum.EMAIL.getCode());
         com.xiaomi.youpin.infra.rpc.Result<PageDataVo<UserVo>> userResult =  userFacade.list(param);
+        log.info("userFacade reqeust param:{},result:{}",gson.toJson(param),gson.toJson(userResult));
         if (userResult == null || userResult.getData() == null || CollectionUtils.isEmpty(userResult.getData().getList())) {
             return Result.success(page);
         }
