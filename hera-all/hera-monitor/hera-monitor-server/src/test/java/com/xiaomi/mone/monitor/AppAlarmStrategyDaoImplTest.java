@@ -20,7 +20,7 @@ import java.util.List;
 
 @Slf4j
 @SpringBootTest(classes = MiMonitorBootstrap.class)
-public class AppAlarmStrategyDaoTest {
+public class AppAlarmStrategyDaoImplTest {
 
     @Autowired
     private AppAlarmStrategyDao appAlarmStrategyDao;

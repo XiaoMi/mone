@@ -5,6 +5,7 @@ import com.xiaomi.youpin.prometheus.agent.Impl.RuleAlertDao;
 import com.xiaomi.youpin.prometheus.agent.entity.RuleAlertEntity;
 import com.xiaomi.youpin.prometheus.agent.result.alertManager.AlertManagerFireResult;
 import com.xiaomi.youpin.prometheus.agent.result.alertManager.Alerts;
+import com.xiaomi.youpin.prometheus.agent.result.alertManager.CommonLabels;
 import com.xiaomi.youpin.prometheus.agent.result.alertManager.GroupLabels;
 import com.xiaomi.youpin.prometheus.agent.service.FeishuService;
 import com.xiaomi.youpin.prometheus.agent.util.DateUtil;
@@ -14,6 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,28 +57,38 @@ public class FeishuAlertContact extends BaseAlertContact {
             map.put("alert_op", alert.getLabels().getAlert_op());
             map.put("alert_value", alert.getLabels().getAlert_value());
             map.put("application", alert.getLabels().getApplication());
-            //根据类别区分基础类、接口类、自定义类
-            String serviceName = fireResult.getCommonLabels().getServiceName();
+            map.put("silence_url", silenceUrl);
+            CommonLabels commonLabels = fireResult.getCommonLabels();
             try {
-                String content = "";
-                //获取priority
-                if (!StringUtils.isBlank(serviceName)) {
-                    //接口型
-                    map.put("ip", alert.getLabels().getServerIp());
-                    map.put("start_time", DateUtil.Time2YYMMdd(alert.getStartsAt().toString()));
-                    map.put("silence_url", silenceUrl);
-                    map.put("serviceName", alert.getLabels().getServiceName());
-                    map.put("methodName", alert.getLabels().getMethodName());
-                    content = FreeMarkerUtil.getContent("/feishu", "feishuInterfalCart.ftl", map);
-                } else {
-                    //基础型
-                    map.put("ip", alert.getLabels().getIp());
-                    map.put("start_time", DateUtil.Time2YYMMdd(alert.getStartsAt().toString()));
-                    map.put("silence_url", silenceUrl);
-                    map.put("pod", alert.getLabels().getPod());
-                    content = FreeMarkerUtil.getContent("/feishu", "feishuBasicCart.ftl", map);
+                Class clazz = commonLabels.getClass();
+                Field[] fields = clazz.getDeclaredFields();
+                StringBuilder sb = new StringBuilder();
+                for (Field field : fields) {
+                    field.setAccessible(true); // 设置访问权限
+                    String fieldName = field.getName();
+                    if ("priority".equals(fieldName) || "title".equals(fieldName) || "alert_op".equals(fieldName) ||
+                            "alert_value".equals(fieldName) || "application".equals(fieldName) ||
+                            "system".equals(fieldName) || "exceptViewLables".equals(fieldName) ||
+                            "app_iam_id".equals(fieldName) || "metrics_flag".equals(fieldName)) {
+                        continue;
+                    }
+                    Object fieldValue = null;
+                    try {
+                        //将fieldValue转成String
+                        fieldValue = field.get(commonLabels); // 获取字段值
+                        if (fieldValue == null) {
+                            continue;
+                        }
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                    }
+                    sb.append("**").append(fieldName).append("**").append(": ").append(fieldValue).append("\n");
                 }
-                feishuService.sendFeishu(content, principals, null, true);
+                String content = sb.toString();
+                map.put("content", content);
+                String freeMarkerRes = FreeMarkerUtil.getContent("/feishu", "feishuCart.ftl", map);
+
+                feishuService.sendFeishu(freeMarkerRes, principals, null, true);
             } catch (Exception e) {
                 log.error("SendAlert.feishuReach error:{}", e);
             }

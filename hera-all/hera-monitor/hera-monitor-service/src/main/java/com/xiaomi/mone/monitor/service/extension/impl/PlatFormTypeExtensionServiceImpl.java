@@ -92,4 +92,15 @@ public class PlatFormTypeExtensionServiceImpl implements PlatFormTypeExtensionSe
         return false;
     }
 
+    @Override
+    public Integer getTypeCodeByName(String typeName) {
+        PlatFormType[] values = PlatFormType.values();
+        for (PlatFormType value : values) {
+            if(value.getName().equals(typeName)) {
+                return value.getCode();
+            }
+        }
+        return null;
+    }
+
 }
