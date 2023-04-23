@@ -11,17 +11,17 @@
 
 先取用户主动设置的，为空取Nacos中DataId为`hera_javaagent_config`中配置的值，为空则设置默认值。必填项需要用户手动设置，不设置可能会导致探针无法生效。
 
-| 变量名                                                     | 是否必填 | 默认值      | 备注                                                                                   |
-| ---------------------------------------------------------- | -------- | ----------- | -------------------------------------------------------------------------------------- |
-| -javaagent:/opt/soft/opentelemetry-javaagent-all-0.0.1.jar  | 是       |             | 用于表示javaagent探针jar包在服务器上的位置，<br/>我们一般习惯将探针的jar文件更名为opentelemetry-javaagent-all-0.0.1.jar，并放在服务器/opt/soft目录下。 |
-| -Dotel.exporter.prometheus.nacos.addr=${nacosurl}           | 是       |             | Nacos地址                                                                             |
-| -Dotel.resource.attributes=service.name=1-test              | 否       | none        | 用于表示当前服务的应用名。格式是appId-appName。eg：1-test，1是 appId，test是appName。<br/>如果为空，程序⾥默认使⽤none。应⽤是Hera中⾮常重要的元数据，可观测数据展⽰都与应⽤有关。 |
-| -Dotel.traces.exporter=log4j2                              | 否       | log4j2      | 用于表示trace export方式，是通过log4j2将trace输出到日志文件中，默认使用log4j2           |
-| -Dotel.exporter.log.isasync=true                            | 否       | true        | 用于表示是否开log4j2启异步日志，一般出于性能考虑，会是true                             |
-| -Dotel.metrics.exporter=prometheus                          | 否       | prometheus  | 用于表示metrics export方式。默认使用prometheus                                       |
-| -Dotel.javaagent.exclude-classes=com.dianping.cat.*          | 否       | com.dianping.cat.* | 过滤不被探针拦截的包。如果使用到了cat，需要将cat所在的目录进行过滤                  |
-| -Dotel.exporter.log.pathprefix=/home/work/log/              | 否       | /home/work/log/ | 用于表示log4j2的日志位置。<br/>这里log4j2的日志会优先输出到名为MIONE_LOG_PATH的环境变量所表示的位置，如果没有这个环境变量，则会输出到-Dotel.exporter.log.pathprefix \ -Dotel.resource.attributes=service.name目录下。<br/>注意：k8s中，需要将此目录挂载出来，以供日志采集容器能够访问到。 |
-| -Dotel.propagators=tracecontext                             | 否       | tracecontext | 用于表示trace传输的处理类型，目前只用到了tracecontext                                |
+| 变量名                                                     | 是否必填 | 默认值      | 备注                                                                                                                                                                                                   |
+| ---------------------------------------------------------- |:--------:| ----------- |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -javaagent:/opt/soft/opentelemetry-javaagent-all-0.0.1.jar  |    是    |             | 用于表示javaagent探针jar包在服务器上的位置，<br/>我们一般习惯将探针的jar文件更名为opentelemetry-javaagent-all-0.0.1.jar，并放在服务器/opt/soft目录下。                                                                                         |
+| -Dotel.exporter.prometheus.nacos.addr=${nacosurl}           |    是    |             | Nacos地址                                                                                                                                                                                              |
+| -Dotel.resource.attributes=service.name=1-test              |    否    | none        | 用于表示当前服务的应用名。格式是appId-appName。eg：1-test，1是 appId，test是appName。<br/>如果为空，程序⾥默认使⽤none。应⽤是Hera中⾮常重要的元数据，可观测数据展⽰都与应⽤有关。                                                                                  |
+| -Dotel.traces.exporter=log4j2                              |    否    | log4j2      | 用于表示trace export方式，是通过log4j2将trace输出到日志文件中，默认使用log4j2                                                                                                                                                |
+| -Dotel.exporter.log.isasync=true                            |    否    | true        | 用于表示是否开log4j2启异步日志，一般出于性能考虑，会是true，只有在`-Dotel.traces.exporter`值为`log4j2`时生效。                                                                                                                         |
+| -Dotel.metrics.exporter=prometheus                          |    否    | prometheus  | 用于表示metrics export方式。默认使用prometheus                                                                                                                                                                  |
+| -Dotel.javaagent.exclude-classes=com.dianping.cat.*          |    否    | com.dianping.cat.* | 过滤不被探针拦截的包。如果使用到了cat，需要将cat所在的目录进行过滤                                                                                                                                                                 |
+| -Dotel.exporter.log.pathprefix=/home/work/log/              |    否    | /home/work/log/ | 用于表示log4j2的日志位置。<br/>这里log4j2的日志会优先输出到名为MIONE_LOG_PATH的环境变量所表示的位置，如果没有这个环境变量，则会输出到`-Dotel.exporter.log.pathprefix` \ `MIONE_PROJECT_NAME`目录下。<br/>注意：k8s中，需要将此目录挂载出来，以供日志采集容器能够访问到。 |
+| -Dotel.propagators=tracecontext                             |    否    | tracecontext | 用于表示trace传输的处理类型，目前只用到了tracecontext                                                                                                                                                                  |
 
 
 ### 3、环境变量
@@ -29,16 +29,16 @@
 先取用户主动设置的，为空取Nacos中DataId为`hera_javaagent_config`中配置的值，为空则设置默认值。必填项需要用户手动设置，不设置可能会导致探针无法生效。
 
 | 变量名                 | 是否必填 | 默认值 | 备注                                                                                                       |
-|------------------------|--------|--------|------------------------------------------------------------------------------------------------------------|
-| MIONE_PROJECT_ENV_NAME  | 是     | default | 当前部署环境的名称，eg：dev、uat、st、preview、production。如不填，默认使用default。                               |
-| MIONE_PROJECT_ENV_ID    | 是     |        | 当前部署环境的ID。环境id与环境名称，在Hera的指标监控中可以根据不同环境来看监控图表。                                       |
-| MIONE_PROJECT_NAME      | 是     | none   | 用于表示当前服务的应用名。格式是appId-appName。eg：1-test，1是 appId，test是appName。如果为空，程序⾥默认使⽤none。应⽤是Hera中⾮常重要的元数据，可观测数据展⽰都与应⽤有关。 |
-| host.ip                | 否     |        | 用于记录当前物理机IP，展示在trace的process.tags里。在k8s里获取的是pod的IP。在K8s中，使用hera-operator部署时，会由webhook自动生成该环境变量            |
-| node.ip                | 否     |        | 用于记录k8s当前node节点的IP，非k8s部署则不用设置。在K8s中，使用hera-operator部署时，会由webhook自动生成该环境变量                                  |
-| JAVAAGENT_PROMETHEUS_PORT | 否     | 55433  | 当前物理机可用端口号，用于提供给Prometheus拉取jvm metrics的httpServer使用。如果为空，程序里默认使用55433。                              |
-| hera.buildin.k8s       | 否     | 1      | 用于记录是否是k8s部署的服务，如果是k8s的服务，标记为1。如果非k8s部署，可以设置为2。默认为1。如果本地调试，可以设置2。                                      |
-| application            | 否     |        | 是将-Dotel.resource.attributes=service.name=的值所有中划线，转为下划线，用于容器监控的扩展指。在K8s中，使用hera-operator部署时，会由webhook自动生成该环境变量     |
-| serverEnv              | 否     |        | 与MIONE_PROJECT_ENV_NAME的值相同，用于容器监控的扩展指标。在K8s中，使用hera-operator部署时，会由webhook自动生成该环境变量                          |
+|------------------------|:------:|--------|------------------------------------------------------------------------------------------------------------|
+| MIONE_PROJECT_ENV_NAME  |   是   | default | 当前部署环境的名称，eg：dev、uat、st、preview、production。如不填，默认使用default。                               |
+| MIONE_PROJECT_ENV_ID    |   是   |        | 当前部署环境的ID。环境id与环境名称，在Hera的指标监控中可以根据不同环境来看监控图表。                                       |
+| MIONE_PROJECT_NAME      |   是   | none   | 用于表示当前服务的应用名。格式是appId-appName。eg：1-test，1是 appId，test是appName。如果为空，程序⾥默认使⽤none。应⽤是Hera中⾮常重要的元数据，可观测数据展⽰都与应⽤有关。 |
+| host.ip                |   否   |        | 用于记录当前物理机IP，展示在trace的process.tags里。在k8s里获取的是pod的IP。在K8s中，使用hera-operator部署时，会由webhook自动生成该环境变量            |
+| node.ip                |   否   |        | 用于记录k8s当前node节点的IP，非k8s部署则不用设置。在K8s中，使用hera-operator部署时，会由webhook自动生成该环境变量                                  |
+| JAVAAGENT_PROMETHEUS_PORT |   否   | 55433  | 当前物理机可用端口号，用于提供给Prometheus拉取jvm metrics的httpServer使用。如果为空，程序里默认使用55433。                              |
+| hera.buildin.k8s       |   否   | 1      | 用于记录是否是k8s部署的服务，如果是k8s的服务，标记为1。如果非k8s部署，可以设置为2。默认为1。如果本地调试，可以设置2。                                      |
+| application            |   否   |        | 是将`MIONE_PROJECT_NAME`的值所有中划线，转为下划线，用于容器监控的扩展指。在K8s中，使用hera-operator部署时，会由webhook自动生成该环境变量     |
+| serverEnv              |   否   |        | 与MIONE_PROJECT_ENV_NAME的值相同，用于容器监控的扩展指标。在K8s中，使用hera-operator部署时，会由webhook自动生成该环境变量                          |
 
 ### 4、log-agent
 目前Hera的trace、log都使用log-agent来收集，log-agent需要以sidecar的方式与应用部署在同一容器中，并且需要被采集的日志文件目录与trace日志目录同时挂载出来，以能够被log-agent采集。
@@ -53,7 +53,9 @@ FROM openjdk:8-jre
 COPY ./hera-demo-client-1.0.0-SNAPSHOT.jar /home/work/hera-demo-client-1.0.0-SNAPSHOT.jar
 COPY ./opentelemetry-javaagent-0.1.0-SNAPSHOT-all.jar /opt/soft/opentelemetry-javaagent-0.1.0-SNAPSHOT-all.jar
 
-ENTRYPOINT ["java","-javaagent:/opt/soft/opentelemetry-javaagent-0.1.0-SNAPSHOT-all.jar","-Dotel.exporter.prometheus.nacos.addr=nacos:80","-Xloggc:/home/work/log/gc.log","-Duser.timezone=Asia/Shanghai","-XX:+HeapDumpOnOutOfMemoryError","-XX:HeapDumpPath=/home/dum/oom.dump","-jar","/home/work/hera-demo-client-1.0.0-SNAPSHOT.jar","&&","tail","-f","/dev/null"]
+ENTRYPOINT ["java","-javaagent:/opt/soft/opentelemetry-javaagent-0.1.0-SNAPSHOT-all.jar","-Dotel.exporter.prometheus.nacos.addr=nacos:80",
+"-Xloggc:/home/work/log/gc.log","-Duser.timezone=Asia/Shanghai","-XX:+HeapDumpOnOutOfMemoryError","-XX:HeapDumpPath=/home/dum/oom.dump","-jar",
+"/home/work/hera-demo-client-1.0.0-SNAPSHOT.jar","&&","tail","-f","/dev/null"]
 ```
 K8S yaml
 
@@ -286,3 +288,39 @@ Hera通过TPC系统来录入、同步、管理应用的元数据信息，以及�
 #### （1）创建trace-space
 
 ![log-space3](images/log-space3.png)
+
+#### （2）创建trace-store
+
+日志类型选择“opentelemetry日志”即可，其他的配置默认即可。
+
+![log-store3](images/log-store3.png)
+
+#### （3）创建trace-tail
+与一般的应用创建tail大致相同，只是配置相对来说比较固定。
+
+    服务应用名：只能选择china_log-agent
+
+    服务分组：选择default_env
+
+    服务IP：全选
+
+    日志文件路径：填写“/home/work/log/*/trace.log”。它会扫描所有/home/work/log下的trace.log文件进行采集
+
+    收集速率：选择快速收集
+
+    MQ配置：选择我们在日志资源中配置的RocketMQ集群，后面则是需要填写topic，如果无更改固定为：mone_hera_staging_trace_etl_server
+
+![log-tail3](images/log-tail3.png)
+
+![log-tail4](images/log-tail4.png)
+
+## 四、首页关注应用
+
+在首页添加应用到“我参与的应用”或者“我关注的应用”后，就可以查看监控、链路信息了。
+
+![hera-dash1](images/hera-dash1.png)
+
+![hera-dash2](images/hera-dash2.png)
+
+![hera-dash3](images/hera-dash3.png)
+
