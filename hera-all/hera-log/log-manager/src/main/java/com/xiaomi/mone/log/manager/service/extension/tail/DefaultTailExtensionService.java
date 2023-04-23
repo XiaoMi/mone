@@ -4,6 +4,7 @@ import com.xiaomi.mone.log.api.enums.OperateEnum;
 import com.xiaomi.mone.log.api.enums.ProjectTypeEnum;
 import com.xiaomi.mone.log.manager.dao.MilogLogstoreDao;
 import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
+import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogTailDo;
 import com.xiaomi.mone.log.manager.service.extension.agent.MilogAgentServiceImpl;
 import com.xiaomi.mone.log.manager.service.impl.LogTailServiceImpl;
@@ -40,6 +41,11 @@ public class DefaultTailExtensionService implements TailExtensionService {
 
     @Resource(name = DEFAULT_AGENT_EXTENSION_SERVICE_KEY)
     private MilogAgentServiceImpl milogAgentService;
+
+    @Override
+    public boolean tailHandlePreprocessingSwitch(MilogLogStoreDO milogLogStore, MilogLogtailParam param) {
+        return true;
+    }
 
     @Override
     public boolean bindMqResourceSwitch(Integer appType) {
