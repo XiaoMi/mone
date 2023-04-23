@@ -17,7 +17,8 @@ public interface EsExtensionService {
 
     /**
      * The domain of the abnormal trace, is used for querying related trace lists for metrics
+     * @param platForm
      * @return
      */
-    String getExceptionTraceDomain();
+    String getExceptionTraceDomain(Integer platForm);
 }

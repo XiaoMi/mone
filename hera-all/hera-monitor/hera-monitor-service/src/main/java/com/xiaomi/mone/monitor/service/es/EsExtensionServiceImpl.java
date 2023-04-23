@@ -57,7 +57,7 @@ public class EsExtensionServiceImpl implements EsExtensionService {
     }
 
     @Override
-    public String getExceptionTraceDomain() {
+    public String getExceptionTraceDomain(Integer platForm) {
         return DashboardConstant.EXCEPTION_TRACE_DOMAIN_HERA;
     }
 }
