@@ -34,30 +34,38 @@ jobs:
               - 'hera-all/hera-operator/**'
             hera-tspandata:
               - 'hera-all/hera-tspandata/**'
-            milog:
-              - 'hera-all/milog/**'
-            mimonitor:
-              - 'hera-all/mimonitor/**'
+            hera-log:
+              - 'hera-all/hera-log/**'
+            hera-monitor:
+              - 'hera-all/hera-monitor/**'
             prometheus-agent:
               - 'hera-all/prometheus-agent/**'
             prometheus-starter-all:
               - 'hera-all/prometheus-starter-all/**'
             trace-etl:
               - 'hera-all/trace-etl/**'
+            hera-demo-client:
+              - 'hera-all/hera-demo-client/**'
+            hera-webhook:
+              - 'hera-all/hera-webhook/**'
         # run only if some file in 'src' folder was changed
-      - if: always() && steps.changes.outputs.hera-app == 'true'
+      - if: always() && steps.changes.outputs.hera-app == 'true' || github.event == 'workflow_dispatch'
         run: cd hera-all/hera-app; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
       - if: always() && steps.changes.outputs.hera-operator == 'true' || github.event == 'workflow_dispatch'
         run: cd hera-all/hera-operator; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
       - if: always() && steps.changes.outputs.hera-tspandata == 'true' || github.event == 'workflow_dispatch'
         run: cd hera-all/hera-tspandata; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
-      - if: always() && steps.changes.outputs.milog == 'true' || github.event == 'workflow_dispatch'
-        run: cd hera-all/milog; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
-      - if: always() && steps.changes.outputs.mimonitor == 'true' || github.event == 'workflow_dispatch'
-        run: cd hera-all/mimonitor; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..\
+      - if: always() && steps.changes.outputs.hera-log == 'true' || github.event == 'workflow_dispatch'
+        run: cd hera-all/hera-log; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
+      - if: always() && steps.changes.outputs.hera-monitor == 'true' || github.event == 'workflow_dispatch'
+        run: cd hera-all/hera-monitor; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..\
       - if: always() && steps.changes.outputs.prometheus-agent == 'true' || github.event == 'workflow_dispatch'
         run: cd hera-all/prometheus-agent; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
       - if: always() && steps.changes.outputs.prometheus-starter-all == 'true' || github.event == 'workflow_dispatch'
         run: cd hera-all/prometheus-starter-all; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
       - if: always() && steps.changes.outputs.trace-etl == 'true' || github.event == 'workflow_dispatch'
         run: cd hera-all/trace-etl; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
+      - if: always() && steps.changes.outputs.hera-demo-client == 'true' || github.event == 'workflow_dispatch'
+        run: cd hera-all/hera-demo-client; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
+      - if: always() && steps.changes.outputs.hera-webhook == 'true' || github.event == 'workflow_dispatch'
+        run: cd hera-all/hera-webhook; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
