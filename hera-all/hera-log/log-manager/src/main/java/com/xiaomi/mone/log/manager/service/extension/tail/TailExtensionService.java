@@ -1,6 +1,7 @@
 package com.xiaomi.mone.log.manager.service.extension.tail;
 
 import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
+import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogTailDo;
 
 import java.util.List;
@@ -13,6 +14,8 @@ import java.util.List;
  */
 public interface TailExtensionService {
     String DEFAULT_TAIL_EXTENSION_SERVICE_KEY = "defaultTailExtensionService";
+
+    boolean tailHandlePreprocessingSwitch(MilogLogStoreDO milogLogStore, MilogLogtailParam param);
 
     boolean bindMqResourceSwitch(Integer appType);
 

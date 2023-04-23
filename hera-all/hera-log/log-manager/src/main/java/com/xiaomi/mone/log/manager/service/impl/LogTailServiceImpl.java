@@ -207,7 +207,9 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         param.setValueList(IndexUtils.getNumberValueList(logStore.getKeyList(), param.getValueList()));
 
         // 参数处理
-        handleMqTailParam(param);
+        if (tailExtensionService.tailHandlePreprocessingSwitch(logStore, param)) {
+            handleMqTailParam(param);
+        }
 
         AppBaseInfo appBaseInfo = heraAppService.queryById(param.getMilogAppId());
 
@@ -371,25 +373,27 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
             return new Result<>(CommonError.ParamsError.getCode(), errorMsg);
         }
 
-        // 处理 MqTailParam 参数
-        handleMqTailParam(param);
-
         // 查询 MilogLogStoreDO 对象
-        MilogLogStoreDO milogLogStoreDO = logstoreDao.queryById(param.getStoreId());
-        if (milogLogStoreDO == null) {
+        MilogLogStoreDO logStoreDO = logstoreDao.queryById(param.getStoreId());
+        if (logStoreDO == null) {
             return new Result<>(CommonError.ParamsError.getCode(), "logstore不存在");
+        }
+
+        // 处理 MqTailParam 参数
+        if (tailExtensionService.tailHandlePreprocessingSwitch(logStoreDO, param)) {
+            handleMqTailParam(param);
         }
 
         // 检查别名是否重复
         String tail = param.getTail();
         Long id = param.getId();
-        String machineRoom = milogLogStoreDO.getMachineRoom();
+        String machineRoom = logStoreDO.getMachineRoom();
         if (checkTailNameSame(tail, id, machineRoom)) {
             return new Result<>(CommonError.ParamsError.getCode(), "别名重复，请确定后提交");
         }
 
         // 处理 value list
-        param.setValueList(IndexUtils.getNumberValueList(milogLogStoreDO.getKeyList(), param.getValueList()));
+        param.setValueList(IndexUtils.getNumberValueList(logStoreDO.getKeyList(), param.getValueList()));
 
         // tailRate 转 filterConf
         FilterDefine filterDefine = FilterDefine.consRateLimitFilterDefine(param.getTailRate());
@@ -399,7 +403,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         }
 
         // 更新 MilogLogTailDo 对象
-        MilogLogTailDo milogLogtailDo = milogLogtailParam2Do(param, milogLogStoreDO);
+        MilogLogTailDo milogLogtailDo = milogLogtailParam2Do(param, logStoreDO);
         wrapBaseCommon(milogLogtailDo, OperateEnum.UPDATE_OPERATE);
         boolean isSucceed = milogLogtailDao.update(milogLogtailDo);
 
@@ -409,12 +413,12 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
             if (tailExtensionService.bindMqResourceSwitch(appType) || processSwitch) {
                 if (!processSwitch) {
                     tailExtensionService.defaultBindingAppTailConfigRel(param.getId(), param.getMilogAppId(),
-                            null == param.getMiddlewareConfigId() ? milogLogStoreDO.getMqResourceId() : param.getMiddlewareConfigId(),
+                            null == param.getMiddlewareConfigId() ? logStoreDO.getMqResourceId() : param.getMiddlewareConfigId(),
                             param.getTopicName(), param.getBatchSendSize());
                 }
                 try {
                     List<String> oldIps = ret.getIps();
-                    boolean supportedConsume = logTypeProcessor.supportedConsume(LogTypeEnum.type2enum(milogLogStoreDO.getLogType()));
+                    boolean supportedConsume = logTypeProcessor.supportedConsume(LogTypeEnum.type2enum(logStoreDO.getLogType()));
                     tailExtensionService.updateSendMsg(milogLogtailDo, oldIps, supportedConsume);
                 } catch (Exception e) {
                     new Result<>(CommonError.UnknownError.getCode(), CommonError.UnknownError.getMessage(), "推送配置错误");
