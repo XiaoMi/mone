@@ -58,6 +58,9 @@ public class AlarmPresetMetricsServiceImpl implements AlarmPresetMetricsService 
     }
 
     private AlarmPresetMetricsPOJO convert(AlarmPresetMetrics metrics){
+        if(metrics == null){
+            return null;
+        }
         AlarmPresetMetricsPOJO pojo = new AlarmPresetMetricsPOJO();
         pojo.setCode(metrics.getCode());
         pojo.setMessage(metrics.getMessage());
@@ -78,6 +81,9 @@ public class AlarmPresetMetricsServiceImpl implements AlarmPresetMetricsService 
     }
 
     private BasicUrlTypePOJO convert(BasicUrlType basicUrlType){
+        if(basicUrlType == null){
+            return null;
+        }
         BasicUrlTypePOJO pojo = new BasicUrlTypePOJO();
         pojo.setName(basicUrlType.getName());
         pojo.setReqJsonObject(basicUrlType.getReqJsonObject());
