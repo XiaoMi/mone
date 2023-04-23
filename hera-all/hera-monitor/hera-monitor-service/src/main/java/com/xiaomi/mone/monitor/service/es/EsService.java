@@ -59,7 +59,7 @@ public class EsService {
 
     public Result query(String index, MetricDetailQuery param, Integer page, Integer pageSize) throws IOException {
 
-        String exceptionTraceDomain = esExtensionService.getExceptionTraceDomain();
+        String exceptionTraceDomain = esExtensionService.getExceptionTraceDomain(param.getAppSource());
         Map<String, String> labels = param.convertEsParam(exceptionTraceDomain);
 
         if (StringUtils.isEmpty(index)) {
