@@ -3,8 +3,8 @@ package com.xiaomi.mone.monitor.service.prometheus;
 import com.google.gson.Gson;
 import com.xiaomi.mone.monitor.dao.AppCapacityAutoAdjustDao;
 import com.xiaomi.mone.monitor.dao.model.AppCapacityAutoAdjust;
+import com.xiaomi.mone.monitor.service.api.PrometheusServiceExtension;
 import com.xiaomi.mone.monitor.service.extension.MetricsExtensionService;
-import com.xiaomi.mone.monitor.service.impl.PrometheusServiceImpl;
 import com.xiaomi.mone.monitor.service.kubernetes.CapacityAdjustMessageService;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
@@ -57,7 +57,7 @@ public class PrometheusService {
     private final Gson gson = new Gson();
 
     @Autowired
-    private PrometheusServiceImpl prometheusServiceImpl;
+    private PrometheusServiceExtension prometheusServiceImpl;
 
 
     @Autowired
