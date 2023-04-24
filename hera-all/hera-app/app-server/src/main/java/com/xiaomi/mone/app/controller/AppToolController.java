@@ -17,12 +17,4 @@ import static com.xiaomi.mone.app.common.Constant.SUCCESS_MESSAGE;
 @RestController
 public class AppToolController {
 
-    @Autowired
-    private HeraJobAppService heraJobAppService;
-
-    @GetMapping("tool/mis/app/name")
-    public String queryById(@RequestParam("name") String name) {
-        heraJobAppService.synchronousMisApp(name);
-        return SUCCESS_MESSAGE;
-    }
 }

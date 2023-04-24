@@ -10,7 +10,6 @@ import com.xiaomi.mone.app.api.model.HeraAppBaseQuery;
 import com.xiaomi.mone.app.api.model.HeraAppRoleModel;
 import com.xiaomi.mone.app.api.response.AppBaseInfo;
 import com.xiaomi.mone.app.api.service.HeraAppService;
-import com.xiaomi.mone.app.api.utils.AppTypeTransferUtil;
 import com.xiaomi.mone.app.dao.HeraAppBaseInfoMapper;
 import com.xiaomi.mone.app.dao.HeraAppExcessInfoMapper;
 import com.xiaomi.mone.app.dao.mapper.HeraAppRoleMapper;
@@ -22,6 +21,7 @@ import com.xiaomi.mone.app.model.HeraAppExcessInfo;
 import com.xiaomi.mone.app.model.HeraAppRole;
 import com.xiaomi.mone.app.service.HeraAppBaseInfoService;
 import com.xiaomi.mone.app.service.HeraAppRoleService;
+import com.xiaomi.mone.app.service.extension.AppTypeServiceExtension;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -59,18 +59,21 @@ public class HeraAppServiceImpl implements HeraAppService {
 
     private final HeraAppRoleMapper heraAppRoleMapper;
 
-    public HeraAppServiceImpl(HeraAppBaseInfoMapper heraAppBaseInfoMapper, HeraAppExcessInfoMapper heraAppExcessInfoMapper, @Lazy HeraAppBaseInfoServiceImpl heraAppBaseInfoService, HeraAppRoleService roleService, HeraAppRoleMapper heraAppRoleMapper) {
+    private final AppTypeServiceExtension appTypeServiceExtension;
+
+    public HeraAppServiceImpl(HeraAppBaseInfoMapper heraAppBaseInfoMapper, HeraAppExcessInfoMapper heraAppExcessInfoMapper, @Lazy HeraAppBaseInfoServiceImpl heraAppBaseInfoService, HeraAppRoleService roleService, HeraAppRoleMapper heraAppRoleMapper, AppTypeServiceExtension appTypeServiceExtension) {
         this.heraAppBaseInfoMapper = heraAppBaseInfoMapper;
         this.heraAppExcessInfoMapper = heraAppExcessInfoMapper;
         this.heraAppBaseInfoService = heraAppBaseInfoService;
         this.roleService = roleService;
         this.heraAppRoleMapper = heraAppRoleMapper;
+        this.appTypeServiceExtension = appTypeServiceExtension;
     }
 
     @Override
     public List<AppBaseInfo> queryAppInfoWithLog(String appName, Integer type) {
         if (Objects.nonNull(type)) {
-            type = AppTypeTransferUtil.queryPlatformTypeWithLogType(type);
+            type = appTypeServiceExtension.getAppTypeLog(type);
         }
         List<AppBaseInfo> appBaseInfos = heraAppBaseInfoMapper.queryAppInfoWithLog(appName, type);
         if (CollectionUtils.isNotEmpty(appBaseInfos)) {
@@ -106,8 +109,6 @@ public class HeraAppServiceImpl implements HeraAppService {
         }
         if (null != platformType) {
             queryWrapper.eq("platform_type", platformType);
-        } else {
-            queryWrapper.ne("platform_type", PlatFormTypeEnum.CHINA.getCode());
         }
         queryWrapper.eq("status", NOT_DELETED.getCode());
         List<HeraAppBaseInfo> appBaseInfos = heraAppBaseInfoMapper.selectList(queryWrapper);
@@ -127,7 +128,7 @@ public class HeraAppServiceImpl implements HeraAppService {
         QueryWrapper<HeraAppBaseInfo> queryWrapper = new QueryWrapper<HeraAppBaseInfo>().eq("status", StatusEnum.NOT_DELETED.getCode());
         queryWrapper.eq("bind_id", appId.toString());
         if (Objects.nonNull(type)) {
-            Integer platformType = AppTypeTransferUtil.queryPlatformTypeWithLogType(type);
+            Integer platformType = appTypeServiceExtension.getAppTypeLog(type);
             queryWrapper.eq("platform_type", platformType);
         }
         HeraAppBaseInfo heraAppBaseInfo = heraAppBaseInfoMapper.selectOne(queryWrapper);
@@ -175,7 +176,7 @@ public class HeraAppServiceImpl implements HeraAppService {
             appBaseInfo.setTreeIds(appExcessInfo.getTreeIds());
         }
         // 设置为log的平台类型
-        Integer code = AppTypeTransferUtil.queryLogTypeWithPlatformType(heraAppBaseInfo.getPlatformType());
+        Integer code = appTypeServiceExtension.getAppTypePlatformType(heraAppBaseInfo.getPlatformType());
         appBaseInfo.setPlatformType(code);
         appBaseInfo.setPlatformName(PlatFormTypeEnum.getEnum(heraAppBaseInfo.getPlatformType()).getName());
         appBaseInfo.setAppTypeName(ProjectTypeEnum.queryTypeByCode(appBaseInfo.getAppType()));
