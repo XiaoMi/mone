@@ -5,11 +5,7 @@ import com.google.gson.JsonObject;
 import com.xiaomi.mone.monitor.bo.UserInfo;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.model.PageData;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.InitializingBean;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,13 +16,9 @@ import java.util.Set;
  * @date 2022/11/7 2:23 下午
  */
 @Service
-public class AlertServiceAdapt implements ApplicationContextAware,InitializingBean {
+public class AlertServiceAdapt {
 
-    private ApplicationContext applicationContext;
-
-    @Value("${alert.manager.env:staging}")
-    private String alertManagerEnv;
-
+    @Autowired
     private AlertManager alertManager;
 
 
@@ -114,29 +106,6 @@ public class AlertServiceAdapt implements ApplicationContextAware,InitializingBe
 
     public Result<JsonObject> deleteAlertGroup(String user, long id) {
         return alertManager.deleteAlertGroup(user, id);
-    }
-
-    @Override
-    public void afterPropertiesSet() throws Exception {
-
-
-        switch (alertManagerEnv){
-            case "openSource" :
-                alertManager = (AlertManager)this.applicationContext.getBean("openSourceAlertManager");
-
-            case "micloud" :
-                alertManager = (AlertManager)this.applicationContext.getBean("miCloudAlertManager");
-
-            default:
-                alertManager = (AlertManager)this.applicationContext.getBean("openSourceAlertManager");
-        }
-
-    }
-
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-
-        this.applicationContext = applicationContext;
     }
 
     public Integer getDefaultIamId() {
