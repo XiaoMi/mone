@@ -48,14 +48,4 @@ public enum PlatFormType {
         return desc;
     }
 
-    public static Integer getCodeByName(String name){
-        PlatFormType[] values = PlatFormType.values();
-        for(PlatFormType value : values){
-            if(value.getName().equals(name)){
-                return value.getCode();
-            }
-        }
-        return null;
-    }
-
 }

@@ -16,27 +16,12 @@
 
 package com.xiaomi.mone.monitor.service.extension;
 
-import com.xiaomi.mone.monitor.bo.Pair;
-import com.xiaomi.mone.monitor.bo.PlatForm;
-
-import java.util.List;
-
 /**
  * @author shanwb
- * @date 2023-04-20
+ * @date 2023-04-23
  */
-public interface PlatFormTypeExtensionService {
+public interface MetricsExtensionService {
 
-    boolean belongPlatForm(Integer typeCode, PlatForm platForm);
-
-    Integer getMarketType(Integer typeCode);
-
-    List<Pair>  getPlatFormTypeDescList();
-
-    String getGrafanaDirByTypeCode(Integer typeCode);
-
-    boolean checkTypeCode(Integer typeCode);
-
-    Integer getTypeCodeByName(String typeName);
+    String getMetricsPrefix();
 
 }

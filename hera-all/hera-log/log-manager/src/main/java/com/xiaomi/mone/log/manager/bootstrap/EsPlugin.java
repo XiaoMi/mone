@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Resource;
 import java.util.List;
 
+import static com.xiaomi.mone.log.common.Constant.GSON;
+
 @DOceanPlugin
 @Slf4j
 public class EsPlugin implements IPlugin {
@@ -51,8 +53,7 @@ public class EsPlugin implements IPlugin {
             Ioc.ins().putBean(Constant.ES_SERV_BEAN_PRE + cluster.getId(), esService);
             log.info("ES客户端[{}]生成成功[{}]", cluster.getName(), Constant.ES_SERV_BEAN_PRE + cluster.getId());
         } catch (Exception e) {
-            log.error("init es cluster client error,address:{},userName:{},password:{},message:{}",
-                    cluster.getAddr(), cluster.getUser(), cluster.getPwd(), e.getMessage(), e);
+            log.error("init es cluster client error,cluster{}", GSON.toJson(cluster), e);
         }
     }
 
