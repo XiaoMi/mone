@@ -14,10 +14,12 @@ import com.xiaomi.youpin.prometheus.agent.param.scrapeConfig.ScrapeConfigParam;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.Reference;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service(value = "openSourceScrapeJob")
+@ConditionalOnProperty(name = "service.selector.property", havingValue = "outer")
 public class ScrapeJobImpl implements ScrapeJob {
 
     @Value("${dubbo.group.alert}")
