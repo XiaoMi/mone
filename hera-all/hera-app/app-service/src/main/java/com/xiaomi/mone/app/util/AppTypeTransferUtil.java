@@ -1,4 +1,4 @@
-package com.xiaomi.mone.app.api.utils;
+package com.xiaomi.mone.app.util;
 
 import com.xiaomi.mone.app.enums.PlatFormTypeEnum;
 import com.xiaomi.mone.app.enums.ProjectTypeEnum;
