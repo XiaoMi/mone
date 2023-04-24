@@ -21,6 +21,7 @@ import com.xiaomi.youpin.prometheus.agent.api.service.PrometheusAlertService;
 import com.xiaomi.youpin.prometheus.agent.param.alert.RuleAlertParam;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.Reference;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -34,6 +35,7 @@ import java.util.Set;
  */
 @Slf4j
 @Service(value="openSourceAlertManager")
+@ConditionalOnProperty(name = "service.selector.property", havingValue = "outer")
 public class AlertManagerImpl implements AlertManager {
 
     @Reference(registry = "registryConfig",check = false, interfaceClass = PrometheusAlertService.class,group="${dubbo.group.alert}")
