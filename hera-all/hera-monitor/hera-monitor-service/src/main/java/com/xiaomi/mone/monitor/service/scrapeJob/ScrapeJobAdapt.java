@@ -2,20 +2,19 @@ package com.xiaomi.mone.monitor.service.scrapeJob;
 
 import com.google.gson.JsonObject;
 import com.xiaomi.mone.monitor.result.Result;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 import org.springframework.stereotype.Service;
 
 @Service
-public class ScrapeJobAdapt implements ApplicationContextAware, InitializingBean {
+public class ScrapeJobAdapt {
     private ApplicationContext applicationContext;
 
     @Value("${scrape.job:staging}")
     private String ScrapeJobEnv;
 
+    @Autowired
     private ScrapeJob scrapeJob;
 
     public Result addScrapeJob(JsonObject param, String identifyId, String user) {
@@ -38,25 +37,4 @@ public class ScrapeJobAdapt implements ApplicationContextAware, InitializingBean
         return scrapeJob.queryScrapeJobByName(name,identifyId, user);
     }
 
-    @Override
-    public void afterPropertiesSet() throws Exception {
-
-
-        switch (ScrapeJobEnv){
-            case "openSource" :
-                scrapeJob = (ScrapeJob)this.applicationContext.getBean("openSourceScrapeJob");
-
-            case "micloud" :
-                scrapeJob = (ScrapeJob)this.applicationContext.getBean("miCloudScrapeJob");
-
-            default:
-                scrapeJob = (ScrapeJob)this.applicationContext.getBean("openSourceScrapeJob");
-        }
-
-    }
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
-
-        this.applicationContext = applicationContext;
-    }
 }
