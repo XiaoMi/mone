@@ -9,11 +9,6 @@
 "honor_labels":false,
 "honor_timestamps":false,
 "scheme":"http",
-"params":{
-"token":[
-"${token}"
-]
-},
 "relabel_configs":[
 {
 "regex":"(.*)",
