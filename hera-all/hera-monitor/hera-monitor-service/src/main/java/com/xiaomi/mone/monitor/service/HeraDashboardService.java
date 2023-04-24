@@ -16,10 +16,12 @@ import com.xiaomi.mone.monitor.service.prometheus.JobService;
 import com.xiaomi.mone.monitor.utils.FreeMarkerUtil;
 import freemarker.template.TemplateException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.io.*;
 import java.util.*;
 
@@ -64,6 +66,35 @@ public class HeraDashboardService {
 
     @Value("${server.type}")
     private String serverType;
+
+    @NacosValue(value = "${prometheus.url}", autoRefreshed = true)
+    private String prometheusUrl;
+
+    @PostConstruct
+    public void init() {
+        try {
+            log.info("begin createDefaultGrafanaResource");
+            createDefaultScrapeJob();
+            createDefaultDashboardTemplate();
+            DashboardDTO dataSourceDTO = new DashboardDTO();
+            if (StringUtils.isBlank(dataSourceDTO.getPrometheusDatasource())) {
+                dataSourceDTO.setPrometheusDatasource(prometheusUrl);
+            }
+            if (StringUtils.isBlank(dataSourceDTO.getUsername())) {
+                dataSourceDTO.setUsername(DashboardConstant.GRAFANA_USER_NAME);
+            }
+            if (StringUtils.isBlank(dataSourceDTO.getPassword())) {
+                dataSourceDTO.setPassword(DashboardConstant.GRAFANA_PASSWORD);
+            }
+            if (StringUtils.isBlank(dataSourceDTO.getDashboardFolderName())) {
+                dataSourceDTO.setDashboardFolderName(DashboardConstant.DEFAULT_FOLDER_NAME);
+            }
+            Result dashboard = createGrafanaResources(dataSourceDTO);
+        } catch (Exception e) {
+            log.error("GrafanaInitController init error:", e);
+            throw new RuntimeException("GrafanaInitController init error");
+        }
+    }
 
     public Result createGrafanaResources(DashboardDTO dashboardDTO) {
         log.info("HeraDashboardService.createGrafanaResources param:{}", gson.toJson(dashboardDTO));
