@@ -14,11 +14,11 @@ import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.prometheus.JobService;
 import com.xiaomi.mone.monitor.utils.FreeMarkerUtil;
-import freemarker.template.TemplateException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -31,6 +31,7 @@ import java.util.*;
  */
 @Service
 @Slf4j
+@ConditionalOnProperty(name = "service.selector.property", havingValue = "outer")
 public class HeraDashboardService {
     private Gson gson = new Gson();
 

@@ -27,15 +27,4 @@ public class GrafanaInitController {
 
     @Autowired
     HeraDashboardService heraDashboardService;
-
-    @PostMapping(path = "/api/grafanaTemplate/apply")
-    public Result applyGrafanaTemplate() {
-        return Result.success("");
-    }
-
-
-    @GetMapping(path = "/api/grafanaResources/create")
-    public Result createDashboard() {
-        return Result.success("ok");
-    }
 }
