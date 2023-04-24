@@ -1,25 +1,14 @@
 package com.xiaomi.mone.monitor.service;
 
-import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.gson.*;
-import com.xiaomi.mone.monitor.bo.AppType;
 import com.xiaomi.mone.monitor.dao.model.GrafanaTemplate;
-import com.xiaomi.mone.monitor.service.impl.GrafanaServiceExtensionImpl;
+import com.xiaomi.mone.monitor.service.api.GrafanaServiceExtension;
 import com.xiaomi.mone.monitor.service.model.MutiGrafanaResponse;
-import com.xiaomi.mone.monitor.utils.FreeMarkerUtil;
-import freemarker.template.TemplateException;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import com.xiaomi.mone.monitor.service.model.GrafanaResponse;
 
-import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * @author zhangxiaowei6
@@ -28,7 +17,7 @@ import java.util.stream.Collectors;
 @Service
 public class GrafanaService {
     @Autowired
-    GrafanaServiceExtensionImpl grafanaServiceExtension;
+    GrafanaServiceExtension grafanaServiceExtension;
 
     public void setFolderData(String area) {
         grafanaServiceExtension.setFolderData(area);
