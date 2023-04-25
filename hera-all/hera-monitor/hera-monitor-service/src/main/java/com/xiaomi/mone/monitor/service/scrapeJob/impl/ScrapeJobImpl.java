@@ -1,15 +1,10 @@
 package com.xiaomi.mone.monitor.service.scrapeJob.impl;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.xiaomi.mone.monitor.result.Result;
-import com.xiaomi.mone.monitor.service.alertmanager.client.Request;
-import com.xiaomi.mone.monitor.service.alertmanager.client.model.HttpMethodName;
 import com.xiaomi.mone.monitor.service.scrapeJob.ScrapeJob;
-import com.xiaomi.youpin.prometheus.agent.api.service.PrometheusAlertService;
 import com.xiaomi.youpin.prometheus.agent.api.service.PrometheusScrapeJobService;
-import com.xiaomi.youpin.prometheus.agent.param.alert.RuleAlertParam;
 import com.xiaomi.youpin.prometheus.agent.param.scrapeConfig.ScrapeConfigParam;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.Reference;
