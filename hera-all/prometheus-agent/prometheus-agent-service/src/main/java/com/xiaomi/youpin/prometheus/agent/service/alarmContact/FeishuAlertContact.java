@@ -54,8 +54,14 @@ public class FeishuAlertContact extends BaseAlertContact {
             Map<String, Object> map = new HashMap<>();
             map.put("priority", "P" + String.valueOf(priority));
             map.put("title", fireResult.getCommonAnnotations().getTitle());
-            map.put("alert_op", alert.getLabels().getAlert_op());
-            map.put("alert_value", alert.getLabels().getAlert_value());
+            String alertOp = alert.getLabels().getAlert_op();
+            String alertValue = alert.getLabels().getAlert_value();
+            if (alertOp == null || alertOp.isEmpty()) {
+                alertOp = "";
+                alertValue = "";
+            }
+            map.put("alert_op", alertOp);
+            map.put("alert_value", alertValue);
             map.put("application", alert.getLabels().getApplication());
             map.put("silence_url", silenceUrl);
             CommonLabels commonLabels = fireResult.getCommonLabels();
