@@ -10,7 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>app-server</artifactId>
-    <version>1.1-swb-SNAPSHOT</version>
+    <version>${hera-app.release.version}</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
