@@ -1,18 +1,12 @@
 package com.xiaomi.mone.monitor.service.prometheus;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.xiaomi.mone.monitor.dao.AppScrapeJobDao;
 import com.xiaomi.mone.monitor.dao.model.AppScrapeJob;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
-import com.xiaomi.mone.monitor.service.alertmanager.AlertManager;
 import com.xiaomi.mone.monitor.service.alertmanager.AlertServiceAdapt;
-import com.xiaomi.mone.monitor.service.alertmanager.client.Request;
-import com.xiaomi.mone.monitor.service.alertmanager.client.model.HttpMethodName;
-import com.xiaomi.mone.monitor.service.alertmanager.impl.AlertManagerImpl;
-import com.xiaomi.mone.monitor.service.alertmanager.impl.MiCloudAlertManager;
 import com.xiaomi.mone.monitor.service.model.PageData;
 import com.xiaomi.mone.monitor.service.scrapeJob.ScrapeJobAdapt;
 import lombok.extern.slf4j.Slf4j;
