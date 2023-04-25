@@ -12,7 +12,6 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 
-import javax.validation.constraints.NotNull;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -44,7 +43,6 @@ public class SearchLog {
         return boolQueryBuilder;
     }
 
-    @NotNull
     private static BoolQueryBuilder buildCommonBuilder(LogQuery logQuery) {
         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
         boolQueryBuilder.filter(QueryBuilders.rangeQuery("timestamp").from(logQuery.getStartTime()).to(logQuery.getEndTime()));
