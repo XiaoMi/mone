@@ -23,7 +23,7 @@ import com.xiaomi.mone.app.service.HeraAppBaseInfoService;
 import com.xiaomi.mone.app.service.HeraAppRoleService;
 import com.xiaomi.mone.app.service.extension.AppTypeServiceExtension;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.Service;
 import org.jetbrains.annotations.Nullable;

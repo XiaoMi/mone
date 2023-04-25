@@ -16,7 +16,7 @@ import com.xiaomi.mone.app.service.HeraAppEnvService;
 import com.xiaomi.mone.app.service.env.DefaultEnvIpFetch;
 import com.xiaomi.mone.app.service.env.EnvIpFetch;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
 import org.apache.rocketmq.common.message.Message;
 import org.springframework.beans.BeanUtils;
