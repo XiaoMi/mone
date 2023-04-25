@@ -4,7 +4,7 @@ import com.google.common.collect.Maps;
 import com.xiaomi.mone.log.manager.mapper.MilogAnalyseGraphTypeMapper;
 import com.xiaomi.mone.log.manager.model.pojo.MilogAnalyseGraphTypeDO;
 import com.xiaomi.youpin.docean.anno.Service;
-import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections.CollectionUtils;
 
 import javax.annotation.Resource;
 import java.util.List;
