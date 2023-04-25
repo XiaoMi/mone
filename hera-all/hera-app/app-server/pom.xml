@@ -10,6 +10,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>app-server</artifactId>
+    <version>${hera-app.release.version}</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -23,6 +24,31 @@
         </dependency>
 
         <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+        <!-- inner module -->
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>app-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>app-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>app-service</artifactId>
+        </dependency>
+        <!-- inner module -->
+
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>infra-result</artifactId>
+        </dependency>
+
+        <!-- test -->
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <version>2.2.1.RELEASE</version>
@@ -34,61 +60,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>19.0</version>
-        </dependency>
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>app-api</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>app-common</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>app-service</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>infra-result</artifactId>
-            <version>1.4-SNAPSHOT</version>
-        </dependency>
     </dependencies>
-
-    <build>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-                <excludes>
-                    <exclude>application-*.properties</exclude>
-                </excludes>
-            </resource>
-        </resources>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>com.xiaomi.mone.app.AppBootstrap</mainClass>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-        </plugins>
-    </build>
 
     <profiles>
         <profile>
@@ -148,7 +120,6 @@
                         </excludes>
                     </resource>
                 </resources>
-
             </build>
         </profile>
 
