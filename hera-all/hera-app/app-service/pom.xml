@@ -20,7 +20,6 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>app-api</artifactId>
-            <version>1.0-SNAPSHOT</version>
         </dependency>
         <!-- mybatis-plus -->
         <dependency>

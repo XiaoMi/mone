@@ -24,6 +24,31 @@
         </dependency>
 
         <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+        <!-- inner module -->
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>app-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>app-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>app-service</artifactId>
+        </dependency>
+        <!-- inner module -->
+
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>infra-result</artifactId>
+        </dependency>
+
+        <!-- test -->
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <version>2.2.1.RELEASE</version>
@@ -34,32 +59,6 @@
                     <artifactId>junit-vintage-engine</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>19.0</version>
-        </dependency>
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>app-api</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>app-common</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>app-service</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>infra-result</artifactId>
-            <version>1.4-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
