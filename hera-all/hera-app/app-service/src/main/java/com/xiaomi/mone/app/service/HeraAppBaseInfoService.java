@@ -5,7 +5,6 @@ import com.xiaomi.mone.app.api.model.HeraAppBaseInfoParticipant;
 import com.xiaomi.mone.app.api.model.HeraAppBaseQuery;
 import com.xiaomi.mone.app.enums.OperateEnum;
 import com.xiaomi.mone.app.model.HeraAppBaseInfo;
-import com.xiaomi.mone.app.model.dto.MisAppInfoDTO;
 
 import java.util.List;
 
@@ -18,8 +17,6 @@ import java.util.List;
 public interface HeraAppBaseInfoService {
 
     HeraAppBaseInfo queryById(Long id);
-
-    Boolean synchronousMisApp(List<MisAppInfoDTO> data);
 
     void deleAppByBindIdAndPlat(String bindId, Integer plat);
 

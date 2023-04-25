@@ -1,7 +1,5 @@
 package com.xiaomi.mone.app.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.google.common.base.Stopwatch;
 import com.google.gson.Gson;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoParticipant;
@@ -14,8 +12,6 @@ import com.xiaomi.mone.app.enums.StatusEnum;
 import com.xiaomi.mone.app.exception.AppException;
 import com.xiaomi.mone.app.model.HeraAppBaseInfo;
 import com.xiaomi.mone.app.model.HeraAppBaseInfoExample;
-import com.xiaomi.mone.app.model.HeraAppExcessInfo;
-import com.xiaomi.mone.app.model.dto.MisAppInfoDTO;
 import com.xiaomi.mone.app.model.vo.HeraAppEnvVo;
 import com.xiaomi.mone.app.service.HeraAppBaseInfoService;
 import com.xiaomi.mone.app.service.HeraAppEnvService;
@@ -28,8 +24,6 @@ import org.springframework.util.CollectionUtils;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.xiaomi.mone.app.common.Constant.GSON;
 
@@ -63,87 +57,6 @@ public class HeraAppBaseInfoServiceImpl implements HeraAppBaseInfoService {
     public HeraAppBaseInfo queryById(Long id) {
         return heraAppBaseInfoMapper.selectById(id);
     }
-
-    @Override
-    public Boolean synchronousMisApp(List<MisAppInfoDTO> data) {
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        log.info("初始化mis项目开始,共有{}个", data.size());
-        AtomicInteger count = new AtomicInteger();
-        for (MisAppInfoDTO misAppInfoDTO : data) {
-            int increment = count.getAndIncrement();
-            log.debug("mis应用同步,总有{}个应用，开始执行第{}个，还剩下{}个", data.size(), increment, data.size() - increment);
-            HeraAppBaseInfo heraAppBaseInfo = geAppBasesInfo(misAppInfoDTO);
-            if (null == heraAppBaseInfo.getIamTreeId()) {
-                log.info("IAM treeIds is null,app name:{},cName:{}", heraAppBaseInfo.getAppName(), heraAppBaseInfo.getAppCname());
-                continue;
-            }
-            HeraAppBaseInfo existAppBaseInfo = queryAppBaseInfo(heraAppBaseInfo);
-            if (null == existAppBaseInfo) {
-                heraAppBaseInfoMapper.insert(heraAppBaseInfo);
-                HeraAppExcessInfo appExcessInfo = getAppExcessInfo(heraAppBaseInfo.getId(), misAppInfoDTO);
-                heraAppExcessInfoMapper.insert(appExcessInfo);
-            } else {
-                HeraAppExcessInfo heraAppExcessInfo = queryAppExcessInfo(existAppBaseInfo.getId());
-                if (null == heraAppExcessInfo) {
-                    HeraAppExcessInfo appExcessInfo = getAppExcessInfo(existAppBaseInfo.getId(), misAppInfoDTO);
-                    heraAppExcessInfoMapper.insert(appExcessInfo);
-                } else {
-                    //比较IP是否变化--更新
-                    heraAppExcessInfo.setTreeIds(misAppInfoDTO.getTree_id());
-                    heraAppExcessInfo.setNodeIPs(misAppInfoDTO.getCluster_info());
-                    heraAppExcessInfoMapper.updateById(heraAppExcessInfo);
-                }
-            }
-            try {
-                TimeUnit.MILLISECONDS.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-        stopwatch.stop();
-        log.info("初始化mis项目结束，花费时间：{} s", stopwatch.elapsed(TimeUnit.SECONDS));
-        return true;
-    }
-
-    private HeraAppBaseInfo queryAppBaseInfo(HeraAppBaseInfo heraAppBaseInfo) {
-        QueryWrapper queryWrapper = new QueryWrapper();
-        queryWrapper.eq("bind_id", heraAppBaseInfo.getBindId());
-        queryWrapper.eq("app_name", heraAppBaseInfo.getAppName());
-        queryWrapper.eq("iam_tree_id", heraAppBaseInfo.getIamTreeId());
-        return heraAppBaseInfoMapper.selectOne(queryWrapper);
-    }
-
-    private HeraAppExcessInfo queryAppExcessInfo(Integer appBaseId) {
-        QueryWrapper queryWrapper = new QueryWrapper();
-        queryWrapper.eq("app_base_id", appBaseId);
-        return heraAppExcessInfoMapper.selectOne(queryWrapper);
-    }
-
-    private HeraAppBaseInfo geAppBasesInfo(MisAppInfoDTO misAppInfoDTO) {
-        HeraAppBaseInfo milogAppTopicRel = new HeraAppBaseInfo();
-        milogAppTopicRel.setBindId(misAppInfoDTO.getService_id().toString());
-        milogAppTopicRel.setBindType(0);
-        milogAppTopicRel.setAppName(misAppInfoDTO.getService());
-        milogAppTopicRel.setAppCname(misAppInfoDTO.getService());
-        milogAppTopicRel.setAppCname(misAppInfoDTO.getService_cn());
-        milogAppTopicRel.setAppType(0);
-        milogAppTopicRel.setStatus(0);
-        milogAppTopicRel.setCreateTime(new Date());
-        milogAppTopicRel.setUpdateTime(new Date());
-        return milogAppTopicRel;
-    }
-
-    private HeraAppExcessInfo getAppExcessInfo(Integer appBaseId, MisAppInfoDTO misAppInfoDTO) {
-        HeraAppExcessInfo milogAppTopicRel = new HeraAppExcessInfo();
-        milogAppTopicRel.setAppBaseId(appBaseId);
-        milogAppTopicRel.setTreeIds(misAppInfoDTO.getTree_id());
-        milogAppTopicRel.setNodeIPs(misAppInfoDTO.getCluster_info());
-        milogAppTopicRel.setManagers(misAppInfoDTO.getManagers());
-        milogAppTopicRel.setCreateTime(new Date());
-        milogAppTopicRel.setUpdateTime(new Date());
-        return milogAppTopicRel;
-    }
-
 
     @Override
     public Long countByParticipant(HeraAppBaseQuery query) {
