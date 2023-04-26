@@ -2,8 +2,8 @@ package com.xiaomi.mone.app.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.xiaomi.mone.app.dao.HeraAppBaseInfoMapper;
-import com.xiaomi.mone.app.dao.HeraAppEnvMapper;
+import com.xiaomi.mone.app.dao.mapper.HeraAppBaseInfoMapper;
+import com.xiaomi.mone.app.dao.mapper.HeraAppEnvMapper;
 import com.xiaomi.mone.app.enums.OperateEnum;
 import com.xiaomi.mone.app.enums.StatusEnum;
 import com.xiaomi.mone.app.exception.AppException;

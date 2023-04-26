@@ -4,10 +4,9 @@ import com.xiaomi.mone.app.api.response.AppBaseInfo;
 import com.xiaomi.mone.app.api.service.HeraAppService;
 import com.xiaomi.mone.app.common.Result;
 import com.xiaomi.mone.app.enums.CommonError;
-import com.xiaomi.mone.app.enums.OperateEnum;
 import com.xiaomi.mone.app.model.HeraAppBaseInfo;
-import com.xiaomi.mone.app.service.HeraAppBaseInfoService;
 import com.xiaomi.mone.app.service.HeraAppRoleService;
+import com.xiaomi.mone.app.service.impl.HeraAppBaseInfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,12 +24,12 @@ import java.util.List;
 @RestController
 public class AppController {
 
-    private final HeraAppBaseInfoService heraAppBaseInfoService;
+    @Autowired
+    HeraAppBaseInfoService heraAppBaseInfoService;
 
     private final HeraAppService heraAppService;
 
-    public AppController(HeraAppBaseInfoService heraAppBaseInfoService, HeraAppService heraAppService) {
-        this.heraAppBaseInfoService = heraAppBaseInfoService;
+    public AppController(HeraAppService heraAppService) {
         this.heraAppService = heraAppService;
     }
 
@@ -59,11 +58,6 @@ public class AppController {
         return heraAppService.queryAppInfoWithLog(appName, type);
     }
 
-    @PostMapping("app/base/add")
-    public HeraAppBaseInfo appBaseInfoAdd(@RequestBody HeraAppBaseInfo heraAppBaseInfo) {
-        return heraAppBaseInfoService.appBaseInfoOperate(heraAppBaseInfo, OperateEnum.ADD_OPERATE);
-    }
-
     @PostMapping("/hera/app/add")
     public Result heraAppAdd(@RequestBody HeraAppBaseInfo heraAppBaseInfo) {
         if(StringUtils.isBlank(heraAppBaseInfo.getBindId()) || StringUtils.isBlank(heraAppBaseInfo.getAppName())){
@@ -84,7 +78,7 @@ public class AppController {
         }
 
         try {
-            heraAppBaseInfoService.appBaseInfoOperate(heraAppBaseInfo, OperateEnum.ADD_OPERATE);
+            heraAppBaseInfoService.create(heraAppBaseInfo);
             return Result.success();
         } catch (Exception e) {
             log.error("heraAppAdd error! {}",e);

@@ -16,8 +16,10 @@
 
 package com.xiaomi.mone.app.dao;
 
+import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoParticipant;
 import com.xiaomi.mone.app.api.model.HeraAppBaseQuery;
+import com.xiaomi.mone.app.dao.mapper.HeraAppBaseInfoMapper;
 import com.xiaomi.mone.app.model.HeraAppBaseInfo;
 import com.xiaomi.mone.app.model.HeraAppBaseInfoExample;
 import lombok.extern.slf4j.Slf4j;
@@ -41,13 +43,7 @@ public class HeraBaseInfoDao {
             log.error("HeraBaseInfoDao.delById invalid param,id is null");
         }
 
-        HeraAppBaseInfo heraAppBaseInfo = heraAppBaseInfoMapper.selectByPrimaryKey(id);
-        if(heraAppBaseInfo == null){
-            log.error("HeraBaseInfoDao.delById no data found!");
-        }
-
-        heraAppBaseInfo.setStatus(1);
-        return heraAppBaseInfoMapper.updateByPrimaryKey(heraAppBaseInfo);
+        return heraAppBaseInfoMapper.deleteByPrimaryKey(id);
 
     }
 
@@ -75,15 +71,16 @@ public class HeraBaseInfoDao {
     }
 
 
-    public Long count(HeraAppBaseInfo baseInfo){
-
+    public Long count(HeraAppBaseInfoModel baseInfo){
 
         HeraAppBaseInfoExample example = new HeraAppBaseInfoExample();
 
-        //默认查询未删除的数据
-        HeraAppBaseInfoExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        HeraAppBaseInfoExample.Criteria ca = example.createCriteria();
+
         if(baseInfo.getStatus() != null){
-            ca = example.createCriteria().andStatusEqualTo(baseInfo.getStatus());
+            ca.andStatusEqualTo(baseInfo.getStatus());
+        }else{
+            ca.andStatusEqualTo(0);
         }
 
         if(baseInfo.getBindId() != null){
@@ -133,7 +130,7 @@ public class HeraBaseInfoDao {
 
     }
 
-    public List<HeraAppBaseInfo> query(HeraAppBaseInfo baseInfo,Integer pageCount,Integer pageNum){
+    public List<HeraAppBaseInfo> query(HeraAppBaseInfoModel baseInfo, Integer pageCount, Integer pageNum){
 
         if(pageCount == null || pageCount.intValue() <=0){
             pageCount = 1;
