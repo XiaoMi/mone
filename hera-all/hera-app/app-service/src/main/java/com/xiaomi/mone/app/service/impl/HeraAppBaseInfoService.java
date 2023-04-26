@@ -81,7 +81,7 @@ public class HeraAppBaseInfoService {
 
     public Long countByParticipant(HeraAppBaseQuery query) {
 
-        if (StringUtils.isBlank(query.getMyParticipant())) {
+        if (!"yes".equals(query.getMyParticipant())) {
             query.setMyParticipant(null);
         }
 
@@ -97,7 +97,7 @@ public class HeraAppBaseInfoService {
 
     public List<HeraAppBaseInfoParticipant> queryByParticipant(HeraAppBaseQuery query) {
 
-        if (StringUtils.isBlank(query.getMyParticipant())) {
+        if (!"yes".equals(query.getMyParticipant())) {
             query.setMyParticipant(null);
         }
 
