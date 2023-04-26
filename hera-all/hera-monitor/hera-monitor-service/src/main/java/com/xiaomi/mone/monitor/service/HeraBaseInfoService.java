@@ -349,6 +349,7 @@ public class HeraBaseInfoService {
         PageData pd = new PageData();
 
         Long aLong = hearAppService.countByParticipant(queryRemote);
+        log.info("queryByParticipantRemote#countByParticipant count : {}",aLong);
         pd.setTotal(aLong);
         pd.setPage(query.getPage());
         pd.setPageSize(query.getPageSize());
@@ -356,7 +357,7 @@ public class HeraBaseInfoService {
         if (aLong != null && aLong.intValue() > 0) {
             List<HeraAppBaseInfoParticipant> list = new ArrayList<>();
             List<com.xiaomi.mone.app.api.model.HeraAppBaseInfoParticipant> heraAppBaseInfoParticipants = hearAppService.queryByParticipant(queryRemote);
-
+            log.info("queryByParticipantRemote#queryByParticipant result : {}",new Gson().toJson(heraAppBaseInfoParticipants));
             if (!CollectionUtils.isEmpty(heraAppBaseInfoParticipants)) {
                 heraAppBaseInfoParticipants.forEach(t -> {
                     HeraAppBaseInfoParticipant heraAppBaseInfoParticipant = new HeraAppBaseInfoParticipant();
