@@ -110,19 +110,15 @@
     <select id="collectAppLog" resultType="java.util.Map">
         SELECT
             sum( count.number ) number,
-            tail.app_id appId
+            tail.milog_app_id milogAppId
         FROM
             milog_log_count count,
-            milog_logstail tail,
-            milog_app_topic_rel rel
+            milog_logstail tail
         WHERE
             count.tail_id = tail.id
-          AND tail.app_id = rel.app_id
-          AND rel.source = #{source}
-          AND rel.type = '0'
           AND <![CDATA[count.day = #{day}]]>
         GROUP BY
-            tail.app_id
+            tail.milog_app_id
         HAVING
             <![CDATA[number >= #{threshold}]]>
     </select>
