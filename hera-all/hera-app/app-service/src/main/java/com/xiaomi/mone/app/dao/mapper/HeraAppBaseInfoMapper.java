@@ -1,4 +1,4 @@
-package com.xiaomi.mone.app.dao;
+package com.xiaomi.mone.app.dao.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoParticipant;

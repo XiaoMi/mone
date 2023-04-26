@@ -6,8 +6,6 @@ import com.google.gson.JsonObject;
 import com.xiaomi.mone.monitor.bo.UserInfo;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.alertmanager.AlertManager;
-import com.xiaomi.mone.monitor.service.alertmanager.client.Request;
-import com.xiaomi.mone.monitor.service.alertmanager.client.model.HttpMethodName;
 import com.xiaomi.mone.monitor.service.model.PageData;
 import com.xiaomi.mone.tpc.api.service.UserFacade;
 import com.xiaomi.mone.tpc.common.enums.UserStatusEnum;

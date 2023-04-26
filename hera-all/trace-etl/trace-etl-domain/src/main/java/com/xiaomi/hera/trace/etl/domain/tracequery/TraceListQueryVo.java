@@ -16,6 +16,16 @@ public class TraceListQueryVo {
     private String maxDuration;
     private int limit;
     private String index;
+    private String serverEnv;
+
+
+    public String getServerEnv() {
+        return serverEnv;
+    }
+
+    public void setServerEnv(String serverEnv) {
+        this.serverEnv = serverEnv;
+    }
 
     public Long getStart() {
         return start;
@@ -110,6 +120,7 @@ public class TraceListQueryVo {
                 ", maxDuration='" + maxDuration + '\'' +
                 ", limit=" + limit +
                 ", index='" + index + '\'' +
+                ", serverEnv='" + serverEnv + '\'' +
                 '}';
     }
 }
