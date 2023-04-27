@@ -126,7 +126,7 @@ public class RuleAlertService {
                 data.setAlertAtPeople(Strings.join(",", param.getAlert_at_people()));
             }
             data.setUpdatedTime(new Date());
-
+            log.info("RuleAlertService.UpdateRuleAlert data : {}", gson.toJson(data));
             String res = dao.UpdateRuleAlert(id, data);
             return Result.success(res);
         } catch (Exception e) {
