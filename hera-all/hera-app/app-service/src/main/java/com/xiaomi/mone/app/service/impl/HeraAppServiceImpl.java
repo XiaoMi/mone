@@ -10,8 +10,8 @@ import com.xiaomi.mone.app.api.model.HeraAppBaseQuery;
 import com.xiaomi.mone.app.api.model.HeraAppRoleModel;
 import com.xiaomi.mone.app.api.response.AppBaseInfo;
 import com.xiaomi.mone.app.api.service.HeraAppService;
-import com.xiaomi.mone.app.dao.HeraAppBaseInfoMapper;
-import com.xiaomi.mone.app.dao.HeraAppExcessInfoMapper;
+import com.xiaomi.mone.app.dao.mapper.HeraAppBaseInfoMapper;
+import com.xiaomi.mone.app.dao.mapper.HeraAppExcessInfoMapper;
 import com.xiaomi.mone.app.dao.mapper.HeraAppRoleMapper;
 import com.xiaomi.mone.app.enums.PlatFormTypeEnum;
 import com.xiaomi.mone.app.enums.ProjectTypeEnum;
@@ -19,7 +19,6 @@ import com.xiaomi.mone.app.enums.StatusEnum;
 import com.xiaomi.mone.app.model.HeraAppBaseInfo;
 import com.xiaomi.mone.app.model.HeraAppExcessInfo;
 import com.xiaomi.mone.app.model.HeraAppRole;
-import com.xiaomi.mone.app.service.HeraAppBaseInfoService;
 import com.xiaomi.mone.app.service.HeraAppRoleService;
 import com.xiaomi.mone.app.service.extension.AppTypeServiceExtension;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +27,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.Service;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeanUtils;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,11 +48,12 @@ import static com.xiaomi.mone.app.enums.StatusEnum.NOT_DELETED;
 @org.springframework.stereotype.Service
 public class HeraAppServiceImpl implements HeraAppService {
 
+    @Autowired
+    HeraAppBaseInfoService heraAppBaseInfoService;
+
     private final HeraAppBaseInfoMapper heraAppBaseInfoMapper;
 
     private final HeraAppExcessInfoMapper heraAppExcessInfoMapper;
-
-    private final HeraAppBaseInfoService heraAppBaseInfoService;
 
     private final HeraAppRoleService roleService;
 
@@ -61,10 +61,9 @@ public class HeraAppServiceImpl implements HeraAppService {
 
     private final AppTypeServiceExtension appTypeServiceExtension;
 
-    public HeraAppServiceImpl(HeraAppBaseInfoMapper heraAppBaseInfoMapper, HeraAppExcessInfoMapper heraAppExcessInfoMapper, @Lazy HeraAppBaseInfoServiceImpl heraAppBaseInfoService, HeraAppRoleService roleService, HeraAppRoleMapper heraAppRoleMapper, AppTypeServiceExtension appTypeServiceExtension) {
+    public HeraAppServiceImpl(HeraAppBaseInfoMapper heraAppBaseInfoMapper, HeraAppExcessInfoMapper heraAppExcessInfoMapper,  HeraAppRoleService roleService, HeraAppRoleMapper heraAppRoleMapper, AppTypeServiceExtension appTypeServiceExtension) {
         this.heraAppBaseInfoMapper = heraAppBaseInfoMapper;
         this.heraAppExcessInfoMapper = heraAppExcessInfoMapper;
-        this.heraAppBaseInfoService = heraAppBaseInfoService;
         this.roleService = roleService;
         this.heraAppRoleMapper = heraAppRoleMapper;
         this.appTypeServiceExtension = appTypeServiceExtension;
@@ -93,7 +92,7 @@ public class HeraAppServiceImpl implements HeraAppService {
 
     @Override
     public AppBaseInfo queryById(Long id) {
-        HeraAppBaseInfo heraAppBaseInfo = heraAppBaseInfoMapper.selectById(id);
+        HeraAppBaseInfo heraAppBaseInfo = heraAppBaseInfoService.getById(id.intValue());
         if (null != heraAppBaseInfo) {
             return generateAppBaseInfo(heraAppBaseInfo);
         }
@@ -197,7 +196,7 @@ public class HeraAppServiceImpl implements HeraAppService {
     public Integer insertOrUpdate(HeraAppBaseInfoModel baseInfo) {
         HeraAppBaseInfo appBaseInfo = generateHeraAppBaseInfo(baseInfo);
         // update
-        if (null != baseInfo.getBindId()) {
+        if (null != baseInfo.getId()) {
             return heraAppBaseInfoMapper.updateByPrimaryKey(appBaseInfo);
         }
         return heraAppBaseInfoMapper.insert(appBaseInfo);

@@ -30,14 +30,6 @@
         <!-- inner module -->
         <dependency>
             <groupId>run.mone</groupId>
-            <artifactId>app-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>app-common</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>run.mone</groupId>
             <artifactId>app-service</artifactId>
         </dependency>
         <!-- inner module -->

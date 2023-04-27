@@ -8,7 +8,7 @@ import com.xiaomi.mone.app.dao.HeraAppRoleDao;
 import com.xiaomi.mone.app.dao.HeraBaseInfoDao;
 import com.xiaomi.mone.app.model.HeraAppBaseInfo;
 import com.xiaomi.mone.app.model.HeraAppRole;
-import com.xiaomi.mone.app.service.impl.HeraAppBaseInfoServiceImpl;
+import com.xiaomi.mone.app.service.impl.HeraAppBaseInfoService;
 import com.xiaomi.mone.app.service.mq.model.HeraAppMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.common.utils.CollectionUtils;
@@ -74,7 +74,7 @@ public class RocketMqHeraAppConsumer {
     HeraAppRoleDao heraAppRoleDao;
 
     @Autowired
-    HeraAppBaseInfoServiceImpl heraBaseInfoService;
+    HeraAppBaseInfoService heraBaseInfoService;
 
     private AtomicBoolean rocketMqStartedStatus = new AtomicBoolean(false);
 
@@ -143,7 +143,7 @@ public class RocketMqHeraAppConsumer {
             }
 
         } catch (Throwable ex) {
-            log.error("mimonitor#appNameGrafanaMapping#consumeMessage error:" + ex.getMessage(), ex);
+            log.error("RocketMqHeraAppConsumer#consumeMessage error:" + ex.getMessage(), ex);
         }
     }
 
