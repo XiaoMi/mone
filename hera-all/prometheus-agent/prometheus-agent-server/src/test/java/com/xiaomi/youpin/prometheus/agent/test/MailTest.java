@@ -1,6 +1,10 @@
 package com.xiaomi.youpin.prometheus.agent.test;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.xiaomi.youpin.prometheus.agent.bootstrap.PrometheusAgentBootstrap;
+import com.xiaomi.youpin.prometheus.agent.result.alertManager.AlertManagerFireResult;
+import com.xiaomi.youpin.prometheus.agent.service.alarmContact.MailAlertContact;
 import com.xiaomi.youpin.prometheus.agent.service.prometheus.RuleAlertService;
 import com.xiaomi.youpin.prometheus.agent.util.MailUtil;
 import org.junit.jupiter.api.Test;
@@ -20,7 +24,9 @@ public class MailTest {
     private MailUtil mailUtil;
 
     @Autowired
-    RuleAlertService ruleAlertService;
+    MailAlertContact mailAlertContact;
+
+    public static final Gson gson = new Gson();
 
     String body = "{\n" +
             "    \"receiver\":\"web\\\\.hook\",\n" +
@@ -117,6 +123,8 @@ public class MailTest {
 
     @Test
     public void testAlertManagerSendMail() {
-        ruleAlertService.SendAlert(body);
+        JsonObject jsonObject = gson.fromJson(body, JsonObject.class);
+        AlertManagerFireResult fireResult = gson.fromJson(body, AlertManagerFireResult.class);
+        mailAlertContact.Reach(fireResult);
     }
 }

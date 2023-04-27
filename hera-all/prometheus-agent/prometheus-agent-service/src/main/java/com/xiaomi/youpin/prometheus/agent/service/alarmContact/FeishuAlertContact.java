@@ -42,42 +42,37 @@ public class FeishuAlertContact extends BaseAlertContact {
         GroupLabels groupLabels = fireResult.getGroupLabels();
         String alertName = groupLabels.getAlertname();
         log.info("SendAlert feishuReach begin send AlertName :{}", alertName);
-        //查表看负责人
-        String[] principals = dao.GetRuleAlertAtPeople(alertName);
-        if (principals == null) {
-            log.info("SendAlert principals null alertName:{}", alertName);
-            return;
-        }
+
         fireResult.getAlerts().stream().forEach(alert -> {
-            RuleAlertEntity ruleAlertEntity = dao.GetRuleAlertByAlertName(alert.getLabels().getAlertname());
-            int priority = ruleAlertEntity.getPriority();
-            Map<String, Object> map = new HashMap<>();
-            map.put("priority", "P" + String.valueOf(priority));
-            map.put("title", fireResult.getCommonAnnotations().getTitle());
-            String alertOp = alert.getLabels().getAlert_op();
-            String alertValue = alert.getLabels().getAlert_value();
-            if (alertOp == null || alertOp.isEmpty()) {
-                alertOp = "";
-                alertValue = "";
-            }
-            map.put("alert_op", alertOp);
-            map.put("alert_value", alertValue);
-            map.put("application", alert.getLabels().getApplication());
-            map.put("silence_url", silenceUrl);
-            CommonLabels commonLabels = fireResult.getCommonLabels();
             try {
+                //查表看负责人
+                String[] principals = dao.GetRuleAlertAtPeople(alertName);
+                if (principals == null) {
+                    log.info("SendAlert principals null alertName:{}", alertName);
+                    return;
+                }
+                RuleAlertEntity ruleAlertEntity = dao.GetRuleAlertByAlertName(alert.getLabels().getAlertname());
+                int priority = ruleAlertEntity.getPriority();
+                Map<String, Object> map = new HashMap<>();
+                map.put("priority", "P" + String.valueOf(priority));
+                map.put("title", fireResult.getCommonAnnotations().getTitle());
+                String alertOp = alert.getLabels().getAlert_op();
+                String alertValue = alert.getLabels().getAlert_value();
+                if (alertOp == null || alertOp.isEmpty()) {
+                    alertOp = "";
+                    alertValue = "";
+                }
+                map.put("alert_op", alertOp);
+                map.put("alert_value", alertValue);
+                map.put("application", alert.getLabels().getApplication());
+                map.put("silence_url", silenceUrl);
+                CommonLabels commonLabels = fireResult.getCommonLabels();
                 Class clazz = commonLabels.getClass();
                 Field[] fields = clazz.getDeclaredFields();
                 StringBuilder sb = new StringBuilder();
                 for (Field field : fields) {
                     field.setAccessible(true); // 设置访问权限
                     String fieldName = field.getName();
-                    if ("priority".equals(fieldName) || "title".equals(fieldName) || "alert_op".equals(fieldName) ||
-                            "alert_value".equals(fieldName) || "application".equals(fieldName) ||
-                            "system".equals(fieldName) || "exceptViewLables".equals(fieldName) ||
-                            "app_iam_id".equals(fieldName) || "metrics_flag".equals(fieldName)) {
-                        continue;
-                    }
                     Object fieldValue = null;
                     try {
                         //将fieldValue转成String
@@ -85,14 +80,21 @@ public class FeishuAlertContact extends BaseAlertContact {
                         if (fieldValue == null) {
                             continue;
                         }
+                        map.put(fieldName, field.get(commonLabels));
                     } catch (IllegalAccessException e) {
                         e.printStackTrace();
                     }
-                    sb.append("**").append(fieldName).append("**").append(": ").append(fieldValue).append("\n");
                 }
+                Map<String, Object> finalMap = transferNames(map);
+                filterName(finalMap);
+                finalMap.forEach(
+                        (k, v) -> {
+                            sb.append("**").append(k).append("**").append(": ").append(v).append("\n");
+                        });
+
                 String content = sb.toString();
-                map.put("content", content);
-                String freeMarkerRes = FreeMarkerUtil.getContent("/feishu", "feishuCart.ftl", map);
+                finalMap.put("content", content);
+                String freeMarkerRes = FreeMarkerUtil.getContent("/feishu", "feishuCart.ftl", finalMap);
 
                 feishuService.sendFeishu(freeMarkerRes, principals, null, true);
             } catch (Exception e) {
