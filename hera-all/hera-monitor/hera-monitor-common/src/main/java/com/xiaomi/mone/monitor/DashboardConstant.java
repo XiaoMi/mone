@@ -38,6 +38,6 @@ public class DashboardConstant {
 
     public static final String HERA_METRICS_PREFIX = "hera";
 
-    public static final String HERA_METRICS_INNER_PREFIX = "hera";
+    public static final String HERA_METRICS_INNER_PREFIX = "jaeger";
 
 }
