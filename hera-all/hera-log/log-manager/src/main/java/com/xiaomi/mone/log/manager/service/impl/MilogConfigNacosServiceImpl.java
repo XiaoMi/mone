@@ -3,8 +3,6 @@ package com.xiaomi.mone.log.manager.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.lang.Assert;
 import com.alibaba.nacos.api.config.ConfigService;
-import com.alibaba.nacos.api.exception.NacosException;
-import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
@@ -16,6 +14,7 @@ import com.xiaomi.mone.log.manager.dao.*;
 import com.xiaomi.mone.log.manager.domain.EsCluster;
 import com.xiaomi.mone.log.manager.model.pojo.*;
 import com.xiaomi.mone.log.manager.service.MilogConfigNacosService;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionServiceFactory;
 import com.xiaomi.mone.log.manager.service.nacos.DynamicConfigProvider;
 import com.xiaomi.mone.log.manager.service.nacos.DynamicConfigPublisher;
 import com.xiaomi.mone.log.manager.service.nacos.FetchStreamMachineService;
@@ -102,32 +101,11 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
 
     @Override
     public void publishStreamConfig(Long spaceId, Long tailId, Integer type, Integer projectTypeCode, String motorRoomEn) {
-        //1.查询所有的stream的机器Ip--实时查询(接口调用)
-        // rpc 调用
-//        List<String> ipList = queryStreamMachineIps(AppTypeEnum.LOG_STREAM.getName());
+        //1.查询所有的stream的机器Ip--实时查询
         List<String> mioneStreamIpList = fetchStreamMachineService.streamMachineUnique();
         log.info("查询到log-stream的机器列表：{}", new Gson().toJson(mioneStreamIpList));
         //2.发送数据
         streamConfigNacosPublisher.publish(DEFAULT_APP_NAME, dealStreamConfigByRule(mioneStreamIpList, spaceId, type, projectTypeCode));
-    }
-
-    /**
-     * rpc 查询机器信息--测试环境查询
-     *
-     * @param
-     * @return
-     */
-    public List<String> queryStreamMachineIps(String serviceName) {
-        try {
-            List<Instance> allInstances = nacosNaming.getAllInstances(serviceName);
-            return allInstances.stream()
-                    .map(Instance::getIp)
-                    .distinct()
-                    .collect(Collectors.toList());
-        } catch (NacosException e) {
-            log.error("queryStreamMachineIps error", e);
-        }
-        return Lists.newArrayList();
     }
 
     private synchronized MiLogStreamConfig dealStreamConfigByRule(List<String> ipList, Long spaceId,
@@ -143,7 +121,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
                 for (String ip : ipList) {
                     Map<Long, String> map = Maps.newHashMapWithExpectedSize(1);
                     if (!idAdd) {
-                        map.put(spaceId, LOG_MANAGE_PREFIX + TAIL_CONFIG_DATA_ID + spaceId);
+                        map.put(spaceId, CommonExtensionServiceFactory.getCommonExtensionService().getLogManagePrefix() + TAIL_CONFIG_DATA_ID + spaceId);
                         idAdd = true;
                     }
                     config.put(ip, map);
@@ -171,7 +149,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
                 String key = ipSizeMap.entrySet().stream()
                         .filter(entry -> ipList.contains(entry.getKey()))
                         .min(Map.Entry.comparingByValue()).get().getKey();
-                config.get(key).put(spaceId, LOG_MANAGE_PREFIX + TAIL_CONFIG_DATA_ID + spaceId);
+                config.get(key).put(spaceId, CommonExtensionServiceFactory.getCommonExtensionService().getLogManagePrefix() + TAIL_CONFIG_DATA_ID + spaceId);
             }
         }
         // 删除配置
