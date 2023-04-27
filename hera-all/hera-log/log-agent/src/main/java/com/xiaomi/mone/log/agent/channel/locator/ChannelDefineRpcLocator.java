@@ -128,14 +128,7 @@ public class ChannelDefineRpcLocator implements ChannelDefineLocator {
                 input.setLinePrefix(logPattern.getFirstLineReg());
 
                 //output
-                Output output = null;
-                if (null != logPattern.getMQConfig()) {
-                    String typeName = logPattern.getMQConfig().getType();
-                    MiddlewareEnum middlewareEnum = MiddlewareEnum.queryByName(typeName);
-                    if (null != middlewareEnum) {
-                        output = OutPutServiceFactory.getOutPutService(middlewareEnum.getServiceName()).configOutPut(logPattern);
-                    }
-                }
+                Output output = OutPutServiceFactory.getChannelDefineLocatorExtension().getOutPutByMQConfigType(logPattern);
                 // filter
                 List<FilterDefine> filterDefines = logPattern.getFilters();
                 List<FilterConf> filters = Lists.newArrayList();
