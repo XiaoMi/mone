@@ -1,6 +1,7 @@
 package com.xiaomi.mone.log.manager.service.nacos.impl;
 
 import com.alibaba.nacos.api.config.ConfigService;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionServiceFactory;
 import com.xiaomi.mone.log.manager.service.nacos.DynamicConfigProvider;
 import com.xiaomi.mone.log.model.MiLogStreamConfig;
 import lombok.Setter;
@@ -25,7 +26,7 @@ public class StreamConfigNacosProvider implements DynamicConfigProvider<MiLogStr
     public MiLogStreamConfig getConfig(String appName) {
         String rules = null;
         try {
-            rules = configService.getConfig(LOG_MANAGE_PREFIX + NAMESPACE_CONFIG_DATA_ID, DEFAULT_GROUP_ID, DEFAULT_TIME_OUT_MS);
+            rules = configService.getConfig(CommonExtensionServiceFactory.getCommonExtensionService().getLogManagePrefix() + NAMESPACE_CONFIG_DATA_ID, DEFAULT_GROUP_ID, DEFAULT_TIME_OUT_MS);
             log.info("nacos中查询日志最初配置：{}", rules);
             if (StringUtils.isNotEmpty(rules)) {
                 return gson.fromJson(rules, MiLogStreamConfig.class);
