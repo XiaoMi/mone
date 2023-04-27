@@ -72,5 +72,5 @@ public interface MilogLogCountMapper extends BaseMapper<LogCountDO> {
     /**
      * app日志量统计
      */
-    List<Map<String, Object>> collectAppLog(@Param("day") String day, @Param("threshold") Long threshold, @Param("source") String source);
+    List<Map<String, Object>> collectAppLog(@Param("day") String day, @Param("threshold") Long threshold);
 }

@@ -1,5 +1,7 @@
 package com.xiaomi.mone.app.service.extension.impl;
 
+import com.xiaomi.mone.app.enums.PlatFormTypeEnum;
+import com.xiaomi.mone.app.enums.ProjectTypeEnum;
 import com.xiaomi.mone.app.service.extension.AppTypeServiceExtension;
 import com.xiaomi.mone.app.util.AppTypeTransferUtil;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -22,5 +24,15 @@ public class DefaultAppTypeServiceExtension implements AppTypeServiceExtension {
     @Override
     public Integer getAppTypePlatformType(Integer type) {
         return AppTypeTransferUtil.queryLogTypeWithPlatformType(type);
+    }
+
+    @Override
+    public String getPlatformName(Integer platformType) {
+        return PlatFormTypeEnum.getEnum(platformType).getName();
+    }
+
+    @Override
+    public String getAppTypeName(Integer appType) {
+        return ProjectTypeEnum.queryTypeByCode(appType);
     }
 }

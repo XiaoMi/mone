@@ -2,12 +2,14 @@ package com.xiaomi.mone.log.manager.service.nacos.impl;
 
 import com.alibaba.nacos.api.config.ConfigService;
 import com.alibaba.nacos.api.exception.NacosException;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionServiceFactory;
 import com.xiaomi.mone.log.manager.service.nacos.DynamicConfigPublisher;
 import com.xiaomi.mone.log.model.MiLogStreamConfig;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import static com.xiaomi.mone.log.common.Constant.*;
+import static com.xiaomi.mone.log.common.Constant.DEFAULT_GROUP_ID;
+import static com.xiaomi.mone.log.common.Constant.NAMESPACE_CONFIG_DATA_ID;
 
 /**
  * @author wtt
@@ -27,7 +29,7 @@ public class StreamConfigNacosPublisher implements DynamicConfigPublisher<MiLogS
             return;
         }
         try {
-            configService.publishConfig(LOG_MANAGE_PREFIX + NAMESPACE_CONFIG_DATA_ID, DEFAULT_GROUP_ID, gson.toJson(config));
+            configService.publishConfig(CommonExtensionServiceFactory.getCommonExtensionService().getLogManagePrefix() + NAMESPACE_CONFIG_DATA_ID, DEFAULT_GROUP_ID, gson.toJson(config));
         } catch (NacosException e) {
             log.error(String.format("创建namespace推送数据异常,参数：%s", gson.toJson(config)), e);
         }
