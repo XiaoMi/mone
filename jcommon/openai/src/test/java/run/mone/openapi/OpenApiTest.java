@@ -158,7 +158,7 @@ public class OpenApiTest {
 
     @Test
     public void testMessage() {
-        OpenAiClient openAiClient = client();
+        OpenAiClient openAiClient = OpenaiCall.client("");
         List<Message> list = Lists.newArrayList(
                 Message.builder().role(Message.Role.SYSTEM).content("根据注释获取api信息").build(),
                 Message.builder().role(Message.Role.ASSISTANT).content("你好！有什么我可以帮助您的吗？").build(),
