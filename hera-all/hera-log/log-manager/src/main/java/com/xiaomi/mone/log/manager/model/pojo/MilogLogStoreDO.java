@@ -100,13 +100,18 @@ public class MilogLogStoreDO extends BaseCommon {
     public MilogLogStoreDO() {
     }
 
-    public MilogLogStoreDO(Long spaceId, String logstoreName, Integer storePeriod, Integer shardCnt, String keyList, Integer logType) {
+    public MilogLogStoreDO(Long spaceId, String logstoreName, Integer storePeriod, Integer shardCnt, String keyList, Integer logType, Boolean isMatrixApp) {
         this.logstoreName = logstoreName;
         this.spaceId = spaceId;
         this.storePeriod = storePeriod;
         this.shardCnt = shardCnt;
         this.keyList = keyList;
         this.logType = logType;
+        this.isMatrixApp = isMatrixApp;
+    }
+
+    public boolean isMatrixAppStore() {
+        return this.isMatrixApp == null ? false : this.isMatrixApp;
     }
 
 }

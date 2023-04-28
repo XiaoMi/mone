@@ -6,9 +6,11 @@ import com.xiaomi.mone.log.manager.dao.MilogLogstoreDao;
 import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogTailDo;
+import com.xiaomi.mone.log.manager.model.pojo.MilogMiddlewareConfig;
 import com.xiaomi.mone.log.manager.service.extension.agent.MilogAgentServiceImpl;
 import com.xiaomi.mone.log.manager.service.impl.LogTailServiceImpl;
 import com.xiaomi.mone.log.manager.service.impl.MilogAppMiddlewareRelServiceImpl;
+import com.xiaomi.mone.log.model.LogtailConfig;
 import com.xiaomi.youpin.docean.anno.Service;
 import lombok.extern.slf4j.Slf4j;
 
@@ -101,6 +103,16 @@ public class DefaultTailExtensionService implements TailExtensionService {
             logTailService.sengMessageToStream(milogLogtailDo, OperateEnum.UPDATE_OPERATE.getCode());
         }
         logTailService.compareChangeDelIps(milogLogtailDo.getId(), milogLogtailDo.getMilogAppId(), milogLogtailDo.getIps(), oldIps);
+    }
+
+    @Override
+    public void logTailDoExtraFiled(MilogLogTailDo milogLogtailDo, MilogLogStoreDO logStoreDO, MilogLogtailParam logTailParam) {
+        milogLogtailDo.setIps(logTailParam.getIps());
+    }
+
+    @Override
+    public void logTailConfigExtraField(LogtailConfig logtailConfig, MilogMiddlewareConfig middlewareConfig) {
+
     }
 
 }

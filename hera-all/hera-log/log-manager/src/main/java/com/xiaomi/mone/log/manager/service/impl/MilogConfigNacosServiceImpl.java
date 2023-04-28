@@ -15,6 +15,7 @@ import com.xiaomi.mone.log.manager.domain.EsCluster;
 import com.xiaomi.mone.log.manager.model.pojo.*;
 import com.xiaomi.mone.log.manager.service.MilogConfigNacosService;
 import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionServiceFactory;
+import com.xiaomi.mone.log.manager.service.extension.tail.TailExtensionServiceFactory;
 import com.xiaomi.mone.log.manager.service.nacos.DynamicConfigProvider;
 import com.xiaomi.mone.log.manager.service.nacos.DynamicConfigPublisher;
 import com.xiaomi.mone.log.manager.service.nacos.FetchStreamMachineService;
@@ -375,6 +376,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
                 logtailConfig.setType(MiddlewareEnum.ROCKETMQ.getName());
                 logtailConfig.setClusterInfo(middlewareConfig.getNameServer());
             }
+            TailExtensionServiceFactory.getTailExtensionService().logTailConfigExtraField(logtailConfig, middlewareConfig);
         }
     }
 }
