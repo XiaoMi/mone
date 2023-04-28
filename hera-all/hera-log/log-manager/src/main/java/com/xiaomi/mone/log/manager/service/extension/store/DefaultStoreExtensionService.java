@@ -103,4 +103,9 @@ public class DefaultStoreExtensionService implements StoreExtensionService {
     public boolean updateLogStore(MilogLogStoreDO ml) {
         return logStoreDao.updateMilogLogStore(ml);
     }
+
+    @Override
+    public boolean isNeedSendMsgType(Integer logType) {
+        return true;
+    }
 }
