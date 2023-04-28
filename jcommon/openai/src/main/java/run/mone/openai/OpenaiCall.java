@@ -54,6 +54,10 @@ public class OpenaiCall {
 
 
     public static OpenAiClient client(String apiKey) {
+        return client(apiKey, null);
+    }
+
+    public static OpenAiClient client(String apiKey, String openApiHost) {
         String proxyAddr = System.getenv("open_api_proxy");
         Proxy proxy = null;
         if (null != proxyAddr && proxyAddr.length() > 0) {
@@ -71,6 +75,10 @@ public class OpenaiCall {
         if (null != hostAddr && hostAddr.length() > 0) {
             log.info("use open aip host:{}", hostAddr);
             host = hostAddr;
+        }
+
+        if (null != openApiHost && openApiHost.length() > 0) {
+            host = openApiHost;
         }
 
         OpenAiClient.Builder builer = OpenAiClient.builder()
