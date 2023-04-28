@@ -26,6 +26,8 @@ import com.xiaomi.mone.log.manager.service.bind.LogTypeProcessorFactory;
 import com.xiaomi.mone.log.manager.service.env.HeraEnvIpServiceFactory;
 import com.xiaomi.mone.log.manager.service.extension.agent.MilogAgentService;
 import com.xiaomi.mone.log.manager.service.extension.agent.MilogAgentServiceFactory;
+import com.xiaomi.mone.log.manager.service.extension.resource.ResourceExtensionService;
+import com.xiaomi.mone.log.manager.service.extension.resource.ResourceExtensionServiceFactory;
 import com.xiaomi.mone.log.manager.service.extension.store.StoreExtensionService;
 import com.xiaomi.mone.log.manager.service.extension.store.StoreExtensionServiceFactory;
 import com.xiaomi.mone.log.manager.service.extension.tail.TailExtensionService;
@@ -112,12 +114,15 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
 
     private StoreExtensionService storeExtensionService;
 
+    private ResourceExtensionService resourceExtensionService;
+
     public void init() {
         logTypeProcessorFactory.setMilogLogTemplateMapper(milogLogTemplateMapper);
         logTypeProcessor = logTypeProcessorFactory.getLogTypeProcessor();
         tailExtensionService = TailExtensionServiceFactory.getTailExtensionService();
         milogAgentService = MilogAgentServiceFactory.getAgentExtensionService();
         storeExtensionService = StoreExtensionServiceFactory.getStoreExtensionService();
+        resourceExtensionService = ResourceExtensionServiceFactory.getResourceExtensionService();
     }
 
     private static boolean filterNameEmpty(MilogLogTailDo milogLogTailDo) {
@@ -494,8 +499,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     }
 
     private void delMqConfigResource(MilogLogTailDo mt, MilogLogStoreDO logStoreDO) {
-        List<MilogAppMiddlewareRel> milogAppMiddlewareRels = milogAppMiddlewareRelDao.queryByCondition(mt.getMilogAppId(), null, mt.getId());
-        logTypeProcessor.supportedConsume(LogTypeEnum.type2enum(logStoreDO.getLogType()));
+        resourceExtensionService.deleteMqResourceProcessing(mt, logStoreDO);
     }
 
     @Override
