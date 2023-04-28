@@ -67,4 +67,9 @@ public class RocketMqSinkJobProvider implements SinkJobProvider {
 
         return sinkJob;
     }
+
+    @Override
+    public SinkJob getSinkJobBackup(SinkJobConfig sinkJobConfig) {
+        return null;
+    }
 }

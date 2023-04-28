@@ -26,4 +26,6 @@ public interface SinkJobProvider {
 
     SinkJob getSinkJob(SinkJobConfig sinkJobConfig);
 
+    SinkJob getSinkJobBackup(SinkJobConfig sinkJobConfig);
+
 }
