@@ -4,6 +4,7 @@ import com.xiaomi.mone.log.api.enums.MachineRegionEnum;
 import com.xiaomi.mone.log.api.enums.MiddlewareEnum;
 import com.xiaomi.mone.log.common.Constant;
 import com.xiaomi.mone.log.manager.model.pojo.MilogMiddlewareConfig;
+import com.xiaomi.mone.log.manager.service.extension.resource.ResourceExtensionServiceFactory;
 import com.xiaomi.youpin.docean.anno.Service;
 import org.apache.commons.collections.CollectionUtils;
 import org.nutz.dao.Cnd;
@@ -86,7 +87,7 @@ public class MilogMiddlewareConfigDao {
     }
 
     public MilogMiddlewareConfig queryDefaultMqMiddlewareConfigMotorRoom(String motorRooman) {
-        Cnd cnd = Cnd.where("type", "in", MiddlewareEnum.ROCKETMQ.getCode())
+        Cnd cnd = Cnd.where("type", "in", ResourceExtensionServiceFactory.getResourceExtensionService().getResourceCode())
                 .and("region_en", EQUAL_OPERATE, motorRooman);
         List<MilogMiddlewareConfig> milogMiddlewareConfigs = dao.query(MilogMiddlewareConfig.class, cnd);
         if (CollectionUtils.isNotEmpty(milogMiddlewareConfigs) && milogMiddlewareConfigs.size() == 1) {
