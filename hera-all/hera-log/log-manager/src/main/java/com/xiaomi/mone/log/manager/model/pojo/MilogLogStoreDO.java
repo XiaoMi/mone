@@ -77,6 +77,11 @@ public class MilogLogStoreDO extends BaseCommon {
     @Comment("1:app,2:ngx..")
     private Integer logType;
 
+    @Column(value = "is_matrix_app")
+    @ColDefine(type = ColType.BOOLEAN)
+    @Default("false")
+    private Boolean isMatrixApp;
+
     @Column(value = "es_index")
     @ColDefine(type = ColType.VARCHAR, width = 256)
     @Comment("es index:milog_logstoreName")
