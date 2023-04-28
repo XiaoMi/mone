@@ -38,13 +38,13 @@ import java.util.stream.Collectors;
 @Slf4j
 public class RocketMqHeraAppConsumer {
 
-    @NacosValue(value = "${rocketmq.topic.hera.app}", autoRefreshed = true)
+    @NacosValue(value = "${hera.app.modify.notice.topic}", autoRefreshed = true)
     private String consumerTopic;
 
-    @NacosValue(value = "${rocketmq.tag.hera.app}", autoRefreshed = true)
+    @NacosValue(value = "${hera.app.modify.notice.tag}", autoRefreshed = true)
     private String consumerTag;
 
-    @NacosValue(value = "${rocketmq.group.hera.app}", autoRefreshed = true)
+    @NacosValue(value = "${hera.app.modify.notice.group}", autoRefreshed = true)
     private String consumerGroup;
 
     @NacosValue(value = "${rocketmq.namesrv.addr}", autoRefreshed = true)
@@ -128,6 +128,11 @@ public class RocketMqHeraAppConsumer {
     private void consumeMessage(MessageExt message) {
         log.info("RocketMqHeraAppConsumer# consumeMessage: {} {}", message.getMsgId(), new String(message.getBody()));
         try {
+
+//            byte[] body = message.getBody();
+//            HeraAppInfoModifyMessage heraAppMessage = new Gson().fromJson(new String(body), HeraAppMessage.class);
+//            log.info("RocketMqHeraAppConsumer# consumeMessage convert heraAppMessage : {}", heraAppMessage.toString());
+
             Gson gson = new Gson();
             RocketMqReceiver<HeraAppMqInfo> heraAppMessage = gson.fromJson(new String(message.getBody()), new TypeToken<RocketMqReceiver<HeraAppMqInfo>>() {
             }.getType());
