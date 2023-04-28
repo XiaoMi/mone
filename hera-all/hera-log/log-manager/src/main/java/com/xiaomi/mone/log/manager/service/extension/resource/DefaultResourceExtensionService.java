@@ -6,9 +6,7 @@ import com.xiaomi.mone.log.api.enums.MiddlewareEnum;
 import com.xiaomi.mone.log.api.model.bo.MiLogResource;
 import com.xiaomi.mone.log.api.model.vo.ResourceUserSimple;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
-import com.xiaomi.mone.log.manager.model.pojo.MilogEsClusterDO;
-import com.xiaomi.mone.log.manager.model.pojo.MilogEsIndexDO;
-import com.xiaomi.mone.log.manager.model.pojo.MilogMiddlewareConfig;
+import com.xiaomi.mone.log.manager.model.pojo.*;
 import com.xiaomi.mone.log.manager.service.impl.RocketMqConfigService;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.common.StringUtils;
@@ -113,6 +111,11 @@ public class DefaultResourceExtensionService implements ResourceExtensionService
     @Override
     public Integer getResourceCode() {
         return MiddlewareEnum.ROCKETMQ.getCode();
+    }
+
+    @Override
+    public void deleteMqResourceProcessing(MilogLogTailDo mt, MilogLogStoreDO logStoreDO) {
+
     }
 
 }
