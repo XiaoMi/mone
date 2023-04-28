@@ -673,8 +673,8 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         milogTailDTO.setEnvId(milogLogtailDo.getEnvId());
         milogTailDTO.setEnvName(milogLogtailDo.getEnvName());
         List<String> list = milogLogtailDo.getIps();
-        if (list != null) {
-            milogTailDTO.setIps(new ArrayList<String>(list));
+        if (CollectionUtils.isEmpty(list)) {
+            milogTailDTO.setIps(list);
         }
         milogTailDTO.setTail(milogLogtailDo.getTail());
         milogTailDTO.setParseType(milogLogtailDo.getParseType());
@@ -688,6 +688,8 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         // filterconf 转 tailRate
         milogTailDTO.setTailRate(RateLimitEnum.consTailRate(milogLogtailDo.getFilter()));
         milogTailDTO.setDeployWay(milogLogtailDo.getDeployWay());
+        milogTailDTO.setDeploySpace(milogLogtailDo.getDeploySpace());
+        milogTailDTO.setFirstLineReg(milogLogtailDo.getFirstLineReg());
         return milogTailDTO;
     }
 
