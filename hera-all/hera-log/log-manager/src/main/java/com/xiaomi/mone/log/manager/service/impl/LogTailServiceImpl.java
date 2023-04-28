@@ -2,7 +2,6 @@ package com.xiaomi.mone.log.manager.service.impl;
 
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
-import com.xiaomi.mone.app.api.model.HeraSimpleEnv;
 import com.xiaomi.mone.app.api.response.AppBaseInfo;
 import com.xiaomi.mone.app.model.vo.HeraEnvIpVo;
 import com.xiaomi.mone.log.api.enums.*;
@@ -542,16 +541,8 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         if (null == appBaseInfo) {
             return Result.failParam("应用不存在");
         }
-        List<HeraSimpleEnv> heraSimpleEnvs = null;
-        try {
-            heraSimpleEnvs = heraAppEnvService.querySimpleEnvAppBaseInfoId(milogAppId.intValue());
-        } catch (Exception e) {
-            log.error(String.format("query ip error:milogAppId:%s,deployWay:%s", milogAppId, deployWay), e);
-        }
-        if (CollectionUtils.isEmpty(heraSimpleEnvs)) {
-            return Result.success(Lists.newArrayList());
-        }
-        return Result.success(heraSimpleEnvs.stream().map(envBo -> MilogAppEnvDTO.builder().label(envBo.getName()).value(envBo.getId()).ips(envBo.getIps()).build()).collect(Collectors.toList()));
+        List<MilogAppEnvDTO> appEnvDTOList = tailExtensionService.getEnInfosByAppId(appBaseInfo, milogAppId, deployWay);
+        return Result.success(appEnvDTOList);
     }
 
     @Override
