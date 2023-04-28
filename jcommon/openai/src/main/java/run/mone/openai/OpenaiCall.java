@@ -53,7 +53,7 @@ public class OpenaiCall {
     private static String proxyAddr = System.getenv("open_api_proxy");
 
 
-    private static OpenAiClient client(String apiKey) {
+    public static OpenAiClient client(String apiKey) {
         String proxyAddr = System.getenv("open_api_proxy");
         Proxy proxy = null;
         if (null != proxyAddr && proxyAddr.length() > 0) {
@@ -62,8 +62,14 @@ public class OpenaiCall {
         HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(new OpenAILogger());
 
         String key = System.getenv("open_api_key");
-        if (null != apiKey) {
+        if (null != apiKey && apiKey.length() > 0) {
             key = apiKey;
+        }
+
+        String host = "https://api.openai.com/";
+        String hostAddr = System.getenv("open_api_host");
+        if (null != hostAddr && hostAddr.length() > 0) {
+            host = hostAddr;
         }
 
         OpenAiClient.Builder builer = OpenAiClient.builder()
@@ -72,7 +78,7 @@ public class OpenaiCall {
                 .writeTimeout(5000)
                 .readTimeout(5000)
                 .interceptor(Arrays.asList(httpLoggingInterceptor))
-                .apiHost("https://api.openai.com/");
+                .apiHost(host);
 
         if (null != proxy) {
             builer.proxy(proxy);

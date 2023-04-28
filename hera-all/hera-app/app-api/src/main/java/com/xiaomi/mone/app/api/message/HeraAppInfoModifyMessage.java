@@ -1,16 +1,23 @@
 package com.xiaomi.mone.app.api.message;
 
 import com.google.gson.JsonObject;
+import lombok.Data;
+import lombok.ToString;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
  * @author gaoxihui
  * @date 2023/4/26 3:29 下午
  */
-public class HeraAppInfoModifyMessage {
+@Data
+@ToString
+public class HeraAppInfoModifyMessage implements Serializable {
 
-        private String id;
+        private Integer id;
+
+        private Integer appId;
 
         private Integer iamTreeId;
 
