@@ -69,6 +69,7 @@ public class OpenaiCall {
         String host = "https://api.openai.com/";
         String hostAddr = System.getenv("open_api_host");
         if (null != hostAddr && hostAddr.length() > 0) {
+            log.info("use open aip host:{}", hostAddr);
             host = hostAddr;
         }
 
