@@ -43,4 +43,6 @@ public interface StoreExtensionService {
     void deleteStorePostProcessing(MilogLogStoreDO logStoreD);
 
     String getMangerEsLabel();
+
+    boolean updateLogStore(MilogLogStoreDO ml);
 }
