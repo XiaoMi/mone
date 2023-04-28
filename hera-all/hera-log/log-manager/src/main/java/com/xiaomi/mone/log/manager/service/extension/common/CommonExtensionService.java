@@ -12,4 +12,6 @@ public interface CommonExtensionService {
 
 
     String getLogManagePrefix();
+
+    String getHeraLogStreamServerName();
 }
