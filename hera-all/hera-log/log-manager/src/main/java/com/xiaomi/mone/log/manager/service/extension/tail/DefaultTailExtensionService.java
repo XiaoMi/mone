@@ -115,4 +115,9 @@ public class DefaultTailExtensionService implements TailExtensionService {
 
     }
 
+    @Override
+    public void logTailDelPostProcess(MilogLogStoreDO logStoreDO, MilogLogTailDo milogLogtailDo) {
+
+    }
+
 }

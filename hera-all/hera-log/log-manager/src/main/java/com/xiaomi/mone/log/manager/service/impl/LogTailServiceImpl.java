@@ -26,6 +26,8 @@ import com.xiaomi.mone.log.manager.service.bind.LogTypeProcessorFactory;
 import com.xiaomi.mone.log.manager.service.env.HeraEnvIpServiceFactory;
 import com.xiaomi.mone.log.manager.service.extension.agent.MilogAgentService;
 import com.xiaomi.mone.log.manager.service.extension.agent.MilogAgentServiceFactory;
+import com.xiaomi.mone.log.manager.service.extension.store.StoreExtensionService;
+import com.xiaomi.mone.log.manager.service.extension.store.StoreExtensionServiceFactory;
 import com.xiaomi.mone.log.manager.service.extension.tail.TailExtensionService;
 import com.xiaomi.mone.log.manager.service.extension.tail.TailExtensionServiceFactory;
 import com.xiaomi.mone.log.manager.service.nacos.impl.StreamConfigNacosProvider;
@@ -108,11 +110,14 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
 
     private MilogAgentService milogAgentService;
 
+    private StoreExtensionService storeExtensionService;
+
     public void init() {
         logTypeProcessorFactory.setMilogLogTemplateMapper(milogLogTemplateMapper);
         logTypeProcessor = logTypeProcessorFactory.getLogTypeProcessor();
         tailExtensionService = TailExtensionServiceFactory.getTailExtensionService();
         milogAgentService = MilogAgentServiceFactory.getAgentExtensionService();
+        storeExtensionService = StoreExtensionServiceFactory.getStoreExtensionService();
     }
 
     private static boolean filterNameEmpty(MilogLogTailDo milogLogTailDo) {
@@ -462,7 +467,11 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         }
         if (milogLogtailDao.deleteMilogLogtail(id)) {
             MilogLogStoreDO logStoreDO = logstoreDao.queryById(milogLogtailDo.getStoreId());
+            if (storeExtensionService.isNeedSendMsgType(logStoreDO.getLogType())) {
+                CompletableFuture.runAsync(() -> sendMessageOnDelete(milogLogtailDo, logStoreDO));
+            }
             CompletableFuture.runAsync(() -> sendMessageOnDelete(milogLogtailDo, logStoreDO));
+            tailExtensionService.logTailDelPostProcess(logStoreDO, milogLogtailDo);
             return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage());
         } else {
             log.warn("[MilogLogtailService.deleteMilogLogtail] delete MilogLogtail err,id:{}", id);
