@@ -3,6 +3,7 @@ package com.xiaomi.mone.log.manager.service.extension.store;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.xiaomi.mone.log.api.enums.OperateEnum;
 import com.xiaomi.mone.log.api.model.vo.ResourceUserSimple;
+import com.xiaomi.mone.log.manager.common.ManagerConstant;
 import com.xiaomi.mone.log.manager.domain.EsIndexTemplate;
 import com.xiaomi.mone.log.manager.mapper.MilogEsClusterMapper;
 import com.xiaomi.mone.log.manager.model.dto.EsInfoDTO;
@@ -43,6 +44,11 @@ public class DefaultStoreExtensionService implements StoreExtensionService {
     private EsIndexTemplate esIndexTemplate;
 
     @Override
+    public boolean storeInfoCheck(LogStoreParam param) {
+        return false;
+    }
+
+    @Override
     public void storeResourceBinding(MilogLogStoreDO ml, LogStoreParam cmd, OperateEnum operateEnum) {
         if (StringUtils.isNotEmpty(ml.getEsIndex()) && null != ml.getMqResourceId() && null != ml.getEsClusterId()) {
             return;
@@ -77,5 +83,15 @@ public class DefaultStoreExtensionService implements StoreExtensionService {
     @Override
     public boolean sendConfigSwitch(LogStoreParam param) {
         return true;
+    }
+
+    @Override
+    public void deleteStorePostProcessing(MilogLogStoreDO logStoreD) {
+
+    }
+
+    @Override
+    public String getMangerEsLabel() {
+        return ManagerConstant.ES_LABEL;
     }
 }

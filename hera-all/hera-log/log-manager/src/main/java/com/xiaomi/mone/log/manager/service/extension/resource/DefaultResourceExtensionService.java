@@ -2,6 +2,7 @@ package com.xiaomi.mone.log.manager.service.extension.resource;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.google.common.collect.Lists;
+import com.xiaomi.mone.log.api.enums.MiddlewareEnum;
 import com.xiaomi.mone.log.api.model.bo.MiLogResource;
 import com.xiaomi.mone.log.api.model.vo.ResourceUserSimple;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
@@ -107,6 +108,11 @@ public class DefaultResourceExtensionService implements ResourceExtensionService
         }
         configResource.setShowFlag(Boolean.TRUE);
         return Boolean.TRUE;
+    }
+
+    @Override
+    public Integer getResourceCode() {
+        return MiddlewareEnum.ROCKETMQ.getCode();
     }
 
 }

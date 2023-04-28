@@ -4,6 +4,8 @@ import com.xiaomi.mone.log.common.Constant;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
 import com.xiaomi.mone.log.manager.mapper.MilogEsClusterMapper;
 import com.xiaomi.mone.log.manager.model.pojo.MilogEsClusterDO;
+import com.xiaomi.mone.log.manager.service.extension.store.StoreExtensionService;
+import com.xiaomi.mone.log.manager.service.extension.store.StoreExtensionServiceFactory;
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.common.StringUtils;
@@ -19,6 +21,12 @@ import java.util.Objects;
 public class EsCluster {
     @Resource
     private MilogEsClusterMapper esClusterMapper;
+
+    private StoreExtensionService storeExtensionService;
+
+    public void init() {
+        storeExtensionService = StoreExtensionServiceFactory.getStoreExtensionService();
+    }
 
     /**
      * 获取ES客户端
@@ -83,7 +91,7 @@ public class EsCluster {
         if (StringUtils.isEmpty(area)) {
             return null;
         }
-        List<MilogEsClusterDO> clusterList = esClusterMapper.selectByArea(area);
+        List<MilogEsClusterDO> clusterList = esClusterMapper.selectByArea(area, storeExtensionService.getMangerEsLabel());
         if (clusterList == null || clusterList.isEmpty()) {
             return null;
         }

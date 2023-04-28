@@ -383,7 +383,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
      */
     private Boolean queryResourceInitialized(ResourceUserSimple configResource, String regionCode,
                                              Integer logTypeCode) {
-        List<MilogMiddlewareConfig> milogMiddlewareConfigs = milogMiddlewareConfigDao.queryByResourceCode(MiddlewareEnum.ROCKETMQ.getCode(), regionCode);
+        List<MilogMiddlewareConfig> milogMiddlewareConfigs = milogMiddlewareConfigDao.queryByResourceCode(resourceExtensionService.getResourceCode(), regionCode);
         List<MilogMiddlewareConfig> middlewareMqConfigs = resourceExtensionService.currentUserConfigFilter(milogMiddlewareConfigs);
 
         List<MilogEsClusterDO> esClusterDOS = milogEsClusterMapper.selectList(Wrappers.lambdaQuery());
