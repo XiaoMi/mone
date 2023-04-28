@@ -57,7 +57,7 @@ public class Constant {
     public static final String LOG_MANAGE_PREFIX = "log_manage_";
     public static final String LOG_MANAGE_GWDASH_TOKEN = "gwdash_token";
 
-    public static final String NAMESPACE_CONFIG_DATA_ID = "create_namespace_config_open";
+    public static final String NAMESPACE_CONFIG_DATA_ID = "create_namespace_config";
 
     public static final String TAIL_CONFIG_DATA_ID = "create_tail_config_open:";
 
