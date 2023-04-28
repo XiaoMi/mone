@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.xiaomi.mone.log.api.enums.OperateEnum;
 import com.xiaomi.mone.log.api.model.vo.ResourceUserSimple;
 import com.xiaomi.mone.log.manager.common.ManagerConstant;
+import com.xiaomi.mone.log.manager.dao.MilogLogstoreDao;
 import com.xiaomi.mone.log.manager.domain.EsIndexTemplate;
 import com.xiaomi.mone.log.manager.mapper.MilogEsClusterMapper;
 import com.xiaomi.mone.log.manager.model.dto.EsInfoDTO;
@@ -42,6 +43,9 @@ public class DefaultStoreExtensionService implements StoreExtensionService {
 
     @Resource
     private EsIndexTemplate esIndexTemplate;
+
+    @Resource
+    private MilogLogstoreDao logStoreDao;
 
     @Override
     public boolean storeInfoCheck(LogStoreParam param) {
@@ -93,5 +97,10 @@ public class DefaultStoreExtensionService implements StoreExtensionService {
     @Override
     public String getMangerEsLabel() {
         return ManagerConstant.ES_LABEL;
+    }
+
+    @Override
+    public boolean updateLogStore(MilogLogStoreDO ml) {
+        return logStoreDao.updateMilogLogStore(ml);
     }
 }
