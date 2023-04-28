@@ -65,16 +65,8 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
     private StoreValidation storeValidation;
 
     @Resource
-    private MilogMiddlewareConfigDao milogMiddlewareConfigDao;
-
-    @Resource
-    private MilogMiddlewareConfigServiceImpl resourceConfigService;
-
-    @Resource
     private MilogMiddlewareConfigServiceImpl milogMiddlewareConfigService;
 
-    @Resource
-    private MilogEsClusterMapper milogEsClusterMapper;
 
     @Resource
     private MilogEsIndexMapper milogEsIndexMapper;
@@ -219,10 +211,8 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
     }
 
     public Result<Void> deleteLogStore(Long id) {
-        List<MilogLogStoreDO> list = logstoreDao.getMilogLogstore(new ArrayList<Long>() {{
-            add(id);
-        }});
-        if (list.size() < 1) {
+        MilogLogStoreDO logStore = logstoreDao.queryById(id);
+        if (null == logStore) {
             return new Result<>(CommonError.ParamsError.getCode(), "logstore 不存在");
         }
         List<MilogLogTailDo> tails = milogLogtailDao.getMilogLogtailByStoreId(id);
@@ -230,6 +220,7 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
             return new Result<>(CommonError.ParamsError.getCode(), "该 log store 下存在tail，无法删除");
         }
         if (logstoreDao.deleteMilogSpace(id)) {
+            storeExtensionService.deleteStorePostProcessing(logStore);
             return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage());
         } else {
             log.warn("[MilogLogstoreService.deleteMilogLogstore] delete Milogstore err,spaceId:{}", id);

@@ -40,4 +40,6 @@ public interface ResourceExtensionService {
     boolean resourceNotRequiredInit(Integer logTypeCode, List<MilogMiddlewareConfig> middlewareMqConfigs, List<MilogMiddlewareConfig> middlewareEsConfigs, List<MilogEsIndexDO> esIndexDOList);
 
     boolean resourceShowStatusFlag(ResourceUserSimple configResource);
+
+    Integer getResourceCode();
 }

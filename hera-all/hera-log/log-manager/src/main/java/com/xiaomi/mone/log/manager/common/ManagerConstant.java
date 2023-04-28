@@ -25,4 +25,6 @@ public class ManagerConstant {
     public static final String RESOURCE_NOT_INITIALIZED_MESSAGE = ",请先去资源管理页初始化资源";
 
     public static final Integer USER_DEPT_MAX_DEFAULT_LEVEL = 1;
+
+    public static final String ES_LABEL = "开源";
 }
