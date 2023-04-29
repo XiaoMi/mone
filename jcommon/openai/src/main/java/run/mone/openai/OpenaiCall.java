@@ -160,7 +160,20 @@ public class OpenaiCall {
 
 
     public static String call(String apiKey, String context, String prompt) {
-        OpenAiClient openAiClient = client(apiKey);
+        return call(apiKey, null, context, prompt);
+    }
+
+    /**
+     * 调用
+     *
+     * @param apiKey
+     * @param proxy   这个proxy是nginx的反向代理
+     * @param context
+     * @param prompt
+     * @return
+     */
+    public static String call(String apiKey, String proxy, String context, String prompt) {
+        OpenAiClient openAiClient = client(apiKey, proxy);
         String content = String.format(context, prompt);
         List<Message> list = Lists.newArrayList(
                 Message.builder().role(Message.Role.USER).content(content).build()
