@@ -4,7 +4,6 @@ import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.google.common.collect.Lists;
 import com.xiaomi.mone.log.api.enums.LogTypeEnum;
-import com.xiaomi.mone.log.api.enums.MachineRegionEnum;
 import com.xiaomi.mone.log.api.enums.OperateEnum;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.exception.CommonError;
@@ -27,6 +26,8 @@ import com.xiaomi.mone.log.manager.model.pojo.MilogMiddlewareConfig;
 import com.xiaomi.mone.log.manager.model.vo.LogStoreParam;
 import com.xiaomi.mone.log.manager.service.BaseService;
 import com.xiaomi.mone.log.manager.service.LogStoreService;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionService;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionServiceFactory;
 import com.xiaomi.mone.log.manager.service.extension.resource.ResourceExtensionService;
 import com.xiaomi.mone.log.manager.service.extension.resource.ResourceExtensionServiceFactory;
 import com.xiaomi.mone.log.manager.service.extension.store.StoreExtensionService;
@@ -74,12 +75,15 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
 
     private ResourceExtensionService resourceExtensionService;
 
+    private CommonExtensionService commonExtensionService;
+
     /**
      * init method
      */
     public void init() {
         storeExtensionService = StoreExtensionServiceFactory.getStoreExtensionService();
         resourceExtensionService = ResourceExtensionServiceFactory.getResourceExtensionService();
+        commonExtensionService = CommonExtensionServiceFactory.getCommonExtensionService();
     }
 
     @Override
@@ -141,7 +145,7 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
             }
             logStoreDTO.setEsResourceId(milogLogStoreDO.getEsClusterId());
             logStoreDTO.setLogTypeName(LogTypeEnum.queryNameByType(milogLogStoreDO.getLogType()));
-            logStoreDTO.setMachineRoomName(MachineRegionEnum.queryCnByEn(milogLogStoreDO.getMachineRoom()));
+            logStoreDTO.setMachineRoomName(commonExtensionService.getMachineRoomName(milogLogStoreDO.getMachineRoom()));
         }
         return Result.success(logStoreDTO);
     }

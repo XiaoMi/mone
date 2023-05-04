@@ -25,6 +25,7 @@ import com.xiaomi.mone.log.manager.service.bind.LogTypeProcessorFactory;
 import com.xiaomi.mone.log.manager.service.env.HeraEnvIpServiceFactory;
 import com.xiaomi.mone.log.manager.service.extension.agent.MilogAgentService;
 import com.xiaomi.mone.log.manager.service.extension.agent.MilogAgentServiceFactory;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionServiceFactory;
 import com.xiaomi.mone.log.manager.service.extension.resource.ResourceExtensionService;
 import com.xiaomi.mone.log.manager.service.extension.resource.ResourceExtensionServiceFactory;
 import com.xiaomi.mone.log.manager.service.extension.store.StoreExtensionService;
@@ -689,24 +690,6 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     }
 
     @Override
-    public List<PodDTO> regionDTOTransferSimpleAppDTOs(List<RegionDTO> neoAppInfos, MachineRegionEnum
-            machineRoom) {
-        List<PodDTO> podDTOList = Lists.newArrayList();
-        if (CollectionUtils.isNotEmpty(neoAppInfos)) {
-            neoAppInfos.forEach(regionDTO ->
-                    regionDTO.getZoneDTOList()
-                            .stream().forEach(zoneDTO -> {
-                                String zoneNameEN = zoneDTO.getZoneNameEN();
-                                MachineRegionEnum machineInfoByZone = MachineRegionEnum.queryMchineRegionByZone(zoneNameEN);
-                                if (null != machineInfoByZone && machineInfoByZone == machineRoom) {
-                                    podDTOList.addAll(zoneDTO.getPodDTOList());
-                                }
-                            }));
-        }
-        return podDTOList;
-    }
-
-    @Override
     public Result<List<MapDTO>> queryAppByStoreId(Long storeId) {
         List<MilogLogTailDo> milogLogtailDos = milogLogtailDao.queryAppIdByStoreId(storeId);
         if (CollectionUtils.isNotEmpty(milogLogtailDos)) {
@@ -736,7 +719,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
                 List<AppTypeTailDTO.TailApp> tailAppList = Lists.newArrayList();
                 AppTypeTailDTO.TailApp tailApp = new AppTypeTailDTO.TailApp();
                 tailApp.setNameEn(nameEn);
-                tailApp.setNameCn(MachineRegionEnum.queryCnByEn(nameEn));
+                tailApp.setNameCn(CommonExtensionServiceFactory.getCommonExtensionService().getMachineRoomName(nameEn));
                 List<MilogLogTailDo> logtailDos = listEntry.getValue();
                 if (CollectionUtils.isNotEmpty(logtailDos)) {
                     List<AppTypeTailDTO.TailInfo> tailInfos = logtailDos.stream().map(milogLogtailDo -> {
