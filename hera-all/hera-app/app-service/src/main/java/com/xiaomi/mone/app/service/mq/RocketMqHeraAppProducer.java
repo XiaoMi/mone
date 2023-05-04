@@ -14,13 +14,13 @@ import org.springframework.stereotype.Service;
  * @date 2023/4/26 3:12 下午
  */
 @Slf4j
-//@Service("rocketMqHeraAppProducer")
+@Service("rocketMqHeraAppProducer")
 public class RocketMqHeraAppProducer {
 
-    @NacosValue("${rocket.mq.hera.app.modify.topic}")
+    @NacosValue("${hera.app.modify.notice.topic}")
     private String topic;
 
-    @NacosValue("${rocket.mq.hera.app.modify.tag}")
+    @NacosValue("${hera.app.modify.notice.tag}")
     private String tag;
 
     @Autowired
@@ -28,10 +28,12 @@ public class RocketMqHeraAppProducer {
 
     public void pushHeraAppMsg(HeraAppInfoModifyMessage heraAppMessage) {
 
+        log.info("pushHeraAppMsg send rocketmq message : {}", heraAppMessage.toString());
+
         Message msg = new Message(topic, tag, JSON.toJSONString(heraAppMessage).getBytes());
         try {
             producer.send(msg);
-            log.info("pushHeraAppMsg send rocketmq message : {}", heraAppMessage.toString());
+            log.info("pushHeraAppMsg send rocketmq message success! msg : {}", heraAppMessage.toString());
         } catch (Exception e) {
             e.printStackTrace();
             log.error("pushHeraAppMsg error: " + e.getMessage(), e);

@@ -8,6 +8,7 @@ import com.xiaomi.mone.log.stream.common.util.StreamUtils;
 import com.xiaomi.mone.log.stream.exception.StreamException;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.common.StringUtils;
+import com.xiaomi.youpin.docean.plugin.config.anno.Value;
 import com.xiaomi.youpin.docean.plugin.nacos.NacosConfig;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +30,11 @@ public class ConfigManager {
     @Resource
     private NacosConfig nacosConfig;
 
-    final String spaceDataId = LOG_MANAGE_PREFIX + NAMESPACE_CONFIG_DATA_ID;
+
+    @Value("${hera.stream.monitor_space_data_id}")
+    private String spaceDataId;
+
+    //final String spaceDataId = LOG_MANAGE_PREFIX + NAMESPACE_CONFIG_DATA_ID;
 
     /**
      * 存储ConfigManager所管理的MilogSpaceConfigListener

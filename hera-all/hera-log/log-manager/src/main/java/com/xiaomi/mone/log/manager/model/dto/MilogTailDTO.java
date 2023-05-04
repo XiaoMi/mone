@@ -24,6 +24,19 @@ public class MilogTailDTO {
     private String logSplitExpress;
     private String valueList;
     private String tailRate;
+    /**
+     * 服务 部署空间
+     **/
+    private String deploySpace;
+
+    /**
+     * 行首正则
+     **/
+    private String firstLineReg;
+
+    /**
+     *   china
+     */
     private String source;
     /**
      * 应用类型 0:mione应用
@@ -34,7 +47,7 @@ public class MilogTailDTO {
      */
     private Integer machineType;
     /**
-     * test 应用所在的机房 节点信息
+     *  应用所在的机房 节点信息
      */
     private List<MotorRoomDTO> motorRooms;
 

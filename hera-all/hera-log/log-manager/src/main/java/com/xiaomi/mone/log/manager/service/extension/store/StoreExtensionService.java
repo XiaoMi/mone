@@ -14,6 +14,8 @@ public interface StoreExtensionService {
 
     String DEFAULT_STORE_EXTENSION_SERVICE_KEY = "defaultStoreExtensionService";
 
+    boolean storeInfoCheck(LogStoreParam param);
+
     /**
      * resource bind
      *
@@ -38,5 +40,11 @@ public interface StoreExtensionService {
      */
     boolean sendConfigSwitch(LogStoreParam param);
 
+    void deleteStorePostProcessing(MilogLogStoreDO logStoreD);
 
+    String getMangerEsLabel();
+
+    boolean updateLogStore(MilogLogStoreDO ml);
+
+    boolean isNeedSendMsgType(Integer logType);
 }

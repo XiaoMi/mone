@@ -1,6 +1,7 @@
 package com.xiaomi.mone.log.manager.service.nacos.impl;
 
 import com.alibaba.nacos.api.config.ConfigService;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionServiceFactory;
 import com.xiaomi.mone.log.manager.service.nacos.DynamicConfigProvider;
 import com.xiaomi.mone.log.model.MilogSpaceData;
 import lombok.Setter;
@@ -23,7 +24,7 @@ public class SpaceConfigNacosProvider implements DynamicConfigProvider<MilogSpac
     @Override
     public MilogSpaceData getConfig(String uniqueSpace) {
         String rules;
-        String dataId = LOG_MANAGE_PREFIX + TAIL_CONFIG_DATA_ID + uniqueSpace;
+        String dataId = CommonExtensionServiceFactory.getCommonExtensionService().getLogManagePrefix() + TAIL_CONFIG_DATA_ID + uniqueSpace;
         try {
             rules = configService.getConfig(dataId, DEFAULT_GROUP_ID, DEFAULT_TIME_OUT_MS);
             log.info("nacos中查询日志配置,dataId:{},data:{}", dataId, rules);

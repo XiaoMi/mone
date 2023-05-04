@@ -4,7 +4,6 @@ import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.google.common.collect.Lists;
 import com.xiaomi.mone.log.api.enums.LogTypeEnum;
-import com.xiaomi.mone.log.api.enums.MachineRegionEnum;
 import com.xiaomi.mone.log.api.enums.OperateEnum;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.exception.CommonError;
@@ -12,11 +11,8 @@ import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
 import com.xiaomi.mone.log.manager.common.validation.StoreValidation;
 import com.xiaomi.mone.log.manager.dao.MilogLogTailDao;
 import com.xiaomi.mone.log.manager.dao.MilogLogstoreDao;
-import com.xiaomi.mone.log.manager.dao.MilogMiddlewareConfigDao;
 import com.xiaomi.mone.log.manager.domain.EsIndexTemplate;
-import com.xiaomi.mone.log.manager.domain.LogStore;
 import com.xiaomi.mone.log.manager.domain.LogTail;
-import com.xiaomi.mone.log.manager.mapper.MilogEsClusterMapper;
 import com.xiaomi.mone.log.manager.mapper.MilogEsIndexMapper;
 import com.xiaomi.mone.log.manager.model.convert.MilogLogstoreConvert;
 import com.xiaomi.mone.log.manager.model.dto.EsInfoDTO;
@@ -30,6 +26,8 @@ import com.xiaomi.mone.log.manager.model.pojo.MilogMiddlewareConfig;
 import com.xiaomi.mone.log.manager.model.vo.LogStoreParam;
 import com.xiaomi.mone.log.manager.service.BaseService;
 import com.xiaomi.mone.log.manager.service.LogStoreService;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionService;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionServiceFactory;
 import com.xiaomi.mone.log.manager.service.extension.resource.ResourceExtensionService;
 import com.xiaomi.mone.log.manager.service.extension.resource.ResourceExtensionServiceFactory;
 import com.xiaomi.mone.log.manager.service.extension.store.StoreExtensionService;
@@ -53,7 +51,7 @@ import static com.xiaomi.mone.log.common.Constant.SUCCESS_MESSAGE;
 public class LogStoreServiceImpl extends BaseService implements LogStoreService {
 
     @Resource
-    private MilogLogstoreDao logstoreDao;
+    private MilogLogstoreDao logStoreDao;
 
     @Resource
     private MilogLogTailDao milogLogtailDao;
@@ -65,22 +63,10 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
     private StoreValidation storeValidation;
 
     @Resource
-    private MilogMiddlewareConfigDao milogMiddlewareConfigDao;
-
-    @Resource
-    private MilogMiddlewareConfigServiceImpl resourceConfigService;
-
-    @Resource
     private MilogMiddlewareConfigServiceImpl milogMiddlewareConfigService;
 
     @Resource
-    private MilogEsClusterMapper milogEsClusterMapper;
-
-    @Resource
     private MilogEsIndexMapper milogEsIndexMapper;
-
-    @Resource
-    private LogStore logStore;
 
     @Resource
     private LogTail logTail;
@@ -89,12 +75,15 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
 
     private ResourceExtensionService resourceExtensionService;
 
+    private CommonExtensionService commonExtensionService;
+
     /**
      * init method
      */
     public void init() {
         storeExtensionService = StoreExtensionServiceFactory.getStoreExtensionService();
         resourceExtensionService = ResourceExtensionServiceFactory.getResourceExtensionService();
+        commonExtensionService = CommonExtensionServiceFactory.getCommonExtensionService();
     }
 
     @Override
@@ -111,7 +100,7 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
         if (StringUtils.isNotEmpty(errorInfos)) {
             return Result.failParam(errorInfos);
         }
-        if (logstoreDao.verifyExistByName(cmd.getLogstoreName(), null)) {
+        if (logStoreDao.verifyExistByName(cmd.getLogstoreName(), null)) {
             return new Result<>(CommonError.UnknownError.getCode(), "存在同名storeName", "");
         }
 
@@ -120,7 +109,7 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
         // 绑定资源
         storeExtensionService.storeResourceBinding(storeDO, cmd, OperateEnum.ADD_OPERATE);
         // 存储
-        boolean res = logstoreDao.newMilogLogStore(storeDO);
+        boolean res = logStoreDao.newMilogLogStore(storeDO);
         if (res == true) {
             storeExtensionService.postProcessing(storeDO, cmd);
             return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage());
@@ -147,7 +136,7 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
         if (null == id) {
             return Result.failParam("id can not be empty");
         }
-        MilogLogStoreDO milogLogStoreDO = logstoreDao.queryById(id);
+        MilogLogStoreDO milogLogStoreDO = logStoreDao.queryById(id);
         LogStoreDTO logStoreDTO = new LogStoreDTO();
         if (null != milogLogStoreDO) {
             BeanUtil.copyProperties(milogLogStoreDO, logStoreDTO);
@@ -156,13 +145,13 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
             }
             logStoreDTO.setEsResourceId(milogLogStoreDO.getEsClusterId());
             logStoreDTO.setLogTypeName(LogTypeEnum.queryNameByType(milogLogStoreDO.getLogType()));
-            logStoreDTO.setMachineRoomName(MachineRegionEnum.queryCnByEn(milogLogStoreDO.getMachineRoom()));
+            logStoreDTO.setMachineRoomName(commonExtensionService.getMachineRoomName(milogLogStoreDO.getMachineRoom()));
         }
         return Result.success(logStoreDTO);
     }
 
     public Result<List<MapDTO<String, Long>>> getLogStoreBySpaceId(Long spaceId) {
-        List<MilogLogStoreDO> stores = logstoreDao.getMilogLogstoreBySpaceId(spaceId);
+        List<MilogLogStoreDO> stores = logStoreDao.getMilogLogstoreBySpaceId(spaceId);
         ArrayList<MapDTO<String, Long>> ret = new ArrayList<>();
         for (MilogLogStoreDO s : stores) {
             ret.add(new MapDTO<>(s.getLogstoreName(), s.getId()));
@@ -171,22 +160,22 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
     }
 
     public Result<Map<String, Object>> getLogStoreByPage(String logstoreName, Long spaceId, int page, int pagesize) {
-        Map<String, Object> ret = logstoreDao.getMilogLogstoreByPage(logstoreName, spaceId, page, pagesize);
+        Map<String, Object> ret = logStoreDao.getMilogLogstoreByPage(logstoreName, spaceId, page, pagesize);
         return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage(), ret);
     }
 
     public Result<Map<String, Object>> getAllLogStore() {
-        Map<String, Object> ret = logstoreDao.getAllMilogLogstore(MoneUserContext.getCurrentUser().getZone());
+        Map<String, Object> ret = logStoreDao.getAllMilogLogstore(MoneUserContext.getCurrentUser().getZone());
         return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage(), ret);
     }
 
     public Result<List<MilogLogStoreDO>> getLogStoreByIds(List<Long> ids) {
-        List<MilogLogStoreDO> ret = logstoreDao.getMilogLogstore(ids);
+        List<MilogLogStoreDO> ret = logStoreDao.getMilogLogstore(ids);
         return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage(), ret);
     }
 
     public Result<String> updateLogStore(LogStoreParam param) {
-        MilogLogStoreDO milogLogstoreDO = logstoreDao.queryById(param.getId());
+        MilogLogStoreDO milogLogstoreDO = logStoreDao.queryById(param.getId());
         if (null == milogLogstoreDO) {
             return new Result<>(CommonError.ParamsError.getCode(), "logstore 不存在");
         }
@@ -197,7 +186,7 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
         if (StringUtils.isNotEmpty(errorInfos)) {
             return Result.failParam(errorInfos);
         }
-        if (logstoreDao.verifyExistByName(param.getLogstoreName(), param.getId())) {
+        if (logStoreDao.verifyExistByName(param.getLogstoreName(), param.getId())) {
             return new Result(CommonError.UnknownError.getCode(), "存在同名storeName", "");
         }
 
@@ -209,7 +198,7 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
         // 选择对应的索引
         storeExtensionService.storeResourceBinding(ml, param, OperateEnum.UPDATE_OPERATE);
         wrapBaseCommon(ml, OperateEnum.UPDATE_OPERATE);
-        boolean updateRes = logstoreDao.updateMilogLogStore(ml);
+        boolean updateRes = storeExtensionService.updateLogStore(ml);
         if (updateRes && storeExtensionService.sendConfigSwitch(param)) {
             //查看是否有tail 如果有重新发送配置信息（nacos 和 agent）
             logTail.handleStoreTail(milogLogstoreDO.getId());
@@ -219,17 +208,16 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
     }
 
     public Result<Void> deleteLogStore(Long id) {
-        List<MilogLogStoreDO> list = logstoreDao.getMilogLogstore(new ArrayList<Long>() {{
-            add(id);
-        }});
-        if (list.size() < 1) {
+        MilogLogStoreDO logStore = logStoreDao.queryById(id);
+        if (null == logStore) {
             return new Result<>(CommonError.ParamsError.getCode(), "logstore 不存在");
         }
         List<MilogLogTailDo> tails = milogLogtailDao.getMilogLogtailByStoreId(id);
         if (tails != null && tails.size() != 0) {
             return new Result<>(CommonError.ParamsError.getCode(), "该 log store 下存在tail，无法删除");
         }
-        if (logstoreDao.deleteMilogSpace(id)) {
+        if (logStoreDao.deleteMilogSpace(id)) {
+            storeExtensionService.deleteStorePostProcessing(logStore);
             return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage());
         } else {
             log.warn("[MilogLogstoreService.deleteMilogLogstore] delete Milogstore err,spaceId:{}", id);

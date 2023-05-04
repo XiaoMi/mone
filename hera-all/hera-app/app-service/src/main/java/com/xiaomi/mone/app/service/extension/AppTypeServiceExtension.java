@@ -22,4 +22,9 @@ public interface AppTypeServiceExtension {
      * @return
      */
     Integer getAppTypePlatformType(Integer type);
+
+
+    String getPlatformName(Integer platformType);
+
+    String getAppTypeName(Integer appType);
 }

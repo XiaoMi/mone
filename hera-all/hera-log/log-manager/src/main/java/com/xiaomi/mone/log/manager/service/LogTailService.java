@@ -65,9 +65,6 @@ public interface LogTailService {
 
     MilogTailDTO milogLogtailDO2DTO(MilogLogTailDo milogLogtailDo);
 
-    List<PodDTO> regionDTOTransferSimpleAppDTOs(List<RegionDTO> neoAppInfos, MachineRegionEnum
-            machineRoom);
-
     Result<List<MapDTO>> queryAppByStoreId(Long storeId);
 
     Result<List<AppTypeTailDTO>> queryAppTailByStoreId(Long storeId);

@@ -13,8 +13,6 @@ import com.xiaomi.mone.app.api.service.HeraAppService;
 import com.xiaomi.mone.app.dao.mapper.HeraAppBaseInfoMapper;
 import com.xiaomi.mone.app.dao.mapper.HeraAppExcessInfoMapper;
 import com.xiaomi.mone.app.dao.mapper.HeraAppRoleMapper;
-import com.xiaomi.mone.app.enums.PlatFormTypeEnum;
-import com.xiaomi.mone.app.enums.ProjectTypeEnum;
 import com.xiaomi.mone.app.enums.StatusEnum;
 import com.xiaomi.mone.app.model.HeraAppBaseInfo;
 import com.xiaomi.mone.app.model.HeraAppExcessInfo;
@@ -61,7 +59,7 @@ public class HeraAppServiceImpl implements HeraAppService {
 
     private final AppTypeServiceExtension appTypeServiceExtension;
 
-    public HeraAppServiceImpl(HeraAppBaseInfoMapper heraAppBaseInfoMapper, HeraAppExcessInfoMapper heraAppExcessInfoMapper,  HeraAppRoleService roleService, HeraAppRoleMapper heraAppRoleMapper, AppTypeServiceExtension appTypeServiceExtension) {
+    public HeraAppServiceImpl(HeraAppBaseInfoMapper heraAppBaseInfoMapper, HeraAppExcessInfoMapper heraAppExcessInfoMapper, HeraAppRoleService roleService, HeraAppRoleMapper heraAppRoleMapper, AppTypeServiceExtension appTypeServiceExtension) {
         this.heraAppBaseInfoMapper = heraAppBaseInfoMapper;
         this.heraAppExcessInfoMapper = heraAppExcessInfoMapper;
         this.roleService = roleService;
@@ -77,8 +75,8 @@ public class HeraAppServiceImpl implements HeraAppService {
         List<AppBaseInfo> appBaseInfos = heraAppBaseInfoMapper.queryAppInfoWithLog(appName, type);
         if (CollectionUtils.isNotEmpty(appBaseInfos)) {
             appBaseInfos = appBaseInfos.parallelStream().map(appBaseInfo -> {
-                appBaseInfo.setPlatformName(PlatFormTypeEnum.getEnum(appBaseInfo.getPlatformType()).getName());
-                appBaseInfo.setAppTypeName(ProjectTypeEnum.queryTypeByCode(appBaseInfo.getAppType()));
+                appBaseInfo.setPlatformName(appTypeServiceExtension.getPlatformName(appBaseInfo.getPlatformType()));
+                appBaseInfo.setAppTypeName(appTypeServiceExtension.getAppTypeName(appBaseInfo.getAppType()));
                 return appBaseInfo;
             }).collect(Collectors.toList());
         }
@@ -177,8 +175,8 @@ public class HeraAppServiceImpl implements HeraAppService {
         // 设置为log的平台类型
         Integer code = appTypeServiceExtension.getAppTypePlatformType(heraAppBaseInfo.getPlatformType());
         appBaseInfo.setPlatformType(code);
-        appBaseInfo.setPlatformName(PlatFormTypeEnum.getEnum(heraAppBaseInfo.getPlatformType()).getName());
-        appBaseInfo.setAppTypeName(ProjectTypeEnum.queryTypeByCode(appBaseInfo.getAppType()));
+        appBaseInfo.setPlatformName(appTypeServiceExtension.getPlatformName(heraAppBaseInfo.getPlatformType()));
+        appBaseInfo.setAppTypeName(appTypeServiceExtension.getAppTypeName(appBaseInfo.getAppType()));
         return appBaseInfo;
     }
 

@@ -31,7 +31,7 @@
             `milog_es_cluster`
         WHERE
             area = #{area}
-            and labels like '%开源%';
+            and labels like CONCAT('%',#{label},'%');
     </select>
     <select id="selectByAlias" resultType="com.xiaomi.mone.log.manager.model.pojo.MilogEsClusterDO">
         SELECT
@@ -40,5 +40,14 @@
             `milog_es_cluster`
         WHERE
             name = #{alias}
+    </select>
+    <select id="selectByTagAndArea" resultType="com.xiaomi.mone.log.manager.model.pojo.MilogEsClusterDO">
+        SELECT
+            *
+        FROM
+            `milog_es_cluster`
+        WHERE
+            tag = #{tag}
+          and area = #{area};
     </select>
 </mapper>
