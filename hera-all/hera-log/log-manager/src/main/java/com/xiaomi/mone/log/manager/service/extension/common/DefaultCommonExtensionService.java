@@ -1,5 +1,6 @@
 package com.xiaomi.mone.log.manager.service.extension.common;
 
+import com.xiaomi.mone.log.api.enums.MachineRegionEnum;
 import com.xiaomi.youpin.docean.anno.Service;
 import lombok.extern.slf4j.Slf4j;
 
@@ -25,5 +26,10 @@ public class DefaultCommonExtensionService implements CommonExtensionService {
     @Override
     public String getHeraLogStreamServerName() {
         return DEFAULT_STREAM_SERVER_NAME;
+    }
+
+    @Override
+    public String getMachineRoomName(String machineRoomEn) {
+        return MachineRegionEnum.queryCnByEn(machineRoomEn);
     }
 }
