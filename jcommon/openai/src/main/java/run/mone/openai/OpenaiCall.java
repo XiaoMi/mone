@@ -54,6 +54,10 @@ public class OpenaiCall {
 
 
     public static OpenAiClient client(String apiKey) {
+        return client(apiKey, null);
+    }
+
+    public static OpenAiClient client(String apiKey, String openApiHost) {
         String proxyAddr = System.getenv("open_api_proxy");
         Proxy proxy = null;
         if (null != proxyAddr && proxyAddr.length() > 0) {
@@ -69,7 +73,12 @@ public class OpenaiCall {
         String host = "https://api.openai.com/";
         String hostAddr = System.getenv("open_api_host");
         if (null != hostAddr && hostAddr.length() > 0) {
+            log.info("use open aip host:{}", hostAddr);
             host = hostAddr;
+        }
+
+        if (null != openApiHost && openApiHost.length() > 0) {
+            host = openApiHost;
         }
 
         OpenAiClient.Builder builer = OpenAiClient.builder()
@@ -151,15 +160,34 @@ public class OpenaiCall {
 
 
     public static String call(String apiKey, String context, String prompt) {
-        OpenAiClient openAiClient = client(apiKey);
+        return call(apiKey, null, context, prompt);
+    }
+
+    /**
+     * 调用
+     *
+     * @param apiKey
+     * @param proxy   这个proxy是nginx的反向代理
+     * @param context
+     * @param prompt
+     * @return
+     */
+    public static String call(String apiKey, String proxy, String context, String prompt) {
+        return call(apiKey, proxy, context, prompt, 0.2f);
+    }
+
+
+    public static String call(String apiKey, String proxy, String context, String prompt, double temperature) {
+        OpenAiClient openAiClient = client(apiKey, proxy);
         String content = String.format(context, prompt);
         List<Message> list = Lists.newArrayList(
                 Message.builder().role(Message.Role.USER).content(content).build()
         );
-        ChatCompletion chatCompletion = ChatCompletion.builder().messages(list).build();
+        ChatCompletion chatCompletion = ChatCompletion.builder().temperature(temperature).messages(list).build();
         ChatCompletionResponse completions = openAiClient.chatCompletion(chatCompletion);
         return completions.getChoices().get(0).getMessage().getContent();
     }
+
 
     @SneakyThrows
     public static String callWithHttpClient(String apiKey, String prompt, String proxy) {
