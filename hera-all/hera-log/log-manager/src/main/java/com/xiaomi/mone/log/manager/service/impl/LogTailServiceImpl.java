@@ -317,7 +317,9 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
             }
             // 处理filterconf 转 rateLimit
             MilogTailDTO milogTailDTO = milogLogtailDO2DTO(tail);
-            decorateMilogTailDTO(milogTailDTO);
+            if (tailExtensionService.decorateTailDTOValId(milogTailDTO.getAppType().intValue())) {
+                decorateMilogTailDTO(milogTailDTO);
+            }
             return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage(), milogTailDTO);
         } else {
             return new Result<>(CommonError.UnknownError.getCode(), "tail 不存在");
@@ -669,7 +671,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         milogTailDTO.setEnvId(milogLogtailDo.getEnvId());
         milogTailDTO.setEnvName(milogLogtailDo.getEnvName());
         List<String> list = milogLogtailDo.getIps();
-        if (CollectionUtils.isEmpty(list)) {
+        if (CollectionUtils.isNotEmpty(list)) {
             milogTailDTO.setIps(list);
         }
         milogTailDTO.setTail(milogLogtailDo.getTail());
