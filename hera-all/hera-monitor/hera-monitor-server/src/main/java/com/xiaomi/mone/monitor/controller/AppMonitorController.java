@@ -344,14 +344,10 @@ public class AppMonitorController {
             log.info("AppMonitorController.addApp request info error no user info found! param : {} ", params);
             return Result.fail(ErrorCode.unknownError);
         }
-
         String user = userInfo.genFullAccount();
+
         // 只允许添加一条（单个应用）
         AppMonitorModel param = params.get(0);
-        if (param.getProjectId() == null || StringUtils.isBlank(param.getProjectName())) {
-            log.error("AppMonitorController.addApp 用户{}添加项目{}，参数不合法", user, param);
-            return Result.fail(ErrorCode.invalidParamError);
-        }
 
         log.info("AppMonitorController.addApp param : {} ,user : {}", param, user);
         Result<String> result = appMonitorService.createWithBaseInfo(param, user);

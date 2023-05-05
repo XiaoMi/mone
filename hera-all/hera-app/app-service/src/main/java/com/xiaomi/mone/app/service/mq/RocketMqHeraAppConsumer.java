@@ -103,6 +103,7 @@ public class RocketMqHeraAppConsumer {
 
 
             heraAppMQPushConsumer.subscribe(consumerTopic, consumerTag);
+            log.info("HeraApp#RocketMqHeraAppConsumer consumerTopic:{},consumerTag:{},consumerGroup:{}",consumerTopic,consumerTag,consumerGroup);
             heraAppMQPushConsumer.registerMessageListener((MessageListenerOrderly) (list, consumeOrderlyContext) -> {
                 try {
                     list.stream().forEach(it -> {
@@ -265,13 +266,14 @@ public class RocketMqHeraAppConsumer {
         HeraAppInfoModifyMessage modifyMsg = new HeraAppInfoModifyMessage();
         modifyMsg.setModifyType(modifyType);
         BeanUtils.copyProperties(changeInfo,modifyMsg);
+        modifyMsg.setAppId(Integer.valueOf(changeInfo.getBindId()));
         if(origInfo != null){
             modifyMsg.setId(origInfo.getId());
         }
         if(HeraAppModifyType.update.equals(modifyType)){
             modifyMsg.setIsNameChange(!changeInfo.getAppName().equals(origInfo.getAppName()) ? true : false);
             modifyMsg.setIsIamTreeIdChange(!changeInfo.getIamTreeId().equals(origInfo.getIamTreeId()) ? true : false);
-            modifyMsg.setIsIamTreeTypeChange(!changeInfo.getIamTreeType().equals(origInfo.getIamTreeType()) ? true : false);
+            modifyMsg.setIsIamTreeTypeChange(changeInfo.getIamTreeType() != null && !changeInfo.getIamTreeType().equals(origInfo.getIamTreeType()) ? true : false);
             modifyMsg.setIsPlatChange(!changeInfo.getPlatformType().equals(origInfo.getPlatformType()) ? true : false);
         }
 

@@ -317,6 +317,40 @@ public class AlarmStrategyService {
         return Result.success(pageData);
     }
 
+    private List<AlarmStrategyInfo> listStrategyByAppIdAndIamId(Integer appId,Integer iamId){
+
+        AlarmStrategy strategy = new AlarmStrategy();
+        strategy.setStatus(0);
+        strategy.setAppId(appId);
+        strategy.setIamId(iamId);
+        PageData<List<AlarmStrategyInfo>> listPageData = appAlarmStrategyDao.searchByCondNoUser(strategy, 1, 5000, null, null);
+        if(listPageData == null){
+            return null;
+        }
+        return listPageData.getList();
+    }
+
+    public void deleteByAppIdAndIamId(Integer appId,Integer iamId){
+        List<AlarmStrategyInfo> alarmStrategyInfos = listStrategyByAppIdAndIamId(appId, iamId);
+        if(CollectionUtils.isEmpty(alarmStrategyInfos)){
+            log.info("AlarmStrategyService#deleteByAppIdAndIamId no data found!appId:{},iamId:{}",appId,iamId);
+            return;
+        }
+
+        for(AlarmStrategyInfo strategy : alarmStrategyInfos){
+
+            Result result = appAlarmService.deleteRulesByIamId(strategy.getIamId() ,strategy.getId(), null);
+            if (result.getCode() != ErrorCode.success.getCode()) {
+                log.error("deleteByAppIdAndIamId delete alarmRules fail! strategy : {}",strategy.toString());
+                continue;
+            }
+            if (!appAlarmStrategyDao.deleteById(strategy.getId())) {
+                log.error("deleteByAppIdAndIamId delete strategy fail! strategy : {}",strategy.toString());
+                continue;
+            }
+        }
+    }
+
     public Result<PageData> dubboSearch(String user, AlarmStrategyParam param) {
         StringBuilder metricStr = new StringBuilder();
         metricStr.append("sum(sum_over_time(staging_").append(param.getAppId()).append("_").append(param.getAppName())
