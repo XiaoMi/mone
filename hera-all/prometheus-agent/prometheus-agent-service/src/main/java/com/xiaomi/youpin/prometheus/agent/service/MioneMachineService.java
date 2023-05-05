@@ -1,23 +1,19 @@
 package com.xiaomi.youpin.prometheus.agent.service;
 
-import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.xiaomi.youpin.prometheus.agent.domain.Ips;
-//import com.xiaomi.youpin.quota.bo.ResourceBo;
-//import com.xiaomi.youpin.quota.bo.Result;
-//import com.xiaomi.youpin.quota.service.QuotaService;
-//import com.xiaomi.youpin.quota.service.ResourceService;
+import com.xiaomi.youpin.prometheus.agent.service.api.MioneMachineServiceExtension;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.dubbo.config.annotation.Reference;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
 @Slf4j
 @Service
 public class MioneMachineService {
+
+    @Autowired
+    private MioneMachineServiceExtension mioneMachineServiceExtension;
 
 //    @NacosValue(value = "${mione.machine.port}", autoRefreshed = true)
 //    private String machinePort;
@@ -60,6 +56,6 @@ public class MioneMachineService {
         defaultResult.add(ips2);
         return defaultResult;
 */
-        return null;
+        return mioneMachineServiceExtension.queryMachineList(type);
     }
 }
