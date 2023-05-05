@@ -40,7 +40,7 @@ public class LogDataTransfer {
 
     private final AtomicLong sendMsgNumber = new AtomicLong(0);
 
-    private RateLimiter rateLimiter = RateLimiter.create(1000000);
+    private RateLimiter rateLimiter = RateLimiter.create(180000000);
 
     public LogDataTransfer(SinkChain sinkChain, LogParser logParser,
                            MessageSender messageSender) {
