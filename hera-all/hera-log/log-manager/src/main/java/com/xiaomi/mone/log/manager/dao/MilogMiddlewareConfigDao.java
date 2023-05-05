@@ -4,6 +4,7 @@ import com.xiaomi.mone.log.api.enums.MachineRegionEnum;
 import com.xiaomi.mone.log.api.enums.MiddlewareEnum;
 import com.xiaomi.mone.log.common.Constant;
 import com.xiaomi.mone.log.manager.model.pojo.MilogMiddlewareConfig;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionServiceFactory;
 import com.xiaomi.mone.log.manager.service.extension.resource.ResourceExtensionServiceFactory;
 import com.xiaomi.youpin.docean.anno.Service;
 import org.apache.commons.collections.CollectionUtils;
@@ -60,7 +61,7 @@ public class MilogMiddlewareConfigDao {
     public List<MilogMiddlewareConfig> queryCurrentMontorRoomMQ(String montorRoomEn) {
         List<MilogMiddlewareConfig> middlewareConfigs = dao.query(MilogMiddlewareConfig.class, Cnd.where("region_en", EQUAL_OPERATE, montorRoomEn.trim()));
         if (CollectionUtils.isNotEmpty(middlewareConfigs)) {
-            return middlewareConfigs.stream().filter(middlewareConfig -> MiddlewareEnum.ROCKETMQ.getCode().equals(middlewareConfig.getType())).collect(Collectors.toList());
+            return middlewareConfigs.stream().filter(middlewareConfig -> CommonExtensionServiceFactory.getCommonExtensionService().middlewareEnumValid(middlewareConfig.getType())).collect(Collectors.toList());
         }
         return null;
     }
@@ -68,7 +69,7 @@ public class MilogMiddlewareConfigDao {
     public MilogMiddlewareConfig queryDefaultMiddlewareConfig() {
         List<MilogMiddlewareConfig> defaultConfigList = dao.query(MilogMiddlewareConfig.class, Cnd.where("region_en", EQUAL_OPERATE, MachineRegionEnum.CN_MACHINE.getEn()).and("is_default", EQUAL_OPERATE, 1));
         if (CollectionUtils.isNotEmpty(defaultConfigList)) {
-            return defaultConfigList.stream().filter(middlewareConfig -> MiddlewareEnum.ROCKETMQ.getCode().equals(middlewareConfig.getType())).findFirst().orElse(null);
+            return defaultConfigList.stream().filter(middlewareConfig -> CommonExtensionServiceFactory.getCommonExtensionService().middlewareEnumValid(middlewareConfig.getType())).findFirst().orElse(null);
         }
         return null;
     }
