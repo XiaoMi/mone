@@ -140,4 +140,9 @@ public class DefaultTailExtensionService implements TailExtensionService {
         return Lists.newArrayList();
     }
 
+    @Override
+    public boolean decorateTailDTOValId(Integer appType) {
+        return true;
+    }
+
 }
