@@ -73,8 +73,8 @@ public class AppGrafanaMappingService {
     ExecutorService executor = null;
 
 
-    public static final String OLD_ST_GRAFANA_DOMAIN = "http://xxx";
-    public static final String OLD_ONLINE_GRAFANA_DOMAIN = "http://xxx";
+    public static final String OLD_ST_GRAFANA_DOMAIN = "http://grafana.mione";
+    public static final String OLD_ONLINE_GRAFANA_DOMAIN = "http://grafana.be";
 
 //    @Reference(registry = "registryConfig",check = false, interfaceClass = FaasFuncManagerService.class,group="${dubbo.group.mifaass}",version = "1.0")
 //    FaasFuncManagerService faasFuncManagerService;
