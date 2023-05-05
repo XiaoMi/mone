@@ -76,77 +76,9 @@ public class AppGrafanaMappingService {
     public static final String OLD_ST_GRAFANA_DOMAIN = "http://xxx";
     public static final String OLD_ONLINE_GRAFANA_DOMAIN = "http://xxx";
 
-//    @Reference(registry = "registryConfig",check = false, interfaceClass = FaasFuncManagerService.class,group="${dubbo.group.mifaass}",version = "1.0")
-//    FaasFuncManagerService faasFuncManagerService;
-
     public AppGrafanaMappingService() {
         executor = Executors.newSingleThreadExecutor();
     }
-
-//    public void exeReloadTemplate(Integer pSize){
-//
-//        log.info("exeReloadTemplate will be running!! pSize:" + pSize);
-//        Future result = executor.submit(()->{
-//
-//            log.info("exeReloadTemplate start running!! pSize:" + pSize);
-//
-//            try {
-//                Long total = appGrafanaMappingDao.getDataTotal();
-//                log.info("AppGrafanaMappingService.reloadTemplate data totalNum ====== {}", total);
-//                if(total == null || total.intValue() == 0){
-//                    log.info("AppGrafanaMappingService.reloadTemplate no data found!!!");
-//                    return "No data found!!";
-//                }
-//
-//                int pageCount = total.intValue() / pSize + (total.intValue() % pSize > 0 ? 1 : 0);
-//
-//                for (int i = 0; i < pageCount; i++) {
-//                    int offset = i * pSize;
-//                    List<AppGrafanaMapping> list = appGrafanaMappingDao.getData(offset, pSize);
-//                    for(AppGrafanaMapping appGrafanaMapping : list){
-//                        String grafanaReqResult = null;
-//                        try {
-//                            grafanaReqResult = grafanaService.requestGrafana(serverType, appGrafanaMapping.getAppName(), appGrafanaMapping.getMioneEnv());
-//                            /**
-//                             *  grafana 视图url拼接
-//                             */
-//                            GrafanaResponse grafanaResponse = new Gson().fromJson(grafanaReqResult, GrafanaResponse.class);
-//
-//                            log.info("grafanaMappingService.reloadTemplate success appName : {}, version:{},MioneEnv : {}, returnUrl :{}"
-//                                    ,appGrafanaMapping.getAppName(),grafanaResponse.getMimonitor_version(),appGrafanaMapping.getMioneEnv(),grafanaReqResult);
-//
-//                            String url = new StringBuffer().append(grafanaDomain).append(grafanaResponse.getUrl()).toString();
-//                            appGrafanaMapping.setGrafanaUrl(url);
-//                            appGrafanaMapping.setUpdateTime(new Date());
-//                            appGrafanaMappingDao.updateByPrimaryKey(appGrafanaMapping);
-//
-//                        } catch (Exception e1) {
-//                            log.error("grafanaMappingService.reloadTemplate error appName:{} error : {}",appGrafanaMapping.getAppName(),e1.getMessage(), e1);
-//                            continue;
-//                        }
-//
-//                    }
-//                }
-//            } catch (Exception e) {
-//                log.error("AppGrafanaMappingService.reloadTemplate error : {}",e.getMessage(), e);
-//                return ErrorCode.unknownError.getMessage();
-//            }
-//
-//            return ErrorCode.success.getMessage();
-//        });
-//    }
-
-//    public List<String> getFaasFunctionList(Integer projectId){
-//        com.xiaomi.youpin.infra.rpc.Result<List<FaasFuncBO>> result = faasFuncManagerService.list(Long.valueOf(projectId));
-//        log.info("getFaasFunctionList.result:{}",new Gson().toJson(result));
-//        if(result == null || CollectionUtils.isEmpty(result.getData())){
-//            return Lists.newArrayList();
-//        }
-//
-//        return result.getData().stream().map(t->{
-//            return t.getFuncName();
-//        }).collect(Collectors.toList());
-//    }
 
     public void exeReloadTemplateBase(Integer pSize) {
 
@@ -189,14 +121,6 @@ public class AppGrafanaMappingService {
         });
     }
 
-    public void createTmpData(String area, String appName, String url) {
-        AppGrafanaMapping appGrafanaMapping = new AppGrafanaMapping();
-        appGrafanaMapping.setMioneEnv(area);
-        appGrafanaMapping.setAppName(appName);
-        appGrafanaMapping.setGrafanaUrl(url);
-        Integer ret = this.saveOrUpdate(appGrafanaMapping);
-    }
-
     public void reloadTmpByAppId(Integer id) {
         HeraAppBaseInfoModel baseInfo = heraBaseInfoService.getById(id);
         if (baseInfo == null) {
@@ -216,7 +140,7 @@ public class AppGrafanaMappingService {
             //无语言配置，默认使用java语言模版
             if (langUageCode == null) {
                 langUageCode = AppLanguage.java.getCode();
-                log.error("the app base info no language set! baseInfo:{}", new Gson().toJson(baseInfo));
+                log.error("the app base info no language set! set default language java. baseInfo:{}", new Gson().toJson(baseInfo));
             }
             template.setLanguage(langUageCode);
 
@@ -266,6 +190,7 @@ public class AppGrafanaMappingService {
 
     }
 
+    @Deprecated
     public String createGrafanaUrlByAppName(String appName, String area) {
         if (StringUtils.isEmpty(appName) || StringUtils.isEmpty(area)) {
             log.error("GrafanaMappingController.createGrafanaUrlByAppName error! param appName or area is empty!");
@@ -352,6 +277,7 @@ public class AppGrafanaMappingService {
 
     }
 
+    @Deprecated
     public Result<String> getGrafanaUrlByAppId(Integer appId) {
 
         if (appId == null) {
@@ -380,38 +306,6 @@ public class AppGrafanaMappingService {
 
     }
 
-    public Result<String> getByIamTreeId(Integer iamTreeId) {
-
-        if (iamTreeId == null) {
-            log.error("AppGrafanaMappingService#getByIamTreeId param is empty");
-            return Result.fail(ErrorCode.invalidParamError);
-        }
-
-        try {
-            AppMonitor appMonitor = appMonitorDao.getByIamTreeId(iamTreeId);
-            if (appMonitor == null) {
-                return Result.success(null);
-            }
-
-            if (appMonitor.getIamTreeId() == null) {
-                log.error("AppGrafanaMappingService#getByIamTreeId error! iam_tree_id no valid data!");
-                return Result.fail(ErrorCode.unknownError);
-            }
-
-            String grafanaName = new StringBuilder().append(appMonitor.getIamTreeId()).append("_").append(appMonitor.getProjectName()).toString();
-            AppGrafanaMapping mapping = appGrafanaMappingDao.getByAppName(grafanaName);
-            if (mapping == null) {
-                log.info("AppGrafanaMappingService#getByIamTreeId can not find data for appName : {}", grafanaName);
-                return new Result<>(ErrorCode.success.getCode(), ErrorCode.success.getMessage(), null);
-            }
-            log.info("AppGrafanaMappingService#getByIamTreeId by appName : {} ,return : {}", grafanaName, mapping.getGrafanaUrl());
-            return new Result<>(ErrorCode.success.getCode(), ErrorCode.success.getMessage(), mapping.getGrafanaUrl());
-        } catch (Exception e) {
-            log.error("AppGrafanaMappingService#getByIamTreeId error" + e.getMessage(), e);
-            return Result.fail(ErrorCode.unknownError);
-        }
-    }
-
     public Integer save(AppGrafanaMapping appGrafanaMapping) {
         try {
             return appGrafanaMappingDao.generateGrafanaMapping(appGrafanaMapping);
@@ -434,32 +328,6 @@ public class AppGrafanaMappingService {
 
         } catch (Exception e) {
             log.error("AppGrafanaMappingService#saveOrUpdate error" + e.getMessage(), e);
-        }
-        return 0;
-    }
-
-    public Integer saveIfAbsent(AppGrafanaMapping appGrafanaMapping) {
-        try {
-            AppGrafanaMapping byAppName = appGrafanaMappingDao.getByAppName(appGrafanaMapping.getAppName());
-            if (byAppName == null) {
-                return appGrafanaMappingDao.generateGrafanaMapping(appGrafanaMapping);
-            }
-        } catch (Exception e) {
-            log.error("AppGrafanaMappingService#saveIfAbsent error" + e.getMessage(), e);
-        }
-        return 0;
-    }
-
-
-    public Integer updateByAppName(AppGrafanaMapping appGrafanaMapping) {
-        try {
-            AppGrafanaMapping byAppName = appGrafanaMappingDao.getByAppName(appGrafanaMapping.getAppName());
-            if (byAppName != null) {
-                appGrafanaMapping.setId(byAppName.getId());
-                return appGrafanaMappingDao.updateByPrimaryKey(appGrafanaMapping);
-            }
-        } catch (Exception e) {
-            log.error("AppGrafanaMappingService#updateByAppName error" + e.getMessage(), e);
         }
         return 0;
     }
