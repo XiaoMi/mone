@@ -166,7 +166,7 @@ public class OpenApiTest {
         BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(System.out));
         String key = System.getenv("open_api_key");
         CountDownLatch latch = new CountDownLatch(1);
-        OpenaiCall.callStream(key, "天空为什么是蓝色的", "", new StreamListener() {
+        OpenaiCall.callStream(key, "天空为什么是蓝色的", new String[]{}, new StreamListener() {
             @Override
             public void onEvent(String str) {
                 try {
