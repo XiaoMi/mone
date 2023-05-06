@@ -536,10 +536,10 @@ public class ChannelServiceImpl implements ChannelService {
                 /**
                  * k8s 中 stateful 的pod不用通过finished判断
                  */
-                if (StringUtils.isNotBlank(channelDefine.getPodType()) &&
-                        K8sPodTypeEnum.valueOf(channelDefine.getPodType().toUpperCase()) == K8sPodTypeEnum.STATEFUL) {
-                } else {
-                    return null;
+                if (StringUtils.isNotBlank(channelDefine.getPodType())) {
+                    if (K8sPodTypeEnum.valueOf(channelDefine.getPodType().toUpperCase()) != K8sPodTypeEnum.STATEFUL) {
+                        return null;
+                    }
                 }
             }
             pointer = fileProgress.getPointer();
