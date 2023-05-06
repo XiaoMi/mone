@@ -16,4 +16,6 @@ public interface CommonExtensionService {
     String getHeraLogStreamServerName();
 
     String getMachineRoomName(String machineRoomEn);
+
+    boolean middlewareEnumValid(Integer type);
 }
