@@ -64,7 +64,7 @@ public class HeraAppInfoModifyMessage implements Serializable {
                 model.setPlatformType(this.getPlatformType());
                 model.setIamTreeId(this.getIamTreeId());
                 model.setIamTreeType(this.getIamTreeType());
-                model.setEnvsMap(this.getEnvMapping().toString());
+                model.setEnvsMap(this.getEnvMapping() != null ? this.getEnvMapping().toString() : null);
                 return model;
         }
 
