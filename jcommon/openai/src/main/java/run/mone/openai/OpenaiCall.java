@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
 import com.unfbx.chatgpt.OpenAiClient;
+import com.unfbx.chatgpt.OpenAiStreamClient;
 import com.unfbx.chatgpt.entity.chat.ChatCompletion;
 import com.unfbx.chatgpt.entity.chat.ChatCompletionResponse;
 import com.unfbx.chatgpt.entity.chat.Message;
@@ -14,7 +15,10 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.Response;
 import okhttp3.logging.HttpLoggingInterceptor;
+import okhttp3.sse.EventSource;
+import okhttp3.sse.EventSourceListener;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.http.HttpResponse;
@@ -31,6 +35,7 @@ import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.EntityUtils;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import run.mone.openai.net.FakeDnsResolver;
 import run.mone.openai.net.MyConnectionSocketFactory;
 import run.mone.openai.net.MySSLConnectionSocketFactory;
@@ -174,6 +179,40 @@ public class OpenaiCall {
      */
     public static String call(String apiKey, String proxy, String context, String prompt) {
         return call(apiKey, proxy, context, prompt, 0.2f);
+    }
+
+    public static void callStream(String apiKey, String context, String prompt, StreamListener listener) {
+        OpenAiStreamClient client = new OpenAiStreamClient(apiKey, 50, 50, 50);
+        ChatCompletion completion = ChatCompletion.builder().messages(Lists.newArrayList(Message.builder().role(Message.Role.USER).content(String.format(context, prompt)).build())).build();
+        client.streamChatCompletion(completion, new EventSourceListener() {
+
+            @Override
+            public void onOpen(EventSource eventSource, Response response) {
+                listener.begin();
+            }
+
+            @Override
+            public void onEvent(EventSource eventSource, @Nullable String id, @Nullable String type, String str) {
+                String data = parse(str);
+                listener.onEvent(data);
+            }
+
+            @Override
+            public void onClosed(EventSource eventSource) {
+                listener.end();
+            }
+        });
+    }
+
+    private static String parse(String data) {
+        if (data.equals("[DONE]")) {
+            return "";
+        }
+        String obj = JSON.parseObject(data).getJSONArray("choices").getJSONObject(0).getJSONObject("delta").getString("content");
+        if (null != obj) {
+            return obj;
+        }
+        return "";
     }
 
 
