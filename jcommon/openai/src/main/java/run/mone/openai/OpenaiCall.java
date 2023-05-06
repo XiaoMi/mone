@@ -181,7 +181,7 @@ public class OpenaiCall {
         return call(apiKey, proxy, context, prompt, 0.2f);
     }
 
-    public static void callStream(String apiKey, String context, String prompt, StreamListener listener) {
+    public static void callStream(String apiKey, String context, String[] prompt, StreamListener listener) {
         OpenAiStreamClient client = new OpenAiStreamClient(apiKey, 50, 50, 50);
         ChatCompletion completion = ChatCompletion.builder().messages(Lists.newArrayList(Message.builder().role(Message.Role.USER).content(String.format(context, prompt)).build())).build();
         client.streamChatCompletion(completion, new EventSourceListener() {
