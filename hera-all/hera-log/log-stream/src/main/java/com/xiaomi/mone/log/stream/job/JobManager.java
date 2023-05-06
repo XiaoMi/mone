@@ -111,12 +111,13 @@ public class JobManager {
             SinkJobProvider sinkJobProvider = Ioc.ins().getBean(sinkProviderBean);
             SinkJob instanceSinkJobEs = sinkJobProvider.getSinkJob(sinkJobConfig);
 
-            //SinkJob instanceSinkJobEs = SinkJobFactory.instanceSinkJobEs(sinkJobConfig);
-//            SinkJob sinkJobBackUp = SinkJobFactory.instanceSinkJobBackUp(sinkJobConfig);
             if (instanceSinkJobEs.start()) {
                 jobs.putIfAbsent(logtailConfig.getLogtailId(), Lists.newArrayList());
                 jobs.get(logtailConfig.getLogtailId()).add(instanceSinkJobEs);
-//                jobs.get(logtailConfig.getLogtailId()).add(sinkJobBackUp);
+            }
+            SinkJob providerBackupJob = sinkJobProvider.getBackupJob(sinkJobConfig);
+            if (null != providerBackupJob && providerBackupJob.start()) {
+                jobs.get(logtailConfig.getLogtailId()).add(providerBackupJob);
             }
             log.info(String.format("[JobManager.initJobs] startJob success,logTailId:%s,topic:%s,tag:%s,esIndex:%s", logtailConfig.getLogtailId(), logtailConfig.getTopic(), logtailConfig.getTag(), esIndex));
         } catch (Exception e) {

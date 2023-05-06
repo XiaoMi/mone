@@ -1,14 +1,18 @@
 package com.xiaomi.mone.monitor.service;
 
-import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import com.xiaomi.mone.app.api.message.HeraAppInfoModifyMessage;
+import com.xiaomi.mone.app.api.message.HeraAppModifyType;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.app.api.service.HeraAppService;
 import com.xiaomi.mone.monitor.bo.AlarmStrategyInfo;
 import com.xiaomi.mone.monitor.bo.AppViewType;
 import com.xiaomi.mone.monitor.bo.RuleStatusType;
-import com.xiaomi.mone.monitor.dao.*;
+import com.xiaomi.mone.monitor.dao.AppAlarmRuleDao;
+import com.xiaomi.mone.monitor.dao.AppAlarmStrategyDao;
+import com.xiaomi.mone.monitor.dao.AppMonitorDao;
+import com.xiaomi.mone.monitor.dao.HeraAppRoleDao;
 import com.xiaomi.mone.monitor.dao.model.*;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
@@ -27,7 +31,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.Reference;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
@@ -45,26 +48,6 @@ public class AppMonitorService {
 
     @Autowired
     AppMonitorDao appMonitorDao;
-    @Autowired
-    private GrafanaService grafanaService;
-
-    @Value("${server.type}")
-    private String serverType;
-
-    @NacosValue(value = "${resource.use.rate.url}", autoRefreshed = true)
-    private String resourceUseRateUrl;
-
-    @NacosValue(value = "${resource.use.rate.url.k8s:nocinfig}", autoRefreshed = true)
-    private String resourceUseRateUrlk8s;
-
-    @NacosValue(value = "${resource.use.rate.nodata.url}", autoRefreshed = true)
-    private String resourceUseRateNoDataUrl;
-
-    @NacosValue(value = "${grafana.domain}", autoRefreshed = true)
-    private String grafanaDomain;
-
-    @Autowired
-    private AppGrafanaMappingDao appGrafanaMappingDao;
 
     @Autowired
     HeraBaseInfoService heraBaseInfoService;
@@ -84,9 +67,6 @@ public class AppMonitorService {
     @Autowired
     ResourceUsageService resourceUsageService;
 
-//    @Autowired
-//    FeishuService feishuService;
-
     @Autowired
     HeraAppRoleDao heraAppRoleDao;
 
@@ -105,8 +85,10 @@ public class AppMonitorService {
     @Autowired
     PlatFormTypeExtensionService platFormTypeExtensionService;
 
-    private static final Gson gson = new Gson();
+    @Autowired
+    AlarmStrategyService alarmStrategyService;
 
+    private static final Gson gson = new Gson();
 
     @Reference(registry = "registryConfig", check = false, interfaceClass = HeraAppService.class, group = "${dubbo.group.heraapp}")
     HeraAppService hearAppService;
@@ -314,7 +296,6 @@ public class AppMonitorService {
         }
     }
 
-
     public Result selectAppAlarmHealth(AlarmHealthQuery query) {
         try {
             List<AlarmHealthResult> alarmHealthResults = appMonitorDao.selectAppHealth(query);
@@ -431,9 +412,6 @@ public class AppMonitorService {
         AppMonitor appMonitor = appMonitorModel.appMonitor();
         appMonitor.setBaseInfoId(baseInfoId);
 
-        //TODO mione项目添加默认iamTreeId
-        //需要兼容内网判断 appMonitor.getIamTreeId() == null 的逻辑
-        //if (appMonitor.getIamTreeId() == null || appMonitor.getProjectId() == null || StringUtils.isBlank(appMonitor.getProjectName())) {
         if (!appMonitorServiceExtension.checkCreateParam(appMonitor)) {
             log.error("AppMonitorService.createWithBaseInfo 用户{}添加项目{}，参数不合法", user, appMonitor);
             return Result.fail(ErrorCode.invalidParamError);
@@ -879,6 +857,234 @@ public class AppMonitorService {
         }catch (Throwable t){
             log.error("select by iamId error : ",t);
             return Result.fail(ErrorCode.unknownError);
+        }
+    }
+
+    public void heraAppInfoModify(HeraAppInfoModifyMessage baseInfoModify) {
+
+        if(HeraAppModifyType.create.equals(baseInfoModify.getModifyType())){
+            HeraAppBaseInfoModel appBaseInfoModel = baseInfoModify.baseInfoModel();
+            appGrafanaMappingService.createTmpByAppBaseInfo(appBaseInfoModel);
+        }
+
+        if(HeraAppModifyType.update.equals(baseInfoModify.getModifyType())){
+            this.modifyAppAndAlarm(baseInfoModify);
+        }
+
+        if(HeraAppModifyType.delete.equals(baseInfoModify.getModifyType())){
+            this.heraAppDelete(baseInfoModify);
+        }
+    }
+
+    private void heraAppDelete(HeraAppInfoModifyMessage message){
+
+        deleteByBaseInfoId(message.getId());
+
+        alarmStrategyService.deleteByAppIdAndIamId(message.getAppId(),message.getIamTreeId());
+    }
+
+    private void deleteByBaseInfoId(Integer baseInfoId){
+
+        List<AppMonitor> appMonitors = appMonitorDao.listAppsByBaseInfoId(baseInfoId);
+        if(CollectionUtils.isEmpty(appMonitors)){
+            log.info("deleteByBaseInfoId no data found! baseInfoId:{}",baseInfoId);
+            return;
+        }
+
+        for(AppMonitor appMonitor : appMonitors){
+            appMonitorDao.delete(appMonitor.getId());
+        }
+    }
+
+    public void modifyAppAndAlarm(HeraAppInfoModifyMessage baseInfoModify) {
+
+        /**
+         * appMonitor 信息同步变更
+         */
+        List<AppMonitor> appMonitors = appMonitorDao.listAppsByBaseInfoId(baseInfoModify.getId());
+        if (!CollectionUtils.isEmpty(appMonitors)) {
+            appMonitors.forEach(t -> {
+                t.setAppSource(baseInfoModify.getPlatformType());
+                t.setProjectId(baseInfoModify.getAppId());
+                t.setIamTreeId(baseInfoModify.getIamTreeId());
+                t.setIamTreeType(baseInfoModify.getIamTreeType());
+                t.setProjectName(baseInfoModify.getAppName());
+                appMonitorDao.update(t);
+            });
+        }
+
+        /**
+         * appName变更，报警策略和报警规则同步变更
+         */
+        if (baseInfoModify.getIsNameChange()) {
+
+            AlarmStrategy strategy = new AlarmStrategy();
+            strategy.setAppId(baseInfoModify.getAppId());
+            strategy.setIamId(baseInfoModify.getIamTreeId());
+
+            if(!appMonitorServiceExtension.checkAppModifyStrategySearchCondition(baseInfoModify)){
+                return;
+            }
+
+            PageData<List<AlarmStrategyInfo>> listPageData = strategyDao.searchByCondNoUser(strategy, 1, 1000, null, null);
+            List<AlarmStrategyInfo> list = listPageData.getList();
+            if (!CollectionUtils.isEmpty(list)) {
+                list.forEach(t -> {
+                    List<AppAlarmRule> rules = ruleDao.selectByStrategyId(t.getId());
+                    for (AppAlarmRule rule : rules) {
+
+                        AppMonitor app = new AppMonitor();
+                        app.setProjectId(baseInfoModify.getAppId());
+                        app.setProjectName(baseInfoModify.getAppName());
+
+                        AlarmRuleData ruleData = new AlarmRuleData();
+                        BeanUtils.copyProperties(rule, ruleData);
+                        ruleData.setLabels(rule.getLabels());
+                        ruleData.convertLabels();
+
+                        ruleData.setIncludeEnvs(t.getIncludeEnvs());
+                        ruleData.setExceptEnvs(t.getExceptEnvs());
+                        ruleData.setIncludeServices(t.getIncludeServices());
+                        ruleData.setExceptServices(t.getExceptServices());
+
+//                        ruleData.setIncludeZones(t.getIncludeEnvs());
+//                        ruleData.setExceptZones(t.getExceptEnvs());
+                        ruleData.setAlertMembers(t.getAlertMembers());
+                        ruleData.setAtMembers(t.getAtMembers());
+
+                        if (!CollectionUtils.isEmpty(t.getIncludeFunctions())) {
+                            ruleData.setIncludeFunctions(t.getIncludeFunctions().stream().map(String::valueOf).collect(Collectors.toList()));
+                        }
+
+                        if (!CollectionUtils.isEmpty(t.getExceptFunctions())) {
+                            ruleData.setExceptFunctions(t.getExceptFunctions().stream().map(String::valueOf).collect(Collectors.toList()));
+                        }
+
+                        ruleData.setIncludeModules(t.getIncludeModules());
+                        ruleData.setExceptModules(t.getExceptModules());
+
+                        Result result = alarmService.editRule(rule, ruleData, app, rule.getCreater());
+                        if(!result.isSuccess()){
+                            log.error("heraAppInfoModify fail! rule : {} , result : {}",rule.toString(),new Gson().toJson(result));
+                            continue;
+                        }
+
+                        int i = ruleDao.updateByIdSelective(rule);
+                        if (i < 1) {
+                            log.error("heraAppInfoModify update rule db fail! rule{}", rule.toString());
+                        }
+
+                    }
+
+                    AlarmStrategy strategyUp = new AlarmStrategy();
+                    strategyUp.setId(t.getId());
+                    strategyUp.setAppId(baseInfoModify.getAppId());
+                    strategyUp.setAppName(baseInfoModify.getAppName());
+                    strategyUp.setIamId(baseInfoModify.getIamTreeId());
+                    boolean b = strategyDao.updateById(strategyUp);
+                    if (!b) {
+                        log.error("heraAppInfoModify update strategy fail! old:{},new:{}", t.toString(), strategyUp.toString());
+                    }
+
+                });
+            }
+        }
+    }
+
+    public void washBugData(){
+        AlarmStrategy strategy = new AlarmStrategy();
+        PageData<List<AlarmStrategyInfo>> listPageData = strategyDao.searchByCondNoUser(strategy, 1, 1000, null, null);
+        List<AlarmStrategyInfo> list = listPageData.getList();
+        if (!CollectionUtils.isEmpty(list)) {
+            list.forEach(t -> {
+                List<AppAlarmRule> rules = ruleDao.selectByStrategyId(t.getId());
+
+                if(!CollectionUtils.isEmpty(rules)){
+                    AppAlarmRule rule = rules.get(0);
+                    AppMonitor appMonitor = appMonitorDao.getByIamTreeIdAndAppId(rule.getIamId(), rule.getProjectId());
+
+                    if(appMonitor != null){
+
+                        AlarmStrategy strategyUp = new AlarmStrategy();
+                        strategyUp.setId(t.getId());
+                        strategyUp.setAppId(appMonitor.getProjectId());
+                        strategyUp.setAppName(appMonitor.getProjectName());
+                        strategyUp.setIamId(appMonitor.getIamTreeId());
+                        boolean b = strategyDao.updateById(strategyUp);
+                        if (!b) {
+                            log.error("heraAppInfoModify update strategy fail! old:{},new:{}", t.toString(), strategyUp.toString());
+                        }
+
+                        for (AppAlarmRule rule1 : rules) {
+
+                            AlarmRuleData ruleData = new AlarmRuleData();
+                            BeanUtils.copyProperties(rule1, ruleData);
+                            ruleData.setLabels(rule1.getLabels());
+                            ruleData.convertLabels();
+
+                            ruleData.setIncludeEnvs(t.getIncludeEnvs());
+                            ruleData.setExceptEnvs(t.getExceptEnvs());
+                            ruleData.setIncludeServices(t.getIncludeServices());
+                            ruleData.setExceptServices(t.getExceptServices());
+
+//                        ruleData.setIncludeZones(t.getIncludeEnvs());
+//                        ruleData.setExceptZones(t.getExceptEnvs());
+                            ruleData.setAlertMembers(t.getAlertMembers());
+                            ruleData.setAtMembers(t.getAtMembers());
+
+                            if (!CollectionUtils.isEmpty(t.getIncludeFunctions())) {
+                                ruleData.setIncludeFunctions(t.getIncludeFunctions().stream().map(String::valueOf).collect(Collectors.toList()));
+                            }
+
+                            if (!CollectionUtils.isEmpty(t.getExceptFunctions())) {
+                                ruleData.setExceptFunctions(t.getExceptFunctions().stream().map(String::valueOf).collect(Collectors.toList()));
+                            }
+
+                            ruleData.setIncludeModules(t.getIncludeModules());
+                            ruleData.setExceptModules(t.getExceptModules());
+
+                            Result result = alarmService.editRule(rule1, ruleData, appMonitor, rule1.getCreater());
+                            if(!result.isSuccess()){
+                                log.error("washBugData fail! rule1 : {} , result : {}",rule1.toString(),new Gson().toJson(result));
+                                continue;
+                            }
+
+                        }
+                    }
+
+
+                }
+
+
+            });
+        }
+    }
+
+    public void washBugDataForAppMonitor(){
+        List<AppMonitor> allApps = appMonitorDao.getAllApps(1, 5000);
+        for(AppMonitor appMonitor : allApps){
+            if(appMonitor.getBaseInfoId() == null){
+                log.error("update appMonitor no baseId found! appMonitor : {}" ,appMonitor.toString());
+                continue;
+            }
+            HeraAppBaseInfoModel byId = heraBaseInfoService.getById(appMonitor.getBaseInfoId());
+
+            if(byId == null || StringUtils.isBlank(byId.getBindId())){
+                log.error("update appMonitor HeraAppBaseInfo error! appMonitor : {}" ,appMonitor.toString());
+                continue;
+            }
+
+            try {
+                appMonitor.setProjectId(Integer.valueOf(byId.getBindId()));
+                appMonitor.setIamTreeId(byId.getIamTreeId());
+                int update = appMonitorDao.update(appMonitor);
+                if(update < 1){
+                    log.error("update appMonitor fail! appMonitor : {}" ,appMonitor.toString());
+                }
+            } catch (NumberFormatException e) {
+                log.error("update appMonitor error!" + e.getMessage(),e);
+                continue;
+            }
         }
     }
 }

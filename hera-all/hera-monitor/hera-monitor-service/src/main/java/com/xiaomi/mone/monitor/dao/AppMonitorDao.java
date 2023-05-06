@@ -135,6 +135,27 @@ public class AppMonitorDao {
 
     }
 
+    public AppMonitor getByIamTreeIdAndAppId(Integer aimTreeId,Integer appId){
+
+        AppMonitorExample example = new AppMonitorExample();
+        example.setOrderByClause("id desc");
+
+        AppMonitorExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(0);
+        ca.andIamTreeIdEqualTo(aimTreeId);
+        ca.andProjectIdEqualTo(appId);
+
+        List<AppMonitor> appMonitors = appMonitorMapper.selectByExample(example);
+
+        if(CollectionUtils.isEmpty(appMonitors)){
+            log.info("AppMonitorDao.getByIamTreeIdAndAppId no data found! aimTreeId :{}",aimTreeId);
+            return null;
+        }
+
+        return appMonitors.get(0);
+
+    }
+
     public Long getDataTotalByOr(String appName,String userName,String careUser){
         AppMonitorExample example = new AppMonitorExample();
         AppMonitorExample.Criteria ca = example.createCriteria();
@@ -323,6 +344,19 @@ public class AppMonitorDao {
 
     }
 
+    public List<AppMonitor> listAppsByBaseInfoId(Integer baseInfoId){
+
+        AppMonitorExample example = new AppMonitorExample();
+        example.setOrderByClause("id desc");
+
+        AppMonitorExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(0);
+        ca.andBaseInfoIdEqualTo(baseInfoId);
+
+        return appMonitorMapper.selectByExample(example);
+
+    }
+
 
 
     public int create(AppMonitor appMonitor) {
@@ -368,6 +402,25 @@ public class AppMonitorDao {
             }
         } catch (Exception e) {
             log.error("[AppMonitorDao.update] failed to update appMonitor: {}, err: {}", appMonitor.toString(), e);
+            return 0;
+        }
+        return 1;
+    }
+
+    public int delete(Integer id) {
+        if (null == id) {
+            log.error("[AppMonitorDao.delete] null id");
+            return 0;
+        }
+
+        try {
+            int affected = appMonitorMapper.deleteByPrimaryKey(id);
+            if (affected < 1) {
+                log.warn("[AppMonitorDao.delete] failed to update id: {}", id);
+                return 0;
+            }
+        } catch (Exception e) {
+            log.error("[AppMonitorDao.delete] failed to delete id: {}, err: {}", id, e);
             return 0;
         }
         return 1;

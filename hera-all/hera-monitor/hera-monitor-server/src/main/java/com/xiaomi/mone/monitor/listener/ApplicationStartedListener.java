@@ -1,6 +1,6 @@
 package com.xiaomi.mone.monitor.listener;
 
-import com.xiaomi.mone.monitor.service.rocketmq.RocketMqHeraAppConsumer;
+import com.xiaomi.mone.monitor.service.rocketmq.RocketMqHeraMonitorConsumer;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
@@ -18,7 +18,7 @@ public class ApplicationStartedListener implements ApplicationListener<Applicati
     public void onApplicationEvent(ApplicationStartedEvent applicationStartedEvent) {
 
         log.info("accept and process ApplicationStartedEvent ... ");
-        RocketMqHeraAppConsumer rocketMqConsumerHera = (RocketMqHeraAppConsumer) applicationStartedEvent.getApplicationContext().getBean("rocketMqConsumerHera");
+        RocketMqHeraMonitorConsumer rocketMqConsumerHera = (RocketMqHeraMonitorConsumer) applicationStartedEvent.getApplicationContext().getBean("heraMonitorMqConsumer");
         rocketMqConsumerHera.start();
         log.info("process ApplicationStartedEvent finish ... ");
     }
