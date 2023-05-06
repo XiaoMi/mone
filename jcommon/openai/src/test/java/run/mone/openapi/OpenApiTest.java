@@ -52,13 +52,16 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
 import run.mone.openai.OpenaiCall;
+import run.mone.openai.StreamListener;
 import run.mone.openai.net.FakeDnsResolver;
 import run.mone.openai.net.MyConnectionSocketFactory;
 import run.mone.openai.net.MySSLConnectionSocketFactory;
 
 import javax.net.ssl.SSLContext;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.net.*;
@@ -67,6 +70,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -153,6 +157,32 @@ public class OpenApiTest {
 //                .proxy(proxy)
                 .build();
         return openAiClient;
+    }
+
+
+    @SneakyThrows
+    @Test
+    public void testCallStream() {
+        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(System.out));
+        String key = System.getenv("open_api_key");
+        CountDownLatch latch = new CountDownLatch(1);
+        OpenaiCall.callStream(key, "天空为什么是蓝色的", "", new StreamListener() {
+            @Override
+            public void onEvent(String str) {
+                try {
+                    writer.write(str);
+                    writer.flush();
+                } catch (Throwable ignore){
+
+                }
+            }
+
+            @Override
+            public void end() {
+                latch.countDown();
+            }
+        });
+        latch.await();
     }
 
 
