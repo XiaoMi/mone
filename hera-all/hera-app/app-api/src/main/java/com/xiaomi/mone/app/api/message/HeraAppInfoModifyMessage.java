@@ -1,6 +1,7 @@
 package com.xiaomi.mone.app.api.message;
 
 import com.google.gson.JsonObject;
+import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import lombok.Data;
 import lombok.ToString;
 
@@ -50,5 +51,21 @@ public class HeraAppInfoModifyMessage implements Serializable {
         private Boolean isIamTreeTypeChange;
 
         private HeraAppModifyType modifyType;
+
+        public HeraAppBaseInfoModel baseInfoModel(){
+                HeraAppBaseInfoModel model = new HeraAppBaseInfoModel();
+                model.setId(this.getId());
+                model.setBindId(String.valueOf(this.getAppId()));
+                model.setBindType(this.getBindType());
+                model.setAppName(this.getAppName());
+                model.setAppCname(this.getAppCname());
+                model.setAppType(this.getAppType());
+                model.setAppLanguage(this.getAppLanguage());
+                model.setPlatformType(this.getPlatformType());
+                model.setIamTreeId(this.getIamTreeId());
+                model.setIamTreeType(this.getIamTreeType());
+                model.setEnvsMap(this.getEnvMapping().toString());
+                return model;
+        }
 
 }

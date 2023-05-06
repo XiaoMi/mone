@@ -4,6 +4,7 @@ import org.apache.dubbo.config.ApplicationConfig;
 import org.apache.dubbo.config.ProtocolConfig;
 import org.apache.dubbo.config.RegistryConfig;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -12,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
  * @date 2021/7/6 2:19 下午
  */
 @Configuration
+@ConditionalOnProperty(name = "service.selector.property", havingValue = "outer")
 public class DubboConfiguration {
 
         @Value("${dubbo.protocol.port}")

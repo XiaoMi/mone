@@ -36,12 +36,6 @@ public class GrafanaMappingController {
         return appGrafanaMappingService.getGrafanaUrlByAppId(appId);
     }
 
-    @ResponseBody
-    @GetMapping("/mimonitor/getGrafanaUrlByIamTreeId")
-    public Result<String> getGrafanaUrlByIamTreeId(Integer iamTreeId){
-        return appGrafanaMappingService.getByIamTreeId(iamTreeId);
-    }
-
     @GetMapping("/api-manual/test")
     public String manualTest(){
 
@@ -86,19 +80,5 @@ public class GrafanaMappingController {
 
         return Result.success("success");
     }
-
-    @GetMapping("/mimonitor/testGrafanaCreate")
-    public Result testGrafanaCreate(String appId, String appName){
-
-        HeraAppBaseInfoModel baseInfo = new HeraAppBaseInfoModel();
-        baseInfo.setBindId(appId);   //
-        baseInfo.setAppName(appName);   //
-        baseInfo.setAppType(0);   //
-        baseInfo.setPlatformType(0);  //
-        baseInfo.setAppLanguage("java");
-        appGrafanaMappingService.createTmpByAppBaseInfo(baseInfo);
-        return Result.success("ok");
-    }
-
 
 }
