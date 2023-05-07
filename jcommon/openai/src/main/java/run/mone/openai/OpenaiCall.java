@@ -40,6 +40,7 @@ import run.mone.openai.net.FakeDnsResolver;
 import run.mone.openai.net.MyConnectionSocketFactory;
 import run.mone.openai.net.MySSLConnectionSocketFactory;
 
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
@@ -181,8 +182,19 @@ public class OpenaiCall {
         return call(apiKey, proxy, context, prompt, 0.2f);
     }
 
-    public static void callStream(String apiKey, String context, String[] prompt, StreamListener listener) {
+    public static void callStream(String apiKey, String openApiHost, String context, String[] prompt, StreamListener listener) {
         OpenAiStreamClient client = new OpenAiStreamClient(apiKey, 50, 50, 50);
+
+        if (null != openApiHost) {
+            try {
+                Field field = client.getClass().getDeclaredField("apiHost");
+                field.setAccessible(true);
+                field.set(client, openApiHost);
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         ChatCompletion completion = ChatCompletion.builder().messages(Lists.newArrayList(Message.builder().role(Message.Role.USER).content(String.format(context, prompt)).build())).build();
         client.streamChatCompletion(completion, new EventSourceListener() {
 
