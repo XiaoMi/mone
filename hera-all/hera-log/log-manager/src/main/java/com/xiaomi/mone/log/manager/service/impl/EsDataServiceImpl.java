@@ -433,7 +433,7 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
             dto.setLogDataDTOList(logDataList);
             return Result.success(dto);
         } catch (Exception e) {
-            log.error("日志查询错误，日志上下文报错:[{}], logContextQuery:[{}], searchRequest:[{}], user:[{}]", e, logContextQuery, searchRequest, MoneUserContext.getCurrentUser());
+            log.error("日志查询错误，日志上下文报错, logContextQuery:[{}], searchRequest:[{}], user:[{}]", logContextQuery, searchRequest, MoneUserContext.getCurrentUser(), e);
             return Result.failParam("系统错误，请重试");
         }
     }
