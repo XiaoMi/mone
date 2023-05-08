@@ -31,6 +31,7 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>app-service</artifactId>
+            <version>${hera-app.release.version}</version>
         </dependency>
         <!-- inner module -->
 
