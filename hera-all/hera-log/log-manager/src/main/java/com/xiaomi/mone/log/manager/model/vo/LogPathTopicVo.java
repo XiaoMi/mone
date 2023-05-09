@@ -40,4 +40,7 @@ public class LogPathTopicVo {
      */
     private String serveAlias;
 
+    private String regionEn;
+
+    private String regionCn;
 }

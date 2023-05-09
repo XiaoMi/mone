@@ -12,6 +12,7 @@ import com.xiaomi.mone.log.manager.common.Utils;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
 import com.xiaomi.mone.log.manager.common.validation.HeraConfigValid;
 import com.xiaomi.mone.log.manager.dao.*;
+import com.xiaomi.mone.log.manager.mapper.MilogLogSearchSaveMapper;
 import com.xiaomi.mone.log.manager.mapper.MilogLogTemplateMapper;
 import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
 import com.xiaomi.mone.log.manager.model.bo.MlogParseParam;
@@ -97,6 +98,8 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     @Resource
     private MilogLogTemplateMapper milogLogTemplateMapper;
     @Resource
+    private MilogLogSearchSaveMapper searchSaveMapper;
+    @Resource
     private HeraConfigValid heraConfigValid;
 
     Gson gson = new Gson();
@@ -129,12 +132,18 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         return StringUtils.isNotBlank(milogLogTailDo.getTail());
     }
 
-    private static QuickQueryVO applyQueryVO(MilogLogTailDo logTailDo) {
+    private QuickQueryVO applyQueryVO(MilogLogTailDo logTailDo) {
+        Integer isFavourite = searchSaveMapper.isMyFavouriteTail(MoneUserContext.getCurrentUser().getUser(), logTailDo.getId().toString());
+        return applyQueryVO(logTailDo, isFavourite);
+    }
+
+    private QuickQueryVO applyQueryVO(MilogLogTailDo logTailDo, Integer isFavourite) {
         return QuickQueryVO.builder()
                 .spaceId(logTailDo.getSpaceId())
                 .storeId(logTailDo.getStoreId())
                 .tailId(logTailDo.getId())
                 .tailName(logTailDo.getTail())
+                .isFavourite(isFavourite == null || isFavourite < 1 ? 0 : 1)
                 .build();
     }
 
@@ -834,11 +843,11 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         if (null == milogAppId) {
             return Result.failParam("milogAppId不能为空");
         }
-        List<MilogLogTailDo> milogLogTailDos = milogLogtailDao.queryByAppId(milogAppId);
+        List<MilogLogTailDo> milogLogTailDos = milogLogtailDao.getLogTailByMilogAppId(milogAppId);
         List<QuickQueryVO> quickQueryVOS = Lists.newArrayList();
         if (CollectionUtils.isNotEmpty(milogLogTailDos)) {
             quickQueryVOS = milogLogTailDos.stream().map(
-                            LogTailServiceImpl::applyQueryVO)
+                            this::applyQueryVO)
                     .collect(Collectors.toList());
             wrapStoreSpaceName(quickQueryVOS);
         }
@@ -893,5 +902,22 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
                 }
             }
         }
+    }
+
+    @Override
+    public Result<QuickQueryVO> queryAppStore(Long appId, Integer platFormCode) {
+        if (null == appId || null == platFormCode) {
+            return Result.failParam("参数不能为空");
+        }
+        AppBaseInfo appBaseInfo = heraAppService.queryByAppIdPlatFormType(appId.toString(), platFormCode);
+        if (null == appBaseInfo) {
+            log.info("queryAppStore app not exist,milogAppId:{},platFormCode:{}", appId, platFormCode);
+            return Result.success(new QuickQueryVO());
+        }
+        List<MilogLogTailDo> logTailDos = milogLogtailDao.queryByAppId(appId, appBaseInfo.getId().longValue());
+        if (CollectionUtils.isEmpty(logTailDos)) {
+            return Result.success(new QuickQueryVO());
+        }
+        return Result.success(applyQueryVO(logTailDos.get(logTailDos.size() - 1), null));
     }
 }
