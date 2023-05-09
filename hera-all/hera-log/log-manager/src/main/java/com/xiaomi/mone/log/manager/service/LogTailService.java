@@ -2,7 +2,6 @@ package com.xiaomi.mone.log.manager.service;
 
 import com.xiaomi.mone.app.api.response.AppBaseInfo;
 import com.xiaomi.mone.app.model.vo.HeraEnvIpVo;
-import com.xiaomi.mone.log.api.enums.MachineRegionEnum;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
 import com.xiaomi.mone.log.manager.model.bo.MlogParseParam;
@@ -78,4 +77,6 @@ public interface LogTailService {
     Result<List<QuickQueryVO>> quickQueryByApp(Long milogAppId);
 
     void machineIpChange(HeraEnvIpVo heraEnvIpVo);
+
+    Result<QuickQueryVO> queryAppStore(Long appId, Integer platFormCode);
 }
