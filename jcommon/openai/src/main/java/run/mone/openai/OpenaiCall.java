@@ -185,7 +185,7 @@ public class OpenaiCall {
     }
 
     public static void callStream(String apiKey, String openApiHost, String context, String[] prompt, StreamListener listener) {
-        callStream(apiKey, openApiHost, context, prompt, listener, ReqConfig.builder().maxTokens(4096).build());
+        callStream(apiKey, openApiHost, context, prompt, listener, ReqConfig.builder().build());
     }
 
     public static String editor(String apiKey, Edit edit) {
