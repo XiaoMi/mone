@@ -184,8 +184,8 @@ public class OpenApiTest {
     @Test
     public void testEditor() {
         String key = System.getenv("open_api_key");
-        String res = OpenaiCall.editor(key, Edit.builder().input("public int sum(int a, int b) {}")
-                .instruction("帮我计算两数和").model("code-davinci-edit-001").temperature(0).build());
+        String res = OpenaiCall.editor(key, Edit.builder().input("sum")
+                .instruction("计算两数和").model("code-davinci-edit-001").temperature(0).build());
         System.out.println(res);
     }
 
