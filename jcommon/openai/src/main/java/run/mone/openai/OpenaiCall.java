@@ -9,6 +9,8 @@ import com.unfbx.chatgpt.OpenAiStreamClient;
 import com.unfbx.chatgpt.entity.chat.ChatCompletion;
 import com.unfbx.chatgpt.entity.chat.ChatCompletionResponse;
 import com.unfbx.chatgpt.entity.chat.Message;
+import com.unfbx.chatgpt.entity.edits.Edit;
+import com.unfbx.chatgpt.entity.edits.EditResponse;
 import com.unfbx.chatgpt.entity.embeddings.EmbeddingResponse;
 import com.unfbx.chatgpt.interceptor.OpenAILogger;
 import lombok.Builder;
@@ -183,6 +185,16 @@ public class OpenaiCall {
     }
 
     public static void callStream(String apiKey, String openApiHost, String context, String[] prompt, StreamListener listener) {
+        callStream(apiKey, openApiHost, context, prompt, listener, ReqConfig.builder().maxTokens(4096).build());
+    }
+
+    public static String editor(String apiKey, Edit edit) {
+        OpenAiClient client = new OpenAiClient(apiKey);
+        EditResponse res = client.edit(edit);
+        return res.getChoices()[0].getText();
+    }
+
+    public static void callStream(String apiKey, String openApiHost, String context, String[] prompt, StreamListener listener, ReqConfig config) {
         OpenAiStreamClient client = new OpenAiStreamClient(apiKey, 50, 50, 50);
 
         if (null != openApiHost) {
@@ -195,7 +207,17 @@ public class OpenaiCall {
             }
         }
 
-        ChatCompletion completion = ChatCompletion.builder().messages(Lists.newArrayList(Message.builder().role(Message.Role.USER).content(String.format(context, prompt)).build())).build();
+        ChatCompletion.ChatCompletionBuilder builder = ChatCompletion.builder()
+                .messages(Lists.newArrayList(Message.builder().role(Message.Role.USER)
+                        .content(String.format(context, prompt)).build()));
+
+        if (config.getMaxTokens() > 0) {
+            builder.maxTokens(config.getMaxTokens());
+        }
+        builder.model(config.getModel());
+        builder.temperature(config.getTemperature());
+
+        ChatCompletion completion = builder.build();
         client.streamChatCompletion(completion, new EventSourceListener() {
 
             @Override
@@ -215,6 +237,7 @@ public class OpenaiCall {
             }
         });
     }
+
 
     private static String parse(String data) {
         if (data.equals("[DONE]")) {
