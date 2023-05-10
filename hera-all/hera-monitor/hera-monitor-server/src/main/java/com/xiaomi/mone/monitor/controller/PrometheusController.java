@@ -222,8 +222,8 @@ public class PrometheusController {
     public Result<PageData> logInfo(@RequestBody MiLogQuery param){
 
         TraceLogQuery query = new TraceLogQuery(param.getProjectId(),param.getServerIp(),param.getTraceId());
-//        query.setGenerationTime(param.getGenerationTime());
-//        query.setLevel(param.getLevel());
+        query.setGenerationTime(param.getGenerationTime());
+        query.setLevel(param.getLevel());
         try {
             PageData pd = new PageData();
             TraceLogDTO traceLog = logDataService.getTraceLog(query);
