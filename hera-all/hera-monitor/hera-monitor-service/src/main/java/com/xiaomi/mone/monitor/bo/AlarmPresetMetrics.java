@@ -45,16 +45,15 @@ public enum AlarmPresetMetrics {
      */
     http_error_times("http_error_times","Http调入异常数", MetricsUnit.UNIT_COUNT, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.error_times),
     http_availability("http_availability","Http调入可用性", MetricsUnit.UNIT_PERCENT, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.availability),
-    http_slow_query("http_slow_query","Http调入慢查询", MetricsUnit.UNIT_COUNT, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.slow_times),
     http_qps("http_qps","Http调入qps", MetricsUnit.UNIT_COUNT, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.qps, BasicUrlType.hera_dash_sip, "116"),
     http_cost("http_cost","Http调入平均耗时", MetricsUnit.UNIT_MS, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.time_cost, BasicUrlType.hera_dash_sip, "128"),
-    http_client_slow_query("http_client_slow_query","Http调入慢查询", MetricsUnit.UNIT_COUNT, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.slow_times),
-
+    http_slow_query("http_slow_query","Http调入慢查询", MetricsUnit.UNIT_COUNT, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.slow_times),
 
     http_client_error_times("http_client_error_times","Http调出异常数", MetricsUnit.UNIT_COUNT, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.error_times),
     http_client_availability("http_client_availability","Http调出可用性", MetricsUnit.UNIT_PERCENT, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.availability),
     http_client_qps("http_client_qps","Http调出qps", MetricsUnit.UNIT_COUNT, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.qps, BasicUrlType.hera_dash_sip, "172"),
     http_client_cost("http_client_cost","Http调出平均耗时", MetricsUnit.UNIT_MS, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.time_cost, BasicUrlType.hera_dash_sip, "173"),
+    http_client_slow_query("http_client_slow_query","Http调出慢查询", MetricsUnit.UNIT_COUNT, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.slow_times),
 
     /**
      * 业务指标-dobbo
