@@ -8,6 +8,7 @@ import com.xiaomi.mone.monitor.service.extension.PlatFormTypeExtensionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -79,6 +80,17 @@ public class GrafanaMappingController {
         }
 
         return Result.success("success");
+    }
+
+    @PostMapping("/mimonitor/reloadTemplateBase")
+    public Result reloadTemplateBaseByPage(){
+
+        log.info("GrafanaMappingController.reloadTemplateBase start ...");
+        Integer pSize = 100;
+
+        appGrafanaMappingService.exeReloadTemplateBase(pSize);
+
+        return Result.success("task has executed!");
     }
 
 }
