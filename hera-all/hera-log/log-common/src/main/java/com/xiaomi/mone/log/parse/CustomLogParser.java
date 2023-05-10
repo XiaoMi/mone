@@ -86,7 +86,6 @@ public class CustomLogParser implements LogParser {
                 ret.put(esKeyMap_timestamp, time);
             }
         } catch (Exception e) {
-            log.error("error", e);
             ret.put(esKeyMap_logSource, originData);
         }
         return ret;
