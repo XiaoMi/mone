@@ -35,6 +35,11 @@ public class HeraMetaData {
     private String metaName;
 
     /**
+     * dubbo service 元数据，group/service/version，多个以逗号分隔
+     */
+    private String dubboServiceMeta;
+
+    /**
      * 元数据类型，有APP、MYSQL、REDIS、ES、MQ等，具体可以参照{@link HeraMetaDataType}
      */
     private String type;
