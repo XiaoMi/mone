@@ -1,6 +1,7 @@
 package com.xiaomi.mone.log.parse;
 
 import cn.hutool.core.collection.CollectionUtil;
+import cn.hutool.core.util.StrUtil;
 import com.google.gson.Gson;
 import com.xiaomi.mone.log.utils.IndexUtils;
 import lombok.Data;
@@ -100,7 +101,6 @@ public class CustomLogParser implements LogParser {
     public List<String> parseLogData(String logData) throws Exception {
         parsePatter(parserData.getParseScript());
         List<String> parsedLogs = new ArrayList<>();
-        int startIndex = 0;
         for (int i = 0; i < mapPattern.size(); i++) {
             String parsedData = "";
             List<String> list = mapPattern.get(i);
@@ -112,16 +112,8 @@ public class CustomLogParser implements LogParser {
             if (null == parsedData) {
                 break;
             }
-//            if (parsedData.length() > MESSAGE_MAX_SIZE) {
-//                parsedData = StringUtils.substring(parsedData, 0, MESSAGE_MAX_SIZE);
-//            }
             parsedLogs.add(parsedData);
-            if (StringUtils.isNotEmpty(list.get(0)) && StringUtils.isNotEmpty(list.get(1))) {
-                startIndex = list.get(0).length() + parsedData.length() + list.get(1).length();
-            } else {
-                startIndex = 0;
-            }
-            logData = StringUtils.substring(logData, startIndex).trim();
+            logData = StrUtil.removePrefix(logData.trim(), String.format("%s%s%s", list.get(0), parsedData, list.get(1)).trim());
         }
         return parsedLogs;
     }
@@ -143,5 +135,4 @@ public class CustomLogParser implements LogParser {
 
         isParsePattern = true;
     }
-
 }
