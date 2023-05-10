@@ -8,6 +8,7 @@ import com.xiaomi.mone.monitor.service.extension.PlatFormTypeExtensionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -34,12 +35,6 @@ public class GrafanaMappingController {
     @GetMapping("/mimonitor/getGrafanaUrlByAppId")
     public Result<String> getGrafanaUrlByAppId(Integer appId){
         return appGrafanaMappingService.getGrafanaUrlByAppId(appId);
-    }
-
-    @ResponseBody
-    @GetMapping("/mimonitor/getGrafanaUrlByIamTreeId")
-    public Result<String> getGrafanaUrlByIamTreeId(Integer iamTreeId){
-        return appGrafanaMappingService.getByIamTreeId(iamTreeId);
     }
 
     @GetMapping("/api-manual/test")
@@ -87,18 +82,15 @@ public class GrafanaMappingController {
         return Result.success("success");
     }
 
-    @GetMapping("/mimonitor/testGrafanaCreate")
-    public Result testGrafanaCreate(String appId, String appName){
+    @PostMapping("/mimonitor/reloadTemplateBase")
+    public Result reloadTemplateBaseByPage(){
 
-        HeraAppBaseInfoModel baseInfo = new HeraAppBaseInfoModel();
-        baseInfo.setBindId(appId);   //
-        baseInfo.setAppName(appName);   //
-        baseInfo.setAppType(0);   //
-        baseInfo.setPlatformType(0);  //
-        baseInfo.setAppLanguage("java");
-        appGrafanaMappingService.createTmpByAppBaseInfo(baseInfo);
-        return Result.success("ok");
+        log.info("GrafanaMappingController.reloadTemplateBase start ...");
+        Integer pSize = 100;
+
+        appGrafanaMappingService.exeReloadTemplateBase(pSize);
+
+        return Result.success("task has executed!");
     }
-
 
 }

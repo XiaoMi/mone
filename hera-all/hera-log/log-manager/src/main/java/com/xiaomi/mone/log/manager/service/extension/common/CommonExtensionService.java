@@ -12,4 +12,10 @@ public interface CommonExtensionService {
 
 
     String getLogManagePrefix();
+
+    String getHeraLogStreamServerName();
+
+    String getMachineRoomName(String machineRoomEn);
+
+    boolean middlewareEnumValid(Integer type);
 }

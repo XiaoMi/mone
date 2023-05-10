@@ -3,6 +3,7 @@ package com.xiaomi.mone.monitor.service.impl;
 import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.xiaomi.mone.app.api.message.HeraAppInfoModifyMessage;
 import com.xiaomi.mone.monitor.bo.GrafanaInterfaceRes;
 import com.xiaomi.mone.monitor.dao.model.AppMonitor;
 import com.xiaomi.mone.monitor.result.ErrorCode;
@@ -92,6 +93,15 @@ public class AppMonitorServiceImpl implements AppMonitorServiceExtension {
     public Boolean checkCreateParam(AppMonitor appMonitor) {
 
         if(appMonitor.getProjectId() == null || StringUtils.isBlank(appMonitor.getProjectName())){
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public Boolean checkAppModifyStrategySearchCondition(HeraAppInfoModifyMessage message) {
+        if(message.getAppId() == null){
+            log.error("checkAppModifyStrategySearchCondition appId is null message : {}",message);
             return false;
         }
         return true;

@@ -2,7 +2,6 @@ package com.xiaomi.mone.log.stream.job;
 
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
-import com.xiaomi.mone.log.api.enums.MiddlewareEnum;
 import com.xiaomi.mone.log.model.EsInfo;
 import com.xiaomi.mone.log.model.LogtailConfig;
 import com.xiaomi.mone.log.model.MilogSpaceData;
@@ -106,18 +105,19 @@ public class JobManager {
             sinkJobConfig.setLogTailId(logtailConfig.getLogtailId());
             sinkJobConfig.setLogStoreId(logStoreId);
             sinkJobConfig.setLogSpaceId(logSpaceId);
-            log.warn("##sinkJobConfig##:{}", gson.toJson(sinkJobConfig));
+            log.warn("##startConsumerJob## spaceId:{}, storeId:{}, tailId:{}", sinkJobConfig.getLogSpaceId(), sinkJobConfig.getLogStoreId(), sinkJobConfig.getLogTailId());
 
             String sinkProviderBean = sinkJobConfig.getMqType() + LogStreamConstants.sinkJobProviderBeanSuffix;
             SinkJobProvider sinkJobProvider = Ioc.ins().getBean(sinkProviderBean);
             SinkJob instanceSinkJobEs = sinkJobProvider.getSinkJob(sinkJobConfig);
 
-            //SinkJob instanceSinkJobEs = SinkJobFactory.instanceSinkJobEs(sinkJobConfig);
-//            SinkJob sinkJobBackUp = SinkJobFactory.instanceSinkJobBackUp(sinkJobConfig);
             if (instanceSinkJobEs.start()) {
                 jobs.putIfAbsent(logtailConfig.getLogtailId(), Lists.newArrayList());
                 jobs.get(logtailConfig.getLogtailId()).add(instanceSinkJobEs);
-//                jobs.get(logtailConfig.getLogtailId()).add(sinkJobBackUp);
+            }
+            SinkJob providerBackupJob = sinkJobProvider.getBackupJob(sinkJobConfig);
+            if (null != providerBackupJob && providerBackupJob.start()) {
+                jobs.get(logtailConfig.getLogtailId()).add(providerBackupJob);
             }
             log.info(String.format("[JobManager.initJobs] startJob success,logTailId:%s,topic:%s,tag:%s,esIndex:%s", logtailConfig.getLogtailId(), logtailConfig.getTopic(), logtailConfig.getTag(), esIndex));
         } catch (Exception e) {

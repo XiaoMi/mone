@@ -52,13 +52,17 @@ import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
 import run.mone.openai.OpenaiCall;
+import run.mone.openai.ReqConfig;
+import run.mone.openai.StreamListener;
 import run.mone.openai.net.FakeDnsResolver;
 import run.mone.openai.net.MyConnectionSocketFactory;
 import run.mone.openai.net.MySSLConnectionSocketFactory;
 
 import javax.net.ssl.SSLContext;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.net.*;
@@ -67,6 +71,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -153,6 +158,35 @@ public class OpenApiTest {
 //                .proxy(proxy)
                 .build();
         return openAiClient;
+    }
+
+
+    @SneakyThrows
+    @Test
+    public void testCallStream() {
+        String key = System.getenv("open_api_key");
+        CountDownLatch latch = new CountDownLatch(1);
+        OpenaiCall.callStream(key, null, "天空为什么是蓝色的", new String[]{}, new StreamListener() {
+            @Override
+            public void onEvent(String str) {
+                System.out.println(str);
+            }
+
+            @Override
+            public void end() {
+                latch.countDown();
+            }
+        });
+        latch.await();
+    }
+
+    @SneakyThrows
+    @Test
+    public void testEditor() {
+        String key = System.getenv("open_api_key");
+        String res = OpenaiCall.editor(key, Edit.builder().input("System.")
+                .instruction("在java中,后边会跟那些代码").model("code-davinci-edit-001").temperature(0).build());
+        System.out.println(res);
     }
 
 
@@ -325,10 +359,13 @@ public class OpenApiTest {
         Arrays.stream(completions.getChoices()).forEach(System.out::println);
     }
 
+    /**
+     * 代码生成用:code-davinci-edit-001 这个模型 (Temperature=0 Top P=1)
+     */
     @Test
-    public void testListModels() {
+    public void testListOpenaiModels() {
         OpenAiClient openAiClient = client();
-        openAiClient.models().forEach(it -> {
+        openAiClient.models().stream().filter(it->it.getID().contains("code")).forEach(it -> {
             System.out.println(it.getID());
         });
     }

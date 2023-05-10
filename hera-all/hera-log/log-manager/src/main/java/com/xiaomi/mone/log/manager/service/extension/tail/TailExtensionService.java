@@ -1,8 +1,12 @@
 package com.xiaomi.mone.log.manager.service.extension.tail;
 
+import com.xiaomi.mone.app.api.response.AppBaseInfo;
 import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
+import com.xiaomi.mone.log.manager.model.dto.MilogAppEnvDTO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogTailDo;
+import com.xiaomi.mone.log.manager.model.pojo.MilogMiddlewareConfig;
+import com.xiaomi.mone.log.model.LogtailConfig;
 
 import java.util.List;
 
@@ -23,12 +27,21 @@ public interface TailExtensionService {
 
     void postProcessing();
 
-    void defaultBindingAppTailConfigRel(Long id, Long milogAppId,
-                                        Long middleWareId, String topicName, Integer batchSendSize);
+    void defaultBindingAppTailConfigRel(Long id, Long milogAppId, Long middleWareId, String topicName, Integer batchSendSize);
 
     void defaultBindingAppTailConfigRelPostProcess(Long spaceId, Long storeId, Long tailId, Long milogAppId, Long storeMqResourceId);
 
     void sendMessageOnCreate(MilogLogtailParam param, MilogLogTailDo mt, Long milogAppId, boolean supportedConsume);
 
     void updateSendMsg(MilogLogTailDo milogLogtailDo, List<String> oldIps, boolean supportedConsume);
+
+    void logTailDoExtraFiled(MilogLogTailDo milogLogtailDo, MilogLogStoreDO logStoreDO, MilogLogtailParam logTailParam);
+
+    void logTailConfigExtraField(LogtailConfig logtailConfig, MilogMiddlewareConfig middlewareConfig);
+
+    void logTailDelPostProcess(MilogLogStoreDO logStoreDO, MilogLogTailDo milogLogtailDo);
+
+    List<MilogAppEnvDTO> getEnInfosByAppId(AppBaseInfo appBaseInfo, Long milogAppId, Integer deployWay);
+
+    boolean decorateTailDTOValId(Integer appType);
 }

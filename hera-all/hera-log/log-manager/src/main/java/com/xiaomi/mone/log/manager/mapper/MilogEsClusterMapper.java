@@ -47,7 +47,16 @@ public interface MilogEsClusterMapper extends BaseMapper<MilogEsClusterDO> {
      * @param area
      * @return
      */
-    List<MilogEsClusterDO> selectByArea(@Param("area") String area);
+    List<MilogEsClusterDO> selectByArea(@Param("area") String area, @Param("label") String label);
 
     List<MilogEsClusterDO> selectByAlias(@Param("alias") String alias);
+
+    /**
+     * 获取 tag 和 area 对应的 ES 集群信息
+     *
+     * @param tag
+     * @param area
+     * @return
+     */
+    MilogEsClusterDO selectByTagAndArea(@Param("tag") String tag, @Param("area") String area);
 }

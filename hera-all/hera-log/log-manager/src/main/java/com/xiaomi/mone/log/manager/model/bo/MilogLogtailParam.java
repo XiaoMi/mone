@@ -19,6 +19,7 @@ public class MilogLogtailParam {
     private Long milogAppId;
     private Long appId;
     private String appName;
+    private String deploySpace;
     private Long envId;
     private String envName;
     private List<String> ips;
@@ -34,11 +35,15 @@ public class MilogLogtailParam {
 
     private String logSplitExpress;
     /**
-     * 应用类型 0:mione应用 1:mis 应用
+     * 行首正则
+     */
+    private String firstLineReg;
+    /**
+     * 应用类型 0:mione应用
      **/
     private Integer appType;
     /**
-     * 机器类型 0.容器 1.物理机（mis应用）
+     * 机器类型 0.容器 1.物理机
      */
     private Integer machineType;
     /**
@@ -49,7 +54,7 @@ public class MilogLogtailParam {
     private String topicName;
     private List<?> middlewareConfig;
     /**
-     * 部署方式 1-mione; 2-miline; 3-k8s
+     * 部署方式 1-mione;
      */
     private Integer deployWay;
 

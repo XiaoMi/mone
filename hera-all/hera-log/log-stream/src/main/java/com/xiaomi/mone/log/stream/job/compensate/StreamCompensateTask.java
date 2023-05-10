@@ -47,6 +47,7 @@ public class StreamCompensateTask {
                 CompensateMsgConsumeProvider compensateMsgConsumeProvider = Ioc.ins().getBean(compensateMsgConsumeProviderBean);
                 CompensateMsgConsume mqMessageConsume = compensateMsgConsumeProvider.getCompensateMsgConsume();
                 mqMessageConsume.consume();
+                log.warn("StreamCompensateTask started, compensateMsgConsumeProviderBean:{}", compensateMsgConsumeProviderBean);
             } else {
                 log.warn("### no need to start compensate consume task");
             }

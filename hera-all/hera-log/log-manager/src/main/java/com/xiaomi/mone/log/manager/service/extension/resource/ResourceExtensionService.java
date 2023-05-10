@@ -3,9 +3,7 @@ package com.xiaomi.mone.log.manager.service.extension.resource;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.xiaomi.mone.log.api.model.bo.MiLogResource;
 import com.xiaomi.mone.log.api.model.vo.ResourceUserSimple;
-import com.xiaomi.mone.log.manager.model.pojo.MilogEsClusterDO;
-import com.xiaomi.mone.log.manager.model.pojo.MilogEsIndexDO;
-import com.xiaomi.mone.log.manager.model.pojo.MilogMiddlewareConfig;
+import com.xiaomi.mone.log.manager.model.pojo.*;
 
 import java.util.List;
 
@@ -40,4 +38,8 @@ public interface ResourceExtensionService {
     boolean resourceNotRequiredInit(Integer logTypeCode, List<MilogMiddlewareConfig> middlewareMqConfigs, List<MilogMiddlewareConfig> middlewareEsConfigs, List<MilogEsIndexDO> esIndexDOList);
 
     boolean resourceShowStatusFlag(ResourceUserSimple configResource);
+
+    Integer getResourceCode();
+
+    void deleteMqResourceProcessing(MilogLogTailDo mt, MilogLogStoreDO logStoreDO);
 }

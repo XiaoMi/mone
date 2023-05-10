@@ -196,4 +196,8 @@ public class MilogLogstoreDao {
     public List<MilogLogStoreDO> queryByLogType(Integer type) {
         return dao.query(MilogLogStoreDO.class, Cnd.where("log_type", EQUAL_OPERATE, type));
     }
+
+    public void deleteById(Long id) {
+        dao.delete(MilogLogStoreDO.class, id);
+    }
 }
