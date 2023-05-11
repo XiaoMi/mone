@@ -306,7 +306,7 @@ public class HeraBaseInfoService {
 
     public List<HeraAppBaseInfoModel> queryRemote(HeraAppBaseInfoModel baseInfo, Integer pageCount, Integer pageNum) {
 
-        List<HeraAppBaseInfoModel> baseInfoModels = hearAppService.query(baseInfo, null, null);
+        List<HeraAppBaseInfoModel> baseInfoModels = hearAppService.query(baseInfo, pageCount, pageNum);
         if (CollectionUtils.isEmpty(baseInfoModels)) {
             return Lists.newArrayList();
         }
