@@ -2,8 +2,10 @@ package com.xiaomi.mone.app.service.mq;
 
 import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.google.gson.Gson;
 import com.xiaomi.mone.app.api.model.HeraMetaDataMessage;
+import com.xiaomi.mone.app.api.model.HeraMetaDataPortModel;
 import com.xiaomi.mone.app.api.service.HeraMetaDataService;
 import com.xiaomi.mone.app.dao.mapper.HeraMetaDataMapper;
 import com.xiaomi.mone.app.model.HeraMetaData;
@@ -37,10 +39,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 public class RocketMqHeraMetaDataConsumer {
 
-    @NacosValue(value = "${rocket.mq.hera.metadata.topic}",autoRefreshed = true)
+    @NacosValue(value = "${rocket.mq.hera.metadata.topic}", autoRefreshed = true)
     private String consumerTopic;
 
-    @NacosValue(value = "${rocket.mq.hera.metadata.producer.group}",autoRefreshed = true)
+    @NacosValue(value = "${rocket.mq.hera.metadata.producer.group}", autoRefreshed = true)
     private String consumerGroup;
 
     @NacosValue(value = "${rocket.mq.srvAddr}", autoRefreshed = true)
@@ -59,7 +61,7 @@ public class RocketMqHeraMetaDataConsumer {
 
     private HeraMetaDataMapper heraMetaDataMapper;
 
-    public RocketMqHeraMetaDataConsumer(HeraMetaDataMapper heraMetaDataMapper){
+    public RocketMqHeraMetaDataConsumer(HeraMetaDataMapper heraMetaDataMapper) {
         this.heraMetaDataMapper = heraMetaDataMapper;
     }
 
@@ -126,8 +128,8 @@ public class RocketMqHeraMetaDataConsumer {
 
             HeraMetaData heraMetaData = HeraMetaDataConvertUtil.messageConvertTo(heraMetaDataMessage);
 
-            if("insert".equals(heraMetaDataMessage.getOperator())){
-                if(getOne(heraMetaDataMessage.getMetaId(), heraMetaDataMessage.getHost()) == null){
+            if ("insert".equals(heraMetaDataMessage.getOperator())) {
+                if (getOne(heraMetaDataMessage.getMetaId(), heraMetaDataMessage.getHost(), heraMetaDataMessage.getPort()) == null) {
                     Date date = new Date();
                     heraMetaData.setCreateTime(date);
                     heraMetaData.setUpdateTime(date);
@@ -139,10 +141,11 @@ public class RocketMqHeraMetaDataConsumer {
         }
     }
 
-    private HeraMetaData getOne(Integer metaId, String ip){
+    private HeraMetaData getOne(Integer metaId, String ip, HeraMetaDataPortModel port) {
         QueryWrapper<HeraMetaData> queryWrapper = new QueryWrapper();
         queryWrapper.eq("meta_id", metaId);
         queryWrapper.eq("host", ip);
+        queryWrapper.eq("port -> '$.dubboPort'", port.getDubboPort());
         return heraMetaDataMapper.selectOne(queryWrapper);
     }
 }

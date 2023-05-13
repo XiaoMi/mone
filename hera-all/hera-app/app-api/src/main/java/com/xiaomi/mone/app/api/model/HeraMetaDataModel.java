@@ -1,6 +1,8 @@
 package com.xiaomi.mone.app.api.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import java.io.Serializable;
@@ -13,6 +15,8 @@ import java.util.Date;
  */
 @Data
 @ToString
+@AllArgsConstructor
+@NoArgsConstructor
 public class HeraMetaDataModel implements Serializable {
 
     private Long id;
@@ -23,6 +27,10 @@ public class HeraMetaDataModel implements Serializable {
      * 元数据的名称，app类型就是appName，mysql类型就是DBA定义的DBName等等
      */
     private String metaName;
+
+    private Integer envId;
+
+    private String envName;
 
     /**
      * dubbo service 元数据，group/service/version，多个以逗号分隔
@@ -51,19 +59,4 @@ public class HeraMetaDataModel implements Serializable {
     private String createBy;
 
     private String updateBy;
-
-    public HeraMetaDataModel(){}
-
-    public HeraMetaDataModel(Long id, Integer metaId, String metaName, String type, String host, HeraMetaDataPortModel port, Date createTime, Date updateTime, String createBy, String updateBy) {
-        this.id = id;
-        this.metaId = metaId;
-        this.metaName = metaName;
-        this.type = type;
-        this.host = host;
-        this.port = port;
-        this.createTime = createTime;
-        this.updateTime = updateTime;
-        this.createBy = createBy;
-        this.updateBy = updateBy;
-    }
 }

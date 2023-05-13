@@ -1,6 +1,8 @@
 package com.xiaomi.mone.app.api.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import java.io.Serializable;
@@ -12,6 +14,8 @@ import java.io.Serializable;
  */
 @Data
 @ToString
+@AllArgsConstructor
+@NoArgsConstructor
 public class HeraMetaDataPortModel implements Serializable {
 
     private int port;
@@ -23,14 +27,4 @@ public class HeraMetaDataPortModel implements Serializable {
     private int grpcPort;
 
     private int thriftPort;
-
-    public HeraMetaDataPortModel(){}
-
-    public HeraMetaDataPortModel(int port, int dubboPort, int httpPort, int grpcPort, int thriftPort) {
-        this.port = port;
-        this.dubboPort = dubboPort;
-        this.httpPort = httpPort;
-        this.grpcPort = grpcPort;
-        this.thriftPort = thriftPort;
-    }
 }

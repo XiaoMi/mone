@@ -34,6 +34,10 @@ public class HeraMetaData {
      */
     private String metaName;
 
+    private Integer envId;
+
+    private String envName;
+
     /**
      * dubbo service 元数据，group/service/version，多个以逗号分隔
      */

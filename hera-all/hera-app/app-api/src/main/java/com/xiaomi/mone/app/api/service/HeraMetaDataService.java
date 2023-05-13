@@ -1,11 +1,15 @@
 package com.xiaomi.mone.app.api.service;
 
 import com.xiaomi.mone.app.api.model.HeraMetaDataModel;
+import com.xiaomi.mone.app.api.model.HeraMetaDataQuery;
 
 import java.util.List;
 
 public interface HeraMetaDataService {
-    List<HeraMetaDataModel> getAll();
+
+    int count(HeraMetaDataQuery query);
+
+    List<HeraMetaDataModel> page(HeraMetaDataQuery query);
 
     int insert(HeraMetaDataModel model);
 

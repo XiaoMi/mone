@@ -17,6 +17,10 @@ public class HeraMetaDataMessage {
 
     private String metaName;
 
+    private Integer envId;
+
+    private String envName;
+
     private String type;
 
     private String host;

@@ -2,6 +2,7 @@ package com.xiaomi.mone.app.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.xiaomi.mone.app.api.model.HeraMetaDataModel;
+import com.xiaomi.mone.app.api.model.HeraMetaDataQuery;
 import com.xiaomi.mone.app.api.service.HeraMetaDataService;
 import com.xiaomi.mone.app.dao.mapper.HeraMetaDataMapper;
 import com.xiaomi.mone.app.model.HeraMetaData;
@@ -28,8 +29,17 @@ public class HeraMetaDataServiceImpl implements HeraMetaDataService {
     }
 
     @Override
-    public List<HeraMetaDataModel> getAll() {
+    public int count(HeraMetaDataQuery query) {
+        return heraMetaDataMapper.selectCount(new QueryWrapper());
+    }
+
+    @Override
+    public List<HeraMetaDataModel> page(HeraMetaDataQuery query) {
+        query.initPageParam();
         QueryWrapper<HeraMetaData> wrapper = new QueryWrapper();
+        if(query.getLimit() != null && query.getLimit() > 0) {
+            wrapper.last("LIMIT "+query.getOffset()+" , "+query.getLimit());
+        }
         List<HeraMetaData> heraMetaData = heraMetaDataMapper.selectList(wrapper);
         return HeraMetaDataConvertUtil.convertToModel(heraMetaData);
     }
