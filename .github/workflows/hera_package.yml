@@ -39,7 +39,7 @@ jobs:
             hera-monitor:
               - 'hera-all/hera-monitor/**'
             prometheus-agent:
-              - 'hera-all/prometheus-agent/**'
+              - 'hera-all/hera-prometheus-agent/**'
             prometheus-starter-all:
               - 'hera-all/prometheus-starter-all/**'
             trace-etl:
@@ -60,7 +60,7 @@ jobs:
       - if: always() && steps.changes.outputs.hera-monitor == 'true' || github.event == 'workflow_dispatch'
         run: cd hera-all/hera-monitor; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..\
       - if: always() && steps.changes.outputs.prometheus-agent == 'true' || github.event == 'workflow_dispatch'
-        run: cd hera-all/prometheus-agent; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
+        run: cd hera-all/hera-prometheus-agent; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
       - if: always() && steps.changes.outputs.prometheus-starter-all == 'true' || github.event == 'workflow_dispatch'
         run: cd hera-all/prometheus-starter-all; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
       - if: always() && steps.changes.outputs.trace-etl == 'true' || github.event == 'workflow_dispatch'
