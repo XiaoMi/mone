@@ -100,17 +100,17 @@
             </build>
         </profile>
 
-        <profile>
-            <id>dev</id>
-            <properties>
-                <profiles.active>dev</profiles.active>
-            </properties>
-            <build>
-                <filters>
-                    <filter>src/main/resources/config/dev.properties</filter>
-                </filters>
-            </build>
-        </profile>
+<!--        <profile>-->
+<!--            <id>dev</id>-->
+<!--            <properties>-->
+<!--                <profiles.active>dev</profiles.active>-->
+<!--            </properties>-->
+<!--            <build>-->
+<!--                <filters>-->
+<!--                    <filter>src/main/resources/config/dev.properties</filter>-->
+<!--                </filters>-->
+<!--            </build>-->
+<!--        </profile>-->
 
     </profiles>
 
