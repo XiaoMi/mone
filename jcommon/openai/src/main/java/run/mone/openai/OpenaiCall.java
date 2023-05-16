@@ -263,6 +263,14 @@ public class OpenaiCall {
     }
 
 
+    public static String call(String apiKey, String proxy, List<Message> messageList, double temperature) {
+        OpenAiClient openAiClient = client(apiKey, proxy);
+        ChatCompletion chatCompletion = ChatCompletion.builder().temperature(temperature).messages(messageList).build();
+        ChatCompletionResponse completions = openAiClient.chatCompletion(chatCompletion);
+        return completions.getChoices().get(0).getMessage().getContent();
+    }
+
+
     @SneakyThrows
     public static String callWithHttpClient(String apiKey, String prompt, String proxy) {
         HttpClientBuilder builer = HttpClients.custom();
