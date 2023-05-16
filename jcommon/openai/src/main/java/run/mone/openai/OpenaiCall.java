@@ -185,7 +185,7 @@ public class OpenaiCall {
     }
 
     public static void callStream(String apiKey, String openApiHost, String context, String[] prompt, StreamListener listener) {
-        callStream(apiKey, openApiHost, context, prompt, listener, ReqConfig.builder().maxTokens(4096).build());
+        callStream(apiKey, openApiHost, context, prompt, listener, ReqConfig.builder().build());
     }
 
     public static String editor(String apiKey, Edit edit) {
@@ -258,6 +258,14 @@ public class OpenaiCall {
                 Message.builder().role(Message.Role.USER).content(content).build()
         );
         ChatCompletion chatCompletion = ChatCompletion.builder().temperature(temperature).messages(list).build();
+        ChatCompletionResponse completions = openAiClient.chatCompletion(chatCompletion);
+        return completions.getChoices().get(0).getMessage().getContent();
+    }
+
+
+    public static String call(String apiKey, String proxy, List<Message> messageList, double temperature) {
+        OpenAiClient openAiClient = client(apiKey, proxy);
+        ChatCompletion chatCompletion = ChatCompletion.builder().temperature(temperature).messages(messageList).build();
         ChatCompletionResponse completions = openAiClient.chatCompletion(chatCompletion);
         return completions.getChoices().get(0).getMessage().getContent();
     }
