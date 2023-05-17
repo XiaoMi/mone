@@ -95,7 +95,7 @@
             </activation>
             <build>
                 <filters>
-                    <filter>src/main/resources/config/application-opensource-outer.properties</filter>
+                    <filter>src/main/resources/application-opensource-outer.properties</filter>
                 </filters>
 
             </build>
