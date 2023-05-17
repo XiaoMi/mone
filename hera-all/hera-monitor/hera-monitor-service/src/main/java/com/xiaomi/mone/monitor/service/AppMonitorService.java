@@ -235,8 +235,8 @@ public class AppMonitorService {
 
                         ruleData.setIncludeEnvs(t.getIncludeEnvs());
                         ruleData.setExceptEnvs(t.getExceptEnvs());
-                        ruleData.setIncludeServices(t.getIncludeServices());
-                        ruleData.setExceptServices(t.getExceptServices());
+                        ruleData.setIncludeZones(t.getIncludeZones());
+                        ruleData.setExceptZones(t.getExceptZones());
                         ruleData.setAlertMembers(t.getAlertMembers());
 
                         if (!CollectionUtils.isEmpty(t.getIncludeFunctions())) {
@@ -944,8 +944,8 @@ public class AppMonitorService {
 
                         ruleData.setIncludeEnvs(t.getIncludeEnvs());
                         ruleData.setExceptEnvs(t.getExceptEnvs());
-                        ruleData.setIncludeServices(t.getIncludeServices());
-                        ruleData.setExceptServices(t.getExceptServices());
+                        ruleData.setIncludeZones(t.getIncludeZones());
+                        ruleData.setExceptZones(t.getExceptZones());
 
 //                        ruleData.setIncludeZones(t.getIncludeEnvs());
 //                        ruleData.setExceptZones(t.getExceptEnvs());
@@ -1024,8 +1024,8 @@ public class AppMonitorService {
 
                             ruleData.setIncludeEnvs(t.getIncludeEnvs());
                             ruleData.setExceptEnvs(t.getExceptEnvs());
-                            ruleData.setIncludeServices(t.getIncludeServices());
-                            ruleData.setExceptServices(t.getExceptServices());
+                            ruleData.setIncludeZones(t.getIncludeZones());
+                            ruleData.setExceptZones(t.getExceptZones());
 
 //                        ruleData.setIncludeZones(t.getIncludeEnvs());
 //                        ruleData.setExceptZones(t.getExceptEnvs());

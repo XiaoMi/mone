@@ -71,6 +71,8 @@ public enum AlarmPresetMetrics {
     dubbo_cost("dubbo_cost","Dubbo调出平均耗时", MetricsUnit.UNIT_MS, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.time_cost, BasicUrlType.hera_dash_sip, "130"),
     dubbo_slow_query("dubbo_slow_query","Dubbo调出慢查询数", MetricsUnit.UNIT_COUNT, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.slow_times),
 
+    dubbo_sla_error_times("dubbo_sla_error_times","DubboSLA异常数", MetricsUnit.UNIT_COUNT, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.error_times),
+    dubbo_sla_availability("dubbo_sla_availability","DubboSLA可用性", MetricsUnit.UNIT_PERCENT, SendAlertGroupKey.APP_METHOD, AlarmStrategyType.INTERFACE,InterfaceMetricTypes.availability),
 
     /**
      * 业务指标-db

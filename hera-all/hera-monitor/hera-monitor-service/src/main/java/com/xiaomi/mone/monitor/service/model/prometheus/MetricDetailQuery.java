@@ -29,6 +29,7 @@ public class MetricDetailQuery implements Serializable {
     private static final String url_ = "url";
 
     private String serverEnv;
+    private String serverZone;
     private String area;
 
     private Long projectId;
