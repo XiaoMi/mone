@@ -271,7 +271,7 @@ public class AlarmService {
                 return getAvailableRate(dubbo_provider_error_metric,dubbo_provider_avalible_total_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,avalible_duration_time,null,rule.getOp(),rule.getValue());
 
             case "dubbo_sla_error_times":
-                return getAvailableRate(dubbo_provier_sla_error_metric,dubbo_provider_sla_avalible_total_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,avalible_duration_time,null,rule.getOp(),rule.getValue());
+                return getPresetMetricErrorAlarm(dubbo_provier_sla_error_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,scrapeIntervel,null,rule.getOp(),rule.getValue());
             case "dubbo_sla_availability":
                 return getAvailableRate(dubbo_provier_sla_error_metric,dubbo_provider_sla_avalible_total_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,avalible_duration_time,null,rule.getOp(),rule.getValue());
 
