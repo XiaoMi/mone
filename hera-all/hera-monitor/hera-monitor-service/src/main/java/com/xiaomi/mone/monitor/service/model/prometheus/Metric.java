@@ -35,6 +35,7 @@ public class Metric implements Serializable {
 
     //env
     private String serverEnv;
+    private String serverZone;
 
     //container info
     private String container_label_PROJECT_ID;

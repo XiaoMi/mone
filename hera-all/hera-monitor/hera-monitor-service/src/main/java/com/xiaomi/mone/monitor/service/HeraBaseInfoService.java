@@ -101,7 +101,7 @@ public class HeraBaseInfoService {
 
     }
 
-    public String getArea(String bindId, Integer plat, String serverEnv) {
+    public String getArea(String bindId, Integer plat, String regionSign) {
 
         HeraAppBaseInfoModel appBaseInfo = this.getAppByBindId(bindId, plat);
 
@@ -113,7 +113,7 @@ public class HeraBaseInfoService {
                 return null;
             }
             EnvMapping envMapping = new Gson().fromJson(envsMap, EnvMapping.class);
-            log.info("getArea# appId:{},serverEnv:{}, envMapping:{}", bindId, serverEnv, envMapping.toString());
+            log.info("getArea# appId:{},regionSign:{}, envMapping:{}", bindId, regionSign, envMapping.toString());
             if (envMapping == null || CollectionUtils.isEmpty(envMapping.getAreas())) {
                 return null;
             }
@@ -125,9 +125,9 @@ public class HeraBaseInfoService {
                     log.info("getArea,no regions found!bindId:{}", bindId);
                     return null;
                 }
-                //这里的serverEnv对应的是region的name
+                //这里的regionSign对应的是region的name
                 for (Region region1 : regions) {
-                    if (region1.getName().equals(serverEnv)) {
+                    if (region1.getName().equals(regionSign)) {
                         return area.getName();
                     }
 
