@@ -1,6 +1,8 @@
 package com.xiaomi.mone.app.model;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * @Description
@@ -8,6 +10,8 @@ import lombok.Data;
  * @Date 2023/4/28 12:12 PM
  */
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class HeraMetaDataPort {
 
     private int port;
@@ -20,13 +24,4 @@ public class HeraMetaDataPort {
 
     private int thriftPort;
 
-    public HeraMetaDataPort(){}
-
-    public HeraMetaDataPort(int port, int dubboPort, int httpPort, int grpcPort, int thriftPort) {
-        this.port = port;
-        this.dubboPort = dubboPort;
-        this.httpPort = httpPort;
-        this.grpcPort = grpcPort;
-        this.thriftPort = thriftPort;
-    }
 }

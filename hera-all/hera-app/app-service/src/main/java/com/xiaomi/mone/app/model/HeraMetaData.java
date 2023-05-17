@@ -6,7 +6,9 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 import com.xiaomi.mone.app.api.model.HeraMetaDataType;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import java.util.Date;
@@ -19,6 +21,8 @@ import java.util.Date;
 @Data
 @TableName(value = "hera_meta_data", autoResultMap = true)
 @ToString
+@AllArgsConstructor
+@NoArgsConstructor
 public class HeraMetaData {
 
     @TableId(value = "id", type = IdType.AUTO)
@@ -67,18 +71,4 @@ public class HeraMetaData {
 
     private String updateBy;
 
-    public HeraMetaData(){}
-
-    public HeraMetaData(Long id, Integer metaId, String metaName, String type, String host, HeraMetaDataPort port, Date createTime, Date updateTime, String createBy, String updateBy) {
-        this.id = id;
-        this.metaId = metaId;
-        this.metaName = metaName;
-        this.type = type;
-        this.host = host;
-        this.port = port;
-        this.createTime = createTime;
-        this.updateTime = updateTime;
-        this.createBy = createBy;
-        this.updateBy = updateBy;
-    }
 }
