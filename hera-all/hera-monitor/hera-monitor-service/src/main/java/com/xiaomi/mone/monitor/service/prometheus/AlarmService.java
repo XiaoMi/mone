@@ -271,9 +271,9 @@ public class AlarmService {
                 return getAvailableRate(dubbo_provider_error_metric,dubbo_provider_avalible_total_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,avalible_duration_time,null,rule.getOp(),rule.getValue());
 
             case "dubbo_sla_error_times":
-                return getAvailableRate(dubbo_provier_sla_error_metric,dubbo_provider_sla_avalible_total_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,avalible_duration_time,null,rule.getOp(),rule.getValue());
+                return getPresetMetricSLAErrorAlarm(dubbo_provier_sla_error_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,scrapeIntervel,null,rule.getOp(),rule.getValue());
             case "dubbo_sla_availability":
-                return getAvailableRate(dubbo_provier_sla_error_metric,dubbo_provider_sla_avalible_total_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,avalible_duration_time,null,rule.getOp(),rule.getValue());
+                return getSlaAvailableRate(dubbo_provier_sla_error_metric,dubbo_provider_sla_avalible_total_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,avalible_duration_time,null,rule.getOp(),rule.getValue());
 
             case "db_error_times":
                 return getPresetMetricErrorAlarm(db_error_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,scrapeIntervel,null,rule.getOp(),rule.getValue());
@@ -550,6 +550,49 @@ public class AlarmService {
 
 
         log.info("AlarmService.getAvailableRate param" +
+                        ":errorMetric:{},totalMetric:{},projectId:{},projectName:{},includeLabels:{},exceptLabels:{},metricSuffix:{},duration:{},offset:{},op:{},value:{},return : {}"
+                ,errorMetric,totalMetric,projectId,projectName,includeLabels,exceptLabels,metricSuffix,duration,offset,op,value,expBuilder.toString());
+        return expBuilder.toString();
+    }
+
+    public String getSlaAvailableRate(String errorMetric,String totalMetric,Integer projectId,String projectName,Map includeLabels,Map exceptLabels,String metricSuffix,String duration,String offset,String op,Float value){
+
+        String errorMetricComplete = prometheusService.completeMetricForAlarm(errorMetric, includeLabels,exceptLabels, projectId,projectName, metricSuffix,  duration, null);
+
+        if(!CollectionUtils.isEmpty(includeLabels)){
+            Iterator iterator = includeLabels.entrySet().iterator();
+            while (iterator.hasNext()){
+                Map.Entry next = (Map.Entry) iterator.next();
+                if(next.getKey().equals(PresetMetricLabels.http_error_code.getLabelName())){
+                    iterator.remove();
+                }
+            }
+        }
+
+        if(!CollectionUtils.isEmpty(exceptLabels)){
+            Iterator iterator = exceptLabels.entrySet().iterator();
+            while (iterator.hasNext()){
+                Map.Entry next = (Map.Entry) iterator.next();
+                if(next.getKey().equals(PresetMetricLabels.http_error_code.getLabelName())){
+                    iterator.remove();
+                }
+            }
+        }
+
+
+        String totalMetricComplate = prometheusService.completeMetricForAlarm(totalMetric, includeLabels,exceptLabels, projectId,projectName, metricSuffix,  duration, null);
+
+        StringBuilder expBuilder = new StringBuilder();
+        expBuilder
+                .append("clamp_min((1-(")
+                .append("sum(sum_over_time(").append(errorMetricComplete).append("))").append(" by (application,system,serverIp,serviceName,methodName,sqlMethod,serverEnv,serverZone,sql,dataSource,functionModule,functionName,clientProjectId,clientProjectName,clientEnv,clientEnvId,clientIp)")
+                .append("/")
+                .append("sum(sum_over_time(").append(totalMetricComplate).append("))").append(" by (application,system,serverIp,serviceName,methodName,sqlMethod,serverEnv,serverZone,sql,dataSource,functionModule,functionName,clientProjectId,clientProjectName,clientEnv,clientEnvId,clientIp)")
+                .append(")),0) * 100")
+                .append(op).append(value);
+
+
+        log.info("AlarmService.getSlaAvailableRate param" +
                         ":errorMetric:{},totalMetric:{},projectId:{},projectName:{},includeLabels:{},exceptLabels:{},metricSuffix:{},duration:{},offset:{},op:{},value:{},return : {}"
                 ,errorMetric,totalMetric,projectId,projectName,includeLabels,exceptLabels,metricSuffix,duration,offset,op,value,expBuilder.toString());
         return expBuilder.toString();
@@ -891,6 +934,22 @@ public class AlarmService {
 
 
         log.info("AlarmService.getPresetMetricErrorAlarm param" +
+                        ":sourceMetric:{},projectId:{},projectName:{},includeLabels:{},exceptLabels:{},metricSuffix:{},duration:{},offset:{},op:{},value:{},return : {}"
+                ,sourceMetric,projectId,projectName,includeLabels,exceptLabels,metricSuffix,duration,offset,op,value,expBuilder.toString());
+        return expBuilder.toString();
+    }
+
+    public String getPresetMetricSLAErrorAlarm(String sourceMetric,Integer projectId,String projectName,Map includeLabels,Map exceptLabels,String metricSuffix,String duration,String offset,String op,Float value){
+        String s = prometheusService.completeMetricForAlarm(sourceMetric, includeLabels,exceptLabels, projectId,projectName, metricSuffix,  duration, null);
+
+        StringBuilder expBuilder = new StringBuilder();
+        expBuilder.append("sum(")
+                .append("sum_over_time").append("(").append(s).append(")")
+                .append(") by (application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,serverEnv,serverZone,sql,dataSource,functionModule,functionName,clientProjectId,clientProjectName,clientEnv,clientEnvId,clientIp)")
+                .append(op).append(value);
+
+
+        log.info("AlarmService.getPresetMetricSLAErrorAlarm param" +
                         ":sourceMetric:{},projectId:{},projectName:{},includeLabels:{},exceptLabels:{},metricSuffix:{},duration:{},offset:{},op:{},value:{},return : {}"
                 ,sourceMetric,projectId,projectName,includeLabels,exceptLabels,metricSuffix,duration,offset,op,value,expBuilder.toString());
         return expBuilder.toString();
