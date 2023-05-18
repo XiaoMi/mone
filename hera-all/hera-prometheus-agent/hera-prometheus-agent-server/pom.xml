@@ -8,7 +8,6 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-
     <artifactId>hera-prometheus-agent-server</artifactId>
 
 
@@ -47,20 +46,20 @@
 
     <build>
 
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-                <filtering>true</filtering>
-            </resource>
-            <resource>
-                <directory>src/main/resources/META-INF</directory>
-                <filtering>true</filtering>
-                <includes>
-                    <include>app.properties</include>
-                </includes>
-                <targetPath>META-INF/</targetPath>
-            </resource>
-        </resources>
+<!--        <resources>-->
+<!--            <resource>-->
+<!--                <directory>src/main/resources</directory>-->
+<!--                <filtering>true</filtering>-->
+<!--            </resource>-->
+<!--            <resource>-->
+<!--                <directory>src/main/resources/META-INF</directory>-->
+<!--                <filtering>true</filtering>-->
+<!--                <includes>-->
+<!--                    <include>app.properties</include>-->
+<!--                </includes>-->
+<!--                <targetPath>META-INF/</targetPath>-->
+<!--            </resource>-->
+<!--        </resources>-->
 
         <plugins>
             <plugin>
@@ -78,6 +77,10 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
 
         </plugins>
