@@ -847,7 +847,7 @@ public class AlarmService {
 
             if(StringUtils.isNotBlank(metric.getServerZone())){
                 allZones.putIfAbsent(metric.getServerZone(),new HashSet<String>());
-                HashSet<String> zoneIps = allZones.get(metric.getServerEnv());
+                HashSet<String> zoneIps = allZones.get(metric.getServerZone());
                 zoneIps.add(metric.getServerIp());
 
                 stringObjectMap.putIfAbsent("zoneList", new HashMap<>());
@@ -1064,6 +1064,22 @@ public class AlarmService {
         if (StringUtils.isNotBlank(rule.getRemark())) {
             jsonSummary.addProperty("summary", rule.getRemark());
         }
+
+        if(rule.getAlert().equals(AlarmPresetMetrics.dubbo_sla_error_times.getCode()) || rule.getAlert().equals(AlarmPresetMetrics.dubbo_sla_availability)){
+
+            String clientInfo = "<br>clientProjectId{{$labels.clientProjectId}}," +
+                    "<br>clientProjectName{{$labels.clientProjectName}}," +
+                    "<br>clientEnv{{$labels.clientEnv}}," +
+                    "<br>clientIp{{$labels.clientIp}}";
+            String summary = jsonSummary.get("summary") == null ? null : jsonSummary.get("summary").getAsString();
+
+            if(summary == null){
+                jsonSummary.addProperty("summary", clientInfo);
+            }else{
+                jsonSummary.addProperty("summary",summary + " " + clientInfo);
+            }
+        }
+
         if (StringUtils.isNotBlank(ruleData.getAlarmCallbackUrl())) {
             jsonSummary.addProperty("callback_url", ruleData.getAlarmCallbackUrl());
         }
@@ -1265,6 +1281,22 @@ public class AlarmService {
         if (StringUtils.isNotBlank(rule.getRemark())) {
             jsonSummary.addProperty("summary", rule.getRemark());
         }
+
+        if(rule.getAlert().equals(AlarmPresetMetrics.dubbo_sla_error_times.getCode()) || rule.getAlert().equals(AlarmPresetMetrics.dubbo_sla_availability)){
+
+            String clientInfo = "<br>clientProjectId{{$labels.clientProjectId}}," +
+                    "<br>clientProjectName{{$labels.clientProjectName}}," +
+                    "<br>clientEnv{{$labels.clientEnv}}," +
+                    "<br>clientIp{{$labels.clientIp}}";
+            String summary = jsonSummary.get("summary") == null ? null : jsonSummary.get("summary").getAsString();
+
+            if(summary == null){
+                jsonSummary.addProperty("summary", clientInfo);
+            }else{
+                jsonSummary.addProperty("summary",summary + " " + clientInfo);
+            }
+        }
+
         if (StringUtils.isNotBlank(ruleData.getAlarmCallbackUrl())) {
             jsonSummary.addProperty("callback_url", ruleData.getAlarmCallbackUrl());
         }

@@ -108,7 +108,7 @@ public class AppMonitorServiceImpl implements AppMonitorServiceExtension {
     }
 
     @Override
-    public void changeAlarmServiceToZone(String appName) {
+    public void changeAlarmServiceToZone(Integer pageSize,String appName) {
 
     }
 
