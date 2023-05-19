@@ -38,6 +38,7 @@ import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.EntityUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import run.mone.openai.common.MutableObject;
 import run.mone.openai.net.FakeDnsResolver;
 import run.mone.openai.net.MyConnectionSocketFactory;
 import run.mone.openai.net.MySSLConnectionSocketFactory;
@@ -194,7 +195,32 @@ public class OpenaiCall {
         return res.getChoices()[0].getText();
     }
 
+    /**
+     * 流式返回结果
+     *
+     * @param apiKey
+     * @param openApiHost
+     * @param context
+     * @param prompt
+     * @param listener
+     * @param config
+     */
     public static void callStream(String apiKey, String openApiHost, String context, String[] prompt, StreamListener listener, ReqConfig config) {
+        List<Message> messages = Lists.newArrayList(Message.builder().role(Message.Role.USER).content(String.format(context, prompt)).build());
+        callStream(apiKey, openApiHost, messages, listener, config);
+    }
+
+
+    /**
+     * 支持多伦问答
+     *
+     * @param apiKey
+     * @param openApiHost
+     * @param messages
+     * @param listener
+     * @param config
+     */
+    public static void callStream(String apiKey, String openApiHost, List<Message> messages, StreamListener listener, ReqConfig config) {
         OpenAiStreamClient client = new OpenAiStreamClient(apiKey, 50, 50, 50);
 
         if (null != openApiHost) {
@@ -207,9 +233,7 @@ public class OpenaiCall {
             }
         }
 
-        ChatCompletion.ChatCompletionBuilder builder = ChatCompletion.builder()
-                .messages(Lists.newArrayList(Message.builder().role(Message.Role.USER)
-                        .content(String.format(context, prompt)).build()));
+        ChatCompletion.ChatCompletionBuilder builder = ChatCompletion.builder().messages(messages);
 
         if (config.getMaxTokens() > 0) {
             builder.maxTokens(config.getMaxTokens());
@@ -236,6 +260,111 @@ public class OpenaiCall {
                 listener.end();
             }
         });
+    }
+
+
+    private static OpenAiStreamClient streamClient(String apiKey, String openApiHost) {
+        OpenAiStreamClient client = new OpenAiStreamClient(apiKey, 50, 50, 50);
+
+        if (null != openApiHost) {
+            try {
+                Field field = client.getClass().getDeclaredField("apiHost");
+                field.setAccessible(true);
+                field.set(client, openApiHost);
+            } catch (NoSuchFieldException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return client;
+    }
+
+
+    /**
+     * 有多个问题,其中的部分答案会当做问题继续提问,最后一个问题是流式返回
+     *
+     * @param apiKey
+     * @param openApiHost
+     * @param messages    (这里会包含若干个Ask)
+     * @param listener
+     * @param config
+     */
+    public static void callStreamWithAsk(String apiKey, String openApiHost, List<Message> messages, StreamListener listener, ReqConfig config) {
+        ChatCompletion.ChatCompletionBuilder builder = ChatCompletion.builder();
+
+        if (config.getMaxTokens() > 0) {
+            builder.maxTokens(config.getMaxTokens());
+        }
+        builder.model(config.getModel());
+        builder.temperature(config.getTemperature());
+
+        List<Message> messageList = new ArrayList<>();
+        int i = 0;
+
+        while (true) {
+            MutableObject<Ask> mo = new MutableObject<>();
+            for (; i < messages.size(); i++) {
+                Message m = messages.get(i);
+                if (m instanceof Ask) {
+                    Ask ask = (Ask) m;
+                    if (!ask.isFinish()) {
+                        messageList.add(ask);
+                        mo.setData(ask);
+                        i++;
+                        break;
+                    }
+                }
+                messageList.add(m);
+            }
+
+            //最后一个问题
+            if (mo.getData().isStream()) {
+                List<Message> qList = messageList.stream().map(it -> {
+                    if (it instanceof Ask) {
+                        Ask a = (Ask) it;
+                        return Message.builder().content(a.getContent()).role(Message.Role.USER).build();
+                    }
+                    return it;
+                }).collect(Collectors.toList());
+
+                builder.messages(qList);
+                ChatCompletion completion = builder.build();
+
+                streamClient(apiKey, openApiHost).streamChatCompletion(qList, new EventSourceListener() {
+
+                    @Override
+                    public void onOpen(EventSource eventSource, Response response) {
+                        listener.begin();
+                    }
+
+                    @Override
+                    public void onEvent(EventSource eventSource, @Nullable String id, @Nullable String type, String str) {
+                        String data = parse(str);
+                        listener.onEvent(data);
+                    }
+
+                    @Override
+                    public void onClosed(EventSource eventSource) {
+                        listener.end();
+                    }
+                });
+                break;
+            } else {
+                //这里会阻塞
+                List<Message> qList = messageList.stream().map(it -> {
+                    if (it instanceof Ask) {
+                        Ask a = (Ask) it;
+                        return Message.builder().content(a.getContent()).role(Message.Role.USER).build();
+                    }
+                    return it;
+                }).collect(Collectors.toList());
+                ChatCompletionResponse res = client(apiKey, openApiHost).chatCompletion(qList);
+                String resMessage = res.getChoices().get(0).getMessage().getContent();
+                messageList.add(Message.builder().role(Message.Role.ASSISTANT).content(resMessage).build());
+                mo.getData().setFinish(true);
+                mo.getData().getAskListener().end(resMessage);
+            }
+
+        }
     }
 
 
@@ -271,6 +400,14 @@ public class OpenaiCall {
     }
 
 
+    /**
+     * 最原始的调用方式,做技术储备,不建议直接使用
+     *
+     * @param apiKey
+     * @param prompt
+     * @param proxy
+     * @return
+     */
     @SneakyThrows
     public static String callWithHttpClient(String apiKey, String prompt, String proxy) {
         HttpClientBuilder builer = HttpClients.custom();
