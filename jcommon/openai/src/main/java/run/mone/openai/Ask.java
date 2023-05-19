@@ -25,5 +25,10 @@ public class Ask extends Message implements Serializable {
      */
     private boolean stream;
 
+    /**
+     * 开始问
+     */
+    private volatile boolean begin;
+
 
 }

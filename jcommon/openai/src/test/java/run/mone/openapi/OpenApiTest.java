@@ -332,10 +332,14 @@ public class OpenApiTest {
             }
         }, ReqConfig.builder().build());
 
+        ask.setBegin(true);
         String c = ask.getAskListener().getAnswer();
         System.out.println(c);
+        ask2.setBegin(true);
         c = ask2.getAskListener().getAnswer();
         System.out.println(c);
+
+        ask3.setBegin(true);
 
         l.await();
 

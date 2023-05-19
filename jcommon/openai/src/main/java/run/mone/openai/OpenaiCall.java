@@ -50,6 +50,7 @@ import java.net.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -316,6 +317,14 @@ public class OpenaiCall {
                 messageList.add(m);
             }
 
+            while (mo.getData().isBegin()){
+                try {
+                    TimeUnit.SECONDS.sleep(1);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+
             //最后一个问题
             if (mo.getData().isStream()) {
                 List<Message> qList = messageList.stream().map(it -> {
@@ -327,7 +336,6 @@ public class OpenaiCall {
                 }).collect(Collectors.toList());
 
                 builder.messages(qList);
-                ChatCompletion completion = builder.build();
 
                 streamClient(apiKey, openApiHost).streamChatCompletion(qList, new EventSourceListener() {
 
