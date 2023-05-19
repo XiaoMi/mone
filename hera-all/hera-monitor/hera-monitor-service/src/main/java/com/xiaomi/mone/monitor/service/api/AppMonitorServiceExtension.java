@@ -25,4 +25,6 @@ public interface AppMonitorServiceExtension {
     Boolean checkCreateParam(AppMonitor appMonitor);
 
     Boolean checkAppModifyStrategySearchCondition(HeraAppInfoModifyMessage message);
+
+    void changeAlarmServiceToZone(String appName);
 }

@@ -13,6 +13,7 @@ public class LogQuery implements Serializable {
     private Long startTime;
     private Long endTime;
     private Integer pageSize;
+    private Integer page;
     private Object[] beginSortValue;
     private String fullTextSearch;
     private String sortKey = "timestamp";

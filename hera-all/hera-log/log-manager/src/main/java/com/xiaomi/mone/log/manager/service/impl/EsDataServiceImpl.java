@@ -146,12 +146,12 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
             // 查询
             stopWatch.start("bool-query");
             builder.sort(logQuery.getSortKey(), logQuery.getAsc() ? ASC : DESC);
-//            if ("cn".equals(milogLogstoreDO.getMachineRoom())) {
-//                builder.sort(LogParser.esKeyMap_lineNumber, logQuery.getAsc() ? ASC : DESC);
-//            }
             // 分页
-            if (logQuery.getBeginSortValue() != null && logQuery.getBeginSortValue().length != 0) {
-                builder.searchAfter(logQuery.getBeginSortValue());
+//            if (logQuery.getBeginSortValue() != null && logQuery.getBeginSortValue().length != 0) {
+//                builder.searchAfter(logQuery.getBeginSortValue());
+//            }
+            if (null != logQuery.getPage()) {
+                builder.from((logQuery.getPage() - 1) * logQuery.getPageSize());
             }
             builder.size(logQuery.getPageSize());
             // 高亮
