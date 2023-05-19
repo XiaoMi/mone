@@ -180,6 +180,51 @@ public class OpenApiTest {
         latch.await();
     }
 
+
+    @Test
+    public void testCallStream2() throws InterruptedException {
+        String key = System.getenv("open_api_key");
+        CountDownLatch latch = new CountDownLatch(1);
+        List<Message> messages = new ArrayList<>();
+        messages.add(Message.builder().content("我给你一些内容,请你记住,然后我会开始提问 a=1 b=2").role(Message.Role.USER).build());
+        messages.add(Message.builder().content("好的").role(Message.Role.ASSISTANT).build());
+        messages.add(Message.builder().content("c=a+b,那么c=?").role(Message.Role.USER).build());
+
+        StringBuilder sb = new StringBuilder();
+        OpenaiCall.callStream(key, null, messages, new StreamListener() {
+            @Override
+            public void onEvent(String str) {
+                System.out.println(str);
+                sb.append(str);
+            }
+
+            @Override
+            public void end() {
+                latch.countDown();
+            }
+        }, ReqConfig.builder().build());
+
+        latch.await();
+
+        CountDownLatch latch2 = new CountDownLatch(1);
+        messages.add(Message.builder().content(sb.toString()).role(Message.Role.ASSISTANT).build());
+        messages.add(Message.builder().content("d=c+b,那么d=?").role(Message.Role.USER).build());
+        OpenaiCall.callStream(key, null, messages, new StreamListener() {
+            @Override
+            public void onEvent(String str) {
+                System.out.println(str);
+                sb.append(str);
+            }
+
+            @Override
+            public void end() {
+                latch2.countDown();
+            }
+        }, ReqConfig.builder().build());
+        latch2.await();
+    }
+
+
     @SneakyThrows
     @Test
     public void testEditor() {
@@ -365,7 +410,7 @@ public class OpenApiTest {
     @Test
     public void testListOpenaiModels() {
         OpenAiClient openAiClient = client();
-        openAiClient.models().stream().filter(it->it.getID().contains("code")).forEach(it -> {
+        openAiClient.models().stream().filter(it -> it.getID().contains("code")).forEach(it -> {
             System.out.println(it.getID());
         });
     }

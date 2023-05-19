@@ -194,7 +194,30 @@ public class OpenaiCall {
         return res.getChoices()[0].getText();
     }
 
+    /**
+     * 流式返回结果
+     * @param apiKey
+     * @param openApiHost
+     * @param context
+     * @param prompt
+     * @param listener
+     * @param config
+     */
     public static void callStream(String apiKey, String openApiHost, String context, String[] prompt, StreamListener listener, ReqConfig config) {
+        List<Message> messages = Lists.newArrayList(Message.builder().role(Message.Role.USER).content(String.format(context, prompt)).build());
+        callStream(apiKey,openApiHost,messages,listener,config);
+    }
+
+
+    /**
+     * 支持多伦问答
+     * @param apiKey
+     * @param openApiHost
+     * @param messages
+     * @param listener
+     * @param config
+     */
+    public static void callStream(String apiKey, String openApiHost, List<Message> messages, StreamListener listener, ReqConfig config) {
         OpenAiStreamClient client = new OpenAiStreamClient(apiKey, 50, 50, 50);
 
         if (null != openApiHost) {
@@ -207,9 +230,7 @@ public class OpenaiCall {
             }
         }
 
-        ChatCompletion.ChatCompletionBuilder builder = ChatCompletion.builder()
-                .messages(Lists.newArrayList(Message.builder().role(Message.Role.USER)
-                        .content(String.format(context, prompt)).build()));
+        ChatCompletion.ChatCompletionBuilder builder = ChatCompletion.builder().messages(messages);
 
         if (config.getMaxTokens() > 0) {
             builder.maxTokens(config.getMaxTokens());
@@ -271,6 +292,13 @@ public class OpenaiCall {
     }
 
 
+    /**
+     * 最原始的调用方式,做技术储备,不建议直接使用
+     * @param apiKey
+     * @param prompt
+     * @param proxy
+     * @return
+     */
     @SneakyThrows
     public static String callWithHttpClient(String apiKey, String prompt, String proxy) {
         HttpClientBuilder builer = HttpClients.custom();
