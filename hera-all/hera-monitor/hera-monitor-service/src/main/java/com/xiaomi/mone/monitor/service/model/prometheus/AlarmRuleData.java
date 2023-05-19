@@ -103,9 +103,9 @@ public class AlarmRuleData implements Serializable {
 
     private List<String> exceptEnvs;//不包含环境列表
 
-    private List<String> includeServices;//包含service列表
+    private List<String> includeZones;//包含zone列表
 
-    private List<String> exceptServices;//不包含service列表
+    private List<String> exceptZones;//不包含zone列表
 
     private List<String> includeModules;//包含模块列表
 
@@ -138,13 +138,13 @@ public class AlarmRuleData implements Serializable {
             String exceptEnvsStr = jsonEnv.get("exceptEnvs").getAsString();
             this.setExceptEnvs(Arrays.asList(exceptEnvsStr.split(",")));
         }
-        if (jsonEnv.has("includeServices")) {
-            String includeServices = jsonEnv.get("includeServices").getAsString();
-            this.setIncludeServices(Arrays.asList(includeServices.split(",")));
+        if (jsonEnv.has("includeZones")) {
+            String includeServices = jsonEnv.get("includeZones").getAsString();
+            this.setIncludeZones(Arrays.asList(includeServices.split(",")));
         }
-        if (jsonEnv.has("exceptServices")) {
-            String exceptServices = jsonEnv.get("exceptServices").getAsString();
-            this.setExceptServices(Arrays.asList(exceptServices.split(",")));
+        if (jsonEnv.has("exceptZones")) {
+            String exceptServices = jsonEnv.get("exceptZones").getAsString();
+            this.setExceptZones(Arrays.asList(exceptServices.split(",")));
         }
 
         if (jsonEnv.has("includeModules")) {

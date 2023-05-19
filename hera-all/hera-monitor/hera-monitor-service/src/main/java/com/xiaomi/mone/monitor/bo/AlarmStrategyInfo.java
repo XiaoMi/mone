@@ -35,8 +35,8 @@ public class AlarmStrategyInfo {
     private boolean owner;//是否是拥有者
     private List<String> includeEnvs;
     private List<String> exceptEnvs;
-    private List<String> includeServices;//包含service列表
-    private List<String> exceptServices;//不包含service列表
+    private List<String> includeZones;//包含Zone列表
+    private List<String> exceptZones;//不包含Zone列表
 
     private List<String> includeModules;//包含模块列表
 
@@ -62,13 +62,13 @@ public class AlarmStrategyInfo {
             String exceptEnvsStr = jsonEnv.get("exceptEnvs").getAsString();
             this.setExceptEnvs(Arrays.asList(exceptEnvsStr.split(",")));
         }
-        if(jsonEnv.has("includeServices")){
-            String includeServices = jsonEnv.get("includeServices").getAsString();
-            this.setIncludeServices(Arrays.asList(includeServices.split(",")));
+        if(jsonEnv.has("includeZones")){
+            String includeZones = jsonEnv.get("includeZones").getAsString();
+            this.setIncludeZones(Arrays.asList(includeZones.split(",")));
         }
-        if(jsonEnv.has("exceptServices")){
-            String exceptServices = jsonEnv.get("exceptServices").getAsString();
-            this.setExceptServices(Arrays.asList(exceptServices.split(",")));
+        if(jsonEnv.has("exceptZones")){
+            String exceptZones = jsonEnv.get("exceptZones").getAsString();
+            this.setExceptZones(Arrays.asList(exceptZones.split(",")));
         }
 
         if(jsonEnv.has("includeModules")){

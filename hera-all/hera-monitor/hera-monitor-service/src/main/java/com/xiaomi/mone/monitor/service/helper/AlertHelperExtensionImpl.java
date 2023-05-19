@@ -75,7 +75,7 @@ public class AlertHelperExtensionImpl implements AlertHelperExtension {
         labels.addProperty("serverIp", "{{$labels.serverIp}}");
         labels.addProperty("job", "{{$labels.job}}");
         labels.addProperty("group", "{{$labels.group}}");
-        if ((BasicUrlType.hera_dash_ip.equals(metric.getBasicUrlType()) || BasicUrlType.hera_dash_sip.equals(metric.getBasicUrlType())) && StringUtils.isNotBlank(heraDashUrl)) {
+        if ((BasicUrlType.hera_dash_ip.getName().equals(metric.getBasicUrlType().getName()) || BasicUrlType.hera_dash_sip.getName().equals(metric.getBasicUrlType().getName())) && StringUtils.isNotBlank(heraDashUrl)) {
             Map<String, Object> params = new HashMap<>();
             params.put("id", app.getProjectId());
             params.put("name", app.getProjectName());
@@ -88,7 +88,7 @@ public class AlertHelperExtensionImpl implements AlertHelperExtension {
                 jsonSummary.addProperty(ConstUtil.paramMapping,json.toString());
                 labels.addProperty(ConstUtil.paramType,"normal");
             }
-        } else if ((BasicUrlType.cn_grafana_ip.equals(metric.getBasicUrlType()) || BasicUrlType.cn_grafana_sip.equals(metric.getBasicUrlType()) || BasicUrlType.cn_grafana_ip_1d.equals(metric.getBasicUrlType()) || BasicUrlType.cn_grafana_sip_1d.equals(metric.getBasicUrlType())) && StringUtils.isNotBlank(cnGrafanaUrl)) {
+        } else if ((BasicUrlType.cn_grafana_ip.getName().equals(metric.getBasicUrlType().getName()) || BasicUrlType.cn_grafana_sip.getName().equals(metric.getBasicUrlType().getName()) || BasicUrlType.cn_grafana_ip_1d.getName().equals(metric.getBasicUrlType().getName()) || BasicUrlType.cn_grafana_sip_1d.getName().equals(metric.getBasicUrlType().getName())) && StringUtils.isNotBlank(cnGrafanaUrl)) {
             Map<String, Object> params = new HashMap<>();
             params.put("orgId", 1);
             params.put("refresh", "10s");
@@ -101,7 +101,7 @@ public class AlertHelperExtensionImpl implements AlertHelperExtension {
                 jsonSummary.addProperty(ConstUtil.paramMapping,json.toString());
                 labels.addProperty(ConstUtil.paramType,"normal");
             }
-        } else if (BasicUrlType.cn_grafana_disk_rate.equals(metric.getBasicUrlType()) && StringUtils.isNotBlank(cnGrafanaDiskRateUrl)) {
+        } else if (BasicUrlType.cn_grafana_disk_rate.getName().equals(metric.getBasicUrlType().getName()) && StringUtils.isNotBlank(cnGrafanaDiskRateUrl)) {
             Map<String, Object> params = new HashMap<>();
             params.put("orgId", 1);
             String url = buildUrl(cnGrafanaDiskRateUrl, metric, params);

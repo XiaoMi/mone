@@ -107,6 +107,11 @@ public class AppMonitorServiceImpl implements AppMonitorServiceExtension {
         return true;
     }
 
+    @Override
+    public void changeAlarmServiceToZone(String appName) {
+
+    }
+
 
     @Override
     public Result getResourceUsageUrl(Integer appId, String appName) {
