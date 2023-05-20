@@ -111,7 +111,7 @@ public class ClientMessageQueue {
 
     public void enqueue(String traceId, MessageExt message) {
         try {
-            // 根据traceId hash
+            // hash by traceId
             int i = HashUtil.consistentHash(traceId, rocketMQQueueSize);
             ClientMessageQueueWrapper clientMessageQueueWrapper = clientMessageQueues.get(i);
             clientMessageQueueWrapper.getClientMessageQueue().put(message);
