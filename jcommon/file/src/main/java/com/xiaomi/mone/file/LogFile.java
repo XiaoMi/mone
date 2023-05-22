@@ -70,6 +70,7 @@ public class LogFile {
             //4kb
             this.raf = new MoneRandomAccessFile(file, "r", 1024 * 4);
             reOpen = false;
+            reFresh = false;
         } catch (InterruptedException e) {
             log.error("open file InterruptedException", e);
         } catch (FileNotFoundException e) {
