@@ -42,10 +42,6 @@ public class LogFile {
     //每次读取时文件的最大偏移量
     private long maxPointer;
 
-    private long readTimeMillSecond = Instant.now().toEpochMilli();
-
-    private long maxTimeOut = 2 * 60 * 1000;
-
     private String md5;
 
     private static final int LINE_MAX_LENGTH = 50000;
@@ -133,7 +129,6 @@ public class LogFile {
                 readResult.setPointer(pointer);
                 readResult.setFileMaxPointer(maxPointer);
                 readResult.setLineNumber(++lineNumber);
-                readTimeMillSecond = Instant.now().toEpochMilli();
                 ReadEvent event = new ReadEvent(readResult);
 
                 listener.onEvent(event);
@@ -147,19 +142,17 @@ public class LogFile {
 
     private void contentCuttingProcessing(String line) throws IOException {
         long currentTimeStamp = Instant.now().toEpochMilli();
-        if (null == line && currentTimeStamp - readTimeMillSecond > maxTimeOut) {
-            Long currentFileMaxPointer = 0L;
-            try {
-                currentFileMaxPointer = raf.length();
-            } catch (IOException e) {
-                log.error("get fileMaxPointer error", e);
-            }
-            if (currentFileMaxPointer < maxPointer) {
-                log.info("file content has Cutting ,fileName:{},readTimeMillSecond:{},currentTimeStamp:{}", file, readTimeMillSecond, currentTimeStamp);
-                pointer = 0;
-                lineNumber = 0;
-                raf.seek(pointer);
-            }
+        Long currentFileMaxPointer = 0L;
+        try {
+            currentFileMaxPointer = raf.length();
+        } catch (IOException e) {
+            log.error("get fileMaxPointer error", e);
+        }
+        if (null == line && currentFileMaxPointer < maxPointer) {
+            log.info("file content has Cutting ,fileName:{},readTimeMillSecond:{},currentTimeStamp:{}", file, readTimeMillSecond, currentTimeStamp);
+            pointer = 0;
+            lineNumber = 0;
+            raf.seek(pointer);
         }
     }
 
