@@ -96,7 +96,6 @@ public class LogFile {
             raf.seek(pointer);
 
             while (true) {
-
                 String line = raf.getNextLine();
                 //大行文件先临时截断
                 line = lineCutOff(line);
