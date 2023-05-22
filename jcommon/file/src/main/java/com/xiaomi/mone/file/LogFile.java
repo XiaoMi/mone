@@ -149,7 +149,7 @@ public class LogFile {
             log.error("get fileMaxPointer error", e);
         }
         if (null == line && currentFileMaxPointer < maxPointer) {
-            log.info("file content has Cutting ,fileName:{},readTimeMillSecond:{},currentTimeStamp:{}", file, readTimeMillSecond, currentTimeStamp);
+            log.info("file content has Cutting ,fileName:{},currentTimeStamp:{}", file, currentTimeStamp);
             pointer = 0;
             lineNumber = 0;
             raf.seek(pointer);
