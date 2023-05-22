@@ -12,7 +12,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
-import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -94,13 +93,8 @@ public class LogFile {
 
             while (true) {
                 String line = raf.getNextLine();
-                if (null != line) {
-                    //line = new String(line.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
-                    //todo 大行文件先临时截断
-                    if (line.length() > LINE_MAX_LENGTH) {
-                        line = line.substring(0, LINE_MAX_LENGTH);
-                    }
-                }
+                //大行文件先临时截断
+                line = lineCutOff(line);
 
                 if (reOpen) {
                     pointer = 0;
@@ -111,7 +105,14 @@ public class LogFile {
                     break;
                 }
 
-                contentCuttingProcessing(line);
+                //文件内容被切割，重头开始采集内容
+                if (contentHasCutting(line)) {
+                    reOpen = true;
+                    pointer = 0;
+                    lineNumber = 0;
+                    log.warn("file:{} content have been cut, goto reOpen file", file);
+                    break;
+                }
 
                 if (listener.isContinue(line)) {
                     continue;
@@ -140,31 +141,45 @@ public class LogFile {
         }
     }
 
-    private void contentCuttingProcessing(String line) throws IOException {
-        long currentTimeStamp = Instant.now().toEpochMilli();
+    private String lineCutOff(String line) {
+        if (null != line) {
+            //todo 大行文件先临时截断
+            if (line.length() > LINE_MAX_LENGTH) {
+                line = line.substring(0, LINE_MAX_LENGTH);
+            }
+        }
+
+        return line;
+    }
+
+    private boolean contentHasCutting(String line) throws IOException {
+        if (null != line) {
+            return false;
+        }
+
         long currentFileMaxPointer;
         try {
             currentFileMaxPointer = raf.length();
             if (currentFileMaxPointer == 0L) {
                 raf.getFD().sync();
-                TimeUnit.MILLISECONDS.sleep(50);
+                TimeUnit.MILLISECONDS.sleep(30);
                 currentFileMaxPointer = raf.length();
             }
         } catch (IOException e) {
             log.error("get fileMaxPointer IOException", e);
-            return;
+            return false;
         } catch (InterruptedException e) {
             log.error("get fileMaxPointer InterruptedException", e);
-            return;
+            return false;
         }
 
-        if (null == line && currentFileMaxPointer < maxPointer) {
-            System.out.println("currentFileMaxPointer:" + currentFileMaxPointer);
-            log.info("file content has Cutting ,fileName:{},currentTimeStamp:{}", file, currentTimeStamp);
-            pointer = 0;
-            lineNumber = 0;
-            raf.seek(pointer);
+        //针对大文件,排除掉局部内容删除的情况,更准确识别内容整体切割的场景（误判重复采集成本较高）
+        long mPointer = maxPointer > 70000 ? maxPointer-700 : maxPointer;
+        if (currentFileMaxPointer < mPointer) {
+            return true;
         }
+
+        return false;
     }
 
 
