@@ -108,10 +108,9 @@ public abstract class AbstractInterceptor implements MethodInterceptor {
                 exceptionProcessor.processException(res);
                 break;
             } catch (Throwable ex) {
-                if (++i >= retries) {
+                if (++i > retries) {
                     throw ex;
                 }
-                exceptionProcessor.processException(ex);
                 TimeUnit.MILLISECONDS.sleep(200);
             }
         }

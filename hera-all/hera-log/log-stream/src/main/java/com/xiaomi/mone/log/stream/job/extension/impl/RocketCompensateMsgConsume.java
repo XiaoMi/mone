@@ -1,5 +1,6 @@
 package com.xiaomi.mone.log.stream.job.extension.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.google.gson.internal.LinkedTreeMap;
 import com.google.gson.reflect.TypeToken;
 import com.xiaomi.mone.es.EsProcessor;
@@ -99,8 +100,8 @@ public class RocketCompensateMsgConsume implements CompensateMsgConsume {
                 }.getType());
                 Object timestampObject = hashMap.get(LogParser.esKeyMap_timestamp);
                 try {
-                    long timeStamp = Long.parseLong(String.valueOf(timestampObject));
-                    if (String.valueOf(timeStamp).length() != LogParser.TIME_STAMP_MILLI_LENGTH) {
+                    Long timeStamp = JSON.parseObject(message).getLong(LogParser.esKeyMap_timestamp);
+                    if (null != timeStamp && String.valueOf(timeStamp).length() != LogParser.TIME_STAMP_MILLI_LENGTH) {
                         hashMap.put(LogParser.esKeyMap_timestamp, Instant.now().toEpochMilli());
                     }
                 } catch (Exception e) {

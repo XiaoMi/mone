@@ -301,6 +301,9 @@ public class AppAlarmStrategyDaoImpl implements AppAlarmStrategyDao {
             if (strategy.getAppId() != null) {
                 sqlB.append(" and an.appId=").append(strategy.getAppId());
             }
+            if (strategy.getIamId() != null) {
+                sqlB.append(" and an.iamId=").append(strategy.getIamId());
+            }
             if (StringUtils.isNotBlank(strategy.getAppName())) {
                 sqlB.append(" and an.appName = ").append("@appName");
             }

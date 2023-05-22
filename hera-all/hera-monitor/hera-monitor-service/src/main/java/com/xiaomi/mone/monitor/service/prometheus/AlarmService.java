@@ -6,10 +6,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.xiaomi.mone.monitor.bo.AlarmRuleMetricType;
-import com.xiaomi.mone.monitor.bo.AppendLabelType;
-import com.xiaomi.mone.monitor.bo.PresetMetricLabels;
-import com.xiaomi.mone.monitor.bo.ResourceUsageMetrics;
+import com.xiaomi.mone.monitor.bo.*;
 import com.xiaomi.mone.monitor.dao.model.AppAlarmRule;
 import com.xiaomi.mone.monitor.dao.model.AppMonitor;
 import com.xiaomi.mone.monitor.pojo.AlarmPresetMetricsPOJO;
@@ -61,6 +58,7 @@ public class AlarmService {
     private static final String oracle_error_metric = "oracleError";
     private static final String dubbo_consumer_error_metric = "dubboConsumerError";
     private static final String dubbo_provider_error_metric = "dubboProviderError";
+    private static final String dubbo_provier_sla_error_metric = "dubboProviderSLAError";
     private static final String redis_error_metric = "redisError";
     private static final String es_error_metric = "elasticsearchClientError";
 
@@ -93,6 +91,7 @@ public class AlarmService {
     private static final String dubbo_avalible_success_metric = "dubboBisSuccessCount";
     private static final String dubbo_avalible_total_metric = "dubboBisTotalCount";
     private static final String dubbo_provider_avalible_total_metric = "dubboMethodCalledCount";
+    private static final String dubbo_provider_sla_avalible_total_metric = "dubboProviderSLACount";
     private static final String dubbo_consumer_time_cost = "dubboConsumerTimeCost";
     private static final String dubbo_provider_time_cost = "dubboProviderCount";
     //db
@@ -270,6 +269,12 @@ public class AlarmService {
                 return getAvailableRate(dubbo_consumer_error_metric,dubbo_avalible_total_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,avalible_duration_time,null,rule.getOp(),rule.getValue());
             case "dubbo_provider_availability":
                 return getAvailableRate(dubbo_provider_error_metric,dubbo_provider_avalible_total_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,avalible_duration_time,null,rule.getOp(),rule.getValue());
+
+            case "dubbo_sla_error_times":
+                return getPresetMetricSLAErrorAlarm(dubbo_provier_sla_error_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,scrapeIntervel,null,rule.getOp(),rule.getValue());
+            case "dubbo_sla_availability":
+                return getSlaAvailableRate(dubbo_provier_sla_error_metric,dubbo_provider_sla_avalible_total_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,avalible_duration_time,null,rule.getOp(),rule.getValue());
+
             case "db_error_times":
                 return getPresetMetricErrorAlarm(db_error_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,scrapeIntervel,null,rule.getOp(),rule.getValue());
             case "db_slow_query":
@@ -328,7 +333,7 @@ public class AlarmService {
             case "k8s_mem_resource_use_rate":
                 return getContainerMemReourceAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),true);
 
-           case "k8s_cpu_avg_use_rate":
+            case "k8s_cpu_avg_use_rate":
                 return getK8sCpuAvgUsageAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue());
 
             case "jvm_heap_mem_use_rate":
@@ -459,8 +464,8 @@ public class AlarmService {
             if(!CollectionUtils.isEmpty(ruleData.getIncludeEnvs())){
                 fillLabels(map,"serverEnv",String.join(",",ruleData.getIncludeEnvs()));
             }
-            if(!CollectionUtils.isEmpty(ruleData.getIncludeServices())){
-                fillLabels(map,"service",String.join(",",ruleData.getIncludeServices()));
+            if(!CollectionUtils.isEmpty(ruleData.getIncludeZones())){
+                fillLabels(map,"serverZone",String.join(",",ruleData.getIncludeZones()));
             }
 
 //            if(!CollectionUtils.isEmpty(ruleData.getIncludeModules())){
@@ -476,8 +481,8 @@ public class AlarmService {
             if(!CollectionUtils.isEmpty(ruleData.getExceptEnvs())){
                 fillLabels(map,"serverEnv",String.join(",",ruleData.getExceptEnvs()));
             }
-            if(!CollectionUtils.isEmpty(ruleData.getExceptServices())){
-                fillLabels(map,"service",String.join(",",ruleData.getExceptServices()));
+            if(!CollectionUtils.isEmpty(ruleData.getExceptZones())){
+                fillLabels(map,"serverZone",String.join(",",ruleData.getExceptZones()));
             }
 
 //            if(!CollectionUtils.isEmpty(ruleData.getExceptModules())){
@@ -537,14 +542,57 @@ public class AlarmService {
         StringBuilder expBuilder = new StringBuilder();
         expBuilder
                 .append("clamp_min((1-(")
-                .append("sum(sum_over_time(").append(errorMetricComplete).append("))").append(" by (application,system,serverIp,serviceName,methodName,sqlMethod,service,serverEnv,sql,dataSource,functionModule,functionName)")
+                .append("sum(sum_over_time(").append(errorMetricComplete).append("))").append(" by (application,system,serverIp,serviceName,methodName,sqlMethod,serverEnv,serverZone,sql,dataSource,functionModule,functionName)")
                 .append("/")
-                .append("sum(sum_over_time(").append(totalMetricComplate).append("))").append(" by (application,system,serverIp,serviceName,methodName,sqlMethod,service,serverEnv,sql,dataSource,functionModule,functionName)")
+                .append("sum(sum_over_time(").append(totalMetricComplate).append("))").append(" by (application,system,serverIp,serviceName,methodName,sqlMethod,serverEnv,serverZone,sql,dataSource,functionModule,functionName)")
                 .append(")),0) * 100")
                 .append(op).append(value);
 
 
         log.info("AlarmService.getAvailableRate param" +
+                        ":errorMetric:{},totalMetric:{},projectId:{},projectName:{},includeLabels:{},exceptLabels:{},metricSuffix:{},duration:{},offset:{},op:{},value:{},return : {}"
+                ,errorMetric,totalMetric,projectId,projectName,includeLabels,exceptLabels,metricSuffix,duration,offset,op,value,expBuilder.toString());
+        return expBuilder.toString();
+    }
+
+    public String getSlaAvailableRate(String errorMetric,String totalMetric,Integer projectId,String projectName,Map includeLabels,Map exceptLabels,String metricSuffix,String duration,String offset,String op,Float value){
+
+        String errorMetricComplete = prometheusService.completeMetricForAlarm(errorMetric, includeLabels,exceptLabels, projectId,projectName, metricSuffix,  duration, null);
+
+        if(!CollectionUtils.isEmpty(includeLabels)){
+            Iterator iterator = includeLabels.entrySet().iterator();
+            while (iterator.hasNext()){
+                Map.Entry next = (Map.Entry) iterator.next();
+                if(next.getKey().equals(PresetMetricLabels.http_error_code.getLabelName())){
+                    iterator.remove();
+                }
+            }
+        }
+
+        if(!CollectionUtils.isEmpty(exceptLabels)){
+            Iterator iterator = exceptLabels.entrySet().iterator();
+            while (iterator.hasNext()){
+                Map.Entry next = (Map.Entry) iterator.next();
+                if(next.getKey().equals(PresetMetricLabels.http_error_code.getLabelName())){
+                    iterator.remove();
+                }
+            }
+        }
+
+
+        String totalMetricComplate = prometheusService.completeMetricForAlarm(totalMetric, includeLabels,exceptLabels, projectId,projectName, metricSuffix,  duration, null);
+
+        StringBuilder expBuilder = new StringBuilder();
+        expBuilder
+                .append("clamp_min((1-(")
+                .append("sum(sum_over_time(").append(errorMetricComplete).append("))").append(" by (application,system,serverIp,serviceName,methodName,sqlMethod,serverEnv,serverZone,sql,dataSource,functionModule,functionName,clientProjectId,clientProjectName,clientEnv,clientEnvId,clientIp)")
+                .append("/")
+                .append("sum(sum_over_time(").append(totalMetricComplate).append("))").append(" by (application,system,serverIp,serviceName,methodName,sqlMethod,serverEnv,serverZone,sql,dataSource,functionModule,functionName,clientProjectId,clientProjectName,clientEnv,clientEnvId,clientIp)")
+                .append(")),0) * 100")
+                .append(op).append(value);
+
+
+        log.info("AlarmService.getSlaAvailableRate param" +
                         ":errorMetric:{},totalMetric:{},projectId:{},projectName:{},includeLabels:{},exceptLabels:{},metricSuffix:{},duration:{},offset:{},op:{},value:{},return : {}"
                 ,errorMetric,totalMetric,projectId,projectName,includeLabels,exceptLabels,metricSuffix,duration,offset,op,value,expBuilder.toString());
         return expBuilder.toString();
@@ -667,7 +715,7 @@ public class AlarmService {
             exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
         }
 
-        exprBuilder.append("}[1d])) by (container_label_PROJECT_ID,application,ip,job,name,system,instance,id,serverEnv)) * 100");
+        exprBuilder.append("}[1d])) by (container_label_PROJECT_ID,application,ip,job,name,system,instance,id,serverEnv,serverZone)) * 100");
         exprBuilder.append(op).append(value);
         log.info("getContainerMemReourceAlarmExpr param: projectId:{}, projectName:{}, op:{},value:{}, return:{}",projectId, projectName, op,value, exprBuilder.toString());
         return exprBuilder.toString();
@@ -781,6 +829,7 @@ public class AlarmService {
 
         Map result = new HashMap();
         Map<String,Map<String,Object>> mapResult = new HashMap<>();
+        Map<String, HashSet<String>> allZones = new HashMap<>();
         Set allIps = new HashSet();
         for(Metric metric : metrics){
 
@@ -796,12 +845,16 @@ public class AlarmService {
             HashSet ipList = (HashSet<String>)stringObjectMap.get("envIps");
             ipList.add(metric.getServerIp());
 
-            if(StringUtils.isNotBlank(metric.getService())){
-                stringObjectMap.putIfAbsent("serviceList", new HashMap<>());
-                HashMap serviceList = (HashMap<String,Set<String>>)stringObjectMap.get("serviceList");
+            if(StringUtils.isNotBlank(metric.getServerZone())){
+                allZones.putIfAbsent(metric.getServerZone(),new HashSet<String>());
+                HashSet<String> zoneIps = allZones.get(metric.getServerZone());
+                zoneIps.add(metric.getServerIp());
 
-                serviceList.putIfAbsent(metric.getService(), new HashSet<String>());
-                HashSet<String> ips = (HashSet<String>)serviceList.get(metric.getService());
+                stringObjectMap.putIfAbsent("zoneList", new HashMap<>());
+                HashMap serviceList = (HashMap<String,Set<String>>)stringObjectMap.get("zoneList");
+
+                serviceList.putIfAbsent(metric.getServerZone(), new HashSet<String>());
+                HashSet<String> ips = (HashSet<String>)serviceList.get(metric.getServerZone());
 
                 ips.add(metric.getServerIp());
             }
@@ -809,6 +862,7 @@ public class AlarmService {
 
         result.put("allIps",allIps);
         result.put("envIpMapping",mapResult);
+        result.put("allZones",allZones);
 
         return result;
     }
@@ -875,7 +929,7 @@ public class AlarmService {
         StringBuilder expBuilder = new StringBuilder();
         expBuilder.append("sum(")
                 .append("sum_over_time").append("(").append(s).append(")")
-                .append(") by (application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,service,serverEnv,sql,dataSource,functionModule,functionName)")
+                .append(") by (application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,serverEnv,serverZone,sql,dataSource,functionModule,functionName)")
                 .append(op).append(value);
 
 
@@ -885,11 +939,27 @@ public class AlarmService {
         return expBuilder.toString();
     }
 
+    public String getPresetMetricSLAErrorAlarm(String sourceMetric,Integer projectId,String projectName,Map includeLabels,Map exceptLabels,String metricSuffix,String duration,String offset,String op,Float value){
+        String s = prometheusService.completeMetricForAlarm(sourceMetric, includeLabels,exceptLabels, projectId,projectName, metricSuffix,  duration, null);
+
+        StringBuilder expBuilder = new StringBuilder();
+        expBuilder.append("sum(")
+                .append("sum_over_time").append("(").append(s).append(")")
+                .append(") by (application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,serverEnv,serverZone,sql,dataSource,functionModule,functionName,clientProjectId,clientProjectName,clientEnv,clientEnvId,clientIp)")
+                .append(op).append(value);
+
+
+        log.info("AlarmService.getPresetMetricSLAErrorAlarm param" +
+                        ":sourceMetric:{},projectId:{},projectName:{},includeLabels:{},exceptLabels:{},metricSuffix:{},duration:{},offset:{},op:{},value:{},return : {}"
+                ,sourceMetric,projectId,projectName,includeLabels,exceptLabels,metricSuffix,duration,offset,op,value,expBuilder.toString());
+        return expBuilder.toString();
+    }
+
     private String getPresetMetricQpsAlarm(String sourceMetric,Integer projectId,String projectName,Map includeLabels,Map exceptLabels,String metricSuffix,String duration, String offset,String op,Float value){
         String s = prometheusService.completeMetricForAlarm(sourceMetric, includeLabels,exceptLabels, projectId,projectName, metricSuffix,  duration, null);
         StringBuilder expBuilder = new StringBuilder();
         expBuilder.append("sum(sum_over_time(").append(s).append(")/").append(evaluationDuration).append(") by (")
-                .append("application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,service,serverEnv,functionModule,functionName").append(")").append(op).append(value);
+                .append("application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,serverEnv,serverZone,functionModule,functionName").append(")").append(op).append(value);
         log.info("AlarmService.getPresetMetricQpsAlarm param" +
                         ":sourceMetric:{},projectId:{},projectName:{},includeLabels:{},exceptLabels:{},metricSuffix:{},duration:{},offset:{},op:{},value:{},return : {}"
                 ,sourceMetric,projectId,projectName,includeLabels,exceptLabels,metricSuffix,duration,offset,op,value,expBuilder.toString());
@@ -901,10 +971,10 @@ public class AlarmService {
         String countSource = prometheusService.completeMetricForAlarm(sourceMetric, includeLabels,exceptLabels, projectId,projectName, metric_count_suffix,  duration, null);
         StringBuilder expBuilder = new StringBuilder();
         expBuilder.append("sum(sum_over_time(").append(sumSource).append(")) by (")
-                .append("application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,service,serverEnv,functionModule,functionName").append(")")
+                .append("application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,serverEnv,serverZone,functionModule,functionName").append(")")
                 .append(" / ")
                 .append("sum(sum_over_time(").append(countSource).append(")) by (")
-                .append("application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,service,serverEnv,functionModule,functionName").append(") ")
+                .append("application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,serverEnv,serverZone,functionModule,functionName").append(") ")
                 .append(op).append(value);
         log.info("AlarmService.getPresetMetricQpsAlarm expr={}", expBuilder.toString());
         return expBuilder.toString();
@@ -915,11 +985,11 @@ public class AlarmService {
         exprBuilder.append("(sum(jvm_memory_used_bytes{");
         exprBuilder.append("application=").append("'").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'").append(",");
         exprBuilder.append("area=").append("'").append(type).append("'");
-        exprBuilder.append("}) by (application,area,instance,serverEnv,serverIp,service,system)/ ");
+        exprBuilder.append("}) by (application,area,instance,serverEnv,serverZone,serverIp,service,system)/ ");
         exprBuilder.append("sum(jvm_memory_max_bytes{");
         exprBuilder.append("application=").append("'").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'").append(",");
         exprBuilder.append("area=").append("'").append(type).append("'");
-        exprBuilder.append("}) by (application,area,instance,serverEnv,serverIp,service,system)) * 100");
+        exprBuilder.append("}) by (application,area,instance,serverEnv,serverZone,serverIp,service,system)) * 100");
         exprBuilder.append(op).append(value);
         log.info("getJvmMemAlarmExpr param: projectId:{}, projectName:{}, type:{}, return:{}",projectId, projectName,type, exprBuilder.toString());
         return exprBuilder.toString();
@@ -994,6 +1064,22 @@ public class AlarmService {
         if (StringUtils.isNotBlank(rule.getRemark())) {
             jsonSummary.addProperty("summary", rule.getRemark());
         }
+
+        if(rule.getAlert().equals(AlarmPresetMetrics.dubbo_sla_error_times.getCode()) || rule.getAlert().equals(AlarmPresetMetrics.dubbo_sla_availability)){
+
+            String clientInfo = "<br>clientProjectId{{$labels.clientProjectId}}," +
+                    "<br>clientProjectName{{$labels.clientProjectName}}," +
+                    "<br>clientEnv{{$labels.clientEnv}}," +
+                    "<br>clientIp{{$labels.clientIp}}";
+            String summary = jsonSummary.get("summary") == null ? null : jsonSummary.get("summary").getAsString();
+
+            if(summary == null){
+                jsonSummary.addProperty("summary", clientInfo);
+            }else{
+                jsonSummary.addProperty("summary",summary + " " + clientInfo);
+            }
+        }
+
         if (StringUtils.isNotBlank(ruleData.getAlarmCallbackUrl())) {
             jsonSummary.addProperty("callback_url", ruleData.getAlarmCallbackUrl());
         }
@@ -1195,6 +1281,22 @@ public class AlarmService {
         if (StringUtils.isNotBlank(rule.getRemark())) {
             jsonSummary.addProperty("summary", rule.getRemark());
         }
+
+        if(rule.getAlert().equals(AlarmPresetMetrics.dubbo_sla_error_times.getCode()) || rule.getAlert().equals(AlarmPresetMetrics.dubbo_sla_availability)){
+
+            String clientInfo = "<br>clientProjectId{{$labels.clientProjectId}}," +
+                    "<br>clientProjectName{{$labels.clientProjectName}}," +
+                    "<br>clientEnv{{$labels.clientEnv}}," +
+                    "<br>clientIp{{$labels.clientIp}}";
+            String summary = jsonSummary.get("summary") == null ? null : jsonSummary.get("summary").getAsString();
+
+            if(summary == null){
+                jsonSummary.addProperty("summary", clientInfo);
+            }else{
+                jsonSummary.addProperty("summary",summary + " " + clientInfo);
+            }
+        }
+
         if (StringUtils.isNotBlank(ruleData.getAlarmCallbackUrl())) {
             jsonSummary.addProperty("callback_url", ruleData.getAlarmCallbackUrl());
         }

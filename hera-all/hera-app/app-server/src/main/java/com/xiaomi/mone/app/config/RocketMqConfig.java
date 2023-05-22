@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
  * @description
  * @date 2022/11/11 19:42
  */
-@Configuration
+//@Configuration
 @Slf4j
 public class RocketMqConfig {
 

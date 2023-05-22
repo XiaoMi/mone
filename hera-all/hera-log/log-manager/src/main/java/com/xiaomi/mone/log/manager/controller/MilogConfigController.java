@@ -308,6 +308,19 @@ public class MilogConfigController {
     }
 
     /**
+     * 查询当前应用的space和store
+     *
+     * @param appId
+     * @param platFormCode
+     * @return
+     */
+    @RequestMapping(path = "/milog/store/app", method = "get")
+    public Result<QuickQueryVO> queryAppStore(@RequestParam(value = "appId") Long appId,
+                                              @RequestParam(value = "platFormCode") Integer platFormCode) {
+        return logTailService.queryAppStore(appId, platFormCode);
+    }
+
+    /**
      * 查询当前创建用户所在部门的下的es索引列表
      *
      * @param regionCode

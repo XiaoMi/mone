@@ -112,11 +112,11 @@ public class AlarmStrategyService {
             envs.addProperty("exceptEnvs",String.join(",", param.getExceptEnvs()));
         }
 
-        if(!CollectionUtils.isEmpty(param.getIncludeServices())){
-            envs.addProperty("includeServices",String.join(",", param.getIncludeServices()));
+        if(!CollectionUtils.isEmpty(param.getIncludeZones())){
+            envs.addProperty("includeZones",String.join(",", param.getIncludeZones()));
         }
-        if(!CollectionUtils.isEmpty(param.getExceptEnvs())){
-            envs.addProperty("exceptServices",String.join(",", param.getExceptServices()));
+        if(!CollectionUtils.isEmpty(param.getExceptZones())){
+            envs.addProperty("exceptZones",String.join(",", param.getExceptZones()));
         }
 
         if(!CollectionUtils.isEmpty(param.getIncludeModules())){
@@ -172,11 +172,11 @@ public class AlarmStrategyService {
             envs.addProperty("exceptEnvs",String.join(",", param.getExceptEnvs()));
         }
 
-        if(!CollectionUtils.isEmpty(param.getIncludeServices())){
-            envs.addProperty("includeServices",String.join(",", param.getIncludeServices()));
+        if(!CollectionUtils.isEmpty(param.getIncludeZones())){
+            envs.addProperty("includeZones",String.join(",", param.getIncludeZones()));
         }
         if(!CollectionUtils.isEmpty(param.getExceptEnvs())){
-            envs.addProperty("exceptServices",String.join(",", param.getExceptServices()));
+            envs.addProperty("exceptZones",String.join(",", param.getExceptZones()));
         }
 
         if(!CollectionUtils.isEmpty(param.getIncludeModules())){
@@ -315,6 +315,40 @@ public class AlarmStrategyService {
         PageData<List<AlarmStrategyInfo>> pageData = appAlarmStrategyDao.searchByCond(user, param.isOwner(),strategy, param.getPage(), param.getPageSize(),param.getSortBy(),param.getSortOrder());
         ruleDataHandler(pageData.getList());
         return Result.success(pageData);
+    }
+
+    private List<AlarmStrategyInfo> listStrategyByAppIdAndIamId(Integer appId,Integer iamId){
+
+        AlarmStrategy strategy = new AlarmStrategy();
+        strategy.setStatus(0);
+        strategy.setAppId(appId);
+        strategy.setIamId(iamId);
+        PageData<List<AlarmStrategyInfo>> listPageData = appAlarmStrategyDao.searchByCondNoUser(strategy, 1, 5000, null, null);
+        if(listPageData == null){
+            return null;
+        }
+        return listPageData.getList();
+    }
+
+    public void deleteByAppIdAndIamId(Integer appId,Integer iamId){
+        List<AlarmStrategyInfo> alarmStrategyInfos = listStrategyByAppIdAndIamId(appId, iamId);
+        if(CollectionUtils.isEmpty(alarmStrategyInfos)){
+            log.info("AlarmStrategyService#deleteByAppIdAndIamId no data found!appId:{},iamId:{}",appId,iamId);
+            return;
+        }
+
+        for(AlarmStrategyInfo strategy : alarmStrategyInfos){
+
+            Result result = appAlarmService.deleteRulesByIamId(strategy.getIamId() ,strategy.getId(), null);
+            if (result.getCode() != ErrorCode.success.getCode()) {
+                log.error("deleteByAppIdAndIamId delete alarmRules fail! strategy : {}",strategy.toString());
+                continue;
+            }
+            if (!appAlarmStrategyDao.deleteById(strategy.getId())) {
+                log.error("deleteByAppIdAndIamId delete strategy fail! strategy : {}",strategy.toString());
+                continue;
+            }
+        }
     }
 
     public Result<PageData> dubboSearch(String user, AlarmStrategyParam param) {

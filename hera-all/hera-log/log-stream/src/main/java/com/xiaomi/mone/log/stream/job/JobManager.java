@@ -110,15 +110,14 @@ public class JobManager {
             String sinkProviderBean = sinkJobConfig.getMqType() + LogStreamConstants.sinkJobProviderBeanSuffix;
             SinkJobProvider sinkJobProvider = Ioc.ins().getBean(sinkProviderBean);
             SinkJob instanceSinkJobEs = sinkJobProvider.getSinkJob(sinkJobConfig);
-            SinkJob instanceSinkJobBackup = sinkJobProvider.getSinkJobBackup(sinkJobConfig);
+
             if (instanceSinkJobEs.start()) {
                 jobs.putIfAbsent(logtailConfig.getLogtailId(), Lists.newArrayList());
                 jobs.get(logtailConfig.getLogtailId()).add(instanceSinkJobEs);
             }
-
-            if (null != instanceSinkJobBackup && instanceSinkJobBackup.start()) {
-                jobs.putIfAbsent(logtailConfig.getLogtailId(), Lists.newArrayList());
-                jobs.get(logtailConfig.getLogtailId()).add(instanceSinkJobBackup);
+            SinkJob providerBackupJob = sinkJobProvider.getBackupJob(sinkJobConfig);
+            if (null != providerBackupJob && providerBackupJob.start()) {
+                jobs.get(logtailConfig.getLogtailId()).add(providerBackupJob);
             }
             log.info(String.format("[JobManager.initJobs] startJob success,logTailId:%s,topic:%s,tag:%s,esIndex:%s", logtailConfig.getLogtailId(), logtailConfig.getTopic(), logtailConfig.getTag(), esIndex));
         } catch (Exception e) {

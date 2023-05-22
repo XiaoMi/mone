@@ -442,7 +442,7 @@ public class PrometheusService {
         StringBuilder sb = new StringBuilder();
         sb.append("sum(sum_over_time(");
         sb.append(source);
-        sb.append(")) by (serverIp,job,application,methodName,serviceName,dataSource,sqlMethod,sql,serverEnv,method) ");
+        sb.append(")) by (serverIp,job,application,methodName,serviceName,dataSource,sqlMethod,sql,serverEnv,serverZone,method) ");
 
         return sb.toString();
     }

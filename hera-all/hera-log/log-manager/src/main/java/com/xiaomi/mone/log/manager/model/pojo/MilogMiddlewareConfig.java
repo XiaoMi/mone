@@ -1,9 +1,9 @@
 package com.xiaomi.mone.log.manager.model.pojo;
 
-import com.xiaomi.mone.log.api.enums.MachineRegionEnum;
 import com.xiaomi.mone.log.api.model.bo.MiLogResource;
 import com.xiaomi.mone.log.api.model.vo.ResourceInfo;
 import com.xiaomi.mone.log.manager.model.BaseCommon;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionServiceFactory;
 import lombok.Data;
 import org.nutz.dao.entity.annotation.*;
 
@@ -113,7 +113,7 @@ public class MilogMiddlewareConfig extends BaseCommon implements Serializable {
         return ResourceInfo.builder().id(this.id)
                 .alias(this.alias)
                 .regionEn(this.regionEn)
-                .regionCn(MachineRegionEnum.queryCnByEn(this.regionEn))
+                .regionCn(CommonExtensionServiceFactory.getCommonExtensionService().getMachineRoomName(this.regionEn))
                 .clusterName(this.nameServer)
                 .serviceUrl(this.serviceUrl)
                 .brokerName(this.brokerName)

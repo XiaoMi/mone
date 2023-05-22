@@ -31,8 +31,8 @@ public class AlarmRuleRequest implements Serializable {
     private String appAlias;
     private List<String> includeEnvs;//包含环境列表
     private List<String> exceptEnvs;//不包含环境列表
-    private List<String> includeServices;//包含service列表
-    private List<String> exceptServices;//不包含service列表
+    private List<String> includeZones;//包含zone列表
+    private List<String> exceptZones;//不包含zone列表
     private List<String> includeModules;//包含模块列表
     private List<String> exceptModules;//不包含模块列表
     private List<String> includeFunctions;//包含函数列表
@@ -52,11 +52,11 @@ public class AlarmRuleRequest implements Serializable {
             envs.addProperty("exceptEnvs",String.join(",", this.getExceptEnvs()));
         }
 
-        if(!CollectionUtils.isEmpty(this.getIncludeServices())){
-            envs.addProperty("includeServices",String.join(",", this.getIncludeServices()));
+        if(!CollectionUtils.isEmpty(this.getIncludeZones())){
+            envs.addProperty("includeZones",String.join(",", this.getIncludeZones()));
         }
         if(!CollectionUtils.isEmpty(this.getExceptEnvs())){
-            envs.addProperty("exceptServices",String.join(",", this.getExceptServices()));
+            envs.addProperty("exceptZones",String.join(",", this.getExceptZones()));
         }
 
         if(!CollectionUtils.isEmpty(this.getIncludeModules())){

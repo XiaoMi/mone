@@ -45,4 +45,6 @@ public interface StoreExtensionService {
     String getMangerEsLabel();
 
     boolean updateLogStore(MilogLogStoreDO ml);
+
+    boolean isNeedSendMsgType(Integer logType);
 }

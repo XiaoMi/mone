@@ -51,14 +51,20 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.junit.Assert;
 import org.junit.Test;
+import run.mone.openai.Ask;
 import run.mone.openai.OpenaiCall;
+import run.mone.openai.ReqConfig;
+import run.mone.openai.StreamListener;
+import run.mone.openai.listener.AskListener;
 import run.mone.openai.net.FakeDnsResolver;
 import run.mone.openai.net.MyConnectionSocketFactory;
 import run.mone.openai.net.MySSLConnectionSocketFactory;
 
 import javax.net.ssl.SSLContext;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.net.*;
@@ -67,6 +73,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -153,6 +160,199 @@ public class OpenApiTest {
 //                .proxy(proxy)
                 .build();
         return openAiClient;
+    }
+
+
+    @SneakyThrows
+    @Test
+    public void testCallStream() {
+        String key = System.getenv("open_api_key");
+        CountDownLatch latch = new CountDownLatch(1);
+        OpenaiCall.callStream(key, null, "天空为什么是蓝色的", new String[]{}, new StreamListener() {
+            @Override
+            public void onEvent(String str) {
+                System.out.println(str);
+            }
+
+            @Override
+            public void end() {
+                latch.countDown();
+            }
+        });
+        latch.await();
+    }
+
+
+    @Test
+    public void testCallStream2() throws InterruptedException {
+        String key = System.getenv("open_api_key");
+        CountDownLatch latch = new CountDownLatch(1);
+        List<Message> messages = new ArrayList<>();
+        messages.add(Message.builder().content("我给你一些内容,请你记住,然后我会开始提问 a=1 b=2").role(Message.Role.USER).build());
+        messages.add(Message.builder().content("好的").role(Message.Role.ASSISTANT).build());
+        messages.add(Message.builder().content("c=a+b,那么c=?").role(Message.Role.USER).build());
+
+        StringBuilder sb = new StringBuilder();
+        OpenaiCall.callStream(key, null, messages, new StreamListener() {
+            @Override
+            public void onEvent(String str) {
+                System.out.println(str);
+                sb.append(str);
+            }
+
+            @Override
+            public void end() {
+                latch.countDown();
+            }
+        }, ReqConfig.builder().build());
+
+        latch.await();
+
+        CountDownLatch latch2 = new CountDownLatch(1);
+        messages.add(Message.builder().content(sb.toString()).role(Message.Role.ASSISTANT).build());
+        messages.add(Message.builder().content("d=c+b,那么d=?").role(Message.Role.USER).build());
+        OpenaiCall.callStream(key, null, messages, new StreamListener() {
+            @Override
+            public void onEvent(String str) {
+                System.out.println(str);
+                sb.append(str);
+            }
+
+            @Override
+            public void end() {
+                latch2.countDown();
+            }
+        }, ReqConfig.builder().build());
+        latch2.await();
+    }
+
+    @Test
+    public void testCallStream3() throws InterruptedException {
+        String key = System.getenv("open_api_key");
+        CountDownLatch latch = new CountDownLatch(1);
+        List<Message> messages = new ArrayList<>();
+        messages.add(Message.builder().content("我给你一些内容,请你记住,然后我会开始提问 a=1 b=2").role(Message.Role.USER).build());
+        messages.add(Message.builder().content("好的").role(Message.Role.ASSISTANT).build());
+
+        Ask ask = new Ask();
+        ask.setContent("c=a+b,那么c=?");
+        ask.setRole(Message.Role.USER.getName());
+        ask.setAskListener(new AskListener());
+        messages.add(ask);
+
+        Ask ask2 = new Ask();
+        ask2.setContent("d=c+b,那么d=?");
+        ask2.setRole(Message.Role.USER.getName());
+        messages.add(ask2);
+
+        StringBuilder sb = new StringBuilder();
+        OpenaiCall.callStream(key, null, messages, new StreamListener() {
+            @Override
+            public void onEvent(String str) {
+                System.out.println(str);
+                sb.append(str);
+            }
+
+            @Override
+            public void end() {
+                latch.countDown();
+            }
+        }, ReqConfig.builder().build());
+
+        latch.await();
+
+        CountDownLatch latch2 = new CountDownLatch(1);
+        messages.add(Message.builder().content(sb.toString()).role(Message.Role.ASSISTANT).build());
+        messages.add(Message.builder().content("d=c+b,那么d=?").role(Message.Role.USER).build());
+        OpenaiCall.callStream(key, null, messages, new StreamListener() {
+            @Override
+            public void onEvent(String str) {
+                System.out.println(str);
+                sb.append(str);
+            }
+
+            @Override
+            public void end() {
+                latch2.countDown();
+            }
+        }, ReqConfig.builder().build());
+        latch2.await();
+    }
+
+
+    @Test
+    public void test4() {
+        String key = System.getenv("open_api_key");
+        OpenAiClient client = OpenaiCall.client(key, null);
+        ChatCompletionResponse res = client.chatCompletion(Lists.newArrayList(
+                Message.builder().role(Message.Role.USER).content("我给你一些内容,请你记住,然后我会开始提问 a=1 b=2").build(),
+                Message.builder().role(Message.Role.ASSISTANT).content("好的").build(),
+                Message.builder().role(Message.Role.USER).content("c=a+b\n\n c=?").build()
+        ));
+        System.out.println(res.getChoices().get(0).getMessage().getContent());
+    }
+
+    @Test
+    public void testCallStream4() throws InterruptedException {
+        String key = System.getenv("open_api_key");
+        List<Message> messages = new ArrayList<>();
+        messages.add(Message.builder().content("我给你一些内容,请你记住,然后我会开始提问 a=1 b=2").role(Message.Role.USER).build());
+        messages.add(Message.builder().content("好的").role(Message.Role.ASSISTANT).build());
+
+        Ask ask = new Ask();
+        ask.setContent("c=a+b,那么c=?");
+        ask.setRole(Message.Role.USER.getName());
+        ask.setAskListener(new AskListener());
+        messages.add(ask);
+
+        Ask ask2 = new Ask();
+        ask2.setContent("d=c+b,那么d=?");
+        ask2.setRole(Message.Role.USER.getName());
+        ask2.setAskListener(new AskListener());
+        messages.add(ask2);
+
+        Ask ask3 = new Ask();
+        ask3.setContent("e=c+d,那么e=?");
+        ask3.setRole(Message.Role.USER.getName());
+        ask3.setAskListener(new AskListener());
+        ask3.setStream(true);
+        messages.add(ask3);
+
+        CountDownLatch l = new CountDownLatch(1);
+
+        OpenaiCall.callStreamWithAsk(key, null, messages, new StreamListener() {
+            @Override
+            public void onEvent(String str) {
+                System.out.println(str);
+            }
+
+            @Override
+            public void end() {
+                l.countDown();
+            }
+        }, ReqConfig.builder().build());
+
+        ask.setBegin(true);
+        String c = ask.getAskListener().getAnswer();
+        System.out.println(c);
+        ask2.setBegin(true);
+        c = ask2.getAskListener().getAnswer();
+        System.out.println(c);
+
+        ask3.setBegin(true);
+
+        l.await();
+
+    }
+
+
+    @SneakyThrows
+    @Test
+    public void testEditor() {
+        String key = System.getenv("open_api_key");
+        String res = OpenaiCall.editor(key, Edit.builder().input("System.")
+                .instruction("在java中,后边会跟那些代码").model("code-davinci-edit-001").temperature(0).build());
+        System.out.println(res);
     }
 
 
@@ -325,10 +525,13 @@ public class OpenApiTest {
         Arrays.stream(completions.getChoices()).forEach(System.out::println);
     }
 
+    /**
+     * 代码生成用:code-davinci-edit-001 这个模型 (Temperature=0 Top P=1)
+     */
     @Test
-    public void testListModels() {
+    public void testListOpenaiModels() {
         OpenAiClient openAiClient = client();
-        openAiClient.models().forEach(it -> {
+        openAiClient.models().stream().filter(it -> it.getID().contains("code")).forEach(it -> {
             System.out.println(it.getID());
         });
     }
