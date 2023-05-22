@@ -65,8 +65,8 @@ public class LogFile {
         try {
             //日志文件进行切分时，减少FileNotFoundException概率
             TimeUnit.SECONDS.sleep(5);
-            //10kb
-            this.raf = new MoneRandomAccessFile(file, "r", 1024 * 10);
+            //4kb
+            this.raf = new MoneRandomAccessFile(file, "r", 1024 * 4);
             reOpen = false;
         } catch (InterruptedException e) {
             log.error("open file InterruptedException", e);
