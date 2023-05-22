@@ -81,11 +81,11 @@ public class LogFileTest {
             if (m.size() > 0) {
                 System.out.println("--->" + m);
             }
-            try {
-                TimeUnit.MILLISECONDS.sleep(200);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+//            try {
+//                TimeUnit.MILLISECONDS.sleep(2);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
         }
 
         @Override
@@ -105,7 +105,8 @@ public class LogFileTest {
 
     @Test
     public void testReadFileCutting() throws IOException {
-        LogFile log = new LogFile("/home/work/log/hera-app/server.log", new MyReadListener());
+        System.out.println("111111");
+        LogFile log = new LogFile("/home/work/log/hera-operator/server.log", new MyReadListener());
         log.readLine();
         System.in.read();
     }

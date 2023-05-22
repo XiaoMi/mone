@@ -142,13 +142,24 @@ public class LogFile {
 
     private void contentCuttingProcessing(String line) throws IOException {
         long currentTimeStamp = Instant.now().toEpochMilli();
-        Long currentFileMaxPointer = Long.MAX_VALUE;
+        long currentFileMaxPointer;
         try {
             currentFileMaxPointer = raf.length();
+            if (currentFileMaxPointer == 0L) {
+                raf.getFD().sync();
+                TimeUnit.MILLISECONDS.sleep(50);
+                currentFileMaxPointer = raf.length();
+            }
         } catch (IOException e) {
-            log.error("get fileMaxPointer error", e);
+            log.error("get fileMaxPointer IOException", e);
+            return;
+        } catch (InterruptedException e) {
+            log.error("get fileMaxPointer InterruptedException", e);
+            return;
         }
+
         if (null == line && currentFileMaxPointer < maxPointer) {
+            System.out.println("currentFileMaxPointer:" + currentFileMaxPointer);
             log.info("file content has Cutting ,fileName:{},currentTimeStamp:{}", file, currentTimeStamp);
             pointer = 0;
             lineNumber = 0;
