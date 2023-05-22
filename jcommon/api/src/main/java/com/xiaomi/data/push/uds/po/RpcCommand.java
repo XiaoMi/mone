@@ -87,4 +87,11 @@ public class RpcCommand {
         return (T) gson.fromJson(s, clazz);
     }
 
+    public boolean isProvider() {
+        return Boolean.TRUE.toString().equals(attachments.get(Cons.SIDE_TYPE_SERVER));
+    }
+
+    public boolean isConsumer() {
+        return Boolean.TRUE.toString().equals(attachments.get(Cons.SIDE_TYPE_CLIENT));
+    }
 }
