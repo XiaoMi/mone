@@ -9,10 +9,10 @@ import lombok.extern.slf4j.Slf4j;
 import javax.xml.bind.DatatypeConverter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -34,11 +34,17 @@ public class LogFile {
     @Setter
     private volatile boolean reOpen;
 
-
     private long pointer;
 
     //行号
     private long lineNumber;
+
+    //每次读取时文件的最大偏移量
+    private long maxPointer;
+
+    private long readTimeMillSecond = Instant.now().toEpochMilli();
+
+    private long maxTimeOut = 2 * 60 * 1000;
 
     private String md5;
 
@@ -108,11 +114,13 @@ public class LogFile {
                 if (stop) {
                     break;
                 }
+
+                contentCuttingProcessing(line);
+
                 if (listener.isContinue(line)) {
                     continue;
                 }
 
-                Long maxPointer = null;
                 try {
                     pointer = raf.getFilePointer();
                     maxPointer = raf.length();
@@ -125,6 +133,7 @@ public class LogFile {
                 readResult.setPointer(pointer);
                 readResult.setFileMaxPointer(maxPointer);
                 readResult.setLineNumber(++lineNumber);
+                readTimeMillSecond = Instant.now().toEpochMilli();
                 ReadEvent event = new ReadEvent(readResult);
 
                 listener.onEvent(event);
@@ -132,6 +141,22 @@ public class LogFile {
             raf.close();
             if (stop) {
                 break;
+            }
+        }
+    }
+
+    private void contentCuttingProcessing(String line) {
+        long currentTimeStamp = Instant.now().toEpochMilli();
+        if (null == line && currentTimeStamp - readTimeMillSecond > maxTimeOut) {
+            Long currentFileMaxPointer = 0L;
+            try {
+                currentFileMaxPointer = raf.length();
+            } catch (IOException e) {
+                log.error("get fileMaxPointer error", e);
+            }
+            if (currentFileMaxPointer < maxPointer) {
+                log.info("file content has Cutting ,fileName:{},readTimeMillSecond:{},currentTimeStamp:{}", file, readTimeMillSecond, currentTimeStamp);
+                this.setReOpen(true);
             }
         }
     }

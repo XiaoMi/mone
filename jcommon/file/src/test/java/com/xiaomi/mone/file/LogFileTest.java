@@ -101,4 +101,12 @@ public class LogFileTest {
         log.readLine();
         System.in.read();
     }
+
+
+    @Test
+    public void testReadFileCutting() throws IOException {
+        LogFile log = new LogFile("/home/work/log/hera-app/server.log", new MyReadListener());
+        log.readLine();
+        System.in.read();
+    }
 }
