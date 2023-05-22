@@ -142,7 +142,7 @@ public class LogFile {
 
     private void contentCuttingProcessing(String line) throws IOException {
         long currentTimeStamp = Instant.now().toEpochMilli();
-        Long currentFileMaxPointer = 0L;
+        Long currentFileMaxPointer = Long.MAX_VALUE;
         try {
             currentFileMaxPointer = raf.length();
         } catch (IOException e) {
