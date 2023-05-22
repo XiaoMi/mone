@@ -145,7 +145,7 @@ public class LogFile {
         }
     }
 
-    private void contentCuttingProcessing(String line) {
+    private void contentCuttingProcessing(String line) throws IOException {
         long currentTimeStamp = Instant.now().toEpochMilli();
         if (null == line && currentTimeStamp - readTimeMillSecond > maxTimeOut) {
             Long currentFileMaxPointer = 0L;
@@ -156,7 +156,9 @@ public class LogFile {
             }
             if (currentFileMaxPointer < maxPointer) {
                 log.info("file content has Cutting ,fileName:{},readTimeMillSecond:{},currentTimeStamp:{}", file, readTimeMillSecond, currentTimeStamp);
-                this.setReOpen(true);
+                pointer = 0;
+                lineNumber = 0;
+                raf.seek(pointer);
             }
         }
     }
