@@ -8,12 +8,16 @@ import com.xiaomi.mone.log.manager.dao.MilogLogTailDao;
 import com.xiaomi.mone.log.manager.domain.LogProcess;
 import com.xiaomi.mone.log.manager.mapper.MilogLogProcessMapper;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogProcessDOMybatis;
+import com.xiaomi.mone.log.manager.model.pojo.MilogLogTailDo;
 import com.xiaomi.youpin.docean.anno.Service;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.Nullable;
 
 import javax.annotation.Resource;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -77,4 +81,27 @@ public class LogProcessServiceImpl implements LogProcessService {
         return Result.success(dtoList);
     }
 
+    public Result<List<UpdateLogProcessCmd.CollectDetail>> getColProcessImperfect(Double progressRation) {
+        if (null == progressRation) {
+            return Result.failParam("参数不能为空");
+        }
+        return Result.success(upColProcessTailName(logProcess.getColProcessImperfect(progressRation)));
+    }
+
+    @Nullable
+    private List<UpdateLogProcessCmd.CollectDetail> upColProcessTailName(List<UpdateLogProcessCmd.CollectDetail> colProcessImperfect) {
+        if (CollectionUtils.isNotEmpty(colProcessImperfect)) {
+            colProcessImperfect = colProcessImperfect.parallelStream().map(collectDetail -> {
+                String tailId = collectDetail.getTailId();
+                if (StringUtils.isNotBlank(tailId)) {
+                    MilogLogTailDo logTailDo = logtailDao.queryById(Long.valueOf(tailId));
+                    if (null != logTailDo) {
+                        collectDetail.setTailName(logTailDo.getTail());
+                    }
+                }
+                return collectDetail;
+            }).collect(Collectors.toList());
+        }
+        return colProcessImperfect;
+    }
 }
