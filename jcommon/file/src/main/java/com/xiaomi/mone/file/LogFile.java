@@ -36,6 +36,9 @@ public class LogFile {
     @Setter
     private volatile boolean reFresh;
 
+    @Getter
+    private int beforePointerHashCode;
+
     private long pointer;
 
     //行号
@@ -97,6 +100,10 @@ public class LogFile {
 
             while (true) {
                 String line = raf.getNextLine();
+                if (null != line && lineNumber == 0 && pointer == 0) {
+                    String hashLine = line.length() > 100 ? line.substring(0, 100) : line;
+                    beforePointerHashCode = hashLine.hashCode();
+                }
                 //大行文件先临时截断
                 line = lineCutOff(line);
 
