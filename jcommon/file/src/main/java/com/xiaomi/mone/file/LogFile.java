@@ -33,6 +33,12 @@ public class LogFile {
     @Setter
     private volatile boolean reOpen;
 
+    @Setter
+    private volatile boolean reFresh;
+
+    @Getter
+    private int beforePointerHashCode;
+
     private long pointer;
 
     //行号
@@ -67,6 +73,7 @@ public class LogFile {
             //4kb
             this.raf = new MoneRandomAccessFile(file, "r", 1024 * 4);
             reOpen = false;
+            reFresh = false;
         } catch (InterruptedException e) {
             log.error("open file InterruptedException", e);
         } catch (FileNotFoundException e) {
@@ -93,14 +100,23 @@ public class LogFile {
 
             while (true) {
                 String line = raf.getNextLine();
+                if (null != line && lineNumber == 0 && pointer == 0) {
+                    String hashLine = line.length() > 100 ? line.substring(0, 100) : line;
+                    beforePointerHashCode = hashLine.hashCode();
+                }
                 //大行文件先临时截断
                 line = lineCutOff(line);
+
+                if (reFresh) {
+                    break;
+                }
 
                 if (reOpen) {
                     pointer = 0;
                     lineNumber = 0;
                     break;
                 }
+
                 if (stop) {
                     break;
                 }
@@ -174,7 +190,7 @@ public class LogFile {
         }
 
         //针对大文件,排除掉局部内容删除的情况,更准确识别内容整体切割的场景（误判重复采集成本较高）
-        long mPointer = maxPointer > 70000 ? maxPointer-700 : maxPointer;
+        long mPointer = maxPointer > 70000 ? maxPointer - 700 : maxPointer;
         if (currentFileMaxPointer < mPointer) {
             return true;
         }
