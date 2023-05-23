@@ -2,13 +2,14 @@ package com.xiaomi.mone.log.api.model.vo;
 
 import lombok.*;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
  * docker 对应一个ip没关系,k8s一个node下有多个pod，因此一个tail可能会有多个ip的情况
  */
 @Data
-public class UpdateLogProcessCmd {
+public class UpdateLogProcessCmd implements Serializable {
     /**
      * 机器ip->k8s对应node ip
      */
@@ -18,7 +19,7 @@ public class UpdateLogProcessCmd {
 
     @Data
     @EqualsAndHashCode
-    public static class CollectDetail {
+    public static class CollectDetail implements Serializable {
 
         private String tailId;
 
@@ -43,7 +44,7 @@ public class UpdateLogProcessCmd {
     @Builder
     @AllArgsConstructor
     @NoArgsConstructor
-    public static class FileProgressDetail {
+    public static class FileProgressDetail implements Serializable {
         // 真实采集文件路径
         private String pattern;
         // 设计配置的ip
