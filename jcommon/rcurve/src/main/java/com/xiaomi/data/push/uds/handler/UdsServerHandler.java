@@ -29,7 +29,6 @@ import io.netty.util.Attribute;
 import io.netty.util.AttributeKey;
 import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
-import run.mone.api.Cons;
 
 import java.util.Map;
 import java.util.Optional;
@@ -58,8 +57,6 @@ public class UdsServerHandler extends ChannelInboundHandlerAdapter {
             ByteBuf msg = (ByteBuf) _msg;
             UdsCommand command = new UdsCommand();
             command.decode(msg);
-            command.putAtt(Cons.SIDE_TYPE_SERVER, Boolean.TRUE.toString());
-            command.putAtt(Cons.SIDE_TYPE_CLIENT, Boolean.FALSE.toString());
             log.debug("server receive:{}:{}:{}", command.getApp(), command.getCmd(), command.getSerializeType());
             if (command.isRequest()) {
                 command.setChannel(ctx.channel());

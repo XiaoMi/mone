@@ -26,7 +26,6 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
-import run.mone.api.Cons;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -85,8 +84,6 @@ public abstract class AbstractInterceptor implements MethodInterceptor {
         }
 
         UdsCommand command = UdsCommand.createRequest();
-        command.putAtt(Cons.SIDE_TYPE_CLIENT, Boolean.TRUE.toString());
-        command.putAtt(Cons.SIDE_TYPE_SERVER, Boolean.FALSE.toString());
         Context ctx = new Context();
         command.setApp(config.get("uds_app", ""));
         command.setMethodName(method.getName());

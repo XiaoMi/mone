@@ -27,7 +27,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
-import run.mone.api.Cons;
 
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,8 +50,6 @@ public class UdsClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
     protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
         UdsCommand command = new UdsCommand();
         command.decode(msg);
-        command.putAtt(Cons.SIDE_TYPE_SERVER, Boolean.TRUE.toString());
-        command.putAtt(Cons.SIDE_TYPE_CLIENT, Boolean.FALSE.toString());
         log.debug("client received:{}", command);
         if (command.isRequest()) {
             command.setChannel(ctx.channel());
