@@ -630,7 +630,7 @@
                 AND hb.app_name LIKE concat('%',#{appName},'%')
             </if>
             <if test="platformType != null">
-                AND hb.platform_type = #{type}
+                AND hb.platform_type = #{platformType}
             </if>
             <if test="type != null">
                 AND hb.app_type = #{type}
