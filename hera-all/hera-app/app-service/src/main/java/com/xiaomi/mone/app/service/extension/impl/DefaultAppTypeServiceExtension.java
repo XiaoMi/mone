@@ -22,6 +22,11 @@ public class DefaultAppTypeServiceExtension implements AppTypeServiceExtension {
     }
 
     @Override
+    public Integer getAppPlatForm(Integer type) {
+        return null;
+    }
+
+    @Override
     public Integer getAppTypePlatformType(Integer type) {
         return AppTypeTransferUtil.queryLogTypeWithPlatformType(type);
     }

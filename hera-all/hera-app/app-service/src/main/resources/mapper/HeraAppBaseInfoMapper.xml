@@ -611,7 +611,7 @@
         <result column="treeIds" jdbcType="ARRAY" property="treeIds" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
         <result column="nodeIPs" jdbcType="ARRAY" property="nodeIPs" typeHandler="com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler"/>
     </resultMap>
-    <select id="queryAppInfoWithLog" resultMap="queryAppResultMap">
+    <select id="queryAppInfo" resultMap="queryAppResultMap">
         SELECT
             hb.id AS id,
             hb.bind_id AS bindId,
@@ -629,8 +629,11 @@
             <if test="appName != null and appName != ''">
                 AND hb.app_name LIKE concat('%',#{appName},'%')
             </if>
-            <if test="type != null">
+            <if test="platformType != null">
                 AND hb.platform_type = #{type}
+            </if>
+            <if test="type != null">
+                AND hb.app_type = #{type}
             </if>
         </where>
     </select>
