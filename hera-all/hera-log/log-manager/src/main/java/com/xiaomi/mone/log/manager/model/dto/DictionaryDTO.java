@@ -16,9 +16,24 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DictionaryDTO<T> {
+
     private T value;
     private String label;
+
+    private boolean showDeployment;
+    private boolean showEnvGroup;
+    private boolean showMachineType;
+    private boolean showMachineRegion;
+    private boolean showServiceIp;
+    private boolean showMqConfig;
+
     private List<DictionaryDTO> children;
+
+    public DictionaryDTO(T value, String label, List<DictionaryDTO> children) {
+        this.value = value;
+        this.label = label;
+        this.children = children;
+    }
 
     public static DictionaryDTO Of(Object label, String value) {
         return new DictionaryDTO(label, value, null);
