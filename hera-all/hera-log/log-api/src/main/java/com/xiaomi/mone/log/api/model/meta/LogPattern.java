@@ -17,8 +17,12 @@
 package com.xiaomi.mone.log.api.model.meta;
 
 import com.xiaomi.mone.log.api.enums.OperateEnum;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.List;
 
@@ -34,10 +38,13 @@ public class LogPattern implements Serializable {
     private Long logtailId;
 
     private String tailName;
-    /**
-     * ip信息，k8s中一个node中可能有多个pod,导致一个tail有多个ip，因此ip顺序必须和路径的顺序对应
-     */
+
     private List<String> ips;
+
+    /**
+     * ip和目录对应关系
+     */
+    private List<LogPattern.IPRel> ipDirectoryRel;
 
     /**
      * LogTypeEnum.name()，
@@ -78,4 +85,16 @@ public class LogPattern implements Serializable {
      * mq配置
      */
     private MQConfig mQConfig;
+
+    /**
+     * ip对应的关系，如果是非k8s上，则只有1个,k8s deamonset部署手时，key为每个pod名称
+     */
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    @Builder
+    public static class IPRel implements Serializable {
+        private String key = File.separator;
+        private String ip;
+    }
 }
