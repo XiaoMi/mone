@@ -21,4 +21,7 @@ public class ReqConfig {
     @Builder.Default
     private String model = ChatCompletion.Model.GPT_3_5_TURBO.getName();
 
+
+    private String askUrl;
+
 }

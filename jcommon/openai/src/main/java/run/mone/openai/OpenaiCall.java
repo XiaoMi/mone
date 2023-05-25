@@ -17,10 +17,14 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.logging.HttpLoggingInterceptor;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
+import okhttp3.sse.EventSources;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealVector;
 import org.apache.http.HttpResponse;
@@ -260,7 +264,55 @@ public class OpenaiCall {
             public void onClosed(EventSource eventSource) {
                 listener.end();
             }
+
+            @Override
+            public void onFailure(EventSource eventSource, @Nullable Throwable t, @Nullable Response response) {
+                log.error("on failure error:" + t, t);
+            }
         });
+    }
+
+
+    public static void callStream2(String req, StreamListener sl, ReqConfig config) {
+        Request request = new Request.Builder()
+                .url(config.getAskUrl())
+                .post(RequestBody.create(null,req.getBytes()))
+                .build();
+
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(2000, TimeUnit.MILLISECONDS)
+                .readTimeout(50000, TimeUnit.MILLISECONDS)
+                .build();
+
+
+        EventSourceListener listener = new EventSourceListener() {
+
+            @Override
+            public void onOpen(EventSource eventSource, Response response) {
+                log.info("onOpen");
+                sl.begin();
+            }
+
+            @Override
+            public void onEvent(EventSource eventSource, String id, String type, String data) {
+                sl.onEvent(data);
+            }
+
+            @Override
+            public void onClosed(EventSource eventSource) {
+                log.info("onClosed");
+                sl.end();
+            }
+
+            @Override
+            public void onFailure(EventSource eventSource, Throwable t, Response response) {
+                log.info("onFailure");
+                sl.end();
+            }
+        };
+
+        EventSource.Factory factory = EventSources.createFactory(client);
+        factory.newEventSource(request, listener);
     }
 
 
@@ -317,7 +369,7 @@ public class OpenaiCall {
                 messageList.add(m);
             }
 
-            while (mo.getData().isBegin()){
+            while (mo.getData().isBegin()) {
                 try {
                     TimeUnit.SECONDS.sleep(1);
                 } catch (InterruptedException e) {
