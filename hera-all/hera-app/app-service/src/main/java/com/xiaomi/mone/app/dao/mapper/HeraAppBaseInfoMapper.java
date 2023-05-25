@@ -20,7 +20,7 @@ import java.util.List;
 @Component
 public interface HeraAppBaseInfoMapper extends BaseMapper<HeraAppBaseInfo> {
 
-    List<AppBaseInfo> queryAppInfoWithLog(String appName, Integer type);
+    List<AppBaseInfo> queryAppInfo(String appName, Integer platformType, Integer type);
 
     List<AppBaseInfo> queryByIds(List<Long> ids);
 
@@ -58,7 +58,7 @@ public interface HeraAppBaseInfoMapper extends BaseMapper<HeraAppBaseInfo> {
 
     int batchInsert(@Param("list") List<HeraAppBaseInfo> list);
 
-    int batchInsertSelective(@Param("list") List<HeraAppBaseInfo> list, @Param("selective") HeraAppBaseInfo.Column ... selective);
+    int batchInsertSelective(@Param("list") List<HeraAppBaseInfo> list, @Param("selective") HeraAppBaseInfo.Column... selective);
 
     Long countNormalData();
 }
