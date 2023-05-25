@@ -124,10 +124,6 @@ public class MilogDictionaryServiceImpl implements MilogDictionaryService {
                 DictionaryDTO dictionaryDTO = new DictionaryDTO();
                 dictionaryDTO.setLabel(milogLogstoreDO.getLogstoreName());
                 dictionaryDTO.setValue(milogLogstoreDO.getId());
-                dictionaryDTO.setShowDeployment(Boolean.TRUE);
-                dictionaryDTO.setShowEnvGroup(Boolean.TRUE);
-                dictionaryDTO.setShowServiceIp(Boolean.TRUE);
-                dictionaryDTO.setShowMqConfig(Boolean.TRUE);
                 dictionaryDTO.setChildren(queryTailByStore(milogLogtailDos, storeId, nameEn));
                 dictionaryDTOS.add(dictionaryDTO);
             });

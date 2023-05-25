@@ -74,6 +74,12 @@ public class DefaultDictionaryExtensionService implements DictionaryExtensionSer
                     DictionaryDTO<Integer> dictionaryDTO = new DictionaryDTO<>();
                     dictionaryDTO.setValue(projectTypeEnum.getCode());
                     dictionaryDTO.setLabel(projectTypeEnum.getType());
+
+                    dictionaryDTO.setShowDeployment(Boolean.TRUE);
+                    dictionaryDTO.setShowEnvGroup(Boolean.TRUE);
+                    dictionaryDTO.setShowServiceIp(Boolean.TRUE);
+                    dictionaryDTO.setShowMqConfig(Boolean.TRUE);
+
                     return dictionaryDTO;
                 })
                 .collect(Collectors.toList());
