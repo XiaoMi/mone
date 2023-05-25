@@ -12,9 +12,7 @@ import lombok.Getter;
 public enum AppTypeEnum {
 
     BUSINESS_TYPE(0, "businessType"),
-    HOST_TYPE(1, "hostType"),
-    SERVERLESS_TYPE(2, "serverless"),
-    MESH_TYPE(3, "mesh");
+    HOST_TYPE(1, "hostType");
     private Integer code;
     private String message;
 
