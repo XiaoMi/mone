@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.unfbx.chatgpt.OpenAiClient;
 import com.unfbx.chatgpt.OpenAiStreamClient;
@@ -70,9 +71,7 @@ import java.math.BigDecimal;
 import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -624,5 +623,21 @@ public class OpenApiTest {
         System.out.println(sw.elapsed(TimeUnit.SECONDS));
     }
 
+
+    @SneakyThrows
+    @Test
+    public void testCallStream22() {
+        Map jo = new HashMap<>();
+        jo.put("id", "1");
+        ChatCompletion cc = ChatCompletion.builder().stream(true).messages(Lists.newArrayList(Message.builder().content("天空为什么是蓝色的?").role(Message.Role.USER).build())).build();
+        jo.put("chatCompletion", cc);
+        OpenaiCall.callStream2(gson.toJson(jo), new StreamListener() {
+            @Override
+            public void onEvent(String str) {
+                System.out.println(str);
+            }
+        }, ReqConfig.builder().askUrl("http://127.0.0.1:8085/ask").build());
+        System.in.read();
+    }
 
 }
