@@ -20,11 +20,12 @@ public class DictionaryDTO<T> {
     private T value;
     private String label;
 
-    private boolean showDeployment;
+    private boolean showDeploymentType;
     private boolean showEnvGroup;
     private boolean showMachineType;
     private boolean showMachineRegion;
     private boolean showServiceIp;
+    private boolean showDeploymentSpace;
     private boolean showMqConfig;
 
     private List<DictionaryDTO> children;
