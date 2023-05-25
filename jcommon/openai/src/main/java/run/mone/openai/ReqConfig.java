@@ -24,4 +24,10 @@ public class ReqConfig {
 
     private String askUrl;
 
+    @Builder.Default
+    private long connectTimeout = 2000;
+
+    @Builder.Default
+    private long readTimeout = 8000;
+
 }
