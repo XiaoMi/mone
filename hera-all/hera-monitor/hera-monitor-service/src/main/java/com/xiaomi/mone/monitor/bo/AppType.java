@@ -11,7 +11,9 @@ public enum AppType {
 
     businessType(0, "businessType"),
     hostType(1, "hostType"),
-    serverless(2, "serverless");
+    serverless(2, "serverless"),
+    mesh(3, "businessType"),
+    ;
     private Integer code;
     private String message;
 
