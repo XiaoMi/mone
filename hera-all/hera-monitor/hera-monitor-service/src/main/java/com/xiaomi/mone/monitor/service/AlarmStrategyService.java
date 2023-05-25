@@ -112,11 +112,11 @@ public class AlarmStrategyService {
             envs.addProperty("exceptEnvs",String.join(",", param.getExceptEnvs()));
         }
 
-        if(!CollectionUtils.isEmpty(param.getIncludeServices())){
-            envs.addProperty("includeServices",String.join(",", param.getIncludeServices()));
+        if(!CollectionUtils.isEmpty(param.getIncludeZones())){
+            envs.addProperty("includeZones",String.join(",", param.getIncludeZones()));
         }
-        if(!CollectionUtils.isEmpty(param.getExceptEnvs())){
-            envs.addProperty("exceptServices",String.join(",", param.getExceptServices()));
+        if(!CollectionUtils.isEmpty(param.getExceptZones())){
+            envs.addProperty("exceptZones",String.join(",", param.getExceptZones()));
         }
 
         if(!CollectionUtils.isEmpty(param.getIncludeModules())){
@@ -172,11 +172,11 @@ public class AlarmStrategyService {
             envs.addProperty("exceptEnvs",String.join(",", param.getExceptEnvs()));
         }
 
-        if(!CollectionUtils.isEmpty(param.getIncludeServices())){
-            envs.addProperty("includeServices",String.join(",", param.getIncludeServices()));
+        if(!CollectionUtils.isEmpty(param.getIncludeZones())){
+            envs.addProperty("includeZones",String.join(",", param.getIncludeZones()));
         }
         if(!CollectionUtils.isEmpty(param.getExceptEnvs())){
-            envs.addProperty("exceptServices",String.join(",", param.getExceptServices()));
+            envs.addProperty("exceptZones",String.join(",", param.getExceptZones()));
         }
 
         if(!CollectionUtils.isEmpty(param.getIncludeModules())){

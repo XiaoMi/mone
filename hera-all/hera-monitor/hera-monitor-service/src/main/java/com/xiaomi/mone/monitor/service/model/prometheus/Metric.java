@@ -35,6 +35,7 @@ public class Metric implements Serializable {
 
     //env
     private String serverEnv;
+    private String serverZone;
 
     //container info
     private String container_label_PROJECT_ID;
@@ -52,6 +53,11 @@ public class Metric implements Serializable {
     private String traceId;
 
     private String service; //应用的服务维度
+
+    //下游服务信息
+    private String clientProjectName;
+    private String clientEnv;
+    private String clientIp;
 
 
 }

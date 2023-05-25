@@ -46,10 +46,11 @@ public class ConsumerService {
 
     @PostConstruct
     public void takeMessage() throws MQClientException {
-        // 在初始化rocketmq consumer前，初始化本地message queue，
-        // 保证消息进来后本地message queue可用
+        // Before initializing rocketmq consumer,
+        // initialize the local message queue to
+        // ensure that the local message queue is available when messages come in
         clientMessageQueue.initFetchQueueTask();
-        // 初始化rocketmq consumer
+        // initializing rocketmq consumer
         log.info("init consumer start ...");
         DefaultMQPushConsumer consumer = new DefaultMQPushConsumer(group);
         consumer.setNamesrvAddr(nameSerAddr);

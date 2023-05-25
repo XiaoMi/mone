@@ -37,7 +37,7 @@ public class PlatFormTypeExtensionServiceImpl implements PlatFormTypeExtensionSe
     @Override
     public boolean belongPlatForm(Integer typeCode, PlatForm platForm) {
         for (PlatFormType pft : PlatFormType.values()) {
-            if (pft.getPlatForm() == platForm) {
+            if (pft.getCode().equals(typeCode) && pft.getPlatForm() == platForm) {
                 return true;
             }
         }

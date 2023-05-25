@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import javax.xml.bind.DatatypeConverter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.MessageDigest;
@@ -34,11 +33,19 @@ public class LogFile {
     @Setter
     private volatile boolean reOpen;
 
+    @Setter
+    private volatile boolean reFresh;
+
+    @Getter
+    private int beforePointerHashCode;
 
     private long pointer;
 
     //行号
     private long lineNumber;
+
+    //每次读取时文件的最大偏移量
+    private long maxPointer;
 
     private String md5;
 
@@ -63,9 +70,10 @@ public class LogFile {
         try {
             //日志文件进行切分时，减少FileNotFoundException概率
             TimeUnit.SECONDS.sleep(5);
-            //10kb
-            this.raf = new MoneRandomAccessFile(file, "r", 1024 * 10);
+            //4kb
+            this.raf = new MoneRandomAccessFile(file, "r", 1024 * 4);
             reOpen = false;
+            reFresh = false;
         } catch (InterruptedException e) {
             log.error("open file InterruptedException", e);
         } catch (FileNotFoundException e) {
@@ -92,12 +100,15 @@ public class LogFile {
 
             while (true) {
                 String line = raf.getNextLine();
-                if (null != line) {
-                    //line = new String(line.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
-                    //todo 大行文件先临时截断
-                    if (line.length() > LINE_MAX_LENGTH) {
-                        line = line.substring(0, LINE_MAX_LENGTH);
-                    }
+                if (null != line && lineNumber == 0 && pointer == 0) {
+                    String hashLine = line.length() > 100 ? line.substring(0, 100) : line;
+                    beforePointerHashCode = hashLine.hashCode();
+                }
+                //大行文件先临时截断
+                line = lineCutOff(line);
+
+                if (reFresh) {
+                    break;
                 }
 
                 if (reOpen) {
@@ -105,14 +116,24 @@ public class LogFile {
                     lineNumber = 0;
                     break;
                 }
+
                 if (stop) {
                     break;
                 }
+
+                //文件内容被切割，重头开始采集内容
+                if (contentHasCutting(line)) {
+                    reOpen = true;
+                    pointer = 0;
+                    lineNumber = 0;
+                    log.warn("file:{} content have been cut, goto reOpen file", file);
+                    break;
+                }
+
                 if (listener.isContinue(line)) {
                     continue;
                 }
 
-                Long maxPointer = null;
                 try {
                     pointer = raf.getFilePointer();
                     maxPointer = raf.length();
@@ -134,6 +155,47 @@ public class LogFile {
                 break;
             }
         }
+    }
+
+    private String lineCutOff(String line) {
+        if (null != line) {
+            //todo 大行文件先临时截断
+            if (line.length() > LINE_MAX_LENGTH) {
+                line = line.substring(0, LINE_MAX_LENGTH);
+            }
+        }
+
+        return line;
+    }
+
+    private boolean contentHasCutting(String line) throws IOException {
+        if (null != line) {
+            return false;
+        }
+
+        long currentFileMaxPointer;
+        try {
+            currentFileMaxPointer = raf.length();
+            if (currentFileMaxPointer == 0L) {
+                raf.getFD().sync();
+                TimeUnit.MILLISECONDS.sleep(30);
+                currentFileMaxPointer = raf.length();
+            }
+        } catch (IOException e) {
+            log.error("get fileMaxPointer IOException", e);
+            return false;
+        } catch (InterruptedException e) {
+            log.error("get fileMaxPointer InterruptedException", e);
+            return false;
+        }
+
+        //针对大文件,排除掉局部内容删除的情况,更准确识别内容整体切割的场景（误判重复采集成本较高）
+        long mPointer = maxPointer > 70000 ? maxPointer - 700 : maxPointer;
+        if (currentFileMaxPointer < mPointer) {
+            return true;
+        }
+
+        return false;
     }
 
 

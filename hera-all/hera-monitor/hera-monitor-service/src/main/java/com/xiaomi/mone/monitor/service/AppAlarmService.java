@@ -338,8 +338,8 @@ public class AppAlarmService {
 
             ruleData.setIncludeEnvs(param.getIncludeEnvs());
             ruleData.setExceptEnvs(param.getExceptEnvs());
-            ruleData.setIncludeServices(param.getIncludeServices());
-            ruleData.setExceptServices(param.getExceptServices());
+            ruleData.setIncludeZones(param.getIncludeZones());
+            ruleData.setExceptZones(param.getExceptZones());
             ruleData.setAlertMembers(param.getAlertMembers());
             ruleData.setAtMembers(param.getAtMembers());
 
@@ -622,8 +622,8 @@ public class AppAlarmService {
 
                     ruleData.setIncludeEnvs(param.getIncludeEnvs());
                     ruleData.setExceptEnvs(param.getExceptEnvs());
-                    ruleData.setIncludeServices(param.getIncludeServices());
-                    ruleData.setExceptServices(param.getExceptServices());
+                    ruleData.setIncludeZones(param.getIncludeZones());
+                    ruleData.setExceptZones(param.getExceptZones());
                     ruleData.setIncludeModules(param.getIncludeModules());
                     ruleData.setExceptModules(param.getExceptModules());
                     ruleData.setIncludeFunctions(param.getIncludeFunctions());

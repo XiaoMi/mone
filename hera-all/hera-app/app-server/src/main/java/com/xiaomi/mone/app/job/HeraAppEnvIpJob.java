@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +19,7 @@ import java.time.LocalDateTime;
  */
 @Component
 @Slf4j
+@ConditionalOnProperty(name = "service.selector.property", havingValue = "outer")
 public class HeraAppEnvIpJob {
 
     @Autowired

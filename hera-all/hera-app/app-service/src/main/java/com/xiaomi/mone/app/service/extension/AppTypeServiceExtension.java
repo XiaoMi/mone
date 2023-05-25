@@ -15,6 +15,8 @@ public interface AppTypeServiceExtension {
      */
     Integer getAppTypeLog(Integer type);
 
+    Integer getAppPlatForm(Integer type);
+
     /**
      * 得到日志类型
      *

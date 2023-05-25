@@ -161,6 +161,7 @@ public class EsService {
         map.put("serviceName", param.getServiceName());
         map.put("area", param.getArea());
         map.put("serverEnv", param.getServerEnv());
+        map.put("serverZone", param.getServerZone());
         if (EsIndexDataType.mysql.name().equals(param.getType()) || EsIndexDataType.oracle.name().equals(param.getType())) {
             map.put("sql", param.getSql());
             map.put("dataSource", param.getDataSource());

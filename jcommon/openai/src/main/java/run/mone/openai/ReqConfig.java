@@ -13,7 +13,7 @@ import lombok.Data;
 public class ReqConfig {
 
     @Builder.Default
-    private int maxTokens = 4096;
+    private int maxTokens = 4000;
 
     @Builder.Default
     private double temperature = 0.2f;
