@@ -18,12 +18,12 @@ import org.springframework.stereotype.Service;
 public class DefaultAppTypeServiceExtension implements AppTypeServiceExtension {
     @Override
     public Integer getAppTypeLog(Integer type) {
-        return AppTypeTransferUtil.queryPlatformTypeWithLogType(type);
+        return null;
     }
 
     @Override
     public Integer getAppPlatForm(Integer type) {
-        return null;
+        return AppTypeTransferUtil.queryPlatformTypeWithLogType(type);
     }
 
     @Override
