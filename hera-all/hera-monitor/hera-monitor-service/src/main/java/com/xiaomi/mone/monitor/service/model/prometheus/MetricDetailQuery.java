@@ -27,6 +27,10 @@ public class MetricDetailQuery implements Serializable {
     private static final String serviceName_ = "serviceName";
     private static final String dataSource_ = "dataSource";
     private static final String url_ = "url";
+    private static final String clientProjectId_ = "clientProjectId";
+    private static final String clientProjectName_ = "clientProjectName";
+    private static final String clientEnv_ = "clientEnv";
+    private static final String clientIp_ = "clientIp";
 
     private String serverEnv;
     private String serverZone;
@@ -42,6 +46,11 @@ public class MetricDetailQuery implements Serializable {
     //dubbo label （metheodName与http的uri共用，当type为http当时候，methodName代表uri）
     private String methodName;
     private String serviceName;
+
+    private String clientProjectId;
+    private String clientProjectName;
+    private String clientEnv;
+    private String clientIp;
 
     //sql label
     private String sql;
@@ -116,6 +125,14 @@ public class MetricDetailQuery implements Serializable {
                 ||EsIndexDataType.apus_server.name().equals(type)
         ){
             map.put(url_,serviceName + "/" + methodName);
+        }
+
+        if(EsIndexDataType.dubbo_sla.name().equals(type)){
+            map.put(url_,serviceName + "/" + methodName);
+            map.put(clientProjectId_,clientProjectId);
+            map.put(clientProjectName_,clientProjectName);
+            map.put(clientEnv_,clientEnv);
+            map.put(clientIp_,clientIp);
         }
 
         if(EsIndexDataType.mysql.name().equals(type)

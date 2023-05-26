@@ -9,6 +9,7 @@ public enum EsIndexDataType {
     http_client,
     dubbo_consumer,
     dubbo_provider,
+    dubbo_sla,
 
     grpc_client,
     grpc_server,

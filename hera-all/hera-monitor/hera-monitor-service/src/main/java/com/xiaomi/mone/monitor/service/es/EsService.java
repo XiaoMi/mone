@@ -162,6 +162,10 @@ public class EsService {
         map.put("area", param.getArea());
         map.put("serverEnv", param.getServerEnv());
         map.put("serverZone", param.getServerZone());
+        map.put("clientProjectId", param.getClientProjectId());
+        map.put("clientProjectName", param.getClientProjectName());
+        map.put("clientEnv", param.getClientEnv());
+        map.put("clientIp", param.getClientIp());
         if (EsIndexDataType.mysql.name().equals(param.getType()) || EsIndexDataType.oracle.name().equals(param.getType())) {
             map.put("sql", param.getSql());
             map.put("dataSource", param.getDataSource());
@@ -292,4 +296,5 @@ public class EsService {
     public Result queryMiddlewareInstance(DbInstanceQuery param, Integer page, Integer pageSize) throws IOException {
         return esExtensionService.queryMiddlewareInstance(param, page, pageSize, esQueryTimeOut);
     }
+
 }
