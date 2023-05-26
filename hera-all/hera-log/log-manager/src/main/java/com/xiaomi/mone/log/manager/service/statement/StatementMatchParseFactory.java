@@ -125,7 +125,7 @@ public class StatementMatchParseFactory {
         List<OperatorSlice> operatorSlices = Lists.newArrayList();
         String kvPrefix = MatchKVPrefix(message, keyPrefixList);
         String[] msgArrays = StringUtils.substringsBetween(message, "\"", "\"");
-        if (StringUtils.isBlank(kvPrefix) && msgArrays.length == 1) {
+        if (StringUtils.isBlank(kvPrefix) && null != msgArrays && msgArrays.length == 1) {
             handleAndLogic(message, operatorSlices);
             return operatorSlices;
         }
