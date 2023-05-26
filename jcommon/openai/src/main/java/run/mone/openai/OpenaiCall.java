@@ -273,15 +273,22 @@ public class OpenaiCall {
     }
 
 
+    /**
+     * 原生的调用,底层只依赖okhttp
+     *
+     * @param req
+     * @param sl
+     * @param config
+     */
     public static void callStream2(String req, StreamListener sl, ReqConfig config) {
         Request request = new Request.Builder()
                 .url(config.getAskUrl())
-                .post(RequestBody.create(null,req.getBytes()))
+                .post(RequestBody.create(null, req.getBytes()))
                 .build();
 
         OkHttpClient client = new OkHttpClient.Builder()
-                .connectTimeout(2000, TimeUnit.MILLISECONDS)
-                .readTimeout(50000, TimeUnit.MILLISECONDS)
+                .connectTimeout(config.getConnectTimeout(), TimeUnit.MILLISECONDS)
+                .readTimeout(config.getReadTimeout(), TimeUnit.MILLISECONDS)
                 .build();
 
 
@@ -307,6 +314,7 @@ public class OpenaiCall {
             @Override
             public void onFailure(EventSource eventSource, Throwable t, Response response) {
                 log.info("onFailure");
+                sl.onFailure(t, response);
                 sl.end();
             }
         };
