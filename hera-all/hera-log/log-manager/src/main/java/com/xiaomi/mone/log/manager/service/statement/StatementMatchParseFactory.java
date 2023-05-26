@@ -52,12 +52,12 @@ public class StatementMatchParseFactory {
         operateMatchMap.put(OR_OPERATOR, orOperateMap);
     }
 
-    public static BoolQueryBuilder getStatementMatchParseQueryBuilder(String message, List<String> keyPerfixList) {
+    public static BoolQueryBuilder getStatementMatchParseQueryBuilder(String message, List<String> keyPrefixList) {
         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-        List<OperatorSlice> operatorSliceList = analyseTransformOs(message);
+        List<OperatorSlice> operatorSliceList = analyseTransformOs(message, keyPrefixList);
         List<OperatorData> operatorDataList = sliceTransformOd(operatorSliceList);
         for (OperatorData operatorData : operatorDataList) {
-            BoolQueryBuilder queryBuilder = getSplitQueryBuilder(keyPerfixList, operatorData);
+            BoolQueryBuilder queryBuilder = getSplitQueryBuilder(keyPrefixList, operatorData);
             boolQueryBuilder.filter(queryBuilder);
         }
         return boolQueryBuilder;
@@ -121,8 +121,14 @@ public class StatementMatchParseFactory {
         }
     }
 
-    public static List<OperatorSlice> analyseTransformOs(String message) {
+    public static List<OperatorSlice> analyseTransformOs(String message, List<String> keyPrefixList) {
         List<OperatorSlice> operatorSlices = Lists.newArrayList();
+        String kvPrefix = MatchKVPrefix(message, keyPrefixList);
+        String[] msgArrays = StringUtils.substringsBetween(message, "\"", "\"");
+        if (StringUtils.isBlank(kvPrefix) && msgArrays.length == 0) {
+            handleAndLogic(message, operatorSlices);
+            return operatorSlices;
+        }
         if (message.contains(AND_MATCH_KEY)) {
             handleAndLogic(message, operatorSlices);
         } else if (message.contains(NOT_MATCH_KEY)) {

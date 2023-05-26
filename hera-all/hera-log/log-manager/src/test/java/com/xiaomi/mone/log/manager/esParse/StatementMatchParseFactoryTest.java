@@ -1,5 +1,6 @@
 package com.xiaomi.mone.log.manager.esParse;
 
+import com.google.common.collect.Lists;
 import com.xiaomi.mone.log.api.enums.EsOperatorEnum;
 import com.xiaomi.mone.log.manager.service.statement.StatementMatchParseFactory;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -24,13 +25,13 @@ public class StatementMatchParseFactoryTest {
     @Test
     public void analyseTransformOsTest() {
         String message = " not \"PrometheusFilter and test\" or message:\"异常\"";
-        StatementMatchParseFactory.analyseTransformOs(message);
+        StatementMatchParseFactory.analyseTransformOs(message, Lists.newArrayList());
     }
 
     @Test
     public void analyseTransformOsTestMultiple() {
         String message = "\"9645ff1e024c2479c5cd7bbf7e402ce6\" and \"京东到家className=JingDongPromotionProxy\" not \"b1933ce60cb54854ad1c405ea3523bdb\"";
-        StatementMatchParseFactory.analyseTransformOs(message);
+        StatementMatchParseFactory.analyseTransformOs(message, Lists.newArrayList());
     }
 
     @Test
