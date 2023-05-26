@@ -162,6 +162,10 @@ public class EsService {
         map.put("area", param.getArea());
         map.put("serverEnv", param.getServerEnv());
         map.put("serverZone", param.getServerZone());
+        map.put("clientProjectId", param.getClientProjectId());
+        map.put("clientProjectName", param.getClientProjectName());
+        map.put("clientEnv", param.getClientEnv());
+        map.put("clientIp", param.getClientIp());
         if (EsIndexDataType.mysql.name().equals(param.getType()) || EsIndexDataType.oracle.name().equals(param.getType())) {
             map.put("sql", param.getSql());
             map.put("dataSource", param.getDataSource());
@@ -291,5 +295,22 @@ public class EsService {
 
     public Result queryMiddlewareInstance(DbInstanceQuery param, Integer page, Integer pageSize) throws IOException {
         return esExtensionService.queryMiddlewareInstance(param, page, pageSize, esQueryTimeOut);
+    }
+
+    public static void main(String[] args) {
+        Map<String,String> map = new HashMap<>();
+        map.put("clientProjectId",null);
+        map.put("clientProjectName","aaaa");
+
+        Set<Map.Entry<String, String>> entries = map.entrySet();
+        for (Map.Entry<String, String> entry : entries) {
+            log.info("entry.key={},entry.value={},value if null:{}",entry.getKey(),entry.getValue(),org.apache.commons.lang3.StringUtils.isBlank(entry.getValue()));
+            if (org.apache.commons.lang3.StringUtils.isBlank(entry.getValue())) {
+                continue;
+            }
+
+            System.out.println("map has value:" + entry.getValue());
+
+        }
     }
 }

@@ -64,6 +64,7 @@ public enum MetricKind {
         http_client_slow_query("httpClientSlow","httpClient慢查询","http"),
         dubbo_consumer_exception("dubboConsumerExcption","dubboConsumer异常","dubbo"),
         dubbo_provider_exception("dubboProviderExcption","dubboProvider异常","dubbo"),
+        dubbo_provider_sla_exception("dubboProviderSLAExcption","dubboProviderSLA异常","dubbo"),
         dubbo_consumer_slow_query("dubboConsumerSlow","dubboConsumer慢查询","dubbo"),
         dubbo_provider_slow_query("dubboProviderSlow","dubboProvider慢查询","dubbo"),
         db_exception("dbException","db异常","db"),

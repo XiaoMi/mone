@@ -27,6 +27,7 @@ public class AppAlarmData {
     private volatile Integer httpClientSlowNum;
     private volatile Integer dubboExceptionNum;
     private volatile Integer dubboPExceptionNum;
+    private volatile Integer dubboSLAExceptionNum;
     private volatile Integer sqlExceptionNum;
     private volatile Integer sqlSlowNum;
     private volatile Integer oracleExceptionNum;
