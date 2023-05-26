@@ -297,20 +297,4 @@ public class EsService {
         return esExtensionService.queryMiddlewareInstance(param, page, pageSize, esQueryTimeOut);
     }
 
-    public static void main(String[] args) {
-        Map<String,String> map = new HashMap<>();
-        map.put("clientProjectId",null);
-        map.put("clientProjectName","aaaa");
-
-        Set<Map.Entry<String, String>> entries = map.entrySet();
-        for (Map.Entry<String, String> entry : entries) {
-            log.info("entry.key={},entry.value={},value if null:{}",entry.getKey(),entry.getValue(),org.apache.commons.lang3.StringUtils.isBlank(entry.getValue()));
-            if (org.apache.commons.lang3.StringUtils.isBlank(entry.getValue())) {
-                continue;
-            }
-
-            System.out.println("map has value:" + entry.getValue());
-
-        }
-    }
 }
