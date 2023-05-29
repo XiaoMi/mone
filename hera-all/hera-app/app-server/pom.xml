@@ -5,7 +5,7 @@
     <parent>
         <artifactId>hera-app</artifactId>
         <groupId>run.mone</groupId>
-        <version>1.0-SNAPSHOT</version>
+        <version>1.2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -31,6 +31,7 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>app-service</artifactId>
+            <version>${hera-app.release.version}</version>
         </dependency>
         <!-- inner module -->
 
