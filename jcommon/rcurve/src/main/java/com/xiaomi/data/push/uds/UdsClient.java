@@ -26,10 +26,7 @@ import com.xiaomi.data.push.uds.handler.UdsClientHandler;
 import com.xiaomi.data.push.uds.po.UdsCommand;
 import com.xiaomi.data.push.uds.processor.UdsProcessor;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.unix.DomainSocketAddress;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
@@ -41,6 +38,7 @@ import run.mone.api.IClient;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author goodjava@qq.com
@@ -51,7 +49,17 @@ import java.util.concurrent.*;
 @Slf4j
 public class UdsClient implements IClient<UdsCommand> {
 
-    private ExecutorService pool = new ThreadPoolExecutor(200, 200, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(100));
+    private ExecutorService pool = new ThreadPoolExecutor(200, 200, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(100),
+            new ThreadFactory() {
+                private final AtomicInteger id = new AtomicInteger(0);
+
+                public Thread newThread(Runnable r) {
+                    String threadName = "udsClient" + this.id.getAndIncrement();
+                    Thread thread = new Thread(r, threadName);
+                    thread.setDaemon(true);
+                    return thread;
+                }
+            });
 
     @Getter
     private volatile Channel channel;
@@ -93,6 +101,8 @@ public class UdsClient implements IClient<UdsCommand> {
             group = getEventLoopGroup();
             Bootstrap b = new Bootstrap();
             b.group(group)
+                    .option(ChannelOption.SO_BACKLOG, 5000)
+                    .option(ChannelOption.SO_RCVBUF, 65535)
                     .channel(NetUtils.getClientChannelClass(mac, this.remote))
                     .handler(new ChannelInitializer<Channel>() {
                         @Override
@@ -143,10 +153,11 @@ public class UdsClient implements IClient<UdsCommand> {
                 log.warn("client channel is close");
                 throw new UdsException("client channel is close");
             }
+            log.debug("start send,id:{}", id);
             Send.send(channel, req);
             return future.get(req.getTimeout(), TimeUnit.MILLISECONDS);
         } catch (Throwable ex) {
-            log.error("client call:{} error:{}", req.getCmd(), ex.getMessage());
+            log.error("client call:{} error:{}", req.getCmd(), ex.getMessage(), ex);
             throw new UdsException("cal error:" + ex);
         } finally {
             reqMap.remove(id);
@@ -164,7 +175,7 @@ public class UdsClient implements IClient<UdsCommand> {
     }
 
     public void putProcessor(UdsProcessor processor) {
-        this.processorMap.put(processor.cmd(), Pair.of(processor, ExecutorServiceUtils.creatThreadPool(processor.poolSize(), this.pool)));
+        this.processorMap.put(processor.cmd(), Pair.of(processor, ExecutorServiceUtils.creatThreadPoolHasName(processor.poolSize(), processor.cmd(), this.pool)));
     }
 
     public void oneWay(UdsCommand req) {

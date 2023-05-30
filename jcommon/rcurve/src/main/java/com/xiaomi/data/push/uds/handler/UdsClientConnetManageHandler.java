@@ -45,7 +45,7 @@ public class UdsClientConnetManageHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        log.info("uds client channel active");
+        log.info("uds client channel active:{}",ctx.channel().id());
         UdsClientContext.ins().channel.set(ctx.channel());
     }
 
@@ -57,7 +57,7 @@ public class UdsClientConnetManageHandler extends ChannelDuplexHandler {
      */
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-        log.warn("client channelInactive");
+        log.warn("client channelInactive:{}", ctx.channel().id());
         final EventLoop eventLoop = ctx.channel().eventLoop();
         if (this.reconnection) {
             eventLoop.schedule(() -> {
