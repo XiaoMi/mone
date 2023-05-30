@@ -37,7 +37,6 @@ import static com.xiaomi.mone.log.manager.common.utils.ManagerUtil.getConfigFrom
 @Slf4j
 public class MiLogManagerBootstrap {
 
-
     public static void main(String[] args) throws InterruptedException {
         getConfigFromNanos();
 
