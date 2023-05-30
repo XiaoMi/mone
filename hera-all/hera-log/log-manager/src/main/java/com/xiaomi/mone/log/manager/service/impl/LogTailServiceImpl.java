@@ -234,7 +234,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
 
         MilogLogTailDo mt = buildLogTailDo(param, logStore, appBaseInfo, MoneUserContext.getCurrentUser().getUser());
         MilogLogTailDo milogLogtailDo = milogLogtailDao.newMilogLogtail(mt);
-        boolean supportedConsume = logTypeProcessor.supportedConsume(LogTypeEnum.type2enum(logStore.getLogType()));
+        boolean supportedConsume = logTypeProcessor.supportedConsume(logStore.getLogType());
         try {
             if (null != milogLogtailDo) {
                 if (tailExtensionService.bindMqResourceSwitch(param.getAppType())) {
@@ -243,11 +243,13 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
                             milogLogtailDo.getId(), param.getMilogAppId(),
                             null == param.getMiddlewareConfigId() ? logStore.getMqResourceId() : param.getMiddlewareConfigId(),
                             param.getTopicName(), param.getBatchSendSize());
+                    /** 创建完tail后同步信息**/
+                    tailExtensionService.sendMessageOnCreate(param, mt, param.getMilogAppId(), supportedConsume);
                 } else if (tailExtensionService.bindPostProcessSwitch(param.getStoreId())) {
                     tailExtensionService.defaultBindingAppTailConfigRelPostProcess(milogLogtailDo.getSpaceId(), milogLogtailDo.getStoreId(), milogLogtailDo.getId(), milogLogtailDo.getMilogAppId(), logStore.getMqResourceId());
+                    /** 创建完tail后同步信息**/
+                    tailExtensionService.sendMessageOnCreate(param, mt, param.getMilogAppId(), supportedConsume);
                 }
-                /** 创建完tail后同步信息**/
-                tailExtensionService.sendMessageOnCreate(param, mt, param.getMilogAppId(), supportedConsume);
                 MilogTailDTO ret = new MilogTailDTO();
                 ret.setId(mt.getId());
                 return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage(), ret);
@@ -270,7 +272,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         // tail创建成功 绑定和中间件的关系
         milogAppMiddlewareRelService.bindingTailConfigRel(milogLogtailDo.getId(), param.getMilogAppId(), param.getMiddlewareConfigId(), param.getTopicName());
         /** 创建完tail后同步信息**/
-        tailExtensionService.sendMessageOnCreate(param, milogLogtailDo, param.getMilogAppId(), logTypeProcessor.supportedConsume(LogTypeEnum.type2enum(milogLogStore.getLogType())));
+        tailExtensionService.sendMessageOnCreate(param, milogLogtailDo, param.getMilogAppId(), logTypeProcessor.supportedConsume(milogLogStore.getLogType()));
     }
 
     @Override
@@ -439,7 +441,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
                 }
                 try {
                     List<String> oldIps = ret.getIps();
-                    boolean supportedConsume = logTypeProcessor.supportedConsume(LogTypeEnum.type2enum(logStoreDO.getLogType()));
+                    boolean supportedConsume = logTypeProcessor.supportedConsume(logStoreDO.getLogType());
                     tailExtensionService.updateSendMsg(milogLogtailDo, oldIps, supportedConsume);
                 } catch (Exception e) {
                     new Result<>(CommonError.UnknownError.getCode(), CommonError.UnknownError.getMessage(), "推送配置错误");
