@@ -42,6 +42,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 /**
@@ -57,7 +58,17 @@ public class UdsServer implements IServer<UdsCommand> {
 
     private ExecutorService pool = new ThreadPoolExecutor(200, 200,
             0L, TimeUnit.MILLISECONDS,
-            new ArrayBlockingQueue<>(100));
+            new ArrayBlockingQueue<>(100),
+            new ThreadFactory() {
+                private final AtomicInteger id = new AtomicInteger(0);
+
+                public Thread newThread(Runnable r) {
+                    String threadName = "udsServer" + this.id.getAndIncrement();
+                    Thread thread = new Thread(r, threadName);
+                    thread.setDaemon(true);
+                    return thread;
+                }
+            });
 
     /**
      * 是否使用remote模式(标准tcp)
@@ -88,7 +99,7 @@ public class UdsServer implements IServer<UdsCommand> {
     }
 
     public void putProcessor(UdsProcessor processor) {
-        this.processorMap.put(processor.cmd(), Pair.of(processor, ExecutorServiceUtils.creatThreadPool(processor.poolSize(), this.pool)));
+        this.processorMap.put(processor.cmd(), Pair.of(processor, ExecutorServiceUtils.creatThreadPoolHasName(processor.poolSize(), processor.cmd(), this.pool)));
     }
 
 
@@ -103,7 +114,8 @@ public class UdsServer implements IServer<UdsCommand> {
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
-                    .option(ChannelOption.SO_BACKLOG, 4096)
+                    .option(ChannelOption.SO_BACKLOG, 5000)
+                    .option(ChannelOption.SO_RCVBUF, 65535)
                     .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                     .channel(NetUtils.getServerChannelClass(mac, this.remote))
                     .childHandler(new ChannelInitializer<Channel>() {

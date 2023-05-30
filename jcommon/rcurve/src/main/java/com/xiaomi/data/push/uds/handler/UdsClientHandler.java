@@ -50,7 +50,7 @@ public class UdsClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
     protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) throws Exception {
         UdsCommand command = new UdsCommand();
         command.decode(msg);
-        log.debug("client received:{}", command);
+        log.debug("client received:{},{}", command.getId(), command.isRequest());
         if (command.isRequest()) {
             command.setChannel(ctx.channel());
             Pair<UdsProcessor<UdsCommand, UdsCommand>, ExecutorService> pair = this.processorMap.get(command.getCmd());
@@ -58,6 +58,7 @@ public class UdsClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                 UdsProcessor processor = pair.getKey();
                 pair.getValue().submit(()->{
                     SafeRun.run(() -> {
+                        log.debug("client received:{}", command.getId());
                         Object res = processor.processRequest(command);
                         if (null != res) {
                             Send.send(ctx.channel(), (UdsCommand) res);
@@ -74,12 +75,13 @@ public class UdsClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        log.error("client channelInactive:{}",ctx.channel().id());
         UdsClientContext.ins().channelInactive();
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        log.error("exceptionCaught:{}", cause);
+        log.error("exceptionCaught:{},{}",ctx.channel().id(), cause);
         UdsClientContext.ins().exceptionCaught(cause);
         ctx.close();
     }
