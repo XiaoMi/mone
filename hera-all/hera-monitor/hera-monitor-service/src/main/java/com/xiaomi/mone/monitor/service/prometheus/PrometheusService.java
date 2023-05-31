@@ -343,7 +343,7 @@ public class PrometheusService {
         if (!CollectionUtils.isEmpty(result)) {
             for (MetricDataSetVector metricDataVector : result) {
                 Metric metric = metricDataVector.getMetric();
-                if (Double.valueOf(metricDataVector.getValue().get(1)).intValue() == 0) {
+                if (Double.valueOf(metricDataVector.getValue().get(1)) == 0d) {
                     continue;
                 }
 
