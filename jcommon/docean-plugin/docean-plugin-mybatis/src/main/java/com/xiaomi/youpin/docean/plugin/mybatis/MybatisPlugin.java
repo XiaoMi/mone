@@ -62,6 +62,8 @@ public class MybatisPlugin implements IPlugin {
 
     private static final String MYBATIS_PAGE_HELPER = "mybatisPageHelper";
 
+    private static final String DB_NAMES = "DB_NAMES";
+
     private boolean serverLess = false;
 
 
@@ -73,7 +75,7 @@ public class MybatisPlugin implements IPlugin {
         Aop.ins().getInterceptorMap().put(Transactional.class, new TransactionalInterceptor());
         Config config = ioc.getBean(Config.class);
         serverLess = Boolean.valueOf(config.get("serverless", "false"));
-        List<String> dbNames = ioc.getBean(DatasourcePlugin.DB_NAMES);
+        List<String> dbNames = ioc.getBean(MybatisPlugin.DB_NAMES);
         boolean one = dbNames.size() == 1;
         dbNames.stream().forEach(it -> addDAO(ioc, it, config.get("mybatis_mapper_location", ""), one));
         log.info("mybatis plugin init use time:{}ms", sw.elapsed(TimeUnit.MILLISECONDS));
