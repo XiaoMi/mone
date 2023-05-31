@@ -42,7 +42,7 @@ public class MilogLogTailServiceTest {
     public void testFactory() {
         logTypeProcessorFactory.setMilogLogTemplateMapper(milogLogTemplateMapper);
         LogTypeProcessor logTypeProcessor = logTypeProcessorFactory.getLogTypeProcessor();
-        boolean supportedConsume = logTypeProcessor.supportedConsume(LogTypeEnum.APP_LOG_MULTI);
+        boolean supportedConsume = logTypeProcessor.supportedConsume(LogTypeEnum.APP_LOG_MULTI.getType());
         log.info("supportedConsume:{}", supportedConsume);
     }
 

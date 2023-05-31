@@ -12,8 +12,8 @@ public interface LogTypeProcessor {
     /**
      * 是否支持消费
      *
-     * @param logTypeEnum
+     * @param logTypeCode
      * @return
      */
-    boolean supportedConsume(LogTypeEnum logTypeEnum);
+    boolean supportedConsume(Integer logTypeCode);
 }
