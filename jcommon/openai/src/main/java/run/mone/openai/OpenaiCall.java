@@ -17,10 +17,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
+import okhttp3.*;
 import okhttp3.logging.HttpLoggingInterceptor;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
@@ -281,9 +278,11 @@ public class OpenaiCall {
      * @param config
      */
     public static void callStream2(String req, StreamListener sl, ReqConfig config) {
+        MediaType mediaType = MediaType.parse("application/json; charset=utf-8");
+
         Request request = new Request.Builder()
                 .url(config.getAskUrl())
-                .post(RequestBody.create(null, req.getBytes()))
+                .post(RequestBody.create(mediaType, req.getBytes()))
                 .build();
 
         OkHttpClient client = new OkHttpClient.Builder()
