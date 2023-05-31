@@ -39,12 +39,7 @@
             <groupId>run.mone</groupId>
             <artifactId>docean-plugin-datasource</artifactId>
             <version>1.4-SNAPSHOT</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.mchange</groupId>
-                    <artifactId>c3p0</artifactId>
-                </exclusion>
-            </exclusions>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
