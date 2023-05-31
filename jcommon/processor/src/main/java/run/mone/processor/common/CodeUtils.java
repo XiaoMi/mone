@@ -1,21 +1,26 @@
 package run.mone.processor.common;
 
 import com.github.javaparser.JavaParser;
+import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.stmt.Statement;
+import com.google.common.io.CharSource;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
 import lombok.SneakyThrows;
 
 import javax.lang.model.element.Modifier;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * @author goodjava@qq.com
@@ -83,6 +88,50 @@ public abstract class CodeUtils {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+
+    @SneakyThrows
+    public static List<String> readImports(String code) {
+        CharSource source = CharSource.wrap(code);
+        String output = source.lines()
+                .filter(line -> line.contains("import "))
+                .collect(Collectors.joining("\n"));
+        JavaParser parser = new JavaParser();
+        ParseResult<CompilationUnit> cu = parser.parse(output);
+        CompilationUnit cu2 = cu.getResult().get();
+        return cu2.getImports().stream()
+                .map(ImportDeclaration::getNameAsString)
+                .collect(Collectors.toList());
+    }
+
+    public static String readImports2(String code) {
+        JavaParser parser = new JavaParser();
+        ParseResult<ImportDeclaration> cu = parser.parseImport(code);
+        if (!cu.isSuccessful()) {
+            return "Error";
+        }
+        ImportDeclaration cu2 = cu.getResult().get();
+        return cu2.getName().toString();
+    }
+
+    public static String readMethod(String code) {
+        JavaParser parser = new JavaParser();
+        ParseResult<MethodDeclaration> cu = parser.parseMethodDeclaration(code);
+        if (!cu.isSuccessful()) {
+            return "Error";
+        }
+        return cu.getResult().get().toString();
+    }
+
+
+    @SneakyThrows
+    public static String removeImports(String code) {
+        CharSource source = CharSource.wrap(code);
+        String output = source.lines()
+                .filter(line -> !line.contains("import "))
+                .collect(Collectors.joining("\n"));
+        return output;
     }
 
 }
