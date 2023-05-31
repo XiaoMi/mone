@@ -137,6 +137,7 @@ public class EsService {
                 || EsIndexDataType.http.name().equals(param.getType())
                 || EsIndexDataType.dubbo_consumer.name().equals(param.getType())
                 || EsIndexDataType.dubbo_provider.name().equals(param.getType())
+                || EsIndexDataType.dubbo_sla.name().equals(param.getType())
                 || EsIndexDataType.grpc_client.name().equals(param.getType())
                 || EsIndexDataType.grpc_server.name().equals(param.getType())
                 || EsIndexDataType.thrift_client.name().equals(param.getType())
