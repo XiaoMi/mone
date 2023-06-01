@@ -38,7 +38,7 @@ public class ResourceUsageService {
     private String resourceAlarm;
 
     public List<ResourceUsageMessage> getCpuUsageData(){
-        String mimonitor = alarmService.getContainerCpuResourceAlarmExpr(null, "mimonitor", "<", Integer.valueOf(resourceAlarm),false);
+        String mimonitor = alarmService.getContainerCpuResourceAlarmExpr(null, "mimonitor", "<", Integer.valueOf(resourceAlarm),false,null);
         Result<PageData> pageDataResult = prometheusService.queryByMetric(mimonitor);
         PageData data = pageDataResult.getData();
         List<ResourceUsageMessage> listMsg = new ArrayList<>();
@@ -57,7 +57,7 @@ public class ResourceUsageService {
     }
 
     public List<ResourceUsageMessage> getMemUsageData(){
-        String mimonitor = alarmService.getContainerMemReourceAlarmExpr(null, "mimonitor", "<", Integer.valueOf(resourceAlarm),false);
+        String mimonitor = alarmService.getContainerMemReourceAlarmExpr(null, "mimonitor", "<", Integer.valueOf(resourceAlarm),false,null);
         Result<PageData> pageDataResult = prometheusService.queryByMetric(mimonitor);
         PageData data = pageDataResult.getData();
         List<ResourceUsageMessage> listMsg = new ArrayList<>();

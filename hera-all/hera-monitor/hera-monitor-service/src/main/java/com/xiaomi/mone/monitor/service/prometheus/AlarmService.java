@@ -300,56 +300,56 @@ public class AlarmService {
             case "es_availability":
                 return getAvailableRate(es_error_metric,es_avalible_total_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,avalible_duration_time,null,rule.getOp(),rule.getValue());
             case "container_cpu_use_rate":
-                return getContainerCpuAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),false);
+                return getContainerCpuAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),false,ruleData);
             case "container_cpu_average_load":
-                return getContainerLoadAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),false);
+                return getContainerLoadAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),false,ruleData);
             case "container_mem_use_rate":
-                return getContainerMemAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),false);
+                return getContainerMemAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),false,ruleData);
             case "container_count_monitor":
-                return getContainerCountAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),false);
+                return getContainerCountAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),false,ruleData);
             case "app_restart_monitor":
                 return getAppRestartAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),false);
             case "app_crash_monitor":
-                return getAppCrashAlarmExpr(rule.getProjectId(),app.getProjectName());
+                return getAppCrashAlarmExpr(rule.getProjectId(),app.getProjectName(),ruleData);
 
             case "container_cpu_resource_use_rate":
-                return getContainerCpuResourceAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),false);
+                return getContainerCpuResourceAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),false,ruleData);
             case "container_mem_resource_use_rate":
-                return getContainerMemReourceAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),false);
+                return getContainerMemReourceAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),false,ruleData);
             case "container_disk_use_rate":
-                return getContainerDiskReourceAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),false);
+                return getContainerDiskReourceAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),false,ruleData);
 
             case "k8s_container_cpu_use_rate":
-                return getContainerCpuAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),true);
+                return getContainerCpuAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),true,ruleData);
             case "k8s_container_cpu_average_load":
-                return getContainerLoadAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),true);
+                return getContainerLoadAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),true,ruleData);
             case "k8s_container_mem_use_rate":
-                return getContainerMemAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),true);
+                return getContainerMemAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),true,ruleData);
             case "k8s_container_count_monitor":
-                return getContainerCountAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),true);
+                return getContainerCountAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),true,ruleData);
 
             case "k8s_cpu_resource_use_rate":
-                return getContainerCpuResourceAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),true);
+                return getContainerCpuResourceAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),true,ruleData);
             case "k8s_mem_resource_use_rate":
-                return getContainerMemReourceAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),true);
+                return getContainerMemReourceAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),true,ruleData);
 
             case "k8s_cpu_avg_use_rate":
-                return getK8sCpuAvgUsageAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue());
+                return getK8sCpuAvgUsageAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),ruleData);
 
             case "jvm_heap_mem_use_rate":
-                return getJvmMemAlarmExpr(rule.getProjectId(),app.getProjectName(),"heap", rule.getOp(), rule.getValue());
+                return getJvmMemAlarmExpr(rule.getProjectId(),app.getProjectName(),"heap", rule.getOp(), rule.getValue(),ruleData);
             case "jvm_no_heap_mem_use_rate":
-                return getJvmMemAlarmExpr(rule.getProjectId(),app.getProjectName(),"nonheap", rule.getOp(), rule.getValue());
+                return getJvmMemAlarmExpr(rule.getProjectId(),app.getProjectName(),"nonheap", rule.getOp(), rule.getValue(),ruleData);
             case "jvm_thread_num":
-                return getJvmThreadAlarmExpr(rule.getProjectId(),app.getProjectName(), rule.getOp(), rule.getValue());
+                return getJvmThreadAlarmExpr(rule.getProjectId(),app.getProjectName(), rule.getOp(), rule.getValue(),ruleData);
             case "jvm_gc_cost":
-                return getJvmGcCostExpr(rule.getProjectId(),app.getProjectName(), rule.getOp(), rule.getValue(),false);
+                return getJvmGcCostExpr(rule.getProjectId(),app.getProjectName(), rule.getOp(), rule.getValue(),false,ruleData);
             case "jvm_gc_times":
-                return getJvmGcCountExpr(rule.getProjectId(),app.getProjectName(), rule.getOp(), rule.getValue(),false);
+                return getJvmGcCountExpr(rule.getProjectId(),app.getProjectName(), rule.getOp(), rule.getValue(),false,ruleData);
             case "jvm_full_gc_cost":
-                return getJvmGcCostExpr(rule.getProjectId(),app.getProjectName(), rule.getOp(), rule.getValue(),true);
+                return getJvmGcCostExpr(rule.getProjectId(),app.getProjectName(), rule.getOp(), rule.getValue(),true,ruleData);
             case "jvm_full_gc_times":
-                return getJvmGcCountExpr(rule.getProjectId(),app.getProjectName(), rule.getOp(), rule.getValue(),true);
+                return getJvmGcCountExpr(rule.getProjectId(),app.getProjectName(), rule.getOp(), rule.getValue(),true,ruleData);
             default:
 
                 if (rule.getAlert().endsWith("_tesla_availability")) {
@@ -598,12 +598,22 @@ public class AlarmService {
         return expBuilder.toString();
     }
 
-    public String getContainerLoadAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s){
+    public String getContainerLoadAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s,AlarmRuleData ruleData){
 
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("avg_over_time(container_cpu_load_average_10s");
         exprBuilder.append("{system='mione',");
         exprBuilder.append("image!='',");
+
+        String envLabel = getServerEnvLabel(ruleData);
+        if(StringUtils.isNotBlank(envLabel)){
+            exprBuilder.append(envLabel).append(",");
+        }
+
+        String zoneLabel = getServerZoneLabel(ruleData);
+        if(StringUtils.isNotBlank(zoneLabel)){
+            exprBuilder.append(zoneLabel).append(",");
+        }
 
         exprBuilder.append("application='").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'");
 
@@ -624,13 +634,23 @@ public class AlarmService {
      * @param value
      * @return
      */
-    public String getContainerCpuAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s){
+    public String getContainerCpuAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s,AlarmRuleData ruleData){
 
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("rate(container_cpu_user_seconds_total{system='mione',");
 
         exprBuilder.append("image!='',");
         exprBuilder.append("system='mione',");
+
+        String envLabel = getServerEnvLabel(ruleData);
+        if(StringUtils.isNotBlank(envLabel)){
+            exprBuilder.append(envLabel).append(",");
+        }
+
+        String zoneLabel = getServerZoneLabel(ruleData);
+        if(StringUtils.isNotBlank(zoneLabel)){
+            exprBuilder.append(zoneLabel).append(",");
+        }
 
         exprBuilder.append("application='").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'");
 
@@ -639,7 +659,7 @@ public class AlarmService {
         log.info("getContainerCpuAlarmExpr param: projectId:{}, projectName:{}, op:{},value:{}, return:{}",projectId, projectName, op,value, exprBuilder.toString());
         return exprBuilder.toString();
     }
-    public String getContainerCpuResourceAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s){
+    public String getContainerCpuResourceAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s,AlarmRuleData ruleData){
 
 //        String jobLabelValue = prometheusAlarmEnv.equals("production") ? "mione-online-china.*|mione-online-youpin.*" : "mione-staging-china.*|mione-staging-youpin.*";
 
@@ -647,6 +667,16 @@ public class AlarmService {
         exprBuilder.append("sum(irate(container_cpu_usage_seconds_total{");
         exprBuilder.append("image!='',");
         exprBuilder.append("system='mione',");
+
+        String envLabel = getServerEnvLabel(ruleData);
+        if(StringUtils.isNotBlank(envLabel)){
+            exprBuilder.append(envLabel).append(",");
+        }
+
+        String zoneLabel = getServerZoneLabel(ruleData);
+        if(StringUtils.isNotBlank(zoneLabel)){
+            exprBuilder.append(zoneLabel).append(",");
+        }
         exprBuilder.append("application='").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'");
 //        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
         exprBuilder.append("}[1d])) without (cpu) * 100");
@@ -655,7 +685,7 @@ public class AlarmService {
         return exprBuilder.toString();
     }
 
-    public String getContainerMemAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s){
+    public String getContainerMemAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s,AlarmRuleData ruleData){
 
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("(sum(avg_over_time(container_memory_rss{");
@@ -663,11 +693,29 @@ public class AlarmService {
         exprBuilder.append("image!='',");
         exprBuilder.append("system='mione',");
 
+        String envLabel = getServerEnvLabel(ruleData);
+        if(StringUtils.isNotBlank(envLabel)){
+            exprBuilder.append(envLabel).append(",");
+        }
+
+        String zoneLabel = getServerZoneLabel(ruleData);
+        if(StringUtils.isNotBlank(zoneLabel)){
+            exprBuilder.append(zoneLabel).append(",");
+        }
+
         exprBuilder.append("application='").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'");
 
         exprBuilder.append("}[1m])) by (application,ip,job,name,system,instance,id,pod,namespace,serverEnv) / ");
         exprBuilder.append("sum(avg_over_time(container_spec_memory_limit_bytes{");
         exprBuilder.append("image!='',");
+
+        if(StringUtils.isNotBlank(envLabel)){
+            exprBuilder.append(envLabel).append(",");
+        }
+
+        if(StringUtils.isNotBlank(zoneLabel)){
+            exprBuilder.append(zoneLabel).append(",");
+        }
 
         exprBuilder.append("application='").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'");
         exprBuilder.append("}[1m])) by (application,ip,job,name,system,instance,id,pod,namespace,serverEnv)) * 100");
@@ -676,14 +724,22 @@ public class AlarmService {
         return exprBuilder.toString();
     }
 
-    public String getContainerMemReourceAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s){
-
-//        String jobLabelValue = prometheusAlarmEnv.equals("production") ? "mione-online-china.*|mione-online-youpin.*" : "mione-staging-china.*|mione-staging-youpin.*";
+    public String getContainerMemReourceAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s,AlarmRuleData ruleData){
 
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("(sum(avg_over_time(container_memory_rss{");
         exprBuilder.append("image!='',");
         exprBuilder.append("system='mione',");
+
+        String envLabel = getServerEnvLabel(ruleData);
+        if(StringUtils.isNotBlank(envLabel)){
+            exprBuilder.append(envLabel).append(",");
+        }
+
+        String zoneLabel = getServerZoneLabel(ruleData);
+        if(StringUtils.isNotBlank(zoneLabel)){
+            exprBuilder.append(zoneLabel).append(",");
+        }
 
         if(projectName.equals("mimonitor")){
             if(isK8s){
@@ -721,11 +777,21 @@ public class AlarmService {
         return exprBuilder.toString();
     }
 
-    public String getContainerDiskReourceAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s){
+    public String getContainerDiskReourceAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s,AlarmRuleData ruleData){
 
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("clamp_max(sum(container_fs_usage_bytes{");
         exprBuilder.append("system='mione',");
+
+        String envLabel = getServerEnvLabel(ruleData);
+        if(StringUtils.isNotBlank(envLabel)){
+            exprBuilder.append(envLabel).append(",");
+        }
+
+        String zoneLabel = getServerZoneLabel(ruleData);
+        if(StringUtils.isNotBlank(zoneLabel)){
+            exprBuilder.append(zoneLabel).append(",");
+        }
         exprBuilder.append("application='").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'");
         exprBuilder.append("}) by (application,name,ip,serverEnv)/10737418240 ,1) * 100  ");
         exprBuilder.append(op).append(value);
@@ -733,7 +799,7 @@ public class AlarmService {
         return exprBuilder.toString();
     }
 
-    public String getK8sCpuAvgUsageAlarmExpr(Integer projectId,String projectName,String op,double value){
+    public String getK8sCpuAvgUsageAlarmExpr(Integer projectId,String projectName,String op,double value,AlarmRuleData ruleData){
 
 
 //        String jobLabelValue = prometheusAlarmEnv.equals("production") ? "mione-online-china.*|mione-online-youpin.*" : "mione-staging-china.*|mione-staging-youpin.*";
@@ -741,6 +807,17 @@ public class AlarmService {
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("sum(irate(container_cpu_usage_seconds_total{");
         exprBuilder.append("image!='',system='mione',");
+
+        String envLabel = getServerEnvLabel(ruleData);
+        if(StringUtils.isNotBlank(envLabel)){
+            exprBuilder.append(envLabel).append(",");
+        }
+
+        String zoneLabel = getServerZoneLabel(ruleData);
+        if(StringUtils.isNotBlank(zoneLabel)){
+            exprBuilder.append(zoneLabel).append(",");
+        }
+
 //        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
         exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
 
@@ -749,6 +826,13 @@ public class AlarmService {
         exprBuilder.append("(");
         exprBuilder.append("container_spec_cpu_quota{");
         exprBuilder.append("system='mione',");
+        if(StringUtils.isNotBlank(envLabel)){
+            exprBuilder.append(envLabel).append(",");
+        }
+
+        if(StringUtils.isNotBlank(zoneLabel)){
+            exprBuilder.append(zoneLabel).append(",");
+        }
 //        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
         exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
         exprBuilder.append("}");
@@ -768,12 +852,22 @@ public class AlarmService {
     }
 
 
-    public String getContainerCountAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s){
+    public String getContainerCountAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s,AlarmRuleData ruleData){
 
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("count(sum_over_time(container_spec_memory_limit_bytes{");
         exprBuilder.append("image!='',");
         exprBuilder.append("system='mione',");
+
+        String envLabel = getServerEnvLabel(ruleData);
+        if(StringUtils.isNotBlank(envLabel)){
+            exprBuilder.append(envLabel).append(",");
+        }
+
+        String zoneLabel = getServerZoneLabel(ruleData);
+        if(StringUtils.isNotBlank(zoneLabel)){
+            exprBuilder.append(zoneLabel).append(",");
+        }
 
         exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
 
@@ -790,11 +884,22 @@ public class AlarmService {
         return exprBuilder.toString();
     }
 
-    public String getAppCrashAlarmExpr(Integer projectId,String projectName){
+    public String getAppCrashAlarmExpr(Integer projectId,String projectName,AlarmRuleData ruleData){
 
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("time() - container_last_seen{");
         exprBuilder.append("system='mione',");
+
+        String envLabel = getServerEnvLabel(ruleData);
+        if(StringUtils.isNotBlank(envLabel)){
+            exprBuilder.append(envLabel).append(",");
+        }
+
+        String zoneLabel = getServerZoneLabel(ruleData);
+        if(StringUtils.isNotBlank(zoneLabel)){
+            exprBuilder.append(zoneLabel).append(",");
+        }
+
         exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
         exprBuilder.append("}").append(" > 360");
 
@@ -980,13 +1085,29 @@ public class AlarmService {
         return expBuilder.toString();
     }
 
-    private String getJvmMemAlarmExpr(Integer projectId,String projectName,String type, String op,Float value){
+    private String getJvmMemAlarmExpr(Integer projectId,String projectName,String type, String op,Float value,AlarmRuleData ruleData){
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("(sum(jvm_memory_used_bytes{");
+
+        String envLabel = getServerEnvLabel(ruleData);
+        if(StringUtils.isNotBlank(envLabel)){
+            exprBuilder.append(envLabel).append(",");
+        }
+        String zoneLabel = getServerZoneLabel(ruleData);
+        if(StringUtils.isNotBlank(zoneLabel)){
+            exprBuilder.append(zoneLabel).append(",");
+        }
         exprBuilder.append("application=").append("'").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'").append(",");
         exprBuilder.append("area=").append("'").append(type).append("'");
         exprBuilder.append("}) by (application,area,instance,serverEnv,serverZone,serverIp,service,system)/ ");
         exprBuilder.append("sum(jvm_memory_max_bytes{");
+
+        if(StringUtils.isNotBlank(envLabel)){
+            exprBuilder.append(envLabel).append(",");
+        }
+        if(StringUtils.isNotBlank(zoneLabel)){
+            exprBuilder.append(zoneLabel).append(",");
+        }
         exprBuilder.append("application=").append("'").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'").append(",");
         exprBuilder.append("area=").append("'").append(type).append("'");
         exprBuilder.append("}) by (application,area,instance,serverEnv,serverZone,serverIp,service,system)) * 100");
@@ -995,10 +1116,19 @@ public class AlarmService {
         return exprBuilder.toString();
     }
 
-    private String getJvmThreadAlarmExpr(Integer projectId,String projectName, String op,Float value){
+    private String getJvmThreadAlarmExpr(Integer projectId,String projectName, String op,Float value,AlarmRuleData ruleData){
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("max_over_time(jvm_threads_live_threads");
         exprBuilder.append("{");
+
+        String envLabel = getServerEnvLabel(ruleData);
+        if(StringUtils.isNotBlank(envLabel)){
+            exprBuilder.append(envLabel).append(",");
+        }
+        String zoneLabel = getServerZoneLabel(ruleData);
+        if(StringUtils.isNotBlank(zoneLabel)){
+            exprBuilder.append(zoneLabel).append(",");
+        }
         exprBuilder.append("application=").append("'").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'").append(",");
         exprBuilder.append("serverIp!=").append("''");
         exprBuilder.append("}[1m])");
@@ -1007,10 +1137,21 @@ public class AlarmService {
         return exprBuilder.toString();
     }
 
-    private String getJvmGcCostExpr(Integer projectId,String projectName, String op,Float value,boolean isFullGc){
+    private String getJvmGcCostExpr(Integer projectId,String projectName, String op,Float value,boolean isFullGc,AlarmRuleData ruleData){
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("max_over_time(jvm_gc_pause_seconds_max");
         exprBuilder.append("{");
+
+        String envLabel = getServerEnvLabel(ruleData);
+        if(StringUtils.isNotBlank(envLabel)){
+            exprBuilder.append(envLabel).append(",");
+        }
+
+        String zoneLabel = getServerZoneLabel(ruleData);
+        if(StringUtils.isNotBlank(zoneLabel)){
+            exprBuilder.append(zoneLabel).append(",");
+        }
+
         if(isFullGc){
             exprBuilder.append("action=~'end of major GC|endofminorGC',");
         }
@@ -1022,9 +1163,19 @@ public class AlarmService {
         return exprBuilder.toString();
     }
 
-    private String getJvmGcCountExpr(Integer projectId,String projectName, String op,Float value,boolean isFullGc){
+    private String getJvmGcCountExpr(Integer projectId,String projectName, String op,Float value,boolean isFullGc,AlarmRuleData ruleData){
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("delta(jvm_gc_pause_seconds_count{");
+
+        String envLabel = getServerEnvLabel(ruleData);
+        if(StringUtils.isNotBlank(envLabel)){
+            exprBuilder.append(envLabel).append(",");
+        }
+        String zoneLabel = getServerZoneLabel(ruleData);
+        if(StringUtils.isNotBlank(zoneLabel)){
+            exprBuilder.append(zoneLabel).append(",");
+        }
+
         if(isFullGc){
             exprBuilder.append("action=~'end of major GC|endofminorGC',");
         }
@@ -1032,6 +1183,44 @@ public class AlarmService {
         exprBuilder.append("}[1m])").append(op).append(value);
         log.info("getJvmGcCountExpr param: projectId:{}, projectName:{}, return:{}",projectId, projectName,exprBuilder.toString());
         return exprBuilder.toString();
+    }
+
+    private String getServerEnvLabel(AlarmRuleData ruleData){
+
+        if(ruleData == null){
+            return null;
+        }
+
+        StringBuilder stringBuilder = new StringBuilder();
+        if(!CollectionUtils.isEmpty(ruleData.getIncludeEnvs())){
+            ruleData.getIncludeEnvs().stream().forEach(t -> stringBuilder.append("|").append(t));
+            return "serverEnv=~'" + stringBuilder.toString().substring(1) + "'";
+        }
+        if(!CollectionUtils.isEmpty(ruleData.getExceptEnvs())){
+            ruleData.getIncludeEnvs().stream().forEach(t -> stringBuilder.append("|").append(t));
+            return "serverEnv!~'" + stringBuilder.toString().substring(1) + "'";
+        }
+
+        return null;
+    }
+
+    private String getServerZoneLabel(AlarmRuleData ruleData){
+
+        if(ruleData == null){
+            return null;
+        }
+
+        StringBuilder stringBuilder = new StringBuilder();
+        if(!CollectionUtils.isEmpty(ruleData.getIncludeZones())){
+            ruleData.getIncludeZones().stream().forEach(t -> stringBuilder.append("|").append(t));
+            return "serverZone=~'" + stringBuilder.toString().substring(1) + "'";
+        }
+        if(!CollectionUtils.isEmpty(ruleData.getExceptZones())){
+            ruleData.getExceptZones().stream().forEach(t -> stringBuilder.append("|").append(t));
+            return "serverZone!~'" + stringBuilder.toString().substring(1) + "'";
+        }
+
+        return null;
     }
 
 
