@@ -76,6 +76,9 @@ public class MybatisPlugin implements IPlugin {
         Config config = ioc.getBean(Config.class);
         serverLess = Boolean.valueOf(config.get("serverless", "false"));
         List<String> dbNames = ioc.getBean(MybatisPlugin.DB_NAMES);
+        if (dbNames == null) {
+            return;
+        }
         boolean one = dbNames.size() == 1;
         dbNames.stream().forEach(it -> addDAO(ioc, it, config.get("mybatis_mapper_location", ""), one));
         log.info("mybatis plugin init use time:{}ms", sw.elapsed(TimeUnit.MILLISECONDS));
