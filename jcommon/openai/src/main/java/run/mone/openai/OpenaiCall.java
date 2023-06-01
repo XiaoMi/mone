@@ -48,6 +48,7 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -282,7 +283,7 @@ public class OpenaiCall {
 
         Request request = new Request.Builder()
                 .url(config.getAskUrl())
-                .post(RequestBody.create(mediaType, req.getBytes()))
+                .post(RequestBody.create(mediaType, req.getBytes(Charset.forName("utf8"))))
                 .build();
 
         OkHttpClient client = new OkHttpClient.Builder()
