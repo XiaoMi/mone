@@ -53,7 +53,7 @@ public class LogDataTransfer {
         this.logParser = logParser;
         this.messageSender = messageSender;
         this.sinkJobConfig = sinkJobConfig;
-        String mqPostProcessingBean = sinkJobConfig.getMqType() + LogStreamConstants.compensateMsgConsumeProviderBeanSuffix;
+        String mqPostProcessingBean = sinkJobConfig.getMqType() + LogStreamConstants.postProcessingProviderBeanSuffix;
         this.messagePostProcessing = Ioc.ins().getBean(mqPostProcessingBean);
     }
 
