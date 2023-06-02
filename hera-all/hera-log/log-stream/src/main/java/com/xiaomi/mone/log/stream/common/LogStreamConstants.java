@@ -26,4 +26,6 @@ public class LogStreamConstants {
 
     public static final String compensateMsgConsumeProviderBeanSuffix = "CmcProvider";
 
+    public static final String postProcessingProviderBeanSuffix = "postProcessing";
+
 }
