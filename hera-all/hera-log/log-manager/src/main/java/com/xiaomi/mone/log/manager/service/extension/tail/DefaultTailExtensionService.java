@@ -145,4 +145,9 @@ public class DefaultTailExtensionService implements TailExtensionService {
         return true;
     }
 
+    @Override
+    public List<String> getStreamMachineUniqueList(Integer projectTypeCode, String motorRoomEn) {
+        return Lists.newArrayList();
+    }
+
 }
