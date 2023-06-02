@@ -48,10 +48,11 @@ public class LogDataTransfer {
     private MqMessagePostProcessing messagePostProcessing;
 
     public LogDataTransfer(SinkChain sinkChain, LogParser logParser,
-                           MessageSender messageSender) {
+                           MessageSender messageSender, SinkJobConfig sinkJobConfig) {
         this.sinkChain = sinkChain;
         this.logParser = logParser;
         this.messageSender = messageSender;
+        this.sinkJobConfig = sinkJobConfig;
         String mqPostProcessingBean = sinkJobConfig.getMqType() + LogStreamConstants.compensateMsgConsumeProviderBeanSuffix;
         this.messagePostProcessing = Ioc.ins().getBean(mqPostProcessingBean);
     }

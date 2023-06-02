@@ -56,9 +56,7 @@ public class RocketMqSinkJobProvider implements SinkJobProvider {
                 sinkJobConfig.getParseScript(), sinkJobConfig.getTopic(), sinkJobConfig.getTail(),
                 sinkJobConfig.getTag(), sinkJobConfig.getLogStoreName());
 
-        LogDataTransfer dataTransfer = new LogDataTransfer(sinkChain, logParser, esMessageSender);
-        // 不合理,违反了设计原则，但是为了拿到topicName暂时先织入了
-        dataTransfer.setSinkJobConfig(sinkJobConfig);
+        LogDataTransfer dataTransfer = new LogDataTransfer(sinkChain, logParser, esMessageSender, sinkJobConfig);
         dataTransfer.setJobType(jobType);
 
         RocketmqConfig rocketmqConfig = RocketmqPlugin.buildRocketmqConfig(sinkJobConfig.getAk(), sinkJobConfig.getSk(), sinkJobConfig.getClusterInfo(),
