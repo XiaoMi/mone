@@ -23,10 +23,10 @@ public class ConfigLogTypeProcessor implements LogTypeProcessor {
     }
 
     @Override
-    public boolean supportedConsume(LogTypeEnum logTypeEnum) {
+    public boolean supportedConsume(Integer type) {
         String notConsume = config.get("log_type_mq_not_consume", "");
         List<Integer> logTypesNotConsume = Arrays.stream(notConsume.split(","))
                 .map(Integer::valueOf).collect(Collectors.toList());
-        return !logTypesNotConsume.contains(logTypeEnum.getType());
+        return !logTypesNotConsume.contains(type);
     }
 }

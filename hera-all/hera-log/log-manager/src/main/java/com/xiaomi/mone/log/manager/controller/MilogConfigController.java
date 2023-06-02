@@ -1,6 +1,7 @@
 package com.xiaomi.mone.log.manager.controller;
 
 import com.xiaomi.mone.log.api.model.vo.TailLogProcessDTO;
+import com.xiaomi.mone.log.api.model.vo.UpdateLogProcessCmd;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.manager.model.MilogSpaceParam;
 import com.xiaomi.mone.log.manager.model.bo.BatchQueryParam;
@@ -125,6 +126,17 @@ public class MilogConfigController {
     @RequestMapping(path = "/milog/store/log/process", method = "get")
     public Result<List<TailLogProcessDTO>> storeLogProcess(@RequestParam("type") String type, @RequestParam("value") String value) {
         return logProcessService.getStoreLogProcess(type, value);
+    }
+
+    /**
+     * 小于progressRation进度的所有采集信息
+     *
+     * @param progressRation 进度 0.80
+     * @return
+     */
+    @RequestMapping(path = "/milog/col/process/imperfect", method = "get")
+    public Result<List<UpdateLogProcessCmd.CollectDetail>> getColProcessImperfect(@RequestParam("progressRation") Double progressRation) {
+        return logProcessService.getColProcessImperfect(progressRation);
     }
 
     @RequestMapping(path = "/milog/store/ips", method = "get")

@@ -137,6 +137,7 @@ public class EsService {
                 || EsIndexDataType.http.name().equals(param.getType())
                 || EsIndexDataType.dubbo_consumer.name().equals(param.getType())
                 || EsIndexDataType.dubbo_provider.name().equals(param.getType())
+                || EsIndexDataType.dubbo_sla.name().equals(param.getType())
                 || EsIndexDataType.grpc_client.name().equals(param.getType())
                 || EsIndexDataType.grpc_server.name().equals(param.getType())
                 || EsIndexDataType.thrift_client.name().equals(param.getType())
@@ -161,6 +162,11 @@ public class EsService {
         map.put("serviceName", param.getServiceName());
         map.put("area", param.getArea());
         map.put("serverEnv", param.getServerEnv());
+        map.put("serverZone", param.getServerZone());
+        map.put("clientProjectId", param.getClientProjectId());
+        map.put("clientProjectName", param.getClientProjectName());
+        map.put("clientEnv", param.getClientEnv());
+        map.put("clientIp", param.getClientIp());
         if (EsIndexDataType.mysql.name().equals(param.getType()) || EsIndexDataType.oracle.name().equals(param.getType())) {
             map.put("sql", param.getSql());
             map.put("dataSource", param.getDataSource());
@@ -291,4 +297,5 @@ public class EsService {
     public Result queryMiddlewareInstance(DbInstanceQuery param, Integer page, Integer pageSize) throws IOException {
         return esExtensionService.queryMiddlewareInstance(param, page, pageSize, esQueryTimeOut);
     }
+
 }

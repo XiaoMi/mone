@@ -1,7 +1,6 @@
 package com.xiaomi.mone.log.manager.service.bind;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
-import com.xiaomi.mone.log.api.enums.LogTypeEnum;
 import com.xiaomi.mone.log.manager.common.exception.MilogManageException;
 import com.xiaomi.mone.log.manager.mapper.MilogLogTemplateMapper;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogTemplateDO;
@@ -26,12 +25,12 @@ public class DataSourceLogTypeProcessor implements LogTypeProcessor {
     }
 
     @Override
-    public boolean supportedConsume(LogTypeEnum logTypeEnum) {
+    public boolean supportedConsume(Integer logTypeCode) {
         QueryWrapper<MilogLogTemplateDO> queryWrapper = new QueryWrapper<>();
-        queryWrapper.eq("type", logTypeEnum.getType());
+        queryWrapper.eq("type", logTypeCode);
         MilogLogTemplateDO templateDO = milogLogTemplateMapper.selectOne(queryWrapper);
         if (null == templateDO) {
-            throw new MilogManageException("log template not exist,logtypeType:" + logTypeEnum.getType());
+            throw new MilogManageException("log template not exist,logtypeType:" + logTypeCode);
         }
         return Objects.equals(EXIST_STATUS, templateDO.getSupportedConsume());
     }

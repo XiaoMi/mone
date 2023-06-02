@@ -343,7 +343,7 @@ public class PrometheusService {
         if (!CollectionUtils.isEmpty(result)) {
             for (MetricDataSetVector metricDataVector : result) {
                 Metric metric = metricDataVector.getMetric();
-                if (Double.valueOf(metricDataVector.getValue().get(1)).intValue() == 0) {
+                if (Double.valueOf(metricDataVector.getValue().get(1)) == 0d) {
                     continue;
                 }
 
@@ -442,8 +442,7 @@ public class PrometheusService {
         StringBuilder sb = new StringBuilder();
         sb.append("sum(sum_over_time(");
         sb.append(source);
-        sb.append(")) by (serverIp,job,application,methodName,serviceName,dataSource,sqlMethod,sql,serverEnv,serverZone,method) ");
-
+        sb.append(")) by (serverIp,job,application,methodName,serviceName,dataSource,sqlMethod,sql,serverEnv,serverZone,method,clientProjectId,clientProjectName,clientEnv,clientIp) ");
         return sb.toString();
     }
 

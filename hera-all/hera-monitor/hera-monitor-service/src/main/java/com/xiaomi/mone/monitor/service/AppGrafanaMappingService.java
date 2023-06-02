@@ -262,8 +262,15 @@ public class AppGrafanaMappingService {
                 if (anEnum == null) {
                     log.error("error AppType appName:{},has set default type by businessType type", appName);
                     appType = AppType.businessType.getMessage();
+                }else {
+                    appType = anEnum.getMessage();
                 }
-                appType = anEnum.getMessage();
+
+                //  mesh类型和业务类型应用使用相同的模版
+                if(appType.equals(AppType.mesh.getMessage())){
+                    appType = AppType.businessType.getMessage();
+                }
+
             }
             Map map = new HashMap();
             map.put("appType", appType);

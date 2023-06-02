@@ -18,6 +18,7 @@ public class MetricsRule implements Serializable {
     private int kind;
     String metricType;
     Boolean hideValueConfig;
+    String teslaGroupTenant;
 
     public MetricsRule(String value,String label, String unit, Integer strategyType,String metricType,Boolean hideValueConfig){
         this.label = label;
@@ -26,5 +27,15 @@ public class MetricsRule implements Serializable {
         this.strategyType = strategyType;
         this.metricType = metricType;
         this.hideValueConfig = hideValueConfig;
+    }
+
+    public MetricsRule(String value,String label, String unit, Integer strategyType,String metricType,Boolean hideValueConfig,String teslaGroupTenant){
+        this.label = label;
+        this.value = value;
+        this.unit = unit;
+        this.strategyType = strategyType;
+        this.metricType = metricType;
+        this.hideValueConfig = hideValueConfig;
+        this.teslaGroupTenant = teslaGroupTenant;
     }
 }

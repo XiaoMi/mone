@@ -47,7 +47,7 @@ public class LogTail {
     public void handleStoreTail(Long storeId) {
         MilogLogStoreDO milogLogStoreDO = logStoreDao.queryById(storeId);
 
-        boolean supportedConsume = logTypeProcessor.supportedConsume(LogTypeEnum.type2enum(milogLogStoreDO.getLogType()));
+        boolean supportedConsume = logTypeProcessor.supportedConsume(milogLogStoreDO.getLogType());
 
         List<MilogLogTailDo> milogLogtailDos = milogLogtailDao.queryTailsByStoreId(storeId);
         if (CollectionUtils.isNotEmpty(milogLogtailDos)) {
