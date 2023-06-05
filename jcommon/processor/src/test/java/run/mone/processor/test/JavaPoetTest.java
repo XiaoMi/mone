@@ -16,6 +16,7 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 import lombok.SneakyThrows;
 import org.junit.Test;
+import run.mone.processor.bo.MethodInfo;
 import run.mone.processor.common.CodeUtils;
 import run.mone.processor.common.MethodCode;
 import run.mone.processor.common.Pair;
@@ -224,6 +225,16 @@ public class JavaPoetTest {
 
         }
     }
+
+    @Test
+    public void test10() {
+        MethodInfo mi = CodeUtils.getMethod("public class A { public void hi(){System.out.println(123);}}");
+        System.out.println(mi);
+        mi = CodeUtils.getMethod("public void hi2(){System.out.println(123);}");
+        System.out.println(mi);
+    }
+
+
 
 
 
