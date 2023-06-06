@@ -119,6 +119,13 @@ public class AlarmStrategyService {
             envs.addProperty("exceptZones",String.join(",", param.getExceptZones()));
         }
 
+        if(!CollectionUtils.isEmpty(param.getIncludeContainerName())){
+            envs.addProperty("includeContainerName",String.join(",", param.getIncludeContainerName()));
+        }
+        if(!CollectionUtils.isEmpty(param.getExceptContainerName())){
+            envs.addProperty("exceptContainerName",String.join(",", param.getExceptContainerName()));
+        }
+
         if(!CollectionUtils.isEmpty(param.getIncludeModules())){
             envs.addProperty("includeModules",String.join(",", param.getIncludeModules()));
         }
@@ -179,6 +186,13 @@ public class AlarmStrategyService {
             envs.addProperty("exceptZones",String.join(",", param.getExceptZones()));
         }
 
+        if(!CollectionUtils.isEmpty(param.getIncludeContainerName())){
+            envs.addProperty("includeContainerName",String.join(",", param.getIncludeContainerName()));
+        }
+        if(!CollectionUtils.isEmpty(param.getExceptContainerName())){
+            envs.addProperty("exceptContainerName",String.join(",", param.getExceptContainerName()));
+        }
+
         if(!CollectionUtils.isEmpty(param.getIncludeModules())){
             envs.addProperty("includeModules",String.join(",", param.getIncludeModules()));
         }
@@ -202,7 +216,7 @@ public class AlarmStrategyService {
             return Result.fail(ErrorCode.unknownError);
         }
 
-        log.info("插入规则策略成功：strategy={}",strategy);
+        log.info("更新规则策略成功：strategy={}",strategy);
         return Result.success(strategy);
     }
 
