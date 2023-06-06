@@ -336,8 +336,12 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
             sinkConfig.setLogstoreName(milogLogstore.getLogstoreName());
             sinkConfig.setKeyList(Utils.parse2KeyAndTypeList(milogLogstore.getKeyList(), milogLogstore.getColumnTypeList()));
             MilogEsClusterDO esInfo = esCluster.getById(milogLogstore.getEsClusterId());
-            sinkConfig.setEsIndex(milogLogstore.getEsIndex());
-            sinkConfig.setEsInfo(buildEsInfo(esInfo));
+            if(null != esInfo){
+                sinkConfig.setEsIndex(milogLogstore.getEsIndex());
+                sinkConfig.setEsInfo(buildEsInfo(esInfo));
+            }else{
+                log.info("assembleSinkConfig esInfo is null,logStoreId:{}",milogLogstore.getId());
+            }
         }
         sinkConfig.setLogtailConfigs(Arrays.asList(assembleLogTailConfigs(tailId)));
         return sinkConfig;
