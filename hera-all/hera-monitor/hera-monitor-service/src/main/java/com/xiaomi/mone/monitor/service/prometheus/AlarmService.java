@@ -2,6 +2,7 @@ package com.xiaomi.mone.monitor.service.prometheus;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.nacos.api.config.annotation.NacosValue;
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -40,6 +41,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author gaoxihui
@@ -72,7 +74,7 @@ public class AlarmService {
     private static final String db_slow_query_metric = "dbSlowQuery";
     private static final String oracle_slow_query_metric = "oracleSlowQuery";
     private static final String redis_slow_query_metric = "redisSlowQuery";
-    private static final String es_slow_query_metric = "esSlowQuery";
+    private static final String es_slow_query_metric = "elasticsearchClientSlowQuery";
 
 
     /**
@@ -476,6 +478,10 @@ public class AlarmService {
                 fillLabels(map,"functionId",String.join(",",ruleData.getIncludeFunctions()));
             }
 
+            if(!CollectionUtils.isEmpty(ruleData.getIncludeContainerName())){
+                fillLabels(map,"containerName",String.join(",",ruleData.getIncludeContainerName()));
+            }
+
         }
         if(!isInclude){
             if(!CollectionUtils.isEmpty(ruleData.getExceptEnvs())){
@@ -490,6 +496,10 @@ public class AlarmService {
 //            }
             if(!CollectionUtils.isEmpty(ruleData.getExceptFunctions())){
                 fillLabels(map,"functionId",String.join(",",ruleData.getExceptFunctions()));
+            }
+
+            if(!CollectionUtils.isEmpty(ruleData.getExceptContainerName())){
+                fillLabels(map,"containerName",String.join(",",ruleData.getExceptContainerName()));
             }
 
         }
@@ -542,9 +552,9 @@ public class AlarmService {
         StringBuilder expBuilder = new StringBuilder();
         expBuilder
                 .append("clamp_min((1-(")
-                .append("sum(sum_over_time(").append(errorMetricComplete).append("))").append(" by (application,system,serverIp,serviceName,methodName,sqlMethod,serverEnv,serverZone,sql,dataSource,functionModule,functionName)")
+                .append("sum(sum_over_time(").append(errorMetricComplete).append("))").append(" by (application,system,serverIp,serviceName,methodName,sqlMethod,serverEnv,serverZone,containerName,sql,dataSource,functionModule,functionName)")
                 .append("/")
-                .append("sum(sum_over_time(").append(totalMetricComplate).append("))").append(" by (application,system,serverIp,serviceName,methodName,sqlMethod,serverEnv,serverZone,sql,dataSource,functionModule,functionName)")
+                .append("sum(sum_over_time(").append(totalMetricComplate).append("))").append(" by (application,system,serverIp,serviceName,methodName,sqlMethod,serverEnv,serverZone,containerName,sql,dataSource,functionModule,functionName)")
                 .append(")),0) * 100")
                 .append(op).append(value);
 
@@ -585,9 +595,9 @@ public class AlarmService {
         StringBuilder expBuilder = new StringBuilder();
         expBuilder
                 .append("clamp_min((1-(")
-                .append("sum(sum_over_time(").append(errorMetricComplete).append("))").append(" by (application,system,serverIp,serviceName,methodName,sqlMethod,serverEnv,serverZone,sql,dataSource,functionModule,functionName,clientProjectId,clientProjectName,clientEnv,clientEnvId,clientIp)")
+                .append("sum(sum_over_time(").append(errorMetricComplete).append("))").append(" by (application,system,serverIp,serviceName,methodName,sqlMethod,serverEnv,serverZone,containerName,sql,dataSource,functionModule,functionName,clientProjectId,clientProjectName,clientEnv,clientEnvId,clientIp)")
                 .append("/")
-                .append("sum(sum_over_time(").append(totalMetricComplate).append("))").append(" by (application,system,serverIp,serviceName,methodName,sqlMethod,serverEnv,serverZone,sql,dataSource,functionModule,functionName,clientProjectId,clientProjectName,clientEnv,clientEnvId,clientIp)")
+                .append("sum(sum_over_time(").append(totalMetricComplate).append("))").append(" by (application,system,serverIp,serviceName,methodName,sqlMethod,serverEnv,serverZone,containerName,sql,dataSource,functionModule,functionName,clientProjectId,clientProjectName,clientEnv,clientEnvId,clientIp)")
                 .append(")),0) * 100")
                 .append(op).append(value);
 
@@ -605,14 +615,9 @@ public class AlarmService {
         exprBuilder.append("{system='mione',");
         exprBuilder.append("image!='',");
 
-        String envLabel = getServerEnvLabel(ruleData);
-        if(StringUtils.isNotBlank(envLabel)){
-            exprBuilder.append(envLabel).append(",");
-        }
-
-        String zoneLabel = getServerZoneLabel(ruleData);
-        if(StringUtils.isNotBlank(zoneLabel)){
-            exprBuilder.append(zoneLabel).append(",");
+        String labelProperties = getEnvLabelProperties(ruleData);
+        if(StringUtils.isNotBlank(labelProperties)){
+            exprBuilder.append(labelProperties).append(",");
         }
 
         exprBuilder.append("application='").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'");
@@ -642,14 +647,9 @@ public class AlarmService {
         exprBuilder.append("image!='',");
         exprBuilder.append("system='mione',");
 
-        String envLabel = getServerEnvLabel(ruleData);
-        if(StringUtils.isNotBlank(envLabel)){
-            exprBuilder.append(envLabel).append(",");
-        }
-
-        String zoneLabel = getServerZoneLabel(ruleData);
-        if(StringUtils.isNotBlank(zoneLabel)){
-            exprBuilder.append(zoneLabel).append(",");
+        String labelProperties = getEnvLabelProperties(ruleData);
+        if(StringUtils.isNotBlank(labelProperties)){
+            exprBuilder.append(labelProperties).append(",");
         }
 
         exprBuilder.append("application='").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'");
@@ -668,15 +668,11 @@ public class AlarmService {
         exprBuilder.append("image!='',");
         exprBuilder.append("system='mione',");
 
-        String envLabel = getServerEnvLabel(ruleData);
-        if(StringUtils.isNotBlank(envLabel)){
-            exprBuilder.append(envLabel).append(",");
+        String labelProperties = getEnvLabelProperties(ruleData);
+        if(StringUtils.isNotBlank(labelProperties)){
+            exprBuilder.append(labelProperties).append(",");
         }
 
-        String zoneLabel = getServerZoneLabel(ruleData);
-        if(StringUtils.isNotBlank(zoneLabel)){
-            exprBuilder.append(zoneLabel).append(",");
-        }
         exprBuilder.append("application='").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'");
 //        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
         exprBuilder.append("}[1d])) without (cpu) * 100");
@@ -693,14 +689,9 @@ public class AlarmService {
         exprBuilder.append("image!='',");
         exprBuilder.append("system='mione',");
 
-        String envLabel = getServerEnvLabel(ruleData);
-        if(StringUtils.isNotBlank(envLabel)){
-            exprBuilder.append(envLabel).append(",");
-        }
-
-        String zoneLabel = getServerZoneLabel(ruleData);
-        if(StringUtils.isNotBlank(zoneLabel)){
-            exprBuilder.append(zoneLabel).append(",");
+        String labelProperties = getEnvLabelProperties(ruleData);
+        if(StringUtils.isNotBlank(labelProperties)){
+            exprBuilder.append(labelProperties).append(",");
         }
 
         exprBuilder.append("application='").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'");
@@ -709,12 +700,8 @@ public class AlarmService {
         exprBuilder.append("sum(avg_over_time(container_spec_memory_limit_bytes{");
         exprBuilder.append("image!='',");
 
-        if(StringUtils.isNotBlank(envLabel)){
-            exprBuilder.append(envLabel).append(",");
-        }
-
-        if(StringUtils.isNotBlank(zoneLabel)){
-            exprBuilder.append(zoneLabel).append(",");
+        if(StringUtils.isNotBlank(labelProperties)){
+            exprBuilder.append(labelProperties).append(",");
         }
 
         exprBuilder.append("application='").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'");
@@ -731,14 +718,9 @@ public class AlarmService {
         exprBuilder.append("image!='',");
         exprBuilder.append("system='mione',");
 
-        String envLabel = getServerEnvLabel(ruleData);
-        if(StringUtils.isNotBlank(envLabel)){
-            exprBuilder.append(envLabel).append(",");
-        }
-
-        String zoneLabel = getServerZoneLabel(ruleData);
-        if(StringUtils.isNotBlank(zoneLabel)){
-            exprBuilder.append(zoneLabel).append(",");
+        String labelProperties = getEnvLabelProperties(ruleData);
+        if(StringUtils.isNotBlank(labelProperties)){
+            exprBuilder.append(labelProperties).append(",");
         }
 
         if(projectName.equals("mimonitor")){
@@ -758,6 +740,9 @@ public class AlarmService {
         exprBuilder.append("sum(avg_over_time(container_spec_memory_limit_bytes{");
         exprBuilder.append("image!='',");
         exprBuilder.append("system='mione',");
+        if(StringUtils.isNotBlank(labelProperties)){
+            exprBuilder.append(labelProperties).append(",");
+        }
 //        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
 
         if(projectName.equals("mimonitor")){
@@ -783,14 +768,9 @@ public class AlarmService {
         exprBuilder.append("clamp_max(sum(container_fs_usage_bytes{");
         exprBuilder.append("system='mione',");
 
-        String envLabel = getServerEnvLabel(ruleData);
-        if(StringUtils.isNotBlank(envLabel)){
-            exprBuilder.append(envLabel).append(",");
-        }
-
-        String zoneLabel = getServerZoneLabel(ruleData);
-        if(StringUtils.isNotBlank(zoneLabel)){
-            exprBuilder.append(zoneLabel).append(",");
+        String labelProperties = getEnvLabelProperties(ruleData);
+        if(StringUtils.isNotBlank(labelProperties)){
+            exprBuilder.append(labelProperties).append(",");
         }
         exprBuilder.append("application='").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'");
         exprBuilder.append("}) by (application,name,ip,serverEnv)/10737418240 ,1) * 100  ");
@@ -808,14 +788,9 @@ public class AlarmService {
         exprBuilder.append("sum(irate(container_cpu_usage_seconds_total{");
         exprBuilder.append("image!='',system='mione',");
 
-        String envLabel = getServerEnvLabel(ruleData);
-        if(StringUtils.isNotBlank(envLabel)){
-            exprBuilder.append(envLabel).append(",");
-        }
-
-        String zoneLabel = getServerZoneLabel(ruleData);
-        if(StringUtils.isNotBlank(zoneLabel)){
-            exprBuilder.append(zoneLabel).append(",");
+        String labelProperties = getEnvLabelProperties(ruleData);
+        if(StringUtils.isNotBlank(labelProperties)){
+            exprBuilder.append(labelProperties).append(",");
         }
 
 //        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
@@ -826,13 +801,11 @@ public class AlarmService {
         exprBuilder.append("(");
         exprBuilder.append("container_spec_cpu_quota{");
         exprBuilder.append("system='mione',");
-        if(StringUtils.isNotBlank(envLabel)){
-            exprBuilder.append(envLabel).append(",");
+
+        if(StringUtils.isNotBlank(labelProperties)){
+            exprBuilder.append(labelProperties).append(",");
         }
 
-        if(StringUtils.isNotBlank(zoneLabel)){
-            exprBuilder.append(zoneLabel).append(",");
-        }
 //        exprBuilder.append("job=~'").append(jobLabelValue).append("',");
         exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
         exprBuilder.append("}");
@@ -859,14 +832,9 @@ public class AlarmService {
         exprBuilder.append("image!='',");
         exprBuilder.append("system='mione',");
 
-        String envLabel = getServerEnvLabel(ruleData);
-        if(StringUtils.isNotBlank(envLabel)){
-            exprBuilder.append(envLabel).append(",");
-        }
-
-        String zoneLabel = getServerZoneLabel(ruleData);
-        if(StringUtils.isNotBlank(zoneLabel)){
-            exprBuilder.append(zoneLabel).append(",");
+        String labelProperties = getEnvLabelProperties(ruleData);
+        if(StringUtils.isNotBlank(labelProperties)){
+            exprBuilder.append(labelProperties).append(",");
         }
 
         exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
@@ -890,14 +858,9 @@ public class AlarmService {
         exprBuilder.append("time() - container_last_seen{");
         exprBuilder.append("system='mione',");
 
-        String envLabel = getServerEnvLabel(ruleData);
-        if(StringUtils.isNotBlank(envLabel)){
-            exprBuilder.append(envLabel).append(",");
-        }
-
-        String zoneLabel = getServerZoneLabel(ruleData);
-        if(StringUtils.isNotBlank(zoneLabel)){
-            exprBuilder.append(zoneLabel).append(",");
+        String labelProperties = getEnvLabelProperties(ruleData);
+        if(StringUtils.isNotBlank(labelProperties)){
+            exprBuilder.append(labelProperties).append(",");
         }
 
         exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
@@ -1028,13 +991,42 @@ public class AlarmService {
         return list;
     }
 
+    private List<Metric> listContainerNameMetric(Integer projectId,String projectName){
+        projectName = projectName.replaceAll("-","_");
+
+        StringBuilder builder = new StringBuilder();
+        builder.append("jvm_classes_loaded_classes{ containerName != '',application=\"")
+                .append(projectId).append("_").append(projectName)
+                .append("\"").append("}");
+        Result<PageData> pageDataResult = prometheusService.queryByMetric(builder.toString());
+        if(pageDataResult.getCode() != ErrorCode.success.getCode() || pageDataResult.getData() == null){
+            log.error("listContainerNameMetric error! projectId :{},projectName:{}",projectId,projectName);
+            return null;
+        }
+
+        List<Metric> list = (List<Metric>) pageDataResult.getData().getList();
+        log.info("listContainerNameMetric param projectName:{},result:{}",projectName,list.size());
+
+        return list;
+    }
+
+    public List<String> listContainerName(Integer projectId,String projectName){
+
+        List<Metric> metrics = listContainerNameMetric(projectId, projectName);
+        if(CollectionUtils.isEmpty(metrics)){
+            return Lists.newArrayList();
+        }
+        return metrics.stream().map(t -> t.getContainerName()).distinct().collect(Collectors.toList());
+    }
+
+
     public String getPresetMetricErrorAlarm(String sourceMetric,Integer projectId,String projectName,Map includeLabels,Map exceptLabels,String metricSuffix,String duration,String offset,String op,Float value){
         String s = prometheusService.completeMetricForAlarm(sourceMetric, includeLabels,exceptLabels, projectId,projectName, metricSuffix,  duration, null);
 
         StringBuilder expBuilder = new StringBuilder();
         expBuilder.append("sum(")
                 .append("sum_over_time").append("(").append(s).append(")")
-                .append(") by (application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,serverEnv,serverZone,sql,dataSource,functionModule,functionName)")
+                .append(") by (application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,serverEnv,serverZone,containerName,sql,dataSource,functionModule,functionName)")
                 .append(op).append(value);
 
 
@@ -1050,7 +1042,7 @@ public class AlarmService {
         StringBuilder expBuilder = new StringBuilder();
         expBuilder.append("sum(")
                 .append("sum_over_time").append("(").append(s).append(")")
-                .append(") by (application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,serverEnv,serverZone,sql,dataSource,functionModule,functionName,clientProjectId,clientProjectName,clientEnv,clientEnvId,clientIp)")
+                .append(") by (application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,serverEnv,serverZone,containerName,sql,dataSource,functionModule,functionName,clientProjectId,clientProjectName,clientEnv,clientEnvId,clientIp)")
                 .append(op).append(value);
 
 
@@ -1064,7 +1056,7 @@ public class AlarmService {
         String s = prometheusService.completeMetricForAlarm(sourceMetric, includeLabels,exceptLabels, projectId,projectName, metricSuffix,  duration, null);
         StringBuilder expBuilder = new StringBuilder();
         expBuilder.append("sum(sum_over_time(").append(s).append(")/").append(evaluationDuration).append(") by (")
-                .append("application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,serverEnv,serverZone,functionModule,functionName").append(")").append(op).append(value);
+                .append("application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,serverEnv,serverZone,containerName,functionModule,functionName").append(")").append(op).append(value);
         log.info("AlarmService.getPresetMetricQpsAlarm param" +
                         ":sourceMetric:{},projectId:{},projectName:{},includeLabels:{},exceptLabels:{},metricSuffix:{},duration:{},offset:{},op:{},value:{},return : {}"
                 ,sourceMetric,projectId,projectName,includeLabels,exceptLabels,metricSuffix,duration,offset,op,value,expBuilder.toString());
@@ -1076,10 +1068,10 @@ public class AlarmService {
         String countSource = prometheusService.completeMetricForAlarm(sourceMetric, includeLabels,exceptLabels, projectId,projectName, metric_count_suffix,  duration, null);
         StringBuilder expBuilder = new StringBuilder();
         expBuilder.append("sum(sum_over_time(").append(sumSource).append(")) by (")
-                .append("application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,serverEnv,serverZone,functionModule,functionName").append(")")
+                .append("application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,serverEnv,serverZone,containerName,functionModule,functionName").append(")")
                 .append(" / ")
                 .append("sum(sum_over_time(").append(countSource).append(")) by (")
-                .append("application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,serverEnv,serverZone,functionModule,functionName").append(") ")
+                .append("application,system,serverIp,serviceName,methodName,sqlMethod,errorCode,serverEnv,serverZone,containerName,functionModule,functionName").append(") ")
                 .append(op).append(value);
         log.info("AlarmService.getPresetMetricQpsAlarm expr={}", expBuilder.toString());
         return expBuilder.toString();
@@ -1089,28 +1081,21 @@ public class AlarmService {
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("(sum(jvm_memory_used_bytes{");
 
-        String envLabel = getServerEnvLabel(ruleData);
-        if(StringUtils.isNotBlank(envLabel)){
-            exprBuilder.append(envLabel).append(",");
-        }
-        String zoneLabel = getServerZoneLabel(ruleData);
-        if(StringUtils.isNotBlank(zoneLabel)){
-            exprBuilder.append(zoneLabel).append(",");
+        String labelProperties = getEnvLabelProperties(ruleData);
+        if(StringUtils.isNotBlank(labelProperties)){
+            exprBuilder.append(labelProperties).append(",");
         }
         exprBuilder.append("application=").append("'").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'").append(",");
         exprBuilder.append("area=").append("'").append(type).append("'");
-        exprBuilder.append("}) by (application,area,instance,serverEnv,serverZone,serverIp,service,system)/ ");
+        exprBuilder.append("}) by (application,area,instance,serverEnv,serverZone,containerName,serverIp,service,system)/ ");
         exprBuilder.append("sum(jvm_memory_max_bytes{");
 
-        if(StringUtils.isNotBlank(envLabel)){
-            exprBuilder.append(envLabel).append(",");
-        }
-        if(StringUtils.isNotBlank(zoneLabel)){
-            exprBuilder.append(zoneLabel).append(",");
+        if(StringUtils.isNotBlank(labelProperties)){
+            exprBuilder.append(labelProperties).append(",");
         }
         exprBuilder.append("application=").append("'").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'").append(",");
         exprBuilder.append("area=").append("'").append(type).append("'");
-        exprBuilder.append("}) by (application,area,instance,serverEnv,serverZone,serverIp,service,system)) * 100");
+        exprBuilder.append("}) by (application,area,instance,serverEnv,serverZone,containerName,serverIp,service,system)) * 100");
         exprBuilder.append(op).append(value);
         log.info("getJvmMemAlarmExpr param: projectId:{}, projectName:{}, type:{}, return:{}",projectId, projectName,type, exprBuilder.toString());
         return exprBuilder.toString();
@@ -1121,13 +1106,9 @@ public class AlarmService {
         exprBuilder.append("max_over_time(jvm_threads_live_threads");
         exprBuilder.append("{");
 
-        String envLabel = getServerEnvLabel(ruleData);
-        if(StringUtils.isNotBlank(envLabel)){
-            exprBuilder.append(envLabel).append(",");
-        }
-        String zoneLabel = getServerZoneLabel(ruleData);
-        if(StringUtils.isNotBlank(zoneLabel)){
-            exprBuilder.append(zoneLabel).append(",");
+        String labelProperties = getEnvLabelProperties(ruleData);
+        if(StringUtils.isNotBlank(labelProperties)){
+            exprBuilder.append(labelProperties).append(",");
         }
         exprBuilder.append("application=").append("'").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'").append(",");
         exprBuilder.append("serverIp!=").append("''");
@@ -1142,14 +1123,9 @@ public class AlarmService {
         exprBuilder.append("max_over_time(jvm_gc_pause_seconds_max");
         exprBuilder.append("{");
 
-        String envLabel = getServerEnvLabel(ruleData);
-        if(StringUtils.isNotBlank(envLabel)){
-            exprBuilder.append(envLabel).append(",");
-        }
-
-        String zoneLabel = getServerZoneLabel(ruleData);
-        if(StringUtils.isNotBlank(zoneLabel)){
-            exprBuilder.append(zoneLabel).append(",");
+        String labelProperties = getEnvLabelProperties(ruleData);
+        if(StringUtils.isNotBlank(labelProperties)){
+            exprBuilder.append(labelProperties).append(",");
         }
 
         if(isFullGc){
@@ -1167,13 +1143,9 @@ public class AlarmService {
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("delta(jvm_gc_pause_seconds_count{");
 
-        String envLabel = getServerEnvLabel(ruleData);
-        if(StringUtils.isNotBlank(envLabel)){
-            exprBuilder.append(envLabel).append(",");
-        }
-        String zoneLabel = getServerZoneLabel(ruleData);
-        if(StringUtils.isNotBlank(zoneLabel)){
-            exprBuilder.append(zoneLabel).append(",");
+        String labelProperties = getEnvLabelProperties(ruleData);
+        if(StringUtils.isNotBlank(labelProperties)){
+            exprBuilder.append(labelProperties).append(",");
         }
 
         if(isFullGc){
@@ -1185,42 +1157,51 @@ public class AlarmService {
         return exprBuilder.toString();
     }
 
-    private String getServerEnvLabel(AlarmRuleData ruleData){
-
-        if(ruleData == null){
-            return null;
-        }
-
-        StringBuilder stringBuilder = new StringBuilder();
-        if(!CollectionUtils.isEmpty(ruleData.getIncludeEnvs())){
-            ruleData.getIncludeEnvs().stream().forEach(t -> stringBuilder.append("|").append(t));
-            return "serverEnv=~'" + stringBuilder.toString().substring(1) + "'";
-        }
-        if(!CollectionUtils.isEmpty(ruleData.getExceptEnvs())){
-            ruleData.getIncludeEnvs().stream().forEach(t -> stringBuilder.append("|").append(t));
-            return "serverEnv!~'" + stringBuilder.toString().substring(1) + "'";
-        }
-
-        return null;
+    private String getEnvLabelProperties(AlarmRuleData ruleData){
+        return getLabelProperties(getEnvLabels(ruleData, true), getEnvLabels(ruleData, false));
     }
 
-    private String getServerZoneLabel(AlarmRuleData ruleData){
+    private String getLabelProperties(Map includeLabels,Map exceptLabels){
+        StringBuilder labels = new StringBuilder();
+        //包含标签拼接
+        if (!CollectionUtils.isEmpty(includeLabels)) {
 
-        if(ruleData == null){
-            return null;
+            Set<Map.Entry<String, String>> set = includeLabels.entrySet();
+            for (Map.Entry<String, String> entry : set) {
+                if (org.apache.commons.lang3.StringUtils.isBlank(entry.getValue())) {
+                    continue;
+                }
+                labels.append(entry.getKey());
+                labels.append("=~");
+                labels.append("'");
+                labels.append(entry.getValue());
+                labels.append("'");
+                labels.append(",");
+            }
         }
 
-        StringBuilder stringBuilder = new StringBuilder();
-        if(!CollectionUtils.isEmpty(ruleData.getIncludeZones())){
-            ruleData.getIncludeZones().stream().forEach(t -> stringBuilder.append("|").append(t));
-            return "serverZone=~'" + stringBuilder.toString().substring(1) + "'";
-        }
-        if(!CollectionUtils.isEmpty(ruleData.getExceptZones())){
-            ruleData.getExceptZones().stream().forEach(t -> stringBuilder.append("|").append(t));
-            return "serverZone!~'" + stringBuilder.toString().substring(1) + "'";
+        if (!CollectionUtils.isEmpty(exceptLabels)) {
+
+            Set<Map.Entry<String, String>> set = exceptLabels.entrySet();
+            for (Map.Entry<String, String> entry : set) {
+                if (org.apache.commons.lang3.StringUtils.isBlank(entry.getValue())) {
+                    continue;
+                }
+                labels.append(entry.getKey());
+                labels.append("!~");
+                labels.append("'");
+                labels.append(entry.getValue());
+                labels.append("'");
+                labels.append(",");
+            }
         }
 
-        return null;
+        String labelsV = labels.toString();
+        if (labelsV.endsWith(",")) {
+            labelsV = labelsV.substring(0, labelsV.length() - 1);
+        }
+
+        return labelsV;
     }
 
 
