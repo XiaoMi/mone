@@ -1,4 +1,4 @@
-package com.xiaomi.mone.app.response.ano;
+package com.xiaomi.mone.app.response.anno;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

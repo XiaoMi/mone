@@ -6,7 +6,7 @@ import com.xiaomi.mone.app.api.service.HeraAppService;
 import com.xiaomi.mone.app.common.Result;
 import com.xiaomi.mone.app.enums.CommonError;
 import com.xiaomi.mone.app.model.HeraAppBaseInfo;
-import com.xiaomi.mone.app.response.ano.OriginalResponse;
+import com.xiaomi.mone.app.response.anno.OriginalResponse;
 import com.xiaomi.mone.app.service.HeraAppRoleService;
 import com.xiaomi.mone.app.service.impl.HeraAppBaseInfoService;
 import lombok.extern.slf4j.Slf4j;

@@ -2,7 +2,7 @@ package com.xiaomi.mone.app.response;
 
 import com.google.gson.Gson;
 import com.xiaomi.mone.app.common.Result;
-import com.xiaomi.mone.app.response.ano.OriginalResponse;
+import com.xiaomi.mone.app.response.anno.OriginalResponse;
 import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
