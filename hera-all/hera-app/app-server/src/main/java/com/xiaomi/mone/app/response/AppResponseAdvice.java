@@ -2,6 +2,7 @@ package com.xiaomi.mone.app.response;
 
 import com.google.gson.Gson;
 import com.xiaomi.mone.app.common.Result;
+import com.xiaomi.mone.app.response.ano.OriginalResponse;
 import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.MediaType;
@@ -32,6 +33,12 @@ public class AppResponseAdvice implements ResponseBodyAdvice<Object> {
 
     @Override
     public Object beforeBodyWrite(Object body, MethodParameter methodParameter, MediaType mediaType, Class<? extends HttpMessageConverter<?>> aClass, ServerHttpRequest serverHttpRequest, ServerHttpResponse serverHttpResponse) {
+        /**
+         * return original response by this annotation
+         */
+        if (methodParameter.hasMethodAnnotation(OriginalResponse.class)) {
+            return body;
+        }
         if (body instanceof Result) {
             return body;
         } else if (body instanceof String) {
