@@ -445,10 +445,10 @@ public class AppMonitorController {
         return appMonitorService.selectByIAMId(iamId,iamType,userName);
     }
 
-    //获取应用的历史实例,时间都是ms单位
+    //Get the historical instance of the application, the time is in ms unit
     @GetMapping("/mimonitor/historyInstance")
     public Result historyInstance(String application,String startTime,String endTime){
-        //参数校验
+        //Parameter check
         if (StringUtils.isBlank(application) || StringUtils.isBlank(startTime) || StringUtils.isBlank(endTime)){
             return Result.fail(ErrorCode.invalidParamError);
         }
@@ -458,7 +458,7 @@ public class AppMonitorController {
         if (start >= end) {
             return Result.fail(ErrorCode.invalidParamError);
         }
-        //改为下划线
+        //underscore
         application = application.replace("-","_");
         Result result = appMonitorService.historyInstance(application, start, end);
         return result;

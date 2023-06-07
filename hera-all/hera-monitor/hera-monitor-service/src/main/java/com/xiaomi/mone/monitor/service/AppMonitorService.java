@@ -1098,7 +1098,8 @@ public class AppMonitorService {
     public Result historyInstance(String application,Long startTime, Long endTime) {
         String promql = "count(jvm_classes_loaded_classes{application=\""+ application +"\"}) by (serverIp)";
         log.info("historyInstance promql : {}",promql);
-        MetricResponse rangeMetricResponse = prometheusService.queryRangePrometheusByPromQl(promql, startTime, endTime, null,null);
+        MetricResponse rangeMetricResponse = prometheusService.queryRangePrometheusByPromQl(promql, startTime, endTime,
+                null,null);
         if(rangeMetricResponse == null || rangeMetricResponse.getData() == null){
             return Result.fail(ErrorCode.unknownError);
         }
@@ -1108,7 +1109,7 @@ public class AppMonitorService {
         rangeResult.forEach(t -> {
             rangeIps.add(t.getMetric().getServerIp());
         });
-        // 一期不做对比
+        // first time no comparison
 //        List<String> momentIps = new ArrayList<>();
 //        MetricResponse momentMetricResponse = prometheusService.queryRangePrometheusByPromQl(promql, startTime, endTime, null,PrometheusService.MOMENT_REQUEST_MODE);
 //        if(momentMetricResponse == null || momentMetricResponse.getData() == null){
@@ -1119,12 +1120,8 @@ public class AppMonitorService {
 //        momentResult.forEach(t -> {
 //            momentIps.add(t.getMetric().getServerIp());
 //        });
-//        //momentIps和rangeIps的差集
+//        //The difference between momentIps and rangeIps
 //        List<String> ips = rangeIps.stream().filter(item -> !momentIps.contains(item)).collect(Collectors.toList());
-//        //临时塞假数据
-//        ips.add("1.1.1.1");
-//        ips.add("1.1.1.2");
-//        ips.add("1.1.1.3");
         return Result.success(rangeIps);
     }
 }

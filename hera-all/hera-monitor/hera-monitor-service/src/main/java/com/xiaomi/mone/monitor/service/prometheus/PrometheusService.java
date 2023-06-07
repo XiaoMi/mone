@@ -1062,11 +1062,11 @@ public class PrometheusService {
 
     public MetricResponse queryRangePrometheusByPromQl(String promQl, Long startTime, Long endTime, Long step,String mode) {
 
-        Long finalStep = step != null ? step : (endTime - startTime)/2; // 默认为查询的时间区间，即step = 查询区间/2
+        Long finalStep = step != null ? step : (endTime - startTime)/2; // The default is the query time interval, that is, step = query interval/2
 
-        String requestMode = mode != null ? mode : "range"; // 默认为range模式，即查询区间内的数据
+        String requestMode = mode != null ? mode : "range"; // The default is the range mode, that is, the data in the query range
         Map<String, Object> map = new HashMap<>();
-        map.put(P_QUERY, promQl);  //指标参数
+        map.put(P_QUERY, promQl);
         map.put(P_START, startTime);
         map.put(P_END, endTime);
         map.put(P_STEP, finalStep);
