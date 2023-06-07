@@ -444,4 +444,23 @@ public class AppMonitorController {
        String userName = userInfo.genFullAccount();
         return appMonitorService.selectByIAMId(iamId,iamType,userName);
     }
+
+    //Get the historical instance of the application, the time is in ms unit
+    @GetMapping("/mimonitor/historyInstance")
+    public Result historyInstance(String application,String startTime,String endTime){
+        //Parameter check
+        if (StringUtils.isBlank(application) || StringUtils.isBlank(startTime) || StringUtils.isBlank(endTime)){
+            return Result.fail(ErrorCode.invalidParamError);
+        }
+        log.info("AppMonitorController.historyInstance param : application : "+application+" startTime : "+startTime+" endTime : "+endTime);
+        Long start = Long.parseLong(startTime) / 1000;
+        Long end = Long.parseLong(endTime) / 1000;
+        if (start >= end) {
+            return Result.fail(ErrorCode.invalidParamError);
+        }
+        //underscore
+        application = application.replace("-","_");
+        Result result = appMonitorService.historyInstance(application, start, end);
+        return result;
+    }
 }
