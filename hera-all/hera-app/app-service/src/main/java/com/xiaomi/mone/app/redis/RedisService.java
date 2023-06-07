@@ -268,6 +268,15 @@ public class RedisService {
         }
     }
 
+    public Long hdel(String key, String... fields){
+        try{
+            return jedis.hdel(key, fields);
+        }catch(Exception e){
+            log.error("redis hdel error key: " + key, e);
+            return null;
+        }
+    }
+
     public List<Boolean> bfMAdd(String key, String... items) {
         try {
             if ("true".equals(cluster)) {
