@@ -157,7 +157,7 @@ public class JarCheckMojo extends AbstractMojo {
             if (sub.isDirectory()) {
                 getClassName(sub, classNames);
             } else if (sub.getName().endsWith(".class")) {
-                classNames.add(sub.getPath().split("classes/")[1].replace("/",".").split(".class")[0]);
+                classNames.add(sub.getPath().split("classes"+File.separator)[1].replace(File.separator,".").split(".class")[0]);
             }
         }
         return classNames;
