@@ -57,6 +57,8 @@ public class JarCheckMojo extends AbstractMojo {
 
     private final String shadePluginKey = "org.apache.maven.plugins:maven-shade-plugin";
 
+    private boolean isWindows = System.getProperty("os.name").toLowerCase().startsWith("win");
+
     @SneakyThrows
     public void execute() throws MojoExecutionException {
         Log log = getLog();
@@ -93,10 +95,13 @@ public class JarCheckMojo extends AbstractMojo {
                 Class type = field.getType();
                 String path = type.getProtectionDomain().getCodeSource().getLocation().getFile();
                 String localRepository = project.getProjectBuildingRequest().getLocalRepository().getBasedir();
+                if (isWindows) {
+                    localRepository = localRepository.replace("\\", "/");
+                }
                 path = path.split(localRepository)[1];
-                String[] arr = path.split(File.separator);
+                String[] arr = path.split("/");
                 String artifactId = arr[arr.length-3];
-                String groupId = String.join(".",path.split(artifactId)[0].split(File.separator)).substring(1);
+                String groupId = String.join(".",path.split(artifactId)[0].split("/")).substring(1);
                 for (MavenProject mavenProject : project.getParent().getCollectedProjects()) {
                     if (!mavenProject.getName().endsWith("-server")) {
                         continue;
@@ -157,7 +162,11 @@ public class JarCheckMojo extends AbstractMojo {
             if (sub.isDirectory()) {
                 getClassName(sub, classNames);
             } else if (sub.getName().endsWith(".class")) {
-                classNames.add(sub.getPath().split("classes"+File.separator)[1].replace(File.separator,".").split(".class")[0]);
+                if (isWindows) {
+                    classNames.add(sub.getPath().split("classes"+"\\\\")[1].replace(File.separator,".").split(".class")[0]);
+                } else {
+                    classNames.add(sub.getPath().split("classes"+File.separator)[1].replace(File.separator,".").split(".class")[0]);
+                }
             }
         }
         return classNames;
