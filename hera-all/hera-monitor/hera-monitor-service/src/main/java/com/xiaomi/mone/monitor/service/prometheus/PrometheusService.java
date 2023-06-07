@@ -54,6 +54,9 @@ public class PrometheusService {
     private static final int CHINA_GROUP_ORACLE = 0;
     private static final double LOAD_THRESHOLD_ORACLE = 0.7;
 
+    public static final String RANGE_REQUEST_MODE = "range";
+    public static final String MOMENT_REQUEST_MODE = "moment";
+
     private final Gson gson = new Gson();
 
     @Autowired
@@ -1055,6 +1058,38 @@ public class PrometheusService {
             default:
                 return Result.fail(ErrorCode.UNKNOWN_TYPE);
         }
+    }
+
+    public MetricResponse queryRangePrometheusByPromQl(String promQl, Long startTime, Long endTime, Long step,String mode) {
+
+        Long finalStep = step != null ? step : (endTime - startTime)/2; // 默认为查询的时间区间，即step = 查询区间/2
+
+        String requestMode = mode != null ? mode : "range"; // 默认为range模式，即查询区间内的数据
+        Map<String, Object> map = new HashMap<>();
+        map.put(P_QUERY, promQl);  //指标参数
+        map.put(P_START, startTime);
+        map.put(P_END, endTime);
+        map.put(P_STEP, finalStep);
+        map.put(P_DEDUP, true);
+        map.put(P_PARTIAL_RESPONSE, true);
+        String uri = "";
+        if (RANGE_REQUEST_MODE.equals(requestMode)) {
+            map.put(P_START, startTime);
+            map.put(P_END, endTime);
+            uri = URI_QUERY_RANGE;
+        } else if (MOMENT_REQUEST_MODE.equals(requestMode)) {
+            map.put(P_TIME, endTime);
+            uri = URI_QUERY_MOMENT;
+        }
+
+        String data = restTemplateService.getHttpM(completeQueryUrl(prometheusUrl, uri), map);
+
+        MetricResponse metricResult = new Gson().fromJson(data, MetricResponse.class);
+        if (metricResult == null || !"success".equals(metricResult.getStatus())) {
+            return null;
+        }
+
+        return metricResult;
     }
 
     private Result loadTypeOracle(String mode) {
