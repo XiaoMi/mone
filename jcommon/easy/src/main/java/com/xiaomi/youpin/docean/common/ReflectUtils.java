@@ -285,7 +285,7 @@ public abstract class ReflectUtils {
         try {
             return Class.forName(name);
         } catch (Throwable e) {
-            log.warn("classForName:{} error:{}", name, e.getMessage());
+            log.error("classForName:{} error:{}", name, e.getMessage());
         }
         return null;
     }
@@ -301,7 +301,7 @@ public abstract class ReflectUtils {
                 return Class.forName(name, true, classLoader);
             }
         } catch (Throwable e) {
-            log.warn("classForName:{} error:{}", name, e.getMessage());
+            log.error("classForName:{} error:{}", name, e.getMessage());
         }
         return null;
     }

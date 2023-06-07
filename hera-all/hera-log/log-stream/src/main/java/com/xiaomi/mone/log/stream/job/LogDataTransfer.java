@@ -4,9 +4,12 @@ import com.google.common.util.concurrent.RateLimiter;
 import com.xiaomi.mone.log.api.model.msg.LineMessage;
 import com.xiaomi.mone.log.common.Constant;
 import com.xiaomi.mone.log.parse.LogParser;
+import com.xiaomi.mone.log.stream.common.LogStreamConstants;
 import com.xiaomi.mone.log.stream.common.SinkJobEnum;
 import com.xiaomi.mone.log.stream.job.extension.MessageSender;
+import com.xiaomi.mone.log.stream.job.extension.MqMessagePostProcessing;
 import com.xiaomi.mone.log.stream.sink.SinkChain;
+import com.xiaomi.youpin.docean.Ioc;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -42,31 +45,37 @@ public class LogDataTransfer {
 
     private RateLimiter rateLimiter = RateLimiter.create(180000000);
 
+    private MqMessagePostProcessing messagePostProcessing;
+
     public LogDataTransfer(SinkChain sinkChain, LogParser logParser,
-                           MessageSender messageSender) {
+                           MessageSender messageSender, SinkJobConfig sinkJobConfig) {
         this.sinkChain = sinkChain;
         this.logParser = logParser;
         this.messageSender = messageSender;
+        this.sinkJobConfig = sinkJobConfig;
+        String mqPostProcessingBean = sinkJobConfig.getMqType() + LogStreamConstants.postProcessingProviderBeanSuffix;
+        this.messagePostProcessing = Ioc.ins().getBean(mqPostProcessingBean);
     }
 
 
     public void handleMessage(String type, String msg, String time) {
-        Map<String, Object> m = null;
+        Map<String, Object> dataMap;
         try {
             LineMessage lineMessage = Constant.GSON.fromJson(msg, LineMessage.class);
             String ip = lineMessage.getProperties(LineMessage.KEY_IP);
             Long lineNumber = lineMessage.getLineNumber();
-            m = logParser.parse(lineMessage.getMsgBody(), ip, lineNumber, lineMessage.getTimestamp(), lineMessage.getFileName());
+            dataMap = logParser.parse(lineMessage.getMsgBody(), ip, lineNumber, lineMessage.getTimestamp(), lineMessage.getFileName());
             if (SinkJobEnum.NORMAL_JOB == jobType) {
-                if (null != m && !sinkChain.execute(m)) {
-                    sendMessage(m);
+                if (null != dataMap && !sinkChain.execute(dataMap)) {
+                    sendMessage(dataMap);
                 }
             } else {
-                sendMessage(m);
+                sendMessage(dataMap);
             }
             if (sendMsgNumber.get() % COUNT_NUM == 0 || sendMsgNumber.get() == 1) {
-                log.info(jobType.name() + " send msg:{}", m);
+                log.info(jobType.name() + " send msg:{}", dataMap);
             }
+            messagePostProcessing.postProcessing(sinkJobConfig, msg);
         } catch (Exception e) {
             log.error(jobType.name() + " parse and send error", e);
         }

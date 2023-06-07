@@ -15,6 +15,7 @@ import com.xiaomi.mone.log.manager.domain.EsCluster;
 import com.xiaomi.mone.log.manager.model.pojo.*;
 import com.xiaomi.mone.log.manager.service.MilogConfigNacosService;
 import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionServiceFactory;
+import com.xiaomi.mone.log.manager.service.extension.tail.TailExtensionService;
 import com.xiaomi.mone.log.manager.service.extension.tail.TailExtensionServiceFactory;
 import com.xiaomi.mone.log.manager.service.nacos.DynamicConfigProvider;
 import com.xiaomi.mone.log.manager.service.nacos.DynamicConfigPublisher;
@@ -94,6 +95,12 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
     @Value(value = "$app.env")
     private String appEnv;
 
+    private TailExtensionService tailExtensionService;
+
+    public void init() {
+        tailExtensionService = TailExtensionServiceFactory.getTailExtensionService();
+    }
+
     /**
      * 推送namespace配置
      *
@@ -104,6 +111,9 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
     public void publishStreamConfig(Long spaceId, Long tailId, Integer type, Integer projectTypeCode, String motorRoomEn) {
         //1.查询所有的stream的机器Ip--实时查询
         List<String> mioneStreamIpList = fetchStreamMachineService.streamMachineUnique();
+        if (CollectionUtils.isEmpty(mioneStreamIpList)) {
+            mioneStreamIpList = tailExtensionService.getStreamMachineUniqueList(projectTypeCode, motorRoomEn);
+        }
         log.info("查询到log-stream的机器列表：{}", new Gson().toJson(mioneStreamIpList));
         //2.发送数据
         streamConfigNacosPublisher.publish(DEFAULT_APP_NAME, dealStreamConfigByRule(mioneStreamIpList, spaceId, type, projectTypeCode));
@@ -326,8 +336,12 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
             sinkConfig.setLogstoreName(milogLogstore.getLogstoreName());
             sinkConfig.setKeyList(Utils.parse2KeyAndTypeList(milogLogstore.getKeyList(), milogLogstore.getColumnTypeList()));
             MilogEsClusterDO esInfo = esCluster.getById(milogLogstore.getEsClusterId());
-            sinkConfig.setEsIndex(milogLogstore.getEsIndex());
-            sinkConfig.setEsInfo(buildEsInfo(esInfo));
+            if(null != esInfo){
+                sinkConfig.setEsIndex(milogLogstore.getEsIndex());
+                sinkConfig.setEsInfo(buildEsInfo(esInfo));
+            }else{
+                log.info("assembleSinkConfig esInfo is null,logStoreId:{}",milogLogstore.getId());
+            }
         }
         sinkConfig.setLogtailConfigs(Arrays.asList(assembleLogTailConfigs(tailId)));
         return sinkConfig;

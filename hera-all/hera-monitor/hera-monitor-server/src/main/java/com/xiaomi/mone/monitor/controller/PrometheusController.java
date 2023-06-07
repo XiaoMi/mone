@@ -174,6 +174,15 @@ public class PrometheusController {
     }
 
     @ResponseBody
+    @PostMapping("/prometheus/listContainerName")
+    public Result<List<String>> listContainerName(@RequestBody PromQueryRangeParam param){
+
+        List<String> strings = alarmService.listContainerName(param.getProjectId(), param.getProjectName());
+        log.info("listContainerName param:{},result:{}",param.toString(),strings);
+        return Result.success(strings);
+    }
+
+    @ResponseBody
     @PostMapping("/prometheus/httpClientDomainList")
     public Result<List<String>> httpClientDomainList(@RequestBody PromQueryRangeParam param){
 
