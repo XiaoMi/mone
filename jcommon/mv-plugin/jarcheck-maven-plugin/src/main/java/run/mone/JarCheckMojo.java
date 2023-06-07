@@ -108,7 +108,7 @@ public class JarCheckMojo extends AbstractMojo {
                     }
                     String mavenShadePlugin = mavenProject.getPlugin(shadePluginKey).getConfiguration().toString();
                     if (!mavenShadePlugin.contains("<include>" + groupId + ":" + artifactId + "</include>")) {
-                        throw new MojoExecutionException("请把依赖:" + "<include>" + groupId + ":" + artifactId + "</include>" + "放到" + mavenProject.getName() + "的pom文件maven-shade-plugin里面");
+                        throw new MojoExecutionException("请把内容:" + "<include>" + groupId + ":" + artifactId + "</include>" + "，添加到" + mavenProject.getName() + "目录下pom文件中maven-shade-plugin插件<includes>里面,该pom里面有参考设置");
                     }
                 }
 
