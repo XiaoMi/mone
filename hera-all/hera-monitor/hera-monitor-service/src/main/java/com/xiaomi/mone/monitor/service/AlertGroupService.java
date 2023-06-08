@@ -171,7 +171,7 @@ public class AlertGroupService {
      * @return
      */
     public Result<AlertGroupInfo> alertGroupCreate(String user, AlertGroupParam param) {
-        Result<JsonObject> result = alertServiceAdapt.createAlertGroup(user, param.getName(), param.getNote(), param.getChatId(), param.getMemberIds());
+        Result<JsonObject> result = alertServiceAdapt.createAlertGroup(user, param.getName(), param.getNote(), param.getChatId(), param.getMemberIds(),param.getDutyInfo());
         if (result == null) {
             return Result.fail(ErrorCode.unknownError);
         }
@@ -202,7 +202,7 @@ public class AlertGroupService {
         if (ag == null) {
             return Result.fail(ErrorCode.NoOperPermission);
         }
-        Result result = alertServiceAdapt.editAlertGroup(user, ag.getRelId(), param.getName(), param.getNote(), param.getChatId(), param.getMemberIds());
+        Result result = alertServiceAdapt.editAlertGroup(user, ag.getRelId(), param.getName(), param.getNote(), param.getChatId(), param.getMemberIds(),param.getDutyInfo());
         if (result == null) {
             return Result.fail(ErrorCode.unknownError);
         }

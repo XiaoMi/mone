@@ -7,6 +7,7 @@ import com.xiaomi.mone.monitor.bo.UserInfo;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.alertmanager.AlertManager;
 import com.xiaomi.mone.monitor.service.model.PageData;
+import com.xiaomi.mone.monitor.service.model.alarm.duty.DutyInfo;
 import com.xiaomi.mone.tpc.api.service.UserFacade;
 import com.xiaomi.mone.tpc.common.enums.UserStatusEnum;
 import com.xiaomi.mone.tpc.common.enums.UserTypeEnum;
@@ -203,7 +204,7 @@ public class AlertManagerImpl implements AlertManager {
     }
 
     @Override
-    public Result<JsonObject> createAlertGroup(String user, String name, String note, String chatId, List<Long> memberIds) {
+    public Result<JsonObject> createAlertGroup(String user, String name, String note, String chatId, List<Long> memberIds, DutyInfo dutyInfo) {
         return null;
     }
 
@@ -213,7 +214,7 @@ public class AlertManagerImpl implements AlertManager {
     }
 
     @Override
-    public Result<JsonObject> editAlertGroup(String user, long id, String name, String note, String chatId, List<Long> memberIds) {
+    public Result<JsonObject> editAlertGroup(String user, long id, String name, String note, String chatId, List<Long> memberIds,DutyInfo dutyInfo) {
         return null;
     }
 
