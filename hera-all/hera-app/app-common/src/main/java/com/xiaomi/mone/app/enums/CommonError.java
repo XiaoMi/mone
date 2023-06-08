@@ -9,15 +9,16 @@ package com.xiaomi.mone.app.enums;
 public enum CommonError {
     Success(0, "success"),
 
-    UnknownError(1, "unknown error"),
+    UnknownError(-1, "unknown error"),
 
-    ParamsError(2, "parameter error"),
+    ParamsError(400, "parameter error"),
 
-    NOT_EXISTS_DATA(3, "数据不存在"),
+    NOT_EXISTS_DATA(204, "数据不存在"),
 
-    SERVER_ERROR(4, "服务器异常"),
+    UNAUTHORIZED(403, "没有操作权限"),
 
-    UNAUTHORIZED(5, "没有操作权限");
+    SERVER_ERROR(500, "服务器异常"),
+    ;
 
     private int code;
     private String message;
