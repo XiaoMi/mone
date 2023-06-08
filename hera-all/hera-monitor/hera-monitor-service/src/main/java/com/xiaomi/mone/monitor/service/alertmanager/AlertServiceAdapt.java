@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.xiaomi.mone.monitor.bo.UserInfo;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.model.PageData;
+import com.xiaomi.mone.monitor.service.model.alarm.duty.DutyInfo;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -92,16 +93,16 @@ public class AlertServiceAdapt {
         return alertManager.searchUser(user, searchName, pageNo, pageSize);
     }
 
-    public Result<JsonObject> createAlertGroup(String user, String name, String note, String chatId, List<Long> memberIds) {
-        return alertManager.createAlertGroup(user, name, note, chatId, memberIds);
+    public Result<JsonObject> createAlertGroup(String user, String name, String note, String chatId, List<Long> memberIds, DutyInfo dutyInfo) {
+        return alertManager.createAlertGroup(user, name, note, chatId, memberIds,dutyInfo);
     }
 
     public Result<JsonObject> getAlertGroup(String user, long id) {
         return alertManager.getAlertGroup(user, id);
     }
 
-    public Result<JsonObject> editAlertGroup(String user, long id, String name, String note, String chatId, List<Long> memberIds) {
-        return alertManager.editAlertGroup(user, id, name, note, chatId, memberIds);
+    public Result<JsonObject> editAlertGroup(String user, long id, String name, String note, String chatId, List<Long> memberIds,DutyInfo dutyInfo) {
+        return alertManager.editAlertGroup(user, id, name, note, chatId, memberIds,dutyInfo);
     }
 
     public Result<JsonObject> deleteAlertGroup(String user, long id) {
