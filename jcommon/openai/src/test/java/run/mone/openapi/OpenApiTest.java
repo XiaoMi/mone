@@ -293,11 +293,12 @@ public class OpenApiTest {
 
     /**
      * 测试使用Azure的openai
+     * POST https://b2c-mione-gpt35.openai.azure.com/openai/deployments/gpt-35-turbo/completions?api-version=2023-05-15
      */
     @Test
     public void testAzure() {
         String key = System.getenv("AZURE_OPENAI_KEY");
-        OpenAiClient client = OpenaiCall.client(key, System.getenv("AZURE_OPENAI_ENDPOINT"));
+        OpenAiClient client = OpenaiCall.client(key, System.getenv("AZURE_OPENAI_COM_ENDPOINT"));
         ChatCompletionResponse res = client.chatCompletion(Lists.newArrayList(
                 Message.builder().role(Message.Role.USER).content("我给你一些内容,请你记住,然后我会开始提问 a=1 b=2").build(),
                 Message.builder().role(Message.Role.ASSISTANT).content("好的").build(),
