@@ -23,4 +23,8 @@ public class DutyGroup implements Serializable {
     private List<UserInfo> oncall_vacations;//当为是（=1）时，oncall_vacations字段不能为空
     private List<UserInfo> oncall_users;//假期值班信息。
 
+    private List<ShiftUserInfo> duty_user;//当前值班人员
+    private List<ShiftUserInfo> next_duty_user;//下期值班人员
+    private List<ShiftUserInfo> duty_order_users;//实际值班表
+
 }
