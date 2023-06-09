@@ -37,13 +37,13 @@ public class FilterConfiguration {
     @NacosValue("${aegis.mione.public.domain.key:noconfig}")
     private String mionePublicDomain;
 
-    @NacosValue(value = "${token.parse.url}",autoRefreshed = true)
+    @NacosValue(value = "${token.parse.url}", autoRefreshed = true)
     private String tokenParseUrl;
     @Value("${inner.auth}")
     private String innerAuth;
     @Value("${dev.mode}")
     private String devMode;
-    @NacosValue(value = "${login.url}",autoRefreshed = true)
+    @NacosValue(value = "${login.url}", autoRefreshed = true)
     private String loginUrl;
 
     @Bean
@@ -52,12 +52,16 @@ public class FilterConfiguration {
         registrationBean.setFilter(new HttpReqUserFilter());
         registrationBean.addUrlPatterns("/*");
         registrationBean.addInitParameter(ConstUtil.innerAuth, innerAuth);
-        String value = aegisSdkHera+","+aegisSdkLog + "," + mionePublicDomain;
+        String value = aegisSdkHera + "," + aegisSdkLog + "," + mionePublicDomain;
         registrationBean.addInitParameter(ConstUtil.CAS_PUBLIC_KEY, value);
         registrationBean.addInitParameter(ConstUtil.authTokenUrl, tokenParseUrl);
-        registrationBean.addInitParameter(ConstUtil.ignoreUrl, "js/*,/api/*,/alert/*,/manual/*,/prometheus/queryIncrease,/prometheus/detail,/prometheus/logInfo,/prometheus/getTeslaError,/alertGroup/test,/mimonitor/alarmUnHealthSendFeishu,/mimonitor/alarmResourceUtilization,/mimonitor/alarmUnHealthSendFeishu,/mimonitor/createGrafanaBlackList,/mimonitor/getGrafanaBlackList,/mimonitor/delGrafanaBlackList,/mimonitor/getGrafanaBlackListList,/mimonitor/testGrafanaCreate");
-        registrationBean.addInitParameter(ConstUtil.devMode,devMode);
-        registrationBean.addInitParameter(ConstUtil.loginUrl,loginUrl);
+        registrationBean.addInitParameter(ConstUtil.ignoreUrl, "js/*,/api/*,/alert/*,/manual/*,/prometheus/queryIncrease," +
+                "/prometheus/detail,/prometheus/logInfo,/prometheus/getTeslaError,/alertGroup/test,/mimonitor/alarmUnHealthSendFeishu," +
+                "/mimonitor/alarmResourceUtilization,/mimonitor/alarmUnHealthSendFeishu,/mimonitor/createGrafanaBlackList," +
+                "/mimonitor/getGrafanaBlackList,/mimonitor/delGrafanaBlackList,/mimonitor/getGrafanaBlackListList," +
+                "/mimonitor/testGrafanaCreate,/mimonitor/historyInstance");
+        registrationBean.addInitParameter(ConstUtil.devMode, devMode);
+        registrationBean.addInitParameter(ConstUtil.loginUrl, loginUrl);
         registrationBean.setOrder(0);
         return registrationBean;
     }

@@ -263,10 +263,6 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         }
     }
 
-    private MilogAppTopicRelDO getMilogAppTopicRelDO(MilogLogtailParam param) {
-        return milogAppTopicRelDao.queryById(param.getMilogAppId());
-    }
-
     @Override
     public void sengMessageNewTail(MilogLogtailParam param, MilogLogTailDo milogLogtailDo, MilogLogStoreDO milogLogStore) {
         // tail创建成功 绑定和中间件的关系
@@ -456,15 +452,6 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
 
     private AppBaseInfo getAppBaseInfo(MilogLogtailParam param) {
         return heraAppService.queryById(param.getMilogAppId());
-    }
-
-    private void mqConfigUpdate(MilogAppMiddlewareRel middlewareRel, Long spaceId, Long storeId, Long tailId) {
-        // 设置Tag
-        MilogAppMiddlewareRel.Config config = middlewareRel.getConfig();
-        String tag = Utils.createTag(spaceId, storeId, tailId);
-        config.setTag(tag);
-        config.setConsumerGroup(DEFAULT_CONSUMER_GROUP + tag);
-        middlewareRel.setConfig(config);
     }
 
     public void compareChangeDelIps(Long tailId, Long milogAppId, List<String> newIps, List<String> oldIps) {

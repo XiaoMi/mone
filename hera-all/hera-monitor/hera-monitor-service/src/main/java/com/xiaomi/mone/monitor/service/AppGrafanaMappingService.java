@@ -132,7 +132,15 @@ public class AppGrafanaMappingService {
 
     public void createTmpByAppBaseInfo(HeraAppBaseInfoModel baseInfo) {
         GrafanaTemplate template = new GrafanaTemplate();
-        template.setAppType(baseInfo.getAppType());
+        Integer appType = baseInfo.getAppType();
+        /**
+         * 默认使用业务类型；
+         * mesh类型应用与业务类型公用模版
+         */
+        if(appType == null || AppType.mesh.getCode().equals(appType)){
+            appType = AppType.businessType.getCode();
+        }
+        template.setAppType(appType);
         template.setPlatform(baseInfo.getPlatformType());
 
         try {
