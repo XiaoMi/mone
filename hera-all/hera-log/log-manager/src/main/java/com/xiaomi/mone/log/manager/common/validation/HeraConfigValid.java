@@ -26,8 +26,6 @@ public class HeraConfigValid {
     @Value("$server.type")
     private String serverType;
 
-    private static final String MIS_LOGPATH_PREFIX = "/home/work/logs";
-
     @Resource
     private MilogLogstoreDao milogLogstoreDao;
 
