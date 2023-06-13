@@ -3,6 +3,7 @@ package com.xiaomi.mone.log.manager.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.google.common.collect.Lists;
+import com.xiaomi.mone.log.api.enums.LogStructureEnum;
 import com.xiaomi.mone.log.api.enums.LogTypeEnum;
 import com.xiaomi.mone.log.api.enums.OperateEnum;
 import com.xiaomi.mone.log.common.Result;
@@ -70,6 +71,9 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
 
     @Resource
     private LogTail logTail;
+
+    @Resource
+    private LogTailServiceImpl logTailService;
 
     private StoreExtensionService storeExtensionService;
 
@@ -217,6 +221,8 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
             return new Result<>(CommonError.ParamsError.getCode(), "该 log store 下存在tail，无法删除");
         }
         if (logStoreDao.deleteMilogSpace(id)) {
+            //删除nacos中的配置
+            logTailService.deleteConfigRemote(logStore.getSpaceId(), id, logStore.getMachineRoom(), LogStructureEnum.STORE);
             storeExtensionService.deleteStorePostProcessing(logStore);
             return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage());
         } else {

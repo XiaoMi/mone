@@ -108,7 +108,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
      */
 
     @Override
-    public void publishStreamConfig(Long spaceId, Long tailId, Integer type, Integer projectTypeCode, String motorRoomEn) {
+    public void publishStreamConfig(Long spaceId, Integer type, Integer projectTypeCode, String motorRoomEn) {
         //1.查询所有的stream的机器Ip--实时查询
         List<String> mioneStreamIpList = fetchStreamMachineService.streamMachineUnique();
         if (CollectionUtils.isEmpty(mioneStreamIpList)) {
@@ -116,11 +116,10 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
         }
         log.info("查询到log-stream的机器列表：{}", new Gson().toJson(mioneStreamIpList));
         //2.发送数据
-        streamConfigNacosPublisher.publish(DEFAULT_APP_NAME, dealStreamConfigByRule(mioneStreamIpList, spaceId, type, projectTypeCode));
+        streamConfigNacosPublisher.publish(DEFAULT_APP_NAME, dealStreamConfigByRule(mioneStreamIpList, spaceId, type));
     }
 
-    private synchronized MiLogStreamConfig dealStreamConfigByRule(List<String> ipList, Long spaceId,
-                                                                  Integer type, Integer projectTypeCode) {
+    private synchronized MiLogStreamConfig dealStreamConfigByRule(List<String> ipList, Long spaceId, Integer type) {
         MiLogStreamConfig existConfig = streamConfigNacosProvider.getConfig(DEFAULT_APP_NAME);
         // 新增配置
         if (null == existConfig || OperateEnum.ADD_OPERATE.getCode().equals(type) || OperateEnum.UPDATE_OPERATE.getCode().equals(type)) {
@@ -336,11 +335,11 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
             sinkConfig.setLogstoreName(milogLogstore.getLogstoreName());
             sinkConfig.setKeyList(Utils.parse2KeyAndTypeList(milogLogstore.getKeyList(), milogLogstore.getColumnTypeList()));
             MilogEsClusterDO esInfo = esCluster.getById(milogLogstore.getEsClusterId());
-            if(null != esInfo){
+            if (null != esInfo) {
                 sinkConfig.setEsIndex(milogLogstore.getEsIndex());
                 sinkConfig.setEsInfo(buildEsInfo(esInfo));
-            }else{
-                log.info("assembleSinkConfig esInfo is null,logStoreId:{}",milogLogstore.getId());
+            } else {
+                log.info("assembleSinkConfig esInfo is null,logStoreId:{}", milogLogstore.getId());
             }
         }
         sinkConfig.setLogtailConfigs(Arrays.asList(assembleLogTailConfigs(tailId)));

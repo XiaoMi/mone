@@ -1,5 +1,7 @@
 package com.xiaomi.mone.log.manager.service.impl;
 
+import com.xiaomi.mone.log.api.enums.LogStructureEnum;
+import com.xiaomi.mone.log.api.enums.MachineRegionEnum;
 import com.xiaomi.mone.log.api.enums.OperateEnum;
 import com.xiaomi.mone.log.api.enums.ProjectSourceEnum;
 import com.xiaomi.mone.log.common.Result;
@@ -41,6 +43,9 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
 
     @Resource
     private TpcSpaceAuthService spaceAuthService;
+
+    @Resource
+    private LogTailServiceImpl logTailService;
 
     @Resource
     private Tpc tpc;
@@ -196,6 +201,8 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
             return new Result<>(CommonError.ParamsError.getCode(), "该space 下存在store，无法删除", "");
         }
         if (milogSpaceDao.deleteMilogSpace(id)) {
+            logTailService.deleteConfigRemote(id, id, MachineRegionEnum.CN_MACHINE.getEn(), LogStructureEnum.SPACE);
+
             com.xiaomi.youpin.infra.rpc.Result tpcResult = spaceAuthService.deleteSpaceTpc(id, MoneUserContext.getCurrentUser().getUser(), MoneUserContext.getCurrentUser().getUserType());
             if (tpcResult == null || tpcResult.getCode() != 0) {
                 log.error("删除space未关联权限系统,space:[{}], tpcResult:[{}]", milogSpace, tpcResult);
