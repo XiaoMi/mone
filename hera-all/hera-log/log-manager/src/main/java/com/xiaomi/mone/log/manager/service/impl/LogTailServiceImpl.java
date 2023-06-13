@@ -505,7 +505,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
 
     @Override
     public void sendMessageOnDelete(MilogLogTailDo mt, MilogLogStoreDO logStoreDO) {
-        log.info("发送删除配置信息：mt:{}", gson.toJson(mt));
+        log.info("发送删除配置信息：mt:{}", GSON.toJson(mt));
         delMqConfigResource(mt, logStoreDO);
         /**
          * 发送配置信息---log-agent
@@ -809,7 +809,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
             Map<String, Object> parseMsg = logParser.parseSimple(mlogParseParam.getMsg(), currentStamp);
             return Result.success(parseMsg);
         } catch (Exception e) {
-            log.info("解析配置信息错误：配置信息：{}", gson.toJson(mlogParseParam), e);
+            log.info("解析配置信息错误：配置信息：{}", GSON.toJson(mlogParseParam), e);
         }
         return Result.success("解析错误 请核对配置信息");
     }
@@ -895,7 +895,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         List<MilogLogTailDo> logTailDos = milogLogtailDao.queryByMilogAppAndEnvId(heraEnvIpVo.getHeraAppId(), heraEnvIpVo.getId());
         if (CollectionUtils.isNotEmpty(logTailDos)) {
             log.info("动态扩容当前环境下的配置，heraAppEnvVo:{}，logTailDos:{}",
-                    gson.toJson(heraEnvIpVo), gson.toJson(logTailDos));
+                    GSON.toJson(heraEnvIpVo), GSON.toJson(logTailDos));
             for (MilogLogTailDo milogLogtailDo : logTailDos) {
                 List<String> exitIps = milogLogtailDo.getIps();
                 List<String> newIps = heraEnvIpVo.getIpList();
