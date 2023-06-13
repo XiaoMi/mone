@@ -224,6 +224,11 @@ public class AlertManagerImpl implements AlertManager {
     }
 
     @Override
+    public Result<JsonObject> dutyInfoList(String user, long id, long start, long end) {
+        return null;
+    }
+
+    @Override
     public Integer getDefaultIamId(){
         return 0;
     }

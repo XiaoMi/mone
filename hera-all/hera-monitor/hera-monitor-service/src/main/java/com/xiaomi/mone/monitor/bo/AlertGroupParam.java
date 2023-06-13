@@ -23,7 +23,8 @@ public class AlertGroupParam {
     private List<Long> memberIds;
     private String type;
     private DutyInfo dutyInfo;
-
+    private Long start;
+    private Long end;
     public void pageQryInit() {
         if (page == null || page <= 0) {
             page = 1;

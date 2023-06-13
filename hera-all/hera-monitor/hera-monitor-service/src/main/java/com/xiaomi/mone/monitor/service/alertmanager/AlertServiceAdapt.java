@@ -112,4 +112,9 @@ public class AlertServiceAdapt {
     public Integer getDefaultIamId() {
         return alertManager.getDefaultIamId();
     }
+
+
+    public Result<JsonObject> dutyInfoList(String user, long id,long start,long end) {
+        return alertManager.dutyInfoList(user, id,start,end);
+    }
 }
