@@ -247,9 +247,9 @@ public class AlertGroupController {
             String user = userInfo.genFullAccount();
             user = userconfigService.getAssignUser(user);
             log.info("AlertGroupController.dutyInfoList param : {} ,user : {}", param, user);
-            return alertGroupService.alertGroupDelete(user, param);
+            return alertGroupService.dutyInfoList(user, param);
         } catch (Exception e) {
-            log.error("AlertGroupController.alertGroupDelete异常 param : {} ,userInfo :{}", param, userInfo, e);
+            log.error("AlertGroupController.dutyInfoList param : {} ,userInfo :{}", param, userInfo, e);
             return Result.fail(ErrorCode.unknownError);
         }
     }

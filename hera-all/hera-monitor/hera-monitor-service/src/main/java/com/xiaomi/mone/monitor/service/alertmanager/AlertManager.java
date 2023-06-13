@@ -56,7 +56,7 @@ public interface AlertManager {
 
     Result<JsonObject> deleteAlertGroup(String user, long id);
 
-    Result<JsonObject> dutyInfoList(String user, long id,long start,long end);
+    Result<JsonObject> dutyInfoList(String user, long id,Long start,Long end);
 
     Integer getDefaultIamId();
 }

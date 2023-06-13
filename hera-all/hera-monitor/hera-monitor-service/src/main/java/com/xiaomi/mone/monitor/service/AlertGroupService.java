@@ -252,7 +252,7 @@ public class AlertGroupService {
         return Result.success(null);
     }
 
-    public Result dutyList(String user, AlertGroupParam param){
+    public Result dutyInfoList(String user, AlertGroupParam param){
         return alertServiceAdapt.dutyInfoList(user, param.getId(), param.getStart(), param.getEnd());
     }
 
