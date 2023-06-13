@@ -600,7 +600,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         List<MilogLogTailDo> milogLogtailDos = milogLogtailDao.queryByAppAndEnv(projectInfo.getProjectId(), projectInfo.getEnvId());
         if (CollectionUtils.isNotEmpty(projectInfo.getIps()) && CollectionUtils.isNotEmpty(milogLogtailDos)) {
             log.info("动态扩容当前环境下的配置，projectId:{},envId:{},配置信息:{}",
-                    projectInfo.getProjectId(), projectInfo.getEnvId(), gson.toJson(milogLogtailDos));
+                    projectInfo.getProjectId(), projectInfo.getEnvId(), GSON.toJson(milogLogtailDos));
             for (MilogLogTailDo milogLogtailDo : milogLogtailDos) {
                 List<String> exitIps = milogLogtailDo.getIps();
                 List<String> newIps = projectInfo.getIps();
