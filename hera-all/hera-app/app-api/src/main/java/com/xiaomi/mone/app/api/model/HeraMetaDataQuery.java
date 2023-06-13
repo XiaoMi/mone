@@ -9,6 +9,7 @@ import java.io.Serializable;
 @ToString
 public class HeraMetaDataQuery implements Serializable {
 
+    private Long id;
 
     private Integer page;
     
