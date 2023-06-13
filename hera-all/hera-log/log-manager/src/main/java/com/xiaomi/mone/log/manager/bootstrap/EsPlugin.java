@@ -21,6 +21,8 @@ public class EsPlugin implements IPlugin {
     @Resource
     private MilogEsClusterMapper milogEsClusterMapper;
 
+    private static final String ADDR_PREFIX = "http://";
+
     @Override
     public void init() {
         log.info("es init start");
@@ -37,6 +39,7 @@ public class EsPlugin implements IPlugin {
     public void buildEsClient(MilogEsClusterDO cluster) {
         try {
             EsService esService;
+            checkAddrUpdate(cluster);
             switch (cluster.getConWay()) {
                 case Constant.ES_CONWAY_PWD:
                     esService = new EsService(cluster.getAddr(), cluster.getUser(), cluster.getPwd());
@@ -57,5 +60,10 @@ public class EsPlugin implements IPlugin {
         }
     }
 
-
+    private void checkAddrUpdate(MilogEsClusterDO cluster) {
+        String addr = cluster.getAddr();
+        if (addr.startsWith(ADDR_PREFIX)) {
+            cluster.setAddr(addr.substring(ADDR_PREFIX.length() + 1));
+        }
+    }
 }
