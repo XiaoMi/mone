@@ -970,6 +970,29 @@ public class Gitlab {
         }
     }
 
+    public BaseResponse createBranch(String gitHost,String projectId, String branchName, String ref, String token) {
+        if (StringUtils.isEmpty(projectId) || StringUtils.isEmpty(branchName) || StringUtils.isEmpty(ref)
+                || StringUtils.isEmpty(token) || StringUtils.isEmpty(gitHost)) {
+            return new BaseResponse(-1, "createBranch参数无效");
+        }
+        //    GitlabBranch branch = new GitlabBranch();
+        String url = gitHost + GIT_API_URI + "projects/" + projectId + "/repository/branches";
+        log.info("createBranch url:{}",url);
+        try {
+            String body = "{\"id\": \"%s\",\"branch\": \"%s\",\"ref\": \"%s\"}";
+            body = String.format(body, projectId, branchName, ref);
+            log.info("createBranch body:{}",body);
+            Map<String, String> headers = new HashMap<>();
+            headers.put("Content-Type", "application/json");
+            headers.put("PRIVATE-TOKEN", token);
+            HttpResult response = HttpClientV6.httpPost(url, headers, body, "UTF-8", 10000);
+            return new BaseResponse(response.code, response.content);
+        } catch (Exception e) {
+            log.error("createBranch {}", e.getMessage());
+            return new BaseResponse(-1, "createBranch异常");
+        }
+    }
+
     public BaseResponse deleteBranch(String projectId, String branchName, String token) {
         if (StringUtils.isEmpty(projectId) || StringUtils.isEmpty(branchName) || StringUtils.isEmpty(token)) {
             return new BaseResponse(-1, "response.content");

@@ -84,4 +84,11 @@ public class GitlabTest {
         System.out.println(merge);
     }
 
+    @Test
+    public void createBranchWithHost() {
+        BaseResponse branch = gitlab.createBranch("https://xxx.com", "1", "test",
+                "test1", "xx");
+        System.out.println(branch);
+    }
+
 }
