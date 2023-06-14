@@ -1131,6 +1131,24 @@ public class Gitlab {
         }
     }
 
+    public BaseResponse getMergeChange(String gitHost, String projectId,String iid,String token) {
+        if (StringUtils.isEmpty(projectId) || StringUtils.isEmpty(iid) || StringUtils.isEmpty(gitHost)) {
+            return null;
+        }
+        String url = gitHost + GIT_API_URI + "projects/" + projectId + "/merge_requests/" + iid + "/changes";
+        log.info("getMergeChange url:{}", url);
+        try {
+            Map<String, String> headers = new HashMap<>();
+            headers.put("Content-Type", "application/json");
+            headers.put("PRIVATE-TOKEN", token);
+            HttpResult response = HttpClientV6.httpGet(url, headers);
+            return new BaseResponse(response.code, response.content);
+        } catch (Exception e) {
+            log.error("error getMergeChange{}", e.getMessage());
+            return null;
+        }
+    }
+
     public GitWebhook addHook(GitWebhook gitWebhook, String token) {
         if (gitWebhook == null || StringUtils.isEmpty(gitWebhook.getId())) {
             return null;
