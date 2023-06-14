@@ -91,4 +91,11 @@ public class GitlabTest {
         System.out.println(branch);
     }
 
+    @Test
+    public void getMergeChangeWithHost() {
+        BaseResponse merge = gitlab.getMergeChange("https://xxx.com","1", "3",
+                "xxx");
+        System.out.println(merge);
+    }
+
 }
