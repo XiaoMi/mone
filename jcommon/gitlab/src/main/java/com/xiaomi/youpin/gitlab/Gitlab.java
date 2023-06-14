@@ -305,20 +305,21 @@ public class Gitlab {
             return new Gson().fromJson(httpResponse, new TypeToken<List<GitlabBranch>>() {
             }.getType());
         } catch (JsonSyntaxException e) {
-            log.warn("fetchBranches token = {}, result = {}",token,httpResponse);
+            log.warn("fetchBranches token = {}, result = {}", token, httpResponse);
             ErrorResponse errorResponse;
             try {
-                errorResponse = new Gson().fromJson(httpResponse, new TypeToken<ErrorResponse>() {}.getType());
-            }catch (Exception e2){
+                errorResponse = new Gson().fromJson(httpResponse, new TypeToken<ErrorResponse>() {
+                }.getType());
+            } catch (Exception e2) {
                 return new ArrayList<>();
             }
-            if(errorResponse == null){
+            if (errorResponse == null) {
                 return new ArrayList<>();
             }
-            if("invalid_token".equalsIgnoreCase(errorResponse.getError())){
+            if ("invalid_token".equalsIgnoreCase(errorResponse.getError())) {
                 throw new InvalidTokenException(errorResponse.getError_description());
             }
-            if(errorResponse.getMessage() != null){
+            if (errorResponse.getMessage() != null) {
                 throw new NotFoundException(errorResponse.getMessage());
             }
 
@@ -341,7 +342,7 @@ public class Gitlab {
         return list;
     }
 
-    public List<GitlabCommit> fetchCommits(String gitHost, String projectId, String branch, String token, Map<String, String> params) throws InvalidTokenException,NotFoundException {
+    public List<GitlabCommit> fetchCommits(String gitHost, String projectId, String branch, String token, Map<String, String> params) throws InvalidTokenException, NotFoundException {
         StringBuilder url = new StringBuilder(gitHost + GIT_API_URI + "projects/" + projectId + "/repository/commits?ref_name=" + branch);
         setParams(params, url);
         Map<String, String> headers = new HashMap<>(1);
@@ -356,29 +357,29 @@ public class Gitlab {
             });
             return list;
         } catch (JsonSyntaxException e) {
-            log.warn("fetchCommits token = {}, result = {}",token,httpResponse);
+            log.warn("fetchCommits token = {}, result = {}", token, httpResponse);
             ErrorResponse errorResponse;
             try {
-                errorResponse = new Gson().fromJson(httpResponse, new TypeToken<ErrorResponse>() {}.getType());
-            }catch (Exception e2){
+                errorResponse = new Gson().fromJson(httpResponse, new TypeToken<ErrorResponse>() {
+                }.getType());
+            } catch (Exception e2) {
                 log.error("fetchCommits error", e2);
                 return new ArrayList<>();
             }
-            if(errorResponse == null){
+            if (errorResponse == null) {
                 log.error("fetchCommits errorResponse is null");
                 return new ArrayList<>();
             }
-            if("invalid_token".equalsIgnoreCase(errorResponse.getError())){
+            if ("invalid_token".equalsIgnoreCase(errorResponse.getError())) {
                 throw new InvalidTokenException(errorResponse.getError_description());
             }
-            if(errorResponse.getMessage() != null){
+            if (errorResponse.getMessage() != null) {
                 throw new NotFoundException(errorResponse.getMessage());
             }
         }
         log.error("fetchCommits error. return empty");
         return new ArrayList<>();
     }
-
 
 
     public GitlabCommit fetchCommit(String gitHost, String projectId, String sha, String token) {
@@ -407,7 +408,7 @@ public class Gitlab {
         headers.put("PRIVATE-TOKEN", token);
         try {
             String res = HttpClientV2.get(url, headers, 10000);
-            log.info("getNamespacesById res = {}",res);
+            log.info("getNamespacesById res = {}", res);
             groupInfo = new Gson().fromJson(res, GroupInfo.class);
         } catch (JsonSyntaxException e) {
             groupInfo = null;
@@ -571,13 +572,13 @@ public class Gitlab {
         return groupInfo.getId();
     }
 
-    private static Integer getGroupIdIfExist(String apiURL, String token, String groupName)  {
+    private static Integer getGroupIdIfExist(String apiURL, String token, String groupName) {
         String url = null;
         if (StringUtils.isEmpty(groupName)) {
             return null;
         }
         try {
-            url = apiURL + "namespaces/" +  URLEncoder.encode(groupName, "UTF-8");
+            url = apiURL + "namespaces/" + URLEncoder.encode(groupName, "UTF-8");
         } catch (UnsupportedEncodingException e) {
             log.error("UnsupportedEncodingException:", e);
             return null;
@@ -881,7 +882,8 @@ public class Gitlab {
         String url = GIT_API_URL + "projects/" + projectId + "/repository/tags?private_token=" + token;
         try {
             String response = HttpClientV2.get(url, new HashMap<>(), 10000);
-            tagList = new Gson().fromJson(response,  new TypeToken<List<GitlabTag>>(){}.getType());
+            tagList = new Gson().fromJson(response, new TypeToken<List<GitlabTag>>() {
+            }.getType());
         } catch (Exception e) {
             log.error("error for query tag" + e);
             return null;
@@ -947,11 +949,12 @@ public class Gitlab {
         }
     }
 
-    public BaseResponse createBranch(String projectId, String branchName, String ref, String token){
-        if (StringUtils.isEmpty(projectId) || StringUtils.isEmpty(branchName) || StringUtils.isEmpty(ref) || StringUtils.isEmpty(token)) {
+    public BaseResponse createBranch(String projectId, String branchName, String ref, String token) {
+        if (StringUtils.isEmpty(projectId) || StringUtils.isEmpty(branchName) || StringUtils.isEmpty(ref)
+                || StringUtils.isEmpty(token)) {
             return new BaseResponse(-1, "createBranch参数无效");
         }
-    //    GitlabBranch branch = new GitlabBranch();
+        //    GitlabBranch branch = new GitlabBranch();
         String url = GIT_API_URL + "projects/" + projectId + "/repository/branches";
         try {
             String body = "{\"id\": \"%s\",\"branch\": \"%s\",\"ref\": \"%s\"}";
@@ -967,7 +970,30 @@ public class Gitlab {
         }
     }
 
-    public BaseResponse deleteBranch(String projectId, String branchName, String token){
+    public BaseResponse createBranch(String gitHost,String projectId, String branchName, String ref, String token) {
+        if (StringUtils.isEmpty(projectId) || StringUtils.isEmpty(branchName) || StringUtils.isEmpty(ref)
+                || StringUtils.isEmpty(token) || StringUtils.isEmpty(gitHost)) {
+            return new BaseResponse(-1, "createBranch参数无效");
+        }
+        //    GitlabBranch branch = new GitlabBranch();
+        String url = gitHost + GIT_API_URI + "projects/" + projectId + "/repository/branches";
+        log.info("createBranch url:{}",url);
+        try {
+            String body = "{\"id\": \"%s\",\"branch\": \"%s\",\"ref\": \"%s\"}";
+            body = String.format(body, projectId, branchName, ref);
+            log.info("createBranch body:{}",body);
+            Map<String, String> headers = new HashMap<>();
+            headers.put("Content-Type", "application/json");
+            headers.put("PRIVATE-TOKEN", token);
+            HttpResult response = HttpClientV6.httpPost(url, headers, body, "UTF-8", 10000);
+            return new BaseResponse(response.code, response.content);
+        } catch (Exception e) {
+            log.error("createBranch {}", e.getMessage());
+            return new BaseResponse(-1, "createBranch异常");
+        }
+    }
+
+    public BaseResponse deleteBranch(String projectId, String branchName, String token) {
         if (StringUtils.isEmpty(projectId) || StringUtils.isEmpty(branchName) || StringUtils.isEmpty(token)) {
             return new BaseResponse(-1, "response.content");
         }
@@ -978,16 +1004,16 @@ public class Gitlab {
             HttpResult response = HttpClientV6.httpDelete(url, headers, Maps.newHashMap(), "UTF-8", 10000);
             return new BaseResponse(response.code, response.content);
         } catch (Exception e) {
-            log.error("deleteBranch {}" , e.getMessage());
+            log.error("deleteBranch {}", e.getMessage());
             return new BaseResponse(-1, "response.content");
         }
     }
 
-    public BaseResponse createMerge(String projectId, String sourceBranch, String targetBranch, String title, String token){
+    public BaseResponse createMerge(String projectId, String sourceBranch, String targetBranch, String title, String token) {
         if (StringUtils.isEmpty(projectId) || StringUtils.isEmpty(sourceBranch) || StringUtils.isEmpty(targetBranch)) {
             return null;
         }
-      //  GitlabMerge merge = new GitlabMerge();
+        //  GitlabMerge merge = new GitlabMerge();
         String url = GIT_API_URL + "projects/" + projectId + "/merge_requests";
         try {
             String body = "{\"id\": \"%s\",\"source_branch\": \"%s\",\"target_branch\": \"%s\",\"title\": \"%s\"}";
@@ -998,16 +1024,39 @@ public class Gitlab {
             HttpResult response = HttpClientV6.httpPost(url, headers, body, "UTF-8", 10000);
             return new BaseResponse(response.code, response.content);
         } catch (Exception e) {
-            log.error("createMerge {}" , e.getMessage());
+            log.error("createMerge {}", e.getMessage());
             return null;
         }
     }
 
-    public BaseResponse acceptMerge(String projectId, String iid, String token){
+    public BaseResponse createMerge(String gitHost, String projectId, String sourceBranch, String targetBranch, String title, String token) {
+        if (StringUtils.isEmpty(projectId) || StringUtils.isEmpty(sourceBranch) || StringUtils.isEmpty(targetBranch) ||
+                StringUtils.isEmpty(gitHost)) {
+            return null;
+        }
+        //  GitlabMerge merge = new GitlabMerge();
+        String url = gitHost + GIT_API_URI + "projects/" + projectId + "/merge_requests";
+        log.info("createMerge url:{}", url);
+        try {
+            String body = "{\"id\": \"%s\",\"source_branch\": \"%s\",\"target_branch\": \"%s\",\"title\": \"%s\"}";
+            body = String.format(body, projectId, sourceBranch, targetBranch, title);
+            log.info("createMerge body:{}", body);
+            Map<String, String> headers = new HashMap<>();
+            headers.put("Content-Type", "application/json");
+            headers.put("PRIVATE-TOKEN", token);
+            HttpResult response = HttpClientV6.httpPost(url, headers, body, "UTF-8", 10000);
+            return new BaseResponse(response.code, response.content);
+        } catch (Exception e) {
+            log.error("createMerge {}", e.getMessage());
+            return null;
+        }
+    }
+
+    public BaseResponse acceptMerge(String projectId, String iid, String token) {
         if (StringUtils.isEmpty(projectId) || StringUtils.isEmpty(iid) || StringUtils.isEmpty(token)) {
             return null;
         }
-   //     GitlabMerge merge = new GitlabMerge();
+        //     GitlabMerge merge = new GitlabMerge();
         String url = GIT_API_URL + "projects/" + projectId + "/merge_requests/" + iid + "/merge";
         try {
             Map<String, String> headers = new HashMap<>();
@@ -1021,7 +1070,68 @@ public class Gitlab {
         }
     }
 
-    public GitWebhook addHook(GitWebhook gitWebhook, String token){
+    public BaseResponse acceptMerge(String gitHost, String projectId, String iid, String token) {
+        if (StringUtils.isEmpty(projectId) || StringUtils.isEmpty(iid) || StringUtils.isEmpty(token) ||
+                StringUtils.isEmpty(gitHost)) {
+            return null;
+        }
+        //     GitlabMerge merge = new GitlabMerge();
+        String url = gitHost + GIT_API_URI + "projects/" + projectId + "/merge_requests/" + iid + "/merge";
+        log.info("acceptMerge url:{}", url);
+        try {
+            Map<String, String> headers = new HashMap<>();
+            headers.put("Content-Type", "application/json");
+            headers.put("PRIVATE-TOKEN", token);
+            HttpResult response = HttpClientV6.httpPut(url, headers, "", "UTF-8", 10000);
+            return new BaseResponse(response.code, response.content);
+        } catch (Exception e) {
+            log.error("error acceptMerge{}", e.getMessage());
+            return null;
+        }
+    }
+
+    public BaseResponse closeMerge(String gitHost, String projectId, String iid, String token) {
+        if (StringUtils.isEmpty(projectId) || StringUtils.isEmpty(iid) || StringUtils.isEmpty(gitHost)
+                || StringUtils.isEmpty(token)) {
+            return null;
+        }
+        String url = gitHost + GIT_API_URI + "projects/" + projectId + "/merge_requests/" + iid;
+        log.info("closeMerge url:{}", url);
+        try {
+            Map<String, String> headers = new HashMap<>();
+            headers.put("Content-Type", "application/json");
+            headers.put("PRIVATE-TOKEN", token);
+            String body = "{\"id\": \"%s\",\"merge_request_iid\": \"%s\",\"state_event\": \"%s\"}";
+            body = String.format(body, projectId, iid, "close");
+            log.info("createMerge body:{}", body);
+            HttpResult response = HttpClientV6.httpPut(url, headers,body, "UTF-8", 10000);
+            return new BaseResponse(response.code, response.content);
+        } catch (Exception e) {
+            log.error("error closeMerge{}", e.getMessage());
+            return null;
+        }
+    }
+
+    public BaseResponse getMerge(String gitHost, String projectId, String iid, String token) {
+        if (StringUtils.isEmpty(projectId) || StringUtils.isEmpty(iid) || StringUtils.isEmpty(gitHost)
+                || StringUtils.isEmpty(token)) {
+            return null;
+        }
+        String url = gitHost + GIT_API_URI + "projects/" + projectId + "/merge_requests/" + iid;
+        log.info("getMerge url:{}", url);
+        try {
+            Map<String, String> headers = new HashMap<>();
+            headers.put("Content-Type", "application/json");
+            headers.put("PRIVATE-TOKEN", token);
+            HttpResult response = HttpClientV6.httpGet(url, headers);
+            return new BaseResponse(response.code, response.content);
+        } catch (Exception e) {
+            log.error("error getMerge{}", e.getMessage());
+            return null;
+        }
+    }
+
+    public GitWebhook addHook(GitWebhook gitWebhook, String token) {
         if (gitWebhook == null || StringUtils.isEmpty(gitWebhook.getId())) {
             return null;
         }
@@ -1035,12 +1145,12 @@ public class Gitlab {
             log.info("addHook rsp {} {}", response.code, response.content);
             return new Gson().fromJson(response.content, GitWebhook.class);
         } catch (Exception e) {
-            log.error("addHook {}" , e.getMessage());
+            log.error("addHook {}", e.getMessage());
             return null;
         }
     }
 
-    public GitWebhook editHook(GitWebhook gitWebhook, String token){
+    public GitWebhook editHook(GitWebhook gitWebhook, String token) {
         if (gitWebhook == null || StringUtils.isEmpty(gitWebhook.getId()) || StringUtils.isEmpty(gitWebhook.getHook_id())) {
             return null;
         }
@@ -1054,12 +1164,12 @@ public class Gitlab {
             log.info("editHook rsp {} {}", response.code, response.content);
             return new Gson().fromJson(response.content, GitWebhook.class);
         } catch (Exception e) {
-            log.error("editHook {}" , e.getMessage());
+            log.error("editHook {}", e.getMessage());
             return null;
         }
     }
 
-    public Boolean deleteHook(GitWebhook gitWebhook, String token){
+    public Boolean deleteHook(GitWebhook gitWebhook, String token) {
         if (gitWebhook == null || StringUtils.isEmpty(gitWebhook.getId()) || StringUtils.isEmpty(gitWebhook.getHook_id())) {
             return null;
         }
@@ -1072,8 +1182,19 @@ public class Gitlab {
             log.info("deleteHook rsp {} {}", response.code, response.content);
             return true;
         } catch (Exception e) {
-            log.error("deleteHook {}" , e.getMessage());
+            log.error("deleteHook {}", e.getMessage());
             return false;
         }
+    }
+
+    public String getProjectByAddress(String gitHost, String groupName, String projectName, String token) {
+        groupName = groupName.trim();
+        projectName = projectName.trim();
+        String url = gitHost + GIT_API_URI + "projects?search=" + groupName + "/" + projectName + "&search_namespaces=true";
+        log.info("getProjectByAddress url:{}", url);
+        Map<String, String> headers = new HashMap<>(1);
+        headers.put("PRIVATE-TOKEN", token);
+
+        return HttpClientV2.get(url, headers, 10000);
     }
 }
