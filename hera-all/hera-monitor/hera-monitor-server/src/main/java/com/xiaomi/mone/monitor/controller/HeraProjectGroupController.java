@@ -1,5 +1,6 @@
 package com.xiaomi.mone.monitor.controller;
 
+import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.app.api.model.project.group.HeraProjectGroupDataRequest;
 import com.xiaomi.mone.app.api.model.project.group.ProjectGroupTreeNode;
 import com.xiaomi.mone.app.common.Result;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
  * @author gaoxihui
@@ -27,7 +29,7 @@ public class HeraProjectGroupController {
     ProjectGroupService projectGroupService;
 
     @ResponseBody
-    @PostMapping("/project-group/tree/full")
+    @PostMapping("manual/project-group/tree/full")
     public Result<ProjectGroupTreeNode> getFullTree(HttpServletRequest request, @RequestBody ProjectGroupRequest param) {
         log.info("getFullTree param : {}", param);
 
@@ -46,7 +48,7 @@ public class HeraProjectGroupController {
     }
 
     @ResponseBody
-    @PostMapping("/project-group/tree")
+    @PostMapping("manual/project-group/tree")
     public Result<ProjectGroupTreeNode> getTreeByUser(HttpServletRequest request, @RequestBody ProjectGroupRequest param) {
         log.info("getFullTree param : {}", param);
 
@@ -67,8 +69,8 @@ public class HeraProjectGroupController {
     }
 
     @ResponseBody
-    @PostMapping("/project-group/app")
-    public Result<ProjectGroupTreeNode> getGroupApps(HttpServletRequest request, @RequestBody ProjectGroupRequest param) {
+    @PostMapping("manual/project-group/app")
+    public Result<List<HeraAppBaseInfoModel>> getGroupApps(HttpServletRequest request, @RequestBody ProjectGroupRequest param) {
         log.info("getGroupApps param : {}", param);
 
         if(param.getGroupType() == null){
@@ -84,7 +86,7 @@ public class HeraProjectGroupController {
 
         param.setUser(userInfo.genFullAccount());
 
-        return projectGroupService.getTreeByUser(param);
+        return projectGroupService.searchGroupApps(param);
     }
 
     @ResponseBody
