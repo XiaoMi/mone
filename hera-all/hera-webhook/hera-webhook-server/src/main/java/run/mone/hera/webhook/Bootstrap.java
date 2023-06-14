@@ -28,6 +28,10 @@ public class Bootstrap {
 
     private static KubernetesClient kubernetesClient;
 
+    private static String webhookConfigYaml;
+
+    private static final String HERA_NAMESPACE = "hera-namespace";
+
     public static void main(String[] args) {
         try {
             Ioc.ins().init("run.mone.docean.plugin", "com.xiaomi.youpin.docean.plugin", "run.mone.hera.webhook");
@@ -35,6 +39,7 @@ public class Bootstrap {
             kubernetesClient = Ioc.ins().getBean(KubernetesClient.class);
             createHeraEnvWebhook();
             SpringApplication.run(Bootstrap.class, args);
+            Runtime.getRuntime().addShutdownHook(new Thread(()->{deleteWebHookConfig();}));
         } catch (Throwable throwable) {
             throwable.printStackTrace();
             System.exit(-1);
@@ -42,11 +47,14 @@ public class Bootstrap {
 
     }
 
+    private static void deleteWebHookConfig() {
+        k8sUtilBean.applyYaml(webhookConfigYaml, HERA_NAMESPACE, "delete");
+    }
+
     public static void createHeraEnvWebhook() {
         try {
             String app = "hera-webhook-server";
-            String nameSpace = "hera-namespace";
-            String csrName = app + "." + nameSpace + ".svc";
+            String csrName = app + "." + HERA_NAMESPACE + ".svc";
             String dir = "/tmp/hera-webhook-tls/";
             /**
              * This is the encryption password for generating the p12 file.
@@ -55,7 +63,7 @@ public class Bootstrap {
             String defaultP12Pwd = "mone";
             String csrShellFilePath = "/tmp/hera-webhook-tls-sh/generate_csr_by_openssl.sh";
             // generate csr file, and get csr base64 string
-            String csrArgs = buildShellArgs(app, nameSpace, dir, csrName);
+            String csrArgs = buildShellArgs(app, HERA_NAMESPACE, dir, csrName);
             Process process = callScript(csrShellFilePath, csrArgs);
             if (process == null) {
                 log.error("generate SSL file error!!");
@@ -75,7 +83,8 @@ public class Bootstrap {
             // load webhook config
             String webhookConfigYaml = FileUtils.readResourceFile("/hera_init/webhook/hera_webhook_config.yaml");
             webhookConfigYaml = webhookConfigYaml.replace("${webhook_caBundle}", "'" + certificate + "'");
-            k8sUtilBean.applyYaml(webhookConfigYaml, nameSpace, "add");
+            Bootstrap.webhookConfigYaml = webhookConfigYaml;
+            k8sUtilBean.applyYaml(webhookConfigYaml, HERA_NAMESPACE, "add");
         } catch (Throwable t) {
             log.error("create hera env webhook error : ", t);
         }

@@ -1,16 +1,25 @@
 package com.xiaomi.mone.log.manager.service;
 
+import com.google.common.collect.Lists;
 import com.xiaomi.mone.log.common.Result;
+import com.xiaomi.mone.log.exception.CommonError;
 import com.xiaomi.mone.log.manager.common.Utils;
+import com.xiaomi.mone.log.manager.common.exception.MilogManageException;
 import com.xiaomi.mone.log.manager.dao.MilogLogstoreDao;
 import com.xiaomi.mone.log.manager.domain.EsCluster;
 import com.xiaomi.mone.log.manager.model.StatisticsQuery;
+import com.xiaomi.mone.log.manager.model.dto.EsStatisticsKeyWord;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.plugin.es.EsService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsRequest;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.client.indices.GetMappingsResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AbstractAggregationBuilder;
@@ -162,5 +171,30 @@ public class StatisticsServiceImpl {
             }
         }
         return Result.success(result);
+    }
+
+    public Result<List<EsStatisticsKeyWord>> queryEsStatisticsRation(Long storeId) {
+        List<EsStatisticsKeyWord> results = Lists.newArrayList();
+        ;
+        if (null == storeId) {
+            return Result.failParam("storeId 不能为空");
+        }
+        MilogLogStoreDO logStoreDO = logstoreDao.queryById(storeId);
+        if (null == logStoreDO) {
+            return Result.fail(CommonError.NOT_EXISTS_DATA.getCode(), "store不存在");
+        }
+        if (null == logStoreDO.getEsClusterId() || StringUtils.isEmpty(logStoreDO.getEsIndex())) {
+            return Result.fail(CommonError.NOT_EXISTS_DATA.getCode(), "es 索引相关信息不存在");
+        }
+        EsService esService = esCluster.getEsService(logStoreDO.getEsClusterId());
+        String esIndexName = logStoreDO.getEsIndex();
+
+        try {
+            GetMappingsResponse response = esService.getEsClient().queryIndexMapping(esIndexName);
+            log.info("res");
+        } catch (IOException e) {
+            log.error("query es index exception,storeId:{}", storeId, e);
+        }
+        return Result.success(results);
     }
 }

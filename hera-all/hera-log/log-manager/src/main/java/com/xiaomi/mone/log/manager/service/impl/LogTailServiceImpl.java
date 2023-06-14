@@ -1,7 +1,7 @@
 package com.xiaomi.mone.log.manager.service.impl;
 
+import cn.hutool.core.lang.Assert;
 import com.google.common.collect.Lists;
-import com.google.gson.Gson;
 import com.xiaomi.mone.app.api.response.AppBaseInfo;
 import com.xiaomi.mone.app.model.vo.HeraEnvIpVo;
 import com.xiaomi.mone.log.api.enums.*;
@@ -63,7 +63,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     private MilogLogTailDao milogLogtailDao;
 
     @Resource
-    private MilogLogstoreDao logstoreDao;
+    private MilogLogstoreDao logStoreDao;
 
     @Resource
     private MilogSpaceDao milogSpaceDao;
@@ -101,10 +101,8 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     private MilogLogSearchSaveMapper searchSaveMapper;
     @Resource
     private HeraConfigValid heraConfigValid;
-
-    Gson gson = new Gson();
-    private static final String MIS_LOGPATH_PREFIX = "/home/work/logs";
-
+    @Resource
+    private LogTailServiceImpl logTailService;
 
     @Resource
     private LogTypeProcessorFactory logTypeProcessorFactory;
@@ -161,7 +159,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
             return "storeId不能为空";
         }
         String path = param.getLogPath();
-        MilogLogStoreDO milogLogstoreDO = logstoreDao.queryById(param.getStoreId());
+        MilogLogStoreDO milogLogstoreDO = logStoreDao.queryById(param.getStoreId());
         if (Objects.equals("staging", serverType) &&
                 !MachineRegionEnum.CN_MACHINE.getEn().equals(milogLogstoreDO.getMachineRoom())) {
             return "测试环境只支持大陆机房，其它机房由于网络问题不支持";
@@ -212,7 +210,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
             return new Result<>(CommonError.ParamsError.getCode(), errorMsg);
         }
 
-        MilogLogStoreDO logStore = logstoreDao.queryById(param.getStoreId());
+        MilogLogStoreDO logStore = logStoreDao.queryById(param.getStoreId());
         if (logStore == null) {
             return new Result<>(CommonError.ParamsError.getCode(), "logStore不存在");
         }
@@ -306,9 +304,27 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     public void handleNaocsConfigByMotorRoom(MilogLogTailDo mt, String motorRoomEn, Integer type, Integer projectType) {
         milogConfigNacosServiceImpl.chooseCurrentEnvNacosSerevice(motorRoomEn);
         if (OperateEnum.ADD_OPERATE.getCode().equals(type) || OperateEnum.UPDATE_OPERATE.getCode().equals(type)) {
-            milogConfigNacosServiceImpl.publishStreamConfig(mt.getSpaceId(), mt.getId(), type, projectType, motorRoomEn);
+            milogConfigNacosServiceImpl.publishStreamConfig(mt.getSpaceId(), type, projectType, motorRoomEn);
         }
         milogConfigNacosServiceImpl.publishNameSpaceConfig(motorRoomEn, mt.getSpaceId(), mt.getStoreId(), mt.getId(), type, "");
+    }
+
+    @Override
+    public boolean deleteConfigRemote(Long spaceId, Long id, String motorRoomEn, LogStructureEnum logStructureEnum) {
+        Assert.notNull(spaceId, "deleteConfigRemote spaceId can not null");
+        Assert.notNull(id, "deleteConfigRemote id can not null");
+        milogConfigNacosServiceImpl.chooseCurrentEnvNacosSerevice(motorRoomEn);
+        if (LogStructureEnum.SPACE == logStructureEnum) {
+            milogConfigNacosServiceImpl.publishStreamConfig(spaceId, OperateEnum.DELETE_OPERATE.getCode(), null, motorRoomEn);
+            return true;
+        }
+        if (LogStructureEnum.STORE == logStructureEnum) {
+            milogConfigNacosServiceImpl.publishNameSpaceConfig(motorRoomEn, spaceId, id, null, OperateEnum.DELETE_OPERATE.getCode(), logStructureEnum.getCode());
+            return true;
+        }
+        MilogLogTailDo tailDo = milogLogtailDao.queryById(id);
+        milogConfigNacosServiceImpl.publishNameSpaceConfig(motorRoomEn, spaceId, tailDo.getStoreId(), id, OperateEnum.DELETE_OPERATE.getCode(), logStructureEnum.getCode());
+        return true;
     }
 
     @Override
@@ -316,7 +332,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         MilogLogTailDo tail = milogLogtailDao.queryById(id);
         if (null != tail) {
             // 处理value list
-            MilogLogStoreDO milogLogstore = logstoreDao.queryById(tail.getStoreId());
+            MilogLogStoreDO milogLogstore = logStoreDao.queryById(tail.getStoreId());
             if (null != milogLogstore && StringUtils.isNotEmpty(milogLogstore.getKeyList())) {
                 String keyList = milogLogstore.getKeyList();
                 String valueList = getKeyValueList(keyList, tail.getValueList());
@@ -393,7 +409,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         }
 
         // 查询 MilogLogStoreDO 对象
-        MilogLogStoreDO logStoreDO = logstoreDao.queryById(param.getStoreId());
+        MilogLogStoreDO logStoreDO = logStoreDao.queryById(param.getStoreId());
         if (logStoreDO == null) {
             return new Result<>(CommonError.ParamsError.getCode(), "logstore不存在");
         }
@@ -471,12 +487,15 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
             return new Result<>(CommonError.ParamsError.getCode(), "tail 不存在");
         }
         if (milogLogtailDao.deleteMilogLogtail(id)) {
-            MilogLogStoreDO logStoreDO = logstoreDao.queryById(milogLogtailDo.getStoreId());
+            MilogLogStoreDO logStoreDO = logStoreDao.queryById(milogLogtailDo.getStoreId());
             if (storeExtensionService.isNeedSendMsgType(logStoreDO.getLogType())) {
                 CompletableFuture.runAsync(() -> sendMessageOnDelete(milogLogtailDo, logStoreDO));
             }
             CompletableFuture.runAsync(() -> sendMessageOnDelete(milogLogtailDo, logStoreDO));
             tailExtensionService.logTailDelPostProcess(logStoreDO, milogLogtailDo);
+            MilogLogStoreDO storeDO = logStoreDao.queryById(milogLogtailDo.getStoreId());
+            logTailService.deleteConfigRemote(storeDO.getSpaceId(), id, storeDO.getMachineRoom(), LogStructureEnum.TAIL);
+
             return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage());
         } else {
             log.warn("[MilogLogtailService.deleteMilogLogtail] delete MilogLogtail err,id:{}", id);
@@ -486,7 +505,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
 
     @Override
     public void sendMessageOnDelete(MilogLogTailDo mt, MilogLogStoreDO logStoreDO) {
-        log.info("发送删除配置信息：mt:{}", gson.toJson(mt));
+        log.info("发送删除配置信息：mt:{}", GSON.toJson(mt));
         delMqConfigResource(mt, logStoreDO);
         /**
          * 发送配置信息---log-agent
@@ -581,7 +600,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         List<MilogLogTailDo> milogLogtailDos = milogLogtailDao.queryByAppAndEnv(projectInfo.getProjectId(), projectInfo.getEnvId());
         if (CollectionUtils.isNotEmpty(projectInfo.getIps()) && CollectionUtils.isNotEmpty(milogLogtailDos)) {
             log.info("动态扩容当前环境下的配置，projectId:{},envId:{},配置信息:{}",
-                    projectInfo.getProjectId(), projectInfo.getEnvId(), gson.toJson(milogLogtailDos));
+                    projectInfo.getProjectId(), projectInfo.getEnvId(), GSON.toJson(milogLogtailDos));
             for (MilogLogTailDo milogLogtailDo : milogLogtailDos) {
                 List<String> exitIps = milogLogtailDo.getIps();
                 List<String> newIps = projectInfo.getIps();
@@ -709,7 +728,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         List<MilogLogTailDo> milogLogtailDos = milogLogtailDao.queryAppIdByStoreId(storeId);
         if (CollectionUtils.isNotEmpty(milogLogtailDos)) {
             Map<Integer, List<MilogLogTailDo>> appTypeMap = milogLogtailDos.stream().collect(Collectors.groupingBy(MilogLogTailDo::getAppType));
-            MilogLogStoreDO milogLogstoreDO = logstoreDao.queryById(storeId);
+            MilogLogStoreDO milogLogstoreDO = logStoreDao.queryById(storeId);
             String nameEn = milogLogstoreDO.getMachineRoom();
 
             for (Map.Entry<Integer, List<MilogLogTailDo>> listEntry : appTypeMap.entrySet()) {
@@ -746,7 +765,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         List<MilogLogTailDo> milogLogtailDos = milogLogtailDao.queryStoreIdByRegionNameEN(nameEn);
         if (CollectionUtils.isNotEmpty(milogLogtailDos)) {
             return Result.success(milogLogtailDos.stream()
-                    .map(milogLogtailDo -> logstoreDao.queryById(milogLogtailDo.getStoreId()))
+                    .map(milogLogtailDo -> logStoreDao.queryById(milogLogtailDo.getStoreId()))
                     .collect(Collectors.collectingAndThen(
                             Collectors.toCollection(() ->
                                     new TreeSet<>(Comparator.comparing(o -> o.getLogstoreName()))),
@@ -778,7 +797,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         if (StringUtils.isNotEmpty(checkMsg)) {
             return Result.failParam(checkMsg);
         }
-        MilogLogStoreDO logstoreDO = logstoreDao.queryById(mlogParseParam.getStoreId());
+        MilogLogStoreDO logstoreDO = logStoreDao.queryById(mlogParseParam.getStoreId());
         if (null == logstoreDO) {
             return Result.fail(CommonError.NOT_EXISTS_DATA.getCode(), "logStore不存在");
         }
@@ -790,7 +809,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
             Map<String, Object> parseMsg = logParser.parseSimple(mlogParseParam.getMsg(), currentStamp);
             return Result.success(parseMsg);
         } catch (Exception e) {
-            log.info("解析配置信息错误：配置信息：{}", gson.toJson(mlogParseParam), e);
+            log.info("解析配置信息错误：配置信息：{}", GSON.toJson(mlogParseParam), e);
         }
         return Result.success("解析错误 请核对配置信息");
     }
@@ -847,7 +866,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         List<Long> storeIds = quickQueryVOS.stream()
                 .map(QuickQueryVO::getStoreId)
                 .collect(Collectors.toList());
-        List<MilogLogStoreDO> milogLogStoreDOS = logstoreDao.queryByIds(storeIds);
+        List<MilogLogStoreDO> milogLogStoreDOS = logStoreDao.queryByIds(storeIds);
         List<Long> spaceIds = quickQueryVOS.stream()
                 .map(QuickQueryVO::getSpaceId)
                 .collect(Collectors.toList());
@@ -876,7 +895,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         List<MilogLogTailDo> logTailDos = milogLogtailDao.queryByMilogAppAndEnvId(heraEnvIpVo.getHeraAppId(), heraEnvIpVo.getId());
         if (CollectionUtils.isNotEmpty(logTailDos)) {
             log.info("动态扩容当前环境下的配置，heraAppEnvVo:{}，logTailDos:{}",
-                    gson.toJson(heraEnvIpVo), gson.toJson(logTailDos));
+                    GSON.toJson(heraEnvIpVo), GSON.toJson(logTailDos));
             for (MilogLogTailDo milogLogtailDo : logTailDos) {
                 List<String> exitIps = milogLogtailDo.getIps();
                 List<String> newIps = heraEnvIpVo.getIpList();

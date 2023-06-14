@@ -35,8 +35,8 @@ public class SpaceConfigNacosPublisher implements DynamicConfigPublisher<MilogSp
     }
 
     @Override
-    public void remove(String app) {
-        String dataId = CommonExtensionServiceFactory.getCommonExtensionService().getLogManagePrefix() + TAIL_CONFIG_DATA_ID + app;
+    public void remove(String spaceId) {
+        String dataId = CommonExtensionServiceFactory.getCommonExtensionService().getLogManagePrefix() + TAIL_CONFIG_DATA_ID + spaceId;
         try {
             configService.removeConfig(dataId, DEFAULT_GROUP_ID);
         } catch (NacosException e) {
