@@ -26,12 +26,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.Node;
-import org.elasticsearch.client.NodeSelector;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.*;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.client.indices.*;
@@ -430,6 +425,18 @@ public class EsClient {
         if (sniffer != null) {
             sniffer.close();
         }
+    }
+
+    /**
+     * query index mapping
+     *
+     * @param indexName
+     * @return
+     * @throws IOException
+     */
+    public GetMappingsResponse queryIndexMapping(String indexName) throws IOException {
+        GetMappingsRequest request = new GetMappingsRequest().indices(indexName);
+        return client.indices().getMapping(request, RequestOptions.DEFAULT);
     }
 
 }

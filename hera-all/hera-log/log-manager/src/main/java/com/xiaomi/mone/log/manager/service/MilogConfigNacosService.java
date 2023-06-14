@@ -12,7 +12,7 @@ public interface MilogConfigNacosService {
 
     String SPACE_PREFIX = "space";
 
-    void publishStreamConfig(Long spaceId, Long tailId, Integer type, Integer projectType, String motorRoomEn);
+    void publishStreamConfig(Long spaceId, Integer type, Integer projectType, String motorRoomEn);
 
     void publishNameSpaceConfig(String motorRoomEn, Long spaceId, Long storeId, Long tailId, Integer type, String changeType);
 

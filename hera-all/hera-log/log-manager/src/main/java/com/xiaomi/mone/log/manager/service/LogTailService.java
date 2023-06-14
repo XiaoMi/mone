@@ -2,6 +2,7 @@ package com.xiaomi.mone.log.manager.service;
 
 import com.xiaomi.mone.app.api.response.AppBaseInfo;
 import com.xiaomi.mone.app.model.vo.HeraEnvIpVo;
+import com.xiaomi.mone.log.api.enums.LogStructureEnum;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
 import com.xiaomi.mone.log.manager.model.bo.MlogParseParam;
@@ -26,6 +27,17 @@ public interface LogTailService {
     void sengMessageToStream(MilogLogTailDo mt, Integer type);
 
     void handleNaocsConfigByMotorRoom(MilogLogTailDo mt, String motorRoomEn, Integer type, Integer projectType);
+
+    /**
+     * 删除配置中心的某个配置的一部分
+     *
+     * @param spaceId
+     * @param id
+     * @param motorRoomEn
+     * @param logStructureEnum
+     * @return
+     */
+    boolean deleteConfigRemote(Long spaceId, Long id, String motorRoomEn, LogStructureEnum logStructureEnum);
 
     Result<MilogTailDTO> getMilogLogtailById(Long id);
 
