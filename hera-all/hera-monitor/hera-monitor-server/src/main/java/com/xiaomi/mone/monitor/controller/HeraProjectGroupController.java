@@ -29,7 +29,7 @@ public class HeraProjectGroupController {
     ProjectGroupService projectGroupService;
 
     @ResponseBody
-    @PostMapping("manual/project-group/tree/full")
+    @PostMapping("/manual/project-group/tree/full")
     public Result<ProjectGroupTreeNode> getFullTree(HttpServletRequest request, @RequestBody ProjectGroupRequest param) {
         log.info("getFullTree param : {}", param);
 
@@ -38,17 +38,17 @@ public class HeraProjectGroupController {
             return Result.fail(CommonError.ParamsError);
         }
 
-        AuthUserVo userInfo = UserUtil.getUser();
-        if (userInfo == null) {
-            log.info("getFullTree request info error no user info found! ");
-            return Result.fail(CommonError.UNAUTHORIZED);
-        }
+//        AuthUserVo userInfo = UserUtil.getUser();
+//        if (userInfo == null) {
+//            log.info("getFullTree request info error no user info found! ");
+//            return Result.fail(CommonError.UNAUTHORIZED);
+//        }
 
         return projectGroupService.getFullTree(param.getGroupType());
     }
 
     @ResponseBody
-    @PostMapping("manual/project-group/tree")
+    @PostMapping("/manual/project-group/tree")
     public Result<ProjectGroupTreeNode> getTreeByUser(HttpServletRequest request, @RequestBody ProjectGroupRequest param) {
         log.info("getFullTree param : {}", param);
 
@@ -57,19 +57,20 @@ public class HeraProjectGroupController {
             return Result.fail(CommonError.ParamsError);
         }
 
-        AuthUserVo userInfo = UserUtil.getUser();
-        if (userInfo == null) {
-            log.info("getTreeByUser request info error! no user info found! ");
-            return Result.fail(CommonError.UNAUTHORIZED);
+        if(StringUtils.isBlank(param.getUser())){
+            AuthUserVo userInfo = UserUtil.getUser();
+            if (userInfo == null) {
+                log.info("getTreeByUser request info error! no user info found! ");
+                return Result.fail(CommonError.UNAUTHORIZED);
+            }
+            param.setUser(userInfo.genFullAccount());
         }
-
-        param.setUser(userInfo.genFullAccount());
 
         return projectGroupService.getTreeByUser(param);
     }
 
     @ResponseBody
-    @PostMapping("manual/project-group/app")
+    @PostMapping("/manual/project-group/app")
     public Result<List<HeraAppBaseInfoModel>> getGroupApps(HttpServletRequest request, @RequestBody ProjectGroupRequest param) {
         log.info("getGroupApps param : {}", param);
 
@@ -78,19 +79,20 @@ public class HeraProjectGroupController {
             return Result.fail(CommonError.ParamsError);
         }
 
-        AuthUserVo userInfo = UserUtil.getUser();
-        if (userInfo == null) {
-            log.info("getTreeByUser request info error! no user info found! ");
-            return Result.fail(CommonError.UNAUTHORIZED);
+        if(StringUtils.isBlank(param.getUser())){
+            AuthUserVo userInfo = UserUtil.getUser();
+            if (userInfo == null) {
+                log.info("getTreeByUser request info error! no user info found! ");
+                return Result.fail(CommonError.UNAUTHORIZED);
+            }
+            param.setUser(userInfo.genFullAccount());
         }
-
-        param.setUser(userInfo.genFullAccount());
 
         return projectGroupService.searchGroupApps(param);
     }
 
     @ResponseBody
-    @PostMapping("manual/project-group/create")
+    @PostMapping("/manual/project-group/create")
     public Result<Integer> createProjectGroup(HttpServletRequest request, @RequestBody HeraProjectGroupDataRequest param) {
         log.info("createProjectGroup param : {}", param);
 
@@ -103,7 +105,7 @@ public class HeraProjectGroupController {
     }
 
     @ResponseBody
-    @PostMapping("manual/project-group/update")
+    @PostMapping("/manual/project-group/update")
     public Result<Integer> updateProjectGroup(HttpServletRequest request, @RequestBody HeraProjectGroupDataRequest param) {
         log.info("updateProjectGroup param : {}", param);
 
@@ -116,7 +118,7 @@ public class HeraProjectGroupController {
     }
 
     @ResponseBody
-    @DeleteMapping("manual/project-group/delete/{id}")
+    @DeleteMapping("/manual/project-group/delete/{id}")
     public Result<Integer> deleteProjectGroup(HttpServletRequest request,@PathVariable("id") Integer id) {
 
         log.info("deleteProjectGroup id : {}", id);
