@@ -23,5 +23,5 @@ public interface DynamicConfigPublisher<T> {
      * 移除配置
      * @param app
      */
-    void remove(String app);
+    void remove(String dataId);
 }

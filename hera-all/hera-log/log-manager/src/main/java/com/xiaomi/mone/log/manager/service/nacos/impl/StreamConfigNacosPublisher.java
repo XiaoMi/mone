@@ -36,7 +36,7 @@ public class StreamConfigNacosPublisher implements DynamicConfigPublisher<MiLogS
     }
 
     @Override
-    public void remove(String app) {
+    public void remove(String dataId) {
 
     }
 
