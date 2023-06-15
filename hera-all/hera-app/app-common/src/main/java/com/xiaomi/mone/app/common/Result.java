@@ -2,6 +2,9 @@ package com.xiaomi.mone.app.common;
 
 import com.xiaomi.mone.app.enums.CommonError;
 import com.xiaomi.mone.app.exception.AppException;
+import lombok.Data;
+
+import java.io.Serializable;
 
 /**
  * @author wtt
@@ -9,7 +12,8 @@ import com.xiaomi.mone.app.exception.AppException;
  * @description
  * @date 2022/10/29 13:21
  */
-public class Result<T> {
+@Data
+public class Result<T> implements Serializable {
 
     private int code;
     private String message;
