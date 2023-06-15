@@ -477,7 +477,7 @@ public class AlertHelper {
             ag.setMembers(buildAlertGroupMemberList(data.get("members")));
         }
         if (data.has("duty_info")) {
-            ag.setDutyInfo(data.get("duty_info").getAsString());
+            ag.setDutyInfo(data.get("duty_info").getAsJsonObject().toString());
         }
         return ag;
     }
