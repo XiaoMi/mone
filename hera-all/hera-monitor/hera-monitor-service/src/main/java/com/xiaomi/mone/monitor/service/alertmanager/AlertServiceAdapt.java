@@ -114,7 +114,7 @@ public class AlertServiceAdapt {
     }
 
 
-    public Result<JsonObject> dutyInfoList(String user, long id,Long start,Long end) {
+    public Result<JsonElement> dutyInfoList(String user, long id,Long start,Long end) {
         return alertManager.dutyInfoList(user, id,start,end);
     }
 }
