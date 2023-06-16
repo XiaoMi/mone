@@ -93,7 +93,7 @@ public class HeraProjectGroupController {
 
     @ResponseBody
     @PostMapping("/manual/project-group/create")
-    public Result<Integer> createProjectGroup(HttpServletRequest request, @RequestBody HeraProjectGroupDataRequest param) {
+    public Result createProjectGroup(HttpServletRequest request, @RequestBody HeraProjectGroupDataRequest param) {
         log.info("createProjectGroup param : {}", param);
 
         if(param.getType() == null || param.getRelationObjectId() == null || param.getParentGroupId() == null || StringUtils.isBlank(param.getName())){
@@ -106,7 +106,7 @@ public class HeraProjectGroupController {
 
     @ResponseBody
     @PostMapping("/manual/project-group/update")
-    public Result<Integer> updateProjectGroup(HttpServletRequest request, @RequestBody HeraProjectGroupDataRequest param) {
+    public Result updateProjectGroup(HttpServletRequest request, @RequestBody HeraProjectGroupDataRequest param) {
         log.info("updateProjectGroup param : {}", param);
 
         if(param.getId() == null){
@@ -119,7 +119,7 @@ public class HeraProjectGroupController {
 
     @ResponseBody
     @DeleteMapping("/manual/project-group/delete/{id}")
-    public Result<Integer> deleteProjectGroup(HttpServletRequest request,@PathVariable("id") Integer id) {
+    public Result deleteProjectGroup(HttpServletRequest request,@PathVariable("id") Integer id) {
 
         log.info("deleteProjectGroup id : {}", id);
 
