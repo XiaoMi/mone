@@ -1,5 +1,7 @@
 package com.xiaomi.mone.app.service.project.group;
 
+import com.google.common.collect.Lists;
+import com.google.gson.Gson;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.app.api.model.project.group.HeraProjectGroupAppRequest;
 import com.xiaomi.mone.app.api.model.project.group.HeraProjectGroupDataRequest;
@@ -45,7 +47,13 @@ public class HeraProjectGroupService {
     @Autowired
     HeraBaseInfoDao heraBaseInfoDao;
 
-    public Result<Integer> create(HeraProjectGroupDataRequest request){
+    public Result create(HeraProjectGroupDataRequest request){
+
+        Integer parentGroupId = request.getParentGroupId();
+        List<HeraProjectGroupModel> heraProjectGroupModels = projectGroupDao.listByIds(Lists.newArrayList(parentGroupId), request.getType(), null);
+        if(heraProjectGroupModels != null && heraProjectGroupModels.size() < 1){
+            return Result.fail(-1,"there is no data  which project group  id is "+parentGroupId);
+        }
 
         HeraProjectGroup group = new HeraProjectGroup();
         BeanUtils.copyProperties(request,group);
@@ -94,10 +102,20 @@ public class HeraProjectGroupService {
     }
 
 
-    public Result<Integer> update(HeraProjectGroupDataRequest request){
+    public Result update(HeraProjectGroupDataRequest request){
 
+        if(request.getParentGroupId() != null){
+            Integer parentGroupId = request.getParentGroupId();
+            List<HeraProjectGroupModel> heraProjectGroupModels = projectGroupDao.listByIds(Lists.newArrayList(parentGroupId), request.getType(), null);
+            if(heraProjectGroupModels != null && heraProjectGroupModels.size() < 1){
+                return Result.fail(-1,"there is no project Group data which Id is "+parentGroupId);
+            }
+        }
+
+        log.info("update project Group request:{}",new Gson().toJson(request));
         HeraProjectGroup group = new HeraProjectGroup();
         BeanUtils.copyProperties(request,group);
+        log.info("update project Group group:{}",new Gson().toJson(group));
         Integer groupId = projectGroupDao.update(group);
 
         updateUsers(request);
@@ -108,7 +126,14 @@ public class HeraProjectGroupService {
 
     }
 
-    public Result<Integer> delete(Integer id){
+    public Result delete(Integer id){
+
+        HeraProjectGroupModel model = new HeraProjectGroupModel();
+        model.setParentGroupId(id);
+        List<HeraProjectGroupModel> search = projectGroupDao.search(model, null, null);
+        if(search != null && search.size() > 0){
+            return Result.fail(-1,"The current node cannot be deleted because it has child nodes！");
+        }
 
         projectGroupAppDao.delByGroupId(id);
 

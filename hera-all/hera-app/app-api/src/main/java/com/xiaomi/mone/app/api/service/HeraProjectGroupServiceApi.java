@@ -19,10 +19,10 @@ public interface HeraProjectGroupServiceApi {
 
     Result<List<HeraAppBaseInfoModel>> searchGroupApps(String user, Integer groupType, Integer projectGroupId, String appName, Integer page, Integer pageSize);
 
-    Result<Integer> create(HeraProjectGroupDataRequest request);
+    Result create(HeraProjectGroupDataRequest request);
 
-    Result<Integer> update(HeraProjectGroupDataRequest request);
+    Result update(HeraProjectGroupDataRequest request);
 
-    Result<Integer> delete(Integer id);
+    Result delete(Integer id);
 
 }

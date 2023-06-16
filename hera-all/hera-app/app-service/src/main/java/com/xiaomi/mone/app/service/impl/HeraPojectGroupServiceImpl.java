@@ -40,17 +40,17 @@ public class HeraPojectGroupServiceImpl implements HeraProjectGroupServiceApi {
     }
 
     @Override
-    public Result<Integer> create(HeraProjectGroupDataRequest request) {
+    public Result create(HeraProjectGroupDataRequest request) {
         return projectGroupService.create(request);
     }
 
     @Override
-    public Result<Integer> update(HeraProjectGroupDataRequest request) {
+    public Result update(HeraProjectGroupDataRequest request) {
         return projectGroupService.update(request);
     }
 
     @Override
-    public Result<Integer> delete(Integer id) {
+    public Result delete(Integer id) {
         return projectGroupService.delete(id);
     }
 }
