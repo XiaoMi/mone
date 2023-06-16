@@ -57,4 +57,6 @@ public class MilogTailDTO {
     private Integer deployWay;
 
     private Integer projectSource;
+
+    private Integer batchSendSize;
 }

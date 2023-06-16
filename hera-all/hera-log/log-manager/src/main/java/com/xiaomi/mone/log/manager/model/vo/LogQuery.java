@@ -9,7 +9,9 @@ import java.util.Objects;
 @Data
 public class LogQuery implements Serializable {
     private String logstore;
+    private Long storeId;
     private String tail;
+    private Long tailId;
     private Long startTime;
     private Long endTime;
     private Integer pageSize;

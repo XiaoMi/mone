@@ -15,9 +15,9 @@ public class EsStatisticsKeyWord {
 
     private String key;
 
-    private List<StatisticsRation> StatisticsRation;
+    private List<StatisticsRation> statisticsRation;
     @Data
-    static class StatisticsRation {
+    public static class StatisticsRation {
         private String value;
         private String ration;
     }

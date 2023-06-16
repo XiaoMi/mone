@@ -49,8 +49,8 @@ public class MilogStatisticController {
     }
 
     @RequestMapping(path = "/log/store/index/field/ration")
-    public Result<List<EsStatisticsKeyWord>> queryEsStatisticsRation(Long storeId) {
-        return statisticsService.queryEsStatisticsRation(storeId);
+    public Result<List<EsStatisticsKeyWord>> queryEsStatisticsRation(LogQuery param) {
+        return statisticsService.queryEsStatisticsRation(param);
     }
 
 }
