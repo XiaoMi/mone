@@ -10,6 +10,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+
 /**
  * @author gaoxihui
  * @date 2023/6/14 10:52 上午
@@ -33,8 +36,11 @@ public class AuthorizationService {
     private static int tokenAccessSequence = 0;
     private static int tokenTimeLimit = 10 * 60;
 
+    private static DateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
     public Result fetchToken(String user, String sign, Long timestamp){
 
+        log.info("fetchToken user : {} , timestamp : {}",user,df.format(timestamp));
 
         if(StringUtils.isBlank(user) || StringUtils.isBlank(sign) || timestamp == null){
             log.error("fetchToken param error! user : {}, sign : {}, timestamp :{}",user,sign,timestamp);
@@ -43,12 +49,12 @@ public class AuthorizationService {
 
         Long currentTime = System.currentTimeMillis();
         if(currentTime - timestamp < 0 || currentTime - timestamp > (1000 * 30)){
-            log.error("fetchToken param timestamp error! currentTimeStamp : {}, param timestamp :{}",currentTime,timestamp);
+            log.error("fetchToken param time expired! currentTimeStamp : {}, param timestamp :{}",currentTime,timestamp);
             return Result.fail(CommonError.ParamsError);
         }
 
         if (!userName.equals(user)) {
-            log.error("fetchToken param user error! user : {} ", user);
+            log.info("fetchToken param user error! user : {} ", user);
             return Result.fail(CommonError.UNAUTHORIZED);
         }
 
@@ -58,6 +64,7 @@ public class AuthorizationService {
 
         String signSource = MD5.getInstance().getMD5String(secretPwdBuffer.toString());
         if(!signSource.equals(sign)){
+            log.info("fetchToken param sign error! user : {} , sign : {}", user, sign);
             return Result.fail(CommonError.UNAUTHORIZED);
         }
 

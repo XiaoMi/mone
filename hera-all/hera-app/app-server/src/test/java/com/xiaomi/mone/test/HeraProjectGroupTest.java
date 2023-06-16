@@ -1,6 +1,8 @@
 package com.xiaomi.mone.test;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.nacos.api.config.annotation.NacosValue;
+import com.alibaba.nacos.client.config.utils.MD5;
 import com.google.gson.Gson;
 import com.xiaomi.mone.app.AppBootstrap;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
@@ -8,6 +10,7 @@ import com.xiaomi.mone.app.api.model.HeraAppBaseInfoParticipant;
 import com.xiaomi.mone.app.api.model.HeraAppBaseQuery;
 import com.xiaomi.mone.app.api.model.project.group.HeraProjectGroupDataRequest;
 import com.xiaomi.mone.app.api.model.project.group.ProjectGroupTreeNode;
+import com.xiaomi.mone.app.auth.AuthorizationService;
 import com.xiaomi.mone.app.common.Result;
 import com.xiaomi.mone.app.service.impl.HeraAppBaseInfoService;
 import com.xiaomi.mone.app.service.project.group.HeraProjectGroupService;
@@ -28,6 +31,34 @@ public class HeraProjectGroupTest {
 
     @Autowired
     HeraProjectGroupService projectGroupService;
+
+    @Autowired
+    AuthorizationService authorizationService;
+
+    @NacosValue(value = "hera.auth.user",autoRefreshed = true)
+    private String userName;
+
+    @NacosValue(value = "hera.auth.pwd",autoRefreshed = true)
+    private String passWord;
+
+    @NacosValue(value = "hera.auth.secret",autoRefreshed = true)
+    private String secret;
+
+    @Test
+    public void testAuth(){
+        Long current = System.currentTimeMillis();
+
+        StringBuilder secretPwdBuffer = new StringBuilder();
+        String md5Pwd = MD5.getInstance().getMD5String(passWord);
+        secretPwdBuffer.append(userName).append(md5Pwd).append(current);
+        String sign = MD5.getInstance().getMD5String(secretPwdBuffer.toString());
+
+        Result result = authorizationService.fetchToken(userName, sign, current);
+        System.out.println("result === " + new Gson().toJson(result));
+
+        Boolean re = authorizationService.checkAuthorization((String) result.getData());
+        System.out.println("check token result:"+re);
+    }
 
     @Test
     public void searchGroupApps(){
