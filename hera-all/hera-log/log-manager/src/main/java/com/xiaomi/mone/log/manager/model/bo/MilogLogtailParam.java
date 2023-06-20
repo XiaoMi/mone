@@ -58,5 +58,5 @@ public class MilogLogtailParam {
      */
     private Integer deployWay;
 
-    private Integer batchSendSize;
+    private Integer batchSendSize = 20;
 }

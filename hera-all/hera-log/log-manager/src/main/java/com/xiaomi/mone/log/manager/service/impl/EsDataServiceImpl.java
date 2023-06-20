@@ -120,59 +120,43 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
         String logInfo = String.format("queryText:%s, user:%s, logQuery:%s", logQuery.getFullTextSearch(), MoneUserContext.getCurrentUser().getUser(), logQuery);
         log.info("query simple param:{}", logInfo);
 
-        SearchRequest searchRequest = null;
         StopWatch stopWatch = new StopWatch("HERA-LOG-QUERY");
+        SearchRequest searchRequest = null;
         try {
-            stopWatch.start("before-query");
-            MilogLogStoreDO milogLogstoreDO = logstoreDao.getByName(logQuery.getLogstore());
+            MilogLogStoreDO milogLogstoreDO = logstoreDao.queryById(logQuery.getStoreId());
             if (milogLogstoreDO == null) {
-                log.warn("[EsDataService.logQuery] not find logstore:[{}]", logQuery.getLogstore());
+                log.warn("[EsDataService.logQuery] not find logStore:[{}]", logQuery.getLogstore());
                 return Result.failParam("找不到[" + logQuery.getLogstore() + "]对应的数据");
             }
             EsService esService = esCluster.getEsService(milogLogstoreDO.getEsClusterId());
             String esIndexName = milogLogstoreDO.getEsIndex();
             if (esService == null || StringUtils.isEmpty(esIndexName)) {
-                log.warn("[EsDataService.logQuery] logstroe:[{}]配置异常", logQuery.getLogstore());
-                return Result.failParam("logstroe配置异常");
+                log.warn("[EsDataService.logQuery] logStore:[{}]配置异常", logQuery.getLogstore());
+                return Result.failParam("logStore配置异常");
             }
             List<String> keyList = getKeyList(milogLogstoreDO.getKeyList(), milogLogstoreDO.getColumnTypeList());
             // 构建查询参数
             BoolQueryBuilder boolQueryBuilder = searchLog.getQueryBuilder(logQuery, getKeyColonPrefix(milogLogstoreDO.getKeyList()));
-            SearchSourceBuilder builder = new SearchSourceBuilder();
-            builder.query(boolQueryBuilder);
-            LogDTO dto = new LogDTO();
-            stopWatch.stop();
+            SearchSourceBuilder builder = assembleSearchSourceBuilder(logQuery, keyList, boolQueryBuilder);
 
+            searchRequest = new SearchRequest(new String[]{esIndexName}, builder);
             // 查询
-            stopWatch.start("bool-query");
-            builder.sort(logQuery.getSortKey(), logQuery.getAsc() ? ASC : DESC);
-            // 分页
-//            if (logQuery.getBeginSortValue() != null && logQuery.getBeginSortValue().length != 0) {
-//                builder.searchAfter(logQuery.getBeginSortValue());
-//            }
-            if (null != logQuery.getPage()) {
-                builder.from((logQuery.getPage() - 1) * logQuery.getPageSize());
-            }
-            builder.size(logQuery.getPageSize());
-            // 高亮
-            builder.highlighter(getHighlightBuilder(keyList));
-            builder.timeout(TimeValue.timeValueMinutes(1L));
-            searchRequest = new SearchRequest(esIndexName);
-            searchRequest.source(builder);
-            dto.setSourceBuilder(builder);
+            stopWatch.start("search-query");
             SearchResponse searchResponse = esService.search(searchRequest);
             stopWatch.stop();
+            LogDTO dto = new LogDTO();
+            dto.setSourceBuilder(builder);
             if (stopWatch.getLastTaskTimeMillis() > 7 * 1000) {
-                log.warn("##LONG-COST-QUERY##{} cost:{} ms, msg:{}", stopWatch.getLastTaskName(), stopWatch.getLastTaskTimeMillis(), logInfo);
+                log.warn("##LONG-COST-QUERY##{} cost:{} ms, msg:{}", stopWatch.getLastTaskName(), stopWatch.getLastTaskTimeMillis());
             }
 
             //结果转换
-            stopWatch.start("after-query");
+            stopWatch.start("data-assemble");
             transformSearchResponse(searchResponse, dto, keyList);
-
             stopWatch.stop();
+
             if (stopWatch.getTotalTimeMillis() > 15 * 1000) {
-                log.warn("##LONG-COST-QUERY##{} cost:{} ms, msg:{}", "gt15s", stopWatch.getLastTaskTimeMillis(), logInfo);
+                log.warn("##LONG-COST-QUERY##{} cost:{} ms, msg:{}", "gt15s", stopWatch.getTotalTimeMillis());
             }
 
             return Result.success(dto);
@@ -185,20 +169,19 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
         }
     }
 
-    private long queryCount(LogQuery logQuery, String esIndexName, SearchSourceBuilder builder, EsService esService) throws IOException {
-        String cacheKey = String.format("es_query_count_%s_%s", logQuery.getLogstore(), logQuery.hashCode());
+    private SearchSourceBuilder assembleSearchSourceBuilder(LogQuery logQuery, List<String> keyList, BoolQueryBuilder boolQueryBuilder) {
+        SearchSourceBuilder builder = new SearchSourceBuilder();
+        builder.query(boolQueryBuilder);
 
-        Long total = HeraLocalCache.instance().getObj(cacheKey, Long.class);
-        if (null == total) {
-            CountRequest countRequest = new CountRequest();
-            countRequest.indices(esIndexName);
-            countRequest.source(builder);
-            total = esService.count(countRequest);
-
-            HeraLocalCache.instance().put(cacheKey, total);
+        builder.sort(logQuery.getSortKey(), logQuery.getAsc() ? ASC : DESC);
+        if (null != logQuery.getPage()) {
+            builder.from((logQuery.getPage() - 1) * logQuery.getPageSize());
         }
-
-        return total;
+        builder.size(logQuery.getPageSize());
+        // 高亮
+        builder.highlighter(getHighlightBuilder(keyList));
+        builder.timeout(TimeValue.timeValueMinutes(2L));
+        return builder;
     }
 
     private void transformSearchResponse(SearchResponse searchResponse, final LogDTO logDTO, List<String> keyList) {
@@ -289,17 +272,6 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
         if (!StringUtils.isEmpty(logquery.getFullTextSearch())) {
             sb.append("fullTextSearch:").append(logquery.getFullTextSearch()).append(";");
         }
-        // TODO
-//        if (param.getParams() != null) {
-//            param.getParams().forEach((k, v) -> {
-//                if (v != null && !StringUtils.isEmpty(v.toString())) {
-//                    if (k.equals("level")) {
-//                        v = String.format("%-5s", v);
-//                    }
-//                    sb.append(k).append(":").append(v).append(";");
-//                }
-//            });
-//        }
         return sb.toString();
     }
 
