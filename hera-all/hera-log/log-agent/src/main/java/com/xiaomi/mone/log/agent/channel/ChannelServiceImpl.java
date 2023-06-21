@@ -56,7 +56,7 @@ import static com.xiaomi.mone.log.common.PathUtils.SEPARATOR;
  * @date 2021-07-20
  */
 @Slf4j
-public class ChannelServiceImpl implements ChannelService {
+public class ChannelServiceImpl extends AbstractChannelService {
 
     private AgentMemoryService memoryService;
 
@@ -90,15 +90,10 @@ public class ChannelServiceImpl implements ChannelService {
 
     private FilterChain chain;
 
-    private String instanceId = UUID.randomUUID().toString();
     /**
      * 监听的文件路径
      */
     private List<MonitorFile> monitorFileList;
-    /**
-     * 实际采集的文件对应的机器Ip(兼容k8s 一个node下多个pod的问题)
-     */
-    Map<String, String> ipPath = new ConcurrentHashMap<>();
 
     private LogTypeEnum logTypeEnum;
 
@@ -155,58 +150,6 @@ public class ChannelServiceImpl implements ChannelService {
     }
 
     @Override
-    public ChannelState state() {
-        ChannelState channelState = new ChannelState();
-
-        channelState.setTailId(this.channelDefine.getChannelId());
-        channelState.setTailName(this.channelDefine.getTailName());
-        channelState.setAppId(this.channelDefine.getAppId());
-        channelState.setAppName(this.channelDefine.getAppName());
-        channelState.setLogPattern(this.channelDefine.getInput().getLogPattern());
-        channelState.setLogPatternCode(this.channelDefine.getInput().getPatternCode());
-        channelState.setIpList(ipPath.values().stream().distinct().collect(Collectors.toList()));
-
-        channelState.setCollectTime(this.channelMemory.getCurrentTime());
-
-        if (channelState.getStateProgressMap() == null) {
-            channelState.setStateProgressMap(new HashMap<>(256));
-        }
-        channelMemory.getFileProgressMap().forEach((pattern, fileProcess) -> {
-            if (null != fileProcess.getFinished() && fileProcess.getFinished()) {
-                return;
-            }
-            ChannelState.StateProgress stateProgress = new ChannelState.StateProgress();
-            stateProgress.setCurrentFile(pattern);
-            stateProgress.setIp(getTailPodIp(pattern));
-            stateProgress.setCurrentRowNum(fileProcess.getCurrentRowNum());
-            stateProgress.setPointer(fileProcess.getPointer());
-            stateProgress.setFileMaxPointer(fileProcess.getFileMaxPointer());
-            channelState.getStateProgressMap().put(pattern, stateProgress);
-        });
-
-        channelState.setTotalSendCnt(this.logCounts);
-        return channelState;
-    }
-
-    private String getTailPodIp(String pattern) {
-        String tailPodIp = ipPath.get(pattern);
-        if (StringUtils.isBlank(tailPodIp)) {
-            Optional<String> ipOptional = ipPath.keySet().stream().filter(path -> pattern.startsWith(path)).findFirst();
-            String ipKey = ipPath.keySet().stream().findFirst().get();
-            if (ipOptional.isPresent()) {
-                ipKey = ipOptional.get();
-            }
-            tailPodIp = ipPath.get(ipKey);
-        }
-        return tailPodIp;
-    }
-
-    @Override
-    public String instanceId() {
-        return instanceId;
-    }
-
-    @Override
     public void start() {
         Long channelId = channelDefine.getChannelId();
         Input input = channelDefine.getInput();
@@ -241,7 +184,7 @@ public class ChannelServiceImpl implements ChannelService {
         startExportQueueDataThread();
         memoryService.refreshMemory(channelMemory);
         delayDeletionFinishedFile();
-        log.warn("channelId:{}, channelInstanceId:{} start success! channelDefine:{}", channelId, instanceId, gson.toJson(this.channelDefine));
+        log.warn("channelId:{}, channelInstanceId:{} start success! channelDefine:{}", channelId, instanceId(), gson.toJson(this.channelDefine));
     }
 
     /**
@@ -609,7 +552,6 @@ public class ChannelServiceImpl implements ChannelService {
         log.info("stop file monitor,fileName:", logFileMap.keySet().stream().collect(Collectors.joining(SYMBOL_COMMA)));
         lineMessageList.clear();
     }
-
     public Long getChannelId() {
         return channelDefine.getChannelId();
     }
@@ -665,6 +607,11 @@ public class ChannelServiceImpl implements ChannelService {
 
     public ChannelMemory getChannelMemory() {
         return channelMemory;
+    }
+
+    @Override
+    public Long getLogCounts() {
+        return this.logCounts;
     }
 
 
