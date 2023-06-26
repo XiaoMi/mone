@@ -29,6 +29,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 
@@ -69,7 +70,25 @@ public class UdsClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                 log.warn("processor is null cmd:{}", command.getCmd());
             }
         } else {
-            Optional.ofNullable(UdsClient.reqMap.get(command.getId())).ifPresent(f -> f.complete(command));
+            Optional.ofNullable(UdsClient.reqMap.get(command.getId())).ifPresent(f -> {
+                if (Boolean.TRUE.toString().equals(String.valueOf(f.get("async")))) {
+                    Object res = null;
+                    try {
+                        res = processResult(command, (Class<?>) f.get("returnType"));
+                        if (command.getCode() == 0) {
+                            ((CompletableFuture)f.get("future")).complete(res);
+                        } else {
+                            ((CompletableFuture)f.get("future")).completeExceptionally(new RuntimeException(res.toString()));
+                        }
+                    } catch (Exception e) {
+                        log.error("async response error,", e);
+                        ((CompletableFuture)f.get("future")).completeExceptionally(e);
+                    }
+                    UdsClient.reqMap.remove(command.getId());
+                } else {
+                    ((CompletableFuture)f.get("future")).complete(command);
+                }
+            });
         }
     }
 
@@ -84,5 +103,18 @@ public class UdsClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
         log.error("exceptionCaught:{},{}",ctx.channel().id(), cause);
         UdsClientContext.ins().exceptionCaught(cause);
         ctx.close();
+    }
+
+    private Object processResult(UdsCommand res, Class<?> returnType) {
+        if (returnType.equals(void.class)) {
+            return null;
+        }
+        //返回结果就是空
+        if (res.getAtt("res_is_null", "false").equals("true")) {
+            return null;
+        }
+        Object result = res.getData(returnType);
+        log.debug("call sidecar:{} receive:{}", "", result);
+        return result;
     }
 }

@@ -103,7 +103,13 @@ public abstract class AbstractInterceptor implements MethodInterceptor {
         int i = 0;
         for (; ; ) {
             try {
+                if (command.isAsync()) {
+                    command.setReturnClass(method.getReturnType());
+                }
                 res = client.call(command);
+                if (command.isAsync()) {
+                    return res.getCompletableFuture();
+                }
                 //调用发生了错误,这里处理(曝出异常)
                 exceptionProcessor.processException(res);
                 break;
