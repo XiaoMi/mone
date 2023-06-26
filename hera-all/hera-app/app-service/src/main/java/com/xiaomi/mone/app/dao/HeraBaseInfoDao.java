@@ -25,6 +25,7 @@ import com.xiaomi.mone.app.model.HeraAppBaseInfoExample;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Repository;
+import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Resource;
 import java.util.Date;
@@ -191,6 +192,106 @@ public class HeraBaseInfoDao {
             return heraAppBaseInfoMapper.selectByExampleWithBLOBs(example);
         } catch (Exception e) {
             log.error("HeraBaseInfoDao#query error!" + e.getMessage(),e);
+            return null;
+        }
+
+    }
+
+    public List<HeraAppBaseInfo> searchAppsByIds(List<Integer> ids,HeraAppBaseInfoModel baseInfo, Integer pageCount, Integer pageNum){
+
+        if(pageCount == null || pageCount.intValue() <=0){
+            pageCount = 1;
+        }
+        if(pageNum == null || pageNum.intValue() <=0){
+            pageNum = 10;
+        }
+
+        HeraAppBaseInfoExample example = new HeraAppBaseInfoExample();
+
+        //默认查询未删除的数据
+        HeraAppBaseInfoExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        if(baseInfo.getStatus() != null){
+            ca.andStatusEqualTo(baseInfo.getStatus());
+        }
+
+        if(!CollectionUtils.isEmpty(ids)){
+            ca.andIdIn(ids);
+        }
+
+        if(baseInfo.getBindId() != null){
+            ca.andBindIdEqualTo(baseInfo.getBindId());
+        }
+
+        if(baseInfo.getBindType() != null){
+            ca.andBindTypeEqualTo(baseInfo.getBindType());
+        }
+
+        if(StringUtils.isNotBlank(baseInfo.getAppName())){
+            ca.andAppNameLike("%" + baseInfo.getAppName() + "%");
+        }
+
+        if(StringUtils.isNotBlank(baseInfo.getAppCname())){
+            ca.andAppCnameLike("%" + baseInfo.getAppCname() + "%");
+        }
+
+        if(baseInfo.getAppType() != null){
+            ca.andAppTypeEqualTo(baseInfo.getAppType());
+        }
+
+        if(StringUtils.isNotBlank(baseInfo.getAppLanguage())){
+            ca.andAppLanguageLike("%" + baseInfo.getAppLanguage() + "%");
+        }
+
+        if(baseInfo.getPlatformType() != null){
+            ca.andPlatformTypeEqualTo(baseInfo.getPlatformType());
+        }
+
+        if(StringUtils.isNotBlank(baseInfo.getAppSignId())){
+            ca.andAppSignIdLike("%" + baseInfo.getAppSignId() + "%");
+        }
+
+        if(baseInfo.getIamTreeId() != null){
+            ca.andIamTreeIdEqualTo(baseInfo.getIamTreeId());
+        }
+
+        example.setOffset((pageCount-1) * pageNum);
+        example.setLimit(pageNum);
+        example.setOrderByClause("id desc");
+
+        try {
+            return heraAppBaseInfoMapper.selectByExampleWithBLOBs(example);
+        } catch (Exception e) {
+            log.error("HeraBaseInfoDao#searchAppsByIds error!" + e.getMessage(),e);
+            return null;
+        }
+
+    }
+
+    public Integer idByBindIdsAndPlat(String bindId,Integer platFormType){
+
+        if(StringUtils.isBlank(bindId) || platFormType == null){
+            log.error("idByBindIdsAndPlat param invalid!bindId:{},platFormType{}",bindId,platFormType);
+            return null;
+        }
+
+        HeraAppBaseInfoExample example = new HeraAppBaseInfoExample();
+
+        //默认查询未删除的数据
+        HeraAppBaseInfoExample.Criteria ca = example.createCriteria().andStatusEqualTo(0);
+        ca.andBindIdEqualTo(bindId);
+        ca.andPlatformTypeEqualTo(platFormType);
+
+
+        try {
+            List<HeraAppBaseInfo> heraAppBaseInfos = heraAppBaseInfoMapper.selectByExample(example);
+            if(CollectionUtils.isEmpty(heraAppBaseInfos)){
+                return null;
+            }
+
+            return heraAppBaseInfos.get(0).getId();
+
+        } catch (Exception e) {
+            log.error("HeraBaseInfoDao#listAppsByBindIds error!" + e.getMessage(),e);
             return null;
         }
 
