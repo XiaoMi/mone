@@ -43,7 +43,7 @@ public class HeraBaseInfoService {
     @Autowired
     AlertGroupService alertGroupService;
 
-    @Reference(registry = "registryConfig", check = false, interfaceClass = HeraAppService.class, group = "${dubbo.group.heraapp}")
+    @Reference(registry = "registryConfig", check = false, interfaceClass = HeraAppService.class, group = "${dubbo.group.heraapp}",timeout = 5000)
     HeraAppService hearAppService;
 
     @Autowired
