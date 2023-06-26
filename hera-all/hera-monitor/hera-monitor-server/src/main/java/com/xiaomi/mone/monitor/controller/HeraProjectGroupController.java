@@ -3,6 +3,7 @@ package com.xiaomi.mone.monitor.controller;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.app.api.model.project.group.HeraProjectGroupDataRequest;
 import com.xiaomi.mone.app.api.model.project.group.ProjectGroupTreeNode;
+import com.xiaomi.mone.app.api.service.HeraAuthorizationApi;
 import com.xiaomi.mone.app.common.Result;
 import com.xiaomi.mone.app.enums.CommonError;
 import com.xiaomi.mone.monitor.service.model.project.group.ProjectGroupRequest;
@@ -11,6 +12,7 @@ import com.xiaomi.mone.tpc.login.util.UserUtil;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.dubbo.config.annotation.Reference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,8 +31,17 @@ public class HeraProjectGroupController {
     ProjectGroupService projectGroupService;
 
     @ResponseBody
-    @PostMapping("/manual/project-group/tree/full")
+    @PostMapping("/api/project-group/tree/full")
     public Result<ProjectGroupTreeNode> getFullTree(HttpServletRequest request, @RequestBody ProjectGroupRequest param) {
+
+        AuthUserVo userInfo = UserUtil.getUser();
+        if (userInfo == null) {
+            Result result = projectGroupService.checkAuthorization(request);
+            if(!result.isSuccess()){
+                return result;
+            }
+        }
+
         log.info("getFullTree param : {}", param);
 
         if(param.getGroupType() == null){
@@ -38,18 +49,28 @@ public class HeraProjectGroupController {
             return Result.fail(CommonError.ParamsError);
         }
 
-//        AuthUserVo userInfo = UserUtil.getUser();
-//        if (userInfo == null) {
-//            log.info("getFullTree request info error no user info found! ");
-//            return Result.fail(CommonError.UNAUTHORIZED);
-//        }
-
         return projectGroupService.getFullTree(param.getGroupType());
     }
 
     @ResponseBody
-    @PostMapping("/manual/project-group/tree")
+    @PostMapping("/api/project-group/tree")
     public Result<ProjectGroupTreeNode> getTreeByUser(HttpServletRequest request, @RequestBody ProjectGroupRequest param) {
+
+        AuthUserVo userInfo = UserUtil.getUser();
+        if (userInfo == null) {
+            Result result = projectGroupService.checkAuthorization(request);
+            if(!result.isSuccess()){
+                return result;
+            }
+        }else{
+            param.setUser(userInfo.genFullAccount());
+        }
+
+        if(StringUtils.isBlank(param.getUser())){
+            log.error("getTreeByUser request param error! no group type found!");
+            return Result.fail(CommonError.ParamsError);
+        }
+
         log.info("getFullTree param : {}", param);
 
         if(param.getGroupType() == null){
@@ -57,21 +78,28 @@ public class HeraProjectGroupController {
             return Result.fail(CommonError.ParamsError);
         }
 
-        if(StringUtils.isBlank(param.getUser())){
-            AuthUserVo userInfo = UserUtil.getUser();
-            if (userInfo == null) {
-                log.info("getTreeByUser request info error! no user info found! ");
-                return Result.fail(CommonError.UNAUTHORIZED);
-            }
-            param.setUser(userInfo.genFullAccount());
-        }
-
         return projectGroupService.getTreeByUser(param);
     }
 
     @ResponseBody
-    @PostMapping("/manual/project-group/app")
+    @PostMapping("/api/project-group/app")
     public Result<List<HeraAppBaseInfoModel>> getGroupApps(HttpServletRequest request, @RequestBody ProjectGroupRequest param) {
+
+        AuthUserVo userInfo = UserUtil.getUser();
+        if (userInfo == null) {
+            Result result = projectGroupService.checkAuthorization(request);
+            if(!result.isSuccess()){
+                return result;
+            }
+        }else{
+            param.setUser(userInfo.genFullAccount());
+        }
+
+        if(StringUtils.isBlank(param.getUser())){
+            log.error("getTreeByUser request param error! no group type found!");
+            return Result.fail(CommonError.ParamsError);
+        }
+
         log.info("getGroupApps param : {}", param);
 
         if(param.getGroupType() == null){
@@ -79,21 +107,21 @@ public class HeraProjectGroupController {
             return Result.fail(CommonError.ParamsError);
         }
 
-        if(StringUtils.isBlank(param.getUser())){
-            AuthUserVo userInfo = UserUtil.getUser();
-            if (userInfo == null) {
-                log.info("getTreeByUser request info error! no user info found! ");
-                return Result.fail(CommonError.UNAUTHORIZED);
-            }
-            param.setUser(userInfo.genFullAccount());
-        }
-
         return projectGroupService.searchGroupApps(param);
     }
 
     @ResponseBody
-    @PostMapping("/manual/project-group/create")
+    @PostMapping("/api/project-group/create")
     public Result createProjectGroup(HttpServletRequest request, @RequestBody HeraProjectGroupDataRequest param) {
+
+        AuthUserVo userInfo = UserUtil.getUser();
+        if (userInfo == null) {
+            Result result = projectGroupService.checkAuthorization(request);
+            if(!result.isSuccess()){
+                return result;
+            }
+        }
+
         log.info("createProjectGroup param : {}", param);
 
         if(param.getType() == null || param.getRelationObjectId() == null || param.getParentGroupId() == null || StringUtils.isBlank(param.getName())){
@@ -105,8 +133,17 @@ public class HeraProjectGroupController {
     }
 
     @ResponseBody
-    @PostMapping("/manual/project-group/update")
+    @PostMapping("/api/project-group/update")
     public Result updateProjectGroup(HttpServletRequest request, @RequestBody HeraProjectGroupDataRequest param) {
+
+        AuthUserVo userInfo = UserUtil.getUser();
+        if (userInfo == null) {
+            Result result = projectGroupService.checkAuthorization(request);
+            if(!result.isSuccess()){
+                return result;
+            }
+        }
+
         log.info("updateProjectGroup param : {}", param);
 
         if(param.getId() == null){
@@ -118,8 +155,16 @@ public class HeraProjectGroupController {
     }
 
     @ResponseBody
-    @DeleteMapping("/manual/project-group/delete/{id}")
+    @DeleteMapping("/api/project-group/delete/{id}")
     public Result deleteProjectGroup(HttpServletRequest request,@PathVariable("id") Integer id) {
+
+        AuthUserVo userInfo = UserUtil.getUser();
+        if (userInfo == null) {
+            Result result = projectGroupService.checkAuthorization(request);
+            if(!result.isSuccess()){
+                return result;
+            }
+        }
 
         log.info("deleteProjectGroup id : {}", id);
 
