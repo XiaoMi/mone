@@ -1215,4 +1215,13 @@ public class Gitlab {
 
         return HttpClientV2.get(url, headers, 10000);
     }
+
+    public String getCommitInfoByBranch(String gitHost,String projectId,String branch,String token) {
+        String url = gitHost + GIT_API_URI + "projects/" + projectId + "/repository/commits?ref_name=" + branch;
+        log.info("getCommitIds url:{}", url);
+        Map<String, String> headers = new HashMap<>(1);
+        headers.put("PRIVATE-TOKEN", token);
+
+        return HttpClientV2.get(url, headers, 10000);
+    }
 }

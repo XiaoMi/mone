@@ -98,4 +98,10 @@ public class GitlabTest {
         System.out.println(merge);
     }
 
+    @Test
+    public void getCommitIds() {
+        String commitIds = gitlab.getCommitInfoByBranch("https://xxx.com", "1", "test", "xxx");
+        System.out.println(commitIds);
+    }
+
 }
