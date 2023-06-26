@@ -94,51 +94,14 @@ public class HeraProjectGroupTest {
     public void create(){
         HeraProjectGroupDataRequest request = new HeraProjectGroupDataRequest();
 
-//        String testStr = "{\n" +
-//                "    \"relationObjectId\": 2,\n" +
-//                "    \"type\": 0,\n" +
-//                "    \"name\": \"xiaomi\",\n" +
-//                "    \"cnName\": \"小米\",\n" +
-//                "    \"users\": [\n" +
-//                "        \"tanghaokun\",\n" +
-//                "        \"maqianli\"\n" +
-//                "    ],\n" +
-//                "    \"apps\": [\n" +
-//                "        {\n" +
-//                "            \"appId\": \"605\",\n" +
-//                "            \"appName\": \"uc-admin\",\n" +
-//                "            \"platFormType\": 8,\n" +
-//                "        },\n" +
-//                "        {\n" +
-//                "            \"appId\": \"604\",\n" +
-//                "            \"appName\": \"mi-permission-api\",\n" +
-//                "            \"platFormType\": 9,\n" +
-//                "        }\n" +
-//                "    ],\n" +
-//                "    \"parentGroupId\": -1\n" +
-//                "}";
-
-
-//        String testStr = "{\n" +
-//                "    \"relationObjectId\": 3,\n" +
-//                "    \"type\": 0,\n" +
-//                "    \"name\": \"chinaArea\",\n" +
-//                "    \"cnName\": \"中国区\",\n" +
-//                "    \"users\": [\n" +
-//                "        \"gaoxihui\",\n" +
-//                "        \"wangtao\"\n" +
-//                "    ],\n" +
-//                "    \"parentGroupId\": 2\n" +
-//                "}";
-
         String testStr1 = "{\n" +
                 "    \"relationObjectId\": 4,\n" +
                 "    \"type\": 0,\n" +
                 "    \"name\": \"newSale\",\n" +
-                "    \"cnName\": \"新零售\",\n" +
+                "    \"cnName\": \"newSale\",\n" +
                 "    \"users\": [\n" +
-                "        \"gaoxihui\",\n" +
-                "        \"wangtao\"\n" +
+                "        \"xxxx\",\n" +
+                "        \"yyyy\"\n" +
                 "    ],\n" +
                 "    \"parentGroupId\": 3\n" +
                 "}";
@@ -152,8 +115,8 @@ public class HeraProjectGroupTest {
                 "    \"name\": \"technology\",\n" +
                 "    \"cnName\": \"技术部\",\n" +
                 "    \"users\": [\n" +
-                "        \"gaoxihui\",\n" +
-                "        \"wangtao\"\n" +
+                "        \"xxxx\",\n" +
+                "        \"yyyy\"\n" +
                 "    ],\n" +
                 "    \"parentGroupId\": " + saleResult.getData() + "\n" +
                 "}";
@@ -165,10 +128,10 @@ public class HeraProjectGroupTest {
                 "    \"relationObjectId\": 6,\n" +
                 "    \"type\": 0,\n" +
                 "    \"name\": \"newSale\",\n" +
-                "    \"cnName\": \"新零售\",\n" +
+                "    \"cnName\": \"newSale\",\n" +
                 "    \"users\": [\n" +
-                "        \"gaoxihui\",\n" +
-                "        \"wangtao\"\n" +
+                "        \"xxxx\",\n" +
+                "        \"yyyy\"\n" +
                 "    ],\n" +
                 "    \"parentGroupId\": "+technologyResult.getData()+"\n" +
                 "}";
@@ -211,7 +174,7 @@ public class HeraProjectGroupTest {
                 "    \"relationObjectId\": 6,\n" +
                 "    \"type\": 0,\n" +
                 "    \"name\": \"efficiency\",\n" +
-                "    \"cnName\": \"效能组\",\n" +
+                "    \"cnName\": \"xiaoneng\",\n" +
                 "    \"users\": [\n" +
                 "        \"gaoxihui\",\n" +
                 "        \"wangtao\"\n" +
@@ -239,36 +202,5 @@ public class HeraProjectGroupTest {
     public void delete(){
         projectGroupService.delete(1);
     }
-
-//    public static void main(String[] args) {
-//        String testStr = "{\n" +
-//                "    \"relationObjectId\": 2,\n" +
-//                "    \"type\": 0,\n" +
-//                "    \"name\": \"xiaomi\",\n" +
-//                "    \"cnName\": \"小米\",\n" +
-//                "    \"users\": [\n" +
-//                "        \"tanghaokun\",\n" +
-//                "        \"maqianli\"\n" +
-//                "    ],\n" +
-//                "    \"apps\": [\n" +
-//                "        {\n" +
-//                "            \"appId\": \"10000675\",\n" +
-//                "            \"appName\": \"unidata_cn_pro\",\n" +
-//                "            \"platFormType\": 8,\n" +
-//                "        },\n" +
-//                "        {\n" +
-//                "            \"appId\": \"10000391\",\n" +
-//                "            \"appName\": \"eam_cn_pro\",\n" +
-//                "            \"platFormType\": 8,\n" +
-//                "        }\n" +
-//                "    ],\n" +
-//                "    \"parentGroupId\": -1\n" +
-//                "}";
-//
-//        HeraProjectGroupDataRequest heraProjectGroupDataRequest = JSON.parseObject(testStr, HeraProjectGroupDataRequest.class);
-//        System.out.println("parseResult:" + heraProjectGroupDataRequest.toString());
-//    }
-
-
 
 }
