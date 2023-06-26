@@ -82,7 +82,10 @@ public class DefaultLogProcessCollector implements LogProcessCollector {
         List<UpdateLogProcessCmd.CollectDetail> collect = tailProgressMap.values().stream()
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
-        collect.parallelStream().forEach(collectDetail -> {
+        if (CollectionUtils.isEmpty(collect)) {
+            return dtoList;
+        }
+        collect.stream().forEach(collectDetail -> {
             String appName = collectDetail.getAppName();
             dtoList.addAll(collectDetail.getFileProgressDetails().stream()
                     .filter(processDTO -> com.xiaomi.youpin.docean.common.StringUtils.isNotBlank(processDTO.getConfigIp()))
@@ -135,13 +138,13 @@ public class DefaultLogProcessCollector implements LogProcessCollector {
         try {
             for (List<UpdateLogProcessCmd.CollectDetail> details : tailProgressMap.values()) {
                 for (UpdateLogProcessCmd.CollectDetail detail : details) {
-                    if(String.valueOf(tailId).equals(detail.getTailId())) {
+                    if (String.valueOf(tailId).equals(detail.getTailId())) {
                         resultList.addAll(detail.getFileProgressDetails());
                     }
                 }
             }
-        }catch (Throwable t){
-            log.error("getFileProcessDetailByTail error : ",t);
+        } catch (Throwable t) {
+            log.error("getFileProcessDetailByTail error : ", t);
         }
         return resultList;
     }
