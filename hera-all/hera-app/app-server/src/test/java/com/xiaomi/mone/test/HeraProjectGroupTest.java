@@ -45,7 +45,7 @@ public class HeraProjectGroupTest {
     private String secret;
 
     @Test
-    public void testAuth(){
+    public void testAuth() throws InterruptedException {
         Long current = System.currentTimeMillis();
 
         StringBuilder secretPwdBuffer = new StringBuilder();
@@ -53,11 +53,23 @@ public class HeraProjectGroupTest {
         secretPwdBuffer.append(userName).append(md5Pwd).append(current);
         String sign = MD5.getInstance().getMD5String(secretPwdBuffer.toString());
 
-        Result result = authorizationService.fetchToken(userName, sign, current);
-        System.out.println("result === " + new Gson().toJson(result));
+        System.out.println("userName:" + userName + ";sign:"+sign+";timestamp:" + current);
 
-        Boolean re = authorizationService.checkAuthorization((String) result.getData());
-        System.out.println("check token result:"+re);
+//        Result result = authorizationService.fetchToken(userName, sign, current);
+//        System.out.println("result === " + new Gson().toJson(result));
+//
+//        Boolean re = authorizationService.checkAuthorization((String) result.getData());
+//        System.out.println("check token result:"+re);
+//
+//        Thread.sleep(3000);
+//        Boolean re1 = authorizationService.checkAuthorization((String) result.getData());
+//        System.out.println("check token result1:"+re1);
+    }
+
+    @Test
+    public void testAuthorization(){
+        Result rt = authorizationService.checkAuthorization("ac138023ce8ac1258bbb3c050f58769c");
+        System.out.println("rt =========== " + new Gson().toJson(rt));
     }
 
     @Test
@@ -228,34 +240,35 @@ public class HeraProjectGroupTest {
         projectGroupService.delete(1);
     }
 
-    public static void main(String[] args) {
-        String testStr = "{\n" +
-                "    \"relationObjectId\": 2,\n" +
-                "    \"type\": 0,\n" +
-                "    \"name\": \"xiaomi\",\n" +
-                "    \"cnName\": \"小米\",\n" +
-                "    \"users\": [\n" +
-                "        \"tanghaokun\",\n" +
-                "        \"maqianli\"\n" +
-                "    ],\n" +
-                "    \"apps\": [\n" +
-                "        {\n" +
-                "            \"appId\": \"10000675\",\n" +
-                "            \"appName\": \"unidata_cn_pro\",\n" +
-                "            \"platFormType\": 8,\n" +
-                "        },\n" +
-                "        {\n" +
-                "            \"appId\": \"10000391\",\n" +
-                "            \"appName\": \"eam_cn_pro\",\n" +
-                "            \"platFormType\": 8,\n" +
-                "        }\n" +
-                "    ],\n" +
-                "    \"parentGroupId\": -1\n" +
-                "}";
+//    public static void main(String[] args) {
+//        String testStr = "{\n" +
+//                "    \"relationObjectId\": 2,\n" +
+//                "    \"type\": 0,\n" +
+//                "    \"name\": \"xiaomi\",\n" +
+//                "    \"cnName\": \"小米\",\n" +
+//                "    \"users\": [\n" +
+//                "        \"tanghaokun\",\n" +
+//                "        \"maqianli\"\n" +
+//                "    ],\n" +
+//                "    \"apps\": [\n" +
+//                "        {\n" +
+//                "            \"appId\": \"10000675\",\n" +
+//                "            \"appName\": \"unidata_cn_pro\",\n" +
+//                "            \"platFormType\": 8,\n" +
+//                "        },\n" +
+//                "        {\n" +
+//                "            \"appId\": \"10000391\",\n" +
+//                "            \"appName\": \"eam_cn_pro\",\n" +
+//                "            \"platFormType\": 8,\n" +
+//                "        }\n" +
+//                "    ],\n" +
+//                "    \"parentGroupId\": -1\n" +
+//                "}";
+//
+//        HeraProjectGroupDataRequest heraProjectGroupDataRequest = JSON.parseObject(testStr, HeraProjectGroupDataRequest.class);
+//        System.out.println("parseResult:" + heraProjectGroupDataRequest.toString());
+//    }
 
-        HeraProjectGroupDataRequest heraProjectGroupDataRequest = JSON.parseObject(testStr, HeraProjectGroupDataRequest.class);
-        System.out.println("parseResult:" + heraProjectGroupDataRequest.toString());
-    }
 
 
 }

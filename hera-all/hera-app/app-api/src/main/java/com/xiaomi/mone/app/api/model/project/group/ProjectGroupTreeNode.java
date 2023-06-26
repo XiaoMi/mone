@@ -18,16 +18,18 @@ public class ProjectGroupTreeNode implements Serializable {
     private Integer relationObjectId;
     private String name;
     private String cnName;
+    private Integer parentGroupId;
     private List<ProjectGroupTreeNode> children;
 
     public ProjectGroupTreeNode(){}
 
-    public ProjectGroupTreeNode(Integer id, Integer type, Integer relationObjectId, String name, String cnName) {
+    public ProjectGroupTreeNode(Integer id, Integer type, Integer relationObjectId, String name, String cnName,Integer parentGroupId) {
         this.id = id;
         this.type = type;
         this.relationObjectId = relationObjectId;
         this.name = name;
         this.cnName = cnName;
+        this.parentGroupId = parentGroupId;
         this.children = new ArrayList<>();
     }
 
@@ -37,6 +39,7 @@ public class ProjectGroupTreeNode implements Serializable {
         this.relationObjectId = projectGroup.getRelationObjectId();
         this.name = projectGroup.getName();
         this.cnName = projectGroup.getCnName();
+        this.parentGroupId = projectGroup.getParentGroupId();
         this.children = new ArrayList<>();
     }
 }

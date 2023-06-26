@@ -1,7 +1,6 @@
 package com.xiaomi.mone.app.service.impl;
 
 import com.xiaomi.mone.app.api.service.HeraAuthorizationApi;
-import com.xiaomi.mone.app.api.service.HeraProjectGroupServiceApi;
 import com.xiaomi.mone.app.auth.AuthorizationService;
 import com.xiaomi.mone.app.common.Result;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +24,7 @@ public class AuthorizationServiceImpl implements HeraAuthorizationApi {
     }
 
     @Override
-    public Boolean checkAuthorization(String token) {
+    public Result checkAuthorization(String token) {
         return authorizationService.checkAuthorization(token);
     }
 }

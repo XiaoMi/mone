@@ -55,6 +55,14 @@ public class HeraProjectGroupService {
             return Result.fail(-1,"there is no data  which project group  id is "+parentGroupId);
         }
 
+        HeraProjectGroupModel projectGroup = new HeraProjectGroupModel();
+        projectGroup.setRelationObjectId(request.getRelationObjectId());
+        projectGroup.setType(request.getType());
+        List<HeraProjectGroupModel> search = projectGroupDao.search(projectGroup, null, null);
+        if(!CollectionUtils.isEmpty(search)){
+            return Result.fail(-1,"the data relationObjectId: " +request.getRelationObjectId()+ " has exist!");
+        }
+
         HeraProjectGroup group = new HeraProjectGroup();
         BeanUtils.copyProperties(request,group);
         Integer groupId = projectGroupDao.create(group);
@@ -112,6 +120,17 @@ public class HeraProjectGroupService {
             }
         }
 
+        if(request.getRelationObjectId() != null && request.getType() != null){
+            HeraProjectGroupModel projectGroup = new HeraProjectGroupModel();
+            projectGroup.setRelationObjectId(request.getRelationObjectId());
+            projectGroup.setType(request.getType());
+            List<HeraProjectGroupModel> search = projectGroupDao.search(projectGroup, null, null);
+            if(!CollectionUtils.isEmpty(search) && !search.get(0).getId().equals(request.getId())){
+                return Result.fail(-1,"the data relationObjectId: " +request.getRelationObjectId()+ " has exist!");
+            }
+        }
+
+
         log.info("update project Group request:{}",new Gson().toJson(request));
         HeraProjectGroup group = new HeraProjectGroup();
         BeanUtils.copyProperties(request,group);
@@ -133,6 +152,11 @@ public class HeraProjectGroupService {
         List<HeraProjectGroupModel> search = projectGroupDao.search(model, null, null);
         if(search != null && search.size() > 0){
             return Result.fail(-1,"The current node cannot be deleted because it has child nodes！");
+        }
+
+        List<HeraProjectGroupApp> apps = projectGroupAppDao.listByProjectGroupId(id);
+        if(!CollectionUtils.isEmpty(apps)){
+            return Result.fail(-1,"The current node cannot be deleted because it has apps！");
         }
 
         projectGroupAppDao.delByGroupId(id);
@@ -365,7 +389,7 @@ public class HeraProjectGroupService {
         if(projectGroupId != null){
             if(!userGroupIds.contains(projectGroupId)){
                 log.info("getGroupApps user:{} has no authorization for assign projectGroupId:{},groupType:{}",user,projectGroupId,groupType);
-                return Result.fail(CommonError.UNAUTHORIZED);
+                return Result.fail(CommonError.NO_AUTHORIZATION);
             }
             groupIds.add(projectGroupId);
         }else{

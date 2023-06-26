@@ -37,6 +37,10 @@ public class Result<T> implements Serializable {
         return new Result<>(error.getCode(), error.getMessage());
     }
 
+    public boolean isSuccess(){
+        return this.getCode() == CommonError.Success.getCode();
+    }
+
     public static <T> Result<T> failParam(String errorMsg) {
         return new Result<>(CommonError.ParamsError.getCode(), errorMsg);
     }

@@ -10,5 +10,5 @@ public interface HeraAuthorizationApi {
 
     Result fetchToken(String user, String sign, Long timestamp);
 
-    Boolean checkAuthorization(String token);
+    Result checkAuthorization(String token);
 }

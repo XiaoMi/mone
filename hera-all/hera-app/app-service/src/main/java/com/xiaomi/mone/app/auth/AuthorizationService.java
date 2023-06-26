@@ -21,13 +21,13 @@ import java.text.SimpleDateFormat;
 @Service
 public class AuthorizationService {
 
-    @NacosValue(value = "hera.auth.user",autoRefreshed = true)
+    @NacosValue(value = "${hera.auth.user}",autoRefreshed = true)
     private String userName;
 
-    @NacosValue(value = "hera.auth.pwd",autoRefreshed = true)
+    @NacosValue(value = "${hera.auth.pwd}",autoRefreshed = true)
     private String passWord;
 
-    @NacosValue(value = "hera.auth.secret",autoRefreshed = true)
+    @NacosValue(value = "${hera.auth.secret}",autoRefreshed = true)
     private String secret;
 
     @Autowired
@@ -55,7 +55,7 @@ public class AuthorizationService {
 
         if (!userName.equals(user)) {
             log.info("fetchToken param user error! user : {} ", user);
-            return Result.fail(CommonError.UNAUTHORIZED);
+            return Result.fail(CommonError.NO_AUTHORIZATION);
         }
 
         String md5Pwd = MD5.getInstance().getMD5String(passWord);
@@ -65,7 +65,7 @@ public class AuthorizationService {
         String signSource = MD5.getInstance().getMD5String(secretPwdBuffer.toString());
         if(!signSource.equals(sign)){
             log.info("fetchToken param sign error! user : {} , sign : {}", user, sign);
-            return Result.fail(CommonError.UNAUTHORIZED);
+            return Result.fail(CommonError.NO_AUTHORIZATION);
         }
 
         return Result.success(generateToken(userName));
@@ -78,23 +78,35 @@ public class AuthorizationService {
         builder.append("token:").append(userName).append(":").append(System.currentTimeMillis()).append(":").append(secret);
         String tokenString = MD5.getInstance().getMD5String(builder.toString());
 
-        redisService.set(tokenString,String.valueOf(tokenAccessSequence),tokenTimeLimit);
+        try {
+            redisService.set(tokenString,String.valueOf(tokenAccessSequence),tokenTimeLimit);
+        } catch (Exception e) {
+            log.error(e.getMessage(),e);
+        }
         return tokenString;
     }
 
-    public Boolean checkAuthorization(String token){
+    public Result checkAuthorization(String token){
 
         if(StringUtils.isBlank(token)){
             log.error("checkAuthorization error!token is null!");
-            return false;
+            return Result.fail(CommonError.NO_TOKEN);
         }
 
-        if(redisService.get(token) == null){
+        String result = null;
+        try {
+            result = redisService.get(token);
+        } catch (Exception e) {
+            log.error("checkAuthorization redis exception!" + e.getMessage(),e);
+            return Result.fail(CommonError.UnknownError);
+        }
+
+        if(StringUtils.isBlank(result)){
             log.error("checkAuthorization token is error or expired!");
-            return false;
+            return Result.fail(CommonError.INVALID_TOKEN);
         }
 
-        return true;
+        return Result.success();
 
     }
 
