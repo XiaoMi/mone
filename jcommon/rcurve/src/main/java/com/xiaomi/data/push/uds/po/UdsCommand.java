@@ -31,6 +31,7 @@ import lombok.Data;
 import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -59,6 +60,11 @@ public class UdsCommand extends RpcCommand implements Serializable {
 
     private int retries;
 
+    private boolean async = false;
+
+    private CompletableFuture completableFuture;
+
+    private Class<?> returnClass;
 
     public static UdsCommand createResponse(RpcCommand request) {
         UdsCommand res = new UdsCommand();
