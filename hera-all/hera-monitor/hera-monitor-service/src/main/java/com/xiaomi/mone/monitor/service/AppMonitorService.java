@@ -93,7 +93,7 @@ public class AppMonitorService {
 
     private static final Gson gson = new Gson();
 
-    @Reference(registry = "registryConfig", check = false, interfaceClass = HeraAppService.class, group = "${dubbo.group.heraapp}")
+    @Reference(registry = "registryConfig", check = false, interfaceClass = HeraAppService.class, group = "${dubbo.group.heraapp}",timeout = 5000)
     HeraAppService hearAppService;
 
     public void appPlatMove(Integer OProjectId, Integer OPlat, Integer NProjectId, Integer Nplat, Integer newIamId, String NprojectName, Boolean rebuildRule) {

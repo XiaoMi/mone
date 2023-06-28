@@ -25,6 +25,8 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
+
 import java.io.File;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
@@ -108,7 +110,10 @@ public class JarCheckMojo extends AbstractMojo {
                     }
                     String mavenShadePlugin = mavenProject.getPlugin(shadePluginKey).getConfiguration().toString();
                     if (!mavenShadePlugin.contains("<include>" + groupId + ":" + artifactId + "</include>")) {
-                        throw new MojoExecutionException("请把内容:" + "<include>" + groupId + ":" + artifactId + "</include>" + "，添加到" + mavenProject.getName() + "目录下pom文件中maven-shade-plugin插件<includes>里面,该pom里面有参考设置");
+                        Xpp3Dom xpp3Dom = new Xpp3Dom("include");
+                        xpp3Dom.setValue(groupId + ":" + artifactId);
+                        ((Xpp3Dom)mavenProject.getPlugin(shadePluginKey).getConfiguration()).getChild("artifactSet").getChild(0).addChild(xpp3Dom);
+                        //throw new MojoExecutionException("请把内容:" + "<include>" + groupId + ":" + artifactId + "</include>" + "，添加到" + mavenProject.getName() + "目录下pom文件中maven-shade-plugin插件<includes>里面,该pom里面有参考设置");
                     }
                 }
 
