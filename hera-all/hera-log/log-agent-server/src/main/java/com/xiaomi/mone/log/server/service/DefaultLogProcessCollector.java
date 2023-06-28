@@ -18,6 +18,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static com.xiaomi.mone.log.common.Constant.GSON;
+
 /**
  * @author wtt
  * @version 1.0
@@ -82,22 +84,28 @@ public class DefaultLogProcessCollector implements LogProcessCollector {
         List<UpdateLogProcessCmd.CollectDetail> collect = tailProgressMap.values().stream()
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
-        collect.parallelStream().forEach(collectDetail -> {
-            String appName = collectDetail.getAppName();
-            dtoList.addAll(collectDetail.getFileProgressDetails().stream()
-                    .filter(processDTO -> com.xiaomi.youpin.docean.common.StringUtils.isNotBlank(processDTO.getConfigIp()))
-                    .filter(processDTO -> Objects.equals(ip, processDTO.getConfigIp()))
-                    .map(fileProgressDetail -> {
-                        AgentLogProcessDTO agentLogProcessDTO = new AgentLogProcessDTO();
-                        agentLogProcessDTO.setPath(fileProgressDetail.getPattern());
-                        agentLogProcessDTO.setFileRowNumber(fileProgressDetail.getFileRowNumber());
-                        agentLogProcessDTO.setPointer(fileProgressDetail.getPointer());
-                        agentLogProcessDTO.setFileMaxPointer(fileProgressDetail.getFileMaxPointer());
-                        agentLogProcessDTO.setAppName(appName);
-                        agentLogProcessDTO.setCollectPercentage(fileProgressDetail.getCollectPercentage());
-                        agentLogProcessDTO.setCollectTime(fileProgressDetail.getCollectTime());
-                        return agentLogProcessDTO;
-                    }).collect(Collectors.toList()));
+        collect.stream().forEach(collectDetail -> {
+            try {
+                String appName = collectDetail.getAppName();
+                if (CollectionUtils.isNotEmpty(collectDetail.getFileProgressDetails())) {
+                    dtoList.addAll(collectDetail.getFileProgressDetails().stream()
+                            .filter(processDTO -> StringUtils.isNotBlank(processDTO.getConfigIp()))
+                            .filter(processDTO -> Objects.equals(ip, processDTO.getConfigIp()))
+                            .map(fileProgressDetail -> {
+                                AgentLogProcessDTO agentLogProcessDTO = new AgentLogProcessDTO();
+                                agentLogProcessDTO.setPath(fileProgressDetail.getPattern());
+                                agentLogProcessDTO.setFileRowNumber(fileProgressDetail.getFileRowNumber());
+                                agentLogProcessDTO.setPointer(fileProgressDetail.getPointer());
+                                agentLogProcessDTO.setFileMaxPointer(fileProgressDetail.getFileMaxPointer());
+                                agentLogProcessDTO.setAppName(appName);
+                                agentLogProcessDTO.setCollectPercentage(fileProgressDetail.getCollectPercentage());
+                                agentLogProcessDTO.setCollectTime(fileProgressDetail.getCollectTime());
+                                return agentLogProcessDTO;
+                            }).collect(Collectors.toList()));
+                }
+            } catch (Exception e) {
+                log.error("getAgentLogProcess error,ip:{},CollectDetail:{}", ip, GSON.toJson(collectDetail), e);
+            }
         });
         return dtoList;
     }
@@ -135,15 +143,20 @@ public class DefaultLogProcessCollector implements LogProcessCollector {
         try {
             for (List<UpdateLogProcessCmd.CollectDetail> details : tailProgressMap.values()) {
                 for (UpdateLogProcessCmd.CollectDetail detail : details) {
-                    if(String.valueOf(tailId).equals(detail.getTailId())) {
+                    if (String.valueOf(tailId).equals(detail.getTailId())) {
                         resultList.addAll(detail.getFileProgressDetails());
                     }
                 }
             }
-        }catch (Throwable t){
-            log.error("getFileProcessDetailByTail error : ",t);
+        } catch (Throwable t) {
+            log.error("getFileProcessDetailByTail error : ", t);
         }
         return resultList;
+    }
+
+    @Override
+    public List<UpdateLogProcessCmd.CollectDetail> getAllCollectDetail(String ip) {
+        return tailProgressMap.get(ip);
     }
 
     /**

@@ -49,8 +49,16 @@ public interface LogProcessCollector {
 
     /**
      * 获取一个tail下的采集详情
+     *
      * @param tailId
      * @return
      */
     List<UpdateLogProcessCmd.FileProgressDetail> getFileProcessDetailByTail(Long tailId);
+
+    /**
+     * get all coll detail
+     *
+     * @return
+     */
+    List<UpdateLogProcessCmd.CollectDetail> getAllCollectDetail(String ip);
 }

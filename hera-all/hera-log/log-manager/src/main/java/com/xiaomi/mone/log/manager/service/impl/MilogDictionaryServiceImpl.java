@@ -84,7 +84,7 @@ public class MilogDictionaryServiceImpl implements MilogDictionaryService {
         dictionaryParam.getCodes().stream().forEach(code -> {
             switch (code) {
                 case 1001:
-                    dictionaryDTO.put(code, dictionaryExtensionService.queryMiddlewareConfigDictionary(MachineRegionEnum.CN_MACHINE.getEn()));
+                    dictionaryDTO.put(code, dictionaryExtensionService.queryMiddlewareConfigDictionary(StringUtils.isNotEmpty(dictionaryParam.getNameEn()) ? dictionaryParam.getNameEn() : MachineRegionEnum.CN_MACHINE.getEn()));
                     break;
                 case 1002:
                     dictionaryDTO.put(code, dictionaryExtensionService.queryMqTypeDictionary());
