@@ -255,6 +255,18 @@ public class EsClient {
         IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
     }
 
+    public void insertDocForIndex(String index, Map<String, Object> data) throws IOException {
+        IndexRequest indexRequest = new IndexRequest(index, "_doc", UUID.randomUUID().toString()).source(data);
+        indexRequest.opType(DocWriteRequest.OpType.INDEX);
+        IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
+    }
+
+    public void insertDocForIndex(String index, Map<String, Object> data, String id) throws IOException {
+        IndexRequest indexRequest = new IndexRequest(index, "_doc", id).source(data);
+        indexRequest.opType(DocWriteRequest.OpType.INDEX);
+        IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
+    }
+
     public void insertDocJson(String index, String jsonString) throws IOException {
         IndexRequest indexRequest = new IndexRequest(index, "_doc", UUID.randomUUID().toString()).source(jsonString, XContentType.JSON);
         indexRequest.opType(DocWriteRequest.OpType.CREATE);
