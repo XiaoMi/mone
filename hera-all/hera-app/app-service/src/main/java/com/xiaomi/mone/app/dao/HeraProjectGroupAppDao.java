@@ -16,6 +16,7 @@
 
 package com.xiaomi.mone.app.dao;
 
+import com.google.gson.Gson;
 import com.xiaomi.mone.app.dao.mapper.HeraProjectGroupAppMapper;
 import com.xiaomi.mone.app.dao.mapper.HeraProjectGroupMapper;
 import com.xiaomi.mone.app.model.HeraProjectGroupApp;
@@ -60,7 +61,13 @@ public class HeraProjectGroupAppDao {
     }
 
     public Integer batchInsert(List<HeraProjectGroupApp> apps){
-        return projectGroupAppMapper.batchInsert(apps);
+        try {
+            return projectGroupAppMapper.batchInsert(apps);
+        } catch (Exception e) {
+            String appsInfo = new Gson().toJson(apps);
+            log.error("App batchInsert exception! exception:"+e.getMessage() + ",appsInfo:" + appsInfo,e);
+        }
+        return 0;
     }
 
     public Integer delById(Integer id){

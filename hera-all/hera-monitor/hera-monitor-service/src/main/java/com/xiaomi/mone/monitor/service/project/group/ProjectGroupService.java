@@ -23,10 +23,10 @@ import java.util.List;
 @Service
 public class ProjectGroupService {
 
-    @Reference(registry = "registryConfig", check = false, interfaceClass = HeraProjectGroupServiceApi.class, group = "${dubbo.group.heraapp}")
+    @Reference(registry = "registryConfig", check = false, interfaceClass = HeraProjectGroupServiceApi.class, group = "${dubbo.group.heraapp}",timeout = 3000)
     HeraProjectGroupServiceApi projectGroupServiceApi;
 
-    @Reference(registry = "registryConfig", check = false, interfaceClass = HeraAuthorizationApi.class, group = "${dubbo.group.heraapp}")
+    @Reference(registry = "registryConfig", check = false, interfaceClass = HeraAuthorizationApi.class, group = "${dubbo.group.heraapp}",timeout = 3000)
     HeraAuthorizationApi heraAuthorizationApi;
 
     public Result checkAuthorization(HttpServletRequest request){
