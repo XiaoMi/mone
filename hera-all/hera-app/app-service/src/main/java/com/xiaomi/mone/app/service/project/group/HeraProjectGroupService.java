@@ -171,7 +171,8 @@ public class HeraProjectGroupService {
 
     private void updateUsers(HeraProjectGroupDataRequest request){
 
-        if(!CollectionUtils.isEmpty(request.getUsers())){
+        //参数为null，认为本次不更新，空list回删除全部现有数据
+        if(request.getUsers() != null){
 
             List<String> updateUsers = request.getUsers();
 
@@ -204,27 +205,27 @@ public class HeraProjectGroupService {
                 });
             }
 
+            if(CollectionUtils.isEmpty(updateUsers)){
+                return;
+            }
 
             /**
              * 添加本次新增的成员
              */
             updateUsers.removeAll(existUsers.stream().map(t -> t.getUser()).collect(Collectors.toList()));
 
-            if (!CollectionUtils.isEmpty(updateUsers)) {
+            List<HeraProjectGroupUser> users = new ArrayList<>();
+            updateUsers.forEach(t -> {
+                HeraProjectGroupUser userI = new HeraProjectGroupUser();
+                userI.setProjectGroupId(request.getId());
+                userI.setUser(t);
+                userI.setStatus(0);
+                userI.setCreateTime(new Date());
+                userI.setUpdateTime(new Date());
+                users.add(userI);
 
-                List<HeraProjectGroupUser> users = new ArrayList<>();
-                updateUsers.forEach(t -> {
-                    HeraProjectGroupUser userI = new HeraProjectGroupUser();
-                    userI.setProjectGroupId(request.getId());
-                    userI.setUser(t);
-                    userI.setStatus(0);
-                    userI.setCreateTime(new Date());
-                    userI.setUpdateTime(new Date());
-                    users.add(userI);
-
-                });
-                Integer integer = groupUserDao.batchInsert(users);
-            }
+            });
+            Integer integer = groupUserDao.batchInsert(users);
 
         }
     }
@@ -233,13 +234,19 @@ public class HeraProjectGroupService {
 
         List<HeraProjectGroupAppRequest> updateApps = request.getApps();
 
-        if(CollectionUtils.isEmpty(updateApps)){
+        if(updateApps == null){
             return;
         }
 
         List<HeraProjectGroupApp> existApps = projectGroupAppDao.listByProjectGroupId(request.getId());
 
         if(CollectionUtils.isEmpty(existApps)){
+
+            //没有历史数据，本次也没有同步新数据
+            if(updateApps.size() == 0){
+                return;
+            }
+
             List<HeraProjectGroupApp> apps = new ArrayList<>();
             for(HeraProjectGroupAppRequest appRequest : updateApps){
 
@@ -267,31 +274,33 @@ public class HeraProjectGroupService {
         }
 
         List<Integer> updateAppIds = new ArrayList<>();
-        for (HeraProjectGroupAppRequest appRequest : updateApps) {
+        if(!CollectionUtils.isEmpty(updateApps)){
+            for (HeraProjectGroupAppRequest appRequest : updateApps) {
 
-            if(appRequest.getAppId() == null || appRequest.getPlatFormType() == null){
-                log.error("updateApps param error! request : {}",request.toString());
-                continue;
+                if(appRequest.getAppId() == null || appRequest.getPlatFormType() == null){
+                    log.error("updateApps param error! request : {}",request.toString());
+                    continue;
+                }
+
+                Integer baseInfoId = heraBaseInfoDao.idByBindIdsAndPlat(String.valueOf(appRequest.getAppId()), appRequest.getPlatFormType());
+                if(baseInfoId != null){
+                    updateAppIds.add(baseInfoId);
+                }
             }
-
-            Integer baseInfoId = heraBaseInfoDao.idByBindIdsAndPlat(String.valueOf(appRequest.getAppId()), appRequest.getPlatFormType());
-            if(baseInfoId != null){
-                updateAppIds.add(baseInfoId);
-            }
-        }
-
-        if(CollectionUtils.isEmpty(updateAppIds)){
-            return;
         }
 
         /**
-         * 删除本次不包含的
+         * 删除本次不包含的，如果本次传递了空list，则删除全部历史数据。
          */
         List<HeraProjectGroupApp> toDeleteApps = existApps.stream().filter(t -> !updateAppIds.contains(t.getAppBaseInfoId())).collect(Collectors.toList());
         if(!CollectionUtils.isEmpty(toDeleteApps)){
             toDeleteApps.forEach(t->{
                 projectGroupAppDao.delById(t.getId());
             });
+        }
+
+        if(CollectionUtils.isEmpty(updateAppIds)){
+            return;
         }
 
         /**
