@@ -16,6 +16,7 @@
 
 package com.xiaomi.mone.app.dao;
 
+import com.google.gson.Gson;
 import com.xiaomi.mone.app.api.model.project.group.HeraProjectGroupModel;
 import com.xiaomi.mone.app.dao.mapper.HeraProjectGroupMapper;
 import com.xiaomi.mone.app.dao.mapper.HeraProjectGroupUserMapper;
@@ -91,7 +92,8 @@ public class HeraProjectGroupUserDao {
         try {
             return projectGroupUserMapper.batchInsert(users);
         } catch (Exception e) {
-            log.error("batchInsert error!exception : {}",e.getMessage(),e);
+            String userInfos = new Gson().toJson(users);
+            log.error("batchInsert error!exception : {},userInfos : {}",e.getMessage(),userInfos,e);
             return 0;
         }
     }
