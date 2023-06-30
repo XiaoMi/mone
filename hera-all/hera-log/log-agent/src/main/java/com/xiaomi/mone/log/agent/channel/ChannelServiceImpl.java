@@ -37,6 +37,7 @@ import com.xiaomi.mone.log.api.model.msg.LineMessage;
 import com.xiaomi.mone.log.common.Constant;
 import com.xiaomi.mone.log.common.PathUtils;
 import com.xiaomi.mone.log.utils.NetUtil;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -66,9 +67,11 @@ public class ChannelServiceImpl extends AbstractChannelService {
 
     private ChannelMemory channelMemory;
 
-    private ConcurrentHashMap<String, LogFile> logFileMap = new ConcurrentHashMap<>();
+    @Getter
+    private final ConcurrentHashMap<String, LogFile> logFileMap = new ConcurrentHashMap<>();
 
-    private ConcurrentHashMap<String, Future> futureMap = new ConcurrentHashMap<>();
+    @Getter
+    private final ConcurrentHashMap<String, Future> futureMap = new ConcurrentHashMap<>();
 
     private Gson gson = Constant.GSON;
 
@@ -552,6 +555,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
         log.info("stop file monitor,fileName:", logFileMap.keySet().stream().collect(Collectors.joining(SYMBOL_COMMA)));
         lineMessageList.clear();
     }
+
     public Long getChannelId() {
         return channelDefine.getChannelId();
     }
