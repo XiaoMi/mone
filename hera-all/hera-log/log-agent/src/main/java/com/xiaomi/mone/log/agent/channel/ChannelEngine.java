@@ -16,17 +16,14 @@
 
 package com.xiaomi.mone.log.agent.channel;
 
+import cn.hutool.core.io.FileUtil;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.xiaomi.data.push.common.SafeRun;
 import com.xiaomi.data.push.rpc.RpcClient;
 import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
-import com.xiaomi.mone.log.agent.channel.comparator.AppSimilarComparator;
-import com.xiaomi.mone.log.agent.channel.comparator.FilterSimilarComparator;
-import com.xiaomi.mone.log.agent.channel.comparator.InputSimilarComparator;
-import com.xiaomi.mone.log.agent.channel.comparator.OutputSimilarComparator;
-import com.xiaomi.mone.log.agent.channel.comparator.SimilarComparator;
+import com.xiaomi.mone.log.agent.channel.comparator.*;
 import com.xiaomi.mone.log.agent.channel.listener.DefaultFileMonitorListener;
 import com.xiaomi.mone.log.agent.channel.listener.FileMonitorListener;
 import com.xiaomi.mone.log.agent.channel.locator.ChannelDefineJsonLocator;
@@ -53,13 +50,8 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.text.NumberFormat;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static com.xiaomi.mone.log.common.Constant.GSON;
@@ -132,12 +124,38 @@ public class ChannelEngine {
             exportChannelState();
             log.info("current channelDefineList:{},current channelServiceList:{}",
                     gson.toJson(this.channelDefineList), gson.toJson(this.channelServiceList.stream().map(ChannelService::instanceId).collect(Collectors.toList())));
-
+            monitorTheadClean();
         } catch (Exception e) {
             log.error("ChannelEngine init exception", e);
         } finally {
             initComplete = true;
         }
+    }
+
+    /**
+     * 监控线程的大小是否已经超过线程池的最大数量，如果超过之后，检查文件是否存在，文件不存在，清理当前线程
+     */
+    private void monitorTheadClean() {
+        ExecutorUtil.scheduleAtFixedRate(() -> {
+            ThreadPoolExecutor tpExecutor = (ThreadPoolExecutor) ExecutorUtil.TP_EXECUTOR;
+            if (tpExecutor.getActiveCount() > tpExecutor.getMaximumPoolSize() - 10) {
+                for (ChannelService channelService : channelServiceList) {
+                    try {
+                        ChannelServiceImpl service = (ChannelServiceImpl) channelService;
+                        ConcurrentHashMap<String, Future> serviceFutureMap = service.getFutureMap();
+                        for (Map.Entry<String, Future> futureEntry : serviceFutureMap.entrySet()) {
+                            if (!FileUtil.exist(futureEntry.getKey())) {
+                                log.info("current file has del,fileName:{}", futureEntry.getKey());
+                                service.getLogFileMap().get(futureEntry.getKey()).setStop(true);
+                                futureEntry.getValue().cancel(true);
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.error("monitorTheadAndClean error", e);
+                    }
+                }
+            }
+        }, 1, 5, TimeUnit.MINUTES);
     }
 
     private ChannelDefineLocator getChannelDefineLocator(Config config) {
