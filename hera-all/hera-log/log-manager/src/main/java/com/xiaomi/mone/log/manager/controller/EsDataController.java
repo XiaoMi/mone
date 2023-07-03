@@ -44,11 +44,12 @@ public class EsDataController {
 
     @RequestMapping(path = "/log/export", method = "get")
     public void logExport(@RequestParam(value = "logstore") String logstore,
+                          @RequestParam(value = "storeId") Long storeId,
                           @RequestParam(value = "tail") String tail,
                           @RequestParam(value = "startTime") Long startTime,
                           @RequestParam(value = "endTime") Long endTime,
                           @RequestParam(value = "fullTextSearch") String fullTextSearch) throws Exception {
-        LogQuery logQuery = new LogQuery(logstore, tail, startTime, endTime, fullTextSearch, "timestamp");
+        LogQuery logQuery = new LogQuery(logstore, storeId, tail, startTime, endTime, fullTextSearch, "timestamp");
         esDataService.logExport(logQuery);
     }
 
@@ -190,7 +191,7 @@ public class EsDataController {
     @RequestMapping(path = "/log/save/list", method = "get")
     public Result<List<SearchSaveDTO>> searchSavelList(@RequestParam(value = "storeId") Long storeId,
                                                        @RequestParam(value = "sort") Integer sort) {
-        return searchSaveService.list(storeId,sort);
+        return searchSaveService.list(storeId, sort);
     }
 
     /**
