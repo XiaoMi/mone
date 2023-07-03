@@ -42,14 +42,14 @@ public class ClientMessageQueue {
         if (queueList == null || queueList.size() == 0) {
             return;
         }
-        // 本地message queue 缺少的，进行添加
+        // If the local message queue is missing, add it
         queueList.stream()
                 .filter(i -> !clientMessageQueues.stream().anyMatch(j -> j.getRocketMQMessageQueue().equals(i)))
                 .forEach(queue -> clientMessageQueues.add(new ClientMessageQueueWrapper(queue, new ArrayBlockingQueue<>(CLIENT_QUEUE_SIZE), producer)));
 
         setRocketMQQueueSize(queueList.size());
 
-        // 本地message queue 多出来的，进行销毁
+        // If the local message queue is extra, it will be destroyed
         List<ClientMessageQueueWrapper> collect = clientMessageQueues.stream()
                 .filter(i -> !queueList.contains(i.getRocketMQMessageQueue()))
                 .collect(Collectors.toList());

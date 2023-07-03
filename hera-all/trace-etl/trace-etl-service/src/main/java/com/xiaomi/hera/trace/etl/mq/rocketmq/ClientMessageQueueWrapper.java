@@ -74,7 +74,7 @@ public class ClientMessageQueueWrapper {
     }
 
     private void startExport() {
-        // 初始化导出任务，定时定量从client queue中取出消息，发送到mq
+        // Initializes the export task, periodically and quantitatively fetches messages from the client queue and sends them to mq
         executor = Executors.newSingleThreadExecutor(r -> {
             Thread thread = new Thread(r);
             thread.setDaemon(false);
@@ -85,7 +85,7 @@ public class ClientMessageQueueWrapper {
     }
 
     public void stopExport() {
-        // 等待所有消息发送成功
+        // Wait for all messages to be successfully sent
         while (clientMessageQueue.size() > 0) {
             try {
                 Thread.sleep(50);
@@ -94,7 +94,7 @@ public class ClientMessageQueueWrapper {
             }
         }
         running = false;
-        // 销毁线程池
+        // Destroy thread pool
         executor.shutdown();
         log.info(rocketMQMessageQueue.getBrokerName()+" - "+rocketMQMessageQueue.getQueueId()+" stopped");
     }
