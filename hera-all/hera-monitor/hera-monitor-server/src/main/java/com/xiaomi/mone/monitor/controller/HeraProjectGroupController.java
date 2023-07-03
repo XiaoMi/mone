@@ -3,7 +3,6 @@ package com.xiaomi.mone.monitor.controller;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.app.api.model.project.group.HeraProjectGroupDataRequest;
 import com.xiaomi.mone.app.api.model.project.group.ProjectGroupTreeNode;
-import com.xiaomi.mone.app.api.service.HeraAuthorizationApi;
 import com.xiaomi.mone.app.common.Result;
 import com.xiaomi.mone.app.enums.CommonError;
 import com.xiaomi.mone.monitor.service.model.project.group.ProjectGroupRequest;
@@ -12,7 +11,6 @@ import com.xiaomi.mone.tpc.login.util.UserUtil;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.dubbo.config.annotation.Reference;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,12 +32,9 @@ public class HeraProjectGroupController {
     @PostMapping("/api/project-group/tree/full")
     public Result<ProjectGroupTreeNode> getFullTree(HttpServletRequest request, @RequestBody ProjectGroupRequest param) {
 
-        AuthUserVo userInfo = UserUtil.getUser();
-        if (userInfo == null) {
-            Result result = projectGroupService.checkAuthorization(request);
-            if(!result.isSuccess()){
-                return result;
-            }
+        Result result = projectGroupService.checkAuthorization(request);
+        if(!result.isSuccess()){
+            return result;
         }
 
         log.info("getFullTree param : {}", param);
@@ -56,14 +51,9 @@ public class HeraProjectGroupController {
     @PostMapping("/api/project-group/tree")
     public Result<ProjectGroupTreeNode> getTreeByUser(HttpServletRequest request, @RequestBody ProjectGroupRequest param) {
 
-        AuthUserVo userInfo = UserUtil.getUser();
-        if (userInfo == null) {
-            Result result = projectGroupService.checkAuthorization(request);
-            if(!result.isSuccess()){
-                return result;
-            }
-        }else{
-            param.setUser(userInfo.genFullAccount());
+        Result result = projectGroupService.checkAuthorization(request);
+        if(!result.isSuccess()){
+            return result;
         }
 
         if(StringUtils.isBlank(param.getUser())){
@@ -85,18 +75,13 @@ public class HeraProjectGroupController {
     @PostMapping("/api/project-group/app")
     public Result<List<HeraAppBaseInfoModel>> getGroupApps(HttpServletRequest request, @RequestBody ProjectGroupRequest param) {
 
-        AuthUserVo userInfo = UserUtil.getUser();
-        if (userInfo == null) {
-            Result result = projectGroupService.checkAuthorization(request);
-            if(!result.isSuccess()){
-                return result;
-            }
-        }else{
-            param.setUser(userInfo.genFullAccount());
+        Result result = projectGroupService.checkAuthorization(request);
+        if(!result.isSuccess()){
+            return result;
         }
 
         if(StringUtils.isBlank(param.getUser())){
-            log.error("getTreeByUser request param error! no group type found!");
+            log.error("getGroupApps request param error! no group type found!");
             return Result.fail(CommonError.ParamsError);
         }
 
@@ -175,4 +160,62 @@ public class HeraProjectGroupController {
 
         return projectGroupService.delete(id);
     }
+
+
+    @ResponseBody
+    @PostMapping("/view/project-group/tree/full")
+    public Result<ProjectGroupTreeNode> vieFullTree(HttpServletRequest request, @RequestBody ProjectGroupRequest param) {
+
+        AuthUserVo userInfo = UserUtil.getUser();
+        if (userInfo == null) {
+            return Result.fail(CommonError.UNAUTHORIZED);
+        }
+
+        log.info("vieFullTree param : {}", param);
+
+        if(param.getGroupType() == null){
+            log.error("vieFullTree request param error! no group type found!");
+            return Result.fail(CommonError.ParamsError);
+        }
+
+        return projectGroupService.getFullTree(param.getGroupType());
+    }
+
+    @ResponseBody
+    @PostMapping("/view/project-group/tree")
+    public Result<ProjectGroupTreeNode> viewTreeByUser(HttpServletRequest request, @RequestBody ProjectGroupRequest param) {
+
+        AuthUserVo userInfo = UserUtil.getUser();
+        if (userInfo == null) {
+            return Result.fail(CommonError.UNAUTHORIZED);
+        }
+        log.info("viewTreeByUser param : {}", param);
+
+        if(param.getGroupType() == null){
+            log.error("getTreeByUser request param error! no group type found!");
+            return Result.fail(CommonError.ParamsError);
+        }
+
+        return projectGroupService.getTreeByUser(param);
+    }
+
+    @ResponseBody
+    @PostMapping("/view/project-group/app")
+    public Result<List<HeraAppBaseInfoModel>> viewGroupApps(HttpServletRequest request, @RequestBody ProjectGroupRequest param) {
+
+        AuthUserVo userInfo = UserUtil.getUser();
+        if (userInfo == null) {
+            return Result.fail(CommonError.UNAUTHORIZED);
+        }
+
+        log.info("viewGroupApps param : {}", param);
+
+        if(param.getGroupType() == null){
+            log.error("viewGroupApps request param error! no group type found!");
+            return Result.fail(CommonError.ParamsError);
+        }
+
+        return projectGroupService.searchGroupApps(param);
+    }
 }
+
