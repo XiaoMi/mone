@@ -65,7 +65,7 @@ public class TraceUtil {
             message = spanStr.split(" \\| ")[1];
         }
         String[] messageArray = message.split(MessageUtil.SPLIT);
-        // 位数校验
+        // Bit check
         if (messageArray.length != MessageUtil.COUNT) {
             log.error("message count illegal : " + spanStr);
             return null;
