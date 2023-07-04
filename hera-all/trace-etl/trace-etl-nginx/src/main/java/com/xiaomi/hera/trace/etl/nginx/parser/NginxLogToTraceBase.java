@@ -57,7 +57,7 @@ public abstract class NginxLogToTraceBase {
     }
 
     public byte[] toTSpanDateBytes(String message) {
-        // 将nginx日志转换为NginxJaegerDomain, 这由具体实现类实现，可以每种nginx日志对应不同实现
+        // The nginx logs are converted to NginxJaegerDomain, which is implemented by the concrete implementation class and can be implemented differently for each nginx log
         NginxJaegerDomain parse = parse(message);
         if (parse != null) {
             try {
@@ -203,7 +203,7 @@ public abstract class NginxLogToTraceBase {
     }
 
     /**
-     * 去掉请求参数
+     * delete request params
      * @param requestUri
      * @return
      */
