@@ -290,6 +290,8 @@ public class SearchLog {
             fos = new FileOutputStream(file);
             excel.write(fos);
             Down.down(fileName);
+        } catch (Exception e) {
+            log.error("downLogFile error,fileName:{}", fileName, e);
         } finally {
             if (excel != null) {
                 excel.close();

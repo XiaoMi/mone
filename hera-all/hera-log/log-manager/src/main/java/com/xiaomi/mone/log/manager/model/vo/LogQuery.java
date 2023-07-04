@@ -25,8 +25,9 @@ public class LogQuery implements Serializable {
     public LogQuery() {
     }
 
-    public LogQuery(String logstore, String tail, Long startTime, Long endTime, String fullTextSearch, String sortKey) {
+    public LogQuery(String logstore, Long storeId, String tail, Long startTime, Long endTime, String fullTextSearch, String sortKey) {
         this.logstore = logstore;
+        this.storeId = storeId;
         this.tail = tail;
         this.startTime = startTime;
         this.endTime = endTime;
