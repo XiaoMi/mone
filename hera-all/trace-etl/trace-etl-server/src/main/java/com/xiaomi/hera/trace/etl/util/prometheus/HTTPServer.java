@@ -93,7 +93,7 @@ public class HTTPServer {
             server.setExecutor(executorService);
             start(false);
         } catch (Exception e) {
-            log.error("http server 启动异常：", e);
+            log.error("http server start fail：", e);
         }
     }
 
@@ -110,7 +110,7 @@ public class HTTPServer {
             this.registryMap = registryMap;
         }
 
-        // 缓存不同ip+uri（/jvm、/metrics）对应的不同metrics数据
+        // Cache different metrics data for different ip+ URIs (/jvm, /metrics)
         private Map<String, byte[]> data = new ConcurrentHashMap<>();
 
         private Map<String, Long> uriLastTime = new ConcurrentHashMap<>();
@@ -205,7 +205,7 @@ public class HTTPServer {
             if(StringUtils.isEmpty(ua)){
                 return true;
             }
-            // 按照UA过滤安全部扫描请求
+            // Filter by User-Agent
             Headers requestHeaders = exchange.getRequestHeaders();
             if(requestHeaders != null && requestHeaders.size() > 0) {
                 List<String> headers = requestHeaders.get("User-agent");
@@ -229,7 +229,6 @@ public class HTTPServer {
         private void clearMetrics() {
 //            synchronized (LockUtil.lock) {
             try {
-                // 清理不带serviceName的指标
                 MetricsManager gMetricsMgr = Metrics.getInstance().gMetricsMgr;
                 if (gMetricsMgr instanceof Prometheus) {
                     Prometheus prometheus = (Prometheus) gMetricsMgr;
@@ -259,7 +258,7 @@ public class HTTPServer {
                     histogram.clear();
                     CollectorRegistry.defaultRegistry.unregister(histogram);
                 } else {
-                    log.error("指标：" + key + " 类型转换失败，原始类型：" + o.getClass().getName());
+                    log.error("metrics : " + key + " Type conversion failed, original type : " + o.getClass().getName());
                 }
             }
         }
