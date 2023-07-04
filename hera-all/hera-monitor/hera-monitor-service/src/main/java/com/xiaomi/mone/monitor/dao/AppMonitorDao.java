@@ -83,6 +83,39 @@ public class AppMonitorDao {
         return appMonitorMapper.selectByExample(example);
     }
 
+    public Long countByBaseInfoIds(List<Integer> baseInfoIds){
+
+        if(CollectionUtils.isEmpty(baseInfoIds)){
+            return 0l;
+        }
+
+        AppMonitorExample example = new AppMonitorExample();
+        AppMonitorExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(0);
+        ca.andBaseInfoIdIn(baseInfoIds);
+        return appMonitorMapper.countByExample(example);
+    }
+
+    public List<AppMonitor> getDataByBaseInfoIds(List<Integer> baseInfoIds,Integer page, Integer pageSize){
+
+        if(page.intValue() <=0){
+            page = 1;
+        }
+
+        if(pageSize <= 0){
+            pageSize = 10;
+        }
+
+        AppMonitorExample example = new AppMonitorExample();
+        AppMonitorExample.Criteria ca = example.createCriteria();
+        ca.andStatusEqualTo(0);
+        ca.andBaseInfoIdIn(baseInfoIds);
+        example.setOffset((page - 1) * pageSize);
+        example.setLimit(pageSize);
+        example.setOrderByClause("id desc");
+        return appMonitorMapper.selectByExample(example);
+    }
+
     public AppMonitor getById(Integer id){
         return appMonitorMapper.selectByPrimaryKey(id);
     }

@@ -1124,4 +1124,12 @@ public class AppMonitorService {
 //        List<String> ips = rangeIps.stream().filter(item -> !momentIps.contains(item)).collect(Collectors.toList());
         return Result.success(rangeIps);
     }
+
+    public Long countByBaseInfoId(List<Integer> baseInfoIds){
+        return appMonitorDao.countByBaseInfoIds(baseInfoIds);
+    }
+
+    public List<AppMonitor> searchByBaseInfoId(List<Integer> baseInfoIds,Integer page,Integer pageSize){
+        return appMonitorDao.getDataByBaseInfoIds(baseInfoIds,page,pageSize);
+    }
 }

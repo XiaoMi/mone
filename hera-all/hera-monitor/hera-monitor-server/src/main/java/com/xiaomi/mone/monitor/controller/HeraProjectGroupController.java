@@ -5,6 +5,7 @@ import com.xiaomi.mone.app.api.model.project.group.HeraProjectGroupDataRequest;
 import com.xiaomi.mone.app.api.model.project.group.ProjectGroupTreeNode;
 import com.xiaomi.mone.app.common.Result;
 import com.xiaomi.mone.app.enums.CommonError;
+import com.xiaomi.mone.monitor.dao.model.AppMonitor;
 import com.xiaomi.mone.monitor.service.model.project.group.ProjectGroupRequest;
 import com.xiaomi.mone.monitor.service.project.group.ProjectGroupService;
 import com.xiaomi.mone.tpc.login.util.UserUtil;
@@ -113,7 +114,6 @@ public class HeraProjectGroupController {
             log.error("createProjectGroup request param error!param:{}",param);
             return Result.fail(CommonError.ParamsError);
         }
-
         return projectGroupService.create(param);
     }
 
@@ -200,22 +200,23 @@ public class HeraProjectGroupController {
     }
 
     @ResponseBody
-    @PostMapping("/view/project-group/app")
-    public Result<List<HeraAppBaseInfoModel>> viewGroupApps(HttpServletRequest request, @RequestBody ProjectGroupRequest param) {
+    @PostMapping("/view/project_group/app")
+    public Result<List<AppMonitor>> viewGroupApps(HttpServletRequest request, @RequestBody ProjectGroupRequest param) {
 
         AuthUserVo userInfo = UserUtil.getUser();
         if (userInfo == null) {
             return Result.fail(CommonError.UNAUTHORIZED);
         }
 
+        String user = userInfo.genFullAccount();
+        param.setUser(user);
         log.info("viewGroupApps param : {}", param);
 
         if(param.getGroupType() == null){
             log.error("viewGroupApps request param error! no group type found!");
             return Result.fail(CommonError.ParamsError);
         }
-
-        return projectGroupService.searchGroupApps(param);
+        return projectGroupService.searchMyApps(param);
     }
 }
 
