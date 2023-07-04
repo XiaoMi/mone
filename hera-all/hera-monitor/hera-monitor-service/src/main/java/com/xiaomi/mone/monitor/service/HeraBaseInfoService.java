@@ -5,6 +5,7 @@ import com.google.gson.Gson;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoParticipant;
 import com.xiaomi.mone.app.api.model.HeraAppRoleModel;
+import com.xiaomi.mone.app.api.response.AppBaseInfo;
 import com.xiaomi.mone.app.api.service.HeraAppService;
 import com.xiaomi.mone.monitor.bo.AlertGroupParam;
 import com.xiaomi.mone.monitor.bo.PlatForm;
@@ -175,6 +176,20 @@ public class HeraBaseInfoService {
                 }
             }
         }
+    }
+
+    public HeraAppBaseInfoModel getByBindIdAndPlat(String bindId, Integer plat){
+        HeraAppBaseInfoModel query = new HeraAppBaseInfoModel();
+        query.setBindId(bindId);
+        query.setPlatformType(plat);
+
+        List<HeraAppBaseInfoModel> list = this.query(query, null, null);
+
+        if (CollectionUtils.isEmpty(list)) {
+            log.info("getByBindIdAndPlat no data found! bindId:{},plat:{}", bindId, plat);
+            return null;
+        }
+        return list.get(0);
     }
 
     public void deleAppByBindIdAndPlat(String bindId, Integer plat) {
