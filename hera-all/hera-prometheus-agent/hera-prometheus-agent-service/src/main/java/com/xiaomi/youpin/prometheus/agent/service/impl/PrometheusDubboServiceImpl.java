@@ -36,7 +36,7 @@ public class PrometheusDubboServiceImpl implements PrometheusDubboService {
     private PrometheusIpService prometheusService;
 
     /**
-     * 获取流量列表
+     * Get traffic list
      * @return
      */
     @Override
