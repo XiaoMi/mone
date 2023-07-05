@@ -37,12 +37,12 @@ public class RuleSilenceService {
         if (!param.getAlertId().isEmpty() && ruleAlertDao.GetRuleAlert(param.getAlertId()) == null) {
             return Result.fail(ErrorCode.NO_DATA_FOUND);
         }
-        //校验时间
+        // check time
         String timeValid = ValidateTime(param.getStartTime(), param.getEndTime());
         if (!timeValid.equals("")) {
             return Result.fail(ErrorCode.invalidParamError, timeValid);
         }
-        //请求alterManager
+        // request alterManager
         String s = AddSilence(param);
         System.out.println("res: " + s);
 
@@ -66,9 +66,9 @@ public class RuleSilenceService {
     }
 
     private String AddSilence(RuleSilenceParam silence) {
-        // 非屏蔽规则时才去 alertmanager 创建 silence
+        // create silence in alertmanager only when the rule is not masked
         //if (silence.getAlertId().isEmpty()) {
-        // 向 alertmanager 创建 silence
+        // create silence to alertmanager
         String requestPath = alertManagerAddr + CREATE_SILENCE;
         AMSilence amSilence = convertToAMSilence(silence);
         String amSilenceStr = gson.toJson(amSilence);
@@ -85,7 +85,7 @@ public class RuleSilenceService {
         amSilence.setMatchers(silence.getMatcher());
         //TODO：以后改为真实用户
         amSilence.setCreatedBy("xxx");
-        //startTime与endTime为UTC时间
+        // startTime and endTime are UTC times
         amSilence.setStartsAt(silence.getStartTime() - 8 * 3600);
         amSilence.setEndsAt(silence.getEndTime() - 8 * 3600);
         amSilence.setId("1");
