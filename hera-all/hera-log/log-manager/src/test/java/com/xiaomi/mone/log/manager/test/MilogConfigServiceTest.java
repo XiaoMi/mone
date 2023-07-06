@@ -18,7 +18,7 @@ package com.xiaomi.mone.log.manager.test;
 import com.google.gson.Gson;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.manager.model.MilogSpaceParam;
-import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
+import com.xiaomi.mone.log.manager.model.bo.LogTailParam;
 import com.xiaomi.mone.log.manager.model.dto.MilogAppEnvDTO;
 import com.xiaomi.mone.log.manager.service.impl.LogSpaceServiceImpl;
 import com.xiaomi.mone.log.manager.service.impl.LogTailServiceImpl;
@@ -62,7 +62,7 @@ public class MilogConfigServiceTest {
     public void testCreateLogTail() {
         Ioc.ins().init("com.xiaomi");
         LogTailServiceImpl milogSpaceService = Ioc.ins().getBean(LogTailServiceImpl.class);
-        MilogLogtailParam param = new MilogLogtailParam();
+        LogTailParam param = new LogTailParam();
         param.setSpaceId(37L);
         param.setStoreId(1L);
         param.setParseType(1);

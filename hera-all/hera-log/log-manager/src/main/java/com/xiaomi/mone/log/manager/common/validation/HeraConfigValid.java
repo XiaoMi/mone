@@ -19,7 +19,7 @@ import com.xiaomi.mone.log.api.enums.MachineRegionEnum;
 import com.xiaomi.mone.log.api.enums.ProjectTypeEnum;
 import com.xiaomi.mone.log.manager.dao.MilogLogTailDao;
 import com.xiaomi.mone.log.manager.dao.MilogLogstoreDao;
-import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
+import com.xiaomi.mone.log.manager.model.bo.LogTailParam;
 import com.xiaomi.mone.log.manager.model.bo.MlogParseParam;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogTailDo;
@@ -47,7 +47,7 @@ public class HeraConfigValid {
     @Resource
     private MilogLogTailDao milogLogtailDao;
 
-    public String verifyLogTailParam(MilogLogtailParam param) {
+    public String verifyLogTailParam(LogTailParam param) {
         if (null == param.getMilogAppId()) {
             return "选择的应用不能为空";
         }

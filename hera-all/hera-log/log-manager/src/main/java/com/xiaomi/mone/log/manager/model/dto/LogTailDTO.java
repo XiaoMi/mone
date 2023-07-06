@@ -20,7 +20,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class MilogTailDTO {
+public class LogTailDTO {
     private Long id;
     private Long ctime;
     private Long utime;
