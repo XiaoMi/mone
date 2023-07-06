@@ -52,7 +52,7 @@ public class MilogLogTailDao {
     @Resource
     private NutDao dao;
 
-    public MilogLogTailDo newMilogLogtail(MilogLogTailDo mt) {
+    public MilogLogTailDo add(MilogLogTailDo mt) {
         return dao.insert(mt);
     }
 

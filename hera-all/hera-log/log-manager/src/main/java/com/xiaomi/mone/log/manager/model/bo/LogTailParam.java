@@ -27,7 +27,7 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class MilogLogtailParam {
+public class LogTailParam {
     private Long id;
     private Long spaceId;
     private Long storeId;

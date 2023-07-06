@@ -19,7 +19,7 @@ import com.xiaomi.mone.app.api.response.AppBaseInfo;
 import com.xiaomi.mone.app.model.vo.HeraEnvIpVo;
 import com.xiaomi.mone.log.api.enums.LogStructureEnum;
 import com.xiaomi.mone.log.common.Result;
-import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
+import com.xiaomi.mone.log.manager.model.bo.LogTailParam;
 import com.xiaomi.mone.log.manager.model.bo.MlogParseParam;
 import com.xiaomi.mone.log.manager.model.dto.*;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
@@ -31,11 +31,11 @@ import java.util.Map;
 
 public interface LogTailService {
 
-    Result<MilogTailDTO> newMilogLogTail(MilogLogtailParam param);
+    Result<LogTailDTO> newMilogLogTail(LogTailParam param);
 
-    void sengMessageNewTail(MilogLogtailParam param, MilogLogTailDo milogLogtailDo, MilogLogStoreDO milogLogStore);
+    void sengMessageNewTail(LogTailParam param, MilogLogTailDo milogLogtailDo, MilogLogStoreDO milogLogStore);
 
-    MilogLogTailDo buildLogTailDo(MilogLogtailParam param, MilogLogStoreDO milogLogStore, AppBaseInfo appBaseInfo, String creator);
+    MilogLogTailDo buildLogTailDo(LogTailParam param, MilogLogStoreDO milogLogStore, AppBaseInfo appBaseInfo, String creator);
 
     void sengMessageToAgent(Long milogAppId, MilogLogTailDo logtailDo);
 
@@ -54,15 +54,15 @@ public interface LogTailService {
      */
     boolean deleteConfigRemote(Long spaceId, Long id, String motorRoomEn, LogStructureEnum logStructureEnum);
 
-    Result<MilogTailDTO> getMilogLogtailById(Long id);
+    Result<LogTailDTO> getMilogLogtailById(Long id);
 
     Result<Map<String, Object>> getMilogLogBypage(Long storeId, int page, int pagesize);
 
     Result<Map<String, Object>> getLogTailCountByStoreId(Long storeId);
 
-    Result<List<MilogTailDTO>> getMilogLogtailByIds(List<Long> ids);
+    Result<List<LogTailDTO>> getMilogLogtailByIds(List<Long> ids);
 
-    Result<Void> updateMilogLogTail(MilogLogtailParam param);
+    Result<Void> updateMilogLogTail(LogTailParam param);
 
     Result<Void> deleteMilogLogTail(Long id);
 
@@ -89,7 +89,7 @@ public interface LogTailService {
      */
     void dockerScaleDynamic(DockerScaleBo projectInfo);
 
-    MilogTailDTO milogLogtailDO2DTO(MilogLogTailDo milogLogtailDo);
+    LogTailDTO milogLogtailDO2DTO(MilogLogTailDo milogLogtailDo);
 
     Result<List<MapDTO>> queryAppByStoreId(Long storeId);
 
@@ -97,7 +97,7 @@ public interface LogTailService {
 
     Result<List<MilogLogStoreDO>> queryLogStoreByRegionEn(String nameEn);
 
-    Result<List<MilogTailDTO>> getTailByStoreId(Long storeId);
+    Result<List<LogTailDTO>> getTailByStoreId(Long storeId);
 
     Result<Object> parseScriptTest(MlogParseParam mlogParseParam);
 
