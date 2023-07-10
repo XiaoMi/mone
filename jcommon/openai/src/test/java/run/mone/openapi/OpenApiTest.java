@@ -298,7 +298,8 @@ public class OpenApiTest {
     @Test
     public void testAzure() {
         String key = System.getenv("AZURE_OPENAI_KEY");
-        OpenAiClient client = OpenaiCall.client(key, System.getenv("AZURE_OPENAI_COM_ENDPOINT"));
+        String endpoint = System.getenv("AZURE_OPENAI_COM_ENDPOINT");
+        OpenAiClient client = OpenaiCall.client(key, endpoint);
         ChatCompletionResponse res = client.chatCompletion(Lists.newArrayList(
                 Message.builder().role(Message.Role.USER).content("我给你一些内容,请你记住,然后我会开始提问 a=1 b=2").build(),
                 Message.builder().role(Message.Role.ASSISTANT).content("好的").build(),
