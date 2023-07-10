@@ -137,6 +137,7 @@ public class MetricDetailQuery implements Serializable {
 
         if(EsIndexDataType.mysql.name().equals(type)
                 || EsIndexDataType.oracle.name().equals(type)
+                || EsIndexDataType.hbase.name().equals(type)
                 || EsIndexDataType.elasticsearch.name().equals(type)){
             map.put(dataSource_,dataSource);
             map.put(url_,sql);
