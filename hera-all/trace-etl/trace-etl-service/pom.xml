@@ -156,7 +156,7 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>es</artifactId>
-            <version>1.4-SNAPSHOT</version>
+            <version>1.5-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.apache.httpcomponents</groupId>
