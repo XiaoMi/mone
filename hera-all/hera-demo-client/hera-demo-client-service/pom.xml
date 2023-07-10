@@ -69,15 +69,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.xiaomi.youpin</groupId>
-            <artifactId>zxw_test2-api</artifactId>
+            <groupId>run.mone</groupId>
+            <artifactId>hera-demo-server-api</artifactId>
             <version>1.0.0-SNAPSHOT</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.httpcomponents</groupId>
-                    <artifactId>httpclient</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
             <groupId>redis.clients</groupId>

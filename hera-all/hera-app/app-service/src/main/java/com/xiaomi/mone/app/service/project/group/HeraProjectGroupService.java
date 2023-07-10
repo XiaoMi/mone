@@ -50,17 +50,23 @@ public class HeraProjectGroupService {
     public Result create(HeraProjectGroupDataRequest request){
 
         Integer parentGroupId = request.getParentGroupId();
-        List<HeraProjectGroupModel> heraProjectGroupModels = projectGroupDao.listByIds(Lists.newArrayList(parentGroupId), request.getType(), null);
-        if(heraProjectGroupModels != null && heraProjectGroupModels.size() < 1){
-            return Result.fail(-1,"there is no data  which project group  id is "+parentGroupId);
+        if(parentGroupId != -1){
+            List<HeraProjectGroupModel> heraProjectGroupModels = projectGroupDao.listByIds(Lists.newArrayList(parentGroupId), request.getType(), null);
+            if(heraProjectGroupModels != null && heraProjectGroupModels.size() < 1){
+                return Result.fail(-1,"there is no data  which project group  id is "+parentGroupId);
+            }
         }
+
 
         HeraProjectGroupModel projectGroup = new HeraProjectGroupModel();
         projectGroup.setRelationObjectId(request.getRelationObjectId());
         projectGroup.setType(request.getType());
         List<HeraProjectGroupModel> search = projectGroupDao.search(projectGroup, null, null);
         if(!CollectionUtils.isEmpty(search)){
-            return Result.fail(-1,"the data relationObjectId: " +request.getRelationObjectId()+ " has exist!");
+            Result<Object> fail = Result.fail(-1, "the data relationObjectId: " + request.getRelationObjectId() + " has exist!  projectGroupId:" + search.get(0).getId() + "parentGroupId:" + search.get(0).getParentGroupId());
+            //将projectGroupId直接放到data上
+            fail.setData(search.get(0).getId());
+            return fail;
         }
 
         HeraProjectGroup group = new HeraProjectGroup();

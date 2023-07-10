@@ -230,7 +230,7 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>es</artifactId>
-            <version>1.4-SNAPSHOT</version>
+            <version>1.5-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -249,12 +249,6 @@
             <groupId>run.mone</groupId>
             <artifactId>http</artifactId>
             <version>1.4-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>health-check-api</artifactId>
-            <version>1.0-SNAPSHOT</version>
         </dependency>
 
         <dependency>
