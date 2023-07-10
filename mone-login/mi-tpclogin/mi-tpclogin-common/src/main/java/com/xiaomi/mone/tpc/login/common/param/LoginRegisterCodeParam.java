@@ -12,32 +12,18 @@ import org.apache.commons.lang3.StringUtils;
  */
 @Data
 @ToString(callSuper = true)
-public class LoginRegisterParam extends BaseParam {
+public class LoginRegisterCodeParam extends BaseParam {
 
     private Integer type;
-    private String password;
-    private String name;
-
-    private String registerCode;
 
     @Override
     public boolean argCheck() {
         if (StringUtils.isBlank(getAccount())) {
             return false;
         }
-        if (StringUtils.isBlank(password)) {
-            return false;
-        }
-        if (StringUtils.isBlank(name)) {
-            return false;
-        }
-        if (StringUtils.isBlank(registerCode)) {
-            return false;
-        }
         if (type == null || AccountTypeEnum.getEnum(type) == null) {
             return false;
         }
-
         return true;
     }
 }

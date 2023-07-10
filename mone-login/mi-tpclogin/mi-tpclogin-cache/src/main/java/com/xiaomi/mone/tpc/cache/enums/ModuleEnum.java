@@ -15,6 +15,7 @@ public enum ModuleEnum {
     LOGIN(200, "登陆缓存", 1, 1, TimeUnit.DAYS),
     AUTH2_VCODE(201, "auth2vcode", 1, 5, TimeUnit.MINUTES),
     AUTH2_CODE_USER(202, "auth2code_user", 1, 5, TimeUnit.MINUTES),
+    REGISTER_CODE(203, "注册码", 1, 5, TimeUnit.MINUTES),
     ;
     private final Integer code;
     private final String desc;

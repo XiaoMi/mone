@@ -81,6 +81,11 @@ public class LoginController {
         return loginService.register(param);
     }
 
+    @RequestMapping(value = "/register_code")
+    public ResultVo registerCode(@RequestBody LoginRegisterCodeParam param) {
+        return loginService.registerCode(param);
+    }
+
 
     @RequestMapping(value = "/session")
     public ResultVo<AuthUserVo> session(@RequestBody LoginSessionParam param) throws Throwable {

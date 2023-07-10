@@ -39,4 +39,26 @@ public class EmailHelper {
             return false;
         }
     }
+
+    /**
+     * 注册验证码
+     * @param registerCode
+     * @param email
+     */
+    public boolean sendRegisterCode(String email, String registerCode) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setSubject("TPC账号注册码");
+            message.setFrom(mailUserName);
+            message.setTo(email);
+            message.setSentDate(new Date());
+            message.setText("请在5分钟内完成注册（勿告诉他人）；" + registerCode);
+            javaMailSender.send(message);
+            log.info("邮件发送成功email={}", email);
+            return true;
+        } catch (Throwable e) {
+            log.error("邮件发送失败email={}", email, e);
+            return false;
+        }
+    }
 }
