@@ -15,6 +15,9 @@
  */
 package com.xiaomi.mone.log.manager.service.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
+import com.alibaba.nacos.common.utils.CollectionUtils;
+import com.google.common.collect.Lists;
 import com.xiaomi.mone.log.api.enums.LogStructureEnum;
 import com.xiaomi.mone.log.api.enums.MachineRegionEnum;
 import com.xiaomi.mone.log.api.enums.OperateEnum;
@@ -34,6 +37,8 @@ import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogSpaceDO;
 import com.xiaomi.mone.log.manager.service.BaseService;
 import com.xiaomi.mone.log.manager.service.LogSpaceService;
+import com.xiaomi.mone.tpc.common.enums.NodeUserRelTypeEnum;
+import com.xiaomi.mone.tpc.common.enums.UserTypeEnum;
 import com.xiaomi.mone.tpc.common.vo.NodeVo;
 import com.xiaomi.mone.tpc.common.vo.PageDataVo;
 import com.xiaomi.youpin.docean.anno.Service;
@@ -45,6 +50,8 @@ import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -89,8 +96,17 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
         if (Objects.isNull(dbDO.getId())) {
             return Result.failParam("space未保存成功，请重试");
         }
+        String creator = MoneUserContext.getCurrentUser().getUser();
+        List<String> otherAdmins = Lists.newArrayList();
+        if (CollectionUtils.isNotEmpty(param.getAdmins())) {
+            creator = param.getAdmins().get(0);
+            if (param.getAdmins().size() > 1) {
+                otherAdmins = CollectionUtil.sub(param.getAdmins(), 1, param.getAdmins().size());
+            }
+        }
+        com.xiaomi.youpin.infra.rpc.Result tpcResult = spaceAuthService.saveSpacePerm(dbDO, creator);
+        addMemberAsync(dbDO.getId(), otherAdmins);
 
-        com.xiaomi.youpin.infra.rpc.Result tpcResult = spaceAuthService.saveSpacePerm(dbDO, MoneUserContext.getCurrentUser().getUser());
         if (tpcResult == null || tpcResult.getCode() != 0) {
             milogSpaceDao.deleteMilogSpace(dbDO.getId());
             log.error("新建space未关联权限系统,space:[{}], tpcResult:[{}]", dbDO, tpcResult);
@@ -98,6 +114,16 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
         }
 
         return Result.success();
+    }
+
+    private void addMemberAsync(Long spaceId, List<String> otherAdmins) {
+        if (CollectionUtil.isNotEmpty(otherAdmins)) {
+            List<CompletableFuture<Void>> adminAsyncResult = otherAdmins.stream()
+                    .map(admin -> CompletableFuture.runAsync(() ->
+                            spaceAuthService.addSpaceMember(spaceId, admin, UserTypeEnum.CAS_TYPE.getCode(), NodeUserRelTypeEnum.MANAGER.getCode())))
+                    .collect(Collectors.toList());
+            CompletableFuture.allOf(adminAsyncResult.toArray(new CompletableFuture[0])).join();
+        }
     }
 
     private MilogSpaceDO wrapMilogSpaceDO(MilogSpaceParam param) {
