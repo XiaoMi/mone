@@ -29,7 +29,7 @@ public interface UserConvert {
     @Mappings({
             @Mapping(target = "user", source = "account"),
             @Mapping(target = "displayName", source = "name"),
-            @Mapping(target = "UID", source = "casUid")
+            @Mapping(target = "uID", source = "casUid")
     })
     MoneUser userAdapter(AuthUserVo userVo);
 
