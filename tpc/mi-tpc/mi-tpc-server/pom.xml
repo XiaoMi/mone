@@ -14,10 +14,6 @@
 
     <dependencies>
         <dependency>
-            <artifactId>hera-trace</artifactId>
-            <groupId>run.mone</groupId>
-        </dependency>
-        <dependency>
             <artifactId>mi-tpc-service</artifactId>
             <groupId>run.mone</groupId>
             <version>1.0.0-SNAPSHOT</version>
