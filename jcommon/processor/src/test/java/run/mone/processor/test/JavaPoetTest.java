@@ -3,10 +3,12 @@ package run.mone.processor.test;
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.stmt.Statement;
 import com.google.common.collect.Lists;
+import com.google.common.io.CharSource;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.JavaFile;
 import com.squareup.javapoet.MethodSpec;
@@ -20,6 +22,8 @@ import run.mone.processor.common.Pair;
 import javax.lang.model.element.Modifier;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Optional;
 
 /**
@@ -61,6 +65,18 @@ public class JavaPoetTest {
         String code = CodeUtils.modifyCode(path, "Run", Lists.newArrayList(addMethod), Lists.newArrayList(modifyMethod), Lists.newArrayList("java.util.Map", "java.lang.reflect.Field"));
         System.out.println(code);
     }
+
+
+    @SneakyThrows
+    @Test
+    public void testParse() {
+        JavaParser javaParser = new JavaParser();
+        CompilationUnit cu = javaParser.parse(new File("/tmp/e")).getResult().get();
+        PackageDeclaration a = cu.getPackageDeclaration().get();
+        System.out.println(a.getName());
+        System.out.println(cu.getType(0).getName().getIdentifier());
+    }
+
 
     @Test
     public void test0() {
@@ -157,6 +173,36 @@ public class JavaPoetTest {
         System.out.println(methodSpec.toString());
 
         out(methodSpec);
+    }
+
+    @SneakyThrows
+    @Test
+    public void testReadImports() {
+        CodeUtils.readImports(new String(Files.readAllBytes(Paths.get("/Users/zhangzhiyong/IdeaProjects/new_opensource/mone/jcommon/processor/src/main/resources/code3.txt")))).forEach(it->{
+            System.out.println(it);
+        });
+    }
+
+
+    @SneakyThrows
+    @Test
+    public void testReadMethod() {
+        String m = CodeUtils.readMethod(CodeUtils.removeImports(new String(Files.readAllBytes(Paths.get("/Users/zhangzhiyong/IdeaProjects/new_opensource/mone/jcommon/processor/src/main/resources/code.txt")))));
+        System.out.println(m);
+    }
+
+    @SneakyThrows
+    @Test
+    public void test11() {
+        String str = new String(Files.readAllBytes(Paths.get("/Users/zhangzhiyong/IdeaProjects/new_opensource/mone/jcommon/processor/src/main/resources/code.txt")));
+        CharSource charSource = CharSource.wrap(str);
+        charSource.lines().forEach(it->{
+            String i = CodeUtils.readImports2(it);
+            if (!i.equals("Error")) {
+                System.out.println(i);
+            }
+        });
+
     }
 
 }

@@ -4,11 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.google.common.collect.Lists;
 import com.xiaomi.mone.app.api.model.HeraSimpleEnv;
 import com.xiaomi.mone.app.api.service.HeraAppEnvOutwardService;
-import com.xiaomi.mone.app.api.service.HeraAppService;
-import com.xiaomi.mone.app.dao.HeraAppEnvMapper;
+import com.xiaomi.mone.app.dao.mapper.HeraAppEnvMapper;
 import com.xiaomi.mone.app.model.HeraAppEnv;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.dubbo.config.annotation.Service;
 
 import java.util.List;

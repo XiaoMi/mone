@@ -4,7 +4,7 @@ metadata:
   name: hera-op-srv
   namespace: hera-namespace
   labels:
-    app: mi-tpc
+    app: hera-operator-server
 spec:
   type: NodePort
   ports:
@@ -50,11 +50,10 @@ spec:
       - name: mione-opensource-credential
       containers:
         - name: hera-operator
-          image: herahub/opensource-pub:hera-operator-v6
+          image: herahub/opensource-pub:hera-operator-v8
           ports:
             - containerPort: 8998
               name: hera-8998
-          imagePullPolicy: Always
         - name: hera-operator-fe
           image: herahub/opensource-pub:hera-operator-fe-v2
           ports:

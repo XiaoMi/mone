@@ -18,7 +18,17 @@ package run.mone.hera.operator.service;
 import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.xiaomi.youpin.docean.anno.Service;
-import io.fabric8.kubernetes.api.model.*;
+import io.fabric8.kubernetes.api.model.ContainerStatus;
+import io.fabric8.kubernetes.api.model.KubernetesResourceList;
+import io.fabric8.kubernetes.api.model.LoadBalancerIngress;
+import io.fabric8.kubernetes.api.model.LoadBalancerStatus;
+import io.fabric8.kubernetes.api.model.Node;
+import io.fabric8.kubernetes.api.model.NodeAddress;
+import io.fabric8.kubernetes.api.model.ObjectMeta;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.api.model.PodList;
+import io.fabric8.kubernetes.api.model.ServiceList;
+import io.fabric8.kubernetes.api.model.ServiceSpec;
 import io.fabric8.kubernetes.api.model.apps.Deployment;
 import io.fabric8.kubernetes.api.model.apps.DeploymentList;
 import io.fabric8.kubernetes.client.KubernetesClient;
@@ -29,7 +39,12 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.text.StringSubstitutor;
 import org.apache.ibatis.jdbc.ScriptRunner;
-import run.mone.hera.operator.bo.*;
+import run.mone.hera.operator.bo.HeraBootstrap;
+import run.mone.hera.operator.bo.HeraObjectMeta;
+import run.mone.hera.operator.bo.HeraResource;
+import run.mone.hera.operator.bo.HeraSpec;
+import run.mone.hera.operator.bo.HeraStatus;
+import run.mone.hera.operator.bo.PropConf;
 import run.mone.hera.operator.common.FileUtils;
 import run.mone.hera.operator.common.HoConstant;
 import run.mone.hera.operator.common.K8sUtilBean;
@@ -38,15 +53,23 @@ import run.mone.hera.operator.dto.DeployStateDTO;
 import run.mone.hera.operator.dto.HeraOperatorDefineDTO;
 import run.mone.hera.operator.dto.PodStateDTO;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.Reader;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -315,6 +338,17 @@ public class HeraBootstrapInitService {
             logManager.setDefaultYaml();
             resourceList.add(logManager);
 
+            HeraResource logAgentServer = HeraResource.builder()
+                    .needCreate(true)
+                    .required(true)
+                    .defaultYamlPath("/hera_init/log-agent-server/hera_log_agent-server.yml")
+                    .resourceType(ResourceTypeEnum.HERA_APP.getTypeName())
+                    .resourceName("hera-log-agent-server")
+                    .remark("load log-agent-server")
+                    .build();
+            logAgentServer.setDefaultYaml();
+            resourceList.add(logAgentServer);
+
             HeraResource logStream = HeraResource.builder()
                     .needCreate(true)
                     .required(true)
@@ -380,6 +414,17 @@ public class HeraBootstrapInitService {
                     .build();
             traceEtlServer.setDefaultYaml();
             resourceList.add(traceEtlServer);
+
+            HeraResource heraWebhook = HeraResource.builder()
+                    .needCreate(true)
+                    .required(true)
+                    .defaultYamlPath("/hera_init/webhook/hera_webhook_server.yaml")
+                    .resourceType(ResourceTypeEnum.HERA_WEBHOOK.getTypeName())
+                    .resourceName("hera-webhook")
+                    .remark("load hera-webhook")
+                    .build();
+            heraWebhook.setDefaultYaml();
+            resourceList.add(heraWebhook);
 
             HeraResource demoServer = HeraResource.builder()
                     .needCreate(true)
@@ -602,23 +647,24 @@ public class HeraBootstrapInitService {
     }
 
 
-    public void deleteService(List<String> serviceNameList, String namespace) {
-        List<io.fabric8.kubernetes.api.model.Service> serviceList = listService(serviceNameList, namespace);
+    public void deleteService(List<String> serviceNameList, String namespace, String serviceType) {
+        List<io.fabric8.kubernetes.api.model.Service> serviceList = listService(serviceNameList, namespace, serviceType);
         if (CollectionUtils.isNotEmpty(serviceList)) {
             kubernetesClient.services().inNamespace(namespace).delete(serviceList);
         }
     }
 
-    public List<io.fabric8.kubernetes.api.model.Service> createAndListService(List<String> serviceNameList, String namespace, String yamlPath) throws InterruptedException {
+    public List<io.fabric8.kubernetes.api.model.Service> createAndListService(List<String> serviceNameList, String namespace, String yamlPath, String serviceType) throws InterruptedException {
+        //按名称过滤service
         List<io.fabric8.kubernetes.api.model.Service> serviceList = listService(serviceNameList, namespace);
         if (CollectionUtils.isEmpty(serviceList)) {
             String yaml = FileUtils.readResourceFile(yamlPath);
             k8sUtilBean.applyYaml(yaml, namespace, "add");
         }
 
-        TimeUnit.SECONDS.sleep(1);
-
-        return listService(serviceNameList, namespace);
+        TimeUnit.SECONDS.sleep(2);
+        //按名称+类型 过滤service
+        return listService(serviceNameList, namespace, serviceType);
     }
 
     public boolean checkLbServiceFailed(List<io.fabric8.kubernetes.api.model.Service> serviceList, String serviceType) {
@@ -663,6 +709,14 @@ public class HeraBootstrapInitService {
                 .collect(Collectors.toList());
     }
 
+    private List<io.fabric8.kubernetes.api.model.Service> listService(List<String> serviceNameList, String namespace, String serviceType) {
+        ServiceList serviceList = kubernetesClient.services().inNamespace(namespace).list();
+        return serviceList.getItems().stream()
+                .filter(s -> serviceNameList.contains(s.getMetadata().getName()))
+                .filter(s -> serviceType.equalsIgnoreCase(s.getSpec().getType()))
+                .collect(Collectors.toList());
+    }
+
     public Map<String, String> getServiceIpPort(List<io.fabric8.kubernetes.api.model.Service> serviceList, String serviceType) {
         Map<String, String> ipPortMap = new HashMap<>();
         String nodePortIP = null;
@@ -674,6 +728,9 @@ public class HeraBootstrapInitService {
                 throw new RuntimeException("cluster node have no internalIP");
             }
             nodePortIP = nodeAddress.get().getAddress();
+            if (StringUtils.isBlank(nodePortIP)) {
+                throw new RuntimeException("cluster node get null [NodePort] IP");
+            }
         }
 
         for (io.fabric8.kubernetes.api.model.Service service : serviceList) {
@@ -695,7 +752,14 @@ public class HeraBootstrapInitService {
 
         return ipPortMap;
     }
-
+    public String getServiceType(List<io.fabric8.kubernetes.api.model.Service> serviceList) {
+        for (io.fabric8.kubernetes.api.model.Service service : serviceList) {
+            ServiceSpec serviceSpec = service.getSpec();
+            String type = serviceSpec.getType();
+            return type;
+        }
+        return "";
+    }
 
     private Map<String, String> kvMap(String key, String value, String remark) {
         return this.kvMap(key, value, remark, "1");
@@ -741,5 +805,4 @@ public class HeraBootstrapInitService {
             }
         }
     }
-
 }

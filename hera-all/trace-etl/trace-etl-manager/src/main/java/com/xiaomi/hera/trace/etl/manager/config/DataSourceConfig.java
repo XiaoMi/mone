@@ -116,7 +116,7 @@ public class DataSourceConfig {
     }
 
     /**
-     * 分页插件
+     * page plugin
      *
      * @return
      */

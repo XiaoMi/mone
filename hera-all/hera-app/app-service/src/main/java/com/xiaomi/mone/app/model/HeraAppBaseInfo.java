@@ -41,6 +41,8 @@ public class HeraAppBaseInfo {
 
     private Integer iamTreeId;
 
+    private Integer iamTreeType;
+
     private Integer status;
 
     private Date createTime;
@@ -48,6 +50,14 @@ public class HeraAppBaseInfo {
     private Date updateTime;
 
     private String envsMap;
+
+    public Integer getIamTreeType() {
+        return iamTreeType;
+    }
+
+    public void setIamTreeType(Integer iamTreeType) {
+        this.iamTreeType = iamTreeType;
+    }
 
     public Integer getId() {
         return id;

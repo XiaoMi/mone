@@ -4,7 +4,8 @@ import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.google.common.collect.Lists;
 import com.xiaomi.data.push.nacos.NacosNaming;
 import com.xiaomi.mone.app.model.vo.HeraAppEnvVo;
-import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -36,6 +37,9 @@ public class DefaultNacosEnvIpFetch implements EnvIpFetch {
 
     @Override
     public HeraAppEnvVo fetch(Long appBaseId, Long appId, String appName) throws Exception {
+        if(StringUtils.isNotEmpty(appName)){
+            appName = appName.replaceAll("-","_");
+        }
         List<Instance> instances = nacosNaming.getAllInstances(String.format("%s_%s_%s", SERVER_PREFIX, appId, appName));
         List<HeraAppEnvVo.EnvVo> envVos = getEnvVos(instances);
         return buildHeraAppEnvVo(appBaseId, appId, appName, envVos);

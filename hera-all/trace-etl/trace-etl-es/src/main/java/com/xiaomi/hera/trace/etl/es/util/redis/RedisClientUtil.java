@@ -38,7 +38,6 @@ public class RedisClientUtil {
 
     @PostConstruct
     public void init() {
-        // 线上使用Redis集群，st使用单机版
         String[] hp = clusterNodes.split(":");
         if (StringUtils.isEmpty(pwd)) {
             jedisPooled = new JedisPooled(getGenericObjectPoolConfig(), hp[0].trim(), Integer.valueOf(hp[1]), timeout);

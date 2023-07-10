@@ -44,31 +44,27 @@ final class MetricExporterConfiguration {
       new ThrottlingLogger(Logger.getLogger(MetricExporterConfiguration.class.getName()));
 
   private static String applicationName;
-  private static String serverIp = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_HOST_IP);
-  private static String projectEnv = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_NAME);
-  private static final String BUILDIN_K8S = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_HERA_BUILD_K8S);
-  private static final String NODE_IP = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_NODE_IP);
-  private static final String ENV_ID = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_ID);
+  private static String serverIp = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_HOST_IP.getKey());
+  private static final String projectEnv = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_NAME.getKey());
+  private static final String BUILDIN_K8S = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_HERA_BUILD_K8S.getKey());
+  private static final String NODE_IP = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_NODE_IP.getKey());
+  private static final String ENV_ID = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_ID.getKey());
   private static final String ENV_DEFAULT = "default_env";
-  private static final String LOG_AGENT_PORT = "55435";
   private static final String LOG_AGENT_NACOS_KET = "prometheus_server_10010_log_agent";
   private static final String LOG_AGENT_ENV_ID = "1";
 
   static void configureExporter(
       String name, ConfigProperties config, SdkMeterProvider meterProvider) {
-      applicationName = config.getString(EnvOrJvmProperties.JVM_OTEL_RESOURCE_ATTRIBUTES);
+      applicationName = config.getString(EnvOrJvmProperties.JVM_OTEL_RESOURCE_ATTRIBUTES.getKey());
       if (StringUtils.isNotEmpty(applicationName)) {
         applicationName = applicationName.split("=")[1];
-      } else {
-        applicationName = "none";
+      }else{
+        applicationName = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.MIONE_PROJECT_NAME.getKey()) == null ? EnvOrJvmProperties.MIONE_PROJECT_NAME.getDefaultValue() : SystemCommon.getEnvOrProperties(EnvOrJvmProperties.MIONE_PROJECT_NAME.getKey());
       }
-    if (StringUtils.isEmpty(projectEnv)) {
-      projectEnv = ENV_DEFAULT;
-    }
     // 替换项目名称中的-为_
     applicationName = applicationName.replaceAll("-", "_");
     if (StringUtils.isEmpty(serverIp)) {
-      serverIp = config.getString(EnvOrJvmProperties.JVM_OTEL_SERVICE_IP);
+      serverIp = config.getString(EnvOrJvmProperties.JVM_OTEL_SERVICE_IP.getKey());
     }
     if (StringUtils.isEmpty(name)) {
       name = "default";
@@ -177,14 +173,11 @@ final class MetricExporterConfiguration {
   @SuppressWarnings({"BooleanParameter", "UnnecessaryParentheses"})
   private static void configureJcommonPrometheusMetrics(ConfigProperties config) {
     // regist nacos for prometheus port
-    String javaagentPrometheusPort = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_JAVAAGENT_PROMETHEUS_PORT);
+    String javaagentPrometheusPort = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_JAVAAGENT_PROMETHEUS_PORT.getKey());
     if (StringUtils.isEmpty(javaagentPrometheusPort)) {
-      javaagentPrometheusPort = config.getString(EnvOrJvmProperties.JVM_OTEL_METRICS_PROMETHEUS_PORT);
-      if (StringUtils.isEmpty(javaagentPrometheusPort)) {
-        javaagentPrometheusPort = "55433";
-      }
+      javaagentPrometheusPort = config.getString(EnvOrJvmProperties.JVM_OTEL_METRICS_PROMETHEUS_PORT.getKey());
     }
-    String nacosAddr = config.getString(EnvOrJvmProperties.JVM_OTEL_NACOS_ADDRESS);
+    String nacosAddr = config.getString(EnvOrJvmProperties.JVM_OTEL_NACOS_ADDRESS.getKey());
     registJvmNacos(javaagentPrometheusPort, nacosAddr);
     registLogAgentNacos(nacosAddr);
 
@@ -258,7 +251,6 @@ final class MetricExporterConfiguration {
       instance.setIp(serverIp);
       instance.setPort(55256);
       Map<String, String> map = new HashMap<>();
-      map.put("javaagent_prometheus_port", LOG_AGENT_PORT);
       map.put("env_id", LOG_AGENT_ENV_ID);
       map.put("env_name", ENV_DEFAULT);
       instance.setMetadata(map);

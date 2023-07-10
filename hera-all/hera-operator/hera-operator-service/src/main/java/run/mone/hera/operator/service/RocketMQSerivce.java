@@ -49,19 +49,28 @@ public class RocketMQSerivce {
             "mone_hera_staging_trace_etl_es"};
 
     public void createTopic(String namesrvAddr) {
+        DefaultMQPushConsumer consumer = null;
+        MQClientInstance mqClientInstance = null;
         try {
-            DefaultMQPushConsumer consumer = new DefaultMQPushConsumer("initGroup");
+            consumer = new DefaultMQPushConsumer("initGroup");
             consumer.setNamesrvAddr(namesrvAddr);
             ClientConfig clientConfig = consumer.cloneClientConfig();
-            MQClientInstance mqClientInstance = new MQClientInstance(clientConfig, 0, consumer.buildMQClientId());
+            mqClientInstance = new MQClientInstance(clientConfig, 0, consumer.buildMQClientId());
             mqClientInstance.start();
             MQClientAPIImpl mqClientAPIImpl = mqClientInstance.getMQClientAPIImpl();
-            // 创建topic
-            for (String topic : topics){
+            // create topic
+            for (String topic : topics) {
                 createTopic(mqClientAPIImpl, topic);
-        }
+            }
         } catch (Throwable t) {
             log.error("create rocketMQ topic error", t);
+        }finally {
+            if(consumer != null){
+                consumer.shutdown();
+            }
+            if(mqClientInstance != null){
+                mqClientInstance.shutdown();
+            }
         }
     }
 
@@ -71,7 +80,7 @@ public class RocketMQSerivce {
             TopicConfig topicConfig = new TopicConfig(topicName, queueSize, queueSize, 6);
             mqClientAPIImpl.createTopic(brokerAddr, "defaultTopicName", topicConfig, 2000L);
         } else {
-            log.info("已存在topic名称为" + topicName + "的主题，无法执行添加操作！");
+            log.info("Exist topic, name is" + topicName + "unable to perform the add operation");
         }
     }
 

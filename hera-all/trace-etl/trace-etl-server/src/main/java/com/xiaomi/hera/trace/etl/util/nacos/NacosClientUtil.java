@@ -70,7 +70,7 @@ public class NacosClientUtil {
                 }));
             }
         } catch (Exception e) {
-            log.error("注册IP到nacos失败：", e);
+            log.error("register IP to nacos failed：", e);
         }
     }
 
@@ -80,7 +80,7 @@ public class NacosClientUtil {
             NacosNamingService chinaNacosNamingService = new NacosNamingService(nacosAddr);
             list.add(chinaNacosNamingService);
         } catch (Exception e) {
-            log.error("初始化NacosNamingService失败：", e);
+            log.error("init NacosNamingService failed：", e);
         }
         return list;
     }

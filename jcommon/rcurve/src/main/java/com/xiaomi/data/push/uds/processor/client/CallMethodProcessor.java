@@ -32,6 +32,8 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -70,7 +72,7 @@ public class CallMethodProcessor implements UdsProcessor<UdsCommand, UdsCommand>
 
     @Override
     public UdsCommand processRequest(UdsCommand req) {
-        log.debug("process request:{}", req.getCmd());
+        log.debug("process request:{}", req.getId());
         UdsCommand response = UdsCommand.createResponse(req);
         new ClassLoaderExecute(this.throwableFunction).execute(() -> {
             CallContext ctx = new CallContext();
@@ -79,7 +81,7 @@ public class CallMethodProcessor implements UdsProcessor<UdsCommand, UdsCommand>
             Object obj = beanFactory.apply(req);
             String[] types = req.getParamTypes() == null ? new String[]{} : req.getParamTypes();
             String[] paramArray = req.getParams() == null ? new String[]{} : req.getParams();
-            log.debug("invoke method : {} {} {} {}", req.getServiceName(), req.getMethodName(), Arrays.toString(types), Arrays.toString(paramArray));
+            log.debug("invoke method :{} {} {} {} {}", req.getId(), req.getServiceName(), req.getMethodName(), Arrays.toString(types), Arrays.toString(paramArray));
 
             MethodReq mr = new MethodReq();
             mr.setMethodName(req.getMethodName());
@@ -90,7 +92,24 @@ public class CallMethodProcessor implements UdsProcessor<UdsCommand, UdsCommand>
             beforeCallMethod(req, mr);
             return ReflectUtils.invokeMethod(mr, obj, (paramTypes, params) -> CovertUtils.convert(req.getSerializeType(), paramTypes, params), invokeMethodCallback);
         }, this.classLoaderFunction, response, req, (res) -> afterCallMethod(res));
-        Send.sendResponse(req.getChannel(), response);
+        if (response.getObj() instanceof CompletableFuture) {
+            ((CompletableFuture)response.getObj()).handle((obj, t) -> {
+                if (t != null) {
+                    if (t instanceof CompletionException) {
+
+                    } else {
+
+                    }
+                } else {
+
+                }
+                response.setObj(obj);
+                Send.sendResponse(req.getChannel(), response);
+                return response;
+            });
+        } else {
+            Send.sendResponse(req.getChannel(), response);
+        }
         return null;
     }
 
@@ -101,7 +120,12 @@ public class CallMethodProcessor implements UdsProcessor<UdsCommand, UdsCommand>
 
     @Override
     public int poolSize() {
-        return 300;
+        String threads = System.getenv("uds.client.dubbo.threads");
+        if (threads != null) {
+            return Integer.valueOf(threads);
+        } else {
+            return 300;
+        }
     }
 
     public void beforeCallMethod(UdsCommand req, MethodReq mr) {

@@ -40,7 +40,7 @@ public class ExecutorUtil {
         try {
             errorESthreadPoolExecutor.submit(runnable);
         }catch(Exception e){
-            log.error("提交错误es任务失败：",e);
+            log.error("Failed to submit an error es task:",e);
         }
     }
 

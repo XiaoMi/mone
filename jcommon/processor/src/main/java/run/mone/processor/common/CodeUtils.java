@@ -1,19 +1,26 @@
 package run.mone.processor.common;
 
 import com.github.javaparser.JavaParser;
+import com.github.javaparser.ParseResult;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.PackageDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.stmt.Statement;
+import com.google.common.io.CharSource;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
+import lombok.SneakyThrows;
 
 import javax.lang.model.element.Modifier;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * @author goodjava@qq.com
@@ -21,16 +28,25 @@ import java.util.Optional;
  */
 public abstract class CodeUtils {
 
+    @SneakyThrows
+    public static String getClassName(String code) {
+        JavaParser javaParser = new JavaParser();
+        CompilationUnit cu = javaParser.parse(code).getResult().get();
+        PackageDeclaration a = cu.getPackageDeclaration().get();
+        return (cu.getType(0).getName().getIdentifier());
+    }
+
     /**
      * 可以根据已有的代码生成新的代码
-     * @param filePath  已有代码路径
-     * @param className 要修改的类
-     * @param addMethodList 添加的代码片段
-     * @param modifyMethodList  修改已有的代码
-     * @param importList  需要import的类
+     *
+     * @param filePath         已有代码路径
+     * @param className        要修改的类
+     * @param addMethodList    添加的代码片段
+     * @param modifyMethodList 修改已有的代码
+     * @param importList       需要import的类
      * @return
      */
-    public static String modifyCode(String filePath, String className, List<MethodCode> addMethodList, List<MethodCode> modifyMethodList, List<String>importList) {
+    public static String modifyCode(String filePath, String className, List<MethodCode> addMethodList, List<MethodCode> modifyMethodList, List<String> importList) {
         File file = new File(filePath);
         try {
             JavaParser javaParser = new JavaParser();
@@ -44,16 +60,16 @@ public abstract class CodeUtils {
                         .addModifiers(Modifier.PUBLIC)
                         .returns(it.getReturnType())
                         .addCode(it.getCode());
-                it.getParamList().forEach(p->{
-                    builder.addParameter(p.getKey(),p.getValue());
+                it.getParamList().forEach(p -> {
+                    builder.addParameter(p.getKey(), p.getValue());
                 });
                 MethodSpec newMethod = builder.build();
                 classOrInterface.addMember(javaParser.parseBodyDeclaration(newMethod.toString()).getResult().get());
             });
             //add import
-            importList.forEach(i-> cu.addImport(i));
+            importList.forEach(i -> cu.addImport(i));
             //modify method
-            modifyMethodList.forEach(mm->{
+            modifyMethodList.forEach(mm -> {
                 Optional<MethodDeclaration> methodOptional = classOrInterface.getMethodsByName(mm.getName()).stream().findFirst();
                 if (methodOptional.isPresent()) {
                     MethodDeclaration method = methodOptional.get();
@@ -72,6 +88,59 @@ public abstract class CodeUtils {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+
+
+    public static List<String> readImports(String code) {
+        CharSource source = CharSource.wrap(code);
+        String output = null;
+        try {
+            output = source.lines()
+                    .filter(line -> line.contains("import "))
+                    .collect(Collectors.joining("\n"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        JavaParser parser = new JavaParser();
+        ParseResult<CompilationUnit> cu = parser.parse(output);
+        CompilationUnit cu2 = cu.getResult().get();
+        return cu2.getImports().stream()
+                .map(ImportDeclaration::getNameAsString)
+                .collect(Collectors.toList());
+    }
+
+    public static String readImports2(String code) {
+        JavaParser parser = new JavaParser();
+        ParseResult<ImportDeclaration> cu = parser.parseImport(code);
+        if (!cu.isSuccessful()) {
+            return "Error";
+        }
+        ImportDeclaration cu2 = cu.getResult().get();
+        return cu2.getName().toString();
+    }
+
+    public static String readMethod(String code) {
+        JavaParser parser = new JavaParser();
+        ParseResult<MethodDeclaration> cu = parser.parseMethodDeclaration(code);
+        if (!cu.isSuccessful()) {
+            return "Error";
+        }
+        return cu.getResult().get().toString();
+    }
+
+
+    public static String removeImports(String code) {
+        CharSource source = CharSource.wrap(code);
+        String output = null;
+        try {
+            output = source.lines()
+                    .filter(line -> !line.contains("import "))
+                    .collect(Collectors.joining("\n"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        return output;
     }
 
 }

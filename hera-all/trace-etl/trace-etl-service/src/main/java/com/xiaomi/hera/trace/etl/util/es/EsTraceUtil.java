@@ -28,7 +28,7 @@ public class EsTraceUtil {
             JSONObject jsonObject = JSONObject.parseObject(json);
             esProcessor.bulkInsert(index, jsonObject);
         }catch (Exception e){
-            log.error("插入jaeger es数据异常：",e);
+            log.error("Insert jaeger es data exception:",e);
         }
     }
 
@@ -36,7 +36,7 @@ public class EsTraceUtil {
         try {
             esProcessor.bulkInsert(index, jsonMap);
         }catch (Exception e){
-            log.error("插入jaeger es数据异常：",e);
+            log.error("Insert jaeger es data exception:",e);
         }
     }
 

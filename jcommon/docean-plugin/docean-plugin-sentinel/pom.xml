@@ -12,6 +12,8 @@
     <artifactId>docean-plugin-sentinel</artifactId>
 
     <dependencies>
+
+
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>docean-plugin-config</artifactId>
@@ -19,13 +21,13 @@
         </dependency>
 
         <dependency>
-            <groupId>com.alibaba.csp</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>sentinel-transport-simple-http</artifactId>
             <version>1.8.2.1-mone-SNAPSHOT</version>
         </dependency>
 
         <dependency>
-            <groupId>com.alibaba.csp</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>sentinel-datasource-nacos</artifactId>
             <version>1.8.2.1-mone-SNAPSHOT</version>
         </dependency>

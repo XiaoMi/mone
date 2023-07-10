@@ -102,7 +102,7 @@ public class HeraResourceEventHandler implements ResourceEventHandler<HeraBootst
             ObjectMeta objectMeta = heraBootstrap.getMetadata();
             List<HeraResource> heraResourceList = heraSpec.getResourceList();
 
-            //0. 按资源order分组
+            //0. Group by resource order
             TreeMap<Integer, List<HeraResource>> groupHrList = heraResourceList.stream()
                     .collect(Collectors.groupingBy(h ->
                                     ResourceTypeEnum.typeOf(h.getResourceType()).getOrder(), TreeMap::new, Collectors.toList()
@@ -113,18 +113,18 @@ public class HeraResourceEventHandler implements ResourceEventHandler<HeraBootst
             for (Map.Entry<Integer, List<HeraResource>> entrySet : groupHrList.entrySet()) {
                 List<HeraResource> hrList = entrySet.getValue();
                 log.warn("hera operator add, applyResource resourceType:{}, HeraResource size:{}", entrySet.getKey(), hrList.size());
-                //1. 部署
+                //1. deploy
                 for (HeraResource heraResource : hrList) {
                     k8sUtilBean.applyResource(heraResource, objectMeta, "add");
                 }
 
-                //2. 检查部署状态
+                //2. Checking deployment status
                 TimeUnit.SECONDS.sleep(step--);
                 block2checkStatus(objectMeta);
 
-                //3. 资源初始化
+                //3. Resource initialization
                 for (HeraResource heraResource : hrList) {
-                    // nacos 配置初始化
+                    // nacos configuration initialization
                     if (ResourceTypeEnum.Nacos.getTypeName().equals(heraResource.getResourceType())) {
                         Preconditions.checkArgument(null != heraResource.getConnectionMapList(), "nacos connection kv config can not be null");
 
@@ -133,10 +133,10 @@ public class HeraResourceEventHandler implements ResourceEventHandler<HeraBootst
 
                         Preconditions.checkArgument(StringUtils.isNotEmpty(newMap.get(HoConstant.KEY_NACOS_ADDRESS)), String.format("nacos connection config:%s can not be null", HoConstant.KEY_NACOS_ADDRESS));
                         Preconditions.checkArgument(StringUtils.isNotEmpty(newMap.get(HoConstant.KEY_NACOS_PASSWORD)), String.format("nacos connection config:%s can not be null", HoConstant.KEY_NACOS_PASSWORD));
-                        // nacos初始化
+                        // nacos initialization
                         initNacos("add", newMap.get(HoConstant.KEY_NACOS_ADDRESS), newMap.get(HoConstant.KEY_NACOS_PASSWORD), heraResource.getPropList());
                     }
-                    // es 配置初始化
+                    // es configuration initialization
                     if (ResourceTypeEnum.ES.getTypeName().equals(heraResource.getResourceType())) {
                         Preconditions.checkArgument(null != heraResource.getConnectionMapList(), "es connection kv config can not be null");
 
@@ -147,7 +147,7 @@ public class HeraResourceEventHandler implements ResourceEventHandler<HeraBootst
 
                         initES(newMap.get(HoConstant.KEY_ES_URL), newMap.get(HoConstant.KEY_ES_USERNAME), newMap.get(HoConstant.KEY_ES_PASSWORD));
                     }
-                    // mysql 配置初始化
+                    // mysql configuration initialization
                     if (ResourceTypeEnum.MYSQL.getTypeName().equals(heraResource.getResourceType())) {
                         Preconditions.checkArgument(null != heraResource.getConnectionMapList(), "mysql connection kv config can not be null");
 
@@ -160,7 +160,7 @@ public class HeraResourceEventHandler implements ResourceEventHandler<HeraBootst
 
                         initSql("add", newMap.get(HoConstant.KEY_DATASOURCE_URL), newMap.get(HoConstant.KEY_DATASOURCE_USERNAME), newMap.get(HoConstant.KEY_DATASOURCE_PASSWORD));
                     }
-                    // rocketmq 配置初始化
+                    // rocketmq configuration initialization
                     if (ResourceTypeEnum.ROCKETMQ.getTypeName().equals(heraResource.getResourceType())) {
                         Preconditions.checkArgument(null != heraResource.getConnectionMapList(), "rocketmq connection kv config can not be null");
 
@@ -174,8 +174,6 @@ public class HeraResourceEventHandler implements ResourceEventHandler<HeraBootst
                 }
             }
 
-            // mimonitor 配置初始化，为了防止mimonitor没有完全启动，所以这里需要在启动之后，再去进行初始化
-            initMimonitor();
             HeraStatus heraStatus = new HeraStatus();
             heraStatus.setStatus(HeraStatus.STATUS_SUCCESS);
             heraStatus.setMsg("success");
@@ -192,20 +190,6 @@ public class HeraResourceEventHandler implements ResourceEventHandler<HeraBootst
         }
     }
 
-    private void initMimonitor() {
-        String mimonitorUrl = "http://mimonitor:8099/api/grafanaResources/create";
-        try {
-            HttpClientV6.post(mimonitorUrl, "", null,10000);
-        }catch(Throwable t){
-            log.error("init mimonitor error : ",t);
-            try {
-                TimeUnit.SECONDS.sleep(30);
-                HttpClientV6.post(mimonitorUrl, "", null,10000);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-        }
-    }
 
     private void block2checkStatus(ObjectMeta objectMeta) throws InterruptedException {
         String namespace = objectMeta.getNamespace();

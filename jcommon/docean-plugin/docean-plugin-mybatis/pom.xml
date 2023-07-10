@@ -24,15 +24,22 @@
         <version>1.4-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <version>1.4.3-less-SNAPSHOT</version>
     <artifactId>docean-plugin-mybatis</artifactId>
+    <version>1.4.5-SNAPSHOT</version>
 
     <dependencies>
 
         <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>1.2.15</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
             <groupId>run.mone</groupId>
             <artifactId>docean-plugin-datasource</artifactId>
             <version>1.4-SNAPSHOT</version>
+            <scope>provided</scope>
         </dependency>
 
         <dependency>
@@ -53,11 +60,11 @@
             <version>3.4.6</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.mchange</groupId>
-            <artifactId>c3p0</artifactId>
-            <version>0.9.5.2</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>com.mchange</groupId>-->
+<!--            <artifactId>c3p0</artifactId>-->
+<!--            <version>0.9.5.2</version>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>org.freemarker</groupId>
