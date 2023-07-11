@@ -30,7 +30,7 @@
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <!-- Replace it with the absolute path of your own hera-demo-server project. -->
+        <!-- Replace it with the absolute path of your own hera-webhook project. -->
         <maven.jcommonDirectory>~/</maven.jcommonDirectory>
     </properties>
 
