@@ -42,7 +42,6 @@ public class MailAlertContact extends BaseAlertContact {
 
         fireResult.getAlerts().stream().forEach(alert -> {
             try {
-                //查表看负责人
                 String[] principals = dao.GetRuleAlertAtPeople(alertName);
                 if (principals == null) {
                     log.info("SendAlert principals null alertName:{}", alertName);

@@ -45,7 +45,7 @@ public class FeishuAlertContact extends BaseAlertContact {
 
         fireResult.getAlerts().stream().forEach(alert -> {
             try {
-                //查表看负责人
+                // query responsible person
                 String[] principals = dao.GetRuleAlertAtPeople(alertName);
                 if (principals == null) {
                     log.info("SendAlert principals null alertName:{}", alertName);
@@ -71,11 +71,12 @@ public class FeishuAlertContact extends BaseAlertContact {
                 Field[] fields = clazz.getDeclaredFields();
                 StringBuilder sb = new StringBuilder();
                 for (Field field : fields) {
-                    field.setAccessible(true); // 设置访问权限
+                    // set access rights
+                    field.setAccessible(true);
                     String fieldName = field.getName();
                     Object fieldValue = null;
                     try {
-                        //将fieldValue转成String
+                        // convert fieldValue to String
                         fieldValue = field.get(commonLabels); // 获取字段值
                         if (fieldValue == null) {
                             continue;

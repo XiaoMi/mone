@@ -20,7 +20,7 @@ import com.xiaomi.mone.log.api.model.vo.UpdateLogProcessCmd;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.manager.model.MilogSpaceParam;
 import com.xiaomi.mone.log.manager.model.bo.BatchQueryParam;
-import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
+import com.xiaomi.mone.log.manager.model.bo.LogTailParam;
 import com.xiaomi.mone.log.manager.model.bo.MlogParseParam;
 import com.xiaomi.mone.log.manager.model.dto.*;
 import com.xiaomi.mone.log.manager.model.page.PageInfo;
@@ -163,22 +163,22 @@ public class MilogConfigController {
      * ********* milogLogtail **********
      */
     @RequestMapping(path = "/milog/tail/new")
-    public Result<MilogTailDTO> newMilogLogtail(@RequestParam("param") MilogLogtailParam param) {
+    public Result<LogTailDTO> newMilogLogtail(@RequestParam("param") LogTailParam param) {
         return logTailService.newMilogLogTail(param);
     }
 
     @RequestMapping(path = "/milog/tail/getbyid", method = "get")
-    public Result<MilogTailDTO> getMilogLogtailById(@RequestParam("id") Long id) {
+    public Result<LogTailDTO> getMilogLogtailById(@RequestParam("id") Long id) {
         return logTailService.getMilogLogtailById(id);
     }
 
     @RequestMapping(path = "/milog/tail/getbyids", method = "get")
-    public Result<List<MilogTailDTO>> getMilogLogtailByIds(@RequestParam("ids") List<Long> ids) {
+    public Result<List<LogTailDTO>> getMilogLogtailByIds(@RequestParam("ids") List<Long> ids) {
         return logTailService.getMilogLogtailByIds(ids);
     }
 
     @RequestMapping(path = "/milog/tail/getbyStoreId", method = "get")
-    public Result<List<MilogTailDTO>> getTailByStoreId(@RequestParam("storeId") Long storeId) {
+    public Result<List<LogTailDTO>> getTailByStoreId(@RequestParam("storeId") Long storeId) {
         return logTailService.getTailByStoreId(storeId);
     }
 
@@ -195,7 +195,7 @@ public class MilogConfigController {
     }
 
     @RequestMapping(path = "/milog/tail/update")
-    public Result<Void> updateMilogLogTail(MilogLogtailParam param) {
+    public Result<Void> updateMilogLogTail(LogTailParam param) {
         return logTailService.updateMilogLogTail(param);
     }
 

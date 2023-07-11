@@ -1,5 +1,6 @@
 package com.xiaomi.mone.monitor.controller;
 
+import com.google.gson.Gson;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.app.api.model.project.group.HeraProjectGroupDataRequest;
 import com.xiaomi.mone.app.api.model.project.group.ProjectGroupTreeNode;
@@ -62,7 +63,7 @@ public class HeraProjectGroupController {
             return Result.fail(CommonError.ParamsError);
         }
 
-        log.info("getFullTree param : {}", param);
+        log.info("getTreeByUser param : {}", param);
 
         if(param.getGroupType() == null){
             log.error("getTreeByUser request param error! no group type found!");
@@ -114,7 +115,11 @@ public class HeraProjectGroupController {
             log.error("createProjectGroup request param error!param:{}",param);
             return Result.fail(CommonError.ParamsError);
         }
-        return projectGroupService.create(param);
+
+        Result<Integer> integerResult = projectGroupService.create(param);
+        log.info("createProjectGroup param : {}, result : {}", param,new Gson().toJson(integerResult));
+
+        return integerResult;
     }
 
     @ResponseBody
@@ -195,6 +200,8 @@ public class HeraProjectGroupController {
             log.error("getTreeByUser request param error! no group type found!");
             return Result.fail(CommonError.ParamsError);
         }
+
+        param.setUser(userInfo.genFullAccount());
 
         return projectGroupService.getTreeByUser(param);
     }

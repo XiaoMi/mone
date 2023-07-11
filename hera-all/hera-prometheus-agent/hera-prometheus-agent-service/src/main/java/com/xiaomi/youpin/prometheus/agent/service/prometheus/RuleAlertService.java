@@ -94,7 +94,7 @@ public class RuleAlertService {
     public Result UpdateRuleAlert(String id, RuleAlertParam param) {
         log.info("RuleAlertService.UpdateRuleAlert  param : {}", gson.toJson(param));
 
-        // 增量替换，允许修改字段：cname、expr、for、labels、annotations、priority、env、alertMember
+        // Incremental replacement, allowing fields to be modified: cname、expr、for、labels、annotations、priority、env、alertMember
         try {
             RuleAlertEntity data = dao.GetRuleAlert(id);
 
@@ -213,7 +213,7 @@ public class RuleAlertService {
         return list;
     }
 
-    //将labelmap转换成string
+    // convert labelmap to string
     private String transLabel2String(Map<String, String> labels) {
         String res = "";
         try {
@@ -227,7 +227,7 @@ public class RuleAlertService {
         }
     }
 
-    //将annotationMap转换成json string
+    // convert the annotationMap to a json string
     private String transAnnotation2String(Map<String, String> annotations) {
         return gson.toJson(annotations);
 //        String res = "";
@@ -243,7 +243,7 @@ public class RuleAlertService {
             if (ps.length == 2) {
                 return Integer.parseInt(ps[1]);
             } else {
-                //默认P2
+                // default P2
                 return 2;
             }
         } catch (Exception e) {

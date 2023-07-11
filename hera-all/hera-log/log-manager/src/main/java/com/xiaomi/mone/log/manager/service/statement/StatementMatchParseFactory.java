@@ -119,9 +119,9 @@ public class StatementMatchParseFactory {
             if (StringUtils.isNotBlank(kvPrefix)) {
                 String field = StringUtils.substringBefore(kvPrefix, SYMBOL_COLON);
                 String fieldValue = StrUtil.trimStart(StringUtils.substringAfter(message, SYMBOL_COLON));
-                if (Objects.equals(LOG_LEVEL_KEY, field)) {
-                    fieldValue = String.format("%-5s", fieldValue.trim());
-                }
+//                if (Objects.equals(LOG_LEVEL_KEY, field)) {
+//                    fieldValue = String.format("%-5s", fieldValue.trim());
+//                }
                 kvMatchEntities.add(QueryEntity.builder()
                         .field(field)
                         .fieldValue(fieldValue)

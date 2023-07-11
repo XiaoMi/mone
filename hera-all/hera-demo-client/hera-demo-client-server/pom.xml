@@ -22,14 +22,6 @@
                     <groupId>org.springframework.boot</groupId>
                 </exclusion>
                 <exclusion>
-                    <artifactId>xiaomi-common-utils</artifactId>
-                    <groupId>com.xiaomi</groupId>
-                </exclusion>
-                <exclusion>
-                    <artifactId>xiaomi-common-perfcounter</artifactId>
-                    <groupId>com.xiaomi.common.perfcounter</groupId>
-                </exclusion>
-                <exclusion>
                     <artifactId>commons-dbcp2</artifactId>
                     <groupId>org.apache.commons</groupId>
                 </exclusion>
@@ -91,18 +83,6 @@
                 <exclusion>
                     <groupId>com.fasterxml.jackson.core</groupId>
                     <artifactId>jackson-databind</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>log</artifactId>
-            <version>1.7-SNAPSHOT</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-api</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

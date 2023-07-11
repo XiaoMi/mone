@@ -63,6 +63,7 @@ public class AlarmService {
     private static final String dubbo_provier_sla_error_metric = "dubboProviderSLAError";
     private static final String redis_error_metric = "redisError";
     private static final String es_error_metric = "elasticsearchClientError";
+    private static final String hbase_error_metric = "hbaseClientError";
 
     /**
      * 业务慢查询指标
@@ -75,6 +76,7 @@ public class AlarmService {
     private static final String oracle_slow_query_metric = "oracleSlowQuery";
     private static final String redis_slow_query_metric = "redisSlowQuery";
     private static final String es_slow_query_metric = "elasticsearchClientSlowQuery";
+    private static final String hbase_slow_query_metric = "hbaseClientSlowQuery";
 
 
     /**
@@ -101,6 +103,7 @@ public class AlarmService {
     private static final String db_avalible_total_metric = "sqlTotalCount";
     private static final String oracle_avalible_total_metric = "oracleTotalCount";
     private static final String es_avalible_total_metric = "elasticsearchClient";
+    private static final String hbase_avalible_total_metric = "hbaseClient";
 
 
     /**
@@ -289,7 +292,12 @@ public class AlarmService {
                 return getPresetMetricErrorAlarm(oracle_slow_query_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,scrapeIntervel,null,rule.getOp(),rule.getValue());
             case "oracle_availability":
                 return getAvailableRate(oracle_error_metric,oracle_avalible_total_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,avalible_duration_time,null,rule.getOp(),rule.getValue());
-
+            case "hbase_error_times":
+                return getPresetMetricErrorAlarm(hbase_error_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,scrapeIntervel,null,rule.getOp(),rule.getValue());
+            case "hbase_slow_query":
+                return getPresetMetricErrorAlarm(hbase_slow_query_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,scrapeIntervel,null,rule.getOp(),rule.getValue());
+            case "hbase_availability":
+                return getAvailableRate(hbase_error_metric,hbase_avalible_total_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,avalible_duration_time,null,rule.getOp(),rule.getValue());
             case "redis_error_times":
                 return getPresetMetricErrorAlarm(redis_error_metric,rule.getProjectId(),app.getProjectName(),includLabels,exceptLabels,metric_total_suffix,scrapeIntervel,null,rule.getOp(),rule.getValue());
             case "redis_slow_query":

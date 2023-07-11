@@ -24,7 +24,10 @@ import com.xiaomi.mone.log.manager.user.MoneUser;
 import com.xiaomi.mone.tpc.api.service.NodeFacade;
 import com.xiaomi.mone.tpc.api.service.NodeUserFacade;
 import com.xiaomi.mone.tpc.api.service.UserOrgFacade;
-import com.xiaomi.mone.tpc.common.enums.*;
+import com.xiaomi.mone.tpc.common.enums.NodeStatusEnum;
+import com.xiaomi.mone.tpc.common.enums.NodeTypeEnum;
+import com.xiaomi.mone.tpc.common.enums.OutIdTypeEnum;
+import com.xiaomi.mone.tpc.common.enums.UserTypeEnum;
 import com.xiaomi.mone.tpc.common.param.*;
 import com.xiaomi.mone.tpc.common.vo.NodeVo;
 import com.xiaomi.mone.tpc.common.vo.OrgInfoVo;
@@ -143,21 +146,6 @@ public class Tpc {
         return node.isTopMgr() || node.isParentMgr() || node.isCurrentMgr();
     }
 
-    public Result saveSpacePerm(MilogSpaceDO spaceDO, String accout) {
-        NodeAddParam nodeAddParam = new NodeAddParam();
-        handleRemoteTpcId(tpcNodeCode, accout, UserTypeEnum.CAS_TYPE.getCode());
-        nodeAddParam.setParentNodeId(tpcPId);
-        nodeAddParam.setType(NodeTypeEnum.PRO_SUB_GROUP.getCode());
-        nodeAddParam.setNodeName(spaceDO.getSpaceName());
-        nodeAddParam.setDesc(spaceDO.getDescription());
-        nodeAddParam.setOutId(spaceDO.getId());
-        nodeAddParam.setOutIdType(OutIdTypeEnum.SPACE.getCode());
-        nodeAddParam.setAccount(accout);
-        nodeAddParam.setUserType(UserTypeEnum.CAS_TYPE.getCode());
-
-        return tpcService.add(nodeAddParam);
-    }
-
     public Result deleteSpaceTpc(Long id, String account, Integer userType) {
         NodeDeleteParam delete = new NodeDeleteParam();
         delete.setOutId(id);
@@ -165,6 +153,21 @@ public class Tpc {
         delete.setAccount(account);
         delete.setUserType(userType);
         return tpcService.delete(delete);
+    }
+
+    public Result saveSpacePerm(MilogSpaceDO spaceDO, String account) {
+        NodeAddParam nodeAddParam = new NodeAddParam();
+        handleRemoteTpcId(tpcNodeCode, account, UserTypeEnum.CAS_TYPE.getCode());
+        nodeAddParam.setParentNodeId(tpcPId);
+        nodeAddParam.setType(NodeTypeEnum.PRO_SUB_GROUP.getCode());
+        nodeAddParam.setNodeName(spaceDO.getSpaceName());
+        nodeAddParam.setDesc(spaceDO.getDescription());
+        nodeAddParam.setOutId(spaceDO.getId());
+        nodeAddParam.setOutIdType(OutIdTypeEnum.SPACE.getCode());
+        nodeAddParam.setAccount(account);
+        nodeAddParam.setUserType(UserTypeEnum.CAS_TYPE.getCode());
+
+        return tpcService.add(nodeAddParam);
     }
 
     public Result updateSpaceTpc(MilogSpaceParam param, String accout) {
@@ -178,15 +181,23 @@ public class Tpc {
         return tpcService.edit(edit);
     }
 
-    public void addSpaceMember(Long spaceId, MoneUser user) {
+    /**
+     * add space member
+     *
+     * @param spaceId
+     * @param userAccount
+     * @param userType
+     * @param memberCode
+     */
+    public void addSpaceMember(Long spaceId, String userAccount, Integer userType, Integer memberCode) {
         NodeUserAddParam add = new NodeUserAddParam();
         add.setOutId(spaceId);
         add.setOutIdType(OutIdTypeEnum.SPACE.getCode());
-        add.setMemberAcc(user.getUser());
+        add.setMemberAcc(userAccount);
         add.setMemberAccType(UserTypeEnum.CAS_TYPE.getCode());
-        add.setType(NodeUserRelTypeEnum.MEMBER.getCode());
-        add.setAccount(MoneUserContext.getCurrentUser().getUser());
-        add.setUserType(user.getUserType());
+        add.setType(memberCode);
+        add.setAccount(userAccount);
+        add.setUserType(userType);
         tpcUserService.add(add);
     }
 

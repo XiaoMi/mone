@@ -15,8 +15,8 @@
  */
 package com.xiaomi.mone.log.manager.model.convert;
 
-import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
-import com.xiaomi.mone.log.manager.model.dto.MilogTailDTO;
+import com.xiaomi.mone.log.manager.model.bo.LogTailParam;
+import com.xiaomi.mone.log.manager.model.dto.LogTailDTO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogTailDo;
 import org.mapstruct.Mapper;
 import org.mapstruct.factory.Mappers;
@@ -25,7 +25,7 @@ import org.mapstruct.factory.Mappers;
 public interface MilogLogtailConvert {
     MilogLogtailConvert INSTANCE = Mappers.getMapper(MilogLogtailConvert.class);
 
-    MilogTailDTO fromDO(MilogLogTailDo milogLogtailDo);
+    LogTailDTO fromDO(MilogLogTailDo milogLogtailDo);
 
-    MilogLogTailDo fromDo(MilogLogtailParam milogLogtailParam);
+    MilogLogTailDo fromDo(LogTailParam logTailParam);
 }

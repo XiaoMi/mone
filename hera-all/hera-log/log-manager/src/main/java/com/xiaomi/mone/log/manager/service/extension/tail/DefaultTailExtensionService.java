@@ -20,7 +20,7 @@ import com.xiaomi.mone.app.api.model.HeraSimpleEnv;
 import com.xiaomi.mone.app.api.response.AppBaseInfo;
 import com.xiaomi.mone.log.api.enums.OperateEnum;
 import com.xiaomi.mone.log.api.enums.ProjectTypeEnum;
-import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
+import com.xiaomi.mone.log.manager.model.bo.LogTailParam;
 import com.xiaomi.mone.log.manager.model.dto.MilogAppEnvDTO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogTailDo;
@@ -66,7 +66,7 @@ public class DefaultTailExtensionService implements TailExtensionService {
     private MilogAgentServiceImpl milogAgentService;
 
     @Override
-    public boolean tailHandlePreprocessingSwitch(MilogLogStoreDO milogLogStore, MilogLogtailParam param) {
+    public boolean tailHandlePreprocessingSwitch(MilogLogStoreDO milogLogStore, LogTailParam param) {
         return true;
     }
 
@@ -96,7 +96,7 @@ public class DefaultTailExtensionService implements TailExtensionService {
     }
 
     @Override
-    public void sendMessageOnCreate(MilogLogtailParam param, MilogLogTailDo mt, Long milogAppId, boolean supportedConsume) {
+    public void sendMessageOnCreate(LogTailParam param, MilogLogTailDo mt, Long milogAppId, boolean supportedConsume) {
         /**
          * 发送配置信息---log-agent
          */
@@ -127,7 +127,7 @@ public class DefaultTailExtensionService implements TailExtensionService {
     }
 
     @Override
-    public void logTailDoExtraFiled(MilogLogTailDo milogLogtailDo, MilogLogStoreDO logStoreDO, MilogLogtailParam logTailParam) {
+    public void logTailDoExtraFiled(MilogLogTailDo milogLogtailDo, MilogLogStoreDO logStoreDO, LogTailParam logTailParam) {
         milogLogtailDo.setIps(logTailParam.getIps());
     }
 

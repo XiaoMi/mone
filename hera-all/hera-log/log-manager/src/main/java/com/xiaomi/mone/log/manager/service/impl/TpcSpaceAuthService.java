@@ -15,7 +15,6 @@
  */
 package com.xiaomi.mone.log.manager.service.impl;
 
-import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
 import com.xiaomi.mone.log.manager.domain.Tpc;
 import com.xiaomi.mone.log.manager.model.MilogSpaceParam;
 import com.xiaomi.mone.log.manager.model.pojo.MilogSpaceDO;
@@ -41,7 +40,7 @@ public class TpcSpaceAuthService implements SpaceAuthService {
 
     @Override
     public Result saveSpacePerm(MilogSpaceDO spaceDO, String account) {
-        Result tpcResult = tpc.saveSpacePerm(spaceDO, MoneUserContext.getCurrentUser().getUser());
+        Result tpcResult = tpc.saveSpacePerm(spaceDO, account);
         return tpcResult;
     }
 
@@ -61,6 +60,11 @@ public class TpcSpaceAuthService implements SpaceAuthService {
     public Result updateSpaceTpc(MilogSpaceParam param, String account) {
         Result tpcResult = this.tpc.updateSpaceTpc(param, account);
         return tpcResult;
+    }
+
+    @Override
+    public void addSpaceMember(Long spaceId, String userAccount, Integer userType, Integer memberCode) {
+        tpc.addSpaceMember(spaceId, userAccount, userType, memberCode);
     }
 
 }
