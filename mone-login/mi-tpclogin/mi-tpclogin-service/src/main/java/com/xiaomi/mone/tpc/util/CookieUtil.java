@@ -2,6 +2,7 @@ package com.xiaomi.mone.tpc.util;
 
 import com.xiaomi.mone.tpc.login.util.ConstUtil;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @project: mi-tpclogin
@@ -16,6 +17,9 @@ public class CookieUtil {
      * @throws Throwable
      */
     public static void setCookieUrl(AuthUserVo userVo, String pageUrl) throws Throwable {
+        if (StringUtils.isBlank(pageUrl)) {
+            return;
+        }
         StringBuilder tokenArg = new StringBuilder();
         tokenArg.append(ConstUtil.AUTH_TOKEN).append("=").append(userVo.getToken());
         StringBuilder setCookieUrl = new StringBuilder();
