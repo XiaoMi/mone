@@ -129,7 +129,7 @@
                 <configuration>
                     <checkConfigurationFile>false</checkConfigurationFile>
                     <ipWhite>
-                        <param>172.17.0.1</param>
+                        <param>127.0.0.1</param>
                     </ipWhite>
                 </configuration>
             </plugin>
