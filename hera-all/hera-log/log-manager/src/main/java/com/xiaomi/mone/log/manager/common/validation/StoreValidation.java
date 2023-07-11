@@ -20,6 +20,10 @@ import com.google.common.collect.Maps;
 import com.xiaomi.mone.log.api.model.vo.ResourceUserSimple;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
 import com.xiaomi.mone.log.manager.common.exception.MilogManageException;
+import com.xiaomi.mone.log.manager.dao.MilogMiddlewareConfigDao;
+import com.xiaomi.mone.log.manager.domain.EsCluster;
+import com.xiaomi.mone.log.manager.model.pojo.MilogEsClusterDO;
+import com.xiaomi.mone.log.manager.model.pojo.MilogMiddlewareConfig;
 import com.xiaomi.mone.log.manager.model.vo.LogStoreParam;
 import com.xiaomi.mone.log.manager.service.extension.store.StoreExtensionService;
 import com.xiaomi.mone.log.manager.service.extension.store.StoreExtensionServiceFactory;
@@ -49,48 +53,69 @@ public class StoreValidation {
 
     private StoreExtensionService storeExtensionService;
 
+    @Resource
+    private MilogMiddlewareConfigDao milogMiddlewareConfigDao;
+
+    @Resource
+    private EsCluster esCluster;
+
     public void init() {
         storeExtensionService = StoreExtensionServiceFactory.getStoreExtensionService();
     }
 
-    public String logStoreParamValid(LogStoreParam param) {
+    public String logStoreParamValid(LogStoreParam storeParam) {
         if (null == MoneUserContext.getCurrentUser()) {
             throw new MilogManageException("please go to login");
         }
         List<String> errorInfos = Lists.newArrayList();
-        if (null == param.getSpaceId()) {
+        if (null == storeParam.getSpaceId()) {
             errorInfos.add("space信息 不能为空");
         }
-        if (null == param || StringUtils.isBlank(param.getLogstoreName())) {
+        if (null == storeParam || StringUtils.isBlank(storeParam.getLogstoreName())) {
             errorInfos.add("logStore 不能为空");
         }
-        if (StringUtils.isEmpty(param.getMachineRoom())) {
+        if (StringUtils.isEmpty(storeParam.getMachineRoom())) {
             errorInfos.add("机房信息 不能为空");
             return errorInfos.stream().collect(Collectors.joining(SYMBOL_COMMA));
         }
-        if (null == param.getLogType()) {
+        if (null == storeParam.getLogType()) {
             errorInfos.add("日志类型 不能为空");
         }
-        if (StringUtils.isEmpty(param.getKeyList())) {
+        if (StringUtils.isEmpty(storeParam.getKeyList())) {
             errorInfos.add("索引列 不能为空");
         }
-        List<String> duplicatedKeyList = getDuplicatedKeys(param.getKeyList());
+        List<String> duplicatedKeyList = getDuplicatedKeys(storeParam.getKeyList());
         if (!duplicatedKeyList.isEmpty()) {
             errorInfos.add("索引列字段有重复，请删除重复字段：" + duplicatedKeyList);
         }
         // Additional field inspection
-        if (storeExtensionService.storeInfoCheck(param)) {
+        if (storeExtensionService.storeInfoCheck(storeParam)) {
             return errorInfos.stream().collect(Collectors.joining(SYMBOL_COMMA));
         }
-        //校验当前用户所属部门是否初始化资源
-        ResourceUserSimple resourceUserSimple = milogMiddlewareConfigService.userResourceList(param.getMachineRoom(), param.getLogType());
-        if (!resourceUserSimple.getInitializedFlag()) {
-            errorInfos.add(resourceUserSimple.getNotInitializedMsg());
-        }
-        boolean resourceChosen = null == param.getMqResourceId() || null == param.getEsResourceId();
-        if (resourceUserSimple.getInitializedFlag() &&
-                resourceUserSimple.getShowFlag() && resourceChosen) {
-            errorInfos.add("请先选择所需要的资源信息");
+        if (null == storeParam.getMqResourceId() || null == storeParam.getEsResourceId()) {
+            //校验当前用户所属部门是否初始化资源
+            ResourceUserSimple resourceUserSimple = milogMiddlewareConfigService.userResourceList(storeParam.getMachineRoom(), storeParam.getLogType());
+            if (!resourceUserSimple.getInitializedFlag()) {
+                errorInfos.add(resourceUserSimple.getNotInitializedMsg());
+            }
+            boolean resourceChosen = null == storeParam.getMqResourceId() || null == storeParam.getEsResourceId();
+            if (resourceUserSimple.getInitializedFlag() &&
+                    resourceUserSimple.getShowFlag() && resourceChosen) {
+                errorInfos.add("请先选择所需要的资源信息");
+            }
+        } else {
+            if (null != storeParam.getMqResourceId()) {
+                MilogMiddlewareConfig milogMiddlewareConfig = milogMiddlewareConfigDao.queryById(storeParam.getMqResourceId());
+                if (null == milogMiddlewareConfig) {
+                    errorInfos.add("MQ资源信息不能为空");
+                }
+            }
+            if (null != storeParam.getEsResourceId()) {
+                MilogEsClusterDO esClusterDO = esCluster.getById(storeParam.getEsResourceId());
+                if (null == esClusterDO) {
+                    errorInfos.add("ES资源信息不能为空");
+                }
+            }
         }
         return errorInfos.stream().collect(Collectors.joining(SYMBOL_COMMA));
     }
