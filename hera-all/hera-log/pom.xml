@@ -126,6 +126,12 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <checkConfigurationFile>false</checkConfigurationFile>
+                    <ipWhite>
+                        <param>127.0.0.1</param>
+                    </ipWhite>
+                </configuration>
             </plugin>
 
 <!--            <plugin>-->
