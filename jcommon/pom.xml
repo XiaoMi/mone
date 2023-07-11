@@ -12,7 +12,8 @@
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
-        <maven.jcommonDirectory>/opt/workspace_all/workspace_mi/mone_opensource/mone/jcommon</maven.jcommonDirectory>
+        <!-- Replace it with the absolute path of your own jcommon project. -->
+        <maven.jcommonDirectory>~/</maven.jcommonDirectory>
     </properties>
 
     <name>${project.artifactId}</name>
