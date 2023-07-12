@@ -42,7 +42,7 @@
         </dependency>
 
         <dependency>
-            <groupId>com.alibaba.spring</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>spring-context-support</artifactId>
             <version>1.0.10</version>
         </dependency>
@@ -63,6 +63,10 @@
                 <exclusion>
                     <groupId>com.alibaba.nacos</groupId>
                     <artifactId>nacos-client</artifactId>
+                </exclusion>
+                <exclusion>
+                    <artifactId>spring-context-support</artifactId>
+                    <groupId>com.alibaba.spring</groupId>
                 </exclusion>
             </exclusions>
         </dependency>
