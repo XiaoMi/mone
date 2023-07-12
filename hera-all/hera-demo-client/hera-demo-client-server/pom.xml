@@ -44,7 +44,7 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>spring-context-support</artifactId>
-            <version>1.0.10</version>
+            <version>1.0.10-mone-SNAPSHOT</version>
         </dependency>
 
         <dependency>
