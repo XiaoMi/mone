@@ -51,7 +51,7 @@ public class HeraProjectGroupService {
 
         Integer parentGroupId = request.getParentGroupId();
         if(parentGroupId != -1){
-            List<HeraProjectGroupModel> heraProjectGroupModels = projectGroupDao.listByIds(Lists.newArrayList(parentGroupId), request.getType(), null);
+            List<HeraProjectGroupModel> heraProjectGroupModels = projectGroupDao.listByIds(Lists.newArrayList(parentGroupId), request.getType(), null,null);
             if(heraProjectGroupModels != null && heraProjectGroupModels.size() < 1){
                 return Result.fail(-1,"there is no data  which project group  id is "+parentGroupId);
             }
@@ -120,7 +120,7 @@ public class HeraProjectGroupService {
 
         if(request.getParentGroupId() != null){
             Integer parentGroupId = request.getParentGroupId();
-            List<HeraProjectGroupModel> heraProjectGroupModels = projectGroupDao.listByIds(Lists.newArrayList(parentGroupId), request.getType(), null);
+            List<HeraProjectGroupModel> heraProjectGroupModels = projectGroupDao.listByIds(Lists.newArrayList(parentGroupId), request.getType(), null,null);
             if(heraProjectGroupModels != null && heraProjectGroupModels.size() < 1){
                 return Result.fail(-1,"there is no project Group data which Id is "+parentGroupId);
             }
@@ -378,7 +378,7 @@ public class HeraProjectGroupService {
             return Result.fail(CommonError.NOT_EXISTS_DATA);
         }
 
-        List<HeraProjectGroupModel> nodesByUser = getNodesByUser(user,type,projectGroupName);
+        List<HeraProjectGroupModel> nodesByUser = getNodesByUser(user,type,projectGroupName,null);
         if(CollectionUtils.isEmpty(nodesByUser)){
             return Result.fail(CommonError.NOT_EXISTS_DATA);
         }
@@ -388,6 +388,40 @@ public class HeraProjectGroupService {
         TreeQueryBuilder treeBuilder = new TreeQueryBuilder(treeNodes);
         Result<ProjectGroupTreeNode> treeByProjectGroup = treeBuilder.getTreeByProjectGroup(rootGroupNode);
         return treeByProjectGroup;
+    }
+
+
+    public Result<List<HeraProjectGroupModel>> searchChildGroups(String user,Integer groupType,Integer projectGroupId, Integer page, Integer pageSize) {
+
+
+        if(StringUtils.isBlank(user) || groupType == null || projectGroupId == null){
+            log.info("searchChildGroups param invalid! user : {}, groupType: {}, projectGroupId: {}",user,groupType,projectGroupId);
+            return Result.fail(CommonError.ParamsError);
+        }
+
+        List<Integer> userGroupIds = groupUserDao.listGroupIdsByUser(user);
+        if (CollectionUtils.isEmpty(userGroupIds)) {
+            log.info("searchChildGroups no group data found for user! user:{},projectGroupId:{},groupType:{}", user, projectGroupId, groupType);
+            return Result.fail(CommonError.NOT_EXISTS_DATA);
+        }
+
+        if (!userGroupIds.contains(projectGroupId)) {
+            log.info("searchChildGroups user:{} has no authorization for assign projectGroupId:{},groupType:{}", user, projectGroupId, groupType);
+            return Result.fail(CommonError.NO_AUTHORIZATION);
+        }
+
+        HeraProjectGroupModel projectGroup = new HeraProjectGroupModel();
+        projectGroup.setParentGroupId(projectGroupId);
+        projectGroup.setType(groupType);
+
+        List<HeraProjectGroupModel> projectGroups = projectGroupDao.search(projectGroup, null, null);
+        if (CollectionUtils.isEmpty(projectGroups)) {
+            log.info("searchChildGroups no assign type group data found for user! user : {},projectGroupId : {},groupType : {} ", user, projectGroupId, groupType);
+            return Result.fail(CommonError.NOT_EXISTS_DATA);
+        }
+
+        return Result.success(projectGroups);
+
     }
 
     public Result<List<HeraAppBaseInfoModel>> searchGroupApps(String user,Integer groupType,Integer projectGroupId,String appName, Integer page, Integer pageSize){
@@ -411,7 +445,7 @@ public class HeraProjectGroupService {
             groupIds.addAll(userGroupIds);
         }
 
-        List<HeraProjectGroupModel> projectGroupsByType = projectGroupDao.listByIds(groupIds, groupType, null);
+        List<HeraProjectGroupModel> projectGroupsByType = projectGroupDao.listByIds(groupIds, groupType, null,null);
         if(CollectionUtils.isEmpty(projectGroupsByType)){
             log.info("getGroupApps no assign type group data found for user! user:{},projectGroupId:{},groupType:{},appName:{}",user,projectGroupId,groupType,appName);
             return Result.fail(CommonError.NOT_EXISTS_DATA);
@@ -465,7 +499,7 @@ public class HeraProjectGroupService {
     }
 
 
-    public List<HeraProjectGroupModel> getNodesByUser(String user,Integer type,String projectGroupName){
+    public List<HeraProjectGroupModel> getNodesByUser(String user,Integer type,String projectGroupName,Integer level){
 
         if(StringUtils.isBlank(user)){
             log.error("getNodesByUser user is invalid!user:{},projectGroupName:{}",user);
@@ -477,7 +511,7 @@ public class HeraProjectGroupService {
             return null;
         }
 
-        return projectGroupDao.listByIds(integers,type,projectGroupName);
+        return projectGroupDao.listByIds(integers,type,projectGroupName,level);
 
     }
 
@@ -502,7 +536,7 @@ public class HeraProjectGroupService {
             return result;
         }
 
-        List<HeraProjectGroupModel> parentNodes = projectGroupDao.listByIds(parentIds,type,null);
+        List<HeraProjectGroupModel> parentNodes = projectGroupDao.listByIds(parentIds,type,null,null);
         if(CollectionUtils.isEmpty(parentNodes)){
             return result;
         }

@@ -9,6 +9,7 @@
     <result column="cn_name" jdbcType="VARCHAR" property="cnName" />
     <result column="parent_group_id" jdbcType="INTEGER" property="parentGroupId" />
     <result column="status" jdbcType="INTEGER" property="status" />
+    <result column="level" jdbcType="INTEGER" property="level" />
     <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
     <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
   </resultMap>
@@ -72,7 +73,7 @@
     </where>
   </sql>
   <sql id="Base_Column_List">
-    id, type, relation_object_id, name, cn_name, parent_group_id, status, create_time, 
+    id, type, relation_object_id, name, cn_name, parent_group_id, status, level, create_time, 
     update_time
   </sql>
   <select id="selectByExample" parameterType="com.xiaomi.mone.app.model.HeraProjectGroupExample" resultMap="BaseResultMap">
@@ -114,10 +115,12 @@
     </selectKey>
     insert into hera_project_group (type, relation_object_id, name, 
       cn_name, parent_group_id, status, 
-      create_time, update_time)
+      level, create_time, update_time
+      )
     values (#{type,jdbcType=INTEGER}, #{relationObjectId,jdbcType=INTEGER}, #{name,jdbcType=VARCHAR}, 
       #{cnName,jdbcType=VARCHAR}, #{parentGroupId,jdbcType=INTEGER}, #{status,jdbcType=INTEGER}, 
-      #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP})
+      #{level,jdbcType=INTEGER}, #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP}
+      )
   </insert>
   <insert id="insertSelective" parameterType="com.xiaomi.mone.app.model.HeraProjectGroup">
     <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
@@ -142,6 +145,9 @@
       </if>
       <if test="status != null">
         status,
+      </if>
+      <if test="level != null">
+        level,
       </if>
       <if test="createTime != null">
         create_time,
@@ -168,6 +174,9 @@
       </if>
       <if test="status != null">
         #{status,jdbcType=INTEGER},
+      </if>
+      <if test="level != null">
+        #{level,jdbcType=INTEGER},
       </if>
       <if test="createTime != null">
         #{createTime,jdbcType=TIMESTAMP},
@@ -207,6 +216,9 @@
       <if test="record.status != null">
         status = #{record.status,jdbcType=INTEGER},
       </if>
+      <if test="record.level != null">
+        level = #{record.level,jdbcType=INTEGER},
+      </if>
       <if test="record.createTime != null">
         create_time = #{record.createTime,jdbcType=TIMESTAMP},
       </if>
@@ -227,6 +239,7 @@
       cn_name = #{record.cnName,jdbcType=VARCHAR},
       parent_group_id = #{record.parentGroupId,jdbcType=INTEGER},
       status = #{record.status,jdbcType=INTEGER},
+      level = #{record.level,jdbcType=INTEGER},
       create_time = #{record.createTime,jdbcType=TIMESTAMP},
       update_time = #{record.updateTime,jdbcType=TIMESTAMP}
     <if test="_parameter != null">
@@ -254,6 +267,9 @@
       <if test="status != null">
         status = #{status,jdbcType=INTEGER},
       </if>
+      <if test="level != null">
+        level = #{level,jdbcType=INTEGER},
+      </if>
       <if test="createTime != null">
         create_time = #{createTime,jdbcType=TIMESTAMP},
       </if>
@@ -271,19 +287,21 @@
       cn_name = #{cnName,jdbcType=VARCHAR},
       parent_group_id = #{parentGroupId,jdbcType=INTEGER},
       status = #{status,jdbcType=INTEGER},
+      level = #{level,jdbcType=INTEGER},
       create_time = #{createTime,jdbcType=TIMESTAMP},
       update_time = #{updateTime,jdbcType=TIMESTAMP}
     where id = #{id,jdbcType=INTEGER}
   </update>
   <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
     insert into hera_project_group
-    (type, relation_object_id, name, cn_name, parent_group_id, status, create_time, update_time
-      )
+    (type, relation_object_id, name, cn_name, parent_group_id, status, level, create_time, 
+      update_time)
     values
     <foreach collection="list" item="item" separator=",">
       (#{item.type,jdbcType=INTEGER}, #{item.relationObjectId,jdbcType=INTEGER}, #{item.name,jdbcType=VARCHAR}, 
         #{item.cnName,jdbcType=VARCHAR}, #{item.parentGroupId,jdbcType=INTEGER}, #{item.status,jdbcType=INTEGER}, 
-        #{item.createTime,jdbcType=TIMESTAMP}, #{item.updateTime,jdbcType=TIMESTAMP})
+        #{item.level,jdbcType=INTEGER}, #{item.createTime,jdbcType=TIMESTAMP}, #{item.updateTime,jdbcType=TIMESTAMP}
+        )
     </foreach>
   </insert>
   <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
@@ -313,6 +331,9 @@
         </if>
         <if test="'status'.toString() == column.value">
           #{item.status,jdbcType=INTEGER}
+        </if>
+        <if test="'level'.toString() == column.value">
+          #{item.level,jdbcType=INTEGER}
         </if>
         <if test="'create_time'.toString() == column.value">
           #{item.createTime,jdbcType=TIMESTAMP}
