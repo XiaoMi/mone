@@ -95,8 +95,8 @@ public class RegexLogParser implements LogParser {
     @Override
     public List<String> parseLogData(String logData) throws Exception {
         List<String> ret = new ArrayList<>();
-        if (filter == null) {
-            throw new Exception("compile failed, empty filter");
+        if (pattern == null) {
+            throw new Exception("compile failed, empty pattern");
         }
 //        List<Matcher> matchers = filter.filter(logData);
         Matcher matcher = pattern.matcher(logData);
