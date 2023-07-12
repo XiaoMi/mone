@@ -77,7 +77,7 @@ public class MilogConfigServiceTest {
     public void testDelLogTail() {
         Ioc.ins().init("com.xiaomi");
         LogTailServiceImpl milogSpaceService = Ioc.ins().getBean(LogTailServiceImpl.class);
-        milogSpaceService.deleteMilogLogTail(1L);
+        milogSpaceService.deleteLogTail(1L);
         Assert.assertNotNull(milogSpaceService);
     }
 

@@ -61,4 +61,6 @@ public interface TailExtensionService {
     boolean decorateTailDTOValId(Integer appType);
 
     List<String> getStreamMachineUniqueList(Integer projectTypeCode, String motorRoomEn);
+
+    String deleteCheckProcessPre(Long id);
 }
