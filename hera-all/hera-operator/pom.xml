@@ -14,6 +14,18 @@
         <module>hera-operator-server</module>
     </modules>
 
+    <name>${project.artifactId}</name>
+    <description>The parent project of jcommon</description>
+    <url>https://github.com/XiaoMi/mone</url>
+    <inceptionYear>2020</inceptionYear>
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -40,6 +52,8 @@
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
+        <!-- Replace it with the absolute path of your own hera-operator project. -->
+        <maven.jcommonDirectory>~/</maven.jcommonDirectory>
     </properties>
 
     <build>
@@ -102,21 +116,18 @@
                     </mapping>
                 </configuration>
             </plugin>
-
-<!--                        <plugin>-->
-<!--                            <groupId>run.mone</groupId>-->
-<!--                            <artifactId>codecheck-maven-plugin</artifactId>-->
-<!--                            <version>1.4-SNAPSHOT</version>-->
-<!--                            <executions>-->
-<!--                                <execution>-->
-<!--                                    <phase>validate</phase>-->
-<!--                                    <goals>-->
-<!--                                        <goal>pmd</goal>-->
-<!--                                    </goals>-->
-<!--                                </execution>-->
-<!--                            </executions>-->
-<!--                        </plugin>-->
         </plugins>
     </build>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
 
 </project>

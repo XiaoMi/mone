@@ -9,6 +9,25 @@
     <packaging>pom</packaging>
     <version>1.4-SNAPSHOT</version>
 
+    <properties>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+        <!-- Replace it with the absolute path of your own jcommon project. -->
+        <maven.jcommonDirectory>~/</maven.jcommonDirectory>
+    </properties>
+
+    <name>${project.artifactId}</name>
+    <description>The parent project of jcommon</description>
+    <url>https://github.com/XiaoMi/mone</url>
+    <inceptionYear>2020</inceptionYear>
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
     <modules>
         <module>aliyun</module>
         <module>log</module>
@@ -80,8 +99,6 @@
 
 
     <dependencies>
-
-
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -141,8 +158,33 @@
 
 
     <build>
-
         <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-license</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>target/classes/META-INF</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${maven.jcommonDirectory}</directory>
+                                    <includes>
+                                        <include>LICENSE.txt</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -180,35 +222,32 @@
                     </execution>
                 </executions>
             </plugin>
-
-
         </plugins>
-
     </build>
 
-    <distributionManagement>
-        <repository>
-            <id>central</id>
-            <name>maven-release-virtual</name>
-            <url>https://pkgs.d.xiaomi.net/artifactory/maven-release-virtual</url>
-        </repository>
-        <snapshotRepository>
-            <id>snapshots</id>
-            <name>maven-snapshot-virtual</name>
-            <url>https://pkgs.d.xiaomi.net/artifactory/maven-snapshot-virtual</url>
-        </snapshotRepository>
-    </distributionManagement>
-
 <!--    <distributionManagement>-->
-<!--        <snapshotRepository>-->
-<!--            <id>ossrh</id>-->
-<!--            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>-->
-<!--        </snapshotRepository>-->
 <!--        <repository>-->
-<!--            <id>ossrh</id>-->
-<!--            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>-->
+<!--            <id>central</id>-->
+<!--            <name>maven-release-virtual</name>-->
+<!--            <url>https://pkgs.d.xiaomi.net/artifactory/maven-release-virtual</url>-->
 <!--        </repository>-->
+<!--        <snapshotRepository>-->
+<!--            <id>snapshots</id>-->
+<!--            <name>maven-snapshot-virtual</name>-->
+<!--            <url>https://pkgs.d.xiaomi.net/artifactory/maven-snapshot-virtual</url>-->
+<!--        </snapshotRepository>-->
 <!--    </distributionManagement>-->
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
 
 
 </project>
