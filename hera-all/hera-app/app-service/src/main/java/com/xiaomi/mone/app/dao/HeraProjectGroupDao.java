@@ -135,7 +135,7 @@ public class HeraProjectGroupDao {
         }
 
     }
-    public List<HeraProjectGroupModel> listByIds(List<Integer> ids,Integer type,String projectGroupName){
+    public List<HeraProjectGroupModel> listByIds(List<Integer> ids,Integer type,String projectGroupName,Integer level){
 
         if(CollectionUtils.isEmpty(ids)){
             log.error("listByIds param is invalid! ids : {}",ids);
@@ -152,6 +152,9 @@ public class HeraProjectGroupDao {
         }
         if(type != null){
             ca.andTypeEqualTo(type);
+        }
+        if(level != null){
+            ca.andLevelEqualTo(level);
         }
 
         try {
