@@ -386,18 +386,22 @@ public class EsClient {
         return count;
     }
 
+    public EsRet dateHistogram(String indexName, String interval, long startTime, long endTime, BoolQueryBuilder builder) throws IOException {
+        return dateHistogram(indexName, "timestamp", interval, startTime, endTime, builder);
+    }
+
     /**
      * 数据直方图
      *
      * @return
      */
-    public EsRet dateHistogram(String indexName, String interval, long startTime, long endTime, BoolQueryBuilder builder) throws IOException {
+    public EsRet dateHistogram(String indexName, String field, String interval, long startTime, long endTime, BoolQueryBuilder builder) throws IOException {
         // 聚合
         EsRet esRet = new EsRet();
         AggregationBuilder aggregationBuilder = AggregationBuilders.dateHistogram("dateHistogram")
                 .minDocCount(0)//返回空桶
                 .fixedInterval(new DateHistogramInterval(interval)) //设置间隔
-                .field("timestamp")
+                .field(field)
                 .timeZone(TimeZone.getTimeZone("GMT+8").toZoneId())
                 .format("yyyy-MM-dd HH:mm:ss")//设定返回格式
                 .extendedBounds(new LongBounds(startTime, endTime));//统计范围
