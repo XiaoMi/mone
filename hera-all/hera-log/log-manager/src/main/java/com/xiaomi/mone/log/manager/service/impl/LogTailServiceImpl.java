@@ -469,21 +469,25 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         if (StringUtils.isNotEmpty(validMsg)) {
             return new Result<>(CommonError.ParamsError.getCode(), validMsg);
         }
+
+        deleteRemoteConfig(id, milogLogtailDo);
+
         if (milogLogtailDao.deleteMilogLogtail(id)) {
             MilogLogStoreDO logStoreDO = logStoreDao.queryById(milogLogtailDo.getStoreId());
             if (storeExtensionService.isNeedSendMsgType(logStoreDO.getLogType())) {
                 CompletableFuture.runAsync(() -> sendMessageOnDelete(milogLogtailDo, logStoreDO));
             }
-            CompletableFuture.runAsync(() -> sendMessageOnDelete(milogLogtailDo, logStoreDO));
             tailExtensionService.logTailDelPostProcess(logStoreDO, milogLogtailDo);
-            MilogLogStoreDO storeDO = logStoreDao.queryById(milogLogtailDo.getStoreId());
-            logTailService.deleteConfigRemote(storeDO.getSpaceId(), id, storeDO.getMachineRoom(), LogStructureEnum.TAIL);
-
             return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage());
         } else {
             log.warn("[LogTailService.deleteMilogLogtail] delete MilogLogtail err,id:{}", id);
             return new Result<>(CommonError.UnknownError.getCode(), CommonError.UnknownError.getMessage());
         }
+    }
+
+    private void deleteRemoteConfig(Long id, MilogLogTailDo milogLogtailDo) {
+        MilogLogStoreDO storeDO = logStoreDao.queryById(milogLogtailDo.getStoreId());
+        logTailService.deleteConfigRemote(storeDO.getSpaceId(), id, storeDO.getMachineRoom(), LogStructureEnum.TAIL);
     }
 
     @Override
