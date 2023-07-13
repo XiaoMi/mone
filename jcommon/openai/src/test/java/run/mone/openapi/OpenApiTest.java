@@ -547,7 +547,7 @@ public class OpenApiTest {
     @Test
     public void testListOpenaiModels() {
         OpenAiClient openAiClient = client();
-        openAiClient.models().stream().filter(it -> it.getID().contains("code")).forEach(it -> {
+        openAiClient.models().stream().filter(it->it.getID().contains("gpt")).forEach(it -> {
             System.out.println(it.getID());
         });
     }
