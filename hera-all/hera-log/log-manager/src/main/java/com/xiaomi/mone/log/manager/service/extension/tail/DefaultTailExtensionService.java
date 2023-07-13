@@ -33,6 +33,7 @@ import com.xiaomi.mone.log.model.LogtailConfig;
 import com.xiaomi.youpin.docean.anno.Service;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -163,6 +164,11 @@ public class DefaultTailExtensionService implements TailExtensionService {
     @Override
     public List<String> getStreamMachineUniqueList(Integer projectTypeCode, String motorRoomEn) {
         return Lists.newArrayList();
+    }
+
+    @Override
+    public String deleteCheckProcessPre(Long id) {
+        return StringUtils.EMPTY;
     }
 
 }

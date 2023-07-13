@@ -64,7 +64,7 @@ public interface LogTailService {
 
     Result<Void> updateMilogLogTail(LogTailParam param);
 
-    Result<Void> deleteMilogLogTail(Long id);
+    Result<Void> deleteLogTail(Long id);
 
     void sendMessageOnDelete(MilogLogTailDo mt, MilogLogStoreDO logStoreDO);
 

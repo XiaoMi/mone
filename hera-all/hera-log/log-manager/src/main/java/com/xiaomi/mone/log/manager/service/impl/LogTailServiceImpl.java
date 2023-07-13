@@ -160,38 +160,6 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
                 .build();
     }
 
-    private String verifyMilogLogtailParam(LogTailParam param) {
-        if (null == param.getMilogAppId()) {
-            return "选择的应用不能为空";
-        }
-        if (null == param || StringUtils.isBlank(param.getLogPath())) {
-            return "路径不能为空";
-        }
-        if (null == param.getSpaceId()) {
-            return "spaceId不能为空";
-        }
-        if (null == param.getStoreId()) {
-            return "storeId不能为空";
-        }
-        String path = param.getLogPath();
-        MilogLogStoreDO milogLogstoreDO = logStoreDao.queryById(param.getStoreId());
-        if (Objects.equals("staging", serverType) && !MachineRegionEnum.CN_MACHINE.getEn().equals(milogLogstoreDO.getMachineRoom())) {
-            return "测试环境只支持大陆机房，其它机房由于网络问题不支持";
-        }
-        if (path.equals("/home/work/log/") || path.equals("/home/work/log") || path.startsWith("/home/work/log") && path.split("/").length < 4) {
-            return "日志路径错误，请确认后提交";
-        }
-        if (Objects.equals(ProjectTypeEnum.MIONE_TYPE.getCode(), param.getAppType())) {
-            // 校验同名日志文件
-            List<MilogLogTailDo> appLogTails = milogLogtailDao.queryByMilogAppAndEnv(param.getMilogAppId(), param.getEnvId());
-            for (int i = 0; i < appLogTails.size() && null == param.getId(); i++) {
-                if (appLogTails.get(i).getLogPath().equals(param.getLogPath())) {
-                    return "当前部署环境该文件" + param.getLogPath() + "已配置日志采集,别名为：" + appLogTails.get(i).getTail();
-                }
-            }
-        }
-        return "";
-    }
 
     private void handleMqTailParam(LogTailParam param) {
         if (CollectionUtils.isEmpty(param.getMiddlewareConfig())) {
@@ -415,7 +383,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         }
 
         // 参数校验
-        String errorMsg = verifyMilogLogtailParam(param);
+        String errorMsg = heraConfigValid.verifyLogTailParam(param);
         if (StringUtils.isNotEmpty(errorMsg)) {
             return new Result<>(CommonError.ParamsError.getCode(), errorMsg);
         }
@@ -491,10 +459,15 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     }
 
     @Override
-    public Result<Void> deleteMilogLogTail(Long id) {
+    public Result<Void> deleteLogTail(Long id) {
         MilogLogTailDo milogLogtailDo = milogLogtailDao.queryById(id);
         if (null == milogLogtailDo) {
             return new Result<>(CommonError.ParamsError.getCode(), "tail 不存在");
+        }
+        //Precondition check before deletion.
+        String validMsg = tailExtensionService.deleteCheckProcessPre(id);
+        if (StringUtils.isNotEmpty(validMsg)) {
+            return new Result<>(CommonError.ParamsError.getCode(), validMsg);
         }
         if (milogLogtailDao.deleteMilogLogtail(id)) {
             MilogLogStoreDO logStoreDO = logStoreDao.queryById(milogLogtailDo.getStoreId());
@@ -508,7 +481,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
 
             return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage());
         } else {
-            log.warn("[MilogLogtailService.deleteMilogLogtail] delete MilogLogtail err,id:{}", id);
+            log.warn("[LogTailService.deleteMilogLogtail] delete MilogLogtail err,id:{}", id);
             return new Result<>(CommonError.UnknownError.getCode(), CommonError.UnknownError.getMessage());
         }
     }
