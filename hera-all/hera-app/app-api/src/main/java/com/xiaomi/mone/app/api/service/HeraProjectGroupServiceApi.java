@@ -2,6 +2,7 @@ package com.xiaomi.mone.app.api.service;
 
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.app.api.model.project.group.HeraProjectGroupDataRequest;
+import com.xiaomi.mone.app.api.model.project.group.HeraProjectGroupModel;
 import com.xiaomi.mone.app.api.model.project.group.ProjectGroupTreeNode;
 import com.xiaomi.mone.app.common.Result;
 
@@ -17,12 +18,14 @@ public interface HeraProjectGroupServiceApi {
 
     Result<ProjectGroupTreeNode> getTreeByUser(String user,Integer type,String projectGroupName);
 
-    Result<List<HeraAppBaseInfoModel>> searchGroupApps(String user, Integer groupType, Integer projectGroupId, String appName, Integer page, Integer pageSize);
+    Result<List<HeraAppBaseInfoModel>> searchGroupApps(String user, Integer groupType, Integer projectGroupId, String appName,Integer page, Integer pageSize);
 
     Result create(HeraProjectGroupDataRequest request);
 
     Result update(HeraProjectGroupDataRequest request);
 
     Result delete(Integer id);
+
+    Result<List<HeraProjectGroupModel>> searchChildGroups(String user, Integer groupType, Integer projectGroupId, Integer page, Integer pageSize);
 
 }

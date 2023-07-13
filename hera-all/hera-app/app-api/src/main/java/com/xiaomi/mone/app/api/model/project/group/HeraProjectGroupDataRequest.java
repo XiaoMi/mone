@@ -24,6 +24,8 @@ public class HeraProjectGroupDataRequest implements Serializable {
 
     private Integer parentGroupId;
 
+    private Integer level;
+
     private List<HeraProjectGroupAppRequest> apps;
 
     private List<String> users;

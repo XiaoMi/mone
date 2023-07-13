@@ -66,6 +66,12 @@
             <groupId>run.mone</groupId>
             <artifactId>dubbo</artifactId>
             <version>2.7.12-mone-v8-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>spring-context-support</artifactId>
+                    <groupId>com.alibaba.spring</groupId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

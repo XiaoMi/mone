@@ -19,6 +19,8 @@ public class HeraProjectGroup {
 
     private Integer status;
 
+    private Integer level;
+
     private Date createTime;
 
     private Date updateTime;
@@ -79,6 +81,14 @@ public class HeraProjectGroup {
         this.status = status;
     }
 
+    public Integer getLevel() {
+        return level;
+    }
+
+    public void setLevel(Integer level) {
+        this.level = level;
+    }
+
     public Date getCreateTime() {
         return createTime;
     }
@@ -103,6 +113,7 @@ public class HeraProjectGroup {
         cnName("cn_name", "cnName", "VARCHAR", false),
         parentGroupId("parent_group_id", "parentGroupId", "INTEGER", false),
         status("status", "status", "INTEGER", false),
+        level("level", "level", "INTEGER", false),
         createTime("create_time", "createTime", "TIMESTAMP", false),
         updateTime("update_time", "updateTime", "TIMESTAMP", false);
 

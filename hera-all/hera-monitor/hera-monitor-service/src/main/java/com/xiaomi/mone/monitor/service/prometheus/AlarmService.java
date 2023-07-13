@@ -346,6 +346,9 @@ public class AlarmService {
             case "k8s_cpu_avg_use_rate":
                 return getK8sCpuAvgUsageAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),ruleData);
 
+            case "k8s_pod_restart_times":
+                return getK8sPodRestartExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),ruleData);
+
             case "jvm_heap_mem_use_rate":
                 return getJvmMemAlarmExpr(rule.getProjectId(),app.getProjectName(),"heap", rule.getOp(), rule.getValue(),ruleData);
             case "jvm_no_heap_mem_use_rate":
@@ -829,6 +832,22 @@ public class AlarmService {
 
         exprBuilder.append(op).append(value);
         log.info("getK8sCpuAvgUsageAlarmExpr param: projectId:{}, projectName:{}, op:{},value:{}, return:{}",projectId, projectName, op,value, exprBuilder.toString());
+        return exprBuilder.toString();
+    }
+
+    public String getK8sPodRestartExpr(Integer projectId,String projectName,String op,double value,AlarmRuleData ruleData){
+
+        StringBuilder exprBuilder = new StringBuilder();
+        exprBuilder.append("(0 * container_last_seen{system='mione',");
+        String labelProperties = getEnvLabelProperties(ruleData);
+        if(StringUtils.isNotBlank(labelProperties)){
+            exprBuilder.append(labelProperties).append(",");
+        }
+        exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
+        exprBuilder.append("}) ");
+        exprBuilder.append("+ on(pod,container) group_left kube_pod_container_status_restarts_total{system='mione',job='mione-kube-state'}");
+        exprBuilder.append(op).append(value);
+
         return exprBuilder.toString();
     }
 
