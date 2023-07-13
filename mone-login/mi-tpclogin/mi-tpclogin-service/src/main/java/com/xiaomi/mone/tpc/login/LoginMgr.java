@@ -29,6 +29,9 @@ public abstract class LoginMgr {
     public abstract AuthUserVo getUserVo(String code, String pageUrl, String vcode, String state);
 
     public String buildAuthUrl(String clientId, String pageUrl, String vcode, String state) throws Exception {
+        if (StringUtils.isBlank(clientId)) {
+            return null;
+        }
         StringBuilder auth2Url = new StringBuilder();
         auth2Url.append(getAuthUrl())
                 .append("&redirect_uri=").append(URLEncoder.encode(getAuth2CallbackUrlFull(pageUrl, vcode, state), "UTF-8"))

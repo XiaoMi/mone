@@ -22,7 +22,7 @@ import java.util.Map;
 @Component
 public class GitlabLoginMgr extends LoginMgr {
 
-    @NacosValue("${gitlab.client_id:''}")
+    @NacosValue("${gitlab.client_id:}")
     private String clientId;
     @NacosValue("${gitlab.client_secret:''}")
     private String clientSecret;

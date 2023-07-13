@@ -24,7 +24,7 @@ import java.util.Map;
 @Component
 public class GithubLoginMgr extends LoginMgr {
 
-    @NacosValue("${github.client_id:''}")
+    @NacosValue("${github.client_id:}")
     private String clientId;
     @NacosValue("${github.client_secret:''}")
     private String clientSecret;

@@ -24,7 +24,7 @@ import java.util.Map;
 @Component
 public class GiteeLoginMgr extends LoginMgr {
 
-    @NacosValue("${gitee.client_id:''}")
+    @NacosValue("${gitee.client_id:}")
     private String clientId;
     @NacosValue("${gitee.client_secret:''}")
     private String clientSecret;

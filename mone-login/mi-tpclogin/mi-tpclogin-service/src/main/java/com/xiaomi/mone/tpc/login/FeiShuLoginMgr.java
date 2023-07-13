@@ -22,7 +22,7 @@ import java.util.Map;
 @Component
 public class FeiShuLoginMgr extends LoginMgr {
 
-    @NacosValue("${feishu.client_id:''}")
+    @NacosValue("${feishu.client_id:}")
     private String clientId;
     @NacosValue("${feishu.client_secret:''}")
     private String clientSecret;
