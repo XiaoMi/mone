@@ -39,7 +39,7 @@ public class FileMonitor implements FileWatcher {
         FileAlterationMonitor monitor = new FileAlterationMonitor(5000);
         log.info("agent monitor files:{}", GSON.toJson(watchList));
         for (String watch : watchList) {
-            FileAlterationObserver observer = new FileAlterationObserver(new File(watch));
+            FileAlterationObserver observer = new LogFileAlterationObserver(new File(watch));
             observer.addListener(new FileListener(consumer));
             log.info("## agent monitor file:{}, filePattern:{}", watch, filePattern);
             monitor.addObserver(observer);
