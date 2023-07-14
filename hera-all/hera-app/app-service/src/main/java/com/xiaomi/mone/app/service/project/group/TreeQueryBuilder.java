@@ -43,7 +43,7 @@ public class TreeQueryBuilder {
         List<HeraProjectGroupModel> groups = groupByParentId.getOrDefault(parentId, new ArrayList<>());
 
         for (HeraProjectGroupModel group : groups) {
-            ProjectGroupTreeNode node = new ProjectGroupTreeNode(group.getId(), group.getType(), group.getRelationObjectId(),
+            ProjectGroupTreeNode node = new ProjectGroupTreeNode(group.getId(), group.getType(),group.getLevel(), group.getRelationObjectId(),
                         group.getName(), group.getCnName(),group.getParentGroupId());
                 List<ProjectGroupTreeNode> children = buildTreeChildren(group.getId());
                 node.setChildren(children);

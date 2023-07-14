@@ -86,7 +86,7 @@ public class HeraProjectGroupTest {
 
     @Test
     public void getTreeByUser(){
-        Result<ProjectGroupTreeNode> fullTree = projectGroupService.getTreeByUser("maqianli",0,null);
+        Result<ProjectGroupTreeNode> fullTree = projectGroupService.getTreeByUser("maqianli",0,null,null);
         System.out.println(new Gson().toJson(fullTree.getData()));
     }
 

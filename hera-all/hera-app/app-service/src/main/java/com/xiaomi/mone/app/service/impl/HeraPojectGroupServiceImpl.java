@@ -30,8 +30,8 @@ public class HeraPojectGroupServiceImpl implements HeraProjectGroupServiceApi {
     }
 
     @Override
-    public Result<ProjectGroupTreeNode> getTreeByUser(String user, Integer type, String projectGroupName) {
-        return projectGroupService.getTreeByUser(user,type,projectGroupName);
+    public Result<ProjectGroupTreeNode> getTreeByUser(String user, Integer type, String projectGroupName,Integer level) {
+        return projectGroupService.getTreeByUser(user,type,projectGroupName,level);
     }
 
     @Override

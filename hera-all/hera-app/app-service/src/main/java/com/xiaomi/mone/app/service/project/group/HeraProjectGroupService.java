@@ -370,7 +370,7 @@ public class HeraProjectGroupService {
     }
 
 
-    public Result<ProjectGroupTreeNode> getTreeByUser(String user,Integer type,String projectGroupName){
+    public Result<ProjectGroupTreeNode> getTreeByUser(String user,Integer type,String projectGroupName,Integer level){
 
         HeraProjectGroupModel rootGroupNode = getRootGroupNode(type);
         if(rootGroupNode == null){
@@ -378,9 +378,9 @@ public class HeraProjectGroupService {
             return Result.fail(CommonError.NOT_EXISTS_DATA);
         }
 
-        List<HeraProjectGroupModel> nodesByUser = getNodesByUser(user,type,projectGroupName,null);
+        List<HeraProjectGroupModel> nodesByUser = getNodesByUser(user,type,projectGroupName,level);
         if(CollectionUtils.isEmpty(nodesByUser)){
-            return Result.fail(CommonError.NOT_EXISTS_DATA);
+            return Result.success();
         }
 
         Set<HeraProjectGroupModel> treeNodes = pathToRootData(nodesByUser,type);
@@ -402,7 +402,7 @@ public class HeraProjectGroupService {
         List<Integer> userGroupIds = groupUserDao.listGroupIdsByUser(user);
         if (CollectionUtils.isEmpty(userGroupIds)) {
             log.info("searchChildGroups no group data found for user! user:{},projectGroupId:{},groupType:{}", user, projectGroupId, groupType);
-            return Result.fail(CommonError.NOT_EXISTS_DATA);
+            return Result.success();
         }
 
         if (!userGroupIds.contains(projectGroupId)) {
@@ -417,7 +417,6 @@ public class HeraProjectGroupService {
         List<HeraProjectGroupModel> projectGroups = projectGroupDao.search(projectGroup, null, null);
         if (CollectionUtils.isEmpty(projectGroups)) {
             log.info("searchChildGroups no assign type group data found for user! user : {},projectGroupId : {},groupType : {} ", user, projectGroupId, groupType);
-            return Result.fail(CommonError.NOT_EXISTS_DATA);
         }
 
         return Result.success(projectGroups);
@@ -432,7 +431,7 @@ public class HeraProjectGroupService {
 
         if (CollectionUtils.isEmpty(userGroupIds)) {
             log.info("getGroupApps no group data found for user! user:{},projectGroupId:{},groupType:{},appName:{}",user,projectGroupId,groupType,appName);
-            return Result.fail(CommonError.NOT_EXISTS_DATA);
+            return Result.success();
         }
 
         if(projectGroupId != null){
@@ -448,7 +447,7 @@ public class HeraProjectGroupService {
         List<HeraProjectGroupModel> projectGroupsByType = projectGroupDao.listByIds(groupIds, groupType, null,null);
         if(CollectionUtils.isEmpty(projectGroupsByType)){
             log.info("getGroupApps no assign type group data found for user! user:{},projectGroupId:{},groupType:{},appName:{}",user,projectGroupId,groupType,appName);
-            return Result.fail(CommonError.NOT_EXISTS_DATA);
+            return Result.success();
         }
 
         //重置为指定类型的组
@@ -457,7 +456,7 @@ public class HeraProjectGroupService {
         List<Integer> appBaseInfoIds = projectGroupAppDao.getAppBaseInfoIds(groupIds);
         if(CollectionUtils.isEmpty(appBaseInfoIds)){
             log.info("getGroupApps no apps data found! user:{},appBaseInfoIds:{},groupType:{}",user,appBaseInfoIds,groupType);
-            return Result.fail(CommonError.NOT_EXISTS_DATA);
+            return Result.success();
         }
 
         HeraAppBaseInfoModel appBaseInfoModel = new HeraAppBaseInfoModel();

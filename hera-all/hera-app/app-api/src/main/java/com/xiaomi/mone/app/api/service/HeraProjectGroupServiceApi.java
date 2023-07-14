@@ -16,7 +16,7 @@ public interface HeraProjectGroupServiceApi {
 
     Result<ProjectGroupTreeNode> getFullTree(Integer type);
 
-    Result<ProjectGroupTreeNode> getTreeByUser(String user,Integer type,String projectGroupName);
+    Result<ProjectGroupTreeNode> getTreeByUser(String user,Integer type,String projectGroupName,Integer level);
 
     Result<List<HeraAppBaseInfoModel>> searchGroupApps(String user, Integer groupType, Integer projectGroupId, String appName,Integer page, Integer pageSize);
 
