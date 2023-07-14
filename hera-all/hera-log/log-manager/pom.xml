@@ -38,8 +38,20 @@
 
         <dependency>
             <groupId>run.mone</groupId>
+            <artifactId>spring-context-support</artifactId>
+            <version>1.0.10-mone-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>run.mone</groupId>
             <artifactId>dubbo</artifactId>
             <version>2.7.12-mone-v8-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.alibaba.spring</groupId>
+                    <artifactId>spring-context-support</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -104,8 +116,21 @@
 
         <dependency>
             <groupId>run.mone</groupId>
+            <artifactId>es</artifactId>
+            <version>1.5-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>run.mone</groupId>
             <artifactId>docean-plugin-es</artifactId>
             <version>1.4-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>run.mone</groupId>
+                    <artifactId>es</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
