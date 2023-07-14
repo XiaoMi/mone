@@ -71,22 +71,10 @@ public class UserUtil {
             param.setUserType(UserTypeEnum.CAS_TYPE.getCode());
             return param;
         }
-        try {
-            Integer userType = Integer.parseInt(fullAccount.substring(pos + 1));
-            UserTypeEnum userTypeEnum = UserTypeEnum.getEnum(userType);
-            if (userTypeEnum != null) {
-                param.setAccount(fullAccount.substring(0, pos));
-                param.setUserType(userTypeEnum.getCode());
-            } else {
-                param.setAccount(fullAccount);
-                param.setUserType(UserTypeEnum.CAS_TYPE.getCode());
-            }
-            return param;
-        } catch (Throwable e) {
-            param.setAccount(fullAccount);
-            param.setUserType(UserTypeEnum.CAS_TYPE.getCode());
-            return param;
-        }
+        Integer userType = Integer.parseInt(fullAccount.substring(pos + 1));
+        param.setAccount(fullAccount.substring(0, pos));
+        param.setUserType(userType);
+        return param;
     }
 
 }

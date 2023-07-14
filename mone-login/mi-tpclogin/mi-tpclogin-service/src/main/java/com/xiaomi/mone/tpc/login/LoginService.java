@@ -161,7 +161,7 @@ public class LoginService {
         }
         UserRegisterParam registerParam = new UserRegisterParam();
         registerParam.setAccount(entity.getAccount());
-        registerParam.setUserType(accountTypeEnum.getUserType().getCode());
+        registerParam.setUserType(accountTypeEnum.getUserType());
         userFacade.register(registerParam);
         return ResponseCode.SUCCESS.build();
     }
@@ -218,7 +218,7 @@ public class LoginService {
         }
         authUserVo.setState(param.getState());
         authUserVo.setAccount(entity.getAccount());
-        authUserVo.setUserType(accountTypeEnum.getUserType().getCode());
+        authUserVo.setUserType(accountTypeEnum.getUserType());
         authUserVo.setExprTime((int)(ModuleEnum.LOGIN.getUnit().toSeconds(ModuleEnum.LOGIN.getTime())));
         authUserVo.setName(entity.getName());
         authUserVo.setToken(TokenUtil.createToken(authUserVo.getExprTime(), authUserVo.getAccount(), authUserVo.getUserType()));

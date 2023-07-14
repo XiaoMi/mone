@@ -50,11 +50,6 @@ public class HttpReqUserFilter implements Filter {
             tokenFilter = new AuthTokenFilter();
             tokenFilter.init(filterConfig);
         }
-        boolean openHermes = Boolean.parseBoolean(filterConfig.getInitParameter(ConstUtil.openHermes));
-        if (openHermes) {
-            hermesFilter = new AuthHermesFilter();
-            hermesFilter.init(filterConfig);
-        }
     }
 
     @Override
