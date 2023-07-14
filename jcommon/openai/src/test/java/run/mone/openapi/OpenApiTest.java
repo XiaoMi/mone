@@ -148,9 +148,10 @@ public class OpenApiTest {
 
     private OpenAiClient client() {
 //        Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyAddr, 65522));
+        String key = System.getenv("open_api_key");
         HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(new OpenAILogger());
         OpenAiClient openAiClient = OpenAiClient.builder()
-                .apiKey(System.getenv("open_api_key"))
+                .apiKey(key)
                 .connectTimeout(50)
                 .writeTimeout(50)
                 .readTimeout(50)
@@ -547,7 +548,8 @@ public class OpenApiTest {
     @Test
     public void testListOpenaiModels() {
         OpenAiClient openAiClient = client();
-        openAiClient.models().stream().filter(it->it.getID().contains("gpt")).forEach(it -> {
+//        openAiClient.models().stream().filter(it->it.getID().contains("gpt")).forEach(it -> {
+        openAiClient.models().stream().forEach(it -> {
             System.out.println(it.getID());
         });
     }
