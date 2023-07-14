@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.app.api.model.project.group.HeraProjectGroupAppRequest;
 import com.xiaomi.mone.app.api.model.project.group.HeraProjectGroupDataRequest;
+import com.xiaomi.mone.app.api.model.project.group.HeraProjectGroupModel;
 import com.xiaomi.mone.app.api.model.project.group.ProjectGroupTreeNode;
 import com.xiaomi.mone.app.api.service.HeraAppService;
 import com.xiaomi.mone.app.api.service.HeraAuthorizationApi;
@@ -58,12 +59,16 @@ public class ProjectGroupService {
     }
 
     public Result<ProjectGroupTreeNode> getTreeByUser(ProjectGroupRequest request){
-        return projectGroupServiceApi.getTreeByUser(request.getUser(),request.getGroupType(),request.getProjectGroupName());
+        return projectGroupServiceApi.getTreeByUser(request.getUser(),request.getGroupType(),request.getProjectGroupName(),request.getLevel());
     }
 
     public Result<List<HeraAppBaseInfoModel>> searchGroupApps(ProjectGroupRequest request){
         return projectGroupServiceApi.searchGroupApps(request.getUser(),request.getGroupType(),request.getProjectGroupId(),request.getAppName(),request.getPage(),request.getPageSize());
 
+    }
+
+    public Result<List<HeraProjectGroupModel>> searchChildGroups(ProjectGroupRequest request){
+        return projectGroupServiceApi.searchChildGroups(request.getUser(),request.getGroupType(),request.getProjectGroupId(),request.getPage(),request.getPageSize());
     }
 
     public Result searchMyApps(ProjectGroupRequest request){
@@ -85,11 +90,11 @@ public class ProjectGroupService {
         List<HeraAppBaseInfoModel> data = listResult.getData();
         List<Integer> baseIds = data.stream().map(t -> t.getId()).collect(Collectors.toList());
         log.info("baseIds : {}",new Gson().toJson(baseIds));
-        Long aLong = appMonitorService.countByBaseInfoId(baseIds);
+        Long aLong = appMonitorService.countByBaseInfoId(baseIds,request.getUser());
         pd.setTotal(aLong);
 
         if(aLong.intValue() > 0){
-            List<AppMonitor> appMonitors = appMonitorService.searchByBaseInfoId(baseIds, 1, 1000);
+            List<AppMonitor> appMonitors = appMonitorService.searchByBaseInfoId(baseIds,request.getUser(), 1, 1000);
             pd.setList(appMonitors);
             pd.setPage(1);
             pd.setPageSize(1000);
