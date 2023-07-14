@@ -16,6 +16,7 @@ public enum UserTypeEnum implements Base {
     GITLAB_TYPE(3, "GITLAB"),
     GITEE_TYPE(4, "GITEE"),
     SERVICE_TYPE(5, "服务账号"),
+    FEISHU_TYPE(6, "飞书"),
     ;
     private Integer code;
     private String desc;

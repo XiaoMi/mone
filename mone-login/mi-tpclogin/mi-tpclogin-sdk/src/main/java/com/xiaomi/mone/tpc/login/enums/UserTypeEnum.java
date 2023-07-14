@@ -13,6 +13,7 @@ public enum UserTypeEnum {
     GITLAB_TYPE(3, "GITLAB"),
     GITEE_TYPE(4, "GITEE"),
     SERVICE_TYPE(5, "服务用户"),
+    FEISHU_TYPE(6, "飞书"),
     ;
     private Integer code;
     private String desc;

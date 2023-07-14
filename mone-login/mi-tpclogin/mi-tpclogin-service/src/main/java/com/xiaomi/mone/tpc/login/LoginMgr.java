@@ -57,7 +57,10 @@ public abstract class LoginMgr {
         List<AuthAccountVo> infos = new ArrayList<>();
         mgrMap.forEach((k, v) -> {
             try {
-                infos.add(v.buildAuth2LoginInfo(pageUrl, vcode, state));
+                AuthAccountVo authAccountVo = v.buildAuth2LoginInfo(pageUrl, vcode, state);
+                if (StringUtils.isNotBlank(authAccountVo.getUrl())) {
+                    infos.add(authAccountVo);
+                }
             } catch (Exception e) {
                 log.info("构建{}的登陆信息异常", k, e);
             }
