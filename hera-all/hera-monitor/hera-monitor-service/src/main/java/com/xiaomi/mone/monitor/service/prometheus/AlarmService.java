@@ -838,15 +838,14 @@ public class AlarmService {
     public String getK8sPodRestartExpr(Integer projectId,String projectName,String op,double value,AlarmRuleData ruleData){
 
         StringBuilder exprBuilder = new StringBuilder();
-        exprBuilder.append("(0 * container_last_seen{system='mione',");
+        exprBuilder.append("increase(kube_pod_container_restarts_record{system='mione',");
         String labelProperties = getEnvLabelProperties(ruleData);
         if(StringUtils.isNotBlank(labelProperties)){
             exprBuilder.append(labelProperties).append(",");
         }
-        exprBuilder.append("application='").append(projectId).append("_").append(projectName).append("'");
-        exprBuilder.append("}) ");
-        exprBuilder.append("+ on(pod,container) group_left kube_pod_container_status_restarts_total{system='mione',job='mione-kube-state'}");
-        exprBuilder.append(op).append(value);
+        String appName = projectName.replaceAll("-","_");
+        exprBuilder.append("application='").append(projectId).append("_").append(appName).append("'");
+        exprBuilder.append("}[3m]) > 0");
 
         return exprBuilder.toString();
     }

@@ -15,6 +15,7 @@ public class ProjectGroupTreeNode implements Serializable {
 
     private Integer id;
     private Integer type;
+    private Integer level;
     private Integer relationObjectId;
     private String name;
     private String cnName;
@@ -23,9 +24,10 @@ public class ProjectGroupTreeNode implements Serializable {
 
     public ProjectGroupTreeNode(){}
 
-    public ProjectGroupTreeNode(Integer id, Integer type, Integer relationObjectId, String name, String cnName,Integer parentGroupId) {
+    public ProjectGroupTreeNode(Integer id, Integer type, Integer level,Integer relationObjectId, String name, String cnName,Integer parentGroupId) {
         this.id = id;
         this.type = type;
+        this.level = level;
         this.relationObjectId = relationObjectId;
         this.name = name;
         this.cnName = cnName;

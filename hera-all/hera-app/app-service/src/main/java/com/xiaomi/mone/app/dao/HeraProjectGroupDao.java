@@ -154,7 +154,8 @@ public class HeraProjectGroupDao {
             ca.andTypeEqualTo(type);
         }
         if(level != null){
-            ca.andLevelEqualTo(level);
+            //查询节点级数小于指定level的数据
+            ca.andLevelLessThan(level);
         }
 
         try {
