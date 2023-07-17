@@ -174,19 +174,33 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
     }
 
     public Result<List<MapDTO<String, Long>>> getMilogSpaces() {
-        com.xiaomi.youpin.infra.rpc.Result<PageDataVo<NodeVo>> tpcRes = spaceAuthService.getUserPermSpace("", 1, Integer.MAX_VALUE);
-        if (tpcRes.getCode() != 0) {
-            return Result.fail(CommonError.UNAUTHORIZED);
-        }
+        int pageNum = 1;
         List<MapDTO<String, Long>> ret = new ArrayList<>();
-        if (tpcRes.getData() == null || tpcRes.getData().getList() == null || tpcRes.getData().getList().isEmpty()) {
-            return Result.success(ret);
+        List<NodeVo> nodeVos = new ArrayList<>();
+
+        while (true) {
+            com.xiaomi.youpin.infra.rpc.Result<PageDataVo<NodeVo>> tpcRes = spaceAuthService.getUserPermSpace("", pageNum, Integer.MAX_VALUE);
+
+            if (tpcRes.getCode() != 0) {
+                return Result.fail(CommonError.UNAUTHORIZED);
+            }
+
+            List<NodeVo> list = tpcRes.getData() != null ? tpcRes.getData().getList() : null;
+
+            if (CollectionUtils.isEmpty(list)) {
+                break;
+            }
+
+            nodeVos.addAll(list);
+            pageNum++;
         }
-        List<NodeVo> list = tpcRes.getData().getList();
-        for (NodeVo s : list) {
+
+        for (NodeVo s : nodeVos) {
             ret.add(new MapDTO<>(s.getNodeName(), s.getOutId()));
         }
-        return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage(), ret);
+
+        return Result.success(ret);
+
     }
 
     /**

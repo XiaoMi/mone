@@ -215,4 +215,10 @@ public class MilogLogstoreDao {
     public void deleteById(Long id) {
         dao.delete(MilogLogStoreDO.class, id);
     }
+
+    public List<MilogLogStoreDO> queryBySpaceIdNamed(Long spaceId, String logStoreName) {
+        Cnd cnd = Cnd.where("space_id", EQUAL_OPERATE, spaceId);
+        cnd.and("logstoreName", EQUAL_OPERATE, logStoreName);
+        return dao.query(MilogLogStoreDO.class, cnd);
+    }
 }

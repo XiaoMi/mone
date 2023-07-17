@@ -119,10 +119,13 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
         if (StringUtils.isNotEmpty(errorInfos)) {
             return Result.failParam(errorInfos);
         }
-        if (logStoreDao.verifyExistByName(cmd.getLogstoreName(), null)) {
+        if (!cmd.getNameSameStatus() && logStoreDao.verifyExistByName(cmd.getLogstoreName(), null)) {
             return new Result<>(CommonError.UnknownError.getCode(), "存在同名storeName", "");
         }
-
+        List<MilogLogStoreDO> logStoreDOS = logStoreDao.queryBySpaceIdNamed(cmd.getSpaceId(), cmd.getLogstoreName());
+        if (CollectionUtils.isNotEmpty(logStoreDOS)) {
+            return Result.failParam("store名称重复，请重新填写名称");
+        }
         MilogLogStoreDO storeDO = MilogLogstoreConvert.INSTANCE.fromCommad(cmd);
         wrapBaseCommon(storeDO, OperateEnum.ADD_OPERATE);
         // 绑定资源

@@ -46,7 +46,7 @@ public class TpcSpaceAuthService implements SpaceAuthService {
 
     @Override
     public Result<PageDataVo<NodeVo>> getUserPermSpace(String spaceName, Integer page, Integer pageSize) {
-        Result<PageDataVo<NodeVo>> tpcRes = tpc.getUserPermSpace(spaceName, 1, Integer.MAX_VALUE);
+        Result<PageDataVo<NodeVo>> tpcRes = tpc.getUserPermSpace(spaceName, page, pageSize);
         return tpcRes;
     }
 
