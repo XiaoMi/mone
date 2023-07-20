@@ -27,6 +27,8 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring.version>5.1.3.RELEASE</spring.version>
         <hera-monitor.release.version>1.2-SNAPSHOT</hera-monitor.release.version>
+        <!-- Replace it with the absolute path of your own hera-monitor project. -->
+        <maven.jcommonDirectory>~/</maven.jcommonDirectory>
     </properties>
 
     <dependencyManagement>
@@ -138,6 +140,32 @@
                 </executions>
             </plugin>
 
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-license</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>target/classes/META-INF</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${maven.jcommonDirectory}</directory>
+                                    <includes>
+                                        <include>LICENSE.txt</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
 <!--            <plugin>-->
 <!--                <groupId>run.mone</groupId>-->
 <!--                <artifactId>codecheck-maven-plugin</artifactId>-->
@@ -154,6 +182,18 @@
         </plugins>
 
     </build>
+
+    <name>${project.artifactId}</name>
+    <description>The parent project of jcommon</description>
+    <url>https://github.com/XiaoMi/mone</url>
+    <inceptionYear>2020</inceptionYear>
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
 
     <distributionManagement>
         <snapshotRepository>
