@@ -43,7 +43,7 @@ public class CustomLogParserTest {
     @Test
     public void test1() {
         Stopwatch stopwatch = Stopwatch.createStarted();
-        String keyList = "timestamp:date,level:keyword,traceId:keyword,threadName:text,className:text,line:keyword,methodName:keyword,message:text,podName:keyword,failed:text,taskId:text,apiType:text,uri:text,method:text,rt:text,code:text,sceneId:text,serialId:text,reportId:text,apiId:text,params:text,result:text,errorInfo :text,reqHeaders:text,respHeaders:text,logstore:keyword,logsource:keyword,mqtopic:keyword,mqtag:keyword,logip:keyword,tail:keyword,linenumber:long";
+        String keyList = "timestamp:date,podName:keyword,level:keyword,threadName:text,className:text,line:keyword,methodName:keyword,traceId:keyword,message:text,ip:ip,logstore:keyword,logsource:keyword,mqtopic:keyword,mqtag:keyword,logip:keyword,tail:keyword,linenumber:long";
         String valueList = "0,-1,16,-1,-1,-1,-1,-1,-1,1,2,3,4,5,6,7,8,9,10,11,13,12,17,14,15";
         String parseScript = "|";
         String logData = "";

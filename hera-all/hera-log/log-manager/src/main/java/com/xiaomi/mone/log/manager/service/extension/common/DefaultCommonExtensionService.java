@@ -75,4 +75,9 @@ public class DefaultCommonExtensionService implements CommonExtensionService {
     public String queryDateHistogramField(Long storeId) {
         return "timestamp";
     }
+
+    @Override
+    public String getSearchIndex(Long logStoreId, String esIndexName) {
+        return esIndexName;
+    }
 }
