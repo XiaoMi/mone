@@ -15,6 +15,7 @@
  */
 package com.xiaomi.mone.log.manager.service.env;
 
+import com.xiaomi.mone.log.api.model.meta.LogPattern;
 import com.xiaomi.mone.log.manager.model.vo.LogAgentListBo;
 
 import java.util.List;
@@ -43,5 +44,5 @@ public interface HeraEnvIpService {
      * @param ips
      * @return
      */
-    List<String> queryActualIps(List<String> ips, String agentIp);
+    List<LogPattern.IPRel> queryActualIps(List<String> ips, String agentIp);
 }
