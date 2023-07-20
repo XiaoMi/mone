@@ -2,6 +2,7 @@ package com.xiaomi.mone.log.agent.channel.file;
 
 import cn.hutool.core.util.ReflectUtil;
 import com.xiaomi.data.push.rpc.common.RemotingUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOCase;
 import org.apache.commons.io.monitor.FileAlterationObserver;
 import org.apache.commons.io.monitor.FileEntry;
@@ -17,6 +18,7 @@ import static com.xiaomi.mone.log.agent.channel.file.InodeFileComparator.INODE_C
  * @description
  * @date 2023/7/14 10:51
  */
+@Slf4j
 public class LogFileAlterationObserver extends FileAlterationObserver {
 
     public LogFileAlterationObserver(String directoryName) {
@@ -46,6 +48,7 @@ public class LogFileAlterationObserver extends FileAlterationObserver {
     protected LogFileAlterationObserver(FileEntry rootEntry, FileFilter fileFilter, IOCase caseSensitivity) {
         super(rootEntry, fileFilter, caseSensitivity);
         if (!RemotingUtil.isWindowsPlatform()) {
+            log.info("LogFileAlterationObserver set comparator:{}", INODE_COMPARATOR);
             ReflectUtil.setFieldValue(this, "comparator", INODE_COMPARATOR);
         }
     }

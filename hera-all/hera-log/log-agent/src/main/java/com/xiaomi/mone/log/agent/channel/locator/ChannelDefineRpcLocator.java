@@ -135,6 +135,7 @@ public class ChannelDefineRpcLocator implements ChannelDefineLocator {
                     filters = filterDefines.stream().map(FilterTrans::filterConfTrans).collect(Collectors.toList());
                 }
                 cloneChannelDefine.setIps(logPattern.getIps());
+                cloneChannelDefine.setIpDirectoryRel(logPattern.getIpDirectoryRel());
                 cloneChannelDefine.setFilters(filters);
                 cloneChannelDefine.setInput(input);
                 cloneChannelDefine.setOutput(output);

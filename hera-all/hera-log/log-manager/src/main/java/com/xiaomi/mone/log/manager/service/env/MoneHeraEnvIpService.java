@@ -23,6 +23,8 @@ import com.xiaomi.youpin.docean.anno.Service;
 import java.util.List;
 import java.util.Map;
 
+import static com.xiaomi.mone.log.manager.common.utils.ManagerUtil.getPhysicsDirectory;
+
 /**
  * @author wtt
  * @version 1.0
@@ -43,7 +45,7 @@ public class MoneHeraEnvIpService implements HeraEnvIpService {
     }
 
     @Override
-    public List<LogPattern.IPRel> queryActualIps(List<String> ips, String agentIp) {
-        return Lists.newArrayList(LogPattern.IPRel.builder().ip(agentIp).build());
+    public List<LogPattern.IPRel> queryActualIps(List<String> ips, String agentIp, String logPath) {
+        return Lists.newArrayList(LogPattern.IPRel.builder().key(getPhysicsDirectory(logPath)).ip(agentIp).build());
     }
 }

@@ -44,5 +44,5 @@ public interface HeraEnvIpService {
      * @param ips
      * @return
      */
-    List<LogPattern.IPRel> queryActualIps(List<String> ips, String agentIp);
+    List<LogPattern.IPRel> queryActualIps(List<String> ips, String agentIp, String logPath);
 }

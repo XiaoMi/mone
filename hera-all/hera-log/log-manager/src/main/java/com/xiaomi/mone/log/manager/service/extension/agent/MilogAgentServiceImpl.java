@@ -341,7 +341,7 @@ public class MilogAgentServiceImpl implements MilogAgentService {
                 try {
                     logPattern.setLogPattern(logPathMapping.getLogPath(milogLogtailDo.getLogPath(), null));
                     logPattern.setLogSplitExpress(logPathMapping.getLogPath(milogLogtailDo.getLogSplitExpress(), null));
-                    logPattern.setIpDirectoryRel(heraEnvIpService.queryActualIps(milogLogtailDo.getIps(), agentIp));
+                    logPattern.setIpDirectoryRel(heraEnvIpService.queryActualIps(milogLogtailDo.getIps(), agentIp, milogLogtailDo.getLogPath()));
                 } catch (Exception e) {
                     log.error("assemble log path data error:", e);
                 }
