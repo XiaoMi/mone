@@ -43,4 +43,6 @@ public interface CommonExtensionService {
     TermQueryBuilder multipleChooseBuilder(Long storeId, String chooseVal);
 
     String queryDateHistogramField(Long storeId);
+
+    String getSearchIndex(Long logStoreId, String esIndex);
 }
