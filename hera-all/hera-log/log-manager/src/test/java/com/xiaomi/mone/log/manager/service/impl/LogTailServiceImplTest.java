@@ -61,7 +61,7 @@ public class LogTailServiceImplTest {
         MlogParseParam mlogParseParam = new MlogParseParam();
         mlogParseParam.setParseType(5);
         mlogParseParam.setParseScript("%s-[%s]-[%s]-%s-[%s]-[%s]-[%s]-%s");
-        mlogParseParam.setMsg("2023-07-19 09:48:54.178 [dk-fdf] [10.126.161.114] INFO [http-nio-8051-exec-166] [com.xiaomi.duokan.api.fiction.common.aspect.PerfCountAspectImpl#doAround:57] [f17c2f4e2f1d29d5015931e682abe400] FictionFeignClient.batchQueryFictionScore costTime:4");
+        mlogParseParam.setMsg("2023-07-19 09:48:54.178 [dk-fdf] [127.0.0.1] INFO [http-nio-8051-exec-166] [com.xiaomi.duokan.api.fiction.common.aspect.PerfCountAspectImpl#doAround:57] [f17c2f4e2f1d29d5015931e682abe400] FictionFeignClient.batchQueryFictionScore costTime:4");
         Result<Object> objectResult = logTailService.parseExample(mlogParseParam);
         log.info("result:{}", objectResult);
     }
