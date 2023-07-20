@@ -150,7 +150,7 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
                 return Result.failParam("找不到[" + logQuery.getLogstore() + "]对应的数据");
             }
             EsService esService = esCluster.getEsService(milogLogstoreDO.getEsClusterId());
-            String esIndexName = milogLogstoreDO.getEsIndex();
+            String esIndexName = commonExtensionService.getSearchIndex(logQuery.getStoreId(), milogLogstoreDO.getEsIndex());
             if (esService == null || StringUtils.isEmpty(esIndexName)) {
                 log.warn("[EsDataService.logQuery] logStore:[{}]配置异常", logQuery.getLogstore());
                 return Result.failParam("logStore配置异常");
@@ -260,7 +260,7 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
             // get interval
             String interval = searchLog.esHistogramInterval(logQuery.getEndTime() - logQuery.getStartTime());
             EsService esService = esCluster.getEsService(logStore.getEsClusterId());
-            String esIndex = logStore.getEsIndex();
+            String esIndex = commonExtensionService.getSearchIndex(logStore.getId(), logStore.getEsIndex());
             if (esService == null || StringUtils.isEmpty(esIndex)) {
                 return Result.failParam("logStore或tail配置异常");
             }

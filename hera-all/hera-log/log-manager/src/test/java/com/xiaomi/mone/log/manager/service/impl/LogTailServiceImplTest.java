@@ -17,6 +17,8 @@ package com.xiaomi.mone.log.manager.service.impl;
 
 import com.google.gson.Gson;
 import com.xiaomi.mone.log.api.enums.LogStructureEnum;
+import com.xiaomi.mone.log.common.Result;
+import com.xiaomi.mone.log.manager.model.bo.MlogParseParam;
 import com.xiaomi.youpin.docean.Ioc;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Before;
@@ -52,5 +54,15 @@ public class LogTailServiceImplTest {
         LogStructureEnum logStructureEnum = LogStructureEnum.TAIL;
         logTailService.deleteConfigRemote(spaceId, id, motorRoomEn, logStructureEnum);
         log.info("deleteConfigRemoteTest");
+    }
+
+    @Test
+    public void parseExampleTest() {
+        MlogParseParam mlogParseParam = new MlogParseParam();
+        mlogParseParam.setParseType(5);
+        mlogParseParam.setParseScript("%s-[%s]-[%s]-%s-[%s]-[%s]-[%s]-%s");
+        mlogParseParam.setMsg("2023-07-19 09:48:54.178 [dk-fdf] [10.126.161.114] INFO [http-nio-8051-exec-166] [com.xiaomi.duokan.api.fiction.common.aspect.PerfCountAspectImpl#doAround:57] [f17c2f4e2f1d29d5015931e682abe400] FictionFeignClient.batchQueryFictionScore costTime:4");
+        Result<Object> objectResult = logTailService.parseExample(mlogParseParam);
+        log.info("result:{}", objectResult);
     }
 }

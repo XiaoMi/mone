@@ -122,12 +122,17 @@ public class CustomLogParser implements LogParser {
             if (StringUtils.isNotEmpty(list.get(0)) && StringUtils.isNotEmpty(list.get(1))) {
                 parsedData = StringUtils.substringBetween(logData, list.get(0), list.get(1));
             } else {
-                parsedData = logData;
+                //下一个索引的前部分不为空的话依赖它
+                if (i + 1 < mapPattern.size() && StringUtils.isNotEmpty(mapPattern.get(i + 1).get(0))) {
+                    parsedData = StringUtils.substringBetween(logData, "", mapPattern.get(i + 1).get(0));
+                } else {
+                    parsedData = logData;
+                }
             }
             if (null == parsedData) {
                 break;
             }
-            parsedLogs.add(parsedData);
+            parsedLogs.add(parsedData.trim());
             logData = StrUtil.removePrefix(logData.trim(), String.format("%s%s%s", list.get(0), parsedData, list.get(1)).trim());
         }
         return parsedLogs;
