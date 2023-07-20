@@ -347,7 +347,7 @@ public class AlarmService {
                 return getK8sCpuAvgUsageAlarmExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),ruleData);
 
             case "k8s_pod_restart_times":
-                return getK8sPodRestartExpr(rule.getProjectId(),app.getProjectName(),rule.getOp(),rule.getValue(),ruleData);
+                return getK8sPodRestartExpr(rule.getProjectId(),app.getProjectName(),ruleData);
 
             case "jvm_heap_mem_use_rate":
                 return getJvmMemAlarmExpr(rule.getProjectId(),app.getProjectName(),"heap", rule.getOp(), rule.getValue(),ruleData);
@@ -835,7 +835,7 @@ public class AlarmService {
         return exprBuilder.toString();
     }
 
-    public String getK8sPodRestartExpr(Integer projectId,String projectName,String op,double value,AlarmRuleData ruleData){
+    public String getK8sPodRestartExpr(Integer projectId,String projectName,AlarmRuleData ruleData){
 
         StringBuilder exprBuilder = new StringBuilder();
         exprBuilder.append("increase(kube_pod_container_restarts_record{system='mione',");
@@ -1155,7 +1155,7 @@ public class AlarmService {
         }
 
         if(isFullGc){
-            exprBuilder.append("action=~'end of major GC|endofminorGC',");
+            exprBuilder.append("action=~'end of major GC|end of minor GC',");
         }
         exprBuilder.append("application=").append("'").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'").append(",");
         exprBuilder.append("serverIp!=").append("''");
@@ -1175,7 +1175,7 @@ public class AlarmService {
         }
 
         if(isFullGc){
-            exprBuilder.append("action=~'end of major GC|endofminorGC',");
+            exprBuilder.append("action=~'end of major GC|end of minor GC',");
         }
         exprBuilder.append("application=").append("'").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'");
         exprBuilder.append("}[1m])").append(op).append(value);
