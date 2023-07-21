@@ -20,6 +20,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.xiaomi.mone.file.*;
+import com.xiaomi.mone.log.agent.channel.file.InodeFileComparator;
 import com.xiaomi.mone.log.agent.channel.file.MonitorFile;
 import com.xiaomi.mone.log.agent.channel.memory.AgentMemoryService;
 import com.xiaomi.mone.log.agent.channel.memory.ChannelMemory;
@@ -237,6 +238,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
     private void startCollectFile(Long channelId, Input input, List<String> patterns) {
         for (int i = 0; i < patterns.size(); i++) {
             readFile(input.getPatternCode(), getTailPodIp(patterns.get(i)), patterns.get(i), channelId);
+            InodeFileComparator.addFile(patterns.get(i));
         }
     }
 
