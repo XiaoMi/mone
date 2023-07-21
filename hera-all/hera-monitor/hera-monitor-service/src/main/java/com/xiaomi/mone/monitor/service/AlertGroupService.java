@@ -88,7 +88,7 @@ public class AlertGroupService {
         PageData<List<AlertGroup>> pageAgList = alertGroupDao.searchByCond(admin,user, param.getName(), param.getType(), param.getPage(), param.getPageSize());
         if (pageAgList != null && pageAgList.getList() != null) {
             pageData.setTotal(pageAgList.getTotal());
-            pageData.setList(alertHelper.buildAlertGroupInfoList(user, pageAgList.getList()));
+            pageData.setList(alertHelper.buildAlertGroupInfoList(admin,user, pageAgList.getList()));
         }
         return Result.success(pageData);
     }
@@ -101,7 +101,8 @@ public class AlertGroupService {
      */
     public Result<List<AlertGroupInfo>> queryByIds(String user, List<Long> ids) {
         List<AlertGroup> agList = alertGroupDao.getByIds(ids, true);
-        return Result.success(alertHelper.buildAlertGroupInfoList(user, agList));
+        boolean admin = userConfigService.isAdmin(user);
+        return Result.success(alertHelper.buildAlertGroupInfoList(admin,user, agList));
     }
 
     /**
@@ -146,9 +147,10 @@ public class AlertGroupService {
         Map<Long, AlertGroupInfo> mapData = new HashMap<>();
         AlertGroupInfo groupInfo = null;
         AlertGroup am = null;
+        boolean admin = userConfigService.isAdmin(user);
         for (Integer relId : param.getRelIds()) {
             am = alertGroupDao.getByRelId(param.getType(), relId);
-            groupInfo = alertHelper.buildAlertGroupInfo(user, am);
+            groupInfo = alertHelper.buildAlertGroupInfo(admin,user, am);
             if (groupInfo == null) {
                 continue;
             }
@@ -165,7 +167,8 @@ public class AlertGroupService {
      */
     public Result<AlertGroupInfo> alertGroupDetailed(String user, AlertGroupParam param) {
         AlertGroup ag = alertGroupDao.getById(param.getId());
-        return Result.success(alertHelper.buildAlertGroupInfo(user, ag));
+        boolean isAdmin = userConfigService.isAdmin(user);
+        return Result.success(alertHelper.buildAlertGroupInfo(isAdmin,user, ag));
     }
 
     /**
@@ -192,7 +195,8 @@ public class AlertGroupService {
         if (!alertGroupDao.insert(ag)) {
             return Result.fail(ErrorCode.OperFailed);
         }
-        return Result.success(alertHelper.buildAlertGroupInfo(user, ag));
+        boolean isAdmin = userConfigService.isAdmin(user);
+        return Result.success(alertHelper.buildAlertGroupInfo(isAdmin,user, ag));
     }
 
     /**
