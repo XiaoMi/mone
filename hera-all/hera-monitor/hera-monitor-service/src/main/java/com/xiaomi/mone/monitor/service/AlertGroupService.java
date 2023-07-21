@@ -15,6 +15,7 @@ import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.alertmanager.AlertServiceAdapt;
 import com.xiaomi.mone.monitor.service.helper.AlertHelper;
 import com.xiaomi.mone.monitor.service.model.PageData;
+import com.xiaomi.mone.monitor.service.user.UserConfigService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,8 @@ public class AlertGroupService {
     private AlertHelper alertHelper;
     @Autowired
     private AlertGroupDao alertGroupDao;
+    @Autowired
+    UserConfigService userConfigService;
 
     /**
      * 数据清洗专用
@@ -81,7 +84,8 @@ public class AlertGroupService {
         pageData.setPage(param.getPage());
         pageData.setPageSize(param.getPageSize());
         pageData.setTotal(0L);
-        PageData<List<AlertGroup>> pageAgList = alertGroupDao.searchByCond(user, param.getName(), param.getType(), param.getPage(), param.getPageSize());
+        boolean admin = userConfigService.isAdmin(user);
+        PageData<List<AlertGroup>> pageAgList = alertGroupDao.searchByCond(admin,user, param.getName(), param.getType(), param.getPage(), param.getPageSize());
         if (pageAgList != null && pageAgList.getList() != null) {
             pageData.setTotal(pageAgList.getTotal());
             pageData.setList(alertHelper.buildAlertGroupInfoList(user, pageAgList.getList()));

@@ -165,7 +165,7 @@ public class AlertGroupDao {
         }
     }
 
-    public PageData<List<AlertGroup>> searchByCond(String member, String name, String type, int page, int pageSize) {
+    public PageData<List<AlertGroup>> searchByCond(Boolean isAdmin,String member, String name, String type, int page, int pageSize) {
         PageData<List<AlertGroup>> pageData = new PageData();
         pageData.setPage(page);
         pageData.setPageSize(pageSize);
@@ -173,7 +173,11 @@ public class AlertGroupDao {
             StringBuilder sqlB = new StringBuilder();
             sqlB.append("select ").append("ag.id,ag.rel_id,ag.name,ag.chat_id,ag.creater,ag.create_time,ag.update_time,ag.type,ag.desc").append(" from ")
                     .append("alert_group ag left join alert_group_member agm on ag.id=agm.alert_group_id")
-                    .append(" where ag.deleted=0 and agm.deleted=0 and agm.member='").append(member).append("'");
+                    .append(" where ag.deleted=0 and agm.deleted=0");
+            if(!isAdmin){
+                sqlB.append("and agm.member='").append(member).append("'");
+            }
+
             if (StringUtils.isNotBlank(name)) {
                 sqlB.append(" and ag.name LIKE '%").append(name).append("%'");
             }
