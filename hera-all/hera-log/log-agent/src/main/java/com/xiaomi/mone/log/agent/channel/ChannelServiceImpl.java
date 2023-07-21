@@ -15,7 +15,6 @@
  */
 package com.xiaomi.mone.log.agent.channel;
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.io.FileUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -71,6 +70,8 @@ public class ChannelServiceImpl extends AbstractChannelService {
 
     @Getter
     private final ConcurrentHashMap<String, Future> futureMap = new ConcurrentHashMap<>();
+
+    private final Map<String, Long> fileReopenMap = new HashMap<>();
 
     private Gson gson = Constant.GSON;
 
@@ -155,7 +156,6 @@ public class ChannelServiceImpl extends AbstractChannelService {
     public void start() {
         Long channelId = channelDefine.getChannelId();
         Input input = channelDefine.getInput();
-        List<String> ips = channelDefine.getIps();
 
         this.logPattern = input.getLogPattern();
         this.logSplitExpress = input.getLogSplitExpress();
@@ -178,10 +178,8 @@ public class ChannelServiceImpl extends AbstractChannelService {
             channelMemory = initChannelMemory(channelId, input, patterns);
         }
         memoryService.cleanChannelMemoryContent(channelId, patterns);
-        // handle all * file ip
-        ChannelUtil.buildConnectionBetweenAppIp(logPattern, ipPath, ips, collectOnce);
 
-        startCollectFile(channelId, input, ips, patterns);
+        startCollectFile(channelId, input, patterns);
 
         startExportQueueDataThread();
         memoryService.refreshMemory(channelMemory);
@@ -236,23 +234,16 @@ public class ChannelServiceImpl extends AbstractChannelService {
         }, 10, 7, TimeUnit.SECONDS);
     }
 
-    private void startCollectFile(Long channelId, Input input, List<String> ips, List<String> patterns) {
-        Map<String, String> ipPathDireMap = new HashMap<>();
-        BeanUtil.copyProperties(ipPath, ipPathDireMap);
-
+    private void startCollectFile(Long channelId, Input input, List<String> patterns) {
         for (int i = 0; i < patterns.size(); i++) {
-            String ip = ChannelUtil.queryCurrentCorrectIp(ipPathDireMap, patterns.get(i), ips);
-
-            readFile(input.getPatternCode(), ip, patterns.get(i), channelId);
-            if (!collectOnce) {
-                ipPath.put(patterns.get(i), ip);
-            }
+            readFile(input.getPatternCode(), getTailPodIp(patterns.get(i)), patterns.get(i), channelId);
         }
     }
 
 
-    private void handleAllFileCollectMonitor(String patternCode, String newFilePath, Long channelId, Map<String, String> ipPath) {
-        String ip = ChannelUtil.queryCurrentCorrectIp(ipPath, newFilePath, Collections.EMPTY_LIST);
+    private void handleAllFileCollectMonitor(String patternCode, String newFilePath, Long channelId) {
+
+        String ip = getTailPodIp(newFilePath);
 
         List<String> collectKeys = logFileMap.keySet().stream().collect(Collectors.toList());
 
@@ -574,14 +565,25 @@ public class ChannelServiceImpl extends AbstractChannelService {
     }
 
     @Override
-    public void reOpen(String filePath) {
+    public synchronized void reOpen(String filePath) {
+        /**
+         * 上次打开的时间距今不超过1min中,则不处理
+         */
+        if (!fileReopenMap.containsKey(filePath)) {
+            fileReopenMap.put(filePath, Instant.now().toEpochMilli());
+        }
+        if (fileReopenMap.get(filePath) > Instant.now().toEpochMilli() - 60 * 1000) {
+            return;
+        }
+        fileReopenMap.put(filePath, Instant.now().toEpochMilli());
         log.info("reOpen file:{}", filePath);
         if (collectOnce) {
-            handleAllFileCollectMonitor(channelDefine.getInput().getPatternCode(), filePath, getChannelId(), ipPath);
+            handleAllFileCollectMonitor(channelDefine.getInput().getPatternCode(), filePath, getChannelId());
             return;
         }
         LogFile logFile = logFileMap.get(filePath);
-        String ip = StringUtils.isBlank(ipPath.get(filePath)) ? NetUtil.getLocalIp() : ipPath.get(filePath);
+        String tailPodIp = getTailPodIp(filePath);
+        String ip = StringUtils.isBlank(tailPodIp) ? NetUtil.getLocalIp() : tailPodIp;
         if (null == logFile) {
             // 新增日志文件
             readFile(channelDefine.getInput().getPatternCode(), ip, filePath, getChannelId());
