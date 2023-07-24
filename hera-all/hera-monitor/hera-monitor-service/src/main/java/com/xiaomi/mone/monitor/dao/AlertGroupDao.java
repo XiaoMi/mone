@@ -173,9 +173,9 @@ public class AlertGroupDao {
             StringBuilder sqlB = new StringBuilder();
             sqlB.append("select ").append("ag.id,ag.rel_id,ag.name,ag.chat_id,ag.creater,ag.create_time,ag.update_time,ag.type,ag.desc").append(" from ")
                     .append("alert_group ag left join alert_group_member agm on ag.id=agm.alert_group_id")
-                    .append(" where ag.deleted=0 and agm.deleted=0");
+                    .append(" where ag.deleted=0 and agm.deleted=0 ");
             if(!isAdmin){
-                sqlB.append("and agm.member='").append(member).append("'");
+                sqlB.append(" and agm.member='").append(member).append("'");
             }
 
             if (StringUtils.isNotBlank(name)) {
