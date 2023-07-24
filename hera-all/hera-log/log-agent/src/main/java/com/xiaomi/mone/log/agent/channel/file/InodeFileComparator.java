@@ -1,15 +1,14 @@
 package com.xiaomi.mone.log.agent.channel.file;
 
+import com.google.common.collect.Lists;
 import com.xiaomi.mone.log.agent.channel.memory.ChannelMemory;
 import com.xiaomi.mone.log.agent.common.ChannelUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.comparator.DefaultFileComparator;
+import org.apache.commons.io.comparator.NameFileComparator;
 
 import java.io.File;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * @author wtt
@@ -22,15 +21,20 @@ public class InodeFileComparator extends DefaultFileComparator {
 
     public static final Comparator<File> INODE_COMPARATOR = new InodeFileComparator();
 
+    private static final Comparator<File> fileComparator = NameFileComparator.NAME_SYSTEM_COMPARATOR;
+
     private static final Map<String, Long> INODE_MAP = new HashMap<>();
+
+    private static final List<String> filePaths = Lists.newArrayList();
 
     @Override
     public int compare(File file1, File file2) {
         if (file1.isDirectory() || file2.isDirectory()) {
             return 0;
         }
-        int sort = file1.compareTo(file2);
-        if (sort == 0) {
+        int sort = fileComparator.compare(file1, file2);
+        if (sort == 0 && filePaths.contains(file1.getAbsolutePath())) {
+            //文件名称相同
             Long oldInode;
             if (INODE_MAP.containsKey(file1.getAbsolutePath())) {
                 oldInode = INODE_MAP.get(file1.getAbsolutePath());
@@ -45,5 +49,9 @@ public class InodeFileComparator extends DefaultFileComparator {
             }
         }
         return sort;
+    }
+
+    public static void addFile(String filePath) {
+        filePaths.add(filePath);
     }
 }

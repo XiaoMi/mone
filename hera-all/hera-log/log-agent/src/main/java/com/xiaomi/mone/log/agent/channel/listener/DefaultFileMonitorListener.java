@@ -165,8 +165,6 @@ public class DefaultFileMonitorListener implements FileMonitorListener {
                         return;
                     }
                     LOGGER.info("monitor changedFilePath：{}", changedFilePath);
-                    // 处理windows,本地测试使用
-//                  changedFilePath = StringUtils.replace(changedFilePath, "D:", "").replaceAll("\\\\", SEPARATOR);
                     List<String> filterSuffixList = judgeSpecialFileNameSuffix(changedFilePath);
                     if (CollectionUtils.isNotEmpty(filterSuffixList)) {
                         specialFileSuffixChanged(changedFilePath, filterSuffixList);

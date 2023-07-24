@@ -53,7 +53,7 @@ public class ChannelDefine implements Serializable {
     private List<LogPattern.IPRel> ipDirectoryRel;
 
     /**
-     * todo filter、script配置
+     * filter、script配置
      */
     private List<FilterConf> filters;
     /**
