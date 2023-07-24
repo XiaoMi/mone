@@ -658,7 +658,7 @@ public class AlarmService {
     public String getContainerCpuAlarmExpr(Integer projectId,String projectName,String op,double value,boolean isK8s,AlarmRuleData ruleData){
 
         StringBuilder exprBuilder = new StringBuilder();
-        exprBuilder.append("rate(container_cpu_user_seconds_total{system='mione',");
+        exprBuilder.append("rate(container_cpu_user_seconds_total{");
 
         exprBuilder.append("image!='',");
         exprBuilder.append("system='mione',");
