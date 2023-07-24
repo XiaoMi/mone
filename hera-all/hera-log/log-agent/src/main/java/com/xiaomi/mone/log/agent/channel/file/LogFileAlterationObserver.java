@@ -20,7 +20,8 @@ import static com.xiaomi.mone.log.agent.channel.file.InodeFileComparator.INODE_C
 /**
  * @author wtt
  * @version 1.0
- * @description
+ * @description Rewritten file listener, removes events for modifications and deletions,
+ * only triggers events for new file additions.
  * @date 2023/7/14 10:51
  */
 @Slf4j
