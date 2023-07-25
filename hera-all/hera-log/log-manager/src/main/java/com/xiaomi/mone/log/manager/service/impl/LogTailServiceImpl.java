@@ -513,8 +513,18 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         return Result.success(queryAllApps(appName, type));
     }
 
+    /**
+     * 如果超过2100条只返回200条
+     * @param appName
+     * @param type
+     * @return
+     */
     private List<MapDTO> queryAllApps(String appName, Integer type) {
-        return queryAppInfo(appName, type);
+        List<MapDTO> mapDTOS = queryAppInfo(appName, type);
+        if (mapDTOS.size() > 200) {
+            return mapDTOS.stream().limit(200).collect(Collectors.toList());
+        }
+        return mapDTOS;
     }
 
     private List<MapDTO> queryAppInfo(String appName, Integer type) {
