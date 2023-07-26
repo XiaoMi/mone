@@ -72,6 +72,8 @@ public class ChannelServiceImpl extends AbstractChannelService {
     @Getter
     private final ConcurrentHashMap<String, Future> futureMap = new ConcurrentHashMap<>();
 
+    private final Map<String, Long> reOpenMap = new HashMap<>();
+
     private final Map<String, ScheduledFuture<?>> lastFileLineScheduledFutureMap = new HashMap<>();
 
     private Gson gson = Constant.GSON;
@@ -364,7 +366,6 @@ public class ChannelServiceImpl extends AbstractChannelService {
          * 采集最后一行数据内存中超 10s 没有发送的数据
          */
         ScheduledFuture<?> lastFileLineScheduledFuture = ExecutorUtil.scheduleAtFixedRate(() -> {
-            log.info("lastFileLineScheduledFuture schedule");
             Long appendTime = mLog.getAppendTime();
             if (null != appendTime && Instant.now().toEpochMilli() - appendTime > 10 * 1000) {
                 String remainMsg = mLog.takeRemainMsg2();
@@ -569,6 +570,13 @@ public class ChannelServiceImpl extends AbstractChannelService {
 
     @Override
     public synchronized void reOpen(String filePath) {
+        //打开次数判断10s内只能重新打开1次
+        if (reOpenMap.containsKey(filePath) && Instant.now().toEpochMilli() - reOpenMap.get(filePath) < 10 * 1000) {
+            log.info("The file has been opened too frequently.Please try again in 10 seconds.fileName:{}," +
+                    "last time opening time.:{}", filePath, reOpenMap.get(filePath));
+            return;
+        }
+        reOpenMap.put(filePath, Instant.now().toEpochMilli());
         log.info("reOpen file:{}", filePath);
         if (collectOnce) {
             handleAllFileCollectMonitor(channelDefine.getInput().getPatternCode(), filePath, getChannelId());
@@ -580,12 +588,12 @@ public class ChannelServiceImpl extends AbstractChannelService {
         if (null == logFile) {
             // 新增日志文件
             readFile(channelDefine.getInput().getPatternCode(), ip, filePath, getChannelId());
-            log.info("watch new file create for chnnelId:{},ip:{},path:{}", getChannelId(), filePath, ip);
+            log.info("watch new file create for channelId:{},ip:{},path:{}", getChannelId(), filePath, ip);
         } else {
             // 正常日志切分
             try {
-                //延迟7s切分文件, todo @shanwb 保证文件采集完再切换
-                TimeUnit.SECONDS.sleep(7);
+                //延迟5s切分文件, todo @shanwb 保证文件采集完再切换
+                TimeUnit.SECONDS.sleep(5);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }

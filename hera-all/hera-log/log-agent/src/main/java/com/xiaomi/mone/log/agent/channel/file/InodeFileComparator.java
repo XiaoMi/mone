@@ -13,7 +13,9 @@ import java.util.*;
 /**
  * @author wtt
  * @version 1.0
- * @description
+ * @description File comparator, when the file names of two files are the same,
+ * continue to compare whether the file inodes are the same. If they are not the same,
+ * it means that the file has changed.
  * @date 2023/7/14 11:19
  */
 @Slf4j
@@ -29,10 +31,10 @@ public class InodeFileComparator extends DefaultFileComparator {
 
     @Override
     public int compare(File file1, File file2) {
-        if (file1.isDirectory() || file2.isDirectory()) {
-            return 0;
-        }
         int sort = fileComparator.compare(file1, file2);
+        if (file1.isDirectory() || file2.isDirectory()) {
+            return sort;
+        }
         if (sort == 0 && filePaths.contains(file1.getAbsolutePath())) {
             //文件名称相同
             Long oldInode;
