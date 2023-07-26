@@ -124,7 +124,7 @@ public class DefaultTailExtensionService implements TailExtensionService {
 //            createConsumerGroup(milogLogtailDo.getSpaceId(), milogLogtailDo.getStoreId(), milogLogtailDo.getId(), milogMiddlewareConfigDao.queryById(middlewareRels.get(0).getMiddlewareId()), milogLogtailDo.getMilogAppId(), false);
             logTailService.sengMessageToStream(milogLogtailDo, OperateEnum.UPDATE_OPERATE.getCode());
         }
-        logTailService.compareChangeDelIps(milogLogtailDo.getId(), milogLogtailDo.getMilogAppId(), milogLogtailDo.getIps(), oldIps);
+        logTailService.compareChangeDelIps(milogLogtailDo.getId(), milogLogtailDo.getLogPath(), milogLogtailDo.getIps(), oldIps);
     }
 
     @Override
