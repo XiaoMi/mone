@@ -14,8 +14,8 @@ public enum InterfaceMetricTypes {
     jvm_runtime("JVM运行时"),
     application("application"),
     mione_container("Mione容器"),
-    matrix_container("Matrix容器"),
-    matrix_instance("Matrix实例"),
+    container("容器"),
+    instance("实例"),
     matrix_deploy_unit("Matrix部署单元"),
     ;
 
