@@ -16,6 +16,8 @@
 package com.xiaomi.mone.log.agent.channel;
 
 import com.xiaomi.mone.log.agent.channel.memory.ChannelMemory;
+import com.xiaomi.mone.log.agent.input.Input;
+import com.xiaomi.mone.log.api.enums.LogTypeEnum;
 import com.xiaomi.mone.log.api.model.meta.LogPattern;
 import com.xiaomi.mone.log.utils.NetUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -83,6 +85,11 @@ public abstract class AbstractChannelService implements ChannelService {
     public abstract ChannelMemory getChannelMemory();
 
     public abstract Long getLogCounts();
+
+    public LogTypeEnum getLogTypeEnum() {
+        Input input = getChannelDefine().getInput();
+        return LogTypeEnum.name2enum(input.getType());
+    }
 
     /**
      * Query IP information based on the actual collection path.

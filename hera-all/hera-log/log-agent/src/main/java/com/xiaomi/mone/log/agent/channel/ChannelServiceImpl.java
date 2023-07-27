@@ -226,6 +226,11 @@ public class ChannelServiceImpl extends AbstractChannelService {
     @Override
     public void deleteCollFile(String directory) {
         log.info("deleteCollFile,directory:{}", directory);
+        try {
+            TimeUnit.SECONDS.sleep(1);
+        } catch (InterruptedException e) {
+            log.error("deleteCollFile sleep error,directory:{}", directory, e);
+        }
         for (Map.Entry<String, LogFile> logFileEntry : logFileMap.entrySet()) {
             if (logFileEntry.getKey().contains(directory)) {
                 logFileEntry.getValue().setStop(true);

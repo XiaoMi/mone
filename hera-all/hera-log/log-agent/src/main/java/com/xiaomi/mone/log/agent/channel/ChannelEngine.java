@@ -36,6 +36,7 @@ import com.xiaomi.mone.log.agent.factory.OutPutServiceFactory;
 import com.xiaomi.mone.log.agent.filter.FilterChain;
 import com.xiaomi.mone.log.agent.input.Input;
 import com.xiaomi.mone.log.agent.output.Output;
+import com.xiaomi.mone.log.api.enums.LogTypeEnum;
 import com.xiaomi.mone.log.api.enums.OperateEnum;
 import com.xiaomi.mone.log.api.model.vo.UpdateLogProcessCmd;
 import com.xiaomi.mone.log.common.Constant;
@@ -481,15 +482,26 @@ public class ChannelEngine {
         if (CollectionUtils.isNotEmpty(delSpecialFiles)) {
             try {
                 for (ChannelService channelService : channelServiceList) {
-                    Long channelId = ((AbstractChannelService) channelService).getChannelDefine().getChannelId();
+                    CompletableFuture.runAsync(() -> {
+                        AbstractChannelService abstractChannelService = (AbstractChannelService) channelService;
+                        Long channelId = abstractChannelService.getChannelDefine().getChannelId();
 
-                    List<ChannelDefine> defineList = delSpecialFiles.stream()
-                            .filter(channelDefine -> Objects.equals(channelDefine.getChannelId(), channelId))
-                            .collect(Collectors.toList());
-                    for (ChannelDefine channelDefine : defineList) {
-                        log.info("deleteConfig,deleteCollFile,channelDefine:{}", gson.toJson(channelDefine));
-                        channelService.deleteCollFile(channelDefine.getDelDirectory());
-                    }
+                        List<ChannelDefine> defineList = delSpecialFiles.stream()
+                                .filter(channelDefine -> Objects.equals(channelDefine.getChannelId(), channelId))
+                                .collect(Collectors.toList());
+
+                        for (ChannelDefine channelDefine : defineList) {
+                            log.info("deleteConfig,deleteCollFile,channelDefine:{}", gson.toJson(channelDefine));
+                            channelService.deleteCollFile(channelDefine.getDelDirectory());
+                        }
+                        //也需要删除opentelemetry日志
+                        if (LogTypeEnum.OPENTELEMETRY == abstractChannelService.getLogTypeEnum()) {
+                            for (ChannelDefine channelDefine : delSpecialFiles) {
+                                log.info("deleteConfig OPENTELEMETRY,deleteCollFile,channelDefine:{}", gson.toJson(channelDefine));
+                                channelService.deleteCollFile(channelDefine.getDelDirectory());
+                            }
+                        }
+                    });
                 }
             } catch (Exception e) {
                 log.error("delSpecialFileColl error,delSpecialFiles:{}", gson.toJson(channelDefines), e);
