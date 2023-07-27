@@ -67,5 +67,9 @@ public class ChannelDefine implements Serializable {
     private Boolean singleMetaData;
 
     private String podType;
+    /**
+     * 某个机器下线的时候需要删除的该目录下的日志采集,只有当某个应用的机器下线时才有值
+     */
+    private String delDirectory;
 
 }

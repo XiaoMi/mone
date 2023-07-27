@@ -223,6 +223,37 @@ public class ChannelServiceImpl extends AbstractChannelService {
         }
     }
 
+    @Override
+    public void deleteCollFile(String directory) {
+        log.info("deleteCollFile,directory:{}", directory);
+        try {
+            TimeUnit.SECONDS.sleep(1);
+        } catch (InterruptedException e) {
+            log.error("deleteCollFile sleep error,directory:{}", directory, e);
+        }
+        for (Map.Entry<String, LogFile> logFileEntry : logFileMap.entrySet()) {
+            if (logFileEntry.getKey().contains(directory)) {
+                logFileEntry.getValue().setStop(true);
+            }
+        }
+        for (Map.Entry<String, Future> futureEntry : futureMap.entrySet()) {
+            if (futureEntry.getKey().contains(directory)) {
+                futureEntry.getValue().cancel(false);
+            }
+        }
+        for (Map.Entry<String, ScheduledFuture<?>> futureEntry : lastFileLineScheduledFutureMap.entrySet()) {
+            if (futureEntry.getKey().contains(directory)) {
+                futureEntry.getValue().cancel(false);
+            }
+        }
+        List<String> delFiles = reOpenMap.keySet().stream()
+                .filter(filePath -> filePath.contains(directory))
+                .collect(Collectors.toList());
+        for (String delFile : delFiles) {
+            reOpenMap.remove(delFile);
+        }
+    }
+
     private void startExportQueueDataThread() {
         scheduledFuture = ExecutorUtil.scheduleAtFixedRate(() -> {
             // 超过10s 未发送mq消息，才进行异步发送
@@ -548,6 +579,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
         }
         log.info("stop file monitor,fileName:", logFileMap.keySet().stream().collect(Collectors.joining(SYMBOL_COMMA)));
         lineMessageList.clear();
+        reOpenMap.clear();
     }
 
     public Long getChannelId() {

@@ -25,6 +25,7 @@ import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.exception.CommonError;
 import com.xiaomi.mone.log.manager.common.Utils;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
+import com.xiaomi.mone.log.manager.common.utils.ManagerUtil;
 import com.xiaomi.mone.log.manager.common.validation.HeraConfigValid;
 import com.xiaomi.mone.log.manager.dao.*;
 import com.xiaomi.mone.log.manager.mapper.MilogLogSearchSaveMapper;
@@ -448,13 +449,13 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         return heraAppService.queryById(param.getMilogAppId());
     }
 
-    public void compareChangeDelIps(Long tailId, Long milogAppId, List<String> newIps, List<String> oldIps) {
+    public void compareChangeDelIps(Long tailId, String logPath, List<String> newIps, List<String> oldIps) {
         if (CollectionUtils.isEmpty(oldIps)) {
             return;
         }
         List<String> delIps = oldIps.stream().filter(s -> !newIps.contains(s)).collect(Collectors.toList());
         if (CollectionUtils.isNotEmpty(delIps)) {
-            milogAgentService.publishIncrementDel(tailId, milogAppId, delIps);
+            milogAgentService.delLogCollDirectoryByIp(tailId, ManagerUtil.getPhysicsDirectory(logPath), delIps);
         }
     }
 
@@ -513,8 +514,19 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         return Result.success(queryAllApps(appName, type));
     }
 
+    /**
+     * 全量只返回200条
+     *
+     * @param appName
+     * @param type
+     * @return
+     */
     private List<MapDTO> queryAllApps(String appName, Integer type) {
-        return queryAppInfo(appName, type);
+        List<MapDTO> mapDTOS = queryAppInfo(appName, type);
+        if (StringUtils.isEmpty(appName)) {
+            return mapDTOS.stream().limit(200).collect(Collectors.toList());
+        }
+        return mapDTOS;
     }
 
     private List<MapDTO> queryAppInfo(String appName, Integer type) {
@@ -591,13 +603,13 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
                     milogLogtailDo.setIps(newIps);
                     milogLogtailDao.update(milogLogtailDo);
                     //2.发送消息
-                    compareIpToHandle(exitIps, newIps);
+                    compareIpToHandle(milogLogtailDo.getId(), milogLogtailDo.getLogPath(), exitIps, newIps);
                 }
             }
         }
     }
 
-    public void compareIpToHandle(List<String> exitIps, List<String> newIps) {
+    public void compareIpToHandle(Long tailId, String logPath, List<String> exitIps, List<String> newIps) {
         List<String> expandIps = newIps.stream().filter(ip -> !exitIps.contains(ip)).collect(Collectors.toList());
         if (CollectionUtils.isNotEmpty(expandIps)) {
             // 扩容---同步配置
@@ -606,9 +618,9 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
                 milogStreamService.configIssueStream(ip);
             });
         }
-        List<String> narrowIps = exitIps.stream().filter(ip -> !newIps.contains(ip)).collect(Collectors.toList());
-        if (CollectionUtils.isNotEmpty(narrowIps)) {
-            // 缩容--不用管
+        List<String> stopFileCollIps = exitIps.stream().filter(ip -> !newIps.contains(ip)).collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(stopFileCollIps)) {
+            milogAgentService.delLogCollDirectoryByIp(tailId, ManagerUtil.getPhysicsDirectory(logPath), stopFileCollIps);
         }
     }
 
@@ -865,7 +877,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
                     milogLogtailDo.setUpdater(DEFAULT_JOB_OPERATOR);
                     milogLogtailDao.updateIps(milogLogtailDo);
                     //2.发送消息
-                    compareIpToHandle(exitIps, newIps);
+                    compareIpToHandle(milogLogtailDo.getId(), milogLogtailDo.getLogPath(), exitIps, newIps);
                 }
             }
         }
