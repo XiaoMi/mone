@@ -15,6 +15,7 @@
  */
 package com.xiaomi.mone.log.manager.service.impl;
 
+import cn.hutool.core.lang.Pair;
 import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Lists;
 import com.xiaomi.mone.es.EsClient;
@@ -115,6 +116,11 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
     private Set<String> noHighLightSet = new HashSet<>();
 
     private Set<String> hidenFiledSet = new HashSet<>();
+
+    public static List<Pair<String, String>> requiredFields = Lists.newArrayList(
+            Pair.of("message", "text"),
+            Pair.of("logsource", "text")
+    );
 
     {
         noHighLightSet.add("logstore");
@@ -224,6 +230,11 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
     // 高亮
     private HighlightBuilder getHighlightBuilder(List<String> keyList) {
         HighlightBuilder highlightBuilder = new HighlightBuilder();
+        for (Pair<String, String> requiredField : requiredFields) {
+            if (!keyList.contains(requiredField.getKey())) {
+                keyList.add(requiredField.getKey());
+            }
+        }
         for (String key : keyList) {
             if (noHighLightSet.contains(key)) {
                 continue;
