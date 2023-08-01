@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: log-agent-server-container
-          image: herahub/opensource-pub:log-agent-server-v2
+          image: herahub/opensource-pub:log-agent-server-v1-release
           resources:
             limits:
               cpu: '500m'
