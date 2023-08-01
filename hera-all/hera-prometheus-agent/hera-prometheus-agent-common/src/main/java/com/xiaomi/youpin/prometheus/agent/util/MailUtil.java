@@ -46,8 +46,11 @@ public class MailUtil {
         properties.setProperty("mail.host", mail_host);
         //Whether to perform permission verification.
         properties.setProperty("mail.smtp.auth", mail_smtp_auth);
-       // properties.setProperty("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+        properties.setProperty("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
         properties.setProperty("mail.smtp.port", mail_smtp_port);
+        //properties.setProperty("mail.smtp.socketFactory.class", sslFactory);
+        properties.setProperty("mail.smtp.socketFactory.fallback", "false");
+        properties.setProperty("mail.smtp.socketFactory.port", mail_smtp_port);
         log.info("mail property: {}",properties.toString());
         //Determine permissions (account and password)
         Authenticator authenticator = new Authenticator() {
