@@ -20,6 +20,7 @@ import com.xiaomi.mone.app.api.model.HeraSimpleEnv;
 import com.xiaomi.mone.app.api.response.AppBaseInfo;
 import com.xiaomi.mone.log.api.enums.OperateEnum;
 import com.xiaomi.mone.log.api.enums.ProjectTypeEnum;
+import com.xiaomi.mone.log.manager.dao.MilogLogTailDao;
 import com.xiaomi.mone.log.manager.model.bo.LogTailParam;
 import com.xiaomi.mone.log.manager.model.dto.MilogAppEnvDTO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
@@ -65,6 +66,9 @@ public class DefaultTailExtensionService implements TailExtensionService {
 
     @Resource(name = DEFAULT_AGENT_EXTENSION_SERVICE_KEY)
     private MilogAgentServiceImpl milogAgentService;
+
+    @Resource
+    private MilogLogTailDao milogLogtailDao;
 
     @Override
     public boolean tailHandlePreprocessingSwitch(MilogLogStoreDO milogLogStore, LogTailParam param) {
@@ -168,6 +172,20 @@ public class DefaultTailExtensionService implements TailExtensionService {
 
     @Override
     public String deleteCheckProcessPre(Long id) {
+        return StringUtils.EMPTY;
+    }
+
+    @Override
+    public String validLogPath(LogTailParam param) {
+        if (Objects.equals(ProjectTypeEnum.MIONE_TYPE.getCode(), param.getAppType())) {
+            // 校验同名日志文件
+            List<MilogLogTailDo> appLogTails = milogLogtailDao.queryByMilogAppAndEnv(param.getMilogAppId(), param.getEnvId());
+            for (int i = 0; i < appLogTails.size() && null == param.getId(); i++) {
+                if (appLogTails.get(i).getLogPath().equals(param.getLogPath())) {
+                    return "当前部署环境该文件" + param.getLogPath() + "已配置日志采集,别名为：" + appLogTails.get(i).getTail();
+                }
+            }
+        }
         return StringUtils.EMPTY;
     }
 

@@ -23,6 +23,14 @@ import com.xiaomi.mone.log.manager.model.bo.LogTailParam;
 import com.xiaomi.mone.log.manager.model.bo.MlogParseParam;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogTailDo;
+import com.xiaomi.mone.log.manager.service.extension.agent.MilogAgentService;
+import com.xiaomi.mone.log.manager.service.extension.agent.MilogAgentServiceFactory;
+import com.xiaomi.mone.log.manager.service.extension.resource.ResourceExtensionService;
+import com.xiaomi.mone.log.manager.service.extension.resource.ResourceExtensionServiceFactory;
+import com.xiaomi.mone.log.manager.service.extension.store.StoreExtensionService;
+import com.xiaomi.mone.log.manager.service.extension.store.StoreExtensionServiceFactory;
+import com.xiaomi.mone.log.manager.service.extension.tail.TailExtensionService;
+import com.xiaomi.mone.log.manager.service.extension.tail.TailExtensionServiceFactory;
 import com.xiaomi.mone.log.parse.LogParserFactory;
 import com.xiaomi.youpin.docean.anno.Component;
 import com.xiaomi.youpin.docean.plugin.config.anno.Value;
@@ -47,6 +55,21 @@ public class HeraConfigValid {
     @Resource
     private MilogLogTailDao milogLogtailDao;
 
+    private TailExtensionService tailExtensionService;
+
+    private MilogAgentService milogAgentService;
+
+    private StoreExtensionService storeExtensionService;
+
+    private ResourceExtensionService resourceExtensionService;
+
+    public void init() {
+        tailExtensionService = TailExtensionServiceFactory.getTailExtensionService();
+        milogAgentService = MilogAgentServiceFactory.getAgentExtensionService();
+        storeExtensionService = StoreExtensionServiceFactory.getStoreExtensionService();
+        resourceExtensionService = ResourceExtensionServiceFactory.getResourceExtensionService();
+    }
+
     public String verifyLogTailParam(LogTailParam param) {
         if (null == param.getMilogAppId()) {
             return "选择的应用不能为空";
@@ -69,16 +92,8 @@ public class HeraConfigValid {
         if (path.equals("/home/work/log/") || path.equals("/home/work/log") || path.startsWith("/home/work/log") && path.split("/").length < 4) {
             return "日志路径错误，请确认后提交";
         }
-        if (Objects.equals(ProjectTypeEnum.MIONE_TYPE.getCode(), param.getAppType())) {
-            // 校验同名日志文件
-            List<MilogLogTailDo> appLogTails = milogLogtailDao.queryByMilogAppAndEnv(param.getMilogAppId(), param.getEnvId());
-            for (int i = 0; i < appLogTails.size() && null == param.getId(); i++) {
-                if (appLogTails.get(i).getLogPath().equals(param.getLogPath())) {
-                    return "当前部署环境该文件" + param.getLogPath() + "已配置日志采集,别名为：" + appLogTails.get(i).getTail();
-                }
-            }
-        }
-        return "";
+        String validMsg = tailExtensionService.validLogPath(param);
+        return StringUtils.isNotEmpty(validMsg) ? validMsg : StringUtils.EMPTY;
     }
 
     public String checkParseParam(MlogParseParam mlogParseParam) {
