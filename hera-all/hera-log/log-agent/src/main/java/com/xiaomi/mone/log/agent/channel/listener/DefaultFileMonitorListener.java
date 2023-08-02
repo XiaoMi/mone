@@ -150,7 +150,13 @@ public class DefaultFileMonitorListener implements FileMonitorListener {
                 /**
                  * 已经是最干净的目录了，只会有1个
                  */
-                newMonitorDirectories.add(watchDList.get(0));
+                String monitorDirectory = watchDList.get(0);
+                if (monitorDirectory.contains(".*")) {
+                    monitorDirectory = StringUtils.substringBefore(monitorDirectory, ".*");
+                }
+                if (pathList.stream().noneMatch(monitorDirectory::startsWith)) {
+                    newMonitorDirectories.add(monitorDirectory);
+                }
             }
         }
         newMonitorDirectories = newMonitorDirectories.stream().distinct().collect(Collectors.toList());
