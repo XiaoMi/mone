@@ -71,7 +71,7 @@ public class FeiShuLoginMgr extends LoginMgr {
             ResponseEntity<Map> responseEntity = restTemplate.exchange(getUserUrl(), HttpMethod.GET, entity, Map.class);
             log.info("userInfo.feishu={}", responseEntity);
             if (responseEntity.getBody().get("email") == null) {
-                log.error("feishu没有拿到user_id字段， responseEntity={}", responseEntity);
+                log.error("feishu没有拿到email字段， responseEntity={}", responseEntity);
                 return null;
             }
             String account = responseEntity.getBody().get("email").toString();
