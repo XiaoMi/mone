@@ -61,29 +61,7 @@
 <!--            </resource>-->
 <!--        </resources>-->
 
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>2.7.5</version>
 
-                <configuration>
-                    <mainClass>com.xiaomi.youpin.prometheus.agent.bootstrap.PrometheusAgentBootstrap</mainClass>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-
-        </plugins>
 
     </build>
 
@@ -100,6 +78,30 @@
                 <filters>
                     <filter>src/main/resources/application-opensource-outer.properties</filter>
                 </filters>
+
+                <plugins>
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                        <version>2.7.5</version>
+
+                        <configuration>
+                            <mainClass>com.xiaomi.youpin.prometheus.agent.bootstrap.PrometheusAgentBootstrap</mainClass>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>repackage</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                    </plugin>
+
+                </plugins>
 
             </build>
 
