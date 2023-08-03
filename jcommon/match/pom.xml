@@ -26,13 +26,6 @@
             <version>5.4.0-2.0.0</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>hyperscan</artifactId>
-            <version>5.4.2-1.5.9</version>
-        </dependency>
-
-
     </dependencies>
 
 </project>
