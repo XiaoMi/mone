@@ -9,6 +9,18 @@
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <name>${project.artifactId}</name>
+    <description>The parent project of jcommon</description>
+    <url>https://github.com/XiaoMi/mone</url>
+    <inceptionYear>2020</inceptionYear>
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
     <modules>
         <module>hera-demo-client-api</module>
         <module>hera-demo-client-common</module>
@@ -21,6 +33,8 @@
         <logback.version>1.2.10</logback.version>
         <springboot.version>2.2.0.RELEASE</springboot.version>
         <spring.version>5.2.0.RELEASE</spring.version>
+        <!-- Replace it with the absolute path of your own hera-demo-client project. -->
+        <maven.jcommonDirectory>~/</maven.jcommonDirectory>
     </properties>
 
     <dependencyManagement>
@@ -106,8 +120,46 @@
         </dependencies>
     </dependencyManagement>
 
+    <distributionManagement>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+        <repository>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+    </distributionManagement>
+
     <build>
         <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-license</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>target/classes/META-INF</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${maven.jcommonDirectory}</directory>
+                                    <includes>
+                                        <include>LICENSE.txt</include>
+                                    </includes>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -127,18 +179,47 @@
             </plugin>
 
             <plugin>
-                <groupId>run.mone</groupId>
-                <artifactId>codecheck-maven-plugin</artifactId>
-                <version>1.4-SNAPSHOT</version>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <version>2.0.0</version>
                 <executions>
                     <execution>
-                        <phase>validate</phase>
+                        <id>license-check</id>
+                        <phase>generate-sources</phase>
                         <goals>
-                            <goal>pmd</goal>
+                            <goal>add-third-party</goal>
                         </goals>
+                        <configuration>
+                            <includeOptional>false</includeOptional>
+                            <useMissingFile>false</useMissingFile>
+                            <failOnMissing>false</failOnMissing>
+                            <licenseMerges>
+                                <licenseMerge>Apache License, Version 2.0|The Apache Software License, Version
+                                    2.0|ASF 2.0|Apache 2|Apache-2.0|Apache 2.0 License|Apache 2.0|Apache License v2.0|Apache License 2.0|The Apache License, Version 2.0|The Apache Software License, Version 2.0
+                                </licenseMerge>
+                                <licenseMerge>The MIT License|MIT License</licenseMerge>
+                                <licenseMerge>The 3-Clause BSD License|New BSD License|3-Clause BSD
+                                    License|BSD|3-Clause BSD License|The New BSD License
+                                </licenseMerge>
+                            </licenseMerges>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
+
+<!--            <plugin>-->
+<!--                <groupId>run.mone</groupId>-->
+<!--                <artifactId>codecheck-maven-plugin</artifactId>-->
+<!--                <version>1.4-SNAPSHOT</version>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <phase>validate</phase>-->
+<!--                        <goals>-->
+<!--                            <goal>pmd</goal>-->
+<!--                        </goals>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--            </plugin>-->
         </plugins>
     </build>
 

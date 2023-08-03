@@ -1,3 +1,18 @@
+/*
+ * Copyright 2020 Xiaomi
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package com.xiaomi.mone.log.manager.controller;
 
 import com.xiaomi.mone.log.api.model.vo.TailLogProcessDTO;
@@ -5,7 +20,7 @@ import com.xiaomi.mone.log.api.model.vo.UpdateLogProcessCmd;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.manager.model.MilogSpaceParam;
 import com.xiaomi.mone.log.manager.model.bo.BatchQueryParam;
-import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
+import com.xiaomi.mone.log.manager.model.bo.LogTailParam;
 import com.xiaomi.mone.log.manager.model.bo.MlogParseParam;
 import com.xiaomi.mone.log.manager.model.dto.*;
 import com.xiaomi.mone.log.manager.model.page.PageInfo;
@@ -148,45 +163,45 @@ public class MilogConfigController {
      * ********* milogLogtail **********
      */
     @RequestMapping(path = "/milog/tail/new")
-    public Result<MilogTailDTO> newMilogLogtail(@RequestParam("param") MilogLogtailParam param) {
+    public Result<LogTailDTO> newLogTail(@RequestParam("param") LogTailParam param) {
         return logTailService.newMilogLogTail(param);
     }
 
     @RequestMapping(path = "/milog/tail/getbyid", method = "get")
-    public Result<MilogTailDTO> getMilogLogtailById(@RequestParam("id") Long id) {
+    public Result<LogTailDTO> getLogTailById(@RequestParam("id") Long id) {
         return logTailService.getMilogLogtailById(id);
     }
 
     @RequestMapping(path = "/milog/tail/getbyids", method = "get")
-    public Result<List<MilogTailDTO>> getMilogLogtailByIds(@RequestParam("ids") List<Long> ids) {
+    public Result<List<LogTailDTO>> getLogTailByIds(@RequestParam("ids") List<Long> ids) {
         return logTailService.getMilogLogtailByIds(ids);
     }
 
     @RequestMapping(path = "/milog/tail/getbyStoreId", method = "get")
-    public Result<List<MilogTailDTO>> getTailByStoreId(@RequestParam("storeId") Long storeId) {
+    public Result<List<LogTailDTO>> getTailByStoreId(@RequestParam("storeId") Long storeId) {
         return logTailService.getTailByStoreId(storeId);
     }
 
     @RequestMapping(path = "/milog/tail/getbypage", method = "get")
-    public Result<Map<String, Object>> getMilogLogtailByPage(@RequestParam("storeId") Long storeId,
-                                                             @RequestParam("page") int page,
-                                                             @RequestParam("pageSize") int pageSize) throws IOException {
+    public Result<Map<String, Object>> getLogTailByPage(@RequestParam("storeId") Long storeId,
+                                                        @RequestParam("page") int page,
+                                                        @RequestParam("pageSize") int pageSize) throws IOException {
         return logTailService.getMilogLogBypage(storeId, page, pageSize);
     }
 
     @RequestMapping(path = "/milog/tail/getcntbystoreid", method = "get")
-    public Result<Map<String, Object>> getMilogLogTailCountByStoreId(@RequestParam("storeId") Long storeId) {
+    public Result<Map<String, Object>> getLogTailCountByStoreId(@RequestParam("storeId") Long storeId) {
         return logTailService.getLogTailCountByStoreId(storeId);
     }
 
     @RequestMapping(path = "/milog/tail/update")
-    public Result<Void> updateMilogLogTail(MilogLogtailParam param) {
+    public Result<Void> updateLogTail(LogTailParam param) {
         return logTailService.updateMilogLogTail(param);
     }
 
     @RequestMapping(path = "/milog/tail/delete", method = "get")
-    public Result<Void> deleteMilogLogTail(@RequestParam(value = "id") Long id) {
-        return logTailService.deleteMilogLogTail(id);
+    public Result<Void> deleteLogTail(@RequestParam(value = "id") Long id) {
+        return logTailService.deleteLogTail(id);
     }
 
     @RequestMapping(path = "/milog/tail/gettailname", method = "get")

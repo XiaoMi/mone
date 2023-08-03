@@ -45,6 +45,11 @@ public class AlarmStrategyInfo {
     private List<Integer> includeFunctions;//包含函数列表
 
     private List<Integer> exceptFunctions;//不包含函数列表
+
+    private List<String> includeContainerName;//包含容器名称
+
+    private List<String> exceptContainerName;//不包含容器名称
+
     private List<String> alertMembers;//报警人员列表
     private List<String> atMembers;//报警@人员列表
 
@@ -69,6 +74,15 @@ public class AlarmStrategyInfo {
         if(jsonEnv.has("exceptZones")){
             String exceptZones = jsonEnv.get("exceptZones").getAsString();
             this.setExceptZones(Arrays.asList(exceptZones.split(",")));
+        }
+
+        if(jsonEnv.has("includeContainerName")){
+            String includeContainerNames = jsonEnv.get("includeContainerName").getAsString();
+            this.setIncludeContainerName(Arrays.asList(includeContainerNames.split(",")));
+        }
+        if(jsonEnv.has("exceptContainerName")){
+            String exceptContainerNames = jsonEnv.get("exceptContainerName").getAsString();
+            this.setExceptContainerName(Arrays.asList(exceptContainerNames.split(",")));
         }
 
         if(jsonEnv.has("includeModules")){

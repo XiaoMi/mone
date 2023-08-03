@@ -43,6 +43,7 @@ public class RocketMQSerivce {
 
     private String[] topics = new String[]{
             "hera_app_operate",
+            "hera_app_modify_notice_open",
             "hera_app_ip_change",
             "hear_log_message_compensate",
             "mone_hera_staging_trace_etl_server",
@@ -58,7 +59,7 @@ public class RocketMQSerivce {
             mqClientInstance = new MQClientInstance(clientConfig, 0, consumer.buildMQClientId());
             mqClientInstance.start();
             MQClientAPIImpl mqClientAPIImpl = mqClientInstance.getMQClientAPIImpl();
-            // 创建topic
+            // create topic
             for (String topic : topics) {
                 createTopic(mqClientAPIImpl, topic);
             }
@@ -80,7 +81,7 @@ public class RocketMQSerivce {
             TopicConfig topicConfig = new TopicConfig(topicName, queueSize, queueSize, 6);
             mqClientAPIImpl.createTopic(brokerAddr, "defaultTopicName", topicConfig, 2000L);
         } else {
-            log.info("已存在topic名称为" + topicName + "的主题，无法执行添加操作！");
+            log.info("Exist topic, name is" + topicName + "unable to perform the add operation");
         }
     }
 
@@ -99,4 +100,5 @@ public class RocketMQSerivce {
             throw new RuntimeException(e);
         }
     }
+
 }

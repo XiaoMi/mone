@@ -1,3 +1,18 @@
+/*
+ * Copyright 2020 Xiaomi
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package com.xiaomi.mone.log.manager.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
@@ -15,6 +30,7 @@ import com.xiaomi.mone.log.manager.domain.EsCluster;
 import com.xiaomi.mone.log.manager.model.pojo.*;
 import com.xiaomi.mone.log.manager.service.MilogConfigNacosService;
 import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionServiceFactory;
+import com.xiaomi.mone.log.manager.service.extension.tail.TailExtensionService;
 import com.xiaomi.mone.log.manager.service.extension.tail.TailExtensionServiceFactory;
 import com.xiaomi.mone.log.manager.service.nacos.DynamicConfigProvider;
 import com.xiaomi.mone.log.manager.service.nacos.DynamicConfigPublisher;
@@ -94,6 +110,12 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
     @Value(value = "$app.env")
     private String appEnv;
 
+    private TailExtensionService tailExtensionService;
+
+    public void init() {
+        tailExtensionService = TailExtensionServiceFactory.getTailExtensionService();
+    }
+
     /**
      * 推送namespace配置
      *
@@ -101,18 +123,21 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
      */
 
     @Override
-    public void publishStreamConfig(Long spaceId, Long tailId, Integer type, Integer projectTypeCode, String motorRoomEn) {
+    public void publishStreamConfig(Long spaceId, Integer type, Integer projectTypeCode, String motorRoomEn) {
         //1.查询所有的stream的机器Ip--实时查询
         List<String> mioneStreamIpList = fetchStreamMachineService.streamMachineUnique();
+        if (CollectionUtils.isEmpty(mioneStreamIpList)) {
+            mioneStreamIpList = tailExtensionService.getStreamMachineUniqueList(projectTypeCode, motorRoomEn);
+        }
         log.info("查询到log-stream的机器列表：{}", new Gson().toJson(mioneStreamIpList));
         //2.发送数据
-        streamConfigNacosPublisher.publish(DEFAULT_APP_NAME, dealStreamConfigByRule(mioneStreamIpList, spaceId, type, projectTypeCode));
+        streamConfigNacosPublisher.publish(DEFAULT_APP_NAME, dealStreamConfigByRule(mioneStreamIpList, spaceId, type));
     }
 
-    private synchronized MiLogStreamConfig dealStreamConfigByRule(List<String> ipList, Long spaceId,
-                                                                  Integer type, Integer projectTypeCode) {
+    private synchronized MiLogStreamConfig dealStreamConfigByRule(List<String> ipList, Long spaceId, Integer type) {
         MiLogStreamConfig existConfig = streamConfigNacosProvider.getConfig(DEFAULT_APP_NAME);
         // 新增配置
+        String spaceKey = CommonExtensionServiceFactory.getCommonExtensionService().getLogManagePrefix() + TAIL_CONFIG_DATA_ID + spaceId;
         if (null == existConfig || OperateEnum.ADD_OPERATE.getCode().equals(type) || OperateEnum.UPDATE_OPERATE.getCode().equals(type)) {
             // 配置还没有配置，初始化配置
             if (null == existConfig) {
@@ -122,7 +147,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
                 for (String ip : ipList) {
                     Map<Long, String> map = Maps.newHashMapWithExpectedSize(1);
                     if (!idAdd) {
-                        map.put(spaceId, CommonExtensionServiceFactory.getCommonExtensionService().getLogManagePrefix() + TAIL_CONFIG_DATA_ID + spaceId);
+                        map.put(spaceId, spaceKey);
                         idAdd = true;
                     }
                     config.put(ip, map);
@@ -132,7 +157,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
                 Map<String, Map<Long, String>> config = existConfig.getConfig();
                 if (config.values().stream()
                         .flatMap(longStringMap -> longStringMap.values().stream())
-                        .anyMatch(s -> s.contains(spaceId.toString()))) {
+                        .anyMatch(s -> s.equals(spaceKey))) {
                     return existConfig;
                 }
                 // 1.先平均数量
@@ -150,7 +175,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
                 String key = ipSizeMap.entrySet().stream()
                         .filter(entry -> ipList.contains(entry.getKey()))
                         .min(Map.Entry.comparingByValue()).get().getKey();
-                config.get(key).put(spaceId, CommonExtensionServiceFactory.getCommonExtensionService().getLogManagePrefix() + TAIL_CONFIG_DATA_ID + spaceId);
+                config.get(key).put(spaceId, spaceKey);
             }
         }
         // 删除配置
@@ -326,8 +351,12 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
             sinkConfig.setLogstoreName(milogLogstore.getLogstoreName());
             sinkConfig.setKeyList(Utils.parse2KeyAndTypeList(milogLogstore.getKeyList(), milogLogstore.getColumnTypeList()));
             MilogEsClusterDO esInfo = esCluster.getById(milogLogstore.getEsClusterId());
-            sinkConfig.setEsIndex(milogLogstore.getEsIndex());
-            sinkConfig.setEsInfo(buildEsInfo(esInfo));
+            if (null != esInfo) {
+                sinkConfig.setEsIndex(milogLogstore.getEsIndex());
+                sinkConfig.setEsInfo(buildEsInfo(esInfo));
+            } else {
+                log.info("assembleSinkConfig esInfo is null,logStoreId:{}", milogLogstore.getId());
+            }
         }
         sinkConfig.setLogtailConfigs(Arrays.asList(assembleLogTailConfigs(tailId)));
         return sinkConfig;

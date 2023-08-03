@@ -41,6 +41,7 @@ public class Metric implements Serializable {
     private String container_label_PROJECT_ID;
     private String name;//
     private String container;//
+    private String containerName;
     private String pod;//
     private String namespace;//
 

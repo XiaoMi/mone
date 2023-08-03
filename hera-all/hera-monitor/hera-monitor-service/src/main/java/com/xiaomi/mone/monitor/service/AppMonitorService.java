@@ -24,6 +24,9 @@ import com.xiaomi.mone.monitor.service.model.AppMonitorRequest;
 import com.xiaomi.mone.monitor.service.model.PageData;
 import com.xiaomi.mone.monitor.service.model.ProjectInfo;
 import com.xiaomi.mone.monitor.service.model.prometheus.AlarmRuleData;
+import com.xiaomi.mone.monitor.service.model.prometheus.MetricData;
+import com.xiaomi.mone.monitor.service.model.prometheus.MetricDataSet;
+import com.xiaomi.mone.monitor.service.model.prometheus.MetricResponse;
 import com.xiaomi.mone.monitor.service.prometheus.AlarmService;
 import com.xiaomi.mone.monitor.service.prometheus.PrometheusService;
 import lombok.extern.slf4j.Slf4j;
@@ -90,7 +93,7 @@ public class AppMonitorService {
 
     private static final Gson gson = new Gson();
 
-    @Reference(registry = "registryConfig", check = false, interfaceClass = HeraAppService.class, group = "${dubbo.group.heraapp}")
+    @Reference(registry = "registryConfig", check = false, interfaceClass = HeraAppService.class, group = "${dubbo.group.heraapp}",timeout = 5000)
     HeraAppService hearAppService;
 
     public void appPlatMove(Integer OProjectId, Integer OPlat, Integer NProjectId, Integer Nplat, Integer newIamId, String NprojectName, Boolean rebuildRule) {
@@ -237,6 +240,8 @@ public class AppMonitorService {
                         ruleData.setExceptEnvs(t.getExceptEnvs());
                         ruleData.setIncludeZones(t.getIncludeZones());
                         ruleData.setExceptZones(t.getExceptZones());
+                        ruleData.setIncludeContainerName(t.getIncludeContainerName());
+                        ruleData.setExceptContainerName(t.getExceptContainerName());
                         ruleData.setAlertMembers(t.getAlertMembers());
 
                         if (!CollectionUtils.isEmpty(t.getIncludeFunctions())) {
@@ -947,8 +952,8 @@ public class AppMonitorService {
                         ruleData.setIncludeZones(t.getIncludeZones());
                         ruleData.setExceptZones(t.getExceptZones());
 
-//                        ruleData.setIncludeZones(t.getIncludeEnvs());
-//                        ruleData.setExceptZones(t.getExceptEnvs());
+                        ruleData.setIncludeContainerName(t.getIncludeContainerName());
+                        ruleData.setExceptContainerName(t.getExceptContainerName());
                         ruleData.setAlertMembers(t.getAlertMembers());
                         ruleData.setAtMembers(t.getAtMembers());
 
@@ -1026,6 +1031,8 @@ public class AppMonitorService {
                             ruleData.setExceptEnvs(t.getExceptEnvs());
                             ruleData.setIncludeZones(t.getIncludeZones());
                             ruleData.setExceptZones(t.getExceptZones());
+                            ruleData.setIncludeContainerName(t.getIncludeContainerName());
+                            ruleData.setExceptContainerName(t.getExceptContainerName());
 
 //                        ruleData.setIncludeZones(t.getIncludeEnvs());
 //                        ruleData.setExceptZones(t.getExceptEnvs());
@@ -1086,5 +1093,43 @@ public class AppMonitorService {
                 continue;
             }
         }
+    }
+
+    public Result historyInstance(String application,Long startTime, Long endTime) {
+        String promql = "count(jvm_classes_loaded_classes{application=\""+ application +"\"}) by (serverIp)";
+        log.info("historyInstance promql : {}",promql);
+        MetricResponse rangeMetricResponse = prometheusService.queryRangePrometheusByPromQl(promql, startTime, endTime,
+                null,null);
+        if(rangeMetricResponse == null || rangeMetricResponse.getData() == null){
+            return Result.fail(ErrorCode.unknownError);
+        }
+        MetricData rangeMetricData = rangeMetricResponse.getData();
+        List<MetricDataSet> rangeResult = rangeMetricData.getResult();
+        List<String> rangeIps = new ArrayList<>();
+        rangeResult.forEach(t -> {
+            rangeIps.add(t.getMetric().getServerIp());
+        });
+        // first time no comparison
+//        List<String> momentIps = new ArrayList<>();
+//        MetricResponse momentMetricResponse = prometheusService.queryRangePrometheusByPromQl(promql, startTime, endTime, null,PrometheusService.MOMENT_REQUEST_MODE);
+//        if(momentMetricResponse == null || momentMetricResponse.getData() == null){
+//            return Result.fail(ErrorCode.unknownError);
+//        }
+//        MetricData momentMetricData = momentMetricResponse.getData();
+//        List<MetricDataSet> momentResult = momentMetricData.getResult();
+//        momentResult.forEach(t -> {
+//            momentIps.add(t.getMetric().getServerIp());
+//        });
+//        //The difference between momentIps and rangeIps
+//        List<String> ips = rangeIps.stream().filter(item -> !momentIps.contains(item)).collect(Collectors.toList());
+        return Result.success(rangeIps);
+    }
+
+    public Long countByBaseInfoId(List<Integer> baseInfoIds,String user){
+        return appMonitorDao.countByBaseInfoIds(baseInfoIds,user);
+    }
+
+    public List<AppMonitor> searchByBaseInfoId(List<Integer> baseInfoIds,String user,Integer page,Integer pageSize){
+        return appMonitorDao.getDataByBaseInfoIds(baseInfoIds,user,page,pageSize);
     }
 }

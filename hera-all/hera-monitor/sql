@@ -11,6 +11,7 @@ CREATE TABLE `alert_group` (
  `rel_id` bigint(20) DEFAULT '0' COMMENT '关联ID',
  `type` varchar(32) DEFAULT 'alert' COMMENT '告警类型',
  `deleted` int(1) DEFAULT '0' COMMENT '0正常,1删除',
+ `duty_info` text DEFAULT NULL COMMENT '值班信息',
  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
@@ -301,7 +302,7 @@ CREATE TABLE `hera_app_base_info` (
   `app_name` varchar(255) COLLATE utf8mb4_bin NOT NULL COMMENT '应用名称',
   `app_cname` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '应用中文名称',
   `app_type` int NOT NULL COMMENT '应用类型-关联指标监控模版（0业务应用 1主机应用）',
-  `app_language` varchar(30) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '语言类型',
+  `app_language` varchar(30) collate utf8mb4_bin DEFAULT NULL COMMENT '语言类型',
   `platform_type` int NOT NULL COMMENT '平台类型',
   `app_sign_id` varchar(60) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '应用指标唯一性标识',
   `iam_tree_id` int DEFAULT NULL COMMENT 'iam_tree_id(报警接口必须)',
@@ -454,5 +455,54 @@ CREATE TABLE `mione_grafana_template` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_name` (`name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin AUTO_INCREMENT=30001;
+
+-- ----------------------------
+-- Table structure for hera_project_group
+-- ----------------------------
+DROP TABLE IF EXISTS `hera_project_group`;
+CREATE TABLE `hera_project_group` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `type` int(3) NOT NULL COMMENT '项目组类型:0-IAM,1-TPC',
+  `relation_object_id` int(11) NOT NULL COMMENT '关联的对象的 Id，比如 IAM 节点 ID，TPC 节点 ID。',
+  `name` varchar(128) NOT NULL COMMENT '项目组名称',
+  `cn_name` varchar(128) DEFAULT NULL COMMENT '项目组中文名',
+  `parent_group_id` int(11) DEFAULT NULL COMMENT '父节点 id',
+  `status` int(3) DEFAULT '0' COMMENT '状态',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_project_group_id` (`parent_group_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- ----------------------------
+-- Table structure for hera_project_group_app
+-- ----------------------------
+DROP TABLE IF EXISTS `hera_project_group_app`;
+CREATE TABLE `hera_project_group_app` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `project_group_id` int(11) DEFAULT NULL COMMENT 'hera项目组id',
+  `app_base_info_id` int(11) NOT NULL COMMENT 'hera app元数据主键id',
+  `status` int(3) DEFAULT '0' COMMENT '状态',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_project_group_id` (`project_group_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- ----------------------------
+-- Table structure for hera_project_group_user
+-- ----------------------------
+DROP TABLE IF EXISTS `hera_project_group_user`;
+CREATE TABLE `hera_project_group_user` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `project_group_id` int(11) DEFAULT NULL COMMENT '项目组id',
+  `user` varchar(30) DEFAULT NULL COMMENT '用户账号',
+  `status` int(3) DEFAULT '0' COMMENT '状态',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_name` (`user`),
+  KEY `idx_project_group_id` (`project_group_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
 SET FOREIGN_KEY_CHECKS = 1;

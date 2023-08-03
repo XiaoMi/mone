@@ -11,7 +11,7 @@ import org.apache.dubbo.config.annotation.Service;
 public class DubboHealthServiceImpl implements DubboHealthService {
 
     @Reference(group = "${dubbo.group}",version = "1.0",timeout = 3000,retries = 0,check = false)
-    private com.xiaomi.youpin.zxw_test2.api.service.DubboHealthService dubboHealthService;
+    private com.xiaomi.mone.hera.demo.server.service.DubboHealthService  dubboHealthService;
 
     @Override
     public int remoteHealth(int size) {

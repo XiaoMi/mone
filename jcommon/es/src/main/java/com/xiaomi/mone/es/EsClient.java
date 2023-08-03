@@ -26,12 +26,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.Node;
-import org.elasticsearch.client.NodeSelector;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.*;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.client.indices.*;
@@ -39,8 +34,8 @@ import org.elasticsearch.client.sniff.ElasticsearchNodesSniffer;
 import org.elasticsearch.client.sniff.NodesSniffer;
 import org.elasticsearch.client.sniff.SniffOnFailureListener;
 import org.elasticsearch.client.sniff.Sniffer;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -249,8 +244,32 @@ public class EsClient {
         IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
     }
 
+    public void insertDoc(String index, Map<String, Object> data, String id) throws IOException {
+        IndexRequest indexRequest = new IndexRequest(index, "_doc", id).source(data);
+        indexRequest.opType(DocWriteRequest.OpType.CREATE);
+        IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
+    }
+
+    public void insertDocForIndex(String index, Map<String, Object> data) throws IOException {
+        IndexRequest indexRequest = new IndexRequest(index, "_doc", UUID.randomUUID().toString()).source(data);
+        indexRequest.opType(DocWriteRequest.OpType.INDEX);
+        IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
+    }
+
+    public void insertDocForIndex(String index, Map<String, Object> data, String id) throws IOException {
+        IndexRequest indexRequest = new IndexRequest(index, "_doc", id).source(data);
+        indexRequest.opType(DocWriteRequest.OpType.INDEX);
+        IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
+    }
+
     public void insertDocJson(String index, String jsonString) throws IOException {
         IndexRequest indexRequest = new IndexRequest(index, "_doc", UUID.randomUUID().toString()).source(jsonString, XContentType.JSON);
+        indexRequest.opType(DocWriteRequest.OpType.CREATE);
+        IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
+    }
+
+    public void insertDocJson(String index, String jsonString, String id) throws IOException {
+        IndexRequest indexRequest = new IndexRequest(index, "_doc", id).source(jsonString, XContentType.JSON);
         indexRequest.opType(DocWriteRequest.OpType.CREATE);
         IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
     }
@@ -367,18 +386,22 @@ public class EsClient {
         return count;
     }
 
+    public EsRet dateHistogram(String indexName, String interval, long startTime, long endTime, BoolQueryBuilder builder) throws IOException {
+        return dateHistogram(indexName, "timestamp", interval, startTime, endTime, builder);
+    }
+
     /**
      * 数据直方图
      *
      * @return
      */
-    public EsRet dateHistogram(String indexName, String interval, long startTime, long endTime, BoolQueryBuilder builder) throws IOException {
+    public EsRet dateHistogram(String indexName, String field, String interval, long startTime, long endTime, BoolQueryBuilder builder) throws IOException {
         // 聚合
         EsRet esRet = new EsRet();
         AggregationBuilder aggregationBuilder = AggregationBuilders.dateHistogram("dateHistogram")
                 .minDocCount(0)//返回空桶
                 .fixedInterval(new DateHistogramInterval(interval)) //设置间隔
-                .field("timestamp")
+                .field(field)
                 .timeZone(TimeZone.getTimeZone("GMT+8").toZoneId())
                 .format("yyyy-MM-dd HH:mm:ss")//设定返回格式
                 .extendedBounds(new LongBounds(startTime, endTime));//统计范围
@@ -430,6 +453,18 @@ public class EsClient {
         if (sniffer != null) {
             sniffer.close();
         }
+    }
+
+    /**
+     * query index mapping
+     *
+     * @param indexName
+     * @return
+     * @throws IOException
+     */
+    public GetMappingsResponse queryIndexMapping(String indexName) throws IOException {
+        GetMappingsRequest request = new GetMappingsRequest().indices(indexName);
+        return client.indices().getMapping(request, RequestOptions.DEFAULT);
     }
 
 }

@@ -1,7 +1,24 @@
+/*
+ * Copyright 2020 Xiaomi
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package com.xiaomi.mone.log.manager.domain;
 
 import com.xiaomi.mone.log.manager.model.vo.LogContextQuery;
 import com.xiaomi.mone.log.manager.model.vo.LogQuery;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionService;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionServiceFactory;
 import com.xiaomi.mone.log.manager.service.statement.StatementMatchParseFactory;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.common.DoceanConfig;
@@ -23,6 +40,13 @@ import java.util.List;
 @Slf4j
 @Service
 public class SearchLog {
+
+    private CommonExtensionService commonExtensionService;
+
+    public void init() {
+        commonExtensionService = CommonExtensionServiceFactory.getCommonExtensionService();
+    }
+
     /**
      * 获取查询参数
      *
@@ -43,16 +67,14 @@ public class SearchLog {
         return boolQueryBuilder;
     }
 
-    private static BoolQueryBuilder buildCommonBuilder(LogQuery logQuery) {
-        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-        boolQueryBuilder.filter(QueryBuilders.rangeQuery("timestamp").from(logQuery.getStartTime()).to(logQuery.getEndTime()));
-        boolQueryBuilder.filter(QueryBuilders.termQuery("logstore", logQuery.getLogstore()));
+    private BoolQueryBuilder buildCommonBuilder(LogQuery logQuery) {
+        BoolQueryBuilder boolQueryBuilder = commonExtensionService.commonRangeQuery(logQuery);
         // 支持tail多选
         if (StringUtils.isNotEmpty(logQuery.getTail())) {
             BoolQueryBuilder tailQueryBuilder = QueryBuilders.boolQuery();
             String[] tailLimitArray = logQuery.getTail().split(",");
             for (String tail : tailLimitArray) {
-                tailQueryBuilder.should(QueryBuilders.termQuery("tail", tail));
+                tailQueryBuilder.should(commonExtensionService.multipleChooseBuilder(logQuery.getStoreId(), tail));
             }
             tailQueryBuilder.minimumShouldMatch(1);
             boolQueryBuilder.filter(tailQueryBuilder);
@@ -268,14 +290,7 @@ public class SearchLog {
     }
 
     public boolean isLegalParam(LogContextQuery param) {
-        if (param == null
-                || StringUtils.isEmpty(param.getLogstore())
-                || StringUtils.isEmpty(param.getIp())
-                || StringUtils.isEmpty(param.getFileName())
-                || param.getLineNumber() == null
-                || StringUtils.isEmpty(param.getTimestamp())
-                || param.getType() == null
-                || param.getPageSize() == null) {
+        if (param == null || StringUtils.isEmpty(param.getLogstore()) || StringUtils.isEmpty(param.getIp()) || StringUtils.isEmpty(param.getFileName()) || param.getLineNumber() == null || StringUtils.isEmpty(param.getTimestamp()) || param.getType() == null || param.getPageSize() == null) {
             return false;
         }
         return true;
@@ -290,6 +305,8 @@ public class SearchLog {
             fos = new FileOutputStream(file);
             excel.write(fos);
             Down.down(fileName);
+        } catch (Exception e) {
+            log.error("downLogFile error,fileName:{}", fileName, e);
         } finally {
             if (excel != null) {
                 excel.close();

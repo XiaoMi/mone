@@ -37,10 +37,12 @@ public class AlarmRuleRequest implements Serializable {
     private List<String> exceptModules;//不包含模块列表
     private List<String> includeFunctions;//包含函数列表
     private List<String> exceptFunctions;//不包含函数列表
+    private List<String> includeContainerName;//包含容器名称
+    private List<String> exceptContainerName;//不包含容器名称
     private List<String> alertMembers;//报警人员列表
     private List<String> atMembers;//@人员列表
     private List<AlarmRuleData> alarmRules;
-    private String user;//但前操作人
+    private String user;//当前操作人
 
     public String convertEnvs(){
 
@@ -57,6 +59,13 @@ public class AlarmRuleRequest implements Serializable {
         }
         if(!CollectionUtils.isEmpty(this.getExceptEnvs())){
             envs.addProperty("exceptZones",String.join(",", this.getExceptZones()));
+        }
+
+        if(!CollectionUtils.isEmpty(this.getIncludeContainerName())){
+            envs.addProperty("includeContainerName",String.join(",", this.getIncludeContainerName()));
+        }
+        if(!CollectionUtils.isEmpty(this.getExceptContainerName())){
+            envs.addProperty("exceptContainerName",String.join(",", this.getExceptContainerName()));
         }
 
         if(!CollectionUtils.isEmpty(this.getIncludeModules())){

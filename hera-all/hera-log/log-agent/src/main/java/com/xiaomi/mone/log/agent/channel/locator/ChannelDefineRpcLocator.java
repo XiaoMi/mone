@@ -1,19 +1,18 @@
 /*
- *  Copyright 2020 Xiaomi
+ * Copyright 2020 Xiaomi
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
-
 package com.xiaomi.mone.log.agent.channel.locator;
 
 import cn.hutool.core.util.ObjectUtil;
@@ -23,11 +22,10 @@ import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
 import com.xiaomi.mone.log.agent.channel.ChannelDefine;
 import com.xiaomi.mone.log.agent.channel.conf.AgentTailConf;
 import com.xiaomi.mone.log.agent.factory.OutPutServiceFactory;
-import com.xiaomi.mone.log.agent.output.Output;
 import com.xiaomi.mone.log.agent.filter.FilterTrans;
 import com.xiaomi.mone.log.agent.input.AppLogInput;
+import com.xiaomi.mone.log.agent.output.Output;
 import com.xiaomi.mone.log.api.enums.LogTypeEnum;
-import com.xiaomi.mone.log.api.enums.MiddlewareEnum;
 import com.xiaomi.mone.log.api.model.meta.*;
 import com.xiaomi.mone.log.common.Constant;
 import com.xiaomi.mone.log.utils.NetUtil;
@@ -42,7 +40,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static com.xiaomi.mone.log.common.Constant.*;
+import static com.xiaomi.mone.log.common.Constant.GSON;
+import static com.xiaomi.mone.log.common.Constant.SYMBOL_COLON;
 
 /**
  * rpc方式从log-manager获取channel元数据
@@ -58,7 +57,7 @@ public class ChannelDefineRpcLocator implements ChannelDefineLocator {
     public List<ChannelDefine> getChannelDefine() {
         String localIp = NetUtil.getLocalIp();
         String heraK8sEnv = NetUtil.getHeraK8sEnv();
-        if (StringUtils.isNotEmpty(heraK8sEnv) && Constant.YES.toString().equals(heraK8sEnv)) {
+        if (StringUtils.isNotEmpty(heraK8sEnv)) {
             localIp = String.format("%s%s%s", localIp, SYMBOL_COLON, heraK8sEnv);
         }
         return getChannelDefine(localIp);
@@ -113,6 +112,7 @@ public class ChannelDefineRpcLocator implements ChannelDefineLocator {
             channelDefine.setPodNames(logCollectMeta.getPodNames());
             channelDefine.setSingleMetaData(logCollectMeta.getSingleMetaData());
             channelDefine.setPodType(logCollectMeta.getPodType());
+            channelDefine.setDelDirectory(logCollectMeta.getDelDirectory());
 
             List<LogPattern> logPatternList = appLogMeta.getLogPatternList();
             for (LogPattern logPattern : logPatternList) {
@@ -136,6 +136,7 @@ public class ChannelDefineRpcLocator implements ChannelDefineLocator {
                     filters = filterDefines.stream().map(FilterTrans::filterConfTrans).collect(Collectors.toList());
                 }
                 cloneChannelDefine.setIps(logPattern.getIps());
+                cloneChannelDefine.setIpDirectoryRel(logPattern.getIpDirectoryRel());
                 cloneChannelDefine.setFilters(filters);
                 cloneChannelDefine.setInput(input);
                 cloneChannelDefine.setOutput(output);

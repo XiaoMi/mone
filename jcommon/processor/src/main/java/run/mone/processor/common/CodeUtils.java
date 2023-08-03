@@ -91,12 +91,17 @@ public abstract class CodeUtils {
     }
 
 
-    @SneakyThrows
+
     public static List<String> readImports(String code) {
         CharSource source = CharSource.wrap(code);
-        String output = source.lines()
-                .filter(line -> line.contains("import "))
-                .collect(Collectors.joining("\n"));
+        String output = null;
+        try {
+            output = source.lines()
+                    .filter(line -> line.contains("import "))
+                    .collect(Collectors.joining("\n"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         JavaParser parser = new JavaParser();
         ParseResult<CompilationUnit> cu = parser.parse(output);
         CompilationUnit cu2 = cu.getResult().get();
@@ -125,12 +130,16 @@ public abstract class CodeUtils {
     }
 
 
-    @SneakyThrows
     public static String removeImports(String code) {
         CharSource source = CharSource.wrap(code);
-        String output = source.lines()
-                .filter(line -> !line.contains("import "))
-                .collect(Collectors.joining("\n"));
+        String output = null;
+        try {
+            output = source.lines()
+                    .filter(line -> !line.contains("import "))
+                    .collect(Collectors.joining("\n"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         return output;
     }
 

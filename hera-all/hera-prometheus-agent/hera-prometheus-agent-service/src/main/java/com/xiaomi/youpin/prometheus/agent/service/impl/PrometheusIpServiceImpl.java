@@ -81,7 +81,7 @@ public class PrometheusIpServiceImpl  implements PrometheusIpServiceExtension {
     public void init() {
         new ScheduledThreadPoolExecutor(1).scheduleWithFixedDelay(() -> {
             Stopwatch sw = Stopwatch.createStarted();
-            log.info("开启异步获取nacos信息");
+            log.info("enable async to obtain nacos information");
             ConcurrentHashMap<String, Set<String>> cache = new ConcurrentHashMap<>();
             Ips starterIps = new Ips();
             Ips javaagentIps = new Ips();
@@ -111,7 +111,6 @@ public class PrometheusIpServiceImpl  implements PrometheusIpServiceExtension {
                         } catch (NacosException e) {
                             log.error("Nacos.getAllInstance error,", e);
                         }
-                        //  TODO:区分tesla内外网
                         assert instances != null;
                         instances.forEach(it5 -> {
                             if (teslaFlag.contains(it)) {
@@ -223,7 +222,7 @@ public class PrometheusIpServiceImpl  implements PrometheusIpServiceExtension {
             defaultResult.add(ips);
             return defaultResult;
         }
-        // type 1:自定义打点  2:javaagent jvm指标   3:jaegerquery
+        // type 1:customized metrics  2:javaagent jvm metrics   3:jaegerquery
         if ("1".equals(type)) {
             return starterIpsList;
         } else if ("2".equals(type)) {
@@ -233,7 +232,7 @@ public class PrometheusIpServiceImpl  implements PrometheusIpServiceExtension {
         } else if ("4".equals(type)) {
             return monequeryIpsList;
         } else {
-            log.info("获取ip列表时， type : " + type + " 非法");
+            log.info("Obtain the ip address list, type : " + type + " illegality");
             List<Ips> defaultResult = new ArrayList<>();
             Ips ips = new Ips();
             ips.setTargets(new ArrayList<>());
@@ -311,7 +310,7 @@ public class PrometheusIpServiceImpl  implements PrometheusIpServiceExtension {
             URL requestUrl = new URL(url);
             HttpURLConnection conn = (HttpURLConnection) requestUrl.openConnection();
             PrintWriter out = null;
-            //设置URLConnection的参数和普通的请求属性
+            // set the parameters of the URLConnection and the normal request properties
             conn.setRequestProperty("Expect", "");
             conn.setRequestProperty("Accept", "application/json");
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
@@ -323,7 +322,7 @@ public class PrometheusIpServiceImpl  implements PrometheusIpServiceExtension {
             conn.setRequestMethod(method);
             conn.connect();
             if ("POST".equals(method)) {
-                //POST请求
+                // POST request
                 BufferedWriter out1 = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream(), "UTF-8"));
                 out1.write(data);
                 out1.flush();

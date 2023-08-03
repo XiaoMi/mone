@@ -1,3 +1,18 @@
+/*
+ * Copyright 2020 Xiaomi
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package com.xiaomi.mone.log.manager.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
@@ -358,11 +373,11 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
 
         if (initializedStatus && showStatus) {
 
-            List<MilogMiddlewareConfig> milogMiddlewareConfigs = milogMiddlewareConfigDao.queryByResourceCode(MiddlewareEnum.ROCKETMQ.getCode(), regionCode);
-            queryCurrentUserResourceList(resourceUserSimple, milogMiddlewareConfigs, MiddlewareEnum.ROCKETMQ);
+            List<MilogMiddlewareConfig> milogMiddlewareConfigs = milogMiddlewareConfigDao.queryByResourceCode(resourceExtensionService.getResourceCode(), regionCode);
+            queryCurrentUserResourceList(resourceUserSimple, milogMiddlewareConfigs, resourceExtensionService.getResourceCode());
 
             List<MilogMiddlewareConfig> middlewareConfigEss = getESConfigs(regionCode);
-            queryCurrentUserResourceList(resourceUserSimple, middlewareConfigEss, MiddlewareEnum.ELASTICSEARCH);
+            queryCurrentUserResourceList(resourceUserSimple, middlewareConfigEss, MiddlewareEnum.ELASTICSEARCH.getCode());
         }
         return resourceUserSimple;
     }
@@ -426,18 +441,18 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     }
 
     /**
-     * 查询当前用户的三级部门下的资源列表
+     * 查询当前用户的资源列表
      *
      * @param configResource
      */
     private void queryCurrentUserResourceList(ResourceUserSimple configResource,
-                                              List<MilogMiddlewareConfig> milogMiddlewareConfigs, MiddlewareEnum middlewareEnum) {
+                                              List<MilogMiddlewareConfig> milogMiddlewareConfigs, Integer code) {
         milogMiddlewareConfigs = resourceExtensionService.currentUserConfigFilter(milogMiddlewareConfigs);
         List valueKeyObjs = milogMiddlewareConfigs.stream()
                 .map(milogMiddlewareConfig -> new ValueKeyObj(
                         milogMiddlewareConfig.getId(), milogMiddlewareConfig.getAlias()))
                 .collect(Collectors.toList());
-        if (MiddlewareEnum.ELASTICSEARCH == middlewareEnum) {
+        if (Objects.equals(MiddlewareEnum.ELASTICSEARCH.getCode(), code)) {
             configResource.setEsResourceList(valueKeyObjs);
             return;
         }

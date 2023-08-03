@@ -32,6 +32,8 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -90,7 +92,24 @@ public class CallMethodProcessor implements UdsProcessor<UdsCommand, UdsCommand>
             beforeCallMethod(req, mr);
             return ReflectUtils.invokeMethod(mr, obj, (paramTypes, params) -> CovertUtils.convert(req.getSerializeType(), paramTypes, params), invokeMethodCallback);
         }, this.classLoaderFunction, response, req, (res) -> afterCallMethod(res));
-        Send.sendResponse(req.getChannel(), response);
+        if (response.getObj() instanceof CompletableFuture) {
+            ((CompletableFuture)response.getObj()).handle((obj, t) -> {
+                if (t != null) {
+                    if (t instanceof CompletionException) {
+
+                    } else {
+
+                    }
+                } else {
+
+                }
+                response.setObj(obj);
+                Send.sendResponse(req.getChannel(), response);
+                return response;
+            });
+        } else {
+            Send.sendResponse(req.getChannel(), response);
+        }
         return null;
     }
 

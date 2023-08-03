@@ -35,10 +35,14 @@ public class HeraMetaDataServiceImpl implements HeraMetaDataService {
 
     @Override
     public List<HeraMetaDataModel> page(HeraMetaDataQuery query) {
-        query.initPageParam();
         QueryWrapper<HeraMetaData> wrapper = new QueryWrapper();
-        if(query.getLimit() != null && query.getLimit() > 0) {
-            wrapper.last("LIMIT "+query.getOffset()+" , "+query.getLimit());
+        if(query.getId() != null){
+            wrapper.gt("id",query.getId()).last("LIMIT "+query.getPageSize());
+        }else {
+            query.initPageParam();
+            if (query.getLimit() != null && query.getLimit() > 0) {
+                wrapper.last("LIMIT " + query.getOffset() + " , " + query.getLimit());
+            }
         }
         List<HeraMetaData> heraMetaData = heraMetaDataMapper.selectList(wrapper);
         return HeraMetaDataConvertUtil.convertToModel(heraMetaData);

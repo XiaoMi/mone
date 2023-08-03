@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: tpc-nginx-fe-container
-        image: herahub/opensource-pub:tpc-nginx-v1
+        image: herahub/opensource-pub:tpc-nginx-v1-release
         resources:
           limits:
             cpu: '200m'
