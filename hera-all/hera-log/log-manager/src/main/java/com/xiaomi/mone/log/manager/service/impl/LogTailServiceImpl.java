@@ -523,9 +523,9 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
      */
     private List<MapDTO> queryAllApps(String appName, Integer type) {
         List<MapDTO> mapDTOS = queryAppInfo(appName, type);
-        if (StringUtils.isEmpty(appName)) {
-            return mapDTOS.stream().limit(200).collect(Collectors.toList());
-        }
+//        if (StringUtils.isEmpty(appName)) {
+//            return mapDTOS.stream().limit(200).collect(Collectors.toList());
+//        }
         return mapDTOS;
     }
 

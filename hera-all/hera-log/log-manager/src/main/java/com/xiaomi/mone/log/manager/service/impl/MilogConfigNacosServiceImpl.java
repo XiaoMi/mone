@@ -137,6 +137,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
     private synchronized MiLogStreamConfig dealStreamConfigByRule(List<String> ipList, Long spaceId, Integer type) {
         MiLogStreamConfig existConfig = streamConfigNacosProvider.getConfig(DEFAULT_APP_NAME);
         // 新增配置
+        String spaceKey = CommonExtensionServiceFactory.getCommonExtensionService().getLogManagePrefix() + TAIL_CONFIG_DATA_ID + spaceId;
         if (null == existConfig || OperateEnum.ADD_OPERATE.getCode().equals(type) || OperateEnum.UPDATE_OPERATE.getCode().equals(type)) {
             // 配置还没有配置，初始化配置
             if (null == existConfig) {
@@ -146,7 +147,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
                 for (String ip : ipList) {
                     Map<Long, String> map = Maps.newHashMapWithExpectedSize(1);
                     if (!idAdd) {
-                        map.put(spaceId, CommonExtensionServiceFactory.getCommonExtensionService().getLogManagePrefix() + TAIL_CONFIG_DATA_ID + spaceId);
+                        map.put(spaceId, spaceKey);
                         idAdd = true;
                     }
                     config.put(ip, map);
@@ -156,7 +157,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
                 Map<String, Map<Long, String>> config = existConfig.getConfig();
                 if (config.values().stream()
                         .flatMap(longStringMap -> longStringMap.values().stream())
-                        .anyMatch(s -> s.contains(spaceId.toString()))) {
+                        .anyMatch(s -> s.equals(spaceKey))) {
                     return existConfig;
                 }
                 // 1.先平均数量
@@ -174,7 +175,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
                 String key = ipSizeMap.entrySet().stream()
                         .filter(entry -> ipList.contains(entry.getKey()))
                         .min(Map.Entry.comparingByValue()).get().getKey();
-                config.get(key).put(spaceId, CommonExtensionServiceFactory.getCommonExtensionService().getLogManagePrefix() + TAIL_CONFIG_DATA_ID + spaceId);
+                config.get(key).put(spaceId, spaceKey);
             }
         }
         // 删除配置

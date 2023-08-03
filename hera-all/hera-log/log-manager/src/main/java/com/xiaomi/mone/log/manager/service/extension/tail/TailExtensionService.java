@@ -63,4 +63,6 @@ public interface TailExtensionService {
     List<String> getStreamMachineUniqueList(Integer projectTypeCode, String motorRoomEn);
 
     String deleteCheckProcessPre(Long id);
+
+    String validLogPath(LogTailParam param);
 }
