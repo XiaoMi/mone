@@ -177,6 +177,10 @@ public class AppGrafanaMappingService {
 
             appGrafanaMappingServiceExtension.dealRequestGrafanaTemplateCode(mutiGrafanaResponse.getCode(), baseInfo.getBindId(), baseInfo.getAppName());
 
+            if(mutiGrafanaResponse.getCode() != 0 || mutiGrafanaResponse.getData() == null){
+                log.info("create grafana fail! baseInfo:{},response:{}",baseInfo.toString(),new Gson().toJson(mutiGrafanaResponse));
+                return;
+            }
             log.info("grafanaMappingService.createTmpByAppBaseInfo success appName : {}, version:{},area : {}, returnUrl :{}"
                     , baseInfo.getAppName(), mutiGrafanaResponse.getData().get(0).getMimonitor_version(), grafanaDirByCode, mutiGrafanaResponse);
 
