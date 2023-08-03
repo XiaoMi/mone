@@ -95,6 +95,7 @@
         <module>processor</module>
         <module>openai</module>
         <module>excel</module>
+        <module>match</module>
     </modules>
 
 
