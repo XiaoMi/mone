@@ -87,7 +87,7 @@ public class EsQueryTransfer implements EsQueryListener {
     @Override
     public void exitNotExpression(EsQueryParser.NotExpressionContext ctx) {
         //获取到括号内得表达式
-        //注：“非”逻辑不论包含多少参数都需加上括号，NOT(a==1)、 NOT(a == 1 AND b == 2)
+        //注：“非”逻辑不论包含多少参数都需加上括号，NOT(a:1)、 NOT(a : 1 AND b : 2)
         ParseTree tree = ctx.children.get(1);
         SearchSourceBuilder sourceBuilder = MergeUtils.MergeNot(treeProperty.get(tree));
         treeProperty.put(ctx, sourceBuilder);
