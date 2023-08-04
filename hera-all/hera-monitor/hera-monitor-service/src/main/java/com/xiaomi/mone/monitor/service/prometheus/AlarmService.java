@@ -11,6 +11,7 @@ import com.xiaomi.mone.monitor.bo.*;
 import com.xiaomi.mone.monitor.dao.model.AppAlarmRule;
 import com.xiaomi.mone.monitor.dao.model.AppMonitor;
 import com.xiaomi.mone.monitor.enums.BasicAlarmLevel;
+import com.xiaomi.mone.monitor.enums.KeyCenterRequestType;
 import com.xiaomi.mone.monitor.pojo.AlarmPresetMetricsPOJO;
 import com.xiaomi.mone.monitor.pojo.ReqErrorMetricsPOJO;
 import com.xiaomi.mone.monitor.pojo.ReqSlowMetricsPOJO;
@@ -449,6 +450,24 @@ public class AlarmService {
                 return getSocketNumAlarmExpr(rule.getProjectId(),app.getProjectName(), rule.getOp(), rule.getValue(),ruleData,BasicAlarmLevel.container);
             case "instance_socket_num":
                 return getSocketNumAlarmExpr(rule.getProjectId(),app.getProjectName(), rule.getOp(), rule.getValue(),ruleData,BasicAlarmLevel.instance);
+
+            //container  key center request
+            case "thrift_request_kc_agent_fail_num":
+                return getKeyCenterRequestAlarmExpr(rule.getProjectId(),app.getProjectName(), rule.getOp(), rule.getValue(),ruleData,KeyCenterRequestType.thrift);
+            case "http_request_kc_agent_fail_num":
+                return getKeyCenterRequestAlarmExpr(rule.getProjectId(),app.getProjectName(), rule.getOp(), rule.getValue(),ruleData,KeyCenterRequestType.http);
+
+            case "instance_tpc_listen_drops_num":
+                return getTpcNumAlarmExpr(rule.getProjectId(),app.getProjectName(), rule.getOp(), rule.getValue(),ruleData);
+
+            case "instance_file_descriptor_num":
+                return getFileDescriptorsAlarmExpr(rule.getProjectId(),app.getProjectName(), rule.getOp(), rule.getValue(),ruleData);
+
+            case "cluster_instance_exception_num":
+                return getDeployUnitExceptionInstanceAlarmExpr(rule.getProjectId(),app.getProjectName(), rule.getOp(), rule.getValue(),ruleData);
+
+            case "cluster_instance_valid_rate":
+                return getDeployUnitInstanceUsageAlarmExpr(rule.getProjectId(),app.getProjectName(), rule.getOp(), rule.getValue(),ruleData);
 
             default:
 
@@ -1372,6 +1391,136 @@ public class AlarmService {
         exprBuilder.append(value);
 
         log.info("getSocketNumAlarmExpr param: projectId:{}, projectName:{}, op:{},value:{}, return:{}",projectId, projectName, op,value, exprBuilder.toString());
+        return exprBuilder.toString();
+    }
+
+
+    public String getKeyCenterRequestAlarmExpr(Integer projectId, String projectName, String op, double value, AlarmRuleData ruleData, KeyCenterRequestType requestType){
+
+        String projectSign = new StringBuilder().append(projectId).append("_").append(projectName.replaceAll("-","_")).toString();
+        String labelProperties = getEnvLabelProperties(ruleData);
+        StringBuilder exprBuilder = new StringBuilder();
+
+        switch (requestType){
+
+            case thrift:
+                exprBuilder.append("sum by(application, serverZone, serverEnv, pod, container, id, system) ")
+                        .append("(increase(keycenter_thrift_request_count_total{code!=\"200\",pod!=\"\",application='").append(projectSign).append("'");
+            case http:
+                exprBuilder.append("sum by(application, serverZone, serverEnv, pod, container, id, system) ")
+                        .append("(increase(keycenter_http_request_count_total{code!=\"200\",pod!=\"\",application='").append(projectSign).append("'");
+            default:
+                ;
+        }
+
+        if (StringUtils.isNotBlank(labelProperties)) {
+            exprBuilder.append(",").append(labelProperties);
+        }
+        exprBuilder.append("}[1m])) ");
+        exprBuilder.append(op);
+        exprBuilder.append(value);
+
+        log.info("getKeyCenterRequestAlarmExpr param: projectId:{}, projectName:{}, op:{},value:{}, return:{}",projectId, projectName, op,value, exprBuilder.toString());
+        return exprBuilder.toString();
+    }
+
+    public String getTpcNumAlarmExpr(Integer projectId, String projectName, String op, double value, AlarmRuleData ruleData){
+
+        String projectSign = new StringBuilder().append(projectId).append("_").append(projectName.replaceAll("-","_")).toString();
+        String labelProperties = getEnvLabelProperties(ruleData);
+        StringBuilder exprBuilder = new StringBuilder();
+
+        exprBuilder.append("sum by(application, serverZone, serverEnv, pod,system) ")
+                .append("(increase(container_network_advance_tcp_stats_total{container=\"POD\",pod!=\"\", tcp_state=\"listendrops\", application='").append(projectSign).append("'");
+
+        if (StringUtils.isNotBlank(labelProperties)) {
+            exprBuilder.append(",").append(labelProperties);
+        }
+        exprBuilder.append("}[5m])) ");
+        exprBuilder.append(op);
+        exprBuilder.append(value);
+
+        log.info("getTpcNumAlarmExpr param: projectId:{}, projectName:{}, op:{},value:{}, return:{}",projectId, projectName, op,value, exprBuilder.toString());
+        return exprBuilder.toString();
+    }
+
+    public String getFileDescriptorsAlarmExpr(Integer projectId, String projectName, String op, double value, AlarmRuleData ruleData){
+
+        String projectSign = new StringBuilder().append(projectId).append("_").append(projectName.replaceAll("-","_")).toString();
+        String labelProperties = getEnvLabelProperties(ruleData);
+        StringBuilder exprBuilder = new StringBuilder();
+
+        exprBuilder.append("sum by(application, serverZone, serverEnv, pod,system) ")
+                .append("(container_file_descriptors{container!=\"\",pod!=\"\", application='").append(projectSign).append("'");
+
+        if (StringUtils.isNotBlank(labelProperties)) {
+            exprBuilder.append(",").append(labelProperties);
+        }
+        exprBuilder.append("}) ");
+        exprBuilder.append(op);
+        exprBuilder.append(value);
+
+        log.info("getFileDescriptorsAlarmExpr param: projectId:{}, projectName:{}, op:{},value:{}, return:{}",projectId, projectName, op,value, exprBuilder.toString());
+        return exprBuilder.toString();
+    }
+
+    public String getDeployUnitExceptionInstanceAlarmExpr(Integer projectId, String projectName, String op, double value, AlarmRuleData ruleData){
+
+        String projectSign = new StringBuilder().append(projectId).append("_").append(projectName.replaceAll("-","_")).toString();
+        String labelProperties = getEnvLabelProperties(ruleData);
+        StringBuilder exprBuilder = new StringBuilder();
+
+        exprBuilder.append("sum by(application, serverZone, serverEnv, deploy_space, cluster,system) ")
+                .append("(kruise_cloneset_spec_replicas{application='").append(projectSign).append("'");
+
+        if (StringUtils.isNotBlank(labelProperties)) {
+            exprBuilder.append(",").append(labelProperties);
+        }
+        exprBuilder.append("}) ");
+        exprBuilder.append(" - ");
+        exprBuilder.append("sum by(application, serverZone, serverEnv, deploy_space, cluster,system) ")
+                .append("(kruise_cloneset_status_replicas_ready{application='").append(projectSign).append("'");
+
+        if (StringUtils.isNotBlank(labelProperties)) {
+            exprBuilder.append(",").append(labelProperties);
+        }
+        exprBuilder.append("}) ");
+
+
+        exprBuilder.append(op);
+        exprBuilder.append(value);
+
+        log.info("getDeployUnitExceptionInstanceAlarmExpr param: projectId:{}, projectName:{}, op:{},value:{}, return:{}",projectId, projectName, op,value, exprBuilder.toString());
+        return exprBuilder.toString();
+    }
+
+    public String getDeployUnitInstanceUsageAlarmExpr(Integer projectId, String projectName, String op, double value, AlarmRuleData ruleData){
+
+        String projectSign = new StringBuilder().append(projectId).append("_").append(projectName.replaceAll("-","_")).toString();
+        String labelProperties = getEnvLabelProperties(ruleData);
+        StringBuilder exprBuilder = new StringBuilder();
+
+        exprBuilder.append("sum by(application, serverZone, serverEnv, deploy_space, cluster,system) ")
+                .append("(kruise_cloneset_status_replicas_ready{ application='").append(projectSign).append("'");
+
+        if (StringUtils.isNotBlank(labelProperties)) {
+            exprBuilder.append(",").append(labelProperties);
+        }
+        exprBuilder.append("}) ");
+        exprBuilder.append("/");
+        exprBuilder.append("sum by(application, serverZone, serverEnv, deploy_space, cluster,system) ")
+                .append("(kruise_cloneset_spec_replicas{application='").append(projectSign).append("'");
+
+        if (StringUtils.isNotBlank(labelProperties)) {
+            exprBuilder.append(",").append(labelProperties);
+        }
+        exprBuilder.append("}) * 100");
+
+
+        exprBuilder.append(op);
+        exprBuilder.append(value);
+
+        log.info("getDeployUnitExceptionInstanceAlarmExpr param: projectId:{}, projectName:{}, op:{},value:{}, return:{}",projectId, projectName, op,value, exprBuilder.toString());
         return exprBuilder.toString();
     }
 
