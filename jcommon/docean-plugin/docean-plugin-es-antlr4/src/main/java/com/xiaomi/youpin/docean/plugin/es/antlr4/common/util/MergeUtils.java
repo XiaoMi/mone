@@ -7,6 +7,12 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.util.List;
 
+/**
+ * @author wtt
+ * @version 1.0
+ * @description
+ * @date 2023/8/3 17:25
+ */
 public class MergeUtils {
     public static SearchSourceBuilder MergeAnd(SearchSourceBuilder builder1, SearchSourceBuilder builder2) {
         SearchSourceBuilder res = new SearchSourceBuilder();

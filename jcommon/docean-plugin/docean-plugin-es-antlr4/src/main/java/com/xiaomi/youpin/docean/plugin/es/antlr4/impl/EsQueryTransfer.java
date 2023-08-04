@@ -23,7 +23,10 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * @author A_Nan
+ * @author wtt
+ * @version 1.0
+ * @description
+ * @date 2023/8/3 17:25
  */
 public class EsQueryTransfer implements EsQueryListener {
 
