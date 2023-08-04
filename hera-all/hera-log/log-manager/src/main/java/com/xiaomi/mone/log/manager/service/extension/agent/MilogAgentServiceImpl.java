@@ -1,3 +1,18 @@
+/*
+ * Copyright 2020 Xiaomi
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package com.xiaomi.mone.log.manager.service.extension.agent;
 
 import com.google.common.collect.Lists;
@@ -14,10 +29,16 @@ import com.xiaomi.mone.log.api.service.PublishConfigService;
 import com.xiaomi.mone.log.common.Constant;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.manager.common.Utils;
-import com.xiaomi.mone.log.manager.dao.*;
+import com.xiaomi.mone.log.manager.dao.MilogAppMiddlewareRelDao;
+import com.xiaomi.mone.log.manager.dao.MilogLogTailDao;
+import com.xiaomi.mone.log.manager.dao.MilogLogstoreDao;
+import com.xiaomi.mone.log.manager.dao.MilogMiddlewareConfigDao;
 import com.xiaomi.mone.log.manager.domain.LogProcess;
 import com.xiaomi.mone.log.manager.model.bo.MilogAgentIpParam;
-import com.xiaomi.mone.log.manager.model.pojo.*;
+import com.xiaomi.mone.log.manager.model.pojo.MilogAppMiddlewareRel;
+import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
+import com.xiaomi.mone.log.manager.model.pojo.MilogLogTailDo;
+import com.xiaomi.mone.log.manager.model.pojo.MilogMiddlewareConfig;
 import com.xiaomi.mone.log.manager.service.env.HeraEnvIpService;
 import com.xiaomi.mone.log.manager.service.env.HeraEnvIpServiceFactory;
 import com.xiaomi.mone.log.manager.service.impl.HeraAppServiceImpl;
@@ -52,9 +73,6 @@ public class MilogAgentServiceImpl implements MilogAgentService {
 
     @Resource
     private HeraEnvIpServiceFactory heraEnvIpServiceFactory;
-
-    @Resource
-    private MilogAppTopicRelDao milogAppTopicRelDao;
 
     @Resource
     private MilogLogTailDao milogLogtailDao;
@@ -194,11 +212,10 @@ public class MilogAgentServiceImpl implements MilogAgentService {
         log.info("删除配置同步到 logAgent,tailId:{},milogAppId:{},ips:{}", tailId, milogAppId, gson.toJson(ips));
         AppLogMeta appLogMeta = new AppLogMeta();
         LogPattern logPattern = new LogPattern();
-        MilogAppTopicRelDO appTopicRel = milogAppTopicRelDao.queryById(milogAppId);
+        assemblyAppInfo(milogAppId, appLogMeta);
         logPattern.setLogtailId(tailId);
         logPattern.setOperateEnum(OperateEnum.DELETE_OPERATE);
-        appLogMeta.setAppId(appTopicRel.getAppId());
-        appLogMeta.setAppName(appTopicRel.getAppName());
+
         appLogMeta.setLogPatternList(Arrays.asList(logPattern));
         ips.forEach(ip -> {
             LogCollectMeta logCollectMeta = new LogCollectMeta();
@@ -206,12 +223,33 @@ public class MilogAgentServiceImpl implements MilogAgentService {
             logCollectMeta.setAgentMachine("");
             logCollectMeta.setAgentId("");
             logCollectMeta.setAppLogMetaList(Arrays.asList(appLogMeta));
-            // todo 获取并设置agent全局filter
-            AgentDefine agentDefine = new AgentDefine();
-            agentDefine.setFilters(new ArrayList<>());
-            logCollectMeta.setAgentDefine(agentDefine);
             sengConfigToAgent(ip, logCollectMeta);
         });
+    }
+
+    private void assemblyAppInfo(Long milogAppId, AppLogMeta appLogMeta) {
+        AppBaseInfo appBaseInfo = heraAppService.queryById(milogAppId);
+        appLogMeta.setAppId(milogAppId);
+        if (null != appBaseInfo) {
+            appLogMeta.setAppName(appBaseInfo.getAppName());
+        }
+    }
+
+    @Override
+    public void delLogCollDirectoryByIp(Long tailId, String directory, List<String> ips) {
+        log.info("delLogCollDirectoryByIp logAgent,tailId:{},directory:{},ips:{}", tailId, directory, gson.toJson(ips));
+        AppLogMeta appLogMeta = new AppLogMeta();
+        LogPattern logPattern = new LogPattern();
+        logPattern.setLogtailId(tailId);
+        logPattern.setOperateEnum(OperateEnum.DELETE_OPERATE);
+        appLogMeta.setLogPatternList(Arrays.asList(logPattern));
+        LogCollectMeta logCollectMeta = new LogCollectMeta();
+        for (String ip : ips) {
+            logCollectMeta.setAgentIp(ip);
+            logCollectMeta.setDelDirectory(directory);
+            logCollectMeta.setAppLogMetaList(Arrays.asList(appLogMeta));
+            sengConfigToAgent(ip, logCollectMeta);
+        }
     }
 
     @Override
@@ -269,10 +307,8 @@ public class MilogAgentServiceImpl implements MilogAgentService {
      * @return
      */
     private AppLogMeta assembleSingleConfig(Long milogAppId, List<LogPattern> logPatternList) {
-        MilogAppTopicRelDO appInfo = milogAppTopicRelDao.queryById(milogAppId);
         AppLogMeta appLogMeta = new AppLogMeta();
-        appLogMeta.setAppId(appInfo.getAppId());
-        appLogMeta.setAppName(appInfo.getAppName());
+        assemblyAppInfo(milogAppId, appLogMeta);
         appLogMeta.setLogPatternList(logPatternList);
         return appLogMeta;
     }
@@ -320,12 +356,13 @@ public class MilogAgentServiceImpl implements MilogAgentService {
                 log.info("assemble data:{}", gson.toJson(milogAppId));
                 LogPattern logPattern = generateLogPattern(milogLogtailDo);
                 logPattern.setIps(Lists.newArrayList(agentIp));
+                logPattern.setIpDirectoryRel(Lists.newArrayList(LogPattern.IPRel.builder().ip(agentIp).build()));
                 LogPathMapping logPathMapping = logPathMappingFactory.queryLogPathMappingByAppType(type);
                 HeraEnvIpService heraEnvIpService = heraEnvIpServiceFactory.getHeraEnvIpServiceByAppType(type);
                 try {
                     logPattern.setLogPattern(logPathMapping.getLogPath(milogLogtailDo.getLogPath(), null));
                     logPattern.setLogSplitExpress(logPathMapping.getLogPath(milogLogtailDo.getLogSplitExpress(), null));
-                    logPattern.setIps(heraEnvIpService.queryActualIps(milogLogtailDo.getIps(), agentIp));
+                    logPattern.setIpDirectoryRel(heraEnvIpService.queryActualIps(milogLogtailDo.getIps(), agentIp, milogLogtailDo.getLogPath()));
                 } catch (Exception e) {
                     log.error("assemble log path data error:", e);
                 }

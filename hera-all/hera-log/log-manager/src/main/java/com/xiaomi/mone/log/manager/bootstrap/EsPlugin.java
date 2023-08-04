@@ -1,3 +1,18 @@
+/*
+ * Copyright 2020 Xiaomi
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package com.xiaomi.mone.log.manager.bootstrap;
 
 import com.xiaomi.mone.log.common.Constant;
@@ -21,6 +36,8 @@ public class EsPlugin implements IPlugin {
     @Resource
     private MilogEsClusterMapper milogEsClusterMapper;
 
+    private static final String ADDR_PREFIX = "http://";
+
     @Override
     public void init() {
         log.info("es init start");
@@ -37,6 +54,7 @@ public class EsPlugin implements IPlugin {
     public void buildEsClient(MilogEsClusterDO cluster) {
         try {
             EsService esService;
+            checkAddrUpdate(cluster);
             switch (cluster.getConWay()) {
                 case Constant.ES_CONWAY_PWD:
                     esService = new EsService(cluster.getAddr(), cluster.getUser(), cluster.getPwd());
@@ -57,5 +75,10 @@ public class EsPlugin implements IPlugin {
         }
     }
 
-
+    private void checkAddrUpdate(MilogEsClusterDO cluster) {
+        String addr = cluster.getAddr();
+        if (addr.startsWith(ADDR_PREFIX)) {
+            cluster.setAddr(addr.substring(ADDR_PREFIX.length() + 1));
+        }
+    }
 }

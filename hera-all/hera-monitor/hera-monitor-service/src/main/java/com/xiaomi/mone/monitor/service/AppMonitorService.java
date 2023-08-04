@@ -93,7 +93,7 @@ public class AppMonitorService {
 
     private static final Gson gson = new Gson();
 
-    @Reference(registry = "registryConfig", check = false, interfaceClass = HeraAppService.class, group = "${dubbo.group.heraapp}")
+    @Reference(registry = "registryConfig", check = false, interfaceClass = HeraAppService.class, group = "${dubbo.group.heraapp}",timeout = 5000)
     HeraAppService hearAppService;
 
     public void appPlatMove(Integer OProjectId, Integer OPlat, Integer NProjectId, Integer Nplat, Integer newIamId, String NprojectName, Boolean rebuildRule) {
@@ -1123,5 +1123,13 @@ public class AppMonitorService {
 //        //The difference between momentIps and rangeIps
 //        List<String> ips = rangeIps.stream().filter(item -> !momentIps.contains(item)).collect(Collectors.toList());
         return Result.success(rangeIps);
+    }
+
+    public Long countByBaseInfoId(List<Integer> baseInfoIds,String user){
+        return appMonitorDao.countByBaseInfoIds(baseInfoIds,user);
+    }
+
+    public List<AppMonitor> searchByBaseInfoId(List<Integer> baseInfoIds,String user,Integer page,Integer pageSize){
+        return appMonitorDao.getDataByBaseInfoIds(baseInfoIds,user,page,pageSize);
     }
 }

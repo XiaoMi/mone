@@ -1,3 +1,18 @@
+/*
+ * Copyright 2020 Xiaomi
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package com.xiaomi.mone.log.agent.common;
 
 import com.google.common.collect.Lists;
@@ -10,6 +25,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Arrays;
@@ -108,13 +124,13 @@ public class ChannelUtil {
      */
     public static ChannelMemory.UnixFileNode buildUnixFileNode(String filePath) {
         try {
-            BasicFileAttributes fileAttributes = Files.readAttributes(Paths.get(filePath), BasicFileAttributes.class);
+            BasicFileAttributes fileAttributes = Files.readAttributes(Paths.get(filePath), BasicFileAttributes.class, LinkOption.NOFOLLOW_LINKS);
             if (null != fileAttributes.fileKey()) {
                 ChannelMemory.UnixFileNode unixFileNode = GSON.fromJson(GSON.toJson(fileAttributes.fileKey()), ChannelMemory.UnixFileNode.class);
                 log.debug("origin file path:{},fileNode unixFileNode:{}", filePath, GSON.toJson(unixFileNode));
                 return unixFileNode;
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.info("buildUnixFileNode error,filePath:{}", filePath, e);
         }
         return new ChannelMemory.UnixFileNode();

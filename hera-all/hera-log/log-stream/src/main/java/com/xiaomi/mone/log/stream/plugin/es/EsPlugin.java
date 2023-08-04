@@ -1,7 +1,23 @@
+/*
+ * Copyright 2020 Xiaomi
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package com.xiaomi.mone.log.stream.plugin.es;
 
+import cn.hutool.core.collection.CollectionUtil;
+import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Lists;
-import com.google.gson.Gson;
 import com.xiaomi.mone.es.EsProcessor;
 import com.xiaomi.mone.log.common.Config;
 import com.xiaomi.mone.log.model.EsInfo;
@@ -31,6 +47,9 @@ public class EsPlugin {
     private static ConcurrentHashMap<String, EsService> esServiceMap = new ConcurrentHashMap<>();
 
     private static ConcurrentHashMap<String, EsProcessor> esProcessorMap = new ConcurrentHashMap<>();
+
+
+    public static final int SINGLE_MESSAGE_BYTES_MAXIMAL = 10 * 1024 * 1024;
 
     public static boolean InitEsConfig() {
         EsConfig config = new EsConfig();
@@ -114,23 +133,27 @@ public class EsPlugin {
                     MqMessageDTO MqMessageDTO = new MqMessageDTO();
                     MqMessageDTO.setEsInfo(esInfo);
                     List<MqMessageDTO.CompensateMqDTO> compensateMqDTOS = Lists.newArrayList();
-                    String cacheKey = cacheKey(esInfo);
-                    Gson gson = new Gson();
                     request.requests().stream().filter(x -> x instanceof IndexRequest)
                             .forEach(x -> {
                                 Map source = ((IndexRequest) x).sourceAsMap();
-                                log.error("Failure to handle index:[{}], type:[{}],id:[{}] data:[{}]", x.index(), x.type(), x.id(), gson.toJson(source));
-                                EsProcessor esProcessor = esProcessorMap.get(cacheKey);
-                                esProcessor.bulkInsert(x.index(), source);
+                                log.error("Failure to handle index:[{}], type:[{}],id:[{}] data:[{}]", x.index(), x.type(), x.id(), JSON.toJSONString(source));
                                 MqMessageDTO.CompensateMqDTO compensateMqDTO = new MqMessageDTO.CompensateMqDTO();
-                                compensateMqDTO.setMsg(gson.toJson(source));
+                                compensateMqDTO.setMsg(JSON.toJSONString(source));
                                 compensateMqDTO.setEsIndex(x.index());
                                 compensateMqDTOS.add(compensateMqDTO);
                             });
-                    MqMessageDTO.setCompensateMqDTOS(compensateMqDTOS);
-                    //消息发送到mq中消费
-                    //mqMessageDispose.product(MqMessageDTO);
-                    onFailedConsumer.accept(MqMessageDTO);
+                    //消息发送到mq中消费--数据不能大于10M,不然写不进去,分2部分
+                    int length = JSON.toJSONString(compensateMqDTOS).getBytes().length;
+                    if (length > SINGLE_MESSAGE_BYTES_MAXIMAL) {
+                        List<List<MqMessageDTO.CompensateMqDTO>> splitList = CollectionUtil.splitList(compensateMqDTOS, 2);
+                        for (List<MqMessageDTO.CompensateMqDTO> mqDTOS : splitList) {
+                            MqMessageDTO.setCompensateMqDTOS(mqDTOS);
+                            onFailedConsumer.accept(MqMessageDTO);
+                        }
+                    } else {
+                        MqMessageDTO.setCompensateMqDTOS(compensateMqDTOS);
+                        onFailedConsumer.accept(MqMessageDTO);
+                    }
                 }
             }));
             esProcessorMap.put(cacheKey(esInfo), esProcessor);

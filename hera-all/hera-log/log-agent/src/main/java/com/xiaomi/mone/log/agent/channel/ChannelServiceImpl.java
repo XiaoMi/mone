@@ -1,27 +1,26 @@
 /*
- *  Copyright 2020 Xiaomi
+ * Copyright 2020 Xiaomi
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
-
 package com.xiaomi.mone.log.agent.channel;
 
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.io.FileUtil;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.xiaomi.mone.file.*;
+import com.xiaomi.mone.log.agent.channel.file.InodeFileComparator;
 import com.xiaomi.mone.log.agent.channel.file.MonitorFile;
 import com.xiaomi.mone.log.agent.channel.memory.AgentMemoryService;
 import com.xiaomi.mone.log.agent.channel.memory.ChannelMemory;
@@ -37,6 +36,7 @@ import com.xiaomi.mone.log.api.model.msg.LineMessage;
 import com.xiaomi.mone.log.common.Constant;
 import com.xiaomi.mone.log.common.PathUtils;
 import com.xiaomi.mone.log.utils.NetUtil;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -56,7 +56,7 @@ import static com.xiaomi.mone.log.common.PathUtils.SEPARATOR;
  * @date 2021-07-20
  */
 @Slf4j
-public class ChannelServiceImpl implements ChannelService {
+public class ChannelServiceImpl extends AbstractChannelService {
 
     private AgentMemoryService memoryService;
 
@@ -66,9 +66,15 @@ public class ChannelServiceImpl implements ChannelService {
 
     private ChannelMemory channelMemory;
 
-    private ConcurrentHashMap<String, LogFile> logFileMap = new ConcurrentHashMap<>();
+    @Getter
+    private final ConcurrentHashMap<String, LogFile> logFileMap = new ConcurrentHashMap<>();
 
-    private ConcurrentHashMap<String, Future> futureMap = new ConcurrentHashMap<>();
+    @Getter
+    private final ConcurrentHashMap<String, Future> futureMap = new ConcurrentHashMap<>();
+
+    private final Map<String, Long> reOpenMap = new HashMap<>();
+
+    private final Map<String, ScheduledFuture<?>> lastFileLineScheduledFutureMap = new HashMap<>();
 
     private Gson gson = Constant.GSON;
 
@@ -82,7 +88,6 @@ public class ChannelServiceImpl implements ChannelService {
 
     private ScheduledFuture<?> scheduledFuture;
 
-    private ScheduledFuture<?> lastFileLineScheduledFuture;
     /**
      * collect once flag
      */
@@ -90,15 +95,10 @@ public class ChannelServiceImpl implements ChannelService {
 
     private FilterChain chain;
 
-    private String instanceId = UUID.randomUUID().toString();
     /**
      * 监听的文件路径
      */
     private List<MonitorFile> monitorFileList;
-    /**
-     * 实际采集的文件对应的机器Ip(兼容k8s 一个node下多个pod的问题)
-     */
-    Map<String, String> ipPath = new ConcurrentHashMap<>();
 
     private LogTypeEnum logTypeEnum;
 
@@ -108,8 +108,7 @@ public class ChannelServiceImpl implements ChannelService {
 
     private String linePrefix;
 
-    public ChannelServiceImpl(MsgExporter msgExporter, AgentMemoryService memoryService,
-                              ChannelDefine channelDefine, FilterChain chain) {
+    public ChannelServiceImpl(MsgExporter msgExporter, AgentMemoryService memoryService, ChannelDefine channelDefine, FilterChain chain) {
         this.memoryService = memoryService;
         this.msgExporter = msgExporter;
         this.channelDefine = channelDefine;
@@ -155,62 +154,9 @@ public class ChannelServiceImpl implements ChannelService {
     }
 
     @Override
-    public ChannelState state() {
-        ChannelState channelState = new ChannelState();
-
-        channelState.setTailId(this.channelDefine.getChannelId());
-        channelState.setTailName(this.channelDefine.getTailName());
-        channelState.setAppId(this.channelDefine.getAppId());
-        channelState.setAppName(this.channelDefine.getAppName());
-        channelState.setLogPattern(this.channelDefine.getInput().getLogPattern());
-        channelState.setLogPatternCode(this.channelDefine.getInput().getPatternCode());
-        channelState.setIpList(ipPath.values().stream().distinct().collect(Collectors.toList()));
-
-        channelState.setCollectTime(this.channelMemory.getCurrentTime());
-
-        if (channelState.getStateProgressMap() == null) {
-            channelState.setStateProgressMap(new HashMap<>(256));
-        }
-        channelMemory.getFileProgressMap().forEach((pattern, fileProcess) -> {
-            if (null != fileProcess.getFinished() && fileProcess.getFinished()) {
-                return;
-            }
-            ChannelState.StateProgress stateProgress = new ChannelState.StateProgress();
-            stateProgress.setCurrentFile(pattern);
-            stateProgress.setIp(getTailPodIp(pattern));
-            stateProgress.setCurrentRowNum(fileProcess.getCurrentRowNum());
-            stateProgress.setPointer(fileProcess.getPointer());
-            stateProgress.setFileMaxPointer(fileProcess.getFileMaxPointer());
-            channelState.getStateProgressMap().put(pattern, stateProgress);
-        });
-
-        channelState.setTotalSendCnt(this.logCounts);
-        return channelState;
-    }
-
-    private String getTailPodIp(String pattern) {
-        String tailPodIp = ipPath.get(pattern);
-        if (StringUtils.isBlank(tailPodIp)) {
-            Optional<String> ipOptional = ipPath.keySet().stream().filter(path -> pattern.startsWith(path)).findFirst();
-            String ipKey = ipPath.keySet().stream().findFirst().get();
-            if (ipOptional.isPresent()) {
-                ipKey = ipOptional.get();
-            }
-            tailPodIp = ipPath.get(ipKey);
-        }
-        return tailPodIp;
-    }
-
-    @Override
-    public String instanceId() {
-        return instanceId;
-    }
-
-    @Override
     public void start() {
         Long channelId = channelDefine.getChannelId();
         Input input = channelDefine.getInput();
-        List<String> ips = channelDefine.getIps();
 
         this.logPattern = input.getLogPattern();
         this.logSplitExpress = input.getLogSplitExpress();
@@ -233,15 +179,13 @@ public class ChannelServiceImpl implements ChannelService {
             channelMemory = initChannelMemory(channelId, input, patterns);
         }
         memoryService.cleanChannelMemoryContent(channelId, patterns);
-        // handle all * file ip
-        ChannelUtil.buildConnectionBetweenAppIp(logPattern, ipPath, ips, collectOnce);
 
-        startCollectFile(channelId, input, ips, patterns);
+        startCollectFile(channelId, input, patterns);
 
         startExportQueueDataThread();
         memoryService.refreshMemory(channelMemory);
         delayDeletionFinishedFile();
-        log.warn("channelId:{}, channelInstanceId:{} start success! channelDefine:{}", channelId, instanceId, gson.toJson(this.channelDefine));
+        log.warn("channelId:{}, channelInstanceId:{} start success! channelDefine:{}", channelId, instanceId(), gson.toJson(this.channelDefine));
     }
 
     /**
@@ -279,6 +223,37 @@ public class ChannelServiceImpl implements ChannelService {
         }
     }
 
+    @Override
+    public void deleteCollFile(String directory) {
+        log.info("deleteCollFile,directory:{}", directory);
+        try {
+            TimeUnit.SECONDS.sleep(1);
+        } catch (InterruptedException e) {
+            log.error("deleteCollFile sleep error,directory:{}", directory, e);
+        }
+        for (Map.Entry<String, LogFile> logFileEntry : logFileMap.entrySet()) {
+            if (logFileEntry.getKey().contains(directory)) {
+                logFileEntry.getValue().setStop(true);
+            }
+        }
+        for (Map.Entry<String, Future> futureEntry : futureMap.entrySet()) {
+            if (futureEntry.getKey().contains(directory)) {
+                futureEntry.getValue().cancel(false);
+            }
+        }
+        for (Map.Entry<String, ScheduledFuture<?>> futureEntry : lastFileLineScheduledFutureMap.entrySet()) {
+            if (futureEntry.getKey().contains(directory)) {
+                futureEntry.getValue().cancel(false);
+            }
+        }
+        List<String> delFiles = reOpenMap.keySet().stream()
+                .filter(filePath -> filePath.contains(directory))
+                .collect(Collectors.toList());
+        for (String delFile : delFiles) {
+            reOpenMap.remove(delFile);
+        }
+    }
+
     private void startExportQueueDataThread() {
         scheduledFuture = ExecutorUtil.scheduleAtFixedRate(() -> {
             // 超过10s 未发送mq消息，才进行异步发送
@@ -291,23 +266,17 @@ public class ChannelServiceImpl implements ChannelService {
         }, 10, 7, TimeUnit.SECONDS);
     }
 
-    private void startCollectFile(Long channelId, Input input, List<String> ips, List<String> patterns) {
-        Map<String, String> ipPathDireMap = new HashMap<>();
-        BeanUtil.copyProperties(ipPath, ipPathDireMap);
-
+    private void startCollectFile(Long channelId, Input input, List<String> patterns) {
         for (int i = 0; i < patterns.size(); i++) {
-            String ip = ChannelUtil.queryCurrentCorrectIp(ipPathDireMap, patterns.get(i), ips);
-
-            readFile(input.getPatternCode(), ip, patterns.get(i), channelId);
-            if (!collectOnce) {
-                ipPath.put(patterns.get(i), ip);
-            }
+            readFile(input.getPatternCode(), getTailPodIp(patterns.get(i)), patterns.get(i), channelId);
+            InodeFileComparator.addFile(patterns.get(i));
         }
     }
 
 
-    private void handleAllFileCollectMonitor(String patternCode, String newFilePath, Long channelId, Map<String, String> ipPath) {
-        String ip = ChannelUtil.queryCurrentCorrectIp(ipPath, newFilePath, Collections.EMPTY_LIST);
+    private void handleAllFileCollectMonitor(String patternCode, String newFilePath, Long channelId) {
+
+        String ip = getTailPodIp(newFilePath);
 
         List<String> collectKeys = logFileMap.keySet().stream().collect(Collectors.toList());
 
@@ -357,8 +326,7 @@ public class ChannelServiceImpl implements ChannelService {
                 /**
                  * 兼容当前文件创建的时候可以监听到
                  */
-                perFilePathExpress = String.format("(%s|%s)", perFilePathExpress,
-                        String.format("%s.*", realFilePaths.get(i)));
+                perFilePathExpress = String.format("(%s|%s)", perFilePathExpress, String.format("%s.*", realFilePaths.get(i)));
             } catch (Exception e) {
                 perFilePathExpress = String.format("%s.*", realFilePaths.get(i));
             }
@@ -405,31 +373,30 @@ public class ChannelServiceImpl implements ChannelService {
                 return;
             }
             String ct = String.valueOf(System.currentTimeMillis());
-            readResult.get().getLines().stream()
-                    .forEach(l -> {
-                        String logType = channelDefine.getInput().getType();
-                        LogTypeEnum logTypeEnum = LogTypeEnum.name2enum(logType);
-                        // 多行应用日志类型和opentelemetry类型才判断异常堆栈
-                        if (LogTypeEnum.APP_LOG_MULTI == logTypeEnum || LogTypeEnum.OPENTELEMETRY == logTypeEnum) {
-                            l = mLog.append2(l);
-                        } else {
-                            // tail 单行模式
-                        }
-                        if (null != l) {
-                            synchronized (lock) {
-                                wrapDataToSend(l, readResult, pattern, patternCode, ip, ct);
-                            }
-                        } else {
-                            log.debug("biz log channelId:{}, not new line:{}", channelDefine.getChannelId(), l);
-                        }
-                    });
+            readResult.get().getLines().stream().forEach(l -> {
+                String logType = channelDefine.getInput().getType();
+                LogTypeEnum logTypeEnum = LogTypeEnum.name2enum(logType);
+                // 多行应用日志类型和opentelemetry类型才判断异常堆栈
+                if (LogTypeEnum.APP_LOG_MULTI == logTypeEnum || LogTypeEnum.OPENTELEMETRY == logTypeEnum) {
+                    l = mLog.append2(l);
+                } else {
+                    // tail 单行模式
+                }
+                if (null != l) {
+                    synchronized (lock) {
+                        wrapDataToSend(l, readResult, pattern, patternCode, ip, ct);
+                    }
+                } else {
+                    log.debug("biz log channelId:{}, not new line:{}", channelDefine.getChannelId(), l);
+                }
+            });
 
         });
 
         /**
          * 采集最后一行数据内存中超 10s 没有发送的数据
          */
-        lastFileLineScheduledFuture = ExecutorUtil.scheduleAtFixedRate(() -> {
+        ScheduledFuture<?> lastFileLineScheduledFuture = ExecutorUtil.scheduleAtFixedRate(() -> {
             Long appendTime = mLog.getAppendTime();
             if (null != appendTime && Instant.now().toEpochMilli() - appendTime > 10 * 1000) {
                 String remainMsg = mLog.takeRemainMsg2();
@@ -441,6 +408,7 @@ public class ChannelServiceImpl implements ChannelService {
                 }
             }
         }, 30, 30, TimeUnit.SECONDS);
+        lastFileLineScheduledFutureMap.put(pattern, lastFileLineScheduledFuture);
         return listener;
     }
 
@@ -513,6 +481,7 @@ public class ChannelServiceImpl implements ChannelService {
             futureMap.put(filePath, future);
         } else {
             log.info("file not exist,file:{}", filePath);
+            lastFileLineScheduledFutureMap.get(filePath).cancel(false);
         }
     }
 
@@ -600,14 +569,17 @@ public class ChannelServiceImpl implements ChannelService {
         if (null != scheduledFuture) {
             scheduledFuture.cancel(false);
         }
-        if (null != lastFileLineScheduledFuture) {
-            lastFileLineScheduledFuture.cancel(false);
+        if (lastFileLineScheduledFutureMap.size() > 0) {
+            lastFileLineScheduledFutureMap.values().forEach(value -> {
+                value.cancel(false);
+            });
         }
         for (Future future : futureMap.values()) {
             future.cancel(false);
         }
         log.info("stop file monitor,fileName:", logFileMap.keySet().stream().collect(Collectors.joining(SYMBOL_COMMA)));
         lineMessageList.clear();
+        reOpenMap.clear();
     }
 
     public Long getChannelId() {
@@ -629,23 +601,31 @@ public class ChannelServiceImpl implements ChannelService {
     }
 
     @Override
-    public void reOpen(String filePath) {
+    public synchronized void reOpen(String filePath) {
+        //打开次数判断10s内只能重新打开1次
+        if (reOpenMap.containsKey(filePath) && Instant.now().toEpochMilli() - reOpenMap.get(filePath) < 10 * 1000) {
+            log.info("The file has been opened too frequently.Please try again in 10 seconds.fileName:{}," +
+                    "last time opening time.:{}", filePath, reOpenMap.get(filePath));
+            return;
+        }
+        reOpenMap.put(filePath, Instant.now().toEpochMilli());
         log.info("reOpen file:{}", filePath);
         if (collectOnce) {
-            handleAllFileCollectMonitor(channelDefine.getInput().getPatternCode(), filePath, getChannelId(), ipPath);
+            handleAllFileCollectMonitor(channelDefine.getInput().getPatternCode(), filePath, getChannelId());
             return;
         }
         LogFile logFile = logFileMap.get(filePath);
-        String ip = StringUtils.isBlank(ipPath.get(filePath)) ? NetUtil.getLocalIp() : ipPath.get(filePath);
+        String tailPodIp = getTailPodIp(filePath);
+        String ip = StringUtils.isBlank(tailPodIp) ? NetUtil.getLocalIp() : tailPodIp;
         if (null == logFile) {
             // 新增日志文件
             readFile(channelDefine.getInput().getPatternCode(), ip, filePath, getChannelId());
-            log.info("watch new file create for chnnelId:{},ip:{},path:{}", getChannelId(), filePath, ip);
+            log.info("watch new file create for channelId:{},ip:{},path:{}", getChannelId(), filePath, ip);
         } else {
             // 正常日志切分
             try {
-                //延迟7s切分文件, todo @shanwb 保证文件采集完再切换
-                TimeUnit.SECONDS.sleep(7);
+                //延迟5s切分文件, todo @shanwb 保证文件采集完再切换
+                TimeUnit.SECONDS.sleep(5);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -665,6 +645,11 @@ public class ChannelServiceImpl implements ChannelService {
 
     public ChannelMemory getChannelMemory() {
         return channelMemory;
+    }
+
+    @Override
+    public Long getLogCounts() {
+        return this.logCounts;
     }
 
 

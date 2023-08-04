@@ -79,7 +79,7 @@ spec:
         tier: mysql
     spec:
       containers:
-        - image: mariadb:latest
+        - image: mariadb:10.6.11
           name: mysql
           env:
             - name: MYSQL_ROOT_PASSWORD

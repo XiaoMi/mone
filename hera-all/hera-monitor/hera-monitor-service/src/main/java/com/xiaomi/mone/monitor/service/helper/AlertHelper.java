@@ -345,18 +345,18 @@ public class AlertHelper {
      * @param agList
      * @return
      */
-    public List<AlertGroupInfo> buildAlertGroupInfoList(String user, List<AlertGroup> agList) {
+    public List<AlertGroupInfo> buildAlertGroupInfoList(Boolean isAdmin,String user, List<AlertGroup> agList) {
         if (agList == null || agList.isEmpty() ) {
             return null;
         }
         List<AlertGroupInfo> groupList = new ArrayList<>();
         agList.forEach((ele) -> {
-            groupList.add(buildAlertGroupInfo(user, ele));
+            groupList.add(buildAlertGroupInfo(isAdmin,user, ele));
         });
         return groupList;
     }
 
-    public AlertGroupInfo buildAlertGroupInfo(String user, AlertGroup ag) {
+    public AlertGroupInfo buildAlertGroupInfo(Boolean isAdmin,String user, AlertGroup ag) {
         if (ag == null) {
             return null;
         }
@@ -370,8 +370,8 @@ public class AlertHelper {
         agInfo.setMembers(buildUserInfoList(ag.getMembers()));
         agInfo.setType(ag.getType());
         agInfo.setRelId(ag.getRelId());
-        if (user != null && agInfo.getMembers() != null &&
-                agInfo.getMembers().stream().filter(m -> user.equals(m.getName())).findAny().isPresent()) {
+        if (isAdmin || (user != null && agInfo.getMembers() != null &&
+                agInfo.getMembers().stream().filter(m -> user.equals(m.getName())).findAny().isPresent())) {
             agInfo.setDelete(true);
             agInfo.setEdit(true);
         }

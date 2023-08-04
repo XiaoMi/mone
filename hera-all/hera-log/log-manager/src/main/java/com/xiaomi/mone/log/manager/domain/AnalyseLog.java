@@ -1,3 +1,18 @@
+/*
+ * Copyright 2020 Xiaomi
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package com.xiaomi.mone.log.manager.domain;
 
 import com.xiaomi.mone.log.manager.dao.MilogLogstoreDao;
@@ -9,14 +24,16 @@ import com.xiaomi.mone.log.manager.model.pojo.MilogAnalyseGraphDO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
 import com.xiaomi.mone.log.manager.model.vo.LogAnalyseDataPreQuery;
 import com.xiaomi.mone.log.manager.model.vo.LogAnalyseDataQuery;
+import com.xiaomi.mone.log.manager.model.vo.LogQuery;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionService;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionServiceFactory;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.plugin.es.EsService;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.core.TimeValue;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
@@ -39,6 +56,13 @@ public class AnalyseLog {
     @Resource
     private AggrCalcu aggrCalcu;
 
+    private CommonExtensionService commonExtensionService;
+
+    public void init() {
+        commonExtensionService = CommonExtensionServiceFactory.getCommonExtensionService();
+    }
+
+
     public LogAnalyseDataDTO getData(LogAnalyseDataPreQuery query) throws IOException {
         return getData(query.getStoreId(), query.getFieldName(), query.getTypeCode(), query.getGraphParam(), query.getStartTime(), query.getEndTime());
     }
@@ -54,12 +78,15 @@ public class AnalyseLog {
         }
         MilogLogStoreDO logStore = logstoreDao.queryById(storeId);
         EsService esService = esCluster.getEsService(logStore.getEsClusterId());
-        String esIndex = logStore.getEsIndex();
+        String esIndex = commonExtensionService.getSearchIndex(logStore.getId(), logStore.getEsIndex());
 
         // 过滤条件
-        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-        boolQueryBuilder.filter(QueryBuilders.rangeQuery("timestamp").from(startTime).to(endTime - 1000));
-        boolQueryBuilder.filter(QueryBuilders.termQuery("logstore", logStore.getLogstoreName()));
+        LogQuery logQuery = new LogQuery();
+        logQuery.setStoreId(logStore.getId());
+        logQuery.setStartTime(startTime);
+        logQuery.setEndTime(endTime - 1000);
+        logQuery.setLogstore(logStore.getLogstoreName());
+        BoolQueryBuilder boolQueryBuilder = commonExtensionService.commonRangeQuery(logQuery);
 
         AggregationBuilder aggrs = aggrCalcu.getAggr(new CalcuAggrParam(graphType, graphParam, fieldName, startTime, endTime));
         if (aggrs == null) {

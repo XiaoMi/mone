@@ -1,7 +1,22 @@
+/*
+ * Copyright 2020 Xiaomi
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package com.xiaomi.mone.log.manager.service.impl;
 
+import cn.hutool.core.lang.Assert;
 import com.google.common.collect.Lists;
-import com.google.gson.Gson;
 import com.xiaomi.mone.app.api.response.AppBaseInfo;
 import com.xiaomi.mone.app.model.vo.HeraEnvIpVo;
 import com.xiaomi.mone.log.api.enums.*;
@@ -10,11 +25,12 @@ import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.exception.CommonError;
 import com.xiaomi.mone.log.manager.common.Utils;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
+import com.xiaomi.mone.log.manager.common.utils.ManagerUtil;
 import com.xiaomi.mone.log.manager.common.validation.HeraConfigValid;
 import com.xiaomi.mone.log.manager.dao.*;
 import com.xiaomi.mone.log.manager.mapper.MilogLogSearchSaveMapper;
 import com.xiaomi.mone.log.manager.mapper.MilogLogTemplateMapper;
-import com.xiaomi.mone.log.manager.model.bo.MilogLogtailParam;
+import com.xiaomi.mone.log.manager.model.bo.LogTailParam;
 import com.xiaomi.mone.log.manager.model.bo.MlogParseParam;
 import com.xiaomi.mone.log.manager.model.dto.*;
 import com.xiaomi.mone.log.manager.model.pojo.*;
@@ -63,7 +79,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     private MilogLogTailDao milogLogtailDao;
 
     @Resource
-    private MilogLogstoreDao logstoreDao;
+    private MilogLogstoreDao logStoreDao;
 
     @Resource
     private MilogSpaceDao milogSpaceDao;
@@ -101,10 +117,8 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     private MilogLogSearchSaveMapper searchSaveMapper;
     @Resource
     private HeraConfigValid heraConfigValid;
-
-    Gson gson = new Gson();
-    private static final String MIS_LOGPATH_PREFIX = "/home/work/logs";
-
+    @Resource
+    private LogTailServiceImpl logTailService;
 
     @Resource
     private LogTypeProcessorFactory logTypeProcessorFactory;
@@ -147,41 +161,8 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
                 .build();
     }
 
-    private String verifyMilogLogtailParam(MilogLogtailParam param) {
-        if (null == param.getMilogAppId()) {
-            return "选择的应用不能为空";
-        }
-        if (null == param || StringUtils.isBlank(param.getLogPath())) {
-            return "路径不能为空";
-        }
-        if (null == param.getSpaceId()) {
-            return "spaceId不能为空";
-        }
-        if (null == param.getStoreId()) {
-            return "storeId不能为空";
-        }
-        String path = param.getLogPath();
-        MilogLogStoreDO milogLogstoreDO = logstoreDao.queryById(param.getStoreId());
-        if (Objects.equals("staging", serverType) &&
-                !MachineRegionEnum.CN_MACHINE.getEn().equals(milogLogstoreDO.getMachineRoom())) {
-            return "测试环境只支持大陆机房，其它机房由于网络问题不支持";
-        }
-        if (path.equals("/home/work/log/") || path.equals("/home/work/log") || path.startsWith("/home/work/log") && path.split("/").length < 4) {
-            return "日志路径错误，请确认后提交";
-        }
-        if (Objects.equals(ProjectTypeEnum.MIONE_TYPE.getCode(), param.getAppType())) {
-            // 校验同名日志文件
-            List<MilogLogTailDo> appLogTails = milogLogtailDao.queryByMilogAppAndEnv(param.getMilogAppId(), param.getEnvId());
-            for (int i = 0; i < appLogTails.size() && null == param.getId(); i++) {
-                if (appLogTails.get(i).getLogPath().equals(param.getLogPath())) {
-                    return "当前部署环境该文件" + param.getLogPath() + "已配置日志采集,别名为：" + appLogTails.get(i).getTail();
-                }
-            }
-        }
-        return "";
-    }
 
-    private void handleMqTailParam(MilogLogtailParam param) {
+    private void handleMqTailParam(LogTailParam param) {
         if (CollectionUtils.isEmpty(param.getMiddlewareConfig())) {
             return;
         }
@@ -205,14 +186,14 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     }
 
     @Override
-    public Result<MilogTailDTO> newMilogLogTail(MilogLogtailParam param) {
+    public Result<LogTailDTO> newMilogLogTail(LogTailParam param) {
         // 参数校验
         String errorMsg = heraConfigValid.verifyLogTailParam(param);
         if (StringUtils.isNotEmpty(errorMsg)) {
             return new Result<>(CommonError.ParamsError.getCode(), errorMsg);
         }
 
-        MilogLogStoreDO logStore = logstoreDao.queryById(param.getStoreId());
+        MilogLogStoreDO logStore = logStoreDao.queryById(param.getStoreId());
         if (logStore == null) {
             return new Result<>(CommonError.ParamsError.getCode(), "logStore不存在");
         }
@@ -233,16 +214,13 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         AppBaseInfo appBaseInfo = getAppBaseInfo(param);
 
         MilogLogTailDo mt = buildLogTailDo(param, logStore, appBaseInfo, MoneUserContext.getCurrentUser().getUser());
-        MilogLogTailDo milogLogtailDo = milogLogtailDao.newMilogLogtail(mt);
+        MilogLogTailDo milogLogtailDo = milogLogtailDao.add(mt);
         boolean supportedConsume = logTypeProcessor.supportedConsume(logStore.getLogType());
         try {
             if (null != milogLogtailDo) {
                 if (tailExtensionService.bindMqResourceSwitch(param.getAppType())) {
                     // tail创建成功 绑定和mq的关系
-                    tailExtensionService.defaultBindingAppTailConfigRel(
-                            milogLogtailDo.getId(), param.getMilogAppId(),
-                            null == param.getMiddlewareConfigId() ? logStore.getMqResourceId() : param.getMiddlewareConfigId(),
-                            param.getTopicName(), param.getBatchSendSize());
+                    tailExtensionService.defaultBindingAppTailConfigRel(milogLogtailDo.getId(), param.getMilogAppId(), null == param.getMiddlewareConfigId() ? logStore.getMqResourceId() : param.getMiddlewareConfigId(), param.getTopicName(), param.getBatchSendSize());
                     /** 创建完tail后同步信息**/
                     tailExtensionService.sendMessageOnCreate(param, mt, param.getMilogAppId(), supportedConsume);
                 } else if (tailExtensionService.bindPostProcessSwitch(param.getStoreId())) {
@@ -250,7 +228,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
                     /** 创建完tail后同步信息**/
                     tailExtensionService.sendMessageOnCreate(param, mt, param.getMilogAppId(), supportedConsume);
                 }
-                MilogTailDTO ret = new MilogTailDTO();
+                LogTailDTO ret = new LogTailDTO();
                 ret.setId(mt.getId());
                 return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage(), ret);
             } else {
@@ -263,12 +241,8 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         }
     }
 
-    private MilogAppTopicRelDO getMilogAppTopicRelDO(MilogLogtailParam param) {
-        return milogAppTopicRelDao.queryById(param.getMilogAppId());
-    }
-
     @Override
-    public void sengMessageNewTail(MilogLogtailParam param, MilogLogTailDo milogLogtailDo, MilogLogStoreDO milogLogStore) {
+    public void sengMessageNewTail(LogTailParam param, MilogLogTailDo milogLogtailDo, MilogLogStoreDO milogLogStore) {
         // tail创建成功 绑定和中间件的关系
         milogAppMiddlewareRelService.bindingTailConfigRel(milogLogtailDo.getId(), param.getMilogAppId(), param.getMiddlewareConfigId(), param.getTopicName());
         /** 创建完tail后同步信息**/
@@ -276,7 +250,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     }
 
     @Override
-    public MilogLogTailDo buildLogTailDo(MilogLogtailParam param, MilogLogStoreDO milogLogStore, AppBaseInfo appBaseInfo, String creator) {
+    public MilogLogTailDo buildLogTailDo(LogTailParam param, MilogLogStoreDO milogLogStore, AppBaseInfo appBaseInfo, String creator) {
         MilogLogTailDo mt = logTailParam2Do(param, milogLogStore, appBaseInfo);
         wrapBaseCommon(mt, OperateEnum.ADD_OPERATE, creator);
         return mt;
@@ -310,42 +284,61 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     public void handleNaocsConfigByMotorRoom(MilogLogTailDo mt, String motorRoomEn, Integer type, Integer projectType) {
         milogConfigNacosServiceImpl.chooseCurrentEnvNacosSerevice(motorRoomEn);
         if (OperateEnum.ADD_OPERATE.getCode().equals(type) || OperateEnum.UPDATE_OPERATE.getCode().equals(type)) {
-            milogConfigNacosServiceImpl.publishStreamConfig(mt.getSpaceId(), mt.getId(), type, projectType, motorRoomEn);
+            milogConfigNacosServiceImpl.publishStreamConfig(mt.getSpaceId(), type, projectType, motorRoomEn);
         }
         milogConfigNacosServiceImpl.publishNameSpaceConfig(motorRoomEn, mt.getSpaceId(), mt.getStoreId(), mt.getId(), type, "");
     }
 
     @Override
-    public Result<MilogTailDTO> getMilogLogtailById(Long id) {
+    public boolean deleteConfigRemote(Long spaceId, Long id, String motorRoomEn, LogStructureEnum logStructureEnum) {
+        Assert.notNull(spaceId, "deleteConfigRemote spaceId can not null");
+        Assert.notNull(id, "deleteConfigRemote id can not null");
+        milogConfigNacosServiceImpl.chooseCurrentEnvNacosSerevice(motorRoomEn);
+        if (LogStructureEnum.SPACE == logStructureEnum) {
+            milogConfigNacosServiceImpl.publishStreamConfig(spaceId, OperateEnum.DELETE_OPERATE.getCode(), null, motorRoomEn);
+            return true;
+        }
+        if (LogStructureEnum.STORE == logStructureEnum) {
+            milogConfigNacosServiceImpl.publishNameSpaceConfig(motorRoomEn, spaceId, id, null, OperateEnum.DELETE_OPERATE.getCode(), logStructureEnum.getCode());
+            return true;
+        }
+        MilogLogTailDo tailDo = milogLogtailDao.queryById(id);
+        milogConfigNacosServiceImpl.publishNameSpaceConfig(motorRoomEn, spaceId, tailDo.getStoreId(), id, OperateEnum.DELETE_OPERATE.getCode(), logStructureEnum.getCode());
+        return true;
+    }
+
+    @Override
+    public Result<LogTailDTO> getMilogLogtailById(Long id) {
         MilogLogTailDo tail = milogLogtailDao.queryById(id);
         if (null != tail) {
             // 处理value list
-            MilogLogStoreDO milogLogstore = logstoreDao.queryById(tail.getStoreId());
+            MilogLogStoreDO milogLogstore = logStoreDao.queryById(tail.getStoreId());
             if (null != milogLogstore && StringUtils.isNotEmpty(milogLogstore.getKeyList())) {
                 String keyList = milogLogstore.getKeyList();
                 String valueList = getKeyValueList(keyList, tail.getValueList());
                 tail.setValueList(valueList);
             }
             // 处理filterconf 转 rateLimit
-            MilogTailDTO milogTailDTO = milogLogtailDO2DTO(tail);
-            if (tailExtensionService.decorateTailDTOValId(milogTailDTO.getAppType().intValue())) {
-                decorateMilogTailDTO(milogTailDTO);
+            LogTailDTO logTailDTO = milogLogtailDO2DTO(tail);
+            if (tailExtensionService.decorateTailDTOValId(logTailDTO.getAppType().intValue())) {
+                decorateMilogTailDTO(logTailDTO);
             }
-            return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage(), milogTailDTO);
+            return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage(), logTailDTO);
         } else {
             return new Result<>(CommonError.UnknownError.getCode(), "tail 不存在");
         }
     }
 
-    private void decorateMilogTailDTO(MilogTailDTO milogTailDTO) {
-        Optional<AppBaseInfo> optionalAppBaseInfo = Optional.ofNullable(heraAppService.queryById(milogTailDTO.getMilogAppId()));
+    private void decorateMilogTailDTO(LogTailDTO logTailDTO) {
+        Optional<AppBaseInfo> optionalAppBaseInfo = Optional.ofNullable(heraAppService.queryById(logTailDTO.getMilogAppId()));
         optionalAppBaseInfo.ifPresent(appBaseInfo -> {
-            milogTailDTO.setSource(appBaseInfo.getPlatformType().toString());
-            List<MilogAppMiddlewareRel> milogAppMiddlewareRels = milogAppMiddlewareRelDao.queryByCondition(milogTailDTO.getMilogAppId(), null, milogTailDTO.getId());
+            logTailDTO.setSource(appBaseInfo.getPlatformType().toString());
+            List<MilogAppMiddlewareRel> milogAppMiddlewareRels = milogAppMiddlewareRelDao.queryByCondition(logTailDTO.getMilogAppId(), null, logTailDTO.getId());
             if (CollectionUtils.isNotEmpty(milogAppMiddlewareRels)) {
                 MilogAppMiddlewareRel milogAppMiddlewareRel = milogAppMiddlewareRels.get(0);
                 MilogMiddlewareConfig config = milogMiddlewareConfigDao.queryById(milogAppMiddlewareRel.getMiddlewareId());
-                milogTailDTO.setMiddlewareConfig(Arrays.asList(Long.valueOf(config.getType()), config.getId(), milogAppMiddlewareRel.getConfig().getTopic()));
+                logTailDTO.setMiddlewareConfig(Arrays.asList(Long.valueOf(config.getType()), config.getId(), milogAppMiddlewareRel.getConfig().getTopic()));
+                logTailDTO.setBatchSendSize(milogAppMiddlewareRel.getConfig().getBatchSendSize());
             }
         });
     }
@@ -353,7 +346,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     @Override
     public Result<Map<String, Object>> getMilogLogBypage(Long storeId, int page, int pagesize) {
         List<MilogLogTailDo> ret = milogLogtailDao.getMilogLogtailByPage(storeId, page, pagesize);
-        ArrayList<MilogTailDTO> res = Lists.newArrayList();
+        ArrayList<LogTailDTO> res = Lists.newArrayList();
         ret.forEach(v -> {
             res.add(milogLogtailDO2DTO(v));
         });
@@ -373,9 +366,9 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     }
 
     @Override
-    public Result<List<MilogTailDTO>> getMilogLogtailByIds(List<Long> ids) {
+    public Result<List<LogTailDTO>> getMilogLogtailByIds(List<Long> ids) {
         List<MilogLogTailDo> ret = milogLogtailDao.getMilogLogtail(ids);
-        ArrayList<MilogTailDTO> res = Lists.newArrayList();
+        ArrayList<LogTailDTO> res = Lists.newArrayList();
         ret.forEach(v -> {
             res.add(milogLogtailDO2DTO(v));
         });
@@ -383,7 +376,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     }
 
     @Override
-    public Result<Void> updateMilogLogTail(MilogLogtailParam param) {
+    public Result<Void> updateMilogLogTail(LogTailParam param) {
         // 查询 MilogLogTailDo 对象
         MilogLogTailDo ret = milogLogtailDao.queryById(param.getId());
         if (ret == null) {
@@ -391,13 +384,13 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         }
 
         // 参数校验
-        String errorMsg = verifyMilogLogtailParam(param);
+        String errorMsg = heraConfigValid.verifyLogTailParam(param);
         if (StringUtils.isNotEmpty(errorMsg)) {
             return new Result<>(CommonError.ParamsError.getCode(), errorMsg);
         }
 
         // 查询 MilogLogStoreDO 对象
-        MilogLogStoreDO logStoreDO = logstoreDao.queryById(param.getStoreId());
+        MilogLogStoreDO logStoreDO = logStoreDao.queryById(param.getStoreId());
         if (logStoreDO == null) {
             return new Result<>(CommonError.ParamsError.getCode(), "logstore不存在");
         }
@@ -435,9 +428,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
             boolean processSwitch = tailExtensionService.bindPostProcessSwitch(param.getStoreId());
             if (tailExtensionService.bindMqResourceSwitch(appType) || processSwitch) {
                 if (!processSwitch) {
-                    tailExtensionService.defaultBindingAppTailConfigRel(param.getId(), param.getMilogAppId(),
-                            null == param.getMiddlewareConfigId() ? logStoreDO.getMqResourceId() : param.getMiddlewareConfigId(),
-                            param.getTopicName(), param.getBatchSendSize());
+                    tailExtensionService.defaultBindingAppTailConfigRel(param.getId(), param.getMilogAppId(), null == param.getMiddlewareConfigId() ? logStoreDO.getMqResourceId() : param.getMiddlewareConfigId(), param.getTopicName(), param.getBatchSendSize());
                 }
                 try {
                     List<String> oldIps = ret.getIps();
@@ -454,52 +445,55 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         }
     }
 
-    private AppBaseInfo getAppBaseInfo(MilogLogtailParam param) {
+    private AppBaseInfo getAppBaseInfo(LogTailParam param) {
         return heraAppService.queryById(param.getMilogAppId());
     }
 
-    private void mqConfigUpdate(MilogAppMiddlewareRel middlewareRel, Long spaceId, Long storeId, Long tailId) {
-        // 设置Tag
-        MilogAppMiddlewareRel.Config config = middlewareRel.getConfig();
-        String tag = Utils.createTag(spaceId, storeId, tailId);
-        config.setTag(tag);
-        config.setConsumerGroup(DEFAULT_CONSUMER_GROUP + tag);
-        middlewareRel.setConfig(config);
-    }
-
-    public void compareChangeDelIps(Long tailId, Long milogAppId, List<String> newIps, List<String> oldIps) {
+    public void compareChangeDelIps(Long tailId, String logPath, List<String> newIps, List<String> oldIps) {
         if (CollectionUtils.isEmpty(oldIps)) {
             return;
         }
         List<String> delIps = oldIps.stream().filter(s -> !newIps.contains(s)).collect(Collectors.toList());
         if (CollectionUtils.isNotEmpty(delIps)) {
-            milogAgentService.publishIncrementDel(tailId, milogAppId, delIps);
+            milogAgentService.delLogCollDirectoryByIp(tailId, ManagerUtil.getPhysicsDirectory(logPath), delIps);
         }
     }
 
     @Override
-    public Result<Void> deleteMilogLogTail(Long id) {
+    public Result<Void> deleteLogTail(Long id) {
         MilogLogTailDo milogLogtailDo = milogLogtailDao.queryById(id);
         if (null == milogLogtailDo) {
             return new Result<>(CommonError.ParamsError.getCode(), "tail 不存在");
         }
+        //Precondition check before deletion.
+        String validMsg = tailExtensionService.deleteCheckProcessPre(id);
+        if (StringUtils.isNotEmpty(validMsg)) {
+            return new Result<>(CommonError.ParamsError.getCode(), validMsg);
+        }
+
+        deleteRemoteConfig(id, milogLogtailDo);
+
         if (milogLogtailDao.deleteMilogLogtail(id)) {
-            MilogLogStoreDO logStoreDO = logstoreDao.queryById(milogLogtailDo.getStoreId());
+            MilogLogStoreDO logStoreDO = logStoreDao.queryById(milogLogtailDo.getStoreId());
             if (storeExtensionService.isNeedSendMsgType(logStoreDO.getLogType())) {
                 CompletableFuture.runAsync(() -> sendMessageOnDelete(milogLogtailDo, logStoreDO));
             }
-            CompletableFuture.runAsync(() -> sendMessageOnDelete(milogLogtailDo, logStoreDO));
             tailExtensionService.logTailDelPostProcess(logStoreDO, milogLogtailDo);
             return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage());
         } else {
-            log.warn("[MilogLogtailService.deleteMilogLogtail] delete MilogLogtail err,id:{}", id);
+            log.warn("[LogTailService.deleteMilogLogtail] delete MilogLogtail err,id:{}", id);
             return new Result<>(CommonError.UnknownError.getCode(), CommonError.UnknownError.getMessage());
         }
     }
 
+    private void deleteRemoteConfig(Long id, MilogLogTailDo milogLogtailDo) {
+        MilogLogStoreDO storeDO = logStoreDao.queryById(milogLogtailDo.getStoreId());
+        logTailService.deleteConfigRemote(storeDO.getSpaceId(), id, storeDO.getMachineRoom(), LogStructureEnum.TAIL);
+    }
+
     @Override
     public void sendMessageOnDelete(MilogLogTailDo mt, MilogLogStoreDO logStoreDO) {
-        log.info("发送删除配置信息：mt:{}", gson.toJson(mt));
+        log.info("发送删除配置信息：mt:{}", GSON.toJson(mt));
         delMqConfigResource(mt, logStoreDO);
         /**
          * 发送配置信息---log-agent
@@ -520,8 +514,19 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         return Result.success(queryAllApps(appName, type));
     }
 
+    /**
+     * 全量只返回200条
+     *
+     * @param appName
+     * @param type
+     * @return
+     */
     private List<MapDTO> queryAllApps(String appName, Integer type) {
-        return queryAppInfo(appName, type);
+        List<MapDTO> mapDTOS = queryAppInfo(appName, type);
+//        if (StringUtils.isEmpty(appName)) {
+//            return mapDTOS.stream().limit(200).collect(Collectors.toList());
+//        }
+        return mapDTOS;
     }
 
     private List<MapDTO> queryAppInfo(String appName, Integer type) {
@@ -566,11 +571,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         }}, tail, appType);
         List<String> ret = Lists.newArrayList();
         if (CollectionUtils.isNotEmpty(milogLogTailDos)) {
-            ret = milogLogTailDos.stream()
-                    .filter(LogTailServiceImpl::filterNameEmpty)
-                    .map(MilogLogTailDo::getTail)
-                    .distinct()
-                    .collect(Collectors.toList());
+            ret = milogLogTailDos.stream().filter(LogTailServiceImpl::filterNameEmpty).map(MilogLogTailDo::getTail).distinct().collect(Collectors.toList());
         }
         return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage(), ret);
     }
@@ -593,8 +594,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     public void dockerScaleDynamic(DockerScaleBo projectInfo) {
         List<MilogLogTailDo> milogLogtailDos = milogLogtailDao.queryByAppAndEnv(projectInfo.getProjectId(), projectInfo.getEnvId());
         if (CollectionUtils.isNotEmpty(projectInfo.getIps()) && CollectionUtils.isNotEmpty(milogLogtailDos)) {
-            log.info("动态扩容当前环境下的配置，projectId:{},envId:{},配置信息:{}",
-                    projectInfo.getProjectId(), projectInfo.getEnvId(), gson.toJson(milogLogtailDos));
+            log.info("动态扩容当前环境下的配置，projectId:{},envId:{},配置信息:{}", projectInfo.getProjectId(), projectInfo.getEnvId(), GSON.toJson(milogLogtailDos));
             for (MilogLogTailDo milogLogtailDo : milogLogtailDos) {
                 List<String> exitIps = milogLogtailDo.getIps();
                 List<String> newIps = projectInfo.getIps();
@@ -603,13 +603,13 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
                     milogLogtailDo.setIps(newIps);
                     milogLogtailDao.update(milogLogtailDo);
                     //2.发送消息
-                    compareIpToHandle(exitIps, newIps);
+                    compareIpToHandle(milogLogtailDo.getId(), milogLogtailDo.getLogPath(), exitIps, newIps);
                 }
             }
         }
     }
 
-    public void compareIpToHandle(List<String> exitIps, List<String> newIps) {
+    public void compareIpToHandle(Long tailId, String logPath, List<String> exitIps, List<String> newIps) {
         List<String> expandIps = newIps.stream().filter(ip -> !exitIps.contains(ip)).collect(Collectors.toList());
         if (CollectionUtils.isNotEmpty(expandIps)) {
             // 扩容---同步配置
@@ -618,13 +618,13 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
                 milogStreamService.configIssueStream(ip);
             });
         }
-        List<String> narrowIps = exitIps.stream().filter(ip -> !newIps.contains(ip)).collect(Collectors.toList());
-        if (CollectionUtils.isNotEmpty(narrowIps)) {
-            // 缩容--不用管
+        List<String> stopFileCollIps = exitIps.stream().filter(ip -> !newIps.contains(ip)).collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(stopFileCollIps)) {
+            milogAgentService.delLogCollDirectoryByIp(tailId, ManagerUtil.getPhysicsDirectory(logPath), stopFileCollIps);
         }
     }
 
-    private MilogLogTailDo logTailParam2Do(MilogLogtailParam logTailParam, MilogLogStoreDO logStoreDO, AppBaseInfo appBaseInfo) {
+    private MilogLogTailDo logTailParam2Do(LogTailParam logTailParam, MilogLogStoreDO logStoreDO, AppBaseInfo appBaseInfo) {
         MilogLogTailDo milogLogtailDo = new MilogLogTailDo();
         milogLogtailDo.setId(logTailParam.getId());
         milogLogtailDo.setTail(logTailParam.getTail());
@@ -646,8 +646,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         milogLogtailDo.setParseType(logTailParam.getParseType());
         milogLogtailDo.setParseScript(StringUtils.isEmpty(logTailParam.getParseScript()) ? DEFAULT_TAIL_SEPARATOR : logTailParam.getParseScript());
         milogLogtailDo.setLogPath(logTailParam.getLogPath().trim());
-        milogLogtailDo.setLogSplitExpress((StringUtils.isNotEmpty(logTailParam.getLogSplitExpress()) ?
-                logTailParam.getLogSplitExpress().trim() : ""));
+        milogLogtailDo.setLogSplitExpress((StringUtils.isNotEmpty(logTailParam.getLogSplitExpress()) ? logTailParam.getLogSplitExpress().trim() : ""));
         milogLogtailDo.setValueList(logTailParam.getValueList());
         FilterDefine filterDefine = FilterDefine.consRateLimitFilterDefine(logTailParam.getTailRate());
         if (filterDefine != null) {
@@ -656,59 +655,55 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         tailExtensionService.logTailDoExtraFiled(milogLogtailDo, logStoreDO, logTailParam);
         milogLogtailDo.setDeployWay(logTailParam.getDeployWay());
         if (logStoreDO.isMatrixAppStore()) {
-            milogLogtailDo.setDeploySpace((StringUtils.isNotEmpty(logTailParam.getDeploySpace()) ?
-                    logTailParam.getDeploySpace().trim() : ""));
+            milogLogtailDo.setDeploySpace((StringUtils.isNotEmpty(logTailParam.getDeploySpace()) ? logTailParam.getDeploySpace().trim() : ""));
         }
-        milogLogtailDo.setFirstLineReg((StringUtils.isNotEmpty(logTailParam.getFirstLineReg()) ?
-                logTailParam.getFirstLineReg() : ""));
+        milogLogtailDo.setFirstLineReg((StringUtils.isNotEmpty(logTailParam.getFirstLineReg()) ? logTailParam.getFirstLineReg() : ""));
         return milogLogtailDo;
     }
 
     @Override
-    public MilogTailDTO milogLogtailDO2DTO(MilogLogTailDo milogLogtailDo) {
+    public LogTailDTO milogLogtailDO2DTO(MilogLogTailDo milogLogtailDo) {
         if (milogLogtailDo == null) {
             return null;
         }
-        MilogTailDTO milogTailDTO = new MilogTailDTO();
+        LogTailDTO logTailDTO = new LogTailDTO();
 
-        milogTailDTO.setId(milogLogtailDo.getId());
-        milogTailDTO.setCtime(milogLogtailDo.getCtime());
-        milogTailDTO.setUtime(milogLogtailDo.getUtime());
-        milogTailDTO.setSpaceId(milogLogtailDo.getSpaceId());
-        milogTailDTO.setStoreId(milogLogtailDo.getStoreId());
-        milogTailDTO.setMilogAppId(milogLogtailDo.getMilogAppId());
-        milogTailDTO.setAppId(milogLogtailDo.getAppId());
-        milogTailDTO.setAppName(milogLogtailDo.getAppName());
-        milogTailDTO.setEnvId(milogLogtailDo.getEnvId());
-        milogTailDTO.setEnvName(milogLogtailDo.getEnvName());
+        logTailDTO.setId(milogLogtailDo.getId());
+        logTailDTO.setCtime(milogLogtailDo.getCtime());
+        logTailDTO.setUtime(milogLogtailDo.getUtime());
+        logTailDTO.setSpaceId(milogLogtailDo.getSpaceId());
+        logTailDTO.setStoreId(milogLogtailDo.getStoreId());
+        logTailDTO.setMilogAppId(milogLogtailDo.getMilogAppId());
+        logTailDTO.setAppId(milogLogtailDo.getAppId());
+        logTailDTO.setAppName(milogLogtailDo.getAppName());
+        logTailDTO.setEnvId(milogLogtailDo.getEnvId());
+        logTailDTO.setEnvName(milogLogtailDo.getEnvName());
         List<String> list = milogLogtailDo.getIps();
         if (CollectionUtils.isNotEmpty(list)) {
-            milogTailDTO.setIps(list);
+            logTailDTO.setIps(list);
         }
-        milogTailDTO.setTail(milogLogtailDo.getTail());
-        milogTailDTO.setParseType(milogLogtailDo.getParseType());
-        milogTailDTO.setParseScript(milogLogtailDo.getParseScript());
-        milogTailDTO.setLogPath(milogLogtailDo.getLogPath());
-        milogTailDTO.setLogSplitExpress(milogLogtailDo.getLogSplitExpress());
-        milogTailDTO.setValueList(milogLogtailDo.getValueList());
-        milogTailDTO.setAppType(milogLogtailDo.getAppType());
-        milogTailDTO.setMachineType(milogLogtailDo.getMachineType());
-        milogTailDTO.setMotorRooms(milogLogtailDo.getMotorRooms());
+        logTailDTO.setTail(milogLogtailDo.getTail());
+        logTailDTO.setParseType(milogLogtailDo.getParseType());
+        logTailDTO.setParseScript(milogLogtailDo.getParseScript());
+        logTailDTO.setLogPath(milogLogtailDo.getLogPath());
+        logTailDTO.setLogSplitExpress(milogLogtailDo.getLogSplitExpress());
+        logTailDTO.setValueList(milogLogtailDo.getValueList());
+        logTailDTO.setAppType(milogLogtailDo.getAppType());
+        logTailDTO.setMachineType(milogLogtailDo.getMachineType());
+        logTailDTO.setMotorRooms(milogLogtailDo.getMotorRooms());
         // filterconf 转 tailRate
-        milogTailDTO.setTailRate(RateLimitEnum.consTailRate(milogLogtailDo.getFilter()));
-        milogTailDTO.setDeployWay(milogLogtailDo.getDeployWay());
-        milogTailDTO.setDeploySpace(milogLogtailDo.getDeploySpace());
-        milogTailDTO.setFirstLineReg(milogLogtailDo.getFirstLineReg());
-        return milogTailDTO;
+        logTailDTO.setTailRate(RateLimitEnum.consTailRate(milogLogtailDo.getFilter()));
+        logTailDTO.setDeployWay(milogLogtailDo.getDeployWay());
+        logTailDTO.setDeploySpace(milogLogtailDo.getDeploySpace());
+        logTailDTO.setFirstLineReg(milogLogtailDo.getFirstLineReg());
+        return logTailDTO;
     }
 
     @Override
     public Result<List<MapDTO>> queryAppByStoreId(Long storeId) {
         List<MilogLogTailDo> milogLogtailDos = milogLogtailDao.queryAppIdByStoreId(storeId);
         if (CollectionUtils.isNotEmpty(milogLogtailDos)) {
-            return Result.success(milogLogtailDos.stream()
-                    .map(milogLogtailDo -> MapDTO.Of(milogLogtailDo.getAppName(),
-                            milogLogtailDo.getMilogAppId())).distinct().collect(Collectors.toList()));
+            return Result.success(milogLogtailDos.stream().map(milogLogtailDo -> MapDTO.Of(milogLogtailDo.getAppName(), milogLogtailDo.getMilogAppId())).distinct().collect(Collectors.toList()));
         }
         return Result.success(Lists.newArrayList());
     }
@@ -722,7 +717,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         List<MilogLogTailDo> milogLogtailDos = milogLogtailDao.queryAppIdByStoreId(storeId);
         if (CollectionUtils.isNotEmpty(milogLogtailDos)) {
             Map<Integer, List<MilogLogTailDo>> appTypeMap = milogLogtailDos.stream().collect(Collectors.groupingBy(MilogLogTailDo::getAppType));
-            MilogLogStoreDO milogLogstoreDO = logstoreDao.queryById(storeId);
+            MilogLogStoreDO milogLogstoreDO = logStoreDao.queryById(storeId);
             String nameEn = milogLogstoreDO.getMachineRoom();
 
             for (Map.Entry<Integer, List<MilogLogTailDo>> listEntry : appTypeMap.entrySet()) {
@@ -758,28 +753,23 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         }
         List<MilogLogTailDo> milogLogtailDos = milogLogtailDao.queryStoreIdByRegionNameEN(nameEn);
         if (CollectionUtils.isNotEmpty(milogLogtailDos)) {
-            return Result.success(milogLogtailDos.stream()
-                    .map(milogLogtailDo -> logstoreDao.queryById(milogLogtailDo.getStoreId()))
-                    .collect(Collectors.collectingAndThen(
-                            Collectors.toCollection(() ->
-                                    new TreeSet<>(Comparator.comparing(o -> o.getLogstoreName()))),
-                            ArrayList::new)));
+            return Result.success(milogLogtailDos.stream().map(milogLogtailDo -> logStoreDao.queryById(milogLogtailDo.getStoreId())).collect(Collectors.collectingAndThen(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(o -> o.getLogstoreName()))), ArrayList::new)));
         }
         return Result.success(Lists.newArrayList());
     }
 
     @Override
-    public Result<List<MilogTailDTO>> getTailByStoreId(Long storeId) {
+    public Result<List<LogTailDTO>> getTailByStoreId(Long storeId) {
         if (storeId == null) {
             return Result.failParam("storeId不能为空");
         }
         List<MilogLogTailDo> tailList = milogLogtailDao.getMilogLogtailByStoreId(storeId);
-        List<MilogTailDTO> dtoList = new ArrayList<>();
-        MilogTailDTO milogTailDTO;
+        List<LogTailDTO> dtoList = new ArrayList<>();
+        LogTailDTO logTailDTO;
         for (MilogLogTailDo milogLogtailDo : tailList) {
-            milogTailDTO = milogLogtailDO2DTO(milogLogtailDo);
+            logTailDTO = milogLogtailDO2DTO(milogLogtailDo);
             if (milogLogtailDo != null) {
-                dtoList.add(milogTailDTO);
+                dtoList.add(logTailDTO);
             }
         }
         return Result.success(dtoList);
@@ -791,7 +781,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         if (StringUtils.isNotEmpty(checkMsg)) {
             return Result.failParam(checkMsg);
         }
-        MilogLogStoreDO logstoreDO = logstoreDao.queryById(mlogParseParam.getStoreId());
+        MilogLogStoreDO logstoreDO = logStoreDao.queryById(mlogParseParam.getStoreId());
         if (null == logstoreDO) {
             return Result.fail(CommonError.NOT_EXISTS_DATA.getCode(), "logStore不存在");
         }
@@ -803,7 +793,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
             Map<String, Object> parseMsg = logParser.parseSimple(mlogParseParam.getMsg(), currentStamp);
             return Result.success(parseMsg);
         } catch (Exception e) {
-            log.info("解析配置信息错误：配置信息：{}", gson.toJson(mlogParseParam), e);
+            log.info("解析配置信息错误：配置信息：{}", GSON.toJson(mlogParseParam), e);
         }
         return Result.success("解析错误 请核对配置信息");
     }
@@ -848,38 +838,26 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         List<MilogLogTailDo> milogLogTailDos = milogLogtailDao.getLogTailByMilogAppId(milogAppId);
         List<QuickQueryVO> quickQueryVOS = Lists.newArrayList();
         if (CollectionUtils.isNotEmpty(milogLogTailDos)) {
-            quickQueryVOS = milogLogTailDos.stream().map(
-                            this::applyQueryVO)
-                    .collect(Collectors.toList());
+            quickQueryVOS = milogLogTailDos.stream().map(this::applyQueryVO).collect(Collectors.toList());
             wrapStoreSpaceName(quickQueryVOS);
         }
         return Result.success(quickQueryVOS);
     }
 
     private void wrapStoreSpaceName(List<QuickQueryVO> quickQueryVOS) {
-        List<Long> storeIds = quickQueryVOS.stream()
-                .map(QuickQueryVO::getStoreId)
-                .collect(Collectors.toList());
-        List<MilogLogStoreDO> milogLogStoreDOS = logstoreDao.queryByIds(storeIds);
-        List<Long> spaceIds = quickQueryVOS.stream()
-                .map(QuickQueryVO::getSpaceId)
-                .collect(Collectors.toList());
+        List<Long> storeIds = quickQueryVOS.stream().map(QuickQueryVO::getStoreId).collect(Collectors.toList());
+        List<MilogLogStoreDO> milogLogStoreDOS = logStoreDao.queryByIds(storeIds);
+        List<Long> spaceIds = quickQueryVOS.stream().map(QuickQueryVO::getSpaceId).collect(Collectors.toList());
         List<MilogSpaceDO> milogSpaceDOS = milogSpaceDao.queryByIds(spaceIds);
         quickQueryVOS.stream().map(quickQueryVO -> {
-            milogLogStoreDOS.stream()
-                    .filter(milogLogsSoreDO -> Objects.equals(quickQueryVO.getStoreId(), milogLogsSoreDO.getId()))
-                    .findFirst()
-                    .map(milogLogStoreDO -> {
-                        quickQueryVO.setStoreName(milogLogStoreDO.getLogstoreName());
-                        return true;
-                    });
-            milogSpaceDOS.stream()
-                    .filter(milogSpaceDO -> Objects.equals(quickQueryVO.getSpaceId(), milogSpaceDO.getId()))
-                    .findFirst()
-                    .map(milogSpaceDO -> {
-                        quickQueryVO.setSpaceName(milogSpaceDO.getSpaceName());
-                        return true;
-                    });
+            milogLogStoreDOS.stream().filter(milogLogsSoreDO -> Objects.equals(quickQueryVO.getStoreId(), milogLogsSoreDO.getId())).findFirst().map(milogLogStoreDO -> {
+                quickQueryVO.setStoreName(milogLogStoreDO.getLogstoreName());
+                return true;
+            });
+            milogSpaceDOS.stream().filter(milogSpaceDO -> Objects.equals(quickQueryVO.getSpaceId(), milogSpaceDO.getId())).findFirst().map(milogSpaceDO -> {
+                quickQueryVO.setSpaceName(milogSpaceDO.getSpaceName());
+                return true;
+            });
             return quickQueryVO;
         }).collect(Collectors.toList());
     }
@@ -888,8 +866,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
     public void machineIpChange(HeraEnvIpVo heraEnvIpVo) {
         List<MilogLogTailDo> logTailDos = milogLogtailDao.queryByMilogAppAndEnvId(heraEnvIpVo.getHeraAppId(), heraEnvIpVo.getId());
         if (CollectionUtils.isNotEmpty(logTailDos)) {
-            log.info("动态扩容当前环境下的配置，heraAppEnvVo:{}，logTailDos:{}",
-                    gson.toJson(heraEnvIpVo), gson.toJson(logTailDos));
+            log.info("动态扩容当前环境下的配置，heraAppEnvVo:{}，logTailDos:{}", GSON.toJson(heraEnvIpVo), GSON.toJson(logTailDos));
             for (MilogLogTailDo milogLogtailDo : logTailDos) {
                 List<String> exitIps = milogLogtailDo.getIps();
                 List<String> newIps = heraEnvIpVo.getIpList();
@@ -900,7 +877,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
                     milogLogtailDo.setUpdater(DEFAULT_JOB_OPERATOR);
                     milogLogtailDao.updateIps(milogLogtailDo);
                     //2.发送消息
-                    compareIpToHandle(exitIps, newIps);
+                    compareIpToHandle(milogLogtailDo.getId(), milogLogtailDo.getLogPath(), exitIps, newIps);
                 }
             }
         }

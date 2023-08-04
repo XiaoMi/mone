@@ -30,7 +30,7 @@ public class AlertGroupParam {
             page = 1;
         }
         if (pageSize == null || pageSize <= 0) {
-            pageSize = 10;
+            pageSize = 50;
         }
         if (pageSize >= 100) {
             pageSize = 99;

@@ -97,7 +97,7 @@ spec:
             name: hera-webhook-tls-sh
       containers:
         - name: hera-webhook-server
-          image: herahub/opensource-pub:hera-webhook-server-v1
+          image: herahub/opensource-pub:hera-webhook-server-v1-release
           volumeMounts:
             - name: hera-webhook-tls-sh-volume
               mountPath: /tmp/hera-webhook-tls-sh

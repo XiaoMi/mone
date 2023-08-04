@@ -73,6 +73,8 @@ public enum MetricKind {
         oracle_slow_query("oracleSlow","oracle慢查询","db"),
         es_exception("esException","es异常","db"),
         es_slow_query("esSlow","es慢查询","db"),
+        hBase_exception("hBaseException","hBase异常","db"),
+        hBase_slow_query("hBaseSlow","hBase慢查询","db"),
         redis_exception("redisException","redis异常","redis"),
         redis_slow("redisSlow","redis慢查询","redis"),
 

@@ -1,3 +1,18 @@
+/*
+ * Copyright 2020 Xiaomi
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package com.xiaomi.mone.log.agent.channel.file;
 
 import com.google.common.collect.Lists;
@@ -20,11 +35,11 @@ public class FileMonitor implements FileWatcher {
     @Override
     public void watch(String filePattern, List<FileAlterationMonitor> monitorList, Consumer<String> consumer) {
         List<String> watchList = Lists.newArrayList(filePattern);
-        // 默认 遍历文件 间隔时间 5s
-        FileAlterationMonitor monitor = new FileAlterationMonitor(5000);
+        // 默认 遍历文件 间隔时间 10s
+        FileAlterationMonitor monitor = new FileAlterationMonitor(10000);
         log.info("agent monitor files:{}", GSON.toJson(watchList));
         for (String watch : watchList) {
-            FileAlterationObserver observer = new FileAlterationObserver(new File(watch));
+            FileAlterationObserver observer = new LogFileAlterationObserver(new File(watch));
             observer.addListener(new FileListener(consumer));
             log.info("## agent monitor file:{}, filePattern:{}", watch, filePattern);
             monitor.addObserver(observer);

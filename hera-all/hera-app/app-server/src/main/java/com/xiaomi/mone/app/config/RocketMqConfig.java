@@ -19,7 +19,7 @@ import org.springframework.context.annotation.Configuration;
 @Slf4j
 public class RocketMqConfig {
 
-    @Value("${rocket.mq.producer.group}")
+    @NacosValue(value = "${rocket.mq.producer.group}",autoRefreshed = true)
     private String producerGroup;
 
     @NacosValue(value = "${rocket.mq.srvAddr}", autoRefreshed = true)

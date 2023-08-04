@@ -1,3 +1,18 @@
+/*
+ * Copyright 2020 Xiaomi
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package com.xiaomi.mone.log.agent.channel.listener;
 
 import cn.hutool.core.io.FileUtil;
@@ -11,18 +26,18 @@ import com.xiaomi.mone.log.agent.common.ExecutorUtil;
 import com.xiaomi.mone.log.api.enums.LogTypeEnum;
 import com.xiaomi.mone.log.common.PathUtils;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.monitor.FileAlterationMonitor;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static com.xiaomi.mone.log.common.PathUtils.*;
@@ -62,9 +77,28 @@ public class DefaultFileMonitorListener implements FileMonitorListener {
 
     private final List<String> specialFileNameSuffixList = Lists.newArrayList("wf");
 
+    private static final int DEFAULT_FILE_SIZE = 50000;
+
     public DefaultFileMonitorListener() {
-        pathList.add(defaultMonitorPath);
-        this.startFileMonitor(defaultMonitorPath);
+        //Check if there are too many files, if there are more than 50,000 files,
+        // then it cannot be monitored.
+        long size = getDefaultFileSize();
+        LOGGER.info("defaultMonitorPath:{} file size:{}", defaultMonitorPath, size);
+        if (size < DEFAULT_FILE_SIZE) {
+            pathList.add(defaultMonitorPath);
+            this.startFileMonitor(defaultMonitorPath);
+        }
+    }
+
+    private long getDefaultFileSize() {
+        CompletableFuture<Integer> fileSizeFuture = CompletableFuture
+                .supplyAsync(() -> FileUtils.listFiles(new File(defaultMonitorPath), null, true).size());
+        try {
+            return fileSizeFuture.get(1, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            LOGGER.info("getDefaultFileSize error", e);
+        }
+        return DEFAULT_FILE_SIZE * 2;
     }
 
     @Override
@@ -111,12 +145,18 @@ public class DefaultFileMonitorListener implements FileMonitorListener {
             }
         }
         for (String perExpress : realExpressList) {
-            if (!perExpress.startsWith(defaultMonitorPath)) {
+            if (pathList.stream().noneMatch(perExpress::startsWith)) {
                 List<String> watchDList = PathUtils.parseWatchDirectory(perExpress);
                 /**
                  * 已经是最干净的目录了，只会有1个
                  */
-                newMonitorDirectories.add(watchDList.get(0));
+                String monitorDirectory = watchDList.get(0);
+                if (monitorDirectory.contains(".*")) {
+                    monitorDirectory = StringUtils.substringBefore(monitorDirectory, ".*");
+                }
+                if (pathList.stream().noneMatch(monitorDirectory::startsWith)) {
+                    newMonitorDirectories.add(monitorDirectory);
+                }
             }
         }
         newMonitorDirectories = newMonitorDirectories.stream().distinct().collect(Collectors.toList());
@@ -150,8 +190,6 @@ public class DefaultFileMonitorListener implements FileMonitorListener {
                         return;
                     }
                     LOGGER.info("monitor changedFilePath：{}", changedFilePath);
-                    // 处理windows,本地测试使用
-//                  changedFilePath = StringUtils.replace(changedFilePath, "D:", "").replaceAll("\\\\", SEPARATOR);
                     List<String> filterSuffixList = judgeSpecialFileNameSuffix(changedFilePath);
                     if (CollectionUtils.isNotEmpty(filterSuffixList)) {
                         specialFileSuffixChanged(changedFilePath, filterSuffixList);

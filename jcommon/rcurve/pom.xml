@@ -26,7 +26,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>rcurve</artifactId>
-    <version>1.4.1-SNAPSHOT</version>
+    <version>1.4.1-tmp-SNAPSHOT</version>
 
     <dependencies>
         <dependency>

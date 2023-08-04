@@ -13,10 +13,10 @@ import com.google.common.io.CharSource;
 import com.squareup.javapoet.CodeBlock;
 import com.squareup.javapoet.MethodSpec;
 import lombok.SneakyThrows;
+import run.mone.processor.bo.MethodInfo;
 
 import javax.lang.model.element.Modifier;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
@@ -91,12 +91,17 @@ public abstract class CodeUtils {
     }
 
 
-    @SneakyThrows
+
     public static List<String> readImports(String code) {
         CharSource source = CharSource.wrap(code);
-        String output = source.lines()
-                .filter(line -> line.contains("import "))
-                .collect(Collectors.joining("\n"));
+        String output = null;
+        try {
+            output = source.lines()
+                    .filter(line -> line.contains("import "))
+                    .collect(Collectors.joining("\n"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         JavaParser parser = new JavaParser();
         ParseResult<CompilationUnit> cu = parser.parse(output);
         CompilationUnit cu2 = cu.getResult().get();
@@ -125,13 +130,45 @@ public abstract class CodeUtils {
     }
 
 
-    @SneakyThrows
     public static String removeImports(String code) {
         CharSource source = CharSource.wrap(code);
-        String output = source.lines()
-                .filter(line -> !line.contains("import "))
-                .collect(Collectors.joining("\n"));
+        String output = null;
+        try {
+            output = source.lines()
+                    .filter(line -> !line.contains("import "))
+                    .collect(Collectors.joining("\n"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         return output;
     }
+
+    /**
+     * 是否是class
+     * @param code
+     * @return
+     */
+    public static boolean isClass(String code) {
+        boolean isPublicClass = code.matches("^\\s*public\\s+class.*");
+        return isPublicClass;
+    }
+
+
+    @SneakyThrows
+    public static MethodInfo getMethod(String code) {
+        JavaParser parser = new JavaParser();
+        if (isClass(code)) {
+            ParseResult<CompilationUnit> result = parser.parse(code);
+            CompilationUnit cu = result.getResult().get();
+            MethodDeclaration md = cu.getType(0).getMethods().stream().findAny().get();
+            return MethodInfo.builder().code(md.toString()).name(md.getNameAsString()).build();
+        }
+        String methodCode = removeImports(code);
+        ParseResult<MethodDeclaration> cu = new JavaParser().parseMethodDeclaration(methodCode);
+        List<MethodDeclaration> methods = cu.getResult().get().findAll(MethodDeclaration.class);
+        MethodDeclaration md = methods.get(0);
+        return MethodInfo.builder().code(md.toString()).name(md.getNameAsString()).build();
+    }
+
 
 }

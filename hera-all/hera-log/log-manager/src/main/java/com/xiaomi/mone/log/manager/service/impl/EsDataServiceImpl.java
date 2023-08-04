@@ -1,12 +1,27 @@
+/*
+ * Copyright 2020 Xiaomi
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package com.xiaomi.mone.log.manager.service.impl;
 
+import cn.hutool.core.lang.Pair;
 import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Lists;
 import com.xiaomi.mone.es.EsClient;
 import com.xiaomi.mone.log.api.model.dto.TraceLogDTO;
 import com.xiaomi.mone.log.api.model.vo.TraceLogQuery;
 import com.xiaomi.mone.log.api.service.LogDataService;
-import com.xiaomi.mone.log.common.HeraLocalCache;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.exception.CommonError;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
@@ -29,6 +44,8 @@ import com.xiaomi.mone.log.manager.model.vo.RegionTraceLogQuery;
 import com.xiaomi.mone.log.manager.model.vo.TraceAppLogUrlQuery;
 import com.xiaomi.mone.log.manager.service.EsDataBaseService;
 import com.xiaomi.mone.log.manager.service.EsDataService;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionService;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionServiceFactory;
 import com.xiaomi.mone.log.parse.LogParser;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.common.StringUtils;
@@ -40,8 +57,7 @@ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.client.core.CountRequest;
-import org.elasticsearch.core.TimeValue;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -91,9 +107,20 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
     @Reference(interfaceClass = LogDataService.class, group = "$dubbo.youpin.group", check = false, timeout = 5000)
     private LogDataService logDataService;
 
+    private CommonExtensionService commonExtensionService;
+
+    public void init() {
+        commonExtensionService = CommonExtensionServiceFactory.getCommonExtensionService();
+    }
+
     private Set<String> noHighLightSet = new HashSet<>();
 
     private Set<String> hidenFiledSet = new HashSet<>();
+
+    public static List<Pair<String, String>> requiredFields = Lists.newArrayList(
+            Pair.of("message", "text"),
+            Pair.of("logsource", "text")
+    );
 
     {
         noHighLightSet.add("logstore");
@@ -120,59 +147,43 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
         String logInfo = String.format("queryText:%s, user:%s, logQuery:%s", logQuery.getFullTextSearch(), MoneUserContext.getCurrentUser().getUser(), logQuery);
         log.info("query simple param:{}", logInfo);
 
-        SearchRequest searchRequest = null;
         StopWatch stopWatch = new StopWatch("HERA-LOG-QUERY");
+        SearchRequest searchRequest = null;
         try {
-            stopWatch.start("before-query");
-            MilogLogStoreDO milogLogstoreDO = logstoreDao.getByName(logQuery.getLogstore());
+            MilogLogStoreDO milogLogstoreDO = logstoreDao.queryById(logQuery.getStoreId());
             if (milogLogstoreDO == null) {
-                log.warn("[EsDataService.logQuery] not find logstore:[{}]", logQuery.getLogstore());
+                log.warn("[EsDataService.logQuery] not find logStore:[{}]", logQuery.getLogstore());
                 return Result.failParam("找不到[" + logQuery.getLogstore() + "]对应的数据");
             }
             EsService esService = esCluster.getEsService(milogLogstoreDO.getEsClusterId());
-            String esIndexName = milogLogstoreDO.getEsIndex();
+            String esIndexName = commonExtensionService.getSearchIndex(logQuery.getStoreId(), milogLogstoreDO.getEsIndex());
             if (esService == null || StringUtils.isEmpty(esIndexName)) {
-                log.warn("[EsDataService.logQuery] logstroe:[{}]配置异常", logQuery.getLogstore());
-                return Result.failParam("logstroe配置异常");
+                log.warn("[EsDataService.logQuery] logStore:[{}]配置异常", logQuery.getLogstore());
+                return Result.failParam("logStore配置异常");
             }
             List<String> keyList = getKeyList(milogLogstoreDO.getKeyList(), milogLogstoreDO.getColumnTypeList());
             // 构建查询参数
             BoolQueryBuilder boolQueryBuilder = searchLog.getQueryBuilder(logQuery, getKeyColonPrefix(milogLogstoreDO.getKeyList()));
-            SearchSourceBuilder builder = new SearchSourceBuilder();
-            builder.query(boolQueryBuilder);
-            LogDTO dto = new LogDTO();
-            stopWatch.stop();
+            SearchSourceBuilder builder = assembleSearchSourceBuilder(logQuery, keyList, boolQueryBuilder);
 
+            searchRequest = new SearchRequest(new String[]{esIndexName}, builder);
             // 查询
-            stopWatch.start("bool-query");
-            builder.sort(logQuery.getSortKey(), logQuery.getAsc() ? ASC : DESC);
-            // 分页
-//            if (logQuery.getBeginSortValue() != null && logQuery.getBeginSortValue().length != 0) {
-//                builder.searchAfter(logQuery.getBeginSortValue());
-//            }
-            if (null != logQuery.getPage()) {
-                builder.from((logQuery.getPage() - 1) * logQuery.getPageSize());
-            }
-            builder.size(logQuery.getPageSize());
-            // 高亮
-            builder.highlighter(getHighlightBuilder(keyList));
-            builder.timeout(TimeValue.timeValueMinutes(1L));
-            searchRequest = new SearchRequest(esIndexName);
-            searchRequest.source(builder);
-            dto.setSourceBuilder(builder);
+            stopWatch.start("search-query");
             SearchResponse searchResponse = esService.search(searchRequest);
             stopWatch.stop();
+            LogDTO dto = new LogDTO();
+            dto.setSourceBuilder(builder);
             if (stopWatch.getLastTaskTimeMillis() > 7 * 1000) {
-                log.warn("##LONG-COST-QUERY##{} cost:{} ms, msg:{}", stopWatch.getLastTaskName(), stopWatch.getLastTaskTimeMillis(), logInfo);
+                log.warn("##LONG-COST-QUERY##{} cost:{} ms, msg:{}", stopWatch.getLastTaskName(), stopWatch.getLastTaskTimeMillis());
             }
 
             //结果转换
-            stopWatch.start("after-query");
+            stopWatch.start("data-assemble");
             transformSearchResponse(searchResponse, dto, keyList);
-
             stopWatch.stop();
+
             if (stopWatch.getTotalTimeMillis() > 15 * 1000) {
-                log.warn("##LONG-COST-QUERY##{} cost:{} ms, msg:{}", "gt15s", stopWatch.getLastTaskTimeMillis(), logInfo);
+                log.warn("##LONG-COST-QUERY##{} cost:{} ms, msg:{}", "gt15s", stopWatch.getTotalTimeMillis());
             }
 
             return Result.success(dto);
@@ -185,20 +196,19 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
         }
     }
 
-    private long queryCount(LogQuery logQuery, String esIndexName, SearchSourceBuilder builder, EsService esService) throws IOException {
-        String cacheKey = String.format("es_query_count_%s_%s", logQuery.getLogstore(), logQuery.hashCode());
+    private SearchSourceBuilder assembleSearchSourceBuilder(LogQuery logQuery, List<String> keyList, BoolQueryBuilder boolQueryBuilder) {
+        SearchSourceBuilder builder = new SearchSourceBuilder();
+        builder.query(boolQueryBuilder);
 
-        Long total = HeraLocalCache.instance().getObj(cacheKey, Long.class);
-        if (null == total) {
-            CountRequest countRequest = new CountRequest();
-            countRequest.indices(esIndexName);
-            countRequest.source(builder);
-            total = esService.count(countRequest);
-
-            HeraLocalCache.instance().put(cacheKey, total);
+        builder.sort(logQuery.getSortKey(), logQuery.getAsc() ? ASC : DESC);
+        if (null != logQuery.getPage()) {
+            builder.from((logQuery.getPage() - 1) * logQuery.getPageSize());
         }
-
-        return total;
+        builder.size(logQuery.getPageSize());
+        // 高亮
+        builder.highlighter(getHighlightBuilder(keyList));
+        builder.timeout(TimeValue.timeValueMinutes(2L));
+        return builder;
     }
 
     private void transformSearchResponse(SearchResponse searchResponse, final LogDTO logDTO, List<String> keyList) {
@@ -220,6 +230,11 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
     // 高亮
     private HighlightBuilder getHighlightBuilder(List<String> keyList) {
         HighlightBuilder highlightBuilder = new HighlightBuilder();
+        for (Pair<String, String> requiredField : requiredFields) {
+            if (!keyList.contains(requiredField.getKey())) {
+                keyList.add(requiredField.getKey());
+            }
+        }
         for (String key : keyList) {
             if (noHighLightSet.contains(key)) {
                 continue;
@@ -249,20 +264,21 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
         try {
             EsStatisticResult result = new EsStatisticResult();
             result.setName(constractEsStatisticRet(logQuery));
-            MilogLogStoreDO logStore = logstoreDao.getByName(logQuery.getLogstore());
+            MilogLogStoreDO logStore = logstoreDao.queryById(logQuery.getStoreId());
             if (logStore == null) {
                 return new Result<>(CommonError.UnknownError.getCode(), "not found logstore", null);
             }
             // get interval
             String interval = searchLog.esHistogramInterval(logQuery.getEndTime() - logQuery.getStartTime());
             EsService esService = esCluster.getEsService(logStore.getEsClusterId());
-            String esIndex = logStore.getEsIndex();
+            String esIndex = commonExtensionService.getSearchIndex(logStore.getId(), logStore.getEsIndex());
             if (esService == null || StringUtils.isEmpty(esIndex)) {
                 return Result.failParam("logStore或tail配置异常");
             }
             if (!StringUtils.isEmpty(interval)) {
                 BoolQueryBuilder queryBuilder = searchLog.getQueryBuilder(logQuery, getKeyColonPrefix(logStore.getKeyList()));
-                EsClient.EsRet esRet = esService.dateHistogram(esIndex, interval, logQuery.getStartTime(), logQuery.getEndTime(), queryBuilder);
+                String histogramField = commonExtensionService.queryDateHistogramField(logQuery.getStoreId());
+                EsClient.EsRet esRet = esService.dateHistogram(esIndex, histogramField, interval, logQuery.getStartTime(), logQuery.getEndTime(), queryBuilder);
                 result.setCounts(esRet.getCounts());
                 result.setTimestamps(esRet.getTimestamps());
                 result.setQueryBuilder(queryBuilder);
@@ -289,17 +305,6 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
         if (!StringUtils.isEmpty(logquery.getFullTextSearch())) {
             sb.append("fullTextSearch:").append(logquery.getFullTextSearch()).append(";");
         }
-        // TODO
-//        if (param.getParams() != null) {
-//            param.getParams().forEach((k, v) -> {
-//                if (v != null && !StringUtils.isEmpty(v.toString())) {
-//                    if (k.equals("level")) {
-//                        v = String.format("%-5s", v);
-//                    }
-//                    sb.append(k).append(":").append(v).append(";");
-//                }
-//            });
-//        }
         return sb.toString();
     }
 
@@ -461,11 +466,7 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
         int maxLogNum = 10000;
         logQuery.setPageSize(maxLogNum);
         Result<LogDTO> logDTOResult = this.logQuery(logQuery);
-        List<Map<String, Object>> exportData =
-                logDTOResult.getCode() != CommonError.Success.getCode()
-                        || logDTOResult.getData().getLogDataDTOList() == null
-                        || logDTOResult.getData().getLogDataDTOList().isEmpty() ?
-                        null : logDTOResult.getData().getLogDataDTOList().stream().map(logDataDto -> ExportUtils.SplitTooLongContent(logDataDto)).collect(Collectors.toList());
+        List<Map<String, Object>> exportData = logDTOResult.getCode() != CommonError.Success.getCode() || logDTOResult.getData().getLogDataDTOList() == null || logDTOResult.getData().getLogDataDTOList().isEmpty() ? null : logDTOResult.getData().getLogDataDTOList().stream().map(logDataDto -> ExportUtils.SplitTooLongContent(logDataDto)).collect(Collectors.toList());
         HSSFWorkbook excel = ExportExcel.HSSFWorkbook4Map(exportData, generateTitle(logQuery));
         // 下载
         String fileName = String.format("%s_log.xls", logQuery.getLogstore());

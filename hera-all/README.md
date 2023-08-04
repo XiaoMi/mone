@@ -25,11 +25,11 @@ HERA是由中国区研发效能团队开源的一款应用性能观测平台(APM
 
 ## Getting started
 ### 部署
-[operator使用文档.pdf](readme/hera-operator-document.pdf)
+[operator使用文档.md](readme%2Fdeploy%2Fhera-deploy-document.md)
 
 ---
 
 ### 应用接入
-[应用接入文档.pdf](readme/application-integration-document.pdf)
+[应用接入文档.md](readme/application-integeration/application-integration-document.md)
 
 ---

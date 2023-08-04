@@ -1,3 +1,18 @@
+/*
+ * Copyright 2020 Xiaomi
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
 package com.xiaomi.mone.log.manager.domain;
 
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
@@ -9,7 +24,10 @@ import com.xiaomi.mone.log.manager.user.MoneUser;
 import com.xiaomi.mone.tpc.api.service.NodeFacade;
 import com.xiaomi.mone.tpc.api.service.NodeUserFacade;
 import com.xiaomi.mone.tpc.api.service.UserOrgFacade;
-import com.xiaomi.mone.tpc.common.enums.*;
+import com.xiaomi.mone.tpc.common.enums.NodeStatusEnum;
+import com.xiaomi.mone.tpc.common.enums.NodeTypeEnum;
+import com.xiaomi.mone.tpc.common.enums.OutIdTypeEnum;
+import com.xiaomi.mone.tpc.common.enums.UserTypeEnum;
 import com.xiaomi.mone.tpc.common.param.*;
 import com.xiaomi.mone.tpc.common.vo.NodeVo;
 import com.xiaomi.mone.tpc.common.vo.OrgInfoVo;
@@ -128,21 +146,6 @@ public class Tpc {
         return node.isTopMgr() || node.isParentMgr() || node.isCurrentMgr();
     }
 
-    public Result saveSpacePerm(MilogSpaceDO spaceDO, String accout) {
-        NodeAddParam nodeAddParam = new NodeAddParam();
-        handleRemoteTpcId(tpcNodeCode, accout, UserTypeEnum.CAS_TYPE.getCode());
-        nodeAddParam.setParentNodeId(tpcPId);
-        nodeAddParam.setType(NodeTypeEnum.PRO_SUB_GROUP.getCode());
-        nodeAddParam.setNodeName(spaceDO.getSpaceName());
-        nodeAddParam.setDesc(spaceDO.getDescription());
-        nodeAddParam.setOutId(spaceDO.getId());
-        nodeAddParam.setOutIdType(OutIdTypeEnum.SPACE.getCode());
-        nodeAddParam.setAccount(accout);
-        nodeAddParam.setUserType(UserTypeEnum.CAS_TYPE.getCode());
-
-        return tpcService.add(nodeAddParam);
-    }
-
     public Result deleteSpaceTpc(Long id, String account, Integer userType) {
         NodeDeleteParam delete = new NodeDeleteParam();
         delete.setOutId(id);
@@ -150,6 +153,21 @@ public class Tpc {
         delete.setAccount(account);
         delete.setUserType(userType);
         return tpcService.delete(delete);
+    }
+
+    public Result saveSpacePerm(MilogSpaceDO spaceDO, String account) {
+        NodeAddParam nodeAddParam = new NodeAddParam();
+        handleRemoteTpcId(tpcNodeCode, account, UserTypeEnum.CAS_TYPE.getCode());
+        nodeAddParam.setParentNodeId(tpcPId);
+        nodeAddParam.setType(NodeTypeEnum.PRO_SUB_GROUP.getCode());
+        nodeAddParam.setNodeName(spaceDO.getSpaceName());
+        nodeAddParam.setDesc(spaceDO.getDescription());
+        nodeAddParam.setOutId(spaceDO.getId());
+        nodeAddParam.setOutIdType(OutIdTypeEnum.SPACE.getCode());
+        nodeAddParam.setAccount(account);
+        nodeAddParam.setUserType(UserTypeEnum.CAS_TYPE.getCode());
+
+        return tpcService.add(nodeAddParam);
     }
 
     public Result updateSpaceTpc(MilogSpaceParam param, String accout) {
@@ -163,15 +181,23 @@ public class Tpc {
         return tpcService.edit(edit);
     }
 
-    public void addSpaceMember(Long spaceId, MoneUser user) {
+    /**
+     * add space member
+     *
+     * @param spaceId
+     * @param userAccount
+     * @param userType
+     * @param memberCode
+     */
+    public void addSpaceMember(Long spaceId, String userAccount, Integer userType, Integer memberCode) {
         NodeUserAddParam add = new NodeUserAddParam();
         add.setOutId(spaceId);
         add.setOutIdType(OutIdTypeEnum.SPACE.getCode());
-        add.setMemberAcc(user.getUser());
+        add.setMemberAcc(userAccount);
         add.setMemberAccType(UserTypeEnum.CAS_TYPE.getCode());
-        add.setType(NodeUserRelTypeEnum.MEMBER.getCode());
-        add.setAccount(MoneUserContext.getCurrentUser().getUser());
-        add.setUserType(user.getUserType());
+        add.setType(memberCode);
+        add.setAccount(userAccount);
+        add.setUserType(userType);
         tpcUserService.add(add);
     }
 

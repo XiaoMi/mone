@@ -1,32 +1,28 @@
 /*
- *  Copyright 2020 Xiaomi
+ * Copyright 2020 Xiaomi
  *
- *    Licensed under the Apache License, Version 2.0 (the "License");
- *    you may not use this file except in compliance with the License.
- *    You may obtain a copy of the License at
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
  *
- *        http://www.apache.org/licenses/LICENSE-2.0
+ *      http://www.apache.org/licenses/LICENSE-2.0
  *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS,
- *    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *    See the License for the specific language governing permissions and
- *    limitations under the License.
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
  */
-
 package com.xiaomi.mone.log.agent.channel;
 
+import cn.hutool.core.io.FileUtil;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.xiaomi.data.push.common.SafeRun;
 import com.xiaomi.data.push.rpc.RpcClient;
 import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
-import com.xiaomi.mone.log.agent.channel.comparator.AppSimilarComparator;
-import com.xiaomi.mone.log.agent.channel.comparator.FilterSimilarComparator;
-import com.xiaomi.mone.log.agent.channel.comparator.InputSimilarComparator;
-import com.xiaomi.mone.log.agent.channel.comparator.OutputSimilarComparator;
-import com.xiaomi.mone.log.agent.channel.comparator.SimilarComparator;
+import com.xiaomi.mone.log.agent.channel.comparator.*;
 import com.xiaomi.mone.log.agent.channel.listener.DefaultFileMonitorListener;
 import com.xiaomi.mone.log.agent.channel.listener.FileMonitorListener;
 import com.xiaomi.mone.log.agent.channel.locator.ChannelDefineJsonLocator;
@@ -40,6 +36,7 @@ import com.xiaomi.mone.log.agent.factory.OutPutServiceFactory;
 import com.xiaomi.mone.log.agent.filter.FilterChain;
 import com.xiaomi.mone.log.agent.input.Input;
 import com.xiaomi.mone.log.agent.output.Output;
+import com.xiaomi.mone.log.api.enums.LogTypeEnum;
 import com.xiaomi.mone.log.api.enums.OperateEnum;
 import com.xiaomi.mone.log.api.model.vo.UpdateLogProcessCmd;
 import com.xiaomi.mone.log.common.Constant;
@@ -53,13 +50,8 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.text.NumberFormat;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
+import java.util.*;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static com.xiaomi.mone.log.common.Constant.GSON;
@@ -132,12 +124,38 @@ public class ChannelEngine {
             exportChannelState();
             log.info("current channelDefineList:{},current channelServiceList:{}",
                     gson.toJson(this.channelDefineList), gson.toJson(this.channelServiceList.stream().map(ChannelService::instanceId).collect(Collectors.toList())));
-
+            monitorTheadClean();
         } catch (Exception e) {
             log.error("ChannelEngine init exception", e);
         } finally {
             initComplete = true;
         }
+    }
+
+    /**
+     * 监控线程的大小是否已经超过线程池的最大数量，如果超过之后，检查文件是否存在，文件不存在，清理当前线程
+     */
+    private void monitorTheadClean() {
+        ExecutorUtil.scheduleAtFixedRate(() -> {
+            ThreadPoolExecutor tpExecutor = (ThreadPoolExecutor) ExecutorUtil.TP_EXECUTOR;
+            if (tpExecutor.getActiveCount() > tpExecutor.getMaximumPoolSize() - 10) {
+                for (ChannelService channelService : channelServiceList) {
+                    try {
+                        ChannelServiceImpl service = (ChannelServiceImpl) channelService;
+                        ConcurrentHashMap<String, Future> serviceFutureMap = service.getFutureMap();
+                        for (Map.Entry<String, Future> futureEntry : serviceFutureMap.entrySet()) {
+                            if (!FileUtil.exist(futureEntry.getKey())) {
+                                log.info("current file has del,fileName:{}", futureEntry.getKey());
+                                service.getLogFileMap().get(futureEntry.getKey()).setStop(true);
+                                futureEntry.getValue().cancel(true);
+                            }
+                        }
+                    } catch (Exception e) {
+                        log.error("monitorTheadAndClean error", e);
+                    }
+                }
+            }
+        }, 1, 5, TimeUnit.MINUTES);
     }
 
     private ChannelDefineLocator getChannelDefineLocator(Config config) {
@@ -402,9 +420,17 @@ public class ChannelEngine {
      * @param channelDefines
      */
     private void deleteConfig(List<ChannelDefine> channelDefines, boolean directDel) {
+        // 指定目录下文件采集删除
+        delSpecialFileColl(channelDefines);
+        // 整个文件采集删除
+        delTailFileColl(channelDefines, directDel);
+    }
+
+    private void delTailFileColl(List<ChannelDefine> channelDefines, boolean directDel) {
         List<ChannelDefine> channelDels = channelDefines.stream()
                 .filter(channelDefine -> null != channelDefine.getOperateEnum()
-                        && channelDefine.getOperateEnum().getCode().equals(OperateEnum.DELETE_OPERATE.getCode()))
+                        && channelDefine.getOperateEnum().getCode().equals(OperateEnum.DELETE_OPERATE.getCode())
+                        && StringUtils.isEmpty(channelDefine.getDelDirectory()))
                 .collect(Collectors.toList());
         if (directDel) {
             channelDels = channelDefines;
@@ -438,6 +464,48 @@ public class ChannelEngine {
             }
         } catch (Exception e) {
             log.error(String.format("delete config exception,config:%s", gson.toJson(channelDels)), e);
+        }
+    }
+
+    /**
+     * 删除特定目录下的日志采集
+     *
+     * @param channelDefines
+     */
+    private void delSpecialFileColl(List<ChannelDefine> channelDefines) {
+        //找出某个机器下线时需要删除的pod
+        List<ChannelDefine> delSpecialFiles = channelDefines.stream()
+                .filter(channelDefine -> null != channelDefine.getOperateEnum()
+                        && channelDefine.getOperateEnum().getCode().equals(OperateEnum.DELETE_OPERATE.getCode())
+                        && StringUtils.isNotEmpty(channelDefine.getDelDirectory()))
+                .collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(delSpecialFiles)) {
+            try {
+                for (ChannelService channelService : channelServiceList) {
+                    CompletableFuture.runAsync(() -> {
+                        AbstractChannelService abstractChannelService = (AbstractChannelService) channelService;
+                        Long channelId = abstractChannelService.getChannelDefine().getChannelId();
+
+                        List<ChannelDefine> defineList = delSpecialFiles.stream()
+                                .filter(channelDefine -> Objects.equals(channelDefine.getChannelId(), channelId))
+                                .collect(Collectors.toList());
+
+                        for (ChannelDefine channelDefine : defineList) {
+                            log.info("deleteConfig,deleteCollFile,channelDefine:{}", gson.toJson(channelDefine));
+                            channelService.deleteCollFile(channelDefine.getDelDirectory());
+                        }
+                        //也需要删除opentelemetry日志
+                        if (LogTypeEnum.OPENTELEMETRY == abstractChannelService.getLogTypeEnum()) {
+                            for (ChannelDefine channelDefine : delSpecialFiles) {
+                                log.info("deleteConfig OPENTELEMETRY,deleteCollFile,channelDefine:{}", gson.toJson(channelDefine));
+                                channelService.deleteCollFile(channelDefine.getDelDirectory());
+                            }
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                log.error("delSpecialFileColl error,delSpecialFiles:{}", gson.toJson(channelDefines), e);
+            }
         }
     }
 
