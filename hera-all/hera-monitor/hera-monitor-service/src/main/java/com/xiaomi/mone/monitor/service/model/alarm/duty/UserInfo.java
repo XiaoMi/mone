@@ -12,6 +12,6 @@ import java.io.Serializable;
 public class UserInfo implements Serializable {
 
     private String user;
-    private Integer start_time;
-    private Integer end_time;
+    private Long start_time;
+    private Long end_time;
 }
