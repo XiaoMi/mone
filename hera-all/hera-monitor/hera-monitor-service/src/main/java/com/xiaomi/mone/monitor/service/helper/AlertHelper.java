@@ -379,31 +379,6 @@ public class AlertHelper {
         return agInfo;
     }
 
-    public static void main(String[] args) {
-        String test = "{\"manager\":\"liyandi\",\n" +
-                "    \"child_groups\":[\n" +
-                "        {\n" +
-                "            \"name\":\"miaoshu\",\n" +
-                "            \"oncall_parent_group_id\":1,\n" +
-                "            \"rotation_type\":0,\n" +
-                "            \"shift_length\":0,\n" +
-                "            \"shift_length_unit\":\"\",\n" +
-                "            \"duty_start_time\":1677664398,\n" +
-                "            \"handoff_time\":43200,\n" +
-                "            \"preset_vacation\":0,\n" +
-                "            \"oncall_users\":[\n" +
-                "                {\n" +
-                "                    \"user\":\"liyandi\"\n" +
-                "                }\n" +
-                "            ]\n" +
-                "        }\n" +
-                "    ],\n" +
-                "    \"model_type\":0,\n" +
-                "    \"chat_only\":0}";
-        DutyInfo dutyInfo = new Gson().fromJson(test, DutyInfo.class);
-        System.out.println(dutyInfo);
-    }
-
     public List<UserInfo> buildUserInfoList(List<AlertGroupMember> agmList) {
         if (CollectionUtils.isEmpty(agmList)) {
             return null;
