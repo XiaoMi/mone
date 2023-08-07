@@ -119,6 +119,9 @@ public class MybatisPlugin implements IPlugin {
                 }
                 SqlSessionFactory factory = bean.buildSqlSessionFactory();
                 ioc.putBean("mybatis_" + beanName + config.getName(), factory);
+                if (System.getenv("mybatis_mapper_annotation") != null) {
+                    factory.getConfiguration().addMappers(System.getenv("mybatis_mapper_annotation"));
+                }
                 Collection<Class<?>> mappers = factory.getConfiguration().getMapperRegistry().getMappers();
 
                 List<String> mapperNameList = mappers.stream().map(it -> it.getName()).collect(Collectors.toList());
