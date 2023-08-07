@@ -143,4 +143,18 @@ public class EsQueryTest {
         searchResponse = client.search(searchRequest);
         System.out.println(esQuery);
     }
+
+    @Test
+    public void test11(){
+        String str = " (not http) and 8088";
+        String esQuery = EsQueryUtils.getEsQuery(str);
+        System.out.println(esQuery);
+    }
+
+    @Test
+    public void test12(){
+        String str = "10.38.201.233";
+        String esQuery = EsQueryUtils.getEsQuery(str);
+        System.out.println(esQuery);
+    }
 }
