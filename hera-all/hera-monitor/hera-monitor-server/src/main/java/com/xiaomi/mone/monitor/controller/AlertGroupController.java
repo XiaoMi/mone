@@ -230,7 +230,7 @@ public class AlertGroupController {
     }
 
     @ResponseBody
-    @PostMapping("/duty_list/")
+    @PostMapping("/duty_list")
     public Result dutyInfoList(HttpServletRequest request, @RequestBody AlertGroupParam param) {
         AuthUserVo userInfo = null;
         try {
