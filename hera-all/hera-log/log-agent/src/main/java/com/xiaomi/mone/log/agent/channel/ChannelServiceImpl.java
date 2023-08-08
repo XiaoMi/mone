@@ -47,6 +47,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import static com.xiaomi.mone.log.common.Constant.GSON;
 import static com.xiaomi.mone.log.common.Constant.SYMBOL_COMMA;
 import static com.xiaomi.mone.log.common.PathUtils.PATH_WILDCARD;
 import static com.xiaomi.mone.log.common.PathUtils.SEPARATOR;
@@ -73,6 +74,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
     private final ConcurrentHashMap<String, Future> futureMap = new ConcurrentHashMap<>();
 
     private final Map<String, Long> reOpenMap = new HashMap<>();
+    private final Map<String, Long> fileReadMap = new HashMap<>();
 
     private final Map<String, ScheduledFuture<?>> lastFileLineScheduledFutureMap = new HashMap<>();
 
@@ -87,6 +89,8 @@ public class ChannelServiceImpl extends AbstractChannelService {
     private long logCounts = 0;
 
     private ScheduledFuture<?> scheduledFuture;
+
+    private ScheduledFuture<?> scheduledFileReadFuture;
 
     /**
      * collect once flag
@@ -185,7 +189,40 @@ public class ChannelServiceImpl extends AbstractChannelService {
         startExportQueueDataThread();
         memoryService.refreshMemory(channelMemory);
         delayDeletionFinishedFile();
+        startFileMergeDelay();
         log.warn("channelId:{}, channelInstanceId:{} start success! channelDefine:{}", channelId, instanceId(), gson.toJson(this.channelDefine));
+    }
+
+    /**
+     * When a file has not been written for more than one day, the file merging process begins, where multiple threads merge into one.
+     */
+    private void startFileMergeDelay() {
+        if (collectOnce) {
+            scheduledFileReadFuture = ExecutorUtil.scheduleAtFixedRate(() -> {
+                List<String> mergeFile = Lists.newArrayList();
+                for (Map.Entry<String, Long> readEntry : fileReadMap.entrySet()) {
+                    if (Instant.now().toEpochMilli() - readEntry.getValue() > TimeUnit.DAYS.toMillis(1)) {
+                        mergeFile.add(readEntry.getKey());
+                    }
+                }
+                if (CollectionUtils.isNotEmpty(mergeFile) && mergeFile.size() > 2) {
+                    log.info("startFileMergeDelay mergeFile:{}", GSON.toJson(mergeFile));
+                    for (String file : mergeFile) {
+                        futureMap.get(file).cancel(true);
+                    }
+                    Future<?> future = ExecutorUtil.submit(() -> {
+                        for (String file : mergeFile) {
+                            try {
+                                logFileMap.get(file).readLine();
+                            } catch (Exception e) {
+                                log.error("merge file error,fileName:{}", file, e);
+                            }
+                        }
+                    });
+                    futureMap.put(mergeFile.stream().collect(Collectors.joining(SYMBOL_COMMA)), future);
+                }
+            }, 1, 24, TimeUnit.HOURS);
+        }
     }
 
     /**
@@ -233,6 +270,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
         }
         for (Map.Entry<String, LogFile> logFileEntry : logFileMap.entrySet()) {
             if (logFileEntry.getKey().contains(directory)) {
+                InodeFileComparator.removeFile(logFileEntry.getKey());
                 logFileEntry.getValue().setStop(true);
             }
         }
@@ -275,26 +313,14 @@ public class ChannelServiceImpl extends AbstractChannelService {
 
 
     private void handleAllFileCollectMonitor(String patternCode, String newFilePath, Long channelId) {
-
         String ip = getTailPodIp(newFilePath);
 
-        List<String> collectKeys = logFileMap.keySet().stream().collect(Collectors.toList());
-
-        readFile(patternCode, ip, newFilePath, channelId);
-
-        // close old
-        collectKeys.forEach(key -> {
-            CompletableFuture.runAsync(() -> {
-                try {
-                    TimeUnit.MINUTES.sleep(2L);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                LogFile logFile = logFileMap.get(key);
-                logFile.shutdown();
-                logFileMap.remove(key);
-            });
-        });
+        if (logFileMap.keySet().stream().anyMatch(key -> Objects.equals(newFilePath, key))) {
+            log.info("collectOnce open file:{}", newFilePath);
+            logFileMap.get(newFilePath).setReOpen(true);
+        } else {
+            readFile(patternCode, ip, newFilePath, channelId);
+        }
     }
 
     /**
@@ -372,7 +398,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
                 log.info("empty data");
                 return;
             }
-            String ct = String.valueOf(System.currentTimeMillis());
+            long ct = System.currentTimeMillis();
             readResult.get().getLines().stream().forEach(l -> {
                 String logType = channelDefine.getInput().getType();
                 LogTypeEnum logTypeEnum = LogTypeEnum.name2enum(logType);
@@ -403,7 +429,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
                 if (null != remainMsg) {
                     synchronized (lock) {
                         log.info("start send last line,pattern:{},patternCode:{},data:{}", pattern, patternCode, remainMsg);
-                        wrapDataToSend(remainMsg, readResult, pattern, patternCode, ip, String.valueOf(Instant.now().toEpochMilli()));
+                        wrapDataToSend(remainMsg, readResult, pattern, patternCode, ip, Instant.now().toEpochMilli());
                     }
                 }
             }
@@ -412,7 +438,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
         return listener;
     }
 
-    private void wrapDataToSend(String lineMsg, AtomicReference<ReadResult> readResult, String pattern, String patternCode, String localIp, String ct) {
+    private void wrapDataToSend(String lineMsg, AtomicReference<ReadResult> readResult, String pattern, String patternCode, String localIp, long ct) {
         LineMessage lineMessage = new LineMessage();
         lineMessage.setMsgBody(lineMsg);
         lineMessage.setPointer(readResult.get().getPointer());
@@ -420,7 +446,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
         lineMessage.setFileName(pattern);
         lineMessage.setProperties(LineMessage.KEY_MQ_TOPIC_TAG, patternCode);
         lineMessage.setProperties(LineMessage.KEY_IP, localIp);
-        lineMessage.setProperties(LineMessage.KEY_COLLECT_TIMESTAMP, ct);
+        lineMessage.setProperties(LineMessage.KEY_COLLECT_TIMESTAMP, String.valueOf(ct));
         String logType = channelDefine.getInput().getType();
         LogTypeEnum logTypeEnum = LogTypeEnum.name2enum(logType);
         if (null != logTypeEnum) {
@@ -443,6 +469,8 @@ public class ChannelServiceImpl extends AbstractChannelService {
         fileProgress.setUnixFileNode(ChannelUtil.buildUnixFileNode(pattern));
         fileProgress.setPodType(channelDefine.getPodType());
         lineMessageList.add(lineMessage);
+
+        fileReadMap.put(pattern, ct);
 
         int batchSize = msgExporter.batchExportSize();
         if (lineMessageList.size() > batchSize) {
@@ -558,8 +586,9 @@ public class ChannelServiceImpl extends AbstractChannelService {
     public void close() {
         log.info("删除当前采集任务，channelId:{}", getChannelId());
         //1.停止日志抓取
-        for (LogFile logFile : logFileMap.values()) {
-            logFile.setStop(true);
+        for (Map.Entry<String, LogFile> fileEntry : logFileMap.entrySet()) {
+            fileEntry.getValue().setStop(true);
+            InodeFileComparator.removeFile(fileEntry.getKey());
         }
         //2. 停止export
         this.msgExporter.close();
@@ -580,6 +609,10 @@ public class ChannelServiceImpl extends AbstractChannelService {
         log.info("stop file monitor,fileName:", logFileMap.keySet().stream().collect(Collectors.joining(SYMBOL_COMMA)));
         lineMessageList.clear();
         reOpenMap.clear();
+        fileReadMap.clear();
+        if (null != scheduledFileReadFuture) {
+            scheduledFileReadFuture.cancel(false);
+        }
     }
 
     public Long getChannelId() {

@@ -135,6 +135,18 @@
 
         <dependency>
             <groupId>run.mone</groupId>
+            <artifactId>docean-plugin-es-antlr4</artifactId>
+            <version>1.4-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>run.mone</groupId>
+                    <artifactId>es</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>run.mone</groupId>
             <artifactId>docean-plugin-mybatis-plus</artifactId>
             <version>1.4-SNAPSHOT</version>
         </dependency>
