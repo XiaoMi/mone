@@ -331,31 +331,33 @@ public class AppAlarmService {
         List<ProjectAlarmInfo> projectsAlarmInfo = param.getProjectsAlarmInfo();
         if(CollectionUtils.isEmpty(projectsAlarmInfo)){
             log.info("batchAddRulesWithStrategy no projectsAlarmInfo found!");
-            return Result.success();
+            return Result.fail(ErrorCode.invalidParamError);
         }
 
-        projectsAlarmInfo.forEach(t->{
+        for(ProjectAlarmInfo t : projectsAlarmInfo){
 
             param.setProjectId(t.getProjectId());
             param.setIamType(t.getIamType());
             param.setIamId(t.getIamId());
 
             /**
-             * 校验当前操作人是否具有权限
+             * check permission for current user.
              */
             AppMonitor app = null;
             app = appMonitorDao.getMyApp(param.getProjectId(), param.getIamId(), param.getUser(), AppViewType.MyApp);
 
             if (app == null) {
-                log.error("batchAddRulesWithStrategy 不存在projectId={}的项目! param:{}", param.getProjectId(),param.toString());
+                log.error("batchAddRulesWithStrategy# current user has not permission for projectId={} param:{}", param.getProjectId(),param.toString());
+                continue;
             }
 
             /**
-             * 创建策略
+             * create strategy
              */
             AlarmStrategy strategy = alarmStrategyService.create(param,app);
             if (strategy == null) {
-                log.error("规则策略创建失败; strategyResult={},param:{}", strategy,param.toString());
+                log.error("batchAddRulesWithStrategy remote fail; param:{},strategyResult={}", param.toString(),strategy.toString());
+                continue;
             }
 
             Integer strategyId = strategy.getId();
@@ -364,8 +366,11 @@ public class AppAlarmService {
             param.setStrategyId(strategyId);
 
             Result result = addRules(param, app);
-            log.info("result:{}",result.toString());
-        });
+            if(!result.isSuccess()){
+                log.error("batchAddRulesWithStrategy#local create strategy fail! param:{},result:{}",param.toString(),new Gson().toJson(result));
+            }
+
+        }
 
         return Result.success();
     }
