@@ -1,5 +1,7 @@
 package com.xiaomi.mone.monitor.service;
 
+import com.alibaba.fastjson.JSONObject;
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -261,7 +263,14 @@ public class AlertGroupService {
     }
 
     public Result dutyInfoList(String user, AlertGroupParam param){
-        return alertServiceAdapt.dutyInfoList(user, param.getId(), param.getStart(), param.getEnd());
+        Result<JsonElement> result = alertServiceAdapt.dutyInfoList(user, param.getId(), param.getStart(), param.getEnd());
+        if(result.isSuccess() && result.getData() != null){
+            JsonArray asJsonArray = result.getData().getAsJsonArray();
+            List<Map> list = JSONObject.parseArray(new Gson().toJson(asJsonArray),Map.class);
+            return Result.success(list);
+        }
+        log.info("dutyInfoList param:{}, result:{}",param.toString(),new Gson().toJson(result));
+        return result;
     }
 
 }
