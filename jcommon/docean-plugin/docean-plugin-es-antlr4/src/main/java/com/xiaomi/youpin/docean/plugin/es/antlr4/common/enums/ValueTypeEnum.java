@@ -21,6 +21,7 @@ public enum ValueTypeEnum {
     NULL("null", "NULL"),
     ARRAY("array", "ARRAY"),
     EQUAL(":", "equal"),
+    IDENTIFY("identifier", "identifier"),
     REGEX("regex", "REGEX");
 
     @Getter
