@@ -19,15 +19,16 @@ import com.xiaomi.mone.log.manager.model.vo.LogContextQuery;
 import com.xiaomi.mone.log.manager.model.vo.LogQuery;
 import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionService;
 import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionServiceFactory;
-import com.xiaomi.mone.log.manager.service.statement.StatementMatchParseFactory;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.common.DoceanConfig;
 import com.xiaomi.youpin.docean.common.StringUtils;
+import com.xiaomi.youpin.docean.plugin.es.antlr4.common.util.EsQueryUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -60,9 +61,10 @@ public class SearchLog {
             return boolQueryBuilder;
         }
 //        BoolQueryBuilder fullTextSearchBuilder = buildTextQuery(logQuery.getFullTextSearch(), keyList);
-        BoolQueryBuilder fullTextSearchBuilder = StatementMatchParseFactory.getStatementMatchParseQueryBuilder(logQuery.getFullTextSearch(), keyList);
-        if (fullTextSearchBuilder != null) {
-            boolQueryBuilder.filter(fullTextSearchBuilder);
+//        BoolQueryBuilder fullTextSearchBuilder = StatementMatchParseFactory.getStatementMatchParseQueryBuilder(logQuery.getFullTextSearch(), keyList);
+        SearchSourceBuilder searchSourceBuilder = EsQueryUtils.getSearchSourceBuilder(logQuery.getFullTextSearch());
+        if (searchSourceBuilder != null) {
+            boolQueryBuilder.filter(searchSourceBuilder.query());
         }
         return boolQueryBuilder;
     }
@@ -103,9 +105,9 @@ public class SearchLog {
             return boolQueryBuilder;
         }
 //        BoolQueryBuilder fullTextSearchBuilder = buildTextQuery(logQuery.getFullTextSearch(), keyList);
-        BoolQueryBuilder fullTextSearchBuilder = StatementMatchParseFactory.getStatementMatchParseQueryBuilder(logQuery.getFullTextSearch(), keyList);
-        if (fullTextSearchBuilder != null) {
-            boolQueryBuilder.filter(fullTextSearchBuilder);
+        SearchSourceBuilder searchSourceBuilder = EsQueryUtils.getSearchSourceBuilder(logQuery.getFullTextSearch());
+        if (searchSourceBuilder != null) {
+            boolQueryBuilder.filter(searchSourceBuilder.query());
         }
         return boolQueryBuilder;
     }
