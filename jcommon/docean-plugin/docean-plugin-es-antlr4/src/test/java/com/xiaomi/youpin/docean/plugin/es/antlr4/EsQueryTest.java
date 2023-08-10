@@ -41,7 +41,7 @@ public class EsQueryTest {
 
     @After
     public void end() {
-        if(null != searchResponse){
+        if (null != searchResponse) {
             SearchHit[] hits = searchResponse.getHits().getHits();
             if (hits == null || hits.length == 0) {
                 return;
@@ -145,16 +145,37 @@ public class EsQueryTest {
     }
 
     @Test
-    public void test11(){
+    public void test11() {
         String str = " (not http) and 8088";
         String esQuery = EsQueryUtils.getEsQuery(str);
         System.out.println(esQuery);
     }
 
     @Test
-    public void test12(){
+    public void test12() {
         String str = "10.38.201.233";
         String esQuery = EsQueryUtils.getEsQuery(str);
         System.out.println(esQuery);
     }
+
+    /**
+     * 某个key的值不等于value
+     */
+    @Test
+    public void test13(){
+//        String str = "level  != INFO";
+        String str = "level  != \"INFO\"";
+        String esQuery = EsQueryUtils.getEsQuery(str);
+        System.out.println(esQuery);
+    }
+    @Test
+    public void test14(){
+//        String str = "linenumber< 128";
+//        String str = "level in [\"ERROR\",\"INFO\"]";
+        String str = "level in [ERROR,INFO]";
+        String esQuery = EsQueryUtils.getEsQuery(str);
+        System.out.println(esQuery);
+    }
+
+
 }
