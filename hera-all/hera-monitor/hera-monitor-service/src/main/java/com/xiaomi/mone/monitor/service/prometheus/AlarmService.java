@@ -1177,7 +1177,7 @@ public class AlarmService {
         }
 
         if(isFullGc){
-            exprBuilder.append("action=~'end of major GC',");
+            exprBuilder.append("action='end of major GC',");
         }
         exprBuilder.append("application=").append("'").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'").append(",");
         exprBuilder.append("serverIp!=").append("''");
@@ -1197,7 +1197,7 @@ public class AlarmService {
         }
 
         if(isFullGc){
-            exprBuilder.append("action=~'end of major GC|end of minor GC',");
+            exprBuilder.append("action='end of major GC',");
         }
         exprBuilder.append("application=").append("'").append(projectId).append("_").append(projectName.replaceAll("-","_")).append("'");
         exprBuilder.append("}[1m])").append(op).append(value);
