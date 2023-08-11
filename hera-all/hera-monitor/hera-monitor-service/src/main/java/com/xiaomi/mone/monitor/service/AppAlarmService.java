@@ -1,6 +1,7 @@
 package com.xiaomi.mone.monitor.service;
 
 import com.alibaba.nacos.api.config.annotation.NacosValue;
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -328,7 +329,19 @@ public class AppAlarmService {
 
     public Result batchAddRulesWithStrategy(AlarmRuleRequest param){
 
+
         List<ProjectAlarmInfo> projectsAlarmInfo = param.getProjectsAlarmInfo();
+        if(projectsAlarmInfo == null){
+            projectsAlarmInfo = Lists.newArrayList();
+        }
+        if(param.getIamId() != null && param.getProjectId() != null){
+            ProjectAlarmInfo projectAlarmInfo = new ProjectAlarmInfo();
+            projectAlarmInfo.setIamId(param.getIamId());
+            projectAlarmInfo.setIamType(param.getIamType());
+            projectAlarmInfo.setProjectId(param.getProjectId());
+            projectsAlarmInfo.add(projectAlarmInfo);
+        }
+
         if(CollectionUtils.isEmpty(projectsAlarmInfo)){
             log.info("batchAddRulesWithStrategy no projectsAlarmInfo found!");
             return Result.fail(ErrorCode.invalidParamError);
