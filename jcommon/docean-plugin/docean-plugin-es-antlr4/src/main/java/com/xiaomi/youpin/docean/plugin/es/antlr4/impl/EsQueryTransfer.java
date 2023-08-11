@@ -509,6 +509,10 @@ public class EsQueryTransfer implements EsQueryListener {
         if (ctx.getParent() instanceof EsQueryParser.EqExprContext) {
             //属于等于下的值
             valueProperty.put(ctx, new ValueContext(ValueTypeEnum.EQUAL, ctx.getChild(0).getText()));
+        } else if (ctx.getParent() instanceof EsQueryParser.NeExprContext) {
+            valueProperty.put(ctx, new ValueContext(ValueTypeEnum.IDENTIFY, ctx.getChild(0).getText()));
+        } else if (ctx.getParent() instanceof EsQueryParser.ArrayContext) {
+            valueProperty.put(ctx, new ValueContext(ValueTypeEnum.STRING, ctx.getChild(0).getText()));
         } else {
             String value = ctx.getChild(0).getText();
             if (null == value) {
