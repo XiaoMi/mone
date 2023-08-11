@@ -130,7 +130,7 @@ public class ChannelUtil {
                 log.debug("origin file path:{},fileNode unixFileNode:{}", filePath, GSON.toJson(unixFileNode));
                 return unixFileNode;
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.info("buildUnixFileNode error,filePath:{}", filePath, e);
         }
         return new ChannelMemory.UnixFileNode();

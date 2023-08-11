@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: hera-app-container
-        image: herahub/opensource-pub:hera-app-v1
+        image: herahub/opensource-pub:hera-app-v1-release
         resources:
           limits:
             cpu: '300m'

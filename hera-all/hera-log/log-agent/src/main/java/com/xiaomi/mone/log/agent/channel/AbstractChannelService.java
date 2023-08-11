@@ -16,9 +16,11 @@
 package com.xiaomi.mone.log.agent.channel;
 
 import com.xiaomi.mone.log.agent.channel.memory.ChannelMemory;
+import com.xiaomi.mone.log.agent.input.Input;
+import com.xiaomi.mone.log.api.enums.LogTypeEnum;
 import com.xiaomi.mone.log.api.model.meta.LogPattern;
+import com.xiaomi.mone.log.utils.NetUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -84,6 +86,11 @@ public abstract class AbstractChannelService implements ChannelService {
 
     public abstract Long getLogCounts();
 
+    public LogTypeEnum getLogTypeEnum() {
+        Input input = getChannelDefine().getInput();
+        return LogTypeEnum.name2enum(input.getType());
+    }
+
     /**
      * Query IP information based on the actual collection path.
      *
@@ -100,8 +107,7 @@ public abstract class AbstractChannelService implements ChannelService {
         if (null != actualIpRel) {
             return actualIpRel.getIp();
         }
-        log.info("getTailPodIp empty,pattern:{}", pattern);
-        return StringUtils.EMPTY;
+        return NetUtil.getLocalIp();
     }
 
 }

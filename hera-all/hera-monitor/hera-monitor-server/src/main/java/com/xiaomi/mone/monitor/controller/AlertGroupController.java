@@ -18,10 +18,7 @@ import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 import com.xiaomi.mone.tpc.login.vo.UserInfoVO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -228,6 +225,31 @@ public class AlertGroupController {
             return alertGroupService.alertGroupDelete(user, param);
         } catch (Exception e) {
             log.error("AlertGroupController.alertGroupDelete异常 param : {} ,userInfo :{}", param, userInfo, e);
+            return Result.fail(ErrorCode.unknownError);
+        }
+    }
+
+    @ResponseBody
+    @PostMapping("/duty_list")
+    public Result dutyInfoList(HttpServletRequest request, @RequestBody AlertGroupParam param) {
+        AuthUserVo userInfo = null;
+        try {
+            log.info("AlertGroupController.dutyInfoList param : {} ", param);
+            if (param.getId() <= 0) {
+                log.info("AlertGroupController.dutyInfoList request info error no arg error! param : {} ", param);
+                return Result.fail(ErrorCode.invalidParamError);
+            }
+            userInfo = UserUtil.getUser();
+            if (userInfo == null) {
+                log.info("AlertGroupController.dutyInfoList request info error no user info found! param : {} ", param);
+                return Result.fail(ErrorCode.INVALID_USER);
+            }
+            String user = userInfo.genFullAccount();
+            user = userconfigService.getAssignUser(user);
+            log.info("AlertGroupController.dutyInfoList param : {} ,user : {}", param, user);
+            return alertGroupService.dutyInfoList(user, param);
+        } catch (Exception e) {
+            log.error("AlertGroupController.dutyInfoList param : {} ,userInfo :{}", param, userInfo, e);
             return Result.fail(ErrorCode.unknownError);
         }
     }

@@ -17,10 +17,10 @@ spec:
     spec:
       containers:
       - name: trace-etl-server-container
-        image: herahub/opensource-pub:trace-etl-server-v1
+        image: herahub/opensource-pub:trace-etl-server-v1-release
         ports:
         - containerPort: 4446
         resources:
           limits:
             cpu: '500m'
-            memory: 2Gi
+            memory: 1Gi

@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.xiaomi.mone.monitor.bo.UserInfo;
 import com.xiaomi.mone.monitor.result.Result;
 import com.xiaomi.mone.monitor.service.model.PageData;
+import com.xiaomi.mone.monitor.service.model.alarm.duty.DutyInfo;
 
 import java.util.List;
 import java.util.Set;
@@ -47,13 +48,15 @@ public interface AlertManager {
 
     Result<PageData<List<UserInfo>>> searchUser(String user, String searchName, int pageNo, int pageSize);
 
-    Result<JsonObject> createAlertGroup(String user, String name, String note, String chatId, List<Long> memberIds);
+    Result<JsonObject> createAlertGroup(String user, String name, String note, String chatId, List<Long> memberIds, DutyInfo dutyInfo);
 
     Result<JsonObject> getAlertGroup(String user, long id);
 
-    Result<JsonObject> editAlertGroup(String user, long id, String name, String note, String chatId, List<Long> memberIds);
+    Result<JsonObject> editAlertGroup(String user, long id, String name, String note, String chatId, List<Long> memberIds,DutyInfo dutyInfo);
 
     Result<JsonObject> deleteAlertGroup(String user, long id);
+
+    Result<JsonElement> dutyInfoList(String user, long id,Long start,Long end);
 
     Integer getDefaultIamId();
 }

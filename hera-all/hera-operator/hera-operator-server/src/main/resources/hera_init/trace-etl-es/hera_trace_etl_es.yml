@@ -67,7 +67,8 @@ spec:
     spec:
       containers:
       - name: trace-etl-es-container
-        image: herahub/opensource-pub:trace-etl-es-v1
+        image: herahub/opensource-pub:trace-etl-es-v1-release
+        imagePullPolicy: Always
         env:
           - name: MONE_CONTAINER_S_POD_NAME
             valueFrom:
