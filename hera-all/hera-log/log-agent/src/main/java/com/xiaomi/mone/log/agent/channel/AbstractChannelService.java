@@ -16,13 +16,15 @@
 package com.xiaomi.mone.log.agent.channel;
 
 import com.xiaomi.mone.log.agent.channel.memory.ChannelMemory;
-import org.apache.commons.lang3.StringUtils;
+import com.xiaomi.mone.log.agent.input.Input;
+import com.xiaomi.mone.log.api.enums.LogTypeEnum;
+import com.xiaomi.mone.log.api.model.meta.LogPattern;
+import com.xiaomi.mone.log.utils.NetUtil;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -31,14 +33,10 @@ import java.util.stream.Collectors;
  * @description
  * @date 2023/6/20 16:26
  */
+@Slf4j
 public abstract class AbstractChannelService implements ChannelService {
 
     public String instanceId = UUID.randomUUID().toString();
-
-    /**
-     * 实际采集的文件对应的机器Ip(兼容k8s 一个node下多个pod的问题)
-     */
-    public Map<String, String> ipPath = new ConcurrentHashMap<>();
 
     @Override
     public String instanceId() {
@@ -58,7 +56,7 @@ public abstract class AbstractChannelService implements ChannelService {
         channelState.setAppName(channelDefine.getAppName());
         channelState.setLogPattern(channelDefine.getInput().getLogPattern());
         channelState.setLogPatternCode(channelDefine.getInput().getPatternCode());
-        channelState.setIpList(ipPath.values().stream().distinct().collect(Collectors.toList()));
+        channelState.setIpList(getChannelDefine().getIpDirectoryRel().stream().map(LogPattern.IPRel::getIp).distinct().collect(Collectors.toList()));
 
         channelState.setCollectTime(channelMemory.getCurrentTime());
 
@@ -88,16 +86,28 @@ public abstract class AbstractChannelService implements ChannelService {
 
     public abstract Long getLogCounts();
 
-    private String getTailPodIp(String pattern) {
-        String tailPodIp = ipPath.get(pattern);
-        if (StringUtils.isBlank(tailPodIp)) {
-            Optional<String> ipOptional = ipPath.keySet().stream().filter(path -> pattern.startsWith(path)).findFirst();
-            String ipKey = ipPath.keySet().stream().findFirst().get();
-            if (ipOptional.isPresent()) {
-                ipKey = ipOptional.get();
-            }
-            tailPodIp = ipPath.get(ipKey);
-        }
-        return tailPodIp;
+    public LogTypeEnum getLogTypeEnum() {
+        Input input = getChannelDefine().getInput();
+        return LogTypeEnum.name2enum(input.getType());
     }
+
+    /**
+     * Query IP information based on the actual collection path.
+     *
+     * @param pattern
+     * @return
+     */
+    protected String getTailPodIp(String pattern) {
+        ChannelDefine channelDefine = getChannelDefine();
+        List<LogPattern.IPRel> ipDirectoryRel = channelDefine.getIpDirectoryRel();
+        LogPattern.IPRel actualIpRel = ipDirectoryRel.stream()
+                .filter(ipRel -> pattern.contains(ipRel.getKey()))
+                .findFirst()
+                .orElse(null);
+        if (null != actualIpRel) {
+            return actualIpRel.getIp();
+        }
+        return NetUtil.getLocalIp();
+    }
+
 }

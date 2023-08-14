@@ -35,11 +35,11 @@ public class FileMonitor implements FileWatcher {
     @Override
     public void watch(String filePattern, List<FileAlterationMonitor> monitorList, Consumer<String> consumer) {
         List<String> watchList = Lists.newArrayList(filePattern);
-        // 默认 遍历文件 间隔时间 5s
-        FileAlterationMonitor monitor = new FileAlterationMonitor(5000);
+        // 默认 遍历文件 间隔时间 10s
+        FileAlterationMonitor monitor = new FileAlterationMonitor(10000);
         log.info("agent monitor files:{}", GSON.toJson(watchList));
         for (String watch : watchList) {
-            FileAlterationObserver observer = new FileAlterationObserver(new File(watch));
+            FileAlterationObserver observer = new LogFileAlterationObserver(new File(watch));
             observer.addListener(new FileListener(consumer));
             log.info("## agent monitor file:{}, filePattern:{}", watch, filePattern);
             monitor.addObserver(observer);

@@ -38,6 +38,8 @@ import com.xiaomi.mone.log.manager.model.vo.LogQuery;
 import com.xiaomi.mone.log.manager.model.vo.RegionTraceLogQuery;
 import com.xiaomi.mone.log.manager.service.EsDataBaseService;
 import com.xiaomi.mone.log.manager.service.LogQueryService;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionService;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionServiceFactory;
 import com.xiaomi.mone.log.parse.LogParser;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.common.StringUtils;
@@ -47,7 +49,7 @@ import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.core.TimeValue;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
@@ -87,6 +89,12 @@ public class LogQueryServiceImpl implements LogQueryService, LogDataService, EsD
 
     private Set<String> hidenFiledSet = new HashSet<>();
 
+    private CommonExtensionService commonExtensionService;
+
+    public void init() {
+        commonExtensionService = CommonExtensionServiceFactory.getCommonExtensionService();
+    }
+
     {
         noHighLightSet.add("logstore");
         noHighLightSet.add("logsource");
@@ -122,7 +130,7 @@ public class LogQueryServiceImpl implements LogQueryService, LogDataService, EsD
                 return Result.failParam("找不到[" + logQuery.getLogstore() + "]对应的数据");
             }
             EsService esService = esCluster.getEsService(logStore.getEsClusterId());
-            String esIndexName = logStore.getEsIndex();
+            String esIndexName = commonExtensionService.getSearchIndex(logQuery.getStoreId(), logStore.getEsIndex());
             if (esService == null || StringUtils.isEmpty(esIndexName)) {
                 log.warn("[EsDataService.logQuery] logstroe:[{}]配置异常", logQuery.getLogstore());
                 return Result.failParam("logstroe配置异常");

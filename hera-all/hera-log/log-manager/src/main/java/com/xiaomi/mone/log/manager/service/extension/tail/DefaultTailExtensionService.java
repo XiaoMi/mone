@@ -20,6 +20,7 @@ import com.xiaomi.mone.app.api.model.HeraSimpleEnv;
 import com.xiaomi.mone.app.api.response.AppBaseInfo;
 import com.xiaomi.mone.log.api.enums.OperateEnum;
 import com.xiaomi.mone.log.api.enums.ProjectTypeEnum;
+import com.xiaomi.mone.log.manager.dao.MilogLogTailDao;
 import com.xiaomi.mone.log.manager.model.bo.LogTailParam;
 import com.xiaomi.mone.log.manager.model.dto.MilogAppEnvDTO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
@@ -33,6 +34,7 @@ import com.xiaomi.mone.log.model.LogtailConfig;
 import com.xiaomi.youpin.docean.anno.Service;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Resource;
 import java.util.List;
@@ -64,6 +66,9 @@ public class DefaultTailExtensionService implements TailExtensionService {
 
     @Resource(name = DEFAULT_AGENT_EXTENSION_SERVICE_KEY)
     private MilogAgentServiceImpl milogAgentService;
+
+    @Resource
+    private MilogLogTailDao milogLogtailDao;
 
     @Override
     public boolean tailHandlePreprocessingSwitch(MilogLogStoreDO milogLogStore, LogTailParam param) {
@@ -123,7 +128,7 @@ public class DefaultTailExtensionService implements TailExtensionService {
 //            createConsumerGroup(milogLogtailDo.getSpaceId(), milogLogtailDo.getStoreId(), milogLogtailDo.getId(), milogMiddlewareConfigDao.queryById(middlewareRels.get(0).getMiddlewareId()), milogLogtailDo.getMilogAppId(), false);
             logTailService.sengMessageToStream(milogLogtailDo, OperateEnum.UPDATE_OPERATE.getCode());
         }
-        logTailService.compareChangeDelIps(milogLogtailDo.getId(), milogLogtailDo.getMilogAppId(), milogLogtailDo.getIps(), oldIps);
+        logTailService.compareChangeDelIps(milogLogtailDo.getId(), milogLogtailDo.getLogPath(), milogLogtailDo.getIps(), oldIps);
     }
 
     @Override
@@ -163,6 +168,25 @@ public class DefaultTailExtensionService implements TailExtensionService {
     @Override
     public List<String> getStreamMachineUniqueList(Integer projectTypeCode, String motorRoomEn) {
         return Lists.newArrayList();
+    }
+
+    @Override
+    public String deleteCheckProcessPre(Long id) {
+        return StringUtils.EMPTY;
+    }
+
+    @Override
+    public String validLogPath(LogTailParam param) {
+        if (Objects.equals(ProjectTypeEnum.MIONE_TYPE.getCode(), param.getAppType())) {
+            // 校验同名日志文件
+            List<MilogLogTailDo> appLogTails = milogLogtailDao.queryByMilogAppAndEnv(param.getMilogAppId(), param.getEnvId());
+            for (int i = 0; i < appLogTails.size() && null == param.getId(); i++) {
+                if (appLogTails.get(i).getLogPath().equals(param.getLogPath())) {
+                    return "当前部署环境该文件" + param.getLogPath() + "已配置日志采集,别名为：" + appLogTails.get(i).getTail();
+                }
+            }
+        }
+        return StringUtils.EMPTY;
     }
 
 }

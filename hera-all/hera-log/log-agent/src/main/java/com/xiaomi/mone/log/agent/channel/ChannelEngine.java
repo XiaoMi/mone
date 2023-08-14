@@ -36,6 +36,7 @@ import com.xiaomi.mone.log.agent.factory.OutPutServiceFactory;
 import com.xiaomi.mone.log.agent.filter.FilterChain;
 import com.xiaomi.mone.log.agent.input.Input;
 import com.xiaomi.mone.log.agent.output.Output;
+import com.xiaomi.mone.log.api.enums.LogTypeEnum;
 import com.xiaomi.mone.log.api.enums.OperateEnum;
 import com.xiaomi.mone.log.api.model.vo.UpdateLogProcessCmd;
 import com.xiaomi.mone.log.common.Constant;
@@ -419,9 +420,17 @@ public class ChannelEngine {
      * @param channelDefines
      */
     private void deleteConfig(List<ChannelDefine> channelDefines, boolean directDel) {
+        // 指定目录下文件采集删除
+        delSpecialFileColl(channelDefines);
+        // 整个文件采集删除
+        delTailFileColl(channelDefines, directDel);
+    }
+
+    private void delTailFileColl(List<ChannelDefine> channelDefines, boolean directDel) {
         List<ChannelDefine> channelDels = channelDefines.stream()
                 .filter(channelDefine -> null != channelDefine.getOperateEnum()
-                        && channelDefine.getOperateEnum().getCode().equals(OperateEnum.DELETE_OPERATE.getCode()))
+                        && channelDefine.getOperateEnum().getCode().equals(OperateEnum.DELETE_OPERATE.getCode())
+                        && StringUtils.isEmpty(channelDefine.getDelDirectory()))
                 .collect(Collectors.toList());
         if (directDel) {
             channelDels = channelDefines;
@@ -455,6 +464,48 @@ public class ChannelEngine {
             }
         } catch (Exception e) {
             log.error(String.format("delete config exception,config:%s", gson.toJson(channelDels)), e);
+        }
+    }
+
+    /**
+     * 删除特定目录下的日志采集
+     *
+     * @param channelDefines
+     */
+    private void delSpecialFileColl(List<ChannelDefine> channelDefines) {
+        //找出某个机器下线时需要删除的pod
+        List<ChannelDefine> delSpecialFiles = channelDefines.stream()
+                .filter(channelDefine -> null != channelDefine.getOperateEnum()
+                        && channelDefine.getOperateEnum().getCode().equals(OperateEnum.DELETE_OPERATE.getCode())
+                        && StringUtils.isNotEmpty(channelDefine.getDelDirectory()))
+                .collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(delSpecialFiles)) {
+            try {
+                for (ChannelService channelService : channelServiceList) {
+                    CompletableFuture.runAsync(() -> {
+                        AbstractChannelService abstractChannelService = (AbstractChannelService) channelService;
+                        Long channelId = abstractChannelService.getChannelDefine().getChannelId();
+
+                        List<ChannelDefine> defineList = delSpecialFiles.stream()
+                                .filter(channelDefine -> Objects.equals(channelDefine.getChannelId(), channelId))
+                                .collect(Collectors.toList());
+
+                        for (ChannelDefine channelDefine : defineList) {
+                            log.info("deleteConfig,deleteCollFile,channelDefine:{}", gson.toJson(channelDefine));
+                            channelService.deleteCollFile(channelDefine.getDelDirectory());
+                        }
+                        //也需要删除opentelemetry日志
+                        if (LogTypeEnum.OPENTELEMETRY == abstractChannelService.getLogTypeEnum()) {
+                            for (ChannelDefine channelDefine : delSpecialFiles) {
+                                log.info("deleteConfig OPENTELEMETRY,deleteCollFile,channelDefine:{}", gson.toJson(channelDefine));
+                                channelService.deleteCollFile(channelDefine.getDelDirectory());
+                            }
+                        }
+                    });
+                }
+            } catch (Exception e) {
+                log.error("delSpecialFileColl error,delSpecialFiles:{}", gson.toJson(channelDefines), e);
+            }
         }
     }
 

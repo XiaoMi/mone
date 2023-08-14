@@ -119,6 +119,7 @@ spec:
         - name: mione-opensource-credential
       containers:
         - image: prom/prometheus:v2.37.2
+          imagePullPolicy: Always
           name: prometheus
           command:
             - "/bin/prometheus"
@@ -143,7 +144,8 @@ spec:
               memory: 2500Mi
 
         - name: prometheus-agent
-          image: herahub/opensource-pub:prometheus-agent-v2
+          imagePullPolicy: Always
+          image: herahub/opensource-pub:prometheus-agent-v1-release
           lifecycle:
             postStart:
               exec:

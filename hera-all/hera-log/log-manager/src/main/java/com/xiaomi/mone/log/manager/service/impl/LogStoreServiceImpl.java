@@ -16,6 +16,7 @@
 package com.xiaomi.mone.log.manager.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.lang.Pair;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.google.common.collect.Lists;
 import com.xiaomi.mone.log.api.enums.LogStructureEnum;
@@ -58,6 +59,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.xiaomi.mone.log.common.Constant.SUCCESS_MESSAGE;
+import static com.xiaomi.mone.log.manager.service.impl.EsDataServiceImpl.requiredFields;
 
 /**
  * @author milog
@@ -119,14 +121,18 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
         if (StringUtils.isNotEmpty(errorInfos)) {
             return Result.failParam(errorInfos);
         }
-        if (logStoreDao.verifyExistByName(cmd.getLogstoreName(), null)) {
+        if (!cmd.getNameSameStatus() && logStoreDao.verifyExistByName(cmd.getLogstoreName(), null)) {
             return new Result<>(CommonError.UnknownError.getCode(), "存在同名storeName", "");
         }
-
+        List<MilogLogStoreDO> logStoreDOS = logStoreDao.queryBySpaceIdNamed(cmd.getSpaceId(), cmd.getLogstoreName());
+        if (CollectionUtils.isNotEmpty(logStoreDOS)) {
+            return Result.failParam("store名称重复，请重新填写名称");
+        }
         MilogLogStoreDO storeDO = MilogLogstoreConvert.INSTANCE.fromCommad(cmd);
         wrapBaseCommon(storeDO, OperateEnum.ADD_OPERATE);
         // 绑定资源
         storeExtensionService.storeResourceBinding(storeDO, cmd, OperateEnum.ADD_OPERATE);
+        checkRequiredFieldExist(storeDO);
         // 存储
         boolean res = logStoreDao.newMilogLogStore(storeDO);
         if (res == true) {
@@ -137,6 +143,19 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
             return new Result<>(CommonError.UnknownError.getCode(), CommonError.UnknownError.getMessage());
         }
 
+    }
+
+    private void checkRequiredFieldExist(MilogLogStoreDO storeDO) {
+        String keyList = storeDO.getKeyList();
+        String columnTypeList = storeDO.getColumnTypeList();
+        for (Pair<String, String> requiredField : requiredFields) {
+            if (!keyList.contains(requiredField.getKey())) {
+                keyList = String.format("%s,%s:1", keyList, requiredField.getKey());
+                columnTypeList = String.format("%s,%s", columnTypeList, requiredField.getValue());
+            }
+        }
+        storeDO.setKeyList(keyList);
+        storeDO.setColumnTypeList(columnTypeList);
     }
 
     @Override
@@ -217,6 +236,7 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
         // 选择对应的索引
         storeExtensionService.storeResourceBinding(ml, param, OperateEnum.UPDATE_OPERATE);
         wrapBaseCommon(ml, OperateEnum.UPDATE_OPERATE);
+        checkRequiredFieldExist(ml);
         boolean updateRes = storeExtensionService.updateLogStore(ml);
         if (updateRes && storeExtensionService.sendConfigSwitch(param)) {
             //查看是否有tail 如果有重新发送配置信息（nacos 和 agent）

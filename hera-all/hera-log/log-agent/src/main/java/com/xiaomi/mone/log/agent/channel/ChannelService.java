@@ -85,4 +85,11 @@ public interface ChannelService extends Closeable {
      * openteltry日志多文件结束clean
      */
     void delayDeletionFinishedFile();
+
+    /**
+     * 删除某个目录的文件采集,适用于k8s中使用demonset方式部署时某个某个下线，需要删除它的采集,解除资源占用
+     *
+     * @param directory
+     */
+    void deleteCollFile(String directory);
 }

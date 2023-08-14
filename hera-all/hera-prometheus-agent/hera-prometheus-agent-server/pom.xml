@@ -37,9 +37,9 @@
             <version>3.0.8</version>
         </dependency>
         <dependency>
-            <groupId>com.alibaba.spring</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>spring-context-support</artifactId>
-            <version>1.0.11</version>
+            <version>1.0.10-mone-SNAPSHOT</version>
         </dependency>
     </dependencies>
 
@@ -61,29 +61,7 @@
 <!--            </resource>-->
 <!--        </resources>-->
 
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>2.7.5</version>
 
-                <configuration>
-                    <mainClass>com.xiaomi.youpin.prometheus.agent.bootstrap.PrometheusAgentBootstrap</mainClass>
-                </configuration>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>repackage</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-
-        </plugins>
 
     </build>
 
@@ -100,6 +78,30 @@
                 <filters>
                     <filter>src/main/resources/application-opensource-outer.properties</filter>
                 </filters>
+
+                <plugins>
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                        <version>2.7.5</version>
+
+                        <configuration>
+                            <mainClass>com.xiaomi.youpin.prometheus.agent.bootstrap.PrometheusAgentBootstrap</mainClass>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>repackage</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.springframework.boot</groupId>
+                        <artifactId>spring-boot-maven-plugin</artifactId>
+                    </plugin>
+
+                </plugins>
 
             </build>
 

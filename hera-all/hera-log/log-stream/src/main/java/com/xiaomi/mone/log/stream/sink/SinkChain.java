@@ -15,26 +15,57 @@
  */
 package com.xiaomi.mone.log.stream.sink;
 
+import com.google.common.collect.Lists;
+import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.Component;
-import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 
-import javax.annotation.Resource;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
- * @Author goodjava@qq.com
- * @Date 2021/8/20 10:09
+ * @author wtt
+ * @version 1.0
+ * @description
+ * @date 2023/8/7 14:38
  */
 @Component
-@Data
+@Slf4j
 public class SinkChain {
+    /**
+     * Have you already scanned and obtained SinkProcessor
+     */
+    private boolean isLoad;
 
-    @Resource
-    private TeslaSink teslaSink;
+    private static final List<SinkProcessor> sinkProcessorList = Lists.newArrayList();
 
-
+    /**
+     * If one is true, then it is true. (literal translation)
+     * As long as one is true, it is considered true. (more natural translation)
+     *
+     * @param map
+     * @return
+     */
     public boolean execute(Map<String, Object> map) {
-        return teslaSink.execute(map);
+        loadSinkProcessor();
+        List<Boolean> res = Lists.newArrayList();
+        if (CollectionUtils.isNotEmpty(sinkProcessorList)) {
+            for (SinkProcessor sinkProcessor : sinkProcessorList) {
+                res.add(sinkProcessor.execute(map));
+            }
+        }
+        return res.stream().anyMatch(re -> re);
     }
 
+    private void loadSinkProcessor() {
+        if (!isLoad) {
+            Set<SinkProcessor> beans = Ioc.ins().getBeans(SinkProcessor.class);
+            if (CollectionUtils.isNotEmpty(beans)) {
+                sinkProcessorList.addAll(beans);
+            }
+            isLoad = true;
+        }
+    }
 }

@@ -15,10 +15,11 @@
  */
 package com.xiaomi.mone.log.agent.channel;
 
-import com.xiaomi.mone.log.agent.output.Output;
 import com.xiaomi.mone.log.agent.input.Input;
+import com.xiaomi.mone.log.agent.output.Output;
 import com.xiaomi.mone.log.api.enums.OperateEnum;
 import com.xiaomi.mone.log.api.model.meta.FilterConf;
+import com.xiaomi.mone.log.api.model.meta.LogPattern;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -46,9 +47,13 @@ public class ChannelDefine implements Serializable {
     private OperateEnum operateEnum;
 
     private List<String> ips;
+    /**
+     * ip和目录对应关系
+     */
+    private List<LogPattern.IPRel> ipDirectoryRel;
 
     /**
-     * todo filter、script配置
+     * filter、script配置
      */
     private List<FilterConf> filters;
     /**
@@ -62,5 +67,9 @@ public class ChannelDefine implements Serializable {
     private Boolean singleMetaData;
 
     private String podType;
+    /**
+     * 某个机器下线的时候需要删除的该目录下的日志采集,只有当某个应用的机器下线时才有值
+     */
+    private String delDirectory;
 
 }
