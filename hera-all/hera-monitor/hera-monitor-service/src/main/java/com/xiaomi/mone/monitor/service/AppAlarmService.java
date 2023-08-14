@@ -635,7 +635,6 @@ public class AppAlarmService {
 
                     ruleData.setAlertMembers(param.getAlertMembers());
                     ruleData.setAtMembers(param.getAtMembers());
-                    ruleData.setRemark(param.getStrategyDesc());
 
                     Result result = editAlarmRule(ruleData, alarmStrategy, appMonitor, param.getUser());
                     if(!result.isSuccess()){

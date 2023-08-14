@@ -36,6 +36,8 @@ public interface MilogAgentService {
 
     void publishIncrementDel(Long tailId, Long milogAppId, List<String> ips);
 
+    void delLogCollDirectoryByIp(Long tailId, String directory, List<String> ips);
+
     Result<String> agentOfflineBatch(MilogAgentIpParam agentIpParam);
 
     LogCollectMeta getLogCollectMetaFromManager(String ip);

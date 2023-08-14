@@ -1125,11 +1125,11 @@ public class AppMonitorService {
         return Result.success(rangeIps);
     }
 
-    public Long countByBaseInfoId(List<Integer> baseInfoIds){
-        return appMonitorDao.countByBaseInfoIds(baseInfoIds);
+    public Long countByBaseInfoId(List<Integer> baseInfoIds,String user){
+        return appMonitorDao.countByBaseInfoIds(baseInfoIds,user);
     }
 
-    public List<AppMonitor> searchByBaseInfoId(List<Integer> baseInfoIds,Integer page,Integer pageSize){
-        return appMonitorDao.getDataByBaseInfoIds(baseInfoIds,page,pageSize);
+    public List<AppMonitor> searchByBaseInfoId(List<Integer> baseInfoIds,String user,Integer page,Integer pageSize){
+        return appMonitorDao.getDataByBaseInfoIds(baseInfoIds,user,page,pageSize);
     }
 }

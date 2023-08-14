@@ -1,7 +1,5 @@
 package com.xiaomi.youpin.docean.common;
 
-import org.springframework.util.StringUtils;
-
 /**
  * @author goodjava@qq.com
  */

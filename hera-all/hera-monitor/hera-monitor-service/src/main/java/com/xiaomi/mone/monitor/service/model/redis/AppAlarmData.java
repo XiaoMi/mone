@@ -36,6 +36,8 @@ public class AppAlarmData {
     private volatile Integer redisSlowNum;
     private volatile Integer esExceptionNum;
     private volatile Integer esSlowNum;
+    private volatile Integer hBaseExceptionNum;
+    private volatile Integer hBaseSlowNum;
     private volatile Integer dubboCSlowQueryNum;
     private volatile Integer dubboProviderSlowQueryNum;
 

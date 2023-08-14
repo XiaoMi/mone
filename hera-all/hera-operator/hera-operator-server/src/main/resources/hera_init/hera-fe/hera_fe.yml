@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: hera-nginx-fe-container
-        image: herahub/opensource-pub:hera-fe-v5
+        image: herahub/opensource-pub:hera-fe-v1-release
         resources:
           limits:
             cpu: '500m'

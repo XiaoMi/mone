@@ -2,8 +2,8 @@ package com.xiaomi.mone.app.service.impl;
 
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.app.api.model.project.group.HeraProjectGroupDataRequest;
+import com.xiaomi.mone.app.api.model.project.group.HeraProjectGroupModel;
 import com.xiaomi.mone.app.api.model.project.group.ProjectGroupTreeNode;
-import com.xiaomi.mone.app.api.service.HeraAppService;
 import com.xiaomi.mone.app.api.service.HeraProjectGroupServiceApi;
 import com.xiaomi.mone.app.common.Result;
 import com.xiaomi.mone.app.service.project.group.HeraProjectGroupService;
@@ -30,8 +30,8 @@ public class HeraPojectGroupServiceImpl implements HeraProjectGroupServiceApi {
     }
 
     @Override
-    public Result<ProjectGroupTreeNode> getTreeByUser(String user, Integer type, String projectGroupName) {
-        return projectGroupService.getTreeByUser(user,type,projectGroupName);
+    public Result<ProjectGroupTreeNode> getTreeByUser(String user, Integer type, String projectGroupName,Integer level) {
+        return projectGroupService.getTreeByUser(user,type,projectGroupName,level);
     }
 
     @Override
@@ -53,4 +53,10 @@ public class HeraPojectGroupServiceImpl implements HeraProjectGroupServiceApi {
     public Result delete(Integer id) {
         return projectGroupService.delete(id);
     }
+
+    @Override
+    public Result<List<HeraProjectGroupModel>> searchChildGroups(String user, Integer groupType, Integer projectGroupId, Integer page, Integer pageSize){
+        return projectGroupService.searchChildGroups(user,groupType,projectGroupId,page,pageSize);
+    }
+
 }

@@ -26,6 +26,8 @@ public class HeraProjectGroupModel implements Serializable {
 
     private Integer status;
 
+    private Integer level;
+
     private Date createTime;
 
     private Date updateTime;

@@ -24,14 +24,16 @@ import com.xiaomi.mone.log.manager.model.pojo.MilogAnalyseGraphDO;
 import com.xiaomi.mone.log.manager.model.pojo.MilogLogStoreDO;
 import com.xiaomi.mone.log.manager.model.vo.LogAnalyseDataPreQuery;
 import com.xiaomi.mone.log.manager.model.vo.LogAnalyseDataQuery;
+import com.xiaomi.mone.log.manager.model.vo.LogQuery;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionService;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionServiceFactory;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.plugin.es.EsService;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.core.TimeValue;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 
@@ -54,6 +56,13 @@ public class AnalyseLog {
     @Resource
     private AggrCalcu aggrCalcu;
 
+    private CommonExtensionService commonExtensionService;
+
+    public void init() {
+        commonExtensionService = CommonExtensionServiceFactory.getCommonExtensionService();
+    }
+
+
     public LogAnalyseDataDTO getData(LogAnalyseDataPreQuery query) throws IOException {
         return getData(query.getStoreId(), query.getFieldName(), query.getTypeCode(), query.getGraphParam(), query.getStartTime(), query.getEndTime());
     }
@@ -69,12 +78,15 @@ public class AnalyseLog {
         }
         MilogLogStoreDO logStore = logstoreDao.queryById(storeId);
         EsService esService = esCluster.getEsService(logStore.getEsClusterId());
-        String esIndex = logStore.getEsIndex();
+        String esIndex = commonExtensionService.getSearchIndex(logStore.getId(), logStore.getEsIndex());
 
         // 过滤条件
-        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-        boolQueryBuilder.filter(QueryBuilders.rangeQuery("timestamp").from(startTime).to(endTime - 1000));
-        boolQueryBuilder.filter(QueryBuilders.termQuery("logstore", logStore.getLogstoreName()));
+        LogQuery logQuery = new LogQuery();
+        logQuery.setStoreId(logStore.getId());
+        logQuery.setStartTime(startTime);
+        logQuery.setEndTime(endTime - 1000);
+        logQuery.setLogstore(logStore.getLogstoreName());
+        BoolQueryBuilder boolQueryBuilder = commonExtensionService.commonRangeQuery(logQuery);
 
         AggregationBuilder aggrs = aggrCalcu.getAggr(new CalcuAggrParam(graphType, graphParam, fieldName, startTime, endTime));
         if (aggrs == null) {

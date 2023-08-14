@@ -43,6 +43,7 @@ public class RocketMQSerivce {
 
     private String[] topics = new String[]{
             "hera_app_operate",
+            "hera_app_modify_notice_open",
             "hera_app_ip_change",
             "hear_log_message_compensate",
             "mone_hera_staging_trace_etl_server",
@@ -99,4 +100,5 @@ public class RocketMQSerivce {
             throw new RuntimeException(e);
         }
     }
+
 }

@@ -19,34 +19,13 @@ spec:
       imagePullSecrets:
       - name: mione-opensource-credential
       containers:
-      - image: herahub/opensource-pub:hera-demo-server-v1
+      - image: herahub/opensource-pub:hera-demo-server-v1-release
         name: hera-demo-server
         env:
-          - name: host.ip
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: status.podIP
-          - name: node.ip
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: status.hostIP
-          - name: MIONE_LOG_PATH
-            value: /home/work/log/hera-demo-server
-          - name: mione.app.name
+          - name: MIONE_PROJECT_NAME
             value: 1-hera-demo-server
-          - name: TESLA_HOST
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: status.podIP
-          - name: hera.buildin.k8s
-            value: '1'
           - name: MIONE_PROJECT_ENV_NAME
             value: dev
-          - name: JAVAAGENT_PROMETHEUS_PORT
-            value: '55433'
           - name: MIONE_PROJECT_ENV_ID
             value: '1'
         ports:
@@ -65,6 +44,9 @@ spec:
 
       - name: log-agent
         image: herahub/opensource-pub:log-agent-v1
+        env:
+          - name: nacosAddr
+            value: nacos.hera-namespace:80
         volumeMounts:
         - mountPath: "/home/work/log"
           name: log-path

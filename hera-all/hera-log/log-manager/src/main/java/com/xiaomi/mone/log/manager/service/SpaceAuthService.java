@@ -66,4 +66,14 @@ public interface SpaceAuthService {
      * @return
      */
     Result updateSpaceTpc(MilogSpaceParam param, String account);
+
+    /**
+     * add member
+     *
+     * @param spaceId
+     * @param userAccount
+     * @param userType
+     * @param memberCode
+     */
+    void addSpaceMember(Long spaceId, String userAccount, Integer userType, Integer memberCode);
 }

@@ -148,9 +148,10 @@ public class OpenApiTest {
 
     private OpenAiClient client() {
 //        Proxy proxy = new Proxy(Proxy.Type.SOCKS, new InetSocketAddress(proxyAddr, 65522));
+        String key = System.getenv("open_api_key");
         HttpLoggingInterceptor httpLoggingInterceptor = new HttpLoggingInterceptor(new OpenAILogger());
         OpenAiClient openAiClient = OpenAiClient.builder()
-                .apiKey(System.getenv("open_api_key"))
+                .apiKey(key)
                 .connectTimeout(50)
                 .writeTimeout(50)
                 .readTimeout(50)
@@ -283,6 +284,23 @@ public class OpenApiTest {
     public void test4() {
         String key = System.getenv("open_api_key");
         OpenAiClient client = OpenaiCall.client(key, null);
+        ChatCompletionResponse res = client.chatCompletion(Lists.newArrayList(
+                Message.builder().role(Message.Role.USER).content("我给你一些内容,请你记住,然后我会开始提问 a=1 b=2").build(),
+                Message.builder().role(Message.Role.ASSISTANT).content("好的").build(),
+                Message.builder().role(Message.Role.USER).content("c=a+b\n\n c=?").build()
+        ));
+        System.out.println(res.getChoices().get(0).getMessage().getContent());
+    }
+
+    /**
+     * 测试使用Azure的openai
+     * POST https://b2c-mione-gpt35.openai.azure.com/openai/deployments/gpt-35-turbo/completions?api-version=2023-05-15
+     */
+    @Test
+    public void testAzure() {
+        String key = System.getenv("AZURE_OPENAI_KEY");
+        String endpoint = System.getenv("AZURE_OPENAI_COM_ENDPOINT");
+        OpenAiClient client = OpenaiCall.client(key, endpoint);
         ChatCompletionResponse res = client.chatCompletion(Lists.newArrayList(
                 Message.builder().role(Message.Role.USER).content("我给你一些内容,请你记住,然后我会开始提问 a=1 b=2").build(),
                 Message.builder().role(Message.Role.ASSISTANT).content("好的").build(),
@@ -530,7 +548,8 @@ public class OpenApiTest {
     @Test
     public void testListOpenaiModels() {
         OpenAiClient openAiClient = client();
-        openAiClient.models().stream().filter(it -> it.getID().contains("code")).forEach(it -> {
+//        openAiClient.models().stream().filter(it->it.getID().contains("gpt")).forEach(it -> {
+        openAiClient.models().stream().forEach(it -> {
             System.out.println(it.getID());
         });
     }

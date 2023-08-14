@@ -110,7 +110,7 @@ public class MailTest {
 
     @Test
     public void testSingle() {
-        mailUtil.sendMailTOSingleUser("xxx@qq.com", "test", "test1");
+        mailUtil.sendMailTOSingleUser("xx@qq.com", "test", "test1");
     }
 
     @Test

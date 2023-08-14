@@ -52,10 +52,9 @@ public class PathUtils {
     private static final String NEO_FILE_PREFIX = "/home/work/logs/neo-logs/(";
     public static final String SPLIT_VERTICAL_LINE = "\\|";
 
-    public static final String SEPARATOR = FileSystems.getDefault().getSeparator();
+//    public static final String SEPARATOR = FileSystems.getDefault().getSeparator();
 
-//    public static final String SEPARATOR = "/";
-
+    public static final String SEPARATOR = "/";
 
     /**
      * 用于解析倒数第二级目录通配符 example:/home/work/log/xapp/ * /server.log

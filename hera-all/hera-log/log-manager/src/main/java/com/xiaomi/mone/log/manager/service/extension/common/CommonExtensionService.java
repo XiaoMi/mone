@@ -15,6 +15,10 @@
  */
 package com.xiaomi.mone.log.manager.service.extension.common;
 
+import com.xiaomi.mone.log.manager.model.vo.LogQuery;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.TermQueryBuilder;
+
 /**
  * @author wtt
  * @version 1.0
@@ -33,4 +37,12 @@ public interface CommonExtensionService {
     String getMachineRoomName(String machineRoomEn);
 
     boolean middlewareEnumValid(Integer type);
+
+    BoolQueryBuilder commonRangeQuery(LogQuery logQuery);
+
+    TermQueryBuilder multipleChooseBuilder(Long storeId, String chooseVal);
+
+    String queryDateHistogramField(Long storeId);
+
+    String getSearchIndex(Long logStoreId, String esIndex);
 }
