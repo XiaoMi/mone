@@ -172,10 +172,39 @@ public class EsQueryTest {
     public void test14(){
 //        String str = "linenumber< 128";
 //        String str = "level in [\"ERROR\",\"INFO\"]";
-        String str = "level in [ERROR,INFO]";
+        String str = "message : \"send mq message, topic: kfs-return-visit-result\"";
         String esQuery = EsQueryUtils.getEsQuery(str);
         System.out.println(esQuery);
     }
 
 
+    @Test
+    public void test15(){
+//        String str = "linenumber< 128";
+//        String str = "level in [\"ERROR\",\"INFO\"]";
+        String str = "message : \"~send mq message, topic: kfs-return-visit-result\"";
+        SearchSourceBuilder esQuery = EsQueryUtils.getSearchSourceBuilder(str);
+        System.out.println(esQuery.query());
+    }
+
+    @Test
+    public void test16(){
+        String str = "230727436807811 and not \"OfflineOrderServiceImpl.orderOfflineList\"";
+        SearchSourceBuilder esQuery = EsQueryUtils.getSearchSourceBuilder(str);
+        System.out.println(esQuery.query());
+    }
+
+    @Test
+    public void test17(){
+        String str = "230727436807811 not \"OfflineOrderServiceImpl.orderOfflineList\"";
+        SearchSourceBuilder esQuery = EsQueryUtils.getSearchSourceBuilder(str);
+        System.out.println(esQuery.query());
+    }
+
+    @Test
+    public void test18(){
+        String str = "linenumber:39058 and logip:10.126.248.201 and tail:\"matrix_dk-system-api-c4\"";
+        SearchSourceBuilder esQuery = EsQueryUtils.getSearchSourceBuilder(str);
+        System.out.println(esQuery.query());
+    }
 }
