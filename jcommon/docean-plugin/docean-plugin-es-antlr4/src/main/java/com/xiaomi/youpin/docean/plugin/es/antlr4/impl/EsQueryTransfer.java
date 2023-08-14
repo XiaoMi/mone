@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
  */
 public class EsQueryTransfer implements EsQueryListener {
 
-    public static final String DOUBLE_QUOTATION_MARK_SEPARATOR = "\"";
+    public static final String DOUBLE_QUOTATION_MARK_SEPARATOR = "~";
 
     private ParseTreeProperty<SearchSourceBuilder> treeProperty = new ParseTreeProperty<>();
 
@@ -91,9 +91,15 @@ public class EsQueryTransfer implements EsQueryListener {
     public void exitNotExpression(EsQueryParser.NotExpressionContext ctx) {
         //获取到括号内得表达式
         //注：“非”逻辑不论包含多少参数都需加上括号，NOT(a:1)、 NOT(a : 1 AND b : 2)
-        ParseTree tree = ctx.children.get(1);
-        SearchSourceBuilder sourceBuilder = MergeUtils.MergeNot(treeProperty.get(tree));
-        treeProperty.put(ctx, sourceBuilder);
+        if ("not".equals(ctx.children.get(0).getText()) || "NOT".equals(ctx.children.get(0).getText())) {
+            ParseTree tree = ctx.children.get(1);
+            SearchSourceBuilder sourceBuilder = MergeUtils.MergeNot(treeProperty.get(tree));
+            treeProperty.put(ctx, sourceBuilder);
+        } else {
+            ParseTree tree = ctx.children.get(2);
+            SearchSourceBuilder sourceBuilder = MergeUtils.MergeNot(treeProperty.get(tree));
+            treeProperty.put(ctx, MergeUtils.MergeAnd(treeProperty.get(ctx.children.get(0)), sourceBuilder));
+        }
     }
 
     @Override
@@ -211,9 +217,9 @@ public class EsQueryTransfer implements EsQueryListener {
                 }
                 default: {
                     if (value.getValue().toString().startsWith(DOUBLE_QUOTATION_MARK_SEPARATOR)) {
-                        boolQueryBuilder.must(QueryBuilders.matchPhraseQuery(param, value.getValue()));
+                        boolQueryBuilder.must(QueryBuilders.matchQuery(param, value.getValue().toString().substring(1)));
                     } else {
-                        boolQueryBuilder.must(QueryBuilders.matchQuery(param, value.getValue()));
+                        boolQueryBuilder.must(QueryBuilders.matchPhraseQuery(param, value.getValue()));
                     }
                 }
             }
