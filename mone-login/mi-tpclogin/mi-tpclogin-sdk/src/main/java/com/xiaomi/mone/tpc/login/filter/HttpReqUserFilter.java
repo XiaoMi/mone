@@ -50,11 +50,6 @@ public class HttpReqUserFilter implements Filter {
             tokenFilter = new AuthTokenFilter();
             tokenFilter.init(filterConfig);
         }
-        boolean openHermes = Boolean.parseBoolean(filterConfig.getInitParameter(ConstUtil.openHermes));
-        if (openHermes) {
-            hermesFilter = new AuthHermesFilter();
-            hermesFilter.init(filterConfig);
-        }
     }
 
     @Override
@@ -66,13 +61,12 @@ public class HttpReqUserFilter implements Filter {
                 mockAcc = "test";
             }
             String mockAccType = ((HttpServletRequest)var1).getHeader("userType");
-            UserTypeEnum userType = UserTypeEnum.getEnum(mockAccType);
-            if (userType == null) {
-                userType = UserTypeEnum.CAS_TYPE;
+            if (StringUtils.isBlank(mockAccType)) {
+                mockAccType = UserTypeEnum.CAS_TYPE.getCode() + "";
             }
             try {
                 AuthUserVo authUserVo = new AuthUserVo();
-                authUserVo.setUserType(userType.getCode());
+                authUserVo.setUserType(Integer.parseInt(mockAccType));
                 authUserVo.setAccount(mockAcc);
                 authUserVo.setName(mockAcc);
                 UserUtil.setUser(authUserVo);

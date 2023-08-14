@@ -1,12 +1,11 @@
 package com.xiaomi.mone.tpc.login;
 
 import com.alibaba.nacos.api.config.annotation.NacosValue;
-import com.xiaomi.mone.tpc.login.common.enums.UserTypeEnum;
 import com.xiaomi.mone.tpc.login.common.vo.AuthAccountVo;
+import com.xiaomi.mone.tpc.login.enums.UserTypeEnum;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 import com.xiaomi.mone.tpc.util.TokenUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -22,7 +21,7 @@ import java.util.Map;
 @Component
 public class FeiShuLoginMgr extends LoginMgr {
 
-    @NacosValue("${feishu.client_id:''}")
+    @NacosValue("${feishu.client_id:}")
     private String clientId;
     @NacosValue("${feishu.client_secret:''}")
     private String clientSecret;
@@ -70,24 +69,16 @@ public class FeiShuLoginMgr extends LoginMgr {
             headers.add("Authorization", "Bearer " + responseMap.get("access_token"));
             HttpEntity<Map> entity = new HttpEntity<>(headers);
             ResponseEntity<Map> responseEntity = restTemplate.exchange(getUserUrl(), HttpMethod.GET, entity, Map.class);
-            log.info("userInfo.gatlab={}", responseEntity);
-            String account = null;
-            if (responseEntity.getBody().get("user_id") != null) {
-                account = responseEntity.getBody().get("user_id").toString();
-            }
-            if (responseEntity.getBody().get("open_id") != null) {
-                account = responseEntity.getBody().get("open_id").toString();
-            }
-            if (responseEntity.getBody() == null || StringUtils.isBlank(account)) {
-                log.error("feishu没有拿到user_id字段， responseEntity={}", responseEntity);
+            log.info("userInfo.feishu={}", responseEntity);
+            if (responseEntity.getBody().get("email") == null) {
+                log.error("feishu没有拿到email字段， responseEntity={}", responseEntity);
                 return null;
             }
+            String account = responseEntity.getBody().get("email").toString();
             AuthUserVo userVo = new AuthUserVo();
-            if (responseEntity.getBody().get("email") != null) {
-                userVo.setEmail(responseEntity.getBody().get("email").toString());
-            }
+            userVo.setEmail(account);
             userVo.setExprTime(3600 * 48);
-            userVo.setUserType(UserTypeEnum.GITLAB_TYPE.getCode());
+            userVo.setUserType(UserTypeEnum.FEISHU_TYPE.getCode());
             userVo.setAccount(account);
             userVo.setToken(TokenUtil.createToken(userVo.getExprTime(), userVo.getAccount(), userVo.getUserType()));
             if (responseEntity.getBody().get("avatar_url") != null) {

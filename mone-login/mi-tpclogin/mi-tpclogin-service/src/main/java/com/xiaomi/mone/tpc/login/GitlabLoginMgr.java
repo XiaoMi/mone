@@ -1,8 +1,8 @@
 package com.xiaomi.mone.tpc.login;
 
 import com.alibaba.nacos.api.config.annotation.NacosValue;
-import com.xiaomi.mone.tpc.login.common.enums.UserTypeEnum;
 import com.xiaomi.mone.tpc.login.common.vo.AuthAccountVo;
+import com.xiaomi.mone.tpc.login.enums.UserTypeEnum;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 import com.xiaomi.mone.tpc.util.TokenUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +22,7 @@ import java.util.Map;
 @Component
 public class GitlabLoginMgr extends LoginMgr {
 
-    @NacosValue("${gitlab.client_id:''}")
+    @NacosValue("${gitlab.client_id:}")
     private String clientId;
     @NacosValue("${gitlab.client_secret:''}")
     private String clientSecret;

@@ -1,6 +1,6 @@
 package com.xiaomi.mone.tpc.login.vo;
 
-import com.xiaomi.mone.tpc.login.enums.UserTypeEnum;
+import com.xiaomi.mone.tpc.login.util.UserUtil;
 
 public class AuthUserVo {
     private String account;
@@ -131,12 +131,7 @@ public class AuthUserVo {
     }
 
     public String genFullAccount() {
-        if (UserTypeEnum.CAS_TYPE.getCode().equals(userType)) {
-            return account;
-        }
-        StringBuilder fullAccount = new StringBuilder();
-        fullAccount.append(account).append("#").append(userType);
-        return fullAccount.toString();
+        return UserUtil.getFullAccount(account, userType);
     }
 
     @Override

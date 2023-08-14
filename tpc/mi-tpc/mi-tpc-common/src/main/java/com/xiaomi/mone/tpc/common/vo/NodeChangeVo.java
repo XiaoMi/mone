@@ -16,4 +16,6 @@ public class NodeChangeVo {
     private int appType = 0;
     private int delete = 0;
     private List<String> joinedMembers;
+    private Integer iamTreeId;
+    private Integer iamTreeType;
 }
