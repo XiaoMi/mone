@@ -344,16 +344,6 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
         return existConfig;
     }
 
-    public static void main(String[] args) {
-
-        List<LogtailConfig> logTailConfigs = Lists.newArrayList();
-        LogtailConfig config = new LogtailConfig();
-        config.setLogtailId(2L);
-        logTailConfigs.add(config);
-        logTailConfigs.removeIf(logtailConfig -> logtailConfig.getLogtailId().equals(2L));
-        System.out.println(logTailConfigs);
-    }
-
     public SinkConfig assembleSinkConfig(Long storeId, Long tailId, String motorRoomEn) {
         SinkConfig sinkConfig = new SinkConfig();
         sinkConfig.setLogstoreId(storeId);
