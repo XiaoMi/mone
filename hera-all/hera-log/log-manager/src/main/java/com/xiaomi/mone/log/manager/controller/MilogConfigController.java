@@ -35,7 +35,6 @@ import com.xiaomi.mone.log.manager.service.impl.LogTailServiceImpl;
 import com.xiaomi.youpin.docean.anno.Controller;
 import com.xiaomi.youpin.docean.anno.RequestMapping;
 import com.xiaomi.youpin.docean.anno.RequestParam;
-import com.xiaomi.youpin.docean.mvc.MvcContext;
 
 import javax.annotation.Resource;
 import java.io.IOException;
@@ -75,15 +74,16 @@ public class MilogConfigController {
     }
 
     @RequestMapping(path = "/milog/space/getall", method = "get")
-    public Result<List<MapDTO<String, Long>>> getMilogSpaces() {
-        return logSpaceService.getMilogSpaces();
+    public Result<List<MapDTO<String, Long>>> getMilogSpaces(@RequestParam("tenantId") Long tenantId) {
+        return logSpaceService.getMilogSpaces(tenantId);
     }
 
     @RequestMapping(path = "/milog/space/getbypage", method = "get")
-    public Result<PageInfo<MilogSpaceDTO>> getMilogSpaceByPage(MvcContext context, @RequestParam(value = "spaceName") String spaceName,
+    public Result<PageInfo<MilogSpaceDTO>> getMilogSpaceByPage(@RequestParam(value = "spaceName") String spaceName,
+                                                               @RequestParam("tenantId") Long tenantId,
                                                                @RequestParam("page") Integer page,
                                                                @RequestParam("pageSize") Integer pageSize) {
-        return logSpaceService.getMilogSpaceByPage(spaceName, page, pageSize);
+        return logSpaceService.getMilogSpaceByPage(spaceName, tenantId, page, pageSize);
     }
 
     @RequestMapping(path = "/milog/space/delete", method = "get")

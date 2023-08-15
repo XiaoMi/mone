@@ -29,7 +29,7 @@ public class StatementMatchParseFactoryTest {
 
     @Test
     public void testGetStatementMatchParse() {
-        String message = " not http or 808";
+        String message = "message: \"send mq message, topic: kfs-return-visit-result\"";
         String keys = "timestamp:1,level:1,traceId:1,threadName:1,className:1,line:1,methodName:1,appName:2,message:1,tail:3,uri:2,remote:2,delay:2,code:2,parent:2,gwid:2,app:2,path:2,linenumber:3,logsource:3,logip:3";
         String columnTypes = "date,keyword,keyword,text,text,keyword,keyword,text,keyword,keyword,text,ip,text,text,text,text,text,text,long,text,keyword";
         List<String> keyList = getKeyColonPrefix(keys);

@@ -293,8 +293,10 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
                         .findFirst()
                         .orElse(null);
                 if (null != currentStoreConfig) {
-                    List<LogtailConfig> logtailConfigs = currentStoreConfig.getLogtailConfigs();
-                    logtailConfigs.removeIf(logtailConfig -> logtailConfig.getLogtailId().equals(tailId));
+                    List<LogtailConfig> logTailConfigs = currentStoreConfig.getLogtailConfigs();
+                    if (null != tailId && CollectionUtils.isNotEmpty(logTailConfigs) &&
+                            logTailConfigs.stream().anyMatch(config -> config.getLogtailId().equals(tailId)))
+                        logTailConfigs.removeIf(logtailConfig -> logtailConfig.getLogtailId().equals(tailId));
                 }
             }
         }
@@ -340,6 +342,16 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
             }
         }
         return existConfig;
+    }
+
+    public static void main(String[] args) {
+
+        List<LogtailConfig> logTailConfigs = Lists.newArrayList();
+        LogtailConfig config = new LogtailConfig();
+        config.setLogtailId(2L);
+        logTailConfigs.add(config);
+        logTailConfigs.removeIf(logtailConfig -> logtailConfig.getLogtailId().equals(2L));
+        System.out.println(logTailConfigs);
     }
 
     public SinkConfig assembleSinkConfig(Long storeId, Long tailId, String motorRoomEn) {

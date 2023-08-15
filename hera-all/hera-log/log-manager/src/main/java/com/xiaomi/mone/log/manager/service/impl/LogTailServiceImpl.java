@@ -427,7 +427,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
             Integer appType = param.getAppType();
             boolean processSwitch = tailExtensionService.bindPostProcessSwitch(param.getStoreId());
             if (tailExtensionService.bindMqResourceSwitch(appType) || processSwitch) {
-                if (!processSwitch) {
+                if (null != param.getMiddlewareConfigId()) {
                     tailExtensionService.defaultBindingAppTailConfigRel(param.getId(), param.getMilogAppId(), null == param.getMiddlewareConfigId() ? logStoreDO.getMqResourceId() : param.getMiddlewareConfigId(), param.getTopicName(), param.getBatchSendSize());
                 }
                 try {

@@ -144,26 +144,29 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
      */
     @Override
     public Result<LogDTO> logQuery(LogQuery logQuery) {
-        String logInfo = String.format("queryText:%s, user:%s, logQuery:%s", logQuery.getFullTextSearch(), MoneUserContext.getCurrentUser().getUser(), logQuery);
-        log.info("query simple param:{}", logInfo);
+//        String logInfo = String.format("queryText:%s, user:%s, logQuery:%s", logQuery.getFullTextSearch(), MoneUserContext.getCurrentUser().getUser(), logQuery);
+//        log.info("query simple param:{}", logInfo);
 
         StopWatch stopWatch = new StopWatch("HERA-LOG-QUERY");
         SearchRequest searchRequest = null;
         try {
-            MilogLogStoreDO milogLogstoreDO = logstoreDao.queryById(logQuery.getStoreId());
-            if (milogLogstoreDO == null) {
-                log.warn("[EsDataService.logQuery] not find logStore:[{}]", logQuery.getLogstore());
-                return Result.failParam("找不到[" + logQuery.getLogstore() + "]对应的数据");
-            }
-            EsService esService = esCluster.getEsService(milogLogstoreDO.getEsClusterId());
-            String esIndexName = commonExtensionService.getSearchIndex(logQuery.getStoreId(), milogLogstoreDO.getEsIndex());
+//            MilogLogStoreDO milogLogstoreDO = logstoreDao.queryById(logQuery.getStoreId());
+//            if (milogLogstoreDO == null) {
+//                log.warn("[EsDataService.logQuery] not find logStore:[{}]", logQuery.getLogstore());
+//                return Result.failParam("找不到[" + logQuery.getLogstore() + "]对应的数据");
+//            }
+//            EsService esService = esCluster.getEsService(milogLogstoreDO.getEsClusterId());
+            EsService esService = new EsService("zjydw.api.es.srv:80","4244b7014a5c44fea63bea711c7697fe", "es_zjy_log", "default");
+
+//            String esIndexName = commonExtensionService.getSearchIndex(logQuery.getStoreId(), milogLogstoreDO.getEsIndex());
+            String esIndexName = "prod_matrix_hera_index_90255";
             if (esService == null || StringUtils.isEmpty(esIndexName)) {
                 log.warn("[EsDataService.logQuery] logStore:[{}]配置异常", logQuery.getLogstore());
                 return Result.failParam("logStore配置异常");
             }
-            List<String> keyList = getKeyList(milogLogstoreDO.getKeyList(), milogLogstoreDO.getColumnTypeList());
+            List<String> keyList = getKeyList("timestamp:1,appName:1,hostName:2,level:1,logId:2,traceId:1,threadName:1,className:1,message:1,logstore:3,logsource:3,mqtopic:3,mqtag:3,logip:3,tail:3,linenumber:3", "date,text,text,keyword,text,keyword,text,text,text,keyword,keyword,keyword,keyword,keyword,keyword,long");
             // 构建查询参数
-            BoolQueryBuilder boolQueryBuilder = searchLog.getQueryBuilder(logQuery, getKeyColonPrefix(milogLogstoreDO.getKeyList()));
+            BoolQueryBuilder boolQueryBuilder = searchLog.getQueryBuilder(logQuery, getKeyColonPrefix("timestamp:1,appName:1,hostName:2,level:1,logId:2,traceId:1,threadName:1,className:1,message:1,logstore:3,logsource:3,mqtopic:3,mqtag:3,logip:3,tail:3,linenumber:3"));
             SearchSourceBuilder builder = assembleSearchSourceBuilder(logQuery, keyList, boolQueryBuilder);
 
             searchRequest = new SearchRequest(new String[]{esIndexName}, builder);
