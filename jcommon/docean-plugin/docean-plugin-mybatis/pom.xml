@@ -25,7 +25,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>docean-plugin-mybatis</artifactId>
-    <version>1.4.5-SNAPSHOT</version>
+    <version>1.4.5-SNAPSHOT-cby</version>
 
     <dependencies>
 

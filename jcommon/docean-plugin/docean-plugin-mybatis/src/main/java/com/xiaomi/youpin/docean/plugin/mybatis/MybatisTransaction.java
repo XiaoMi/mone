@@ -98,7 +98,7 @@ public class MybatisTransaction implements Transaction {
     @Override
     public void close() throws SQLException {
         if (connection != null) {
-            resetAutoCommit();
+            connection.rollback();
             if (log.isDebugEnabled()) {
                 log.debug("Closing JDBC Connection [" + connection + "]");
             }
@@ -142,7 +142,7 @@ public class MybatisTransaction implements Transaction {
                 connection.setTransactionIsolation(level.getLevel());
             }
             setDesiredAutoCommit(autoCommmit);
-            SidecarTransactionContext.connectionnMap.put(this.xid.getId(),connection);
+            SidecarTransactionContext.connectionnMap.put(this.xid.getId(), connection);
             return;
         }
 
