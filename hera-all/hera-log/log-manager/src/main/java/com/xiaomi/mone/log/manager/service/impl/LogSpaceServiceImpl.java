@@ -139,6 +139,7 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
      * @param id
      * @return
      */
+    @Override
     public Result<MilogSpaceDTO> getMilogSpaceById(Long id) {
         if (null == id) {
             return new Result<>(CommonError.ParamsError.getCode(), "id不能为空");
@@ -167,13 +168,15 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
      * @param pagesize
      * @return
      */
-    public Result<PageInfo<MilogSpaceDTO>> getMilogSpaceByPage(String spaceName, Integer page, Integer pagesize) {
+    @Override
+    public Result<PageInfo<MilogSpaceDTO>> getMilogSpaceByPage(String spaceName, Long tenantId, Integer page, Integer pagesize) {
         com.xiaomi.youpin.infra.rpc.Result<PageDataVo<NodeVo>> userPermSpacePage = spaceAuthService.getUserPermSpace(spaceName, page, pagesize);
         PageInfo<MilogSpaceDTO> spaceDTOPageInfo = MilogSpaceConvert.INSTANCE.fromTpcPage(userPermSpacePage.getData());
         return Result.success(spaceDTOPageInfo);
     }
 
-    public Result<List<MapDTO<String, Long>>> getMilogSpaces() {
+    @Override
+    public Result<List<MapDTO<String, Long>>> getMilogSpaces(Long tenantId) {
         int pageNum = 1;
         List<MapDTO<String, Long>> ret = new ArrayList<>();
         List<NodeVo> nodeVos = new ArrayList<>();
@@ -210,6 +213,7 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
      * @return
      */
     @Transactional
+    @Override
     public Result<String> updateMilogSpace(MilogSpaceParam param) {
         if (null == param || StringUtils.isBlank(param.getSpaceName())) {
             return new Result<>(CommonError.ParamsError.getCode(), "参数错误", "");
@@ -240,6 +244,7 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
     }
 
     @Transactional
+    @Override
     public Result<String> deleteMilogSpace(Long id) {
         if (null == id) {
             return new Result<>(CommonError.ParamsError.getCode(), "id不能为空", "");
@@ -270,7 +275,7 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
         }
     }
 
-
+    @Override
     public Result<String> setSpacePermission(Long spaceId, String permDeptIds) {
         if (spaceId == null || StringUtils.isEmpty(permDeptIds)) {
             return Result.fail(CommonError.ParamsError);
@@ -284,6 +289,7 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
         return update ? Result.success() : Result.fail(CommonError.UnknownError);
     }
 
+    @Override
     public MilogSpaceDO buildMiLogSpace(MilogSpaceParam cmd, String appCreator) {
         MilogSpaceDO ms = new MilogSpaceDO();
         wrapMilogSpace(ms, cmd, ProjectSourceEnum.ONE_SOURCE.getSource());

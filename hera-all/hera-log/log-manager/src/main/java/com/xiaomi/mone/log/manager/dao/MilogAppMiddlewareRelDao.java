@@ -56,6 +56,12 @@ public class MilogAppMiddlewareRelDao {
                 .and("tail_id", EQUAL_OPERATE, middlewareRel.getTailId());
         List<MilogAppMiddlewareRel> middlewareRels = dao.query(MilogAppMiddlewareRel.class, cnd);
         if (CollectionUtils.isEmpty(middlewareRels)) {
+            List<MilogAppMiddlewareRel> appMiddlewareRels = queryByCondition(middlewareRel.getMilogAppId(), null, middlewareRel.getTailId());
+            if (null != appMiddlewareRels) {
+                for (MilogAppMiddlewareRel appMiddlewareRel : appMiddlewareRels) {
+                    delete(appMiddlewareRel.getId());
+                }
+            }
             dao.insert(middlewareRel);
         } else {
             MilogAppMiddlewareRel rel = middlewareRels.get(middlewareRels.size() - 1);

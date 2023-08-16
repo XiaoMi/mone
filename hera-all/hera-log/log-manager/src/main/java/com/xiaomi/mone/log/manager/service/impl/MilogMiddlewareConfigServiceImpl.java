@@ -30,6 +30,7 @@ import com.xiaomi.mone.log.api.model.vo.EsIndexVo;
 import com.xiaomi.mone.log.api.model.vo.ResourceInfo;
 import com.xiaomi.mone.log.api.model.vo.ResourceUserSimple;
 import com.xiaomi.mone.log.api.model.vo.ValueKeyObj;
+import com.xiaomi.mone.log.common.Constant;
 import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.manager.bootstrap.EsPlugin;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
@@ -521,6 +522,9 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
      */
     private void updateMqResourceLabel(MilogMiddlewareConfig milogMiddlewareConfig) {
         List<String> labels = milogMiddlewareConfig.getLabels();
+        if (Constant.DEFAULT_OPERATOR.equals(milogMiddlewareConfig.getUpdater())) {
+            return;
+        }
         List<String> newLabels = generateResourceLabels(milogMiddlewareConfig.getUpdater(), labels);
         milogMiddlewareConfig.setLabels(newLabels);
         milogMiddlewareConfigDao.updateMiddlewareConfig(milogMiddlewareConfig);

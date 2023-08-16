@@ -50,10 +50,10 @@ public interface LogSpaceService {
      * @param pagesize
      * @return
      */
-    Result<PageInfo<MilogSpaceDTO>> getMilogSpaceByPage(String spaceName, Integer page, Integer pagesize);
+    Result<PageInfo<MilogSpaceDTO>> getMilogSpaceByPage(String spaceName, Long tenantId, Integer page, Integer pagesize);
 
 
-    Result<List<MapDTO<String, Long>>> getMilogSpaces();
+    Result<List<MapDTO<String, Long>>> getMilogSpaces(Long tenantId);
 
     /**
      * 更新
