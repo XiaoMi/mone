@@ -142,7 +142,7 @@ public class MybatisTransaction implements Transaction {
                 connection.setTransactionIsolation(level.getLevel());
             }
             setDesiredAutoCommit(autoCommmit);
-            SidecarTransactionContext.connectionnMap.put(this.xid.getId(),connection);
+            SidecarTransactionContext.connectionnMap.put(this.xid.getId(), connection);
             return;
         }
 
