@@ -3,6 +3,8 @@ package com.xiaomi.mone.monitor.bo;
 import lombok.Data;
 import lombok.ToString;
 
+import java.util.List;
+
 /**
  * 
  * @author zhanggaofeng1
@@ -11,7 +13,8 @@ import lombok.ToString;
 @Data
 public class AlarmStrategyParam {
 
-   private int id;
+   private Integer id;
+   private List<Integer> ids;
    private Integer appId;
    private String appName;
    private Integer strategyType;

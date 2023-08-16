@@ -244,6 +244,27 @@ public class AlarmStrategyService {
         return Result.success(null);
     }
 
+    public Result batchDeleteStrategy(String user, List<Integer> strategyIds){
+
+        if(CollectionUtils.isEmpty(strategyIds)){
+            log.error("batchDeleteStrategy param error!user:{} strategyIds:{}",user,strategyIds);
+            return Result.success();
+        }
+
+        for(Integer id : strategyIds){
+            try {
+                Result result = deleteById(user, id);
+                if(!result.isSuccess()){
+                    log.error("deleteById fail! user : {}, id : {} ,result : {}",user,id,new Gson().toJson(result));
+                }
+            } catch (Exception e) {
+                log.error("deleteById error!user:" + user + ",strategyId:" + id + ",exception:" + e.getMessage(),e);
+            }
+        }
+
+        return Result.success();
+
+    }
 
     public Result deleteById(String user, Integer strategyId) {
         if (strategyId == null) {

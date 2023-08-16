@@ -11,7 +11,7 @@ public enum InterfaceMetricTypes {
     slow_times("slow_times"),
     time_cost("time_cost"),
     basic("basic"),
-    jvm_runtime("jvm_runtimeJVM运行时"),
+    jvm_runtime("jvm_runtime"),
     application("application"),
     mione_container("mione_container"),
     container("container"),
