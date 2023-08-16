@@ -23,15 +23,6 @@ import java.util.stream.Collectors;
 @Service
 public class DefaultNacosEnvIpFetch implements EnvIpFetch {
 
-    private static final String SERVER_PREFIX = "prometheus_server";
-
-    private static final String ENV_NAME = "env_name";
-
-    private static final String ENV_ID = "env_id";
-
-    private static final String DEFAULT_EVN_ID = "0";
-    private static final String DEFAULT_EVN_NAME = "default_env";
-
     @Resource
     private NacosNaming nacosNaming;
 
