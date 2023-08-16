@@ -98,7 +98,7 @@ public class MybatisTransaction implements Transaction {
     @Override
     public void close() throws SQLException {
         if (connection != null) {
-            connection.rollback();
+            resetAutoCommit();
             if (log.isDebugEnabled()) {
                 log.debug("Closing JDBC Connection [" + connection + "]");
             }
