@@ -17,28 +17,14 @@ spec:
     spec:
       containers:
       - name: hera-demo-client-container
-        image: herahub/opensource-pub:hera-demo-client-v2
+        image: herahub/opensource-pub:hera-demo-client-v1-release
         env:
-          - name: host.ip
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: status.podIP
-          - name: node.ip
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: status.hostIP
           - name: MIONE_PROJECT_ENV_NAME
             value: dev
-          - name: PROMETHEUS_PORT
-            value: '55423'
           - name: MIONE_PROJECT_ENV_ID
             value: '2'
-          - name: APPLICATION
-            value: 2_hera_demo_client
-          - name: serverEnv
-            value: dev
+          - name: MIONE_PROJECT_NAME
+            value: 2-hera-demo-client
         volumeMounts:
           - name: log-path
             mountPath: /home/work/log
@@ -48,7 +34,7 @@ spec:
             memory: 2Gi
 
       - name: log-agent
-        image: herahub/opensource-pub:log-agent-v3
+        image: herahub/opensource-pub:log-agent-v1-release
         volumeMounts:
         - mountPath: "/home/work/log"
           name: log-path

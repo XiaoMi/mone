@@ -27,6 +27,7 @@ public enum AlarmPresetMetrics {
     k8s_mem_resource_use_rate("k8s_mem_resource_use_rate","k8s容器内存资源利用率（1d）", MetricsUnit.UNIT_PERCENT, SendAlertGroupKey.APP_INSTANCE, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic, BasicUrlType.cn_grafana_ip_1d, "11"),
 
     k8s_cpu_avg_use_rate("k8s_cpu_avg_use_rate","k8s容器CPU平均使用率", MetricsUnit.UNIT_PERCENT, SendAlertGroupKey.APP_INSTANCE, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic, BasicUrlType.cn_grafana_ip_1d, "2"),
+//    k8s_pod_restart_times("k8s_pod_restart_times","k8s-POD重启", MetricsUnit.UNIT_COUNT, SendAlertGroupKey.APP_INSTANCE, AlarmStrategyType.SYSTEM,InterfaceMetricTypes.basic, true,BasicUrlType.cn_grafana_ip_1d, "2"),
 
     /**
      * jvm指标
@@ -145,6 +146,18 @@ public enum AlarmPresetMetrics {
         this.strategyType = strategyType;
         this.metricType = metricType;
         this.hideValueConfig = hideValueConfig;
+    }
+
+    AlarmPresetMetrics(String code, String message, MetricsUnit unit, SendAlertGroupKey groupKey, AlarmStrategyType strategyType, InterfaceMetricTypes metricType, Boolean hideValueConfig, BasicUrlType basicUrlType, String viewPanel){
+        this.code = code;
+        this.message = message;
+        this.unit = unit;
+        this.groupKey = groupKey;
+        this.strategyType = strategyType;
+        this.metricType = metricType;
+        this.hideValueConfig = hideValueConfig;
+        this.basicUrlType = basicUrlType;
+        this.viewPanel = viewPanel;
     }
 
     AlarmPresetMetrics(String code, String message, String errorMetric, String totalMetric, String slowQueryMetric, String timeCostMetric, MetricsUnit unit, SendAlertGroupKey groupKey, AlarmStrategyType strategyType, InterfaceMetricTypes metricType){

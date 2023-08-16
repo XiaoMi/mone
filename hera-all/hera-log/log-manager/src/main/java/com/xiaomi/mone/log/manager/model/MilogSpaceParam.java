@@ -20,6 +20,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.List;
+
 /**
  * @author milog
  */
@@ -33,4 +35,8 @@ public class MilogSpaceParam {
     private String spaceName;
     private String description;
     private String permDeptId;
+    /**
+     * 管理员,取第一个人为创建人,其它的为管理员
+     */
+    private List<String> admins;
 }

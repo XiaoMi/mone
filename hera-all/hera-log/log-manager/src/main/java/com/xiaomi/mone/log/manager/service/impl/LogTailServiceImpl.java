@@ -25,6 +25,7 @@ import com.xiaomi.mone.log.common.Result;
 import com.xiaomi.mone.log.exception.CommonError;
 import com.xiaomi.mone.log.manager.common.Utils;
 import com.xiaomi.mone.log.manager.common.context.MoneUserContext;
+import com.xiaomi.mone.log.manager.common.utils.ManagerUtil;
 import com.xiaomi.mone.log.manager.common.validation.HeraConfigValid;
 import com.xiaomi.mone.log.manager.dao.*;
 import com.xiaomi.mone.log.manager.mapper.MilogLogSearchSaveMapper;
@@ -160,38 +161,6 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
                 .build();
     }
 
-    private String verifyMilogLogtailParam(LogTailParam param) {
-        if (null == param.getMilogAppId()) {
-            return "选择的应用不能为空";
-        }
-        if (null == param || StringUtils.isBlank(param.getLogPath())) {
-            return "路径不能为空";
-        }
-        if (null == param.getSpaceId()) {
-            return "spaceId不能为空";
-        }
-        if (null == param.getStoreId()) {
-            return "storeId不能为空";
-        }
-        String path = param.getLogPath();
-        MilogLogStoreDO milogLogstoreDO = logStoreDao.queryById(param.getStoreId());
-        if (Objects.equals("staging", serverType) && !MachineRegionEnum.CN_MACHINE.getEn().equals(milogLogstoreDO.getMachineRoom())) {
-            return "测试环境只支持大陆机房，其它机房由于网络问题不支持";
-        }
-        if (path.equals("/home/work/log/") || path.equals("/home/work/log") || path.startsWith("/home/work/log") && path.split("/").length < 4) {
-            return "日志路径错误，请确认后提交";
-        }
-        if (Objects.equals(ProjectTypeEnum.MIONE_TYPE.getCode(), param.getAppType())) {
-            // 校验同名日志文件
-            List<MilogLogTailDo> appLogTails = milogLogtailDao.queryByMilogAppAndEnv(param.getMilogAppId(), param.getEnvId());
-            for (int i = 0; i < appLogTails.size() && null == param.getId(); i++) {
-                if (appLogTails.get(i).getLogPath().equals(param.getLogPath())) {
-                    return "当前部署环境该文件" + param.getLogPath() + "已配置日志采集,别名为：" + appLogTails.get(i).getTail();
-                }
-            }
-        }
-        return "";
-    }
 
     private void handleMqTailParam(LogTailParam param) {
         if (CollectionUtils.isEmpty(param.getMiddlewareConfig())) {
@@ -415,7 +384,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         }
 
         // 参数校验
-        String errorMsg = verifyMilogLogtailParam(param);
+        String errorMsg = heraConfigValid.verifyLogTailParam(param);
         if (StringUtils.isNotEmpty(errorMsg)) {
             return new Result<>(CommonError.ParamsError.getCode(), errorMsg);
         }
@@ -480,37 +449,46 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         return heraAppService.queryById(param.getMilogAppId());
     }
 
-    public void compareChangeDelIps(Long tailId, Long milogAppId, List<String> newIps, List<String> oldIps) {
+    public void compareChangeDelIps(Long tailId, String logPath, List<String> newIps, List<String> oldIps) {
         if (CollectionUtils.isEmpty(oldIps)) {
             return;
         }
         List<String> delIps = oldIps.stream().filter(s -> !newIps.contains(s)).collect(Collectors.toList());
         if (CollectionUtils.isNotEmpty(delIps)) {
-            milogAgentService.publishIncrementDel(tailId, milogAppId, delIps);
+            milogAgentService.delLogCollDirectoryByIp(tailId, ManagerUtil.getPhysicsDirectory(logPath), delIps);
         }
     }
 
     @Override
-    public Result<Void> deleteMilogLogTail(Long id) {
+    public Result<Void> deleteLogTail(Long id) {
         MilogLogTailDo milogLogtailDo = milogLogtailDao.queryById(id);
         if (null == milogLogtailDo) {
             return new Result<>(CommonError.ParamsError.getCode(), "tail 不存在");
         }
+        //Precondition check before deletion.
+        String validMsg = tailExtensionService.deleteCheckProcessPre(id);
+        if (StringUtils.isNotEmpty(validMsg)) {
+            return new Result<>(CommonError.ParamsError.getCode(), validMsg);
+        }
+
+        deleteRemoteConfig(id, milogLogtailDo);
+
         if (milogLogtailDao.deleteMilogLogtail(id)) {
             MilogLogStoreDO logStoreDO = logStoreDao.queryById(milogLogtailDo.getStoreId());
             if (storeExtensionService.isNeedSendMsgType(logStoreDO.getLogType())) {
                 CompletableFuture.runAsync(() -> sendMessageOnDelete(milogLogtailDo, logStoreDO));
             }
-            CompletableFuture.runAsync(() -> sendMessageOnDelete(milogLogtailDo, logStoreDO));
             tailExtensionService.logTailDelPostProcess(logStoreDO, milogLogtailDo);
-            MilogLogStoreDO storeDO = logStoreDao.queryById(milogLogtailDo.getStoreId());
-            logTailService.deleteConfigRemote(storeDO.getSpaceId(), id, storeDO.getMachineRoom(), LogStructureEnum.TAIL);
-
             return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage());
         } else {
-            log.warn("[MilogLogtailService.deleteMilogLogtail] delete MilogLogtail err,id:{}", id);
+            log.warn("[LogTailService.deleteMilogLogtail] delete MilogLogtail err,id:{}", id);
             return new Result<>(CommonError.UnknownError.getCode(), CommonError.UnknownError.getMessage());
         }
+    }
+
+    private void deleteRemoteConfig(Long id, MilogLogTailDo milogLogtailDo) {
+        MilogLogStoreDO storeDO = logStoreDao.queryById(milogLogtailDo.getStoreId());
+        logTailService.deleteConfigRemote(storeDO.getSpaceId(), id, storeDO.getMachineRoom(), LogStructureEnum.TAIL);
     }
 
     @Override
@@ -536,8 +514,19 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
         return Result.success(queryAllApps(appName, type));
     }
 
+    /**
+     * 全量只返回200条
+     *
+     * @param appName
+     * @param type
+     * @return
+     */
     private List<MapDTO> queryAllApps(String appName, Integer type) {
-        return queryAppInfo(appName, type);
+        List<MapDTO> mapDTOS = queryAppInfo(appName, type);
+//        if (StringUtils.isEmpty(appName)) {
+//            return mapDTOS.stream().limit(200).collect(Collectors.toList());
+//        }
+        return mapDTOS;
     }
 
     private List<MapDTO> queryAppInfo(String appName, Integer type) {
@@ -614,13 +603,13 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
                     milogLogtailDo.setIps(newIps);
                     milogLogtailDao.update(milogLogtailDo);
                     //2.发送消息
-                    compareIpToHandle(exitIps, newIps);
+                    compareIpToHandle(milogLogtailDo.getId(), milogLogtailDo.getLogPath(), exitIps, newIps);
                 }
             }
         }
     }
 
-    public void compareIpToHandle(List<String> exitIps, List<String> newIps) {
+    public void compareIpToHandle(Long tailId, String logPath, List<String> exitIps, List<String> newIps) {
         List<String> expandIps = newIps.stream().filter(ip -> !exitIps.contains(ip)).collect(Collectors.toList());
         if (CollectionUtils.isNotEmpty(expandIps)) {
             // 扩容---同步配置
@@ -629,9 +618,9 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
                 milogStreamService.configIssueStream(ip);
             });
         }
-        List<String> narrowIps = exitIps.stream().filter(ip -> !newIps.contains(ip)).collect(Collectors.toList());
-        if (CollectionUtils.isNotEmpty(narrowIps)) {
-            // 缩容--不用管
+        List<String> stopFileCollIps = exitIps.stream().filter(ip -> !newIps.contains(ip)).collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(stopFileCollIps)) {
+            milogAgentService.delLogCollDirectoryByIp(tailId, ManagerUtil.getPhysicsDirectory(logPath), stopFileCollIps);
         }
     }
 
@@ -888,7 +877,7 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
                     milogLogtailDo.setUpdater(DEFAULT_JOB_OPERATOR);
                     milogLogtailDao.updateIps(milogLogtailDo);
                     //2.发送消息
-                    compareIpToHandle(exitIps, newIps);
+                    compareIpToHandle(milogLogtailDo.getId(), milogLogtailDo.getLogPath(), exitIps, newIps);
                 }
             }
         }

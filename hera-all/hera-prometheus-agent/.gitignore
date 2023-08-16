@@ -23,3 +23,5 @@ nohup*
 *.pyc
 .sbtserver*
 log.path_IS_UNDEFINED/
+license-list
+licenseCheck.sh

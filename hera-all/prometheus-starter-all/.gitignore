@@ -22,3 +22,5 @@ nohup*
 *.swp
 *.pyc
 .sbtserver*
+license-list
+licenseCheck.sh

@@ -18,6 +18,7 @@ package com.xiaomi.mone.log.agent.channel.memory;
 import com.xiaomi.mone.log.agent.input.Input;
 import com.xiaomi.mone.log.api.model.msg.LineMessage;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 import java.util.List;
@@ -93,6 +94,7 @@ public class ChannelMemory implements Serializable {
     }
 
     @Data
+    @EqualsAndHashCode
     public static class UnixFileNode {
         private Long st_dev;
         private Long st_ino;

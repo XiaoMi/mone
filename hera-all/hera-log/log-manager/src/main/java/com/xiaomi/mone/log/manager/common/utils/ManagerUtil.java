@@ -77,4 +77,19 @@ public class ManagerUtil {
         nacosConfig.init();
         nacosConfig.forEach((k, v) -> Config.ins().set(k, v));
     }
+
+
+    /**
+     * Get the second last layer of the path.
+     *
+     * @param logPath
+     * @return
+     */
+    public static String getPhysicsDirectory(String logPath) {
+        String[] splitPath = StringUtils.split(logPath, "/");
+        if (splitPath.length > 2) {
+            return splitPath[splitPath.length - 2].trim();
+        }
+        return logPath.trim();
+    }
 }

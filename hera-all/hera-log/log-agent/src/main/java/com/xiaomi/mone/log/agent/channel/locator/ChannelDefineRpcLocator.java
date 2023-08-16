@@ -22,11 +22,10 @@ import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
 import com.xiaomi.mone.log.agent.channel.ChannelDefine;
 import com.xiaomi.mone.log.agent.channel.conf.AgentTailConf;
 import com.xiaomi.mone.log.agent.factory.OutPutServiceFactory;
-import com.xiaomi.mone.log.agent.output.Output;
 import com.xiaomi.mone.log.agent.filter.FilterTrans;
 import com.xiaomi.mone.log.agent.input.AppLogInput;
+import com.xiaomi.mone.log.agent.output.Output;
 import com.xiaomi.mone.log.api.enums.LogTypeEnum;
-import com.xiaomi.mone.log.api.enums.MiddlewareEnum;
 import com.xiaomi.mone.log.api.model.meta.*;
 import com.xiaomi.mone.log.common.Constant;
 import com.xiaomi.mone.log.utils.NetUtil;
@@ -41,7 +40,8 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static com.xiaomi.mone.log.common.Constant.*;
+import static com.xiaomi.mone.log.common.Constant.GSON;
+import static com.xiaomi.mone.log.common.Constant.SYMBOL_COLON;
 
 /**
  * rpc方式从log-manager获取channel元数据
@@ -112,6 +112,7 @@ public class ChannelDefineRpcLocator implements ChannelDefineLocator {
             channelDefine.setPodNames(logCollectMeta.getPodNames());
             channelDefine.setSingleMetaData(logCollectMeta.getSingleMetaData());
             channelDefine.setPodType(logCollectMeta.getPodType());
+            channelDefine.setDelDirectory(logCollectMeta.getDelDirectory());
 
             List<LogPattern> logPatternList = appLogMeta.getLogPatternList();
             for (LogPattern logPattern : logPatternList) {
@@ -135,6 +136,7 @@ public class ChannelDefineRpcLocator implements ChannelDefineLocator {
                     filters = filterDefines.stream().map(FilterTrans::filterConfTrans).collect(Collectors.toList());
                 }
                 cloneChannelDefine.setIps(logPattern.getIps());
+                cloneChannelDefine.setIpDirectoryRel(logPattern.getIpDirectoryRel());
                 cloneChannelDefine.setFilters(filters);
                 cloneChannelDefine.setInput(input);
                 cloneChannelDefine.setOutput(output);

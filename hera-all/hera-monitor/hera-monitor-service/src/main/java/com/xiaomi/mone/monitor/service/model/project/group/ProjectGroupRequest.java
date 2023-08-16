@@ -16,6 +16,7 @@ public class ProjectGroupRequest implements Serializable {
     Integer projectGroupId;
     String projectGroupName;
     String appName;
+    Integer level;
     Integer page;
     Integer pageSize;
 

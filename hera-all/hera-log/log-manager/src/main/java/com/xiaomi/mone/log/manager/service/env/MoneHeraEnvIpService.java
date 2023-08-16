@@ -16,12 +16,14 @@
 package com.xiaomi.mone.log.manager.service.env;
 
 import com.google.common.collect.Lists;
+import com.xiaomi.mone.log.api.model.meta.LogPattern;
 import com.xiaomi.mone.log.manager.model.vo.LogAgentListBo;
 import com.xiaomi.youpin.docean.anno.Service;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Map;
+
+import static com.xiaomi.mone.log.manager.common.utils.ManagerUtil.getPhysicsDirectory;
 
 /**
  * @author wtt
@@ -43,10 +45,7 @@ public class MoneHeraEnvIpService implements HeraEnvIpService {
     }
 
     @Override
-    public List<String> queryActualIps(List<String> ips, String agentIp) {
-        if (StringUtils.isNotBlank(agentIp)) {
-            return Lists.newArrayList(agentIp);
-        }
-        return ips;
+    public List<LogPattern.IPRel> queryActualIps(List<String> ips, String agentIp, String logPath) {
+        return Lists.newArrayList(LogPattern.IPRel.builder().key(getPhysicsDirectory(logPath)).ip(agentIp).build());
     }
 }

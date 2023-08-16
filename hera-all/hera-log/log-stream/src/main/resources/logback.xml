@@ -17,7 +17,8 @@
 
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <FileNamePattern>${log.path}/server.log.%d{yyyy-MM-dd-HH}</FileNamePattern>
-            <maxHistory>148</maxHistory>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
+            <maxHistory>168</maxHistory>
         </rollingPolicy>
 <!--        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">-->
 <!--            <fileNamePattern>${log.path}/server.log.%d{yyyy-MM-dd-HH}-%i</fileNamePattern>-->

@@ -79,6 +79,12 @@
             <groupId>run.mone</groupId>
             <artifactId>dubbo</artifactId>
             <version>2.7.12-mone-v8-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.alibaba.spring</groupId>
+                    <artifactId>spring-context-support</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
@@ -99,9 +105,9 @@
         </dependency>
         <!-- nacos -->
         <dependency>
-            <groupId>com.alibaba.spring</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>spring-context-support</artifactId>
-            <version>1.0.10</version>
+            <version>1.0.10-mone-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>run.mone</groupId>
@@ -150,6 +156,10 @@
                 <exclusion>
                     <groupId>com.fasterxml.jackson.core</groupId>
                     <artifactId>jackson-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.alibaba.spring</groupId>
+                    <artifactId>spring-context-support</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>

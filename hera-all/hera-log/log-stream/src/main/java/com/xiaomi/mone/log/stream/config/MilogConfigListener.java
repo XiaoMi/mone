@@ -15,6 +15,8 @@
  */
 package com.xiaomi.mone.log.stream.config;
 
+import cn.hutool.core.thread.ExecutorBuilder;
+import cn.hutool.core.thread.ThreadFactoryBuilder;
 import com.alibaba.nacos.api.config.listener.Listener;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
@@ -35,6 +37,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
@@ -245,12 +249,19 @@ public class MilogConfigListener {
         oldLogTailConfigMap.put(logTailConfig.getLogtailId(), logTailConfig);
     }
 
+    private static ExecutorService THREAD_POOL = ExecutorBuilder.create()
+            .setCorePoolSize(5)//初始池大小
+            .setMaxPoolSize(30) //最大池大小
+            .setWorkQueue(new LinkedBlockingQueue<>(1000))//最大等待数为100
+            .setThreadFactory(ThreadFactoryBuilder.create().setNamePrefix("Listen-tail-Pool-").build())// 线程池命名
+            .build();
+
     @NotNull
     private Listener getListener(String dataId, MilogSpaceData milogSpaceData) {
         return new Listener() {
             @Override
             public Executor getExecutor() {
-                return null;
+                return THREAD_POOL;
             }
 
             @Override

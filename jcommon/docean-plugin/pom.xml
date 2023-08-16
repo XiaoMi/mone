@@ -48,6 +48,7 @@
         <module>docean-plugin-http-server</module>
         <module>docean-plugin-classloader</module>
         <module>docean-plugin-mesh-dubbo</module>
+        <module>docean-plugin-es-antlr4</module>
     </modules>
 
     <dependencies>

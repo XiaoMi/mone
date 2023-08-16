@@ -16,6 +16,7 @@
 package com.xiaomi.mone.log.parse;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.parser.Feature;
 import com.xiaomi.mone.log.utils.IndexUtils;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -87,7 +88,7 @@ public class JsonLogParser implements LogParser {
 
     @Override
     public List<String> parseLogData(String logData) throws Exception {
-        Map<String, Object> rawLogMap = JSON.parseObject(logData);
+        Map<String, Object> rawLogMap = JSON.parseObject(logData, Feature.OrderedField);
         List<String> parsedLogs = new ArrayList<>();
         for (String key : rawLogMap.keySet()) {
             parsedLogs.add(rawLogMap.getOrDefault(key, "").toString());

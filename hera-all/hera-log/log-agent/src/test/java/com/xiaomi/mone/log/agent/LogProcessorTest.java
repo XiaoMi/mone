@@ -16,9 +16,13 @@
 package com.xiaomi.mone.log.agent;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author wtt
@@ -30,12 +34,48 @@ import java.util.concurrent.CompletableFuture;
 public class LogProcessorTest {
 
     @Test
-    public void test(){
+    public void test() {
         CompletableFuture<Void> reFreshFuture = CompletableFuture.runAsync(() -> {
         });
         CompletableFuture<Void> stopChannelFuture = CompletableFuture.runAsync(() -> {
         });
         CompletableFuture.allOf(reFreshFuture, stopChannelFuture).join();
         log.info("config change success");
+    }
+
+    @Test
+    public void testFile() {
+        String defaultMonitorPath = "/home/work/log/";
+        long size = FileUtils.listFiles(new File(defaultMonitorPath), null, true).size();
+        log.info("result:{}", size);
+    }
+
+    /**
+     * 停止不了的
+     *
+     * @throws IOException
+     */
+    @Test
+    public void testComplete() throws IOException {
+        String defaultMonitorPath = "/home/work/log/";
+        int result = 0;
+        CompletableFuture<Integer> fileSizeFuture = CompletableFuture
+                .supplyAsync(() -> {
+                    try {
+                        TimeUnit.SECONDS.sleep(30);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                    log.info("testes");
+                    return FileUtils.listFiles(new File(defaultMonitorPath), null, true).size();
+                });
+        try {
+            result = fileSizeFuture.get(1, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            log.info("getDefaultFileSize error", e);
+        }
+        log.info("result:{}", result);
+        fileSizeFuture.complete(1);
+        System.in.read();
     }
 }

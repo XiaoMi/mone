@@ -17,15 +17,18 @@ package com.xiaomi.mone.log.manager.domain;
 
 import com.xiaomi.mone.log.manager.model.vo.LogContextQuery;
 import com.xiaomi.mone.log.manager.model.vo.LogQuery;
-import com.xiaomi.mone.log.manager.service.statement.StatementMatchParseFactory;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionService;
+import com.xiaomi.mone.log.manager.service.extension.common.CommonExtensionServiceFactory;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.common.DoceanConfig;
 import com.xiaomi.youpin.docean.common.StringUtils;
+import com.xiaomi.youpin.docean.plugin.es.antlr4.common.util.EsQueryUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.builder.SearchSourceBuilder;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -38,6 +41,13 @@ import java.util.List;
 @Slf4j
 @Service
 public class SearchLog {
+
+    private CommonExtensionService commonExtensionService;
+
+    public void init() {
+        commonExtensionService = CommonExtensionServiceFactory.getCommonExtensionService();
+    }
+
     /**
      * 获取查询参数
      *
@@ -51,23 +61,22 @@ public class SearchLog {
             return boolQueryBuilder;
         }
 //        BoolQueryBuilder fullTextSearchBuilder = buildTextQuery(logQuery.getFullTextSearch(), keyList);
-        BoolQueryBuilder fullTextSearchBuilder = StatementMatchParseFactory.getStatementMatchParseQueryBuilder(logQuery.getFullTextSearch(), keyList);
-        if (fullTextSearchBuilder != null) {
-            boolQueryBuilder.filter(fullTextSearchBuilder);
+//        BoolQueryBuilder fullTextSearchBuilder = StatementMatchParseFactory.getStatementMatchParseQueryBuilder(logQuery.getFullTextSearch(), keyList);
+        SearchSourceBuilder searchSourceBuilder = EsQueryUtils.getSearchSourceBuilder(logQuery.getFullTextSearch());
+        if (searchSourceBuilder != null) {
+            boolQueryBuilder.filter(searchSourceBuilder.query());
         }
         return boolQueryBuilder;
     }
 
-    private static BoolQueryBuilder buildCommonBuilder(LogQuery logQuery) {
-        BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
-        boolQueryBuilder.filter(QueryBuilders.rangeQuery("timestamp").from(logQuery.getStartTime()).to(logQuery.getEndTime()));
-        boolQueryBuilder.filter(QueryBuilders.termQuery("logstore", logQuery.getLogstore()));
+    private BoolQueryBuilder buildCommonBuilder(LogQuery logQuery) {
+        BoolQueryBuilder boolQueryBuilder = commonExtensionService.commonRangeQuery(logQuery);
         // 支持tail多选
         if (StringUtils.isNotEmpty(logQuery.getTail())) {
             BoolQueryBuilder tailQueryBuilder = QueryBuilders.boolQuery();
             String[] tailLimitArray = logQuery.getTail().split(",");
             for (String tail : tailLimitArray) {
-                tailQueryBuilder.should(QueryBuilders.termQuery("tail", tail));
+                tailQueryBuilder.should(commonExtensionService.multipleChooseBuilder(logQuery.getStoreId(), tail));
             }
             tailQueryBuilder.minimumShouldMatch(1);
             boolQueryBuilder.filter(tailQueryBuilder);
@@ -96,9 +105,9 @@ public class SearchLog {
             return boolQueryBuilder;
         }
 //        BoolQueryBuilder fullTextSearchBuilder = buildTextQuery(logQuery.getFullTextSearch(), keyList);
-        BoolQueryBuilder fullTextSearchBuilder = StatementMatchParseFactory.getStatementMatchParseQueryBuilder(logQuery.getFullTextSearch(), keyList);
-        if (fullTextSearchBuilder != null) {
-            boolQueryBuilder.filter(fullTextSearchBuilder);
+        SearchSourceBuilder searchSourceBuilder = EsQueryUtils.getSearchSourceBuilder(logQuery.getFullTextSearch());
+        if (searchSourceBuilder != null) {
+            boolQueryBuilder.filter(searchSourceBuilder.query());
         }
         return boolQueryBuilder;
     }
@@ -283,14 +292,7 @@ public class SearchLog {
     }
 
     public boolean isLegalParam(LogContextQuery param) {
-        if (param == null
-                || StringUtils.isEmpty(param.getLogstore())
-                || StringUtils.isEmpty(param.getIp())
-                || StringUtils.isEmpty(param.getFileName())
-                || param.getLineNumber() == null
-                || StringUtils.isEmpty(param.getTimestamp())
-                || param.getType() == null
-                || param.getPageSize() == null) {
+        if (param == null || StringUtils.isEmpty(param.getLogstore()) || StringUtils.isEmpty(param.getIp()) || StringUtils.isEmpty(param.getFileName()) || param.getLineNumber() == null || StringUtils.isEmpty(param.getTimestamp()) || param.getType() == null || param.getPageSize() == null) {
             return false;
         }
         return true;

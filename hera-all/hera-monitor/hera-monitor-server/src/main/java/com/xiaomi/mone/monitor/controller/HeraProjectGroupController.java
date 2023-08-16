@@ -1,7 +1,9 @@
 package com.xiaomi.mone.monitor.controller;
 
+import com.google.gson.Gson;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.app.api.model.project.group.HeraProjectGroupDataRequest;
+import com.xiaomi.mone.app.api.model.project.group.HeraProjectGroupModel;
 import com.xiaomi.mone.app.api.model.project.group.ProjectGroupTreeNode;
 import com.xiaomi.mone.app.common.Result;
 import com.xiaomi.mone.app.enums.CommonError;
@@ -62,7 +64,7 @@ public class HeraProjectGroupController {
             return Result.fail(CommonError.ParamsError);
         }
 
-        log.info("getFullTree param : {}", param);
+        log.info("getTreeByUser param : {}", param);
 
         if(param.getGroupType() == null){
             log.error("getTreeByUser request param error! no group type found!");
@@ -114,7 +116,11 @@ public class HeraProjectGroupController {
             log.error("createProjectGroup request param error!param:{}",param);
             return Result.fail(CommonError.ParamsError);
         }
-        return projectGroupService.create(param);
+
+        Result<Integer> integerResult = projectGroupService.create(param);
+        log.info("createProjectGroup param : {}, result : {}", param,new Gson().toJson(integerResult));
+
+        return integerResult;
     }
 
     @ResponseBody
@@ -196,11 +202,13 @@ public class HeraProjectGroupController {
             return Result.fail(CommonError.ParamsError);
         }
 
+        param.setUser(userInfo.genFullAccount());
+
         return projectGroupService.getTreeByUser(param);
     }
 
     @ResponseBody
-    @PostMapping("/view/project_group/app")
+    @PostMapping("/view/project-group/apps")
     public Result<List<AppMonitor>> viewGroupApps(HttpServletRequest request, @RequestBody ProjectGroupRequest param) {
 
         AuthUserVo userInfo = UserUtil.getUser();
@@ -217,6 +225,31 @@ public class HeraProjectGroupController {
             return Result.fail(CommonError.ParamsError);
         }
         return projectGroupService.searchMyApps(param);
+    }
+
+    @ResponseBody
+    @PostMapping("/view/project-group/childs")
+    public Result<List<HeraProjectGroupModel>> searchChildGroups(HttpServletRequest request, @RequestBody ProjectGroupRequest param) {
+
+        AuthUserVo userInfo = UserUtil.getUser();
+        if (userInfo == null) {
+            return Result.fail(CommonError.UNAUTHORIZED);
+        }
+
+        String user = userInfo.genFullAccount();
+        param.setUser(user);
+        log.info("searchChildGroups param : {}", param);
+
+        if(param.getGroupType() == null){
+            log.error("searchChildGroups request param error! no group type found!");
+            return Result.fail(CommonError.ParamsError);
+        }
+
+        if(param.getProjectGroupId() == null){
+            log.error("searchChildGroups request param error! no projectGroupId found!");
+            return Result.fail(CommonError.ParamsError);
+        }
+        return projectGroupService.searchChildGroups(param);
     }
 }
 

@@ -16,6 +16,7 @@
 package com.xiaomi.mone.log.manager.user;
 
 import com.google.gson.annotations.SerializedName;
+import lombok.Builder;
 import lombok.Data;
 import lombok.ToString;
 
@@ -27,6 +28,7 @@ import lombok.ToString;
  */
 @Data
 @ToString
+@Builder
 public class MoneUser {
 
     /**

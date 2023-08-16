@@ -38,7 +38,7 @@ spec:
             type: ''
       containers:
         - name: cadvisor
-          image: herahub/opensource-pub:cadvisor-v0.42.0
+          image: herahub/opensource-pub:cadvisor-v1-release
           args:
             - '--port=5195'
             - '--housekeeping_interval=10s'

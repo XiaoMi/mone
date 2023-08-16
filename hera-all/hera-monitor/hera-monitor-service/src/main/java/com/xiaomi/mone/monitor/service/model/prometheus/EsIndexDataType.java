@@ -20,6 +20,7 @@ public enum EsIndexDataType {
     mq_consumer,
     mq_producer,
 
+    hbase,
     redis,
     oracle,
     mysql,

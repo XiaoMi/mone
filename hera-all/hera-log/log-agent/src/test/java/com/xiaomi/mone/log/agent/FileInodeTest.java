@@ -16,6 +16,8 @@
 package com.xiaomi.mone.log.agent;
 
 import com.google.common.collect.Lists;
+import com.xiaomi.mone.log.agent.channel.memory.ChannelMemory;
+import com.xiaomi.mone.log.agent.common.ChannelUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Test;
@@ -39,8 +41,14 @@ import java.util.Objects;
 public class FileInodeTest {
 
     @Test
+    public void testFileNode() {
+        ChannelMemory.UnixFileNode unixFileNode = ChannelUtil.buildUnixFileNode("/home/work/log/log-test/server.log");
+        log.info("result:{}", unixFileNode);
+    }
+
+    @Test
     public void test() {
-        File file = new File("/home/work/log/123/trace.log");
+        File file = new File("/home/work/log-test/server.log");
         try {
             BasicFileAttributeView basicview = Files.getFileAttributeView(file.toPath(), BasicFileAttributeView.class);
             BasicFileAttributes attr = basicview.readAttributes();
