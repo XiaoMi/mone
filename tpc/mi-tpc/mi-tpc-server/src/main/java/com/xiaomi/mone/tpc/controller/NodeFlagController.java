@@ -36,6 +36,13 @@ public class NodeFlagController {
         return nodeFlagService.list(param);
     }
 
+    @ArgCheck(needUser = false)
+    @RequestMapping(value = "/inner_list")
+    public ResultVo<PageDataVo<FlagVo>> innerList(@RequestBody FlagQryParam param) {
+        param.setType(FlagTypeEnum.NODE.getCode());
+        return nodeFlagService.list(param);
+    }
+
     @ArgCheck
     @RequestMapping(value = "/get")
     public ResultVo<FlagVo> get(@RequestBody FlagQryParam param) {
