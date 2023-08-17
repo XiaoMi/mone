@@ -32,6 +32,7 @@ import com.xiaomi.youpin.docean.listener.event.EventType;
 import com.xiaomi.youpin.docean.mvc.*;
 import com.xiaomi.youpin.docean.mvc.common.MvcConst;
 import com.xiaomi.youpin.docean.mvc.util.ExceptionUtil;
+import com.xiaomi.youpin.docean.mvc.util.Jump;
 import io.netty.handler.codec.http.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -183,12 +184,7 @@ public class Mvc {
                 }
                 // need to jump (302)
                 if (mr.getCode() == HttpResponseStatus.FOUND.code()) {
-                    FullHttpResponse response302 = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.FOUND);
-                    response302.headers().set(HttpHeaderNames.CONTENT_LENGTH, 0);
-                    response302.headers().set(HttpHeaderNames.CONNECTION, "keep-alive");
-                    response302.headers().set(HttpHeaderNames.LOCATION, mr.getData());
-                    HttpUtil.setKeepAlive(response302, true);
-                    response.getCtx().writeAndFlush(response302);
+                    Jump.jump(response,mr.getData());
                     return;
                 }
             }

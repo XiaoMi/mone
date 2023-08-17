@@ -17,10 +17,7 @@
 package com.xiaomi.youpin.docean.mvc;
 
 import com.xiaomi.youpin.docean.Ioc;
-import com.xiaomi.youpin.docean.common.Cons;
-import com.xiaomi.youpin.docean.common.DoceanVersion;
-import com.xiaomi.youpin.docean.common.NamedThreadFactory;
-import com.xiaomi.youpin.docean.common.NetUtils;
+import com.xiaomi.youpin.docean.common.*;
 import com.xiaomi.youpin.docean.config.HttpServerConfig;
 import com.xiaomi.youpin.docean.exception.DoceanException;
 import com.xiaomi.youpin.docean.mvc.upload.HttpUploadHandler;
@@ -41,6 +38,7 @@ import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
 import java.net.InetSocketAddress;
 import java.util.concurrent.CountDownLatch;
 
@@ -68,12 +66,26 @@ public class DoceanHttpServer {
         }
 
         if (this.config.isSsl()) {
-            try {
-                SelfSignedCertificate certificate = new SelfSignedCertificate("youpinfs.com");
-                sslContext = SslContextBuilder.forServer(certificate.certificate(), certificate.privateKey()).build();
-            } catch (Throwable ex) {
-                log.warn("error:{}", ex.getMessage());
-            }
+            Safe.runAndLog(() -> {
+                String domain = Ioc.ins().getBean("$ssl_domain");
+                boolean test = Boolean.valueOf(Ioc.ins().getBean("$ssl_self_sign", "true"));
+                if (test) {
+                    SelfSignedCertificate certificate = new SelfSignedCertificate(domain);
+                    sslContext = SslContextBuilder.forServer(certificate.certificate(), certificate.privateKey()).build();
+                } else {
+                    String certificate = Ioc.ins().getBean("$ssl_certificate");
+                    String privateKey = Ioc.ins().getBean("$ssl_cprivateKey");
+                    if (StringUtils.isEmpty(certificate) || StringUtils.isEmpty(privateKey)) {
+                        String message = "Please provide the file addresses of the public key and private key.";
+                        log.error(message);
+                        throw new RuntimeException(message);
+                    }
+
+                    File certChainFile = new File(certificate);
+                    File privateKeyFile = new File(privateKey);
+                    sslContext = SslContextBuilder.forServer(certChainFile, privateKeyFile).build();
+                }
+            });
         }
     }
 

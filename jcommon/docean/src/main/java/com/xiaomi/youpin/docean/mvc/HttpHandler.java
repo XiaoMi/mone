@@ -22,6 +22,7 @@ import com.xiaomi.youpin.docean.config.HttpServerConfig;
 import com.xiaomi.youpin.docean.mvc.util.RequestUtils;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.http.FullHttpRequest;
 import lombok.extern.slf4j.Slf4j;
 
@@ -69,6 +70,12 @@ public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        if (cause instanceof DecoderException) {
+            DecoderException ex = (DecoderException) cause;
+            if (ex.getMessage().contains("certificate_unknown")) {
+                return;
+            }
+        }
         log.info("remote address:{} error:{}", ctx.channel().remoteAddress(), cause.getMessage());
         if (null != ctx.channel() && ctx.channel().isOpen() && ctx.channel().isActive()) {
             ctx.channel().close();

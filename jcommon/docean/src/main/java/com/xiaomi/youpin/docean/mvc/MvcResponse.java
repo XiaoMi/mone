@@ -52,6 +52,7 @@ public class MvcResponse {
                 response.headers().set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
             }
             HttpSessionManager.setSessionId(context, HttpSessionManager.isHasSessionId(context.getHeaders()), response);
+            response.headers().set(HttpHeaderNames.CONNECTION, "close");
             ctx.writeAndFlush(response);
         }
     }
