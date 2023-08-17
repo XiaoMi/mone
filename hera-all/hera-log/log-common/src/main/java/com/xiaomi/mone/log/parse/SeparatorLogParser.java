@@ -59,7 +59,7 @@ public class SeparatorLogParser implements LogParser {
             String[] keysAndTypes = StringUtils.split(parserData.getKeyList(), ",");
             String[] values = StringUtils.split(parserData.getValueList(), ",");
 
-            int maxLength = Arrays.stream(values).filter(s -> !s.equals("-1")).collect(Collectors.toList()).size();
+            int maxLength = (int) Arrays.stream(values).filter(s -> !s.equals("-1")).count();
 
             List<String> logArray = parseLogData(logData, maxLength);
             if (0 == maxLength) {

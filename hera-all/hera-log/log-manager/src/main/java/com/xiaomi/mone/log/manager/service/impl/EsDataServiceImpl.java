@@ -156,6 +156,7 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
                 return Result.failParam("找不到[" + logQuery.getLogstore() + "]对应的数据");
             }
             EsService esService = esCluster.getEsService(milogLogstoreDO.getEsClusterId());
+
             String esIndexName = commonExtensionService.getSearchIndex(logQuery.getStoreId(), milogLogstoreDO.getEsIndex());
             if (esService == null || StringUtils.isEmpty(esIndexName)) {
                 log.warn("[EsDataService.logQuery] logStore:[{}]配置异常", logQuery.getLogstore());

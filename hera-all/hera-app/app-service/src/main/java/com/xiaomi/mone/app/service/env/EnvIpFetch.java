@@ -12,6 +12,16 @@ import java.util.List;
  */
 public interface EnvIpFetch {
 
+    String SERVER_PREFIX = "prometheus_server";
+
+    String ENV_NAME = "env_name";
+
+    String ENV_ID = "env_id";
+
+    String DEFAULT_EVN_ID = "0";
+    String DEFAULT_EVN_NAME = "default_env";
+
+
     HeraAppEnvVo fetch(Long appBaseId, Long appId, String appName) throws Exception;
 
     default HeraAppEnvVo buildHeraAppEnvVo(Long appBaseId, Long appId, String appName, List<HeraAppEnvVo.EnvVo> envVos) {

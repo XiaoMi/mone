@@ -56,4 +56,8 @@ public class InodeFileComparator extends DefaultFileComparator {
     public static void addFile(String filePath) {
         filePaths.add(filePath);
     }
+
+    public static void removeFile(String filePath) {
+        filePaths.remove(filePath);
+    }
 }

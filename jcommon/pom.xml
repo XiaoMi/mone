@@ -96,6 +96,7 @@
         <module>openai</module>
         <module>excel</module>
         <module>match</module>
+        <module>infra-common</module>
     </modules>
 
 
