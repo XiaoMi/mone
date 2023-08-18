@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
-import java.util.function.Function;
 
 /**
  * @author goodjava@qq.com
@@ -22,9 +21,6 @@ import java.util.function.Function;
  */
 @Slf4j
 public class MoneHttpClient {
-
-
-    private ConnectionPool pool = null;
 
     private OkHttpClient client = null;
 
@@ -34,18 +30,16 @@ public class MoneHttpClient {
     private ConcurrentHashMap<String, ConnectionPool> poolMap = new ConcurrentHashMap<>();
 
 
-    public MoneHttpClient(int maxIdleConnections, int timeout, int poolNum) {
+    public MoneHttpClient(int timeout, int poolNum) {
         this.poolNum = poolNum;
-        pool = new ConnectionPool(maxIdleConnections, 4, TimeUnit.MINUTES);
         client = new OkHttpClient.Builder()
-                .connectionPool(pool)
                 .eventListenerFactory(PrintingEventListener.FACTORY)
                 .callTimeout(timeout, TimeUnit.MILLISECONDS)
                 .build();
     }
 
     public String info() {
-        return "connectionCount:" + pool.connectionCount() + ",idleConnectionCount:" + pool.idleConnectionCount();
+        return "poolNum:" + poolNum;
     }
 
 

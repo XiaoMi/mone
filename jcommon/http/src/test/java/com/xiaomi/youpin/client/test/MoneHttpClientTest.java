@@ -31,11 +31,11 @@ public class MoneHttpClientTest {
         Stopwatch sw = Stopwatch.createStarted();
 //        String url = "http://10.225.177.190:80/api/z/oss/hi";
         String url = "http://127.0.0.1:8999/a";
-        MoneHttpClient client = new MoneHttpClient(10, 10000, 5);
-        IntStream.range(0, 1).forEach(i -> {
+        MoneHttpClient client = new MoneHttpClient(10000, 5);
+        IntStream.range(0, 10000).parallel().forEach(i -> {
 //            String res = client.get(url + "/" + i, ImmutableMap.of("connection","close"), 200000);
             Call call = client.getCall("a:" + i % 5, "get", url + "/" + i, ImmutableMap.of(), null, 10000);
-            new Thread(()->{
+            new Thread(() -> {
                 try {
                     System.out.println("cancel");
                     TimeUnit.SECONDS.sleep(4);
@@ -59,7 +59,7 @@ public class MoneHttpClientTest {
     public void testPost() {
         Stopwatch sw = Stopwatch.createStarted();
         String url = "http://127.0.0.1:8999/p";
-        MoneHttpClient client = new MoneHttpClient(10, 1000, 1);
+        MoneHttpClient client = new MoneHttpClient(1000, 1);
         JsonObject obj = new JsonObject();
         obj.addProperty("id", 12334);
         IntStream.range(0, 1000).forEach(i -> {

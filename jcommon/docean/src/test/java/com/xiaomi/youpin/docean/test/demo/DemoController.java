@@ -75,7 +75,7 @@ public class DemoController {
     @SneakyThrows
     @RequestMapping(path = "/a/**")
     public String a() {
-        TimeUnit.SECONDS.sleep(3);
+//        TimeUnit.SECONDS.sleep(3);
         return "a";
     }
 
