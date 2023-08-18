@@ -23,4 +23,6 @@ public class HttpResult implements Serializable {
         this.respHeaders = respHeaders;
     }
 
+    public HttpResult() {
+    }
 }

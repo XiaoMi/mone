@@ -30,6 +30,7 @@ import com.xiaomi.youpin.docean.mvc.session.HttpSession;
 import com.xiaomi.youpin.docean.test.anno.TAnno;
 import com.xiaomi.youpin.docean.test.demo.ErrorReport;
 import com.xiaomi.youpin.docean.test.interceptor.TAInterceptor;
+import com.xiaomi.youpin.docean.test.ssl.HttpClient;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
@@ -69,12 +70,21 @@ public class HttpServerTest {
             System.exit(-1);
         }
 
+
         Ioc.ins().putBean("$response-original-value","true");
+        Ioc.ins().putBean("$ssl_domain","zzy.com");
+        Ioc.ins().putBean("$ssl_self_sign","false");
 
         Mvc.ins();
-        DoceanHttpServer server = new DoceanHttpServer(HttpServerConfig.builder().port(8999).websocket(true)
+        DoceanHttpServer server = new DoceanHttpServer(HttpServerConfig.builder().port(8999).websocket(false).ssl(false)
                 .uploadDir("/tmp/v").upload(true)
                 .build());
         server.start();
+    }
+
+
+    @Test
+    public void testClient() {
+        HttpClient.call();
     }
 }
