@@ -3,6 +3,7 @@ package com.xiaomi.data.push.client;
 import com.google.common.collect.Maps;
 import com.xiaomi.data.push.client.bo.HttpResult;
 import com.xiaomi.data.push.client.common.PrintingEventListener;
+import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Response;
@@ -10,6 +11,7 @@ import okhttp3.*;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
@@ -24,6 +26,9 @@ public class MoneHttpClient {
     private ConnectionPool pool = null;
 
     private OkHttpClient client = null;
+
+    @Getter
+    private ConcurrentHashMap<String, ConnectionPool> poolMap = new ConcurrentHashMap<>();
 
 
     public MoneHttpClient(int maxIdleConnections, int timeout) {
@@ -60,19 +65,20 @@ public class MoneHttpClient {
 
 
     @SneakyThrows
-    public HttpResult get(String url, Map<String, String> headers, int timeout) {
-        return call("get", url, headers, null, timeout, MoneHttpClient.getResFun);
+    public HttpResult get(String group, String url, Map<String, String> headers, int timeout) {
+        return call(group, "get", url, headers, null, timeout, MoneHttpClient.getResFun);
     }
 
     @SneakyThrows
-    public HttpResult post(String url, Map<String, String> headers, byte[] data, int timeout) {
-        return call("post", url, headers, data, timeout, MoneHttpClient.getResFun);
+    public HttpResult post(String group, String url, Map<String, String> headers, byte[] data, int timeout) {
+        return call(group, "post", url, headers, data, timeout, MoneHttpClient.getResFun);
     }
 
 
     @SneakyThrows
-    private HttpResult call(String method, String url, Map<String, String> headers, byte[] data, int timeout, Function<Response, HttpResult> function) {
-        OkHttpClient client = this.client.newBuilder().callTimeout(timeout, TimeUnit.MILLISECONDS).build();
+    private HttpResult call(String group, String method, String url, Map<String, String> headers, byte[] data, int timeout, Function<Response, HttpResult> function) {
+        ConnectionPool groupPool = poolMap.computeIfAbsent(group, (k) -> new ConnectionPool(20, 5, TimeUnit.MINUTES));
+        OkHttpClient client = this.client.newBuilder().connectionPool(groupPool).callTimeout(timeout, TimeUnit.MILLISECONDS).build();
         Headers.Builder headersBuilder = new Headers.Builder();
         headers.forEach((k, v) -> headersBuilder.add(k, v));
         Request.Builder builder = new Request.Builder().url(url).headers(headersBuilder.build());

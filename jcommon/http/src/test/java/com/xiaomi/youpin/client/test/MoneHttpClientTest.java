@@ -29,13 +29,14 @@ public class MoneHttpClientTest {
 //        String url = "http://10.225.177.190:80/api/z/oss/hi";
         String url = "http://127.0.0.1:8999/a";
         MoneHttpClient client = new MoneHttpClient(10, 1000);
-        IntStream.range(0, 3).forEach(i -> {
+        IntStream.range(0, 300).forEach(i -> {
 //            String res = client.get(url + "/" + i, ImmutableMap.of("connection","close"), 200000);
-            HttpResult res = client.get(url + "/" + i, ImmutableMap.of(), 2000);
+            HttpResult res = client.get("a:" + i % 5, url + "/" + i, ImmutableMap.of(), 2000);
             System.out.println(new String(res.getData()));
         });
         System.out.println(client.info());
         System.out.println(sw.elapsed(TimeUnit.MILLISECONDS));
+        System.out.println(client.getPoolMap());
     }
 
     @Test
@@ -46,7 +47,7 @@ public class MoneHttpClientTest {
         JsonObject obj = new JsonObject();
         obj.addProperty("id", 12334);
         IntStream.range(0, 1000).forEach(i -> {
-            HttpResult res = client.post(url, ImmutableMap.of(), gson.toJson(obj).getBytes(), 2000);
+            HttpResult res = client.post(String.valueOf(i % 5), url, ImmutableMap.of(), gson.toJson(obj).getBytes(), 2000);
             System.out.println(new String(res.getData()));
         });
         System.out.println(sw.elapsed(TimeUnit.MILLISECONDS));
