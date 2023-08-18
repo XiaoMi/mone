@@ -76,7 +76,7 @@ public class HttpServerTest {
         Ioc.ins().putBean("$ssl_self_sign","false");
 
         Mvc.ins();
-        DoceanHttpServer server = new DoceanHttpServer(HttpServerConfig.builder().port(8999).websocket(false).ssl(true)
+        DoceanHttpServer server = new DoceanHttpServer(HttpServerConfig.builder().port(8999).websocket(false).ssl(false)
                 .uploadDir("/tmp/v").upload(true)
                 .build());
         server.start();

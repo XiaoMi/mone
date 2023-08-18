@@ -23,6 +23,7 @@ import com.xiaomi.youpin.docean.anno.RequestParam;
 import com.xiaomi.youpin.docean.mvc.MvcContext;
 import com.xiaomi.youpin.docean.mvc.MvcResult;
 import com.xiaomi.youpin.docean.test.anno.TAnno;
+import com.xiaomi.youpin.docean.test.bo.M;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -58,7 +59,7 @@ public class DemoController {
         DemoVo vo = new DemoVo();
         vo.setId("1");
         vo.setName("test");
-        context.getResHeaders().put("name","zzy");
+        context.getResHeaders().put("name", "zzy");
         return vo;
     }
 
@@ -74,6 +75,15 @@ public class DemoController {
     public String a() {
         return "a";
     }
+
+
+    @RequestMapping(path = "/p")
+    public M p(MvcContext c, M m) {
+        log.info("{}", c.getHeaders());
+        m.setName("zz");
+        return m;
+    }
+
 
     @RequestMapping(path = "/test2")
     public DemoVo test2(MvcContext context, DemoVo req) {

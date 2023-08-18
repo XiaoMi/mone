@@ -25,6 +25,13 @@
             <version>4.1.36.Final</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.11.0</version>
+        </dependency>
+
+
 
     </dependencies>
 

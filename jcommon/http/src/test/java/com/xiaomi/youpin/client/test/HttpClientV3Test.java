@@ -16,6 +16,7 @@
 
 package com.xiaomi.youpin.client.test;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Maps;
 import com.xiaomi.data.push.client.HttpClientV2;
 import com.xiaomi.data.push.client.HttpClientV4;
@@ -40,6 +41,21 @@ public class HttpClientV3Test {
         String res2 = HttpClientV2.get("http://www.baidu.com", Maps.newHashMap());
         System.out.println(res2);
         Assert.assertTrue(res2.getBytes().length > 0);
+    }
+
+    //1466->1000
+    //10000->6904
+    //wb->100->9695
+    @Test
+    public void testHttp2() {
+        String url = "http://127.0.0.1:8999/a/b";
+//        String url = "http://10.225.177.190:80/api/z/oss/hi";
+        Stopwatch sw = Stopwatch.createStarted();
+        IntStream.range(0, 100).forEach(i -> {
+            String res2 = HttpClientV2.get(url, Maps.newHashMap());
+//            System.out.println(res2);
+        });
+        System.out.println(sw.elapsed(TimeUnit.MILLISECONDS));
     }
 
 

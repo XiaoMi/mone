@@ -16,7 +16,7 @@
 
 package com.xiaomi.youpin.docean.mvc;
 
-import com.xiaomi.youpin.docean.Ioc;
+import com.xiaomi.youpin.docean.common.StringUtils;
 import com.xiaomi.youpin.docean.mvc.session.HttpSessionManager;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -24,8 +24,6 @@ import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import lombok.Getter;
 import lombok.Setter;
-
-import java.util.Objects;
 
 /**
  * @author goodjava@qq.com
@@ -52,7 +50,9 @@ public class MvcResponse {
                 response.headers().set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
             }
             HttpSessionManager.setSessionId(context, HttpSessionManager.isHasSessionId(context.getHeaders()), response);
-            response.headers().set(HttpHeaderNames.CONNECTION, "close");
+            if (StringUtils.isNotEmpty(context.getRequest().headers().get(HttpHeaderNames.CONNECTION))) {
+                response.headers().add(HttpHeaderNames.CONNECTION,context.getRequest().headers().get(HttpHeaderNames.CONNECTION));
+            }
             ctx.writeAndFlush(response);
         }
     }
