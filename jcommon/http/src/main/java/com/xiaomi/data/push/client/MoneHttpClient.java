@@ -42,11 +42,9 @@ public class MoneHttpClient {
 
     private static Function<Response, HttpResult> getResFun = res -> {
         byte[] data = new byte[]{};
-        if (res.body().contentLength() > 0) {
-            try {
-                data = res.body().source().readByteArray();
-            } catch (IOException e) {
-            }
+        try {
+            data = res.body().source().readByteArray();
+        } catch (IOException e) {
         }
         HttpResult result = new HttpResult();
         result.setData(data);
