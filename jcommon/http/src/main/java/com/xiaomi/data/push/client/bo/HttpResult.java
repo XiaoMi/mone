@@ -17,6 +17,8 @@ public class HttpResult implements Serializable {
     public byte[] data;
     private Map<String, String> respHeaders;
 
+    private Object call;
+
     public HttpResult(int code, String content, Map<String, String> respHeaders) {
         this.code = code;
         this.content = content;
