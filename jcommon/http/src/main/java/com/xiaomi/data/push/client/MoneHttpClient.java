@@ -27,11 +27,14 @@ public class MoneHttpClient {
 
     private OkHttpClient client = null;
 
+    private int poolNum = 20;
+
     @Getter
     private ConcurrentHashMap<String, ConnectionPool> poolMap = new ConcurrentHashMap<>();
 
 
-    public MoneHttpClient(int maxIdleConnections, int timeout) {
+    public MoneHttpClient(int maxIdleConnections, int timeout, int poolNum) {
+        this.poolNum = poolNum;
         pool = new ConnectionPool(maxIdleConnections, 4, TimeUnit.MINUTES);
         client = new OkHttpClient.Builder()
                 .connectionPool(pool)
@@ -77,7 +80,7 @@ public class MoneHttpClient {
 
     @SneakyThrows
     private HttpResult call(String group, String method, String url, Map<String, String> headers, byte[] data, int timeout, Function<Response, HttpResult> function) {
-        ConnectionPool groupPool = poolMap.computeIfAbsent(group, (k) -> new ConnectionPool(20, 5, TimeUnit.MINUTES));
+        ConnectionPool groupPool = poolMap.computeIfAbsent(String.valueOf(group.hashCode() % poolNum), (k) -> new ConnectionPool(20, 5, TimeUnit.MINUTES));
         OkHttpClient client = this.client.newBuilder().connectionPool(groupPool).callTimeout(timeout, TimeUnit.MILLISECONDS).build();
         Headers.Builder headersBuilder = new Headers.Builder();
         headers.forEach((k, v) -> headersBuilder.add(k, v));
