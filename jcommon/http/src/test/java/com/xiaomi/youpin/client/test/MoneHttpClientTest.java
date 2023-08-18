@@ -6,6 +6,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.xiaomi.data.push.client.MoneHttpClient;
 import com.xiaomi.data.push.client.bo.HttpResult;
+import lombok.SneakyThrows;
+import okhttp3.Call;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -23,15 +25,29 @@ public class MoneHttpClientTest {
     //1151->1000
     //4801->10000
     //wb->5981->100
+    @SneakyThrows
     @Test
     public void testGet() {
         Stopwatch sw = Stopwatch.createStarted();
 //        String url = "http://10.225.177.190:80/api/z/oss/hi";
         String url = "http://127.0.0.1:8999/a";
-        MoneHttpClient client = new MoneHttpClient(10, 1000, 5);
-        IntStream.range(0, 300).parallel().forEach(i -> {
+        MoneHttpClient client = new MoneHttpClient(10, 10000, 5);
+        IntStream.range(0, 1).forEach(i -> {
 //            String res = client.get(url + "/" + i, ImmutableMap.of("connection","close"), 200000);
-            HttpResult res = client.get("a:" + i % 5, url + "/" + i, ImmutableMap.of(), 2000);
+            Call call = client.getCall("a:" + i % 5, "get", url + "/" + i, ImmutableMap.of(), null, 10000);
+            new Thread(()->{
+                try {
+                    System.out.println("cancel");
+                    TimeUnit.SECONDS.sleep(4);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                call.cancel();
+                System.out.println("cancel finish");
+            }).start();
+
+            HttpResult res = client.call(call, MoneHttpClient.getResFun);
+
             System.out.println(new String(res.getData()));
         });
         System.out.println(client.info());

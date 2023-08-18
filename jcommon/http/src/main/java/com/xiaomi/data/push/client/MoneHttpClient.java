@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 /**
@@ -48,7 +49,7 @@ public class MoneHttpClient {
     }
 
 
-    private static Function<Response, HttpResult> getResFun = res -> {
+    public static BiFunction<Response, Call, HttpResult> getResFun = (res, call) -> {
         byte[] data = new byte[]{};
         try {
             data = res.body().source().readByteArray();
@@ -63,23 +64,24 @@ public class MoneHttpClient {
             h.put(it.getFirst(), it.getSecond());
         });
         result.setRespHeaders(h);
+        result.setCall(call);
         return result;
     };
 
 
     @SneakyThrows
     public HttpResult get(String group, String url, Map<String, String> headers, int timeout) {
-        return call(group, "get", url, headers, null, timeout, MoneHttpClient.getResFun);
+        Call call = getCall(group, "get", url, headers, null, timeout);
+        return call(call, getResFun);
     }
 
     @SneakyThrows
     public HttpResult post(String group, String url, Map<String, String> headers, byte[] data, int timeout) {
-        return call(group, "post", url, headers, data, timeout, MoneHttpClient.getResFun);
+        Call call = getCall(group, "post", url, headers, data, timeout);
+        return call(call, getResFun);
     }
 
-
-    @SneakyThrows
-    private HttpResult call(String group, String method, String url, Map<String, String> headers, byte[] data, int timeout, Function<Response, HttpResult> function) {
+    public Call getCall(String group, String method, String url, Map<String, String> headers, byte[] data, int timeout) {
         ConnectionPool groupPool = poolMap.computeIfAbsent(String.valueOf(group.hashCode() % poolNum), (k) -> new ConnectionPool(20, 5, TimeUnit.MINUTES));
         OkHttpClient client = this.client.newBuilder().connectionPool(groupPool).callTimeout(timeout, TimeUnit.MILLISECONDS).build();
         Headers.Builder headersBuilder = new Headers.Builder();
@@ -91,11 +93,14 @@ public class MoneHttpClient {
         }
         Request req = builder.build();
         Call call = client.newCall(req);
+        return call;
+    }
+
+
+    @SneakyThrows
+    public HttpResult call(Call call, BiFunction<Response, Call, HttpResult> function) {
         try (Response res = call.execute()) {
-            res.headers().forEach(it -> {
-                log.debug("{}->{}", it.getFirst(), it.getSecond());
-            });
-            return function.apply(res);
+            return function.apply(res, call);
         }
     }
 

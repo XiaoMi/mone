@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Resource;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author goodjava@qq.com
@@ -71,8 +72,10 @@ public class DemoController {
     }
 
 
+    @SneakyThrows
     @RequestMapping(path = "/a/**")
     public String a() {
+        TimeUnit.SECONDS.sleep(3);
         return "a";
     }
 
