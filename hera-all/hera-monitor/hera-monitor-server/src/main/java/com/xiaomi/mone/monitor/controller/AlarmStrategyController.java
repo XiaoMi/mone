@@ -80,9 +80,9 @@ public class AlarmStrategyController {
         AuthUserVo userInfo = null;
         try {
             log.info("AlarmStrategyController.deleteById param : {} ", param);
-            if (param.getId() <= 0) {
-                return Result.fail(ErrorCode.invalidParamError);
-            }
+//            if (param.getId() <= 0) {
+//                return Result.fail(ErrorCode.invalidParamError);
+//            }
             userInfo = UserUtil.getUser();
             if (userInfo == null) {
                 log.info("AlarmStrategyController.deleteById request info error no user info found! param : {} ", param);
