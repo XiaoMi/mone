@@ -90,6 +90,7 @@ public class HttpServerTest {
 
     @Test
     public void testClient() {
-        HttpClient.call();
+        HttpClient.call("https://zzy.com:8999/a");
     }
+
 }

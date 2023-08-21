@@ -15,7 +15,7 @@
 package com.xiaomi.youpin.docean.mvc.http2;
 
 import com.xiaomi.youpin.docean.config.HttpServerConfig;
-import com.xiaomi.youpin.docean.mvc.HttpHandlerCall;
+import com.xiaomi.youpin.docean.mvc.HttpHandlerRead;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
@@ -57,8 +57,8 @@ public class Http2OrHttpHandler extends ApplicationProtocolNegotiationHandler {
                         ch.pipeline().addLast(new Http2StreamFrameToHttpObjectCodec(true));
                         ch.pipeline().addLast(new SimpleChannelInboundHandler<HttpObject>() {
                             @Override
-                            protected void channelRead0(ChannelHandlerContext ctx, HttpObject msg) throws Exception {
-                                HttpHandlerCall.read(ctx,msg,config);
+                            protected void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
+                                HttpHandlerRead.read(ctx, msg, config);
                             }
                         });
                     }

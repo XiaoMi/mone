@@ -1,19 +1,19 @@
 package com.xiaomi.youpin.docean.test.ssl;
 
 import lombok.SneakyThrows;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
+import okhttp3.*;
 
 import javax.net.ssl.*;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
+import java.util.stream.IntStream;
 
 /**
  * @author goodjava@qq.com
@@ -22,8 +22,13 @@ import java.security.cert.X509Certificate;
 public class HttpClient {
 
 
+    /**
+     * Used to test the access under http2 and http1 https.
+     *
+     * @param url
+     */
     @SneakyThrows
-    public static void call() {
+    public static void call(String url) {
         CertificateFactory cf = CertificateFactory.getInstance("X.509");
 
         InputStream caInput = new BufferedInputStream(new FileInputStream("/Users/zhangzhiyong/key/zzy.com/certificate.crt"));
@@ -51,9 +56,11 @@ public class HttpClient {
             public X509Certificate[] getAcceptedIssuers() {
                 return new X509Certificate[]{}; // 返回受信任的证书数组
             }
+
             public void checkClientTrusted(X509Certificate[] chain, String authType) {
                 // 检查客户端证书
             }
+
             public void checkServerTrusted(X509Certificate[] chain, String authType) {
                 // 检查服务器证书
             }
@@ -65,13 +72,15 @@ public class HttpClient {
                 .build();
 
         Request request = new Request.Builder()
-                .url("https://zzy.com:8999/a?id="+System.currentTimeMillis())
+                .url(url)
                 .build();
+        try (Response res = client.newCall(request).execute()) {
+            ResponseBody body = res.body();
+            String str = body.string();
+            System.out.println(str);
+        }
 
-        Response res = client.newCall(request).execute();
-        ResponseBody body = res.body();
-        String str = body.string();
-        System.out.println(str);
     }
+
 
 }

@@ -13,7 +13,7 @@ import java.util.Map;
  * @author goodjava@qq.com
  * @date 2023/8/21 16:56
  */
-public class HttpHandlerCall {
+public class HttpHandlerRead {
 
 
     public static void read(ChannelHandlerContext ctx, HttpObject obj, HttpServerConfig config) {
