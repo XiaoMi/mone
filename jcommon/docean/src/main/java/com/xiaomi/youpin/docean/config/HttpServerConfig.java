@@ -30,6 +30,11 @@ public class HttpServerConfig {
 
     private boolean ssl;
 
+    private boolean http2;
+
+    @Builder.Default
+    private boolean http1 = true;
+
     private boolean websocket;
 
     private int port;

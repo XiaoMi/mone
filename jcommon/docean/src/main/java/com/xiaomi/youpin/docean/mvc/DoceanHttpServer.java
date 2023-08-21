@@ -20,7 +20,7 @@ import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.common.*;
 import com.xiaomi.youpin.docean.config.HttpServerConfig;
 import com.xiaomi.youpin.docean.exception.DoceanException;
-import com.xiaomi.youpin.docean.mvc.upload.HttpUploadHandler;
+import com.xiaomi.youpin.docean.mvc.http2.Http2ServerInitializer;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.epoll.EpollEventLoopGroup;
@@ -30,12 +30,12 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
-import io.netty.handler.ssl.OptionalSslHandler;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.codec.http2.Http2SecurityUtil;
+import io.netty.handler.ssl.*;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.handler.timeout.IdleStateHandler;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -65,7 +65,7 @@ public class DoceanHttpServer {
             this.config.setPort(Integer.valueOf(port));
         }
 
-        if (this.config.isSsl()) {
+        if (this.config.isSsl()  && this.config.isHttp1()) {
             Safe.runAndLog(() -> {
                 String domain = Ioc.ins().getBean("$ssl_domain");
                 boolean test = Boolean.valueOf(Ioc.ins().getBean("$ssl_self_sign", "true"));
@@ -89,6 +89,7 @@ public class DoceanHttpServer {
         }
     }
 
+    @SneakyThrows
     public void start() throws InterruptedException {
         log.info("docean http server start:{}", new DoceanVersion());
         boolean useEpoll = NetUtils.useEpoll();
@@ -114,27 +115,60 @@ public class DoceanHttpServer {
                         .option(ChannelOption.SO_SNDBUF, 65535)
                         .option(ChannelOption.SO_RCVBUF, 65535)
                         .childOption(ChannelOption.TCP_NODELAY, true);
-        ChannelInitializer<Channel> initializer = new ChannelInitializer<Channel>() {
-            @Override
-            protected void initChannel(Channel ch) {
+        ChannelHandler initializer = null;
 
-                if (config.isSsl()) {
-                    //同时支持http 和 https
-                    ch.pipeline().addLast(new OptionalSslHandler(sslContext));
+        if (config.isHttp1()) {
+
+            new ChannelInitializer<Channel>() {
+                @SneakyThrows
+                @Override
+                protected void initChannel(Channel ch) {
+                    if (config.isSsl()) {
+                        //同时支持http 和 https
+                        ch.pipeline().addLast(new OptionalSslHandler(sslContext));
+                    }
+
+                    ch.pipeline().addLast(new HttpServerCodec());
+                    ch.pipeline().addLast(new HttpObjectAggregator(1 * 1024 * 1024));
+                    ch.pipeline().addLast(new ChunkedWriteHandler());
+                    ch.pipeline().addLast(new IdleStateHandler(15, 15, 15));
+                    ch.pipeline().addLast(new HttpHandler(config));
+
+                    if (config.isWebsocket()) {
+                        ch.pipeline().addLast(new WebSocketServerProtocolHandler(Cons.WebSocketPath));
+                        ch.pipeline().addLast(new TextWebSocketHandler());
+                    }
                 }
+            };
+        }
 
-                ch.pipeline().addLast(new HttpServerCodec());
-                ch.pipeline().addLast(new HttpObjectAggregator(1 * 1024 * 1024));
-                ch.pipeline().addLast(new ChunkedWriteHandler());
-                ch.pipeline().addLast(new IdleStateHandler(15, 15, 15));
-                ch.pipeline().addLast(new HttpHandler(config));
-
-                if (config.isWebsocket()) {
-                    ch.pipeline().addLast(new WebSocketServerProtocolHandler(Cons.WebSocketPath));
-                    ch.pipeline().addLast(new TextWebSocketHandler());
-                }
+        if (config.isHttp2()) {
+            boolean SSL = true;
+            SslContext sslCtx;
+            if (SSL) {
+                SslProvider provider = OpenSsl.isAlpnSupported() ? SslProvider.OPENSSL : SslProvider.JDK;
+                String certificate = Ioc.ins().getBean("$ssl_certificate");
+                String privateKey = Ioc.ins().getBean("$ssl_cprivateKey");
+                sslCtx = SslContextBuilder.forServer(new File(certificate),new File(privateKey))
+                        .sslProvider(provider)
+                        /* NOTE: the cipher filter may not include all ciphers required by the HTTP/2 specification.
+                         * Please refer to the HTTP/2 specification for cipher requirements. */
+                        .ciphers(Http2SecurityUtil.CIPHERS, SupportedCipherSuiteFilter.INSTANCE)
+                        .applicationProtocolConfig(new ApplicationProtocolConfig(
+                                ApplicationProtocolConfig.Protocol.ALPN,
+                                // NO_ADVERTISE is currently the only mode supported by both OpenSsl and JDK providers.
+                                ApplicationProtocolConfig.SelectorFailureBehavior.NO_ADVERTISE,
+                                // ACCEPT is currently the only mode supported by both OpenSsl and JDK providers.
+                                ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT,
+                                ApplicationProtocolNames.HTTP_2,
+                                ApplicationProtocolNames.HTTP_1_1))
+                        .build();
+            } else {
+                sslCtx = null;
             }
-        };
+            initializer = new Http2ServerInitializer(sslCtx);
+        }
+
 
         serverBootstrap.childHandler(initializer);
         ChannelFuture future =
