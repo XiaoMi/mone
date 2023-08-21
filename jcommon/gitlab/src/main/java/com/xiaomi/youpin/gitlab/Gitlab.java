@@ -16,7 +16,7 @@
 
 package com.xiaomi.youpin.gitlab;
 
-import com.alibaba.fastjson.JSON;
+import com.google.gson.Gson;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -61,6 +61,8 @@ public class Gitlab {
     private static final String GIT_PUSH_PATH = "/tmp/git/push/";
     private static final String username = "";
     private static final String password = "";
+
+    private static Gson gson = new Gson();
 
     public Gitlab(String gitlabBaseUrl) {
         if (StringUtils.isBlank(gitlabBaseUrl)) {
@@ -1174,7 +1176,8 @@ public class Gitlab {
         }
         String url = GIT_API_URL + "projects/" + gitWebhook.getId() + "/hooks/" + gitWebhook.getHook_id();
         try {
-            String body = JSON.toJSONString(gitWebhook);
+            //String body = JSON.toJSONString(gitWebhook);
+            String body = gson.toJson(gitWebhook);
             Map<String, String> headers = new HashMap<>();
             headers.put("Content-Type", "application/json");
             headers.put("PRIVATE-TOKEN", token);
