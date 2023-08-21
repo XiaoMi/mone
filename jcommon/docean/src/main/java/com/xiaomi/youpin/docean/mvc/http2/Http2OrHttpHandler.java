@@ -16,18 +16,18 @@ package com.xiaomi.youpin.docean.mvc.http2;
 
 import com.xiaomi.youpin.docean.config.HttpServerConfig;
 import com.xiaomi.youpin.docean.mvc.HttpHandlerCall;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.HttpObject;
+import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
 import io.netty.handler.codec.http2.Http2MultiplexHandler;
 import io.netty.handler.codec.http2.Http2StreamFrameToHttpObjectCodec;
 import io.netty.handler.ssl.ApplicationProtocolNames;
 import io.netty.handler.ssl.ApplicationProtocolNegotiationHandler;
-import io.netty.util.CharsetUtil;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -58,14 +58,7 @@ public class Http2OrHttpHandler extends ApplicationProtocolNegotiationHandler {
                         ch.pipeline().addLast(new SimpleChannelInboundHandler<HttpObject>() {
                             @Override
                             protected void channelRead0(ChannelHandlerContext ctx, HttpObject msg) throws Exception {
-                                log.info("-->{}", msg);
                                 HttpHandlerCall.read(ctx,msg,config);
-//                                FullHttpResponse response = new DefaultFullHttpResponse(
-//                                        HttpVersion.HTTP_1_1, HttpResponseStatus.OK,
-//                                        Unpooled.copiedBuffer("hello_http2---", CharsetUtil.UTF_8));
-//                                response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain");
-//                                response.headers().set(HttpHeaderNames.CONTENT_LENGTH, response.content().readableBytes());
-//                                ctx.writeAndFlush(response);
                             }
                         });
                     }
@@ -73,7 +66,6 @@ public class Http2OrHttpHandler extends ApplicationProtocolNegotiationHandler {
             } else {
                 ctx.pipeline().addLast(new Http2MultiplexHandler(new HelloWorldHttp2Handler()));
             }
-
             return;
         }
 
