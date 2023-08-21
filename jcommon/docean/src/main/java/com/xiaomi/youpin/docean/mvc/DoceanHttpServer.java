@@ -166,7 +166,7 @@ public class DoceanHttpServer {
             } else {
                 sslCtx = null;
             }
-            initializer = new Http2ServerInitializer(sslCtx);
+            initializer = new Http2ServerInitializer(sslCtx,this.config);
         }
 
 

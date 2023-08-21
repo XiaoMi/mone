@@ -18,6 +18,7 @@ package com.xiaomi.youpin.docean.mvc.http2;
 
 import static io.netty.util.internal.ObjectUtil.checkPositiveOrZero;
 
+import com.xiaomi.youpin.docean.config.HttpServerConfig;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
@@ -59,9 +60,11 @@ public class Http2ServerInitializer extends ChannelInitializer<SocketChannel> {
 
     private final SslContext sslCtx;
     private final int maxHttpContentLength;
+    private HttpServerConfig config;
 
-    public Http2ServerInitializer(SslContext sslCtx) {
+    public Http2ServerInitializer(SslContext sslCtx,HttpServerConfig config) {
         this(sslCtx, 16 * 1024);
+        this.config = config;
     }
 
     public Http2ServerInitializer(SslContext sslCtx, int maxHttpContentLength) {
@@ -82,7 +85,7 @@ public class Http2ServerInitializer extends ChannelInitializer<SocketChannel> {
      * Configure the pipeline for TLS NPN negotiation to HTTP/2.
      */
     private void configureSsl(SocketChannel ch) {
-        ch.pipeline().addLast(sslCtx.newHandler(ch.alloc()), new Http2OrHttpHandler());
+        ch.pipeline().addLast(sslCtx.newHandler(ch.alloc()), new Http2OrHttpHandler(this.config));
     }
 
     /**

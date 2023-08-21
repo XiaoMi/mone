@@ -14,31 +14,66 @@
  */
 package com.xiaomi.youpin.docean.mvc.http2;
 
+import com.xiaomi.youpin.docean.config.HttpServerConfig;
+import com.xiaomi.youpin.docean.mvc.HttpHandlerCall;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.HttpObjectAggregator;
-import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.http.*;
 import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
 import io.netty.handler.codec.http2.Http2MultiplexHandler;
+import io.netty.handler.codec.http2.Http2StreamFrameToHttpObjectCodec;
 import io.netty.handler.ssl.ApplicationProtocolNames;
 import io.netty.handler.ssl.ApplicationProtocolNegotiationHandler;
+import io.netty.util.CharsetUtil;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Negotiates with the browser if HTTP2 or HTTP is going to be used. Once decided, the Netty
  * pipeline is setup with the correct handlers for the selected protocol.
  */
+@Slf4j
 public class Http2OrHttpHandler extends ApplicationProtocolNegotiationHandler {
 
     private static final int MAX_CONTENT_LENGTH = 1024 * 100;
 
-    protected Http2OrHttpHandler() {
+    private HttpServerConfig config;
+
+    public Http2OrHttpHandler(HttpServerConfig config) {
         super(ApplicationProtocolNames.HTTP_1_1);
+        this.config = config;
     }
 
     @Override
     protected void configurePipeline(ChannelHandlerContext ctx, String protocol) throws Exception {
         if (ApplicationProtocolNames.HTTP_2.equals(protocol)) {
             ctx.pipeline().addLast(Http2FrameCodecBuilder.forServer().build());
-            ctx.pipeline().addLast(new Http2MultiplexHandler(new HelloWorldHttp2Handler()));
+            if (true) {
+                ctx.pipeline().addLast(new Http2MultiplexHandler(new ChannelInitializer<Channel>() {
+                    @Override
+                    protected void initChannel(Channel ch) {
+                        ch.pipeline().addLast(new Http2StreamFrameToHttpObjectCodec(true));
+                        ch.pipeline().addLast(new SimpleChannelInboundHandler<HttpObject>() {
+                            @Override
+                            protected void channelRead0(ChannelHandlerContext ctx, HttpObject msg) throws Exception {
+                                log.info("-->{}", msg);
+                                HttpHandlerCall.read(ctx,msg,config);
+//                                FullHttpResponse response = new DefaultFullHttpResponse(
+//                                        HttpVersion.HTTP_1_1, HttpResponseStatus.OK,
+//                                        Unpooled.copiedBuffer("hello_http2---", CharsetUtil.UTF_8));
+//                                response.headers().set(HttpHeaderNames.CONTENT_TYPE, "text/plain");
+//                                response.headers().set(HttpHeaderNames.CONTENT_LENGTH, response.content().readableBytes());
+//                                ctx.writeAndFlush(response);
+                            }
+                        });
+                    }
+                }));
+            } else {
+                ctx.pipeline().addLast(new Http2MultiplexHandler(new HelloWorldHttp2Handler()));
+            }
+
             return;
         }
 
