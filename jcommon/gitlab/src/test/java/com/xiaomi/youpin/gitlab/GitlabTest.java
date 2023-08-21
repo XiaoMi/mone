@@ -104,4 +104,10 @@ public class GitlabTest {
         System.out.println(commitIds);
     }
 
+    @Test
+    public void getBranchInfo() {
+        String branchInfo = gitlab.getBranchInfo("https://xxx.com","1","master","xxx");
+        System.out.println(branchInfo);
+    }
+
 }

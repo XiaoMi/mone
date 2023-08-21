@@ -16,7 +16,7 @@
 
 package com.xiaomi.youpin.gitlab;
 
-import com.alibaba.fastjson.JSON;
+//import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -1168,24 +1168,24 @@ public class Gitlab {
         }
     }
 
-    public GitWebhook editHook(GitWebhook gitWebhook, String token) {
-        if (gitWebhook == null || StringUtils.isEmpty(gitWebhook.getId()) || StringUtils.isEmpty(gitWebhook.getHook_id())) {
-            return null;
-        }
-        String url = GIT_API_URL + "projects/" + gitWebhook.getId() + "/hooks/" + gitWebhook.getHook_id();
-        try {
-            String body = JSON.toJSONString(gitWebhook);
-            Map<String, String> headers = new HashMap<>();
-            headers.put("Content-Type", "application/json");
-            headers.put("PRIVATE-TOKEN", token);
-            HttpResult response = HttpClientV6.httpPut(url, headers, body, "UTF-8", 5000);
-            log.info("editHook rsp {} {}", response.code, response.content);
-            return new Gson().fromJson(response.content, GitWebhook.class);
-        } catch (Exception e) {
-            log.error("editHook {}", e.getMessage());
-            return null;
-        }
-    }
+//    public GitWebhook editHook(GitWebhook gitWebhook, String token) {
+//        if (gitWebhook == null || StringUtils.isEmpty(gitWebhook.getId()) || StringUtils.isEmpty(gitWebhook.getHook_id())) {
+//            return null;
+//        }
+//        String url = GIT_API_URL + "projects/" + gitWebhook.getId() + "/hooks/" + gitWebhook.getHook_id();
+//        try {
+//            String body = JSON.toJSONString(gitWebhook);
+//            Map<String, String> headers = new HashMap<>();
+//            headers.put("Content-Type", "application/json");
+//            headers.put("PRIVATE-TOKEN", token);
+//            HttpResult response = HttpClientV6.httpPut(url, headers, body, "UTF-8", 5000);
+//            log.info("editHook rsp {} {}", response.code, response.content);
+//            return new Gson().fromJson(response.content, GitWebhook.class);
+//        } catch (Exception e) {
+//            log.error("editHook {}", e.getMessage());
+//            return null;
+//        }
+//    }
 
     public Boolean deleteHook(GitWebhook gitWebhook, String token) {
         if (gitWebhook == null || StringUtils.isEmpty(gitWebhook.getId()) || StringUtils.isEmpty(gitWebhook.getHook_id())) {
@@ -1222,6 +1222,15 @@ public class Gitlab {
         Map<String, String> headers = new HashMap<>(1);
         headers.put("PRIVATE-TOKEN", token);
 
+        return HttpClientV2.get(url, headers, 10000);
+    }
+
+    // Get branch information of a repository
+    public String getBranchInfo(String gitHost,String projectId,String branch,String token) {
+        String url = gitHost + GIT_API_URI + "projects/" + projectId + "/repository/branches/" + branch;
+        log.info("getBranchInfo url:{}", url);
+        Map<String, String> headers = new HashMap<>(1);
+        headers.put("PRIVATE-TOKEN", token);
         return HttpClientV2.get(url, headers, 10000);
     }
 }
