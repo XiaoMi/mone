@@ -2,17 +2,26 @@ package com.xiaomi.youpin.docean.test.ssl;
 
 import lombok.SneakyThrows;
 import okhttp3.*;
+import okhttp3.internal.concurrent.TaskRunner;
+import okhttp3.internal.http2.ErrorCode;
+import okhttp3.internal.http2.Header;
+import okhttp3.internal.http2.Http2Connection;
+import okhttp3.internal.http2.PushObserver;
+import okio.BufferedSource;
+import org.jetbrains.annotations.NotNull;
 
 import javax.net.ssl.*;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.Socket;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.IntStream;
 
 /**
@@ -74,11 +83,41 @@ public class HttpClient {
         Request request = new Request.Builder()
                 .url(url)
                 .build();
+
+
+        Http2Connection connection = new Http2Connection.Builder(true, TaskRunner.INSTANCE).socket(client.socketFactory().createSocket("zzy.com",8999)).pushObserver(new PushObserver() {
+            @Override
+            public boolean onRequest(int i, @NotNull List<Header> list) {
+                return false;
+            }
+
+            @Override
+            public boolean onHeaders(int i, @NotNull List<Header> list, boolean b) {
+                return false;
+            }
+
+            @Override
+            public boolean onData(int i, @NotNull BufferedSource bufferedSource, int i1, boolean b) throws IOException {
+                return false;
+            }
+
+            @Override
+            public void onReset(int i, @NotNull ErrorCode errorCode) {
+
+            }
+        }).build();
+
+
+//        Request request = new Request.Builder()
+//                .url(url)
+//                .build();
         try (Response res = client.newCall(request).execute()) {
             ResponseBody body = res.body();
             String str = body.string();
             System.out.println(str);
         }
+
+        System.in.read();
 
     }
 
