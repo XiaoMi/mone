@@ -35,8 +35,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class Http2OrHttpHandler extends ApplicationProtocolNegotiationHandler {
 
-    private static final int MAX_CONTENT_LENGTH = 1024 * 100;
-
     private HttpServerConfig config;
 
     public Http2OrHttpHandler(HttpServerConfig config) {

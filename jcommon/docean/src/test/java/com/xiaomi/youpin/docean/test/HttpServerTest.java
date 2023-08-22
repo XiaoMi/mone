@@ -153,9 +153,14 @@ public class HttpServerTest {
         Request request = new Request.Builder()
                 .url("http://zzy.com:8999/a")
                 .build();
-        Response response = client.newCall(request).execute();
-        System.out.println("----><" + response.body().string());
-        System.in.read();
+        IntStream.range(0,100).forEach(i->{
+            try {
+                Response response = client.newCall(request).execute();
+                System.out.println("---->" + response.body().string());
+            } catch (Throwable ex) {
+
+            }
+        });
     }
 
 
