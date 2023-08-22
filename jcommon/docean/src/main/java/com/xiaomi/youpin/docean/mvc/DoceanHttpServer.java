@@ -65,7 +65,7 @@ public class DoceanHttpServer {
             this.config.setPort(Integer.valueOf(port));
         }
 
-        if (this.config.isSsl()  && this.config.isHttp1()) {
+        if (this.config.isSsl() && this.config.getHttpVersion().equals("http1")) {
             Safe.runAndLog(() -> {
                 String domain = Ioc.ins().getBean("$ssl_domain");
                 boolean test = Boolean.valueOf(Ioc.ins().getBean("$ssl_self_sign", "true"));
@@ -104,7 +104,6 @@ public class DoceanHttpServer {
             eventLoopGroupBoss = new NioEventLoopGroup(1, new NamedThreadFactory("NettyServerBoss_", false));
             eventLoopGroupWorker = new NioEventLoopGroup(Runtime.getRuntime().availableProcessors() * 2 + 1, new NamedThreadFactory("NettyServerWorker_", false));
         }
-
         ServerBootstrap serverBootstrap =
                 new ServerBootstrap().group(eventLoopGroupBoss, eventLoopGroupWorker)
                         .channel(useEpoll ? EpollServerSocketChannel.class : NioServerSocketChannel.class)
@@ -115,11 +114,12 @@ public class DoceanHttpServer {
                         .option(ChannelOption.SO_SNDBUF, 65535)
                         .option(ChannelOption.SO_RCVBUF, 65535)
                         .childOption(ChannelOption.TCP_NODELAY, true);
-        ChannelHandler initializer = null;
 
-        if (config.isHttp1()) {
 
-            new ChannelInitializer<Channel>() {
+        ChannelInitializer initializer = null;
+
+        if (config.getHttpVersion().equals(HttpServerConfig.HttpVersion.http1)) {
+            initializer = new ChannelInitializer<Channel>() {
                 @SneakyThrows
                 @Override
                 protected void initChannel(Channel ch) {
@@ -127,7 +127,6 @@ public class DoceanHttpServer {
                         //同时支持http 和 https
                         ch.pipeline().addLast(new OptionalSslHandler(sslContext));
                     }
-
                     ch.pipeline().addLast(new HttpServerCodec());
                     ch.pipeline().addLast(new HttpObjectAggregator(1 * 1024 * 1024));
                     ch.pipeline().addLast(new ChunkedWriteHandler());
@@ -140,24 +139,21 @@ public class DoceanHttpServer {
                     }
                 }
             };
-        }
-
-        if (config.isHttp2()) {
+        } else if (config.getHttpVersion().equals(HttpServerConfig.HttpVersion.http2)) {
             SslContext sslCtx;
             if (config.isSsl()) {
                 SslProvider provider = OpenSsl.isAlpnSupported() ? SslProvider.OPENSSL : SslProvider.JDK;
                 String certificate = Ioc.ins().getBean("$ssl_certificate");
                 String privateKey = Ioc.ins().getBean("$ssl_cprivateKey");
-                sslCtx = SslContextBuilder.forServer(new File(certificate),new File(privateKey))
+                if (StringUtils.isEmpty(certificate) || StringUtils.isEmpty(privateKey)) {
+                    throw new RuntimeException("certificate or privateKey is null");
+                }
+                sslCtx = SslContextBuilder.forServer(new File(certificate), new File(privateKey))
                         .sslProvider(provider)
-                        /* NOTE: the cipher filter may not include all ciphers required by the HTTP/2 specification.
-                         * Please refer to the HTTP/2 specification for cipher requirements. */
                         .ciphers(Http2SecurityUtil.CIPHERS, SupportedCipherSuiteFilter.INSTANCE)
                         .applicationProtocolConfig(new ApplicationProtocolConfig(
                                 ApplicationProtocolConfig.Protocol.ALPN,
-                                // NO_ADVERTISE is currently the only mode supported by both OpenSsl and JDK providers.
                                 ApplicationProtocolConfig.SelectorFailureBehavior.NO_ADVERTISE,
-                                // ACCEPT is currently the only mode supported by both OpenSsl and JDK providers.
                                 ApplicationProtocolConfig.SelectedListenerFailureBehavior.ACCEPT,
                                 ApplicationProtocolNames.HTTP_2,
                                 ApplicationProtocolNames.HTTP_1_1))
@@ -165,11 +161,10 @@ public class DoceanHttpServer {
             } else {
                 sslCtx = null;
             }
-            initializer = new Http2ServerInitializer(sslCtx,this.config);
+            initializer = new Http2ServerInitializer(sslCtx, this.config);
         }
-
-
         serverBootstrap.childHandler(initializer);
+
         ChannelFuture future =
                 serverBootstrap.bind("0.0.0.0", this.config.getPort()).addListener((ChannelFutureListener) future1 -> {
                     if (future1.isSuccess()) {

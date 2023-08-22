@@ -30,10 +30,8 @@ public class HttpServerConfig {
 
     private boolean ssl;
 
-    private boolean http2;
-
     @Builder.Default
-    private boolean http1 = true;
+    private HttpVersion httpVersion = HttpVersion.http1;
 
     private boolean websocket;
 
@@ -54,6 +52,11 @@ public class HttpServerConfig {
 
     public static int HTTP_POOL_SIZE = 500;
     public static int HTTP_POOL_QUEUE_SIZE = 1000;
+
+
+    public enum HttpVersion {
+        http1, http2
+    }
 
     public HttpServerConfig(boolean ssl, boolean websocket, int port) {
         this.ssl = ssl;
