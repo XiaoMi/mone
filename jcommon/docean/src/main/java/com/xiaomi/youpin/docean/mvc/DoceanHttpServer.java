@@ -143,9 +143,8 @@ public class DoceanHttpServer {
         }
 
         if (config.isHttp2()) {
-            boolean SSL = true;
             SslContext sslCtx;
-            if (SSL) {
+            if (config.isSsl()) {
                 SslProvider provider = OpenSsl.isAlpnSupported() ? SslProvider.OPENSSL : SslProvider.JDK;
                 String certificate = Ioc.ins().getBean("$ssl_certificate");
                 String privateKey = Ioc.ins().getBean("$ssl_cprivateKey");

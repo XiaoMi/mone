@@ -84,33 +84,6 @@ public class HttpClient {
                 .url(url)
                 .build();
 
-
-        Http2Connection connection = new Http2Connection.Builder(true, TaskRunner.INSTANCE).socket(client.socketFactory().createSocket("zzy.com",8999)).pushObserver(new PushObserver() {
-            @Override
-            public boolean onRequest(int i, @NotNull List<Header> list) {
-                return false;
-            }
-
-            @Override
-            public boolean onHeaders(int i, @NotNull List<Header> list, boolean b) {
-                return false;
-            }
-
-            @Override
-            public boolean onData(int i, @NotNull BufferedSource bufferedSource, int i1, boolean b) throws IOException {
-                return false;
-            }
-
-            @Override
-            public void onReset(int i, @NotNull ErrorCode errorCode) {
-
-            }
-        }).build();
-
-
-//        Request request = new Request.Builder()
-//                .url(url)
-//                .build();
         try (Response res = client.newCall(request).execute()) {
             ResponseBody body = res.body();
             String str = body.string();

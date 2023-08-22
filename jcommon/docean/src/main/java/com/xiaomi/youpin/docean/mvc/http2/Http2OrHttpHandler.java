@@ -21,8 +21,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.HttpObject;
-import io.netty.handler.codec.http.HttpObjectAggregator;
-import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.http2.Http2FrameCodecBuilder;
 import io.netty.handler.codec.http2.Http2MultiplexHandler;
 import io.netty.handler.codec.http2.Http2StreamFrameToHttpObjectCodec;
@@ -50,32 +48,20 @@ public class Http2OrHttpHandler extends ApplicationProtocolNegotiationHandler {
     protected void configurePipeline(ChannelHandlerContext ctx, String protocol) throws Exception {
         if (ApplicationProtocolNames.HTTP_2.equals(protocol)) {
             ctx.pipeline().addLast(Http2FrameCodecBuilder.forServer().build());
-            if (true) {
-                ctx.pipeline().addLast(new Http2MultiplexHandler(new ChannelInitializer<Channel>() {
-                    @Override
-                    protected void initChannel(Channel ch) {
-                        ch.pipeline().addLast(new Http2StreamFrameToHttpObjectCodec(true));
-                        ch.pipeline().addLast(new SimpleChannelInboundHandler<HttpObject>() {
-                            @Override
-                            protected void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
-                                HttpHandlerRead.read(ctx, msg, config);
-                            }
-                        });
-                    }
-                }));
-            } else {
-                ctx.pipeline().addLast(new Http2MultiplexHandler(new HelloWorldHttp2Handler()));
-            }
+            ctx.pipeline().addLast(new Http2MultiplexHandler(new ChannelInitializer<Channel>() {
+                @Override
+                protected void initChannel(Channel ch) {
+                    ch.pipeline().addLast(new Http2StreamFrameToHttpObjectCodec(true));
+                    ch.pipeline().addLast(new SimpleChannelInboundHandler<HttpObject>() {
+                        @Override
+                        protected void channelRead0(ChannelHandlerContext ctx, HttpObject msg) {
+                            HttpHandlerRead.read(ctx, msg, config);
+                        }
+                    });
+                }
+            }));
             return;
         }
-
-        if (ApplicationProtocolNames.HTTP_1_1.equals(protocol)) {
-            ctx.pipeline().addLast(new HttpServerCodec(),
-                    new HttpObjectAggregator(MAX_CONTENT_LENGTH),
-                    new HelloWorldHttp1Handler("ALPN Negotiation"));
-            return;
-        }
-
         throw new IllegalStateException("unknown protocol: " + protocol);
     }
 }
