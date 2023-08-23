@@ -109,6 +109,13 @@ public class EsQueryBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
+	@Override public T visitLikeExpr(EsQueryParser.LikeExprContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
 	@Override public T visitContainExpr(EsQueryParser.ContainExprContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}

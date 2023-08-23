@@ -101,6 +101,13 @@ public interface EsQueryVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitEqExpr(EsQueryParser.EqExprContext ctx);
 	/**
+	 * Visit a parse tree produced by the {@code LikeExpr}
+	 * labeled alternative in {@link EsQueryParser#expr}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLikeExpr(EsQueryParser.LikeExprContext ctx);
+	/**
 	 * Visit a parse tree produced by the {@code ContainExpr}
 	 * labeled alternative in {@link EsQueryParser#expr}.
 	 * @param ctx the parse tree
