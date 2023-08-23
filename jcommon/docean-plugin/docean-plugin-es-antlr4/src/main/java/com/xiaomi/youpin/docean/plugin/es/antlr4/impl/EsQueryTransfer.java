@@ -338,7 +338,7 @@ public class EsQueryTransfer implements EsQueryListener {
         String param = ctx.getChild(0).getText();
         String value = valueProperty.get(ctx.getChild(2)).getValue().toString();
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
-                .query(new BoolQueryBuilder().must(QueryBuilders.wildcardQuery(param, value)));
+                .query(new BoolQueryBuilder().must(QueryBuilders.regexpQuery(param, value)));
         treeProperty.put(ctx, sourceBuilder);
     }
 
