@@ -10,6 +10,7 @@ import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeProperty;
 import org.antlr.v4.runtime.tree.TerminalNode;
+import org.elasticsearch.common.unit.Fuzziness;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -229,6 +230,20 @@ public class EsQueryTransfer implements EsQueryListener {
     }
 
     @Override
+    public void enterLikeExpr(EsQueryParser.LikeExprContext ctx) {
+
+    }
+
+    @Override
+    public void exitLikeExpr(EsQueryParser.LikeExprContext ctx) {
+        String param = ctx.getChild(0).getText();
+        String value = valueProperty.get(ctx.getChild(2)).getValue().toString();
+        SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
+                .query(new BoolQueryBuilder().must(QueryBuilders.fuzzyQuery(param, value).fuzziness(Fuzziness.AUTO)));
+        treeProperty.put(ctx, sourceBuilder);
+    }
+
+    @Override
     public void enterContainExpr(EsQueryParser.ContainExprContext ctx) {
 
     }
@@ -323,7 +338,7 @@ public class EsQueryTransfer implements EsQueryListener {
         String param = ctx.getChild(0).getText();
         String value = valueProperty.get(ctx.getChild(2)).getValue().toString();
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
-                .query(new BoolQueryBuilder().must(QueryBuilders.regexpQuery(param, value)));
+                .query(new BoolQueryBuilder().must(QueryBuilders.wildcardQuery(param, value)));
         treeProperty.put(ctx, sourceBuilder);
     }
 
