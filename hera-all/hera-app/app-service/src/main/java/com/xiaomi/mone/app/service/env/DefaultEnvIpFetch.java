@@ -1,16 +1,13 @@
 package com.xiaomi.mone.app.service.env;
 
-import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.xiaomi.mone.app.common.Result;
 import com.xiaomi.mone.app.common.TpcLabelRes;
 import com.xiaomi.mone.app.common.TpcPageRes;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.FormBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
+import okhttp3.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -40,7 +37,7 @@ public class DefaultEnvIpFetch {
     @Value("${app.ip.fetch.type}")
     private String envApppType;
 
-    @NacosValue("${hera.tpc.url}")
+    @Value("${hera.tpc.url:http://mi-tpc:8097}")
     private String heraTpcUrl;
 
     @Resource
@@ -66,10 +63,15 @@ public class DefaultEnvIpFetch {
     }
 
     private EnvIpFetch getEnvFetchFromRemote(String appId) {
+        JsonObject jsonObject = new JsonObject();
+        MediaType mediaType = MediaType.parse("application/json; charset=utf-8");
+        jsonObject.addProperty("parentId", appId);
+        jsonObject.addProperty("flagKey", DEFAULT_REGISTER_REMOTE_TYPE);
+        RequestBody requestBody = RequestBody.create(mediaType, gson.toJson(jsonObject));
+
         Request request = new Request.Builder()
-                .url(String.format(heraTpcUrl, HERA_TPC_APP_DETAIL_URL))
-                .post(new FormBody.Builder().add("parentId", appId)
-                        .add("flagKey", DEFAULT_REGISTER_REMOTE_TYPE).build())
+                .url(String.format("%s%s", heraTpcUrl, HERA_TPC_APP_DETAIL_URL))
+                .post(requestBody)
                 .build();
         try {
             Response response = okHttpClient.newCall(request).execute();

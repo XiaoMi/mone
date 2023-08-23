@@ -26,7 +26,7 @@ import static com.xiaomi.mone.app.common.Constant.URL.HERA_OPERATOR_ENV_URL;
 @Slf4j
 public class DefaultHttpEnvIpFetch implements EnvIpFetch {
 
-    @Value("$hera.operator.env.url}")
+    @Value("$hera.operator.env.url:http://mi-operator-env:8097}")
     private String operatorEnvUrl;
     @Resource
     private OkHttpClient okHttpClient;
@@ -42,7 +42,7 @@ public class DefaultHttpEnvIpFetch implements EnvIpFetch {
         jsonObject.addProperty("name", appName);
         RequestBody requestBody = RequestBody.create(mediaType, gson.toJson(jsonObject));
 
-        Request request = new Request.Builder().url(String.format(operatorEnvUrl, HERA_OPERATOR_ENV_URL)).post(requestBody).build();
+        Request request = new Request.Builder().url(String.format("%s%s", operatorEnvUrl, HERA_OPERATOR_ENV_URL)).post(requestBody).build();
         Response response = okHttpClient.newCall(request).execute();
         if (response.isSuccessful()) {
             String rstJson = response.body().string();
