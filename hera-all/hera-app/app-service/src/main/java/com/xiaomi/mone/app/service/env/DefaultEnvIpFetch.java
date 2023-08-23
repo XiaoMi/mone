@@ -1,5 +1,6 @@
 package com.xiaomi.mone.app.service.env;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
@@ -10,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -26,6 +28,7 @@ import static com.xiaomi.mone.app.common.Constant.URL.HERA_TPC_APP_DETAIL_URL;
  */
 @Service
 @Slf4j
+@ConditionalOnProperty(name = "service.selector.property", havingValue = "outer")
 public class DefaultEnvIpFetch {
 
     @Autowired
@@ -37,7 +40,7 @@ public class DefaultEnvIpFetch {
     @Value("${app.ip.fetch.type}")
     private String envApppType;
 
-    @Value("${hera.tpc.url:http://mi-tpc:8097}")
+    @NacosValue(value = "${hera.tpc.url}", autoRefreshed = true)
     private String heraTpcUrl;
 
     @Resource
