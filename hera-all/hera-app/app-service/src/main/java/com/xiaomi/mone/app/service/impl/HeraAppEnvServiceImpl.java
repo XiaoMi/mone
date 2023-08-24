@@ -22,6 +22,7 @@ import org.apache.rocketmq.client.producer.DefaultMQProducer;
 import org.apache.rocketmq.common.message.Message;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -39,6 +40,7 @@ import static com.xiaomi.mone.app.common.Constant.GSON;
  */
 @Service
 @Slf4j
+@ConditionalOnProperty(name = "service.selector.property", havingValue = "outer")
 public class HeraAppEnvServiceImpl implements HeraAppEnvService {
 
     private final HeraAppBaseInfoMapper heraAppBaseInfoMapper;
