@@ -123,7 +123,7 @@ public class SeparatorLogParser implements LogParser {
                     Long time = getTimestampFromString(value, collectStamp);
                     ret.put(esKeyMap_timestamp, time);
                 } else {
-                    ret.put(kTsplit[0], value);
+                    ret.put(kTsplit[0], StringUtils.isNotEmpty(value) ? value.trim() : value);
                 }
             }
 

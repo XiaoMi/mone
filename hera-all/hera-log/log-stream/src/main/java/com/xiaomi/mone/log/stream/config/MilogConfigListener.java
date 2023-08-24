@@ -243,7 +243,11 @@ public class MilogConfigListener {
     }
 
     private void startTailPer(SinkConfig sinkConfig, LogtailConfig logTailConfig, Long logSpaceId) {
-        log.info("【监听tail】初始化新任务，tail配置：{},索引:{}.集群信息：{}", gson.toJson(logTailConfig), sinkConfig.getEsIndex(), gson.toJson(sinkConfig.getEsInfo()));
+        if (null == logSpaceId) {
+            log.error("startTailPer error,logSpaceId is null,LogtailConfig:{}", gson.toJson(logTailConfig), new RuntimeException());
+            return;
+        }
+        log.info("【监听tail】初始化新任务，tail配置：{},索引:{},集群信息：{},spaceId:{}", gson.toJson(logTailConfig), sinkConfig.getEsIndex(), gson.toJson(sinkConfig.getEsInfo()), logSpaceId);
         jobManager.startJob(logTailConfig, sinkConfig.getEsIndex(), sinkConfig.getKeyList(), sinkConfig.getLogstoreName(), logTailConfig.getTail(), sinkConfig.getEsInfo(),
                 sinkConfig.getLogstoreId(), logSpaceId);
         oldLogTailConfigMap.put(logTailConfig.getLogtailId(), logTailConfig);

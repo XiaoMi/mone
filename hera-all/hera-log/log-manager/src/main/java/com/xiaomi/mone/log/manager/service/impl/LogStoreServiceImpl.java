@@ -255,10 +255,10 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
         if (tails != null && tails.size() != 0) {
             return new Result<>(CommonError.ParamsError.getCode(), "该 log store 下存在tail，无法删除");
         }
+        storeExtensionService.deleteStorePostProcessing(logStore);
         if (logStoreDao.deleteMilogSpace(id)) {
             //删除nacos中的配置
             logTailService.deleteConfigRemote(logStore.getSpaceId(), id, logStore.getMachineRoom(), LogStructureEnum.STORE);
-            storeExtensionService.deleteStorePostProcessing(logStore);
             return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage());
         } else {
             log.warn("[MilogLogstoreService.deleteMilogLogstore] delete Milogstore err,spaceId:{}", id);

@@ -29,7 +29,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static com.xiaomi.mone.log.common.Constant.GSON;
@@ -57,10 +56,6 @@ public class LogProcessor implements NettyRequestProcessor {
 
     private synchronized void metaConfigEffect(LogCollectMeta req) {
         ChannelEngine channelEngine = Ioc.ins().getBean(ChannelEngine.class);
-        CompletableFuture<Void> reFreshFuture = CompletableFuture.runAsync(() -> {
-        });
-        CompletableFuture<Void> stopChannelFuture = CompletableFuture.runAsync(() -> {
-        });
         // 是否初始化完成，没完成等待30s后执行
         int count = 0;
         while (true) {
@@ -77,21 +72,13 @@ public class LogProcessor implements NettyRequestProcessor {
             }
         }
         if (CollectionUtils.isNotEmpty(req.getAppLogMetaList())) {
-            reFreshFuture = CompletableFuture.runAsync(() -> {
-                try {
-                    List<ChannelDefine> channelDefines = ChannelDefineRpcLocator.agentTail2ChannelDefine(ChannelDefineRpcLocator.logCollectMeta2ChannelDefines(req));
-                    channelEngine.refresh(channelDefines);
-                } catch (Exception e) {
-                    log.error("refresh config error,req:{}", GSON.toJson(req), e);
-                }
-            });
+            try {
+                List<ChannelDefine> channelDefines = ChannelDefineRpcLocator.agentTail2ChannelDefine(ChannelDefineRpcLocator.logCollectMeta2ChannelDefines(req));
+                channelEngine.refresh(channelDefines);
+            } catch (Exception e) {
+                log.error("refresh config error,req:{}", GSON.toJson(req), e);
+            }
         }
-        if (CollectionUtils.isNotEmpty(req.getPodNames())) {
-            stopChannelFuture = CompletableFuture.runAsync(() -> {
-                channelEngine.stopChannelFile(req.getPodNames());
-            });
-        }
-        CompletableFuture.allOf(reFreshFuture, stopChannelFuture).join();
     }
 
     @Override
