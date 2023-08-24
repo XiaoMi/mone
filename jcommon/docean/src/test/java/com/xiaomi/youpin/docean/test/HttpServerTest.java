@@ -87,7 +87,7 @@ public class HttpServerTest {
 
         Mvc.ins();
         DoceanHttpServer server = new DoceanHttpServer(HttpServerConfig.builder()
-//                .httpVersion(HttpServerConfig.HttpVersion.http2)
+                .httpVersion(HttpServerConfig.HttpVersion.http2)
 //                .ssl(true)
                 .port(8999)
                 .websocket(false)

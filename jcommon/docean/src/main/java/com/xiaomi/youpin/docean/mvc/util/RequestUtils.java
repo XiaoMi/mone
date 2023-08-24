@@ -45,7 +45,7 @@ public abstract class RequestUtils {
     }
 
     public static Map<String, String> headers(FullHttpRequest request) {
-        return request.headers().entries().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return request.headers().entries().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e, n) -> n));
     }
 
 }
