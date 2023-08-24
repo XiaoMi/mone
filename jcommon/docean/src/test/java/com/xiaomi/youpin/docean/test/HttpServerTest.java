@@ -82,12 +82,12 @@ public class HttpServerTest {
         Ioc.ins().putBean("$response-original-value", "true");
         Ioc.ins().putBean("$ssl_domain", "zzy.com");
         Ioc.ins().putBean("$ssl_self_sign", "false");
-        Ioc.ins().putBean("$ssl_certificate","/Users/zhangzhiyong/key/zzy.com/certificate.crt");
-        Ioc.ins().putBean("$ssl_cprivateKey","/Users/zhangzhiyong/key/zzy.com/privateKey.key");
+//        Ioc.ins().putBean("$ssl_certificate","/Users/zhangzhiyong/key/zzy.com/certificate.crt");
+//        Ioc.ins().putBean("$ssl_cprivateKey","/Users/zhangzhiyong/key/zzy.com/privateKey.key");
 
         Mvc.ins();
         DoceanHttpServer server = new DoceanHttpServer(HttpServerConfig.builder()
-                .httpVersion(HttpServerConfig.HttpVersion.http2)
+//                .httpVersion(HttpServerConfig.HttpVersion.http2)
 //                .ssl(true)
                 .port(8999)
                 .websocket(false)

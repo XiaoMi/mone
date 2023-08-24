@@ -2,6 +2,7 @@ package com.xiaomi.data.push.client;
 
 import com.google.common.collect.Maps;
 import com.xiaomi.data.push.client.bo.HttpResult;
+import com.xiaomi.data.push.client.bo.OkHttpReq;
 import com.xiaomi.data.push.client.common.PrintingEventListener;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -65,19 +66,25 @@ public class MoneHttpClient {
 
     @SneakyThrows
     public HttpResult get(String group, String url, Map<String, String> headers, int timeout) {
-        Call call = getCall(group, "get", url, headers, null, timeout);
+        Call call = getCall(group, "get", url, headers, null, timeout, null);
         return call(call, getResFun);
     }
 
     @SneakyThrows
     public HttpResult post(String group, String url, Map<String, String> headers, byte[] data, int timeout) {
-        Call call = getCall(group, "post", url, headers, data, timeout);
+        Call call = getCall(group, "post", url, headers, data, timeout, null);
         return call(call, getResFun);
     }
 
-    public Call getCall(String group, String method, String url, Map<String, String> headers, byte[] data, int timeout) {
+    public Call getCall(String group, String method, String url, Map<String, String> headers, byte[] data, int timeout, OkHttpReq okHttpReq) {
         ConnectionPool groupPool = poolMap.computeIfAbsent(String.valueOf(group.hashCode() % poolNum), (k) -> new ConnectionPool(20, 5, TimeUnit.MINUTES));
-        OkHttpClient client = this.client.newBuilder().connectionPool(groupPool).callTimeout(timeout, TimeUnit.MILLISECONDS).build();
+        OkHttpClient.Builder clientBuilder = this.client.newBuilder()
+                .connectionPool(groupPool)
+                .callTimeout(timeout, TimeUnit.MILLISECONDS);
+        if (null != okHttpReq && null != okHttpReq.getProtocolList()) {
+            clientBuilder.protocols(okHttpReq.getProtocolList());
+        }
+        OkHttpClient client = clientBuilder.build();
         Headers.Builder headersBuilder = new Headers.Builder();
         headers.forEach((k, v) -> headersBuilder.add(k, v));
         Request.Builder builder = new Request.Builder().url(url).headers(headersBuilder.build());
