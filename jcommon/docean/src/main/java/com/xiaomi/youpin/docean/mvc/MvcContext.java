@@ -48,6 +48,8 @@ public class MvcContext {
 
     private boolean websocket;
 
+    private boolean cookie;
+
     private HttpSession session;
 
     private FullHttpRequest request;

@@ -161,7 +161,7 @@ public class Mvc {
 
     public void callMethod(MvcContext context, MvcRequest request, MvcResponse response, MvcResult<Object> result, HttpRequestMethod method) {
         Safe.run(() -> {
-            JsonElement arguments = gson.fromJson(new String(request.getBody()), JsonElement.class);
+            JsonElement arguments = request.getBody().length == 0 ? null : gson.fromJson(new String(request.getBody()), JsonElement.class);
             String m = method.getHttpMethod();
             MutableObject mo = getArgs(method, arguments, m);
             Safe.run(() -> context.setParams(arguments));
@@ -184,7 +184,7 @@ public class Mvc {
                 }
                 // need to jump (302)
                 if (mr.getCode() == HttpResponseStatus.FOUND.code()) {
-                    Jump.jump(response,mr.getData());
+                    Jump.jump(response, mr.getData());
                     return;
                 }
             }

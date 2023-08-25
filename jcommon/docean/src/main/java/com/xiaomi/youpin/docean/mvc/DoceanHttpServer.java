@@ -96,13 +96,14 @@ public class DoceanHttpServer {
         EventLoopGroup eventLoopGroupBoss = null;
         EventLoopGroup eventLoopGroupWorker = null;
         //是否使用原生的epoll
+        int nThreads = Runtime.getRuntime().availableProcessors() * 2 + 1;
         if (useEpoll) {
-            log.info("use epollEventLoopGroup");
+            log.info("use epollEventLoopGroup nThreads:{}", nThreads);
             eventLoopGroupBoss = new EpollEventLoopGroup(1, new NamedThreadFactory("EpollNettyServerBoss_", false));
-            eventLoopGroupWorker = new EpollEventLoopGroup(Runtime.getRuntime().availableProcessors() * 2 + 1, new NamedThreadFactory("NettyEpollServerWorker_", false));
+            eventLoopGroupWorker = new EpollEventLoopGroup(nThreads, new NamedThreadFactory("NettyEpollServerWorker_", false));
         } else {
             eventLoopGroupBoss = new NioEventLoopGroup(1, new NamedThreadFactory("NettyServerBoss_", false));
-            eventLoopGroupWorker = new NioEventLoopGroup(Runtime.getRuntime().availableProcessors() * 2 + 1, new NamedThreadFactory("NettyServerWorker_", false));
+            eventLoopGroupWorker = new NioEventLoopGroup(nThreads, new NamedThreadFactory("NettyServerWorker_", false));
         }
         ServerBootstrap serverBootstrap =
                 new ServerBootstrap().group(eventLoopGroupBoss, eventLoopGroupWorker)

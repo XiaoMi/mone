@@ -28,6 +28,7 @@ public class HttpHandlerRead {
             context.setMethod(method);
             context.setHandlerContext(ctx);
             context.setPath(uri);
+            context.setCookie(config.isCookie());
             req.setHeaders(RequestUtils.headers(request));
             context.setHeaders(req.getHeaders());
             req.setMethod(method);
