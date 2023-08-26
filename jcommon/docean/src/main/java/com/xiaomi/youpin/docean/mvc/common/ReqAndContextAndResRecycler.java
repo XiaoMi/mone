@@ -12,7 +12,7 @@ import io.netty.util.Recycler;
 public class ReqAndContextAndResRecycler {
 
 
-    public static final Recycler<ReqAndContextAndRes> RECYCLER = new Recycler<ReqAndContextAndRes>() {
+    public static final Recycler<ReqAndContextAndRes> RECYCLER = new Recycler<>() {
         @Override
         protected ReqAndContextAndRes newObject(Handle<ReqAndContextAndRes> handle) {
             return new ReqAndContextAndRes(new MvcRequest(), new MvcContext(), new MvcResponse(), handle);
