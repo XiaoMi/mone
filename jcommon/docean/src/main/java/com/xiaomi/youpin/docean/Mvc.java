@@ -33,6 +33,7 @@ import com.xiaomi.youpin.docean.mvc.*;
 import com.xiaomi.youpin.docean.mvc.common.MvcConst;
 import com.xiaomi.youpin.docean.mvc.util.ExceptionUtil;
 import com.xiaomi.youpin.docean.mvc.util.Jump;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -139,6 +140,10 @@ public class Mvc {
         } else {
             executor.submit(new MvcRunnable(this, context, request, response, requestMethodMap));
         }
+    }
+
+    public void dispatcher(HttpServerConfig config, ChannelHandlerContext ctx, FullHttpRequest httpRequest, String uri, byte[] body) {
+        executor.submit(new MvcRunnable(this, config, ctx, httpRequest, uri, body, requestMethodMap));
     }
 
 

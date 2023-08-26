@@ -38,7 +38,9 @@ public abstract class RequestUtils {
                 return new byte[]{};
             }
             Map<String, String> params = decoder.parameters().entrySet().stream().collect(Collectors.toMap(it -> it.getKey(), it -> it.getValue().get(0)));
-            consumer.accept(params);
+            if (null != consumer) {
+                consumer.accept(params);
+            }
             return gson.toJson(params).getBytes();
         }
         if (request.method().equals(HttpMethod.POST)) {

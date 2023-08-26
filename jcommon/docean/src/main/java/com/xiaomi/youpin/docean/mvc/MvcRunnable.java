@@ -5,10 +5,16 @@ import com.google.gson.Gson;
 import com.xiaomi.youpin.docean.Mvc;
 import com.xiaomi.youpin.docean.common.Cons;
 import com.xiaomi.youpin.docean.common.Safe;
+import com.xiaomi.youpin.docean.config.HttpServerConfig;
 import com.xiaomi.youpin.docean.listener.event.Event;
 import com.xiaomi.youpin.docean.listener.event.EventType;
+import com.xiaomi.youpin.docean.mvc.common.ReqAndContextAndRes;
+import com.xiaomi.youpin.docean.mvc.common.ReqAndContextAndResRecycler;
 import com.xiaomi.youpin.docean.mvc.download.Download;
 import com.xiaomi.youpin.docean.mvc.util.ExceptionUtil;
+import com.xiaomi.youpin.docean.mvc.util.RequestUtils;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.extern.slf4j.Slf4j;
 
@@ -30,11 +36,13 @@ public class MvcRunnable implements Runnable {
 
     private MvcResponse response;
 
+    private ReqAndContextAndRes data;
+
     private ConcurrentHashMap<String, HttpRequestMethod> requestMethodMap;
 
     private Mvc mvc;
 
-    private Gson gson = new Gson();
+    private static Gson gson = new Gson();
 
     public MvcRunnable(Mvc mvc, MvcContext context, MvcRequest request, MvcResponse response, ConcurrentHashMap<String, HttpRequestMethod> requestMethodMap) {
         this.context = context;
@@ -42,6 +50,28 @@ public class MvcRunnable implements Runnable {
         this.response = response;
         this.requestMethodMap = requestMethodMap;
         this.mvc = mvc;
+    }
+
+
+    public MvcRunnable(Mvc mvc, HttpServerConfig config, ChannelHandlerContext ctx, FullHttpRequest httpRequest, String uri, byte[] body, ConcurrentHashMap<String, HttpRequestMethod> requestMethodMap) {
+        this.data = ReqAndContextAndResRecycler.RECYCLER.get();
+        this.context = data.getMvcContext();
+        this.request = data.getRequest();
+        this.response = data.getMvcResponse();
+        String method = httpRequest.method().name();
+        this.context.setRequest(httpRequest);
+        this.context.setMethod(method);
+        this.context.setHandlerContext(ctx);
+        this.context.setPath(uri);
+        this.context.setCookie(config.isCookie());
+        this.request.setHeaders(RequestUtils.headers(httpRequest));
+        this.context.setHeaders(this.request.getHeaders());
+        this.request.setMethod(method);
+        this.request.setPath(uri);
+        this.request.setBody(body);
+        this.response.setCtx(ctx);
+        this.mvc = mvc;
+        this.requestMethodMap = requestMethodMap;
     }
 
     @Override
@@ -121,6 +151,9 @@ public class MvcRunnable implements Runnable {
                 mvc.callService(context, request, response);
             } finally {
                 ContextHolder.getContext().close();
+                if (null != this.data) {
+                    this.data.recycle();
+                }
             }
         }, ex -> {
             MvcResult<String> mr = new MvcResult();

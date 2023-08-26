@@ -111,15 +111,14 @@ public class DoceanHttpServer {
                         .option(ChannelOption.SO_BACKLOG, 1024)
                         .option(ChannelOption.SO_REUSEADDR, true)
                         .option(ChannelOption.SO_KEEPALIVE, false)
-                        .option(ChannelOption.SO_LINGER, 3)
-                        .option(ChannelOption.SO_SNDBUF, 65535)
-                        .option(ChannelOption.SO_RCVBUF, 65535)
+//                        .option(ChannelOption.SO_LINGER, 3)
                         .childOption(ChannelOption.TCP_NODELAY, true);
 
 
         ChannelInitializer initializer = null;
 
         if (config.getHttpVersion().equals(HttpServerConfig.HttpVersion.http1)) {
+            HttpHandler httpHandler = new HttpHandler(config);
             initializer = new ChannelInitializer<Channel>() {
                 @SneakyThrows
                 @Override
@@ -132,7 +131,7 @@ public class DoceanHttpServer {
                     ch.pipeline().addLast(new HttpObjectAggregator(1 * 1024 * 1024));
                     ch.pipeline().addLast(new ChunkedWriteHandler());
                     ch.pipeline().addLast(new IdleStateHandler(15, 15, 15));
-                    ch.pipeline().addLast(new HttpHandler(config));
+                    ch.pipeline().addLast(httpHandler);
 
                     if (config.isWebsocket()) {
                         ch.pipeline().addLast(new WebSocketServerProtocolHandler(Cons.WebSocketPath));

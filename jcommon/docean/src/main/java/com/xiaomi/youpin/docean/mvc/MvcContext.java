@@ -79,4 +79,17 @@ public class MvcContext {
 
     private String path;
 
+    public void clear() {
+        this.traceId = null;
+        if (null != this.attachments) {
+            this.attachments.clear();
+        }
+        if (null != this.headers) {
+            this.headers.clear();
+        }
+        if (null != this.resHeaders) {
+            this.resHeaders.clear();
+        }
+    }
+
 }

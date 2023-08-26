@@ -18,6 +18,7 @@ package com.xiaomi.youpin.docean.mvc;
 
 import com.xiaomi.youpin.docean.common.Cons;
 import com.xiaomi.youpin.docean.config.HttpServerConfig;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.DecoderException;
@@ -29,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
  * @author goodjava@qq.com
  */
 @Slf4j
+@ChannelHandler.Sharable
 public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
 
@@ -44,7 +46,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
             ctx.fireChannelRead(request.retain());
             return;
         }
-        HttpHandlerRead.read(ctx,request,this.config);
+        HttpHandlerRead.read(ctx, request, this.config);
     }
 
 

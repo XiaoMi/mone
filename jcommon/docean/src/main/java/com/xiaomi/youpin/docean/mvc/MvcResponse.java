@@ -68,4 +68,8 @@ public class MvcResponse {
         }
         writeAndFlush(context, responseStatus, message);
     }
+
+    public void clear() {
+        this.ctx = null;
+    }
 }
