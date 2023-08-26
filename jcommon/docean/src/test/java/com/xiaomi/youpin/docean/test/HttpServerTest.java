@@ -55,20 +55,20 @@ public class HttpServerTest {
 
     @Test
     public void testHttpServer() throws InterruptedException {
-        LinkedHashMap<Class, EnhanceInterceptor> m = new LinkedHashMap<>();
-        m.put(RequestMapping.class, new EnhanceInterceptor() {
-            @Override
-            public void before(AopContext aopContext, Method method, Object[] args) {
-                MvcContext mvcContext = ContextHolder.getContext().get();
-                HttpSession session = mvcContext.session();
-                if (session.getAttribute("name") == null) {
-                    log.info("set name");
-                    session.setAttribute("name", "zzy:" + new Date() + ":" + System.currentTimeMillis());
-                }
-            }
-        });
-        Aop.ins().init(m);
-        Aop.ins().getInterceptorMap().put(TAnno.class, new TAInterceptor());
+//        LinkedHashMap<Class, EnhanceInterceptor> m = new LinkedHashMap<>();
+//        m.put(RequestMapping.class, new EnhanceInterceptor() {
+//            @Override
+//            public void before(AopContext aopContext, Method method, Object[] args) {
+//                MvcContext mvcContext = ContextHolder.getContext().get();
+//                HttpSession session = mvcContext.session();
+//                if (session.getAttribute("name") == null) {
+//                    log.info("set name");
+//                    session.setAttribute("name", "zzy:" + new Date() + ":" + System.currentTimeMillis());
+//                }
+//            }
+//        });
+//        Aop.ins().init(m);
+//        Aop.ins().getInterceptorMap().put(TAnno.class, new TAInterceptor());
         Ioc ioc = Ioc.ins();
         ioc.putBean(ioc).init("com.xiaomi.youpin.docean");
 

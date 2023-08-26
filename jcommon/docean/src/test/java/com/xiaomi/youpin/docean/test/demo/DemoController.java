@@ -76,7 +76,7 @@ public class DemoController {
     @RequestMapping(path = "/a/**")
     public String a() {
 //        TimeUnit.SECONDS.sleep(3);
-        return "a";
+        return "a:"+Thread.currentThread().getName();
     }
 
 

@@ -143,7 +143,8 @@ public class Mvc {
     }
 
     public void dispatcher(HttpServerConfig config, ChannelHandlerContext ctx, FullHttpRequest httpRequest, String uri, byte[] body) {
-        executor.submit(new MvcRunnable(this, config, ctx, httpRequest, uri, body, requestMethodMap));
+        //executor.submit(new MvcRunnable(this, config, ctx, httpRequest, uri, body, requestMethodMap));
+        Thread.ofVirtual().start(new MvcRunnable(this, config, ctx, httpRequest, uri, body, requestMethodMap));
     }
 
 
