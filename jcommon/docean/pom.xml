@@ -49,13 +49,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- https://mvnrepository.com/artifact/org.mortbay.jetty.alpn/alpn-boot -->
-        <!--        <dependency>-->
-        <!--            <groupId>org.mortbay.jetty.alpn</groupId>-->
-        <!--            <artifactId>alpn-boot</artifactId>-->
-        <!--            <version>8.1.13.v20181017</version>-->
-        <!--        </dependency>-->
-
         <dependency>
             <groupId>javax.annotation</groupId>
             <artifactId>javax.annotation-api</artifactId>
