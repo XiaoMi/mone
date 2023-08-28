@@ -162,6 +162,18 @@ public interface EsQueryListener extends ParseTreeListener {
 	 */
 	void exitEqExpr(EsQueryParser.EqExprContext ctx);
 	/**
+	 * Enter a parse tree produced by the {@code LikeExpr}
+	 * labeled alternative in {@link EsQueryParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void enterLikeExpr(EsQueryParser.LikeExprContext ctx);
+	/**
+	 * Exit a parse tree produced by the {@code LikeExpr}
+	 * labeled alternative in {@link EsQueryParser#expr}.
+	 * @param ctx the parse tree
+	 */
+	void exitLikeExpr(EsQueryParser.LikeExprContext ctx);
+	/**
 	 * Enter a parse tree produced by the {@code ContainExpr}
 	 * labeled alternative in {@link EsQueryParser#expr}.
 	 * @param ctx the parse tree

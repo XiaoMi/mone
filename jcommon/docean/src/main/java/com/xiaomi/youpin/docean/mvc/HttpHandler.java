@@ -16,17 +16,13 @@
 
 package com.xiaomi.youpin.docean.mvc;
 
-import com.xiaomi.youpin.docean.Mvc;
 import com.xiaomi.youpin.docean.common.Cons;
 import com.xiaomi.youpin.docean.config.HttpServerConfig;
-import com.xiaomi.youpin.docean.mvc.util.RequestUtils;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.http.FullHttpRequest;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.Map;
 
 
 /**
@@ -48,23 +44,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
             ctx.fireChannelRead(request.retain());
             return;
         }
-        String uri = HttpRequestUtils.getBasePath(request);
-        MvcRequest req = new MvcRequest();
-        byte[] body = RequestUtils.getData(config, uri, request, (params) -> req.setParams((Map<String, String>) params));
-        String method = request.method().name();
-        MvcContext context = new MvcContext();
-        context.setRequest(request);
-        context.setMethod(method);
-        context.setHandlerContext(ctx);
-        context.setPath(uri);
-        req.setHeaders(RequestUtils.headers(request));
-        context.setHeaders(req.getHeaders());
-        req.setMethod(method);
-        req.setPath(uri);
-        req.setBody(body);
-        MvcResponse response = new MvcResponse();
-        response.setCtx(ctx);
-        Mvc.ins().dispatcher(context, req, response);
+        HttpHandlerRead.read(ctx,request,this.config);
     }
 
 

@@ -1,5 +1,6 @@
 package com.xiaomi.mone.app.service.env;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -8,7 +9,7 @@ import com.xiaomi.mone.app.common.Result;
 import com.xiaomi.mone.app.model.vo.HeraAppEnvVo;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
@@ -24,9 +25,10 @@ import static com.xiaomi.mone.app.common.Constant.URL.HERA_OPERATOR_ENV_URL;
  */
 @Service
 @Slf4j
+@ConditionalOnProperty(name = "service.selector.property", havingValue = "outer")
 public class DefaultHttpEnvIpFetch implements EnvIpFetch {
 
-    @Value("$hera.operator.env.url}")
+    @NacosValue(value = "$hera.operator.env.url}", autoRefreshed = true)
     private String operatorEnvUrl;
     @Resource
     private OkHttpClient okHttpClient;
@@ -42,7 +44,7 @@ public class DefaultHttpEnvIpFetch implements EnvIpFetch {
         jsonObject.addProperty("name", appName);
         RequestBody requestBody = RequestBody.create(mediaType, gson.toJson(jsonObject));
 
-        Request request = new Request.Builder().url(String.format(operatorEnvUrl, HERA_OPERATOR_ENV_URL)).post(requestBody).build();
+        Request request = new Request.Builder().url(String.format("%s%s", operatorEnvUrl, HERA_OPERATOR_ENV_URL)).post(requestBody).build();
         Response response = okHttpClient.newCall(request).execute();
         if (response.isSuccessful()) {
             String rstJson = response.body().string();

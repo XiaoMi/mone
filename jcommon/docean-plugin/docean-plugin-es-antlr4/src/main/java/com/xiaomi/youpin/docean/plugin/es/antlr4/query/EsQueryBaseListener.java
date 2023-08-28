@@ -173,6 +173,18 @@ public class EsQueryBaseListener implements EsQueryListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterLikeExpr(EsQueryParser.LikeExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitLikeExpr(EsQueryParser.LikeExprContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterContainExpr(EsQueryParser.ContainExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
