@@ -1236,4 +1236,13 @@ public class Gitlab {
         headers.put("PRIVATE-TOKEN", token);
         return HttpClientV2.get(url, headers, 10000);
     }
+
+    //Compare branches, tags or commits
+    public String getRepositoryCompare(String gitHost,String projectId,String token,String from,String to) {
+        String url = gitHost + GIT_API_URI + "projects/" + projectId + "/repository/compare?from=" + from + "&to=" + to;
+        log.info("getBranchInfo url:{}", url);
+        Map<String, String> headers = new HashMap<>(1);
+        headers.put("PRIVATE-TOKEN", token);
+        return HttpClientV2.get(url, headers, 10000);
+    }
 }

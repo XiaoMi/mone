@@ -110,4 +110,10 @@ public class GitlabTest {
         System.out.println(branchInfo);
     }
 
+    @Test
+    public void getRepositoryCompare() {
+        String repositoryCompare = gitlab.getRepositoryCompare("https://xxx.com", "1", "xxx", "test2", "test1");
+        System.out.println(repositoryCompare);
+    }
+
 }
