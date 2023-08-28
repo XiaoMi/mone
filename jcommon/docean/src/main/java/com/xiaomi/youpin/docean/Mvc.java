@@ -40,10 +40,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
 import java.util.Optional;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * @author goodjava@qq.com
@@ -52,7 +49,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class Mvc {
 
-    private ThreadPoolExecutor executor;
+    private ExecutorService executor;
 
     @Getter
     private ConcurrentHashMap<String, HttpRequestMethod> requestMethodMap = new ConcurrentHashMap<>();
@@ -80,7 +77,11 @@ public class Mvc {
         this.mvcConfig.setUseCglib(Boolean.valueOf(ioc.getBean(MvcConst.CGLIB, MvcConst.TRUE)));
         this.mvcConfig.setResponseOriginalValue(Boolean.valueOf(ioc.getBean(MvcConst.RESPONSE_ORIGINAL_VALUE, MvcConst.FALSE)));
         this.mvcConfig.setPoolSize(Integer.valueOf(ioc.getBean(MvcConst.MVC_POOL_SIZE, String.valueOf(MvcConst.DEFAULT_MVC_POOL_SIZE))));
-        if (mvcConfig.getPoolSize() > 0) {
+        this.mvcConfig.setVirtualThread(Boolean.valueOf(ioc.getBean(MvcConst.VIRTUAL_THREAD, MvcConst.TRUE)));
+        //Prefer to use coroutines.
+        if (mvcConfig.isVirtualThread()) {
+            executor = Executors.newVirtualThreadPerTaskExecutor();
+        } else {
             executor = new ThreadPoolExecutor(this.mvcConfig.getPoolSize(), this.mvcConfig.getPoolSize(), 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(HttpServerConfig.HTTP_POOL_QUEUE_SIZE), new NamedThreadFactory("docean_mvc"));
         }
         ioc.publishEvent(new Event(EventType.mvcBegin, this.mvcConfig));
@@ -124,7 +125,6 @@ public class Mvc {
         private static final Mvc ins = new Mvc(Ioc.ins());
     }
 
-
     public static final Mvc ins() {
         return LazyHolder.ins;
     }
@@ -143,8 +143,7 @@ public class Mvc {
     }
 
     public void dispatcher(HttpServerConfig config, ChannelHandlerContext ctx, FullHttpRequest httpRequest, String uri, byte[] body) {
-        //executor.submit(new MvcRunnable(this, config, ctx, httpRequest, uri, body, requestMethodMap));
-        Thread.ofVirtual().start(new MvcRunnable(this, config, ctx, httpRequest, uri, body, requestMethodMap));
+        executor.submit(new MvcRunnable(this, config, ctx, httpRequest, uri, body, requestMethodMap));
     }
 
 

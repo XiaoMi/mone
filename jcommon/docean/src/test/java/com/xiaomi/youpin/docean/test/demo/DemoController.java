@@ -113,6 +113,14 @@ public class DemoController {
         return vo;
     }
 
+    @RequestMapping(path = "/test5")
+    public DemoVo test5(DemoVo req) {
+        DemoVo vo = new DemoVo();
+        vo.setId(req.getId());
+        vo.setName("test5");
+        return vo;
+    }
+
 
     /**
      * 测试302 跳转

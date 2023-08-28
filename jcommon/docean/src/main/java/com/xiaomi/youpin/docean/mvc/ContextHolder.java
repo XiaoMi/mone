@@ -22,12 +22,7 @@ package com.xiaomi.youpin.docean.mvc;
  */
 public class ContextHolder {
 
-    private static ThreadLocal<ContextHolder> context = new ThreadLocal<ContextHolder>() {
-        @Override
-        protected ContextHolder initialValue() {
-            return new ContextHolder();
-        }
-    };
+    private static ThreadLocal<ContextHolder> context = ThreadLocal.withInitial(() -> new ContextHolder());
 
     private MvcContext mvcContext;
 
