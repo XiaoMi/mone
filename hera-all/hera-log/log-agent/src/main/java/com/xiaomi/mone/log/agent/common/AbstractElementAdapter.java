@@ -78,9 +78,12 @@ public class AbstractElementAdapter implements
         return jsonDeserializationContext.deserialize(jsonElement, clz);
     }
 
-    @SneakyThrows
     public Class getClassForName() {
-        return Class.forName("com.xiaomi.mone.log.agent.output.TalosOutput");
+        try {
+            return Class.forName("com.xiaomi.mone.log.agent.output.TalosOutput");
+        } catch (Throwable ex) {
+            throw new RuntimeException(ex);
+        }
     }
 
     @Override

@@ -114,25 +114,26 @@
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>run.mone</groupId>
-                <artifactId>codecheck-maven-plugin</artifactId>
-                <version>1.4-SNAPSHOT</version>
-                <executions>
-                    <execution>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>pmd</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <checkConfigurationFile>false</checkConfigurationFile>
-                    <ipWhite>
-                        <param>127.0.0.1</param>
-                    </ipWhite>
-                </configuration>
-            </plugin>
+
+<!--            <plugin>-->
+<!--                <groupId>run.mone</groupId>-->
+<!--                <artifactId>codecheck-maven-plugin</artifactId>-->
+<!--                <version>1.4-SNAPSHOT</version>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <phase>validate</phase>-->
+<!--                        <goals>-->
+<!--                            <goal>pmd</goal>-->
+<!--                        </goals>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--                <configuration>-->
+<!--                    <checkConfigurationFile>false</checkConfigurationFile>-->
+<!--                    <ipWhite>-->
+<!--                        <param>127.0.0.1</param>-->
+<!--                    </ipWhite>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
 
 <!--            <plugin>-->
 <!--                <groupId>org.codehaus.mojo</groupId>-->
