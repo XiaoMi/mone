@@ -82,9 +82,9 @@ public interface ChannelService extends Closeable {
     List<MonitorFile> getMonitorPathList();
 
     /**
-     * openteltry日志多文件结束clean
+     * 需要删除的文件清理
      */
-    void delayDeletionFinishedFile();
+    void cleanCollectFiles();
 
     /**
      * 删除某个目录的文件采集,适用于k8s中使用demonset方式部署时某个某个下线，需要删除它的采集,解除资源占用

@@ -88,7 +88,8 @@ public class CustomLogParser implements LogParser {
                     ret.put(logPerComments.get(i), "");
                     continue;
                 }
-                ret.put(logPerComments.get(i), logDataArray.get(i));
+                String value = logDataArray.get(i);
+                ret.put(logPerComments.get(i), StringUtils.isNotEmpty(value) ? value.trim() : value);
             }
             if (ret.values().stream().map(String::valueOf).anyMatch(StringUtils::isEmpty)) {
                 ret.put(esKeyMap_logSource, originLog);

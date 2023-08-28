@@ -15,7 +15,7 @@
  */
 package com.xiaomi.mone.log.agent.channel;
 
-import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.lang.Pair;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
@@ -51,7 +51,10 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.text.NumberFormat;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.xiaomi.mone.log.common.Constant.GSON;
@@ -104,15 +107,13 @@ public class ChannelEngine {
             fileMonitorListener = new DefaultFileMonitorListener();
 
             log.info("query channelDefineList:{}", gson.toJson(channelDefineList));
-            channelServiceList = channelDefineList.stream()
-                    .map(channelDefine -> {
-                        ChannelService channelService = this.channelServiceTrans(channelDefine);
-                        if (null == channelService) {
-                            failedChannelId.add(channelDefine.getChannelId());
-                        }
-                        return channelService;
-                    }).filter(channelService -> null != channelService)
-                    .collect(Collectors.toList());
+            channelServiceList = channelDefineList.stream().map(channelDefine -> {
+                ChannelService channelService = this.channelServiceTrans(channelDefine);
+                if (null == channelService) {
+                    failedChannelId.add(channelDefine.getChannelId());
+                }
+                return channelService;
+            }).filter(channelService -> null != channelService).collect(Collectors.toList());
             // 删除失败的channel
             deleteFailedChannel(failedChannelId, this.channelDefineList, this.channelServiceList);
             channelServiceList = new CopyOnWriteArrayList<>(channelServiceList);
@@ -122,9 +123,9 @@ public class ChannelEngine {
             graceShutdown();
             //10s一次 上报channel进度
             exportChannelState();
-            log.info("current channelDefineList:{},current channelServiceList:{}",
-                    gson.toJson(this.channelDefineList), gson.toJson(this.channelServiceList.stream().map(ChannelService::instanceId).collect(Collectors.toList())));
-            monitorTheadClean();
+            log.info("current channelDefineList:{},current channelServiceList:{}", gson.toJson(this.channelDefineList), gson.toJson(this.channelServiceList.stream().map(ChannelService::instanceId).collect(Collectors.toList())));
+            monitorFilesClean();
+            executorFileClean();
         } catch (Exception e) {
             log.error("ChannelEngine init exception", e);
         } finally {
@@ -133,29 +134,46 @@ public class ChannelEngine {
     }
 
     /**
-     * 监控线程的大小是否已经超过线程池的最大数量，如果超过之后，检查文件是否存在，文件不存在，清理当前线程
+     * Thread pool cleaning, many wasted files don't need to keep wasting threads, they should be cleaned up directly.
      */
-    private void monitorTheadClean() {
+    private void executorFileClean() {
         ExecutorUtil.scheduleAtFixedRate(() -> {
-            ThreadPoolExecutor tpExecutor = (ThreadPoolExecutor) ExecutorUtil.TP_EXECUTOR;
-            if (tpExecutor.getActiveCount() > tpExecutor.getMaximumPoolSize() - 10) {
+            SafeRun.run(() -> {
+                List<Pair<AbstractChannelService, Pair<String, Long>>> serviceTimeList = Lists.newArrayList();
                 for (ChannelService channelService : channelServiceList) {
-                    try {
-                        ChannelServiceImpl service = (ChannelServiceImpl) channelService;
-                        ConcurrentHashMap<String, Future> serviceFutureMap = service.getFutureMap();
-                        for (Map.Entry<String, Future> futureEntry : serviceFutureMap.entrySet()) {
-                            if (!FileUtil.exist(futureEntry.getKey())) {
-                                log.info("current file has del,fileName:{}", futureEntry.getKey());
-                                service.getLogFileMap().get(futureEntry.getKey()).setStop(true);
-                                futureEntry.getValue().cancel(true);
-                            }
+                    AbstractChannelService service = (AbstractChannelService) channelService;
+                    Map<String, Long> fileReadTime = service.getExpireFileMap();
+                    if (!fileReadTime.isEmpty()) {
+                        for (Map.Entry<String, Long> entry : fileReadTime.entrySet()) {
+                            serviceTimeList.add(Pair.of(service, Pair.of(entry.getKey(), entry.getValue())));
                         }
-                    } catch (Exception e) {
-                        log.error("monitorTheadAndClean error", e);
                     }
                 }
+                if (serviceTimeList.size() > 100) {
+                    serviceTimeList = serviceTimeList.stream().sorted(Comparator.comparing(o -> o.getValue().getValue())).collect(Collectors.toList());
+                    for (int i = 0; i < serviceTimeList.size(); i++) {
+                        if (i < 80) {
+                            serviceTimeList.get(i).getKey().cancelFile(serviceTimeList.get(i).getValue().getKey());
+                        }
+                    }
+                }
+            });
+        }, 1, 10, TimeUnit.MINUTES);
+    }
+
+    /**
+     * Clean up deleted file events
+     */
+    private void monitorFilesClean() {
+        ExecutorUtil.scheduleAtFixedRate(() -> {
+            for (ChannelService channelService : channelServiceList) {
+                try {
+                    channelService.cleanCollectFiles();
+                } catch (Exception e) {
+                    log.error("monitorFilesClean error", e);
+                }
             }
-        }, 1, 5, TimeUnit.MINUTES);
+        }, 1, 1, TimeUnit.MINUTES);
     }
 
     private ChannelDefineLocator getChannelDefineLocator(Config config) {
@@ -171,11 +189,11 @@ public class ChannelEngine {
 
     private void exportChannelState() {
         ExecutorUtil.scheduleAtFixedRate(() -> {
-            List<ChannelState> channelStateList = channelServiceList.stream()
-                    .map(c -> c.state())
-                    .collect(Collectors.toList());
-            // 发送收集进度
-            sendCollectionProgress(channelStateList);
+            SafeRun.run(() -> {
+                List<ChannelState> channelStateList = channelServiceList.stream().map(c -> c.state()).collect(Collectors.toList());
+                // 发送收集进度
+                sendCollectionProgress(channelStateList);
+            });
         }, 10, 10, TimeUnit.SECONDS);
     }
 
@@ -190,6 +208,8 @@ public class ChannelEngine {
                 channelService.start();
                 fileMonitorListener.addChannelService(realChannelService);
                 successChannelIds.add(realChannelService.getChannelId());
+            } catch (RejectedExecutionException e) {
+                log.error("The thread pool is full.id:{}", realChannelService.getChannelId(), e);
             } catch (Exception e) {
                 Long channelId = ((ChannelServiceImpl) channelService).getChannelId();
                 failedChannelIds.add(channelId);
@@ -275,15 +295,21 @@ public class ChannelEngine {
 
     /**
      * 刷新配置(增量配置和全量配置来时刷新已经存在的配置)
+     * 其中有删除事件，说明不是全量配置，直接走停止事件
      *
      * @param channelDefines
      */
     public void refresh(List<ChannelDefine> channelDefines) {
-        log.info("[config change],changed data:{},origin data:{}", gson.toJson(channelDefines),
-                gson.toJson(channelDefineList));
+        log.info("[config change],changed data:{},origin data:{}", gson.toJson(channelDefines), gson.toJson(channelDefineList));
         try {
-            if (CollectionUtils.isNotEmpty(channelDefines) &&
-                    !CollectionUtils.isEqualCollection(channelDefines, channelDefineList)) {
+            if (CollectionUtils.isNotEmpty(channelDefines) && !CollectionUtils.isEqualCollection(channelDefines, channelDefineList)) {
+                if (channelDefines.stream().allMatch(channelDefine -> null != channelDefine.getOperateEnum() && channelDefine.getOperateEnum().getCode().equals(OperateEnum.DELETE_OPERATE.getCode()))) {
+                    // 指定目录下文件采集删除
+                    log.info("delSpecialFileColl,config:{}", gson.toJson(channelDefines));
+                    delSpecialFileColl(channelDefines);
+                    return;
+                }
+                log.info("refresh,config:{}", gson.toJson(channelDefines));
                 // 新增配置
                 addConfig(channelDefines, false);
                 // 修改的的更新
@@ -291,53 +317,14 @@ public class ChannelEngine {
                 /**
                  * 单项配置处理 不删除
                  */
-                if (channelDefines.size() == 1 && channelDefines.get(0).getSingleMetaData() != null
-                        && channelDefines.get(0).getSingleMetaData()) {
+                if (channelDefines.size() == 1 && channelDefines.get(0).getSingleMetaData() != null && channelDefines.get(0).getSingleMetaData()) {
                     return;
                 }
                 // 删除的配置
                 deleteConfig(channelDefines, false);
-                // 处理opentelemetry日志监控多文件的问题
-                openlyLogMulFileMonitorClear();
             }
         } catch (Exception e) {
-            log.error("refresh error,[config change],changed data:{},origin data:{}",
-                    gson.toJson(channelDefines), gson.toJson(channelDefineList), e);
-        }
-    }
-
-    private void openlyLogMulFileMonitorClear() {
-        for (ChannelService channelService : this.channelServiceList) {
-            channelService.delayDeletionFinishedFile();
-        }
-    }
-
-    /**
-     * 停止指定前缀的文件采集，对#refresh 方法进行补充
-     * 适用于容器环境下pod的删除，停止对应的文件采集
-     *
-     * @param filePrefixList
-     */
-    public void stopChannelFile(List<String> filePrefixList) {
-        log.warn("stop pod file craw:{}", gson.toJson(filePrefixList));
-        if (CollectionUtils.isEmpty(filePrefixList)) {
-            return;
-        }
-        if (CollectionUtils.isNotEmpty(channelServiceList)) {
-            for (ChannelService c : channelServiceList) {
-                CompletableFuture.runAsync(() -> {
-                    try {
-                        TimeUnit.MINUTES.sleep(6L);
-                    } catch (InterruptedException e) {
-                        log.error("stopChannelFile TimeUnit.MINUTES.sleep error,instanceId:{}", c.instanceId(), e);
-                    }
-                    try {
-                        c.stopFile(filePrefixList);
-                    } catch (Exception e) {
-                        log.warn("stopFile exception", e);
-                    }
-                });
-            }
+            log.error("refresh error,[config change],changed data:{},origin data:{}", gson.toJson(channelDefines), gson.toJson(channelDefineList), e);
         }
     }
 
@@ -358,8 +345,7 @@ public class ChannelEngine {
                 initIncrement(channelDefinesDifference);
             }
         } catch (Exception e) {
-            log.error("addConfig error,source channelDefines:{},origin channelDefines:{},directAdd:{}",
-                    gson.toJson(channelDefines), gson.toJson(channelDefineList), directAdd, e);
+            log.error("addConfig error,source channelDefines:{},origin channelDefines:{},directAdd:{}", gson.toJson(channelDefines), gson.toJson(channelDefineList), directAdd, e);
         }
     }
 
@@ -382,23 +368,16 @@ public class ChannelEngine {
                 ChannelDefine newChannelDefine = iterator.next();
                 // 旧channelDefine
                 Long channelId = newChannelDefine.getChannelId();
-                ChannelDefine oldChannelDefine = channelDefineList.stream()
-                        .filter(channelDefine -> channelDefine.getChannelId().equals(channelId))
-                        .findFirst().orElse(null);
+                ChannelDefine oldChannelDefine = channelDefineList.stream().filter(channelDefine -> channelDefine.getChannelId().equals(channelId)).findFirst().orElse(null);
                 if (null != oldChannelDefine) {
                     // 比较器
                     SimilarComparator appSimilarComparator = new AppSimilarComparator(oldChannelDefine.getAppId());
                     SimilarComparator inputSimilarComparator = new InputSimilarComparator(oldChannelDefine.getInput());
                     SimilarComparator outputSimilarComparator = new OutputSimilarComparator(oldChannelDefine.getOutput());
                     FilterSimilarComparator filterSimilarComparator = new FilterSimilarComparator(oldChannelDefine.getFilters());
-                    if (appSimilarComparator.compare(newChannelDefine.getAppId())
-                            && inputSimilarComparator.compare(newChannelDefine.getInput())
-                            && outputSimilarComparator.compare(newChannelDefine.getOutput())) {
+                    if (appSimilarComparator.compare(newChannelDefine.getAppId()) && inputSimilarComparator.compare(newChannelDefine.getInput()) && outputSimilarComparator.compare(newChannelDefine.getOutput())) {
                         if (!filterSimilarComparator.compare(newChannelDefine.getFilters())) {
-                            channelServiceList.stream()
-                                    .filter(channelService -> ((ChannelServiceImpl) channelService).getChannelId().equals(channelId))
-                                    .findFirst()
-                                    .ifPresent(channelService -> channelService.filterRefresh(newChannelDefine.getFilters()));
+                            channelServiceList.stream().filter(channelService -> ((ChannelServiceImpl) channelService).getChannelId().equals(channelId)).findFirst().ifPresent(channelService -> channelService.filterRefresh(newChannelDefine.getFilters()));
                         }
                     } else {
                         log.info("config changed,old:{},new:{}", gson.toJson(oldChannelDefine), gson.toJson(newChannelDefine));
@@ -420,18 +399,12 @@ public class ChannelEngine {
      * @param channelDefines
      */
     private void deleteConfig(List<ChannelDefine> channelDefines, boolean directDel) {
-        // 指定目录下文件采集删除
-        delSpecialFileColl(channelDefines);
         // 整个文件采集删除
         delTailFileColl(channelDefines, directDel);
     }
 
     private void delTailFileColl(List<ChannelDefine> channelDefines, boolean directDel) {
-        List<ChannelDefine> channelDels = channelDefines.stream()
-                .filter(channelDefine -> null != channelDefine.getOperateEnum()
-                        && channelDefine.getOperateEnum().getCode().equals(OperateEnum.DELETE_OPERATE.getCode())
-                        && StringUtils.isEmpty(channelDefine.getDelDirectory()))
-                .collect(Collectors.toList());
+        List<ChannelDefine> channelDels = channelDefines.stream().filter(channelDefine -> null != channelDefine.getOperateEnum() && channelDefine.getOperateEnum().getCode().equals(OperateEnum.DELETE_OPERATE.getCode()) && StringUtils.isEmpty(channelDefine.getDelDirectory())).collect(Collectors.toList());
         if (directDel) {
             channelDels = channelDefines;
         }
@@ -474,11 +447,7 @@ public class ChannelEngine {
      */
     private void delSpecialFileColl(List<ChannelDefine> channelDefines) {
         //找出某个机器下线时需要删除的pod
-        List<ChannelDefine> delSpecialFiles = channelDefines.stream()
-                .filter(channelDefine -> null != channelDefine.getOperateEnum()
-                        && channelDefine.getOperateEnum().getCode().equals(OperateEnum.DELETE_OPERATE.getCode())
-                        && StringUtils.isNotEmpty(channelDefine.getDelDirectory()))
-                .collect(Collectors.toList());
+        List<ChannelDefine> delSpecialFiles = channelDefines.stream().filter(channelDefine -> null != channelDefine.getOperateEnum() && channelDefine.getOperateEnum().getCode().equals(OperateEnum.DELETE_OPERATE.getCode()) && StringUtils.isNotEmpty(channelDefine.getDelDirectory())).collect(Collectors.toList());
         if (CollectionUtils.isNotEmpty(delSpecialFiles)) {
             try {
                 for (ChannelService channelService : channelServiceList) {
@@ -486,9 +455,7 @@ public class ChannelEngine {
                         AbstractChannelService abstractChannelService = (AbstractChannelService) channelService;
                         Long channelId = abstractChannelService.getChannelDefine().getChannelId();
 
-                        List<ChannelDefine> defineList = delSpecialFiles.stream()
-                                .filter(channelDefine -> Objects.equals(channelDefine.getChannelId(), channelId))
-                                .collect(Collectors.toList());
+                        List<ChannelDefine> defineList = delSpecialFiles.stream().filter(channelDefine -> Objects.equals(channelDefine.getChannelId(), channelId)).collect(Collectors.toList());
 
                         for (ChannelDefine channelDefine : defineList) {
                             log.info("deleteConfig,deleteCollFile,channelDefine:{}", gson.toJson(channelDefine));
@@ -521,9 +488,7 @@ public class ChannelEngine {
             return origin;
         }
         List<Long> sourceIds = source.stream().map(ChannelDefine::getChannelId).collect(Collectors.toList());
-        return origin.stream().filter(channelDefine -> !sourceIds.contains(
-                        channelDefine.getChannelId()) && OperateEnum.DELETE_OPERATE != channelDefine.getOperateEnum())
-                .collect(Collectors.toList());
+        return origin.stream().filter(channelDefine -> !sourceIds.contains(channelDefine.getChannelId()) && OperateEnum.DELETE_OPERATE != channelDefine.getOperateEnum()).collect(Collectors.toList());
     }
 
 
@@ -540,9 +505,7 @@ public class ChannelEngine {
             sourceIds = source.stream().map(ChannelDefine::getChannelId).collect(Collectors.toList());
         }
         List<Long> finalSourceIds = sourceIds;
-        return origin.stream().filter(channelDefine -> finalSourceIds.contains(
-                        channelDefine.getChannelId()) && OperateEnum.DELETE_OPERATE != channelDefine.getOperateEnum())
-                .collect(Collectors.toList());
+        return origin.stream().filter(channelDefine -> finalSourceIds.contains(channelDefine.getChannelId()) && OperateEnum.DELETE_OPERATE != channelDefine.getOperateEnum()).collect(Collectors.toList());
     }
 
     /**
@@ -552,28 +515,20 @@ public class ChannelEngine {
      */
     public void initIncrement(List<ChannelDefine> definesIncrement) {
         List<Long> failedChannelId = Lists.newArrayList();
-        List<ChannelService> channelServices = definesIncrement.stream()
-                .filter(Objects::nonNull)
-                .map(channelDefine -> {
-                    ChannelService channelService = channelServiceTrans(channelDefine);
-                    if (null == channelService) {
-                        failedChannelId.add(channelDefine.getChannelId());
-                    }
-                    return channelService;
-                }).filter(Objects::nonNull)
-                .collect(Collectors.toList());
+        List<ChannelService> channelServices = definesIncrement.stream().filter(Objects::nonNull).map(channelDefine -> {
+            ChannelService channelService = channelServiceTrans(channelDefine);
+            if (null == channelService) {
+                failedChannelId.add(channelDefine.getChannelId());
+            }
+            return channelService;
+        }).filter(Objects::nonNull).collect(Collectors.toList());
         deleteFailedChannel(failedChannelId, definesIncrement, channelServices);
         List<Long> successChannelIds = channelStart(channelServices);
         if (CollectionUtils.isNotEmpty(successChannelIds)) {
-            this.channelServiceList.addAll(channelServices.stream()
-                    .filter(channelService -> successChannelIds.contains(((ChannelServiceImpl) channelService).getChannelId()))
-                    .collect(Collectors.toList()));
-            this.channelDefineList.addAll(definesIncrement.stream().
-                    filter(channelDefine -> successChannelIds.contains(channelDefine.getChannelId()))
-                    .collect(Collectors.toList()));
+            this.channelServiceList.addAll(channelServices.stream().filter(channelService -> successChannelIds.contains(((ChannelServiceImpl) channelService).getChannelId())).collect(Collectors.toList()));
+            this.channelDefineList.addAll(definesIncrement.stream().filter(channelDefine -> successChannelIds.contains(channelDefine.getChannelId())).collect(Collectors.toList()));
         }
-        log.info("[add config] after current channelDefineList:{},channelServiceList:{}",
-                gson.toJson(this.channelDefineList), gson.toJson(gson.toJson(channelServiceList.stream().map(ChannelService::instanceId).collect(Collectors.toList()))));
+        log.info("[add config] after current channelDefineList:{},channelServiceList:{}", gson.toJson(this.channelDefineList), gson.toJson(gson.toJson(channelServiceList.stream().map(ChannelService::instanceId).collect(Collectors.toList()))));
     }
 
 
@@ -583,20 +538,18 @@ public class ChannelEngine {
      * @param
      */
     private void sendCollectionProgress(List<ChannelState> channelStateList) {
-        SafeRun.run(() -> {
-            if (CollectionUtils.isEmpty(channelStateList)) {
-                return;
-            }
-            UpdateLogProcessCmd processCmd = assembleParam(channelStateList);
-            RpcClient rpcClient = Ioc.ins().getBean(RpcClient.class);
-            RemotingCommand req = RemotingCommand.createRequestCommand(Constant.RPCCMD_AGENT_CODE);
-            req.setBody(GSON.toJson(processCmd).getBytes());
-            rpcClient.sendMessage(req);
-            log.debug("send collect progress,data:{}", gson.toJson(processCmd));
-        });
+        if (CollectionUtils.isEmpty(channelStateList)) {
+            return;
+        }
+        UpdateLogProcessCmd processCmd = assembleLogProcessData(channelStateList);
+        RpcClient rpcClient = Ioc.ins().getBean(RpcClient.class);
+        RemotingCommand req = RemotingCommand.createRequestCommand(Constant.RPCCMD_AGENT_CODE);
+        req.setBody(GSON.toJson(processCmd).getBytes());
+        rpcClient.sendMessage(req);
+        log.debug("send collect progress,data:{}", gson.toJson(processCmd));
     }
 
-    private UpdateLogProcessCmd assembleParam(List<ChannelState> channelStateList) {
+    private UpdateLogProcessCmd assembleLogProcessData(List<ChannelState> channelStateList) {
         UpdateLogProcessCmd cmd = new UpdateLogProcessCmd();
         try {
             cmd.setIp(NetUtil.getLocalIp());
@@ -612,18 +565,7 @@ public class ChannelEngine {
                 collectDetail.setIpList(channelState.getIpList());
                 collectDetail.setPath(channelState.getLogPattern());
 
-                List<UpdateLogProcessCmd.FileProgressDetail> progressDetails = channelState.getStateProgressMap()
-                        .entrySet().stream()
-                        .map(entry -> UpdateLogProcessCmd.FileProgressDetail
-                                .builder()
-                                .fileRowNumber(entry.getValue().getCurrentRowNum())
-                                .collectTime(channelState.getCollectTime())
-                                .pointer(entry.getValue().getPointer())
-                                .fileMaxPointer(entry.getValue().getFileMaxPointer())
-                                .collectPercentage(getPercent(entry.getValue().getPointer(), entry.getValue().getFileMaxPointer()))
-                                .configIp(entry.getValue().getIp())
-                                .pattern(entry.getKey())
-                                .build()).collect(Collectors.toList());
+                List<UpdateLogProcessCmd.FileProgressDetail> progressDetails = channelState.getStateProgressMap().entrySet().stream().map(entry -> UpdateLogProcessCmd.FileProgressDetail.builder().fileRowNumber(entry.getValue().getCurrentRowNum()).collectTime(entry.getValue().getCtTime()).pointer(entry.getValue().getPointer()).fileMaxPointer(entry.getValue().getFileMaxPointer()).collectPercentage(getPercent(entry.getValue().getPointer(), entry.getValue().getFileMaxPointer())).configIp(entry.getValue().getIp()).pattern(entry.getKey()).build()).collect(Collectors.toList());
                 collectDetail.setFileProgressDetails(progressDetails);
                 finalCollects.add(collectDetail);
             });

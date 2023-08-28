@@ -20,6 +20,7 @@ expr
     |   param GE value  #GeExpr
     |   param NE value  #NeExpr
     |   param EQ value  #EqExpr
+    |   param LIKE value #LikeExpr
     |   param CONTAIN value  #ContainExpr
     |   param NOTCONTAIN value  #NotContainExpr
     |   param IN array  #InExpr
@@ -89,8 +90,8 @@ LT  :   '<';
 GT  :   '>';
 LE  :   '<=';
 GE  :   '>=';
-REG :   '=~';
-LIKE:   'LIKE';
+REG :   ':~';
+LIKE:   'LIKE' | 'like';
 IN  :   'IN' | 'in';
 NOT_IN  :   'NOT_IN' | 'not_in';
 EXIST   :   'EXIST' | 'exist';

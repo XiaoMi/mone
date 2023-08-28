@@ -16,7 +16,7 @@
 
 package com.xiaomi.youpin.gitlab;
 
-import com.alibaba.fastjson.JSON;
+import com.google.gson.Gson;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -61,6 +61,8 @@ public class Gitlab {
     private static final String GIT_PUSH_PATH = "/tmp/git/push/";
     private static final String username = "";
     private static final String password = "";
+
+    private static Gson gson = new Gson();
 
     public Gitlab(String gitlabBaseUrl) {
         if (StringUtils.isBlank(gitlabBaseUrl)) {
@@ -1174,7 +1176,8 @@ public class Gitlab {
         }
         String url = GIT_API_URL + "projects/" + gitWebhook.getId() + "/hooks/" + gitWebhook.getHook_id();
         try {
-            String body = JSON.toJSONString(gitWebhook);
+            //String body = JSON.toJSONString(gitWebhook);
+            String body = gson.toJson(gitWebhook);
             Map<String, String> headers = new HashMap<>();
             headers.put("Content-Type", "application/json");
             headers.put("PRIVATE-TOKEN", token);
@@ -1222,6 +1225,24 @@ public class Gitlab {
         Map<String, String> headers = new HashMap<>(1);
         headers.put("PRIVATE-TOKEN", token);
 
+        return HttpClientV2.get(url, headers, 10000);
+    }
+
+    // Get branch information of a repository
+    public String getBranchInfo(String gitHost,String projectId,String branch,String token) {
+        String url = gitHost + GIT_API_URI + "projects/" + projectId + "/repository/branches/" + branch;
+        log.info("getBranchInfo url:{}", url);
+        Map<String, String> headers = new HashMap<>(1);
+        headers.put("PRIVATE-TOKEN", token);
+        return HttpClientV2.get(url, headers, 10000);
+    }
+
+    //Compare branches, tags or commits
+    public String getRepositoryCompare(String gitHost,String projectId,String token,String from,String to) {
+        String url = gitHost + GIT_API_URI + "projects/" + projectId + "/repository/compare?from=" + from + "&to=" + to;
+        log.info("getBranchInfo url:{}", url);
+        Map<String, String> headers = new HashMap<>(1);
+        headers.put("PRIVATE-TOKEN", token);
         return HttpClientV2.get(url, headers, 10000);
     }
 }
