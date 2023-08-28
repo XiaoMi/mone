@@ -63,6 +63,7 @@ public class MvcRunnable implements Runnable {
         this.context.setCookie(config.isCookie());
         this.request.setHeaders(RequestUtils.headers(httpRequest));
         this.context.setHeaders(this.request.getHeaders());
+        this.context.setVirtualThread(this.mvc.getMvcConfig().isVirtualThread());
         this.request.setMethod(method);
         this.request.setPath(uri);
         this.request.setBody(body);

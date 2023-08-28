@@ -34,8 +34,10 @@ import com.xiaomi.youpin.docean.mvc.common.MvcConst;
 import com.xiaomi.youpin.docean.mvc.util.ExceptionUtil;
 import com.xiaomi.youpin.docean.mvc.util.Jump;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.*;
-import lombok.Getter;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
@@ -47,63 +49,64 @@ import java.util.concurrent.*;
  * @date 2020/6/20
  */
 @Slf4j
+@Data
 public class Mvc {
 
     private ExecutorService executor;
 
-    @Getter
     private ConcurrentHashMap<String, HttpRequestMethod> requestMethodMap = new ConcurrentHashMap<>();
 
-    @Getter
     private Ioc ioc;
 
     private static Gson gson = new Gson();
 
-    @Getter
     private MvcConfig mvcConfig = new MvcConfig();
 
     private MethodInvoker methodInvoker = new MethodInvoker();
 
+    private String name = "mvc";
+
     private Mvc(Ioc ioc) {
         this.ioc = ioc;
+        this.name = this.ioc.getName();
         setConfig(ioc);
+        this.executor = createPool();
         initHttpRequestMethod();
     }
 
     private void setConfig(Ioc ioc) {
         this.mvcConfig.setAllowCross(Boolean.valueOf(ioc.getBean(MvcConst.ALLOW_CROSS_DOMAIN, MvcConst.FALSE)));
         this.mvcConfig.setDownload(Boolean.valueOf(ioc.getBean(MvcConst.MVC_DOWNLOAD, MvcConst.FALSE)));
-        Boolean.valueOf(ioc.getBean(MvcConst.RESPONSE_ORIGINAL_VALUE, MvcConst.FALSE));
         this.mvcConfig.setUseCglib(Boolean.valueOf(ioc.getBean(MvcConst.CGLIB, MvcConst.TRUE)));
         this.mvcConfig.setResponseOriginalValue(Boolean.valueOf(ioc.getBean(MvcConst.RESPONSE_ORIGINAL_VALUE, MvcConst.FALSE)));
         this.mvcConfig.setPoolSize(Integer.valueOf(ioc.getBean(MvcConst.MVC_POOL_SIZE, String.valueOf(MvcConst.DEFAULT_MVC_POOL_SIZE))));
         this.mvcConfig.setVirtualThread(Boolean.valueOf(ioc.getBean(MvcConst.VIRTUAL_THREAD, MvcConst.TRUE)));
-        //Prefer to use coroutines.
-        if (mvcConfig.isVirtualThread()) {
-            executor = Executors.newVirtualThreadPerTaskExecutor();
-        } else {
-            executor = new ThreadPoolExecutor(this.mvcConfig.getPoolSize(), this.mvcConfig.getPoolSize(), 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(HttpServerConfig.HTTP_POOL_QUEUE_SIZE), new NamedThreadFactory("docean_mvc"));
-        }
         ioc.publishEvent(new Event(EventType.mvcBegin, this.mvcConfig));
+    }
+
+    private ExecutorService createPool() {
+        if (mvcConfig.isVirtualThread()) {
+            return Executors.newVirtualThreadPerTaskExecutor();
+        } else {
+            return new ThreadPoolExecutor(this.mvcConfig.getPoolSize(), this.mvcConfig.getPoolSize(), 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(HttpServerConfig.HTTP_POOL_QUEUE_SIZE), new NamedThreadFactory("docean_mvc"));
+        }
     }
 
     private void initHttpRequestMethod() {
         ioc.beans().entrySet().stream().forEach(entry -> {
             Bean bean = entry.getValue();
             if (bean.getType() == Bean.Type.controller.ordinal()) {
-                Arrays.stream(bean.getClazz().getMethods()).forEach(m -> {
-                    Optional.ofNullable(m.getAnnotation(RequestMapping.class)).ifPresent(rm -> {
-                        String path = rm.path();
-                        HttpRequestMethod hrm = new HttpRequestMethod();
-                        hrm.setTimeout(rm.timeout());
-                        hrm.setPath(path);
-                        hrm.setObj(bean.getObj());
-                        hrm.setMethod(m);
-                        hrm.setHttpMethod(rm.method());
-                        ioc.publishEvent(new Event(EventType.initController, path));
-                        requestMethodMap.put(path, hrm);
-                    });
-                });
+                Arrays.stream(bean.getClazz().getMethods()).forEach(m -> Optional.ofNullable(m.getAnnotation(RequestMapping.class)).ifPresent(rm -> {
+                    String path = rm.path();
+                    HttpRequestMethod hrm = new HttpRequestMethod();
+                    hrm.setTimeout(rm.timeout());
+                    hrm.setPath(path);
+                    hrm.setObj(bean.getObj());
+                    hrm.setMethod(m);
+                    hrm.setHttpMethod(rm.method());
+                    ioc.publishEvent(new Event(EventType.initController, path));
+                    requestMethodMap.put(path, hrm);
+                }));
             }
             if (bean.getObj() instanceof MvcServlet) {
                 MvcServlet ms = (MvcServlet) bean.getObj();

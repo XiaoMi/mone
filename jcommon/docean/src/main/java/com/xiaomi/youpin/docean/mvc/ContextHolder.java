@@ -16,6 +16,8 @@
 
 package com.xiaomi.youpin.docean.mvc;
 
+import com.xiaomi.youpin.docean.mvc.common.MvcConst;
+
 /**
  * @author goodjava@qq.com
  * @date 2020/7/5
@@ -35,6 +37,12 @@ public class ContextHolder {
         return this.mvcContext;
     }
 
+    public MvcContext get(boolean virtualThread) {
+        if (virtualThread) {
+            return MvcConst.MVC_CONTEXT.get();
+        }
+        return get();
+    }
 
     public static ContextHolder getContext() {
         return context.get();
