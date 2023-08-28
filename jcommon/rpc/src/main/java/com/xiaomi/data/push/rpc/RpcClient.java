@@ -84,9 +84,7 @@ public class RpcClient implements Service {
 
     private int pooSize = Runtime.getRuntime().availableProcessors() * 2 + 1;
 
-    private ExecutorService defaultPool = new ThreadPoolExecutor(pooSize, pooSize,
-            0L, TimeUnit.MILLISECONDS,
-            new ArrayBlockingQueue<>(1000));
+    private ExecutorService defaultPool = Executors.newVirtualThreadPerTaskExecutor();
 
     private ScheduledExecutorService pool;
 
