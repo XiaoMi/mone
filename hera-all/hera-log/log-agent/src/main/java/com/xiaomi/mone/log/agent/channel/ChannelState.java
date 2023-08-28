@@ -75,5 +75,10 @@ public class ChannelState implements Serializable {
          * 当前文件的最大字符号
          */
         private Long fileMaxPointer;
+
+        /**
+         * 采集时间
+         */
+        private Long ctTime;
     }
 }

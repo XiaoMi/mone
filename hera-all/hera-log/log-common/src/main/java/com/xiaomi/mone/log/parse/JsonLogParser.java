@@ -20,6 +20,7 @@ import com.alibaba.fastjson.parser.Feature;
 import com.xiaomi.mone.log.utils.IndexUtils;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 
@@ -69,7 +70,7 @@ public class JsonLogParser implements LogParser {
                 }
                 String currentKey = keyNameList.get(i);
                 String value = rawLogMap.getOrDefault(currentKey, "").toString();
-                ret.put(currentKey, value);
+                ret.put(currentKey, StringUtils.isNotEmpty(value) ? value.trim() : value);
             }
             /* 不需要考虑跳过了所有的key的情况，后面会对 esKeyMap_MESSAGE 做判断 :
             if (ret.size()==0){
