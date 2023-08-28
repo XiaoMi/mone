@@ -26,12 +26,14 @@ import com.google.gson.JsonObject;
  */
 public abstract class Post {
 
+    private static Gson gson = new Gson();
+
 
     public static JsonArray getParams(HttpRequestMethod method, JsonElement arguments) {
         JsonArray array = new JsonArray();
         Class<?>[] types = method.getMethod().getParameterTypes();
         if (types.length > 0 && types[0] == MvcContext.class) {
-            array.add(new Gson().fromJson("{}", JsonObject.class));
+            array.add(gson.fromJson("{}", JsonObject.class));
         }
 
         if (null == arguments) {
@@ -43,9 +45,7 @@ public abstract class Post {
         }
 
         if (arguments.isJsonArray()) {
-            arguments.getAsJsonArray().forEach(it -> {
-                array.add(it);
-            });
+            arguments.getAsJsonArray().forEach(it -> array.add(it));
         }
 
         if (arguments.isJsonPrimitive()) {

@@ -37,6 +37,9 @@ public class HttpServerConfig {
 
     private int port;
 
+    @Builder.Default
+    private boolean cookie = true;
+
     /**
      * 允许上传文件
      */

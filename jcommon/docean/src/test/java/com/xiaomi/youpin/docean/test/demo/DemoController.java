@@ -76,7 +76,7 @@ public class DemoController {
     @RequestMapping(path = "/a/**")
     public String a() {
 //        TimeUnit.SECONDS.sleep(3);
-        return "a";
+        return "a:"+Thread.currentThread().getName();
     }
 
 
@@ -110,6 +110,14 @@ public class DemoController {
         log.info("{}", context);
         DemoVo vo = new DemoVo();
         vo.setName("test4");
+        return vo;
+    }
+
+    @RequestMapping(path = "/test5")
+    public DemoVo test5(DemoVo req) {
+        DemoVo vo = new DemoVo();
+        vo.setId(req.getId());
+        vo.setName("test5");
         return vo;
     }
 

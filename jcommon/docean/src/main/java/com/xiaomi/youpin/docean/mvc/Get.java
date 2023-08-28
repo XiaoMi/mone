@@ -30,13 +30,19 @@ import java.util.Arrays;
  */
 public abstract class Get {
 
+    private static Gson gson = new Gson();
+
 
     public static JsonArray getParams(HttpRequestMethod method, JsonElement arguments) {
-
         JsonArray array = new JsonArray();
+
+        if (null == arguments) {
+            return array;
+        }
+
         Class<?>[] types = method.getMethod().getParameterTypes();
         if (types.length > 0 && types[0] == MvcContext.class) {
-            array.add(new Gson().fromJson("{}", JsonObject.class));
+            array.add(gson.fromJson("{}", JsonObject.class));
         }
 
 
