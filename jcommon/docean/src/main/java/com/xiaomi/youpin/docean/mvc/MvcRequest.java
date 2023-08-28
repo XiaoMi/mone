@@ -31,6 +31,8 @@ public class MvcRequest {
 
     private String path;
 
+    private String uri;
+
     private String serviceName;
 
     private String methodName;

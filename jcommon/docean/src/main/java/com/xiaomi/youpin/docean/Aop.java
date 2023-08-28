@@ -50,6 +50,9 @@ public class Aop {
      */
     private boolean cglib = true;
 
+    @Getter
+    private String name = "aop";
+
     private Aop() {
     }
 

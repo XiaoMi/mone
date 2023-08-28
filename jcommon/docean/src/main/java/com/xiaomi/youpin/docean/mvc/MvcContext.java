@@ -35,6 +35,11 @@ public class MvcContext {
 
     private String traceId;
 
+    /**
+     * 使用协程
+     */
+    private boolean virtualThread;
+
     private Map<String, String> attachments;
 
     private Map<String, String> headers;
@@ -69,7 +74,6 @@ public class MvcContext {
         }
         return this.session;
     }
-
 
     private String sessionId = "";
 

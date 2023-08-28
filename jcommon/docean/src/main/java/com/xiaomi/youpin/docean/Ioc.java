@@ -86,6 +86,7 @@ public class Ioc {
     @Getter
     private ClassLoader classLoader;
 
+    @Getter
     private String name = "";
 
     public Ioc name(String name) {
