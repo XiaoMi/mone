@@ -55,4 +55,9 @@ public class RmqOutput extends Output implements Serializable {
     public String getEndpoint() {
         return clusterInfo;
     }
+
+    @Override
+    public String getServiceName() {
+        return serviceName;
+    }
 }
