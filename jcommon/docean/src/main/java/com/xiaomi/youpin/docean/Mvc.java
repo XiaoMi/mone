@@ -40,6 +40,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.*;
 
@@ -168,8 +169,7 @@ public class Mvc {
 
     public void callMethod(MvcContext context, MvcRequest request, MvcResponse response, MvcResult<Object> result, HttpRequestMethod method) {
         Safe.run(() -> {
-            String m = method.getHttpMethod();
-            JsonElement args = getArgs(method, m, request);
+            JsonElement args = getArgs(method, request.getMethod().toLowerCase(Locale.ROOT), request);
             context.setParams(args);
             Object[] params = methodInvoker.getMethodParams(method.getMethod(), args);
             setMvcContext(context, params);
