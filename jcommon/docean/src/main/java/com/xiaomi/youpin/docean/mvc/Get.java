@@ -16,43 +16,46 @@
 
 package com.xiaomi.youpin.docean.mvc;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.xiaomi.youpin.docean.anno.RequestParam;
+import com.xiaomi.youpin.docean.exception.DoceanException;
+import com.xiaomi.youpin.docean.mvc.httpmethod.HttpMethodUtils;
+import io.netty.handler.codec.http.QueryStringDecoder;
 
 import java.lang.annotation.Annotation;
 import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author goodjava@qq.com
  */
 public abstract class Get {
 
-    private static Gson gson = new Gson();
-
-
-    public static JsonArray getParams(HttpRequestMethod method, JsonElement arguments) {
+    public static JsonArray getParams(HttpRequestMethod method, String uri) {
+        QueryStringDecoder decoder = new QueryStringDecoder(uri);
+        Map<String, String> params = decoder.parameters().entrySet().stream().collect(Collectors.toMap(it -> it.getKey(), it -> it.getValue().get(0)));
         JsonArray array = new JsonArray();
-
-        if (null == arguments) {
+        HttpMethodUtils.addMvcContext(method, array);
+        if (null == params) {
             return array;
         }
-
-        Class<?>[] types = method.getMethod().getParameterTypes();
-        if (types.length > 0 && types[0] == MvcContext.class) {
-            array.add(gson.fromJson("{}", JsonObject.class));
-        }
-
         Annotation[][] anns = method.getMethod().getParameterAnnotations();
         Arrays.stream(anns).forEach(it -> {
             if (it.length > 0) {
-                RequestParam param = (RequestParam) (it[0]);
+                RequestParam param = getRequestParam(it);
                 String name = param.value();
-                array.add(arguments.getAsJsonObject().get(name));
+                if (!params.containsKey(name)) {
+                    throw new DoceanException("Missing parameter:" + name);
+                }
+                array.add(params.get(name));
             }
         });
         return array;
+    }
+
+    private static RequestParam getRequestParam(Annotation[] annos) {
+        return (RequestParam) Arrays.stream(annos).filter(it -> it instanceof RequestParam).findFirst().get();
     }
 }

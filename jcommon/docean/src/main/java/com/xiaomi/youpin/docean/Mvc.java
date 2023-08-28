@@ -22,7 +22,6 @@ import com.xiaomi.youpin.docean.anno.RequestMapping;
 import com.xiaomi.youpin.docean.bo.Bean;
 import com.xiaomi.youpin.docean.bo.MvcConfig;
 import com.xiaomi.youpin.docean.common.MethodInvoker;
-import com.xiaomi.youpin.docean.common.MutableObject;
 import com.xiaomi.youpin.docean.common.NamedThreadFactory;
 import com.xiaomi.youpin.docean.common.Safe;
 import com.xiaomi.youpin.docean.config.HttpServerConfig;
@@ -169,11 +168,9 @@ public class Mvc {
 
     public void callMethod(MvcContext context, MvcRequest request, MvcResponse response, MvcResult<Object> result, HttpRequestMethod method) {
         Safe.run(() -> {
-            JsonElement arguments = request.getBody().length == 0 ? null : gson.fromJson(new String(request.getBody()), JsonElement.class);
             String m = method.getHttpMethod();
-            MutableObject mo = getArgs(method, arguments, m);
-            Safe.run(() -> context.setParams(arguments));
-            JsonElement args = mo.getObj();
+            JsonElement args = getArgs(method, m, request);
+            context.setParams(args);
             Object[] params = methodInvoker.getMethodParams(method.getMethod(), args);
             setMvcContext(context, params);
             Object data = this.mvcConfig.isUseCglib() ? methodInvoker.invokeFastMethod(method.getObj(), method.getMethod(), params) :
@@ -229,20 +226,17 @@ public class Mvc {
      * parsing parameters
      *
      * @param method
-     * @param arguments
-     * @param m
+     * @param httpMethod
      * @return
      */
-    private MutableObject getArgs(HttpRequestMethod method, JsonElement arguments, String m) {
-        MutableObject mo = new MutableObject();
-        if (m.equalsIgnoreCase("get")) {
-            mo.setObj(Get.getParams(method, arguments));
-        } else if (m.equalsIgnoreCase("post")) {
-            mo.setObj(Post.getParams(method, arguments));
+    private JsonElement getArgs(HttpRequestMethod method, String httpMethod, MvcRequest req) {
+        if (httpMethod.equalsIgnoreCase("get")) {
+            return Get.getParams(method, req.getUri());
+        } else if (httpMethod.equalsIgnoreCase("post")) {
+            return Post.getParams(method, req.getBody());
         } else {
-            throw new DoceanException(m);
+            throw new DoceanException("don't support:" + httpMethod);
         }
-        return mo;
     }
 
     private void setMvcContext(MvcContext context, Object[] params) {

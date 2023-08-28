@@ -20,6 +20,10 @@ public abstract class RequestUtils {
 
     private static Gson gson = new Gson();
 
+    public static byte[] getData(HttpServerConfig config, String uri, FullHttpRequest request) {
+        return getData(config, uri, request, null);
+    }
+
     public static byte[] getData(HttpServerConfig config, String uri, FullHttpRequest request, Consumer consumer) {
         if (Upload.isUpload(uri)) {
             if (config.isUpload()) {
@@ -33,15 +37,7 @@ public abstract class RequestUtils {
             }
         }
         if (request.method().equals(HttpMethod.GET)) {
-            QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
-            if (decoder.parameters().size() == 0) {
-                return new byte[]{};
-            }
-            Map<String, String> params = decoder.parameters().entrySet().stream().collect(Collectors.toMap(it -> it.getKey(), it -> it.getValue().get(0)));
-            if (null != consumer) {
-                consumer.accept(params);
-            }
-            return gson.toJson(params).getBytes();
+            return new byte[]{};
         }
         if (request.method().equals(HttpMethod.POST)) {
             return HttpRequestUtils.getRequestBody(request);

@@ -15,14 +15,12 @@ import io.netty.handler.codec.http.HttpObject;
 public class HttpHandlerRead {
 
 
-    public static void read(ChannelHandlerContext ctx, HttpObject obj, HttpServerConfig config) {
-        if (obj instanceof FullHttpRequest) {
-            FullHttpRequest request = (FullHttpRequest) obj;
-            String uri = HttpRequestUtils.getBasePath(request);
-            byte[] body = RequestUtils.getData(config, uri, request, null);
+    public static void read(ChannelHandlerContext ctx, HttpObject httpObject, HttpServerConfig config) {
+        if (httpObject instanceof FullHttpRequest request) {
+            var uri = HttpRequestUtils.getBasePath(request);
+            byte[] body = RequestUtils.getData(config, uri, request);
             Mvc.ins().dispatcher(config, ctx, request, uri, body);
         }
-
     }
 
 }

@@ -18,7 +18,7 @@ import java.util.UUID;
 @Slf4j
 public class Download {
 
-    public void download(MvcContext context, MvcRequest request, MvcResponse response) {
+    public static void download(MvcContext context, MvcRequest request, MvcResponse response) {
         String name = request.getParams().getOrDefault("name", "");
         if (StringUtils.isEmpty(name)) {
             response.writeAndFlush(context, HttpResponseStatus.NOT_FOUND, "");
