@@ -7,7 +7,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpObject;
 
-import java.util.Map;
 
 /**
  * @author goodjava@qq.com
@@ -20,22 +19,8 @@ public class HttpHandlerRead {
         if (obj instanceof FullHttpRequest) {
             FullHttpRequest request = (FullHttpRequest) obj;
             String uri = HttpRequestUtils.getBasePath(request);
-            MvcRequest req = new MvcRequest();
-            byte[] body = RequestUtils.getData(config, uri, request, (params) -> req.setParams((Map<String, String>) params));
-            String method = request.method().name();
-            MvcContext context = new MvcContext();
-            context.setRequest(request);
-            context.setMethod(method);
-            context.setHandlerContext(ctx);
-            context.setPath(uri);
-            req.setHeaders(RequestUtils.headers(request));
-            context.setHeaders(req.getHeaders());
-            req.setMethod(method);
-            req.setPath(uri);
-            req.setBody(body);
-            MvcResponse response = new MvcResponse();
-            response.setCtx(ctx);
-            Mvc.ins().dispatcher(context, req, response);
+            byte[] body = RequestUtils.getData(config, uri, request, null);
+            Mvc.ins().dispatcher(config, ctx, request, uri, body);
         }
 
     }

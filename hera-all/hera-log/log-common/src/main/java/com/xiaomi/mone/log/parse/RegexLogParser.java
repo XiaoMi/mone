@@ -19,6 +19,7 @@ import com.gliwka.hyperscan.util.PatternFilter;
 import com.xiaomi.mone.log.utils.IndexUtils;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -82,7 +83,7 @@ public class RegexLogParser implements LogParser {
                 if (valueIndexList[i] < logArray.size()) {
                     value = logArray.get(valueIndexList[i]);
                 }
-                ret.put(keyNameList.get(i), value);
+                ret.put(keyNameList.get(i), StringUtils.isNotEmpty(value) ? value.trim() : value);
             }
             validTimestamp(ret, logData, collectStamp);
         } catch (Exception e) {

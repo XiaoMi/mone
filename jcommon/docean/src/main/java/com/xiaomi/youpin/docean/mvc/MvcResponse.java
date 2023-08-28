@@ -49,7 +49,9 @@ public class MvcResponse {
                 response.headers().set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_METHODS, "GET, POST, PUT,DELETE");
                 response.headers().set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true");
             }
-            HttpSessionManager.setSessionId(context, HttpSessionManager.isHasSessionId(context.getHeaders()), response);
+            if (context.isCookie()) {
+                HttpSessionManager.setSessionId(context, HttpSessionManager.isHasSessionId(context.getHeaders()), response);
+            }
             if (StringUtils.isNotEmpty(context.getRequest().headers().get(HttpHeaderNames.CONNECTION))) {
                 response.headers().add(HttpHeaderNames.CONNECTION,context.getRequest().headers().get(HttpHeaderNames.CONNECTION));
             }
@@ -65,5 +67,9 @@ public class MvcResponse {
             responseStatus = HttpResponseStatus.valueOf(Integer.valueOf(status));
         }
         writeAndFlush(context, responseStatus, message);
+    }
+
+    public void clear() {
+        this.ctx = null;
     }
 }

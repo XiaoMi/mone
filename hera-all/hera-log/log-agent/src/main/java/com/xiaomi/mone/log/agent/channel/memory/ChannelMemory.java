@@ -52,6 +52,10 @@ public class ChannelMemory implements Serializable {
     public static class FileProgress implements Serializable {
 
         private String currentFile;
+        /**
+         * 采集时间
+         */
+        private Long ctTime;
 
         /**
          * 当前文件列表索引号，

@@ -48,6 +48,8 @@ public class MvcContext {
 
     private boolean websocket;
 
+    private boolean cookie;
+
     private HttpSession session;
 
     private FullHttpRequest request;
@@ -76,5 +78,18 @@ public class MvcContext {
     private ChannelHandlerContext handlerContext;
 
     private String path;
+
+    public void clear() {
+        this.traceId = null;
+        if (null != this.attachments) {
+            this.attachments.clear();
+        }
+        if (null != this.headers) {
+            this.headers.clear();
+        }
+        if (null != this.resHeaders) {
+            this.resHeaders.clear();
+        }
+    }
 
 }

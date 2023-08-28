@@ -34,8 +34,13 @@ public abstract class RequestUtils {
         }
         if (request.method().equals(HttpMethod.GET)) {
             QueryStringDecoder decoder = new QueryStringDecoder(request.uri());
+            if (decoder.parameters().size() == 0) {
+                return new byte[]{};
+            }
             Map<String, String> params = decoder.parameters().entrySet().stream().collect(Collectors.toMap(it -> it.getKey(), it -> it.getValue().get(0)));
-            consumer.accept(params);
+            if (null != consumer) {
+                consumer.accept(params);
+            }
             return gson.toJson(params).getBytes();
         }
         if (request.method().equals(HttpMethod.POST)) {
@@ -45,7 +50,7 @@ public abstract class RequestUtils {
     }
 
     public static Map<String, String> headers(FullHttpRequest request) {
-        return request.headers().entries().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+        return request.headers().entries().stream().collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e, n) -> n));
     }
 
 }

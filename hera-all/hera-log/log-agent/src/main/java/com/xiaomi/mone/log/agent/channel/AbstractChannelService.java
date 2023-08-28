@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -73,6 +74,7 @@ public abstract class AbstractChannelService implements ChannelService {
             stateProgress.setCurrentRowNum(fileProcess.getCurrentRowNum());
             stateProgress.setPointer(fileProcess.getPointer());
             stateProgress.setFileMaxPointer(fileProcess.getFileMaxPointer());
+            stateProgress.setCtTime(fileProcess.getCtTime());
             channelState.getStateProgressMap().put(pattern, stateProgress);
         });
 
@@ -83,6 +85,10 @@ public abstract class AbstractChannelService implements ChannelService {
     public abstract ChannelDefine getChannelDefine();
 
     public abstract ChannelMemory getChannelMemory();
+
+    public abstract Map<String, Long> getExpireFileMap();
+
+    public abstract void cancelFile(String file);
 
     public abstract Long getLogCounts();
 

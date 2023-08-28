@@ -279,7 +279,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
                     logtailConfigs.add(assembleLogTailConfigs(tailId));
                     currentStoreConfig.setLogtailConfigs(logtailConfigs);
                 } else {
-                    //新加入的logstore
+                    //新加入的logStore
                     spaceConfig.add(assembleSinkConfig(storeId, tailId, motorRoomEn));
                 }
             }
@@ -348,16 +348,16 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
         SinkConfig sinkConfig = new SinkConfig();
         sinkConfig.setLogstoreId(storeId);
         // 查询logStore
-        MilogLogStoreDO milogLogstore = logstoreDao.queryById(storeId);
-        if (null != milogLogstore) {
-            sinkConfig.setLogstoreName(milogLogstore.getLogstoreName());
-            sinkConfig.setKeyList(Utils.parse2KeyAndTypeList(milogLogstore.getKeyList(), milogLogstore.getColumnTypeList()));
-            MilogEsClusterDO esInfo = esCluster.getById(milogLogstore.getEsClusterId());
+        MilogLogStoreDO logStoreDO = logstoreDao.queryById(storeId);
+        if (null != logStoreDO) {
+            sinkConfig.setLogstoreName(logStoreDO.getLogstoreName());
+            sinkConfig.setKeyList(Utils.parse2KeyAndTypeList(logStoreDO.getKeyList(), logStoreDO.getColumnTypeList()));
+            MilogEsClusterDO esInfo = esCluster.getById(logStoreDO.getEsClusterId());
             if (null != esInfo) {
-                sinkConfig.setEsIndex(milogLogstore.getEsIndex());
+                sinkConfig.setEsIndex(logStoreDO.getEsIndex());
                 sinkConfig.setEsInfo(buildEsInfo(esInfo));
             } else {
-                log.info("assembleSinkConfig esInfo is null,logStoreId:{}", milogLogstore.getId());
+                log.info("assembleSinkConfig esInfo is null,logStoreId:{}", logStoreDO.getId());
             }
         }
         sinkConfig.setLogtailConfigs(Arrays.asList(assembleLogTailConfigs(tailId)));

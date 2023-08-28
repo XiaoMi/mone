@@ -471,30 +471,31 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
             return new Result<>(CommonError.ParamsError.getCode(), validMsg);
         }
 
-        deleteRemoteConfig(id, milogLogtailDo);
+        MilogLogStoreDO logStoreDO = logStoreDao.queryById(milogLogtailDo.getStoreId());
+        deleteRemoteConfig(id, logStoreDO);
 
         if (milogLogtailDao.deleteMilogLogtail(id)) {
-            MilogLogStoreDO logStoreDO = logStoreDao.queryById(milogLogtailDo.getStoreId());
             if (storeExtensionService.isNeedSendMsgType(logStoreDO.getLogType())) {
                 CompletableFuture.runAsync(() -> sendMessageOnDelete(milogLogtailDo, logStoreDO));
             }
             tailExtensionService.logTailDelPostProcess(logStoreDO, milogLogtailDo);
             return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage());
         } else {
-            log.warn("[LogTailService.deleteMilogLogtail] delete MilogLogtail err,id:{}", id);
+            log.warn("[LogTailService.deleteLogTail] delete LogTail error,id:{}", id);
             return new Result<>(CommonError.UnknownError.getCode(), CommonError.UnknownError.getMessage());
         }
     }
 
-    private void deleteRemoteConfig(Long id, MilogLogTailDo milogLogtailDo) {
-        MilogLogStoreDO storeDO = logStoreDao.queryById(milogLogtailDo.getStoreId());
-        logTailService.deleteConfigRemote(storeDO.getSpaceId(), id, storeDO.getMachineRoom(), LogStructureEnum.TAIL);
+    private void deleteRemoteConfig(Long id, MilogLogStoreDO storeDO) {
+        if (logTypeProcessor.supportedConsume(storeDO.getLogType())) {
+            logTailService.deleteConfigRemote(storeDO.getSpaceId(), id, storeDO.getMachineRoom(), LogStructureEnum.TAIL);
+        }
     }
 
     @Override
     public void sendMessageOnDelete(MilogLogTailDo mt, MilogLogStoreDO logStoreDO) {
         log.info("发送删除配置信息：mt:{}", GSON.toJson(mt));
-        delMqConfigResource(mt, logStoreDO);
+        resourceExtensionService.deleteMqResourceProcessing(mt, logStoreDO);
         /**
          * 发送配置信息---log-agent
          */
@@ -503,10 +504,6 @@ public class LogTailServiceImpl extends BaseService implements LogTailService {
          * 删除关系
          */
         milogAppMiddlewareRelDao.deleteRel(mt.getMilogAppId(), mt.getId());
-    }
-
-    private void delMqConfigResource(MilogLogTailDo mt, MilogLogStoreDO logStoreDO) {
-        resourceExtensionService.deleteMqResourceProcessing(mt, logStoreDO);
     }
 
     @Override
