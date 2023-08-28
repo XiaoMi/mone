@@ -63,7 +63,7 @@ public class MvcRunnable implements Runnable {
         this.context.setCookie(config.isCookie());
         this.request.setHeaders(RequestUtils.headers(httpRequest));
         this.context.setHeaders(this.request.getHeaders());
-        this.context.setVirtualThread(this.mvc.getMvcConfig().isVirtualThread());
+        this.context.setVirtualThread(mvc.getMvcConfig().isVirtualThread());
         this.request.setMethod(method);
         this.request.setPath(uri);
         this.request.setBody(body);
@@ -167,7 +167,6 @@ public class MvcRunnable implements Runnable {
         }
         //直接调用服务
         mvc.callService(context, request, response);
-        return;
     }
 
     private boolean isDownload(String path) {

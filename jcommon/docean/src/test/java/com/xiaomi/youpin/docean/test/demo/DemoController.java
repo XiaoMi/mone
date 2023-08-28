@@ -20,6 +20,7 @@ import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.Controller;
 import com.xiaomi.youpin.docean.anno.RequestMapping;
 import com.xiaomi.youpin.docean.anno.RequestParam;
+import com.xiaomi.youpin.docean.mvc.ContextHolder;
 import com.xiaomi.youpin.docean.mvc.MvcContext;
 import com.xiaomi.youpin.docean.mvc.MvcResult;
 import com.xiaomi.youpin.docean.test.anno.TAnno;
@@ -76,7 +77,7 @@ public class DemoController {
     @RequestMapping(path = "/a/**")
     public String a() {
 //        TimeUnit.SECONDS.sleep(3);
-        return "a:"+Thread.currentThread().getName();
+        return "a:" + Thread.currentThread().getName();
     }
 
 
@@ -118,6 +119,14 @@ public class DemoController {
         DemoVo vo = new DemoVo();
         vo.setId(req.getId());
         vo.setName("test5");
+        return vo;
+    }
+
+    @RequestMapping(path = "/test6")
+    public DemoVo test6(DemoVo req) {
+        DemoVo vo = new DemoVo();
+        vo.setId(req.getId());
+        vo.setName("test6:" + ContextHolder.getContext().get());
         return vo;
     }
 

@@ -45,7 +45,6 @@ public abstract class Get {
             array.add(gson.fromJson("{}", JsonObject.class));
         }
 
-
         Annotation[][] anns = method.getMethod().getParameterAnnotations();
         Arrays.stream(anns).forEach(it -> {
             if (it.length > 0) {
