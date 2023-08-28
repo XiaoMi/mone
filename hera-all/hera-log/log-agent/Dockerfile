@@ -1,4 +1,4 @@
-FROM micr.cloud.mioffice.cn/mixiao/openjdk:20-jdk-bullseye
+FROM openjdk:20-jdk-bullseye
 
 ENV APP_HOME /opt/app
 
