@@ -29,8 +29,7 @@ public class ExecutorUtil {
 
     public static ScheduledThreadPoolExecutor STP_EXECUTOR = new ScheduledThreadPoolExecutor(15, new CustomThreadFactory("ExecutorUtil-STP-Thread"));
 
-    public static ExecutorService TP_EXECUTOR = new ThreadPoolExecutor(5, 1024, 30, TimeUnit.SECONDS,
-            new SynchronousQueue<>(), new CustomThreadFactory("ExecutorUtil-Thread"));
+    public static ExecutorService TP_EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
 
     public static ScheduledFuture<?> scheduleAtFixedRate(Runnable command,
                                                          long initialDelay,

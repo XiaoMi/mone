@@ -1,4 +1,4 @@
-FROM openjdk:8-jre
+FROM openjdk:20-jdk-bullseye
 
 ENV APP_HOME /opt/app
 
@@ -8,4 +8,4 @@ COPY target/log-agent-1.0-SNAPSHOT.jar ${APP_HOME}
 
 WORKDIR ${APP_HOME}
 
-ENTRYPOINT ["java", "-jar", "log-agent-1.0-SNAPSHOT.jar"]
+ENTRYPOINT ["java","--enable-preview", "-jar", "log-agent-1.0-SNAPSHOT.jar"]
