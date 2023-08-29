@@ -109,10 +109,8 @@ public class RpcServer implements Service {
         }
     }
 
-    private ThreadPoolExecutor creatThreadPool(int size) {
-        return new ThreadPoolExecutor(size, size,
-                0L, TimeUnit.MILLISECONDS,
-                new ArrayBlockingQueue<>(1000));
+    private ExecutorService creatThreadPool(int size) {
+        return Executors.newVirtualThreadPerTaskExecutor();
     }
 
     @Override

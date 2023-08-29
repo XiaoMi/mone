@@ -19,6 +19,9 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author dingtao
@@ -44,6 +47,9 @@ public class ConsumerService {
     @Autowired
     private ClientMessageQueue clientMessageQueue;
 
+    @Autowired
+    private DataCacheService cacheService;
+
     @PostConstruct
     public void takeMessage() throws MQClientException {
         // Before initializing rocketmq consumer,
@@ -62,6 +68,11 @@ public class ConsumerService {
 
     private class TraceEtlMessageListener implements MessageListenerConcurrently {
 
+        private AtomicInteger i = new AtomicInteger();
+
+        private AtomicLong time = new AtomicLong(System.currentTimeMillis());
+
+
         @Override
         public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> list, ConsumeConcurrentlyContext consumeConcurrentlyContext) {
             if (list == null || list.isEmpty()) {
@@ -78,6 +89,15 @@ public class ConsumerService {
                     log.error("consumer message error", t);
                 }
                 clientMessageQueue.enqueue(traceId, message);
+            }
+
+            long now = System.currentTimeMillis();
+
+            i.addAndGet(list.size());
+            if (i.get() > 10000 || (now - time.get() >= TimeUnit.SECONDS.toMillis(4))) {
+                i.set(0);
+                time.set(now);
+                cacheService.cacheData();
             }
             return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
         }
