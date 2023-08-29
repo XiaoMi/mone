@@ -27,12 +27,12 @@ import java.util.List;
  */
 public interface ChannelService extends Closeable {
     /**
-     * 启动channel任务
+     * Start channel task.
      */
     void start();
 
     /**
-     * 动态刷新channel配置
+     * Dynamic refresh channel configuration
      *
      * @param channelDefine
      * @param msgExporter
@@ -40,54 +40,54 @@ public interface ChannelService extends Closeable {
     void refresh(ChannelDefine channelDefine, MsgExporter msgExporter);
 
     /**
-     * 停止指定的文件采集
+     * Stop specified file collection.
      *
      * @param filePrefixList
      */
     void stopFile(List<String> filePrefixList);
 
     /**
-     * 获取chanel当前最新状态
+     * Get the current latest status of Chanel.
      *
      * @return
      */
     ChannelState state();
 
     /**
-     * channel 实例id
+     * channel instance id
      *
      * @return
      */
     String instanceId();
 
     /**
-     * filter配置存在变更
+     * There have been changes in the filter configuration.
      *
      * @param confs
      */
     void filterRefresh(List<FilterConf> confs);
 
     /**
-     * 监听到变化重新开始采集文件
+     * Listening for changes and restarting file collection.
      *
      * @param filePath
      */
     void reOpen(String filePath);
 
     /**
-     * 需要监听的文件列表
+     * List of files to be monitored
      *
      * @return
      */
     List<MonitorFile> getMonitorPathList();
 
     /**
-     * 需要删除的文件清理
+     * File cleanup needed
      */
     void cleanCollectFiles();
 
     /**
-     * 删除某个目录的文件采集,适用于k8s中使用demonset方式部署时某个某个下线，需要删除它的采集,解除资源占用
+     * Delete the file collection of a certain directory, applicable when using the demonset deployment method in k8s, when a certain node goes offline, it needs to delete its collection and release resource occupation.
      *
      * @param directory
      */
