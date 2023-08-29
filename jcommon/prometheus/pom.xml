@@ -24,7 +24,7 @@
 
     <properties>
 		<java.version>1.8</java.version>
-		<prometheus-all.version>0.0.5-SNAPSHOT</prometheus-all.version>
+		<prometheus-all.version>0.0.5-multi-metrics-SNAPSHOT</prometheus-all.version>
 	</properties>
 
 	<dependencies>
