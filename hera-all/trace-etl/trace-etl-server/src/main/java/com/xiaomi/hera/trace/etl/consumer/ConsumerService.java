@@ -7,9 +7,7 @@ import com.xiaomi.hera.trace.etl.util.ThriftUtil;
 import com.xiaomi.hera.tspandata.TSpanData;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
-import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyContext;
-import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;
-import org.apache.rocketmq.client.consumer.listener.MessageListenerConcurrently;
+import org.apache.rocketmq.client.consumer.listener.*;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.thrift.TDeserializer;
@@ -66,7 +64,7 @@ public class ConsumerService {
         log.info("init consumer end ...");
     }
 
-    private class TraceEtlMessageListener implements MessageListenerConcurrently {
+    private class TraceEtlMessageListener implements MessageListenerOrderly {
 
         private AtomicInteger i = new AtomicInteger();
 
@@ -74,9 +72,9 @@ public class ConsumerService {
 
 
         @Override
-        public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> list, ConsumeConcurrentlyContext consumeConcurrentlyContext) {
+        public ConsumeOrderlyStatus consumeMessage(List<MessageExt> list, final ConsumeOrderlyContext context) {
             if (list == null || list.isEmpty()) {
-                return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
+                return ConsumeOrderlyStatus.SUCCESS;
             }
             for (MessageExt message : list) {
                 String traceId = "";
@@ -94,12 +92,12 @@ public class ConsumerService {
             long now = System.currentTimeMillis();
 
             i.addAndGet(list.size());
-            if (i.get() > 10000 || (now - time.get() >= TimeUnit.SECONDS.toMillis(4))) {
+            if ((now - time.get() >= TimeUnit.SECONDS.toMillis(15))) {
                 i.set(0);
                 time.set(now);
                 cacheService.cacheData();
             }
-            return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
+            return ConsumeOrderlyStatus.SUCCESS;
         }
     }
 }
