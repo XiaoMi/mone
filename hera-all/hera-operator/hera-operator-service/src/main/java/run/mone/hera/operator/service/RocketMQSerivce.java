@@ -47,7 +47,8 @@ public class RocketMQSerivce {
             "hera_app_ip_change",
             "hear_log_message_compensate",
             "mone_hera_staging_trace_etl_server",
-            "mone_hera_staging_trace_etl_es"};
+            "mone_hera_staging_trace_etl_es",
+            "hera_meta_data_staging"};
 
     public void createTopic(String namesrvAddr) {
         DefaultMQPushConsumer consumer = null;
@@ -65,11 +66,11 @@ public class RocketMQSerivce {
             }
         } catch (Throwable t) {
             log.error("create rocketMQ topic error", t);
-        }finally {
-            if(consumer != null){
+        } finally {
+            if (consumer != null) {
                 consumer.shutdown();
             }
-            if(mqClientInstance != null){
+            if (mqClientInstance != null) {
                 mqClientInstance.shutdown();
             }
         }
