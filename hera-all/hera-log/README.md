@@ -1,4 +1,9 @@
 # milog
+
+# log-agent支持jdk20（2023-08-29）
++ 启动参数里注意加上：--enable-preview --add-opens java.base/java.util.regex=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.lang.invoke=ALL-UNNAMED  --add-opens=java.base/java.util=ALL-UNNAMED --add-modules=jdk.incubator.concurrent --add-opens java.base/sun.nio.fs=ALL-UNNAMED
+
+
 # 支持了外部编译(去除xiaomi全部依赖):2023-04-03
 
 # 代码规范

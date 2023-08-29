@@ -6,7 +6,6 @@ import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.xml.bind.DatatypeConverter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -225,8 +224,11 @@ public class LogFile {
         MessageDigest md = MessageDigest.getInstance("MD5");
         md.update(msg.getBytes());
         byte[] digest = md.digest();
-        return DatatypeConverter
-                .printHexBinary(digest).toUpperCase();
+        StringBuilder sb = new StringBuilder(2 * digest.length);
+        for(byte b : digest) {
+            sb.append(String.format("%02x", b & 0xff));
+        }
+        return sb.toString().toUpperCase();
     }
 
 

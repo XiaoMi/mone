@@ -12,25 +12,16 @@
     <artifactId>log-agent</artifactId>
 
     <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
+        <maven.compiler.source>20</maven.compiler.source>
+        <maven.compiler.target>20</maven.compiler.target>
         <rocketmq-version>4.9.4</rocketmq-version>
     </properties>
 
     <dependencies>
-
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.28</version>
-            <scope>provided</scope>
-        </dependency>
-
-
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>docean</artifactId>
-            <version>1.4-SNAPSHOT</version>
+            <version>1.4-java20-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -59,6 +50,11 @@
 
 
         <dependency>
+            <groupId>cn.hutool</groupId>
+            <artifactId>hutool-all</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>run.mone</groupId>
             <artifactId>hera-tspandata</artifactId>
             <version>2.0-SNAPSHOT</version>
@@ -77,6 +73,10 @@
             </exclusions>
         </dependency>
 
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.apache.commons</groupId>
@@ -111,6 +111,16 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+        </dependency>
+
     </dependencies>
 
 
@@ -131,19 +141,20 @@
         </resources>
 
         <plugins>
-
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.11.0</version>
                 <configuration>
-                    <compilerArgs>--enable-preview</compilerArgs>
+                    <compilerArgs>
+                        <arg>--add-modules=jdk.incubator.concurrent</arg>
+                        <arg>--enable-preview</arg>
+                    </compilerArgs>
                     <compilerVersion>20</compilerVersion>
                     <source>20</source>
                     <target>20</target>
                 </configuration>
             </plugin>
-
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -189,6 +200,20 @@
             <build>
                 <filters>
                     <filter>src/main/resources/config/open.properties</filter>
+                </filters>
+            </build>
+        </profile>
+        <profile>
+            <id>dev</id>
+            <properties>
+                <profiles.active>dev</profiles.active>
+            </properties>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <build>
+                <filters>
+                    <filter>src/main/resources/config/dev.properties</filter>
                 </filters>
             </build>
         </profile>
