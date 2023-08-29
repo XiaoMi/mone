@@ -15,6 +15,10 @@
  */
 package run.mone.hera.operator.common;
 
+import org.apache.commons.lang3.StringUtils;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -1074,12 +1078,22 @@ public class ESIndexConst {
     public static void main(String[] args) {
         // update your es api address
         String esApiAddr = "elasticsearch:9200";
+        String userName = "";
+        String password = "";
+        String authHeader = "";
+        if (StringUtils.isNotEmpty(userName) && StringUtils.isNotEmpty(password)) {
+            byte[] auth = (userName + ":" + password).getBytes(StandardCharsets.UTF_8);
+            String base64 = Base64.getEncoder().encodeToString(auth);
+            authHeader = "--header 'Authorization: Basic " + base64 + "' \\\n";
+        }
 
         for (String index : templates.keySet()) {
             System.out.println("curl --location --request PUT 'http://" + esApiAddr + "/_template/" + index + "' \\\n" +
                     "--header 'Content-type: application/json; charset=UTF-8' \\\n" +
+                    authHeader +
                     "--data-raw '" + templates.get(index).replaceAll("\\\n", "").replaceAll("\\\t", "").replaceAll(" ", "") + "'");
             System.out.println("=============================================================");
         }
     }
+
 }
