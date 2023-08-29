@@ -24,7 +24,7 @@
 
     <properties>
 		<java.version>1.8</java.version>
-		<prometheus-all.version>0.0.5-SNAPSHOT</prometheus-all.version>
+		<prometheus-all.version>0.0.5-multi-metrics-SNAPSHOT</prometheus-all.version>
 	</properties>
 
 	<dependencies>
@@ -49,5 +49,18 @@
 
 
 	</dependencies>
+
+	<distributionManagement>
+		<repository>
+			<id>central</id>
+			<name>maven-release-virtual</name>
+			<url>https://pkgs.d.xiaomi.net/artifactory/maven-release-virtual</url>
+		</repository>
+		<snapshotRepository>
+			<id>snapshots</id>
+			<name>maven-snapshot-virtual</name>
+			<url>https://pkgs.d.xiaomi.net/artifactory/maven-snapshot-virtual</url>
+		</snapshotRepository>
+	</distributionManagement>
 
 </project>
