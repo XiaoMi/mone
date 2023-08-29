@@ -4,6 +4,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.Sets;
 import com.xiaomi.youpin.prometheus.client.MetricsManager;
 import com.xiaomi.youpin.prometheus.client.Prometheus;
+import com.xiaomi.youpin.prometheus.client.multi.MutiMetrics;
 import io.prometheus.client.*;
 import io.prometheus.client.exporter.common.TextFormat;
 import lombok.extern.slf4j.Slf4j;
@@ -73,7 +74,8 @@ public class DataCacheService {
             log.info("cache data");
             Stopwatch sw = Stopwatch.createStarted();
             List<String> list = new ArrayList<>();
-            CollectorRegistry registry = call.old().getRegistry();
+            MutiMetrics old = call.old();
+            CollectorRegistry registry = old.getRegistry();
             try {
                 Field field = registry.getClass().getDeclaredField("namesToCollectors");
                 field.setAccessible(true);
@@ -92,20 +94,20 @@ public class DataCacheService {
             } catch (Throwable ex) {
                 log.error(ex.getMessage());
             } finally {
-                clearMetrics();
+                clearMetrics(old);
             }
             log.info("cache data use time:{} ms", sw.elapsed(TimeUnit.MILLISECONDS));
         });
     }
 
 
-    private void clearMetrics() {
+    private void clearMetrics(MutiMetrics old) {
         try {
-            MetricsManager gMetricsMgr = call.old().gMetricsMgr;
+            MetricsManager gMetricsMgr = old.gMetricsMgr;
             if (gMetricsMgr instanceof Prometheus) {
                 Prometheus prometheus = (Prometheus) gMetricsMgr;
                 Map<String, Object> prometheusMetrics = prometheus.prometheusMetrics;
-                clearTypeMetrics(prometheusMetrics);
+                clearTypeMetrics(prometheusMetrics,old.getRegistry());
                 prometheus.prometheusMetrics.clear();
                 prometheus.prometheusTypeMetrics.clear();
             }
@@ -114,8 +116,7 @@ public class DataCacheService {
         }
     }
 
-    private void clearTypeMetrics(Map<String, Object> prometheusMetrics) {
-        CollectorRegistry registry = call.old().getRegistry();
+    private void clearTypeMetrics(Map<String, Object> prometheusMetrics, CollectorRegistry registry) {
         for (String key : prometheusMetrics.keySet()) {
             Object o = prometheusMetrics.get(key);
             if (o instanceof Counter) {
