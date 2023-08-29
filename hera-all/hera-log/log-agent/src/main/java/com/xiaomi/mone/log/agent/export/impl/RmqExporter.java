@@ -90,7 +90,6 @@ public class RmqExporter implements MsgExporter {
                 .collect(Collectors.toList());
 
         try {
-            //todo @shanwb 发送失败异常处理
             mqProducer.send(messages);
         } catch (MQClientException e) {
             log.error("rocketmq export MQClientException:{}", e);
