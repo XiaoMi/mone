@@ -27,7 +27,7 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>prometheus-trace-etl</artifactId>
-            <version>0.0.5-SNAPSHOT</version>
+            <version>0.0.5-multi-metrics-SNAPSHOT</version>
         </dependency>
 
         <dependency>

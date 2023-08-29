@@ -95,7 +95,7 @@ public class DataCacheService {
                 clearMetrics();
             }
             log.info("cache data use time:{} ms", sw.elapsed(TimeUnit.MILLISECONDS));
-        }).start();
+        });
     }
 
 
