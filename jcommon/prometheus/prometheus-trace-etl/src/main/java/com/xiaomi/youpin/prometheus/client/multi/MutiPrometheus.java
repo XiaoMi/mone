@@ -104,14 +104,14 @@ public class MutiPrometheus implements MetricsManager {
             return null;
         }
         try {
-            //如果有直接返回
+            // return if not exist
             if (prometheusMetrics.containsKey(metricName)) {
                 //log.debug("already have metric:" + metricName);
                 return (Counter) prometheusMetrics.get(metricName);
             }
 
             synchronized (lock) {
-                //没有需要先注册一个
+                // register if not exist
                 List<String> mylist = new ArrayList<>(Arrays.asList(labelName));
 //            mylist.add(Metrics.APPLICATION);
                 String[] finalValue = mylist.toArray(new String[mylist.size()]);
@@ -136,13 +136,13 @@ public class MutiPrometheus implements MetricsManager {
             return null;
         }
         try {
-            //如果有直接返回
+            // return if not exist
             if (prometheusMetrics.containsKey(metricName)) {
                 // log.debug("already have metric:" + metricName);
                 return (Gauge) prometheusMetrics.get(metricName);
             }
             synchronized (lock) {
-                //没有需要先注册一个
+                // register if not exist
                 List<String> mylist = new ArrayList<>(Arrays.asList(labelName));
 //            mylist.add(Metrics.APPLICATION);
                 String[] finalValue = mylist.toArray(new String[mylist.size()]);
@@ -168,14 +168,14 @@ public class MutiPrometheus implements MetricsManager {
             return null;
         }
         try {
-            //如果有直接返回
+            // return if not exist
             if (prometheusMetrics.containsKey(metricName)) {
                 // log.debug("already have metric:" + metricName);
                 return (Histogram) prometheusMetrics.get(metricName);
             }
 
             synchronized (lock) {
-                //没有需要注册一个
+                // register if not exist
                 List<String> mylist = new ArrayList<>(Arrays.asList(labelNames));
 //            mylist.add(Metrics.APPLICATION);
                 String[] finalValue = mylist.toArray(new String[mylist.size()]);
