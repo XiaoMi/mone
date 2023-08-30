@@ -16,7 +16,7 @@ public class MutiMetrics {
 
     public MutiPrometheus gMetricsMgr;
     /**
-     * group+service形成namespace标识
+     * The combination of 'group' and 'service' forms the namespace identifier.
      */
     public static final String GROUP = "group";
     public static final String SERVICE = "service";
