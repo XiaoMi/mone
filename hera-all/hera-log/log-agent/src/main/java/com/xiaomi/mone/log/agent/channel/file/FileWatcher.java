@@ -27,13 +27,15 @@ import java.util.function.Consumer;
  */
 public interface FileWatcher {
     /**
-     * watch目录文件变化
+     * Watch directory file changes.
+     *
      * @param logFile
      */
     void watch(LogFile logFile);
 
     /**
-     * watch目录文件变化
+     * watch directory file changes
+     *
      * @param filePattern
      * @param monitorList
      * @param consumer
