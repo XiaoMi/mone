@@ -66,23 +66,17 @@ import static com.xiaomi.mone.log.common.Constant.GSON;
 @Service
 @Slf4j
 public class ChannelEngine {
-
-    /**
-     * 按nameSrvAddr 初始化MQProducer
-     */
-    //private ConcurrentHashMap<String, TalosProducer> talosProducerMap;
-
     private AgentMemoryService agentMemoryService;
 
     private ChannelDefineLocator channelDefineLocator;
     /**
-     * 服务启动时全量拉取的配置
+     * The configuration pulled in full when the service starts.
      */
     private List<ChannelDefine> channelDefineList = Lists.newArrayList();
 
     private volatile List<ChannelService> channelServiceList = Lists.newArrayList();
     /**
-     * 文件监听器
+     * File listener
      */
     private FileMonitorListener fileMonitorListener;
 
@@ -294,8 +288,8 @@ public class ChannelEngine {
 
 
     /**
-     * 刷新配置(增量配置和全量配置来时刷新已经存在的配置)
-     * 其中有删除事件，说明不是全量配置，直接走停止事件
+     * Refresh configuration (refresh existing configuration when incremental configuration and full configuration come)
+     * There are deletion events, indicating that it is not a full configuration, and it goes directly to the stop event.
      *
      * @param channelDefines
      */
@@ -315,7 +309,7 @@ public class ChannelEngine {
                 // 修改的的更新
                 updateConfig(channelDefines);
                 /**
-                 * 单项配置处理 不删除
+                 * Single configuration processing without deletion.
                  */
                 if (channelDefines.size() == 1 && channelDefines.get(0).getSingleMetaData() != null && channelDefines.get(0).getSingleMetaData()) {
                     return;
@@ -329,7 +323,7 @@ public class ChannelEngine {
     }
 
     /**
-     * 新增配置
+     * New configuration
      *
      * @param channelDefines
      */
@@ -350,10 +344,10 @@ public class ChannelEngine {
     }
 
     /**
-     * 更新配置(
-     * 1.找到变化了的配置
-     * 2.删除原配置
-     * 3.重新增加配置
+     * Update configuration(
+     * 1. Find the changed configuration
+     * 2. Delete the original configuration
+     * 3. Add the configuration again
      * )
      *
      * @param channelDefines
@@ -394,12 +388,12 @@ public class ChannelEngine {
     }
 
     /**
-     * 删除配置
+     * Delete configuration
      *
      * @param channelDefines
      */
     private void deleteConfig(List<ChannelDefine> channelDefines, boolean directDel) {
-        // 整个文件采集删除
+        // The entire file is collected and deleted.
         delTailFileColl(channelDefines, directDel);
     }
 
@@ -441,7 +435,7 @@ public class ChannelEngine {
     }
 
     /**
-     * 删除特定目录下的日志采集
+     * Delete log collection under a specific directory.
      *
      * @param channelDefines
      */
@@ -461,7 +455,7 @@ public class ChannelEngine {
                             log.info("deleteConfig,deleteCollFile,channelDefine:{}", gson.toJson(channelDefine));
                             channelService.deleteCollFile(channelDefine.getDelDirectory());
                         }
-                        //也需要删除opentelemetry日志
+                        //Also need to delete opentelemetry logs.
                         if (LogTypeEnum.OPENTELEMETRY == abstractChannelService.getLogTypeEnum()) {
                             for (ChannelDefine channelDefine : delSpecialFiles) {
                                 log.info("deleteConfig OPENTELEMETRY,deleteCollFile,channelDefine:{}", gson.toJson(channelDefine));
@@ -477,10 +471,10 @@ public class ChannelEngine {
     }
 
     /**
-     * 差集
+     * Difference
      *
-     * @param origin 新老的配置
-     * @param source 旧的配置
+     * @param origin New and old configuration
+     * @param source Old configuration
      * @return
      */
     private List<ChannelDefine> differenceSet(List<ChannelDefine> origin, List<ChannelDefine> source) {
@@ -493,7 +487,7 @@ public class ChannelEngine {
 
 
     /**
-     * 交集
+     * Intersection
      *
      * @param origin
      * @param source
@@ -509,7 +503,7 @@ public class ChannelEngine {
     }
 
     /**
-     * 新增配置初始化
+     * New configuration initialization
      *
      * @param definesIncrement
      */
@@ -533,7 +527,7 @@ public class ChannelEngine {
 
 
     /**
-     * 发送采集进度
+     * Send collection progress.
      *
      * @param
      */

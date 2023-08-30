@@ -48,27 +48,27 @@ public class ChannelDefine implements Serializable {
 
     private List<String> ips;
     /**
-     * ip和目录对应关系
+     * Relationship between IP and directory
      */
     private List<LogPattern.IPRel> ipDirectoryRel;
 
     /**
-     * filter、script配置
+     * filter and script configuration
      */
     private List<FilterConf> filters;
     /**
-     * 只有当前机器为k8s且日志类型为opentelemetry类型日志时才有作用，这个机器上存活的pod
+     * Only when the current machine is k8s and the log type is opentelemetry type log, it will take effect, and the pods alive on this machine.
      */
     private List<String> podNames;
 
     /**
-     * 单个配置数据，默认该机器下的全量配置
+     * Individual configuration data, default full configuration under this machine.
      */
     private Boolean singleMetaData;
 
     private String podType;
     /**
-     * 某个机器下线的时候需要删除的该目录下的日志采集,只有当某个应用的机器下线时才有值
+     * The log collection in the directory that needs to be deleted when a machine goes offline only has a value when a machine of a certain application goes offline.
      */
     private String delDirectory;
 
