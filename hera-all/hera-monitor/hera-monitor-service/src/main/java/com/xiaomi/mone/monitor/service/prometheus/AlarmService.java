@@ -737,7 +737,7 @@ public class AlarmService {
      */
     public String getCpuUsageAlarmExpr(Integer projectId, String projectName, String op, double value, AlarmRuleData ruleData, BasicAlarmLevel alarmLevel){
 
-        if(alarmLevel == null || BasicAlarmLevel.isValid(alarmLevel)){
+        if(alarmLevel == null || !BasicAlarmLevel.isValid(alarmLevel)){
             log.error("getCpuUsageAlarmExpr no valid alarmLevel assign! alarmLevel : {}",alarmLevel);
             return null;
         }
