@@ -799,7 +799,7 @@ public class AlarmService {
 
     public String getCpuLoadAverageAlarmExpr(Integer projectId, String projectName, String op, double value, AlarmRuleData ruleData, BasicAlarmLevel alarmLevel){
 
-        if(alarmLevel == null || BasicAlarmLevel.isValid(alarmLevel)){
+        if(alarmLevel == null || !BasicAlarmLevel.isValid(alarmLevel)){
             log.error("getCpuLoadAverageAlarmExpr no valid alarmLevel assign! alarmLevel : {}",alarmLevel);
             return null;
         }
@@ -864,7 +864,7 @@ public class AlarmService {
      */
     public String getMemUsageAlarmExpr(Integer projectId, String projectName, String op, double value, AlarmRuleData ruleData, BasicAlarmLevel alarmLevel){
 
-        if(alarmLevel == null || BasicAlarmLevel.isValid(alarmLevel)){
+        if(alarmLevel == null || !BasicAlarmLevel.isValid(alarmLevel)){
             log.error("getMemUsageAlarmExpr no valid alarmLevel assign! alarmLevel : {}",alarmLevel);
             return null;
         }
@@ -926,7 +926,7 @@ public class AlarmService {
 
     public String getDiskHasUsedAlarmExpr(Integer projectId, String projectName, String op, double value, AlarmRuleData ruleData, BasicAlarmLevel alarmLevel){
 
-        if(alarmLevel == null || BasicAlarmLevel.isValid(alarmLevel)){
+        if(alarmLevel == null || !BasicAlarmLevel.isValid(alarmLevel)){
             log.error("getDiskHasUsedAlarmExpr no valid alarmLevel assign! alarmLevel : {}",alarmLevel);
             return null;
         }
@@ -970,7 +970,7 @@ public class AlarmService {
 
     public String getDiskUsageAlarmExpr(Integer projectId, String projectName, String op, double value, AlarmRuleData ruleData, BasicAlarmLevel alarmLevel){
 
-        if(alarmLevel == null || BasicAlarmLevel.isValid(alarmLevel)){
+        if(alarmLevel == null || !BasicAlarmLevel.isValid(alarmLevel)){
             log.error("getDiskUsageAlarmExpr no valid alarmLevel assign! alarmLevel : {}",alarmLevel);
             return null;
         }
@@ -1035,7 +1035,7 @@ public class AlarmService {
 
     public String getDiskWriteAlarmExpr(Integer projectId, String projectName, String op, double value, AlarmRuleData ruleData, BasicAlarmLevel alarmLevel){
 
-        if(alarmLevel == null || BasicAlarmLevel.isValid(alarmLevel)){
+        if(alarmLevel == null || !BasicAlarmLevel.isValid(alarmLevel)){
             log.error("getDiskWriteAlarmExpr no valid alarmLevel assign! alarmLevel : {}",alarmLevel);
             return null;
         }
@@ -1079,7 +1079,7 @@ public class AlarmService {
 
     public String getDiskReadAlarmExpr(Integer projectId, String projectName, String op, double value, AlarmRuleData ruleData, BasicAlarmLevel alarmLevel){
 
-        if(alarmLevel == null || BasicAlarmLevel.isValid(alarmLevel)){
+        if(alarmLevel == null || !BasicAlarmLevel.isValid(alarmLevel)){
             log.error("getDiskReadAlarmExpr no valid alarmLevel assign! alarmLevel : {}",alarmLevel);
             return null;
         }
@@ -1123,7 +1123,7 @@ public class AlarmService {
 
     public String getNetworkTransmitAlarmExpr(Integer projectId, String projectName, String op, double value, AlarmRuleData ruleData, BasicAlarmLevel alarmLevel){
 
-        if(alarmLevel == null || BasicAlarmLevel.isValid(alarmLevel)){
+        if(alarmLevel == null || !BasicAlarmLevel.isValid(alarmLevel)){
             log.error("getNetworkTransmitAlarmExpr no valid alarmLevel assign! alarmLevel : {}",alarmLevel);
             return null;
         }
@@ -1167,7 +1167,7 @@ public class AlarmService {
 
     public String getNetworkReceiveAlarmExpr(Integer projectId, String projectName, String op, double value, AlarmRuleData ruleData, BasicAlarmLevel alarmLevel){
 
-        if(alarmLevel == null || BasicAlarmLevel.isValid(alarmLevel)){
+        if(alarmLevel == null || !BasicAlarmLevel.isValid(alarmLevel)){
             log.error("getNetworkReceiveAlarmExpr no valid alarmLevel assign! alarmLevel : {}",alarmLevel);
             return null;
         }
@@ -1211,7 +1211,7 @@ public class AlarmService {
 
     public String getContainerRestartAlarmExpr(Integer projectId, String projectName, String op, double value, AlarmRuleData ruleData, BasicAlarmLevel alarmLevel){
 
-        if(alarmLevel == null || BasicAlarmLevel.isValid(alarmLevel)){
+        if(alarmLevel == null || !BasicAlarmLevel.isValid(alarmLevel)){
             log.error("getContainerRestartAlarmExpr no valid alarmLevel assign! alarmLevel : {}",alarmLevel);
             return null;
         }
@@ -1267,7 +1267,7 @@ public class AlarmService {
 
     public String getProcessNumAlarmExpr(Integer projectId, String projectName, String op, double value, AlarmRuleData ruleData, BasicAlarmLevel alarmLevel){
 
-        if(alarmLevel == null || BasicAlarmLevel.isValid(alarmLevel)){
+        if(alarmLevel == null || !BasicAlarmLevel.isValid(alarmLevel)){
             log.error("getProcessNumAlarmExpr no valid alarmLevel assign! alarmLevel : {}",alarmLevel);
             return null;
         }
@@ -1310,7 +1310,7 @@ public class AlarmService {
 
     public String getThreadsNumAlarmExpr(Integer projectId, String projectName, String op, double value, AlarmRuleData ruleData, BasicAlarmLevel alarmLevel){
 
-        if(alarmLevel == null || BasicAlarmLevel.isValid(alarmLevel)){
+        if(alarmLevel == null || !BasicAlarmLevel.isValid(alarmLevel)){
             log.error("getThreadsNumAlarmExpr no valid alarmLevel assign! alarmLevel : {}",alarmLevel);
             return null;
         }
@@ -1353,7 +1353,7 @@ public class AlarmService {
 
     public String getSocketNumAlarmExpr(Integer projectId, String projectName, String op, double value, AlarmRuleData ruleData, BasicAlarmLevel alarmLevel){
 
-        if(alarmLevel == null || BasicAlarmLevel.isValid(alarmLevel)){
+        if(alarmLevel == null || !BasicAlarmLevel.isValid(alarmLevel)){
             log.error("getSocketNumAlarmExpr no valid alarmLevel assign! alarmLevel : {}",alarmLevel);
             return null;
         }
