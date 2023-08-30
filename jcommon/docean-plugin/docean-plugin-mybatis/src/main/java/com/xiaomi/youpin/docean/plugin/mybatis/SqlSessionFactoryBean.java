@@ -19,6 +19,7 @@ package com.xiaomi.youpin.docean.plugin.mybatis;
 import com.xiaomi.youpin.docean.common.Resource;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.ibatis.builder.xml.XMLMapperBuilder;
 import org.apache.ibatis.executor.ErrorContext;
 import org.apache.ibatis.mapping.Environment;
@@ -53,6 +54,7 @@ public class SqlSessionFactoryBean {
 
     private SqlSessionFactoryBuilder sqlSessionFactoryBuilder = new SqlSessionFactoryBuilder();
 
+    private static final String MAP_UNDERSCORE_TO_CAMEL_CASE = "mybatis.map-underscore-to-camel";
 
     public SqlSessionFactory buildSqlSessionFactory() throws IOException {
         Configuration configuration = new Configuration();
@@ -64,7 +66,9 @@ public class SqlSessionFactoryBean {
         }
 
         configuration.setEnvironment(new Environment(this.environment, this.transactionFactory, this.dataSource));
-
+        if (StringUtils.equals(System.getenv(MAP_UNDERSCORE_TO_CAMEL_CASE), "true")) {
+            configuration.setMapUnderscoreToCamelCase(true);
+        }
         if (null != this.mapperLocations) {
             for (Resource mapperLocation : this.mapperLocations) {
                 if (mapperLocation == null) {
