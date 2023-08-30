@@ -33,24 +33,24 @@ import java.util.regex.Pattern;
 @NoArgsConstructor
 public class MonitorFile {
     /**
-     * 真实的文件路径地址
+     * Real file path address
      */
     private String realFilePath;
     /**
-     * 监听文件变化的表达式，eg:/home/work/log/server.log.*
+     * Expression for monitoring file changes, eg: /home/work/log/server.log.*
      */
     private String monitorFileExpress;
     /**
-     * 根据表达式生成正则解释器用于后边匹配
+     * Generate a regular expression interpreter based on the expression for subsequent matching.
      */
     private Pattern filePattern;
     /**
-     * 单个文件采集完就结束
+     * The collection of individual files is completed and then ends.
      */
     private boolean collectOnce;
 
     /**
-     * 日志类型，由于opentelemetry日志特殊，监听时需要特殊处理
+     * Log type, due to the special nature of OpenTelemetry logs, requires special handling when listening.
      */
     private LogTypeEnum logTypeEnum;
 
