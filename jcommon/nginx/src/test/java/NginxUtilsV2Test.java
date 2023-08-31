@@ -52,7 +52,7 @@ public class NginxUtilsV2Test {
         String path = this.getClass().getResource("/").getPath() + "nginx.conf";
         System.out.println(path);
         String config = new String(Files.readAllBytes(Paths.get(path)));
-        String content = NginxUtilsV2.addServer(config, "gateway", Lists.newArrayList("127.0.0.3:7777"), true);
+        String content = NginxUtilsV2.addServer(config, "gateway", Lists.newArrayList("127.0.0.3:7777"), "/tesla/heath");
         System.out.println(content);
     }
 }

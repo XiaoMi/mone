@@ -17,9 +17,9 @@
 package com.xiaomi.youpin.nginx;
 
 import com.github.odiszapc.nginxparser.*;
-import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.ByteArrayInputStream;
 import java.util.LinkedList;
@@ -70,10 +70,10 @@ public class NginxUtilsV2 {
      * @return
      */
     public static String addServer(String config, String name, List<String> serversToAdd) {
-        return addServer(config, name, serversToAdd, false);
+        return addServer(config, name, serversToAdd, "");
     }
 
-    public static String addServer(String config, String name, List<String> serversToAdd, boolean check) {
+    public static String addServer(String config, String name, List<String> serversToAdd, String checkUrl) {
         try {
             NgxConfig conf = NgxConfig.read(new ByteArrayInputStream(config.getBytes()));
             List<NgxEntry> v = conf.findAll(NgxConfig.BLOCK, "upstream");
@@ -87,8 +87,8 @@ public class NginxUtilsV2 {
                         param.addValue("server " + addr + " max_fails=3 fail_timeout=5s");
                         nb0.addEntry(param);
                     });
-                    if (check) {
-                        Lists.newArrayList("check interval=3000 rise=2 fall=3 timeout=1000 type=http", "check_http_send \"HEAD /tesla/heath HTTP/1.0\\r\\n\\r\\n\"").forEach(p -> {
+                    if (StringUtils.isNotEmpty(checkUrl)) {
+                        Lists.newArrayList("check interval=3000 rise=2 fall=3 timeout=1000 type=http", String.format("check_http_send \"HEAD %s HTTP/1.0\\r\\n\\r\\n\"",checkUrl)).forEach(p -> {
                             NgxParam param = new NgxParam();
                             param.addValue(p);
                             nb0.getEntries().add(param);
