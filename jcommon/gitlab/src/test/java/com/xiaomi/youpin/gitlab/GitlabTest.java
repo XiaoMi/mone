@@ -3,6 +3,8 @@ package com.xiaomi.youpin.gitlab;
 import com.xiaomi.youpin.gitlab.bo.*;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 /**
  * @Author wmin
  * @Date 2021-09-01
@@ -54,7 +56,7 @@ public class GitlabTest {
 
     @Test
     public void testGetProject() {
-        String project = gitlab.getProjectByAddress("https://xxx.com", "xx", "yy", "zz");
+        String project = gitlab.getProjectByAddress("https://git.n.xiaomi.com", "xx", "yy", "zz");
         System.out.println(project);
     }
 
@@ -114,6 +116,11 @@ public class GitlabTest {
     public void getRepositoryCompare() {
         String repositoryCompare = gitlab.getRepositoryCompare("https://xxx.com", "1", "xxx", "test2", "test1");
         System.out.println(repositoryCompare);
+    }
+
+    @Test
+    public void getDomainByIP() {
+        gitlab.getDomainByIP("https://xxx.com","xx","", Arrays.asList("127.0.0.1"),"token");
     }
 
 }
