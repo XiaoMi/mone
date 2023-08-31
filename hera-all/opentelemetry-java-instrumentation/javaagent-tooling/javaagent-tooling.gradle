@@ -29,7 +29,7 @@ dependencies {
   implementation("io.micrometer:micrometer-registry-prometheus:1.1.7")
   implementation("ch.qos.logback:logback-classic:1.2.3")
   implementation("ch.qos.logback:logback-core:1.2.3")
-//  implementation("com.alibaba.nacos:nacos-client:1.2.1-mone-SNAPSHOT")
+  implementation "run.mone:nacos-client:1.2.1-mone-v3-SNAPSHOT"
   implementation "run.mone:opentelemetry-sdk-extension-autoconfigure"
   implementation("run.mone:opentelemetry-extension-kotlin")
   implementation "run.mone:opentelemetry-extension-aws"

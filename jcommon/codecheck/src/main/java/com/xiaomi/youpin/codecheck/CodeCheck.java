@@ -27,11 +27,9 @@ import com.xiaomi.youpin.codecheck.code.impl.set.LongVariableAvoidNoneL;
 import com.xiaomi.youpin.codecheck.code.impl.youpin.DubboMethodMustReturnResultRule;
 import com.xiaomi.youpin.codecheck.code.impl.youpin.DubboProNeedHealthMethod;
 import com.xiaomi.youpin.codecheck.code.impl.youpin.IPRule;
-import com.xiaomi.youpin.codecheck.docCheck.JavaDocReader;
 import com.xiaomi.youpin.codecheck.po.CheckResult;
 import com.xiaomi.youpin.codecheck.pomCheck.PomCheck;
 import com.xiaomi.youpin.codecheck.visitor.SourceVisitor;
-import org.apache.commons.lang3.tuple.Pair;
 
 import java.io.File;
 import java.io.Serializable;
@@ -69,17 +67,23 @@ public class CodeCheck implements Serializable {
 
 
     public Map<String, List<CheckResult>> check(String path) {
+        return check(path, true);
+    }
+
+    public Map<String, List<CheckResult>> check(String path, boolean checkFile) {
         Map<String, List<CheckResult>> res = new HashMap<>();
 
         if (path == null || path.equals("")) {
             return res;
         }
 
-        //yml等配置文件校验
-        ConfigCheck ipCheck = new ConfigCheck();
-        Map<String, List<CheckResult>> configCheckMap = ipCheck.configCheck(path);
-        if (!configCheckMap.isEmpty() && configCheckMap.size() > 0) {
-            res.putAll(configCheckMap);
+        if (checkFile) {
+            //yml等配置文件校验
+            ConfigCheck ipCheck = new ConfigCheck();
+            Map<String, List<CheckResult>> configCheckMap = ipCheck.configCheck(path);
+            if (!configCheckMap.isEmpty() && configCheckMap.size() > 0) {
+                res.putAll(configCheckMap);
+            }
         }
 
         //xxx.java校验
@@ -93,10 +97,11 @@ public class CodeCheck implements Serializable {
                 res.put(it.getPath(), checkResultList);
             }
 
-            Pair<Integer, CheckResult> javaDocRes = JavaDocReader.check(it.getPath());
-            if (javaDocRes.getKey() > CheckResult.INFO) {
-                res.put(it.getPath(),  Lists.newArrayList(javaDocRes.getRight()));
-            }
+            //todo doc这里会打印一些符号找不到的信息，线注释掉
+//            Pair<Integer, CheckResult> javaDocRes = JavaDocReader.check(it.getPath());
+//            if (javaDocRes.getKey() > CheckResult.INFO) {
+//                res.put(it.getPath(),  Lists.newArrayList(javaDocRes.getRight()));
+//            }
         });
 
         //pom.xml校验

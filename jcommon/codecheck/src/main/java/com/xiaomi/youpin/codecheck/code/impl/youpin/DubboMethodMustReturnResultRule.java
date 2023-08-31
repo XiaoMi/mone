@@ -28,7 +28,7 @@ import java.util.List;
 
 public class DubboMethodMustReturnResultRule extends CompilationCheck {
     private static final String DESC = "dubbo method should return class Result<>";
-    private static final String CHINA_DESC = "dubbo接口返回参数类型必须是Result";
+    private static final String CHINA_DESC = "dubbo method should return class Result<>";
 
     @Override
     public Pair<Integer, CheckResult> _check(CompilationUnitTree compilationUnitTree) {

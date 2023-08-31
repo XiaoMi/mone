@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mi-tcplogin
+  namespace: hera-namespace
+  labels:
+    app: mi-tcplogin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mi-tcplogin
+  template:
+    metadata:
+      labels:
+        app: mi-tcplogin
+    spec:
+      containers:
+      - name: mi-tcplogin-container
+        image: herahub/opensource-pub:mi-tpclogin-v1-release
+        resources:
+          limits:
+            cpu: '500m'
+            memory: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mi-tpclogin
+  namespace: hera-namespace
+  labels:
+    app: mi-tpclogin
+spec:
+  ports:
+    - port: 8098
+      targetPort: 8098
+      protocol: TCP
+  selector:
+    app: mi-tcplogin
+  clusterIP: None

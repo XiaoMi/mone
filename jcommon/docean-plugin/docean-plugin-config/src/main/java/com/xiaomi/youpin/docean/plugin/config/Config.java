@@ -16,6 +16,7 @@
 
 package com.xiaomi.youpin.docean.plugin.config;
 
+import com.xiaomi.youpin.docean.common.EnvUtils;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.InputStream;
@@ -34,7 +35,8 @@ public class Config {
     private Properties properties;
 
     public Config() {
-        InputStream is = Config.class.getClassLoader().getResourceAsStream("config.properties");
+        String configName = EnvUtils.getEnvOrProperty("docean.config.name", "config.properties");
+        InputStream is = Config.class.getClassLoader().getResourceAsStream(configName);
         properties = new Properties();
         if (null != is) {
             try {

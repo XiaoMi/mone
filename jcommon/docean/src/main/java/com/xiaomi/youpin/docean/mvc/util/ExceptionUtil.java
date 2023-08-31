@@ -1,7 +1,5 @@
 package com.xiaomi.youpin.docean.mvc.util;
 
-import com.xiaomi.youpin.docean.exception.DoceanException;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.UndeclaredThrowableException;
 
@@ -12,7 +10,6 @@ import java.lang.reflect.UndeclaredThrowableException;
  */
 public class ExceptionUtil {
     private ExceptionUtil() {
-        // Prevent Instantiation
     }
 
     /**
@@ -28,9 +25,7 @@ public class ExceptionUtil {
                 unwrapped = ((InvocationTargetException) unwrapped).getTargetException();
             } else if (unwrapped instanceof UndeclaredThrowableException) {
                 unwrapped = ((UndeclaredThrowableException) unwrapped).getUndeclaredThrowable();
-            } else if (unwrapped instanceof DoceanException) {
-                unwrapped = unwrapped.getCause();
-            }else{
+            } else {
                 return unwrapped;
             }
         }

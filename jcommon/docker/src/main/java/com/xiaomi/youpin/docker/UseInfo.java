@@ -25,31 +25,30 @@ import java.util.Set;
 /**
  * @author goodjava@qq.com
  * <p>
- * container 使用的信息
+ * container info
  */
 @Data
 @Builder
 public class UseInfo {
 
     /**
-     * 使用中的cpu数量
+     * The number of CPUs in use
      */
     private int useCpuNum;
 
-
     /**
-     * 使用中的内存数量
+     * The amount of memory in use
      */
     private long useMemNum;
 
     /**
-     * 安装的应用
+     * Installed applications
      */
     private Set<String> apps;
 
 
     /**
-     * 安装的应用的详细信息
+     * Detailed information about installed applications
      */
     private List<AppInfo> appInfos;
 

@@ -5,7 +5,7 @@
     <parent>
         <artifactId>prometheus</artifactId>
         <groupId>run.mone</groupId>
-        <version>0.0.2-SNAPSHOT</version>
+        <version>0.0.5-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -15,14 +15,14 @@
     <dependencies>
 
         <dependency>
-            <groupId>org.apache.dubbo</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>dubbo</artifactId>
-            <version>2.7.0-youpin-SNAPSHOT</version>
+            <version>2.7.12-mone-v8-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
 
         <dependency>
-            <groupId>com.xiaomi.youpin</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>prometheus-client</artifactId>
             <version>${prometheus-all.version}</version>
             <scope>provided</scope>

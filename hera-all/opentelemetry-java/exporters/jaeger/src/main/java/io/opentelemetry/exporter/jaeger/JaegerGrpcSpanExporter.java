@@ -16,6 +16,8 @@ import io.opentelemetry.exporter.jaeger.proto.api_v2.Collector;
 import io.opentelemetry.exporter.jaeger.proto.api_v2.CollectorServiceGrpc;
 import io.opentelemetry.exporter.jaeger.proto.api_v2.Model;
 import io.opentelemetry.sdk.common.CompletableResultCode;
+import io.opentelemetry.sdk.common.EnvOrJvmProperties;
+import io.opentelemetry.sdk.common.SystemCommon;
 import io.opentelemetry.sdk.internal.ThrottlingLogger;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.data.SpanData;
@@ -42,7 +44,6 @@ public final class JaegerGrpcSpanExporter implements SpanExporter {
   private static final String ENV_KEY = "service.env";
   private static final String ENV_ID_KEY = "service.env.id";
   private static final String IP_DEFAULT = "0.0.0.0";
-  private static final String ENV_DEFAULT = "default_env";
   private final ThrottlingLogger logger =
       new ThrottlingLogger(Logger.getLogger(JaegerGrpcSpanExporter.class.getName()));
 
@@ -62,23 +63,19 @@ public final class JaegerGrpcSpanExporter implements SpanExporter {
     String ipv4;
 
     try {
-      String ipv4Env = System.getenv("host.ip");
+      String ipv4Env = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_HOST_IP.getKey());
       if (!StringUtils.isNullOrEmpty(ipv4Env)) {
         ipv4 = ipv4Env;
       } else {
         ipv4 = InetAddress.getLocalHost().getHostAddress();
       }
-
     } catch (UnknownHostException e) {
       ipv4 = IP_DEFAULT;
     }
     // mifaas env name
-    String env = System.getenv("MIONE_PROJECT_ENV_NAME");
-    if (StringUtils.isNullOrEmpty(env)) {
-      env = ENV_DEFAULT;
-    }
+    String env = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_NAME.getKey());
     // env id
-    String envId = System.getenv("MIONE_PROJECT_ENV_ID");
+    String envId = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_ID.getKey());
     if (envId == null) {
       envId = "";
     }

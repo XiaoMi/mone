@@ -1,0 +1,1 @@
+org.springframework.context.ApplicationListener=com.xiaomi.mone.monitor.listener.ApplicationStartedListener

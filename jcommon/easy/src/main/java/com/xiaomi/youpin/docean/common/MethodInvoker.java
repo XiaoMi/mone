@@ -30,7 +30,6 @@ import net.sf.cglib.reflect.FastMethod;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
@@ -159,13 +158,13 @@ public class MethodInvoker {
         return getMethodParams(method, params);
     }
 
+    private static final Gson gson = new GsonBuilder()
+            .registerTypeAdapter(Integer.class, new IntegerDefaultAdapter())
+            .registerTypeAdapter(Double.class, new DoubleDefaultAdapter())
+            .registerTypeAdapter(Long.class, new LongDefaultAdapter())
+            .create();
 
     public Object[] getMethodParams(Method method, JsonElement params) {
-        Gson gson = new GsonBuilder()
-                .registerTypeAdapter(Integer.class, new IntegerDefaultAdapter())
-                .registerTypeAdapter(Double.class, new DoubleDefaultAdapter())
-                .registerTypeAdapter(Long.class, new LongDefaultAdapter())
-                .create();
         Class<?>[] types = method.getParameterTypes();
         if (types.length == 0) {
             return new Object[]{};

@@ -1,0 +1,347 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaomi.mone.monitor.dao.mapper.AppCapacityAutoAdjustRecordMapper">
+  <resultMap id="BaseResultMap" type="com.xiaomi.mone.monitor.dao.model.AppCapacityAutoAdjustRecord">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="container" jdbcType="VARCHAR" property="container" />
+    <result column="name_space" jdbcType="VARCHAR" property="nameSpace" />
+    <result column="replicas" jdbcType="INTEGER" property="replicas" />
+    <result column="set_replicas" jdbcType="INTEGER" property="setReplicas" />
+    <result column="env_id" jdbcType="INTEGER" property="envId" />
+    <result column="status" jdbcType="INTEGER" property="status" />
+    <result column="time" jdbcType="BIGINT" property="time" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    id, container, name_space, replicas, set_replicas, env_id, status, time, create_time, 
+    update_time
+  </sql>
+  <select id="selectByExample" parameterType="com.xiaomi.mone.monitor.dao.model.AppCapacityAutoAdjustRecordExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from app_capacity_auto_adjust_record
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+    <if test="limit != null and limit >= 0">
+      limit #{offset} , #{limit}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from app_capacity_auto_adjust_record
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from app_capacity_auto_adjust_record
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.xiaomi.mone.monitor.dao.model.AppCapacityAutoAdjustRecordExample">
+    delete from app_capacity_auto_adjust_record
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.xiaomi.mone.monitor.dao.model.AppCapacityAutoAdjustRecord">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into app_capacity_auto_adjust_record (container, name_space, replicas, 
+      set_replicas, env_id, status, 
+      time, create_time, update_time
+      )
+    values (#{container,jdbcType=VARCHAR}, #{nameSpace,jdbcType=VARCHAR}, #{replicas,jdbcType=INTEGER}, 
+      #{setReplicas,jdbcType=INTEGER}, #{envId,jdbcType=INTEGER}, #{status,jdbcType=INTEGER}, 
+      #{time,jdbcType=BIGINT}, #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.xiaomi.mone.monitor.dao.model.AppCapacityAutoAdjustRecord">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into app_capacity_auto_adjust_record
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="container != null">
+        container,
+      </if>
+      <if test="nameSpace != null">
+        name_space,
+      </if>
+      <if test="replicas != null">
+        replicas,
+      </if>
+      <if test="setReplicas != null">
+        set_replicas,
+      </if>
+      <if test="envId != null">
+        env_id,
+      </if>
+      <if test="status != null">
+        status,
+      </if>
+      <if test="time != null">
+        time,
+      </if>
+      <if test="createTime != null">
+        create_time,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="container != null">
+        #{container,jdbcType=VARCHAR},
+      </if>
+      <if test="nameSpace != null">
+        #{nameSpace,jdbcType=VARCHAR},
+      </if>
+      <if test="replicas != null">
+        #{replicas,jdbcType=INTEGER},
+      </if>
+      <if test="setReplicas != null">
+        #{setReplicas,jdbcType=INTEGER},
+      </if>
+      <if test="envId != null">
+        #{envId,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="time != null">
+        #{time,jdbcType=BIGINT},
+      </if>
+      <if test="createTime != null">
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.xiaomi.mone.monitor.dao.model.AppCapacityAutoAdjustRecordExample" resultType="java.lang.Long">
+    select count(*) from app_capacity_auto_adjust_record
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update app_capacity_auto_adjust_record
+    <set>
+      <if test="record.id != null">
+        id = #{record.id,jdbcType=INTEGER},
+      </if>
+      <if test="record.container != null">
+        container = #{record.container,jdbcType=VARCHAR},
+      </if>
+      <if test="record.nameSpace != null">
+        name_space = #{record.nameSpace,jdbcType=VARCHAR},
+      </if>
+      <if test="record.replicas != null">
+        replicas = #{record.replicas,jdbcType=INTEGER},
+      </if>
+      <if test="record.setReplicas != null">
+        set_replicas = #{record.setReplicas,jdbcType=INTEGER},
+      </if>
+      <if test="record.envId != null">
+        env_id = #{record.envId,jdbcType=INTEGER},
+      </if>
+      <if test="record.status != null">
+        status = #{record.status,jdbcType=INTEGER},
+      </if>
+      <if test="record.time != null">
+        time = #{record.time,jdbcType=BIGINT},
+      </if>
+      <if test="record.createTime != null">
+        create_time = #{record.createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="record.updateTime != null">
+        update_time = #{record.updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update app_capacity_auto_adjust_record
+    set id = #{record.id,jdbcType=INTEGER},
+      container = #{record.container,jdbcType=VARCHAR},
+      name_space = #{record.nameSpace,jdbcType=VARCHAR},
+      replicas = #{record.replicas,jdbcType=INTEGER},
+      set_replicas = #{record.setReplicas,jdbcType=INTEGER},
+      env_id = #{record.envId,jdbcType=INTEGER},
+      status = #{record.status,jdbcType=INTEGER},
+      time = #{record.time,jdbcType=BIGINT},
+      create_time = #{record.createTime,jdbcType=TIMESTAMP},
+      update_time = #{record.updateTime,jdbcType=TIMESTAMP}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.mone.monitor.dao.model.AppCapacityAutoAdjustRecord">
+    update app_capacity_auto_adjust_record
+    <set>
+      <if test="container != null">
+        container = #{container,jdbcType=VARCHAR},
+      </if>
+      <if test="nameSpace != null">
+        name_space = #{nameSpace,jdbcType=VARCHAR},
+      </if>
+      <if test="replicas != null">
+        replicas = #{replicas,jdbcType=INTEGER},
+      </if>
+      <if test="setReplicas != null">
+        set_replicas = #{setReplicas,jdbcType=INTEGER},
+      </if>
+      <if test="envId != null">
+        env_id = #{envId,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="time != null">
+        time = #{time,jdbcType=BIGINT},
+      </if>
+      <if test="createTime != null">
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.mone.monitor.dao.model.AppCapacityAutoAdjustRecord">
+    update app_capacity_auto_adjust_record
+    set container = #{container,jdbcType=VARCHAR},
+      name_space = #{nameSpace,jdbcType=VARCHAR},
+      replicas = #{replicas,jdbcType=INTEGER},
+      set_replicas = #{setReplicas,jdbcType=INTEGER},
+      env_id = #{envId,jdbcType=INTEGER},
+      status = #{status,jdbcType=INTEGER},
+      time = #{time,jdbcType=BIGINT},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    insert into app_capacity_auto_adjust_record
+    (container, name_space, replicas, set_replicas, env_id, status, time, create_time, 
+      update_time)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.container,jdbcType=VARCHAR}, #{item.nameSpace,jdbcType=VARCHAR}, #{item.replicas,jdbcType=INTEGER}, 
+        #{item.setReplicas,jdbcType=INTEGER}, #{item.envId,jdbcType=INTEGER}, #{item.status,jdbcType=INTEGER}, 
+        #{item.time,jdbcType=BIGINT}, #{item.createTime,jdbcType=TIMESTAMP}, #{item.updateTime,jdbcType=TIMESTAMP}
+        )
+    </foreach>
+  </insert>
+  <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
+    insert into app_capacity_auto_adjust_record (
+    <foreach collection="selective" item="column" separator=",">
+      ${column.escapedColumnName}
+    </foreach>
+    )
+    values
+    <foreach collection="list" item="item" separator=",">
+      (
+      <foreach collection="selective" item="column" separator=",">
+        <if test="'container'.toString() == column.value">
+          #{item.container,jdbcType=VARCHAR}
+        </if>
+        <if test="'name_space'.toString() == column.value">
+          #{item.nameSpace,jdbcType=VARCHAR}
+        </if>
+        <if test="'replicas'.toString() == column.value">
+          #{item.replicas,jdbcType=INTEGER}
+        </if>
+        <if test="'set_replicas'.toString() == column.value">
+          #{item.setReplicas,jdbcType=INTEGER}
+        </if>
+        <if test="'env_id'.toString() == column.value">
+          #{item.envId,jdbcType=INTEGER}
+        </if>
+        <if test="'status'.toString() == column.value">
+          #{item.status,jdbcType=INTEGER}
+        </if>
+        <if test="'time'.toString() == column.value">
+          #{item.time,jdbcType=BIGINT}
+        </if>
+        <if test="'create_time'.toString() == column.value">
+          #{item.createTime,jdbcType=TIMESTAMP}
+        </if>
+        <if test="'update_time'.toString() == column.value">
+          #{item.updateTime,jdbcType=TIMESTAMP}
+        </if>
+      </foreach>
+      )
+    </foreach>
+  </insert>
+</mapper>

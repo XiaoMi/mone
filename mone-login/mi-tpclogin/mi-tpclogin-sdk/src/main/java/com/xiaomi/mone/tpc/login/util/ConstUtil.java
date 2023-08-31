@@ -23,10 +23,6 @@ public class ConstUtil {
      * 数据签名+用户数据header key
      */
     public final static String HEADER_KEY_SIGN_AND_USER_DATA = "x-proxy-userdetail";
-    /**
-     * 用户信息的request attribute key
-     */
-    public final static String REQUEST_ATTRIBUTE_USER_INFO_KEY = "user-info";
 
     public final static String hermesUrl = "hermesUrl";
 

@@ -46,7 +46,7 @@ public class RedisMonitor {
                                   String metricName, MetricTypes metricType, String action, String keys,Long startTime, boolean value,AttachInfo attachInfo) {
         log.info("monitor start catEnabled={},prometheusEnable={},isCatStart={},metricName={},metricType={},action={},keys={},value={}"
                 , catEnabled, prometheusEnable, isCatStart, metricName, metricType, action, keys, value);
-        StopWatch sw = new StopWatch();
+        //StopWatch sw = new StopWatch();
         if (prometheusEnable) {
             try {
                 switch (metricType) {

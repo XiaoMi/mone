@@ -1,12 +1,15 @@
 package com.xiaomi.mone.app.dao.mapper;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.xiaomi.mone.app.model.HeraAppRole;
 import com.xiaomi.mone.app.model.HeraAppRoleExample;
 import org.apache.ibatis.annotations.Param;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-public interface HeraAppRoleMapper {
+@Component
+public interface HeraAppRoleMapper extends BaseMapper<HeraAppRole> {
     long countByExample(HeraAppRoleExample example);
 
     int deleteByExample(HeraAppRoleExample example);
@@ -31,5 +34,5 @@ public interface HeraAppRoleMapper {
 
     int batchInsert(@Param("list") List<HeraAppRole> list);
 
-    int batchInsertSelective(@Param("list") List<HeraAppRole> list, @Param("selective") HeraAppRole.Column ... selective);
+    int batchInsertSelective(@Param("list") List<HeraAppRole> list, @Param("selective") HeraAppRole.Column... selective);
 }

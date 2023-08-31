@@ -61,7 +61,7 @@ public class DemoBootstrap {
 //        String r = service.tao();
 //        System.out.println(r);
         TestService ts = new TestService();
-        AService aService = new AService();
+//        AService aService = new AService();
         int i = 12340;
         while (true) {
 //            System.out.println(ts.order(String.valueOf(i++)));

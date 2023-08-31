@@ -1,0 +1,643 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaomi.mone.monitor.dao.mapper.AppMonitorMapper">
+  <resultMap id="BaseResultMap" type="com.xiaomi.mone.monitor.dao.model.AppMonitor">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="project_id" jdbcType="INTEGER" property="projectId" />
+    <result column="iam_tree_id" jdbcType="INTEGER" property="iamTreeId" />
+    <result column="iam_tree_type" jdbcType="INTEGER" property="iamTreeType" />
+    <result column="project_name" jdbcType="VARCHAR" property="projectName" />
+    <result column="owner" jdbcType="VARCHAR" property="owner" />
+    <result column="care_user" jdbcType="VARCHAR" property="careUser" />
+    <result column="alarm_level" jdbcType="INTEGER" property="alarmLevel" />
+    <result column="total_alarm" jdbcType="INTEGER" property="totalAlarm" />
+    <result column="exception_num" jdbcType="INTEGER" property="exceptionNum" />
+    <result column="slow_query_num" jdbcType="INTEGER" property="slowQueryNum" />
+    <result column="status" jdbcType="INTEGER" property="status" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="app_source" jdbcType="INTEGER" property="appSource" />
+    <result column="base_info_id" jdbcType="INTEGER" property="baseInfoId" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    id, project_id, iam_tree_id, iam_tree_type, project_name, app_source, owner, care_user, 
+    alarm_level, total_alarm, exception_num, slow_query_num, status, base_info_id, create_time, 
+    update_time
+  </sql>
+
+  <select id="getMyAndCareAppList" resultMap="BaseResultMap">
+    SELECT
+    <include refid="Base_Column_List" />
+    FROM app_monitor
+    WHERE `status`=0 AND (care_user=#{userName,jdbcType=VARCHAR} OR owner=#{userName,jdbcType=VARCHAR})
+    <if test="appName != null">
+      and  project_name like "%"#{appName,jdbcType=VARCHAR}"%"
+    </if>
+  </select>
+
+
+  <resultMap id="AlarmHealthMap" type="com.xiaomi.mone.monitor.dao.model.AlarmHealthResult">
+    <result column="project_id" jdbcType="INTEGER" property="appId" />
+    <result column="iam_tree_id" jdbcType="INTEGER" property="iamTreeId" />
+    <result column="project_name" jdbcType="VARCHAR" property="appName" />
+    <result column="owner" jdbcType="VARCHAR" property="owner" />
+    <result column="app_source" jdbcType="INTEGER" property="plateFormType" />
+    <result column="baseAlarmNum" jdbcType="INTEGER" property="baseAlarmNum" />
+    <result column="appAlarmNum" jdbcType="INTEGER" property="appAlarmNum" />
+
+    <result column="cpuUseRate" jdbcType="INTEGER" property="cpuUseRate" />
+    <result column="cpuLoad" jdbcType="INTEGER" property="cpuLoad" />
+    <result column="memUseRate" jdbcType="INTEGER" property="memUseRate" />
+    <result column="containerNum" jdbcType="INTEGER" property="containerNum" />
+    <result column="jvmThread" jdbcType="INTEGER" property="jvmThread" />
+    <result column="jvmGc" jdbcType="INTEGER" property="jvmGc" />
+    <result column="httpServerAvailability" jdbcType="INTEGER" property="httpServerAvailability" />
+    <result column="httpServerQps" jdbcType="INTEGER" property="httpServerQps" />
+    <result column="httpServerTimeCost" jdbcType="INTEGER" property="httpServerTimeCost" />
+    <result column="httpClientAvailability" jdbcType="INTEGER" property="httpClientAvailability" />
+    <result column="httpClientQps" jdbcType="INTEGER" property="httpClientQps" />
+    <result column="httpClientTimeCost" jdbcType="INTEGER" property="httpClientTimeCost" />
+    <result column="dubboProviderAvailability" jdbcType="INTEGER" property="dubboProviderAvailability" />
+    <result column="dubboProviderQps" jdbcType="INTEGER" property="dubboProviderQps" />
+    <result column="dubboProviderTimeCost" jdbcType="INTEGER" property="dubboProviderTimeCost" />
+    <result column="dubboProviderSlowQuery" jdbcType="INTEGER" property="dubboProviderSlowQuery" />
+    <result column="dubboConsumerAvailability" jdbcType="INTEGER" property="dubboConsumerAvailability" />
+    <result column="dubboConsumerQps" jdbcType="INTEGER" property="dubboConsumerQps" />
+    <result column="dubboConsumerTimeCost" jdbcType="INTEGER" property="dubboConsumerTimeCost" />
+    <result column="dubboConsumerSlowQuery" jdbcType="INTEGER" property="dubboConsumerSlowQuery" />
+    <result column="dbAvailability" jdbcType="INTEGER" property="dbAvailability" />
+    <result column="dbSlowQuery" jdbcType="INTEGER" property="dbSlowQuery" />
+
+  </resultMap>
+
+  <select id="selectAlarmHealth" parameterType="com.xiaomi.mone.monitor.dao.model.AlarmHealthQuery" resultMap="AlarmHealthMap">
+    SELECT
+    app.project_id,
+    app.project_name,
+    app.iam_tree_id,
+    app_source,
+    owner,
+    IFNULL(alarmConfig.baseAlarmNum,0) as baseAlarmNum,
+    IFNULL(alarmConfig.appAlarmNum,0) as appAlarmNum,
+    IFNULL(alarmConfig.cpuUseRate,0) as cpuUseRate,
+    IFNULL(alarmConfig.cpuLoad,0) as cpuLoad,
+    IFNULL(alarmConfig.memUseRate,0) as memUseRate,
+    IFNULL(alarmConfig.containerNum,0) as containerNum,
+    IFNULL(alarmConfig.jvmThread,0) as jvmThread,
+    IFNULL(alarmConfig.jvmGc,0) as jvmGc,
+    IFNULL(alarmConfig.httpServerAvailability,0) as httpServerAvailability,
+    IFNULL(alarmConfig.httpServerQps,0) as httpServerQps,
+    IFNULL(alarmConfig.httpServerTimeCost,0) as httpServerTimeCost,
+    IFNULL(alarmConfig.httpClientAvailability,0) as httpClientAvailability,
+    IFNULL(alarmConfig.httpClientQps,0) as httpClientQps,
+    IFNULL(alarmConfig.httpClientTimeCost,0) as httpClientTimeCost,
+    IFNULL(alarmConfig.dubboProviderAvailability,0) as dubboProviderAvailability,
+    IFNULL(alarmConfig.dubboProviderQps,0) as dubboProviderQps,
+    IFNULL(alarmConfig.dubboProviderTimeCost,0) as dubboProviderTimeCost,
+    IFNULL(alarmConfig.dubboProviderSlowQuery,0) as dubboProviderSlowQuery,
+
+    IFNULL(alarmConfig.dubboConsumerAvailability,0) as dubboConsumerAvailability,
+    IFNULL(alarmConfig.dubboConsumerQps,0) as dubboConsumerQps,
+    IFNULL(alarmConfig.dubboConsumerTimeCost,0) as dubboConsumerTimeCost,
+    IFNULL(alarmConfig.dubboConsumerSlowQuery,0) as dubboConsumerSlowQuery,
+
+    IFNULL(alarmConfig.dbAvailability,0) as dbAvailability,
+    IFNULL(alarmConfig.dbSlowQuery,0) as dbSlowQuery
+
+
+    from app_monitor app
+    INNER JOIN
+    (select appId,
+    appName,
+    sum(case when strategy_type=0 then 1 else 0 end) as baseAlarmNum,
+    sum(case when strategy_type=1 then 1 else 0 end) as appAlarmNum,
+    sum(case when alert='container_cpu_use_rate' or alert='k8s_container_cpu_use_rate' then 1 else 0 end) as cpuUseRate,
+    sum(case when alert='container_cpu_average_load' or alert='k8s_container_cpu_average_load' then 1 else 0 end) as cpuLoad,
+    sum(case when alert='container_mem_use_rate' or alert='k8s_container_mem_use_rate' then 1 else 0 end) as memUseRate,
+    sum(case when alert='k8s_container_count_monitor' or alert='k8s_container_count_monitor' then 1 else 0 end) as containerNum,
+    sum(case when alert='jvm_thread_num' then 1 else 0 end) as jvmThread,
+    sum(case when alert='jvm_gc_times' or alert='jvm_gc_cost' then 1 else 0 end) as jvmGc,
+
+    sum(case when alert='http_error_times' or alert='http_availability' then 1 else 0 end) as httpServerAvailability,
+    sum(case when alert='http_qps' then 1 else 0 end) as httpServerQps,
+    sum(case when alert='http_cost' then 1 else 0 end) as httpServerTimeCost,
+
+    sum(case when alert='http_client_error_times' or alert='http_client_availability' then 1 else 0 end) as httpClientAvailability,
+    sum(case when alert='http_client_qps' then 1 else 0 end) as httpClientQps,
+    sum(case when alert='http_client_cost' then 1 else 0 end) as httpClientTimeCost,
+
+    sum(case when alert='dubbo_provider_availability' or alert='dubbo_provider_error_times' then 1 else 0 end) as dubboProviderAvailability,
+    sum(case when alert='dubbo_provider_qps' then 1 else 0 end) as dubboProviderQps,
+    sum(case when alert='dubbo_provider_cost' then 1 else 0 end) as dubboProviderTimeCost,
+    sum(case when alert='dubbo_provider_slow_query' then 1 else 0 end) as dubboProviderSlowQuery,
+
+    sum(case when alert='dubbo_availability' or alert='dubbo_error_times' then 1 else 0 end) as dubboConsumerAvailability,
+    sum(case when alert='dubbo_qps' then 1 else 0 end) as dubboConsumerQps,
+    sum(case when alert='dubbo_cost' then 1 else 0 end) as dubboConsumerTimeCost,
+    sum(case when alert='dubbo_slow_query' then 1 else 0 end) as dubboConsumerSlowQuery,
+
+    sum(case when alert='db_availability' or alert='db_error_times' then 1 else 0 end) as dbAvailability,
+    sum(case when alert='db_slow_query' then 1 else 0 end) as dbSlowQuery
+    from app_alarm_strategy s,app_alarm_rule r
+    where (s.strategy_type=0 or s.strategy_type=1)  and r.strategy_id = s.id group by appId,appName) as alarmConfig
+    on app.project_id = alarmConfig.appId and app.project_name = alarmConfig.appName
+    where 1=1 and app.`owner`!=''  and app.`status`=0
+    <if test="owner != null">
+      and app.`owner`=#{owner}
+    </if>
+    <if test="appName != null">
+      and app.`project_name` like "%"#{appName}"%"
+    </if>
+    <if test="projectId != null">
+      and app.`project_id` = #{projectId}
+    </if>
+    <if test="appSource != null">
+      and app.`app_source` = #{appSource}
+    </if>
+  </select>
+
+  <select id="selectAllMyAppDistinct" resultMap="BaseResultMap">
+
+    select DISTINCT a.project_id as project_id,a.iam_tree_id as iam_tree_id,a.project_name as project_name,a.app_source as app_source
+    from app_monitor a
+    where a.`status`=0 and (a.`owner`= #{userName} or a.`care_user`= #{userName})
+
+    <if test="appName != null">
+      and  a.project_name like "%"#{appName,jdbcType=VARCHAR}"%"
+    </if>
+
+    <if test="limit != null and limit >= 0">
+      limit #{offset} , #{limit}
+    </if>
+
+  </select>
+
+  <select id="countAllMyAppDistinct" resultType="java.lang.Long">
+
+    select count(DISTINCT a.project_id,a.app_source) as totalNum
+    from app_monitor a
+    where a.`status`=0 and (a.`owner`= #{userName} or a.`care_user`= #{userName})
+
+    <if test="appName != null">
+      and  a.project_name like "%"#{appName,jdbcType=VARCHAR}"%"
+    </if>
+
+
+  </select>
+
+  <select id="selectByExample" parameterType="com.xiaomi.mone.monitor.dao.model.AppMonitorExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from app_monitor
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+    <if test="limit != null and limit >= 0">
+      limit #{offset} , #{limit}
+    </if>
+  </select>
+  <select id="selectByGroupBy" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select iam_tree_id, project_id, project_name from app_monitor where status=0 group by iam_tree_id, project_id, project_name order by project_id desc limit #{offset}, #{limit}
+  </select>
+
+  <select id="selectByIAMId" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from app_monitor
+    where iam_tree_id = #{iamId, jdbcType=INTEGER}
+    and iam_tree_type = #{iamType, jdbcType=INTEGER}
+    and status = 0
+    <if test="userName != null">
+      and owner = #{userName, jdbcType=VARCHAR}
+    </if>
+  </select>
+
+  <select id="selectTreeIdByOwnerOrCareUser" parameterType="java.lang.String" resultType="java.lang.Integer">
+    select iam_tree_id from app_monitor where status=0 and (care_user=#{userName,jdbcType=VARCHAR} OR owner=#{userName,jdbcType=VARCHAR}) limit 100
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from app_monitor
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from app_monitor
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <delete id="deleteByExample" parameterType="com.xiaomi.mone.monitor.dao.model.AppMonitorExample">
+    delete from app_monitor
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="com.xiaomi.mone.monitor.dao.model.AppMonitor">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into app_monitor (project_id, iam_tree_id, iam_tree_type, 
+      project_name, app_source, owner, 
+      care_user, alarm_level, total_alarm, 
+      exception_num, slow_query_num, status, 
+      base_info_id, create_time, update_time
+      )
+    values (#{projectId,jdbcType=INTEGER}, #{iamTreeId,jdbcType=INTEGER}, #{iamTreeType,jdbcType=INTEGER}, 
+      #{projectName,jdbcType=VARCHAR}, #{appSource,jdbcType=INTEGER}, #{owner,jdbcType=VARCHAR}, 
+      #{careUser,jdbcType=VARCHAR}, #{alarmLevel,jdbcType=INTEGER}, #{totalAlarm,jdbcType=INTEGER}, 
+      #{exceptionNum,jdbcType=INTEGER}, #{slowQueryNum,jdbcType=INTEGER}, #{status,jdbcType=INTEGER}, 
+      #{baseInfoId,jdbcType=INTEGER}, #{createTime,jdbcType=TIMESTAMP}, #{updateTime,jdbcType=TIMESTAMP}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="com.xiaomi.mone.monitor.dao.model.AppMonitor">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into app_monitor
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="projectId != null">
+        project_id,
+      </if>
+      <if test="iamTreeId != null">
+        iam_tree_id,
+      </if>
+      <if test="iamTreeType != null">
+        iam_tree_type,
+      </if>
+      <if test="projectName != null">
+        project_name,
+      </if>
+      <if test="owner != null">
+        owner,
+      </if>
+      <if test="careUser != null">
+        care_user,
+      </if>
+      <if test="alarmLevel != null">
+        alarm_level,
+      </if>
+      <if test="totalAlarm != null">
+        total_alarm,
+      </if>
+      <if test="exceptionNum != null">
+        exception_num,
+      </if>
+      <if test="slowQueryNum != null">
+        slow_query_num,
+      </if>
+      <if test="status != null">
+        status,
+      </if>
+      <if test="createTime != null">
+        create_time,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+      <if test="appSource != null">
+        app_source,
+      </if>
+      <if test="baseInfoId != null">
+        base_info_id,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="projectId != null">
+        #{projectId,jdbcType=INTEGER},
+      </if>
+      <if test="iamTreeId != null">
+        #{iamTreeId,jdbcType=INTEGER},
+      </if>
+      <if test="iamTreeType != null">
+        #{iamTreeType,jdbcType=INTEGER},
+      </if>
+      <if test="projectName != null">
+        #{projectName,jdbcType=VARCHAR},
+      </if>
+      <if test="owner != null">
+        #{owner,jdbcType=VARCHAR},
+      </if>
+      <if test="careUser != null">
+        #{careUser,jdbcType=VARCHAR},
+      </if>
+      <if test="alarmLevel != null">
+        #{alarmLevel,jdbcType=INTEGER},
+      </if>
+      <if test="totalAlarm != null">
+        #{totalAlarm,jdbcType=INTEGER},
+      </if>
+      <if test="exceptionNum != null">
+        #{exceptionNum,jdbcType=INTEGER},
+      </if>
+      <if test="slowQueryNum != null">
+        #{slowQueryNum,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="createTime != null">
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="appSource != null">
+        #{appSource,jdbcType=INTEGER},
+      </if>
+      <if test="baseInfoId != null">
+        #{baseInfoId,jdbcType=INTEGER},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="com.xiaomi.mone.monitor.dao.model.AppMonitorExample" resultType="java.lang.Long">
+    select count(*) from app_monitor
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update app_monitor
+    <set>
+      <if test="record.id != null">
+        id = #{record.id,jdbcType=INTEGER},
+      </if>
+      <if test="record.projectId != null">
+        project_id = #{record.projectId,jdbcType=INTEGER},
+      </if>
+      <if test="record.iamTreeId != null">
+        iam_tree_id = #{record.iamTreeId,jdbcType=INTEGER},
+      </if>
+      <if test="record.iamTreeType != null">
+        iam_tree_type = #{record.iamTreeType,jdbcType=INTEGER},
+      </if>
+      <if test="record.projectName != null">
+        project_name = #{record.projectName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.owner != null">
+        owner = #{record.owner,jdbcType=VARCHAR},
+      </if>
+      <if test="record.careUser != null">
+        care_user = #{record.careUser,jdbcType=VARCHAR},
+      </if>
+      <if test="record.alarmLevel != null">
+        alarm_level = #{record.alarmLevel,jdbcType=INTEGER},
+      </if>
+      <if test="record.totalAlarm != null">
+        total_alarm = #{record.totalAlarm,jdbcType=INTEGER},
+      </if>
+      <if test="record.exceptionNum != null">
+        exception_num = #{record.exceptionNum,jdbcType=INTEGER},
+      </if>
+      <if test="record.slowQueryNum != null">
+        slow_query_num = #{record.slowQueryNum,jdbcType=INTEGER},
+      </if>
+      <if test="record.status != null">
+        status = #{record.status,jdbcType=INTEGER},
+      </if>
+      <if test="record.createTime != null">
+        create_time = #{record.createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="record.updateTime != null">
+        update_time = #{record.updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="record.appSource != null">
+        app_source = #{record.appSource,jdbcType=INTEGER},
+      </if>
+      <if test="record.baseInfoId != null">
+        base_info_id = #{record.baseInfoId,jdbcType=INTEGER},
+      </if>
+    </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update app_monitor
+    set id = #{record.id,jdbcType=INTEGER},
+      project_id = #{record.projectId,jdbcType=INTEGER},
+      iam_tree_id = #{record.iamTreeId,jdbcType=INTEGER},
+      iam_tree_type = #{record.iamTreeType,jdbcType=INTEGER},
+      project_name = #{record.projectName,jdbcType=VARCHAR},
+      app_source = #{record.appSource,jdbcType=INTEGER},
+      owner = #{record.owner,jdbcType=VARCHAR},
+      care_user = #{record.careUser,jdbcType=VARCHAR},
+      alarm_level = #{record.alarmLevel,jdbcType=INTEGER},
+      total_alarm = #{record.totalAlarm,jdbcType=INTEGER},
+      exception_num = #{record.exceptionNum,jdbcType=INTEGER},
+      slow_query_num = #{record.slowQueryNum,jdbcType=INTEGER},
+      status = #{record.status,jdbcType=INTEGER},
+      base_info_id = #{record.baseInfoId,jdbcType=INTEGER},
+      create_time = #{record.createTime,jdbcType=TIMESTAMP},
+      update_time = #{record.updateTime,jdbcType=TIMESTAMP}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="com.xiaomi.mone.monitor.dao.model.AppMonitor">
+    update app_monitor
+    <set>
+      <if test="projectId != null">
+        project_id = #{projectId,jdbcType=INTEGER},
+      </if>
+      <if test="iamTreeId != null">
+        iam_tree_id = #{iamTreeId,jdbcType=INTEGER},
+      </if>
+      <if test="iamTreeType != null">
+        iam_tree_type = #{iamTreeType,jdbcType=INTEGER},
+      </if>
+      <if test="projectName != null">
+        project_name = #{projectName,jdbcType=VARCHAR},
+      </if>
+      <if test="owner != null">
+        owner = #{owner,jdbcType=VARCHAR},
+      </if>
+      <if test="careUser != null">
+        care_user = #{careUser,jdbcType=VARCHAR},
+      </if>
+      <if test="alarmLevel != null">
+        alarm_level = #{alarmLevel,jdbcType=INTEGER},
+      </if>
+      <if test="totalAlarm != null">
+        total_alarm = #{totalAlarm,jdbcType=INTEGER},
+      </if>
+      <if test="exceptionNum != null">
+        exception_num = #{exceptionNum,jdbcType=INTEGER},
+      </if>
+      <if test="slowQueryNum != null">
+        slow_query_num = #{slowQueryNum,jdbcType=INTEGER},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="createTime != null">
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="appSource != null">
+        app_source = #{appSource,jdbcType=INTEGER},
+      </if>
+      <if test="baseInfoId != null">
+        base_info_id = #{baseInfoId,jdbcType=INTEGER},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="com.xiaomi.mone.monitor.dao.model.AppMonitor">
+    update app_monitor
+    set project_id = #{projectId,jdbcType=INTEGER},
+      iam_tree_id = #{iamTreeId,jdbcType=INTEGER},
+      iam_tree_type = #{iamTreeType,jdbcType=INTEGER},
+      project_name = #{projectName,jdbcType=VARCHAR},
+      owner = #{owner,jdbcType=VARCHAR},
+      care_user = #{careUser,jdbcType=VARCHAR},
+      alarm_level = #{alarmLevel,jdbcType=INTEGER},
+      total_alarm = #{totalAlarm,jdbcType=INTEGER},
+      exception_num = #{exceptionNum,jdbcType=INTEGER},
+      slow_query_num = #{slowQueryNum,jdbcType=INTEGER},
+      status = #{status,jdbcType=INTEGER},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP},
+      app_source = #{appSource,jdbcType=INTEGER},
+      base_info_id = #{baseInfoId,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    insert into app_monitor
+    (project_id, iam_tree_id, iam_tree_type, project_name, app_source, owner, care_user, 
+      alarm_level, total_alarm, exception_num, slow_query_num, status, base_info_id, 
+      create_time, update_time)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.projectId,jdbcType=INTEGER}, #{item.iamTreeId,jdbcType=INTEGER}, #{item.iamTreeType,jdbcType=INTEGER}, 
+        #{item.projectName,jdbcType=VARCHAR}, #{item.appSource,jdbcType=INTEGER}, #{item.owner,jdbcType=VARCHAR}, 
+        #{item.careUser,jdbcType=VARCHAR}, #{item.alarmLevel,jdbcType=INTEGER}, #{item.totalAlarm,jdbcType=INTEGER}, 
+        #{item.exceptionNum,jdbcType=INTEGER}, #{item.slowQueryNum,jdbcType=INTEGER}, #{item.status,jdbcType=INTEGER}, 
+        #{item.baseInfoId,jdbcType=INTEGER}, #{item.createTime,jdbcType=TIMESTAMP}, #{item.updateTime,jdbcType=TIMESTAMP}
+        )
+    </foreach>
+  </insert>
+  <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
+    insert into app_monitor (
+    <foreach collection="selective" item="column" separator=",">
+      ${column.escapedColumnName}
+    </foreach>
+    )
+    values
+    <foreach collection="list" item="item" separator=",">
+      (
+      <foreach collection="selective" item="column" separator=",">
+        <if test="'project_id'.toString() == column.value">
+          #{item.projectId,jdbcType=INTEGER}
+        </if>
+        <if test="'iam_tree_id'.toString() == column.value">
+          #{item.iamTreeId,jdbcType=INTEGER}
+        </if>
+        <if test="'iam_tree_type'.toString() == column.value">
+          #{item.iamTreeType,jdbcType=INTEGER}
+        </if>
+        <if test="'project_name'.toString() == column.value">
+          #{item.projectName,jdbcType=VARCHAR}
+        </if>
+        <if test="'owner'.toString() == column.value">
+          #{item.owner,jdbcType=VARCHAR}
+        </if>
+        <if test="'care_user'.toString() == column.value">
+          #{item.careUser,jdbcType=VARCHAR}
+        </if>
+        <if test="'alarm_level'.toString() == column.value">
+          #{item.alarmLevel,jdbcType=INTEGER}
+        </if>
+        <if test="'total_alarm'.toString() == column.value">
+          #{item.totalAlarm,jdbcType=INTEGER}
+        </if>
+        <if test="'exception_num'.toString() == column.value">
+          #{item.exceptionNum,jdbcType=INTEGER}
+        </if>
+        <if test="'slow_query_num'.toString() == column.value">
+          #{item.slowQueryNum,jdbcType=INTEGER}
+        </if>
+        <if test="'status'.toString() == column.value">
+          #{item.status,jdbcType=INTEGER}
+        </if>
+        <if test="'create_time'.toString() == column.value">
+          #{item.createTime,jdbcType=TIMESTAMP}
+        </if>
+        <if test="'update_time'.toString() == column.value">
+          #{item.updateTime,jdbcType=TIMESTAMP}
+        </if>
+        <if test="'app_source'.toString() == column.value">
+          #{item.appSource,jdbcType=INTEGER}
+        </if>
+        <if test="'base_info_id'.toString() == column.value">
+          #{item.baseInfoId,jdbcType=INTEGER}
+        </if>
+      </foreach>
+      )
+    </foreach>
+  </insert>
+</mapper>

@@ -24,9 +24,19 @@ import com.google.gson.JsonObject;
 import com.xiaomi.youpin.docean.bo.Bean;
 import com.xiaomi.youpin.docean.common.ClassDeserializer;
 import com.xiaomi.youpin.docean.common.ClassSerializer;
+import com.xiaomi.youpin.docean.mvc.MvcContext;
 import org.junit.Test;
 
 public class GsonTest {
+
+
+    @Test
+    public void testJsonArray() {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("traceId","123");
+        MvcContext mc = new Gson().fromJson(obj,MvcContext.class);
+        System.out.println(mc);
+    }
 
 
     @Test

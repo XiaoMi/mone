@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tpclogin-nginx-fe
+  namespace: hera-namespace
+  labels:
+    app: tpclogin-nginx-fe
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tpclogin-nginx-fe
+  template:
+    metadata:
+      labels:
+        app: tpclogin-nginx-fe
+    spec:
+      containers:
+      - name: tpclogin-nginx-fe-container
+        image: herahub/opensource-pub:tpclogin-nginx-v1-release
+        resources:
+          limits:
+            cpu: '200m'
+            memory: 1Gi

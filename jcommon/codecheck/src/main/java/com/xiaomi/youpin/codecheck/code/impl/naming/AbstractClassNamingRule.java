@@ -30,7 +30,7 @@ import static javax.lang.model.element.Modifier.ABSTRACT;
 
 public class AbstractClassNamingRule extends ClassCheck {
     private static final String DESC = "Abstract class naming should start with Abstract or Base";
-    private static final String CHINA_DESC = "抽象类命名使用Abstract或Base开头";
+    private static final String CHINA_DESC = "Abstract class naming should start with Abstract or Base";
 
     @Override
     public Pair<Integer, CheckResult> _check(ClassTree classTree) {

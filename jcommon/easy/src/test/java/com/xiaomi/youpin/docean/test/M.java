@@ -16,11 +16,13 @@
 
 package com.xiaomi.youpin.docean.test;
 
+import com.xiaomi.youpin.docean.common.Loadable;
+
 /**
  * @Author goodjava@qq.com
  * @Date 2021/1/29 15:22
  */
-public class M {
+public class M implements Loadable {
 
 
     public int sum(int a, int b) {
@@ -39,4 +41,8 @@ public class M {
         return a + b;
     }
 
+    @Override
+    public String name() {
+        return "M";
+    }
 }

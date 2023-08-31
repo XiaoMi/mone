@@ -12,6 +12,9 @@ import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
+import java.util.Optional;
 
 class AuthTokenFilter implements Filter {
 
@@ -29,7 +32,7 @@ class AuthTokenFilter implements Filter {
         loginUrl = filterConfig.getInitParameter(ConstUtil.loginUrl);
         String authTokenUrl = filterConfig.getInitParameter(ConstUtil.authTokenUrl);
         if (StringUtils.isBlank(authTokenUrl)) {
-            throw new ServletException("authTokenUrl值为空");
+            throw new IllegalArgumentException("authTokenUrl值为空");
         }
         ConstUtil.authTokenUrlVal = authTokenUrl;
         logger.info("auth_token_url is {}", authTokenUrl);
@@ -37,39 +40,39 @@ class AuthTokenFilter implements Filter {
         if (ignoreUrl != null && !"".equals(ignoreUrl)) {
             ignoreUrls = ignoreUrl.split(",");
         }
-        logger.info("ignore_url_list is {}", authTokenUrl);
+        logger.info("ignore_url_list is {}", ignoreUrls);
     }
 
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         HttpServletRequest request = (HttpServletRequest)servletRequest;
-        String url = request.getRequestURI();
+        String uri = request.getRequestURI();
         AuthTokenVo authToken = TokenUtil.parseAuthToken(request);
         logger.info("authToken={}", authToken);
         if (authToken == null) {
-            if (CommonUtil.isIgnoreUrl(ignoreUrls, url)) {
-                logger.info("request is ignore_url={}", url);
+            if (CommonUtil.isIgnoreUrl(ignoreUrls, uri)) {
+                logger.info("request is ignore_uri={}", uri);
                 filterChain.doFilter(servletRequest, servletResponse);
                 return;
             }
-            logger.info("request not login request_url={}", url);
+            logger.info("request not login request_uri={}", uri);
             noAuthResponse(servletResponse);
             return;
         }
         ResultVo<AuthUserVo> resultVo = SystemReqUtil.authRequest(authToken.getAuthToken(), !authToken.isFromCookie());
         logger.info("getResult={}", resultVo);
         if (resultVo == null || !resultVo.success()) {
-            if (CommonUtil.isIgnoreUrl(ignoreUrls, url)) {
-                logger.info("request is ignore_url={}", url);
+            if (CommonUtil.isIgnoreUrl(ignoreUrls, uri)) {
+                logger.info("request is ignore_uri={}", uri);
                 filterChain.doFilter(servletRequest, servletResponse);
                 return;
             }
-            logger.info("request not login request_url={}", url);
+            logger.info("request not login request_uri={}", uri);
             noAuthResponse(servletResponse);
             return;
         }
         if (!authToken.isFromCookie()) {
-            TokenUtil.setCookie(resultVo.getData(), servletResponse);
+            TokenUtil.setCookie(request, resultVo.getData(), servletResponse);
         }
         servletRequest.setAttribute(ConstUtil.TPC_USER, resultVo.getData());
         filterChain.doFilter(servletRequest, servletResponse);

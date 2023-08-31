@@ -1,11 +1,11 @@
 package com.xiaomi.mone.tpc.login.vo;
 
+import com.xiaomi.mone.tpc.login.enums.UserTypeEnum;
 import com.xiaomi.mone.tpc.login.util.SignUtil;
 import com.xiaomi.mone.tpc.login.util.UserUtil;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,7 +25,7 @@ public class MoneTpcContext implements Serializable {
     private Map<String, String> extMap;
 
     public static MoneTpcContext create(String sysName, String token, String userToken, Object param) throws Throwable {
-        long now = new Date().getTime();
+        long now = System.currentTimeMillis();
         MoneTpcContext context = new MoneTpcContext();
         context.sysName = sysName;
         context.reqTime = now;
@@ -40,6 +40,14 @@ public class MoneTpcContext implements Serializable {
             sysSignBuilder.append(dataSign);
         }
         context.sysSign = sysSignBuilder.toString();
+        return context;
+    }
+
+    public static MoneTpcContext create(String account, UserTypeEnum userType) throws Throwable {
+        long now = System.currentTimeMillis();
+        MoneTpcContext context = new MoneTpcContext();
+        context.account = account;
+        context.userType = userType.getCode();
         return context;
     }
 

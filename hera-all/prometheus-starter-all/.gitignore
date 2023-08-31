@@ -1,0 +1,26 @@
+*.bak
+build_info.properties
+.classpath
+dependency-reduced-pom.xml
+*.diff
+.DS_Store
+
+# IDEA
+.idea/
+*.iml
+logs/
+log/
+
+# eclipse (Scala IDE)
+.project
+.settings/
+.tags*
+target/
+test-output/
+nohup*
+*.log
+*.swp
+*.pyc
+.sbtserver*
+license-list
+licenseCheck.sh

@@ -1,13 +1,14 @@
 package com.xiaomi.mone.app.controller;
 
+import com.google.common.collect.Lists;
 import com.xiaomi.mone.app.api.response.AppBaseInfo;
 import com.xiaomi.mone.app.api.service.HeraAppService;
 import com.xiaomi.mone.app.common.Result;
 import com.xiaomi.mone.app.enums.CommonError;
-import com.xiaomi.mone.app.enums.OperateEnum;
 import com.xiaomi.mone.app.model.HeraAppBaseInfo;
-import com.xiaomi.mone.app.service.HeraAppBaseInfoService;
+import com.xiaomi.mone.app.response.anno.OriginalResponse;
 import com.xiaomi.mone.app.service.HeraAppRoleService;
+import com.xiaomi.mone.app.service.impl.HeraAppBaseInfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,12 +26,12 @@ import java.util.List;
 @RestController
 public class AppController {
 
-    private final HeraAppBaseInfoService heraAppBaseInfoService;
+    @Autowired
+    HeraAppBaseInfoService heraAppBaseInfoService;
 
     private final HeraAppService heraAppService;
 
-    public AppController(HeraAppBaseInfoService heraAppBaseInfoService, HeraAppService heraAppService) {
-        this.heraAppBaseInfoService = heraAppBaseInfoService;
+    public AppController(HeraAppService heraAppService) {
         this.heraAppService = heraAppService;
     }
 
@@ -59,47 +60,42 @@ public class AppController {
         return heraAppService.queryAppInfoWithLog(appName, type);
     }
 
-    @PostMapping("app/base/add")
-    public HeraAppBaseInfo appBaseInfoAdd(@RequestBody HeraAppBaseInfo heraAppBaseInfo) {
-        return heraAppBaseInfoService.appBaseInfoOperate(heraAppBaseInfo, OperateEnum.ADD_OPERATE);
-    }
-
     @PostMapping("/hera/app/add")
     public Result heraAppAdd(@RequestBody HeraAppBaseInfo heraAppBaseInfo) {
-        if(StringUtils.isBlank(heraAppBaseInfo.getBindId()) || StringUtils.isBlank(heraAppBaseInfo.getAppName())){
-            log.error("heraAppAdd param error! BindId or AppName is blank!heraAppBaseInfo:{}",heraAppBaseInfo);
+        if (StringUtils.isBlank(heraAppBaseInfo.getBindId()) || StringUtils.isBlank(heraAppBaseInfo.getAppName())) {
+            log.error("heraAppAdd param error! BindId or AppName is blank!heraAppBaseInfo:{}", heraAppBaseInfo);
             return Result.fail(CommonError.ParamsError);
         }
 
-        if(heraAppBaseInfo.getAppType() == null){
+        if (heraAppBaseInfo.getAppType() == null) {
             heraAppBaseInfo.setAppType(0);//默认0 应用型应用，用户可以扩展自己的绑定方式
         }
 
-        if(heraAppBaseInfo.getBindType() == null){
+        if (heraAppBaseInfo.getBindType() == null) {
             heraAppBaseInfo.setBindType(0);//默认按0 appId类型绑定，用户可以根据需要扩展自己的绑定类型
         }
 
-        if(heraAppBaseInfo.getPlatformType() == null){
+        if (heraAppBaseInfo.getPlatformType() == null) {
             heraAppBaseInfo.setPlatformType(0);//默认按0 开源类型，用户可以根据需要扩展自己的平台类型
         }
 
         try {
-            heraAppBaseInfoService.appBaseInfoOperate(heraAppBaseInfo, OperateEnum.ADD_OPERATE);
+            heraAppBaseInfoService.create(heraAppBaseInfo);
             return Result.success();
         } catch (Exception e) {
-            log.error("heraAppAdd error! {}",e);
+            log.error("heraAppAdd error! {}", e);
             return Result.fail(CommonError.UnknownError);
         }
     }
 
     @GetMapping("/mimonitor/addHeraRoleGet")
-    public Result addRoleByAppIdAndPlat(String appId, Integer plat, String user){
+    public Result addRoleByAppIdAndPlat(String appId, Integer plat, String user) {
 
-        try{
-            heraAppRoleService.addRoleGet(appId,plat,user);
+        try {
+            heraAppRoleService.addRoleGet(appId, plat, user);
             return Result.success();
-        }catch (Exception e){
-            log.error(e.getMessage(),e);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
             return Result.fail(CommonError.UnknownError);
         }
 
@@ -108,5 +104,11 @@ public class AppController {
     @PostMapping("app/base/query/batch")
     public List<AppBaseInfo> queryByIds(@RequestBody List<Long> ids) {
         return heraAppService.queryByIds(ids);
+    }
+
+    @GetMapping("app/original/response")
+    @OriginalResponse
+    public List<String> testOriginalResponse() {
+        return Lists.newArrayList("122343", "中国", "5656.66");
     }
 }
