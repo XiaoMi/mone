@@ -56,7 +56,7 @@ public class GitlabTest {
 
     @Test
     public void testGetProject() {
-        String project = gitlab.getProjectByAddress("https://git.n.xiaomi.com", "xx", "yy", "zz");
+        String project = gitlab.getProjectByAddress("https://xxx.com", "xx", "yy", "zz");
         System.out.println(project);
     }
 
