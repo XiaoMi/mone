@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import okio.Buffer;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
+import javax.annotation.Resource;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
 import java.lang.reflect.Field;
@@ -19,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -31,6 +34,25 @@ import java.util.stream.Collectors;
 public class DataCacheService {
 
     private CopyOnWriteArrayList<byte[]> data = new CopyOnWriteArrayList<>();
+
+    @Resource
+    private EnterManager enterManager;
+
+
+    @PostConstruct
+    public void init() {
+        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
+            try {
+                enterManager.getMonitor().enter();
+                cacheData();
+            } catch (Throwable ex) {
+                log.error(ex.getMessage(), ex);
+            } finally {
+                enterManager.getMonitor().leave();
+            }
+        }, 0, 15, TimeUnit.SECONDS);
+    }
+
 
     public byte[] getData() {
         log.info("get data");

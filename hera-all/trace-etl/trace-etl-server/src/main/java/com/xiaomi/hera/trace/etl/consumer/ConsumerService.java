@@ -50,6 +50,9 @@ public class ConsumerService {
     @Autowired
     private DataCacheService cacheService;
 
+    @Autowired
+    private EnterManager enterManager;
+
     @PostConstruct
     public void takeMessage() throws MQClientException {
         // Before initializing rocketmq consumer,
@@ -78,6 +81,7 @@ public class ConsumerService {
             if (list == null || list.isEmpty()) {
                 return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
             }
+            enterManager.enter();
             for (MessageExt message : list) {
                 String traceId = "";
                 try {
@@ -99,6 +103,8 @@ public class ConsumerService {
                 time.set(now);
                 cacheService.cacheData();
             }
+
+            enterManager.processEnter();
             return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
         }
     }
