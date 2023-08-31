@@ -33,6 +33,24 @@ CREATE TABLE `hera_trace_etl_config`
     PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
 
+CREATE TABLE `hera_meta_data` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `type` varchar(10) DEFAULT NULL COMMENT '元数据类型，有APP MYSQL REDIS ES MQ等',
+  `meta_id` int(11) DEFAULT NULL COMMENT '元数据id 比如appId',
+  `meta_name` varchar(255) DEFAULT NULL COMMENT '元数据的名称 比如appName',
+  `env_id` int(11) DEFAULT NULL COMMENT '环境id',
+  `env_name` varchar(255) DEFAULT NULL COMMENT '环境名称',
+  `host` varchar(255) DEFAULT NULL COMMENT '元数据对应的实例 有可能是IP 有可能是域名 也有可能是hostName',
+  `port` json DEFAULT NULL COMMENT '元数据暴露的端口',
+  `dubbo_service_meta` text DEFAULT NULL COMMENT 'dubbo Service信息 包含ServiceName Group version',
+  `create_time` datetime DEFAULT NULL,
+  `update_time` datetime DEFAULT NULL,
+  `create_by` varchar(125) DEFAULT NULL,
+  `update_by` varchar(125) DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `index_meta_id` (`meta_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
 -- mimonitor
 
 CREATE TABLE `alert_group`

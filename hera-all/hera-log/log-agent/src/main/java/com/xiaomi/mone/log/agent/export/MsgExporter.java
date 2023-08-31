@@ -28,19 +28,22 @@ public interface MsgExporter extends Closeable {
     int BATCH_EXPORT_SIZE = 200;
 
     /**
-     * 单条export
+     * Single export
+     *
      * @param message
      */
     void export(LineMessage message);
 
     /**
-     * 多条export
+     * Multiple exports
+     *
      * @param messageList
      */
     void export(List<LineMessage> messageList);
 
     /**
-     * 批量export条数
+     * Batch export quantity
+     *
      * @return
      */
     default int batchExportSize() {
