@@ -33,9 +33,11 @@ import com.xiaomi.hera.tspandata.TStatus;
 import com.xiaomi.hera.tspandata.TValue;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.thrift.TException;
 import org.apache.thrift.TSerializer;
 import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TProtocolFactory;
+import org.apache.thrift.transport.TTransportException;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -57,14 +59,27 @@ public class TraceUtil {
     public static byte[] toBytes(String spanStr) {
         try {
             TSpanData tSpanData = toTSpanData(spanStr);
-            if(tSpanData == null){
-                return null;
-            }
-            TSerializer serializer = new TSerializer(PROTOCOL_FACTORY);
-            return serializer.serialize(tSpanData);
+            return toBytes(tSpanData);
         } catch (Throwable ex) {
             log.error("Failed to convert span to thrift,spanStr={}", spanStr, ex);
         }
+        return null;
+    }
+
+    public static byte[] toBytes(TSpanData tSpanData) {
+        if (tSpanData == null) {
+            return null;
+        }
+
+        try {
+            TSerializer serializer = new TSerializer(PROTOCOL_FACTORY);
+            return serializer.serialize(tSpanData);
+        } catch (TTransportException e) {
+            log.error("Failed to convert span to thrift TTransportException", e);
+        } catch (TException e) {
+            log.error("Failed to convert span to thrift TException", e);
+        }
+
         return null;
     }
 
