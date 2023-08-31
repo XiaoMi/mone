@@ -760,6 +760,7 @@ public class AlarmService {
                 }
                 metric_usage_builder.append("}");
                 metric_quota_builder.append("}");
+                break;
 
             case container:
                 sumBy = "sum by(application, serverZone, serverEnv, pod, container, id, system, ip)";
@@ -771,6 +772,8 @@ public class AlarmService {
                 }
                 metric_usage_builder.append("}");
                 metric_quota_builder.append("}");
+                break;
+
             case instance:
                 sumBy = "sum by(application, serverZone, serverEnv, pod, system)";
                 metric_usage_builder.append("container_cpu_usage_seconds_total{container!='', pod!='', application='").append(projectSign).append("'");
@@ -781,6 +784,8 @@ public class AlarmService {
                 }
                 metric_usage_builder.append("}");
                 metric_quota_builder.append("}");
+                break;
+
             default:
                 ;
         }
@@ -819,6 +824,7 @@ public class AlarmService {
                     metric_usage_builder.append(",").append(labelProperties);
                 }
                 metric_usage_builder.append("})");
+                break;
 
             case container:
                 metric_usage_builder.append("avg_over_time(container_cpu_load_average_10s{image!='',application='").append(projectSign).append("'");
@@ -826,6 +832,7 @@ public class AlarmService {
                     metric_usage_builder.append(",").append(labelProperties);
                 }
                 metric_usage_builder.append("}[1m])");
+                break;
 
             case instance:
                 sumBy = "sum by(application, serverZone, serverEnv, pod,system) ";
@@ -835,6 +842,7 @@ public class AlarmService {
                     metric_usage_builder.append(",").append(labelProperties);
                 }
                 metric_usage_builder.append("})");
+                break;
 
             default:
                 ;
@@ -888,6 +896,7 @@ public class AlarmService {
                 }
                 metric_usage_builder.append("}");
                 metric_quota_builder.append("}");
+                break;
             case container:
                 sumBy = "sum by(application, serverZone, serverEnv, pod, container, id,system, ip) ";
                 metric_usage_builder.append("container_memory_rss{container!='',container!='POD', application='").append(projectSign).append("'");
@@ -898,6 +907,7 @@ public class AlarmService {
                 }
                 metric_usage_builder.append("}");
                 metric_quota_builder.append("}");
+                break;
             case instance:
                 sumBy = "sum by(application, serverZone, serverEnv, pod,system)";
                 metric_usage_builder.append("container_memory_rss{container!='', pod!='', application='").append(projectSign).append("'");
@@ -908,6 +918,7 @@ public class AlarmService {
                 }
                 metric_usage_builder.append("}");
                 metric_quota_builder.append("}");
+                break;
             default:
                 ;
         }
@@ -946,6 +957,7 @@ public class AlarmService {
                     metric_usage_builder.append(",").append(labelProperties);
                 }
                 metric_usage_builder.append("}");
+                break;
             case instance:
                 sumBy = "sum by(application, serverZone, serverEnv, pod,system) ";
                 metric_usage_builder.append("container_fs_usage_bytes{pod!='', application='").append(projectSign).append("'");
@@ -953,6 +965,7 @@ public class AlarmService {
                     metric_usage_builder.append(",").append(labelProperties);
                 }
                 metric_usage_builder.append("}");
+                break;
             default:
                 ;
         }
@@ -990,6 +1003,7 @@ public class AlarmService {
                     metric_usage_builder.append(",").append(labelProperties);
                 }
                 metric_usage_builder.append("}");
+                break;
             default:
                 ;
         }
@@ -1055,6 +1069,7 @@ public class AlarmService {
                     metric_usage_builder.append(",").append(labelProperties);
                 }
                 metric_usage_builder.append("}[5m]))");
+                break;
             case instance:
                 sumBy = "sum by(application, serverZone, serverEnv, pod,system) ";
                 metric_usage_builder.append("(irate(container_fs_write_seconds_total{pod!=\"\", application='").append(projectSign).append("'");
@@ -1062,6 +1077,7 @@ public class AlarmService {
                     metric_usage_builder.append(",").append(labelProperties);
                 }
                 metric_usage_builder.append("}[5m]))");
+                break;
             default:
                 ;
         }
@@ -1099,6 +1115,7 @@ public class AlarmService {
                     metric_usage_builder.append(",").append(labelProperties);
                 }
                 metric_usage_builder.append("}[5m]))");
+                break;
             case instance:
                 sumBy = "sum by(application, serverZone, serverEnv, pod,system) ";
                 metric_usage_builder.append("(irate(container_fs_read_seconds_total{pod!=\"\", application='").append(projectSign).append("'");
@@ -1106,6 +1123,7 @@ public class AlarmService {
                     metric_usage_builder.append(",").append(labelProperties);
                 }
                 metric_usage_builder.append("}[5m]))");
+                break;
             default:
                 ;
         }
@@ -1143,6 +1161,7 @@ public class AlarmService {
                     metric_usage_builder.append(",").append(labelProperties);
                 }
                 metric_usage_builder.append("}[5m]))");
+                break;
             case instance:
                 sumBy = "sum by(application, serverZone, serverEnv, pod,system) ";
                 metric_usage_builder.append("(irate(container_network_transmit_bytes_total{pod!=\"\", application='").append(projectSign).append("'");
@@ -1150,6 +1169,7 @@ public class AlarmService {
                     metric_usage_builder.append(",").append(labelProperties);
                 }
                 metric_usage_builder.append("}[5m]))");
+                break;
             default:
                 ;
         }
@@ -1187,6 +1207,7 @@ public class AlarmService {
                     metric_usage_builder.append(",").append(labelProperties);
                 }
                 metric_usage_builder.append("}[5m]))");
+                break;
             case instance:
                 sumBy = "sum by(application, serverZone, serverEnv, pod,system) ";
                 metric_usage_builder.append("(irate(container_network_receive_bytes_total{pod!=\"\", application='").append(projectSign).append("'");
@@ -1194,6 +1215,7 @@ public class AlarmService {
                     metric_usage_builder.append(",").append(labelProperties);
                 }
                 metric_usage_builder.append("}[5m]))");
+                break;
             default:
                 ;
         }
@@ -1237,6 +1259,7 @@ public class AlarmService {
                 }
                 metric_usage_builder1.append("}[5m])))");
                 metric_usage_builder2.append("}[5m])))");
+                break;
             case instance:
                 sumBy1 = "sum by(application, serverZone, serverEnv, pod,container,system) ";
                 metric_usage_builder1.append("(round(increase(kube_pod_container_status_restarts_total{container=\"main\",instance!=\"\",pod!=\"\",application='").append(projectSign).append("'");
@@ -1244,6 +1267,7 @@ public class AlarmService {
                     metric_usage_builder1.append(",").append(labelProperties);
                 }
                 metric_usage_builder1.append("}[5m])))");
+                break;
             default:
                 ;
         }
@@ -1287,6 +1311,7 @@ public class AlarmService {
                     metric_usage_builder1.append(",").append(labelProperties);
                 }
                 metric_usage_builder1.append("})");
+                break;
             case instance:
                 sumBy1 = "sum by(application, serverZone, serverEnv, pod,container,system) ";
                 metric_usage_builder1.append("(container_processes{container=\"main\",pod!=\"\",application='").append(projectSign).append("'");
@@ -1294,6 +1319,7 @@ public class AlarmService {
                     metric_usage_builder1.append(",").append(labelProperties);
                 }
                 metric_usage_builder1.append("})");
+                break;
             default:
                 ;
         }
@@ -1330,6 +1356,7 @@ public class AlarmService {
                     metric_usage_builder1.append(",").append(labelProperties);
                 }
                 metric_usage_builder1.append("})");
+                break;
             case instance:
                 sumBy1 = "sum by(application, serverZone, serverEnv, pod,container,system) ";
                 metric_usage_builder1.append("(container_threads{container=\"main\",pod!=\"\",application='").append(projectSign).append("'");
@@ -1337,6 +1364,7 @@ public class AlarmService {
                     metric_usage_builder1.append(",").append(labelProperties);
                 }
                 metric_usage_builder1.append("})");
+                break;
             default:
                 ;
         }
@@ -1373,6 +1401,7 @@ public class AlarmService {
                     metric_usage_builder1.append(",").append(labelProperties);
                 }
                 metric_usage_builder1.append("})");
+                break;
             case instance:
                 sumBy1 = "sum by(application, serverZone, serverEnv, pod,container,system) ";
                 metric_usage_builder1.append("(container_sockets{container=\"main\",pod!=\"\",application='").append(projectSign).append("'");
@@ -1380,6 +1409,7 @@ public class AlarmService {
                     metric_usage_builder1.append(",").append(labelProperties);
                 }
                 metric_usage_builder1.append("})");
+                break;
             default:
                 ;
         }
@@ -1406,9 +1436,11 @@ public class AlarmService {
             case thrift:
                 exprBuilder.append("sum by(application, serverZone, serverEnv, pod, container, id, system) ")
                         .append("(increase(keycenter_thrift_request_count_total{code!=\"200\",pod!=\"\",application='").append(projectSign).append("'");
+                break;
             case http:
                 exprBuilder.append("sum by(application, serverZone, serverEnv, pod, container, id, system) ")
                         .append("(increase(keycenter_http_request_count_total{code!=\"200\",pod!=\"\",application='").append(projectSign).append("'");
+                break;
             default:
                 ;
         }
