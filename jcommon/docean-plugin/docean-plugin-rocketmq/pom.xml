@@ -20,22 +20,11 @@
             <version>1.4-SNAPSHOT</version>
         </dependency>
 
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-            <version>1.2.77</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.rocketmq</groupId>
-            <artifactId>rocketmq-acl</artifactId>
-            <version>4.9.4</version>
-        </dependency>
 
         <dependency>
             <groupId>org.apache.rocketmq</groupId>
             <artifactId>rocketmq-client</artifactId>
-            <version>4.9.4</version>
+            <version>4.4.0-youpin-SNAPSHOT</version>
         </dependency>
 
     </dependencies>

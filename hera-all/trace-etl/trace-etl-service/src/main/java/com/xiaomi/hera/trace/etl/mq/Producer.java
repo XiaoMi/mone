@@ -10,12 +10,12 @@ import java.util.List;
 public interface Producer<T> {
 
     /**
-     * send one
+     * 单条发送
      * @param message
      */
     void send(T message);
     /**
-     * send batch
+     * 单条发送
      * @param messages
      */
     void send(List<T> messages);

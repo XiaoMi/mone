@@ -19,8 +19,6 @@ package com.xiaomi.data.push.common;
 import com.xiaomi.data.push.uds.po.UdsCommand;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import lombok.extern.slf4j.Slf4j;
 
 
@@ -39,17 +37,8 @@ public abstract class Send {
             command.setSerializeType(RcurveConfig.ins().getCodeType());
         }
         try {
-            log.debug("begin send:{}",command.getId());
             ByteBuf buf = command.encode();
-            ChannelFuture channelFuture = channel.writeAndFlush(buf);
-            channelFuture.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                    if (!channelFuture.isSuccess()) {
-                        log.error("send fail:{},", command.getId(), channelFuture.cause());
-                    }
-                }
-            });
+            channel.writeAndFlush(buf);
         } catch (Throwable ex) {
             log.error("send error:" + ex.getMessage(), ex);
         }
@@ -61,17 +50,8 @@ public abstract class Send {
             return;
         }
         try {
-            log.debug("begin send:{}", response.getId());
             ByteBuf buf = response.encode();
-            ChannelFuture channelFuture = channel.writeAndFlush(buf);
-            channelFuture.addListener(new ChannelFutureListener() {
-                @Override
-                public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                    if (!channelFuture.isSuccess()) {
-                        log.error("send fail:{},", response.getId(), channelFuture.cause());
-                    }
-                }
-            });
+            channel.writeAndFlush(buf);
         } catch (Throwable ex) {
             log.error("send response error:" + ex.getMessage(), ex);
         }

@@ -28,8 +28,6 @@ public class HeraAppBaseInfoModel implements Serializable {
 
     private Integer iamTreeId;
 
-    private Integer iamTreeType;
-
     private Integer status;
 
     private Date createTime;

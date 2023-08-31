@@ -44,7 +44,7 @@ public class ContainerSizeCheck extends VariableCheck {
                 JCTree.JCNewClass nc = (JCTree.JCNewClass) ex;
                 if (set.contains(nc.getIdentifier().toString())) {
                     if (nc.getArguments().size() == 0) {
-                        return Pair.of(CheckResult.WARN, CheckResult.getInfoRes("The container needs to establish initial values", tree.toString(), "The container needs to establish initial values"));
+                        return Pair.of(CheckResult.WARN, CheckResult.getInfoRes("容器需要制定初始值", tree.toString(), "容器需要制定初始值"));
                     }
                 }
             }

@@ -23,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * This is an optimized version of the RandomAccessFile class
+ * code @see https://www.ebi.ac.uk/~maven/m2repo/uk/ac/ebi/pride/tools/braf/1.2.2/
  *
  * @author shanwb
  * @date 2022-02-07

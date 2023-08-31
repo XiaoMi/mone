@@ -3,15 +3,13 @@ package com.xiaomi.mone.tpc.login.filter;
 
 import com.xiaomi.mone.tpc.login.anno.AuthCheck;
 import com.xiaomi.mone.tpc.login.enums.RpcTypeEnum;
-import com.xiaomi.mone.tpc.login.util.ConstUtil;
-import com.xiaomi.mone.tpc.login.util.SignUtil;
-import com.xiaomi.mone.tpc.login.util.SystemReqUtil;
-import com.xiaomi.mone.tpc.login.util.UserUtil;
+import com.xiaomi.mone.tpc.login.util.*;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 import com.xiaomi.mone.tpc.login.vo.MoneTpcContext;
 import com.xiaomi.mone.tpc.login.vo.ResultVo;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.rpc.RpcContext;
+import org.apache.dubbo.rpc.RpcResult;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
@@ -19,10 +17,13 @@ import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.core.annotation.Order;
 
+import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -32,9 +33,8 @@ import java.util.stream.Collectors;
  * @author: zgf1
  * @date: 2022/1/13 14:39
  */
-@Order(Integer.MIN_VALUE)
 @Aspect
-public class RpcReqUserFilter {
+public class RpcReqUserFilter implements Filter {
 
     private final Logger logger = LoggerFactory.getLogger(AuthTokenFilter.class);
 
@@ -49,7 +49,7 @@ public class RpcReqUserFilter {
 
     public RpcReqUserFilter(String authTokenUrl, Object authFailResult) {
         if (StringUtils.isBlank(authTokenUrl)) {
-            throw new IllegalArgumentException("authTokenUrl is null");
+            new RpcResult(new IllegalArgumentException("authTokenUrl is null"));
         }
         this.authTokenUrl = authTokenUrl;
         if (authFailResult != null) {
@@ -100,9 +100,14 @@ public class RpcReqUserFilter {
             sysSign = RpcContext.getContext().getAttachment(ConstUtil.SYS_SIGN);
             userToken = RpcContext.getContext().getAttachment(ConstUtil.USER_TOKEN);
             reqTime = RpcContext.getContext().getAttachment(ConstUtil.REQ_TIME);
+        } else if (context == null && RpcTypeEnum.HTTP.equals(authCheck.rpcType())) {
+            sysName = HeaderUtil.getHeader(ConstUtil.SYS_NAME);
+            sysSign = HeaderUtil.getHeader(ConstUtil.SYS_SIGN);
+            userToken = HeaderUtil.getHeader(ConstUtil.USER_TOKEN);
+            reqTime = HeaderUtil.getHeader(ConstUtil.REQ_TIME);
         }
         if (StringUtils.isBlank(sysName) || StringUtils.isBlank(sysSign) || StringUtils.isBlank(reqTime)) {
-            throw new RuntimeException("auth arg is error");
+            throw new RuntimeException("user_auth_arg is null");
         }
         if (supportSysNames != null && !supportSysNames.isEmpty() && !supportSysNames.contains(sysName)) {
             throw new RuntimeException("sysName has no permission to call");
@@ -112,7 +117,7 @@ public class RpcReqUserFilter {
         }
         ResultVo<AuthUserVo> result = SystemReqUtil.authRequest(sysName, sysSign, userToken, reqTime, dataSign, authTokenUrl);
         if (result == null || !result.success()) {
-            return getResult(method.getReturnType(), authFailResultCls, authFailResult, "auth is failed");
+            return getResult(method.getReturnType(), authFailResultCls, authFailResult, "user_auth_check is fail");
         }
         AuthUserVo userVo = result.getData();
         if (context != null && userVo != null) {
@@ -127,6 +132,23 @@ public class RpcReqUserFilter {
         }
     }
 
+    @Override
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+        try {
+            HttpServletRequest request = (HttpServletRequest)servletRequest;
+            Enumeration<String> names = request.getHeaderNames();
+            if (names != null) {
+                while (names.hasMoreElements()) {
+                    String key = names.nextElement();
+                    HeaderUtil.addHeader(key, request.getHeader(key));
+                }
+            }
+            filterChain.doFilter(servletRequest, servletResponse);
+        } finally{
+            HeaderUtil.clearHeader();
+        }
+    }
+
     private Object getResult(Class<?> resultCls, Class<?> failResultCls, Object failResult, String message) {
         if (failResult != null && failResultCls != null && failResultCls.equals(resultCls)) {
             return failResult;
@@ -134,4 +156,13 @@ public class RpcReqUserFilter {
         throw new RuntimeException(message);
     }
 
+    @Override
+    public void init(FilterConfig filterConfig) throws ServletException {
+
+    }
+
+    @Override
+    public void destroy() {
+
+    }
 }

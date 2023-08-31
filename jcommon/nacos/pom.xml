@@ -13,11 +13,10 @@
     <version>1.4-v1-SNAPSHOT</version>
 
     <dependencies>
-
         <dependency>
-            <groupId>run.mone</groupId>
+            <groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-client</artifactId>
-            <version>1.2.1-mone-v3-SNAPSHOT</version>
+            <version>1.2.1-mone-v5-SNAPSHOT</version>
         </dependency>
 
         <dependency>

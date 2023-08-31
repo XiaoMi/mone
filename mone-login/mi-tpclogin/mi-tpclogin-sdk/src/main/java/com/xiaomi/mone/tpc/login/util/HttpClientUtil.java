@@ -1,6 +1,8 @@
 package com.xiaomi.mone.tpc.login.util;
 
 import com.google.gson.reflect.TypeToken;
+import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
+import com.xiaomi.mone.tpc.login.vo.ResultVo;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;

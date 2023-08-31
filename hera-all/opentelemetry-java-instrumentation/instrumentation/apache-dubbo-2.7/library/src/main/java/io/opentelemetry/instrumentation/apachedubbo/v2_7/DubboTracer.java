@@ -13,6 +13,7 @@ import io.opentelemetry.context.propagation.TextMapGetter;
 import io.opentelemetry.instrumentation.api.tracer.RpcServerTracer;
 import io.opentelemetry.instrumentation.api.tracer.net.NetPeerAttributes;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
+import org.apache.dubbo.common.Constants;
 import org.apache.dubbo.common.URL;
 import org.apache.dubbo.rpc.Result;
 import org.apache.dubbo.rpc.RpcContext;
@@ -45,6 +46,7 @@ class DubboTracer extends RpcServerTracer<RpcInvocation> {
             .setAttribute(SemanticAttributes.RPC_SYSTEM, "dubbo");
     DubboHelper.prepareSpan(spanBuilder, interfaceName, methodName);
     NetPeerAttributes.INSTANCE.setNetPeer(spanBuilder, RpcContext.getContext().getRemoteAddress());
+    setRpcServerName(spanBuilder, url);
     return withClientSpan(parentContext, spanBuilder.startSpan());
   }
 
@@ -66,4 +68,16 @@ class DubboTracer extends RpcServerTracer<RpcInvocation> {
     return DubboExtractAdapter.GETTER;
   }
 
+  public void setRpcServerName(SpanBuilder spanBuilder, URL url){
+    if(url == null) {
+      spanBuilder.setAttribute(RPC_SERVER_NAME, "");
+    }else{
+      String appName = url.getParameter("serverApplicationName");
+      if (null == appName || appName.equals("")) {
+        String interfaceName = url.getParameter(Constants.INTERFACE_KEY);
+        appName = interfaceName.substring(0, interfaceName.lastIndexOf('.'));
+      }
+      spanBuilder.setAttribute(RPC_SERVER_NAME, appName);
+    }
+  }
 }

@@ -11,11 +11,9 @@
 
     <artifactId>pool</artifactId>
 
-
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
-        <netty.version>4.1.97.Final</netty.version>
     </properties>
 
     <dependencies>
@@ -24,12 +22,6 @@
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-pool2</artifactId>
             <version>2.11.1</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-all</artifactId>
-            <version>${netty.version}</version>
         </dependency>
 
 

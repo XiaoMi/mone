@@ -33,9 +33,4 @@ public class MvcConfig implements Serializable {
      */
     private boolean download;
 
-    /**
-     * 是否使用协程
-     */
-    private boolean virtualThread;
-
 }

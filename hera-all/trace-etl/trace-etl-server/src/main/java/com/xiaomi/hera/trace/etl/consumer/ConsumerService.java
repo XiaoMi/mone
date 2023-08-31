@@ -1,13 +1,14 @@
 package com.xiaomi.hera.trace.etl.consumer;
 
-import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.xiaomi.hera.trace.etl.mq.rocketmq.ClientMessageQueue;
 import com.xiaomi.hera.trace.etl.mq.rocketmq.RocketMqProducer;
 import com.xiaomi.hera.trace.etl.util.ThriftUtil;
 import com.xiaomi.hera.tspandata.TSpanData;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
-import org.apache.rocketmq.client.consumer.listener.*;
+import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyContext;
+import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;
+import org.apache.rocketmq.client.consumer.listener.MessageListenerConcurrently;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.thrift.TDeserializer;
@@ -17,9 +18,6 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author dingtao
@@ -33,7 +31,7 @@ public class ConsumerService {
     @Value("${mq.rocketmq.consumer.group}")
     private String group;
 
-    @NacosValue("${mq.rocketmq.nameseraddr}")
+    @Value("${mq.rocketmq.nameseraddr}")
     private String nameSerAddr;
 
     @Value("${mq.rocketmq.server.topic}")
@@ -45,19 +43,12 @@ public class ConsumerService {
     @Autowired
     private ClientMessageQueue clientMessageQueue;
 
-    @Autowired
-    private DataCacheService cacheService;
-
-    @Autowired
-    private EnterManager enterManager;
-
     @PostConstruct
     public void takeMessage() throws MQClientException {
-        // Before initializing rocketmq consumer,
-        // initialize the local message queue to
-        // ensure that the local message queue is available when messages come in
+        // 在初始化rocketmq consumer前，初始化本地message queue，
+        // 保证消息进来后本地message queue可用
         clientMessageQueue.initFetchQueueTask();
-        // initializing rocketmq consumer
+        // 初始化rocketmq consumer
         log.info("init consumer start ...");
         DefaultMQPushConsumer consumer = new DefaultMQPushConsumer(group);
         consumer.setNamesrvAddr(nameSerAddr);
@@ -67,48 +58,26 @@ public class ConsumerService {
         log.info("init consumer end ...");
     }
 
-    private class TraceEtlMessageListener implements MessageListenerOrderly {
-
-        private AtomicInteger i = new AtomicInteger();
-
-        private AtomicLong time = new AtomicLong(System.currentTimeMillis());
-
+    private class TraceEtlMessageListener implements MessageListenerConcurrently {
 
         @Override
-        public ConsumeOrderlyStatus consumeMessage(List<MessageExt> list, final ConsumeOrderlyContext context) {
+        public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> list, ConsumeConcurrentlyContext consumeConcurrentlyContext) {
             if (list == null || list.isEmpty()) {
-                return ConsumeOrderlyStatus.SUCCESS;
+                return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
             }
-            enterManager.enter();
-            enterManager.getProcessNum().incrementAndGet();
-            try {
-                for (MessageExt message : list) {
-                    String traceId = "";
-                    try {
-                        TSpanData tSpanData = new TSpanData();
-                        new TDeserializer(ThriftUtil.PROTOCOL_FACTORY).deserialize(tSpanData, message.getBody());
-                        traceId = tSpanData.getTraceId();
-                        metricsExporterService.parse(tSpanData);
-                    } catch (Throwable t) {
-                        log.error("consumer message error", t);
-                    }
-                    clientMessageQueue.enqueue(traceId, message);
+            for (MessageExt message : list) {
+                String traceId = "";
+                try {
+                    TSpanData tSpanData = new TSpanData();
+                    new TDeserializer(ThriftUtil.PROTOCOL_FACTORY).deserialize(tSpanData, message.getBody());
+                    traceId = tSpanData.getTraceId();
+                    metricsExporterService.parse(tSpanData);
+                } catch (Throwable t) {
+                    log.error("consumer message error", t);
                 }
-
-                long now = System.currentTimeMillis();
-
-                i.addAndGet(list.size());
-                if ((now - time.get() >= TimeUnit.SECONDS.toMillis(15))) {
-                    i.set(0);
-                    time.set(now);
-                    cacheService.cacheData();
-                }
-
-                enterManager.processEnter();
-                return ConsumeOrderlyStatus.SUCCESS;
-            } finally {
-                enterManager.getProcessNum().decrementAndGet();
+                clientMessageQueue.enqueue(traceId, message);
             }
+            return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
         }
     }
 }

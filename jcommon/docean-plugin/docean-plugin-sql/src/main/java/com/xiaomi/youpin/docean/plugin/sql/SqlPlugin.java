@@ -70,7 +70,7 @@ public class SqlPlugin implements IPlugin {
      * 移除一个dao
      */
     public void remove(DatasourceConfig config) {
-		//Db db = Ioc.ins().getBean("dao:" + config.getName());
+        Db db = Ioc.ins().getBean("dao:" + config.getName());
         DatasourcePlugin datasourcePlugin = Ioc.ins().getBean(DatasourcePlugin.class);
         Ioc.ins().remove("dao:" + config.getName());
         datasourcePlugin.remove(config);

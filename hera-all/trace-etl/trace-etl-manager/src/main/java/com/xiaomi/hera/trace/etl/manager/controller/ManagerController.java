@@ -39,7 +39,7 @@ public class ManagerController {
             AuthUserVo user = UserUtil.getUser();
             if (user == null || StringUtils.isEmpty(user.genFullAccount())) {
                 log.warn("getAllPage userInfo is null");
-                return Result.fail(GeneralCodes.InternalError, "The user information is empty. Please log in again");
+                return Result.fail(GeneralCodes.InternalError, "用户信息为空，请重新登录");
             }
             String userName = user.genFullAccount();
             log.info("userName is : "+userName);
@@ -55,7 +55,7 @@ public class ManagerController {
     }
 
     /**
-     * Whether it is admin, the admin member list is configured by nacos.
+     * 是否为admin，admin member list由nacos配置。
      * @param user
      * @return
      */
@@ -99,7 +99,7 @@ public class ManagerController {
             AuthUserVo userInfo = UserUtil.getUser();
             if (userInfo == null) {
                 log.warn("insertOrUpdate userInfo is null");
-                return Result.fail(GeneralCodes.InternalError, "The user information is empty. Please log in again");
+                return Result.fail(GeneralCodes.InternalError, "用户信息为空，请重新登录");
             }
             String user = userInfo.genFullAccount();
             log.info("insertOrUpdate user : "+user+" param : " + config);
@@ -115,7 +115,7 @@ public class ManagerController {
         try {
             log.info("delete param : " + config);
             int delete = managerService.delete(config);
-            return delete > 0 ? Result.success(null) : Result.fail(GeneralCodes.InternalError, "Deletion failure");
+            return delete > 0 ? Result.success(null) : Result.fail(GeneralCodes.InternalError, "删除失败");
         } catch (Exception e) {
             log.error("delete error : ", e);
             return Result.fromException(e);

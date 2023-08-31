@@ -1,6 +1,4 @@
 package com.xiaomi.youpin.prometheus.client;
-
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -38,7 +36,7 @@ public class PrometheusTest {
             throw new RuntimeException(e);
         }
         //m = new Metrics("systech", "zxw_test2");*/
-        Metrics.getInstance().init("systch", "zxw_test2");
+        Metrics.getInstance().init("systch","zxw_test2");
     }
 
     @Test
@@ -47,42 +45,61 @@ public class PrometheusTest {
 
             Metrics.getInstance().newCounter("testCounter", "name").
                     with("zxw").
-                    add(1, "zxw");
-            Metrics.getInstance().newCounter("testCounter2", "age", "city").with("99", "china").add(1, "18", "beijing");
-            Assert.assertNotNull(Metrics.getInstance());
-//            try {
-//                Thread.sleep(3000);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
+                    add(1,"zxw");
+            Metrics.getInstance().newCounter("testCounter2", "age", "city").with("99", "china").add(1,"18","beijing");
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         });
     }
 
     @Test
-    public void testGauge() {
+    public void testGauge()  {
         IntStream.range(0, 100).forEach(i -> {
-            Metrics.getInstance().newGauge("testGauge", "name").with("zxw").set(128, "zxw");
-            Assert.assertNotNull(Metrics.getInstance());
-//            try {
-//                Thread.sleep(3000);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
+            Metrics.getInstance().newGauge("testGauge", "name").with("zxw").set(128,"zxw");
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         });
     }
 
     @Test
     public void testHistogram() {
-        IntStream.range(0, 100).forEach(i -> {
-            Metrics.getInstance().newHistogram("testHistogramWithDefaultBucket", null, "name").with("zxw").observe(12, "zxw");
-            Metrics.getInstance().newHistogram("testHistogramWithDiyBucket", new double[]{.01, .05, 0.7, 5, 10, 50, 100, 200}, "name").with("zxw").observe(12, "zxw");
-            Assert.assertNotNull(Metrics.getInstance());
-//            try {
-//                Thread.sleep(3000);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
+        IntStream.range(0,100).forEach(i-> {
+            Metrics.getInstance().newHistogram("testHistogramWithDefaultBucket",null,"name").with("zxw").observe(12,"zxw");
+            Metrics.getInstance().newHistogram("testHistogramWithDiyBucket", new double[] {.01, .05, 0.7, 5 ,10, 50, 100, 200},"name").with("zxw").observe(12,"zxw");
+            try {
+                Thread.sleep(3000);
+            }catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         });
+    }
+
+    @Test
+    public void testException()   {
+        IntStream.range(0, 100).forEach(i -> {
+            //重复metric名字异常
+            // m.newCounter("testDuplicateNameException","name").with("aa").add(1);
+            //  m.newCounter("testDuplicateNameException","name").with("bb").add(1);
+            //标签名数量和标签值数量不匹配异常
+            Metrics.getInstance().newCounter("testNotMatchLabelNameAndLabelValueExceptionCounter", "a", "b").with("1").add(1);
+            Metrics.getInstance().newGauge("testNotMatchLabelNameAndLabelValueExceptionGauge", "a", "b").with("1").add(1);
+            Metrics.getInstance().newHistogram("testNotMatchLabelNameAndLabelValueExceptionHistogram", null, "b", "c").with("1").observe(1);
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+    }
+    @Test
+    public void testJvm() throws InterruptedException {
+        Thread.sleep(3000000);
     }
 }
 

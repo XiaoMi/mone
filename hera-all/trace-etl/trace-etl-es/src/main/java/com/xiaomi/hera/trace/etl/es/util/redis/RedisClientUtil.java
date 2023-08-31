@@ -1,6 +1,5 @@
 package com.xiaomi.hera.trace.etl.es.util.redis;
 
-import com.alibaba.nacos.api.config.annotation.NacosValue;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
@@ -18,7 +17,7 @@ public class RedisClientUtil {
 
     @Value("${server.type}")
     private String env;
-    @NacosValue("${spring.redis.cluster.nodes}")
+    @Value("${spring.redis.cluster.nodes}")
     private String clusterNodes;
     @Value("${spring.redis.timeout.connection}")
     private int timeout;
@@ -28,7 +27,7 @@ public class RedisClientUtil {
     private int maxIdle;
     @Value("${spring.redis.pool.max-wait}")
     private long maxWaitMillis;
-    @NacosValue("${spring.redis.password}")
+    @Value("${spring.redis.password}")
     private String pwd;
     @Value("${spring.redis.max-attempts}")
     private int maxAttempts;
@@ -38,6 +37,7 @@ public class RedisClientUtil {
 
     @PostConstruct
     public void init() {
+        // 线上使用Redis集群，st使用单机版
         String[] hp = clusterNodes.split(":");
         if (StringUtils.isEmpty(pwd)) {
             jedisPooled = new JedisPooled(getGenericObjectPoolConfig(), hp[0].trim(), Integer.valueOf(hp[1]), timeout);

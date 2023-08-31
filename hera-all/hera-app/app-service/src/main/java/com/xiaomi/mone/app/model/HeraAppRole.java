@@ -1,8 +1,5 @@
 package com.xiaomi.mone.app.model;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.util.ArrayList;
@@ -10,9 +7,7 @@ import java.util.Arrays;
 import java.util.Date;
 
 @Data
-@TableName("hera_app_role")
 public class HeraAppRole {
-    @TableId(value = "id", type = IdType.AUTO)
     private Integer id;
 
     private String appId;

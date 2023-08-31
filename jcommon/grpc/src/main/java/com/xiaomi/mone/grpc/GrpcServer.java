@@ -29,7 +29,6 @@ import run.mone.mesh.service.SideCarServiceImpl;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.*;
 
 /**
@@ -40,7 +39,7 @@ import java.util.concurrent.*;
 @Slf4j
 public class GrpcServer implements IServer<RpcCommand> {
 
-    private int port = 8765;
+    private int port;
 
     private Server server;
 
@@ -97,6 +96,9 @@ public class GrpcServer implements IServer<RpcCommand> {
     @SneakyThrows
     @Override
     public void start(String port) {
+        if (null != port && !port.trim().equals("")){
+            port = String.valueOf(this.port);
+        }
         InitGrpcService service = new InitGrpcService();
         service.init();
         sidecarService.setContext(context);
@@ -112,8 +114,7 @@ public class GrpcServer implements IServer<RpcCommand> {
 
         this.getProcessorMap().forEach((k, v) -> sidecarService.getProcessorMap().put(k, v));
         List<BindableService> serviceList = Lists.newArrayList(sidecarService);
-        Optional.ofNullable(this.serviceList).ifPresent(list -> list.forEach(it -> serviceList.add(it)));
-
+        this.serviceList.stream().forEach(it -> serviceList.add(it));
         this.setPort(Integer.valueOf(port));
         this.setServiceList(serviceList);
         this.start();

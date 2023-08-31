@@ -1,22 +1,20 @@
 package com.xiaomi.youpin.docean.mvc;
 
+import com.google.common.base.Joiner;
 import com.google.gson.Gson;
 import com.xiaomi.youpin.docean.Mvc;
 import com.xiaomi.youpin.docean.common.Cons;
 import com.xiaomi.youpin.docean.common.Safe;
-import com.xiaomi.youpin.docean.config.HttpServerConfig;
-import com.xiaomi.youpin.docean.mvc.common.MvcConst;
+import com.xiaomi.youpin.docean.listener.event.Event;
+import com.xiaomi.youpin.docean.listener.event.EventType;
 import com.xiaomi.youpin.docean.mvc.download.Download;
-import com.xiaomi.youpin.docean.mvc.upload.MvcUpload;
 import com.xiaomi.youpin.docean.mvc.util.ExceptionUtil;
-import com.xiaomi.youpin.docean.mvc.util.MethodFinder;
-import com.xiaomi.youpin.docean.mvc.util.RequestUtils;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import jdk.incubator.concurrent.ScopedValue;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -36,7 +34,7 @@ public class MvcRunnable implements Runnable {
 
     private Mvc mvc;
 
-    private static Gson gson = new Gson();
+    private Gson gson = new Gson();
 
     public MvcRunnable(Mvc mvc, MvcContext context, MvcRequest request, MvcResponse response, ConcurrentHashMap<String, HttpRequestMethod> requestMethodMap) {
         this.context = context;
@@ -46,44 +44,83 @@ public class MvcRunnable implements Runnable {
         this.mvc = mvc;
     }
 
-
-    public MvcRunnable(Mvc mvc, HttpServerConfig config, ChannelHandlerContext ctx, FullHttpRequest httpRequest, String path, byte[] body, ConcurrentHashMap<String, HttpRequestMethod> requestMethodMap) {
-        String method = httpRequest.method().name();
-        this.context = new MvcContext();
-        this.request = new MvcRequest();
-        this.response = new MvcResponse();
-        this.context.setRequest(httpRequest);
-        this.context.setMethod(method);
-        this.context.setHandlerContext(ctx);
-        this.context.setCookie(config.isCookie());
-        this.request.setHeaders(RequestUtils.headers(httpRequest));
-        this.request.setUri(httpRequest.uri());
-        this.context.setHeaders(this.request.getHeaders());
-        this.context.setVirtualThread(mvc.getMvcConfig().isVirtualThread());
-        this.request.setMethod(method);
-        this.request.setPath(path);
-        this.request.setBody(body);
-        this.response.setCtx(ctx);
-        this.mvc = mvc;
-        this.requestMethodMap = requestMethodMap;
-    }
-
-
     @Override
     public void run() {
         Safe.run(() -> {
-            log.debug("call mvc path:{}", request.getPath());
-            if (mvc.getMvcConfig().isVirtualThread()) {
-                ScopedValue.where(MvcConst.MVC_CONTEXT, context).run(() -> {
-                    call();
-                });
-            } else {
+            try {
+                log.debug("call mvc path:{}", request.getPath());
                 ContextHolder.getContext().set(context);
-                try {
-                    call();
-                } finally {
-                    ContextHolder.getContext().close();
+                if (context.isWebsocket()) {
+                    WsRequest req = new Gson().fromJson(new String(request.getBody()), WsRequest.class);
+                    request.setPath(req.getPath());
+                    request.setBody(new Gson().toJson(req.getParams()).getBytes());
                 }
+                String path = request.getPath();
+                MvcResult<Object> result = new MvcResult<>();
+                HttpRequestMethod method = this.requestMethodMap.get(path);
+                //支持文件下载(/download) 并且必须开启下载
+                if (isDownload(path) && mvc.getMvcConfig().isDownload()) {
+                    new Download().download(context, request, response);
+                    return;
+                }
+
+                //支持上传文件(/upload)
+                if (isUpload(path)) {
+                    Map<String, String> m = new HashMap<>(2);
+                    if (null != request.getParams()) {
+                        m.putAll(request.getParams());
+                    }
+                    m.put("fileName", new String(request.getBody()));
+                    mvc.getIoc().publishEvent(new Event(EventType.mvcUploadFinish, m));
+                    response.writeAndFlush(context, "upload success");
+                    return;
+                }
+
+                //支持模糊匹配
+                if (null == method) {
+                    String[] array = path.split("/");
+                    if (array.length > 1) {
+                        array[array.length - 1] = "*";
+                        String p = Joiner.on("/").join(array);
+                        method = this.requestMethodMap.get(p);
+                    }
+                }
+                //多层次模糊匹配(/a/** 匹配 /a/b/c /a/b/d)
+                if (null == method) {
+                    final String p = path;
+                    Optional<Map.Entry<String, HttpRequestMethod>> optional = this.requestMethodMap.entrySet().stream().filter(it -> {
+                        String key = it.getKey();
+                        if (key.endsWith("/**")) {
+                            key = key.replace("/**", "");
+                            return p.startsWith(key);
+                        }
+                        return false;
+                    }).findAny();
+                    if (optional.isPresent()) {
+                        method = optional.get().getValue();
+                    }
+                }
+                //支持指定path执行
+                if (null != method) {
+                    mvc.callMethod(context, request, response, result, method);
+                    return;
+                }
+                //查找favicon.ioc 的直接返回找不到
+                if (isFaviconIco(request)) {
+                    response.writeAndFlush(context, HttpResponseStatus.NOT_FOUND, "");
+                    return;
+                }
+
+                if (!path.equals(Cons.Service)) {
+                    result.setCode(HttpResponseStatus.NOT_FOUND.code());
+                    result.setMessage(HttpResponseStatus.NOT_FOUND.reasonPhrase());
+                    response.writeAndFlush(context, gson.toJson(result));
+                    return;
+                }
+                //直接调用服务
+                mvc.callService(context, request, response);
+            } finally {
+                ContextHolder.getContext().close();
             }
         }, ex -> {
             MvcResult<String> mr = new MvcResult();
@@ -93,50 +130,6 @@ public class MvcRunnable implements Runnable {
             response.writeAndFlush(context, gson.toJson(mr));
         });
     }
-
-    private void call() {
-        if (context.isWebsocket()) {
-            WsRequest req = new Gson().fromJson(new String(request.getBody()), WsRequest.class);
-            request.setPath(req.getPath());
-            request.setBody(new Gson().toJson(req.getParams()).getBytes());
-        }
-        //查找favicon.ioc 的直接返回找不到
-        if (isFaviconIco(request)) {
-            response.writeAndFlush(context, HttpResponseStatus.NOT_FOUND, "");
-            return;
-        }
-        String path = request.getPath();
-
-        //支持文件下载(/download) 并且必须开启下载
-        if (isDownload(path) && mvc.getMvcConfig().isDownload()) {
-            Download.download(context, request, response);
-            return;
-        }
-
-        //支持上传文件(/upload)
-        if (isUpload(path)) {
-            MvcUpload.upload(mvc, request, response, context);
-            return;
-        }
-
-        HttpRequestMethod method = MethodFinder.find(path,this.requestMethodMap);
-        //支持指定path执行
-        if (null != method) {
-            mvc.callMethod(context, request, response, new MvcResult<>(), method);
-            return;
-        }
-
-        if (!path.equals(Cons.Service)) {
-            MvcResult<Object> result = new MvcResult<>();
-            result.setCode(HttpResponseStatus.NOT_FOUND.code());
-            result.setMessage(HttpResponseStatus.NOT_FOUND.reasonPhrase());
-            response.writeAndFlush(context, gson.toJson(result));
-            return;
-        }
-        //直接调用服务
-        mvc.callService(context, request, response);
-    }
-
 
     private boolean isDownload(String path) {
         return path.equals("/download");

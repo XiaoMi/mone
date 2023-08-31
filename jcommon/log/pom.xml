@@ -37,9 +37,9 @@
         </dependency>
 
         <dependency>
-            <groupId>run.mone</groupId>
+            <groupId>org.apache.dubbo</groupId>
             <artifactId>dubbo</artifactId>
-            <version>2.7.12-mone-v8-SNAPSHOT</version>
+            <version>2.7.0-youpin-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <artifactId>netty</artifactId>

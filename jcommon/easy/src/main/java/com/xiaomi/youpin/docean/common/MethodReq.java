@@ -18,8 +18,6 @@ package com.xiaomi.youpin.docean.common;
 
 import lombok.Data;
 
-import java.util.Map;
-
 /**
  * @author goodjava@qq.com
  * @date 1/24/21
@@ -38,7 +36,5 @@ public class MethodReq {
     private byte[][] byteParams;
 
     private String[] params;
-
-    private Map<String,String> attachments;
 
 }

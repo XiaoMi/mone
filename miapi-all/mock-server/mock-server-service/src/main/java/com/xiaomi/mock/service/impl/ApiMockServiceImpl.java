@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
+ * @Description TODO
  * @Author zhenxing.dong
  * @Date 2021/8/9 11:08
  */
@@ -46,7 +47,7 @@ public class ApiMockServiceImpl implements ApiMockService {
     public void init() {
         ScriptEngineManager manager = new ScriptEngineManager();
         engine = manager.getEngineByName("javascript");
-        // load mockjs
+        // 加载mockjs
         try {
             InputStream is = this.getClass().getResourceAsStream("/mock.js");
             Reader fileReader = new InputStreamReader(is);
@@ -77,7 +78,7 @@ public class ApiMockServiceImpl implements ApiMockService {
         Object mockResult = null;
         if (mockData != null) {
             if (engine instanceof Invocable) {
-                // call js script，get the result
+                // 调用js函数，获取结果
                 try {
                     String jsonStr = mockData.getApiMockData().replaceAll("\n", "");
                     mockResult = engine.eval("JSON.stringify(Mock.mock(" + jsonStr + "), null, 2)");
@@ -164,6 +165,7 @@ public class ApiMockServiceImpl implements ApiMockService {
                 return new Result<>(500, "add api mock data error", false);
             }
         } else {
+            //更新
             boolean ok;
             if (bo.getEnable() > 0) {
                 ok = apiMockDao.editApiMockResult(bo.getUrl(), bo.getMockData(), bo.getParamsMd5(), Integer.parseInt(bo.getMockExpID()), true, bo.getUseMockScript() > 0, bo.getMockScript());

@@ -68,13 +68,7 @@ public class SidecarTransactionContext {
         }
         connectionnMap.remove(xid);
         MybatisTransaction transaction = transactionMap.remove(xid);
-        Safe.runAndLog(() -> {
-            // 超时的，需要在释放连接前进行回滚
-            if (!removeTimeout){
-                transaction.rollback();
-            }
-            transaction.close();
-        });
+        Safe.runAndLog(() -> transaction.close());
     }
 
     public static void close(String xid) {

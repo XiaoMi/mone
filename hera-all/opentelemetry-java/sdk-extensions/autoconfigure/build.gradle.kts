@@ -26,7 +26,7 @@ dependencies {
 
     implementation(project(":semconv"))
     implementation("io.micrometer:micrometer-registry-prometheus:1.1.7")
-    implementation("run.mone:nacos-client:1.2.1-mone-v3-SNAPSHOT")
+    implementation("com.alibaba.nacos:nacos-client:1.2.1-mone-SNAPSHOT")
 
 
     compileOnly(project(":exporters:jaeger"))

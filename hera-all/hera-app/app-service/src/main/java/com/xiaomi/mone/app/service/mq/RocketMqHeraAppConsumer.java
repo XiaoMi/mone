@@ -1,15 +1,13 @@
 package com.xiaomi.mone.app.service.mq;
 
-import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.gson.Gson;
-import com.xiaomi.mone.app.api.message.HeraAppInfoModifyMessage;
-import com.xiaomi.mone.app.api.message.HeraAppModifyType;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
+import com.xiaomi.mone.app.api.service.HeraAppService;
 import com.xiaomi.mone.app.dao.HeraAppRoleDao;
 import com.xiaomi.mone.app.dao.HeraBaseInfoDao;
 import com.xiaomi.mone.app.model.HeraAppBaseInfo;
 import com.xiaomi.mone.app.model.HeraAppRole;
-import com.xiaomi.mone.app.service.impl.HeraAppBaseInfoService;
+import com.xiaomi.mone.app.service.impl.HeraAppBaseInfoServiceImpl;
 import com.xiaomi.mone.app.service.mq.model.HeraAppMessage;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.common.utils.CollectionUtils;
@@ -24,7 +22,6 @@ import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.common.consumer.ConsumeFromWhere;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.remoting.RPCHook;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -43,24 +40,24 @@ import java.util.stream.Collectors;
 @Slf4j
 public class RocketMqHeraAppConsumer {
 
-    @NacosValue(value = "${rocket.mq.hera.app.topic}",autoRefreshed = true)
+    @Value("${rocket.mq.hera.app.topic}")
     private String consumerTopic;
 
-    @NacosValue(value = "${rocket.mq.hera.app.tag}",autoRefreshed = true)
+    @Value("${rocket.mq.hera.app.tag}")
     private String consumerTag;
 
-    @NacosValue(value = "${rocket.mq.producer.group}",autoRefreshed = true)
+    @Value("${rocket.mq.producer.group}")
     private String consumerGroup;
 
-    @NacosValue(value = "${rocket.mq.srvAddr}", autoRefreshed = true)
+    @Value("${rocket.mq.srvAddr}")
     private String namesrvAddr;
 
     //默认为空，根据需要配置
-    @NacosValue(value = "${rocketmq.ak}", autoRefreshed = true)
+    @Value("${rocketmq.ak:}")
     private String ak;
 
     //默认为空，根据需要配置
-    @NacosValue(value = "${rocketmq.sk}", autoRefreshed = true)
+    @Value("${rocketmq.sk:}")
     private String sk;
 
     private DefaultMQPushConsumer heraAppMQPushConsumer;
@@ -69,13 +66,13 @@ public class RocketMqHeraAppConsumer {
     HeraBaseInfoDao heraBaseInfoDao;
 
     @Autowired
+    HeraAppService hearAppService;
+
+    @Autowired
     HeraAppRoleDao heraAppRoleDao;
 
     @Autowired
-    RocketMqHeraAppProducer mqHeraAppProducer;
-
-    @Autowired
-    HeraAppBaseInfoService heraBaseInfoService;
+    HeraAppBaseInfoServiceImpl heraBaseInfoService;
 
     private AtomicBoolean rocketMqStartedStatus = new AtomicBoolean(false);
 
@@ -103,7 +100,6 @@ public class RocketMqHeraAppConsumer {
 
 
             heraAppMQPushConsumer.subscribe(consumerTopic, consumerTag);
-            log.info("HeraApp#RocketMqHeraAppConsumer consumerTopic:{},consumerTag:{},consumerGroup:{}",consumerTopic,consumerTag,consumerGroup);
             heraAppMQPushConsumer.registerMessageListener((MessageListenerOrderly) (list, consumeOrderlyContext) -> {
                 try {
                     list.stream().forEach(it -> {
@@ -136,63 +132,45 @@ public class RocketMqHeraAppConsumer {
             HeraAppMessage heraAppMessage = new Gson().fromJson(new String(body), HeraAppMessage.class);
             log.info("RocketMqHeraAppConsumer# consumeMessage convert heraAppMessage : {}", heraAppMessage.toString());
 
-            HeraAppBaseInfo changeHeraApp = heraAppMessage.baseInfo();
-            HeraAppBaseInfo origHeraApp = matchExistHeraApp(heraAppMessage.baseInfo());
-
             if (heraAppMessage.getDelete() != null && heraAppMessage.getDelete().intValue() == 1) {
-
-                if(origHeraApp == null){
-                    log.info("RocketMqHeraAppConsumer# delete hera app, no db data found! heraAppMessage : {}",heraAppMessage.toString());
-                    return;
-                }
-
-                heraBaseInfoService.delById(origHeraApp.getId());
-                log.info("RocketMqHeraAppConsumer# delete hera app info record:{}",heraAppMessage.toString());
-                sendHeraAppModify(heraAppMessage.baseInfo(),origHeraApp,HeraAppModifyType.delete);
-                return;
+                heraBaseInfoService.deleAppByBindIdAndPlat(heraAppMessage.getId(), heraAppMessage.getPlatformType());
+            } else {
+                HeraAppBaseInfo heraAppBaseInfo = heraAppMessage.baseInfo();
+                HeraAppBaseInfo heraAppBaseInfo1 = saveOrUpdateHeraApp(heraAppBaseInfo);
+                saveOrUpdateHeraAppRole(heraAppMessage.getJoinedMembers(), heraAppMessage.getId(), heraAppBaseInfo.getPlatformType());
             }
-
-            if(origHeraApp == null){
-                int create = heraBaseInfoService.create(changeHeraApp);
-                String result = create == 1 ? "success!" : "fail!";
-                log.info("RocketMqHeraAppConsumer#create heraAppBaseInfo : {}, result:{}", changeHeraApp.toString(),result);
-            }else{
-                changeHeraApp.setId(origHeraApp.getId());
-                changeHeraApp.setStatus(0);
-                int update = heraBaseInfoService.update(changeHeraApp);
-                String result = update == 1 ? "success!" : "fail!";
-                log.info("RocketMqHeraAppConsumer#update heraAppBaseInfo : {}, result:{}", changeHeraApp.toString(),result);
-            }
-
-            saveOrUpdateHeraAppRole(heraAppMessage.getJoinedMembers(), heraAppMessage.getId(), heraAppMessage.getPlatformType());
-
-            sendHeraAppModify(heraAppMessage.baseInfo(),origHeraApp,origHeraApp == null ? HeraAppModifyType.create : HeraAppModifyType.update);
 
         } catch (Throwable ex) {
-            log.error("RocketMqHeraAppConsumer#consumeMessage error:" + ex.getMessage(), ex);
+            log.error("mimonitor#appNameGrafanaMapping#consumeMessage error:" + ex.getMessage(), ex);
         }
     }
 
-    private HeraAppBaseInfo matchExistHeraApp(HeraAppBaseInfo heraAppBaseInfo){
+    private HeraAppBaseInfo saveOrUpdateHeraApp(HeraAppBaseInfo heraAppBaseInfo) {
         HeraAppBaseInfoModel queryInfo = new HeraAppBaseInfoModel();
         queryInfo.setBindId(heraAppBaseInfo.getBindId());
         queryInfo.setPlatformType(heraAppBaseInfo.getPlatformType());
         queryInfo.setStatus(0);
         List<HeraAppBaseInfo> query = heraBaseInfoService.query(queryInfo, null, null);
-        if(CollectionUtils.isEmpty(query)){
+        if (CollectionUtils.isEmpty(query)) {
+            heraBaseInfoDao.create(heraAppBaseInfo);
+            log.info("create heraAppBaseInfo by rocketMq success,heraAppBaseInfo:{}", heraAppBaseInfo);
             return null;
+        } else {
+            if (query.size() > 1) {
+                log.error("duplicate heraBaseInfo : {}", new Gson().toJson(query));
+            }
+            HeraAppBaseInfo heraAppBaseInfo1 = query.get(0);
+            heraAppBaseInfo.setId(heraAppBaseInfo1.getId());
+            heraAppBaseInfo.setStatus(0);
+            heraBaseInfoDao.update(heraAppBaseInfo);
+            log.info("update heraAppBaseInfo by rocketMq success,heraAppBaseInfo:{}", heraAppBaseInfo);
+            return heraAppBaseInfo1;
         }
-
-        if (query.size() > 1) {
-            log.error("matchExistHeraApp#duplicate heraBaseInfo : {}", new Gson().toJson(query));
-        }
-
-        return query.get(0);
     }
 
     private void saveOrUpdateHeraAppRole(List<String> members, String appId, Integer platFormType) {
 
-        log.info("RocketMqHeraAppConsumer#saveOrUpdateHeraAppRole appId:{},platFormType:{},members:{}", appId, platFormType, members);
+        log.info("saveOrUpdateHeraAppRole appId:{},platFormType:{},members:{}", appId, platFormType, members);
         if (CollectionUtils.isEmpty(members)) {
             return;
         }
@@ -254,30 +232,7 @@ public class RocketMqHeraAppConsumer {
 
             });
         }
-    }
 
-    /**
-     * hera app 发布原数据变更消息通知
-     * @param changeInfo 本次变更的hera app信息
-     * @param origInfo 原有hera app信息
-     */
-    private void sendHeraAppModify(HeraAppBaseInfo changeInfo,HeraAppBaseInfo origInfo,HeraAppModifyType modifyType){
-
-        HeraAppInfoModifyMessage modifyMsg = new HeraAppInfoModifyMessage();
-        modifyMsg.setModifyType(modifyType);
-        BeanUtils.copyProperties(changeInfo,modifyMsg);
-        modifyMsg.setAppId(Integer.valueOf(changeInfo.getBindId()));
-        if(origInfo != null){
-            modifyMsg.setId(origInfo.getId());
-        }
-        if(HeraAppModifyType.update.equals(modifyType)){
-            modifyMsg.setIsNameChange(!changeInfo.getAppName().equals(origInfo.getAppName()) ? true : false);
-            modifyMsg.setIsIamTreeIdChange(!changeInfo.getIamTreeId().equals(origInfo.getIamTreeId()) ? true : false);
-            modifyMsg.setIsIamTreeTypeChange(changeInfo.getIamTreeType() != null && !changeInfo.getIamTreeType().equals(origInfo.getIamTreeType()) ? true : false);
-            modifyMsg.setIsPlatChange(!changeInfo.getPlatformType().equals(origInfo.getPlatformType()) ? true : false);
-        }
-
-        mqHeraAppProducer.pushHeraAppMsg(modifyMsg);
 
     }
 

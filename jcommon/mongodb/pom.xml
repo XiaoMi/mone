@@ -19,7 +19,7 @@
         </dependency>
 
         <dependency>
-            <groupId>run.mone</groupId>
+            <groupId>com.xiaomi.youpin</groupId>
             <artifactId>catPlugin</artifactId>
             <version>1.4-SNAPSHOT</version>
         </dependency>

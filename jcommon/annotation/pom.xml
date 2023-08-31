@@ -18,7 +18,7 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>common</artifactId>
-            <version>1.7.2-SNAPSHOT</version>
+            <version>1.7-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <artifactId>fastjson</artifactId>
@@ -29,9 +29,9 @@
 
 
         <dependency>
-            <groupId>run.mone</groupId>
+            <groupId>com.xiaomi.youpin</groupId>
             <artifactId>redis</artifactId>
-            <version>1.8-SNAPSHOT</version>
+            <version>1.4-SNAPSHOT</version>
         </dependency>
 
 

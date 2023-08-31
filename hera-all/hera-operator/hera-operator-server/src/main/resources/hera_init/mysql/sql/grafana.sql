@@ -1,2 +1,0 @@
-CREATE
-DATABASE  IF NOT EXISTS `mione_hera_grafana`  DEFAULT CHARACTER SET utf8mb4 ;

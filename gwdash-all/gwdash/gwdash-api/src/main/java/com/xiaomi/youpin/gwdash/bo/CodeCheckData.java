@@ -31,7 +31,7 @@ public class CodeCheckData implements Serializable {
     private long id;
 
     /**
-     * Time consuming
+     * 耗时
      */
     private long time;
 

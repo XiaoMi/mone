@@ -1,6 +1,0 @@
-请根据这些信息生成一个HttpFilter
-开发者:zzy@qq.com
-判断是否进入Dubbo Filter执行的逻辑:routeType == RouteType.Http.type()
-FilterOrder的数字是:3001
-client的名字叫:httpClient
-client的类叫:Http

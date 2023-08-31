@@ -56,11 +56,12 @@ import java.util.stream.Collectors;
 
 /**
  * @author goodjava@qq.com
+ * @date 2020/6/20
  */
 @Slf4j
 public class Ioc {
 
-    private final ConcurrentHashMap<String, Bean> beans = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<String, Bean> beans = new ConcurrentHashMap<>();
 
     private final List<Class<? extends Annotation>> scanAnno = Lists.newArrayList(Component.class, Service.class, Controller.class);
 
@@ -70,7 +71,7 @@ public class Ioc {
     private String[] scanPackages;
 
     /**
-     * It needs to be used when interacting with containers like spring
+     * 和spring这样的容器交互的时候需要用到
      */
     private Function<String, Object> contextFunction = new Function<String, Object>() {
         @Override
@@ -86,7 +87,6 @@ public class Ioc {
     @Getter
     private ClassLoader classLoader;
 
-    @Getter
     private String name = "";
 
     public Ioc name(String name) {
@@ -196,7 +196,7 @@ public class Ioc {
     }
 
     /**
-     * Get the value in the annotation.
+     * 获取注解中的值
      *
      * @param obj
      * @param method
@@ -240,7 +240,7 @@ public class Ioc {
 
 
     /**
-     * complete dependency injection
+     * 完成依赖注入
      *
      * @param it
      */
@@ -263,18 +263,17 @@ public class Ioc {
     }
 
     /**
-     * Add a bean (dynamic)
-     * Put it into the dependency list, in order to avoid secondary analysis
-     * (in fact, there is a way to analyze it again, but let’s do this for performance first)
+     * 加入一个bean(动态的)
+     * 放入依赖列表,为了避免二次分析(其实也有办法,再分析一遍,但为了性能先这样吧)
      */
     public void addBean(String name, Object obj, Map<String, Field> dependenceMap) {
         this.putBean(name, obj);
         Bean bean = this.getBeanInfo(name);
-        // call the init function
+        //调用init函数
         callInit(bean);
-        // complete dependency injection (which I depend on)
+        //完成依赖注入(我依赖的)
         initIoc(bean);
-        // complete dependency injection (depends on mine)
+        //完成依赖注入(依赖我的)
         callDependenceIoc(bean, dependenceMap);
     }
 
@@ -286,9 +285,9 @@ public class Ioc {
     }
 
     /**
-     * Remove a bean (dynamic)
-     * 1. Remove the reference that depends on this bean
-     * 2. Delete this bean from ioc
+     * 移除某个bean(动态的)
+     * 1.移除依赖这个bean的引用
+     * 2.从ioc中删除这个bean
      *
      * @param name
      */
@@ -355,7 +354,7 @@ public class Ioc {
     }
 
     /**
-     * Load the plugins that also need to be scanned
+     * 把插件也需要扫描的加载进来
      *
      * @return
      */
@@ -384,7 +383,7 @@ public class Ioc {
     }
 
     /**
-     * Create a brand new Ioc container (required by server less)
+     * 创建一个全新的Ioc容器(server less 需要)
      *
      * @param classLoader
      * @return
@@ -496,7 +495,7 @@ public class Ioc {
     }
 
     /**
-     * Get a list of beans by type
+     * 根据类型获取bean 列表
      *
      * @param type
      * @return
@@ -510,8 +509,8 @@ public class Ioc {
     }
 
     /**
-     * According to the level and number of references (controller->service->component)
-     * (theoretically the least referenced, the first to destroy the least negative impact) call destroy method
+     * destory
+     * 根据层级和引用数量 (controller->service->component) (理论上被引用最少的,最先销毁负面影响最少) call destory method
      */
     public void destory() {
         log.info("ioc destory");
@@ -529,13 +528,13 @@ public class Ioc {
 
 
     /**
-     * Call the destruction logic in this bean
+     * 调用这个bean中的销毁逻辑
      *
      * @param b
      */
     private void destoryBean(Bean b) {
-        String destroyMethodName = Plugin.ins().getDestoryMethodName(b.getObj(), b.getObj().getClass());
-        ReflectUtils.invokeMethod(b.getObj(), b.getObj().getClass(), destroyMethodName, new Object[]{});
+        String destoryMethodName = Plugin.ins().getDestoryMethodName(b.getObj(), b.getObj().getClass());
+        ReflectUtils.invokeMethod(b.getObj(), b.getObj().getClass(), destoryMethodName, new Object[]{});
     }
 
 

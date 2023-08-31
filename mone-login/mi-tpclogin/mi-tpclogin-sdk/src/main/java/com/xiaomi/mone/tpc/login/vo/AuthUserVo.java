@@ -15,8 +15,6 @@ public class AuthUserVo {
     private String departmentName;
     private String loginUrl;
     private String logoutUrl;
-    private String code;
-    private String state;
 
     public String getAccount() {
         return account;
@@ -114,22 +112,6 @@ public class AuthUserVo {
         this.logoutUrl = logoutUrl;
     }
 
-    public String getCode() {
-        return code;
-    }
-
-    public void setCode(String code) {
-        this.code = code;
-    }
-
-    public String getState() {
-        return state;
-    }
-
-    public void setState(String state) {
-        this.state = state;
-    }
-
     public String genFullAccount() {
         if (UserTypeEnum.CAS_TYPE.getCode().equals(userType)) {
             return account;
@@ -152,8 +134,6 @@ public class AuthUserVo {
                 ", departmentName='" + departmentName + '\'' +
                 ", setCookUrl='" + setCookUrl + '\'' +
                 ", loginUrl='" + loginUrl + '\'' +
-                ", code='" + code + '\'' +
-                ", state='" + state + '\'' +
                 ", logoutUrl='" + logoutUrl + '\'' +
                 '}';
     }

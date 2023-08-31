@@ -16,19 +16,17 @@
 
 package com.xiaomi.data.push.client;
 
+import com.alibaba.fastjson.JSON;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 import com.google.common.net.HttpHeaders;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
 import com.xiaomi.data.push.client.bo.HttpResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.*;
 import java.io.*;
-import java.lang.reflect.Type;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.URL;
@@ -44,15 +42,13 @@ import java.util.zip.GZIPInputStream;
  * @author dongzhenxing
  * @author goodjava@qq.com
  * @author zheng.xucn@outlook.com
- * <p>
+ *
  * Based on HttpClientV5
  * 与httpClientV5的区别是HttpClientV6的getResult()接受HTTP_NO_CONTENT
  */
 public class HttpClientV6 {
 
     private static final Logger logger = LoggerFactory.getLogger(com.xiaomi.data.push.client.HttpClientV5.class);
-
-    private static Gson gson = new Gson();
 
     private static boolean catEnabled;
 
@@ -208,9 +204,7 @@ public class HttpClientV6 {
     }
 
     public static HttpResult httpPut(String url, Map<String, String> headers, String body, String encoding, int readTimeout) {
-        Type typeOfT = new TypeToken<Map<String, String>>() {
-        }.getType();
-        Map<String, String> paramValues = gson.fromJson(body, typeOfT);
+        Map<String, String> paramValues = (Map) JSON.parse(body);
         List<String> list = Lists.newArrayList();
         if (null != headers) {
             headers.entrySet().stream().forEach(it -> {
@@ -294,9 +288,7 @@ public class HttpClientV6 {
     }
 
     public static HttpResult httpPost(String url, Map<String, String> headers, String body, String encoding, int readTimeout) {
-        Type typeOfT = new TypeToken<Map<String, String>>() {
-        }.getType();
-        Map<String, String> paramValues = gson.fromJson(body, typeOfT);
+        Map<String, String> paramValues = (Map) JSON.parse(body);
         List<String> list = Lists.newArrayList();
         if (null != headers) {
             headers.entrySet().stream().forEach(it -> {
@@ -380,7 +372,7 @@ public class HttpClientV6 {
             try {
                 if (conn != null) {
                     logger.warn("failed to request " + conn.getURL() + " from "
-                            + InetAddress.getByName(conn.getURL().getHost()).getHostAddress());
+                        + InetAddress.getByName(conn.getURL().getHost()).getHostAddress());
                 }
             } catch (Exception e1) {
                 logger.warn("NA", "failed to request ", e1);
@@ -402,9 +394,9 @@ public class HttpClientV6 {
 
         InputStream inputStream;
         if (HttpURLConnection.HTTP_OK == respCode
-                || HttpURLConnection.HTTP_NOT_MODIFIED == respCode
-                || HttpURLConnection.HTTP_NO_CONTENT == respCode
-                || HttpURLConnection.HTTP_CREATED == respCode
+            || HttpURLConnection.HTTP_NOT_MODIFIED == respCode
+            || HttpURLConnection.HTTP_NO_CONTENT == respCode
+            || HttpURLConnection.HTTP_CREATED == respCode
         ) {
             inputStream = conn.getInputStream();
         } else {
@@ -522,7 +514,7 @@ public class HttpClientV6 {
     }
 
     private static String encodingParams(Map<String, String> params, String encoding)
-            throws UnsupportedEncodingException {
+        throws UnsupportedEncodingException {
         StringBuilder sb = new StringBuilder();
         if (null == params || params.isEmpty()) {
             return null;

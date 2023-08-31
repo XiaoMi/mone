@@ -45,11 +45,11 @@ public class SideCarServerInterceptor implements ServerInterceptor {
             });
         }
 
-        return new ForwardingServerCallListener.SimpleForwardingServerCallListener<ReqT>(next.startCall(new SidecarServerCall<>(call), headers)) {
+        return new ForwardingServerCallListener.SimpleForwardingServerCallListener<ReqT>(next.startCall(call, headers)) {
             @Override
             public void onMessage(ReqT message) {
                 super.onMessage(message);
-                log.info("grpc server request:{}", message);
+                log.debug("on message:{}", message);
             }
         };
     }

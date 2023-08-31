@@ -57,21 +57,20 @@ public class UdsServerHandler extends ChannelInboundHandlerAdapter {
             ByteBuf msg = (ByteBuf) _msg;
             UdsCommand command = new UdsCommand();
             command.decode(msg);
-            log.debug("server receive:id:{}:{}:{}:{}:{}",command.getId(), command.isRequest(), command.getApp(), command.getCmd(), command.getSerializeType());
+            log.debug("server receive:{}:{}:{}", command.getApp(), command.getCmd(), command.getSerializeType());
             if (command.isRequest()) {
                 command.setChannel(ctx.channel());
                 Pair<UdsProcessor, ExecutorService> pair = this.m.get(command.getCmd());
                 if (null != pair) {
                     UdsProcessor<UdsCommand, UdsCommand> processor = pair.getKey();
                     pair.getValue().submit(() -> {
-                        log.debug("server received:{}", command.getId());
                         UdsCommand res = processor.processRequest(command);
                         if (null != res) {
                             Send.send(ctx.channel(), res);
                         }
                     });
                 } else {
-                    log.warn("processor is null cmd:{},id:{}", command.getCmd(),command.getId());
+                    log.warn("processor is null cmd:{}", command.getCmd());
                 }
             } else {
                 Optional.ofNullable(UdsServer.reqMap.get(command.getId())).ifPresent(f -> f.complete(command));
@@ -91,7 +90,6 @@ public class UdsServerHandler extends ChannelInboundHandlerAdapter {
     public void channelInactive(ChannelHandlerContext ctx) {
         Attribute<String> attr = ctx.channel().attr(app);
         String v = attr.get();
-        log.error("server channelInactive:{},{},{}", app, v,ctx.channel().id());
         if (null != v) {
             UdsServerContext.ins().remove(v);
         }
@@ -99,7 +97,7 @@ public class UdsServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        log.error("exceptionCaught,{}:{}",ctx.channel().id(), cause);
+        log.error(cause.getMessage(), cause);
         Attribute<String> attr = ctx.channel().attr(app);
         String v = attr.get();
         if (null != v) {

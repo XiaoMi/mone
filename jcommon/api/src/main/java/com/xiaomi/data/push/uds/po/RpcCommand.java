@@ -86,4 +86,5 @@ public class RpcCommand {
         String s = new String(this.data);
         return (T) gson.fromJson(s, clazz);
     }
+
 }

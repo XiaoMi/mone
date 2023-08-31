@@ -1,8 +1,9 @@
 package com.xiaomi.data.push.common;
 
-
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author goodjava@qq.com
@@ -17,25 +18,6 @@ public class ExecutorServiceUtils {
         return new ThreadPoolExecutor(size, size,
                 0L, TimeUnit.MILLISECONDS,
                 new ArrayBlockingQueue<>(100));
-    }
-
-    public static ExecutorService creatThreadPoolHasName(int size, String name, ExecutorService defaultPool) {
-        if (size <= 0) {
-            return defaultPool;
-        }
-        return new ThreadPoolExecutor(size, size,
-                0L, TimeUnit.MILLISECONDS,
-                new ArrayBlockingQueue<>(100),
-                new ThreadFactory() {
-                    private final AtomicInteger id = new AtomicInteger(0);
-
-                    public Thread newThread(Runnable r) {
-                        String threadName = name + this.id.getAndIncrement();
-                        Thread thread = new Thread(r, threadName);
-                        thread.setDaemon(true);
-                        return thread;
-                    }
-                });
     }
 
 

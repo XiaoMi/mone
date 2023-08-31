@@ -8,6 +8,7 @@ import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
+import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -15,28 +16,28 @@ import java.util.function.Supplier;
  * @date 2022/5/3 11:45
  */
 @Slf4j
-public class Pool<T> {
+public class Pool {
 
-    private GenericObjectPool<T> pool = null;
+    private static GenericObjectPool<BeanMap> pool = null;
 
     private int total = 0;
 
-    private Supplier<T> supplier;
+    private Supplier<BeanMap> supplier;
 
-    public void init(int total, final Supplier<T> supplier) {
+    public void init(int total, Supplier<BeanMap> supplier) {
         this.supplier = supplier;
         this.total = total;
         GenericObjectPoolConfig config = new GenericObjectPoolConfig();
         config.setMaxTotal(total);
         config.setMaxIdle(total);
-        pool = new GenericObjectPool<T>(new BasePooledObjectFactory<T>() {
+        pool = new GenericObjectPool(new BasePooledObjectFactory() {
             @Override
-            public T create() {
-                return supplier.get();
+            public Object create() {
+                return Pool.this.supplier.get();
             }
 
             @Override
-            public PooledObject wrap(T obj) {
+            public PooledObject wrap(Object obj) {
                 PooledObject o = new DefaultPooledObject(obj);
                 return o;
             }
@@ -45,14 +46,14 @@ public class Pool<T> {
 
 
     @SneakyThrows
-    public T borrow() {
+    public BeanMap borrow() {
         if (total <= 0) {
             return supplier.get();
         }
         return pool.borrowObject();
     }
 
-    public void returnObject(T obj) {
+    public void returnObject(BeanMap obj) {
         if (total > 0) {
             pool.returnObject(obj);
         }

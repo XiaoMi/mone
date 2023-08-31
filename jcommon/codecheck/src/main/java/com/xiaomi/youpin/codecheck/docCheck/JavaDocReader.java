@@ -28,7 +28,7 @@ import org.apache.commons.lang3.tuple.Pair;
 public class JavaDocReader {
 
     private static final String DESC = "interface should have java doc or comment";
-    private static final String CHINA_DESC = "interface should have java doc or comment";
+    private static final String CHINA_DESC = "接口类型需要有注释";
     private static final Pair<Integer, CheckResult> success = Pair.of(CheckResult.INFO, CheckResult.getInfoRes("DubboMethodMustReturnResultRule", "", ""));
 
     private static RootDoc root;

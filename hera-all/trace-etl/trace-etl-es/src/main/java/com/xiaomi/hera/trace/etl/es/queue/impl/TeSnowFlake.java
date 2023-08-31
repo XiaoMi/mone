@@ -43,7 +43,7 @@ public class TeSnowFlake extends SnowFlake implements InitializingBean {
         //从redis恢复上次时间
         afterPropertiesSet();
         // 从环境变量获取机器编号
-        String podName = System.getenv("MONE_CONTAINER_S_POD_NAME");
+        String podName = System.getenv("CONTAINER_S_POD_NAME");
         if(StringUtils.isEmpty(podName)){
             log.error("this pod con't get podName!");
             throw new RuntimeException("this pod con't get podName!");

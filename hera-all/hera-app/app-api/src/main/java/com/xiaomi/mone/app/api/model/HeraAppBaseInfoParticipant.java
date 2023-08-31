@@ -21,8 +21,6 @@ public class HeraAppBaseInfoParticipant implements Serializable {
 
     private Integer iamTreeId;
 
-    private Integer iamTreeType;
-
     private Integer bindType;
 
     private Integer platformType;

@@ -8,7 +8,6 @@ package io.opentelemetry.exporter.prometheus;
 import static io.prometheus.client.Collector.doubleToGoString;
 
 import io.opentelemetry.api.metrics.common.Labels;
-import io.opentelemetry.sdk.common.SystemCommon;
 import io.opentelemetry.sdk.metrics.data.AggregationTemporality;
 import io.opentelemetry.sdk.metrics.data.DoubleHistogramPointData;
 import io.opentelemetry.sdk.metrics.data.DoublePointData;
@@ -51,9 +50,8 @@ final class MetricAdapter {
   static final String SAMPLE_SUFFIX_BUCKET = "_bucket";
   static final String LABEL_NAME_QUANTILE = "quantile";
   static final String LABEL_NAME_LE = "le";
-  static final String ip = SystemCommon.getEnvOrProperties("host.ip") == null?"":SystemCommon.getEnvOrProperties("host.ip");
-  static String applicationName = SystemCommon.getEnvOrProperties("otel.resource.attributes") == null ? "none":
-      SystemCommon.getEnvOrProperties("otel.resource.attributes");
+  static final String ip = System.getenv("TESLA_HOST") == null?"":System.getenv("TESLA_HOST");
+  static String applicationName = System.getenv("mione.app.name") == null?"":System.getenv("mione.app.name");
 
   static{
     // 替换项目名称中的-为_

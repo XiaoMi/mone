@@ -19,9 +19,6 @@ package com.xiaomi.youpin.docean.test;
 import com.xiaomi.youpin.docean.common.FileUtils;
 import org.junit.Test;
 
-import java.io.File;
-import java.io.IOException;
-
 /**
  * @author goodjava@qq.com
  * @date 2022/5/7
@@ -32,21 +29,6 @@ public class FileUtilsTest {
     public void testFileUtils() {
         System.out.println(FileUtils.home());
         System.out.println(FileUtils.tmp());
-    }
-
-    @Test
-    public void testForceDelete() throws IOException {
-        String fileName = "/home/work/log/dubbo/rpc.log.2022-07-08";
-        FileUtils.forceDelete(new File(fileName));
-    }
-
-    @Test
-    public void testDeleteDirectory() throws IOException {
-        String directory = "/home/work/log/zzytest";
-        /**
-         * Directory must be empty to be deleted
-         */
-        FileUtils.deleteDirectory(new File(directory));
     }
 }
 

@@ -61,10 +61,10 @@ public class CheckDep {
 
     private CheckResult checkLog4jDep2(String groupId, String version) {
         if (groupId == null || !groupId.equals(LOG4J_DEP2.groupId)) {
-            return CheckResult.getWarnRes("log4j", "groupId of log4j is null or not equals " + LOG4J_DEP2.groupId, "groupId error");
+            return CheckResult.getWarnRes("log4j", "groupId of log4j is null or not equals " + LOG4J_DEP2.groupId, "groupId错误");
         }
         if (version == null) {
-            return CheckResult.getWarnRes("log4j", "version of log4j is null", "version is null");
+            return CheckResult.getWarnRes("log4j", "version of log4j is null", "version为空");
         }
         try {
             return CommonUtils.checkLog4jVersion(version, LOG4J_DEP2.version);
@@ -75,17 +75,17 @@ public class CheckDep {
 
     private CheckResult checkFastjsonDep(String groupId, String version) {
         if (groupId == null || !groupId.equals(FASTJSON_DEP.groupId)) {
-            return CheckResult.getWarnRes("fastjson", "groupId of fastjson is null or not equals " + FASTJSON_DEP.groupId, "groupId error");
+            return CheckResult.getWarnRes("fastjson", "groupId of fastjson is null or not equals " + FASTJSON_DEP.groupId, "groupId错误");
         }
         if (version == null) {
-            return CheckResult.getWarnRes("fastjson", "version of fastjson is null", "version is null");
+            return CheckResult.getWarnRes("fastjson", "version of fastjson is null", "version为空");
         }
         try {
             int res = CommonUtils.compareVersion(FASTJSON_DEP.version, version);
             if (res <= 0) {
                 return CheckResult.getInfoRes("fastjson", "", "");
             } else {
-                return CheckResult.getWarnRes("fastjson", "version of fastjson is wrong, should equals or higher than " + FASTJSON_DEP.version, "version error");
+                return CheckResult.getWarnRes("fastjson", "version of fastjson is wrong, should equals or higher than " + FASTJSON_DEP.version, "version版本错误");
             }
         } catch (Exception e) {
             return CheckResult.getWarnRes("fastjson", "version of fastjson has something wrong", "");
@@ -94,16 +94,16 @@ public class CheckDep {
 
     private CheckResult checkDubboDep(String groupId, String version) {
         if (groupId == null || !groupId.equals(DUBBO_DEP.groupId)) {
-            return CheckResult.getWarnRes("dubbo", "groupId of dubbo is null or not equals " + DUBBO_DEP.groupId, "groupId error");
+            return CheckResult.getWarnRes("dubbo", "groupId of dubbo is null or not equals " + DUBBO_DEP.groupId, "groupId错误");
         }
         if (version == null) {
-            return CheckResult.getWarnRes("dubbo", "version of dubbo is null", "version is null");
+            return CheckResult.getWarnRes("dubbo", "version of dubbo is null", "version为空");
         }
         try {
             if (DUBBO_DEP.version.equals(version)) {
                 return CheckResult.getInfoRes("dubbo", "", "");
             } else {
-                return CheckResult.getWarnRes("dubbo", "version of dubbo is wrong, should equals " + DUBBO_DEP.version, "version error");
+                return CheckResult.getWarnRes("dubbo", "version of dubbo is wrong, should equals " + DUBBO_DEP.version, "version版本错误");
             }
         } catch (Exception e) {
             return CheckResult.getWarnRes("dubbo", "version of dubbo has something wrong", "");
@@ -112,16 +112,16 @@ public class CheckDep {
 
     private CheckResult checkNacosDep(String groupId, String version) {
         if (groupId == null || !groupId.equals(NACOS_DEP.groupId)) {
-            return CheckResult.getWarnRes("nacos", "groupId of nacos is null or not equals " + NACOS_DEP.groupId, "groupId error");
+            return CheckResult.getWarnRes("nacos", "groupId of nacos is null or not equals " + NACOS_DEP.groupId, "groupId错误");
         }
         if (version == null) {
-            return CheckResult.getWarnRes("nacos", "version of nacos is null", "version is null");
+            return CheckResult.getWarnRes("nacos", "version of nacos is null", "version为空");
         }
         try {
             if (NACOS_DEP.version.equals(version)) {
                 return CheckResult.getInfoRes("nacos", "", "");
             } else {
-                return CheckResult.getWarnRes("nacos", "version of nacos is wrong, should equals " + NACOS_DEP.version, "version error");
+                return CheckResult.getWarnRes("nacos", "version of nacos is wrong, should equals " + NACOS_DEP.version, "version版本错误");
             }
         } catch (Exception e) {
             return CheckResult.getWarnRes("nacos", "version of nacos has something wrong", "");
@@ -130,16 +130,16 @@ public class CheckDep {
 
     private CheckResult checkCatDep(String groupId, String version) {
         if (groupId == null || !groupId.equals(CAT_DEP.groupId)) {
-            return CheckResult.getWarnRes("cat", "groupId of cat is null or not equals " + CAT_DEP.groupId, "groupId error");
+            return CheckResult.getWarnRes("cat", "groupId of cat is null or not equals " + CAT_DEP.groupId, "groupId错误");
         }
         if (version == null) {
-            return CheckResult.getWarnRes("cat", "version of cat is null", "version is null");
+            return CheckResult.getWarnRes("cat", "version of cat is null", "version为空");
         }
         try {
             if (CAT_DEP.version.equals(version)) {
                 return CheckResult.getInfoRes("cat", "", "");
             } else {
-                return CheckResult.getWarnRes("cat", "version of cat is wrong, should equals " + CAT_DEP.version, "version error");
+                return CheckResult.getWarnRes("cat", "version of cat is wrong, should equals " + CAT_DEP.version, "version版本错误");
             }
         } catch (Exception e) {
             return CheckResult.getWarnRes("cat", "version of cat has something wrong", "");

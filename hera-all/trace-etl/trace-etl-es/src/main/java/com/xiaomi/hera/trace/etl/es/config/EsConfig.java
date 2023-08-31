@@ -1,6 +1,5 @@
 package com.xiaomi.hera.trace.etl.es.config;
 
-import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.xiaomi.mone.es.EsClient;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
@@ -16,11 +15,11 @@ import org.springframework.context.annotation.Configuration;
 @Slf4j
 public class EsConfig {
 
-    @NacosValue("${es.trace.address}")
+    @Value("${es.trace.address}")
     private String traceAddress;
-    @NacosValue("${es.trace.username}")
+    @Value("${es.trace.username}")
     private String traceUserName;
-    @NacosValue("${es.trace.password}")
+    @Value("${es.trace.password}")
     private String tracePassword;
 
     @Bean(name = "jaegerEsClient")

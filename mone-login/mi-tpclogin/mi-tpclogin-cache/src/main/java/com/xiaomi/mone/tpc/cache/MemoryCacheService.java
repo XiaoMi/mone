@@ -6,15 +6,13 @@ import com.google.common.collect.Maps;
 import com.xiaomi.mone.tpc.cache.enums.CacheTypeEnum;
 import com.xiaomi.mone.tpc.cache.key.Key;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
@@ -26,33 +24,14 @@ import java.util.stream.Collectors;
  * @date: 2022/3/3 15:57
  */
 @Slf4j
-@Component
+@Service
 public class MemoryCacheService extends CacheService {
 
-    private ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
-    private Cache<String, Object> cache;
+    private final Cache<String, Object> cache;
 
     public MemoryCacheService() {
-        super(CacheTypeEnum.MEMORY);
-    }
-
-
-
-    @Override
-    public void realInit() {
+        super(CacheTypeEnum.MEMORY.getCode());
         cache = CacheBuilder.newBuilder().expireAfterAccess(1, TimeUnit.DAYS).build();
-        executor.scheduleWithFixedDelay(new Runnable() {
-            @Override
-            public void run() {
-                Map<String, Object> map = cache.asMap();
-                if (CollectionUtils.isEmpty(map)) {
-                    return;
-                }
-                map.keySet().forEach(key -> {
-                    cache.getIfPresent(key);
-                });
-            }
-        },1, 1, TimeUnit.HOURS);
     }
 
     private Map<String,Object> getSubCache(Key bigKey) {
@@ -154,6 +133,6 @@ public class MemoryCacheService extends CacheService {
     public boolean unlock0(Key key) {
         ReentrantLock lock = getReentrantLock(key);
         lock.unlock();
-        return true;
+        return false;
     }
 }

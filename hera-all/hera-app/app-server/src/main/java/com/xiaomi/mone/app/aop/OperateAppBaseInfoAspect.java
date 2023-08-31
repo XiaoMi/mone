@@ -29,8 +29,8 @@ import static com.xiaomi.mone.app.common.Constant.GSON;
  * @description
  * @date 2022/11/11 18:34
  */
-//@Configuration
-//@Aspect
+@Configuration
+@Aspect
 @Slf4j
 public class OperateAppBaseInfoAspect {
 

@@ -7,11 +7,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
 
 import java.lang.reflect.Field;
-import java.security.KeyFactory;
-import java.security.Signature;
-import java.security.SignatureException;
-import java.security.interfaces.RSAPublicKey;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -23,6 +18,17 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SignUtil {
 
     private static final Logger logger = LoggerFactory.getLogger(SignUtil.class);
+
+    /**
+     * 系统签名
+     * @param sysName
+     * @param token
+     * @param now
+     * @return
+     */
+    public static final String getSysSign(String sysName, String token, long now) {
+        return getSysSign(sysName, token, now, null, null);
+    }
 
     /**
      * 系统签名
@@ -70,6 +76,40 @@ public class SignUtil {
         String md5Val = MD5Util.md5(signBuilder.toString());
         logger.info("ReqSignUtil.getDataSign data={}, md5={}", signBuilder.toString(), md5Val);
         return md5Val;
+    }
+
+    /**
+     * 数据签名
+     * @param arg
+     * @return
+     * @throws NoSuchFieldException
+     * @throws IllegalAccessException
+     */
+    public static String getDataSign(Map<String, Object> arg) throws NoSuchFieldException, IllegalAccessException {
+        if (arg == null) {
+            return null;
+        }
+        StringBuilder signBuilder = new StringBuilder();
+        dataStr(arg, arg.getClass(), signBuilder);
+        return MD5Util.md5(signBuilder.toString());
+    }
+
+    /**
+     * 数据签名
+     * @param args
+     * @return
+     * @throws NoSuchFieldException
+     * @throws IllegalAccessException
+     */
+    public static String getDataSign(List<Map<String, Object>> args) throws NoSuchFieldException, IllegalAccessException {
+        if (args == null || args.size() <= 0) {
+            return null;
+        }
+        StringBuilder signBuilder = new StringBuilder();
+        for (Object arg : args) {
+            dataStr(arg, arg.getClass(), signBuilder);
+        }
+        return MD5Util.md5(signBuilder.toString());
     }
 
     public static void dataStr(Object arg, Class argClass, StringBuilder signBuilder) throws NoSuchFieldException, IllegalAccessException {
@@ -162,8 +202,8 @@ public class SignUtil {
             return new HashMap<>();
         }
         Field[] fields = clazz.getDeclaredFields();
-        if (fields == null) {
-            fields = new Field[0];
+        if (fields == null || fields.length <= 0) {
+            return new HashMap<>();
         }
         Map<String, Field> map = new HashMap<>();
         Map<String, Field> subMap = getClazzFieldMap(clazz.getSuperclass());
@@ -193,57 +233,5 @@ public class SignUtil {
                 || String.class.equals(fClazz)
                 || Float.class.equals(fClazz)
                 || Double.class.equals(fClazz);
-    }
-
-    /**
-     * 验签并获取信息
-     * @param message
-     * @param key
-     * @return 验签成功返回数据，失败返回空串""
-     * @throws SignatureException
-     */
-    private static String verifySignGetInfo(String message, String key, boolean isDecode) throws SignatureException {
-        try {
-            logger.debug("cas VerifySignGetInfo message:" + message);
-            java.util.Base64.Decoder decoder = java.util.Base64.getDecoder();
-            if (StringUtils.isEmpty(message)) {
-                return "";
-            }
-            String[] dataBox = message.split("#");
-
-            String signature = dataBox[0];
-            String data = dataBox[1];
-            logger.debug("verifySignGetInfo signature:" + signature);
-            logger.debug("verifySignGetInfo data:" + data);
-            byte[] signBytes = signature.getBytes();
-            byte[] dataBytes = data.getBytes();
-            if (isDecode) {
-                signBytes = decoder.decode(signature);
-                dataBytes = decoder.decode(data);
-            }
-            String pkey = key.replace("\\n", "");
-            pkey = pkey.replace("\n", "");
-            pkey = pkey.replace("-----BEGIN PUBLIC KEY-----", "");
-            pkey = pkey.replace("-----END PUBLIC KEY-----", "");
-            byte[] keyBytes = decoder.decode(pkey);
-            X509EncodedKeySpec spec = new X509EncodedKeySpec(keyBytes);
-            KeyFactory kf = KeyFactory.getInstance("RSA");
-            RSAPublicKey pubKey = (RSAPublicKey) kf.generatePublic(spec);
-            Signature sign = Signature.getInstance("SHA256withRSA");
-            sign.initVerify(pubKey);
-            sign.update(dataBytes);
-            if (sign.verify(signBytes)) {
-                return new String(dataBytes);
-            } else {
-                return "";
-            }
-        } catch (Exception ex) {
-            logger.error("VerifySignGetInfo err ", ex);
-            throw new SignatureException(ex);
-        }
-    }
-
-    public static String verifySignGetInfo(String data, String key) throws SignatureException {
-        return verifySignGetInfo(data, key, true);
     }
 }

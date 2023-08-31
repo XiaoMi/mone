@@ -3,7 +3,7 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-    <groupId>run.mone</groupId>
+    <groupId>com.xiaomi.youpin</groupId>
     <modelVersion>4.0.0</modelVersion>
     <version>1.4-SNAPSHOT</version>
 
@@ -52,7 +52,7 @@
 
 
         <dependency>
-            <groupId>run.mone</groupId>
+            <groupId>com.xiaomi.youpin</groupId>
             <artifactId>docean</artifactId>
             <version>1.4-SNAPSHOT</version>
         </dependency>

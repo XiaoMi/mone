@@ -58,7 +58,7 @@ public class RocksdbStoreServiceImpl implements DiskStoreService {
 
     public RocksdbStoreServiceImpl(String path, String keyPrefix) {
         this.keyPrefix = keyPrefix;
-        // Create a directory to solve the problem that only a single-level directory can be created on rocksDB
+        // 创建目录，解决rocksDB只能创建单级目录问题
         try {
             File file = new File(path);
             if (!file.exists()) {
@@ -74,7 +74,7 @@ public class RocksdbStoreServiceImpl implements DiskStoreService {
         }
         Options options = new Options();
         options.setCreateIfMissing(true)
-                // Dynamic compression, automatic compression once an hour, delete expired files
+                // 动态压缩，配合每小时自动压缩一次，删除过期文件
                 .setLevelCompactionDynamicLevelBytes(true)
                 .setPeriodicCompactionSeconds(60 * 60)
                 .setWriteBufferSize(8 * SizeUnit.MB)
@@ -83,12 +83,9 @@ public class RocksdbStoreServiceImpl implements DiskStoreService {
                 .setMaxBackgroundJobs(10)
                 .setCompressionType(CompressionType.SNAPPY_COMPRESSION)
                 .setNumLevels(5)
-                // First layer 200Mb
+                //第一层200Mb
                 .setMaxBytesForLevelBase(200 * SizeUnit.MB)
-                /**
-                 * The size growth coefficient between each layer is 300%
-                 * 200Mb -> 600Mb -> 1.8Gb -> 5.4Gb -> 16.2Gb
-                 */
+                //每层之间大小增长系数300%; 200Mb -> 600Mb -> 1.8Gb -> 5.4Gb -> 16.2Gb
                 .setMaxBytesForLevelMultiplier(3.0)
                 .setCompactionStyle(CompactionStyle.LEVEL)
                 .setWalTtlSeconds(60L);

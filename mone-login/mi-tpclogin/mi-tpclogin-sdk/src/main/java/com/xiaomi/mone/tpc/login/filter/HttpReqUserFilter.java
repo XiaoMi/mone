@@ -3,10 +3,9 @@ package com.xiaomi.mone.tpc.login.filter;
 import com.xiaomi.mone.tpc.login.enums.UserTypeEnum;
 import com.xiaomi.mone.tpc.login.util.ConstUtil;
 import com.xiaomi.mone.tpc.login.util.GsonUtil;
-import com.xiaomi.mone.tpc.login.util.TokenUtil;
 import com.xiaomi.mone.tpc.login.util.UserUtil;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
-import com.xiaomi.mone.tpc.login.vo.ResultVo;
+import com.xiaomi.mone.tpc.login.vo.UserInfoVO;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,16 +62,12 @@ public class HttpReqUserFilter implements Filter {
         if (devMode) {
             String mockAcc = ((HttpServletRequest)var1).getHeader("user");
             if (StringUtils.isBlank(mockAcc)) {
-                mockAcc = "test";
-            }
-            String mockAccType = ((HttpServletRequest)var1).getHeader("userType");
-            UserTypeEnum userType = UserTypeEnum.getEnum(mockAccType);
-            if (userType == null) {
-                userType = UserTypeEnum.CAS_TYPE;
+                var3.doFilter(var1, var2);
+                return;
             }
             try {
                 AuthUserVo authUserVo = new AuthUserVo();
-                authUserVo.setUserType(userType.getCode());
+                authUserVo.setUserType(UserTypeEnum.CAS_TYPE.getCode());
                 authUserVo.setAccount(mockAcc);
                 authUserVo.setName(mockAcc);
                 UserUtil.setUser(authUserVo);
@@ -86,34 +81,72 @@ public class HttpReqUserFilter implements Filter {
             }
             return;
         }
-        FilterChain chain = new FilterChain() {
-            @Override
-            public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse) throws IOException, ServletException {
-                AuthUserVo userInfo = (AuthUserVo)servletRequest.getAttribute(ConstUtil.TPC_USER);
-                if (userInfo == null) {
-                    var3.doFilter(servletRequest, servletResponse);
-                    return;
-                }
-                try {
-                    UserUtil.setUser(userInfo);
-                    if (isUserRequest(var1)) {
-                        writeUserResponse(var2);
-                        return;
-                    }
-                    if (hermesFilter != null) {
-                        hermesFilter.doFilter(servletRequest, servletResponse, var3);
-                    } else {
-                        var3.doFilter(servletRequest, servletResponse);
-                    }
-                } finally {
-                    UserUtil.clearUser();
-                }
-            }
-        };
         if (innerAuth) {
-            casFilter.doFilter(var1, var2, chain);
+            casFilter.doFilter(
+                    var1,
+                    var2,
+                    new FilterChain() {
+                        @Override
+                        public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse)
+                                throws IOException, ServletException {
+                            UserInfoVO userInfo = (UserInfoVO)servletRequest.getAttribute(ConstUtil.REQUEST_ATTRIBUTE_USER_INFO_KEY);
+                            if (userInfo == null) {
+                                var3.doFilter(servletRequest, servletResponse);
+                                return;
+                            }
+                            try {
+                                AuthUserVo authUserVo = new AuthUserVo();
+                                authUserVo.setUserType(UserTypeEnum.CAS_TYPE.getCode());
+                                authUserVo.setAccount(userInfo.getUser());
+                                authUserVo.setName(userInfo.getDisplayName());
+                                authUserVo.setEmail(userInfo.getEmail());
+                                authUserVo.setAvatarUrl(userInfo.getAvatar());
+                                authUserVo.setCasUid(userInfo.getuID());
+                                authUserVo.setDepartmentName(userInfo.getDepartmentName());
+                                UserUtil.setUser(authUserVo);
+                                if (isUserRequest(var1)) {
+                                    writeUserResponse(var2);
+                                    return;
+                                }
+                                if (hermesFilter != null) {
+                                    hermesFilter.doFilter(servletRequest, servletResponse, var3);
+                                } else {
+                                    var3.doFilter(servletRequest, servletResponse);
+                                }
+                            } finally {
+                                UserUtil.clearUser();
+                            }
+                        }
+                    });
         } else {
-            tokenFilter.doFilter(var1, var2, chain);
+            tokenFilter.doFilter(
+                    var1,
+                    var2,
+                    new FilterChain() {
+                        @Override
+                        public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse)
+                                throws IOException, ServletException {
+                            AuthUserVo userInfo = (AuthUserVo)servletRequest.getAttribute(ConstUtil.TPC_USER);
+                            if (userInfo == null) {
+                                var3.doFilter(servletRequest, servletResponse);
+                                return;
+                            }
+                            try {
+                                UserUtil.setUser(userInfo);
+                                if (isUserRequest(var1)) {
+                                    writeUserResponse(var2);
+                                    return;
+                                }
+                                if (hermesFilter != null) {
+                                    hermesFilter.doFilter(servletRequest, servletResponse, var3);
+                                } else {
+                                    var3.doFilter(servletRequest, servletResponse);
+                                }
+                            } finally {
+                                UserUtil.clearUser();
+                            }
+                        }
+                    });
         }
     }
 
@@ -128,19 +161,10 @@ public class HttpReqUserFilter implements Filter {
             return;
         }
         userInfo.setLoginUrl(loginUrl);
-        if (UserTypeEnum.CAS_TYPE.getCode().equals(userInfo.getUserType())) {
-            userInfo.setLogoutUrl(logoutUrl);
-        } else {
-            userInfo.setLogoutUrl(TokenUtil.getLogoutUrlWithToken(userInfo.getToken(), logoutUrl));
-        }
-        log.info("writeUserResponse.userInfo={}", userInfo);
-        ResultVo<AuthUserVo> userResult = new ResultVo<>();
-        userResult.setData(userInfo);
-        userResult.setCode(0);
-        userResult.setMessage("ok");
+        userInfo.setLogoutUrl(logoutUrl);
         var2.setCharacterEncoding("UTF-8");
         var2.setContentType("application/json;charset=utf-8");
-        var2.getWriter().write(GsonUtil.gsonString(userResult));
+        var2.getWriter().write(GsonUtil.gsonString(userInfo));
     }
 
     @Override

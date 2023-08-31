@@ -1,10 +1,11 @@
 package com.xiaomi.hera.trace.etl.util.nacos;
 
+import com.alibaba.fastjson.JSONObject;
 import com.alibaba.nacos.api.NacosFactory;
 import com.alibaba.nacos.api.config.ConfigService;
-import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.alibaba.nacos.api.naming.pojo.Instance;
 import com.alibaba.nacos.client.naming.NacosNamingService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,14 +14,20 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.net.InetAddress;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.logging.Level;
 
 @Component
 public class NacosClientUtil {
 
     private static final Logger log = LoggerFactory.getLogger(NacosClientUtil.class);
 
-    @NacosValue("${nacos.address}")
+    @Value("${nacos.address}")
     private String nacosAddr;
     @Value("${prometheus.http.server.port}")
     private int prometheusPort;
@@ -62,7 +69,7 @@ public class NacosClientUtil {
                 }));
             }
         } catch (Exception e) {
-            log.error("register IP to nacos failed：", e);
+            log.error("注册IP到nacos失败：", e);
         }
     }
 
@@ -72,7 +79,7 @@ public class NacosClientUtil {
             NacosNamingService chinaNacosNamingService = new NacosNamingService(nacosAddr);
             list.add(chinaNacosNamingService);
         } catch (Exception e) {
-            log.error("init NacosNamingService failed：", e);
+            log.error("初始化NacosNamingService失败：", e);
         }
         return list;
     }

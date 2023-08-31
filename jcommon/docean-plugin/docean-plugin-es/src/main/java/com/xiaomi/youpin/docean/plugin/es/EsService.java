@@ -33,7 +33,6 @@ public class EsService {
     public EsClient getEsClient() {
         return this.esClient;
     }
-
     public EsService(String esAddr, String token, String catalog, String database) {
         this.esClient = new EsClient(esAddr, token, catalog, database);
     }
@@ -142,6 +141,7 @@ public class EsService {
     }
 
 
+
     /**
      * 数据直方图
      *
@@ -153,10 +153,6 @@ public class EsService {
      */
     public EsClient.EsRet dateHistogram(String indexName, String interval, long startTime, long endTime, BoolQueryBuilder builder) throws IOException {
         return esClient.dateHistogram(indexName, interval, startTime, endTime, builder);
-    }
-
-    public EsClient.EsRet dateHistogram(String indexName, String field, String interval, long startTime, long endTime, BoolQueryBuilder builder) throws IOException {
-        return esClient.dateHistogram(indexName, field, interval, startTime, endTime, builder);
     }
 
     /**

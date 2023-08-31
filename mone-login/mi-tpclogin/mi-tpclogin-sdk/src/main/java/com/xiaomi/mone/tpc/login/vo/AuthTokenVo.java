@@ -1,5 +1,10 @@
 package com.xiaomi.mone.tpc.login.vo;
 
+import com.xiaomi.mone.tpc.login.util.ConstUtil;
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Map;
+
 /**
  * @project: mi-tpc
  * @author: zgf1

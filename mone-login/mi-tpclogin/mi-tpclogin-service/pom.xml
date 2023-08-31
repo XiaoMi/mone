@@ -14,14 +14,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>infra-result</artifactId>
-        </dependency>
-        <dependency>
-            <artifactId>mi-tpc-api</artifactId>
-            <groupId>run.mone</groupId>
-        </dependency>
-        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
@@ -67,6 +59,10 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

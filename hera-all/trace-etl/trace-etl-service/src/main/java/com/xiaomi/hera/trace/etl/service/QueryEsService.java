@@ -61,7 +61,6 @@ public class QueryEsService {
 
     public static final String TRACE_ID = "traceID";
     private static final String SERVICE_NAME = "serviceName";
-    private static final String SERVICE_ENV = "service.env";
     private static final String PROCESS_SERVICE_NAME = "process.serviceName";
     private static final String OPERATION_NAME = "operationName";
     public static final String START_TIME_MILLIS = "startTimeMillis";
@@ -116,8 +115,6 @@ public class QueryEsService {
             long minDuration = StringUtils.isEmpty(vo.getMinDuration()) ? 0 : TimeConverter.getMicro(vo.getMinDuration());
             long maxDuration = StringUtils.isEmpty(vo.getMaxDuration()) ? 0 : TimeConverter.getMicro(vo.getMaxDuration());
             List<JaegerAttribute> tags = getTags(vo.getTags());
-            // deal serverEnv
-            tags = dealServerEnv(tags, vo.getServerEnv());
             if (startTime != 0 && endTime != 0) {
                 boolQueryBuilder.must(QueryBuilders.rangeQuery(START_TIME_MILLIS).gte(startTime).lte(endTime));
             }
@@ -261,20 +258,6 @@ public class QueryEsService {
             log.error("parse String tags to JaegerAttribute error : ", t);
         }
         return jaegerAttributes;
-    }
-
-    private List<JaegerAttribute> dealServerEnv(List<JaegerAttribute> tags, String serverEnv){
-        if(StringUtils.isEmpty(serverEnv)){
-            return tags;
-        }
-        if(tags == null){
-            tags = new ArrayList<>();
-        }
-        JaegerAttribute attr = new JaegerAttribute();
-        attr.setKey(SERVICE_ENV);
-        attr.setValue(serverEnv);
-        tags.add(attr);
-        return tags;
     }
 
     private BoolQueryBuilder buildTagQuery(JaegerAttribute tag) {

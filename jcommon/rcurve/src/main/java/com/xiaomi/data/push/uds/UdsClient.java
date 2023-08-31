@@ -18,7 +18,6 @@ package com.xiaomi.data.push.uds;
 
 import com.google.common.base.Stopwatch;
 import com.xiaomi.data.push.common.*;
-import com.xiaomi.data.push.uds.WheelTimer.UdsWheelTimer;
 import com.xiaomi.data.push.uds.context.TraceContext;
 import com.xiaomi.data.push.uds.context.TraceEvent;
 import com.xiaomi.data.push.uds.context.UdsClientContext;
@@ -27,7 +26,10 @@ import com.xiaomi.data.push.uds.handler.UdsClientHandler;
 import com.xiaomi.data.push.uds.po.UdsCommand;
 import com.xiaomi.data.push.uds.processor.UdsProcessor;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.unix.DomainSocketAddress;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
@@ -38,10 +40,7 @@ import run.mone.api.Address;
 import run.mone.api.IClient;
 
 import java.net.InetSocketAddress;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author goodjava@qq.com
@@ -52,19 +51,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @Slf4j
 public class UdsClient implements IClient<UdsCommand> {
 
-    private static UdsWheelTimer wheelTimer = new UdsWheelTimer();
-
-    private ExecutorService pool = new ThreadPoolExecutor(200, 200, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(100),
-            new ThreadFactory() {
-                private final AtomicInteger id = new AtomicInteger(0);
-
-                public Thread newThread(Runnable r) {
-                    String threadName = "udsClient" + this.id.getAndIncrement();
-                    Thread thread = new Thread(r, threadName);
-                    thread.setDaemon(true);
-                    return thread;
-                }
-            });
+    private ExecutorService pool = new ThreadPoolExecutor(200, 200, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(100));
 
     @Getter
     private volatile Channel channel;
@@ -84,7 +71,7 @@ public class UdsClient implements IClient<UdsCommand> {
     @Setter
     private int port;
 
-    public static ConcurrentHashMap<Long, HashMap<String, Object>> reqMap = new ConcurrentHashMap<>();
+    public static ConcurrentHashMap<Long, CompletableFuture<UdsCommand>> reqMap = new ConcurrentHashMap<>();
 
     public UdsClient(String id) {
         log.info("id:{}", id);
@@ -106,8 +93,6 @@ public class UdsClient implements IClient<UdsCommand> {
             group = getEventLoopGroup();
             Bootstrap b = new Bootstrap();
             b.group(group)
-                    .option(ChannelOption.SO_BACKLOG, 5000)
-                    .option(ChannelOption.SO_RCVBUF, 65535)
                     .channel(NetUtils.getClientChannelClass(mac, this.remote))
                     .handler(new ChannelInitializer<Channel>() {
                         @Override
@@ -151,36 +136,20 @@ public class UdsClient implements IClient<UdsCommand> {
         context.enter();
         long id = req.getId();
         try {
-            CompletableFuture<Object> future = new CompletableFuture<>();
-            HashMap<String,Object> hashMap = new HashMap<>();
-            hashMap.put("future", future);
-            hashMap.put("async", req.isAsync());
-            hashMap.put("returnType", req.getReturnClass());
-            reqMap.put(req.getId(),hashMap);
+            CompletableFuture<UdsCommand> future = new CompletableFuture<>();
+            reqMap.put(req.getId(), future);
             Channel channel = this.channel;
             if (null == channel || !channel.isOpen()) {
                 log.warn("client channel is close");
                 throw new UdsException("client channel is close");
             }
-            log.debug("start send,id:{}", id);
             Send.send(channel, req);
-            //异步还是同步
-            if (req.isAsync()) {
-                req.setCompletableFuture(future);
-                wheelTimer.newTimeout(() -> {
-                    log.warn("check async udsClient time out auto close:{},{}", req.getId(), req.getTimeout());
-                    reqMap.remove(req.getId());
-                }, req.getTimeout()+350);
-                return req;
-            }
-            return (UdsCommand) future.get(req.getTimeout(), TimeUnit.MILLISECONDS);
+            return future.get(req.getTimeout(), TimeUnit.MILLISECONDS);
         } catch (Throwable ex) {
-            log.error("client call:{} error:{}", req.getCmd(), ex.getMessage(), ex);
+            log.error("client call:{} error:{}", req.getCmd(), ex.getMessage());
             throw new UdsException("cal error:" + ex);
         } finally {
-            if (!req.isAsync()) {
-                reqMap.remove(id);
-            }
+            reqMap.remove(id);
             context.exit(new TraceEvent("client", sw.elapsed(TimeUnit.MILLISECONDS)));
         }
     }
@@ -195,7 +164,7 @@ public class UdsClient implements IClient<UdsCommand> {
     }
 
     public void putProcessor(UdsProcessor processor) {
-        this.processorMap.put(processor.cmd(), Pair.of(processor, ExecutorServiceUtils.creatThreadPoolHasName(processor.poolSize(), processor.cmd(), this.pool)));
+        this.processorMap.put(processor.cmd(), Pair.of(processor, ExecutorServiceUtils.creatThreadPool(processor.poolSize(), this.pool)));
     }
 
     public void oneWay(UdsCommand req) {

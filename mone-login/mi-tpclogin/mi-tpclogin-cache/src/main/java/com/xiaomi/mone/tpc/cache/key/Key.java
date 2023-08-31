@@ -1,7 +1,7 @@
 package com.xiaomi.mone.tpc.cache.key;
 
 import com.xiaomi.mone.tpc.cache.enums.ModuleEnum;
-import com.xiaomi.mone.tpc.login.common.util.MD5Util;
+import com.xiaomi.mone.tpc.common.util.MD5Util;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 

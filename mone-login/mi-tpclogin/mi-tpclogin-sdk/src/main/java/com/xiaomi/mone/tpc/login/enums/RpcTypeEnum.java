@@ -8,6 +8,7 @@ package com.xiaomi.mone.tpc.login.enums;
  */
 public enum RpcTypeEnum {
     DUBBO(0, "DUBBO"),
+    HTTP(1, "HTTP"),
     ;
     private Integer code;
     private String desc;

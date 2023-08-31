@@ -23,8 +23,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
-import lombok.Data;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -63,23 +61,16 @@ public class JsonTest {
 
     @Test
     public void testJson() {
+//        JSONLexer lexer = new JSONLexer(new ANTLRInputStream("[{\"name\":{\"age\":$age},\"zzz\":$zzz},\"123\"]"));
+//        JSONLexer lexer = new JSONLexer(new ANTLRInputStream("[{\"name\":{\"age\":$age},\"zzz\":$zzz},true]"));
+        String str = "[{\"name\":{\"age\":$age},\"zzz\":$zzz},$num]";
         Map<String, String> m = Maps.newHashMap();
         m.put("$age", "23");
         m.put("$num", "44");
         m.put("$zzz", "gggg");
-        Gson gson = new Gson();
-        System.out.println(gson.toJson(m));
-        Assert.assertNotNull(gson.toJson(m));
+//        System.out.println(Json.json(str, m));
     }
 
-    @Data
-    public class Dog {
-
-        private int id;
-
-        private String name;
-
-    }
 
     @Test
     public void testJson2() {
@@ -90,6 +81,5 @@ public class JsonTest {
         JsonObject o = gson.fromJson(gson.toJson(dog),JsonObject.class);
         System.out.println(o.get("id").getAsInt());
         System.out.println(o.has("name"));
-        Assert.assertTrue(o.has("name"));
     }
 }

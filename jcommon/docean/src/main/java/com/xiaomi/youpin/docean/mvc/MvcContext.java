@@ -35,11 +35,6 @@ public class MvcContext {
 
     private String traceId;
 
-    /**
-     * 使用协程
-     */
-    private boolean virtualThread;
-
     private Map<String, String> attachments;
 
     private Map<String, String> headers;
@@ -52,8 +47,6 @@ public class MvcContext {
     private JsonElement params;
 
     private boolean websocket;
-
-    private boolean cookie;
 
     private HttpSession session;
 
@@ -75,6 +68,7 @@ public class MvcContext {
         return this.session;
     }
 
+
     private String sessionId = "";
 
     private String method;
@@ -82,18 +76,5 @@ public class MvcContext {
     private ChannelHandlerContext handlerContext;
 
     private String path;
-
-    public void clear() {
-        this.traceId = null;
-        if (null != this.attachments) {
-            this.attachments.clear();
-        }
-        if (null != this.headers) {
-            this.headers.clear();
-        }
-        if (null != this.resHeaders) {
-            this.resHeaders.clear();
-        }
-    }
 
 }

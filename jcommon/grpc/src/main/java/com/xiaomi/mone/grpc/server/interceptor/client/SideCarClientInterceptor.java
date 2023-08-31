@@ -47,11 +47,6 @@ public class SideCarClientInterceptor implements ClientInterceptor {
     public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(MethodDescriptor<ReqT, RespT> method, CallOptions callOptions, Channel next) {
 
         return new ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(next.newCall(method, callOptions)) {
-            @Override
-            public void sendMessage(ReqT message) {
-                log.info("grpc client request:{}", message);
-                super.sendMessage(message);
-            }
 
             @Override
             public void start(Listener<RespT> responseListener, Metadata headers) {
@@ -61,14 +56,13 @@ public class SideCarClientInterceptor implements ClientInterceptor {
                 super.start(new ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT>(responseListener) {
                     @Override
                     public void onHeaders(Metadata headers) {
+                        /**
+                         * if you don't need receive header from server, you can
+                         * use {@link io.grpc.stub.MetadataUtils#attachHeaders}
+                         * directly to send header
+                         */
                         log.info("header received from server:" + headers);
                         super.onHeaders(headers);
-                    }
-
-                    @Override
-                    public void onMessage(RespT message) {
-                        log.info("grpc client response:{}", message);
-                        super.onMessage(message);
                     }
                 }, headers);
             }

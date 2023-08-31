@@ -19,7 +19,6 @@ package com.xiaomi.youpin.nginx;
 import com.github.odiszapc.nginxparser.*;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 
 import java.io.ByteArrayInputStream;
 import java.util.LinkedList;
@@ -33,7 +32,7 @@ import java.util.List;
 public class NginxUtilsV2 {
 
     /**
-     * Get the list of servers under the specified upstream name.
+     * 获取指定upstream名字下的服务器列表
      *
      * @param config
      * @param name
@@ -62,7 +61,7 @@ public class NginxUtilsV2 {
 
 
     /**
-     * Add server list to specified upstream.
+     * 添加服务器列表到指定upstream下
      *
      * @param config
      * @param name
@@ -70,30 +69,19 @@ public class NginxUtilsV2 {
      * @return
      */
     public static String addServer(String config, String name, List<String> serversToAdd) {
-        return addServer(config, name, serversToAdd, "");
-    }
-
-    public static String addServer(String config, String name, List<String> serversToAdd, String checkUrl) {
         try {
             NgxConfig conf = NgxConfig.read(new ByteArrayInputStream(config.getBytes()));
             List<NgxEntry> v = conf.findAll(NgxConfig.BLOCK, "upstream");
             v.stream().forEach(it -> {
                 NgxBlock nb0 = NgxBlock.class.cast(it);
                 if (Lists.newArrayList(nb0.getTokens().iterator()).get(1).getToken().equals(name)) {
-                    //It will clear what was already there.
+                    //会清空之前已经有的
                     nb0.getEntries().clear();
                     serversToAdd.stream().forEach(addr -> {
                         NgxParam param = new NgxParam();
                         param.addValue("server " + addr + " max_fails=3 fail_timeout=5s");
                         nb0.addEntry(param);
                     });
-                    if (StringUtils.isNotEmpty(checkUrl)) {
-                        Lists.newArrayList("check interval=3000 rise=2 fall=3 timeout=1000 type=http", String.format("check_http_send \"HEAD %s HTTP/1.0\\r\\n\\r\\n\"",checkUrl)).forEach(p -> {
-                            NgxParam param = new NgxParam();
-                            param.addValue(p);
-                            nb0.getEntries().add(param);
-                        });
-                    }
                 }
             });
             String content = new NgxDumper(conf).dump();

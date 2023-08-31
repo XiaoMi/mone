@@ -1,6 +1,5 @@
 package com.xiaomi.hera.trace.etl.config;
 
-import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.common.collect.Maps;
 import org.apache.dubbo.config.ApplicationConfig;
 import org.apache.dubbo.config.ProtocolConfig;
@@ -18,7 +17,7 @@ public class DubboConfiguration {
     @Value("${server.port}")
     private String httpGateWayPort;
 
-    @NacosValue("${dubbo.registry.address}")
+    @Value("${dubbo.registry.address}")
     private String regAddress;
 
     @Bean

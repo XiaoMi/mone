@@ -74,9 +74,9 @@ public class DubboCall {
          */
         if (StringUtils.isNotEmpty(request.getAddr())) {
             String[] ss = request.getAddr().split(":");
-            RpcContext.getContext().setAttachment("_must_provider_ip_port_", "true");
-            RpcContext.getContext().setAttachment("_provider_ip_", ss[0]);
-            RpcContext.getContext().setAttachment("_provider_port_", ss[1]);
+            RpcContext.getContext().setAttachment(Constants.MUST_PROVIDER_IP_PORT, "true");
+            RpcContext.getContext().setAttachment(Constants.PROVIDER_IP, ss[0]);
+            RpcContext.getContext().setAttachment(Constants.PROVIDER_PORT, ss[1]);
         }
 
         Object res = null;

@@ -6,7 +6,10 @@ import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import com.xiaomi.hera.trace.etl.consumer.DataCacheService;
+import com.xiaomi.hera.trace.etl.constant.LockUtil;
+import com.xiaomi.youpin.prometheus.client.Metrics;
+import com.xiaomi.youpin.prometheus.client.MetricsManager;
+import com.xiaomi.youpin.prometheus.client.Prometheus;
 import com.xiaomi.youpin.prometheus.client.binder.ClassLoaderMetricsReduced;
 import com.xiaomi.youpin.prometheus.client.binder.JvmGcMetricsReduced;
 import com.xiaomi.youpin.prometheus.client.binder.JvmMemoryMetricsReduced;
@@ -18,6 +21,9 @@ import io.micrometer.prometheus.PrometheusConfig;
 import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.prometheus.client.Collector;
 import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.Counter;
+import io.prometheus.client.Gauge;
+import io.prometheus.client.Histogram;
 import io.prometheus.client.exporter.common.TextFormat;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -26,7 +32,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
-import javax.annotation.Resource;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -38,7 +43,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -49,7 +60,7 @@ public class HTTPServer {
 
     @Value("${prometheus.http.server.port}")
     private int port;
-    @NacosValue(value = "${prometheus.token}")
+    @Value("${prometheus.token}")
     private String token;
     @Value("${security.scanner.ua}")
     private String ua;
@@ -57,9 +68,6 @@ public class HTTPServer {
     private String appName;
     @Value("${metrics.uri.whitelist}")
     private String uriWhitelist;
-
-    @Resource
-    private DataCacheService dataCacheService;
 
     private HttpServer server;
     private ExecutorService executorService;
@@ -86,7 +94,7 @@ public class HTTPServer {
             server.setExecutor(executorService);
             start(false);
         } catch (Exception e) {
-            log.error("http server start fail：", e);
+            log.error("http server 启动异常：", e);
         }
     }
 
@@ -103,7 +111,7 @@ public class HTTPServer {
             this.registryMap = registryMap;
         }
 
-        // Cache different metrics data for different ip+ URIs (/jvm, /metrics)
+        // 缓存不同ip+uri（/jvm、/metrics）对应的不同metrics数据
         private Map<String, byte[]> data = new ConcurrentHashMap<>();
 
         private Map<String, Long> uriLastTime = new ConcurrentHashMap<>();
@@ -152,56 +160,57 @@ public class HTTPServer {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
             long a = System.currentTimeMillis();
-            if (!filterRequest(exchange)) {
+            if(!filterRequest(exchange)){
                 return;
             }
             String hostString = exchange.getRemoteAddress().getHostString();
             String path = exchange.getRequestURI().getPath();
-            byte[] data = null;
-            try (OutputStream os = exchange.getResponseBody()) {
-                if ("/-/healthy".equals(path)) {
-                    exchange.sendResponseHeaders(200, HEALTHY_RESPONSE.length);
-                    os.write(HEALTHY_RESPONSE);
-                    os.flush();
-                } else {
-                    String contentType = TextFormat.chooseContentType(exchange.getRequestHeaders().getFirst("Accept"));
-                    exchange.getResponseHeaders().set("Content-Type", contentType);
-                    if ("/jvm".equals(path)) {
-                        CollectorRegistry registry = this.registryMap.get("jvm");
-                        Map<String, Object> dataMap = getData(contentType, registry, path, hostString);
-                        data = (byte[]) dataMap.get("data");
+            boolean isCache = false;
+            synchronized (LockUtil.lock) {
+                try (OutputStream os = exchange.getResponseBody()) {
+                    if ("/-/healthy".equals(path)) {
+                        exchange.sendResponseHeaders(200, HEALTHY_RESPONSE.length);
+                        os.write(HEALTHY_RESPONSE);
+                        os.flush();
+                        return;
                     } else {
-                        data = dataCacheService.getData();
+                        String contentType = TextFormat.chooseContentType(exchange.getRequestHeaders().getFirst("Accept"));
+                        exchange.getResponseHeaders().set("Content-Type", contentType);
+                        CollectorRegistry registry = this.registryMap.get("default");
+                        if ("/jvm".equals(path)) {
+                            registry = this.registryMap.get("jvm");
+                        }
+                        Map<String, Object> dataMap = getData(contentType, registry, path, hostString);
+                        byte[] data = (byte[]) dataMap.get("data");
+                        isCache = (boolean) dataMap.get("isCache");
+                        exchange.sendResponseHeaders(200, data.length);
+                        os.write(data);
+                        os.flush();
                     }
-                    exchange.sendResponseHeaders(200, data.length);
-                    os.write(data);
-                    os.flush();
+                } catch (Throwable ex) {
+                    ex.printStackTrace();
+                    exchange.sendResponseHeaders(200, 0);
+                    exchange.getResponseBody().write(new byte[]{});
+                } finally {
+                    String query = exchange.getRequestURI().getRawQuery();
+                    long b = System.currentTimeMillis();
+                    log.info("prometheus request uri : " + path + " queryString : " + query + " remoteAddr：" + hostString + " duration : " + (b - a));
+                    if (!isCache && "/metrics".equals(path) && token.equals(getToken(query))) {
+                        clearMetrics();
+                    }
                 }
-            } catch (Throwable ex) {
-                ex.printStackTrace();
-                exchange.sendResponseHeaders(200, 0);
-                exchange.getResponseBody().write(new byte[]{});
-            } finally {
-                String query = exchange.getRequestURI().getRawQuery();
-                long b = System.currentTimeMillis();
-                int len = null != data ? data.length : 0;
-                log.info("prometheus request uri : " + path + " queryString : " + query + " remoteAddr：" + hostString + " duration : " + (b - a) + " data size:" + len);
-
             }
         }
 
-        private boolean filterRequest(HttpExchange exchange) {
-            if (StringUtils.isEmpty(ua)) {
-                return true;
-            }
-            // Filter by User-Agent
+        private boolean filterRequest(HttpExchange exchange){
+            // 按照UA过滤安全部扫描请求
             Headers requestHeaders = exchange.getRequestHeaders();
-            if (requestHeaders != null && requestHeaders.size() > 0) {
+            if(requestHeaders != null && requestHeaders.size() > 0) {
                 List<String> headers = requestHeaders.get("User-agent");
                 if (headers != null && headers.size() > 0) {
-                    for (String header : headers) {
-                        for (String uaBlack : ua.split(";")) {
-                            if (header.contains(uaBlack)) {
+                    for (String header : headers){
+                        for(String uaBlack : ua.split(";")){
+                            if(header.contains(uaBlack)){
                                 return false;
                             }
                         }
@@ -215,6 +224,43 @@ public class HTTPServer {
             return true;
         }
 
+        private void clearMetrics() {
+//            synchronized (LockUtil.lock) {
+            try {
+                // 清理不带serviceName的指标
+                MetricsManager gMetricsMgr = Metrics.getInstance().gMetricsMgr;
+                if (gMetricsMgr instanceof Prometheus) {
+                    Prometheus prometheus = (Prometheus) gMetricsMgr;
+                    Map<String, Object> prometheusMetrics = prometheus.prometheusMetrics;
+                    clearTypeMetrics(prometheusMetrics);
+                    prometheus.prometheusMetrics.clear();
+                    prometheus.prometheusTypeMetrics.clear();
+                }
+            } catch (Exception e) {
+                log.error("clear metrics error", e);
+            }
+//            }
+        }
+
+        private void clearTypeMetrics(Map<String, Object> prometheusMetrics) {
+            for (String key : prometheusMetrics.keySet()) {
+                Object o = prometheusMetrics.get(key);
+                if (o instanceof Counter) {
+                    Counter counter = (Counter) o;
+                    CollectorRegistry.defaultRegistry.unregister(counter);
+                } else if (o instanceof Gauge) {
+                    Gauge gauge = (Gauge) o;
+                    gauge.clear();
+                    CollectorRegistry.defaultRegistry.unregister(gauge);
+                } else if (o instanceof Histogram) {
+                    Histogram histogram = (Histogram) o;
+                    histogram.clear();
+                    CollectorRegistry.defaultRegistry.unregister(histogram);
+                } else {
+                    log.error("指标：" + key + " 类型转换失败，原始类型：" + o.getClass().getName());
+                }
+            }
+        }
     }
 
     protected static String getToken(String query) throws IOException {

@@ -46,12 +46,9 @@ public class Aop {
     private LinkedHashMap<Class, EnhanceInterceptor> interceptorMap = new LinkedHashMap<>();
 
     /**
-     * cglib cannot be used in native image mode
+     * native image 模式下是不能使用cglib的
      */
     private boolean cglib = true;
-
-    @Getter
-    private String name = "aop";
 
     private Aop() {
     }
@@ -65,7 +62,7 @@ public class Aop {
     }
 
     /**
-     * support to implement aop based on annotation Aspect
+     * 支持根据注解Aspect来实现aop
      *
      * @param packages
      * @return

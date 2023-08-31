@@ -20,7 +20,6 @@ import com.alibaba.ttl.TransmittableThreadLocal;
 import com.alibaba.ttl.TtlRunnable;
 import org.junit.Test;
 
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -38,11 +37,8 @@ public class ThreadLocalTest {
         tl.set("abc");
         System.out.println(tl.get());
 
-        CountDownLatch latch = new CountDownLatch(3);
-
         new Thread(() -> {
             System.out.println(tl.get());
-            latch.countDown();
         }).start();
 
         pool.submit(TtlRunnable.get(new Runnable() {
@@ -51,12 +47,12 @@ public class ThreadLocalTest {
                 IntStream.range(0, 3).forEach(i -> {
                     System.out.println(tl.get());
                     try {
-                        TimeUnit.MILLISECONDS.sleep(10);
+                        TimeUnit.SECONDS.sleep(1);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
+
                 });
-                latch.countDown();
             }
         }));
         tl.set("def");
@@ -72,17 +68,14 @@ public class ThreadLocalTest {
                     }
 
                 });
-                latch.countDown();
             }
         }));
-
-        latch.await();
+        Thread.currentThread().join();
     }
 
 
     @Test
     public void test2() throws InterruptedException {
-        CountDownLatch latch= new CountDownLatch(2);
         ExecutorService pool = Executors.newFixedThreadPool(10);
         ThreadLocal<String> tl = new ThreadLocal<>();
         tl.set("abc");
@@ -90,17 +83,15 @@ public class ThreadLocalTest {
 
         new Thread(() -> {
             System.out.println(tl.get());
-            latch.countDown();
         }).start();
 
         pool.submit(new Runnable() {
             @Override
             public void run() {
                 System.out.println(tl.get());
-                latch.countDown();
             }
         });
-        latch.await();
+        Thread.currentThread().join();
     }
 
 
@@ -111,11 +102,9 @@ public class ThreadLocalTest {
         InheritableThreadLocal<String> tl = new InheritableThreadLocal<>();
         tl.set("abc");
         System.out.println(tl.get());
-        CountDownLatch latch = new CountDownLatch(3);
 
         new Thread(() -> {
             System.out.println(tl.get());
-            latch.countDown();
         }).start();
 
         pool.submit(new Runnable() {
@@ -124,12 +113,12 @@ public class ThreadLocalTest {
                 IntStream.range(0, 3).forEach(i -> {
                     System.out.println(tl.get());
                     try {
-                        TimeUnit.MILLISECONDS.sleep(10);
+                        TimeUnit.SECONDS.sleep(1);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
+
                 });
-                latch.countDown();
             }
         });
         tl.set("def");
@@ -145,11 +134,9 @@ public class ThreadLocalTest {
                     }
 
                 });
-                latch.countDown();
             }
         });
-
-        latch.await();;
+        Thread.currentThread().join();
     }
 
 }
