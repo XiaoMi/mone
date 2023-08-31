@@ -18,22 +18,23 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.dubbo</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>dubbo</artifactId>
-            <version>2.7.0-mone-SNAPSHOT</version>
+            <version>2.7.12-mone-v8-SNAPSHOT</version>
+            <scope>provided</scope>
         </dependency>
 
 
         <dependency>
-            <groupId>com.alibaba.nacos</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>nacos-client</artifactId>
-            <version>0.8.0-youpin-SNAPSHOT</version>
+            <version>1.2.1-mone-v3-SNAPSHOT</version>
         </dependency>
 
         <dependency>
-            <groupId>com.alibaba</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>dubbo-registry-nacos</artifactId>
-            <version>0.0.2-youpin-SNAPSHOT</version>
+            <version>1.2.1-mone-SNAPSHOT</version>
         </dependency>
 
 

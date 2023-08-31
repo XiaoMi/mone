@@ -20,7 +20,6 @@ import ch.qos.logback.classic.pattern.*;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import com.google.gson.Gson;
-import com.xiaomi.youpin.dubbo.filter.TraceIdUtils;
 import lombok.Setter;
 import org.slf4j.MDC;
 import org.springframework.util.StringUtils;
@@ -102,8 +101,7 @@ public class YouPinLogAppender extends UnsynchronizedAppenderBase<ILoggingEvent>
     @Override
     public void start() {
         super.start();
-        ip = Optional.ofNullable(System.getenv("host.ip")).orElse(TraceIdUtils.ins().ip());
-        TraceIdUtils.ins().pid();
+        ip = System.getenv("host.ip");
         new Thread(() -> initYouPinLogAppender()).start();
     }
 
@@ -166,7 +164,7 @@ public class YouPinLogAppender extends UnsynchronizedAppenderBase<ILoggingEvent>
         String time = dateConverter.convert(eventObject);
         String line = lineOfCallerConverter.convert(eventObject);
         String methodName = methodOfCallerConverter.convert(eventObject);
-        String pid = TraceIdUtils.ins().pid();
+        String pid = "";
 
         if (disruptor) {
             logDisruptor.publishEvent(lr -> {

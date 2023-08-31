@@ -42,7 +42,7 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>common</artifactId>
-            <version>1.7-SNAPSHOT</version>
+            <version>1.7.2-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
 

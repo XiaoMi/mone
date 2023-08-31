@@ -14,9 +14,29 @@
 
     <dependencies>
         <dependency>
+            <artifactId>hera-trace</artifactId>
+            <groupId>run.mone</groupId>
+        </dependency>
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>dubbo</artifactId>
+        </dependency>
+        <dependency>
             <artifactId>mi-tpclogin-service</artifactId>
             <groupId>run.mone</groupId>
             <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>nacos</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.nacos</groupId>
+            <artifactId>nacos-spring-context</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
         </dependency>
     </dependencies>
 
@@ -61,16 +81,13 @@
     <profiles>
 
         <profile>
-            <id>dev</id>
+            <id>opensource-outer</id>
             <properties>
-                <profiles.active>dev</profiles.active>
+                <profiles.active>opensource-outer</profiles.active>
             </properties>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
             <build>
                 <filters>
-                    <filter>src/main/resources/config/dev.properties</filter>
+                    <filter>src/main/resources/config/opensource-outer.properties</filter>
                 </filters>
             </build>
         </profile>

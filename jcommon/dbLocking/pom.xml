@@ -12,10 +12,11 @@
     <artifactId>dbLocking</artifactId>
 
     <dependencies>
+
         <dependency>
-            <groupId>org.nutz</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>nutz</artifactId>
-            <version>1.r.68-youpin-SNAPSHOT</version>
+            <version>1.r.68-open-SNAPSHOT</version>
         </dependency>
 
         <dependency>

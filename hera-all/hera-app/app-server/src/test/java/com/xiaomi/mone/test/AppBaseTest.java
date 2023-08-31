@@ -5,7 +5,7 @@ import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoParticipant;
 import com.xiaomi.mone.app.api.model.HeraAppBaseQuery;
 import com.xiaomi.mone.app.AppBootstrap;
-import com.xiaomi.mone.app.service.impl.HeraAppBaseInfoServiceImpl;
+import com.xiaomi.mone.app.service.impl.HeraAppBaseInfoService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +22,7 @@ import java.util.List;
 public class AppBaseTest {
 
     @Autowired
-    HeraAppBaseInfoServiceImpl baseInfoService;
+    HeraAppBaseInfoService baseInfoService;
 
     @Test
     public void testBaseInfoDb(){

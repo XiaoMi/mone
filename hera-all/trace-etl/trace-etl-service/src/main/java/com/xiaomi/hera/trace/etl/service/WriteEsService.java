@@ -62,12 +62,12 @@ public class WriteEsService {
                     build();
 
     public void insertJaegerService(String date, String serviceName, String oprationName) {
-        // 判断是否存在
+        // Determine whether there is
         String key = serviceName + ":" + oprationName;
         if (localCache.asMap().containsKey(key)) {
             return;
         } else {
-            // 插入es
+            // writer into ES
             Map<String, String> map1 = new HashMap<>();
             map1.put("serviceName", serviceName);
             map1.put("operationName", oprationName);
@@ -201,7 +201,7 @@ public class WriteEsService {
             JSONObject jsonObject = (JSONObject) JSONObject.toJSON(driverDomain);
             esTraceUtil.insertBulk(index, jsonObject);
         } catch (Exception e) {
-            log.error("插入db/redis es数据异常：", e);
+            log.error("db/redis es data exception:", e);
         }
     }
 

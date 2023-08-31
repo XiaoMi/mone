@@ -7,6 +7,7 @@
         <groupId>run.mone</groupId>
         <version>1.4-SNAPSHOT</version>
     </parent>
+    <version>1.4-SNAPSHOT</version>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>codecheck</artifactId>
@@ -20,9 +21,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.xiaomi.youpin</groupId>
-            <artifactId>youpin-infra-rpc</artifactId>
-            <version>1.13-arch-SNAPSHOT</version>
+            <groupId>run.mone</groupId>
+            <artifactId>infra-result</artifactId>
+            <version>1.4-SNAPSHOT</version>
         </dependency>
 
         <dependency>

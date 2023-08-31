@@ -47,7 +47,6 @@ public abstract class HttpResponseUtils {
         } else {
             res.headers().set(HttpHeaderNames.CONTENT_LENGTH, content.readableBytes());
         }
-        res.headers().set(HttpHeaderNames.CONNECTION, "close");
         return res;
     }
 

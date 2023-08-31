@@ -1,32 +1,39 @@
 package com.xiaomi.mone.app.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.google.common.collect.Lists;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoModel;
 import com.xiaomi.mone.app.api.model.HeraAppBaseInfoParticipant;
 import com.xiaomi.mone.app.api.model.HeraAppBaseQuery;
 import com.xiaomi.mone.app.api.model.HeraAppRoleModel;
 import com.xiaomi.mone.app.api.response.AppBaseInfo;
 import com.xiaomi.mone.app.api.service.HeraAppService;
-import com.xiaomi.mone.app.api.utils.AppTypeTransferUtil;
-import com.xiaomi.mone.app.dao.HeraAppBaseInfoMapper;
-import com.xiaomi.mone.app.dao.HeraAppExcessInfoMapper;
-import com.xiaomi.mone.app.enums.PlatFormTypeEnum;
-import com.xiaomi.mone.app.enums.ProjectTypeEnum;
+import com.xiaomi.mone.app.dao.mapper.HeraAppBaseInfoMapper;
+import com.xiaomi.mone.app.dao.mapper.HeraAppExcessInfoMapper;
+import com.xiaomi.mone.app.dao.mapper.HeraAppRoleMapper;
 import com.xiaomi.mone.app.enums.StatusEnum;
 import com.xiaomi.mone.app.model.HeraAppBaseInfo;
 import com.xiaomi.mone.app.model.HeraAppExcessInfo;
-import com.xiaomi.mone.app.service.HeraAppBaseInfoService;
+import com.xiaomi.mone.app.model.HeraAppRole;
 import com.xiaomi.mone.app.service.HeraAppRoleService;
+import com.xiaomi.mone.app.service.extension.AppTypeServiceExtension;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.Service;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.BeanUtils;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import static com.xiaomi.mone.app.common.Constant.GSON;
+import static com.xiaomi.mone.app.enums.StatusEnum.NOT_DELETED;
 
 /**
  * @author wtt
@@ -39,31 +46,41 @@ import java.util.stream.Collectors;
 @org.springframework.stereotype.Service
 public class HeraAppServiceImpl implements HeraAppService {
 
+    @Autowired
+    HeraAppBaseInfoService heraAppBaseInfoService;
+
     private final HeraAppBaseInfoMapper heraAppBaseInfoMapper;
 
     private final HeraAppExcessInfoMapper heraAppExcessInfoMapper;
 
-    private final HeraAppBaseInfoService heraAppBaseInfoService;
-
     private final HeraAppRoleService roleService;
 
-    public HeraAppServiceImpl(HeraAppBaseInfoMapper heraAppBaseInfoMapper, HeraAppExcessInfoMapper heraAppExcessInfoMapper, @Lazy HeraAppBaseInfoServiceImpl heraAppBaseInfoService, HeraAppRoleService roleService) {
+    private final HeraAppRoleMapper heraAppRoleMapper;
+
+    private final AppTypeServiceExtension appTypeServiceExtension;
+
+    public HeraAppServiceImpl(HeraAppBaseInfoMapper heraAppBaseInfoMapper, HeraAppExcessInfoMapper heraAppExcessInfoMapper, HeraAppRoleService roleService, HeraAppRoleMapper heraAppRoleMapper, AppTypeServiceExtension appTypeServiceExtension) {
         this.heraAppBaseInfoMapper = heraAppBaseInfoMapper;
         this.heraAppExcessInfoMapper = heraAppExcessInfoMapper;
-        this.heraAppBaseInfoService = heraAppBaseInfoService;
         this.roleService = roleService;
+        this.heraAppRoleMapper = heraAppRoleMapper;
+        this.appTypeServiceExtension = appTypeServiceExtension;
     }
 
     @Override
     public List<AppBaseInfo> queryAppInfoWithLog(String appName, Integer type) {
+        Integer platformType = null;
+        Integer appType = null;
         if (Objects.nonNull(type)) {
-            type = AppTypeTransferUtil.queryPlatformTypeWithLogType(type);
+            appType = appTypeServiceExtension.getAppTypeLog(type);
+            platformType = appTypeServiceExtension.getAppPlatForm(type);
         }
-        List<AppBaseInfo> appBaseInfos = heraAppBaseInfoMapper.queryAppInfoWithLog(appName, type);
+
+        List<AppBaseInfo> appBaseInfos = heraAppBaseInfoMapper.queryAppInfo(appName, platformType, appType);
         if (CollectionUtils.isNotEmpty(appBaseInfos)) {
             appBaseInfos = appBaseInfos.parallelStream().map(appBaseInfo -> {
-                appBaseInfo.setPlatformName(PlatFormTypeEnum.getEnum(appBaseInfo.getPlatformType()).getName());
-                appBaseInfo.setAppTypeName(ProjectTypeEnum.queryTypeByCode(appBaseInfo.getAppType()));
+                appBaseInfo.setPlatformName(appTypeServiceExtension.getPlatformName(appBaseInfo.getPlatformType()));
+                appBaseInfo.setAppTypeName(appTypeServiceExtension.getAppTypeName(appBaseInfo.getAppType()));
                 return appBaseInfo;
             }).collect(Collectors.toList());
         }
@@ -77,9 +94,27 @@ public class HeraAppServiceImpl implements HeraAppService {
 
     @Override
     public AppBaseInfo queryById(Long id) {
-        HeraAppBaseInfo heraAppBaseInfo = heraAppBaseInfoMapper.selectById(id);
+        HeraAppBaseInfo heraAppBaseInfo = heraAppBaseInfoService.getById(id.intValue());
         if (null != heraAppBaseInfo) {
             return generateAppBaseInfo(heraAppBaseInfo);
+        }
+        return null;
+    }
+
+    @Override
+    public AppBaseInfo queryByIamTreeId(Long iamTreeId, String bingId, Integer platformType) {
+        QueryWrapper<HeraAppBaseInfo> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("iam_tree_id", iamTreeId.intValue());
+        if (StringUtils.isNotBlank(bingId)) {
+            queryWrapper.eq("bind_id", bingId);
+        }
+        if (null != platformType) {
+            queryWrapper.eq("platform_type", platformType);
+        }
+        queryWrapper.eq("status", NOT_DELETED.getCode());
+        List<HeraAppBaseInfo> appBaseInfos = heraAppBaseInfoMapper.selectList(queryWrapper);
+        if (CollectionUtils.isNotEmpty(appBaseInfos)) {
+            return generateAppBaseInfo(appBaseInfos.get(appBaseInfos.size() - 1));
         }
         return null;
     }
@@ -94,12 +129,41 @@ public class HeraAppServiceImpl implements HeraAppService {
         QueryWrapper<HeraAppBaseInfo> queryWrapper = new QueryWrapper<HeraAppBaseInfo>().eq("status", StatusEnum.NOT_DELETED.getCode());
         queryWrapper.eq("bind_id", appId.toString());
         if (Objects.nonNull(type)) {
-            Integer platformType = AppTypeTransferUtil.queryPlatformTypeWithLogType(type);
+            Integer platformType = appTypeServiceExtension.getAppPlatForm(type);
             queryWrapper.eq("platform_type", platformType);
         }
         HeraAppBaseInfo heraAppBaseInfo = heraAppBaseInfoMapper.selectOne(queryWrapper);
         if (null != heraAppBaseInfo) {
             return generateAppBaseInfo(heraAppBaseInfo);
+        }
+        return null;
+    }
+
+    @Override
+    public AppBaseInfo queryByAppIdPlatFormType(String bindId, Integer platformTypeCode) {
+        QueryWrapper<HeraAppBaseInfo> queryWrapper = new QueryWrapper<HeraAppBaseInfo>();
+        queryWrapper.eq("bind_id", bindId);
+        queryWrapper.eq("platform_type", platformTypeCode);
+        return getAppBaseInfo(queryWrapper);
+    }
+
+    @Nullable
+    private AppBaseInfo getAppBaseInfo(QueryWrapper<HeraAppBaseInfo> queryWrapper) {
+        List<HeraAppBaseInfo> appBaseInfos = heraAppBaseInfoMapper.selectList(queryWrapper);
+        HeraAppBaseInfo heraAppBaseInfo = null;
+        if (CollectionUtils.isNotEmpty(appBaseInfos)) {
+            List<HeraAppBaseInfo> baseInfos = appBaseInfos.stream()
+                    .filter(appBaseInfo -> Objects.equals(NOT_DELETED.getCode(), appBaseInfo.getStatus()))
+                    .collect(Collectors.toList());
+            if (CollectionUtils.isNotEmpty(baseInfos)) {
+                heraAppBaseInfo = baseInfos.get(baseInfos.size() - 1);
+            }
+            if (null == heraAppBaseInfo) {
+                heraAppBaseInfo = appBaseInfos.get(appBaseInfos.size() - 1);
+            }
+            if (null != heraAppBaseInfo) {
+                return generateAppBaseInfo(heraAppBaseInfo);
+            }
         }
         return null;
     }
@@ -113,10 +177,10 @@ public class HeraAppServiceImpl implements HeraAppService {
             appBaseInfo.setTreeIds(appExcessInfo.getTreeIds());
         }
         // 设置为log的平台类型
-        Integer code = AppTypeTransferUtil.queryLogTypeWithPlatformType(heraAppBaseInfo.getPlatformType());
+        Integer code = appTypeServiceExtension.getAppTypePlatformType(heraAppBaseInfo.getPlatformType());
         appBaseInfo.setPlatformType(code);
-        appBaseInfo.setPlatformName(PlatFormTypeEnum.getEnum(heraAppBaseInfo.getPlatformType()).getName());
-        appBaseInfo.setAppTypeName(ProjectTypeEnum.queryTypeByCode(appBaseInfo.getAppType()));
+        appBaseInfo.setPlatformName(appTypeServiceExtension.getPlatformName(heraAppBaseInfo.getPlatformType()));
+        appBaseInfo.setAppTypeName(appTypeServiceExtension.getAppTypeName(appBaseInfo.getAppType()));
         return appBaseInfo;
     }
 
@@ -128,6 +192,26 @@ public class HeraAppServiceImpl implements HeraAppService {
     @Override
     public List<HeraAppBaseInfoParticipant> queryByParticipant(HeraAppBaseQuery query) {
         return heraAppBaseInfoService.queryByParticipant(query);
+    }
+
+    @Override
+    public Integer insertOrUpdate(HeraAppBaseInfoModel baseInfo) {
+        HeraAppBaseInfo appBaseInfo = generateHeraAppBaseInfo(baseInfo);
+        // update
+        if (null != baseInfo.getId()) {
+            return heraAppBaseInfoMapper.updateByPrimaryKey(appBaseInfo);
+        }
+        return heraAppBaseInfoMapper.insert(appBaseInfo);
+    }
+
+    private HeraAppBaseInfo generateHeraAppBaseInfo(HeraAppBaseInfoModel appBaseInfoModel) {
+        HeraAppBaseInfo heraAppBaseInfo = new HeraAppBaseInfo();
+        try {
+            BeanUtils.copyProperties(appBaseInfoModel, heraAppBaseInfo);
+        } catch (Exception e) {
+            log.error("getById copyProperties error,ori:{}", GSON.toJson(appBaseInfoModel), e);
+        }
+        return heraAppBaseInfo;
     }
 
     @Override
@@ -200,5 +284,45 @@ public class HeraAppServiceImpl implements HeraAppService {
         return roleService.count(roleModel);
     }
 
+    @Override
+    public List<Long> userProjectIdAuth(String user, Long plateFormCode) {
+        QueryWrapper<HeraAppRole> queryWrapper = new QueryWrapper<>();
+        if (null != plateFormCode) {
+            queryWrapper.eq("app_platform", plateFormCode);
+        }
+        queryWrapper.eq("user", user);
+        queryWrapper.select("app_id", "app_platform");
+        List<HeraAppRole> appMonitors = heraAppRoleMapper.selectList(queryWrapper);
+        if (CollectionUtils.isNotEmpty(appMonitors)) {
+            //一般情况下，一个人关注的应用不可能特别多，所以这种循环查询方式是可以的
+            return appMonitors.parallelStream().map(appMonitor -> {
+                HeraAppBaseInfo heraAppIdByApp = getHeraAppIdByApp(Integer.valueOf(appMonitor.getAppId()), appMonitor.getAppPlatform());
+                if (null != heraAppIdByApp) {
+                    return heraAppIdByApp.getId().longValue();
+                }
+                return null;
+            }).filter(Objects::nonNull).collect(Collectors.toList());
+        }
+        return Lists.newArrayList();
+    }
 
+    /**
+     * 查询hera_app_id通过应用Id和平台编码
+     *
+     * @param projectId
+     * @param plateFormCode
+     * @return
+     */
+    private HeraAppBaseInfo getHeraAppIdByApp(Integer projectId, Integer plateFormCode) {
+        LambdaQueryWrapper<HeraAppBaseInfo> lambdaQueryWrapper = Wrappers.<HeraAppBaseInfo>lambdaQuery()
+                .eq(HeraAppBaseInfo::getBindId, projectId.toString())
+                .eq(HeraAppBaseInfo::getStatus, NOT_DELETED.getCode());
+        lambdaQueryWrapper.eq(HeraAppBaseInfo::getPlatformType, plateFormCode);
+        lambdaQueryWrapper.select(HeraAppBaseInfo::getId);
+        List<HeraAppBaseInfo> heraAppBaseInfos = heraAppBaseInfoMapper.selectList(lambdaQueryWrapper);
+        if (CollectionUtils.isEmpty(heraAppBaseInfos)) {
+            return null;
+        }
+        return heraAppBaseInfos.get(heraAppBaseInfos.size() - 1);
+    }
 }

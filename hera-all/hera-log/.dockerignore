@@ -1,0 +1,7 @@
+
+.dockerignore
+.gitlab-ci.yml
+.gitignore
+.git/
+README.md
+.DS_Store

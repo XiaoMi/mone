@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xiaomi.mone.log.manager.mapper.MilogLogNumAlertMapper">
+
+    <insert id="insertBatch" parameterType="java.util.List">
+        INSERT INTO milog_log_num_alert
+            (day, app_id, alert_user)
+        VALUES
+        <foreach collection ="doList" item="do" separator =",">
+            (#{do.day}, #{do.appId}, #{do.alertUser})
+        </foreach >
+    </insert>
+    <delete id="deleteThisDay">
+        DELETE
+        FROM
+            milog_log_num_alert
+        WHERE
+            <![CDATA[day <= #{day}]]>
+    </delete>
+
+    <select id="isSend" resultType="java.lang.Long">
+        SELECT
+            1
+        FROM
+            milog_log_num_alert
+        WHERE
+            app_id = #{appId}
+        and DAY = #{day}
+    </select>
+</mapper>

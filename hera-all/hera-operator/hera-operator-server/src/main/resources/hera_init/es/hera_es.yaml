@@ -1,0 +1,72 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    product: k8s-elastic
+  name: elastic-config
+  namespace: hera-namespace
+data:
+  elasticsearch.yaml: |
+    discovery.type: single-node
+    discovery.seed_hosts: ["0.0.0.0"]
+    network.host: 0.0.0.0
+    http.port: 9200
+    xpack.security.enabled: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: elasticsearch
+  namespace: hera-namespace
+spec:
+  selector:
+    matchLabels:
+      run: elasticsearch
+  template:
+    metadata:
+      labels:
+        name: elasticsearch
+        run: elasticsearch
+    spec:
+      initContainers:
+      - name: set-vm-sync-limit
+        image: busybox
+        imagePullPolicy: IfNotPresent
+        command: ["sysctl", "-w", "vm.max_map_count=262144"]
+        securityContext:
+          privileged: true
+      containers:
+      - image: docker.elastic.co/elasticsearch/elasticsearch:7.17.8
+        name: elasticsearch
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            cpu: '1'
+            memory: 2Gi
+        ports:
+        - containerPort: 9200
+          protocol: TCP
+        volumeMounts:
+          - name: elastic-config
+            mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
+            subPath: elasticsearch.yaml
+      volumes:
+      - name: elastic-config
+        configMap:
+          name: elastic-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: elasticsearch
+  namespace: hera-namespace
+  labels:
+    run: elasticsearch
+spec:
+  ports:
+    - port: 9200
+      targetPort: 9200
+      protocol: TCP
+  selector:
+    run: elasticsearch
+  type: ClusterIP

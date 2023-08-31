@@ -12,7 +12,7 @@ public class BloomFilterHelper<T> {
     private Funnel<T> funnel;
 
     public BloomFilterHelper(Funnel<T> funnel, long expectedInsertions, double fpp) {
-        Preconditions.checkArgument(funnel != null, "funnel不能为空");
+        Preconditions.checkArgument(funnel != null, "funnel is not null");
         this.funnel = funnel;
         bitSize = optimalNumOfBits(expectedInsertions, fpp);
         numHashFunctions = optimalNumOfHashFunctions(expectedInsertions, bitSize);
@@ -36,7 +36,7 @@ public class BloomFilterHelper<T> {
     }
 
     /**
-     * 计算bit数组长度
+     * Calculates the bit array length
      */
     private int optimalNumOfBits(long n, double p) {
         if (p == 0) {
@@ -46,7 +46,7 @@ public class BloomFilterHelper<T> {
     }
 
     /**
-     * 计算hash方法执行次数
+     * Calculates the hash method execution times
      */
     private int optimalNumOfHashFunctions(long n, long m) {
         return Math.max(1, (int) Math.round((double) m / n * Math.log(2)));

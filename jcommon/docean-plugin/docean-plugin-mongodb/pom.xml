@@ -14,7 +14,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.xiaomi.youpin</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>docean-plugin-config</artifactId>
             <version>1.4-SNAPSHOT</version>
         </dependency>
@@ -26,7 +26,7 @@
         </dependency>
 
         <dependency>
-            <groupId>com.xiaomi.youpin</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>catPlugin</artifactId>
             <version>1.4-SNAPSHOT</version>
         </dependency>

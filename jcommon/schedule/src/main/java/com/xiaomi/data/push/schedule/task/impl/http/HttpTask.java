@@ -54,8 +54,8 @@ public class HttpTask extends AbstractTask {
     public TaskResult execute(TaskParam param, TaskContext context) {
         String email = param.getParam().get("email");
         String feishu = param.getParam().get("feishu");
-        String responseCode = param.getParam().get("responseCode");
-        String statusCode = param.getParam().get("statusCode");
+//        String responseCode = param.getParam().get("responseCode");
+//        String statusCode = param.getParam().get("statusCode");
         String history = param.getParam().get("history");
         int taskId = param.getTaskId();
         String creator = param.getCreator();

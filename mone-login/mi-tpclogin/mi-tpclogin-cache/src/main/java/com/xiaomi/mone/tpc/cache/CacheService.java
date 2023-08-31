@@ -1,8 +1,11 @@
 package com.xiaomi.mone.tpc.cache;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
+import com.xiaomi.mone.tpc.cache.enums.CacheTypeEnum;
 import com.xiaomi.mone.tpc.cache.key.Key;
 import lombok.extern.slf4j.Slf4j;
 
+import javax.annotation.PostConstruct;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -16,11 +19,23 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public abstract class CacheService {
 
-    protected Integer cacheType;
+    @NacosValue("${cache.type:0}")
+    private Integer cacheType;
+    protected Integer curCacheType;
 
-    public CacheService(Integer cacheType) {
-        this.cacheType = cacheType;
+    public CacheService(CacheTypeEnum cacheTypeEnum) {
+        curCacheType = cacheTypeEnum.getCode();
     }
+
+    @PostConstruct
+    public void init() {
+        if (!curCacheType.equals(cacheType)) {
+            return;
+        }
+        realInit();
+    }
+
+    protected abstract void realInit();
 
     public boolean set(Key key, Object value) {
         try {

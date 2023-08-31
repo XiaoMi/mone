@@ -36,7 +36,8 @@ public class K8s {
                 client = ClientBuilder.standard().build();
             }
         } catch (Exception e) {
-            client = null;
+            //Client build failure throws an exception
+            throw new RuntimeException(e);
         } finally {
             Configuration.setDefaultApiClient(client);
 //            client.setDebugging(true);
@@ -51,7 +52,8 @@ public class K8s {
                 client = ClientBuilder.standard().build();
             }
         } catch (Exception e) {
-            client = null;
+            //Client build failure throws an exception
+            throw new RuntimeException(e);
         } finally {
             Configuration.setDefaultApiClient(client);
             // client.setDebugging(true);
@@ -66,7 +68,8 @@ public class K8s {
                 client = ClientBuilder.standard().build();
             }
         } catch (Exception e) {
-            client = null;
+            //Client build failure throws an exception
+            throw new RuntimeException(e);
         } finally {
             Configuration.setDefaultApiClient(client);
             // client.setDebugging(true);
@@ -127,7 +130,7 @@ public class K8s {
      * @throws ApiException
      */
     public V1Deployment createDeployment(String namespace, String json) throws IOException, ApiException {
-        V1Deployment v = new Gson().fromJson(json, V1Deployment.class);
+		//V1Deployment v = new Gson().fromJson(json, V1Deployment.class);
         AppsV1Api appsV1Api = new AppsV1Api(client);
         V1Deployment body = Configuration.getDefaultApiClient().getJSON().deserialize(json, V1Deployment.class);
         return appsV1Api.createNamespacedDeployment(namespace, body, "false", null, null);

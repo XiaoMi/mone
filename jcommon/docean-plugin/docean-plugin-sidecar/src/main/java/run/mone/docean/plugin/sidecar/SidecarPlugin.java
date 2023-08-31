@@ -55,6 +55,7 @@ import java.lang.annotation.Annotation;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -282,7 +283,14 @@ public class SidecarPlugin implements IPlugin {
             Set<UdsProcessor> processorSet = ioc.getBeans(UdsProcessor.class);
             processorSet.stream().filter(it -> it.side().equals(SideType.server)).forEach(it -> server.putProcessor(it));
             if (grpc) {
-                new Thread(() -> this.grpcServer.start(this.sideCarGrpcServerPort)).start();
+                new Thread(() -> {
+                    String port = sideCarGrpcServerPort;
+                    Config config = ioc.getBean(Config.class);
+                    if (config != null && !StringUtils.isEmpty(config.get("biz_grpc_server_addr", ""))) {
+                        port = config.get("biz_grpc_server_addr", "").split(":")[1];
+                    }
+                    this.grpcServer.start(port);
+                }).start();
             }
             Consumer<RpcServerInfo> consumer = ioc.getBean("regConsumer");
             if (Optional.ofNullable(consumer).isPresent()) {
@@ -368,26 +376,38 @@ public class SidecarPlugin implements IPlugin {
         return "0.0.1:sidecar_plugin:2022-11-18";
     }
 
-    public synchronized IClient getClient(String name) {
+    private ConcurrentHashMap<String, Object> lockMap = new ConcurrentHashMap<>();
+
+    public IClient getClient(String name) {
         if (null == this.DiscoveryFunction) {
             return null;
         }
-        ProviderMap providerList = this.clientMap.get(name);
-        List<IClient> list = null;
-        if (null == providerList) {
-            providerList = new ProviderMap();
-            providerList.refresh(this.DiscoveryFunction, name, this);
-            this.clientMap.put(name, providerList);
-        }
-        list = new ArrayList<>(providerList.getClientMap().values());
-        int n = list.size();
-        if (n == 1) {
-            return list.get(0);
-        }
-        if (n == 0) {
-            return null;
-        }
 
-        return list.get(ThreadLocalRandom.current().nextInt(n));
+        Object obj = lockMap.compute(name, (k, v) -> {
+            if (v == null) {
+                return new Object();
+            }
+            return v;
+        });
+
+        synchronized (obj) {
+            ProviderMap providerList = this.clientMap.get(name);
+            List<IClient> list = null;
+            if (null == providerList) {
+                providerList = new ProviderMap();
+                providerList.refresh(this.DiscoveryFunction, name, this);
+                this.clientMap.put(name, providerList);
+            }
+            list = new ArrayList<>(providerList.getClientMap().values());
+            int n = list.size();
+            if (n == 1) {
+                return list.get(0);
+            }
+            if (n == 0) {
+                return null;
+            }
+
+            return list.get(ThreadLocalRandom.current().nextInt(n));
+        }
     }
 }
