@@ -2,14 +2,12 @@ package com.xiaomi.hera.trace.etl.consumer;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Sets;
-import com.xiaomi.hera.trace.etl.constant.LockUtil;
-import com.xiaomi.youpin.prometheus.client.Metrics;
 import com.xiaomi.youpin.prometheus.client.MetricsManager;
 import com.xiaomi.youpin.prometheus.client.Prometheus;
+import com.xiaomi.youpin.prometheus.client.multi.MutiMetrics;
 import io.prometheus.client.*;
 import io.prometheus.client.exporter.common.TextFormat;
 import lombok.extern.slf4j.Slf4j;
-import okio.Buffer;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -33,14 +31,28 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DataCacheService {
 
-    private CopyOnWriteArrayList<byte[]> data = new CopyOnWriteArrayList<>();
+    private CopyOnWriteArrayList<byte[]> cacheData = new CopyOnWriteArrayList<>();
 
     @Resource
-    private EnterManager enterManager;
+    private MutiMetricsCall call;
 
+    public int dataSize() {
+        return cacheData.size();
+    }
 
     @PostConstruct
     public void init() {
+        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
+            try {
+                if (cacheData.size() > 4) {
+                    log.info("clear cache data:{}", cacheData.size());
+                    cacheData.clear();
+                }
+            } catch (Throwable ex) {
+                log.error(ex.getMessage());
+            }
+        }, 0, 60, TimeUnit.SECONDS);
+
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
             try {
                 enterManager.getMonitor().enter();
@@ -53,28 +65,34 @@ public class DataCacheService {
         }, 0, 15, TimeUnit.SECONDS);
     }
 
+    @Resource
+    private EnterManager enterManager;
+
+
+
 
     public byte[] getData() {
         log.info("get data");
         Stopwatch sw = Stopwatch.createStarted();
-        Buffer buffer = new Buffer();
         try {
-            data.forEach(it -> buffer.write(it));
-            data.clear();
-            return buffer.readByteArray();
+            if (cacheData.size() >= 1) {
+                return cacheData.remove(0);
+            }
         } finally {
             log.info("get data use time:{}ms", sw.elapsed(TimeUnit.MILLISECONDS));
-            buffer.clear();
         }
+        return new byte[]{};
     }
 
 
     public void cacheData() {
-        log.info("cache data");
-        Stopwatch sw = Stopwatch.createStarted();
-        synchronized (LockUtil.lock) {
+        call.change();
+        Executors.newSingleThreadExecutor().submit(() -> {
+            log.info("cache data");
+            Stopwatch sw = Stopwatch.createStarted();
             List<String> list = new ArrayList<>();
-            CollectorRegistry registry = CollectorRegistry.defaultRegistry;
+            MutiMetrics old = call.old();
+            CollectorRegistry registry = old.getRegistry();
             try {
                 Field field = registry.getClass().getDeclaredField("namesToCollectors");
                 field.setAccessible(true);
@@ -89,24 +107,24 @@ public class DataCacheService {
                 TextFormat.writeFormat(TextFormat.CONTENT_TYPE_004, writer, registry.filteredMetricFamilySamples(Sets.newHashSet(list)));
                 writer.flush();
                 byte[] bytes = baos.toByteArray();
-                this.data.add(bytes);
+                this.cacheData.add(bytes);
             } catch (Throwable ex) {
                 log.error(ex.getMessage());
             } finally {
-                clearMetrics();
+                clearMetrics(old);
             }
-        }
-        log.info("cache data use time:{}ms", sw.elapsed(TimeUnit.MILLISECONDS));
+            log.info("cache data use time:{} ms", sw.elapsed(TimeUnit.MILLISECONDS));
+        });
     }
 
 
-    private void clearMetrics() {
+    private void clearMetrics(MutiMetrics old) {
         try {
-            MetricsManager gMetricsMgr = Metrics.getInstance().gMetricsMgr;
+            MetricsManager gMetricsMgr = old.gMetricsMgr;
             if (gMetricsMgr instanceof Prometheus) {
                 Prometheus prometheus = (Prometheus) gMetricsMgr;
                 Map<String, Object> prometheusMetrics = prometheus.prometheusMetrics;
-                clearTypeMetrics(prometheusMetrics);
+                clearTypeMetrics(prometheusMetrics,old.getRegistry());
                 prometheus.prometheusMetrics.clear();
                 prometheus.prometheusTypeMetrics.clear();
             }
@@ -115,20 +133,20 @@ public class DataCacheService {
         }
     }
 
-    private void clearTypeMetrics(Map<String, Object> prometheusMetrics) {
+    private void clearTypeMetrics(Map<String, Object> prometheusMetrics, CollectorRegistry registry) {
         for (String key : prometheusMetrics.keySet()) {
             Object o = prometheusMetrics.get(key);
             if (o instanceof Counter) {
                 Counter counter = (Counter) o;
-                CollectorRegistry.defaultRegistry.unregister(counter);
+                registry.unregister(counter);
             } else if (o instanceof Gauge) {
                 Gauge gauge = (Gauge) o;
                 gauge.clear();
-                CollectorRegistry.defaultRegistry.unregister(gauge);
+                registry.unregister(gauge);
             } else if (o instanceof Histogram) {
                 Histogram histogram = (Histogram) o;
                 histogram.clear();
-                CollectorRegistry.defaultRegistry.unregister(histogram);
+                registry.unregister(histogram);
             } else {
                 log.error("metrics : " + key + " Type conversion failed, original type : " + o.getClass().getName());
             }

@@ -8,6 +8,7 @@ import com.xiaomi.youpin.prometheus.client.PrometheusHistogram;
 import com.xiaomi.youpin.prometheus.client.XmCounter;
 import com.xiaomi.youpin.prometheus.client.XmGauge;
 import com.xiaomi.youpin.prometheus.client.XmHistogram;
+import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Gauge;
 import io.prometheus.client.Histogram;
@@ -30,12 +31,20 @@ public class MutiPrometheus implements MetricsManager {
    public Map<String, Object> prometheusMetrics;
    public Map<String,Object> prometheusTypeMetrics;
 
+   private CollectorRegistry registry;
+
    private byte[] lock = new byte[0];
    private byte[] typeLock = new byte[0];
 
    public MutiPrometheus() {
       this.prometheusMetrics = new ConcurrentHashMap<>();
       this.prometheusTypeMetrics = new ConcurrentHashMap<>();
+   }
+
+   public MutiPrometheus(CollectorRegistry registry) {
+      this.prometheusMetrics = new ConcurrentHashMap<>();
+      this.prometheusTypeMetrics = new ConcurrentHashMap<>();
+      this.registry = registry;
    }
 
    @Override
@@ -96,7 +105,7 @@ public class MutiPrometheus implements MetricsManager {
                     .namespace(constLabels.get(Metrics.GROUP) + "_" + constLabels.get(Metrics.SERVICE))
                     .labelNames(finalValue)
                     .help(metricName)
-                    .register();
+                    .register(registry);
 
             prometheusMetrics.put(metricName, newCounter);
             return newCounter;
@@ -127,7 +136,7 @@ public class MutiPrometheus implements MetricsManager {
                     .namespace(constLabels.get(Metrics.GROUP) + "_" + constLabels.get(Metrics.SERVICE))
                     .labelNames(finalValue)
                     .help(metricName)
-                    .register();
+                    .register(registry);
 
             prometheusMetrics.put(metricName, newGauge);
             return newGauge;
@@ -161,7 +170,7 @@ public class MutiPrometheus implements MetricsManager {
                     .namespace(constLabels.get(Metrics.GROUP) + "_" + constLabels.get(Metrics.SERVICE))
                     .labelNames(finalValue)
                     .help(metricName)
-                    .register();
+                    .register(registry);
             prometheusMetrics.put(metricName, newHistogram);
             return newHistogram;
          }

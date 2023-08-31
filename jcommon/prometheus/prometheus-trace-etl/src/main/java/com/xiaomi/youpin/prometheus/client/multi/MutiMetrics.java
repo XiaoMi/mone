@@ -3,6 +3,7 @@ package com.xiaomi.youpin.prometheus.client.multi;
 import com.xiaomi.youpin.prometheus.client.XmCounter;
 import com.xiaomi.youpin.prometheus.client.XmGauge;
 import com.xiaomi.youpin.prometheus.client.XmHistogram;
+import io.prometheus.client.CollectorRegistry;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
@@ -20,6 +21,8 @@ public class MutiMetrics {
     public static final String GROUP = "group";
     public static final String SERVICE = "service";
     public static final String APPLICATION = "application";
+
+    private CollectorRegistry registry;
 
     public void init(String group,String service) {
         setGroup(group);
@@ -39,8 +42,13 @@ public class MutiMetrics {
             new double[]{.01, .05, 1, 5, 7.5, 10, 25, 50, 100, 200, 500, 1000,1500,2000,3000,4000,5000};
 
     public MutiMetrics() {
-        gMetricsMgr = new MutiPrometheus();
+        this.registry = new CollectorRegistry(true);
+        gMetricsMgr = new MutiPrometheus(registry);
         gMetricsMgr.constLabels = new HashMap<>();
+    }
+
+    public CollectorRegistry getRegistry(){
+        return this.registry;
     }
 
     public XmCounter newCounter(String metricName, String... labelNames) {

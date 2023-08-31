@@ -12,12 +12,7 @@ import com.xiaomi.hera.trace.etl.domain.MetricsParseResult;
 import com.xiaomi.hera.trace.etl.service.HeraContextService;
 import com.xiaomi.hera.trace.etl.service.WriteEsService;
 import com.xiaomi.hera.trace.etl.util.ThriftUtil;
-import com.xiaomi.hera.tspandata.TAttributeKey;
-import com.xiaomi.hera.tspandata.TAttributes;
-import com.xiaomi.hera.tspandata.TResource;
-import com.xiaomi.hera.tspandata.TSpanData;
-import com.xiaomi.hera.tspandata.TValue;
-import com.xiaomi.youpin.prometheus.client.Metrics;
+import com.xiaomi.hera.tspandata.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,11 +69,12 @@ public class MetricsParseService {
     @Autowired
     private HeraContextService heraContextService;
 
-    private Metrics singleMetrics = Metrics.getInstance();
+    @Autowired
+    private MutiMetricsCall mutiMetrics;
 
     @PostConstruct
     public void init() {
-        singleMetrics.init(env, "");
+        mutiMetrics.init(env, "");
     }
 
     private static final double[] redisBuckets = new double[]{0.1D, 0.5D, 1.0D, 10.0D, 100.0D, 500.0D, 1000.0D};
@@ -97,13 +93,11 @@ public class MetricsParseService {
             traceStatistics(serviceName);
             // 解析TSpanData，转换为指标类
             MetricsParseResult metricsParseResult = metricsParse(tSpanData);
-            if(metricsParseResult.isIgnore()){
+            if (metricsParseResult.isIgnore()) {
                 return;
             }
             if (metricsParseResult.isValidate()) {
-                synchronized (LockUtil.lock) {
-                    computeMetrics(metricsParseResult.getJaegerTracerDomain(), metricsParseResult.getHeraTraceEtlConfig());
-                }
+                computeMetrics(metricsParseResult.getJaegerTracerDomain(), metricsParseResult.getHeraTraceEtlConfig());
             }
             if (metricsParseResult.getDriverDomain() != null) {
                 esService.insertDriver(metricsParseResult.getDriverDomain());
@@ -115,11 +109,9 @@ public class MetricsParseService {
     }
 
     private void traceStatistics(String applicationName) {
-        synchronized (LockUtil.lock) {
-            singleMetrics.newCounter("trace_statistics_span_count", "application")
-                    .with(applicationName)
-                    .add(1, applicationName);
-        }
+        mutiMetrics.newCounter("trace_statistics_span_count", "application")
+                .with(applicationName)
+                .add(1, applicationName);
     }
 
     public MetricsParseResult metricsParse(TSpanData tSpanData) {
@@ -304,57 +296,57 @@ public class MetricsParseService {
                 if (exclude(config == null ? excludeHttpServer : config.getExcludeHttpserverMethod(), jtc.getMethod())) {
                     return;
                 }
-                singleMetrics.newCounter(httpMetricsName+jtc.getType() + "TotalMethodCount", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
+                mutiMetrics.newCounter(httpMetricsName + jtc.getType() + "TotalMethodCount", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
                         .with(jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .add(1, jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                 // success or fail counter
                 if (jtc.isSuccess()) {
-                    singleMetrics.newCounter(httpMetricsName+jtc.getType() + "SuccessMethodCount", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
+                    mutiMetrics.newCounter(httpMetricsName + jtc.getType() + "SuccessMethodCount", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
                             .with(jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                             .add(1, jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                     // slow query
                     if (jtc.getDuration() > (config == null ? httpSlowTime : config.getHttpSlowThreshold())) {
-                        singleMetrics.newCounter(httpMetricsName+"httpSlowQuery", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
+                        mutiMetrics.newCounter(httpMetricsName + "httpSlowQuery", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
                                 .with(jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                                 .add(1, jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                         esService.submitErrorEsTrace(esDomain, jtc.getMethod(), metricsServiceName, jtc.getTraceId(), "http", jtc.getServerIp(), String.valueOf(jtc.getEndTime()), "", String.valueOf(jtc.getDuration()), "timeout", jtc.getHttpCode(), jtc.getServiceEnv());
                     }
                 } else {
-                    singleMetrics.newCounter(httpMetricsName+"httpError", "methodName", "application", "serverIp", "errorCode", "serverEnv", "serverEnvId")
+                    mutiMetrics.newCounter(httpMetricsName + "httpError", "methodName", "application", "serverIp", "errorCode", "serverEnv", "serverEnvId")
                             .with(jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getHttpCode(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                             .add(1, jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getHttpCode(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                     esService.submitErrorEsTrace(esDomain, jtc.getMethod(), metricsServiceName, jtc.getTraceId(), "http", jtc.getServerIp(), String.valueOf(jtc.getEndTime()), "", String.valueOf(jtc.getDuration()), "error", jtc.getHttpCode(), jtc.getServiceEnv());
                 }
-                singleMetrics.newHistogram(httpMetricsName+jtc.getType() + "MethodTimeCount", aopDubboBuckets, new String[]{"methodName", "application", "serverIp", "serverEnv", "serverEnvId"})
+                mutiMetrics.newHistogram(httpMetricsName + jtc.getType() + "MethodTimeCount", aopDubboBuckets, new String[]{"methodName", "application", "serverIp", "serverEnv", "serverEnvId"})
                         .with(jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .observe(jtc.getDuration(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
-                singleMetrics.newHistogram(httpMetricsName+jtc.getType() + "MethodTimeCount_without_methodName", aopDubboBuckets, new String[]{"application", "serverIp", "serverEnv", "serverEnvId"})
+                mutiMetrics.newHistogram(httpMetricsName + jtc.getType() + "MethodTimeCount_without_methodName", aopDubboBuckets, new String[]{"application", "serverIp", "serverEnv", "serverEnvId"})
                         .with(metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .observe(jtc.getDuration(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
             } else if (SpanKind.CLIENT.equals(jtc.getKind())) {
-                singleMetrics.newCounter(httpMetricsName+jtc.getType() + "ClientTotalMethodCount", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
+                mutiMetrics.newCounter(httpMetricsName + jtc.getType() + "ClientTotalMethodCount", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
                         .with(jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .add(1, jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                 if (jtc.isSuccess()) {
-                    singleMetrics.newCounter(httpMetricsName+jtc.getType() + "ClientSuccessMethodCount", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
+                    mutiMetrics.newCounter(httpMetricsName + jtc.getType() + "ClientSuccessMethodCount", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
                             .with(jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                             .add(1, jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                     if (jtc.getDuration() > (config == null ? httpSlowTime : config.getHttpSlowThreshold())) {
-                        singleMetrics.newCounter(httpMetricsName+"httpClientSlowQuery", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
+                        mutiMetrics.newCounter(httpMetricsName + "httpClientSlowQuery", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
                                 .with(jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                                 .add(1, jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                         esService.submitErrorEsTrace(esDomain, jtc.getMethod(), metricsServiceName, jtc.getTraceId(), "http_client", jtc.getServerIp(), String.valueOf(jtc.getEndTime()), "", String.valueOf(jtc.getDuration()), "timeout", jtc.getHttpCode(), jtc.getServiceEnv());
                     }
                 } else {
-                    singleMetrics.newCounter(httpMetricsName+"httpClientError", "methodName", "application", "serverIp", "errorCode", "serverEnv", "serverEnvId")
+                    mutiMetrics.newCounter(httpMetricsName + "httpClientError", "methodName", "application", "serverIp", "errorCode", "serverEnv", "serverEnvId")
                             .with(jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getHttpCode(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                             .add(1, jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getHttpCode(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                     esService.submitErrorEsTrace(esDomain, jtc.getMethod(), metricsServiceName, jtc.getTraceId(), "http_client", jtc.getServerIp(), String.valueOf(jtc.getEndTime()), "", String.valueOf(jtc.getDuration()), "error", jtc.getHttpCode(), jtc.getServiceEnv());
                 }
-                singleMetrics.newHistogram(httpMetricsName+jtc.getType() + "ClientMethodTimeCount", aopDubboBuckets, new String[]{"methodName", "application", "serverIp", "serverEnv", "serverEnvId"})
+                mutiMetrics.newHistogram(httpMetricsName + jtc.getType() + "ClientMethodTimeCount", aopDubboBuckets, new String[]{"methodName", "application", "serverIp", "serverEnv", "serverEnvId"})
                         .with(jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .observe(jtc.getDuration(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
-                singleMetrics.newHistogram(httpMetricsName+jtc.getType() + "ClientMethodTimeCount_without_methodName", aopDubboBuckets, new String[]{"application", "serverIp", "serverEnv", "serverEnvId"})
+                mutiMetrics.newHistogram(httpMetricsName + jtc.getType() + "ClientMethodTimeCount_without_methodName", aopDubboBuckets, new String[]{"application", "serverIp", "serverEnv", "serverEnvId"})
                         .with(metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .observe(jtc.getDuration(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
             }
@@ -363,53 +355,53 @@ public class MetricsParseService {
         if (SpanType.DUBBO.equals(jtc.getType())) {
             String dubboMetricsName = "hera_";
             if (SpanKind.CLIENT.equals(jtc.getKind())) {
-                singleMetrics.newHistogram(dubboMetricsName + "dubboConsumerTimeCost", aopDubboBuckets, new String[]{"serviceName", "methodName", "application", "serverIp", "serverEnv", "serverEnvId"})
+                mutiMetrics.newHistogram(dubboMetricsName + "dubboConsumerTimeCost", aopDubboBuckets, new String[]{"serviceName", "methodName", "application", "serverIp", "serverEnv", "serverEnvId"})
                         .with(jtc.getDubboServiceName(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .observe(jtc.getDuration(), jtc.getDubboServiceName(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
-                singleMetrics.newHistogram(dubboMetricsName + "dubboConsumerTimeCost_without_methodName", aopDubboBuckets, new String[]{"serviceName", "application", "serverIp", "serverEnv", "serverEnvId"})
+                mutiMetrics.newHistogram(dubboMetricsName + "dubboConsumerTimeCost_without_methodName", aopDubboBuckets, new String[]{"serviceName", "application", "serverIp", "serverEnv", "serverEnvId"})
                         .with(jtc.getDubboServiceName(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .observe(jtc.getDuration(), jtc.getDubboServiceName(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
-                singleMetrics.newCounter(dubboMetricsName + "dubboBisTotalCount", "serviceName", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
+                mutiMetrics.newCounter(dubboMetricsName + "dubboBisTotalCount", "serviceName", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
                         .with(jtc.getDubboServiceName(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .add(1, jtc.getDubboServiceName(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                 if (jtc.isSuccess()) {
-                    singleMetrics.newCounter(dubboMetricsName + "dubboBisSuccessCount", "serviceName", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
+                    mutiMetrics.newCounter(dubboMetricsName + "dubboBisSuccessCount", "serviceName", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
                             .with(jtc.getDubboServiceName(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                             .add(1, jtc.getDubboServiceName(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                     if (jtc.getDuration() > (config == null ? dubboSlowTime : config.getDubboSlowThreshold())) {
-                        singleMetrics.newCounter(dubboMetricsName + "dubboConsumerSlowQuery", "serviceName", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
+                        mutiMetrics.newCounter(dubboMetricsName + "dubboConsumerSlowQuery", "serviceName", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
                                 .with(jtc.getDubboServiceName(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                                 .add(1, jtc.getDubboServiceName(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                         esService.submitErrorEsTrace(esDomain, jtc.getDubboServiceName() + "/" + jtc.getMethod(), metricsServiceName, jtc.getTraceId(), "dubbo_consumer", jtc.getServerIp(), String.valueOf(jtc.getEndTime()), "", String.valueOf(jtc.getDuration()), "timeout", jtc.getHttpCode(), jtc.getServiceEnv());
                     }
                 } else {
-                    singleMetrics.newCounter(dubboMetricsName + "dubboConsumerError", "serviceName", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
+                    mutiMetrics.newCounter(dubboMetricsName + "dubboConsumerError", "serviceName", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
                             .with(jtc.getDubboServiceName(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                             .add(1, jtc.getDubboServiceName(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                     esService.submitErrorEsTrace(esDomain, jtc.getDubboServiceName() + "/" + jtc.getMethod(), metricsServiceName, jtc.getTraceId(), "dubbo_consumer", jtc.getServerIp(), String.valueOf(jtc.getEndTime()), "", String.valueOf(jtc.getDuration()), "error", jtc.getHttpCode(), jtc.getServiceEnv());
                 }
             } else if (SpanKind.SERVER.equals(jtc.getKind())) {
-                singleMetrics.newCounter(dubboMetricsName + "dubboMethodCalledCount", "serviceName", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
+                mutiMetrics.newCounter(dubboMetricsName + "dubboMethodCalledCount", "serviceName", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
                         .with(jtc.getDubboServiceName(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .add(1, jtc.getDubboServiceName(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
-                singleMetrics.newHistogram(dubboMetricsName + "dubboProviderCount", aopDubboBuckets, new String[]{"serviceName", "methodName", "application", "serverIp", "serverEnv", "serverEnvId"})
+                mutiMetrics.newHistogram(dubboMetricsName + "dubboProviderCount", aopDubboBuckets, new String[]{"serviceName", "methodName", "application", "serverIp", "serverEnv", "serverEnvId"})
                         .with(jtc.getDubboServiceName(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .observe(jtc.getDuration(), jtc.getDubboServiceName(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
-                singleMetrics.newHistogram(dubboMetricsName + "dubboProviderCount_without_methodName", aopDubboBuckets, new String[]{"serviceName", "application", "serverIp", "serverEnv", "serverEnvId"})
+                mutiMetrics.newHistogram(dubboMetricsName + "dubboProviderCount_without_methodName", aopDubboBuckets, new String[]{"serviceName", "application", "serverIp", "serverEnv", "serverEnvId"})
                         .with(jtc.getDubboServiceName(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .observe(jtc.getDuration(), jtc.getDubboServiceName(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                 if (jtc.isSuccess()) {
-                    singleMetrics.newCounter(dubboMetricsName + "dubboMethodCalledSuccessCount", "serviceName", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
+                    mutiMetrics.newCounter(dubboMetricsName + "dubboMethodCalledSuccessCount", "serviceName", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
                             .with(jtc.getDubboServiceName(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                             .add(1, jtc.getDubboServiceName(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                     if (jtc.getDuration() > (config == null ? dubboSlowTime : config.getDubboSlowThreshold())) {
-                        singleMetrics.newCounter(dubboMetricsName + "dubboProviderSlowQuery", "serviceName", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
+                        mutiMetrics.newCounter(dubboMetricsName + "dubboProviderSlowQuery", "serviceName", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
                                 .with(jtc.getDubboServiceName(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                                 .add(1, jtc.getDubboServiceName(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                         esService.submitErrorEsTrace(esDomain, jtc.getDubboServiceName() + "/" + jtc.getMethod(), metricsServiceName, jtc.getTraceId(), "dubbo_provider", jtc.getServerIp(), String.valueOf(jtc.getEndTime()), "", String.valueOf(jtc.getDuration()), "timeout", jtc.getHttpCode(), jtc.getServiceEnv());
                     }
                 } else {
-                    singleMetrics.newCounter(dubboMetricsName + "dubboProviderError", "serviceName", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
+                    mutiMetrics.newCounter(dubboMetricsName + "dubboProviderError", "serviceName", "methodName", "application", "serverIp", "serverEnv", "serverEnvId")
                             .with(jtc.getDubboServiceName(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                             .add(1, jtc.getDubboServiceName(), jtc.getMethod(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                     esService.submitErrorEsTrace(esDomain, jtc.getDubboServiceName() + "/" + jtc.getMethod(), metricsServiceName, jtc.getTraceId(), "dubbo_provider", jtc.getServerIp(), String.valueOf(jtc.getEndTime()), "", String.valueOf(jtc.getDuration()), "error", jtc.getHttpCode(), jtc.getServiceEnv());
@@ -420,19 +412,19 @@ public class MetricsParseService {
         if (SpanType.REDIS.equals(jtc.getType())) {
             String redisMetricsName = "hera_";
             if (jtc.isSuccess()) {
-                singleMetrics.newCounter(redisMetricsName + "RedisSuccessCount", "method", "host", "port", "application", "serverIp", "serverEnv", "serverEnvId")
+                mutiMetrics.newCounter(redisMetricsName + "RedisSuccessCount", "method", "host", "port", "application", "serverIp", "serverEnv", "serverEnvId")
                         .with(reduceString(jtc.getMethod(), 100), jtc.getDbHost(), jtc.getDbPort(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .add(1, reduceString(jtc.getMethod(), 100), jtc.getDbHost(), jtc.getDbPort(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
             } else {
-                singleMetrics.newCounter(redisMetricsName + "redisError", "method", "host", "port", "application", "serverIp", "serverEnv", "serverEnvId")
+                mutiMetrics.newCounter(redisMetricsName + "redisError", "method", "host", "port", "application", "serverIp", "serverEnv", "serverEnvId")
                         .with(reduceString(jtc.getMethod(), 100), jtc.getDbHost(), jtc.getDbPort(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .add(1, reduceString(jtc.getMethod(), 100), jtc.getDbHost(), jtc.getDbPort(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                 esService.submitErrorEsTrace(esDomain, jtc.getMethod(), metricsServiceName, jtc.getTraceId(), "redis", jtc.getServerIp(), String.valueOf(jtc.getEndTime()), jtc.getDbHost() + ":" + jtc.getDbPort(), String.valueOf(jtc.getDuration()), "error", jtc.getHttpCode(), jtc.getServiceEnv());
             }
-            singleMetrics.newCounter(redisMetricsName + "RedisTotalCount", "method", "host", "port", "application", "serverIp", "serverEnv", "serverEnvId")
+            mutiMetrics.newCounter(redisMetricsName + "RedisTotalCount", "method", "host", "port", "application", "serverIp", "serverEnv", "serverEnvId")
                     .with(reduceString(jtc.getMethod(), 100), jtc.getDbHost(), jtc.getDbPort(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                     .add(1, reduceString(jtc.getMethod(), 100), jtc.getDbHost(), jtc.getDbPort(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
-            singleMetrics.newHistogram(redisMetricsName + "RedisMethodTimeCost", redisBuckets, new String[]{"method", "host", "port", "application", "serverIp", "serverEnv", "serverEnvId"})
+            mutiMetrics.newHistogram(redisMetricsName + "RedisMethodTimeCost", redisBuckets, new String[]{"method", "host", "port", "application", "serverIp", "serverEnv", "serverEnvId"})
                     .with(reduceString(jtc.getMethod(), 100), jtc.getDbHost(), jtc.getDbPort(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                     .observe(jtc.getDuration(), reduceString(jtc.getMethod(), 100), jtc.getDbHost(), jtc.getDbPort(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
         }
@@ -440,25 +432,25 @@ public class MetricsParseService {
         if (SpanType.MYSQL.equals(jtc.getType())) {
             String mysqlMetricsName = "hera_";
             if (jtc.isSuccess()) {
-                singleMetrics.newCounter(mysqlMetricsName + "sqlSuccessCount", "dataSource", "sqlMethod", "sql", "application", "serverIp", "serverEnv", "serverEnvId")
+                mutiMetrics.newCounter(mysqlMetricsName + "sqlSuccessCount", "dataSource", "sqlMethod", "sql", "application", "serverIp", "serverEnv", "serverEnvId")
                         .with(jtc.getDataSource() + "/" + jtc.getDbName(), jtc.getSqlMethod(), reduceString(jtc.getSql(), 100), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .add(1, jtc.getDataSource() + "/" + jtc.getDbName(), jtc.getSqlMethod(), reduceString(jtc.getSql(), 100), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                 if (jtc.getDuration() > (config == null ? mysqlSlowTime : config.getMysqlSlowThreshold())) {
-                    singleMetrics.newCounter(mysqlMetricsName + "dbSlowQuery", "dataSource", "sqlMethod", "sql", "application", "serverIp", "serverEnv", "serverEnvId")
+                    mutiMetrics.newCounter(mysqlMetricsName + "dbSlowQuery", "dataSource", "sqlMethod", "sql", "application", "serverIp", "serverEnv", "serverEnvId")
                             .with(jtc.getDataSource() + "/" + jtc.getDbName(), jtc.getSqlMethod(), reduceString(jtc.getSql(), 100), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                             .add(1, jtc.getDataSource() + "/" + jtc.getDbName(), jtc.getSqlMethod(), reduceString(jtc.getSql(), 100), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                     esService.submitErrorEsTrace(esDomain, reduceString(jtc.getSql(), 200), metricsServiceName, jtc.getTraceId(), "mysql", jtc.getServerIp(), String.valueOf(jtc.getEndTime()), jtc.getDataSource() + "/" + jtc.getDbName(), String.valueOf(jtc.getDuration()), "timeout", jtc.getHttpCode(), jtc.getServiceEnv());
                 }
             } else {
-                singleMetrics.newCounter(mysqlMetricsName + "dbError", "dataSource", "sqlMethod", "sql", "application", "serverIp", "serverEnv", "serverEnvId")
+                mutiMetrics.newCounter(mysqlMetricsName + "dbError", "dataSource", "sqlMethod", "sql", "application", "serverIp", "serverEnv", "serverEnvId")
                         .with(jtc.getDataSource() + "/" + jtc.getDbName(), jtc.getSqlMethod(), reduceString(jtc.getSql(), 100), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .add(1, jtc.getDataSource() + "/" + jtc.getDbName(), jtc.getSqlMethod(), reduceString(jtc.getSql(), 100), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                 esService.submitErrorEsTrace(esDomain, reduceString(jtc.getSql(), 200), metricsServiceName, jtc.getTraceId(), "mysql", jtc.getServerIp(), String.valueOf(jtc.getEndTime()), jtc.getDataSource() + "/" + jtc.getDbName(), String.valueOf(jtc.getDuration()), "error", jtc.getHttpCode(), jtc.getServiceEnv());
             }
-            singleMetrics.newCounter(mysqlMetricsName + "sqlTotalCount", "dataSource", "sqlMethod", "sql", "application", "serverIp", "serverEnv", "serverEnvId")
+            mutiMetrics.newCounter(mysqlMetricsName + "sqlTotalCount", "dataSource", "sqlMethod", "sql", "application", "serverIp", "serverEnv", "serverEnvId")
                     .with(jtc.getDataSource() + "/" + jtc.getDbName(), jtc.getSqlMethod(), reduceString(jtc.getSql(), 100), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                     .add(1, jtc.getDataSource() + "/" + jtc.getDbName(), jtc.getSqlMethod(), reduceString(jtc.getSql(), 100), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
-            singleMetrics.newHistogram(mysqlMetricsName + "sqlTotalTimer", sqlBuckets, new String[]{"dataSource", "sqlMethod", "sql", "application", "serverIp", "serverEnv", "serverEnvId"})
+            mutiMetrics.newHistogram(mysqlMetricsName + "sqlTotalTimer", sqlBuckets, new String[]{"dataSource", "sqlMethod", "sql", "application", "serverIp", "serverEnv", "serverEnvId"})
                     .with(jtc.getDataSource() + "/" + jtc.getDbName(), jtc.getSqlMethod(), reduceString(jtc.getSql(), 100), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                     .observe(jtc.getDuration(), jtc.getDataSource() + "/" + jtc.getDbName(), jtc.getSqlMethod(), reduceString(jtc.getSql(), 100), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
         }
@@ -466,25 +458,25 @@ public class MetricsParseService {
         if (SpanType.MONGODB.equals(jtc.getType())) {
             String mysqlMetricsName = "hera_";
             if (jtc.isSuccess()) {
-                singleMetrics.newCounter(mysqlMetricsName + "mongoSuccessCount", "dataSource", "method", "command", "application", "serverIp", "serverEnv", "serverEnvId")
+                mutiMetrics.newCounter(mysqlMetricsName + "mongoSuccessCount", "dataSource", "method", "command", "application", "serverIp", "serverEnv", "serverEnvId")
                         .with(jtc.getDataSource(), jtc.getSqlMethod(), reduceString(jtc.getSql(), 100), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .add(1, jtc.getDataSource(), jtc.getSqlMethod(), reduceString(jtc.getSql(), 100), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                 if (jtc.getDuration() > mysqlSlowTime) {
-                    singleMetrics.newCounter(mysqlMetricsName + "mongodbSlowQuery", "dataSource", "method", "command", "application", "serverIp", "serverEnv", "serverEnvId")
+                    mutiMetrics.newCounter(mysqlMetricsName + "mongodbSlowQuery", "dataSource", "method", "command", "application", "serverIp", "serverEnv", "serverEnvId")
                             .with(jtc.getDataSource(), jtc.getSqlMethod(), reduceString(jtc.getSql(), 100), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                             .add(1, jtc.getDataSource(), jtc.getSqlMethod(), reduceString(jtc.getSql(), 100), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                     esService.submitErrorEsTrace(esDomain, reduceString(jtc.getSql(), 200), metricsServiceName, jtc.getTraceId(), SpanType.MONGODB, jtc.getServerIp(), String.valueOf(jtc.getEndTime()), jtc.getDataSource(), String.valueOf(jtc.getDuration()), "timeout", jtc.getHttpCode(), jtc.getServiceEnv());
                 }
             } else {
-                singleMetrics.newCounter(mysqlMetricsName + "mongodbError", "dataSource", "method", "command", "application", "serverIp", "serverEnv", "serverEnvId")
+                mutiMetrics.newCounter(mysqlMetricsName + "mongodbError", "dataSource", "method", "command", "application", "serverIp", "serverEnv", "serverEnvId")
                         .with(jtc.getDataSource(), jtc.getSqlMethod(), reduceString(jtc.getSql(), 100), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .add(1, jtc.getDataSource(), jtc.getSqlMethod(), reduceString(jtc.getSql(), 100), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                 esService.submitErrorEsTrace(esDomain, reduceString(jtc.getSql(), 200), metricsServiceName, jtc.getTraceId(), SpanType.MONGODB, jtc.getServerIp(), String.valueOf(jtc.getEndTime()), jtc.getDataSource(), String.valueOf(jtc.getDuration()), "error", jtc.getHttpCode(), jtc.getServiceEnv());
             }
-            singleMetrics.newCounter(mysqlMetricsName + "mongoTotalCount", "dataSource", "method", "command", "application", "serverIp", "serverEnv", "serverEnvId")
+            mutiMetrics.newCounter(mysqlMetricsName + "mongoTotalCount", "dataSource", "method", "command", "application", "serverIp", "serverEnv", "serverEnvId")
                     .with(jtc.getDataSource(), jtc.getSqlMethod(), reduceString(jtc.getSql(), 100), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                     .add(1, jtc.getDataSource(), jtc.getSqlMethod(), reduceString(jtc.getSql(), 100), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
-            singleMetrics.newHistogram(mysqlMetricsName + "mongoTotalTimer", sqlBuckets, new String[]{"dataSource", "method", "command", "application", "serverIp", "serverEnv", "serverEnvId"})
+            mutiMetrics.newHistogram(mysqlMetricsName + "mongoTotalTimer", sqlBuckets, new String[]{"dataSource", "method", "command", "application", "serverIp", "serverEnv", "serverEnvId"})
                     .with(jtc.getDataSource(), jtc.getSqlMethod(), reduceString(jtc.getSql(), 100), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                     .observe(jtc.getDuration(), jtc.getDataSource(), jtc.getSqlMethod(), reduceString(jtc.getSql(), 100), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
         }
@@ -492,47 +484,47 @@ public class MetricsParseService {
         if (SpanType.ROCKETMQ.equals(jtc.getType())) {
             String metricsName = "hera_";
             if (SpanKind.PRODUCER.equals(jtc.getKind())) {
-                singleMetrics.newHistogram(metricsName + "rocketmqProducerTimeCost", aopDubboBuckets, new String[]{"topic", "application", "serverIp", "serverEnv", "serverEnvId"})
+                mutiMetrics.newHistogram(metricsName + "rocketmqProducerTimeCost", aopDubboBuckets, new String[]{"topic", "application", "serverIp", "serverEnv", "serverEnvId"})
                         .with(jtc.getTopic(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .observe(jtc.getDuration(), jtc.getTopic(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
-                singleMetrics.newCounter(metricsName + "rocketmqProducerTotalCount", "topic", "application", "serverIp", "serverEnv", "serverEnvId")
+                mutiMetrics.newCounter(metricsName + "rocketmqProducerTotalCount", "topic", "application", "serverIp", "serverEnv", "serverEnvId")
                         .with(jtc.getTopic(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .add(1, jtc.getTopic(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                 if (jtc.isSuccess()) {
-                    singleMetrics.newCounter(metricsName + "rocketmqProducerSuccessCount", "topic", "application", "serverIp", "serverEnv", "serverEnvId")
+                    mutiMetrics.newCounter(metricsName + "rocketmqProducerSuccessCount", "topic", "application", "serverIp", "serverEnv", "serverEnvId")
                             .with(jtc.getTopic(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                             .add(1, jtc.getTopic(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                     if (jtc.getDuration() > dubboSlowTime) {
-                        singleMetrics.newCounter(metricsName + "rocketmqProducerSlowQuery", "topic", "application", "serverIp", "serverEnv", "serverEnvId")
+                        mutiMetrics.newCounter(metricsName + "rocketmqProducerSlowQuery", "topic", "application", "serverIp", "serverEnv", "serverEnvId")
                                 .with(jtc.getTopic(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                                 .add(1, jtc.getTopic(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                         esService.submitErrorEsTrace(esDomain, jtc.getMethod(), metricsServiceName, jtc.getTraceId(), "rocketmq_producer", jtc.getServerIp(), String.valueOf(jtc.getEndTime()), "", String.valueOf(jtc.getDuration()), "timeout", jtc.getHttpCode(), jtc.getServiceEnv());
                     }
                 } else {
-                    singleMetrics.newCounter(metricsName + "rocketmqProducerError", "topic", "application", "serverIp", "serverEnv", "serverEnvId")
+                    mutiMetrics.newCounter(metricsName + "rocketmqProducerError", "topic", "application", "serverIp", "serverEnv", "serverEnvId")
                             .with(jtc.getTopic(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                             .add(1, jtc.getTopic(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                     esService.submitErrorEsTrace(esDomain, jtc.getMethod(), metricsServiceName, jtc.getTraceId(), "rocketmq_producer", jtc.getServerIp(), String.valueOf(jtc.getEndTime()), "", String.valueOf(jtc.getDuration()), "error", jtc.getHttpCode(), jtc.getServiceEnv());
                 }
             } else if (SpanKind.CONSUMER.equals(jtc.getKind())) {
-                singleMetrics.newHistogram(metricsName + "rocketmqConsumerTimeCost", aopDubboBuckets, new String[]{"topic", "application", "serverIp", "serverEnv", "serverEnvId"})
+                mutiMetrics.newHistogram(metricsName + "rocketmqConsumerTimeCost", aopDubboBuckets, new String[]{"topic", "application", "serverIp", "serverEnv", "serverEnvId"})
                         .with(jtc.getTopic(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .observe(jtc.getDuration(), jtc.getTopic(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
-                singleMetrics.newCounter(metricsName + "rocketmqConsumerTotalCount", "topic", "application", "serverIp", "serverEnv", "serverEnvId")
+                mutiMetrics.newCounter(metricsName + "rocketmqConsumerTotalCount", "topic", "application", "serverIp", "serverEnv", "serverEnvId")
                         .with(jtc.getTopic(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .add(1, jtc.getTopic(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                 if (jtc.isSuccess()) {
-                    singleMetrics.newCounter(metricsName + "rocketmqConsumerSuccessCount", "topic", "application", "serverIp", "serverEnv", "serverEnvId")
+                    mutiMetrics.newCounter(metricsName + "rocketmqConsumerSuccessCount", "topic", "application", "serverIp", "serverEnv", "serverEnvId")
                             .with(jtc.getTopic(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                             .add(1, jtc.getTopic(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                     if (jtc.getDuration() > dubboSlowTime) {
-                        singleMetrics.newCounter(metricsName + "rocketmqConsumerSlowQuery", "topic", "application", "serverIp", "serverEnv", "serverEnvId")
+                        mutiMetrics.newCounter(metricsName + "rocketmqConsumerSlowQuery", "topic", "application", "serverIp", "serverEnv", "serverEnvId")
                                 .with(jtc.getTopic(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                                 .add(1, jtc.getTopic(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                         esService.submitErrorEsTrace(esDomain, jtc.getMethod(), metricsServiceName, jtc.getTraceId(), "rocketmq_consumer", jtc.getServerIp(), String.valueOf(jtc.getEndTime()), "", String.valueOf(jtc.getDuration()), "timeout", jtc.getHttpCode(), jtc.getServiceEnv());
                     }
                 } else {
-                    singleMetrics.newCounter(metricsName + "rocketmqConsumerError", "topic", "application", "serverIp", "serverEnv", "serverEnvId")
+                    mutiMetrics.newCounter(metricsName + "rocketmqConsumerError", "topic", "application", "serverIp", "serverEnv", "serverEnvId")
                             .with(jtc.getTopic(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                             .add(1, jtc.getTopic(), metricsServiceName, jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                     esService.submitErrorEsTrace(esDomain, jtc.getMethod(), metricsServiceName, jtc.getTraceId(), "rocketmq_consumer", jtc.getServerIp(), String.valueOf(jtc.getEndTime()), "", String.valueOf(jtc.getDuration()), "error", jtc.getHttpCode(), jtc.getServiceEnv());
@@ -542,24 +534,24 @@ public class MetricsParseService {
         // customizeAnno
         if (SpanType.CUSTOMIZE_MTTHOD.equals(jtc.getType())) {
             String metricsName = "hera_";
-            singleMetrics.newHistogram(metricsName + "CustomizeMethodTimeCost", aopDubboBuckets, new String[]{"application", "methodName", "serverIp", "serverEnv", "serverEnvId"})
+            mutiMetrics.newHistogram(metricsName + "CustomizeMethodTimeCost", aopDubboBuckets, new String[]{"application", "methodName", "serverIp", "serverEnv", "serverEnvId"})
                     .with(metricsServiceName, jtc.getMethod(), jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                     .observe(jtc.getDuration(), metricsServiceName, jtc.getMethod(), jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
-            singleMetrics.newCounter(metricsName + "CustomizeMethodTotalCount", "application", "methodName", "serverIp", "serverEnv", "serverEnvId")
+            mutiMetrics.newCounter(metricsName + "CustomizeMethodTotalCount", "application", "methodName", "serverIp", "serverEnv", "serverEnvId")
                     .with(metricsServiceName, jtc.getMethod(), jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                     .add(1, metricsServiceName, jtc.getMethod(), jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
             if (jtc.isSuccess()) {
-                singleMetrics.newCounter(metricsName + "CustomizeMethodSuccessCount", "application", "methodName", "serverIp", "serverEnv", "serverEnvId")
+                mutiMetrics.newCounter(metricsName + "CustomizeMethodSuccessCount", "application", "methodName", "serverIp", "serverEnv", "serverEnvId")
                         .with(metricsServiceName, jtc.getMethod(), jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .add(1, metricsServiceName, jtc.getMethod(), jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                 if (jtc.getDuration() > dubboSlowTime) {
-                    singleMetrics.newCounter(metricsName + "CustomizeMethodSlowQuery", "application", "methodName", "serverIp", "serverEnv", "serverEnvId")
+                    mutiMetrics.newCounter(metricsName + "CustomizeMethodSlowQuery", "application", "methodName", "serverIp", "serverEnv", "serverEnvId")
                             .with(metricsServiceName, jtc.getMethod(), jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                             .add(1, metricsServiceName, jtc.getMethod(), jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                     esService.submitErrorEsTrace(esDomain, jtc.getMethod(), metricsServiceName, jtc.getTraceId(), "customize_method", jtc.getServerIp(), String.valueOf(jtc.getEndTime()), "", String.valueOf(jtc.getDuration()), "timeout", jtc.getHttpCode(), jtc.getServiceEnv());
                 }
             } else {
-                singleMetrics.newCounter(metricsName + "CustomizeMethodError", "application", "methodName", "serverIp", "serverEnv", "serverEnvId")
+                mutiMetrics.newCounter(metricsName + "CustomizeMethodError", "application", "methodName", "serverIp", "serverEnv", "serverEnvId")
                         .with(metricsServiceName, jtc.getMethod(), jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId())
                         .add(1, metricsServiceName, jtc.getMethod(), jtc.getServerIp(), jtc.getServiceEnv(), jtc.getServiceEnvId());
                 esService.submitErrorEsTrace(esDomain, jtc.getMethod(), metricsServiceName, jtc.getTraceId(), "customize_method", jtc.getServerIp(), String.valueOf(jtc.getEndTime()), "", String.valueOf(jtc.getDuration()), "error", jtc.getHttpCode(), jtc.getServiceEnv());
