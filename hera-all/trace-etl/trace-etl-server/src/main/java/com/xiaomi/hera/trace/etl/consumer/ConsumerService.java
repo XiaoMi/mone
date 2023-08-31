@@ -69,41 +69,30 @@ public class ConsumerService {
 
     private class TraceEtlMessageListener implements MessageListenerOrderly {
 
-        private AtomicInteger i = new AtomicInteger();
-
-        private AtomicLong time = new AtomicLong(System.currentTimeMillis());
-
-
         @Override
         public ConsumeOrderlyStatus consumeMessage(List<MessageExt> list, final ConsumeOrderlyContext context) {
             if (list == null || list.isEmpty()) {
                 return ConsumeOrderlyStatus.SUCCESS;
             }
             enterManager.enter();
-            for (MessageExt message : list) {
-                String traceId = "";
-                try {
-                    TSpanData tSpanData = new TSpanData();
-                    new TDeserializer(ThriftUtil.PROTOCOL_FACTORY).deserialize(tSpanData, message.getBody());
-                    traceId = tSpanData.getTraceId();
-                    metricsExporterService.parse(tSpanData);
-                } catch (Throwable t) {
-                    log.error("consumer message error", t);
+            enterManager.getProcessNum().incrementAndGet();
+            try {
+                for (MessageExt message : list) {
+                    String traceId = "";
+                    try {
+                        TSpanData tSpanData = new TSpanData();
+                        new TDeserializer(ThriftUtil.PROTOCOL_FACTORY).deserialize(tSpanData, message.getBody());
+                        traceId = tSpanData.getTraceId();
+                        metricsExporterService.parse(tSpanData);
+                    } catch (Throwable t) {
+                        log.error("consumer message error", t);
+                    }
+                    clientMessageQueue.enqueue(traceId, message);
                 }
-                clientMessageQueue.enqueue(traceId, message);
+                return ConsumeOrderlyStatus.SUCCESS;
+            } finally {
+                enterManager.getProcessNum().decrementAndGet();
             }
-
-            long now = System.currentTimeMillis();
-
-            i.addAndGet(list.size());
-            if ((now - time.get() >= TimeUnit.SECONDS.toMillis(15))) {
-                i.set(0);
-                time.set(now);
-                cacheService.cacheData();
-            }
-
-            enterManager.processEnter();
-            return ConsumeOrderlyStatus.SUCCESS;
         }
     }
 }

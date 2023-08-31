@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.Monitor;
 import lombok.Getter;
 import org.springframework.stereotype.Service;
 
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 
 /**
@@ -18,6 +19,9 @@ public class EnterManager {
 
     @Getter
     private Monitor processMonitor = new Monitor();
+
+    @Getter
+    private AtomicInteger processNum = new AtomicInteger();
 
     private Monitor.Guard guard = monitor.newGuard(new BooleanSupplier() {
         @Override

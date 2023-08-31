@@ -55,7 +55,17 @@ public class DataCacheService {
 
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
             try {
+                Stopwatch sw = Stopwatch.createStarted();
                 enterManager.getMonitor().enter();
+                try {
+                    while (enterManager.getProcessNum().get() >= 0) {
+                        TimeUnit.MILLISECONDS.sleep(200);
+                    }
+                    call.change();
+                } finally {
+                    enterManager.getMonitor().leave();
+                    log.info("change use time:{}ms", sw.elapsed(TimeUnit.MILLISECONDS));
+                }
                 cacheData();
             } catch (Throwable ex) {
                 log.error(ex.getMessage(), ex);
@@ -86,7 +96,7 @@ public class DataCacheService {
 
 
     public void cacheData() {
-        call.change();
+
         Executors.newSingleThreadExecutor().submit(() -> {
             log.info("cache data");
             Stopwatch sw = Stopwatch.createStarted();
@@ -124,7 +134,7 @@ public class DataCacheService {
             if (gMetricsMgr instanceof Prometheus) {
                 Prometheus prometheus = (Prometheus) gMetricsMgr;
                 Map<String, Object> prometheusMetrics = prometheus.prometheusMetrics;
-                clearTypeMetrics(prometheusMetrics,old.getRegistry());
+                clearTypeMetrics(prometheusMetrics, old.getRegistry());
                 prometheus.prometheusMetrics.clear();
                 prometheus.prometheusTypeMetrics.clear();
             }
