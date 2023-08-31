@@ -12,9 +12,8 @@ import java.util.concurrent.TimeUnit;
  */
 @ToString
 public enum ModuleEnum {
+    USER_ACC_TYPE_LOCK(101, "用户-账号-类型锁", 1, 1, TimeUnit.DAYS),
     LOGIN(200, "登陆缓存", 1, 1, TimeUnit.DAYS),
-    AUTH2_VCODE(201, "auth2vcode", 1, 5, TimeUnit.MINUTES),
-    AUTH2_CODE_USER(202, "auth2code_user", 1, 5, TimeUnit.MINUTES),
     ;
     private final Integer code;
     private final String desc;

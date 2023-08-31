@@ -33,18 +33,6 @@ public enum UserTypeEnum {
         return null;
     }
 
-    public static final UserTypeEnum getEnum(String desc) {
-        if (desc == null) {
-            return null;
-        }
-        for (UserTypeEnum userTypeEnum : UserTypeEnum.values()) {
-            if (desc.equals(userTypeEnum.desc)) {
-                return userTypeEnum;
-            }
-        }
-        return null;
-    }
-
 
     public Integer getCode() {
         return code;

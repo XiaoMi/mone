@@ -20,6 +20,7 @@ package com.xiaomi.youpin.jcommon.log;
 
 import ch.qos.logback.classic.pattern.ClassicConverter;
 import ch.qos.logback.classic.spi.ILoggingEvent;
+import com.xiaomi.youpin.dubbo.filter.TraceIdUtils;
 import org.slf4j.MDC;
 
 import java.util.Map;
@@ -49,7 +50,7 @@ public class LogbackPatternConverter extends ClassicConverter {
                 return traceId;
             }
 
-            return null;
+            return TraceIdUtils.ins().traceId();
         } catch (Exception e) {
             return "";
         }

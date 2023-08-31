@@ -29,7 +29,7 @@ public class AvoidStartWithDollarAndUnderLineNamingRule extends VariableCheck {
     private static final String DOLLAR = "$";
     private static final String UNDERSCORE = "_";
     private static final String DESC = "All variables should not start or end with an underline or a dollar sign";
-    private static final String CHINA_DESC = "All variables should not start or end with an underline or a dollar sign";
+    private static final String CHINA_DESC = "代码中的命名均不能以下划线或美元符号开始，也不能以下划线或美元符号结束";
 
 
     @Override

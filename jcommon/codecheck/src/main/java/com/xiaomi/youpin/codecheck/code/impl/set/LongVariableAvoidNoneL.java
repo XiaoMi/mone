@@ -23,7 +23,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 public class LongVariableAvoidNoneL extends VariableCheck {
     private static final String DESC = "When assigning an initial value to a variable of type long, use a capital L at the end of the value";
-    private static final String CHINA_DESC = "When assigning an initial value to a variable of type long, use a capital L at the end of the value";
+    private static final String CHINA_DESC = "long类型变量赋初值时，数值后使用大写L结尾，不能不写";
 
     @Override
     public Pair<Integer, CheckResult> _check(VariableTree variableTree) {

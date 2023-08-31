@@ -32,7 +32,7 @@ import java.util.Optional;
  */
 public class SwitchStatementRule extends MethodCheck {
     private static final String DESC = "In a switch block, a default statement must be present, even if it is empty";
-    private static final String CHINA_DESC = "In a switch block, a default statement must be present, even if it is empty";
+    private static final String CHINA_DESC = "在一个switch块内，都必须包含一个default语句并且放在最后，即使它什么代码也没有";
 
 
     @Override

@@ -5,12 +5,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.rocketmq.common.message.MessageQueue;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * @Description
@@ -19,7 +22,7 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 public class ClientMessageQueue {
-    public List<ClientMessageQueueWrapper> clientMessageQueues = new CopyOnWriteArrayList<>();
+    public Map<Integer, ClientMessageQueueWrapper> clientMessageQueues = new ConcurrentHashMap<>();
 
     private volatile int rocketMQQueueSize;
 
@@ -27,8 +30,11 @@ public class ClientMessageQueue {
 
     private static final int CLIENT_QUEUE_SIZE = 2000;
 
+    private static final int CLIENT_QUEUE_BATCH_SEND_SIZE = 1000;
 
-    private final static int FETCH_ROCKETMQ_QUEUE_GAP = 10;
+    private static final int CLIENT_QUEUE_SEND_GAP = 1000;
+
+    private final static int FETCH_ROCKETMQ_QUEUE_GAP = 30;
 
     public ClientMessageQueue(RocketMqProducer producer) {
         this.producer = producer;
@@ -42,28 +48,70 @@ public class ClientMessageQueue {
         if (queueList == null || queueList.size() == 0) {
             return;
         }
-        // If the local message queue is missing, add it
-        queueList.stream()
-                .filter(i -> !clientMessageQueues.stream().anyMatch(j -> j.getRocketMQMessageQueue().equals(i)))
-                .forEach(queue -> clientMessageQueues.add(new ClientMessageQueueWrapper(queue, new ArrayBlockingQueue<>(CLIENT_QUEUE_SIZE), producer)));
-
+        for (MessageQueue messageQueue : queueList) {
+            int queueId = messageQueue.getQueueId();
+            ClientMessageQueueWrapper clientQueue = clientMessageQueues.get(queueId);
+            if (clientQueue == null) {
+                ClientMessageQueueWrapper clientMessageQueueWrapper = new ClientMessageQueueWrapper(messageQueue, new ArrayBlockingQueue<>(CLIENT_QUEUE_SIZE));
+                clientMessageQueues.put(queueId, clientMessageQueueWrapper);
+                initClientQueueExporter(queueId);
+            }
+        }
         setRocketMQQueueSize(queueList.size());
+    }
 
-        // If the local message queue is extra, it will be destroyed
-        List<ClientMessageQueueWrapper> collect = clientMessageQueues.stream()
-                .filter(i -> !queueList.contains(i.getRocketMQMessageQueue()))
-                .collect(Collectors.toList());
+    private void initClientQueueExporter(int queueId) {
+        final int currQueueId = queueId;
+        // 初始化导出任务，定时定量从client queue中取出消息，发送到mq
+        ThreadPoolExecutor threadPoolExecutor = new ThreadPoolExecutor(1, 1,
+                0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue(1), r -> {
+            Thread thread = new Thread(r);
+            thread.setDaemon(false);
+            thread.setName("client-queue-exporter-" + currQueueId);
+            return thread;
+        });
+        threadPoolExecutor.submit(new ClientQueueExporter(currQueueId));
+    }
 
-        clientMessageQueues.stream()
-                .filter(i -> !queueList.contains(i.getRocketMQMessageQueue()))
-                .forEach(clientMessageQueues::remove);
+    private class ClientQueueExporter implements Runnable {
 
-        collect.forEach(ClientMessageQueueWrapper::stopExport);
+        private int queueId;
+
+        private long lastSendTime = System.currentTimeMillis();
+
+        public ClientQueueExporter(int queueId) {
+            this.queueId = queueId;
+        }
+
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    ClientMessageQueueWrapper clientMessageQueueWrapper = clientMessageQueues.get(queueId);
+                    BlockingQueue<MessageExt> clientMessageQueue = clientMessageQueueWrapper.getClientMessageQueue();
+                    int clientQueueSize = clientMessageQueue.size();
+                    if (clientQueueSize > 0) {
+                        if (clientQueueSize >= CLIENT_QUEUE_BATCH_SEND_SIZE || System.currentTimeMillis() - lastSendTime >= CLIENT_QUEUE_SEND_GAP) {
+                            List<MessageExt> list = new ArrayList<>();
+                            clientMessageQueue.drainTo(list);
+                            producer.send(list, clientMessageQueueWrapper.getRocketMQMessageQueue());
+                        }
+                    }
+                } catch (Throwable t) {
+                    log.error("client queue exporter error : ", t);
+                }
+                try {
+                    Thread.sleep(1);
+                } catch (InterruptedException e) {
+                    log.error("sleep error : ", e);
+                }
+            }
+        }
     }
 
     public void enqueue(String traceId, MessageExt message) {
         try {
-            // hash by traceId
+            // 根据traceId hash
             int i = HashUtil.consistentHash(traceId, rocketMQQueueSize);
             ClientMessageQueueWrapper clientMessageQueueWrapper = clientMessageQueues.get(i);
             clientMessageQueueWrapper.getClientMessageQueue().put(message);
@@ -76,7 +124,7 @@ public class ClientMessageQueue {
         new ScheduledThreadPoolExecutor(1).scheduleAtFixedRate(
                 () -> {
                     List<MessageQueue> messageQueues = producer.fetchMessageQueue();
-                    log.info("fetch message queue size : " + messageQueues.size());
+                    log.info("fetch message queue size : "+messageQueues.size());
                     if (messageQueues == null || messageQueues.size() == 0) {
                         return;
                     }

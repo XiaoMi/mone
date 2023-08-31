@@ -14,8 +14,6 @@
     <modules>
         <module>native-plugin</module>
         <module>mv-demo</module>
-        <module>codecheck-maven-plugin</module>
-        <module>jarcheck-maven-plugin</module>
     </modules>
 
 

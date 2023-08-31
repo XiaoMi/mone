@@ -80,11 +80,6 @@ public class MongoDb {
         return db.getCollection(collectionName);
     }
 
-    /**
-     * Inserts a document under the specified collection
-     * @param collectionName
-     * @param doc
-     */
     public void insert(String collectionName, Document doc) {
         CatPlugin cat = new CatPlugin("insert", catEnabled, CAT_TYPE);
         boolean success = true;
@@ -104,11 +99,6 @@ public class MongoDb {
 
     }
 
-    /**
-     * Inserts a list of documents under the specified collection
-     * @param collectionName
-     * @param docList
-     */
     public void insertMany(String collectionName, List<Document> docList) {
         CatPlugin cat = new CatPlugin("insertMany", catEnabled, CAT_TYPE);
         boolean success = true;
@@ -127,11 +117,6 @@ public class MongoDb {
         }
     }
 
-    /**
-     * Finds the first document under the specified collection
-     * @param collectionName
-     * @return
-     */
     public Document findFirst(String collectionName) {
         CatPlugin cat = new CatPlugin("findFirst", catEnabled, CAT_TYPE);
         boolean success = true;
@@ -151,19 +136,13 @@ public class MongoDb {
         return null;
     }
 
-    /**
-     * Finds all documents under the specified collection according to the criteria
-     * @param collectionName
-     * @param doc
-     * @return
-     */
     public List<Document> findAll(String collectionName, Document doc) {
         CatPlugin cat = new CatPlugin("findAll", catEnabled, CAT_TYPE);
         boolean success = true;
         cat.before(null);
         try {
             MongoCollection<Document> collection = this.getCollection(collectionName);
-            //MongoCursor<Document> cursor = collection.find().iterator();
+            MongoCursor<Document> cursor = collection.find().iterator();
             List<Document> res = new ArrayList<>();
             for (Document cur : collection.find()) {
                 res.add(cur);
@@ -182,11 +161,6 @@ public class MongoDb {
         return null;
     }
 
-    /**
-     * Deletes a document under a specified collection under specified conditions
-     * @param collectionName
-     * @param doc
-     */
     public void delete(String collectionName, Document doc) {
         CatPlugin cat = new CatPlugin("delete", catEnabled, CAT_TYPE);
         boolean success = true;
@@ -205,11 +179,6 @@ public class MongoDb {
         }
     }
 
-    /**
-     * Returns the number of documents under the specified collection
-     * @param collectionName
-     * @return
-     */
     public long count(String collectionName) {
         CatPlugin cat = new CatPlugin("count", catEnabled, CAT_TYPE);
         boolean success = true;

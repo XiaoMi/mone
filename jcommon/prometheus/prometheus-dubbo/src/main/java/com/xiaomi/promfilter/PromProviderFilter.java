@@ -1,6 +1,6 @@
 package com.xiaomi.promfilter;
 
-//import com.xiaomi.youpin.dubbo.filter.ResultUtils;
+import com.xiaomi.youpin.dubbo.filter.ResultUtils;
 import com.xiaomi.youpin.prometheus.client.Metrics;
 import org.apache.dubbo.common.Constants;
 import org.apache.dubbo.common.extension.Activate;
@@ -53,7 +53,7 @@ public class PromProviderFilter implements Filter {
         String methodName = RpcUtils.getMethodName(invocation);
         Result res = null;
         try {
-            boolean supportServerAsync = invoker.getUrl().getMethodParameter(invocation.getMethodName(), "", false);
+            boolean supportServerAsync = invoker.getUrl().getMethodParameter(invocation.getMethodName(), Constants.ASYNC_KEY, false);
 
             //异步调用直接返回
             if (supportServerAsync) {
@@ -72,7 +72,7 @@ public class PromProviderFilter implements Filter {
             recordTimer(m,DUBBO_PROVIDER_TIME_COST,new String[]{SERVICE_NAME,METHOD_NAME},duration,serviceName,methodName);
 
             int code = 0;
-          //  code = ResultUtils.getCode(res);
+            code = ResultUtils.getCode(res);
             String status;
             if (res.getException() != null) {
                 status = res.getException().getClass().getSimpleName();

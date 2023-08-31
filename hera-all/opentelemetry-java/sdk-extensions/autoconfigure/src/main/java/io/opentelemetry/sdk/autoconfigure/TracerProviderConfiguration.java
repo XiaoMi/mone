@@ -7,7 +7,6 @@ package io.opentelemetry.sdk.autoconfigure;
 
 import io.opentelemetry.sdk.autoconfigure.spi.ConfigurableSamplerProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.SdkTracerProviderConfigurer;
-import io.opentelemetry.sdk.common.EnvOrJvmProperties;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.SdkTracerProviderBuilder;
@@ -45,7 +44,7 @@ final class TracerProviderConfiguration {
       configurer.configure(tracerProviderBuilder);
     }
 
-    String exporterName = config.getString(EnvOrJvmProperties.JVM_OTEL_TRACES_EXPORTER.getKey());
+    String exporterName = config.getString("otel.traces.exporter");
     if (exporterName == null) {
       exporterName = "otlp";
     }

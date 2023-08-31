@@ -4,7 +4,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.JWTVerifier;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.xiaomi.mone.tpc.login.common.util.MD5Util;
+import com.xiaomi.mone.tpc.common.util.MD5Util;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 
 import java.util.Calendar;

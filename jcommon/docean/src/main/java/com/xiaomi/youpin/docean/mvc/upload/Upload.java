@@ -16,6 +16,7 @@
 
 package com.xiaomi.youpin.docean.mvc.upload;
 
+import com.google.common.collect.ImmutableMap;
 import io.netty.handler.codec.http.HttpRequest;
 import io.netty.handler.codec.http.multipart.FileUpload;
 import io.netty.handler.codec.http.multipart.HttpPostRequestDecoder;
@@ -24,6 +25,7 @@ import lombok.SneakyThrows;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author goodjava@qq.com

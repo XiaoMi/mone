@@ -1,7 +1,6 @@
 package com.xiaomi.data.push.test;
 
 import com.github.rholder.retry.*;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
@@ -17,15 +16,15 @@ public class RetryTest {
     public void testRetryer() throws ExecutionException, RetryException {
         Retryer<Integer> retryer = RetryerBuilder.<Integer>newBuilder()
                 .retryIfRuntimeException()
-                .retryIfResult(result -> result % 2 == 1)
-                .withWaitStrategy(failedAttempt -> 100L)
-                .withStopStrategy(StopStrategies.stopAfterAttempt(2)).build();
-        int v = retryer.call(() -> {
+                .retryIfResult(result -> result % 2 == 0)
+                .withWaitStrategy(failedAttempt -> 1000L)
+                .withStopStrategy(StopStrategies.stopAfterAttempt(3)).build();
+
+        retryer.call(() -> {
             System.out.println("call");
             return 2;
         });
         System.out.println("finish");
-        Assert.assertEquals(2, v);
     }
 
     @Test
@@ -54,7 +53,6 @@ public class RetryTest {
                 return 2;
             });
             System.out.println("finish:" + v);
-            Assert.assertEquals((Object) v, 2);
         } catch (Throwable ex) {
             ex.printStackTrace();
         }

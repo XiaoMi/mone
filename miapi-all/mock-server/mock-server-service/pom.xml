@@ -24,6 +24,11 @@
             <version>1.4-SNAPSHOT</version>
             <type>pom</type>
         </dependency>
+<!--        <dependency>-->
+<!--            <groupId>run.mone</groupId>-->
+<!--            <artifactId>docean-plugin-dubbo</artifactId>-->
+<!--            <version>1.4-SNAPSHOT</version>-->
+<!--        </dependency>-->
 
         <dependency>
             <artifactId>mock-server-api</artifactId>

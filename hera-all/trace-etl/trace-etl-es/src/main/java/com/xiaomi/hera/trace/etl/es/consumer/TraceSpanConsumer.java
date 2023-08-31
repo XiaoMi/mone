@@ -1,6 +1,5 @@
 package com.xiaomi.hera.trace.etl.es.consumer;
 
-import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.xiaomi.hera.trace.etl.es.util.pool.ConsumerPool;
 import com.xiaomi.hera.trace.etl.util.ThriftUtil;
 import com.xiaomi.hera.tspandata.TSpanData;
@@ -34,7 +33,7 @@ public class TraceSpanConsumer {
     @Value("${mq.rocketmq.group}")
     private String group;
 
-    @NacosValue("${mq.rocketmq.nameseraddr}")
+    @Value("${mq.rocketmq.nameseraddr}")
     private String nameSerAddr;
 
     @Value("${mq.rocketmq.es.topic}")

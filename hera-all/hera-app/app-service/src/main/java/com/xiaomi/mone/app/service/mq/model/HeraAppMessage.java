@@ -21,8 +21,6 @@ public class HeraAppMessage implements Serializable {
 
     private Integer iamTreeId;
 
-    private Integer iamTreeType;
-
     private String appName;
 
     private String appCname;
@@ -58,7 +56,6 @@ public class HeraAppMessage implements Serializable {
         heraAppBaseInfo.setEnvsMap(this.getEnvMapping() == null ? "" : this.getEnvMapping().toString());
 
         heraAppBaseInfo.setIamTreeId(this.getIamTreeId());
-        heraAppBaseInfo.setIamTreeType(this.getIamTreeType());
 
         return heraAppBaseInfo;
     }

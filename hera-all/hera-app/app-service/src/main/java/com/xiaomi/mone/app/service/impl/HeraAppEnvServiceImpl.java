@@ -1,10 +1,9 @@
 package com.xiaomi.mone.app.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.xiaomi.mone.app.dao.mapper.HeraAppBaseInfoMapper;
-import com.xiaomi.mone.app.dao.mapper.HeraAppEnvMapper;
+import com.xiaomi.mone.app.dao.HeraAppBaseInfoMapper;
+import com.xiaomi.mone.app.dao.HeraAppEnvMapper;
 import com.xiaomi.mone.app.enums.OperateEnum;
 import com.xiaomi.mone.app.enums.StatusEnum;
 import com.xiaomi.mone.app.exception.AppException;
@@ -17,12 +16,11 @@ import com.xiaomi.mone.app.service.HeraAppEnvService;
 import com.xiaomi.mone.app.service.env.DefaultEnvIpFetch;
 import com.xiaomi.mone.app.service.env.EnvIpFetch;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
 import org.apache.rocketmq.common.message.Message;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
@@ -40,7 +38,6 @@ import static com.xiaomi.mone.app.common.Constant.GSON;
  */
 @Service
 @Slf4j
-@ConditionalOnProperty(name = "service.selector.property", havingValue = "outer")
 public class HeraAppEnvServiceImpl implements HeraAppEnvService {
 
     private final HeraAppBaseInfoMapper heraAppBaseInfoMapper;
@@ -112,7 +109,7 @@ public class HeraAppEnvServiceImpl implements HeraAppEnvService {
             log.info("轮询应用,pageNum:{},pageSize:{}", pageNum, pageSize);
             Page<HeraAppBaseInfo> appBaseInfoPage = heraAppBaseInfoMapper
                     .selectPage(new Page(pageNum, pageSize),
-                            new LambdaQueryWrapper<HeraAppBaseInfo>().eq(HeraAppBaseInfo::getStatus,
+                            new QueryWrapper<HeraAppBaseInfo>().eq("status",
                                     StatusEnum.NOT_DELETED.getCode()));
             List<HeraAppBaseInfo> appBaseInfos = appBaseInfoPage.getRecords();
             if (CollectionUtils.isNotEmpty(appBaseInfos)) {
@@ -135,14 +132,12 @@ public class HeraAppEnvServiceImpl implements HeraAppEnvService {
     }
 
     public void handleAppEnv(Integer id, String bindId, String appName) throws Exception {
-        envIpFetch = defaultEnvIpFetch.getEnvFetch(bindId);
         HeraAppEnvVo heraAppEnvVo = envIpFetch.fetch(id.longValue(),
                 Long.valueOf(bindId), appName);
         for (HeraAppEnvVo.EnvVo envVo : heraAppEnvVo.getEnvVos()) {
-            LambdaQueryWrapper<HeraAppEnv> queryWrapper = new LambdaQueryWrapper<HeraAppEnv>()
-                    .eq(HeraAppEnv::getHeraAppId, id)
-                    .eq(HeraAppEnv::getAppId, Long.valueOf(bindId))
-                    .eq(HeraAppEnv::getEnvId, envVo.getEnvId());
+            QueryWrapper<HeraAppEnv> queryWrapper = new QueryWrapper<HeraAppEnv>().eq("hera_app_id",
+                    id).eq("app_id", Long.valueOf(bindId))
+                    .eq("env_id", envVo.getEnvId());
             HeraAppEnv heraAppEnv = heraAppEnvMapper.selectOne(queryWrapper);
             if (null == heraAppEnv) {
                 addAppEnvNotExist(heraAppEnvVo, envVo);
@@ -184,7 +179,7 @@ public class HeraAppEnvServiceImpl implements HeraAppEnvService {
     @Override
     public Boolean addAppEnvNotExist(HeraAppEnvVo heraAppEnvVo, HeraAppEnvVo.EnvVo envVo) {
         QueryWrapper<HeraAppEnv> queryWrapper = new QueryWrapper<HeraAppEnv>().eq("hera_app_id",
-                        heraAppEnvVo.getHeraAppId()).eq("app_id", heraAppEnvVo.getAppId())
+                heraAppEnvVo.getHeraAppId()).eq("app_id", heraAppEnvVo.getAppId())
                 .eq("env_id", envVo.getEnvId());
         HeraAppEnv heraAppEnv = heraAppEnvMapper.selectOne(queryWrapper);
         if (null == heraAppEnv) {

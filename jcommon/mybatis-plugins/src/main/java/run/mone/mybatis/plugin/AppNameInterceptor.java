@@ -19,18 +19,7 @@ public class AppNameInterceptor implements Interceptor {
 
     private Properties properties;
 
-    private final String APP_NAEM = "appName";
-    private Field sqlFiled = null;
-
-    AppNameInterceptor() {
-        try {
-            //减少每次反射性能损耗
-            sqlFiled = BoundSql.class.getDeclaredField("sql");
-            sqlFiled.setAccessible(true);
-        } catch (NoSuchFieldException e) {
-            throw new RuntimeException(e);
-        }
-    }
+    private final static String APP_NAEM = "appName";
 
     @Override
     public Object intercept(Invocation invocation) throws Throwable {
@@ -38,7 +27,9 @@ public class AppNameInterceptor implements Interceptor {
         BoundSql sql = target.getBoundSql();
         if (properties != null && properties.getProperty(APP_NAEM) != null && properties.getProperty(APP_NAEM).trim().length() >0) {
             String newSql = sql.getSql().trim() + String.format("/*%s*/", properties.getProperty(APP_NAEM));
-            sqlFiled.set(sql, newSql);
+            Field field = sql.getClass().getDeclaredField("sql");
+            field.setAccessible(true);
+            field.set(sql, newSql);
         }
         Object res = invocation.proceed();
         return res;

@@ -1,4 +1,0 @@
-
-public static String readFile(String filePath) throws IOException {
-    return Files.lines(Paths.get(filePath)).collect(Collectors.joining(System.lineSeparator()));
-}

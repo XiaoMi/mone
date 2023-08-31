@@ -25,28 +25,28 @@
         </dependency>
 
         <dependency>
-            <groupId>run.mone</groupId>
+            <groupId>org.apache.dubbo</groupId>
             <artifactId>dubbo</artifactId>
-            <version>2.7.0-mone-serverless-v15-SNAPSHOT</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.xiaomi.youpin</groupId>
-                    <artifactId>youpin-infra-rpc</artifactId>
-                </exclusion>
-            </exclusions>
+            <version>2.7.0-mone-serverless-SNAPSHOT</version>
         </dependency>
 
 
         <dependency>
-            <groupId>run.mone</groupId>
+            <groupId>com.alibaba.nacos</groupId>
             <artifactId>nacos-client</artifactId>
-            <version>1.2.1-mone-v3-SNAPSHOT</version>
+            <version>0.8.0-youpin-SNAPSHOT</version>
         </dependency>
 
         <dependency>
-            <groupId>run.mone</groupId>
+            <groupId>com.alibaba</groupId>
             <artifactId>dubbo-registry-nacos</artifactId>
-            <version>1.2.1-mone-SNAPSHOT</version>
+            <version>0.0.2-youpin-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.dubbo</groupId>
+            <artifactId>dubbo</artifactId>
+            <version>2.7.0-mone-serverless-SNAPSHOT</version>
         </dependency>
 
 

@@ -16,7 +16,6 @@
 
 package com.xiaomi.youpin.docean.plugin.mybatis;
 
-import com.alibaba.druid.pool.DruidDataSource;
 import com.xiaomi.youpin.docean.plugin.mybatis.transaction.Xid;
 import lombok.Getter;
 import lombok.Setter;
@@ -142,22 +141,14 @@ public class MybatisTransaction implements Transaction {
                 connection.setTransactionIsolation(level.getLevel());
             }
             setDesiredAutoCommit(autoCommmit);
-            SidecarTransactionContext.connectionnMap.put(this.xid.getId(), connection);
+            SidecarTransactionContext.connectionnMap.put(this.xid.getId(),connection);
             return;
         }
 
         if (TransactionalContext.getConnection() != null) {
             return;
         }
-        if (log.isDebugEnabled()) {
-            long numconnection = ((DruidDataSource) dataSource).getConnectCount();
-            int numbusyConnection = ((DruidDataSource) dataSource).getActiveCount();
-            Long time = System.currentTimeMillis();
-            connection = dataSource.getConnection();
-            log.debug("druid connection:{},{},{}", numconnection, numbusyConnection, System.currentTimeMillis() - time);
-        } else {
-            connection = dataSource.getConnection();
-        }
+        connection = dataSource.getConnection();
         if (level != null) {
             connection.setTransactionIsolation(level.getLevel());
         }

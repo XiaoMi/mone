@@ -11,7 +11,6 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>docean-plugin-sidecar</artifactId>
-    <version>1.4.1-tmp-SNAPSHOT</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
@@ -29,25 +28,19 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>rcurve</artifactId>
-            <version>1.4.1-tmp-SNAPSHOT</version>
+            <version>1.4-SNAPSHOT</version>
         </dependency>
 
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>grpc</artifactId>
             <version>1.4-SNAPSHOT</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>run.mone</groupId>
-                    <artifactId>api</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>infra-result</artifactId>
-            <version>1.4-SNAPSHOT</version>
+            <artifactId>youpin-infra-rpc</artifactId>
+            <groupId>com.xiaomi.youpin</groupId>
+            <version>1.28-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
 

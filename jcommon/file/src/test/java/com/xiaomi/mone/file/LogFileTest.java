@@ -81,11 +81,11 @@ public class LogFileTest {
             if (m.size() > 0) {
                 System.out.println("--->" + m);
             }
-//            try {
-//                TimeUnit.MILLISECONDS.sleep(2);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
+            try {
+                TimeUnit.MILLISECONDS.sleep(200);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
         @Override
@@ -98,15 +98,6 @@ public class LogFileTest {
     @Test
     public void testLog2() throws IOException {
         LogFile log = new LogFile("/tmp/zzytest/zzytest/server.log", new MyReadListener());
-        log.readLine();
-        System.in.read();
-    }
-
-
-    @Test
-    public void testReadFileCutting() throws IOException {
-        System.out.println("111111");
-        LogFile log = new LogFile("/home/work/log/hera-operator/server.log", new MyReadListener());
         log.readLine();
         System.in.read();
     }

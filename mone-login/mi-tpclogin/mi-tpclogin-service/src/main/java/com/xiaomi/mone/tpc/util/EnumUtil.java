@@ -2,8 +2,8 @@ package com.xiaomi.mone.tpc.util;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.xiaomi.mone.tpc.login.common.enums.Base;
-import com.xiaomi.mone.tpc.login.common.vo.EnumData;
+import com.xiaomi.mone.tpc.common.enums.Base;
+import com.xiaomi.mone.tpc.common.vo.EnumData;
 import org.reflections.Reflections;
 import org.springframework.util.CollectionUtils;
 

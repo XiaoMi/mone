@@ -23,19 +23,13 @@ public interface HeraAppService {
 
     AppBaseInfo queryById(Long id);
 
-    AppBaseInfo queryByIamTreeId(Long iamTreeId, String bingId, Integer platformType);
-
     List<AppBaseInfo> queryByIds(List<Long> ids);
 
     AppBaseInfo queryByAppId(Long appId, Integer type);
 
-    AppBaseInfo queryByAppIdPlatFormType(String bindId, Integer platformTypeCode);
-
     Long countByParticipant(HeraAppBaseQuery query);
 
     List<HeraAppBaseInfoParticipant> queryByParticipant(HeraAppBaseQuery query);
-
-    Integer insertOrUpdate(HeraAppBaseInfoModel baseInfo);
 
     Long count(HeraAppBaseInfoModel baseInfo);
 
@@ -54,14 +48,5 @@ public interface HeraAppService {
     List<HeraAppRoleModel> queryRole(HeraAppRoleModel roleModel,Integer pageCount,Integer pageNum);
 
     Long countRole(HeraAppRoleModel roleModel);
-
-    /**
-     * query user have permission project
-     *
-     * @param user
-     * @param plateFormCode
-     * @return
-     */
-    List<Long> userProjectIdAuth(String user, Long plateFormCode);
 
 }

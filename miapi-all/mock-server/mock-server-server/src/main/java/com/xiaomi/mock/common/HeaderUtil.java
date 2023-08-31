@@ -6,11 +6,10 @@ import com.xiaomi.youpin.docean.mvc.MvcContext;
 import java.util.Map;
 
 public class HeaderUtil {
-    public static final String CONTENT_TYPE= "content-type";
 
     public static void setContentTypeUtf8(MvcContext context){
         Map<String,String> map = context.getResHeaders();
-        map.put(CONTENT_TYPE, HttpResponseUtils.ContentTypeJson);
+        map.put(Const.CONTENT_TYPE, HttpResponseUtils.ContentTypeJson);
         context.setResHeaders(map);
     }
 

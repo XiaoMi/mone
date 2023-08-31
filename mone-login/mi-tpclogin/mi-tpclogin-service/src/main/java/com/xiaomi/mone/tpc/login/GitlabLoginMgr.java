@@ -1,8 +1,7 @@
 package com.xiaomi.mone.tpc.login;
 
-import com.alibaba.nacos.api.config.annotation.NacosValue;
-import com.xiaomi.mone.tpc.login.common.enums.UserTypeEnum;
-import com.xiaomi.mone.tpc.login.common.vo.AuthAccountVo;
+import com.xiaomi.mone.tpc.common.enums.UserTypeEnum;
+import com.xiaomi.mone.tpc.common.vo.AuthAccountVo;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 import com.xiaomi.mone.tpc.util.TokenUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -22,9 +21,9 @@ import java.util.Map;
 @Component
 public class GitlabLoginMgr extends LoginMgr {
 
-    @NacosValue("${gitlab.client_id:''}")
+    @Value("${gitlab.client_id}")
     private String clientId;
-    @NacosValue("${gitlab.client_secret:''}")
+    @Value("${gitlab.client_secret}")
     private String clientSecret;
 
     @Autowired
@@ -35,20 +34,20 @@ public class GitlabLoginMgr extends LoginMgr {
      * @return
      */
     @Override
-    public AuthAccountVo buildAuth2LoginInfo(String pageUrl, String vcode, String state) throws Exception {
+    public AuthAccountVo buildAuth2LoginInfo(String pageUrl) throws Exception {
         AuthAccountVo info = new AuthAccountVo();
         info.setName("gitlab");
         info.setDesc("gitlab账号授权登陆");
-        info.setUrl(this.buildAuthUrl(clientId, pageUrl, vcode, state));
+        info.setUrl(this.buildAuthUrl(clientId, pageUrl));
         return info;
     }
 
     @Override
-    public AuthUserVo getUserVo(String code, String pageUrl, String vcode, String state) {
+    public AuthUserVo getUserVo(String code, String pageUrl) {
         try {
             Map<String, String> map = new HashMap<>();
             map.put("grant_type", "authorization_code");
-            map.put("redirect_uri", getAuth2CallbackUrlFull(pageUrl, vcode, state));
+            map.put("redirect_uri", getAuth2CallbackUrlFull(pageUrl));
             map.put("client_id", clientId);
             map.put("client_secret", clientSecret);
             map.put("code", code);
@@ -61,15 +60,10 @@ public class GitlabLoginMgr extends LoginMgr {
             headers.add("Authorization", "Bearer " + responseMap.get("access_token"));
             HttpEntity<Map> entity = new HttpEntity<>(headers);
             ResponseEntity<Map> responseEntity = restTemplate.exchange(getUserUrl(), HttpMethod.GET, entity, Map.class);
-            log.info("userInfo.gatlab={}", responseEntity);
             if (responseEntity.getBody() == null || responseEntity.getBody().get("username") == null) {
-                log.error("gitlab没有拿到邮件信息responseEntity={}", responseEntity);
                 return null;
             }
             AuthUserVo userVo = new AuthUserVo();
-            if (responseEntity.getBody().get("email") != null) {
-                userVo.setEmail(responseEntity.getBody().get("email").toString());
-            }
             userVo.setExprTime(Integer.parseInt(responseMap.get("expires_in").toString()));
             userVo.setUserType(UserTypeEnum.GITLAB_TYPE.getCode());
             userVo.setAccount(responseEntity.getBody().get("username").toString());
@@ -82,7 +76,7 @@ public class GitlabLoginMgr extends LoginMgr {
             }
             return userVo;
         } catch (Throwable e) {
-            log.error("gitlab_oauth2_failed", e);
+            e.printStackTrace();
             return null;
         }
     }
@@ -105,10 +99,5 @@ public class GitlabLoginMgr extends LoginMgr {
     @Override
     public String getUserUrl() {
         return "https://gitlab.com/api/v4/user";
-    }
-
-    @Override
-    public String getEmailUrl() {
-        return null;
     }
 }

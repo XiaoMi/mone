@@ -16,12 +16,19 @@
 
 package com.xiaomi.youpin.docean.mvc.download;
 
-import com.xiaomi.youpin.docean.common.StringUtils;
-import com.xiaomi.youpin.docean.exception.DoceanException;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.http.*;
+import io.netty.handler.codec.http.DefaultHttpResponse;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.HttpChunkedInput;
+import io.netty.handler.codec.http.HttpHeaderNames;
+import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.HttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.netty.handler.codec.http.HttpUtil;
+import io.netty.handler.codec.http.HttpVersion;
+import io.netty.handler.codec.http.LastHttpContent;
 import io.netty.handler.stream.ChunkedFile;
 
 import javax.activation.MimetypesFileTypeMap;
@@ -29,6 +36,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
@@ -72,14 +80,7 @@ public class DownloadService extends BaseService {
 
 
     private static String path(String name) {
-        checkFileName(name);
         return DATAPATH + File.separator + name;
-    }
-
-    public static void checkFileName(String name) {
-        if (StringUtils.isEmpty(name) || name.contains("..") || name.contains("/") || name.contains("\\")) {
-            throw new DoceanException();
-        }
     }
 
 

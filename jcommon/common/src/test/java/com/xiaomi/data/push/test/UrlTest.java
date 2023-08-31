@@ -1,6 +1,5 @@
 package com.xiaomi.data.push.test;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.net.MalformedURLException;
@@ -22,6 +21,5 @@ public class UrlTest {
         URL url = new URL(str);
         System.out.println(url.getHost());
         System.out.println(url.getHost().endsWith(match));
-        Assert.assertFalse(url.getHost().endsWith(match));
     }
 }

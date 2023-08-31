@@ -7,6 +7,7 @@ import org.nutz.dao.entity.annotation.Id;
 import org.nutz.dao.entity.annotation.Table;
 
 /**
+ * @Description TODO
  * @Author zhenxing.dong
  * @Date 2021/8/9 11:13
  */

@@ -4,8 +4,8 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>prometheus</artifactId>
-        <groupId>run.mone</groupId>
-        <version>0.0.5-SNAPSHOT</version>
+        <groupId>com.xiaomi.youpin</groupId>
+        <version>0.0.2-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -22,7 +22,7 @@
         </dependency>
 
         <dependency>
-            <groupId>run.mone</groupId>
+            <groupId>com.xiaomi.youpin</groupId>
             <artifactId>prometheus-client</artifactId>
             <version>${prometheus-all.version}</version>
         </dependency>

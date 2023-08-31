@@ -504,14 +504,13 @@ public class YpDockerClient {
                         return new UseInfo(0, 0, new HashSet<>(), Lists.newArrayList());
                     }
                 }
-        ).reduce((a, b) -> UseInfo.builder().useCpuNum(a.getUseCpuNum() + b.getUseCpuNum()).useMemNum(a.getUseMemNum() + b.getUseMemNum()).build());
+        ).reduce((a, b) -> UseInfo.builder().useCpuNum(a.getUseCpuNum() + b.getUseCpuNum()).build());
 
         Set<String> appNames = list.stream().map(it -> getAppName(it.getImage())).collect(Collectors.toSet());
         UseInfo info = null;
         if (res.isPresent()) {
             info = res.get();
             if (null != info) {
-                log.info("containerUseInfo .{}", info);
                 info.setApps(appNames);
             }
         } else {

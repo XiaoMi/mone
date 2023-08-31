@@ -1,5 +1,0 @@
-FROM openjdk:8-jre
-
-COPY ./target/trace-etl-manager-1.0.0-SNAPSHOT.jar /home/work/trace-etl-manager-1.0.0-SNAPSHOT.jar
-
-ENTRYPOINT ["java","-Xloggc:/home/work/log/gc.log","-Duser.timezone=Asia/Shanghai","-XX:+HeapDumpOnOutOfMemoryError","-XX:HeapDumpPath=/home/rocksdb/dum/oom.dump","-jar","/home/work/trace-etl-manager-1.0.0-SNAPSHOT.jar","&&","tail","-f","/dev/null"]

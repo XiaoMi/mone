@@ -6,7 +6,6 @@ import com.xiaomi.mone.app.service.HeraAppEnvService;
 import com.xiaomi.mone.app.valid.AddGroup;
 import com.xiaomi.mone.app.valid.UpdateGroup;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,7 +17,6 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/hera/app/env")
-@ConditionalOnProperty(name = "service.selector.property", havingValue = "outer")
 public class HeraAppEnvController {
 
     @Autowired

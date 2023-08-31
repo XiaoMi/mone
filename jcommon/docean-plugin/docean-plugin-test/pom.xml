@@ -108,7 +108,7 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>docean-plugin-mybatis</artifactId>
-            <version>1.4-SNAPSHOT</version>
+            <version>1.4.3-less-SNAPSHOT</version>
         </dependency>
 
 
@@ -148,6 +148,12 @@
             <groupId>run.mone</groupId>
             <artifactId>docean-plugin-http-server</artifactId>
             <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.tesla</groupId>
+            <artifactId>tesla-api</artifactId>
+            <version>1.0.4-SNAPSHOT</version>
         </dependency>
 
 

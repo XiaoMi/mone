@@ -1,6 +1,5 @@
 package com.xiaomi.mone.app.config;
 
-import com.alibaba.nacos.api.config.annotation.NacosValue;
 import org.apache.dubbo.config.ApplicationConfig;
 import org.apache.dubbo.config.ProtocolConfig;
 import org.apache.dubbo.config.RegistryConfig;
@@ -20,7 +19,7 @@ public class DubboConfiguration {
     @Value("${dubbo.protocol.port}")
     private int port;
 
-    @NacosValue(value = "${dubbo.registry.address}", autoRefreshed = true)
+    @Value("${dubbo.registry.address}")
     private String regAddress;
 
     @Value("${spring.application.name}")

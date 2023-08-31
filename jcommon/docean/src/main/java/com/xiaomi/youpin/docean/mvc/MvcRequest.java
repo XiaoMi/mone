@@ -31,8 +31,6 @@ public class MvcRequest {
 
     private String path;
 
-    private String uri;
-
     private String serviceName;
 
     private String methodName;
@@ -43,18 +41,7 @@ public class MvcRequest {
 
     private String method;
 
-    private Map<String, String> headers;
+    private Map<String,String> headers;
 
     private Map<String, String> params;
-
-    public void clear() {
-        this.path = null;
-        this.serviceName = null;
-        this.methodName = null;
-        this.arguments = null;
-        this.body = null;
-        this.method = null;
-        this.headers = null;
-        this.params = null;
-    }
 }

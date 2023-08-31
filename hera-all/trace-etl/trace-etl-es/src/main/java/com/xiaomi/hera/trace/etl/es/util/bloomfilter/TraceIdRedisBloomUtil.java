@@ -36,9 +36,9 @@ public class TraceIdRedisBloomUtil {
     @PostConstruct
     public void init() {
         localBloomFilter = BloomFilter.create(charSequenceFunnel, LOCAL_EXPECTEDINSERTIONS, LOCAL_REDIS_ACCIRACY);
-        // Set a scheduled task to update the local bloom filter at 4:00 a.m. every day
+        // 设置定时任务，每天凌晨四点更新local bloom filter
         updateLocalBloomTimer();
-        // Set a scheduled task to update the local bloom filter at noon every day
+        // 设置定时任务，每天中午十二点更新local bloom filter
         updateLocalBloomTimerMiddle();
     }
 
@@ -46,7 +46,7 @@ public class TraceIdRedisBloomUtil {
         try {
             return localBloomFilter.mightContain(traceId);
         } catch (Exception e) {
-            log.error("judgment traceID: " + traceId + " whether there are failures in the local bloomfilter:", e);
+            log.error("判断traceID：" + traceId + " 在local bloomfilter中是否存在失败：", e);
         }
         return true;
     }
@@ -56,12 +56,9 @@ public class TraceIdRedisBloomUtil {
     }
 
     private void updateLocalBloomTimer() {
-        // Calculates the difference between the update time and the current time
+        // 计算更新时间距离当前时间的差值
         long initDelay = getTimeMillis(localUpdateTime) - System.currentTimeMillis();
-        /**
-         * If the difference is less than 0, it indicates that the update time has passed,
-         * and the difference of the next update time is calculated, that is, 24h is added
-         */
+        // 如果差值小于0，说明更新时间已过，就计算下一个更新时间的差值，即加24h
         initDelay = initDelay > 0 ? initDelay : PERIOD_DAY + initDelay;
         new ScheduledThreadPoolExecutor(1).scheduleAtFixedRate(
                 () -> {
@@ -73,9 +70,9 @@ public class TraceIdRedisBloomUtil {
     }
 
     private void updateLocalBloomTimerMiddle() {
-        // Calculates the difference between the update time and the current time
+        // 计算更新时间距离当前时间的差值
         long initDelay = getTimeMillis(localUpdateTimeMiddle) - System.currentTimeMillis();
-        // If the difference is less than 0, it indicates that the update time has passed, and the difference of the next update time is calculated, that is, 24h is added
+        // 如果差值小于0，说明更新时间已过，就计算下一个更新时间的差值，即加24h
         initDelay = initDelay > 0 ? initDelay : PERIOD_DAY + initDelay;
         new ScheduledThreadPoolExecutor(1).scheduleAtFixedRate(
                 () -> {
@@ -87,7 +84,7 @@ public class TraceIdRedisBloomUtil {
     }
 
     /**
-     * Gets the number of milliseconds for a specified time
+     * 获取指定时间对应的毫秒数
      *
      * @param time "HH:mm:ss"
      * @return

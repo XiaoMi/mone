@@ -71,7 +71,7 @@ public class DisruptorTest {
     public void testDisruptor() throws InterruptedException {
         EventFactory<Event> eventFactory = new LongEventFactory();
         ExecutorService executor = Executors.newFixedThreadPool(10);
-        int ringBufferSize = 1024 * 2; // RingBuffer's size，must be 2^N；
+        int ringBufferSize = 1024 * 2; // RingBuffer 大小，必须是 2 的 N 次方；
 
         Disruptor<Event> disruptor = new Disruptor<Event>(eventFactory,
                 ringBufferSize, executor, ProducerType.MULTI,
@@ -80,7 +80,7 @@ public class DisruptorTest {
         int n = 2000;
         CountDownLatch latch = new CountDownLatch(n);
 
-        //multi processors are allowed
+        //可以有多个处理器
         disruptor.handleEventsWith(new TestEventHandler(latch)).then(new MyEventHandler());
 
         disruptor.start();

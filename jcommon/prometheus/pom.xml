@@ -11,7 +11,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>prometheus</artifactId>
     <packaging>pom</packaging>
-    <version>0.0.5-SNAPSHOT</version>
+    <version>0.0.2-SNAPSHOT</version>
     <modules>
         <module>prometheus-client</module>
 		<module>prometheus-sql</module>
@@ -19,7 +19,6 @@
 		<module>prometheus-redis</module>
         <module>prometheus-starter</module>
 		<module>prometheus-metrics</module>
-		<module>prometheus-trace-etl</module>
     </modules>
 
     <properties>

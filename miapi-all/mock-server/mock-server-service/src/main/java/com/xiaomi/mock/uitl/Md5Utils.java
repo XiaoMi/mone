@@ -6,7 +6,7 @@ import java.security.NoSuchAlgorithmException;
 
 public class Md5Utils {
 
-    private static final ThreadLocal<MessageDigest> MESSAGE_DIGEST_LOCAL = new ThreadLocal<MessageDigest>() {
+    private static ThreadLocal<MessageDigest> MESSAGE_DIGEST_LOCAL = new ThreadLocal<MessageDigest>() {
         @Override
         protected MessageDigest initialValue() {
             try {
@@ -27,6 +27,14 @@ public class Md5Utils {
         }
 
         throw new NoSuchAlgorithmException("MessageDigest get MD5 instance error");
+    }
+
+    public static String getMD5(String value, String encode) {
+        try {
+            return getMD5(value.getBytes(encode));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static String getMD5(String value) {

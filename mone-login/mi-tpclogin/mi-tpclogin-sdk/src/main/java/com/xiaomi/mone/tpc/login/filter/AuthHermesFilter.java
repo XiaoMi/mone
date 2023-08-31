@@ -26,7 +26,6 @@ public class AuthHermesFilter implements Filter {
     private String hermesUrl;
     private String hermesProjectName = null;
 
-
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
         hermesUrl = filterConfig.getInitParameter(ConstUtil.hermesUrl);

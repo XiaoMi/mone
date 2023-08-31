@@ -16,6 +16,9 @@
 
 package com.xiaomi.youpin.mistarter.config;
 
+import com.alibaba.nacos.api.annotation.NacosProperties;
+import com.alibaba.nacos.spring.context.annotation.config.EnableNacosConfig;
+import com.xiaomi.data.push.nacos.NacosNaming;
 import com.xiaomi.mone.mistarter.nacos.MoneConfig;
 import com.xiaomi.youpin.health.HealthController;
 import com.xiaomi.youpin.health.HealthServiceImpl;
@@ -42,6 +45,7 @@ import javax.annotation.PostConstruct;
 @ConditionalOnClass({QpsAop.class, InitService.class})
 @EnableAspectJAutoProxy
 @DubboComponentScan(basePackages = "com.xiaomi.youpin")
+@EnableNacosConfig(globalProperties = @NacosProperties(serverAddr = "${nacos.config.addrs}"))
 @Slf4j
 public class MistarterAutoConfigure {
 

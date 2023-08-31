@@ -19,19 +19,20 @@ package com.xiaomi.youpin.docean.mvc;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
-import com.xiaomi.youpin.docean.mvc.httpmethod.HttpMethodUtils;
+import com.google.gson.JsonObject;
 
 /**
  * @author goodjava@qq.com
  */
 public abstract class Post {
 
-    private static Gson gson = new Gson();
 
-    public static JsonArray getParams(HttpRequestMethod method, byte[] data) {
-        JsonElement arguments = (null == data || data.length == 0) ? null : gson.fromJson(new String(data), JsonElement.class);
+    public static JsonArray getParams(HttpRequestMethod method, JsonElement arguments) {
         JsonArray array = new JsonArray();
-        HttpMethodUtils.addMvcContext(method, array);
+        Class<?>[] types = method.getMethod().getParameterTypes();
+        if (types.length > 0 && types[0] == MvcContext.class) {
+            array.add(new Gson().fromJson("{}", JsonObject.class));
+        }
 
         if (null == arguments) {
             return array;
@@ -42,7 +43,9 @@ public abstract class Post {
         }
 
         if (arguments.isJsonArray()) {
-            arguments.getAsJsonArray().forEach(it -> array.add(it));
+            arguments.getAsJsonArray().forEach(it -> {
+                array.add(it);
+            });
         }
 
         if (arguments.isJsonPrimitive()) {

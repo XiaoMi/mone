@@ -16,27 +16,20 @@
 
 package com.xiaomi.youpin.docean.mvc;
 
-import com.xiaomi.youpin.docean.Mvc;
-import com.xiaomi.youpin.docean.mvc.common.MvcConst;
-
 /**
  * @author goodjava@qq.com
  * @date 2020/7/5
  */
 public class ContextHolder {
 
-    private static ThreadLocal<ContextHolder> context = ThreadLocal.withInitial(() -> new ContextHolder());
+    private static ThreadLocal<ContextHolder> context = new ThreadLocal<ContextHolder>() {
+        @Override
+        protected ContextHolder initialValue() {
+            return new ContextHolder();
+        }
+    };
 
     private MvcContext mvcContext;
-
-    private static class VirtualThreadContextHolder extends ContextHolder {
-        @Override
-        public MvcContext get() {
-            return MvcConst.MVC_CONTEXT.get();
-        }
-    }
-
-    private static VirtualThreadContextHolder virtualThreadContextHolder = new VirtualThreadContextHolder();
 
 
     public void set(MvcContext mvcContext) {
@@ -47,16 +40,9 @@ public class ContextHolder {
         return this.mvcContext;
     }
 
-    private static ContextHolder getContext0() {
-        return context.get();
-    }
 
     public static ContextHolder getContext() {
-        boolean virtualThread = Mvc.ins().getMvcConfig().isVirtualThread();
-        if (virtualThread) {
-            return virtualThreadContextHolder;
-        }
-        return getContext0();
+        return context.get();
     }
 
     public void close() {

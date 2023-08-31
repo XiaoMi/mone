@@ -21,15 +21,15 @@
         </dependency>
 
         <dependency>
-            <groupId>run.mone</groupId>
+            <groupId>com.xiaomi.youpin</groupId>
             <artifactId>catPlugin</artifactId>
             <version>1.4-SNAPSHOT</version>
         </dependency>
 
         <dependency>
-            <groupId>run.mone</groupId>
+            <groupId>com.xiaomi.youpin</groupId>
             <artifactId>prometheus-client</artifactId>
-            <version>0.0.5-SNAPSHOT</version>
+            <version>0.0.2-SNAPSHOT</version>
         </dependency>
 
         <dependency>

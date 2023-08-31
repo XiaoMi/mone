@@ -30,7 +30,7 @@ import java.util.Map;
 
 /**
  * @author goodjava@qq.com
- * Handles notification information sent by the client
+ * 处理客户端发送过来的通知信息
  */
 @Slf4j
 public class NotifyMsgProcessor implements NettyRequestProcessor {

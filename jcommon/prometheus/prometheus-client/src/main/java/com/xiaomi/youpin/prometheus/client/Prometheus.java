@@ -34,11 +34,8 @@ public class Prometheus implements MetricsManager{
          return (XmCounter) prometheusTypeMetrics.get(metricName);
       }
       synchronized (typeLock) {
-         Counter counter = getCounter(metricName, labelName);
-         PrometheusCounter prometheusCounter = new PrometheusCounter(counter, labelName, null);
-         if (counter != null) {
-            prometheusTypeMetrics.put(metricName,prometheusCounter);
-         }
+         PrometheusCounter prometheusCounter = new PrometheusCounter(getCounter(metricName, labelName), labelName, null);
+         prometheusTypeMetrics.put(metricName,prometheusCounter);
          return prometheusCounter;
       }
    }
@@ -49,11 +46,8 @@ public class Prometheus implements MetricsManager{
          return (XmGauge) prometheusTypeMetrics.get(metricName);
       }
       synchronized (typeLock) {
-         Gauge gauge = getGauge(metricName, labelName);
-         PrometheusGauge prometheusGauge = new PrometheusGauge(gauge, labelName, null);
-         if (gauge != null) {
-            prometheusTypeMetrics.put(metricName,prometheusGauge);
-         }
+         PrometheusGauge prometheusGauge = new PrometheusGauge(getGauge(metricName, labelName), labelName, null);
+         prometheusTypeMetrics.put(metricName,prometheusGauge);
          return prometheusGauge;
       }
 
@@ -65,11 +59,8 @@ public class Prometheus implements MetricsManager{
          return (XmHistogram) prometheusTypeMetrics.get(metricName);
       }
       synchronized (typeLock) {
-         Histogram histogram = getHistogram(metricName, bucket, labelNames);
-         PrometheusHistogram prometheusHistogram = new PrometheusHistogram(histogram, labelNames, null);
-         if (histogram != null) {
-            prometheusTypeMetrics.put(metricName,prometheusHistogram);
-         }
+         PrometheusHistogram prometheusHistogram = new PrometheusHistogram(getHistogram(metricName, bucket, labelNames), labelNames, null);
+         prometheusTypeMetrics.put(metricName,prometheusHistogram);
          return prometheusHistogram;
       }
    }

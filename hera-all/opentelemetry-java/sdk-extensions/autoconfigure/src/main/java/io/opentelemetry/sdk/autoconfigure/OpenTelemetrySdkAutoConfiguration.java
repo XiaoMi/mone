@@ -9,7 +9,6 @@ import io.opentelemetry.context.propagation.ContextPropagators;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.spi.ResourceProvider;
 import io.opentelemetry.sdk.autoconfigure.spi.SdkMeterProviderConfigurer;
-import io.opentelemetry.sdk.common.EnvOrJvmProperties;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.SdkMeterProviderBuilder;
 import io.opentelemetry.sdk.resources.Resource;
@@ -63,7 +62,7 @@ public final class OpenTelemetrySdkAutoConfiguration {
 
     SdkMeterProvider meterProvider = meterProviderBuilder.buildAndRegisterGlobal();
 
-    String exporterName = config.getString(EnvOrJvmProperties.JVM_OTEL_METRICS_EXPORTER.getKey());
+    String exporterName = config.getString("otel.metrics.exporter");
     MetricExporterConfiguration.configureExporter(exporterName, config, meterProvider);
   }
 

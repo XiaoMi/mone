@@ -1,6 +1,5 @@
 package com.xiaomi.hera.trace.etl.consumer;
 
-import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.xiaomi.hera.trace.etl.mq.rocketmq.ClientMessageQueue;
 import com.xiaomi.hera.trace.etl.mq.rocketmq.RocketMqProducer;
 import com.xiaomi.hera.trace.etl.util.ThriftUtil;
@@ -32,7 +31,7 @@ public class ConsumerService {
     @Value("${mq.rocketmq.consumer.group}")
     private String group;
 
-    @NacosValue("${mq.rocketmq.nameseraddr}")
+    @Value("${mq.rocketmq.nameseraddr}")
     private String nameSerAddr;
 
     @Value("${mq.rocketmq.server.topic}")
@@ -46,11 +45,10 @@ public class ConsumerService {
 
     @PostConstruct
     public void takeMessage() throws MQClientException {
-        // Before initializing rocketmq consumer,
-        // initialize the local message queue to
-        // ensure that the local message queue is available when messages come in
+        // 在初始化rocketmq consumer前，初始化本地message queue，
+        // 保证消息进来后本地message queue可用
         clientMessageQueue.initFetchQueueTask();
-        // initializing rocketmq consumer
+        // 初始化rocketmq consumer
         log.info("init consumer start ...");
         DefaultMQPushConsumer consumer = new DefaultMQPushConsumer(group);
         consumer.setNamesrvAddr(nameSerAddr);
