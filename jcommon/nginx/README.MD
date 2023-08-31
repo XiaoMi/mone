@@ -1,13 +1,13 @@
-#提供nginx相关操作
+#Nginx related operations
 
-例如：
+For example:
 
-删除服务器   
+Delete server
 
-删除多个服务器
+Delete multiple servers
 
-添加服务器
+Add server
 
-添加多个新服务器
+Add multiple new servers
 
-等操作
+And so on.

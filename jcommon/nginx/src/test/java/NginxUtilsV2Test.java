@@ -16,6 +16,7 @@
 
 import com.google.common.collect.Lists;
 import com.xiaomi.youpin.nginx.NginxUtilsV2;
+import lombok.SneakyThrows;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -28,10 +29,30 @@ public class NginxUtilsV2Test {
 
     @Test
     public void testGetServerList() throws IOException {
-        String path = this.getClass().getResource("/").getPath()+"nginx.conf";
+        String path = this.getClass().getResource("/").getPath() + "nginx.conf";
         System.out.println(path);
         String config = new String(Files.readAllBytes(Paths.get(path)));
         List<String> list = NginxUtilsV2.getServers(config, "gateway");
         System.out.println(list);
+    }
+
+    @SneakyThrows
+    @Test
+    public void testAddServerList() {
+        String path = this.getClass().getResource("/").getPath() + "nginx.conf";
+        System.out.println(path);
+        String config = new String(Files.readAllBytes(Paths.get(path)));
+        String content = NginxUtilsV2.addServer(config, "gateway", Lists.newArrayList("127.0.0.3:7777"));
+        System.out.println(content);
+    }
+
+    @SneakyThrows
+    @Test
+    public void testAddServerList2() {
+        String path = this.getClass().getResource("/").getPath() + "nginx.conf";
+        System.out.println(path);
+        String config = new String(Files.readAllBytes(Paths.get(path)));
+        String content = NginxUtilsV2.addServer(config, "gateway", Lists.newArrayList("127.0.0.3:7777"), true);
+        System.out.println(content);
     }
 }
