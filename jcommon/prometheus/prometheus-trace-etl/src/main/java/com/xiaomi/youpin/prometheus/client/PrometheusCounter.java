@@ -1,13 +1,10 @@
 package com.xiaomi.youpin.prometheus.client;
 
+import com.xiaomi.youpin.prometheus.client.multi.MutiPrometheus;
 import io.prometheus.client.Counter;
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.MDC;
-import org.springframework.util.StringUtils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * @author zhangxiaowei
@@ -21,10 +18,13 @@ public class PrometheusCounter implements XmCounter {
 
     public String[] labelNames;
 
-    public PrometheusCounter(Counter cb, String[] lns, String[] lvs) {
+    private MutiPrometheus mutiPrometheus;
+
+    public PrometheusCounter(Counter cb, String[] lns, String[] lvs, MutiPrometheus mutiPrometheus) {
         this.myCounter = cb;
         this.labelNames = lns;
         this.labelValues = lvs;
+        this.mutiPrometheus = mutiPrometheus;
     }
 
     public PrometheusCounter() {
@@ -47,19 +47,15 @@ public class PrometheusCounter implements XmCounter {
 
     @Override
     public void add(double delta, String... labelValues) {
-        this.add(Prometheus.constLabels.get(Metrics.SERVICE),delta,labelValues);
+        try {
+            this.myCounter.labels(labelValues).inc(delta);
+        } catch (Exception e) {
+            log.warn("prometheus counter add error",e);
+        }
     }
 
     @Override
     public void add(String service, double delta, String... labelValues) {
-        List<String> mylist = new ArrayList<>(Arrays.asList(labelValues));
-//        mylist.add(service);
-        // mylist.add(traceId);
-        String[] finalValue = mylist.toArray(new String[mylist.size()]);
-        try {
-            this.myCounter.labels(finalValue).inc(delta);
-        } catch (Exception e) {
-            log.warn("prometheus counter add error",e);
-        }
+
     }
 }
