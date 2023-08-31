@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-agent-server
+  namespace: hera-namespace
+  labels:
+    app: log-agent-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log-agent-server
+  template:
+    metadata:
+      labels:
+        app: log-agent-server
+    spec:
+      containers:
+        - name: log-agent-server-container
+          image: herahub/opensource-pub:log-agent-server-v1-release
+          resources:
+            limits:
+              cpu: '500m'
+              memory: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: log-agent-server
+  namespace: hera-namespace
+  labels:
+    app: log-agent-server
+spec:
+  ports:
+    - port: 9899
+      targetPort: 9899
+      protocol: TCP
+  selector:
+    app: log-agent-server
+  clusterIP: None

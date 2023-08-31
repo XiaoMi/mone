@@ -1,5 +1,6 @@
 package com.xiaomi.hera.trace.etl.es.config;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.common.collect.Maps;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.ApplicationConfig;
@@ -18,7 +19,7 @@ public class DubboConfiguration {
     @Value("${server.port}")
     private String httpGateWayPort;
 
-    @Value("${dubbo.registry.address}")
+    @NacosValue("${dubbo.registry.address}")
     private String regAddress;
 
     @Bean
@@ -28,11 +29,6 @@ public class DubboConfiguration {
         applicationConfig.setParameters(Maps.newHashMap());
         applicationConfig.getParameters().put("http_gateway_port", httpGateWayPort);
         applicationConfig.getParameters().put("dubbo_version", "1.0");
-        String prometheusPort = System.getenv("PROMETHEUS_PORT");
-        if (StringUtils.isEmpty(prometheusPort)) {
-            prometheusPort = "4444";
-        }
-        applicationConfig.getParameters().put("prometheus_port", prometheusPort);
         applicationConfig.setQosEnable(false);
         return applicationConfig;
     }

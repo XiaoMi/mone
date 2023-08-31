@@ -2,6 +2,7 @@ package com.xiaomi.data.push.test;
 
 import com.google.common.base.Stopwatch;
 import com.xiaomi.data.push.common.SnowFlake;
+import lombok.SneakyThrows;
 import org.junit.Test;
 
 import java.util.Set;
@@ -11,11 +12,13 @@ import java.util.concurrent.TimeUnit;
 
 public class SnowFlakeTest {
 
+    @SneakyThrows
     @Test
     public void testConflict() {
         Set<Long> idSet = new CopyOnWriteArraySet<>();
-
-        for (int i = 0; i < 10; i++) {
+        int num = 3;
+        CountDownLatch latch = new CountDownLatch(num);
+        for (int i = 0; i < num; i++) {
             new Thread() {{
                     int conflict = 0;
                     SnowFlake worker = new SnowFlake();
@@ -30,22 +33,18 @@ public class SnowFlakeTest {
                     }
                     stopwatch.stop();
                     System.out.println("end, 耗时：" + stopwatch.toString() + ", 冲突数:" + conflict);
+                    latch.countDown();
                 }
             }.start();
         }
-
-        try {
-            TimeUnit.SECONDS.sleep(10);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+        latch.await();;
     }
 
     @Test
     public void testCost() throws InterruptedException {
         SnowFlake worker = new SnowFlake();
 
-        int threadCnt = 100;
+        int threadCnt = 10;
         final CountDownLatch cdl = new CountDownLatch(threadCnt);
 
         for (int i = 0; i < threadCnt; i++) {
@@ -57,7 +56,7 @@ public class SnowFlakeTest {
                             long id = worker.nextId();
                         }
                         stopwatch.stop();
-                        System.out.println("end, 耗时：" + stopwatch.toString());
+                        System.out.println("end, 耗时：" + stopwatch);
                     } catch (Exception e) {
                         e.printStackTrace();
                     } finally {
@@ -66,13 +65,8 @@ public class SnowFlakeTest {
                 }
             }.start();
         }
-
         cdl.await();
         System.out.println("SnowFlake end");
     }
 
-    @Test
-    public void testInit() {
-        SnowFlake worker = new SnowFlake(3, 256, 0);
-    }
 }

@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>buddy</artifactId>
-        <groupId>com.xiaomi.youpin</groupId>
+        <groupId>run.mone</groupId>
         <version>1.4-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -31,9 +31,9 @@
 
 
         <dependency>
-            <groupId>com.xiaomi.youpin</groupId>
+            <groupId>run.mone</groupId>
             <artifactId>redis</artifactId>
-            <version>1.4-SNAPSHOT</version>
+            <version>1.8-SNAPSHOT</version>
         </dependency>
 
         <dependency>
@@ -46,7 +46,7 @@
         <dependency>
             <groupId>org.nutz</groupId>
             <artifactId>nutz</artifactId>
-            <version>1.r.68-youpin-SNAPSHOT</version>
+            <version>1.r.67</version>
         </dependency>
 
         <dependency>

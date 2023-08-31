@@ -4,6 +4,7 @@ import lombok.Data;
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.client.config.RequestConfig;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.impl.nio.reactor.IOReactorConfig;
 import org.apache.http.message.BasicHeader;
 import org.elasticsearch.action.ActionListener;
@@ -25,15 +26,16 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestClientBuilder;
-import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.*;
 import org.elasticsearch.client.core.CountRequest;
 import org.elasticsearch.client.core.CountResponse;
 import org.elasticsearch.client.indices.*;
+import org.elasticsearch.client.sniff.ElasticsearchNodesSniffer;
+import org.elasticsearch.client.sniff.NodesSniffer;
+import org.elasticsearch.client.sniff.SniffOnFailureListener;
+import org.elasticsearch.client.sniff.Sniffer;
+import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -54,7 +56,15 @@ import java.util.concurrent.TimeUnit;
  */
 public class EsClient {
 
+    private static RestClientBuilder restClientBuilder;
+    private static Sniffer sniffer;
+    private static final int TIME_OUT = 10 * 60 * 1000;
+    private static final int SNIFF_INTERVAL_MILLIS = 30 * 1000;
+    private static final int SNIFF_AFTER_FAILURE_DELAY_MILLIS = 30 * 1000;
+
     private RestHighLevelClient client;
+
+    private RestClient restClient;
 
 //    public EsClient(String esAddr, String user, String pwd) {
 //        final CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
@@ -125,6 +135,103 @@ public class EsClient {
 
     }
 
+    public EsClient(List<String> restAddress, int httpPort, String username, String password, int timeOut, int snifferIntervalMillis, int snifferAfterFailDelayMillis) throws IOException {
+        snifferNodeInit(restAddress, httpPort, username, password, timeOut, snifferIntervalMillis, snifferAfterFailDelayMillis);
+    }
+
+    public EsClient(List<String> restAddress, int httpPort, String username, String password) throws IOException {
+        snifferNodeInit(restAddress, httpPort, username, password, TIME_OUT, SNIFF_INTERVAL_MILLIS, SNIFF_AFTER_FAILURE_DELAY_MILLIS);
+    }
+
+    private void snifferNodeInit(List<String> restAddress, int httpPort, String username, String password, int timeOut, int snifferIntervalMillis, int snifferAfterFailDelayMillis) throws IOException {
+
+
+        HttpHost[] hosts = new HttpHost[restAddress.size()];
+        for (int index = 0; index < restAddress.size(); index++) {
+            hosts[index] = new HttpHost(restAddress.get(index), httpPort, "http");
+        }
+
+        RestClientBuilder.RequestConfigCallback requestConfigCallback = new RestClientBuilder.RequestConfigCallback() {
+            @Override
+            public RequestConfig.Builder customizeRequestConfig(
+                    RequestConfig.Builder requestConfigBuilder) {
+                return requestConfigBuilder
+                        .setConnectTimeout(timeOut)
+                        .setSocketTimeout(timeOut);
+            }
+        };
+
+        RestClientBuilder.HttpClientConfigCallback httpClientConfigCallback = new RestClientBuilder.HttpClientConfigCallback() {
+            @Override
+            public HttpAsyncClientBuilder customizeHttpClient(
+                    HttpAsyncClientBuilder httpClientBuilder) {
+                RequestConfig.Builder requestConfigBuilder = RequestConfig.custom()
+                        .setConnectTimeout(timeOut)
+                        .setSocketTimeout(timeOut)
+                        .setConnectionRequestTimeout(timeOut);
+                httpClientBuilder.setDefaultRequestConfig(requestConfigBuilder.build());
+                return httpClientBuilder;
+            }
+        };
+
+        SniffOnFailureListener sniffOnFailureListener = new SniffOnFailureListener();
+        if (username != null && password != null) {
+            String token = "Basic " + new String(Base64.getUrlEncoder().encode((username + ":" + password).getBytes()));
+            Header[] tokenHeader = new Header[]{new BasicHeader("Authorization", token)};
+            restClientBuilder = RestClient.builder(hosts).setNodeSelector(SKIP_DEDICATED_NODES)
+                    .setFailureListener(sniffOnFailureListener)
+                    .setHttpClientConfigCallback(httpClientConfigCallback)
+                    .setRequestConfigCallback(requestConfigCallback)
+                    .setDefaultHeaders(tokenHeader);
+        } else {
+            restClientBuilder = RestClient.builder(hosts).setNodeSelector(SKIP_DEDICATED_NODES)
+                    .setFailureListener(sniffOnFailureListener)
+                    .setRequestConfigCallback(requestConfigCallback)
+                    .setHttpClientConfigCallback(httpClientConfigCallback);
+        }
+
+        client = new RestHighLevelClient(restClientBuilder);
+        restClient = client.getLowLevelClient();
+
+        NodesSniffer elasticsearchNodesSniffer = new ElasticsearchNodesSniffer(
+                restClient,
+                TimeUnit.SECONDS.toMillis(5),
+                ElasticsearchNodesSniffer.Scheme.HTTP);
+
+        // important
+        sniffer = Sniffer.builder(restClient)
+                .setSniffIntervalMillis(snifferIntervalMillis)
+                .setSniffAfterFailureDelayMillis(snifferAfterFailDelayMillis)
+                .setNodesSniffer(elasticsearchNodesSniffer)
+                .build();
+        sniffOnFailureListener.setSniffer(sniffer);
+    }
+
+    // important
+    private NodeSelector SKIP_DEDICATED_NODES = new NodeSelector() {
+        @Override
+        public void select(Iterable<Node> nodes) {
+            for (Iterator<Node> itr = nodes.iterator(); itr.hasNext(); ) {
+                Node node = itr.next();
+                if (node.getRoles() == null) continue;
+                if ((node.getRoles().isMasterEligible()
+                        && false == node.getRoles().isData()
+                        && false == node.getRoles().isIngest())
+                        ||
+                        (node.getAttributes().containsKey("node_type")
+                                && node.getAttributes().get("node_type").contains("client")
+                                && false == node.getRoles().isData())) {
+                    itr.remove();
+                }
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "SKIP_DEDICATED_NODES";
+        }
+    };
+
     public SearchResponse search(SearchRequest searchRequest) throws IOException {
         SearchResponse res = this.client.search(searchRequest, RequestOptions.DEFAULT);
         return res;
@@ -137,8 +244,32 @@ public class EsClient {
         IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
     }
 
+    public void insertDoc(String index, Map<String, Object> data, String id) throws IOException {
+        IndexRequest indexRequest = new IndexRequest(index, "_doc", id).source(data);
+        indexRequest.opType(DocWriteRequest.OpType.CREATE);
+        IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
+    }
+
+    public void insertDocForIndex(String index, Map<String, Object> data) throws IOException {
+        IndexRequest indexRequest = new IndexRequest(index, "_doc", UUID.randomUUID().toString()).source(data);
+        indexRequest.opType(DocWriteRequest.OpType.INDEX);
+        IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
+    }
+
+    public void insertDocForIndex(String index, Map<String, Object> data, String id) throws IOException {
+        IndexRequest indexRequest = new IndexRequest(index, "_doc", id).source(data);
+        indexRequest.opType(DocWriteRequest.OpType.INDEX);
+        IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
+    }
+
     public void insertDocJson(String index, String jsonString) throws IOException {
         IndexRequest indexRequest = new IndexRequest(index, "_doc", UUID.randomUUID().toString()).source(jsonString, XContentType.JSON);
+        indexRequest.opType(DocWriteRequest.OpType.CREATE);
+        IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
+    }
+
+    public void insertDocJson(String index, String jsonString, String id) throws IOException {
+        IndexRequest indexRequest = new IndexRequest(index, "_doc", id).source(jsonString, XContentType.JSON);
         indexRequest.opType(DocWriteRequest.OpType.CREATE);
         IndexResponse indexResponse = client.index(indexRequest, RequestOptions.DEFAULT);
     }
@@ -255,18 +386,22 @@ public class EsClient {
         return count;
     }
 
+    public EsRet dateHistogram(String indexName, String interval, long startTime, long endTime, BoolQueryBuilder builder) throws IOException {
+        return dateHistogram(indexName, "timestamp", interval, startTime, endTime, builder);
+    }
+
     /**
      * 数据直方图
      *
      * @return
      */
-    public EsRet dateHistogram(String indexName, String interval, long startTime, long endTime, BoolQueryBuilder builder) throws IOException {
+    public EsRet dateHistogram(String indexName, String field, String interval, long startTime, long endTime, BoolQueryBuilder builder) throws IOException {
         // 聚合
         EsRet esRet = new EsRet();
         AggregationBuilder aggregationBuilder = AggregationBuilders.dateHistogram("dateHistogram")
                 .minDocCount(0)//返回空桶
                 .fixedInterval(new DateHistogramInterval(interval)) //设置间隔
-                .field("timestamp")
+                .field(field)
                 .timeZone(TimeZone.getTimeZone("GMT+8").toZoneId())
                 .format("yyyy-MM-dd HH:mm:ss")//设定返回格式
                 .extendedBounds(new LongBounds(startTime, endTime));//统计范围
@@ -315,6 +450,21 @@ public class EsClient {
 
     public void close() throws IOException {
         this.client.close();
+        if (sniffer != null) {
+            sniffer.close();
+        }
+    }
+
+    /**
+     * query index mapping
+     *
+     * @param indexName
+     * @return
+     * @throws IOException
+     */
+    public GetMappingsResponse queryIndexMapping(String indexName) throws IOException {
+        GetMappingsRequest request = new GetMappingsRequest().indices(indexName);
+        return client.indices().getMapping(request, RequestOptions.DEFAULT);
     }
 
 }

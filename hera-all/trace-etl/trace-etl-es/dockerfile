@@ -1,0 +1,5 @@
+FROM openjdk:8-jre
+
+COPY ./target/trace-etl-es-1.0.0-SNAPSHOT.jar /home/work/trace-etl-es/trace-etl-es-1.0.0-SNAPSHOT.jar
+
+ENTRYPOINT ["java","-Xms3024M","-Xmx3024M","-Xss512k","-XX:MetaspaceSize=128m","-XX:MaxMetaspaceSize=256m","-XX:MaxDirectMemorySize=512M","-XX:+PrintReferenceGC","-XX:+PrintGCDetails","-XX:+PrintGCDateStamps","-XX:+PrintHeapAtGC","-Xloggc:/home/work/log/gc.log","-Duser.timezone=Asia/Shanghai","-XX:+HeapDumpOnOutOfMemoryError","-XX:HeapDumpPath=/home/rocksdb/dum/oom.dump","-jar","/home/work/trace-etl-es/trace-etl-es-1.0.0-SNAPSHOT.jar","&&","tail","-f","/dev/null"]

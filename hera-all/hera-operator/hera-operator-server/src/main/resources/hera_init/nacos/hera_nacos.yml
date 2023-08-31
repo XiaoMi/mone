@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nacos
+  namespace: hera-namespace
+  labels:
+    app: nacos
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nacos
+  template:
+    metadata:
+      labels:
+        app: nacos
+    spec:
+      containers:
+      - name: nacos-container
+        image: herahub/opensource-pub:mone-nacos-mysql-v1-release
+        env:
+          - name: db.url.0
+            value: 'jdbc:mysql://mone-db-all:3306/nacos_standalone?characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true'
+          - name: db.user
+            value: 'root'
+          - name: db.ppwwdd
+            value: 'Mone_123456'
+        resources:
+          limits:
+            cpu: '1'
+            memory: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nacos
+  namespace: hera-namespace
+  labels:
+    app: nacos
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+  selector:
+    app: nacos
+  clusterIP: None

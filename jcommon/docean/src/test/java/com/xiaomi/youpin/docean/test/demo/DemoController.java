@@ -20,15 +20,18 @@ import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.Controller;
 import com.xiaomi.youpin.docean.anno.RequestMapping;
 import com.xiaomi.youpin.docean.anno.RequestParam;
+import com.xiaomi.youpin.docean.mvc.ContextHolder;
 import com.xiaomi.youpin.docean.mvc.MvcContext;
 import com.xiaomi.youpin.docean.mvc.MvcResult;
 import com.xiaomi.youpin.docean.test.anno.TAnno;
+import com.xiaomi.youpin.docean.test.bo.M;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.annotation.Resource;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author goodjava@qq.com
@@ -58,7 +61,7 @@ public class DemoController {
         DemoVo vo = new DemoVo();
         vo.setId("1");
         vo.setName("test");
-        context.getResHeaders().put("name","zzy");
+        context.getResHeaders().put("name", "zzy");
         return vo;
     }
 
@@ -70,10 +73,21 @@ public class DemoController {
     }
 
 
+    @SneakyThrows
     @RequestMapping(path = "/a/**")
     public String a() {
-        return "a";
+//        TimeUnit.SECONDS.sleep(3);
+        return "a:" + Thread.currentThread().getName();
     }
+
+
+    @RequestMapping(path = "/p")
+    public M p(MvcContext c, M m) {
+        log.info("{}", c.getHeaders());
+        m.setName("zz");
+        return m;
+    }
+
 
     @RequestMapping(path = "/test2")
     public DemoVo test2(MvcContext context, DemoVo req) {
@@ -97,6 +111,22 @@ public class DemoController {
         log.info("{}", context);
         DemoVo vo = new DemoVo();
         vo.setName("test4");
+        return vo;
+    }
+
+    @RequestMapping(path = "/test5")
+    public DemoVo test5(DemoVo req) {
+        DemoVo vo = new DemoVo();
+        vo.setId(req.getId());
+        vo.setName("test5");
+        return vo;
+    }
+
+    @RequestMapping(path = "/test6")
+    public DemoVo test6(DemoVo req) {
+        DemoVo vo = new DemoVo();
+        vo.setId(req.getId());
+        vo.setName("test6:" + ContextHolder.getContext().get());
         return vo;
     }
 

@@ -6,6 +6,7 @@
 package io.opentelemetry.exporter.logging;
 
 import io.opentelemetry.sdk.common.CompletableResultCode;
+import io.opentelemetry.sdk.common.SystemCommon;
 import io.opentelemetry.sdk.trace.data.SpanData;
 import io.opentelemetry.sdk.trace.export.SpanExporter;
 import org.apache.logging.log4j.Logger;
@@ -24,7 +25,7 @@ public final class Log4j2SpanExporter implements SpanExporter {
   private static final String[] traceIDChars = new String[]{"a", "b", "c", "d", "e", "f", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
   private static Random r = new Random();
 
-  private static String ipv4Env = System.getenv("host.ip");
+  private static String ipv4Env = SystemCommon.getEnvOrProperties("host.ip");
 
   public Log4j2SpanExporter() {
     log = Log4j2Factory.getLogger();

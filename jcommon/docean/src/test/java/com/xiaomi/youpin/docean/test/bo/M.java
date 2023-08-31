@@ -1,5 +1,6 @@
 package com.xiaomi.youpin.docean.test.bo;
 
+import io.netty.util.Recycler;
 import lombok.Data;
 
 /**
@@ -12,4 +13,6 @@ public class M {
     private int id;
 
     private String name;
+
+    private Recycler.Handle<M> handle;
 }

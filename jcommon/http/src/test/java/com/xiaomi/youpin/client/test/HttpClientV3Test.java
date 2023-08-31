@@ -16,16 +16,18 @@
 
 package com.xiaomi.youpin.client.test;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Maps;
-import com.xiaomi.data.push.client.*;
+import com.xiaomi.data.push.client.HttpClientV2;
+import com.xiaomi.data.push.client.HttpClientV4;
+import com.xiaomi.data.push.client.Response;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -35,17 +37,25 @@ public class HttpClientV3Test {
 
 
     @Test
-    public void testHttps() {
-        String res = HttpClientV2.get("https://127.0.0.1:9999/version?name=a&token=a", Maps.newHashMap());
-        System.out.println(res);
-        String res2 = HttpClientV2.get("http://127.0.0.1:9999/version?name=a&token=a", Maps.newHashMap());
+    public void testHttp() {
+        String res2 = HttpClientV2.get("http://www.baidu.com", Maps.newHashMap());
         System.out.println(res2);
+        Assert.assertTrue(res2.getBytes().length > 0);
     }
 
+    //1466->1000
+    //10000->6904
+    //wb->100->9695
     @Test
-    public void testDns() {
-        String res = HttpClientV2.get("http://www.baaafaidu.com", Maps.newHashMap());
-        System.out.println(res);
+    public void testHttp2() {
+        String url = "http://127.0.0.1:8999/a/b";
+//        String url = "http://10.225.177.190:80/api/z/oss/hi";
+        Stopwatch sw = Stopwatch.createStarted();
+        IntStream.range(0, 100).forEach(i -> {
+            String res2 = HttpClientV2.get(url, Maps.newHashMap());
+//            System.out.println(res2);
+        });
+        System.out.println(sw.elapsed(TimeUnit.MILLISECONDS));
     }
 
 
@@ -53,7 +63,7 @@ public class HttpClientV3Test {
     public void testCHttp() {
         ExecutorService pool = Executors.newFixedThreadPool(200);
         int[] ii = new int[]{8848, 8849};
-        IntStream.range(0, 1000).forEach(it -> {
+        IntStream.range(0, 1).forEach(it -> {
             IntStream.range(0, 600).parallel().forEach(i -> {
                 pool.submit(() -> {
                     try {
@@ -93,13 +103,11 @@ public class HttpClientV3Test {
     }
 
 
-
     @Test
     public void testGet3() {
         HttpClientV4 client = new HttpClientV4();
         IntStream.range(0, 1).parallel().forEach(it -> {
-            Response res = client.get("https://www.jianshu.com/p/067820da332e", Maps.newHashMap(), 1000);
-//            Response res = client.get("http://www.baidu.com", Maps.newHashMap(), 1000);
+            Response res = client.get("https://www.baidu.com", Maps.newHashMap(), 1000);
             System.out.println("res:" + res.getCode() + ":" + new String(res.getData()));
         });
     }

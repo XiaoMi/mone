@@ -1,5 +1,6 @@
 package com.xiaomi.hera.trace.etl.manager.config;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.xiaomi.hera.trace.etl.manager.filter.RequestHeaderFilter;
 import com.xiaomi.mone.tpc.login.filter.HttpReqUserFilter;
 import com.xiaomi.mone.tpc.login.util.ConstUtil;
@@ -16,7 +17,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class FilterConfiguration {
 
-    @Value("${tpc.token.parse.url}")
+    @NacosValue("${tpc.token.parse.url}")
     public String tokenParseUrl;
 
     @Bean

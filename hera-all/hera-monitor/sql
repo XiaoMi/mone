@@ -1,0 +1,508 @@
+表结构sql：
+DROP TABLE IF EXISTS `alert_group`;
+CREATE TABLE `alert_group` (
+ `id` bigint(20) NOT NULL AUTO_INCREMENT,
+ `name` varchar(64) NOT NULL COMMENT '名称',
+ `desc` varchar(256) DEFAULT NULL COMMENT '备注',
+ `chat_id` varchar(125) DEFAULT NULL COMMENT '飞书ID',
+ `creater` varchar(64) DEFAULT NULL COMMENT '创建人',
+ `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
+ `update_time` timestamp NULL DEFAULT NULL COMMENT '更新时间',
+ `rel_id` bigint(20) DEFAULT '0' COMMENT '关联ID',
+ `type` varchar(32) DEFAULT 'alert' COMMENT '告警类型',
+ `deleted` int(1) DEFAULT '0' COMMENT '0正常,1删除',
+ `duty_info` text DEFAULT NULL COMMENT '值班信息',
+ PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- ----------------------------
+-- Table structure for alert_group_member
+-- ----------------------------
+DROP TABLE IF EXISTS `alert_group_member`;
+CREATE TABLE `alert_group_member` (
+ `id` bigint(20) NOT NULL AUTO_INCREMENT,
+ `member_id` bigint(20) DEFAULT '0' COMMENT '会员ID',
+ `alert_group_id` bigint(20) DEFAULT '0' COMMENT '告警组ID',
+ `creater` varchar(64) DEFAULT NULL COMMENT '创建人',
+ `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
+ `update_time` timestamp NULL DEFAULT NULL COMMENT '更新时间',
+ `member` varchar(64) DEFAULT '' COMMENT '用户',
+ `deleted` int(1) DEFAULT '0' COMMENT '0正常,1删除',
+ PRIMARY KEY (`id`),
+ KEY `idx_member_id` (`member_id`),
+ KEY `idx_alert_group_id` (`alert_group_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+
+-- ----------------------------
+-- Table structure for app_alarm_rule
+-- ----------------------------
+DROP TABLE IF EXISTS `app_alarm_rule`;
+CREATE TABLE `app_alarm_rule` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `alarm_id` int(11) DEFAULT NULL COMMENT '报警id，对应prometheus报警接口的报警Id',
+ `alert` varchar(255) NOT NULL COMMENT '报警名称',
+ `cname` varchar(255) DEFAULT NULL COMMENT '报警别名',
+ `metric_type` int(11) DEFAULT NULL COMMENT '指标类型0预置指标 1用户自定义指标',
+ `expr` text DEFAULT NULL COMMENT '表达式',
+ `for_time` varchar(50) NOT NULL COMMENT '持续时间',
+ `labels` text DEFAULT NULL COMMENT 'label',
+ `annotations` varchar(255) DEFAULT NULL COMMENT '告警描述信息',
+ `rule_group` varchar(50) DEFAULT NULL COMMENT 'rule-group',
+ `priority` varchar(20) DEFAULT NULL COMMENT '告警级别',
+ `alert_team` text DEFAULT NULL COMMENT '告警组json',
+ `env` varchar(100) DEFAULT NULL COMMENT '环境',
+ `op` varchar(5) DEFAULT NULL COMMENT '操作符',
+ `value` float(255,2) DEFAULT NULL COMMENT '阈值',
+ `data_count` int(11) DEFAULT NULL COMMENT '最近数据点次数',
+ `send_interval` varchar(20) DEFAULT NULL COMMENT '告警发送间隔',
+ `project_id` int(11) DEFAULT NULL COMMENT '项目id',
+ `strategy_id` int(11) unsigned DEFAULT '0' COMMENT '策略id',
+ `iam_id` int(11) DEFAULT NULL COMMENT 'iamId',
+ `template_id` int(11) DEFAULT NULL COMMENT '模版id',
+ `rule_type` int(11) DEFAULT NULL COMMENT '规则类型 0模版规则 1应用配置规则 ',
+ `rule_status` int(11) DEFAULT NULL COMMENT '0 生效 1暂停',
+ `remark` varchar(255) DEFAULT NULL COMMENT '备注',
+ `creater` varchar(64) DEFAULT NULL COMMENT '创建人',
+ `status` int(11) DEFAULT NULL COMMENT '状态0有效 1删除',
+ `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
+ `update_time` timestamp NULL DEFAULT NULL COMMENT '更新时间',
+ PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- ----------------------------
+-- Table structure for app_alarm_rule_template
+-- ----------------------------
+DROP TABLE IF EXISTS `app_alarm_rule_template`;
+CREATE TABLE `app_alarm_rule_template` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `name` varchar(255) NOT NULL COMMENT '模版名称',
+ `type` int(11) NOT NULL COMMENT '类型 0 system 1 user',
+ `remark` varchar(255) DEFAULT NULL COMMENT '备注',
+ `creater` varchar(64) DEFAULT NULL COMMENT '创建人',
+ `status` int(11) DEFAULT NULL COMMENT '状态：0有效1删除',
+ `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
+ `update_time` timestamp NULL DEFAULT NULL COMMENT '更新时间',
+ `strategy_type` int(11) DEFAULT '0' COMMENT '策略类型',
+ PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+
+
+-- ----------------------------
+-- Table structure for app_alarm_strategy
+-- ----------------------------
+DROP TABLE IF EXISTS `app_alarm_strategy`;
+CREATE TABLE `app_alarm_strategy` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `iamId` int(11) DEFAULT '0',
+ `appId` int(11) NOT NULL,
+ `appName` varchar(100) DEFAULT NULL COMMENT '应用名称',
+ `strategy_type` int(11) DEFAULT NULL COMMENT '策略类别',
+ `strategy_name` varchar(100) DEFAULT NULL COMMENT '策略名称',
+ `desc` varchar(255) DEFAULT NULL COMMENT '描述',
+ `creater` varchar(64) DEFAULT NULL COMMENT '创建人',
+ `create_time` timestamp NULL DEFAULT NULL,
+ `update_time` timestamp NULL DEFAULT NULL,
+ `status` tinyint(2) NOT NULL DEFAULT '0' COMMENT '状态',
+ `alert_team` text DEFAULT NULL COMMENT '报警组',
+ `group3` varchar(32) DEFAULT '' COMMENT '三级组织',
+ `group4` varchar(32) DEFAULT '' COMMENT '四级组织',
+ `group5` varchar(32) DEFAULT '' COMMENT '五级组织',
+ `envs` text DEFAULT NULL COMMENT '环境设置',
+ `alert_members` text DEFAULT NULL COMMENT '报警人列表',
+ `at_members` text DEFAULT NULL COMMENT 'At人员列表',
+ `services` text DEFAULT NULL,
+ PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+
+-- ----------------------------
+-- Table structure for app_capacity_auto_adjust
+-- ----------------------------
+DROP TABLE IF EXISTS `app_capacity_auto_adjust`;
+CREATE TABLE `app_capacity_auto_adjust` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `app_id` int(11) NOT NULL,
+ `pipeline_id` int(11) NOT NULL COMMENT '流水线（环境）id',
+ `container` varchar(255) DEFAULT NULL COMMENT '容器名称',
+ `status` int(3) DEFAULT NULL COMMENT '0可用，1不可用',
+ `min_instance` int(8) DEFAULT NULL COMMENT '最小实例数',
+ `max_instance` int(8) DEFAULT NULL COMMENT '最大实例数',
+ `auto_capacity` int(3) DEFAULT NULL COMMENT '自动扩容 1是 0否',
+ `depend_on` int(3) DEFAULT NULL COMMENT '扩容依据 0 cpu 1内存 2cpu及内存 depend_on',
+ `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
+ `update_time` timestamp NULL DEFAULT NULL COMMENT '更新时间',
+ PRIMARY KEY (`id`),
+ UNIQUE KEY `unique-pipleline` (`app_id`,`pipeline_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- ----------------------------
+-- Table structure for app_capacity_auto_adjust_record
+-- ----------------------------
+DROP TABLE IF EXISTS `app_capacity_auto_adjust_record`;
+CREATE TABLE `app_capacity_auto_adjust_record` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `container` varchar(255) DEFAULT NULL,
+ `name_space` varchar(255) DEFAULT NULL,
+ `replicas` int(8) DEFAULT NULL,
+ `set_replicas` int(8) DEFAULT NULL,
+ `env_id` int(11) DEFAULT NULL,
+ `status` int(3) DEFAULT NULL,
+ `time` bigint(20) DEFAULT NULL,
+ `create_time` timestamp NULL DEFAULT NULL,
+ `update_time` timestamp NULL DEFAULT NULL,
+ PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+
+-- ----------------------------
+-- Table structure for app_grafana_mapping
+-- ----------------------------
+DROP TABLE IF EXISTS `app_grafana_mapping`;
+CREATE TABLE `app_grafana_mapping` (
+ `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
+ `app_name` varchar(100) NOT NULL,
+ `mione_env` varchar(20) DEFAULT NULL,
+ `grafana_url` varchar(200) NOT NULL,
+ `create_time` timestamp NULL DEFAULT NULL,
+ `update_time` timestamp NULL DEFAULT NULL,
+ PRIMARY KEY (`id`),
+ KEY `appNameIndex` (`app_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+
+-- ----------------------------
+-- Table structure for app_monitor
+-- ----------------------------
+DROP TABLE IF EXISTS `app_monitor`;
+CREATE TABLE `app_monitor` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `project_id` int(11) DEFAULT NULL COMMENT '项目id',
+ `iam_tree_id` int(11) DEFAULT NULL COMMENT 'iamTreeId',
+ `project_name` varchar(255) DEFAULT NULL COMMENT '项目名称',
+ `app_source` int(8) DEFAULT '0' COMMENT 'app来源 0-开源',
+ `owner` varchar(30) DEFAULT NULL COMMENT '所属者',
+ `care_user` varchar(30) DEFAULT NULL COMMENT '关注者',
+ `alarm_level` int(11) DEFAULT NULL COMMENT '报警级别',
+ `total_alarm` int(11) DEFAULT NULL COMMENT '应用报警总数',
+ `exception_num` int(11) DEFAULT NULL COMMENT '异常数',
+ `slow_query_num` int(11) DEFAULT NULL COMMENT '慢查询数',
+ `status` int(11) DEFAULT NULL COMMENT '状态 0有效1删除',
+ `base_info_id` int(11) DEFAULT NULL COMMENT '基本信息id',
+ `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
+ `update_time` timestamp NULL DEFAULT NULL COMMENT '更新时间',
+ PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- ----------------------------
+-- Table structure for app_quality_market
+-- ----------------------------
+DROP TABLE IF EXISTS `app_quality_market`;
+CREATE TABLE `app_quality_market` (
+ `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '自动递增id',
+ `market_name` varchar(255) NOT NULL DEFAULT '' COMMENT '大盘名称',
+ `creator` varchar(100) DEFAULT '' COMMENT '创建者',
+ `service_list` text(16383) DEFAULT NULL COMMENT '应用列表 ; 号分割多个',
+ `last_updater` varchar(100) DEFAULT '' COMMENT '上一次更新人',
+ `remark` varchar(255) DEFAULT '' COMMENT '备注',
+ `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+ `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+ PRIMARY KEY (`id`),
+ KEY `key_market_name` (`market_name`),
+ KEY `key_creator` (`creator`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- ----------------------------
+-- Table structure for app_scrape_job
+-- ----------------------------
+DROP TABLE IF EXISTS `app_scrape_job`;
+CREATE TABLE `app_scrape_job` (
+ `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '自增id',
+ `iam_id` int(11) NOT NULL COMMENT 'iam树的id',
+ `user` varchar(64) NOT NULL DEFAULT '' COMMENT '操作用户',
+ `job_json` text DEFAULT NULL COMMENT '抓取配置json',
+ `message` varchar(255) NOT NULL DEFAULT '' COMMENT '请求返回的信息',
+ `data` varchar(255) DEFAULT '' COMMENT '成功则是请求返回的抓取id',
+ `job_name` varchar(64) DEFAULT NULL COMMENT '抓取的job的名字',
+ `status` tinyint(2) unsigned NOT NULL DEFAULT '0' COMMENT 'job状态 0创建失败 1创建成功 2 已删除',
+ `job_desc` varchar(255) DEFAULT '' COMMENT 'job描述',
+ `create_time` datetime NOT NULL COMMENT '创建时间',
+ `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+ PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- ----------------------------
+-- Table structure for app_service_market
+-- ----------------------------
+DROP TABLE IF EXISTS `app_service_market`;
+CREATE TABLE `app_service_market` (
+ `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '自增id',
+ `market_name` varchar(150) NOT NULL DEFAULT '' COMMENT '大盘名称',
+ `belong_team` varchar(150) NOT NULL DEFAULT '' COMMENT '所属团队',
+ `creator` varchar(50) DEFAULT '' COMMENT '创建者',
+ `service_list` text(16383) DEFAULT '' COMMENT '应用列表 ; 号分割多个',
+ `last_updater` varchar(50) DEFAULT '' COMMENT '上一次更新人',
+ `remark` varchar(255) DEFAULT '' COMMENT '备注',
+ `service_type` int(11) unsigned NOT NULL DEFAULT '0' COMMENT '服务类别',
+ `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+ `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+ PRIMARY KEY (`id`),
+ KEY `key_market_name` (`market_name`),
+ KEY `key_creator` (`creator`),
+ KEY `key_belong_team` (`belong_team`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- ----------------------------
+-- Table structure for app_tesla_alarm_rule
+-- ----------------------------
+DROP TABLE IF EXISTS `app_tesla_alarm_rule`;
+CREATE TABLE `app_tesla_alarm_rule` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `name` varchar(100) DEFAULT NULL COMMENT '警报名称',
+ `tesla_group` varchar(100) NOT NULL COMMENT 'tesla组',
+ `alert_type` varchar(50) DEFAULT NULL COMMENT '报警类型',
+ `exper` text DEFAULT NULL COMMENT '表达式',
+ `op` varchar(2) DEFAULT NULL COMMENT '操作符',
+ `value` float(11,2) DEFAULT NULL COMMENT '阈值',
+ `duration` varchar(20) DEFAULT NULL COMMENT '持续时间',
+ `remark` varchar(255) DEFAULT NULL COMMENT '备注',
+ `type` int(11) DEFAULT NULL COMMENT '类型',
+ `status` int(11) DEFAULT NULL COMMENT '状态',
+ `creater` varchar(64) DEFAULT NULL COMMENT '创建人',
+ `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
+ `update_time` timestamp NULL DEFAULT NULL COMMENT '更新时间',
+ PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- ----------------------------
+-- Table structure for app_tesla_feishu_mapping
+-- ----------------------------
+DROP TABLE IF EXISTS `app_tesla_feishu_mapping`;
+CREATE TABLE `app_tesla_feishu_mapping` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `tesla_group` varchar(50) NOT NULL COMMENT 'tesla分组名',
+ `feishu_group_id` varchar(50) NOT NULL COMMENT '飞书群id',
+ `remark` varchar(255) DEFAULT NULL COMMENT '备注',
+ `creater` varchar(64) DEFAULT NULL COMMENT '创建者',
+ `status` int(11) DEFAULT NULL COMMENT '状态',
+ `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
+ `update_time` timestamp NULL DEFAULT NULL COMMENT '更新时间',
+ PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- ----------------------------
+-- Table structure for hera_app_base_info
+-- ----------------------------
+DROP TABLE IF EXISTS `hera_app_base_info`;
+CREATE TABLE `hera_app_base_info` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `bind_id` varchar(50) COLLATE utf8mb4_bin NOT NULL COMMENT '绑定的id',
+  `bind_type` int NOT NULL COMMENT '绑定类型(0 appId 1 iamTreeId)',
+  `app_name` varchar(255) COLLATE utf8mb4_bin NOT NULL COMMENT '应用名称',
+  `app_cname` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '应用中文名称',
+  `app_type` int NOT NULL COMMENT '应用类型-关联指标监控模版（0业务应用 1主机应用）',
+  `app_language` varchar(30) collate utf8mb4_bin DEFAULT NULL COMMENT '语言类型',
+  `platform_type` int NOT NULL COMMENT '平台类型',
+  `app_sign_id` varchar(60) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '应用指标唯一性标识',
+  `iam_tree_id` int DEFAULT NULL COMMENT 'iam_tree_id(报警接口必须)',
+  `envs_map` text COLLATE utf8mb4_bin COMMENT '环境列表',
+  `auto_capacity` int DEFAULT NULL COMMENT '自动扩容 1是，0否',
+  `status` int DEFAULT NULL COMMENT '状态',
+  `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` timestamp NULL DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_uniqe_app` (`bind_id`,`platform_type`),
+  KEY `idx_app_name` (`app_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+DROP TABLE IF EXISTS `hera_app_role`;
+CREATE TABLE `hera_app_role` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `app_id` varchar(50) NOT NULL,
+ `app_platform` int(11) NOT NULL,
+ `user` varchar(64) NOT NULL,
+ `role` int(11) NOT NULL,
+ `status` int(11) NOT NULL,
+ `create_time` timestamp NULL DEFAULT NULL,
+ `update_time` timestamp NULL DEFAULT NULL,
+ PRIMARY KEY (`id`),
+ KEY `idx_app_role` (`app_id`,`app_platform`),
+ KEY `idx_app_role_user` (`user`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- ----------------------------
+-- Table structure for hera_oper_log
+-- ----------------------------
+DROP TABLE IF EXISTS `hera_oper_log`;
+CREATE TABLE `hera_oper_log` (
+ `id` bigint(11) NOT NULL AUTO_INCREMENT COMMENT 'id',
+ `oper_name` varchar(64) NOT NULL COMMENT '操作者',
+ `log_type` int(1) DEFAULT '0' COMMENT '0概况，1明细',
+ `before_parent_id` bigint(11) DEFAULT '0' COMMENT '明细所属概况id',
+ `module_name` varchar(64) DEFAULT '' COMMENT '模块名称',
+ `interface_name` varchar(64) DEFAULT '' COMMENT '接口名称',
+ `interface_url` varchar(128) DEFAULT '' COMMENT '接口链接',
+ `action` varchar(32) DEFAULT '' COMMENT '行为',
+ `before_data` text DEFAULT NULL COMMENT '操作前数据',
+ `after_data` text DEFAULT NULL COMMENT '操作后数据',
+ `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
+ `update_time` timestamp NULL DEFAULT NULL COMMENT '更新时间',
+ `data_type` int(1) DEFAULT '0' COMMENT '0未知，1策略，2规则',
+ `after_parent_id` bigint(11) DEFAULT '0' COMMENT '明细所属概况id',
+ `result_desc` varchar(128) DEFAULT '' COMMENT '结果',
+ PRIMARY KEY (`id`),
+ KEY `idx_before_parent_id` (`before_parent_id`),
+ KEY `idx_oper_name` (`oper_name`),
+ KEY `idx_after_parent_id` (`after_parent_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+
+-- ----------------------------
+-- Table structure for rules
+-- ----------------------------
+DROP TABLE IF EXISTS `rules`;
+CREATE TABLE `rules` (
+ `rule_id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '规则id',
+ `rule_name` varchar(255) DEFAULT '' COMMENT '规则所属组的名称',
+ `rule_fn` varchar(255) DEFAULT '' COMMENT '类别',
+ `rule_interval` int(11) DEFAULT NULL COMMENT '规则计算间隔',
+ `rule_alert` varchar(255) DEFAULT '' COMMENT '告警名称',
+ `rule_expr` text DEFAULT NULL COMMENT '表达式',
+ `rule_for` varchar(255) DEFAULT '' COMMENT '持续时间',
+ `rule_labels` varchar(255) DEFAULT '' COMMENT '规则维度信息',
+ `rule_annotations` text DEFAULT NULL COMMENT '规则描述信息',
+ `principal` varchar(255) DEFAULT NULL COMMENT '负责人邮箱前缀逗号分隔',
+ `create_time` date DEFAULT NULL COMMENT '创建时间',
+ `update_time` date DEFAULT NULL COMMENT '更新时间',
+ PRIMARY KEY (`rule_id`),
+ UNIQUE KEY `unique_key` (`rule_alert`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+
+-- ----------------------------
+-- Table structure for app_scrape_job
+-- ----------------------------
+DROP TABLE IF EXISTS `app_scrape_job`;
+CREATE TABLE `app_scrape_job` (
+ `id` int(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '自增id',
+ `iam_id` int(11) NOT NULL COMMENT 'iam树的id',
+ `user` varchar(64) NOT NULL DEFAULT '' COMMENT '操作用户',
+ `job_json` text DEFAULT NULL COMMENT '抓取配置json',
+ `message` varchar(255) NOT NULL DEFAULT '' COMMENT '请求返回的信息',
+ `data` varchar(255) DEFAULT '' COMMENT '成功则是请求返回的抓取id',
+ `job_name` varchar(64) DEFAULT NULL COMMENT '抓取的job的名字',
+ `status` tinyint(2) unsigned NOT NULL DEFAULT '0' COMMENT 'job状态 0创建失败 1创建成功 2 已删除',
+ `job_desc` varchar(255) DEFAULT '' COMMENT 'job描述',
+ `create_time` datetime NOT NULL COMMENT '创建时间',
+ `update_time` datetime DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+ PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+
+-- ----------------------------
+-- Table structure for rule_promql_template
+-- ----------------------------
+DROP TABLE IF EXISTS `rule_promql_template`;
+CREATE TABLE `rule_promql_template` (
+ `id` int(11) NOT NULL AUTO_INCREMENT,
+ `name` varchar(255) NOT NULL COMMENT '模版名称',
+ `promql` varchar(512) DEFAULT NULL COMMENT 'promql',
+ `type` int(11) NOT NULL COMMENT '类型 0 system 1 user',
+ `remark` varchar(255) DEFAULT NULL COMMENT '备注',
+ `creater` varchar(64) DEFAULT '' COMMENT '创建人',
+ `status` int(11) DEFAULT NULL COMMENT '状态：0有效',
+ `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
+ `update_time` timestamp NULL DEFAULT NULL COMMENT '更新时间',
+ PRIMARY KEY (`id`),
+ KEY `idx_creater` (`creater`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+
+-- ----------------------------
+-- Table structure for app_monitor_config
+-- ----------------------------
+DROP TABLE IF EXISTS `app_monitor_config`;
+CREATE TABLE `app_monitor_config` (
+ `id` int NOT NULL AUTO_INCREMENT,
+ `project_id` int NOT NULL COMMENT '项目id',
+ `config_type` int NOT NULL COMMENT '配置类型 0慢查询时间',
+ `config_name` varchar(50) NOT NULL COMMENT '配置名称',
+ `value` varchar(255) NOT NULL COMMENT '配置值',
+ `status` int NOT NULL,
+ `create_time` timestamp NULL DEFAULT NULL,
+ `update_time` timestamp NULL DEFAULT NULL,
+ PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+
+-- ----------------------------
+-- Table structure for mione_grafana_template
+-- ----------------------------
+DROP TABLE IF EXISTS `mione_grafana_template`;
+CREATE TABLE `mione_grafana_template` (
+  `id` int(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '自增id',
+  `name` varchar(64) NOT NULL DEFAULT '' COMMENT '模板名字',
+  `template` longtext DEFAULT NULL COMMENT '模板json',
+  `platform` int(11) DEFAULT NULL COMMENT '平台',
+  `language` int(11) DEFAULT NULL COMMENT '语言',
+  `app_type` int(11) DEFAULT NULL COMMENT '应用类型',
+  `panel_id_list` text DEFAULT NULL COMMENT '图表id列表',
+  `url_param` text DEFAULT NULL COMMENT 'url参数',
+  `create_time` timestamp NULL DEFAULT NULL COMMENT '创建时间',
+  `update_time` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `deleted` tinyint(1) DEFAULT '0' COMMENT '0未删除1删除',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_name` (`name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin AUTO_INCREMENT=30001;
+
+-- ----------------------------
+-- Table structure for hera_project_group
+-- ----------------------------
+DROP TABLE IF EXISTS `hera_project_group`;
+CREATE TABLE `hera_project_group` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `type` int(3) NOT NULL COMMENT '项目组类型:0-IAM,1-TPC',
+  `relation_object_id` int(11) NOT NULL COMMENT '关联的对象的 Id，比如 IAM 节点 ID，TPC 节点 ID。',
+  `name` varchar(128) NOT NULL COMMENT '项目组名称',
+  `cn_name` varchar(128) DEFAULT NULL COMMENT '项目组中文名',
+  `parent_group_id` int(11) DEFAULT NULL COMMENT '父节点 id',
+  `status` int(3) DEFAULT '0' COMMENT '状态',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_project_group_id` (`parent_group_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- ----------------------------
+-- Table structure for hera_project_group_app
+-- ----------------------------
+DROP TABLE IF EXISTS `hera_project_group_app`;
+CREATE TABLE `hera_project_group_app` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `project_group_id` int(11) DEFAULT NULL COMMENT 'hera项目组id',
+  `app_base_info_id` int(11) NOT NULL COMMENT 'hera app元数据主键id',
+  `status` int(3) DEFAULT '0' COMMENT '状态',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_project_group_id` (`project_group_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+-- ----------------------------
+-- Table structure for hera_project_group_user
+-- ----------------------------
+DROP TABLE IF EXISTS `hera_project_group_user`;
+CREATE TABLE `hera_project_group_user` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `project_group_id` int(11) DEFAULT NULL COMMENT '项目组id',
+  `user` varchar(30) DEFAULT NULL COMMENT '用户账号',
+  `status` int(3) DEFAULT '0' COMMENT '状态',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_name` (`user`),
+  KEY `idx_project_group_id` (`project_group_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin;
+
+SET FOREIGN_KEY_CHECKS = 1;

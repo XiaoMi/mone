@@ -20,6 +20,8 @@ import io.micrometer.prometheus.PrometheusMeterRegistry;
 import io.opentelemetry.exporter.logging.LoggingMetricExporter;
 import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporter;
 import io.opentelemetry.exporter.otlp.metrics.OtlpGrpcMetricExporterBuilder;
+import io.opentelemetry.sdk.common.EnvOrJvmProperties;
+import io.opentelemetry.sdk.common.SystemCommon;
 import io.opentelemetry.sdk.internal.ThrottlingLogger;
 import io.opentelemetry.sdk.metrics.SdkMeterProvider;
 import io.opentelemetry.sdk.metrics.export.IntervalMetricReader;
@@ -41,31 +43,28 @@ final class MetricExporterConfiguration {
   private static final ThrottlingLogger logger =
       new ThrottlingLogger(Logger.getLogger(MetricExporterConfiguration.class.getName()));
 
-  private static String applicationName = System.getenv("mione.app.name");
-  private static String serverIp = System.getenv("TESLA_HOST");
-  private static String projectEnv = System.getenv("MIONE_PROJECT_ENV_NAME");
-  private static final String BUILDIN_K8S = System.getenv("hera.buildin.k8s");
-  private static final String NODE_IP = System.getenv("node.ip");
-  private static final String ENV_ID = System.getenv("MIONE_PROJECT_ENV_ID");
+  private static String applicationName;
+  private static String serverIp = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_HOST_IP.getKey());
+  private static final String projectEnv = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_NAME.getKey());
+  private static final String BUILDIN_K8S = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_HERA_BUILD_K8S.getKey());
+  private static final String NODE_IP = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_NODE_IP.getKey());
+  private static final String ENV_ID = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_ID.getKey());
   private static final String ENV_DEFAULT = "default_env";
+  private static final String LOG_AGENT_NACOS_KET = "prometheus_server_10010_log_agent";
+  private static final String LOG_AGENT_ENV_ID = "1";
 
   static void configureExporter(
       String name, ConfigProperties config, SdkMeterProvider meterProvider) {
-    if (StringUtils.isEmpty(applicationName)) {
-      applicationName = config.getString("otel.resource.attributes");
+      applicationName = config.getString(EnvOrJvmProperties.JVM_OTEL_RESOURCE_ATTRIBUTES.getKey());
       if (StringUtils.isNotEmpty(applicationName)) {
         applicationName = applicationName.split("=")[1];
-      } else {
-        applicationName = "none";
+      }else{
+        applicationName = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.MIONE_PROJECT_NAME.getKey()) == null ? EnvOrJvmProperties.MIONE_PROJECT_NAME.getDefaultValue() : SystemCommon.getEnvOrProperties(EnvOrJvmProperties.MIONE_PROJECT_NAME.getKey());
       }
-    }
-    if (StringUtils.isEmpty(projectEnv)) {
-      projectEnv = ENV_DEFAULT;
-    }
     // 替换项目名称中的-为_
     applicationName = applicationName.replaceAll("-", "_");
     if (StringUtils.isEmpty(serverIp)) {
-      serverIp = config.getString("otel.service.ip");
+      serverIp = config.getString(EnvOrJvmProperties.JVM_OTEL_SERVICE_IP.getKey());
     }
     if (StringUtils.isEmpty(name)) {
       name = "default";
@@ -174,15 +173,13 @@ final class MetricExporterConfiguration {
   @SuppressWarnings({"BooleanParameter", "UnnecessaryParentheses"})
   private static void configureJcommonPrometheusMetrics(ConfigProperties config) {
     // regist nacos for prometheus port
-    String javaagentPrometheusPort = System.getenv("JAVAAGENT_PROMETHEUS_PORT");
+    String javaagentPrometheusPort = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_JAVAAGENT_PROMETHEUS_PORT.getKey());
     if (StringUtils.isEmpty(javaagentPrometheusPort)) {
-      javaagentPrometheusPort = config.getString("otel.metrics.prometheus.port");
-      if (StringUtils.isEmpty(javaagentPrometheusPort)) {
-        javaagentPrometheusPort = "55433";
-      }
+      javaagentPrometheusPort = config.getString(EnvOrJvmProperties.JVM_OTEL_METRICS_PROMETHEUS_PORT.getKey());
     }
-    String nacosAddr = config.getString("otel.exporter.prometheus.nacos.addr");
-    registNacos(javaagentPrometheusPort, nacosAddr);
+    String nacosAddr = config.getString(EnvOrJvmProperties.JVM_OTEL_NACOS_ADDRESS.getKey());
+    registJvmNacos(javaagentPrometheusPort, nacosAddr);
+    registLogAgentNacos(nacosAddr);
 
     PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
     if ("1".equals(BUILDIN_K8S)) {
@@ -215,7 +212,7 @@ final class MetricExporterConfiguration {
     }).start();
   }
 
-  private static void registNacos(String prometheusPort, String nacosServerAddr) {
+  private static void registJvmNacos(String prometheusPort, String nacosServerAddr) {
     try {
       String appName = "prometheus_server_" + applicationName;
       NacosNamingService nacosNamingService = new NacosNamingService(nacosServerAddr);
@@ -227,7 +224,7 @@ final class MetricExporterConfiguration {
       if (StringUtils.isNotEmpty(ENV_ID)) {
         map.put("env_id", ENV_ID);
       }
-      if (StringUtils.isNotEmpty(projectEnv)){
+      if (StringUtils.isNotEmpty(projectEnv)) {
         map.put("env_name", projectEnv);
       }
       instance.setMetadata(map);
@@ -237,6 +234,32 @@ final class MetricExporterConfiguration {
         logger.log(Level.INFO, "nacos shutdown hook deregister instance");
         try {
           nacosNamingService.deregisterInstance(appName, instance);
+        } catch (Exception e) {
+          logger.log(Level.WARNING, "nacos shutdown hook error : " + e.getMessage());
+        }
+      }));
+    } catch (Exception e) {
+      throw new ConfigurationException(
+          "Prometheus export regist nacos exception: " + e.getMessage());
+    }
+  }
+
+  private static void registLogAgentNacos(String nacosAddr) {
+    try {
+      NacosNamingService nacosNamingService = new NacosNamingService(nacosAddr);
+      Instance instance = new Instance();
+      instance.setIp(serverIp);
+      instance.setPort(55256);
+      Map<String, String> map = new HashMap<>();
+      map.put("env_id", LOG_AGENT_ENV_ID);
+      map.put("env_name", ENV_DEFAULT);
+      instance.setMetadata(map);
+      nacosNamingService.registerInstance(LOG_AGENT_NACOS_KET, instance);
+      // deregister
+      Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+        logger.log(Level.INFO, "nacos shutdown hook deregister instance");
+        try {
+          nacosNamingService.deregisterInstance(LOG_AGENT_NACOS_KET, instance);
         } catch (Exception e) {
           logger.log(Level.WARNING, "nacos shutdown hook error : " + e.getMessage());
         }

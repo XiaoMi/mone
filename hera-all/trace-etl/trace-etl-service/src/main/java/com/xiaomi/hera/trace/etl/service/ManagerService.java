@@ -18,7 +18,7 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * @Description 通过bootstrap工程BeanConfig初始化，以免不需要的工程启动报错
+ * @Description Initialize through the bootstrap project BeanConfig to avoid unwanted project startup errors
  * @Author dingtao
  * @Date 2022/4/18 3:31 下午
  */
@@ -70,10 +70,10 @@ public class ManagerService {
         Date now = new Date();
         int i = 0;
         if (config.getId() == null) {
-            // 校验是否存在
+            // Check for existence
             HeraTraceEtlConfig byBaseInfoId = heraTraceEtlConfigMapper.getByBaseInfoId(config.getBaseInfoId());
             if(byBaseInfoId != null){
-                return Result.fail(GeneralCodes.InternalError, "项目配置已存在，请勿重复添加");
+                return Result.fail(GeneralCodes.InternalError, "The item configuration already exists. Do not add it again");
             }
             config.setCreateTime(now);
             config.setUpdateTime(now);
@@ -102,7 +102,7 @@ public class ManagerService {
                 });
             }
         }
-        return i > 0 ? Result.success(null) : Result.fail(GeneralCodes.InternalError, "操作失败");
+        return i > 0 ? Result.success(null) : Result.fail(GeneralCodes.InternalError, "Operation failure");
     }
 
     public int delete(HeraTraceEtlConfig config) {
