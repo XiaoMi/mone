@@ -200,10 +200,10 @@ public class HTTPServer {
         }
 
         /**
-         * 为了解决服务启动时，consumer消息已经进来很久，但是prometheus还没有开始拉取，
-         * 导致DataCacheService中的cacheData长度超过4个，指标被清除的风险。
-         * prometheus第一次拉取时，直接从CollectRegister中拉取；
-         * ConsumerService中的cacheData操作，直到prometheus第一拉取的15s后才会执行
+         * In order to solve the problem that consumer messages have been coming in for a long time when the service starts, but Prometheus has not started pulling yet,
+         * causing the risk of clearing the metrics when the cacheData length in DataCacheService exceeds 4.
+         * When Prometheus pulls for the first time, it pulls directly from CollectRegister.
+         * The cacheData operation in ConsumerService will not be executed until 15 seconds after the first pull of Prometheus.
          *
          * @return
          */

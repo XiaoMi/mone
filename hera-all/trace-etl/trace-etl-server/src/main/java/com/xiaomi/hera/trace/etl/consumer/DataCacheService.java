@@ -40,8 +40,8 @@ public class DataCacheService {
     private CopyOnWriteArrayList<byte[]> cacheData = new CopyOnWriteArrayList<>();
 
     /**
-     * 在prometheus拉取数据之后，才开始启动缓存。
-     * 防止在服务启动时，prometheus发现较慢，导致cacheData中数据过多，指标会被clear的风险。
+     * Start caching after pulling data from Prometheus.
+     * Prevent the risk of having too much data in cacheData and the metrics being cleared due to Prometheus being slow to discover during service startup.
      */
     @Getter
     @Setter
