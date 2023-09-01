@@ -34,7 +34,7 @@ public class ClientMessageQueueWrapper {
         this.clientMessageQueue = clientMessageQueue;
         this.producer = producer;
         startExport();
-        log.info(rocketMQMessageQueue.getBrokerName() + " - "+rocketMQMessageQueue.getQueueId()+" start");
+        log.info(rocketMQMessageQueue.getBrokerName() + " - " + rocketMQMessageQueue.getQueueId() + " start");
     }
 
     public BlockingQueue<MessageExt> getClientMessageQueue() {
@@ -57,13 +57,13 @@ public class ClientMessageQueueWrapper {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null) return false;
-        if(o instanceof ClientMessageQueueWrapper) {
+        if (o instanceof ClientMessageQueueWrapper) {
             ClientMessageQueueWrapper that = (ClientMessageQueueWrapper) o;
             return Objects.equals(rocketMQMessageQueue, that.rocketMQMessageQueue);
-        }else if (o instanceof MessageQueue){
+        } else if (o instanceof MessageQueue) {
             MessageQueue queue = (MessageQueue) o;
             return Objects.equals(rocketMQMessageQueue, queue);
-        }else{
+        } else {
             return false;
         }
     }
@@ -96,7 +96,7 @@ public class ClientMessageQueueWrapper {
         running = false;
         // Destroy thread pool
         executor.shutdown();
-        log.info(rocketMQMessageQueue.getBrokerName()+" - "+rocketMQMessageQueue.getQueueId()+" stopped");
+        log.info(rocketMQMessageQueue.getBrokerName() + " - " + rocketMQMessageQueue.getQueueId() + " stopped");
     }
 
     private class ClientQueueExporter implements Runnable {

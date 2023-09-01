@@ -18,9 +18,6 @@ public class EnterManager {
     private Monitor monitor = new Monitor();
 
     @Getter
-    private Monitor processMonitor = new Monitor();
-
-    @Getter
     private AtomicInteger processNum = new AtomicInteger();
 
     private Monitor.Guard guard = monitor.newGuard(new BooleanSupplier() {
@@ -35,12 +32,5 @@ public class EnterManager {
         monitor.enter();
         monitor.leave();
     }
-
-    public void processEnter() {
-        processMonitor.enter();
-        processMonitor.leave();
-    }
-
-
 
 }

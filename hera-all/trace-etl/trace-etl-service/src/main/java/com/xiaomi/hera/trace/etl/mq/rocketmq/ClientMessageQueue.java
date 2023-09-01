@@ -27,7 +27,6 @@ public class ClientMessageQueue {
 
     private static final int CLIENT_QUEUE_SIZE = 2000;
 
-
     private final static int FETCH_ROCKETMQ_QUEUE_GAP = 10;
 
     public ClientMessageQueue(RocketMqProducer producer) {
