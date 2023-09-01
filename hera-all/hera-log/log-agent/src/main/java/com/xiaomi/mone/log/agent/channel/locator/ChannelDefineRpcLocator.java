@@ -60,6 +60,7 @@ public class ChannelDefineRpcLocator implements ChannelDefineLocator {
         if (StringUtils.isNotEmpty(heraK8sEnv)) {
             localIp = String.format("%s%s%s", localIp, SYMBOL_COLON, heraK8sEnv);
         }
+        log.info("ChannelDefineRpcLocator,localIp:{},heraK8sEnv:{},ipUnique:{}", NetUtil.getLocalIp(), heraK8sEnv, localIp);
         return getChannelDefine(localIp);
     }
 

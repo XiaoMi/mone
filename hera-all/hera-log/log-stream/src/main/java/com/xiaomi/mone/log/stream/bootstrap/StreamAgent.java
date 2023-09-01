@@ -18,7 +18,6 @@ package com.xiaomi.mone.log.stream.bootstrap;
 import com.alibaba.nacos.client.config.utils.SnapShotSwitch;
 import com.xiaomi.mone.log.stream.config.ConfigManager;
 import com.xiaomi.mone.log.stream.config.MilogConfigListener;
-import com.xiaomi.mone.log.stream.job.JobManager;
 import com.xiaomi.mone.log.stream.plugin.es.EsPlugin;
 import com.xiaomi.youpin.docean.anno.Service;
 import lombok.extern.slf4j.Slf4j;
@@ -34,9 +33,6 @@ public class StreamAgent {
 
     @Resource
     private ConfigManager configManager;
-
-    @Resource
-    private JobManager jobManager;
 
     public void init() {
         try {
