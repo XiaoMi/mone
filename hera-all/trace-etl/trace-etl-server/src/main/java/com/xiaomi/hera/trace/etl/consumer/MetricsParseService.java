@@ -89,9 +89,9 @@ public class MetricsParseService {
                 log.error("serviceName is empty : " + tSpanData);
                 return;
             }
-            // 统计span来源、qps、日总量等信息
+            // Collect information such as span source, QPS, daily total, etc.
             traceStatistics(serviceName);
-            // 解析TSpanData，转换为指标类
+            // Parse TSpanData and convert it into an indicator class.
             MetricsParseResult metricsParseResult = metricsParse(tSpanData);
             if (metricsParseResult.isIgnore()) {
                 return;
