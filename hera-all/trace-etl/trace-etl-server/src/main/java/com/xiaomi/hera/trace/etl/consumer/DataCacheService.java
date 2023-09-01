@@ -1,12 +1,18 @@
 package com.xiaomi.hera.trace.etl.consumer;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Sets;
-import com.xiaomi.youpin.prometheus.client.MetricsManager;
-import com.xiaomi.youpin.prometheus.client.Prometheus;
 import com.xiaomi.youpin.prometheus.client.multi.MutiMetrics;
-import io.prometheus.client.*;
+import com.xiaomi.youpin.prometheus.client.multi.MutiPrometheus;
+import io.prometheus.client.Collector;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.Counter;
+import io.prometheus.client.Gauge;
+import io.prometheus.client.Histogram;
 import io.prometheus.client.exporter.common.TextFormat;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -33,8 +39,22 @@ public class DataCacheService {
 
     private CopyOnWriteArrayList<byte[]> cacheData = new CopyOnWriteArrayList<>();
 
+    /**
+     * 在prometheus拉取数据之后，才开始启动缓存。
+     * 防止在服务启动时，prometheus发现较慢，导致cacheData中数据过多，指标会被clear的风险。
+     */
+    @Getter
+    @Setter
+    private boolean startCache = false;
+
     @Resource
     private MutiMetricsCall call;
+
+    @Resource
+    private EnterManager enterManager;
+
+    @NacosValue(value = "${prometheus.pull.header}", autoRefreshed = true)
+    private String prometheusPullHeader;
 
     public int dataSize() {
         return cacheData.size();
@@ -54,32 +74,28 @@ public class DataCacheService {
         }, 0, 60, TimeUnit.SECONDS);
 
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
-            try {
-                Stopwatch sw = Stopwatch.createStarted();
-                enterManager.getMonitor().enter();
+            if (startCache) {
                 try {
-                    while (enterManager.getProcessNum().get() >= 0) {
-                        TimeUnit.MILLISECONDS.sleep(200);
+                    Stopwatch sw = Stopwatch.createStarted();
+                    enterManager.getMonitor().enter();
+                    try {
+                        while (enterManager.getProcessNum().get() > 0) {
+                            TimeUnit.MILLISECONDS.sleep(200);
+                        }
+                        call.change();
+                    } finally {
+                        enterManager.getMonitor().leave();
+                        log.info("change use time:{}ms", sw.elapsed(TimeUnit.MILLISECONDS));
                     }
-                    call.change();
-                } finally {
-                    enterManager.getMonitor().leave();
-                    log.info("change use time:{}ms", sw.elapsed(TimeUnit.MILLISECONDS));
+
+                    cacheData();
+
+                } catch (Throwable ex) {
+                    log.error(ex.getMessage(), ex);
                 }
-                cacheData();
-            } catch (Throwable ex) {
-                log.error(ex.getMessage(), ex);
-            } finally {
-                enterManager.getMonitor().leave();
             }
         }, 0, 15, TimeUnit.SECONDS);
     }
-
-    @Resource
-    private EnterManager enterManager;
-
-
-
 
     public byte[] getData() {
         log.info("get data");
@@ -114,7 +130,7 @@ public class DataCacheService {
                 log.info("export metrics error : ", e);
             }
             try (ByteArrayOutputStream baos = new ByteArrayOutputStream(); OutputStreamWriter writer = new OutputStreamWriter(baos)) {
-                TextFormat.writeFormat(TextFormat.CONTENT_TYPE_004, writer, registry.filteredMetricFamilySamples(Sets.newHashSet(list)));
+                TextFormat.writeFormat(prometheusPullHeader, writer, registry.filteredMetricFamilySamples(Sets.newHashSet(list)));
                 writer.flush();
                 byte[] bytes = baos.toByteArray();
                 this.cacheData.add(bytes);
@@ -127,16 +143,44 @@ public class DataCacheService {
         });
     }
 
+    public byte[] cacheDataSync() {
+        call.change();
+        log.info("cache data sync start");
+        Stopwatch sw = Stopwatch.createStarted();
+        List<String> list = new ArrayList<>();
+        MutiMetrics old = call.old();
+        CollectorRegistry registry = old.getRegistry();
+        try {
+            Field field = registry.getClass().getDeclaredField("namesToCollectors");
+            field.setAccessible(true);
+            Map<String, Collector> namesToCollectors = (Map<String, Collector>) field.get(registry);
+            list = namesToCollectors.keySet().stream()
+                    .filter(it -> !it.endsWith("created"))
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.info("sync cache data error : ", e);
+        }
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream(); OutputStreamWriter writer = new OutputStreamWriter(baos)) {
+            TextFormat.writeFormat(TextFormat.CONTENT_TYPE_004, writer, registry.filteredMetricFamilySamples(Sets.newHashSet(list)));
+            writer.flush();
+            return baos.toByteArray();
+        } catch (Throwable ex) {
+            log.error(ex.getMessage());
+        } finally {
+            clearMetrics(old);
+            log.info("sync cache data use time:{} ms", sw.elapsed(TimeUnit.MILLISECONDS));
+        }
+        return null;
+    }
 
     private void clearMetrics(MutiMetrics old) {
         try {
-            MetricsManager gMetricsMgr = old.gMetricsMgr;
-            if (gMetricsMgr instanceof Prometheus) {
-                Prometheus prometheus = (Prometheus) gMetricsMgr;
-                Map<String, Object> prometheusMetrics = prometheus.prometheusMetrics;
+            MutiPrometheus prometheus = old.gMetricsMgr;
+            if (prometheus != null) {
+                Map<String, Object> prometheusMetrics = prometheus.getPrometheusMetrics();
                 clearTypeMetrics(prometheusMetrics, old.getRegistry());
-                prometheus.prometheusMetrics.clear();
-                prometheus.prometheusTypeMetrics.clear();
+                prometheus.getPrometheusMetrics().clear();
+                prometheus.getPrometheusTypeMetrics().clear();
             }
         } catch (Exception e) {
             log.error("clear metrics error", e);
