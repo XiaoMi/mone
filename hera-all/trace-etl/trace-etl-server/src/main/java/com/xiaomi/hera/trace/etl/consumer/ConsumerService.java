@@ -7,9 +7,7 @@ import com.xiaomi.hera.trace.etl.util.ThriftUtil;
 import com.xiaomi.hera.tspandata.TSpanData;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
-import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyContext;
-import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;
-import org.apache.rocketmq.client.consumer.listener.MessageListenerConcurrently;
+import org.apache.rocketmq.client.consumer.listener.*;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.common.message.MessageExt;
 import org.apache.thrift.TDeserializer;
@@ -19,6 +17,9 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author dingtao
@@ -44,6 +45,12 @@ public class ConsumerService {
     @Autowired
     private ClientMessageQueue clientMessageQueue;
 
+    @Autowired
+    private DataCacheService cacheService;
+
+    @Autowired
+    private EnterManager enterManager;
+
     @PostConstruct
     public void takeMessage() throws MQClientException {
         // Before initializing rocketmq consumer,
@@ -60,26 +67,32 @@ public class ConsumerService {
         log.info("init consumer end ...");
     }
 
-    private class TraceEtlMessageListener implements MessageListenerConcurrently {
+    private class TraceEtlMessageListener implements MessageListenerOrderly {
 
         @Override
-        public ConsumeConcurrentlyStatus consumeMessage(List<MessageExt> list, ConsumeConcurrentlyContext consumeConcurrentlyContext) {
+        public ConsumeOrderlyStatus consumeMessage(List<MessageExt> list, final ConsumeOrderlyContext context) {
             if (list == null || list.isEmpty()) {
-                return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
+                return ConsumeOrderlyStatus.SUCCESS;
             }
-            for (MessageExt message : list) {
-                String traceId = "";
-                try {
-                    TSpanData tSpanData = new TSpanData();
-                    new TDeserializer(ThriftUtil.PROTOCOL_FACTORY).deserialize(tSpanData, message.getBody());
-                    traceId = tSpanData.getTraceId();
-                    metricsExporterService.parse(tSpanData);
-                } catch (Throwable t) {
-                    log.error("consumer message error", t);
+            enterManager.enter();
+            enterManager.getProcessNum().incrementAndGet();
+            try {
+                for (MessageExt message : list) {
+                    String traceId = "";
+                    try {
+                        TSpanData tSpanData = new TSpanData();
+                        new TDeserializer(ThriftUtil.PROTOCOL_FACTORY).deserialize(tSpanData, message.getBody());
+                        traceId = tSpanData.getTraceId();
+                        metricsExporterService.parse(tSpanData);
+                    } catch (Throwable t) {
+                        log.error("consumer message error", t);
+                    }
+                    clientMessageQueue.enqueue(traceId, message);
                 }
-                clientMessageQueue.enqueue(traceId, message);
+                return ConsumeOrderlyStatus.SUCCESS;
+            } finally {
+                enterManager.getProcessNum().decrementAndGet();
             }
-            return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;
         }
     }
 }
