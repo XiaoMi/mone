@@ -85,8 +85,12 @@ public class DefaultLogProcessCollector implements LogProcessCollector {
             dtoList = dtoList.stream().filter(processDTO -> Objects.equals(targetIp, processDTO.getIp())).collect(Collectors.toList());
         }
         List<TailLogProcessDTO> perOneIpProgressList = Lists.newArrayList();
-        perOneIpProgressList = getTailLogProcessDTOS(dtoList, perOneIpProgressList);
-        perOneIpProgressList = filterExpireTimePath(perOneIpProgressList);
+        try {
+            perOneIpProgressList = getTailLogProcessDTOS(dtoList, perOneIpProgressList);
+            perOneIpProgressList = filterExpireTimePath(perOneIpProgressList);
+        } catch (Exception e) {
+            log.error("getTailLogProcess error,dtoList:{}", GSON.toJson(dtoList), e);
+        }
         return perOneIpProgressList;
     }
 
@@ -212,7 +216,8 @@ public class DefaultLogProcessCollector implements LogProcessCollector {
 
     private List<TailLogProcessDTO> filterExpireTimePath(List<TailLogProcessDTO> tailLogProcessDTOS) {
         return tailLogProcessDTOS.stream()
-                .filter(tailLogProcessDTO -> Instant.now().toEpochMilli() - tailLogProcessDTO.getCollectTime() <
-                        TimeUnit.MINUTES.toMillis(MAX_INTERRUPT_TIME)).collect(Collectors.toList());
+                .filter(processDTO -> Objects.nonNull(processDTO.getCollectTime()) &&
+                        Instant.now().toEpochMilli() - processDTO.getCollectTime() < TimeUnit.MINUTES.toMillis(MAX_INTERRUPT_TIME))
+                .collect(Collectors.toList());
     }
 }
