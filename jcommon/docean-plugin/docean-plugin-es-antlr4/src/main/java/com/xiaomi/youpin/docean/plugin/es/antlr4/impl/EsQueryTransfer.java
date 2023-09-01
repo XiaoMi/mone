@@ -3,6 +3,7 @@ package com.xiaomi.youpin.docean.plugin.es.antlr4.impl;
 import com.xiaomi.youpin.docean.plugin.es.antlr4.common.context.ValueContext;
 import com.xiaomi.youpin.docean.plugin.es.antlr4.common.enums.ValueTypeEnum;
 import com.xiaomi.youpin.docean.plugin.es.antlr4.common.util.MergeUtils;
+import com.xiaomi.youpin.docean.plugin.es.antlr4.common.util.StrUtils;
 import com.xiaomi.youpin.docean.plugin.es.antlr4.query.EsQueryListener;
 import com.xiaomi.youpin.docean.plugin.es.antlr4.query.EsQueryParser;
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -30,8 +31,10 @@ import java.util.stream.Collectors;
  * @date 2023/8/3 17:25
  */
 public class EsQueryTransfer implements EsQueryListener {
+    //波浪线
+    private static final String WAVY_LINE_MARK = "~";
 
-    public static final String DOUBLE_QUOTATION_MARK_SEPARATOR = "~";
+    private static final String DOUBLE_QUOTATION_MARK = "\"";
 
     private ParseTreeProperty<SearchSourceBuilder> treeProperty = new ParseTreeProperty<>();
 
@@ -217,7 +220,7 @@ public class EsQueryTransfer implements EsQueryListener {
                     break;
                 }
                 default: {
-                    if (value.getValue().toString().startsWith(DOUBLE_QUOTATION_MARK_SEPARATOR)) {
+                    if (value.getValue().toString().startsWith(WAVY_LINE_MARK)) {
                         boolQueryBuilder.must(QueryBuilders.matchQuery(param, value.getValue().toString().substring(1)));
                     } else {
                         boolQueryBuilder.must(QueryBuilders.matchPhraseQuery(param, value.getValue()));
@@ -337,6 +340,9 @@ public class EsQueryTransfer implements EsQueryListener {
     public void exitRegexExpr(EsQueryParser.RegexExprContext ctx) {
         String param = ctx.getChild(0).getText();
         String value = valueProperty.get(ctx.getChild(2)).getValue().toString();
+        if (value.startsWith(DOUBLE_QUOTATION_MARK) && value.endsWith(DOUBLE_QUOTATION_MARK)) {
+            value = StrUtils.substringBetween(value, DOUBLE_QUOTATION_MARK);
+        }
         SearchSourceBuilder sourceBuilder = new SearchSourceBuilder()
                 .query(new BoolQueryBuilder().must(QueryBuilders.regexpQuery(param, value)));
         treeProperty.put(ctx, sourceBuilder);
