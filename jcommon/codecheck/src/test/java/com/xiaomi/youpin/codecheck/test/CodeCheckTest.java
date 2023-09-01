@@ -32,7 +32,7 @@ public class CodeCheckTest {
     @Test
     public void testCheckIP() {
         CodeCheck codeCheck = new CodeCheck();
-        Map<String, List<CheckResult>> map = codeCheck.check("/home/zhangping17/code/dubbo-demo/springboot-nacos-client-demo");
+        Map<String, List<CheckResult>> map = codeCheck.check("/home/work/code/dubbo-demo/springboot-nacos-client-demo");
         map.entrySet().stream().forEach(it ->  {
             System.out.println(it.getKey());
             it.getValue().stream().forEach(it1->System.out.println(it1));

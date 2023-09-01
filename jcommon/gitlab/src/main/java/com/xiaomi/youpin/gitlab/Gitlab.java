@@ -1246,8 +1246,20 @@ public class Gitlab {
         return HttpClientV2.get(url, headers, 10000);
     }
 
+    /**
+     * 在gitlab搜索关键字，根据返回内容进行upstream语法树解析
+     * @param gitHost
+     * @param project
+     * @param branch
+     * @param keywords
+     * @param token
+     * @return
+     */
     public List<String> getDomainByIP(String gitHost, String project, String branch, List<String> keywords, String token) {
         List<String> domains = new ArrayList<>();
+        if (StringUtils.isEmpty(gitHost) || StringUtils.isEmpty(project)) {
+            return domains;
+        }
         if (keywords == null || keywords.size() < 1) {
             return domains;
         }
