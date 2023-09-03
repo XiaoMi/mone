@@ -13,7 +13,11 @@
     <version>1.6-SNAPSHOT</version>
 
     <dependencies>
-
+        <dependency>
+            <groupId>com.github.odiszapc</groupId>
+            <artifactId>nginxparser</artifactId>
+            <version>0.9.3</version>
+        </dependency>
         <dependency>
             <artifactId>http</artifactId>
             <groupId>run.mone</groupId>
