@@ -1,16 +1,20 @@
-+ 第一个不依赖小米库可以编译过的版本:2023-04-02
-+ The first version that can be compiled without relying on the Xiaomi library: 2023-04-02 
-+ 类似于谷歌的guava,提供一些组内经常使用的库
-+ Similar to Google's Guava, it provides some internally used libraries 
-+ jcommon　是Mone开发团队在开发过程中抽象的一套Java基础库，包含了日志，缓存，rpc框架，多线程多个模块。
-+ Jcommon is a Java library developed by the Mone dev team that contains common packages for logging, caching, rpc, concurrency, and database access.
-+ hera 主要依赖 rcurve+docean+rpc
-+ hera mainly relies on rcurve+docean+rpc 
-+ mifaas 主要依赖 rcurve+docean+docean-plugin
-+ mifaas mainly depends on rcurve+docean+docean-plugin 
-+ 支持Hera(可观测系统) Odin(Mesh系统) Tesla(网关) 等项目
++ The first version that can be compiled without relying on the Xiaomi library.:2023-04-02
++ Try to implement the new code version using Java 20's coroutines instead of threads.
++ Similar to Google's Guava, it provides some commonly used libraries within the group.
++ Similar to Google's Guava, it provides some internally used libraries
++ jcommon Mone is an abstract Java foundation library developed by the development team, which includes modules such as
+  logging, caching, RPC framework, and multi-threading.
++ Jcommon is a Java library developed by the Mone dev team that contains common packages for logging, caching, rpc,
+  concurrency, and database access.
++ hera Mainly rely on rcurve+docean+rpc
++ hera mainly relies on rcurve+docean+rpc
++ mifaas Mainly rely on rcurve+docean+docean-plugin
++ mifaas mainly depends on rcurve+docean+docean-plugin
++ Support projects like Hera (Observable System), Odin (Mesh System), Tesla (Gateway), etc.
 + Support for projects such as Hera (Observable System), Odin (Mesh System), Tesla (Gateway), etc.
-+ 推荐maven设置(主要是国内用阿里的源),阿里的那个可以不设置,阿里的主要是用来提速
++ Recommend maven settings (mainly using Alibaba's source in China), Alibaba's can be not set, Alibaba's is mainly used
+  for speeding up.
+
 ```
 <settings>
 
