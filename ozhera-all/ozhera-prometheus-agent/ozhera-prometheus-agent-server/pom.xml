@@ -3,18 +3,18 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>hera-prometheus-agent</artifactId>
+        <artifactId>ozhera-prometheus-agent</artifactId>
         <groupId>run.mone</groupId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-    <artifactId>hera-prometheus-agent-server</artifactId>
+    <artifactId>ozhera-prometheus-agent-server</artifactId>
 
 
     <dependencies>
 
         <dependency>
-            <artifactId>hera-prometheus-agent-client</artifactId>
+            <artifactId>ozhera-prometheus-agent-client</artifactId>
             <groupId>run.mone</groupId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>

@@ -4,17 +4,17 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <parent>
-        <artifactId>hera-prometheus-agent</artifactId>
+        <artifactId>ozhera-prometheus-agent</artifactId>
         <groupId>run.mone</groupId>
         <version>1.0.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>hera-prometheus-agent-dao</artifactId>
+    <artifactId>ozhera-prometheus-agent-dao</artifactId>
 
     <dependencies>
         <dependency>
-            <artifactId>hera-prometheus-agent-common</artifactId>
+            <artifactId>ozhera-prometheus-agent-common</artifactId>
             <groupId>run.mone</groupId>
             <version>1.0.0-SNAPSHOT</version>
         </dependency>
