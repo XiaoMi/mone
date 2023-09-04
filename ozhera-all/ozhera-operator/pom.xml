@@ -5,13 +5,13 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>run.mone</groupId>
-    <artifactId>hera-operator</artifactId>
+    <artifactId>ozhera-operator</artifactId>
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
     <modules>
-        <module>hera-operator-common</module>
-        <module>hera-operator-service</module>
-        <module>hera-operator-server</module>
+        <module>ozhera-operator-common</module>
+        <module>ozhera-operator-service</module>
+        <module>ozhera-operator-server</module>
     </modules>
 
     <name>${project.artifactId}</name>

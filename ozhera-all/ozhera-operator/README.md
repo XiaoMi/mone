@@ -1,5 +1,5 @@
-# MoneOperator概述
-MoneOperator用于一键部署和更新整个Mone系统。
+# OzHeraOperator概述
+OzHeraOperator用于一键部署和更新整个OzHera系统。
 部署完成后，请进入k8s dashboard，查看NodePort类型的Service，进行页面访问：
 + "mifaas-dash" service：mifaas产品访问: http://nodePort:32198/
 + "nacos-mone-b2c-srv" service：nacos产品访问: http://nodePort:32188/
