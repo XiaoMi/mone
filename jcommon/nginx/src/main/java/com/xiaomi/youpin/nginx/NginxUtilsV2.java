@@ -87,13 +87,16 @@ public class NginxUtilsV2 {
                         param.addValue("server " + addr + " max_fails=3 fail_timeout=5s");
                         nb0.addEntry(param);
                     });
-                    if (StringUtils.isNotEmpty(checkUrl)) {
-                        Lists.newArrayList("check interval=3000 rise=2 fall=3 timeout=1000 type=http", String.format("check_http_send \"HEAD %s HTTP/1.0\\r\\n\\r\\n\"",checkUrl)).forEach(p -> {
-                            NgxParam param = new NgxParam();
-                            param.addValue(p);
-                            nb0.getEntries().add(param);
-                        });
-                    }
+
+                    List<String> checkList = StringUtils.isNotEmpty(checkUrl)
+                            ? Lists.newArrayList("check interval=3000 rise=2 fall=3 timeout=1000 type=http", String.format("check_http_send \"HEAD %s HTTP/1.0\\r\\n\\r\\n\"", checkUrl))
+                            : Lists.newArrayList("check interval=3000 rise=2 fall=3 timeout=1000 type=tcp");
+                    checkList.stream().forEach(p -> {
+                        NgxParam param = new NgxParam();
+                        param.addValue(p);
+                        nb0.getEntries().add(param);
+                    });
+
                 }
             });
             String content = new NgxDumper(conf).dump();

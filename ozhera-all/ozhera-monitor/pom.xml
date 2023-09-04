@@ -15,10 +15,10 @@
     <packaging>pom</packaging>
     <version>1.2-SNAPSHOT</version>
     <modules>
-        <module>hera-monitor-server</module>
-        <module>hera-monitor-service</module>
-        <module>hera-monitor-api</module>
-        <module>hera-monitor-common</module>
+        <module>ozhera-monitor-server</module>
+        <module>ozhera-monitor-service</module>
+        <module>ozhera-monitor-api</module>
+        <module>ozhera-monitor-common</module>
     </modules>
 
     <properties>
