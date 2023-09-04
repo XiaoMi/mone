@@ -20,6 +20,6 @@ nohup*
 .sbtserver*
 .java-version
 license-list
-/hera-operator-service/target/
-/hera-operator-server/target/
+/ozhera-operator-service/target/
+/ozhera-operator-server/target/
 */src/license/
