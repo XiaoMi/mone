@@ -6,9 +6,7 @@ import com.xiaomi.mone.tpc.login.enums.UserTypeEnum;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 import com.xiaomi.mone.tpc.util.TokenUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -17,17 +15,25 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 @Slf4j
 @Component
-public class GiteeLoginMgr extends LoginMgr {
+public class FeiShuLoginMgr extends LoginMgr {
 
-    @NacosValue("${gitee.client_id:}")
+    @NacosValue("${feishu.client_id:}")
     private String clientId;
-    @NacosValue("${gitee.client_secret:''}")
+    @NacosValue("${feishu.client_secret:''}")
     private String clientSecret;
+
+    @NacosValue("${feishu.oauth.auth.url:''}")
+    private String oauthAuthUrl;
+
+    @NacosValue("${feishu.oauth.token.url:''}")
+    private String oauthTokenUrl;
+
+    @NacosValue("${feishu.oauth.user.url:''}")
+    private String oauthUserUrl;
 
     @Autowired
     private RestTemplate restTemplate;
@@ -39,8 +45,8 @@ public class GiteeLoginMgr extends LoginMgr {
     @Override
     public AuthAccountVo buildAuth2LoginInfo(String pageUrl, String vcode, String state) throws Exception {
         AuthAccountVo info = new AuthAccountVo();
-        info.setName("gitee");
-        info.setDesc("gitee账号授权登陆");
+        info.setName("feishu");
+        info.setDesc("feishu账号授权登陆");
         info.setUrl(this.buildAuthUrl(clientId, pageUrl, vcode, state));
         return info;
     }
@@ -63,25 +69,17 @@ public class GiteeLoginMgr extends LoginMgr {
             headers.add("Authorization", "Bearer " + responseMap.get("access_token"));
             HttpEntity<Map> entity = new HttpEntity<>(headers);
             ResponseEntity<Map> responseEntity = restTemplate.exchange(getUserUrl(), HttpMethod.GET, entity, Map.class);
-            log.info("userInfo.gitee={}", responseEntity);
-            if (responseEntity.getBody() == null || responseEntity.getBody().get("login") == null) {
-                log.error("gitee没有拿到邮件信息responseEntity={}", responseEntity);
+            log.info("userInfo.feishu={}", responseEntity);
+            if (responseEntity.getBody().get("email") == null) {
+                log.error("feishu没有拿到email字段， responseEntity={}", responseEntity);
                 return null;
             }
-            String email = (String)responseEntity.getBody().get("email");
-            if (StringUtils.isBlank(email)) {
-                ResponseEntity<List> emailResponseEntity = restTemplate.exchange(getEmailUrl(), HttpMethod.GET, entity, List.class);
-                log.info("emailResponseEntity.github={}", emailResponseEntity);
-                if (emailResponseEntity.getBody() != null && !emailResponseEntity.getBody().isEmpty()) {
-                    Map emailMap = (Map)emailResponseEntity.getBody().get(0);
-                    email = (String)emailMap.get("email");
-                }
-            }
+            String account = responseEntity.getBody().get("email").toString();
             AuthUserVo userVo = new AuthUserVo();
-            userVo.setEmail(email);
-            userVo.setExprTime(Integer.parseInt(responseMap.get("expires_in").toString()));
-            userVo.setUserType(UserTypeEnum.GITEE_TYPE.getCode());
-            userVo.setAccount(responseEntity.getBody().get("login").toString());
+            userVo.setEmail(account);
+            userVo.setExprTime(3600 * 48);
+            userVo.setUserType(UserTypeEnum.FEISHU_TYPE.getCode());
+            userVo.setAccount(account);
             userVo.setToken(TokenUtil.createToken(userVo.getExprTime(), userVo.getAccount(), userVo.getUserType()));
             if (responseEntity.getBody().get("avatar_url") != null) {
                 userVo.setAvatarUrl(responseEntity.getBody().get("avatar_url").toString());
@@ -91,33 +89,33 @@ public class GiteeLoginMgr extends LoginMgr {
             }
             return userVo;
         } catch (Throwable e) {
-            log.error("gitee_oauth2_failed", e);
+            log.error("gitlab_oauth2_failed", e);
             return null;
         }
     }
 
     @Override
     public String getSource() {
-        return "gitee";
+        return "feishu";
     }
 
     @Override
     public String getAuthUrl() {
-        return "https://gitee.com/oauth/authorize?response_type=code&scope=user_info emails";
+        return oauthAuthUrl + "?response_type=code";
     }
 
     @Override
     public String getTokenUrl() {
-        return "https://gitee.com/oauth/token";
+        return oauthTokenUrl;
     }
 
     @Override
     public String getUserUrl() {
-        return "https://gitee.com/api/v5/user";
+        return oauthUserUrl;
     }
 
     @Override
     public String getEmailUrl() {
-        return "https://gitee.com/api/v5/emails";
+        return null;
     }
 }

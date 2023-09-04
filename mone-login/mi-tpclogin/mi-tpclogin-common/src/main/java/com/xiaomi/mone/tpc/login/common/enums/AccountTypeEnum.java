@@ -10,12 +10,12 @@ import lombok.ToString;
  */
 @ToString
 public enum AccountTypeEnum implements Base {
-    EMAIL(0, "邮箱账号", UserTypeEnum.EMAIL),
+    EMAIL(0, "邮箱账号", 2),
     ;
     private Integer code;
     private String desc;
-    private UserTypeEnum userType;
-    AccountTypeEnum(Integer code, String desc, UserTypeEnum userType) {
+    private Integer userType;
+    AccountTypeEnum(Integer code, String desc, Integer userType) {
         this.code = code;
         this.desc = desc;
         this.userType = userType;
@@ -43,7 +43,7 @@ public enum AccountTypeEnum implements Base {
         return desc;
     }
 
-    public UserTypeEnum getUserType() {
+    public Integer getUserType() {
         return userType;
     }
 

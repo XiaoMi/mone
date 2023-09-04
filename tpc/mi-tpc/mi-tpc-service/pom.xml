@@ -109,10 +109,6 @@
             <artifactId>fluent-hc</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.codehaus.janino</groupId>
-            <artifactId>janino</artifactId>
-        </dependency>
-        <dependency>
             <groupId>run.mone</groupId>
             <artifactId>infra-result</artifactId>
         </dependency>

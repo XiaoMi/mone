@@ -28,11 +28,6 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <artifactId>hera-trace</artifactId>
-                <groupId>run.mone</groupId>
-                <version>1.4-SNAPSHOT</version>
-            </dependency>
-            <dependency>
                 <groupId>org.apache.rocketmq</groupId>
                 <artifactId>rocketmq-client</artifactId>
                 <version>4.9.3</version>
@@ -135,29 +130,9 @@
                 <version>4.5.12</version>
             </dependency>
             <dependency>
-                <groupId>org.codehaus.janino</groupId>
-                <artifactId>janino</artifactId>
-                <version>3.0.8</version>
-            </dependency>
-            <dependency>
                 <groupId>org.nutz</groupId>
                 <artifactId>nutz</artifactId>
                 <version>1.r.68.v20191031</version>
-            </dependency>
-            <dependency>
-                <groupId>org.nutz</groupId>
-                <artifactId>nutz-integration-spring</artifactId>
-                <version>1.r.68.v20191031</version>
-                <exclusions>
-                    <exclusion>
-                        <artifactId>spring-context</artifactId>
-                        <groupId>org.springframework</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>nutz</artifactId>
-                        <groupId>org.nutz</groupId>
-                    </exclusion>
-                </exclusions>
             </dependency>
             <dependency>
                 <groupId>run.mone</groupId>
@@ -210,6 +185,34 @@
                         </sourcepath>
                     </compilerArguments>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>license-maven-plugin</artifactId>
+                <version>2.0.0</version>
+                <executions>
+                    <execution>
+                        <id>license-check</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>add-third-party</goal>
+                        </goals>
+                        <configuration>
+                            <includeOptional>false</includeOptional>
+                            <useMissingFile>false</useMissingFile>
+                            <failOnMissing>false</failOnMissing>
+                            <licenseMerges>
+                                <licenseMerge>Apache License, Version 2.0|The Apache Software License, Version
+                                    2.0|ASF 2.0|Apache 2|Apache-2.0|Apache 2.0 License|Apache 2.0|Apache License v2.0|Apache License 2.0|The Apache License, Version 2.0|The Apache Software License, Version 2.0
+                                </licenseMerge>
+                                <licenseMerge>The MIT License|MIT License</licenseMerge>
+                                <licenseMerge>The 3-Clause BSD License|New BSD License|3-Clause BSD
+                                    License|BSD|3-Clause BSD License|The New BSD License
+                                </licenseMerge>
+                            </licenseMerges>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

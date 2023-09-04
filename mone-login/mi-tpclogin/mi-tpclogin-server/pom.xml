@@ -14,10 +14,6 @@
 
     <dependencies>
         <dependency>
-            <artifactId>hera-trace</artifactId>
-            <groupId>run.mone</groupId>
-        </dependency>
-        <dependency>
             <groupId>run.mone</groupId>
             <artifactId>dubbo</artifactId>
         </dependency>

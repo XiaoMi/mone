@@ -24,11 +24,6 @@ public class ConstUtil {
      */
     public final static String HEADER_KEY_SIGN_AND_USER_DATA = "x-proxy-userdetail";
 
-    public final static String hermesUrl = "hermesUrl";
-
-    public final static String hermesProjectName = "hermesProjectName";
-
-    public final static String openHermes = "openHermes";
     public final static String loginUrl = "loginUrl";
     public final static String logoutUrl = "logoutUrl";
 

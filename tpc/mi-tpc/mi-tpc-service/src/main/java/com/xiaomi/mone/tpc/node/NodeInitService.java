@@ -1,5 +1,6 @@
 package com.xiaomi.mone.tpc.node;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.common.collect.Lists;
 import com.xiaomi.mone.tpc.common.enums.*;
 import com.xiaomi.mone.tpc.common.param.NodeAddParam;
@@ -42,6 +43,9 @@ public class NodeInitService implements CommandLineRunner {
     @Autowired
     private SystemDao systemDao;
 
+    @NacosValue("${tpc.super.account:tpc@tpc.com}")
+    private String tpcSuperAccount;
+
     @Override
     public void run(String... args) throws Exception {
         nodeInit();
@@ -51,24 +55,20 @@ public class NodeInitService implements CommandLineRunner {
      * @return
      */
     public ResultVo nodeInit() {
-        String account = System.getenv("init_mail_account");
-        if (StringUtils.isBlank(account)) {
-            account = "tpc@tpc.com";
-        }
         UserTypeEnum userType = UserTypeEnum.EMAIL;
         log.info("tpc init call.........");
-        UserEntity user = userDao.getOneByAccount(account, userType.getCode());
+        UserEntity user = userDao.getOneByAccount(tpcSuperAccount, userType.getCode());
         log.info("tpc init user={}", user);
         if (user == null) {
             user = new UserEntity();
-            user.setAccount(account);
+            user.setAccount(tpcSuperAccount);
             user.setType(userType.getCode());
             user.setStatus(UserStatusEnum.ENABLE.getCode());
             user.setCreaterId(0L);
-            user.setCreaterAcc(account);
+            user.setCreaterAcc(tpcSuperAccount);
             user.setCreaterType(userType.getCode());
             user.setUpdaterId(0L);
-            user.setUpdaterAcc(account);
+            user.setUpdaterAcc(tpcSuperAccount);
             user.setUpdaterType(userType.getCode());
             userDao.insert(user);
             user.setCreaterId(user.getId());

@@ -145,6 +145,10 @@ public class LoginService {
         if (entity != null) {
             return ResponseCode.CHECK_FAILED.build("账号已经存在");
         }
+        String registerCode = cache.get().get(Key.build(ModuleEnum.REGISTER_CODE).keys(param.getAccount(), param.getType()), String.class);
+        if (!param.getRegisterCode().equals(registerCode)) {
+            return ResponseCode.CHECK_FAILED.build("注册码过期或错误");
+        }
         entity = new AccountEntity();
         entity.setType(param.getType());
         entity.setAccount(param.getAccount());
@@ -157,8 +161,31 @@ public class LoginService {
         }
         UserRegisterParam registerParam = new UserRegisterParam();
         registerParam.setAccount(entity.getAccount());
-        registerParam.setUserType(accountTypeEnum.getUserType().getCode());
+        registerParam.setUserType(accountTypeEnum.getUserType());
         userFacade.register(registerParam);
+        return ResponseCode.SUCCESS.build();
+    }
+
+    public ResultVo registerCode(LoginRegisterCodeParam param) {
+        AccountTypeEnum accountTypeEnum = AccountTypeEnum.getEnum(param.getType());
+        if (accountTypeEnum.equals(AccountTypeEnum.EMAIL)) {
+            if (!EmailUtil.check(param.getAccount())) {
+                return ResponseCode.CHECK_FAILED.build("邮箱格式错误");
+            }
+        } else {
+            return ResponseCode.CHECK_FAILED.build("账号类型暂不支持");
+        }
+        AccountEntity entity = accountDao.getOneByAccount(param.getAccount(), param.getType());
+        if (entity != null) {
+            return ResponseCode.CHECK_FAILED.build("账号已经存在");
+        }
+        String registerCode = TokenUtil.getRegisterCode(6);
+        if (!cache.get().set(Key.build(ModuleEnum.REGISTER_CODE).keys(param.getAccount(), param.getType()), registerCode)) {
+            return ResponseCode.OPER_FAIL.build("请稍后重试");
+        }
+        if (!emailHelper.sendRegisterCode(param.getAccount(), registerCode)) {
+            return ResponseCode.OPER_ILLEGAL.build("邮件发送失败");
+        }
         return ResponseCode.SUCCESS.build();
     }
 
@@ -191,7 +218,7 @@ public class LoginService {
         }
         authUserVo.setState(param.getState());
         authUserVo.setAccount(entity.getAccount());
-        authUserVo.setUserType(accountTypeEnum.getUserType().getCode());
+        authUserVo.setUserType(accountTypeEnum.getUserType());
         authUserVo.setExprTime((int)(ModuleEnum.LOGIN.getUnit().toSeconds(ModuleEnum.LOGIN.getTime())));
         authUserVo.setName(entity.getName());
         authUserVo.setToken(TokenUtil.createToken(authUserVo.getExprTime(), authUserVo.getAccount(), authUserVo.getUserType()));

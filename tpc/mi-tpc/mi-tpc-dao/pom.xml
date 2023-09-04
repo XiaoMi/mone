@@ -47,10 +47,6 @@
             <groupId>org.nutz</groupId>
             <artifactId>nutz</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.nutz</groupId>
-            <artifactId>nutz-integration-spring</artifactId>
-        </dependency>
     </dependencies>
 
 

@@ -17,6 +17,22 @@ public class TokenUtil {
     private static final String codes = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_+=-";
 
     /**
+     * 获取注册码
+     * @param len
+     * @return
+     */
+    public static String getRegisterCode(int len) {
+        Random random = new Random();
+        StringBuilder registerCode = new StringBuilder();
+        int codesLen = codes.length();
+        for (int i = 0; i < len; i++) {
+            int randNum = random.nextInt(10000000) % codesLen;
+            registerCode.append(codes.charAt(randNum));
+        }
+        return registerCode.toString();
+    }
+
+    /**
      * 每天随机一个字符串
      * @return
      */
