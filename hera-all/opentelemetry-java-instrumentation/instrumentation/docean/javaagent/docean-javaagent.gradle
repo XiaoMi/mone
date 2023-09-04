@@ -1,6 +1,0 @@
-apply from: "$rootDir/gradle/instrumentation.gradle"
-
-dependencies {
-    compileOnly("run.mone:docean:1.4-SNAPSHOT")
-    implementation("run.mone:opentelemetry-api")
-}
