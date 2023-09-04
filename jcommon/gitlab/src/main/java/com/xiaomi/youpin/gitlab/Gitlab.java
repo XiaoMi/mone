@@ -1293,6 +1293,33 @@ public class Gitlab {
         return domains;
     }
 
+    public List<String> getDomainByIP(String gitHost, String projectId, List<String> keywords, String token) {
+        List<String> domains = new ArrayList<>();
+        if (StringUtils.isEmpty(projectId)) {
+            return domains;
+        }
+        if (keywords == null || keywords.size() < 1) {
+            return domains;
+        }
+        String url = null;
+        Map<String, String> headers = new HashMap<>(1);
+        headers.put("PRIVATE-TOKEN", token);
+        for (String key : keywords) {
+            url = gitHost + GIT_API_URI + "projects/"+ projectId +"/search?scope=blobs&search="+key;
+            String fileInfo = HttpClientV2.get(url, headers, 10000);
+            List<Map> fileList = gson.fromJson(fileInfo, List.class);
+            if (fileList == null || fileList.size() < 1) {
+                continue;
+            }
+            fileList.forEach(file -> {
+                if (getServers(String.valueOf(file.get("data")), key)) {
+                    domains.add(String.valueOf(file.get("filename")));
+                }
+            });
+        }
+        return domains;
+    }
+
     private boolean getServers(String config, String name) {
         boolean res = false;
         try {

@@ -11,7 +11,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>prometheus</artifactId>
     <packaging>pom</packaging>
-    <version>0.0.5-SNAPSHOT</version>
+    <version>0.0.6-SNAPSHOT</version>
     <modules>
         <module>prometheus-client</module>
 		<module>prometheus-sql</module>
@@ -24,7 +24,7 @@
 
     <properties>
 		<java.version>1.8</java.version>
-		<prometheus-all.version>0.0.5-SNAPSHOT</prometheus-all.version>
+		<prometheus-all.version>0.0.6-SNAPSHOT</prometheus-all.version>
 	</properties>
 
 	<dependencies>

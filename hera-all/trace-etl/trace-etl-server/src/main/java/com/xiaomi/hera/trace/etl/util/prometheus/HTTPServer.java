@@ -7,6 +7,7 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import com.xiaomi.hera.trace.etl.consumer.DataCacheService;
+import com.xiaomi.hera.trace.etl.consumer.EnterManager;
 import com.xiaomi.youpin.prometheus.client.binder.ClassLoaderMetricsReduced;
 import com.xiaomi.youpin.prometheus.client.binder.JvmGcMetricsReduced;
 import com.xiaomi.youpin.prometheus.client.binder.JvmMemoryMetricsReduced;
@@ -60,6 +61,8 @@ public class HTTPServer {
 
     @Resource
     private DataCacheService dataCacheService;
+    @Resource
+    private EnterManager enterManager;
 
     private HttpServer server;
     private ExecutorService executorService;
@@ -164,14 +167,20 @@ public class HTTPServer {
                     os.write(HEALTHY_RESPONSE);
                     os.flush();
                 } else {
-                    String contentType = TextFormat.chooseContentType(exchange.getRequestHeaders().getFirst("Accept"));
+                    String acceptHeader = exchange.getRequestHeaders().getFirst("Accept");
+                    log.info("prometheus pull header is : " + acceptHeader);
+                    String contentType = TextFormat.chooseContentType(acceptHeader);
                     exchange.getResponseHeaders().set("Content-Type", contentType);
                     if ("/jvm".equals(path)) {
                         CollectorRegistry registry = this.registryMap.get("jvm");
                         Map<String, Object> dataMap = getData(contentType, registry, path, hostString);
                         data = (byte[]) dataMap.get("data");
                     } else {
-                        data = dataCacheService.getData();
+                        if (dataCacheService.isStartCache()) {
+                            data = dataCacheService.getData();
+                        } else {
+                            data = firstPull();
+                        }
                     }
                     exchange.sendResponseHeaders(200, data.length);
                     os.write(data);
@@ -188,6 +197,30 @@ public class HTTPServer {
                 log.info("prometheus request uri : " + path + " queryString : " + query + " remoteAddr：" + hostString + " duration : " + (b - a) + " data size:" + len);
 
             }
+        }
+
+        /**
+         * In order to solve the problem that consumer messages have been coming in for a long time when the service starts, but Prometheus has not started pulling yet,
+         * causing the risk of clearing the metrics when the cacheData length in DataCacheService exceeds 4.
+         * When Prometheus pulls for the first time, it pulls directly from CollectRegister.
+         * The cacheData operation in ConsumerService will not be executed until 15 seconds after the first pull of Prometheus.
+         *
+         * @return
+         */
+        private byte[] firstPull() {
+            try {
+                enterManager.getMonitor().enter();
+                while (enterManager.getProcessNum().get() > 0) {
+                    TimeUnit.MILLISECONDS.sleep(200);
+                }
+                return dataCacheService.cacheDataSync();
+            } catch (Throwable ex) {
+                log.error("first pull error", ex);
+            } finally {
+                dataCacheService.setStartCache(true);
+                enterManager.getMonitor().leave();
+            }
+            return null;
         }
 
         private boolean filterRequest(HttpExchange exchange) {
