@@ -54,7 +54,7 @@ public class CustomLogParserTest {
         Map<String, Object> parse = customParse.parse(logData, ip, 1l, currentStamp, "");
         System.out.println(parse);
 
-        System.out.println(customParse.getTimestampFromString("2021-12-28 18:04:51.23", currentStamp));
+        System.out.println(customParse.getTimestampFromString("2023-08-25 10:46:09.239", currentStamp));
         stopwatch.stop();
         log.info("cost time:{}", stopwatch.elapsed().toMillis());
     }

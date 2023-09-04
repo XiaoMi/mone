@@ -227,4 +227,11 @@ public class EsQueryTest {
         SearchSourceBuilder esQuery = EsQueryUtils.getSearchSourceBuilder(message);
         System.out.println(esQuery.query());
     }
+
+    @Test
+    public void testMulQuery(){
+        String message = "message like \"xiaomiyoupbn\"  and message :~ \"4CWYnR8wM*\"";
+        SearchSourceBuilder esQuery = EsQueryUtils.getSearchSourceBuilder(message);
+        System.out.println(esQuery.query());
+    }
 }

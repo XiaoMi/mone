@@ -53,7 +53,9 @@ public class SinkChain {
         List<Boolean> res = Lists.newArrayList();
         if (CollectionUtils.isNotEmpty(sinkProcessorList)) {
             for (SinkProcessor sinkProcessor : sinkProcessorList) {
-                res.add(sinkProcessor.execute(map));
+                if(null != sinkProcessor){
+                    res.add(sinkProcessor.execute(map));
+                }
             }
         }
         return res.stream().anyMatch(re -> re);

@@ -76,13 +76,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
     private FetchStreamMachineService fetchStreamMachineService;
 
     @Resource
-    private MilogMachineDao milogMachineDao;
-
-    @Resource
     private MilogLogstoreDao logstoreDao;
-
-    @Resource
-    private MilogAppTopicRelDao milogAppTopicRelDao;
 
     @Resource
     private MilogLogTailDao milogLogtailDao;
@@ -91,18 +85,9 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
     private EsCluster esCluster;
 
     @Resource
-    private MilogSpaceDao milogSpaceDao;
-
-    @Resource
     private MilogAppMiddlewareRelDao milogAppMiddlewareRelDao;
     @Resource
     private MilogMiddlewareConfigDao milogMiddlewareConfigDao;
-
-    @Resource
-    private NacosNaming nacosNaming;
-
-    @Resource
-    private ConfigService configService;
 
     @Value(value = "$europe.ip.key")
     private String europeIpKey;
