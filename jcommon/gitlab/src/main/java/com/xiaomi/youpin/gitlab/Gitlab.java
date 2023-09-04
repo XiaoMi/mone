@@ -1332,11 +1332,13 @@ public class Gitlab {
                 NgxBlock nb0 = NgxBlock.class.cast(ngxEntry);
                 Collection<NgxEntry> entryCollection = nb0.getEntries();
                 for (NgxEntry entry : entryCollection) {
-                    Collection<NgxToken> ngxTokens = ((NgxParam) entry).getTokens();
-                    for (NgxToken ngxToken : ngxTokens) {
-                        String token = ngxToken.getToken();
-                        if (token != null && token.contains(name) && !token.startsWith("#")) {
-                            return true;
+                    if (entry instanceof NgxParam) {
+                        Collection<NgxToken> ngxTokens = ((NgxParam) entry).getTokens();
+                        for (NgxToken ngxToken : ngxTokens) {
+                            String token = ngxToken.getToken();
+                            if (token != null && token.contains(name) && !token.startsWith("#")) {
+                                return true;
+                            }
                         }
                     }
                 }
