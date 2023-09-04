@@ -5,17 +5,17 @@
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>run.mone</groupId>
-    <artifactId>hera-prometheus-agent</artifactId>
+    <artifactId>ozhera-prometheus-agent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
-        <module>hera-prometheus-agent-api</module>
-        <module>hera-prometheus-agent-common</module>
-        <module>hera-prometheus-agent-service</module>
-        <module>hera-prometheus-agent-server</module>
-        <module>hera-prometheus-agent-dao</module>
-        <module>hera-prometheus-agent-client</module>
+        <module>ozhera-prometheus-agent-api</module>
+        <module>ozhera-prometheus-agent-common</module>
+        <module>ozhera-prometheus-agent-service</module>
+        <module>ozhera-prometheus-agent-server</module>
+        <module>ozhera-prometheus-agent-dao</module>
+        <module>ozhera-prometheus-agent-client</module>
     </modules>
 
     <dependencyManagement>
