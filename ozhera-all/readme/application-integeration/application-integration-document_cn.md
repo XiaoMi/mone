@@ -21,7 +21,7 @@
 | -Dotel.exporter.log.isasync=true                           |  否   | true               | 用于表示是否开log4j2启异步日志，一般出于性能考虑，会是true，只有在`-Dotel.traces.exporter`值为`log4j2`时生效。                                                                                                        |
 | -Dotel.metrics.exporter=prometheus                         |  否   | prometheus         | 用于表示metrics export方式。默认使用prometheus                                                                                                                                                 |
 | -Dotel.javaagent.exclude-classes=com.dianping.cat.*        |  否   | com.dianping.cat.* | 过滤不被探针拦截的包。如果使用到了cat，需要将cat所在的目录进行过滤                                                                                                                                                |
-| -Dotel.exporter.log.pathprefix=/home/work/log/             |  否   | /home/work/log/    | 用于表示log4j2的日志位置。<br/>这里log4j2的日志会优先输出到名为MIONE_LOG_PATH的环境变量所表示的位置，如果没有这个环境变量，则会输出到`-Dotel.exporter.log.pathprefix` \ `MIONE_PROJECT_NAME`目录下。<br/>注意：k8s中，需要将此目录挂载出来，以供日志采集容器能够访问到。 |
+| -Dotel.exporter.log.pathprefix=/home/work/log/             |  否   | /home/work/log/    | 用于表示log4j2的日志位置。<br/>这里log4j2的日志会优先输出到名为MIONE_LOG_PATH的环境变量所表示的位置，如果没有这个环境变量，则会输出到`-Dotel.exporter.log.pathprefix` / `MIONE_PROJECT_NAME`目录下。<br/>注意：k8s中，需要将此目录挂载出来，以供日志采集容器能够访问到。 |
 | -Dotel.propagators=tracecontext                            |  否   | tracecontext       | 用于表示trace传输的处理类型，目前只用到了tracecontext                                                                                                                                                 |
 
 ### 3、环境变量
