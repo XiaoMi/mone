@@ -1,80 +1,79 @@
-# 部署过程中的最佳实践
+# Best practices during deployment
 
-## 针对于小集群的内存调整
-- 在hera系统的一些组件，默认的jvm内存使用是比较高的，因为hera脱胎于高QPS的业务环境（百万+）。
-- 但是对于小规模的k8s集群（比如3个8c16g的工作节点），过高的内存占用会引起hera系统的初始化失败；或出现Pod驱逐，引起服务不稳定。
-- 下面是针对几个默认配置下内存占用最高的组件的调整方式。
-
+## Memory adjustment for small clusters
+- Some components of the hera system use relatively high default JVM memory because hera was designed for a high QPS business environment (millions+).
+- However, for small-scale k8s clusters (such as three 8c16g working nodes), excessive memory usage can cause the initialization of the hera system to fail; or Pod eviction can occur, causing service instability.
+- Below are the adjustments for some of the components with the highest memory usage in the default configuration.-
 ### rocket-mq
-- 调整rocketmq-broker-config中的BROKER_MEM，比如： 
+- Adjust BROKER_MEM in rocketmq-broker-config, for example:
 ```yaml
-    BROKER_MEM: ' -Xms512m -Xmx512m -Xmn200m '
+     BROKER_MEM: ' -Xms512m -Xmx512m -Xmn200m '
 ```
-- 只调整上面的配置是不够的，还需要给rocketmq-broker-0-master设置环境变量JAVA_OPT_EXT，比如：
+- Simply adjusting the above configuration is not sufficient, you also need to set the environment variable JAVA_OPT_EXT for rocketmq-broker-0-master, for example:
 ```yaml
-  - name: JAVA_OPT_EXT
-    value: "-server -Xms512m -Xmx512m -Xmn200m"
+   - name: JAVA_OPT_EXT
+     value: "-server -Xms512m -Xmx512m -Xmn200m"
 ```
 
 ### trace-etl-es
-- 暂时只能通过重新定义入口修改，比如：
+- Currently, it can only be modified by redefining the entry point, for example:
 ```yaml
-  containers:
-    - name: trace-etl-es-container
-      command: ["java","-Xms512M","-Xmx512M","-Xss512k","-XX:MetaspaceSize=128m","-XX:MaxMetaspaceSize=256m","-XX:MaxDirectMemorySize=512M","-XX:+PrintReferenceGC","-XX:+PrintGCDetails","-XX:+PrintGCDateStamps","-XX:+PrintHeapAtGC","-Xloggc:/home/work/log/gc.log","-Duser.timezone=Asia/Shanghai","-XX:+HeapDumpOnOutOfMemoryError","-XX:HeapDumpPath=/home/rocksdb/dum/oom.dump","-jar","/home/work/trace-etl-es/trace-etl-es-1.0.0-SNAPSHOT.jar","&&","tail","-f","/dev/null"]
+   containers:
+     - name: trace-etl-es-container
+       command: ["java","-Xms512M","-Xmx512M","-Xss512k","-XX:MetaspaceSize=128m","-XX:MaxMetaspaceSize=256m","-XX:MaxDirectMemorySize=512M"," -XX:+PrintReferenceGC","-XX:+PrintGCDetails","-XX:+PrintGCDateStamps","-XX:+PrintHeapAtGC","-Xloggc:/home/work/log/gc.log","-Duser .timezone=Asia/Shanghai","-XX:+HeapDumpOnOutOfMemoryError","-XX:HeapDumpPath=/home/rocksdb/dum/oom.dump","-jar","/home/work/trace-etl-es /trace-etl-es-1.0.0-SNAPSHOT.jar","&&","tail","-f","/dev/null"]
 ```
 
 ### nacos
-- 同样，暂时只能通过重新定义入口修改，比如：
+- Similarly, it can only be temporarily modified by redefining the entry point, as follows:
 ```yaml
-  containers:
-    - name: nacos-container
-      command: ["java", "-Xms512m", "-Xmx512m", "-XX:MetaspaceSize=512M", "-XX:+UseG1GC", "-XX:+PrintReferenceGC", "-XX:+PrintGCDetails", "-XX:+PrintGCDateStamps", "-XX:+PrintHeapAtGC", "-verbose:gc", "-Xloggc:/home/work/log/nacos/gc.log", "-jar", "-Dnacos.standalone=true", "/home/work/nacos/nacos-server.jar", "--server.port=80"]
+   containers:
+     - name: nacos-container
+       command: ["java", "-Xms512m", "-Xmx512m", "-XX:MetaspaceSize=512M", "-XX:+UseG1GC", "-XX:+PrintReferenceGC", "-XX:+PrintGCDetails", "-XX:+PrintGCDateStamps", "-XX:+PrintHeapAtGC", "-verbose:gc", "-Xloggc:/home/work/log/nacos/gc.log", "-jar", "-Dnacos. standalone=true", "/home/work/nacos/nacos-server.jar", "--server.port=80"]
 ```
 
-## 重新部署的步骤
-- hera系统一次初始化完成之后，如果系统状态不符合预期，需要调整yml参数的情况下，建议重新部署。
-- 重新部署如果操作不当，会造成系统状态异常，手动修正会很复杂，所以一定要按步骤操作：
-1. 确定hera-op-nginx服务的访问方式，可以用kubectl查询：
+## Steps to redeploy
+- After the initialization of the hera system is completed, if the system status does not meet expectations and the yml parameters need to be adjusted, it is recommended to redeploy.
+- Improper redeployment can cause system abnormalities, and manual correction will be complicated, so be sure to follow these steps:
+1. Determine the access method of the hera-op-nginx service. You can use kubectl to query:
 ```yaml
 kubectl get svc hera-op-nginx -n hera-namespace
-NAME            TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)          AGE
-hera-op-nginx   NodePort   172.17.164.114   <none>        7001:30999/TCP   6d2h
+NAME TYPE CLUSTER-IP EXTERNAL-IP PORT(S) AGE
+hera-op-nginx NodePort 172.17.164.114 <none> 7001:30999/TCP 6d2h
 ```
-2. 通过http请求，删除已经部署的资源：
+2. Delete deployed resources through http request:
 ```yaml
-http://任意worker节点ip:30999/hera/operator/cr/delete
+http://any worker node ip:30999/hera/operator/cr/delete
 ```
-3. 删除名字空间
+3. Delete the namespace
 ```yaml
 kubectl delete ns hera-namespace
 ```
-4. 重新进行hera系统的部署，从部署operator开始，不再赘述。
+4. Re-deploy the hera system, starting from deploying the operator, which will not be described in details.
 
-## 重新部署es
-- 默认的es部署没有绑定pv，重启之后初始化阶段由operator创建的索引模板会丢失。
-- 首先强烈建议给es绑定pv，可以参考mysql的默认配置。
-- 可以通过执行下面的命令来重新创建索引模板。
+## redeploy es
+- The default es deployment does not bind PV, and the index template created by the operator during the initialization phase will be lost after restarting.
+- First of all, it is strongly recommended to bind pv to es. You can refer to the default configuration of mysql.
+- The index template can be recreated by executing the command below.
 ```yaml
 sh indexTemplate.sh
 ```
-- indexTemplate.sh在当前目录下，执行方式有两种选项：
-1. 默认es的服务类型是clusterIp，需要在同名字空间下的某个pod内执行。
-2. 也可以给es暴露NodePort服务，在集群外执行，把脚本中的elasticsearch:9200做相应修改。
+- indexTemplate.sh is in the current directory and has two execution options:
+1. The default service type of es is clusterIp, which needs to be executed in a pod under the same namespace.
+2. You can also expose the NodePort service to es and execute it outside the cluster. Modify elasticsearch:9200 in the script accordingly.
 
-## 如何接入hostnetwork模式的应用
-如果不得以必须为Pod指定hostNetwork，这样的应用也是可以接入hera的，但是需要注意下面几点：
-1. 首先与普通的Pod相比，指定了hostNetwork为true之后就不能以clusterIp访问集群内的svc了。
-2. 需要为nacos暴露NodePort/LoadBalance类型的服务。
-3. 需要修改探针的启动参数中nacos的地址，比如
+## How to access the hostnetwork mode application
+If you do not have to specify a hostNetwork for the Pod, such an application can also be connected to hera, but you need to pay attention to the following points:
+1. First of all, compared with ordinary Pods, after specifying hostNetwork as true, you cannot access the svc in the cluster with clusterIp.
+2. Need to expose NodePort/LoadBalance type services for nacos.
+3. It is necessary to modify the address of nacos in the startup parameters of the probe, such as
 ```yaml
--Dotel.exporter.prometheus.nacos.addr=节点ip:NodePort端口
+-Dotel.exporter.prometheus.nacos.addr=Node ip:NodePort port
 ```
-4. 需要修改log-agent连接nacos的地址，这可以通过指定env实现，比如
+4. It is necessary to modify the address of the log-agent to connect to nacos, which can be achieved by specifying env, such as
 ```yaml
-  env:
-    - name: nacosAddr
-      value: 节点ip:NodePort端口
+   env:
+     - name: nacosAddr
+       value: node ip:NodePort port
 ```
-5. 需要为rocketmq-name-server暴露NodePort/LoadBalance类型的服务。
-6. 需要在hera系统->日志服务->资源管理下编辑rocketmq资源，将mq地址修改为第5步中修改成的可访问地址。
+5. Need to expose NodePort/LoadBalance type services for rocketmq-name-server.
+6. You need to edit the rocketmq resource under hera system->log service->resource management, and change the mq address to the accessible address modified in step 5.
