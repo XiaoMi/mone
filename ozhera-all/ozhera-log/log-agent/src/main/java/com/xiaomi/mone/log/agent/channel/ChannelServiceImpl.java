@@ -422,7 +422,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
 
         ReadListener listener = initFileReadListener(mLog, patternCode, usedIp, filePath);
         Map<String, ChannelMemory.FileProgress> fileProgressMap = channelMemory.getFileProgressMap();
-//        log.info("fileProgressMap:{}", gson.toJson(fileProgressMap));
+        log.info("fileProgressMap:{}", gson.toJson(fileProgressMap));
         LogFile logFile = getLogFile(filePath, listener, fileProgressMap);
         if (null == logFile) {
             log.warn("file:{} marked stop to collect", filePath);
