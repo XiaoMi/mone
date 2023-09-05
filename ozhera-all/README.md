@@ -1,7 +1,7 @@
-# OzHera说明文档
+# OzHera Documentation
 
-## OzHera是什么？
-OzHera是由小米-中国区研发效能团队开源的一款应用性能观测平台(APM)。以应用为核心，集指标监控、链路追踪、日志、报警于一身，并实现了metrics->tracing->logging的串联和联动，OzHera还提供应用健康状态列表、应用指标看板、接口大盘、应用大盘、网关大盘等内容丰富的监测看板，以及简洁明了的可视化明文报警，让用户准确、高效定位故障。
+## What is OzHera?
+OzHera is an Application Performance Monitoring platform (APM) open-sourced by the R&D efficiency team of Xiaomi-China region. Centered around applications, it integrates metrics monitoring, link tracing, logging, and alerts. It achieves a seamless connection and interaction from metrics to tracing to logging. Moreover, OzHera offers a comprehensive monitoring dashboard featuring application health status lists, application metric boards, interface overviews, application overviews, gateway overviews, etc., along with clear and concise visual text alerts, enabling users to pinpoint issues accurately and efficiently.
 
 ---
 
@@ -11,21 +11,21 @@ OzHera是由小米-中国区研发效能团队开源的一款应用性能观测�
 ---
 
 ## Features
-- 准：基于业务错误码提取可用性指标
-- 快：metrics-tracing-logging联动
-- 经济：<5%存储成本，满足99.9%的tracing诉求
-- 拥抱云原生：遵循Opentracing标准、深度适配K8S、集成集成Opentelemetry、Grafana、Prometheus、ES等多个开源明星产品
-- 企业级可观测产品
+- Accurate: Extract usability metrics based on business error codes.
+- Fast: Integrated metrics-tracing-logging.
+- Economical: <5% storage cost, meets 99.9% of tracing demands.
+- Cloud-native Friendly: Adheres to the Opentracing standard, deeply adapts to K8S, and integrates multiple star open-source products like Opentelemetry, Grafana, Prometheus, ES, and more.
+- Enterprise-level observability product.
 
 ---
 
 ## Getting started
-### 部署
-[operator使用文档.md](readme%2Fdeploy%2Fozhera-deploy-document.md)
+### Deployment
+[operator-usage-document.md](readme%2Fdeploy%2Fozhera-deploy-document.md)
 
 ---
 
-### 应用接入
-[应用接入文档.md](readme/application-integeration/application-integration-document.md)
+### Application Integration
+[application-integration-document.md](readme/application-integeration/application-integration-document.md)
 
 ---

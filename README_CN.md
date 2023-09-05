@@ -9,30 +9,30 @@
 <br>
 </div>
 
-  Mone is a one-stop enterprise collaborative Research and Development platform centered on microservices. It supports various deployment forms such as public cloud, private cloud, and hybrid cloud; it provides end-to-end R&D full-process services from "creation -> development -> deployment -> governance -> observation".  
-  Mone creates "dual agility", agile R&D and agile organization through new cloud-native technologies and new R&D models,  to ensure the agile R&D collaboration of Xiaomi's high-complexity business and large-scale teams in the China region, achieving multiple efficiency improvements.
+  Mone是以微服务为核心的一站式企业协同研发平台。支持公共云、专有云和混合云多种部署形态；提供从“项目创建->开发->部署->治理->应用观测”端到端的研发全流程服务。
+  Mone通过云原生新技术和研发新模式，打造“双敏”，敏捷研发和敏捷组织，保障小米-中国区高复杂业务、大规模团队的敏捷研发协同，实现多倍效能提升。
 
 ## ✨ Architecture
-### Product Architecture
+### 产品架构
 ![mone](readme/image/mione产品架构.png)
-### Improving Efficiency Across the Entire R&D Process
+### 研发全流程提效
 ![mone](readme/image/mione_devflow.png)
 
 
 ## ✨ Features
-- 🌈 Full Lifecycle Project Management
-- 📦 Continuous Integration, Continuous Delivery
-- 🛡 Dayu - Microservice Governance
-- ⚙️ Tesla Gateway
-- 🌍 OzHera - Application Observability Platform
-- 🎨 FaaS Platform
-- ⚙️ API Management Platform
+- 🌈 项目全生命周期管理
+- 📦 持续集成、持续交付
+- 🛡 Dayu微服务治理
+- ⚙️ Tesla网关
+- 🌍 Hera应用可观测平台
+- 🎨 FaaS平台
+- ⚙️ API管理平台
 
 
 
 ## 🔗 Mone introduction
 
-### [Home Page]
+### [首页]
 
 <div align='center'>
   <a href="https://github.com/XiaoMi/mone">
@@ -40,19 +40,19 @@
   </a>
 </div>
 
-### [Application Management]
+### [应用管理]
 ![mone-miline](readme/image/miline01.png)
 ![mone-miline](readme/image/miline02.png)
 ![mone-miline](readme/image/miline03.png)
 ![mone-miline](readme/image/miline05.png)
 ![mone-miline](readme/image/miline04.png)
 
-### [Tesla Gateway]
+### [智能网关]
 ![mone-miline](readme/image/gw01.png)
 ![mone-miline](readme/image/gw02.png)
 ![mone-miline](readme/image/gw04.png)
 
-### [OzHera - Application Observability Platform]
+### [OzHera可观测平台]
 ![mone-hera](readme/image/hera01.jpeg)
 ![mone-hera](readme/image/hera02.png)
 ![mone-hera](readme/image/hera03.png)
@@ -62,7 +62,7 @@
 ![mone-hera](readme/image/hera07.png)
 ![mone-hera](readme/image/hera08.png)
 
-### [API Management Platform]
+### [API管理平台]
 ![mone-hera](readme/image/miapi01.png)
 ![mone-hera](readme/image/miapi02.png)
 ![mone-hera](readme/image/miapi03.png)
@@ -73,49 +73,49 @@
 
 ## 📃 Document
 
-To learn more or get started quickly [Quick Start](http://mone.xiaomiyoupin.com/#/doc/1)，please refer to the [Mone Official Website](http://mone.xiaomiyoupin.com/#/index)
+ 想要了解更多或快速入门[快速入门](http://mone.xiaomiyoupin.com/#/doc/1)，请参照 [米效官网](http://mone.xiaomiyoupin.com/#/index)
  
 ## 🔨Contributing
 
 **owners:**
-- Xinyan Xing
-- Jinliang Ou
-- Zhiyong Zhang
-- Wenbang Dan
-- Qingfu Ren
-- Pei Ding
+- 邢鑫岩
+- 欧金良
+- 张志勇
+- 单文榜
+- 任清福
+- 丁佩
 
 **committers:**
-- Ping Zhang
-- Baoyu Cao
-- Yibo Gao
-- Zhenxing Dong
-- Zhidong Wang
-- Tao Ding
-- Xiaowei Zhang
-- Gaofeng Zhang
-- Tao Wang
-- Min Wang
-- Xihui Gao
-- Haoyang Wang
-- Linlin Tan
-- Chuankang Liu
-- Yandong Wang
-- Yulin Gao
-- Ting Kang
-- Yuchong Liu
-- Xiuhua Zhang
-- Zheng Xu
-- Ming Zhi
-- Lei Chen
-- Hao Zheng
+- 张平
+- 曹宝玉
+- 高一波
+- 董振兴
+- 王志东
+- 丁涛
+- 张校炜
+- 张高峰
+- 王涛
+- 王敏
+- 高希辉
+- 王浩阳
+- 谭琳琳
+- 刘传康
+- 王彦东
+- 高钰林
+- 康婷
+- 刘玉冲
+- 张秀华
+- 许铮
+- 支明
+- 陈磊
+- 郑浩
     
  ## 📞 Contact
 
 
  + 📮 Mailing list:
    + mione@xiaomi.com
- + 📮 Wechat official account
+ + 📮 Wechat official account（微信公众号）
    + 天穹云原生
  + 📮 Forum
    + [Mone](https://m.one.mi.com/)
