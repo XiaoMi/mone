@@ -1,7 +1,7 @@
-# Hera接入文档
+# OzHera接入文档
 
 ## 一、应用部署的依赖
-接入Hera的应用，需要依赖探针、jvm参数、环境变量以及log-agent服务
+接入OzHera的应用，需要依赖探针、jvm参数、环境变量以及log-agent服务
 
 ### 1、探针
 探针在构建完成后最终会得到一个opentelemetry相关的jar，我们需要在部署项目时，将jar文件放到服务器上。这是为了在jvm参数中，能够通过-javaagent使用到探针。我们基于开源版本默认打包了一版探针，可以直接使用：
@@ -33,29 +33,29 @@
 | MIONE_PROJECT_ENV_NAME  |   是   | default | 当前部署环境的名称，eg：dev、uat、st、preview、production。如不填，默认使用default。                               |
 | MIONE_PROJECT_ENV_ID    |   是   |        | 当前部署环境的ID。环境id与环境名称，在Hera的指标监控中可以根据不同环境来看监控图表。                                       |
 | MIONE_PROJECT_NAME      |   是   | none   | 用于表示当前服务的应用名。格式是appId-appName。eg：1-test，1是 appId，test是appName。如果为空，程序⾥默认使⽤none。应⽤是Hera中⾮常重要的元数据，可观测数据展⽰都与应⽤有关。 |
-| host.ip                |   否   |        | 用于记录当前物理机IP，展示在trace的process.tags里。在k8s里获取的是pod的IP。在K8s中，使用hera-operator部署时，会由webhook自动生成该环境变量            |
-| node.ip                |   否   |        | 用于记录k8s当前node节点的IP，非k8s部署则不用设置。在K8s中，使用hera-operator部署时，会由webhook自动生成该环境变量                                  |
+| host.ip                |   否   |        | 用于记录当前物理机IP，展示在trace的process.tags里。在k8s里获取的是pod的IP。在K8s中，使用ozhera-operator部署时，会由webhook自动生成该环境变量            |
+| node.ip                |   否   |        | 用于记录k8s当前node节点的IP，非k8s部署则不用设置。在K8s中，使用ozhera-operator部署时，会由webhook自动生成该环境变量                                  |
 | JAVAAGENT_PROMETHEUS_PORT |   否   | 55433  | 当前物理机可用端口号，用于提供给Prometheus拉取jvm metrics的httpServer使用。如果为空，程序里默认使用55433。                              |
 | hera.buildin.k8s       |   否   | 1      | 用于记录是否是k8s部署的服务，如果是k8s的服务，标记为1。如果非k8s部署，可以设置为2。默认为1。如果本地调试，可以设置2。                                      |
-| application            |   否   |        | 是将`MIONE_PROJECT_NAME`的值所有中划线，转为下划线，用于容器监控的扩展指。在K8s中，使用hera-operator部署时，会由webhook自动生成该环境变量     |
-| serverEnv              |   否   |        | 与MIONE_PROJECT_ENV_NAME的值相同，用于容器监控的扩展指标。在K8s中，使用hera-operator部署时，会由webhook自动生成该环境变量                          |
+| application            |   否   |        | 是将`MIONE_PROJECT_NAME`的值所有中划线，转为下划线，用于容器监控的扩展指。在K8s中，使用ozhera-operator部署时，会由webhook自动生成该环境变量     |
+| serverEnv              |   否   |        | 与MIONE_PROJECT_ENV_NAME的值相同，用于容器监控的扩展指标。在K8s中，使用ozhera-operator部署时，会由webhook自动生成该环境变量                          |
 
 ### 4、log-agent
 目前Hera的trace、log都使用log-agent来收集，log-agent需要以sidecar的方式与应用部署在同一容器中，并且需要被采集的日志文件目录与trace日志目录同时挂载出来，以能够被log-agent采集。
 
 ### 5、应用Dockerfile与K8S yaml文件示例
-下面是我们demo项目所使用的dockerfile与k8s的yaml文件，可以参考一下hera-demo-client应用中关于探针、jvm、环境变量与log-agent的配置
+下面是我们demo项目所使用的dockerfile与k8s的yaml文件，可以参考一下ozhera-demo-client应用中关于探针、jvm、环境变量与log-agent的配置
 
 Dockerfile
 ```
 FROM openjdk:8-jre
 
-COPY ./hera-demo-client-1.0.0-SNAPSHOT.jar /home/work/hera-demo-client-1.0.0-SNAPSHOT.jar
+COPY ./ozhera-demo-client-1.0.0-SNAPSHOT.jar /home/work/ozhera-demo-client-1.0.0-SNAPSHOT.jar
 COPY ./opentelemetry-javaagent-0.1.0-SNAPSHOT-all.jar /opt/soft/opentelemetry-javaagent-0.1.0-SNAPSHOT-all.jar
 
 ENTRYPOINT ["java","-javaagent:/opt/soft/opentelemetry-javaagent-0.1.0-SNAPSHOT-all.jar","-Dotel.exporter.prometheus.nacos.addr=nacos:80",
 "-Xloggc:/home/work/log/gc.log","-Duser.timezone=Asia/Shanghai","-XX:+HeapDumpOnOutOfMemoryError","-XX:HeapDumpPath=/home/dum/oom.dump","-jar",
-"/home/work/hera-demo-client-1.0.0-SNAPSHOT.jar","&&","tail","-f","/dev/null"]
+"/home/work/ozhera-demo-client-1.0.0-SNAPSHOT.jar","&&","tail","-f","/dev/null"]
 ```
 K8S yaml
 
@@ -63,19 +63,19 @@ K8S yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hera-demo-client
+  name: ozhera-demo-client
   namespace: demo
   labels:
-    app: hera-demo-client
+    app: ozhera-demo-client
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: hera-demo-client
+      app: ozhera-demo-client
   template:
     metadata:
       labels:
-        app: hera-demo-client
+        app: ozhera-demo-client
     spec:
       containers:
       - name: hera-demo-client-container
@@ -115,7 +115,7 @@ Hera通过TPC系统来录入、同步、管理应用的元数据信息，以及�
 
 ### 1、注册并登录tpc
 
-我们需要访问通过hera-operator生成的tpc的页面链接
+我们需要访问通过ozhera-operator生成的tpc的页面链接
 
 ![operator-url](images/operator-url.png)
 
@@ -162,9 +162,9 @@ Hera通过TPC系统来录入、同步、管理应用的元数据信息，以及�
 
 由于Hera中的日志、trace数据都是由log-agent采集，所以我们需要在Hera日志配置中配置采集信息，告诉log-agent去哪采集，以及采集后发送给谁。
 
-### 1、访问Hera日志页面
+### 1、访问OzHera日志页面
 
-我们通过访问operator生成的hera首页的链接，在首页头部title中，点击“日志服务”，进入Hera日志的界面。
+我们通过访问operator生成的ozhera首页的链接，在首页头部title中，点击“日志服务”，进入OzHera日志的界面。
 
 ![operator-url2](images/operator-url2.png)
 
