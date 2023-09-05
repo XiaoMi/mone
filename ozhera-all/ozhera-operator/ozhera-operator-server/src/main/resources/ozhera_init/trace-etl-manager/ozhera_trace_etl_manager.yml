@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: trace-etl-manager
-  namespace: hera-namespace
+  namespace: ozhera-namespace
   labels:
     app: trace-etl-manager
 spec:
@@ -27,7 +27,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: trace-etl-manager
-  namespace: hera-namespace
+  namespace: ozhera-namespace
   labels:
     app: trace-etl-manager
 spec:

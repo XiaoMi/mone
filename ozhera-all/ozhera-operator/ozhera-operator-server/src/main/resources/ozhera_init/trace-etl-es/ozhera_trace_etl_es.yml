@@ -34,7 +34,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: trace-etl-es-pv-claim
-  namespace: hera-namespace
+  namespace: ozhera-namespace
   labels:
     app: trace-etl-es-pvc
 spec:
@@ -52,7 +52,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: trace-etl-es
-  namespace: hera-namespace
+  namespace: ozhera-namespace
   labels:
     app: trace-etl-es
 spec:

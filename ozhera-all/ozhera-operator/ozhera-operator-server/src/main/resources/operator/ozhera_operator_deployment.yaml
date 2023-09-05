@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: hera-op-srv
-  namespace: hera-namespace
+  namespace: ozhera-namespace
   labels:
     app: hera-operator-server
 spec:
@@ -20,7 +20,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: hera-op-nginx
-  namespace: hera-namespace
+  namespace: ozhera-namespace
 spec:
   ports:
     - port: 80
@@ -34,7 +34,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hera-operator-deployment
-  namespace: hera-namespace
+  namespace: ozhera-namespace
 spec:
   selector:
     matchLabels:

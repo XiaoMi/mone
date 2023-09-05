@@ -6,7 +6,7 @@ metadata:
 
   name: rocketmq-name-service
 
-  namespace: hera-namespace
+  namespace: ozhera-namespace
 
 spec:
 
@@ -97,7 +97,7 @@ metadata:
 
   name: rocketmq-name-server-service
 
-  namespace: hera-namespace
+  namespace: ozhera-namespace
 
 spec:
 
@@ -126,7 +126,7 @@ metadata:
 
   name: rocketmq-broker-config
 
-  namespace: hera-namespace
+  namespace: ozhera-namespace
 
 data:
 
@@ -157,7 +157,7 @@ metadata:
 
   name: rocketmq-broker-0-master
 
-  namespace: hera-namespace
+  namespace: ozhera-namespace
 
 spec:
 
@@ -294,7 +294,7 @@ metadata:
 
   name: rocketmq-broker-0-master
 
-  namespace: hera-namespace
+  namespace: ozhera-namespace
 
 spec:
 
@@ -339,7 +339,7 @@ metadata:
 
   name: rocketmq-dashboard
 
-  namespace: hera-namespace
+  namespace: ozhera-namespace
 
 spec:
 
@@ -412,7 +412,7 @@ metadata:
 
   name: rocketmq-dashboard-service
 
-  namespace: hera-namespace
+  namespace: ozhera-namespace
 
 spec:
 

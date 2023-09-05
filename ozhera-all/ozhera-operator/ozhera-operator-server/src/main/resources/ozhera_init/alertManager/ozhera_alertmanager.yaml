@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: alertmanager-config
-  namespace: hera-namespace
+  namespace: ozhera-namespace
 data:
   alertmanager.yml: |
     global:
@@ -97,7 +97,7 @@ kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: alertmanager-hera-namespace
-  namespace: hera-namespace
+  namespace: ozhera-namespace
   labels:
     k8s-app: alertmanager-hera-namespace
 spec:
@@ -117,7 +117,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: alertmanager
-  namespace: hera-namespace
+  namespace: ozhera-namespace
   labels:
     k8s-app: alertmanager
 spec:

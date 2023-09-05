@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hera-demo-client
-  namespace: hera-namespace
+  namespace: ozhera-namespace
   labels:
     app: hera-demo-client
 spec:
@@ -50,7 +50,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: hera-demo-client
-  namespace: hera-namespace
+  namespace: ozhera-namespace
   labels:
     app: hera-demo-client
 spec:

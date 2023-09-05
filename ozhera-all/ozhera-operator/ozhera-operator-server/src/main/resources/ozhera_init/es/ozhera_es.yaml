@@ -4,7 +4,7 @@ metadata:
   labels:
     product: k8s-elastic
   name: elastic-config
-  namespace: hera-namespace
+  namespace: ozhera-namespace
 data:
   elasticsearch.yaml: |
     discovery.type: single-node
@@ -17,7 +17,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: elasticsearch
-  namespace: hera-namespace
+  namespace: ozhera-namespace
 spec:
   selector:
     matchLabels:
@@ -59,7 +59,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: elasticsearch
-  namespace: hera-namespace
+  namespace: ozhera-namespace
   labels:
     run: elasticsearch
 spec:

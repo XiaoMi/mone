@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: tpc-nginx-fe
-  namespace: hera-namespace
+  namespace: ozhera-namespace
   labels:
     app: tpc-nginx-fe
 spec:
