@@ -1,52 +1,65 @@
-# OzHera接入文档
+# OzHera Integration Documentation
 
-## 一、应用部署的依赖
-接入OzHera的应用，需要依赖探针、jvm参数、环境变量以及log-agent服务
+## I. Dependencies for Application Deployment
 
-### 1、探针
-探针在构建完成后最终会得到一个opentelemetry相关的jar，我们需要在部署项目时，将jar文件放到服务器上。这是为了在jvm参数中，能够通过-javaagent使用到探针。我们基于开源版本默认打包了一版探针，可以直接使用：
+Applications integrating with OzHera require probes, JVM parameters, environment variables, and the log-agent service.
 
+### 1. Probes
 
-### 2、jvm参数
+Upon completion of the probe build, a jar related to opentelemetry will be generated. When deploying the project, this
+jar file should be placed on the server. This allows the probe to be utilized in the JVM parameters through
+the `-javaagent`. We have packaged a default version of the probe based on the open-source version, which can be used
+directly.
 
-先取用户主动设置的，为空取Nacos中DataId为`hera_javaagent_config`中配置的值，为空则设置默认值。必填项需要用户手动设置，不设置可能会导致探针无法生效。
+### 2. JVM Parameters
 
-| 变量名                                                     | 是否必填 | 默认值      | 备注                                                                                                                                                                                                   |
-| ---------------------------------------------------------- |:--------:| ----------- |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| -javaagent:/opt/soft/opentelemetry-javaagent-all-0.0.1.jar  |    是    |             | 用于表示javaagent探针jar包在服务器上的位置，<br/>我们一般习惯将探针的jar文件更名为opentelemetry-javaagent-all-0.0.1.jar，并放在服务器/opt/soft目录下。                                                                                         |
-| -Dotel.exporter.prometheus.nacos.addr=${nacosurl}           |    是    |             | Nacos地址                                                                                                                                                                                              |
-| -Dotel.resource.attributes=service.name=1-test              |    否    | none        | 用于表示当前服务的应用名。格式是appId-appName。eg：1-test，1是 appId，test是appName。<br/>如果为空，程序⾥默认使⽤none。应⽤是Hera中⾮常重要的元数据，可观测数据展⽰都与应⽤有关。                                                                                  |
-| -Dotel.traces.exporter=log4j2                              |    否    | log4j2      | 用于表示trace export方式，是通过log4j2将trace输出到日志文件中，默认使用log4j2                                                                                                                                                |
-| -Dotel.exporter.log.isasync=true                            |    否    | true        | 用于表示是否开log4j2启异步日志，一般出于性能考虑，会是true，只有在`-Dotel.traces.exporter`值为`log4j2`时生效。                                                                                                                         |
-| -Dotel.metrics.exporter=prometheus                          |    否    | prometheus  | 用于表示metrics export方式。默认使用prometheus                                                                                                                                                                  |
-| -Dotel.javaagent.exclude-classes=com.dianping.cat.*          |    否    | com.dianping.cat.* | 过滤不被探针拦截的包。如果使用到了cat，需要将cat所在的目录进行过滤                                                                                                                                                                 |
-| -Dotel.exporter.log.pathprefix=/home/work/log/              |    否    | /home/work/log/ | 用于表示log4j2的日志位置。<br/>这里log4j2的日志会优先输出到名为MIONE_LOG_PATH的环境变量所表示的位置，如果没有这个环境变量，则会输出到`-Dotel.exporter.log.pathprefix` \ `MIONE_PROJECT_NAME`目录下。<br/>注意：k8s中，需要将此目录挂载出来，以供日志采集容器能够访问到。 |
-| -Dotel.propagators=tracecontext                             |    否    | tracecontext | 用于表示trace传输的处理类型，目前只用到了tracecontext                                                                                                                                                                  |
+First, take the user-defined value. If it's empty, take the value configured in Nacos with DataId
+as `hera_javaagent_config`. If that's empty too, set the default value. Mandatory items need to be set by the user
+manually; failure to set might cause the probe to be ineffective.
 
+| Variables                                                  | Mandatory indicators | Default values     | Comments                                                                                                                                                                                                                                                                                                                                                                                                                      |
+|------------------------------------------------------------|:--------------------:|--------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| -javaagent:/opt/soft/opentelemetry-javaagent-all-0.0.1.jar |         true         |                    | Used to indicate the location of the javaagent probe jar package on the server, <br/> we usually rename the probe's jar file to opentelemetry-javaagent-all-0.0.1.jar and place it in the /opt/soft directory on the server.                                                                                                                                                                                                  |
+| -Dotel.exporter.prometheus.nacos.addr=${nacosurl}          |         true         |                    | Nacos address                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| -Dotel.resource.attributes=service.name=1-test             |        false         | none               | Used to represent the application name of the current service. The format is appId-appName. For example: 1-test, where "1" is the appId and "test" is the appName. <br/> If it is empty, the default used in the program is "none". The application is a very important piece of metadata in OzHera, and observable data presentations are all related to the application.                                                      |
+| -Dotel.traces.exporter=log4j2                              |        false         | log4j2             | Used to indicate the trace export method, which is to output the trace to log files via log4j2. The default is to use log4j2.                                                                                                                                                                                                                                                                                                 |
+| -Dotel.exporter.log.isasync=true                           |        false         | true               | Used to indicate whether to enable asynchronous logging with log4j2. Generally, for performance reasons, it would be set to "true". It only takes effect when the value of `-Dotel.traces.exporter` is `log4j2`.                                                                                                                                                                                                              |
+| -Dotel.metrics.exporter=prometheus                         |        false         | prometheus         | Used to indicate the metrics export method. The default is to use Prometheus.                                                                                                                                                                                                                                                                                                                                                 |
+| -Dotel.javaagent.exclude-classes=com.dianping.cat.*        |        false         | com.dianping.cat.* | Used to filter packages that are not intercepted by the probe. If you are using "cat", you need to filter out the directory where "cat" resides.                                                                                                                                                                                                                                                                              |
+| -Dotel.exporter.log.pathprefix=/home/work/log/             |        false         | /home/work/log/    | Used to indicate the location of log4j2 logs.</br> Here, the log4j2 logs will be outputted to the location represented by the environment variable named MIONE_LOG_PATH. If this environment variable does not exist, it will be outputted to the `-Dotel.exporter.log.pathprefix` \ `MIONE_PROJECT_NAME` directory.<br/>Note: In k8s, this directory needs to be mounted so that the log collection container can access it. |
+| -Dotel.propagators=tracecontext                            |        false         | tracecontext       | Used to indicate the processing type for trace transmission. Currently, only "tracecontext" has been used.                                                                                                                                                                                                                                                                                                                    |
 
-### 3、环境变量
+### 3. Environment Variables
 
-先取用户主动设置的，为空取Nacos中DataId为`hera_javaagent_config`中配置的值，为空则设置默认值。必填项需要用户手动设置，不设置可能会导致探针无法生效。
+Similar to the JVM parameters, first take the user-defined value. If it's empty, take the value from Nacos with DataId
+as `hera_javaagent_config`. If that's empty, then set to the default value. Mandatory items need to be set manually;
+failure to set might cause the probe to be ineffective.
 
-| 变量名                 | 是否必填 | 默认值 | 备注                                                                                                       |
-|------------------------|:------:|--------|------------------------------------------------------------------------------------------------------------|
-| MIONE_PROJECT_ENV_NAME  |   是   | default | 当前部署环境的名称，eg：dev、uat、st、preview、production。如不填，默认使用default。                               |
-| MIONE_PROJECT_ENV_ID    |   是   |        | 当前部署环境的ID。环境id与环境名称，在Hera的指标监控中可以根据不同环境来看监控图表。                                       |
-| MIONE_PROJECT_NAME      |   是   | none   | 用于表示当前服务的应用名。格式是appId-appName。eg：1-test，1是 appId，test是appName。如果为空，程序⾥默认使⽤none。应⽤是Hera中⾮常重要的元数据，可观测数据展⽰都与应⽤有关。 |
-| host.ip                |   否   |        | 用于记录当前物理机IP，展示在trace的process.tags里。在k8s里获取的是pod的IP。在K8s中，使用ozhera-operator部署时，会由webhook自动生成该环境变量            |
-| node.ip                |   否   |        | 用于记录k8s当前node节点的IP，非k8s部署则不用设置。在K8s中，使用ozhera-operator部署时，会由webhook自动生成该环境变量                                  |
-| JAVAAGENT_PROMETHEUS_PORT |   否   | 55433  | 当前物理机可用端口号，用于提供给Prometheus拉取jvm metrics的httpServer使用。如果为空，程序里默认使用55433。                              |
-| hera.buildin.k8s       |   否   | 1      | 用于记录是否是k8s部署的服务，如果是k8s的服务，标记为1。如果非k8s部署，可以设置为2。默认为1。如果本地调试，可以设置2。                                      |
-| application            |   否   |        | 是将`MIONE_PROJECT_NAME`的值所有中划线，转为下划线，用于容器监控的扩展指。在K8s中，使用ozhera-operator部署时，会由webhook自动生成该环境变量     |
-| serverEnv              |   否   |        | 与MIONE_PROJECT_ENV_NAME的值相同，用于容器监控的扩展指标。在K8s中，使用ozhera-operator部署时，会由webhook自动生成该环境变量                          |
+| Variables                 | Mandatory indicators | Default values | Comments                                                                                                       |
+|---------------------------|:--------------------:|----------------|----------------------------------------------------------------------------------------------------------------|
+| MIONE_PROJECT_ENV_NAME    |         true         | default        | Name of the current deployment environment, e.g., dev, uat, st, preview, production. If not provided, 'default' is used by default.                                                   |
+| MIONE_PROJECT_ENV_ID      |         true         |                | ID of the current deployment environment. The environment id and environment name can be used in OzHera's metric monitoring to view monitoring charts based on different environments.                                                                 |
+| MIONE_PROJECT_NAME        |         true         | none           | Represents the current service's application name. The format is appId-appName. E.g., 1-test, where 1 is the appId, and test is the appName. If left empty, 'none' is used by default in the program. Applications are a crucial metadata in OzHera, and all observability data displays are related to the application. |
+| host.ip                   |        false         |                | Used to record the current physical machine IP, displayed in the trace's process.tags. In k8s, it retrieves the pod's IP. In K8s, when deploying using the ozhera-operator, this environment variable is auto-generated by the webhook.               |
+| node.ip                   |        false         |                | Used to record the IP of the current node in k8s; if not deployed in k8s, there's no need to set this. In K8s, when deploying using the ozhera-operator, this environment variable is auto-generated by the webhook.                                   |
+| JAVAAGENT_PROMETHEUS_PORT |        false         | 55433          | The available port number of the current physical machine, used by the httpServer that provides Prometheus to pull jvm metrics. If left empty, the program defaults to using 55433.                                        |
+| hera.buildin.k8s          |        false         | 1              | Used to record whether the service is deployed in k8s. If the service is in k8s, it's marked as 1. If not deployed in k8s, it can be set to 2. The default is 1. If debugging locally, you can set it to 2.                                              |
+| application               |        false         |                | Converts all hyphens in the `MIONE_PROJECT_NAME` value to underscores, used for container monitoring's extended metrics. In K8s, when deploying using the ozhera-operator, this environment variable is auto-generated by the webhook.                   |
+| serverEnv                 |        false         |                | The value is the same as MIONE_PROJECT_ENV_NAME, used for the extended metrics in container monitoring. In K8s, when deploying using the ozhera-operator, this environment variable is auto-generated by the webhook.                          |
 
 ### 4、log-agent
-目前Hera的trace、log都使用log-agent来收集，log-agent需要以sidecar的方式与应用部署在同一容器中，并且需要被采集的日志文件目录与trace日志目录同时挂载出来，以能够被log-agent采集。
 
-### 5、应用Dockerfile与K8S yaml文件示例
-下面是我们demo项目所使用的dockerfile与k8s的yaml文件，可以参考一下ozhera-demo-client应用中关于探针、jvm、环境变量与log-agent的配置
+Currently, OzHera uses the log-agent to collect both trace and log. The log-agent should be deployed as a sidecar along
+with the application in the same container. Additionally, the directories for logs to be collected and trace logs should
+both be mounted, enabling the log-agent to access them.
+
+### 5. Sample Application Dockerfile and K8S yaml Files
+
+The Dockerfile and K8S yaml file used in our demo project are presented below. These can be referenced for probe, JVM,
+environment variables, and log-agent configurations in the ozhera-demo-client application.
 
 Dockerfile
+
 ```
 FROM openjdk:8-jre
 
@@ -57,6 +70,7 @@ ENTRYPOINT ["java","-javaagent:/opt/soft/opentelemetry-javaagent-0.1.0-SNAPSHOT-
 "-Xloggc:/home/work/log/gc.log","-Duser.timezone=Asia/Shanghai","-XX:+HeapDumpOnOutOfMemoryError","-XX:HeapDumpPath=/home/dum/oom.dump","-jar",
 "/home/work/ozhera-demo-client-1.0.0-SNAPSHOT.jar","&&","tail","-f","/dev/null"]
 ```
+
 K8S yaml
 
 ```
@@ -78,15 +92,15 @@ spec:
         app: ozhera-demo-client
     spec:
       containers:
-      - name: hera-demo-client-container
-        image: demo/hera-demo-client:v1
+      - name: ozhera-demo-client-container
+        image: demo/ozhera-demo-client:v1
         env:
           - name: MIONE_PROJECT_ENV_NAME
             value: dev
           - name: MIONE_PROJECT_ENV_ID
             value: '2'
           - name: MIONE_PROJECT_NAME
-            value: 2-hera-demo-client
+            value: 2-ozhera-demo-client
         volumeMounts:
           - name: log-path
             mountPath: /home/work/log
@@ -109,38 +123,52 @@ spec:
         emptyDir: {}
 ```
 
-## 录入TPC
+## Input into TPC
 
-Hera通过TPC系统来录入、同步、管理应用的元数据信息，以及应用与人的权限关系
+OzHera uses the TPC system to input, sync, and manage application metadata information, as well as relationships between
+applications and users.
 
-### 1、注册并登录tpc
+### 1. Registration and Login to TPC
 
-我们需要访问通过ozhera-operator生成的tpc的页面链接
+One needs to visit the TPC page link generated through the ozhera-operator.
 
 ![operator-url](images/operator-url.png)
 
-未登录访问时，会跳转到tpc登录页面，如果是第一次访问，我们需要先注册tpc超级管理员账号，该账号用于创建项目、授权等操作。超级管理员账号名必须为：tpc@tpc.com，密码可以自定义。注册完成后，我们使用tpc@tpc.com进行登录。
+When accessing without logging in, it redirects to the TPC login page. If it's the first visit, we need to register the
+TPC super admin account. This account is used for creating projects and authorizations. The super admin username must
+be: tpc@tpc.com. The password can be customized. After registration, we log in using tpc@tpc.com.
 
 ![tpc-login](images/tpc-login.png)
 
-### 2、录入应用
+### 2. Enter Application Information
 
-登录成功后，就进入了tpc的首页。在tpc首页的节点信息--子节点中，默认会创建一个名为hera的节点，这个节点是项目组，接入Hera的应用需要先在这个项目组下维护应用信息。
+After successful login, you'll land on the TPC homepage. Under the node information on the TPC homepage's sub-node, a
+node named 'hera' will be created by default. This node represents a project group. To integrate with OzHera, one must
+first maintain the application information under this project group.
 
 ![tpc-node1](images/tpc-node1.png)
 
-点击hera节点，进入hera项目组中。hera项目组中默认会创建logger项目，这个项目是用于Hera日志中，我们可以忽略。点击图中标注的“添加”按钮，会弹出创建项目的弹框。
+Clicking on the OzHera node takes us into the OzHera project group. By default, a logger project will be created within the
+OzHera project group, which is used in OzHera logs and can be ignored. Clicking the "Add" button highlighted in the image
+will pop up a dialog box to create a new project.
 
 ![tpc-node2](images/tpc-node2.png)
 
-节点类型选择“项目”，节点名称就填写我们的应用名称，管理员就填写当前应用的成员账号，当然，这个账号需要提前在tpc上注册。
-我们录入应用信息时，需要分两种情况：
+Select the node type as "Project", enter the name of our application for the node name, and enter the account of the
+current application member as the admin. Of course, this account needs to be registered on TPC in advance. When entering
+application information, there are two scenarios:
 
-一是，我们目前已经有了应用的数据，并且应用的数据中有id，此时我们可以通过在tpc维护外部节点id，来将我们已有的应用id录入。这里我使用之前“一、应用部署的依赖”中的“应用Dockerfile与K8s yaml文件示例”中的应用来进行录入，如下图所示：
+- First, if we already have application data, and there's an id in the application data, we can enter our existing
+  application id by maintaining the external node id on TPC. Here, I use the application from the previous section "I.
+  Application Deployment Dependencies" under "Application Dockerfile & K8S yaml file examples" for entry, as shown
+  below:
 
 ![tpc-add-node1](images/tpc-add-node1.png)
 
-二是，我们目前只有应用的名称，但是没有应用的id，此时我们不需要填写“外部节点类型”与“外部节点ID”，tpc在创建应用之后，会自动生成该应用的id，点击该应用节点详情按钮，在该应用“节点信息”中，我们可以看到该应用的id。如下图所示：
+- Second, if we only have the name of the application but no application id, we don't need to fill in the "External Node
+  Type" and "External Node ID". After TPC creates the application, it will automatically generate an id for this
+  application. Click on the application node detail button, and in the application "Node Information", we can see the id
+  of the application, as shown below:
 
 ![tpc-add-node2](images/tpc-add-node2.png)
 
@@ -148,78 +176,76 @@ Hera通过TPC系统来录入、同步、管理应用的元数据信息，以及�
 
 ![tpc-node-id2](images/tpc-node-id2.png)
 
-不管是哪种情况，注意这里的应用id与应用名称，都要与应用部署中的jvm参数：`-Dotel.resource.attributes=service.name`或者是环境变量中的`MIONE_PROJECT_NAME`保持一致。
+Regardless of the scenario, note that both the application id and application name must be consistent with the JVM
+parameters `-Dotel.resource.attributes=service.name` or the environment variable `MIONE_PROJECT_NAME`.
 
-### 3、应用与人的权限
+### 3. Application and User Permissions
 
-如果我们想给某一个应用添加管理员，让他可以在hera上有配置该应用的权限，我们可以在tpc中找到这个应用，点击应用名称，进入节点详情，在该应用节点的“成员”标签页中，点击添加按钮，可以选择将某个人的账号添加为管理员
+If we want to add an admin to a particular application, allowing them to have the permissions to configure that
+application on OzHera, we can find the application in TPC, click on the application name, enter the node details, and in
+the "Members" tab of the application node, click the add button. This allows us to add someone's account as an admin.
 
 ![tpc-role1](images/tpc-role1.png)
 
 ![tpc-add-role1](images/tpc-add-role1.png)
 
-## 配置日志采集
+## Configuring Log Collection
 
-由于Hera中的日志、trace数据都是由log-agent采集，所以我们需要在Hera日志配置中配置采集信息，告诉log-agent去哪采集，以及采集后发送给谁。
+Since logs and trace data in OzHera are collected by log-agent, we need to configure collection information in OzHera log
+settings, instructing the log-agent where to collect and where to send the data after collection.
 
-### 1、访问OzHera日志页面
+### 1. Accessing OzHera Logging Page
 
-我们通过访问operator生成的ozhera首页的链接，在首页头部title中，点击“日志服务”，进入OzHera日志的界面。
+We access the ozhera homepage link generated by the operator, and in the homepage title, click "Logging Service" to
+enter the OzHera logging interface.
 
 ![operator-url2](images/operator-url2.png)
 
 ![hera-log1](images/hera-log1.png)
 
-### 2、配置日志资源（后续会自动创建默认资源）
+### 2. Configuring Logging Resources (default resources will be automatically created later)
 
-在日志页面左侧菜单栏，点击资源管理，填写RocketMQ与ES资源信息。
+In the logging page sidebar, click on Resource Management and fill in the RocketMQ and ES resource details.
 
-#### （1）RocketMQ
-    别名：RocketMQ资源别名，可以自定义
+#### (1) RocketMQ
 
-    区域：选择“大陆机房”
-
-    mq地址：RocketMQ的地址，格式为host:port
-
-    mq域名：RocketMQ地址的域名
-
-    ak：RocketMQ的accessKey，没有可不填
-
-    sk：RocketMQ的secretKey，没有可不填
-
-    brokerName：填写RocketMQ的brokerName，可以在RocketMQ的dashboard中查看，目的是为了创建日志所需要的topic，默认的为broker-0
-
-    标签列表：RocketMQ的tag列表，没有可不填
+- Alias: Alias for RocketMQ resources, can be customized
+- Region: Choose "Mainland Data Center"
+- MQ Address: The address of RocketMQ, formatted as host:port
+- MQ Domain: Domain name of the RocketMQ address
+- AK: RocketMQ's accessKey, if none, leave blank
+- SK: RocketMQ's secretKey, if none, leave blank
+- BrokerName: Enter the brokerName of RocketMQ, which can be viewed in the RocketMQ dashboard. The purpose is to create
+  the required topic for logs, the default is broker-0
+- Tag List: List of tags for RocketMQ, if none, leave blank
 
 ![hera-log-mq1](images/hera-log-mq1.png)
 
-#### 2）ES
-    别名：ES资源别名，可以自定义
+#### (2) ES
 
-    区域：选择“大陆机房”
-
-    es集群名称：同别名
-
-    esApi地址：ES的地址，格式为host:port
-
-    连接方式：选择连接ES的方式，分为“用户名和密码”与“Token”，用户名、密码、Token没有可以不填
-
-    标签列表：没有可不填
-
-    es索引组：我们会为每种日志类型默认创建一个索引组，但是需要用户将这四个索引组进行分别配置：
-        多行应用日志：mione_hera_log_multiple_app_log01
-        单行应用日志：mione_hera_log_single_app_log01
-        nginx日志：mione_hera_log_nginx_app_log01
-        opentelemetry日志：mione_hera_log_other_app_log01
+- Alias: Alias for ES resources, can be customized
+- Region: Choose "Mainland Data Center"
+- ES Cluster Name: Same as Alias
+- ES API Address: Address of ES, formatted as host:port
+- Connection Method: Choose the method to connect to ES, either "Username and Password" or "Token". If none for
+  username, password, and token, leave blank.
+- Tag List: If none, leave blank
+- ES Index Group: An index group will be created by default for each log type, but users need to configure these four
+  index groups separately:
+    - Multi-line Application Log: mione_hera_log_multiple_app_log01
+    - Single-line Application Log: mione_hera_log_single_app_log01
+    - Nginx Log: mione_hera_log_nginx_app_log01
+    - Opentelemetry Log: mione_hera_log_other_app_log01
 
 ![hera-log-es](images/hera-log-es.png)
 
-### 3、创建space
+### 3. Creating Space
 
-配置好资源后，我们需要创建space--store--taill这三个配置。
-首先，在hera日志服务首页中，点击“立即接入”，进入日志接入页面。点击空间Space右侧的立即创建，创建一个Space。Space一般是部门组织级别。
+After configuring the resources, we need to create the configurations for space, store, and tail. Firstly, on the OzHera
+logging service homepage, click "Immediate Access", and it leads to the logging access page. Click on the "Create"
+option next to Space to create a new space. A Space is generally at the department or organizational level.
 
-注意：创建Space后，需要去tpc上hera--logger下对应的space节点下进行授权。
+Note: After creating a Space, one needs to authorize it under the hera-logger space node on TPC.
 
 ![hera-log2](images/hera-log2.png)
 
@@ -227,96 +253,95 @@ Hera通过TPC系统来录入、同步、管理应用的元数据信息，以及�
 
 ![log-space2](images/log-space2.png)
 
-### 4、创建store
+### 4. Creating Store
 
-在创建Space后，我们在空间Space下拉框中选择刚刚创建的Space，点击日志库Logstore右侧的立即创建，创建store。
+After creating Space, select the newly created Space from the drop-down menu under Space. Click on the "Create" option
+next to Logstore to create a store.
 
 ![log-store1](images/log-store1.png)
 
 ![log-store2](images/log-store2.png)
 
-### 5、创建tail
-    应用类型：选择hera
+### 5. Creating Tail
 
-    部署方式：选择mione
-
-    服务应用名：选择需要接入的应用名
-
-    服务别名：可以自定义
-
-    环境分组：选择需要接入的环境
-
-    服务IP：选择环境后自动带出，需要进行勾选。如果没有，也可以手动进行添加
-
-    日志文件目录：应用日志文件的输出位置，具体到文件名
-
-    切分表达式：日志文件切分的命名规则
-        如果日志切分后和当前目录不在一起，且切分后的文件名的前缀不是日志为名的，则要自己手动填写切分表达式，例如：/home/work/logs/applogs/old/shopapi_application.log-.*。否则可不填。
-        行首正则表达式：如：^2022-* .*$
-        日志解析类型：分割符、自定义、正则、json、nginx
-        解析脚本：
-        分割符：每一段是怎么分割的，输入分割你日志的分割符
-        自定义：如果是比较复杂的，可能每一部分都分割都不一样，则用自定义，例如：[%s]-[%s]-[%s]-[%s]-[%s]-%s，会根据 %s 查找每一部分，每一部分的前缀和后缀
-        正则：输入正则表达式，会根据捕获组来提取字段
-        nginx：输入 nginx 日志格式配置，例如：
-            log_format milog2  '$time_iso8601\t$msec\t$host\t$request_method\t$scheme\t$status\t'
-            '$upstream_addr\t$upstream_cache_status\t$upstream_status\t'
-            '$server_addr\t$remote_addr\t$http_x_forwarded_for\t'
-            '$request_length\t$request_time\t$bytes_sent\t$upstream_response_time\t'
-            '$upstream_connect_time\t $upstream_header_time\t$upstream_response_length\t$upstream_bytes_received\t'
-            '$request_uri\t"$http_user_agent"\t'
-            '$sent_http_x_xiaomi_error_code';
-
-    收集速率：日志采集时多长时间发送一次，控制发送的速率
-
-    MQ配置：可不填，默认会将日志消息随机发送至某一个topic中
-
-    索引列：日志每一部分代表的含义，这个是从当前 store 中选择的，且顺序必须和日志中实际的日志中字段各部分的含义对应。store 的索引列必须是最多的，避免 tail 选择时没有.
+- Application Type: Choose OzHera
+- Deployment Method: Choose Mione
+- Service Application Name: Choose the application to be integrated
+- Service Alias: Can be customized
+- Environment Group: Choose the environment to be integrated
+- Service IP: It's automatically populated after choosing the environment and needs to be selected. If not available, it
+  can be added manually.
+- Log File Directory: Output location of the application log file, specific to the filename.
+- Split Expression: Naming rule for log file splitting
+    - If after splitting the log, it isn't in the current directory and the prefix of the split file's name isn't the
+      log's name, one has to manually enter the split expression. For example:
+      /home/work/logs/applogs/old/shopapi_application.log-.*. Otherwise, leave it blank.
+    - Line Beginning Regular Expression: e.g., ^2022-* .*$
+    - Log Parsing Type: Delimiter, Custom, Regular, JSON, Nginx
+    - Parsing Script:
+        - Delimiter: How each segment is split. Enter the delimiter that splits your log.
+        - Custom: If it's more complex, where each part might have different splits, use Custom. For
+          example: [%s]-[%s]-[%s]-[%s]-[%s]-%s. It will look for each segment based on %s, the prefix and suffix of each
+          segment.
+        - Regular: Enter a regular expression, extracting fields based on capture groups.
+        - Nginx: Enter the Nginx log format configuration, for example:
+          log_format milog2  '$time_iso8601\t$msec\t$host\t$request_method\t$scheme\t$status\t'
+          '$upstream_addr\t$upstream_cache_status\t$upstream_status\t'
+          '$server_addr\t$remote_addr\t$http_x_forwarded_for\t'
+          '$request_length\t$request_time\t$bytes_sent\t$upstream_response_time\t'
+          '$upstream_connect_time\t $upstream_header_time\t$upstream_response_length\t$upstream_bytes_received\t'
+          '$request_uri\t"$http_user_agent"\t'
+          '$sent_http_x_xiaomi_error_code';
+    - Collection Rate: How often logs are sent during collection to control the sending rate.
+    - MQ Configuration: Can be left blank. By default, the log message will be randomly sent to a topic.
+    - Index Column: The meaning of each part of the log. This is selected from the current store, and the order must
+      match the actual order of fields in the log. The index column of the store must be the most, to avoid not having a
+      choice during tail selection.
 
 ![log-tail1](images/log-tail1.png)
 
 ![log-tail2](images/log-tail2.png)
 
-配置完成后，等待几秒钟的时间，就可以在日志页面查看日志了。
+Once the configuration is completed, after waiting for a few seconds, the logs can be viewed on the log page.
 
 ![hera-log3](images/hera-log3.png)
 
-### 6、配置trace采集（后续可以自动创建）
+### 6. Configuring Trace Collection (can be automatically created later)
 
-在Hera中，trace信息是通过Hera日志中的log-agent进行收集的，我们是把trace信息当做是一种特殊的日志进行采集，所以还需要在Hera日志上配置trace的采集信息。只需要按照以下配置即可。
+In OzHera, trace information is collected through log-agent in OzHera logs. We treat trace information as a special type of
+log for collection, so trace collection information still needs to be configured on OzHera logs. Just follow the
+configurations below.
 
-#### （1）创建trace-space
+#### (1) Create trace-space
 
 ![log-space3](images/log-space3.png)
 
-#### （2）创建trace-store
+#### (2) Create trace-store
 
-日志类型选择“opentelemetry日志”即可，其他的配置默认即可。
+For log type, choose "opentelemetry log". Other configurations can be left as default.
 
 ![log-store3](images/log-store3.png)
 
-#### （3）创建trace-tail
-与一般的应用创建tail大致相同，只是配置相对来说比较固定。
+#### (3) Create trace-tail
 
-    服务应用名：只能选择china_log-agent
+Creating a tail for trace is similar to creating one for a regular application, but the configurations are more fixed.
 
-    服务分组：选择default_env
-
-    服务IP：全选
-
-    日志文件路径：填写“/home/work/log/*/trace.log”。它会扫描所有/home/work/log下的trace.log文件进行采集
-
-    收集速率：选择快速收集
-
-    MQ配置：选择我们在日志资源中配置的RocketMQ集群，后面则是需要填写topic，如果无更改固定为：mone_hera_staging_trace_etl_server
+- Service Application Name: Can only choose china_log-agent
+- Service Group: Choose default_env
+- Service IP: Select all
+- Log File Path: Enter "/home/work/log/*/trace.log". It will scan and collect all trace.log files under /home/work/log.
+- Collection Rate: Choose fast collection
+- MQ Configuration: Choose the RocketMQ cluster configured in log resources. The following is to fill in the topic. If
+  unchanged, it's fixed as: mone_hera_staging_trace_etl_server
 
 ![log-tail3](images/log-tail3.png)
 
 ![log-tail4](images/log-tail4.png)
 
-## 四、首页关注应用
+## IV. Follow Applications on the Homepage
 
-在首页添加应用到“我参与的应用”或者“我关注的应用”后，就可以查看监控、链路信息了。
+After adding applications to "Applications I'm Involved With" or "Applications I Follow" on the homepage, one can view
+monitoring and linkage information.
 
 ![hera-dash1](images/hera-dash1.png)
 

@@ -21,11 +21,11 @@ OzHera是由小米-中国区研发效能团队开源的一款应用性能观测�
 
 ## Getting started
 ### 部署
-[operator使用文档.md](readme%2Fdeploy%2Fozhera-deploy-document.md)
+[operator使用文档.md](readme%2Fdeploy%2Fozhera-deploy-document_cn.md)
 
 ---
 
 ### 应用接入
-[应用接入文档.md](readme/application-integeration/application-integration-document.md)
+[应用接入文档.md](readme/application-integeration/application-integration-document_cn.md)
 
 ---
