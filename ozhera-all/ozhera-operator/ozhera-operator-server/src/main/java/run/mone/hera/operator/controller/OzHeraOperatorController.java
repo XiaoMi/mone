@@ -51,7 +51,7 @@ import java.util.concurrent.Semaphore;
  */
 @Slf4j
 @Controller
-public class HeraOperatorController {
+public class OzHeraOperatorController {
 
     private Gson gson = new Gson();
 

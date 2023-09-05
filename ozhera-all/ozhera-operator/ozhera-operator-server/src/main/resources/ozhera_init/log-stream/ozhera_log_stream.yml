@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: log-stream
-  namespace: hera-namespace
+  namespace: ozhera-namespace
   labels:
     app: log-stream
 spec:

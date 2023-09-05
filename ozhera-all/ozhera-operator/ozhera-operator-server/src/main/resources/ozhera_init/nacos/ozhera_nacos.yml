@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nacos
-  namespace: hera-namespace
+  namespace: ozhera-namespace
   labels:
     app: nacos
 spec:
@@ -34,7 +34,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: nacos
-  namespace: hera-namespace
+  namespace: ozhera-namespace
   labels:
     app: nacos
 spec:

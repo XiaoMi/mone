@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: hera-nginx-fe
-  namespace: hera-namespace
+  namespace: ozhera-namespace
   labels:
     app: hera-nginx-fe
 spec:

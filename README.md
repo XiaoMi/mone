@@ -52,7 +52,7 @@
 ![mone-miline](readme/image/gw02.png)
 ![mone-miline](readme/image/gw04.png)
 
-### [Hera可观测平台]
+### [OzHera可观测平台]
 ![mone-hera](readme/image/hera01.jpeg)
 ![mone-hera](readme/image/hera02.png)
 ![mone-hera](readme/image/hera03.png)

@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: mi-tpc
-  namespace: hera-namespace
+  namespace: ozhera-namespace
   labels:
     app: mi-tpc
 spec:
@@ -27,7 +27,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mi-tpc
-  namespace: hera-namespace
+  namespace: ozhera-namespace
   labels:
     app: mi-tpc-service
 spec:
