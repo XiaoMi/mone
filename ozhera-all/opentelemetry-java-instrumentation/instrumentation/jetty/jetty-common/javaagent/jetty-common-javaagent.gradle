@@ -1,0 +1,6 @@
+apply from: "$rootDir/gradle/instrumentation.gradle"
+
+dependencies {
+  api(project(':instrumentation:servlet:servlet-common:library'))
+  implementation(project(':instrumentation:servlet:servlet-common:javaagent'))
+}
