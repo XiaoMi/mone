@@ -13,7 +13,7 @@
     <groupId>run.mone</groupId>
     <artifactId>hera-monitor</artifactId>
     <packaging>pom</packaging>
-    <version>1.2-SNAPSHOT</version>
+    <version>1.2-matrix-alert-SNAPSHOT</version>
     <modules>
         <module>ozhera-monitor-server</module>
         <module>ozhera-monitor-service</module>
@@ -26,7 +26,7 @@
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <spring.version>5.1.3.RELEASE</spring.version>
-        <hera-monitor.release.version>1.2-SNAPSHOT</hera-monitor.release.version>
+        <hera-monitor.release.version>1.2-matrix-alert-SNAPSHOT</hera-monitor.release.version>
         <!-- Replace it with the absolute path of your own hera-monitor project. -->
         <maven.jcommonDirectory>~/</maven.jcommonDirectory>
     </properties>

@@ -1,5 +1,7 @@
 package com.xiaomi.mone.monitor.service;
 
+import com.alibaba.fastjson.JSONObject;
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -178,7 +180,7 @@ public class AlertGroupService {
      * @return
      */
     public Result<AlertGroupInfo> alertGroupCreate(String user, AlertGroupParam param) {
-        Result<JsonObject> result = alertServiceAdapt.createAlertGroup(user, param.getName(), param.getNote(), param.getChatId(), param.getMemberIds());
+        Result<JsonObject> result = alertServiceAdapt.createAlertGroup(user, param.getName(), param.getNote(), param.getChatId(), param.getMemberIds(),param.getDutyInfo());
         if (result == null) {
             return Result.fail(ErrorCode.unknownError);
         }
@@ -210,7 +212,7 @@ public class AlertGroupService {
         if (ag == null) {
             return Result.fail(ErrorCode.NoOperPermission);
         }
-        Result result = alertServiceAdapt.editAlertGroup(user, ag.getRelId(), param.getName(), param.getNote(), param.getChatId(), param.getMemberIds());
+        Result result = alertServiceAdapt.editAlertGroup(user, ag.getRelId(), param.getName(), param.getNote(), param.getChatId(), param.getMemberIds(),param.getDutyInfo());
         if (result == null) {
             return Result.fail(ErrorCode.unknownError);
         }
@@ -258,6 +260,17 @@ public class AlertGroupService {
         }
         alertGroupDao.delete(ag);
         return Result.success(null);
+    }
+
+    public Result dutyInfoList(String user, AlertGroupParam param){
+        Result<JsonElement> result = alertServiceAdapt.dutyInfoList(user, param.getId(), param.getStart(), param.getEnd());
+        if(result.isSuccess() && result.getData() != null){
+            JsonArray asJsonArray = result.getData().getAsJsonArray();
+            List<Map> list = JSONObject.parseArray(new Gson().toJson(asJsonArray),Map.class);
+            return Result.success(list);
+        }
+        log.info("dutyInfoList param:{}, result:{}",param.toString(),new Gson().toJson(result));
+        return result;
     }
 
 }

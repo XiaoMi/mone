@@ -1,6 +1,7 @@
 package com.xiaomi.mone.monitor.service;
 
 import com.alibaba.nacos.api.config.annotation.NacosValue;
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -25,12 +26,7 @@ import com.xiaomi.mone.monitor.service.aop.context.HeraRequestMappingContext;
 import com.xiaomi.mone.monitor.service.api.AlarmPresetMetricsService;
 import com.xiaomi.mone.monitor.service.api.AppAlarmServiceExtension;
 import com.xiaomi.mone.monitor.service.model.PageData;
-import com.xiaomi.mone.monitor.service.model.prometheus.AlarmRuleData;
-import com.xiaomi.mone.monitor.service.model.prometheus.AlarmRuleRequest;
-import com.xiaomi.mone.monitor.service.model.prometheus.AlarmRuleTemplateRequest;
-import com.xiaomi.mone.monitor.service.model.prometheus.AlarmTemplateResponse;
-import com.xiaomi.mone.monitor.service.model.prometheus.AppAlarmRuleTemplateQuery;
-import com.xiaomi.mone.monitor.service.model.prometheus.AppWithAlarmRules;
+import com.xiaomi.mone.monitor.service.model.prometheus.*;
 import com.xiaomi.mone.monitor.service.prometheus.AlarmService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -329,6 +325,67 @@ public class AppAlarmService {
 
         return addRules(param,app);
 
+    }
+
+    public Result batchAddRulesWithStrategy(AlarmRuleRequest param){
+
+
+        List<ProjectAlarmInfo> projectsAlarmInfo = param.getProjectsAlarmInfo();
+        if(projectsAlarmInfo == null){
+            projectsAlarmInfo = Lists.newArrayList();
+        }
+        if(param.getIamId() != null && param.getProjectId() != null){
+            ProjectAlarmInfo projectAlarmInfo = new ProjectAlarmInfo();
+            projectAlarmInfo.setIamId(param.getIamId());
+            projectAlarmInfo.setIamType(param.getIamType());
+            projectAlarmInfo.setProjectId(param.getProjectId());
+            projectsAlarmInfo.add(projectAlarmInfo);
+        }
+
+        if(CollectionUtils.isEmpty(projectsAlarmInfo)){
+            log.info("batchAddRulesWithStrategy no projectsAlarmInfo found!");
+            return Result.fail(ErrorCode.invalidParamError);
+        }
+
+        for(ProjectAlarmInfo t : projectsAlarmInfo){
+
+            param.setProjectId(t.getProjectId());
+            param.setIamType(t.getIamType());
+            param.setIamId(t.getIamId());
+
+            /**
+             * check permission for current user.
+             */
+            AppMonitor app = null;
+            app = appMonitorDao.getMyApp(param.getProjectId(), param.getIamId(), param.getUser(), AppViewType.MyApp);
+
+            if (app == null) {
+                log.error("batchAddRulesWithStrategy# current user has not permission for projectId={} param:{}", param.getProjectId(),param.toString());
+                continue;
+            }
+
+            /**
+             * create strategy
+             */
+            AlarmStrategy strategy = alarmStrategyService.create(param,app);
+            if (strategy == null) {
+                log.error("batchAddRulesWithStrategy remote fail; param:{},strategyResult={}", param.toString(),strategy.toString());
+                continue;
+            }
+
+            Integer strategyId = strategy.getId();
+            HeraRequestMappingContext.set("strategyId", strategyId);
+
+            param.setStrategyId(strategyId);
+
+            Result result = addRules(param, app);
+            if(!result.isSuccess()){
+                log.error("batchAddRulesWithStrategy#local create strategy fail! param:{},result:{}",param.toString(),new Gson().toJson(result));
+            }
+
+        }
+
+        return Result.success();
     }
 
 

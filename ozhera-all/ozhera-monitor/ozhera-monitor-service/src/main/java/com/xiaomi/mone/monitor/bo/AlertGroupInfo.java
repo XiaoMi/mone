@@ -1,5 +1,6 @@
 package com.xiaomi.mone.monitor.bo;
 
+import com.xiaomi.mone.monitor.service.model.alarm.duty.DutyInfo;
 import lombok.Data;
 import lombok.ToString;
 
@@ -25,5 +26,6 @@ public class AlertGroupInfo {
     private long createdTime;
     private String type;
     private long relId;
+    private DutyInfo dutyInfo;
 
 }
