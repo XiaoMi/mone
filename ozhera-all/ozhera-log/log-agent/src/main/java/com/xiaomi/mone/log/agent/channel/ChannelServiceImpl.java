@@ -229,6 +229,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
 
     private void startCollectFile(Long channelId, Input input, List<String> patterns) {
         for (int i = 0; i < patterns.size(); i++) {
+            log.info("startCollectFile,total file:{},start:{},remain:{}", patterns.size(), i + 1, patterns.size() - (i + 1));
             readFile(input.getPatternCode(), getTailPodIp(patterns.get(i)), patterns.get(i), channelId);
             InodeFileComparator.addFile(patterns.get(i));
         }
@@ -421,7 +422,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
 
         ReadListener listener = initFileReadListener(mLog, patternCode, usedIp, filePath);
         Map<String, ChannelMemory.FileProgress> fileProgressMap = channelMemory.getFileProgressMap();
-        log.info("fileProgressMap:{}", fileProgressMap);
+//        log.info("fileProgressMap:{}", gson.toJson(fileProgressMap));
         LogFile logFile = getLogFile(filePath, listener, fileProgressMap);
         if (null == logFile) {
             log.warn("file:{} marked stop to collect", filePath);

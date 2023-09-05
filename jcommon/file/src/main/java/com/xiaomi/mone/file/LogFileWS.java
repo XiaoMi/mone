@@ -6,14 +6,12 @@ import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.xml.bind.DatatypeConverter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.security.MessageDigest;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author goodjava@qq.com
@@ -111,7 +109,8 @@ public class LogFileWS extends LogFile {
                 log.error("file.length() IOException, file:{}", this.file, e);
             }
             raf.seek(pointer);
-            readFile: while (true) {
+            readFile:
+            while (true) {
                 WatchKey watchKey = null;
                 try {
                     watchKey = watchService.take();
@@ -120,40 +119,40 @@ public class LogFileWS extends LogFile {
                     continue;
                 }
                 List<WatchEvent<?>> watchEvents = watchKey.pollEvents();
-                for(WatchEvent<?> watchEvent : watchEvents) {
-                   if (watchEvent.kind().equals(StandardWatchEventKinds.ENTRY_MODIFY)) {
-                       String line = raf.getNextLine();
-                       if (null != line) {
-                           line = new String(line.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
-                           //todo 大行文件先临时截断
-                           if (line.length() > LINE_MAX_LENGTH) {
-                               line = line.substring(0, LINE_MAX_LENGTH);
-                           }
-                       }
-                       if (reOpen) {
-                           pointer = 0;
-                           lineNumber = 0;
-                           break readFile;
-                       }
-                       if (stop) {
-                           break readFile;
-                       }
-                       Long maxPointer = null;
-                       try {
-                           pointer = raf.getFilePointer();
-                           maxPointer = raf.length();
-                       } catch (IOException e) {
-                           log.error("file.length() IOException, file:{}", this.file, e);
-                       }
+                for (WatchEvent<?> watchEvent : watchEvents) {
+                    if (watchEvent.kind().equals(StandardWatchEventKinds.ENTRY_MODIFY)) {
+                        String line = raf.getNextLine();
+                        if (null != line) {
+                            line = new String(line.getBytes(StandardCharsets.ISO_8859_1), StandardCharsets.UTF_8);
+                            //todo 大行文件先临时截断
+                            if (line.length() > LINE_MAX_LENGTH) {
+                                line = line.substring(0, LINE_MAX_LENGTH);
+                            }
+                        }
+                        if (reOpen) {
+                            pointer = 0;
+                            lineNumber = 0;
+                            break readFile;
+                        }
+                        if (stop) {
+                            break readFile;
+                        }
+                        Long maxPointer = null;
+                        try {
+                            pointer = raf.getFilePointer();
+                            maxPointer = raf.length();
+                        } catch (IOException e) {
+                            log.error("file.length() IOException, file:{}", this.file, e);
+                        }
 
-                       ReadResult readResult = new ReadResult();
-                       readResult.setLines(Lists.newArrayList(line));
-                       readResult.setPointer(pointer);
-                       readResult.setFileMaxPointer(maxPointer);
-                       readResult.setLineNumber(++lineNumber);
-                       ReadEvent event = new ReadEvent(readResult);
-                       listener.onEvent(event);
-                   }
+                        ReadResult readResult = new ReadResult();
+                        readResult.setLines(Lists.newArrayList(line));
+                        readResult.setPointer(pointer);
+                        readResult.setFileMaxPointer(maxPointer);
+                        readResult.setLineNumber(++lineNumber);
+                        ReadEvent event = new ReadEvent(readResult);
+                        listener.onEvent(event);
+                    }
                 }
                 watchKey.reset();
             }
@@ -194,8 +193,11 @@ public class LogFileWS extends LogFile {
         MessageDigest md = MessageDigest.getInstance("MD5");
         md.update(msg.getBytes());
         byte[] digest = md.digest();
-        return DatatypeConverter
-                .printHexBinary(digest).toUpperCase();
+        StringBuilder sb = new StringBuilder(2 * digest.length);
+        for (byte b : digest) {
+            sb.append(String.format("%02x", b & 0xff));
+        }
+        return sb.toString().toUpperCase();
     }
 
 
