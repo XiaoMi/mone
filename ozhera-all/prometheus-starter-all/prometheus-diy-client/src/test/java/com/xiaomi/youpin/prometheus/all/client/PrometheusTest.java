@@ -22,7 +22,6 @@ public class PrometheusTest {
                 e.printStackTrace();
             }
             System.out.println(str);
-            // 暴露 Prometheus HTTP 服务，如果已经有，可以使用已有的 HTTP Server
             HttpServer server = HttpServer.create(new InetSocketAddress(8070), 0);
             server.createContext("/metrics", httpExchange -> {
                 String response = Prometheus.registry.scrape();
@@ -83,10 +82,6 @@ public class PrometheusTest {
     @Test
     public void testException()   {
         IntStream.range(0, 100).forEach(i -> {
-            //重复metric名字异常
-            // m.newCounter("testDuplicateNameException","name").with("aa").add(1);
-            //  m.newCounter("testDuplicateNameException","name").with("bb").add(1);
-            //标签名数量和标签值数量不匹配异常
             Metrics.getInstance().newCounter("testNotMatchLabelNameAndLabelValueExceptionCounter", "a", "b").with("1").add(1);
             Metrics.getInstance().newGauge("testNotMatchLabelNameAndLabelValueExceptionGauge", "a", "b").with("1").add(1);
             Metrics.getInstance().newHistogram("testNotMatchLabelNameAndLabelValueExceptionHistogram", null, "b", "c").with("1").observe(1);
