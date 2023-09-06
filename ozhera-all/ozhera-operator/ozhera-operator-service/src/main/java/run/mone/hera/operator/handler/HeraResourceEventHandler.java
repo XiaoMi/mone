@@ -223,18 +223,6 @@ public class HeraResourceEventHandler implements ResourceEventHandler<HeraBootst
         throw new RuntimeException("deployment not ready, after retry 15 times, break");
     }
 
-//    private void initResource(String action) {
-//        // sql 脚本初始化
-//        initSql(action);
-//        // nacos集群、配置初始化
-//        initNacos(action);
-//    }
-
-//    private void initApp(String action) {
-//        // tpc根节点初始化
-//        initTpc(action);
-//    }
-
     private void initTpc(String action) {
         String url = "http://tpc-mone-b2c-srv:8097/tpc/init";
         int retryTimes = 9;
@@ -307,7 +295,7 @@ public class HeraResourceEventHandler implements ResourceEventHandler<HeraBootst
     }
 
     private void initSql(String action, String url, String userName, String pwd) {
-        //mysql安装完后，初始化数据
+        // After installing mysql, initialize the data.
         String[] scripts = new String[]{"/ozhera_init/mysql/sql/nacos.sql",
                 "/ozhera_init/mysql/sql/tpc.sql",
                 "/ozhera_init/mysql/sql/grafana.sql",
@@ -364,7 +352,7 @@ public class HeraResourceEventHandler implements ResourceEventHandler<HeraBootst
         esService.createESTemplate(url, userName, pwd);
     }
 
-    private void initRocketMQ(String nameserver){
+    private void initRocketMQ(String nameserver) {
         rocketMQSerivce.createTopic(nameserver);
     }
 
@@ -389,7 +377,7 @@ public class HeraResourceEventHandler implements ResourceEventHandler<HeraBootst
                 try {
                     k8sUtilBean.applyResource(heraResource, objectMeta, "delete");
                 } catch (Exception e) {
-                    log.warn("heraResource:{} delete error", heraResource.getResourceName() , e);
+                    log.warn("heraResource:{} delete error", heraResource.getResourceName(), e);
                 }
             }
         } catch (Throwable e) {
