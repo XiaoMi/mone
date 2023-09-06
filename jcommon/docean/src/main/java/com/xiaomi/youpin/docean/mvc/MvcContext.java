@@ -36,7 +36,7 @@ public class MvcContext {
     private String traceId;
 
     /**
-     * 使用协程
+     * rate limited or exceeded quota
      */
     private boolean virtualThread;
 
@@ -45,7 +45,7 @@ public class MvcContext {
     private Map<String, String> headers;
 
     /**
-     * 用户可以修改返回结果的headers
+     * Users can modify the headers of the returned results.
      */
     private Map<String, String> resHeaders = new HashMap<>();
 
@@ -64,7 +64,7 @@ public class MvcContext {
     private Object response;
 
     /**
-     * 是否允许跨域
+     * rate limited or exceeded quota
      */
     private boolean allowCross;
 

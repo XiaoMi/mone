@@ -143,7 +143,6 @@ public class HttpServerTest {
         System.out.println("----><" + response.body().string());
 
 
-
         System.in.read();
     }
 
@@ -153,7 +152,7 @@ public class HttpServerTest {
         Request request = new Request.Builder()
                 .url("http://127.0.0.1:8999/a")
                 .build();
-        IntStream.range(0,100).forEach(i->{
+        IntStream.range(0, 100).forEach(i -> {
             try {
                 Response response = client.newCall(request).execute();
                 System.out.println("---->" + response.body().string());
@@ -165,19 +164,19 @@ public class HttpServerTest {
 
 
     public static String s() {
-        // 创建一个ByteBuffer，用于存储SETTINGS帧的内容
+        // Create a ByteBuffer to store the content of the SETTINGS frame.
         ByteBuffer buffer = ByteBuffer.allocate(6);
 
-        // 写入SETTINGS_MAX_CONCURRENT_STREAMS的标识符（0x3）
+        // Identifier for writing into SETTINGS_MAX_CONCURRENT_STREAMS (0x3)
         buffer.putShort((short) 0x3);
 
-        // 写入SETTINGS_MAX_CONCURRENT_STREAMS的值（例如，100）
+        // The value written into SETTINGS_MAX_CONCURRENT_STREAMS (e.g., 100)
         buffer.putInt(100);
 
-        // 将ByteBuffer转换为字节数组
+        // Convert ByteBuffer to byte array
         byte[] settingsFrame = buffer.array();
 
-        // 对字节数组进行Base64编码
+        // rate limited or exceeded quota
         String http2Settings = Base64.getUrlEncoder().encodeToString(settingsFrame);
 
         return http2Settings;
