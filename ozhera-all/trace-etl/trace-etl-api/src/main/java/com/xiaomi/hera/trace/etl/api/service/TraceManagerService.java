@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * @Description
  * @Author dingtao
- * @Date 2022/4/24 7:35 下午
+ * @Date 2022/4/24 7:35 pm
  */
 public interface TraceManagerService {
     Result<List<HeraTraceEtlConfig>> getAll();

@@ -5,7 +5,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * @Description
  * @Author dingtao
- * @Date 2021/11/10 10:00 上午
+ * @Date 2021/11/10 10:00 am
  */
 public class LocalStorages {
     public static long firstCurrentSeconds = System.currentTimeMillis() / 1000;
