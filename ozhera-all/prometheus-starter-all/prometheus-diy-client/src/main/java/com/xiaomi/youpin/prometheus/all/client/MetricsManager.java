@@ -4,31 +4,31 @@ package com.xiaomi.youpin.prometheus.all.client;
  */
 public interface MetricsManager {
      /**
-      * 使用Counter打点
+      * use Counter
       *
-      * @param metricName 指标名
-      * @param labelNames 标签名
+      * @param metricName
+      * @param labelNames
       * @return XMCounter
       */
 
      XmCounter newCounter(String metricName, String... labelNames);
 
      /**
-      * 使用Gauge打点
+      * use Gauge
       *
-      * @param metricName 指标名
-      * @param labelNames 标签名
+      * @param metricName
+      * @param labelNames
       * @return XMGauge
       */
 
      XmGauge newGauge(String metricName, String... labelNames);
 
      /**
-      * 使用Histogram打点
+      * use Histogram
       *
-      * @param metricName 指标名
-      * @param buckets    存储桶
-      * @param labelNames 标签名
+      * @param metricName
+      * @param buckets
+      * @param labelNames
       * @return XMHistogram
       */
 
