@@ -29,13 +29,18 @@ public class ExecutorUtil {
 
     public static ScheduledThreadPoolExecutor STP_EXECUTOR = new ScheduledThreadPoolExecutor(15, new CustomThreadFactory("ExecutorUtil-STP-Thread"));
 
-    public static ExecutorService TP_EXECUTOR = Executors.newVirtualThreadPerTaskExecutor();
+    public static ExecutorService TP_EXECUTOR = createPool();
 
     public static ScheduledFuture<?> scheduleAtFixedRate(Runnable command,
                                                          long initialDelay,
                                                          long period,
                                                          TimeUnit unit) {
         return STP_EXECUTOR.scheduleAtFixedRate(command, initialDelay, period, unit);
+    }
+
+    public static ExecutorService createPool() {
+        System.setProperty("jdk.virtualThreadScheduler.parallelism", String.valueOf(Runtime.getRuntime().availableProcessors() + 1));
+        return Executors.newVirtualThreadPerTaskExecutor();
     }
 
     public static Future<?> submit(Runnable task) {

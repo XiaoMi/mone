@@ -431,6 +431,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
             logFileMap.put(filePath, logFile);
             Future<?> future = ExecutorUtil.submit(() -> {
                 try {
+                    log.info("thread {} {}", Thread.currentThread().isVirtual(), Thread.currentThread());
                     logFile.readLine();
                 } catch (Exception e) {
                     log.error("logFile read line err,channelId:{},localIp:{},file:{},patternCode:{}", channelId, usedIp, fileProgressMap, patternCode, e);
