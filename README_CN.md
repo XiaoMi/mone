@@ -14,7 +14,7 @@
 
 ## ✨ Architecture
 ### 产品架构
-![mone](readme/image/mione产品架构.png)
+![mone](readme/image/mione_architect.png)
 ### 研发全流程提效
 ![mone](readme/image/mione_devflow.png)
 

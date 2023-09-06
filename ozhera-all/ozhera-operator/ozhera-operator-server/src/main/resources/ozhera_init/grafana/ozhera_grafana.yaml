@@ -1693,11 +1693,11 @@ spec:
           - 0
       containers:
         - name: grafana
-          ### 启动后执行命令
+          ### Execute command after startup.
           lifecycle:
             postStart:
               exec:
-                command: ["/bin/bash", "-c", "bin/grafana-cli plugins install grafana-singlestat-panel & bin/grafana-cli plugins install grafana-piechart-panel"]
+                command: [ "/bin/bash", "-c", "bin/grafana-cli plugins install grafana-singlestat-panel & bin/grafana-cli plugins install grafana-piechart-panel" ]
           image: grafana/grafana:9.2.0
           imagePullPolicy: IfNotPresent
           ports:

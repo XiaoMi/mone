@@ -15,21 +15,23 @@ import java.util.Random;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-@SuppressWarnings({"unused", "FieldCanBeFinal","FutureReturnValueIgnored","SystemOut","CatchAndPrintStackTrace"})
+@SuppressWarnings({"unused", "FieldCanBeFinal", "FutureReturnValueIgnored", "SystemOut",
+    "CatchAndPrintStackTrace"})
 public final class Log4j2SpanExporter implements SpanExporter {
 
   private Logger log;
 
-  // 生成日志文件的间隙，单位：m
+  // Interval for generating log files, unit: m
   private static final int GENERATE_LOG_GAP = 20;
-  private static final String[] traceIDChars = new String[]{"a", "b", "c", "d", "e", "f", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9"};
+  private static final String[] traceIDChars = new String[] {"a", "b", "c", "d", "e", "f", "0", "1",
+      "2", "3", "4", "5", "6", "7", "8", "9"};
   private static Random r = new Random();
 
   private static String ipv4Env = SystemCommon.getEnvOrProperties("host.ip");
 
   public Log4j2SpanExporter() {
     log = Log4j2Factory.getLogger();
-    // 自动生产trace log，防止长时间无数据之后，日志采集行号对应不上，从而无法采集
+    // Automatically generate trace logs to prevent the mismatch between log collection line numbers and the absence of data for a long time, thus unable to collect.
     scheduledSpanDateForLog();
   }
 
@@ -81,15 +83,17 @@ public final class Log4j2SpanExporter implements SpanExporter {
     try {
       long currNano = System.currentTimeMillis() * 1000 * 1000;
       String autoGenerator = currNano + " ### 123 ### " + ipv4Env
-          + " ### auto-generator ### dbDriver ### UNSET ### "+buildTraceId()+" ### "+buildSpanId()+" ### [] ### [] ### {\"tags\":[{\"key\":\"service.name\",\"type\":\"string\",\"value\":\"auto-generator\"}]} ### [] ### ";
+          + " ### auto-generator ### dbDriver ### UNSET ### " + buildTraceId() + " ### "
+          + buildSpanId()
+          + " ### [] ### [] ### {\"tags\":[{\"key\":\"service.name\",\"type\":\"string\",\"value\":\"auto-generator\"}]} ### [] ### ";
       log.info(autoGenerator);
     } catch (Throwable t) {
       t.printStackTrace();
     }
   }
 
-  private static String buildTraceId(){
-    // 构造随机的traceID
+  private static String buildTraceId() {
+    // Generate a random traceID.
     StringBuilder stringBuilder = new StringBuilder();
     for (int j = 0; j < 32; j++) {
       int i = r.nextInt(traceIDChars.length);
@@ -98,7 +102,7 @@ public final class Log4j2SpanExporter implements SpanExporter {
     return stringBuilder.toString();
   }
 
-  private static String buildSpanId(){
+  private static String buildSpanId() {
     StringBuilder stringBuilder = new StringBuilder();
     for (int j = 0; j < 16; j++) {
       int i = r.nextInt(traceIDChars.length);

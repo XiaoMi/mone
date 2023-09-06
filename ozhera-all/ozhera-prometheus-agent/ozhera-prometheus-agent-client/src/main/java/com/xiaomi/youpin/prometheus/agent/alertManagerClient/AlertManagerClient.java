@@ -42,7 +42,7 @@ public class AlertManagerClient implements Client {
     @NacosValue(value = "${job.alertManager.enabled}", autoRefreshed = true)
     private String enabled;
 
-    //第一次GetLocalConfigs后置位true
+    // Set to true after the first GetLocalConfigs
     private boolean firstInitSign = false;
 
     @Autowired
@@ -65,16 +65,16 @@ public class AlertManagerClient implements Client {
 
     @Override
     public void GetLocalConfigs() {
-        //定时请求数据库查找所有pending状态的未删除的alert
+        // Regularly query the database to find all undeleted alerts in pending status.
         new ScheduledThreadPoolExecutor(1).scheduleAtFixedRate(() -> {
             try {
                 log.info("AlertManagerClient start GetLocalConfigs");
                 List<RuleAlertEntity> allRuleAlertList = ruleAlertService.GetAllRuleAlertList();
-                //先清空上一次结果
+                //Clear the previous result first.
                 localRuleList.clear();
                 log.info("AlertManagerClient GetLocalConfigs allRuleAlertList: {}", allRuleAlertList);
                 allRuleAlertList.forEach(item -> {
-                    //加上group分组
+                    //Add grouping to the group.
                     String tmpGroup = item.getAlert_group();
                     Rule rule = new Rule();
                     rule.setAlert(item.getName());
@@ -105,10 +105,10 @@ public class AlertManagerClient implements Client {
     public void CompareAndReload() {
 
         new ScheduledThreadPoolExecutor(1).scheduleAtFixedRate(() -> {
-            //如果有变动，调用reload接口，一期直接reload
-            //读取本地rule配置文件
+            // If there are any changes, call the reload interface, and directly reload the first phase.
+            // Read local rule configuration file.
             try {
-                //如果localRuleList为空，说明数据库中为空记录，直接返回
+                // If localRuleList is empty, it means there are no records in the database, so return directly.
                 if (localRuleList.size() == 0) {
                     log.info("localRuleList is empty and no need reload");
                     return;
@@ -137,10 +137,10 @@ public class AlertManagerClient implements Client {
                 log.info("AlertManagerClient request reload res :{}", getReloadRes);
                 if (getReloadRes.equals("200")) {
                     log.info("AlertManagerClient request reload success");
-                    //成功后，删除备份
+                    //After success, delete backup.
                     deleteBackConfig();
                 } else {
-                    //如果reload失败，用备份恢复配置
+                    //If reload fails, restore configuration from backup.
                     log.info("AlertManagerClient request reload fail and begin rollback config");
                     boolean rollbackRes = restoreConfiguration(backFilePath, filePath);
                     log.info("AlertManagerClient request reload fail and rollbackRes: {}", rollbackRes);
@@ -153,9 +153,9 @@ public class AlertManagerClient implements Client {
         }, 0, 30, TimeUnit.SECONDS);
     }
 
-    //将labelString转换成map
+    //Convert labelString to a map.
     private Map<String, String> transLabel2Map(String labels) {
-        //按,分割后,再按=分割
+        //Press, divide, then press = divide.
         Map<String, String> labelMap = new HashMap<>();
         try {
             Arrays.stream(labels.split(",")).forEach(item -> {
@@ -163,14 +163,14 @@ public class AlertManagerClient implements Client {
                 labelMap.put(split[0], split[1]);
             });
             return labelMap;
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("AlertManagerClient transLabel2Map error: {}", e);
             return labelMap;
         }
 
     }
 
-    //将annotationString转换成map
+    //Convert annotationString to map.
     private Map<String, String> transAnnotation2Map(String annotations) {
         Map annotationMap = gson.fromJson(annotations, Map.class);
 //        Map<String, String> annotationMap = new HashMap<>();
@@ -187,22 +187,22 @@ public class AlertManagerClient implements Client {
         AlertManagerConfig alertManagerConfig = YamlUtil.toObject(content, AlertManagerConfig.class);
         log.info("AlertManagerClient config : {}", alertManagerConfig);
         //System.out.println(content);
-        //转换成AlertManager配置类
+        //Convert to AlertManager configuration class.
         return alertManagerConfig;
     }
 
     private void writeAlertManagerConfig2Yaml(AlertManagerConfig alertManagerConfig) {
-        //转换成yaml
+        //Convert to YAML.
         log.info("AlertManagerClient write config : {}", alertManagerConfig);
         String alertManagerYml = YamlUtil.toYaml(alertManagerConfig);
-        //检验文件是否存在
+        //Check if the file exists.
         if (!isFileExists(filePath)) {
             log.error("AlertManagerClient writeAlertManagerConfig2Yaml no files here path: {}", filePath);
             return;
         }
-        //备份
+        //backup
         backUpConfig();
-        //覆盖写配置
+        //Overwrite configuration
 
         String writeRes = FileUtil.WriteFile(filePath, alertManagerYml);
         if (StringUtils.isEmpty(writeRes)) {
@@ -211,23 +211,23 @@ public class AlertManagerClient implements Client {
         log.info("AlertManagerClient WriteFile res : {}", writeRes);
     }
 
-    //备份配置文件
+    //Backup configuration file
     private void backUpConfig() {
-        //检验文件是否存在
+        //Check if the file exists.
         if (!isFileExists(filePath)) {
             log.error("AlertManagerClient backUpConfig no files here path: {}", filePath);
             return;
         }
 
-        //如果没有备份文件则创建
+        //If there is no backup file, create one.
         if (!isFileExists(backFilePath)) {
             log.info("AlertManagerClient backUpConfig backFile does not exist and begin create");
             FileUtil.GenerateFile(backFilePath);
         }
 
-        //获取当前配置文件
+        //Get current configuration file.
         String content = FileUtil.LoadFile(filePath);
-        //写备份
+        //Write backup.
         String writeRes = FileUtil.WriteFile(backFilePath, content);
         if (StringUtils.isEmpty(writeRes)) {
             log.error("AlertManagerClient backUpConfig WriteFile Error");
@@ -236,14 +236,14 @@ public class AlertManagerClient implements Client {
         }
     }
 
-    //reload成功后，删除备份配置
+    //After successful reload, delete backup configuration.
     private void deleteBackConfig() {
-        //检验文件是否存在
+        //Check if the file exists.
         if (!isFileExists(backFilePath)) {
             log.error("AlertManagerClient deleteBackConfig no files here path: {}", backFilePath);
             return;
         }
-        //删除备份文件
+        //Delete backup files.
         boolean deleteRes = FileUtil.DeleteFile(backFilePath);
         if (deleteRes) {
             log.info("AlertManagerClient deleteBackConfig delete success");
@@ -252,12 +252,12 @@ public class AlertManagerClient implements Client {
         }
     }
 
-    //校验文件是否存在
+    //Check if the file exists.
     private boolean isFileExists(String filePath) {
         return FileUtil.IsHaveFile(filePath);
     }
 
-    //用备份文件恢复原文件
+    //Restore the original file using the backup file.
     private boolean restoreConfiguration(String oldFilePath, String newFilePath) {
         log.info("AlertManagerClient restoreConfiguration oldPath: {}, newPath: {}", oldFilePath, newFilePath);
         boolean b = FileUtil.RenameFile(oldFilePath, newFilePath);

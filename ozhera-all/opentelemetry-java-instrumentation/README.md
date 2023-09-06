@@ -1,15 +1,17 @@
-# 概况
-这是Hera用于拦截方法，提取trace数据的项目，我们一般称它为"探针"。是以开源版本的Opentelemetry为基础，添加了Hera相关的instrumentation、exporter、jvm metrics等功能。
-## 构建依赖
+# Overview
+This is the project used by Hera to intercept methods and extract trace data, commonly referred to as a "probe". It's based on the open-source version of Opentelemetry, with added Hera-specific instrumentation, exporter, JVM metrics, and other features.
 
-### jdk
-此项目依赖的jdk版本为11及以上版本
+## Build Dependencies
 
-### gradle
-1、下载安装gradle-7.0.1
+### JDK
+This project requires JDK version 11 or higher.
 
-2、指定gradle数据源。在gradle安装目录下，新建init.d目录，在init.d目录下新建init.gradle文件，文件内容可以通过写入：
+### Gradle
+1. Download and install gradle-7.0.1.
 
+2. Specify the Gradle data source. In the Gradle installation directory, create a new `init.d` directory. Inside `init.d`, create an `init.gradle` file. The file content can be set up as:
+
+    ```gradle
     allprojects {
         repositories {
             mavenLocal()
@@ -17,81 +19,63 @@
             mavenCentral()
         }
     }
+    ```
 
-来使用阿里的国内镜像仓库，加快依赖文件的下载速度
+   This uses Alibaba's domestic mirror repository, which can speed up the dependency file download.
 
-3、添加本地环境变量，`GRADLE_USER_HOME=${gradle安装目录}`，然后将${gradle安装目录}/bin目录加入到PATH中。
-加入之后，可以在任意位置执行`gradle -v`查看环境变量是否生效
+3. Add the local environment variable, `GRADLE_USER_HOME=${gradle installation directory}`, and then add `${gradle installation directory}/bin` to the PATH. After adding, you can execute `gradle -v` from any location to check if the environment variable is effective.
 
-4、将项目导入idea之后，需要配置该项目对应的idea内部的gradle：
-`Gradle user home`：需要配置gradle依赖的下载位置
-`Use gradle from`：需要选择 'gradle-wrapper.properties'file
-`Gradle JVM`：需要选择自己安装的jdk11的目录
+4. After importing the project into IDEA, you need to configure the project's internal Gradle in IDEA:
+    - `Gradle user home`: Set the download location for Gradle dependencies.
+    - `Use gradle from`: Choose 'gradle-wrapper.properties' file.
+    - `Gradle JVM`: Select the directory of the installed JDK 11.
 
-5、可以通过设置Maven，加速依赖导入。设置idea Build Tools----Maven的`Maven home path`为常用的Maven目录，
-将`User setting files`设置为常用的Maven settings.xml，将`Local repository`设置为常用的Maven repository。通过这些配置，gradle可以使用已有的Maven依赖，加快项目导入速度。
+5. Accelerate dependency import by setting Maven. Set IDEA Build Tools----Maven's `Maven home path` to the commonly used Maven directory. Set `User setting files` to the commonly used Maven settings.xml and `Local repository` to the commonly used Maven repository. With these configurations, Gradle can use existing Maven dependencies, speeding up project import.
 
-6、检查opentelemetry-java-instrumentation目录下是否有.git文件夹，如果没有，需要从父目录copy一份，或者在opentelemetry-java-instrumentation目录下执行git init初始化一份.git文件。这是因为探针中的很多gradle插件需要用到git做版本控制。
+6. Check if there is a .git folder in the opentelemetry-java-instrumentation directory. If not, copy one from the parent directory, or execute `git init` in the opentelemetry-java-instrumentation directory. This is because many gradle plugins in the probe need to use git for version control.
 
-7、在idea gradle工具栏中执行`Reload All Gradle Projects`，等待gradle下载依赖文件，这个过程对于首次导入来说，可能会花费30-60分钟的时间
+7. Execute `Reload All Gradle Projects` in the IDEA Gradle toolbar and wait for Gradle to download dependency files. This process may take 30-60 minutes for the first import.
 
-8、在项目根目录执行`./gradlew assemble`进行构建。构建成功后，会在`javaagent`模块下的`build/libs`目录下生成`opentelemetry-javaagent-${version}-all.jar`，这个jar文件就是最终的探针。
+8. Execute `./gradlew assemble` in the project root directory to build. After successful construction, the `opentelemetry-javaagent-${version}-all.jar` file will be generated in the `javaagent` module's `build/libs` directory. This jar file is the final probe.
 
-### *可能出现的问题
-1、出现ClassNotFound、找不到符号、找不到包等等这些，都是因为依赖没有下载全，需要再次点击Reload All Gradle Projects，会继续下载。
+### *Possible Issues
+1. If you encounter errors like ClassNotFound, missing symbols, or missing packages, it might be due to incomplete dependency downloads. Click on `Reload All Gradle Projects` to continue the download.
 
-2、可能会出现Deprecated Gradle features were used in this build, making it incompatible with Gradle 8.0，这种错误信息，这只是gradle的版本过期警告，并不影响。
+2. You might see errors like "Deprecated Gradle features were used in this build, making it incompatible with Gradle 8.0". This is just a version expiration warning from Gradle and will not cause any issues.
 
-3、Make sure Gradle is running on a JDK, not JRE。这时，需要确认本地环境变量是否有JDK。
+3. If you get the error "Make sure Gradle is running on a JDK, not JRE", ensure your local environment variables point to a JDK.
 
-4、找不到符号：classpathLoader(toolingRuntime, ClassLoader.getPlatformClassLoader(), project)。这时，需要确认本地环境变量里的JDK版本是否为jdk11，可以输入命令java -version确认。
+4. If the error "Missing symbol: classpathLoader(toolingRuntime, ClassLoader.getPlatformClassLoader(), project)" appears, check if the JDK version in your local environment variables is JDK 11 by executing `java -version`.
 
-5、使用https的Maven仓库地址。如果出现类似于这种提示`Using insecure protocols with repositories...to redirect to a secure protocol (like HTTPS) or allow insecure protocols`，请将本地gradle安装目录下咱们新建的init.d文件中的仓库地址改为https
+5. Use the HTTPS Maven repository URL. If a prompt like "Using insecure protocols with repositories...to redirect to a secure protocol (like HTTPS) or allow insecure protocols" appears, please change the repository URL in the `init.d` file we just created to use HTTPS.
 
-6、执行gradlew assemble时，报错：Could not find opentelemetry-sdk-extension-jaeger-remote-sampler-1.15.0.jar (io.opentelemetry:opentelemetry-sdk-extension-jaeger-remote-sampler:1.15.0)，类似的找不到jar包的错误，可以把build.gradle.kts中的allprojects下的maven.aliyun.com的仓库地址注释掉，重新执行gradlew assemble
+6. When executing `gradlew assemble`, if you get an error like "Could not find opentelemetry-sdk-extension-jaeger-remote-sampler-1.15.0.jar (io.opentelemetry:opentelemetry-sdk-extension-jaeger-remote-sampler:1.15.0)", or similar missing jar file errors, you can comment out the `maven.aliyun.com` repository URL in `build.gradle.kts` under the `allprojects` section and re-execute `gradlew assemble`.
 
-## 运行依赖
-### 环境变量
-`host.ip`：用于记录当前物理机IP，展示在trace的process.tags里。在k8s里获取的是pod的IP
+## Runtime Dependencies
+### Environment Variables
+`host.ip`: Used to record the current physical machine IP, displayed in trace's process.tags. In Kubernetes, it captures the pod's IP.
 
-`node.ip`：用于记录k8s当前node节点的IP
+`node.ip`: Records the IP of the current node in Kubernetes.
 
-`MIONE_LOG_PATH`：用于记录mione应用上的日志目录，将trace span信息存放在${MIONE_LOG_PATH}/trace/trace.log。如果为空，程序里默认使用/home/work/log/none/trace/trace.log。
+`MIONE_LOG_PATH`: Used to specify the log directory on the mione application, storing trace span information in `${MIONE_LOG_PATH}/trace/trace.log`. If not set, it defaults to `/home/work/log/none/trace/trace.log`.
 
-`mione.app.name`：用于记录服务名，格式是projectId-projectName。eg：1-test，1是projectId，test是projectName。如果为空，程序里默认使用none
+`mione.app.name`: Records the service name in the format `projectId-projectName`. For example: 1-test, where 1 is the projectId and test is the projectName. If not set, it defaults to "none".
 
-`TESLA_HOST`：同host.ip。用于注册nacos、jvm metrics里的serverIp标签。
+`TESLA_HOST`: Same as `host.ip`. Used for Nacos registration and the serverIp tag in JVM metrics.
 
-`JAVAAGENT_PROMETHEUS_PORT`：当前物理机可用端口号，用于提供给Prometheus拉取jvm metrics的httpServer使用。如果为空，程序里默认使用55433。
+`JAVAAGENT_PROMETHEUS_PORT`: An available port number on the current machine. It's used for the httpServer that Prometheus uses to pull JVM metrics. Defaults to 55433 if not set.
 
-`hera.buildin.k8s`：用于记录是否是k8s部署的服务，如果是k8s的服务，标记为1。
+`hera.buildin.k8s`: Indicates if the service is deployed in Kubernetes. Set to 1 if it is.
 
-`MIONE_PROJECT_ENV_NAME`：当前部署环境的名称，eg：dev、uat、st、preview、production
+`MIONE_PROJECT_ENV_NAME`: Name of the current deployment environment, e.g., dev, uat, st, preview, production.
 
-`MIONE_PROJECT_ENV_ID`：当前部署环境的ID。
+`MIONE_PROJECT_ENV_ID`: ID of the current deployment environment.
 
-### JVM参数
-`-javaagent:/opt/soft/opentelemetry-javaagent-all-0.0.1.jar`：用于表示javaagent探针jar包在服务器上的位置，我们一般习惯将探针的jar文件更名为`opentelemetry-javaagent-all-0.0.1.jar`，并放在服务器`/opt/soft`目录下。
-
-`-Dotel.resource.attributes=service.name=1-test`：用于表示当前服务的应用名。应用名应当与`mione.app.name`保持一致
-
-`-Dotel.traces.exporter=log4j2`：用于表示trace export方式
-
-`-Dotel.metrics.exporter=prometheus`：用于表示metrics export方式
-
-`-Dotel.javaagent.debug=false`：用于表示是否开启debug日志，一般线上服务不建议开启
-
-`-Dotel.exporter.prometheus.nacos.addr=${nacosurl}`：用于表示nacos地址。需要将nacos地址端口进行配置，例如：127.0.0.1:80
-
-`-Dotel.javaagent.exclude-classes=com.dianping.cat.*`：过滤不被探针拦截的包。如果使用到了cat，需要将cat所在的目录进行过滤
-
-`-Dotel.exporter.log.isasync=true`：用于表示是否开log4j2启异步日志，一般出于性能考虑，会是true
-
-`-Dotel.exporter.log.pathprefix=/home/work/log/`：用于表示log4j2的日志位置
-
-`-Dotel.propagators=tracecontext`：用于表示trace传输的处理类型，目前只用到了tracecontext。
+### JVM Parameters
+Various JVM parameters are given for the probe configuration. For instance, `-javaagent:/opt/soft/opentelemetry-javaagent-all-0.0.1.jar` indicates the location of the javaagent probe jar on the server. Many parameters like this one set various properties for the probe.
 
 ## Opentelemetry-java
-更多细节、配置、设计原理可以查看开源版opentelemetry-java-instrumentation：
+For more details, configurations, and design principles, please refer to the open-source version of opentelemetry-java-instrumentation:
+
 
 https://github.com/open-telemetry/opentelemetry-java-instrumentation/tree/v1.3.x

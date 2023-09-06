@@ -72,11 +72,11 @@ public abstract class HttpRequestUtils {
 
     public static byte[] getRequestBody(FullHttpRequest request) {
         String contentType = request.headers().get(CONTENT_TYPE, "").trim();
-        //支持form 表单提交
+        //Support form submission.
         if (contentType.contains(X_WWW_FORM_URLENCODED) || contentType.contains(FORM_DATA)) {
             HttpPostRequestDecoder decoder = new HttpPostRequestDecoder(new DefaultHttpDataFactory(false), request);
             List<InterfaceHttpData> postData = decoder.getBodyHttpDatas();
-            Map<String,String> kv = new HashMap<>();
+            Map<String, String> kv = new HashMap<>();
             for (InterfaceHttpData data : postData) {
                 if (data.getHttpDataType() == InterfaceHttpData.HttpDataType.Attribute) {
                     MemoryAttribute attribute = (MemoryAttribute) data;
@@ -88,7 +88,7 @@ public abstract class HttpRequestUtils {
         ByteBuf buf = request.content();
         byte[] data = new byte[buf.readableBytes()];
         buf.readBytes(data);
-        //使得下游继续可以读取
+        //Enable downstream to continue reading.
         buf.readerIndex(0);
         return data;
     }
@@ -111,7 +111,7 @@ public abstract class HttpRequestUtils {
     }
 
     /**
-     * 判断是否是内网
+     * Determine whether it is an intranet.
      *
      * @param request
      * @return

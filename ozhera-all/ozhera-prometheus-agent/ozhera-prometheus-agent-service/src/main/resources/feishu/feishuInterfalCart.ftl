@@ -13,7 +13,7 @@
 {
 "tag": "div",
 "text": {
-"content": "**应用**: ${application}\n**阈值**: ${alert_value}\n**ip**: ${ip}\n**serviceName**: ${serviceName}\n**methodName**: ${methodName}\n**开始时间**: ${start_time}",
+"content": "**Application**: ${application}\n**Threshold**: ${alert_value}\n**ip**: ${ip}\n**serviceName**: ${serviceName}\n**methodName**: ${methodName}\n**Start time**: ${start_time}",
 "tag": "lark_md"
 }
 },
@@ -22,7 +22,7 @@
 {
 "tag": "button",
 "text": {
-"content": "报警静默",
+"content": "Silence the alarm",
 "tag": "plain_text"
 },
 "type": "primary",

@@ -3,6 +3,7 @@ package com.xiaomi.youpin.prometheus.agent.util;
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
+
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import freemarker.cache.StringTemplateLoader;
@@ -16,32 +17,32 @@ import java.util.Map;
 
 public class FreeMarkerUtil {
     /**
-     * 获取指定目录下的模板文件
+     * Get the template file under the specified directory.
      *
-     * @param name       模板文件的名称
-     * @param pathPrefix 模板文件的目录
+     * @param name       The name of the template file.
+     * @param pathPrefix The directory of the template file.
      */
     private static Template getTemplate(String name, String pathPrefix) throws IOException {
         Configuration cfg = new Configuration();
-        cfg.setClassForTemplateLoading(FreeMarkerUtil.class, pathPrefix); //设置模板文件的目录
+        cfg.setClassForTemplateLoading(FreeMarkerUtil.class, pathPrefix); // Set the directory for template files
         cfg.setDefaultEncoding("UTF-8");       //Set the default charset of the template files
-        Template temp = cfg.getTemplate(name); //在模板文件目录中寻找名为"name"的模板文件
-        return temp; //此时FreeMarker就会到类路径下的"pathPrefix"文件夹中寻找名为"name"的模板文件
+        Template temp = cfg.getTemplate(name); //Search for a template file named "name" in the template file directory.
+        return temp; //At this time, FreeMarker will search for the template file named "name" in the "pathPrefix" folder in the classpath.
     }
 
 
     /**
-     * 根据模板文件输出内容到控制台
+     * Output the content according to the template file to the console.
      *
-     * @param name       模板文件的名称
-     * @param pathPrefix 模板文件的目录
-     * @param rootMap    模板的数据模型
+     * @param name       The name of the template file
+     * @param pathPrefix The directory of the template file
+     * @param rootMap    The data model of the template
      */
     public static String getContent(String pathPrefix, String name, Map<String, Object> rootMap) throws TemplateException, IOException {
         StringWriter writer = new StringWriter();
         getTemplate(name, pathPrefix).process(rootMap, writer);
         String jsonStr = writer.toString();
-        JsonObject returnData = new JsonParser().parse(jsonStr).getAsJsonObject();//先将模板文件转为json对象，再转为json字符串
+        JsonObject returnData = new JsonParser().parse(jsonStr).getAsJsonObject();//First convert the template file into a JSON object, then convert it into a JSON string.
         return returnData.toString();
     }
 
@@ -54,16 +55,16 @@ public class FreeMarkerUtil {
 
 
     /**
-     * 根据模板文件输出内容到指定的文件中
+     * Output the content according to the template file to the specified file.
      *
-     * @param name       模板文件的名称
-     * @param pathPrefix 模板文件的目录
-     * @param rootMap    模板的数据模型
-     * @param file       内容的输出文件
+     * @param name       The name of the template file
+     * @param pathPrefix The directory of the template file
+     * @param rootMap    The data model of the template
+     * @param file       The output file of the content
      */
     public static void printFile(String pathPrefix, String name, Map<String, Object> rootMap, File file) throws TemplateException, IOException {
         Writer out = new BufferedWriter(new OutputStreamWriter(new FileOutputStream(file), "UTF-8"));
-        getTemplate(name, pathPrefix).process(rootMap, out); //将模板文件内容以UTF-8编码输出到相应的流中
+        getTemplate(name, pathPrefix).process(rootMap, out); //Output the content of the template file to the corresponding stream encoded in UTF-8.
         if (null != out) {
             out.close();
         }
@@ -104,7 +105,7 @@ public class FreeMarkerUtil {
         map.put("folderUid", "GUoGPii7k");
         map.put("dataSource", "prometheus-systech");
         try {
-            //获取工程路径
+            //Get project path
             String content = getContent("/", "grafana.ftl", map);
             System.out.println("返回的json" + "\n" + content + "\n");
         } catch (TemplateException | IOException e) {

@@ -83,7 +83,7 @@ public class RuleSilenceService {
         AMSilence amSilence = new AMSilence();
         amSilence.setComment(silence.getComment());
         amSilence.setMatchers(silence.getMatcher());
-        //TODO：以后改为真实用户
+        //TODO：Change to real user later
         amSilence.setCreatedBy("xxx");
         // startTime and endTime are UTC times
         amSilence.setStartsAt(silence.getStartTime() - 8 * 3600);

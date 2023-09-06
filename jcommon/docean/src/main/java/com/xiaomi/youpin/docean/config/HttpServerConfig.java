@@ -41,12 +41,12 @@ public class HttpServerConfig {
     private boolean cookie = true;
 
     /**
-     * 允许上传文件
+     * Allow file upload
      */
     private boolean upload;
 
     /**
-     * 上传的路径
+     * Upload path
      */
     private String uploadDir;
 

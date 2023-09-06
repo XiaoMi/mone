@@ -2,7 +2,7 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>报警邮件</title>
+    <title>Alarm email</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -34,16 +34,16 @@
 </head>
 <body>
 <div class="container">
-    <h3>报警信息</h3>
-    <p><strong>应用：</strong>${application}</p>
-    <p><strong>阈值：</strong>${alert_value}</p>
+    <h3>Alarm information</h3>
+    <p><strong>Application：</strong>${application}</p>
+    <p><strong>Threshold：</strong>${alert_value}</p>
     <p><strong>IP：</strong>${ip}</p>
     <p><strong>serviceName：</strong>${serviceName}</p>
     <p><strong>methodName：</strong>${methodName}</p>
-    <p><strong>开始时间：</strong>${start_time}</p>
+    <p><strong>Start time：</strong>${start_time}</p>
 </div>
 <p class="container" style="text-align:center;">
-    <a href="http://${silence_url}" style="background-color:#4CAF50; color:white; padding:10px 20px; border:none; border-radius:5px; text-decoration:none;">报警静默</a>
+    <a href="http://${silence_url}" style="background-color:#4CAF50; color:white; padding:10px 20px; border:none; border-radius:5px; text-decoration:none;">Silence the alarm</a>
 </p>
 </body>
 </html>

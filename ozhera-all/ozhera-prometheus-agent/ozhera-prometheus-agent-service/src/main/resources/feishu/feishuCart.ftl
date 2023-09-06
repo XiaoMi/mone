@@ -15,7 +15,7 @@
 {
 "tag": "button",
 "text": {
-"content": "报警静默",
+"content": "Silence the alarm",
 "tag": "plain_text"
 },
 "type": "primary",

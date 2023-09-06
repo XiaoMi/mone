@@ -132,7 +132,7 @@ public class DemoController {
 
 
     /**
-     * 测试302 跳转
+     * test 302 jump
      *
      * @return
      */
@@ -165,7 +165,7 @@ public class DemoController {
 
 
     /**
-     * 测试session
+     * test session
      *
      * @return
      */

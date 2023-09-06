@@ -175,7 +175,7 @@ public class feishuCartTest {
         List<Alerts> alerts = alertManagerFireResult.getAlerts();
         alertManagerFireResult.getAlerts().stream().forEach(alert -> {
             System.out.println(DateUtil.Time2YYMMdd(alert.getStartsAt().toString()));
-            //ai:用java代码将UTC时间转换为yyyy-mm-dd格式
+            //ai:Convert UTC time to yyyy-mm-dd format using Java code.
             Map<String, Object> map = new HashMap<>();
             map.put("title", alertManagerFireResult.getCommonAnnotations().getTitle());
             map.put("priority", "p0");
@@ -204,7 +204,7 @@ public class feishuCartTest {
         List<Alerts> alerts = alertManagerFireResult.getAlerts();
         alertManagerFireResult.getAlerts().stream().forEach(alert -> {
             System.out.println(DateUtil.Time2YYMMdd(alert.getStartsAt().toString()));
-            //ai:用java代码将UTC时间转换为yyyy-mm-dd格式
+            //ai:Convert UTC time to yyyy-mm-dd format using Java code.
             Map<String, Object> map = new HashMap<>();
             map.put("title", alertManagerFireResult.getCommonAnnotations().getTitle());
             map.put("priority", "p0");
@@ -214,7 +214,7 @@ public class feishuCartTest {
             map.put("ip", alert.getLabels().getIp());
             map.put("start_time", DateUtil.Time2YYMMdd(alert.getStartsAt().toString()));
             map.put("silence_url", "http://localhost:80");
-            map.put("pod",alert.getLabels().getPod());
+            map.put("pod", alert.getLabels().getPod());
             try {
                 String content = FreeMarkerUtil.getContent("/feishu", "feishuBasicCart.ftl", map);
                 System.out.println(content);

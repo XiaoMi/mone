@@ -23,7 +23,7 @@ public class Metrics {
 
     public MetricsManager gMetricsMgr;
     /**
-     * group+service形成namespace标识
+     * group+service become namespace
      */
     public static final String GROUP = "group";
     public static final String SERVICE = "service";
