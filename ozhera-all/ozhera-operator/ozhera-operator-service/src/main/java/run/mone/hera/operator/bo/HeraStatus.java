@@ -29,9 +29,9 @@ public class HeraStatus {
     public static final int STATUS_SUCCESS = 1;
 
     /**
-     * -1：失败
-     *  0：默认
-     *  1：成功
+     * -1：success
+     *  0：default
+     *  1：fail
      */
     private int status;
 

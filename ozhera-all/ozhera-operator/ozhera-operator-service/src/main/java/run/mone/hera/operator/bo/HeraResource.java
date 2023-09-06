@@ -36,13 +36,13 @@ import java.util.*;
 public class HeraResource implements IResource {
 
     /**
-     * 是否需要基于yaml去创建
+     * Do you need to create based on YAML?
      */
     private Boolean needCreate = true;
 
     /**
-     * 当前资源是否必填
-     * */
+     * Is the current resource required?
+     */
     private Boolean required = true;
 
     /**
@@ -51,7 +51,7 @@ public class HeraResource implements IResource {
     private String resourceType;
 
     /**
-     * 资源名称，不允许重复
+     * Resource name, duplication not allowed.
      */
     private String resourceName;
 
@@ -63,31 +63,29 @@ public class HeraResource implements IResource {
     private String yamlStr;
 
     /**
-     * 连接信息，
-     * 用于nacos配置中变量替换
+     * Connection information for variable replacement in Nacos configuration.
      * e.g.
-     *  [{"key":"mysql.url", "value":"xxx"},
-     *   {"key":"mysql.password", "value":"yyy"}]
+     * [{"key":"mysql.url", "value":"xxx"},
+     * {"key":"mysql.password", "value":"yyy"}]
      */
     private List<Map<String, String>> connectionMapList;
 
     /**
-     * 备注
+     * Note
      */
     private String remark;
 
     /**
-     * 扩展配置
+     * Expand configuration
      * e.g.
-     *  nacos配置：
-     *      key：dataId_#_group
-     *      value：config properties
-     *
+     * Nacos configuration：
+     * key：dataId_#_group
+     * value：config properties
      */
     private List<PropConf> propList;
 
     /**
-     * 默认扩展配置 文件路径
+     * Default extension configuration file path
      */
     private String[] defaultExtendConfigPath;
 
