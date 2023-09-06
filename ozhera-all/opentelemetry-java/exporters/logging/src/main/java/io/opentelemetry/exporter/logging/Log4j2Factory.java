@@ -14,7 +14,8 @@ import org.apache.logging.log4j.core.config.builder.api.LayoutComponentBuilder;
 import org.apache.logging.log4j.core.config.builder.impl.BuiltConfiguration;
 import org.apache.logging.log4j.core.config.builder.impl.DefaultConfigurationBuilder;
 
-@SuppressWarnings({"unused","rawtypes","SystemOut","unchecked","PrivateConstructorForUtilityClass"})
+@SuppressWarnings({"unused", "rawtypes", "SystemOut", "unchecked",
+    "PrivateConstructorForUtilityClass"})
 public class Log4j2Factory {
 
   public static final String IS_ASYNC_PROPERTY_NAME = EnvOrJvmProperties.JVM_OTEL_EXPORTER_LOG_ISASYNC.getKey();
@@ -30,8 +31,12 @@ public class Log4j2Factory {
 
 
   static Configuration createConfiguration(final String name) {
-    String interval = StringUtils.isNullOrEmpty(System.getProperty(LOG_INTERVAL_PROPERTY_NAME)) ? "30" : System.getProperty(LOG_INTERVAL_PROPERTY_NAME);
-    String deleteAge = StringUtils.isNullOrEmpty(System.getProperty(LOG_DELETE_AGE_PROPERTY_NAME)) ? "PT2H" : System.getProperty(LOG_DELETE_AGE_PROPERTY_NAME);
+    String interval =
+        StringUtils.isNullOrEmpty(System.getProperty(LOG_INTERVAL_PROPERTY_NAME)) ? "30"
+            : System.getProperty(LOG_INTERVAL_PROPERTY_NAME);
+    String deleteAge =
+        StringUtils.isNullOrEmpty(System.getProperty(LOG_DELETE_AGE_PROPERTY_NAME)) ? "PT2H"
+            : System.getProperty(LOG_DELETE_AGE_PROPERTY_NAME);
     String logPath = LogFileNameUtil.getLogPathFile();
     ConfigurationBuilder<BuiltConfiguration> builder = new DefaultConfigurationBuilder();
     builder.setConfigurationName(name);
@@ -41,16 +46,17 @@ public class Log4j2Factory {
     LayoutComponentBuilder layoutBuilder = builder.newLayout("PatternLayout")
         .addAttribute("pattern", "%d ||| %msg%n");
     ComponentBuilder triggeringPolicy = builder.newComponent("Policies")
-        .addComponent(builder.newComponent("TimeBasedTriggeringPolicy").addAttribute("interval",interval));
+        .addComponent(
+            builder.newComponent("TimeBasedTriggeringPolicy").addAttribute("interval", interval));
     ComponentBuilder defaultRolloverStrategy = builder.newComponent("DefaultRolloverStrategy")
         .addAttribute("max", 5)
         .addComponent(builder.newComponent("Delete")
-            .addAttribute("basePath",LogFileNameUtil.getLogPath())
+            .addAttribute("basePath", LogFileNameUtil.getLogPath())
             .addComponent(builder.newComponent("IfLastModified")
-                .addAttribute("age",deleteAge)));
+                .addAttribute("age", deleteAge)));
     AppenderComponentBuilder appenderBuilder = builder.newAppender("rolling", "RollingFile")
         .addAttribute("fileName", logPath)
-        .addAttribute("filePattern", logPath+"-%d{yyyy-MM-dd-HH-mm}");
+        .addAttribute("filePattern", logPath + "-%d{yyyy-MM-dd-HH-mm}");
     String property = System.getProperty(IS_ASYNC_PROPERTY_NAME);
     System.out.println("log4j2 isAsync : " + property);
     if ("true".equals(property)) {
@@ -66,14 +72,14 @@ public class Log4j2Factory {
           .add(builder.newAppenderRef("rolling")));
       builder.add(builder.newLogger("TraceLogger", Level.INFO)
           .addComponent(builder.newAppenderRef("rolling"))
-          .addAttribute( "additivity", false ));
+          .addAttribute("additivity", false));
     } else {
-      // 异步rootlogger
+      // Asynchronous root logger
       builder.add(builder.newAsyncRootLogger(Level.INFO)
           .add(builder.newAppenderRef("rolling")));
       builder.add(builder.newAsyncLogger("TraceLogger", Level.INFO)
           .addComponent(builder.newAppenderRef("rolling"))
-          .addAttribute( "additivity", false ));
+          .addAttribute("additivity", false));
     }
     return builder.build();
   }

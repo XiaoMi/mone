@@ -51,13 +51,15 @@ final class MetricAdapter {
   static final String SAMPLE_SUFFIX_BUCKET = "_bucket";
   static final String LABEL_NAME_QUANTILE = "quantile";
   static final String LABEL_NAME_LE = "le";
-  static final String ip = SystemCommon.getEnvOrProperties("host.ip") == null?"":SystemCommon.getEnvOrProperties("host.ip");
-  static String applicationName = SystemCommon.getEnvOrProperties("otel.resource.attributes") == null ? "none":
-      SystemCommon.getEnvOrProperties("otel.resource.attributes");
+  static final String ip = SystemCommon.getEnvOrProperties("host.ip") == null ? ""
+      : SystemCommon.getEnvOrProperties("host.ip");
+  static String applicationName =
+      SystemCommon.getEnvOrProperties("otel.resource.attributes") == null ? "none" :
+          SystemCommon.getEnvOrProperties("otel.resource.attributes");
 
-  static{
-    // 替换项目名称中的-为_
-    applicationName = applicationName.replaceAll("-","_");
+  static {
+    // Replace "-" with "_" in the project name.
+    applicationName = applicationName.replaceAll("-", "_");
   }
 
   // Converts a MetricData to a Prometheus MetricFamilySamples.
