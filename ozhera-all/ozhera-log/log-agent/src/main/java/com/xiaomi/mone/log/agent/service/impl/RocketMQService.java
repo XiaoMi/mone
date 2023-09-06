@@ -26,8 +26,12 @@ import com.xiaomi.mone.log.api.model.meta.LogPattern;
 import com.xiaomi.mone.log.api.model.meta.MQConfig;
 import com.xiaomi.youpin.docean.anno.Service;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.rocketmq.acl.common.AclClientRPCHook;
+import org.apache.rocketmq.acl.common.SessionCredentials;
 import org.apache.rocketmq.client.exception.MQClientException;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
+import org.apache.rocketmq.remoting.RPCHook;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -44,7 +48,7 @@ public class RocketMQService implements OutPutService {
 
     private ConcurrentHashMap<String, DefaultMQProducer> producerMap;
 
-    public void init(){
+    public void init() {
         producerMap = new ConcurrentHashMap<>(128);
     }
 
@@ -107,8 +111,13 @@ public class RocketMQService implements OutPutService {
     }
 
     private DefaultMQProducer initMqProducer(RmqOutput rmqOutput) {
-        DefaultMQProducer producer = null;
-        producer = new DefaultMQProducer(rmqOutput.getProducerGroup() + "x", true);
+        DefaultMQProducer producer;
+        if (StringUtils.isNotEmpty(rmqOutput.getAk()) && StringUtils.isNotEmpty(rmqOutput.getSk())) {
+            RPCHook rpcHook = new AclClientRPCHook(new SessionCredentials(rmqOutput.getAk(), rmqOutput.getSk()));
+            producer = new DefaultMQProducer(rmqOutput.getProducerGroup() + "x", rpcHook, true, null);
+        } else {
+            producer = new DefaultMQProducer(rmqOutput.getProducerGroup() + "x", true);
+        }
         producer.setNamesrvAddr(rmqOutput.getClusterInfo());
         try {
             producer.start();
