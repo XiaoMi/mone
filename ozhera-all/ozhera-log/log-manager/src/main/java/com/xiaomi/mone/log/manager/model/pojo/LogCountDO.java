@@ -41,22 +41,22 @@ public class LogCountDO implements Serializable {
     private Long id;
 
     /**
-     * tail的ID
+     * tail id
      */
     private Long tailId;
 
     /**
-     * es索引名
+     * es index name
      */
     private String esIndex;
 
     /**
-     * 日志数据产生日yyyy-MM-dd
+     * The log data is generated on the day yyyy-MM-dd
      */
     private String day;
 
     /**
-     * 日志条数
+     * Number of logs
      */
     private Long number;
 

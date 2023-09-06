@@ -27,7 +27,7 @@ import lombok.Data;
 @Builder
 public class AlarmPattern {
     /**
-     * 匹配到的次数
+     * The number of times it was matched
      */
     private Integer count;
 

@@ -45,9 +45,9 @@ public class LimitTest {
     public void testIf() {
         int num = 1;
         if (num == 1) {
-            System.out.println("急急急");
+            System.out.println("hello ");
         } else if (1 == 1) {
-            System.out.println("梵蒂冈");
+            System.out.println("Vatican City");
         }
     }
 

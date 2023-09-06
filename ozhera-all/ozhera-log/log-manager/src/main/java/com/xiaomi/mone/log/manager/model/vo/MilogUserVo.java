@@ -26,27 +26,27 @@ import lombok.Data;
 @Data
 public class MilogUserVo {
     /**
-     * 用户名，如：zhangsan
+     * Username, such as: zhangsan
      */
     private String user;
 
     /**
-     * 用户名，如：张三
+     * Username, such as: Zhang San
      */
     private String name;
 
     /**
-     * 用户展示名，如：sa zhang 张三
+     * User display name, such as: sa zhang Zhangsan
      */
     private String displayName;
 
     /**
-     * 部门名称
+     * Department name
      */
     private String departmentName;
 
     /**
-     * 邮箱
+     * mailbox
      */
     private String email;
 
@@ -61,15 +61,16 @@ public class MilogUserVo {
     private String uID;
 
     /**
-     * 头像
+     * avatar
      */
     private String avatar;
 
     /**
+     *
      */
     private String zone;
     /**
-     * 最后一级部门Id
+     * Last level department Id
      */
     private String deptId;
 

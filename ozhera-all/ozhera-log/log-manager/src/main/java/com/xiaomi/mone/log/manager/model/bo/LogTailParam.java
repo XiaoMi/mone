@@ -50,26 +50,26 @@ public class LogTailParam {
 
     private String logSplitExpress;
     /**
-     * 行首正则
+     * Beginning of line rule
      */
     private String firstLineReg;
     /**
-     * 应用类型 0:mione应用
+     * Application type 0:mione application
      **/
     private Integer appType;
     /**
-     * 机器类型 0.容器 1.物理机
+     * Machine type 0.Container 1.Physical machine
      */
     private Integer machineType;
     /**
-     * mis 应用所在的机房 节点信息
+     * The node information of the computer room where the mis application is located
      */
     private List<MotorRoomDTO> motorRooms;
 
     private String topicName;
     private List<?> middlewareConfig;
     /**
-     * 部署方式 1-mione;
+     * Deployment method 1-mione;
      */
     private Integer deployWay;
 

@@ -32,13 +32,13 @@ public class EsIndexTemplateServiceImplTest {
         Ioc.ins().init("com.xiaomi");
         EsIndexTemplateServiceImpl esIndexTemplateService = Ioc.ins().getBean(EsIndexTemplateServiceImpl.class);
         UpdateIndexTemplateCommand command = new UpdateIndexTemplateCommand();
-        // 设置
+        // Set up
         command.setIndexTemplateName("auto_create_index");
         command.setIndexShards(3);
         command.setIndexReplicas(0);
         command.setLifecycle("7Del");
 
-        // 属性
+        // attribute
         List<CreateIndexTemplatePropertyCommand> propertyList = new ArrayList<>();
         CreateIndexTemplatePropertyCommand message = new CreateIndexTemplatePropertyCommand();
         message.setName("message");
@@ -55,7 +55,7 @@ public class EsIndexTemplateServiceImplTest {
 
         command.setPropertyList(propertyList);
 
-        // 执行创建
+        // Perform the creation
         try {
             System.out.println("====================" + esIndexTemplateService.updateIndexTemplate(command));
         } catch (Exception e) {

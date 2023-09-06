@@ -18,7 +18,7 @@ package com.xiaomi.mone.log.manager.service;
 /**
  * @author wtt
  * @version 1.0
- * @description 配置同步nacos的中间配置
+ * @description Configure the intermediate configuration of synchronized nacos
  * @date 2021/7/19 16:10
  */
 public interface MilogConfigNacosService {

@@ -23,7 +23,7 @@ import com.xiaomi.youpin.docean.anno.Service;
 
 /**
  * <p>
- *  服务实现类
+ *  Service implementation class
  * </p>
  *
  * @author wanghaoyang

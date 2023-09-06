@@ -32,7 +32,7 @@ import lombok.ToString;
 public class MoneUser {
 
     /**
-     * 用户名，如：zhangsan
+     * Username, such as: zhangsan
      */
     @SerializedName("cas:user")
     private String user;
@@ -40,25 +40,25 @@ public class MoneUser {
     private String fullUser;
 
     /**
-     * 用户名，如：张三
+     * Username, such as: Zhang San
      */
     @SerializedName("cas:name")
     private String name;
 
     /**
-     * 用户展示名，如：sa zhang 张三
+     * User display name, such as: sa zhang Zhangsan
      */
     @SerializedName("cas:displayName")
     private String displayName;
 
     /**
-     * 部门名称
+     * Department name
      */
     @SerializedName("cas:departmentName")
     private String departmentName;
 
     /**
-     * 邮箱
+     * Email
      */
     @SerializedName("cas:email")
     private String email;
@@ -76,7 +76,7 @@ public class MoneUser {
     private String uID;
 
     /**
-     * 头像
+     * avatar
      */
     @SerializedName("cas:avatar")
     private String avatar;
@@ -85,7 +85,7 @@ public class MoneUser {
 
     private String zone;
     /**
-     * 最后一级部门Id
+     * Last level department ID
      */
     private String deptId;
 
@@ -93,7 +93,4 @@ public class MoneUser {
 
     private Integer userType;
 
-//    public String getSource(){
-//        if(this.getDepartmentName().equals("研发效能不")
-//    }
 }

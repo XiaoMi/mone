@@ -29,7 +29,7 @@ import java.util.List;
  */
 public class Constant {
     /**
-     * mq http 请求成功返回码
+     * mq http The request succeeds with the return code
      */
     public static final int SUCCESS_CODE = 100;
     public static final Double SUCCESS_CODE_DOUBLE = 100.0;
@@ -37,7 +37,7 @@ public class Constant {
     public static final int RPCCMD_AGENT_CODE = 13579;
     public static final int RPCCMD_AGENT_CONFIG_CODE = 24680;
     /**
-     * mq http 请求成功返回消息
+     * mq http The request returned a message successfully
      */
     public static final String SUCCESS_MESSAGE = "success";
 
@@ -49,7 +49,7 @@ public class Constant {
 
     public static final String HAS_CREATED_MESSAGE = "This name has been used!";
     /**
-     * 操作符=
+     * Operator =
      */
     public static final String EQUAL_OPERATE = "=";
 
@@ -57,7 +57,7 @@ public class Constant {
 
     public static final String DEFAULT_TAIL_SEPARATOR = "|";
     /**
-     * mq消息类型
+     * MQ message type
      */
     public static final String ROCKET_MQ_TYPE = "rocketmq";
 
@@ -122,7 +122,7 @@ public class Constant {
 
     public static final String DEFAULT_STORE_SUFFIX = "store";
 
-    public static final String DEFAULT_SPACE_DESC = "我们的namespace，都在一个篮子里，属于:%s 项目";
+    public static final String DEFAULT_SPACE_DESC = "Our namespaces, all in one basket, belong to: %s project";
 
     public static final Integer MIFAAS_STORE_NUM = 10;
 
@@ -137,7 +137,7 @@ public class Constant {
     public static final String MIFAAS_APP_TYPE_TEXT = "serverLess";
 
     /**
-     * rocketmq 数据监控
+     * RocketMQ data monitoring
      */
 
     public static final String ROCKETMQ_GROUP_DIFF = "rocketmq_group_diff";
@@ -147,12 +147,12 @@ public class Constant {
     public static final String ROCKETMQ_PRODUCER_OFFSET = "rocketmq_producer_offset";
 
     /**
-     * es客户端bean名前缀
+     * ES client bean name prefix
      */
     public static String ES_SERV_BEAN_PRE = "esServiceBean_";
 
     /**
-     * es机房
+     * ES computer room
      */
     public static String ES_REGION_EROUP = "Amstega";
 

@@ -24,7 +24,7 @@ import java.util.List;
 
 /**
  * <p>
- * milog日志模板 Mapper 接口
+ * milog log templateMapper
  * </p>
  *
  * @author wanghaoyang

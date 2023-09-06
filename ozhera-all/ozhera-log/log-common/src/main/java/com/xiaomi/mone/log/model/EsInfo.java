@@ -27,17 +27,17 @@ import lombok.NoArgsConstructor;
 public class EsInfo {
     private Long id;
     /**
-     * ES地址
+     * ES address
      */
     private String addr;
 
     /**
-     * ES用户名
+     * ES user name
      */
     private String user;
 
     /**
-     * ES密码
+     * ES password
      */
     private String pwd;
 

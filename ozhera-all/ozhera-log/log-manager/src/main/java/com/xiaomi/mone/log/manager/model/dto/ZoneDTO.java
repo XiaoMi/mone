@@ -25,17 +25,17 @@ import java.util.List;
 public class ZoneDTO {
 
     /**
-     * 英文名
+     * english name
      */
     private String zoneNameEN;
 
     /**
-     * 中文名
+     * chinese name
      */
     private String zoneNameCN;
 
     /**
-     * pod集合
+     * pod collect
      */
     private List<PodDTO> podDTOList;
 }

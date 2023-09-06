@@ -33,12 +33,12 @@ import static com.xiaomi.mone.log.common.Constant.DEFAULT_OPERATOR;
 /**
  * @author wtt
  * @version 1.0
- * @description 初始化默认的nacos配置信息到表中
+ * @description Initialize the default NACOS configuration information into the table
  * @date 2023/3/3 10:45
  */
 @Service
 public class NcosConfigSqlService extends BaseService {
-    private static final String DEFAULT_NCOS_ALIAS = "系统nacos";
+    private static final String DEFAULT_NCOS_ALIAS = "system nacos";
 
     @Resource
     private MilogMiddlewareConfigDao milogMiddlewareConfigDao;

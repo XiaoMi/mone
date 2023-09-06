@@ -30,7 +30,7 @@ import static com.xiaomi.mone.log.common.Constant.SYMBOL_COLON;
 /**
  * @author wtt
  * @version 1.0
- * @description 日志分析图类型初始化
+ * @description Log analysis graph type initialization
  * @date 2023/3/31 10:32
  */
 @Service

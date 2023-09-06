@@ -51,7 +51,7 @@ public class ChannelDefineRpcLocatorTest {
         String str = "";
         LogCollectMeta logCollectMeta = JSONUtil.toBean(str, LogCollectMeta.class);
         List<ChannelDefine> channelDefine = ChannelDefineRpcLocator.agentTail2ChannelDefine(channelDefineRpcLocator.logCollectMeta2ChannelDefines(logCollectMeta));
-        log.info("返回数据：{}", channelDefine);
+        log.info("Returns data：{}", channelDefine);
         Assert.assertNotNull(channelDefine);
     }
 

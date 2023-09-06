@@ -44,7 +44,7 @@ public interface LogTailService {
     void handleNaocsConfigByMotorRoom(MilogLogTailDo mt, String motorRoomEn, Integer type, Integer projectType);
 
     /**
-     * 删除配置中心的某个配置的一部分
+     * Delete a part of a configuration in the configuration center
      *
      * @param spaceId
      * @param id
@@ -71,7 +71,7 @@ public interface LogTailService {
     Result<List<MapDTO>> getAppInfoByName(String appName, Integer type);
 
     /**
-     * 如果应用为milog-agent,获取所有的机器列表通过额外的接口
+     * If the application is milog-agent, get a list of all machines through an additional interface
      *
      * @param milogAppId
      * @param deployWay
@@ -84,7 +84,7 @@ public interface LogTailService {
     Result<List<MapDTO<String, String>>> tailRatelimit();
 
     /***
-     * miline 动态扩缩容
+     * miline Dynamic expansion and contraction
      * @param projectInfo
      */
     void dockerScaleDynamic(DockerScaleBo projectInfo);

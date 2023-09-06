@@ -40,7 +40,7 @@ public class JsonLogParser implements LogParser {
     @Override
     public Map<String, Object> parse(String logData, String ip, Long lineNum, Long collectStamp, String fileName) {
         Map<String, Object> ret = parseSimple(logData, collectStamp);
-        //字段配置错误校验
+        //Field configuration error check
         validRet(ret, logData);
         //timestamp
         extractTimeStamp(ret, logData, collectStamp);
@@ -59,12 +59,12 @@ public class JsonLogParser implements LogParser {
         }
         try {
             Map<String, Object> rawLogMap = JSON.parseObject(logData);
-            // 索引列名全集
+            // The complete set of index column names
             List<String> keyNameList = IndexUtils.getKeyListSlice(parserData.getKeyList());
-            // 索引子集，标记对应位置的索引列名是否在当前 tail 中被引用
+            // An index subset that marks whether the index column name at the corresponding location is referenced in the current tail
             int[] valueIndexList = Arrays.stream(parserData.getValueList().split(",")).mapToInt(Integer::parseInt).toArray();
             for (int i = 0; i < keyNameList.size(); i++) {
-                // 跳过未被引用的 key
+                // Skip unreferenced keys
                 if (i >= valueIndexList.length || valueIndexList[i] == -1) {
                     continue;
                 }
@@ -72,16 +72,10 @@ public class JsonLogParser implements LogParser {
                 String value = rawLogMap.getOrDefault(currentKey, "").toString();
                 ret.put(currentKey, StringUtils.isNotEmpty(value) ? value.trim() : value);
             }
-            /* 不需要考虑跳过了所有的key的情况，后面会对 esKeyMap_MESSAGE 做判断 :
-            if (ret.size()==0){
-                ret.put(esKeyMap_MESSAGE, logData);
-                return ret;
-            }
-            */
             //timestamp
             validTimestamp(ret, logData, collectStamp);
         } catch (Exception e) {
-            // 如果出现异常则保留原始日志到 logsource 字段
+            // If an exception occurs, the original log is kept to the logsource field
             ret.put(esKeyMap_logSource, logData);
         }
         return ret;

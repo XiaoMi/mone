@@ -24,7 +24,7 @@ import java.util.List;
 
 /**
  * <p>
- * Mapper 接口
+ * Mapper
  * </p>
  *
  * @author wanghaoyang
@@ -34,7 +34,7 @@ import java.util.List;
 public interface MilogEsClusterMapper extends BaseMapper<MilogEsClusterDO> {
 
     /**
-     * 获取tag对应的ES 客户端
+     * obtain tag Obtain the tag corresponding to the ES client
      *
      * @param tag
      * @return
@@ -42,14 +42,14 @@ public interface MilogEsClusterMapper extends BaseMapper<MilogEsClusterDO> {
     List<MilogEsClusterDO> selectByTag(@Param("tag") String tag);
 
     /**
-     * 查找所有
+     * Find all
      *
      * @return
      */
     List<MilogEsClusterDO> selectAll();
 
     /**
-     * 获取region对应的ES客户端
+     * Obtain the ES client corresponding to the region
      *
      * @param region
      * @return
@@ -57,7 +57,7 @@ public interface MilogEsClusterMapper extends BaseMapper<MilogEsClusterDO> {
     MilogEsClusterDO selectByRegion(@Param("region") String region);
 
     /**
-     * 获取area对应的ES客户端
+     * Obtain the ES client corresponding to the area
      *
      * @param area
      * @return
@@ -67,7 +67,7 @@ public interface MilogEsClusterMapper extends BaseMapper<MilogEsClusterDO> {
     List<MilogEsClusterDO> selectByAlias(@Param("alias") String alias);
 
     /**
-     * 获取 tag 和 area 对应的 ES 集群信息
+     * Obtain the ES cluster information corresponding to tags and areas
      *
      * @param tag
      * @param area

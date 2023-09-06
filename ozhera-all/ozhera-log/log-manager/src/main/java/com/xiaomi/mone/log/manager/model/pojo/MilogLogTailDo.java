@@ -32,18 +32,18 @@ import java.util.List;
  */
 
 @Table("milog_logstail")
-@Comment("milog日志收集")
+@Comment("Milog log collection")
 @Data
 @EqualsAndHashCode
 public class MilogLogTailDo extends BaseCommon {
     @Id
-    @Comment("主键Id")
+    @Comment("Primary key Id")
     @ColDefine(customType = "bigint")
     private Long id;
 
     @Column(value = "tail")
     @ColDefine(type = ColType.VARCHAR)
-    @Comment("应用别名")
+    @Comment("App aliases")
     private String tail;
 
     @Column(value = "space_id")
@@ -58,74 +58,74 @@ public class MilogLogTailDo extends BaseCommon {
 
     @Column(value = "milog_app_id")
     @ColDefine(type = ColType.INT)
-    @Comment("应用表id")
+    @Comment("Application table ID")
     private Long milogAppId;
 
     @Column(value = "app_id")
     @ColDefine(type = ColType.INT)
-    @Comment("应用id")
+    @Comment("App ID")
     private Long appId;
 
     @Column(value = "app_name")
     @ColDefine(type = ColType.VARCHAR)
-    @Comment("应用名")
+    @Comment("App name")
     private String appName;
 
     @Column(value = "app_type")
     @ColDefine(type = ColType.VARCHAR, width = 10)
-    @Comment("0.mione项目 1.mis项目")
+    @Comment("0.mione project")
     private Integer appType;
 
     @Column(value = "env_id")
     @ColDefine(type = ColType.INT)
-    @Comment("环境Id")
+    @Comment("environment Id")
     private Long envId;
 
     @Column(value = "env_name")
     @ColDefine(type = ColType.VARCHAR)
-    @Comment("环境名称")
+    @Comment("environment name")
     private String envName;
 
     @Column(value = "machine_type")
     @ColDefine(type = ColType.INT)
-    @Comment("mis应用 机器类型 0.容器 1.物理机")
+    @Comment("Machine Type 0. Container 1. Physical machine")
     private Integer machineType;
 
     @Column(value = "ips")
     @ColDefine(type = ColType.MYSQL_JSON)
-    @Comment("tail 采集ip列表(appId+envId所对应的ip列表)")
+    @Comment("tail Collect IP list (appId + envId corresponding to IP list)")
     @JsonField
     private List<String> ips;
 
     @Column(value = "motor_rooms")
     @ColDefine(type = ColType.MYSQL_JSON)
-    @Comment("mis 应用机房信息")
+    @Comment("Apply the information of the computer room")
     @JSONField
     private List<MotorRoomDTO> motorRooms;
 
     @Column(value = "parse_type")
     @ColDefine(type = ColType.INT)
-    @Comment("日志解析类型：1:服务应用日志，2.分隔符，3：单行，4：多行，5：自定义")
+    @Comment("Log parsing type: 1: service application log, 2. delimiter, 3: single line, 4: multiple line, 5: custom")
     private Integer parseType;
 
     @Column(value = "parse_script")
     @ColDefine(type = ColType.TEXT)
-    @Comment("对于分隔符，该字段指定分隔符；对于自定义，该字段指定日志读取脚本")
+    @Comment("For delimiter, the field specifies the delimiter; For customization, this field specifies the log read script")
     private String parseScript;
 
     @Column(value = "log_path")
     @ColDefine(type = ColType.VARCHAR, width = 1024)
-    @Comment("逗号分割，多个日志文件路径,e.g.:/home/work/log/xxx/server.log")
+    @Comment("Comma split, multiple log file paths,e.g.:/home/work/log/xxx/server.log")
     private String logPath;
 
     @Column(value = "log_split_express")
     @ColDefine(type = ColType.VARCHAR, width = 1024)
-    @Comment("日志切分表达式")
+    @Comment("Log slicing expression")
     private String logSplitExpress;
 
     @Column(value = "value_list")
     @ColDefine(type = ColType.VARCHAR, width = 1024)
-    @Comment("value列表，多个用逗号分隔")
+    @Comment("A list of values, multiple separated by commas")
     private String valueList;
 
     @Column(value = "filter")
@@ -136,17 +136,17 @@ public class MilogLogTailDo extends BaseCommon {
 
     @Column(value = "deploy_way")
     @ColDefine(type = ColType.INT)
-    @Comment("部署方式：1-mione; 2-miline;")
+    @Comment("Deployment method：1-mione; 2-miline;")
     private Integer deployWay;
 
     @Column(value = "deploy_space")
     @ColDefine(type = ColType.VARCHAR, width = 1024)
-    @Comment("matrix 服务对应的部署空间")
+    @Comment("The deployment space corresponding to the service")
     private String deploySpace;
 
     @Column(value = "first_line_reg")
     @ColDefine(type = ColType.VARCHAR, width = 1024)
-    @Comment("行首正则匹配表达式")
+    @Comment("A regular match expression at the beginning of a row")
     private String firstLineReg;
 
     public MilogLogTailDo() {

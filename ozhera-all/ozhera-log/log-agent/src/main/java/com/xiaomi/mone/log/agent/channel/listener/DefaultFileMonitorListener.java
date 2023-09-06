@@ -55,23 +55,23 @@ public class DefaultFileMonitorListener implements FileMonitorListener {
     private static Gson gson = new Gson();
 
     /**
-     * 默认监听的文件夹
+     * Default listening folder
      */
     private String defaultMonitorPath = "/home/work/log/";
     /**
-     * 真实监听的文件夹列表
+     * List of folders actually monitored
      */
     List<String> pathList = new CopyOnWriteArrayList<>();
     /**
-     * 实际的监听器列表
+     * Actual listener list
      */
     private List<FileAlterationMonitor> monitorList = new CopyOnWriteArrayList();
     /**
-     * 每个监听的线程
+     * Each listening thread
      */
     private Map<String, Future<?>> scheduledFutureMap = new ConcurrentHashMap<>();
     /**
-     * 每个ChannelService 对应监听的文件
+     * Each ChannelService corresponds to the monitored file
      */
     Map<List<MonitorFile>, ChannelService> pathChannelServiceMap = new ConcurrentHashMap<>();
 
@@ -132,7 +132,7 @@ public class DefaultFileMonitorListener implements FileMonitorListener {
         Set<String> expressList = monitorPathList.stream().map(MonitorFile::getMonitorFileExpress).collect(Collectors.toSet());
         Set<String> realExpressList = Sets.newHashSet();
         /**
-         * 处理多个路径拼接起来的，如：(/home/work/data/logs/mishop-oscar/mishop-oscar-.*|/home/work/data/logs/mishop-oscar/mishop-oscar-current.log.*)
+         * Handle multiple paths spliced together, such as：(/home/work/data/logs/mishop-oscar/mishop-oscar-.*|/home/work/data/logs/mishop-oscar/mishop-oscar-current.log.*)
          */
         for (String express : expressList) {
             if (express.startsWith(MULTI_FILE_PREFIX) && express.endsWith(MULTI_FILE_SUFFIX)
@@ -148,7 +148,7 @@ public class DefaultFileMonitorListener implements FileMonitorListener {
             if (pathList.stream().noneMatch(perExpress::startsWith)) {
                 List<String> watchDList = PathUtils.parseWatchDirectory(perExpress);
                 /**
-                 * 已经是最干净的目录了，只会有1个
+                 * It is already the cleanest directory, there will only be one
                  */
                 String monitorDirectory = watchDList.get(0);
                 if (monitorDirectory.contains(".*")) {
@@ -205,7 +205,7 @@ public class DefaultFileMonitorListener implements FileMonitorListener {
     }
 
     /**
-     * 正常文件变化事件处理
+     * Normal file change event handling
      *
      * @param changedFilePath
      */
@@ -215,7 +215,7 @@ public class DefaultFileMonitorListener implements FileMonitorListener {
                 if (monitorFile.getFilePattern().matcher(changedFilePath).matches()) {
                     String reOpenFilePath = monitorFile.getRealFilePath();
                     /**
-                     * OPENTELEMETRY 日志特殊处理
+                     * OPENTELEMETRY Special processing of logs
                      */
                     if (LogTypeEnum.OPENTELEMETRY == monitorFile.getLogTypeEnum()) {
                         reOpenFilePath = String.format("%s%s%s", StringUtils.substringBeforeLast(changedFilePath, SEPARATOR),
@@ -236,9 +236,10 @@ public class DefaultFileMonitorListener implements FileMonitorListener {
     }
 
     /**
-     * 特殊文件后缀变化事件处理
-     * 通过实际观察，go项目发现好像日志的错误日志文件是server.log.wf 这样的，这样和正常的server.log就冲突了，
-     * 都会收到重新开始的信息，因此为了兼容这样特殊的，需要把wf的单独拎出来判断
+     * Special file suffix change event handling Through actual observation,
+     * the go project found that the error log file of the log is server.log.wf,
+     * which conflicts with the normal server.log, and will receive restart information,
+     * so for compatibility For something so special, we need to separate out the WF for judgment.
      */
     private void specialFileSuffixChanged(String changedFilePath, List<String> filterSuffixList) {
         Map<String, ChannelService> serviceMap = new HashMap<>();

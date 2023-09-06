@@ -19,7 +19,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 /**
- * 对应logtail 配置，一个logtail 对应一个rmq topic
+ * Corresponds to the logtail configuration, and one logtail corresponds to an RMQ topic
  */
 @Data
 @EqualsAndHashCode
@@ -38,7 +38,7 @@ public class LogtailConfig {
     private Integer parseType;
     private String tail;
     /**
-     * 日志分隔符
+     * Log delimiter
      */
     private String parseScript;
     private String valueList;

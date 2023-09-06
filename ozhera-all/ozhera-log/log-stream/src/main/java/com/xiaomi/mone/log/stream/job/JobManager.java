@@ -52,8 +52,7 @@ public class JobManager {
 
     public void closeJobs(MilogSpaceData milogSpaceData) {
         List<SinkConfig> spaceConfig = milogSpaceData.getSpaceConfig();
-        log.info("已经在运行的任务：{}", gson.toJson(jobs));
-        log.info("正要被关掉的任务：{}", gson.toJson(milogSpaceData));
+        log.info("Tasks that are already running:{},The task that is about to be shut down:{}", gson.toJson(jobs), gson.toJson(milogSpaceData));
         if (spaceConfig != null) {
             spaceConfig.forEach(sinkConfig -> {
                 List<LogtailConfig> logtailConfigs = sinkConfig.getLogtailConfigs();

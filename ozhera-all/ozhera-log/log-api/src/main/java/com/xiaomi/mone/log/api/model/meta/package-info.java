@@ -19,5 +19,5 @@
  */
 package com.xiaomi.mone.log.api.model.meta;
 /**
- * meta包下封装的是与log-manager交互的结构体
+ * Encapsulated under the meta package are structs that interact with the log-manager
  **/

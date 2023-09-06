@@ -37,7 +37,7 @@ public class TpcTest {
     public void buildBean() {
         Ioc.ins().init("com.xiaomi");
         tpc = Ioc.ins().getBean(Tpc.class);
-        //模拟用户登陆
+        //Simulate user login
         AuthUserVo authUserVo = new AuthUserVo();
         authUserVo.setAccount("zhangsan29");
         authUserVo.setUserType(UserTypeEnum.CAS_TYPE.getCode());

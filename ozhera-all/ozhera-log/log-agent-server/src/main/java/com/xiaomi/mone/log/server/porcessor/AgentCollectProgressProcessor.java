@@ -34,7 +34,7 @@ import static com.xiaomi.mone.log.common.Constant.GSON;
 /**
  * @author wtt
  * @version 1.0
- * @description 与agent通信的接收器----采集进度
+ * @description The receiver that communicates with the agent ---- the acquisition progress
  * @date 2021/8/19 15:32
  */
 @Slf4j
@@ -48,11 +48,11 @@ public class AgentCollectProgressProcessor implements NettyRequestProcessor {
 
     @Override
     public RemotingCommand processRequest(ChannelHandlerContext ctx, RemotingCommand request) throws Exception {
-        log.debug("接受到了agent发过来的信息");
+        log.debug("received a message from the agent");
         RemotingCommand response = RemotingCommand.createResponseCommand(Constant.RPCCMD_AGENT_CODE);
         String body = new String(request.getBody(), StandardCharsets.UTF_8);
         UpdateLogProcessCmd cmd = GSON.fromJson(body, UpdateLogProcessCmd.class);
-        log.debug("agent发过来的客户端的请求:{}", cmd.getIp());
+        log.debug("a request from the client sent by the agent:{}", cmd.getIp());
         if (null == processService && Ioc.ins().containsBean(DefaultLogProcessCollector.class.getCanonicalName())) {
             processService = Ioc.ins().getBean(DefaultLogProcessCollector.class);
         }

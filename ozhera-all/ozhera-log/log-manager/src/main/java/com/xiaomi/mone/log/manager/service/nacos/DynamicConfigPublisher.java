@@ -27,7 +27,7 @@ public interface DynamicConfigPublisher<T> {
     Gson gson = new Gson();
 
     /**
-     * 数据持久化到nacos
+     * Data persistence to NACOS
      *
      * @param app
      * @param configs
@@ -35,8 +35,8 @@ public interface DynamicConfigPublisher<T> {
     void publish(String app, T configs);
 
     /**
-     * 移除配置
-     * @param app
+     * Remove the configuration
+     * @param dataId
      */
     void remove(String dataId);
 }

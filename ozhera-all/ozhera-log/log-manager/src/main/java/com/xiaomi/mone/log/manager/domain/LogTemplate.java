@@ -21,9 +21,9 @@ import com.xiaomi.youpin.docean.anno.Service;
 public class LogTemplate {
 
     /**
-     * 生成应用日志模板
+     * Build an app log template
      */
     public void createAppTemplate() {
-        // 模板
+        // template
     }
 }

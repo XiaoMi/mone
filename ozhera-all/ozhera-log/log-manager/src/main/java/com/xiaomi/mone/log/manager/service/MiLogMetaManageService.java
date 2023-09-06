@@ -24,7 +24,7 @@ import com.xiaomi.mone.log.api.model.meta.LogCollectMeta;
 public interface MiLogMetaManageService {
 
     /**
-     * 获取指定agent的日志采集元数据信息
+     * Get the log collection metadata information of the specified agent
      *
      * @param agentId
      * @param agentIp

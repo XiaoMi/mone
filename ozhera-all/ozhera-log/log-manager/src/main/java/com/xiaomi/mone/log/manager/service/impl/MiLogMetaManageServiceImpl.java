@@ -47,11 +47,8 @@ public class MiLogMetaManageServiceImpl implements MiLogMetaManageService {
 
     @Override
     public LogCollectMeta queryLogCollectMeta(String agentId, String agentIp) {
-        //1. 通过agent获取当前 物理机上的所有app信息
         List<Long> appIdList = Lists.newArrayList();
-        //2. 通过app信息 获取所有的logtail配置
         Map<Long, List<MilogLogTailDo>> miLogTailMap = milogLogtailDao.getMilogLogtailByAppId(appIdList);
-        //4.聚合结果
         LogCollectMeta meta = new LogCollectMeta();
         meta.setAgentId(agentId);
         meta.setAgentIp(agentIp);
@@ -61,13 +58,12 @@ public class MiLogMetaManageServiceImpl implements MiLogMetaManageService {
             AppLogMeta appLogMeta = new AppLogMeta();
             appLogMeta.setAppId(entry.getKey());
             appLogMeta.setAppName(null);
-            //3.获取app的topic配置信息
 //            MilogAppTopicRel topicRel = milogAppTopicRelDao.queryByAppId(entry.getKey(), MoneContext.getCurrentUser().getZone());
 //            MQConfig mqConfig = new MQConfig();
 //            try {
 //                BeanUtilsBean.getInstance().copyProperties(mqConfig, topicRel.getMq_config());
 //            } catch (Exception e) {
-//                log.error("数据拷贝异常:{}", new Gson().toJson(topicRel));
+//                log.error("Data copy exception:{}", new Gson().toJson(topicRel));
 //            }
 //            appLogMeta.setMQConfig(mqConfig);
             List<LogPattern> logPatternList = new ArrayList<>();

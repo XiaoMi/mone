@@ -56,7 +56,7 @@ public class LogProcessor implements NettyRequestProcessor {
 
     private synchronized void metaConfigEffect(LogCollectMeta req) {
         ChannelEngine channelEngine = Ioc.ins().getBean(ChannelEngine.class);
-        // 是否初始化完成，没完成等待30s后执行
+        // Whether the initialization is completed or not, wait for 30 s before executing
         int count = 0;
         while (true) {
             if (!channelEngine.isInitComplete()) {

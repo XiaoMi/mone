@@ -45,12 +45,12 @@ public class StreamAgent {
             }
             graceShutdown();
         } catch (Exception e) {
-            log.error("服务初始化异常", e);
+            log.error("Service initialization exception", e);
         }
     }
 
     private void graceShutdown() {
-        //关闭操作
+        //Close the operation
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             log.info("stream shutdown!");
             ConcurrentHashMap<Long, MilogConfigListener> listeners = configManager.getListeners();

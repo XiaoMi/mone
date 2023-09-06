@@ -40,7 +40,7 @@
             <version>2.5.1</version>
             <scope>compile</scope>
         </dependency>
-        <!--字符串相似度-->
+        <!--String similarity-->
         <dependency>
             <groupId>me.xdrop</groupId>
             <artifactId>fuzzywuzzy</artifactId>

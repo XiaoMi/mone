@@ -49,13 +49,13 @@ public class StoreSpaceAuthValid {
     public String validParam(StoreSpaceAuth storeSpaceAuth) {
         List<String> errorInfos = Lists.newArrayList();
         if (null == storeSpaceAuth) {
-            errorInfos.add("参数不能为空");
+            errorInfos.add("The parameter cannot be empty");
         }
         if (null == storeSpaceAuth.getStoreId()) {
-            errorInfos.add("storeId不能为空");
+            errorInfos.add("The store ID cannot be empty");
         }
         if (null == storeSpaceAuth.getSpaceId()) {
-            errorInfos.add("spaceId不能为空");
+            errorInfos.add("The space ID cannot be empty");
         }
         return errorInfos.stream().collect(Collectors.joining(SYMBOL_COMMA));
     }
@@ -64,14 +64,14 @@ public class StoreSpaceAuthValid {
         List<String> errorInfos = Lists.newArrayList();
         MilogLogStoreDO milogLogStoreDO = milogLogstoreDao.queryById(storeSpaceAuth.getStoreId());
         if (null == milogLogStoreDO) {
-            errorInfos.add("store信息不存在，请检查是否正确");
+            errorInfos.add("The store information does not exist, please check if it is correct");
         }
         MilogSpaceDO milogSpaceDO = milogSpaceDao.queryById(storeSpaceAuth.getSpaceId());
         if (null == milogSpaceDO) {
-            errorInfos.add("space信息不存在，请检查是否正确");
+            errorInfos.add("The space information does not exist, please check if it is correct");
         }
         if (storeSpaceAuth.getSpaceId().equals(milogLogStoreDO.getSpaceId())) {
-            errorInfos.add("store已经归属了该space了，不能重复授权");
+            errorInfos.add("The store already belongs to the space and cannot be relicensed");
         }
         return errorInfos.stream().collect(Collectors.joining(SYMBOL_COMMA));
     }

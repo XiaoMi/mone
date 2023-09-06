@@ -30,8 +30,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import static com.xiaomi.mone.log.common.Constant.GSON;
 
 /**
- * look:zhangzhiyong1
- *
  * @author goodjava@qq.com
  */
 @Slf4j

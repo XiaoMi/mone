@@ -46,7 +46,7 @@ public class LogTemplateServiceImpl extends ServiceImpl<MilogLogTemplateMapper, 
     private MilogLogTemplateDetailMapper templateDetailMapper;
 
     /**
-     * 日志模板列表
+     * A list of log templates
      *
      * @return
      */
@@ -70,7 +70,7 @@ public class LogTemplateServiceImpl extends ServiceImpl<MilogLogTemplateMapper, 
 
 
     /**
-     * 获取日志模板
+     * Get the log template
      *
      * @param logTemplateId
      * @return

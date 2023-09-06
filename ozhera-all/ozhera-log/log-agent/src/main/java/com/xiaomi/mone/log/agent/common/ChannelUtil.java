@@ -52,38 +52,6 @@ public class ChannelUtil {
 
     }
 
-    public static String queryCurrentCorrectIp(Map<String, String> ipPath, String pattern, List<String> ips) {
-        if (ips.size() == 1) {
-            return ips.get(ips.size() - 1);
-        }
-        String ip = "";
-        try {
-            if (!ipPath.isEmpty()) {
-                String correctIpKey = ipPath.keySet().stream()
-                        .filter(data -> pattern.contains(data))
-                        .findFirst().get();
-                ip = ipPath.get(correctIpKey);
-            }
-        } catch (Exception e) {
-            ip = NetUtil.getLocalIp();
-        }
-        return ip;
-    }
-
-    public static void buildConnectionBetweenAppIp(String logPattern, Map<String, String> ipPath, List<String> ips, boolean collectOnce) {
-        List<String> directoryWithMultiple = PathUtils.findDirectoryWithMultiple(logPattern, collectOnce);
-        ipPath.clear();
-        String ip;
-        for (int i = 0; i < directoryWithMultiple.size(); i++) {
-            try {
-                ip = ips.get(i);
-            } catch (Exception e) {
-                ip = NetUtil.getLocalIp();
-            }
-            ipPath.put(directoryWithMultiple.get(i), ip);
-        }
-    }
-
     public static List<String> buildLogExpressList(String logPattern) {
         List<String> pathList = Lists.newArrayList();
         for (String filePath : logPattern.split(SYMBOL_COMMA)) {
@@ -117,7 +85,7 @@ public class ChannelUtil {
     }
 
     /**
-     * unix系统文件才可以获取到值，否则为空对象
+     * The value can only be obtained from unix system files, otherwise it is an empty object.
      *
      * @param filePath
      * @return

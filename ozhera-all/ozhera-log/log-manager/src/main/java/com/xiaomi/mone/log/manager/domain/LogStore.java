@@ -45,12 +45,12 @@ public class LogStore {
     private EsIndexTemplate esIndexTemplate;
 
     /**
-     * es资源绑定
+     * ES resource binding
      */
     public void storeResourceBinding(MilogLogStoreDO ml, LogStoreParam cmd) {
         ResourceUserSimple resourceUserConfig = resourceConfigService.userResourceList(cmd.getMachineRoom(), cmd.getLogType());
         if (resourceUserConfig.getInitializedFlag()) {
-            //选择es集群
+            //Select the ES cluster
             if (null == cmd.getEsResourceId()) {
                 List<MilogEsClusterDO> esClusterDOS = milogEsClusterMapper.selectList(Wrappers.lambdaQuery());
                 cmd.setEsResourceId(esClusterDOS.get(esClusterDOS.size() - 1).getId());

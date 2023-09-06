@@ -167,7 +167,7 @@
             <artifactId>nutz</artifactId>
             <version>1.r.68-open-SNAPSHOT</version>
         </dependency>
-        <!-- 内部依赖 -->
+        <!-- Internal dependencies -->
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>log-api</artifactId>

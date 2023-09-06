@@ -48,17 +48,17 @@ public class MilogStoreSpaceAuthServiceImpl extends BaseService implements Milog
 
     @Override
     public String storeSpaceAuth(StoreSpaceAuth storeSpaceAuth) {
-        // 校验参数
+        // Verify parameters
         String paramsErrorInfos = storeSpaceAuthValid.validParam(storeSpaceAuth);
         if (StringUtils.isNotBlank(paramsErrorInfos)) {
             throw new MilogManageException(paramsErrorInfos);
         }
-        // 校验数据是否真实存在
+        // Verify that the data is real
         String dataCollectInfos = storeSpaceAuthValid.validStoreAuthData(storeSpaceAuth);
         if (StringUtils.isNotBlank(dataCollectInfos)) {
             throw new MilogManageException(dataCollectInfos);
         }
-        // 是否存在，存在修改，不存在新增
+        // Whether there is, there are modifications, there are no additions
         MilogStoreSpaceAuth milogStoreSpaceAuth = milogStoreSpaceAuthDao.queryByStoreSpace(storeSpaceAuth.getStoreId(), storeSpaceAuth.getSpaceId());
         if (null == milogStoreSpaceAuth) {
             MilogStoreSpaceAuth auth = buildStoreSpaceAuth(storeSpaceAuth.getStoreId(), storeSpaceAuth.getSpaceId());

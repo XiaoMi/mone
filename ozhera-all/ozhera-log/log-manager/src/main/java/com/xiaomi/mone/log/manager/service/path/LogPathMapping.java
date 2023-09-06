@@ -22,13 +22,13 @@ import java.util.List;
 /**
  * @author wtt
  * @version 1.0
- * @description 日志路径映射规则
+ * @description Log path mapping rules
  * @date 2022/11/15 18:50
  */
 public interface LogPathMapping {
     String LOG_PATH_PREFIX = "/home/work/log";
     /**
-     * 映射完毕后的日志路径
+     * The log path after mapping
      *
      * @param origin
      * @return

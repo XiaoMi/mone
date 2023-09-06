@@ -18,8 +18,8 @@ package com.xiaomi.mone.log.agent.input;
 import java.io.Serializable;
 
 /**
- * 原样日志类型输入
- * 该类型的日志，只负责原样采集到mq，不负责消费
+ * Log type input as is
+ * This type of log is only responsible for collecting mq as it is, not for consumption.
  *
  * @author shanwb
  * @date 2022-12-23

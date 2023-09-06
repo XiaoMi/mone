@@ -37,17 +37,17 @@ public class PatterTest {
         String regex = ".*runoob.*";
 
         boolean isMatch = Pattern.matches(regex, content);
-        System.out.println("字符串是否包含了“runoob”" + isMatch);
+        System.out.println("Whether the string contains “runoob”" + isMatch);
     }
 
     @Test
     public void test2() {
-        //按指定模式在字符串中查找
+        //Looks in a string by the specified pattern
         String input = "this order was placed for QT3000! OK? ";
         String regex = "(\\D*)(\\d+)(.*)";
-        //创建Pattern对象
+        //Create a Pattern object
         Pattern p = Pattern.compile(regex);
-        //创建matcher对象
+        //Create a matcher object
         Matcher m = p.matcher(input);
         if (m.find()) {
             System.out.println("Found value:" + m.group(0));
@@ -63,9 +63,9 @@ public class PatterTest {
     public void test3() {
         String regex = "\\bcat\\b";
         final String input = "cat cat cat cattie cat";
-        //创建Pettern对象
+        //Create a Pettern object
         Pattern p = Pattern.compile(regex);
-        //创建Matcher对象
+        //Create a Pettern object...
         Matcher m = p.matcher(input);
         int count = 0;
         if (m.find()) {

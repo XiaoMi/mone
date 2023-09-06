@@ -34,7 +34,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * Rocketmq 消息发送实现类
+ * Rocketmq Default message sending implementation class
  *
  * @author shanwb
  * @date 2021-07-19
@@ -126,7 +126,7 @@ public class RmqExporter implements MsgExporter {
 
     @Override
     public void close() {
-        //mqProducer多topic公用，不能shutdown();
+        //mqProducer multi-topic public and cannot shutdown();
     }
 
 }

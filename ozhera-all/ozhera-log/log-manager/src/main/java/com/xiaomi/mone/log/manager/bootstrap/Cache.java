@@ -30,12 +30,12 @@ public class Cache implements IPlugin {
 
     @Override
     public void init() {
-        // 构建日志量统计缓存
+        // Build a log statistics cache
         buildLogCountCache();
     }
 
     public void buildLogCountCache() {
         logCountService.collectTopCount();
-        log.info("日志量统计排行榜缓存已加");
+        log.info("The log statistics leaderboard cache has been added");
     }
 }

@@ -52,7 +52,7 @@ public class TailLogCountJob {
 
     public void statisticsAll() {
         try {
-            log.info("统计日志定时任务开始执行");
+            log.info("Statistics log scheduled task starts execution");
             String thisDay = DateUtils.getDaysAgo(1);
             if (!logCountService.isLogtailCountDone(thisDay)) {
                 logCountService.collectLogCount(thisDay);
@@ -61,9 +61,9 @@ public class TailLogCountJob {
             logCountService.collectTopCount();
             logCountService.collectSpaceTopCount();
             logCountService.collectSpaceTrend();
-            log.info("统计日志定时任务执行完毕");
+            log.info("Statistics log scheduled task execution completed");
         } catch (Exception e) {
-            log.error("统计日志定时任务失败", e);
+            log.error("Statistical log timing task failed", e);
         }
     }
 }

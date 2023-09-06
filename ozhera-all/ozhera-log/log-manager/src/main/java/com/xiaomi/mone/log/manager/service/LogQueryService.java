@@ -28,7 +28,7 @@ import java.io.IOException;
 public interface LogQueryService {
 
     /**
-     * 读取ES索引中数据
+     * Read the data in the ES index
      *
      * @param logQuery
      * @return
@@ -38,7 +38,7 @@ public interface LogQueryService {
     Result<EsStatisticResult> EsStatistic(LogQuery param) throws Exception;
 
     /**
-     * 获取机房内trace日志
+     * Obtain trace logs in the data center
      *
      * @param regionTraceLogQuery
      * @return
@@ -46,14 +46,16 @@ public interface LogQueryService {
     Result<TraceLogDTO> queryRegionTraceLog(RegionTraceLogQuery regionTraceLogQuery) throws IOException;
 
     /**
-     * 获取日志上下文
+     * Obtain trace logs in the data center...
+     *
      * @param logContextQuery
      * @return
      */
     Result<LogDTO> getDocContext(LogContextQuery logContextQuery);
 
     /**
-     * 日志导出
+     * Log export
+     *
      * @param logQuery
      * @throws Exception
      */

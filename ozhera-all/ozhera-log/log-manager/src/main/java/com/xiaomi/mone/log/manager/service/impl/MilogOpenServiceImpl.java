@@ -103,17 +103,17 @@ public class MilogOpenServiceImpl implements MilogOpenService {
         }
         log.info("youpin mione transfer milie,data:{}", gson.toJson(logMoneEnv));
         MiLogMoneTransfer miLogMoneTransfer = new MiLogMoneTransfer();
-        //1.查找应用
+        //1.Find apps
         handleMilogAppInfo(logMoneEnv, miLogMoneTransfer);
-        //2.修改tail
+        //2.Modify tail
         handleMilogAppTail(logMoneEnv, miLogMoneTransfer);
-        //3.修改应用的来源-迁移后不需要
+        //3.Modify the source of the app - not required after migration
 //        handleAppSource(logMoneEnv, miLogMoneTransfer);
         return miLogMoneTransfer;
     }
 
     private void handleMilogAppTail(MiLogMoneEnv logMoneEnv, MiLogMoneTransfer miLogMoneTransfer) {
-        // 查询旧的tail
+        // Query the old tail
         List<MilogLogTailDo> milogLogtailDos = milogLogtailDao.queryByMilogAppAndEnv(miLogMoneTransfer.getMilogAppId(), logMoneEnv.getOldEnvId());
         if (CollectionUtils.isEmpty(milogLogtailDos)) {
             return;
@@ -136,13 +136,12 @@ public class MilogOpenServiceImpl implements MilogOpenService {
     }
 
     private void handleMilogAppInfo(MiLogMoneEnv logMoneEnv, MiLogMoneTransfer miLogMoneTransfer) {
-        //1.根据旧ID查找应用
+        //1.Find apps based on old IDs
         AppBaseInfo appBaseInfo = heraAppService.queryByAppId(logMoneEnv.getNewAppId(), ProjectTypeEnum.MIONE_TYPE.getCode());
         if (null == appBaseInfo) {
-            // 兼容
             appBaseInfo = heraAppService.queryByAppId(logMoneEnv.getNewAppId(), 20);
             if (null == appBaseInfo) {
-                throw new MilogManageException("应用不存在");
+                throw new MilogManageException("The app does not exist");
             }
         }
         miLogMoneTransfer.setMilogAppId(appBaseInfo.getId().longValue());

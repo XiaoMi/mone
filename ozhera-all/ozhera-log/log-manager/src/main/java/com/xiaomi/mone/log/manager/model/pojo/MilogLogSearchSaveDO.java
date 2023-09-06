@@ -49,7 +49,7 @@ public class MilogLogSearchSaveDO implements Serializable {
     private String queryText;
 
     /**
-     * 1-保存了时间参数；0-没有保存
+     * 1 - the time parameter is saved; 0 - Not saved
      */
     private Integer isFixTime;
 
@@ -58,7 +58,7 @@ public class MilogLogSearchSaveDO implements Serializable {
     private Long endTime;
 
     /**
-     * 备注
+     * remark
      */
     private String common;
 

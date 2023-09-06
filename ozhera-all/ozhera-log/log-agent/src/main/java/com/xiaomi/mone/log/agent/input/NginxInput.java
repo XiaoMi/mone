@@ -18,7 +18,7 @@ package com.xiaomi.mone.log.agent.input;
 import java.io.Serializable;
 
 /**
- * nginx类型输入
+ * nginx type input
  *
  * @author shanwb
  * @date 2021-07-19

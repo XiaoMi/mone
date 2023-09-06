@@ -56,7 +56,7 @@ public class ConfigManager {
     //final String spaceDataId = LOG_MANAGE_PREFIX + NAMESPACE_CONFIG_DATA_ID;
 
     /**
-     * 存储ConfigManager所管理的MilogSpaceConfigListener
+     * Stores the Milog Space Config Listener managed by Config Manager
      * key: spaceId
      * value: MilogSpaceConfigListener
      */
@@ -64,7 +64,7 @@ public class ConfigManager {
     private ConcurrentHashMap<Long, MilogConfigListener> listeners = new ConcurrentHashMap<>();
 
     /**
-     * 本实例所需要监听的MilogSpaceData
+     * The Milog Space Data that this instance needs to listen on
      * key: spaceId
      * value: milogSpaceData
      */
@@ -73,7 +73,7 @@ public class ConfigManager {
     private Gson gson = new Gson();
 
     /**
-     * 服务启动时执行一次
+     * Executed once when the service starts
      *
      * @throws StreamException
      */
@@ -124,10 +124,10 @@ public class ConfigManager {
     }
 
     private static ExecutorService THREAD_POOL = ExecutorBuilder.create()
-            .setCorePoolSize(5)//初始池大小
-            .setMaxPoolSize(30) //最大池大小
-            .setWorkQueue(new LinkedBlockingQueue<>(1000))//最大等待数为100
-            .setThreadFactory(ThreadFactoryBuilder.create().setNamePrefix("Listen-space-Pool-").build())// 线程池命名
+            .setCorePoolSize(5)
+            .setMaxPoolSize(30)
+            .setWorkQueue(new LinkedBlockingQueue<>(1000))
+            .setThreadFactory(ThreadFactoryBuilder.create().setNamePrefix("Listen-space-Pool-").build())
             .build();
 
     public void listenMilogStreamConfig() {
@@ -143,15 +143,15 @@ public class ConfigManager {
                 try {
                     MiLogStreamConfig milogStreamConfig = GSON.fromJson(spaceStr, MiLogStreamConfig.class);
                     String uniqueMark = StreamUtils.getCurrentMachineMark();
-                    log.info("【监听namespace】收到了配置请求：{},uniqueMark:{}", gson.toJson(milogStreamConfig), uniqueMark);
+                    log.info("Listening namespace received a configuration request,{},uniqueMark:{}", gson.toJson(milogStreamConfig), uniqueMark);
                     if (null != milogStreamConfig) {
                         Map<String, Map<Long, String>> config = milogStreamConfig.getConfig();
                         if (null != config) {
                             if (config.containsKey(uniqueMark)) {
                                 Map<Long, String> dataIdMap = config.get(uniqueMark);
-                                // 删除旧的dataId监听，停止它下边dataId
+                                // Delete the old data ID listener and stop the data ID underneath it
                                 stopUnusefulListenerAndJob(dataIdMap);
-                                // 新增新的配置监听
+                                // Added a new configuration listener
                                 startNewListenerAndJob(dataIdMap);
                             }
                         } else {
@@ -161,14 +161,14 @@ public class ConfigManager {
                         log.warn("listen dataID:{},groupId:{},but receive info is null", spaceDataId, DEFAULT_GROUP_ID);
                     }
                 } catch (Exception e) {
-                    log.error("【监听nameSpace】异常", e);
+                    log.error("Listen to name Space exception", e);
                 }
             }
         });
     }
 
     /**
-     * 新{spaceid,dataid} A 与内存中的{spaceid,dataid} B 进行比较，筛选出集合A-B
+     * The new {spaceid,dataid} A is compared to {spaceid,dataid} B in memory to filter out the sets A-B
      *
      * @param spaceId
      * @return
@@ -182,15 +182,15 @@ public class ConfigManager {
     }
 
     /**
-     * 新{spaceid,dataid} A 与内存中的{spaceid,dataid} B 进行比较，筛选出集合B-A
+     * The new {spaceid,dataid} A is compared to {spaceid,dataid} B in memory and filtered out the set B-A
      *
-     * @param newMilogStreamDataMap 新的{spaceid,dataid}
-     * @return 返回不再需要的{dataid}列表
+     * @param newMilogStreamDataMap new {spaceid,dataid}
+     * @return Returns a list of {dataid} that are no longer needed
      */
     public List<Long> unUseFilter(Map<Long, String> newMilogStreamDataMap) {
         List<Long> ret = new ArrayList<>();
         milogSpaceDataMap.forEach((spaceId, milogSpaceData) -> {
-            // 存在于内存，不存在与最新Nacos配置
+            // Exists in memory, does not exist with the latest Nacos configuration
             if (!newMilogStreamDataMap.containsKey(spaceId)) {
                 ret.add(spaceId);
             }
@@ -199,8 +199,8 @@ public class ConfigManager {
     }
 
     /**
-     * 1. 取消监听对应dataID
-     * 2. 停止dataID配置下的job
+     * 1. Cancel the listener corresponding to the data ID
+     * 2. Stop the job in the data ID configuration
      *
      * @param milogStreamDataMap
      */
@@ -209,16 +209,16 @@ public class ConfigManager {
         if (CollectionUtils.isEmpty(unUseSpaceIds)) {
             return;
         }
-        log.info("【监听namespace】需要停止的spaceId:{}", gson.toJson(unUseSpaceIds));
+        log.info("【Listening namespace】The space ID that needs to be stopped:{}", gson.toJson(unUseSpaceIds));
         List<Long> listenerKeys = listeners.entrySet().stream().map(entry -> entry.getKey()).collect(Collectors.toList());
-        log.info("【监听namespace】已经存在所有的监听器:{}", gson.toJson(listenerKeys));
+        log.info("[Listening namespace] All listeners already exist:{}", gson.toJson(listenerKeys));
         unUseSpaceIds.forEach(unUseSpaceId -> {
             MilogConfigListener milogSpaceConfigListener = listeners.get(unUseSpaceId);
             if (milogSpaceConfigListener != null) {
-                log.info("被停止的spaceId:{}", unUseSpaceId);
+                log.info("The stopped space ID:{}", unUseSpaceId);
                 milogSpaceConfigListener.shutdown();
             } else {
-                log.warn("当前监听器中不存在准备要停止的spaceId:{}", unUseSpaceId);
+                log.warn("There is no space ID in the current listener that is ready to be stopped:{}", unUseSpaceId);
             }
             log.info("remove unUseSpaceId:{} log tail config listener", unUseSpaceId);
             listeners.remove(unUseSpaceId);
@@ -237,16 +237,16 @@ public class ConfigManager {
     }
 
     /**
-     * 1. 监听对应dataId
-     * 2. 启动job
+     * 1. The listener corresponds to the data ID
+     * 2. start job
      *
      * @param milogStreamDataMap
      */
     public void startNewListenerAndJob(Map<Long, String> milogStreamDataMap) {
         milogStreamDataMap.forEach((spaceId, dataId) -> {
-            if (!existListener(spaceId)) { // 内存中不存在对应spaceid的linstener
+            if (!existListener(spaceId)) { // There is no linstener corresponding to the spaceid in memory
                 log.info("startNewListenerAndJob for spaceId:{}", spaceId);
-                // 通过dataID 获取一份spaceData配置，放在configListener中缓存
+                // Get a copy of the spaceData configuration through the dataID and put it in the configListener cache
                 String milogSpaceDataStr = nacosConfig.getConfigStr(dataId, DEFAULT_GROUP_ID, DEFAULT_TIME_OUT_MS);
                 MilogSpaceData milogSpaceData;
                 if (StringUtils.isNotEmpty(milogSpaceDataStr)) {

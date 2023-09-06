@@ -113,7 +113,7 @@ public class HeralogHomePageService {
     }
 
     /**
-     * 查询原来归属于space的store，查询授权的store
+     * Query the store that originally belonged to the space, and query the authorized store
      *
      * @param spaceId
      * @return

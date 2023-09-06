@@ -32,24 +32,24 @@ public class BaseCommon {
 
     @Column(value = "ctime")
     @ColDefine(customType = "bigint")
-    @Comment("创建时间")
+    @Comment("create time")
     private Long ctime;
 
 
     @Column(value = "utime")
     @ColDefine(customType = "bigint")
-    @Comment("更新时间")
+    @Comment("update time")
     private Long utime;
 
 
     @Column(value = "creator")
     @ColDefine(type = ColType.VARCHAR, width = 50)
-    @Comment("创建人")
+    @Comment("creator")
     private String creator;
 
 
     @Column(value = "updater")
     @ColDefine(type = ColType.VARCHAR, width = 50)
-    @Comment("更新人")
+    @Comment("updater")
     private String updater;
 }

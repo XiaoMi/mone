@@ -25,7 +25,7 @@ import java.io.Serializable;
 
 /**
  * <p>
- * 
+ *
  * </p>
  *
  * @author wanghaoyang
@@ -42,22 +42,22 @@ public class MilogLogstailDO implements Serializable {
     private Long id;
 
     /**
-     * 创建时间	
+     * Creation time
      */
     private Long ctime;
 
     /**
-     * 更新时间	
+     * Update time
      */
     private Long utime;
 
     /**
-     * 创建人	
+     * creator
      */
     private String creator;
 
     /**
-     * 更新人	
+     * updater
      */
     private String updater;
 
@@ -72,82 +72,82 @@ public class MilogLogstailDO implements Serializable {
     private Long storeId;
 
     /**
-     * milog表主键
+     * Milog table primary key
      */
     private Long milogAppId;
 
     /**
-     * 应用id	
+     * App ID
      */
     private Long appId;
 
     /**
-     * 应用名	
+     * App name
      */
     private String appName;
 
     /**
-     * 0.mione项目 1.mis项目
+     * 0.mione project
      */
     private Integer appType;
 
     /**
-     * mis应用 机器类型 0.容器 1.物理机
+     * machine type 0. Container 1. Physical machine
      */
     private Integer machineType;
 
     /**
-     * 环境Id	
+     * environment Id
      */
     private Integer envId;
 
     /**
-     * 环境名称	
+     * environment name
      */
     private String envName;
 
     /**
-     * 日志解析类型：1:服务应用日志，2.分隔符，3：单行，4：多行，5：自定义
+     * Log parsing type: 1: service application log, 2. delimiter, 3: single line, 4: multiple line, 5: custom
      */
     private Integer parseType;
 
     /**
-     * 对于分隔符，该字段指定分隔符；对于自定义，该字段指定日志读取脚本	
+     * For delimiter, the field specifies the delimiter; For customization, this field specifies the log read script
      */
     private String parseScript;
 
     /**
-     * 逗号分割，多个日志文件路径,e.g.:/home/work/log/xxx/server.log	
+     * Comma split, multiple log file paths,e.g.:/home/work/log/xxx/server.log
      */
     private String logPath;
 
     /**
-     * value列表，多个用逗号分隔	
+     * A list of values, multiple separated by commas
      */
     private String valueList;
 
     /**
-     * ip列表	
+     * ip list
      */
     private String ips;
 
     /**
-     * mis 应用机房信息
+     *  Apply the information of the computer room
      */
     private String motorRooms;
 
     /**
-     * 应用别名	
+     * App aliases
      */
     private String tail;
 
     /**
-     * filter配置	
+     * Filter configuration
      */
     private String filter;
 
     /**
-     * mis应用索引配置
+     * applies the index configuration
      */
     private String enEsIndex;
 

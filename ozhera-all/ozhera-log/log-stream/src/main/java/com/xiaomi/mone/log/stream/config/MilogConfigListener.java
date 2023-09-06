@@ -62,7 +62,7 @@ public class MilogConfigListener {
 
     private Gson gson = new Gson();
     /**
-     * 不能用于判断 这个是持续递增的
+     * It can't be used to judge that this is continuously increasing
      */
     private Map<Long, LogtailConfig> oldLogTailConfigMap = new HashMap<>();
     private Map<Long, SinkConfig> oldSinkConfigMap = new HashMap<>();
@@ -85,7 +85,7 @@ public class MilogConfigListener {
             for (SinkConfig sinkConfig : sinkConfigs) {
                 compareOldTailIdJobStop(sinkConfig);
                 if (oldSinkConfigMap.containsKey(sinkConfig.getLogstoreId())) {
-                    //提交store信息是否变化，变化了都停止
+                    //Whether the submission store information changes, the change stops
                     if (!isStoreSame(sinkConfig, oldSinkConfigMap.get(sinkConfig.getLogstoreId()))) {
                         restartPerTail(sinkConfig, milogSpaceData);
                     } else {
@@ -96,15 +96,15 @@ public class MilogConfigListener {
                 }
             }
         } else {
-            // 重启所有的
+            // Restart all
             initNewJob(newMilogSpaceData);
         }
     }
 
     private void restartPerTail(SinkConfig sinkConfig, MilogSpaceData newMilogSpaceData) {
-        //停止
+        //Stop
         stopOldJobPerStore(sinkConfig.getLogstoreId());
-        //重启
+        //Restart
         for (LogtailConfig logtailConfig : sinkConfig.getLogtailConfigs()) {
             startTailPer(sinkConfig, logtailConfig, newMilogSpaceData.getMilogSpaceId());
         }
@@ -112,7 +112,7 @@ public class MilogConfigListener {
     }
 
     private void comparePerTailHandle(SinkConfig sinkConfig, MilogSpaceData newMilogSpaceData) {
-        // 比较每个tail是否相同
+        // Compare whether each tail is the same
         for (LogtailConfig logtailConfig : sinkConfig.getLogtailConfigs()) {
             if (!isTailSame(logtailConfig, oldLogTailConfigMap.get(logtailConfig.getLogtailId()))) {
                 if (null != oldLogTailConfigMap.get(logtailConfig.getLogtailId())) {
@@ -124,7 +124,7 @@ public class MilogConfigListener {
     }
 
     private void newStoreStart(SinkConfig sinkConfig, MilogSpaceData newMilogSpaceData) {
-        // 新的store
+        // New store
         for (LogtailConfig logtailConfig : sinkConfig.getLogtailConfigs()) {
             startTailPer(sinkConfig, logtailConfig, newMilogSpaceData.getMilogSpaceId());
         }
@@ -132,7 +132,7 @@ public class MilogConfigListener {
     }
 
     private void stopAllJobClear() {
-        //关闭所有的
+        //Close all
         if (!oldSinkConfigMap.isEmpty()) {
             for (SinkConfig sinkConfig : oldSinkConfigMap.values()) {
                 stopOldJobPerStore(sinkConfig.getLogstoreId());
@@ -196,7 +196,7 @@ public class MilogConfigListener {
     private void stopOldJobPerStore(Long logStoreId) {
         SinkConfig sinkConfig = oldSinkConfigMap.get(logStoreId);
         if (null != sinkConfig) {
-            log.info("【监听tail】要停止的任务：{}", gson.toJson(sinkConfig.getLogtailConfigs()));
+            log.info("[Listen tail] The task to stop:{}", gson.toJson(sinkConfig.getLogtailConfigs()));
             List<LogtailConfig> logTailConfigs = sinkConfig.getLogtailConfigs();
             for (LogtailConfig logTailConfig : logTailConfigs) {
                 stopOldJobPerTail(logTailConfig, sinkConfig);
@@ -206,7 +206,7 @@ public class MilogConfigListener {
     }
 
     private void stopOldJobPerTail(LogtailConfig logTailConfig, SinkConfig sinkConfig) {
-        log.info("【监听tail】需要停止旧的任务,oldTail{},oldEsIndex:{}", gson.toJson(logTailConfig), sinkConfig.getEsIndex());
+        log.info("[Listen tail] needs to stop the old task,oldTail{},oldEsIndex:{}", gson.toJson(logTailConfig), sinkConfig.getEsIndex());
         if (null != logTailConfig) {
             jobManager.stopJob(logTailConfig);
             oldLogTailConfigMap.remove(logTailConfig.getLogtailId());
@@ -219,7 +219,7 @@ public class MilogConfigListener {
      * @param newMilogSpaceData
      */
     private void initNewJob(MilogSpaceData newMilogSpaceData) {
-        log.info("开始重新当前space的所有任务，spaceData:{}", gson.toJson(newMilogSpaceData));
+        log.info("Start all tasks to restart the current space，spaceData:{}", gson.toJson(newMilogSpaceData));
         Map<Long, LogtailConfig> newLogTailConfigMap = new HashMap<>();
         Map<Long, SinkConfig> newSinkConfigMap = new HashMap<>();
         List<SinkConfig> newSpaceConfig = newMilogSpaceData.getSpaceConfig();
@@ -247,17 +247,17 @@ public class MilogConfigListener {
             log.error("startTailPer error,logSpaceId is null,LogtailConfig:{}", gson.toJson(logTailConfig), new RuntimeException());
             return;
         }
-        log.info("【监听tail】初始化新任务，tail配置：{},索引:{},集群信息：{},spaceId:{}", gson.toJson(logTailConfig), sinkConfig.getEsIndex(), gson.toJson(sinkConfig.getEsInfo()), logSpaceId);
+        log.info("【Listen tail】Initialize the new task, tail configuration:{},index:{},cluster information：{},spaceId:{}", gson.toJson(logTailConfig), sinkConfig.getEsIndex(), gson.toJson(sinkConfig.getEsInfo()), logSpaceId);
         jobManager.startJob(logTailConfig, sinkConfig.getEsIndex(), sinkConfig.getKeyList(), sinkConfig.getLogstoreName(), logTailConfig.getTail(), sinkConfig.getEsInfo(),
                 sinkConfig.getLogstoreId(), logSpaceId);
         oldLogTailConfigMap.put(logTailConfig.getLogtailId(), logTailConfig);
     }
 
     private static ExecutorService THREAD_POOL = ExecutorBuilder.create()
-            .setCorePoolSize(5)//初始池大小
-            .setMaxPoolSize(30) //最大池大小
-            .setWorkQueue(new LinkedBlockingQueue<>(1000))//最大等待数为100
-            .setThreadFactory(ThreadFactoryBuilder.create().setNamePrefix("Listen-tail-Pool-").build())// 线程池命名
+            .setCorePoolSize(5)
+            .setMaxPoolSize(30)
+            .setWorkQueue(new LinkedBlockingQueue<>(1000))
+            .setThreadFactory(ThreadFactoryBuilder.create().setNamePrefix("Listen-tail-Pool-").build())
             .build();
 
     @NotNull
@@ -271,11 +271,11 @@ public class MilogConfigListener {
             @Override
             public void receiveConfigInfo(String dataValue) {
                 try {
-                    log.info("【监听tail】收到了配置请求：{},已经存在的配置:storeMap:{},tailMap:{}", dataValue, gson.toJson(oldSinkConfigMap), gson.toJson(oldLogTailConfigMap));
+                    log.info("Listen tail received a configuration request:{},a configuration that already exists:storeMap:{},tailMap:{}", dataValue, gson.toJson(oldSinkConfigMap), gson.toJson(oldLogTailConfigMap));
                     if (StringUtils.isNotEmpty(dataValue) && !Constant.NULLVALUE.equals(dataValue)) {
                         MilogSpaceData newMilogSpaceData = GSON.fromJson(dataValue, MilogSpaceData.class);
                         if (null == newMilogSpaceData || CollectionUtils.isEmpty(newMilogSpaceData.getSpaceConfig())) {
-                            log.error("【监听tail】收到的配置错误，dataId:{},spaceId:{}", dataId, milogSpaceData.getMilogSpaceId());
+                            log.error("Listen tail received configuration error,dataId:{},spaceId:{}", dataId, milogSpaceData.getMilogSpaceId());
                             return;
                         }
                         handleNacosConfigDataJob(newMilogSpaceData);
@@ -283,14 +283,14 @@ public class MilogConfigListener {
                         stopAllJobClear();
                     }
                 } catch (Exception e) {
-                    log.error(String.format("【监听tail】异常,dataId:%s", dataId), e);
+                    log.error(String.format("listen tail error,dataId:%s", dataId), e);
                 }
             }
         };
     }
 
     public void shutdown() {
-        // 取消监听spaceId对应的配置监听器
+        // Unlisten to the configured listener corresponding to the spaceId
         if (this.listener != null) {
             nacosConfig.removeListener(this.dataId, this.group, this.listener);
         }

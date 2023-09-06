@@ -39,24 +39,24 @@ public class StatementMatchParseFactoryTest {
 
     @Test
     public void analyseTransformOsTest() {
-        String message = " not \"PrometheusFilter and test\" or message:\"异常\"";
+        String message = " not \"PrometheusFilter and test\" or message:\"exception\"";
         StatementMatchParseFactory.analyseTransformOs(message, Lists.newArrayList());
     }
 
     @Test
     public void analyseTransformOsTestMultiple() {
-        String message = "\"9645ff1e024c2479c5cd7bbf7e402ce6\" and \"京东到家className=JingDongPromotionProxy\" not \"b1933ce60cb54854ad1c405ea3523bdb\"";
+        String message = "\"9645ff1e024c2479c5cd7bbf7e402ce6\" and \"className=JingDongPromotionProxy\" not \"b1933ce60cb54854ad1c405ea3523bdb\"";
         StatementMatchParseFactory.analyseTransformOs(message, Lists.newArrayList());
     }
 
     @Test
     public void splitBySeparatorTest() {
-//        String message = "\"PrometheusFilter and test\" and message:\"异常\"";
-//        String message = "\"PrometheusFilter\" and message:\"异常\"";
-//        String message = "\"PrometheusFilter and\" and message:\"异常\"";
-//        String message = "'\"异常\"  and code";
-//        String message = "'\\\"异常'  and code";
-//        String message = "'异常'  and code";
+//        String message = "\"PrometheusFilter and test\" and message:\"exception\"";
+//        String message = "\"PrometheusFilter\" and message:\"exception\"";
+//        String message = "\"PrometheusFilter and\" and message:\"exception\"";
+//        String message = "'\"exception\"  and code";
+//        String message = "'\\\"exception'  and code";
+//        String message = "'exception'  and code";
         String message = "\"test\"  and code or \"fff\"";
         String separator = EsOperatorEnum.AND_OPERATOR.getCode();
         List<String> splitBySeparators = StatementMatchParseFactory.splitBySeparator(message, separator);

@@ -62,7 +62,7 @@ public class Comparator {
         LoadingCache<String, String> graphs = CacheBuilder.newBuilder().maximumSize(1000)
                 .build(new CacheLoader<String, String>() {
                     public String load(String key) {
-                        // 这里是key根据实际去取值的方法，例如根据这个key去数据库或者通过复杂耗时的计算得出
+                        // Here is the method of taking the value of the key according to the actual value, such as going to the database according to the key or through complex and time-consuming calculations
                         System.out.println("no cache,load from db");
                         return "123";
                     }
@@ -75,7 +75,7 @@ public class Comparator {
                 .maximumSize(1000).build();
         String val = cache.get("key", new Callable<String>() {
             public String call() {
-                // 这里是key根据实际去取值的方法，例如根据这个key去数据库或者通过复杂耗时的计算得出
+                // Here is the method of taking the value of the key according to the actual value, such as going to the database according to the key or through complex and time-consuming calculations
                 System.out.println("val call method is invoked");
                 return "123";
             }
@@ -83,7 +83,6 @@ public class Comparator {
         System.out.println("1 value is: " + val1);
         val = cache.get("key", new Callable<String>() {
             public String call() {
-                // 这里是key根据实际去取值的方法，例如根据这个key去数据库或者通过复杂耗时的计算得出
                 System.out.println("val call method is invoked");
                 return "123";
             }
@@ -92,7 +91,6 @@ public class Comparator {
 
         val = cache.get("testKey", new Callable<String>() {
             public String call() {
-                // 这里是key根据实际去取值的方法，例如根据这个key去数据库或者通过复杂耗时的计算得出
                 System.out.println("testKey val call method is invoked");
                 return "456";
             }
@@ -104,7 +102,7 @@ public class Comparator {
 
     @Test
     public void testRateLimiter() throws InterruptedException {
-        // qps设置为5，代表一秒钟只允许处理五个并发请求
+        //A QPS setting of 5 means that only five concurrent requests are allowed to be processed per second
         RateLimiter rateLimiter = RateLimiter.create(5);
         ExecutorService executorService = Executors.newFixedThreadPool(10);
         int nTasks = 10;

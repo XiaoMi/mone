@@ -20,10 +20,10 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.xiaomi.mone.log.agent.channel.ChannelDefine;
-import com.xiaomi.mone.log.agent.common.AbstractElementAdapter;
 import com.xiaomi.mone.log.agent.channel.conf.AgentTailConf;
-import com.xiaomi.mone.log.agent.output.Output;
+import com.xiaomi.mone.log.agent.common.AbstractElementAdapter;
 import com.xiaomi.mone.log.agent.input.Input;
+import com.xiaomi.mone.log.agent.output.Output;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
@@ -32,7 +32,7 @@ import java.io.InputStreamReader;
 import java.util.List;
 
 /**
- * 本地json配置方式获取channel元数据
+ * Local json configuration method to obtain channel metadata
  *
  * @author shanwb
  * @date 2021-07-21
@@ -89,29 +89,7 @@ public class ChannelDefineJsonLocator implements ChannelDefineLocator {
                 }
             }
         }
-
-//        String pathname = ChannelDefineJsonLocator.class.getClassLoader().getResource("agent_channel_config.json").getPath();
-//        Path path;
-//        try {
-//            path = Paths.get(pathname);
-//        } catch (Exception e) {
-//            path = Paths.get(pathname.substring(1));
-//        }
-//        ;
-//        try {
-//            // 使用readAllLines的时候，小文件可以很快读取.
-//            byte[] bytes = Files.readAllBytes(path);
-//            String str = new String(bytes, "UTF-8");
-//            System.out.println(str);
-//            str = str.replaceAll("\r|\n|\\s", "");
-//
-//            return str;
-//        } catch (IOException e) {
-//            log.error("readConfigJson exception:{}", e);
-//        }
-
         return null;
     }
 
-    //private static final String CHANNEL_JSON = "[{\"channelId\":100,\"appId\":100,\"appName\":\"test\",\"input\":{\"type\":\"APP_LOG\",\"logPattern\":\"/home/work/log/tesla/server.log\",\"patternCode\":\"tesla_server_log\"},\"output\":{\"type\":\"rocketmq\",\"clusterInfo\":\"staging-cnbj2-rocketmq.namesrv.api.xiaomi.net:9876\",\"producerGroup\":\"RocketMQResStaging\",\"ak\":\"AK2RMWSENPXOP65KDB\",\"sk\":\"9GWdjoqRgZaN9EzoxGQDMguQncJ/AipR8Wq5SStH\",\"topic\":\"mi_log\"}}]";
 }

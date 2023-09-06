@@ -76,7 +76,7 @@ public class SeparatorLogParser implements LogParser {
             int count = 0;
             int valueCount = 0;
             /**
-             * 正常解析
+             * Normal parsing
              */
             for (int i = 0; i < keysAndTypes.length; i++) {
                 String[] kTsplit = keysAndTypes[i].split(":");
@@ -128,8 +128,8 @@ public class SeparatorLogParser implements LogParser {
             }
 
             /**
-             * 字段配置错误
-             * esKeyMap_topic,esKeyMap_tag,esKeyMap_logstoreName,esKeyMap_logSource 对用户不可见，即不存在于values，logArray
+             * The field is misconfigured
+             * esKeyMap_topic,esKeyMap_tag,esKeyMap_logstoreName,esKeyMap_logSource are not visible to the user, i.e. do not exist in values, logArray
              */
             if (ret.values().stream().filter(Objects::nonNull).map(String::valueOf).anyMatch(StringUtils::isEmpty)) {
                 ret.put(esKeyMap_logSource, logData);

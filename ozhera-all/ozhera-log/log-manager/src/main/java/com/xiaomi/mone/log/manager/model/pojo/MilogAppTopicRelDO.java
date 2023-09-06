@@ -27,7 +27,7 @@ import java.util.List;
  * @date 2021-06-28
  */
 @Table("milog_app_topic_rel")
-@Comment("应用app与mq关联表")
+@Comment("The application association table with MQ")
 @Data
 @Builder
 @NoArgsConstructor
@@ -35,53 +35,53 @@ import java.util.List;
 @EqualsAndHashCode
 public class MilogAppTopicRelDO extends BaseCommon {
     @Id
-    @Comment("主键Id")
+    @Comment("Primary key Id")
     @ColDefine(customType = "bigint")
     private Long id;
 
     @Column(value = "tenant_id")
     @ColDefine(customType = "bigint")
-    @Comment("租户Id")
+    @Comment("Tenant ID")
     private Long tenantId;
 
     @Column(value = "iam_tree_id")
     @ColDefine(customType = "bigint")
-    @Comment("iam树Id(mione应用的唯一)")
+    @Comment("IAM tree ID (unique to the mione app)")
     private Long iamTreeId;
 
     @Column(value = "app_id")
     @ColDefine(customType = "bigint")
-    @Comment("应用id")
+    @Comment("app id")
     private Long appId;
 
     @Column(value = "app_name")
     @ColDefine(type = ColType.VARCHAR, width = 256)
-    @Comment("app名称")
+    @Comment("app name")
     private String appName;
 
     @Column(value = "tree_ids")
     @ColDefine(type = ColType.MYSQL_JSON)
-    @Comment("mis 项目的挂载的树ids")
+    @Comment("The IDS of the mounted tree of the project")
     private List<Long> treeIds;
 
     @Column(value = "node_ips")
     @ColDefine(type = ColType.MYSQL_JSON)
-    @Comment("应用所在的物理机ips")
+    @Comment("The IPS of the physical machine where the application resides")
     private LinkedHashMap<String, List<String>> nodeIPs;
 
     @Column(value = "operator")
     @ColDefine(type = ColType.VARCHAR, width = 128)
-    @Comment("操作者")
+    @Comment("operator")
     private String operator;
 
     @Column(value = "source")
     @ColDefine(type = ColType.VARCHAR, width = 64)
-    @Comment("服务来源")
+    @Comment("Service source")
     private String source;
 
     @Column(value = "type")
     @ColDefine(type = ColType.VARCHAR, width = 10)
-    @Comment("0.mione项目 1.mis项目")
+    @Comment("0.mione project")
     private Integer type;
 
 

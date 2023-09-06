@@ -27,19 +27,19 @@ import lombok.EqualsAndHashCode;
 public abstract class Input {
     /**
      * LogTypeEnum.name()，
-     * 可以根据这个类型，决定是单行收集还是多行收集(支持java异常栈)
+     * You can decide whether to collect single lines or multiple lines based on this type (supports java exception stack)
      *
      * @see com.xiaomi.mone.log.api.enums.LogTypeEnum
      */
     private String type;
 
     /**
-     * 日志路径格式
-     * 当前支持 单文件、多文件、目录层级通配模式
+     * log path format
+     * Currently supports single-file, multi-file, and directory-level wildcard modes
      * <p>
-     * 单文件: /home/work/log/xxapp/server.log
-     * 多文件: /home/work/log/neo-logs/(cxx01|cxx022)/server.log
-     * 目录层级通配:/home/work/log/xxapp/ * /server.log
+     * single file: /home/work/log/xxapp/server.log
+     * multiple files: /home/work/log/neo-logs/(cxx01|cxx022)/server.log
+     * Directory level wildcarding:/home/work/log/xxapp/ * /server.log
      */
     private String logPattern;
 
@@ -50,7 +50,7 @@ public abstract class Input {
 
     private String logSplitExpress;
     /**
-     * 用户自定义的行首正则，默认是""
+     * User-defined regularity at the beginning of the line, the default is ""
      */
     private String linePrefix;
 

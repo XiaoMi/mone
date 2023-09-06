@@ -19,11 +19,11 @@ import lombok.Data;
 import org.nutz.dao.entity.annotation.*;
 
 @Table("milog_log_process")
-@Comment("日志收集进度")
+@Comment("Log collection progress")
 @Data
 public class MilogLogProcessDO {
     @Id
-    @Comment("主键Id")
+    @Comment("Primary key Id")
     @ColDefine(customType = "bigint")
     private Long id;
 
@@ -44,7 +44,7 @@ public class MilogLogProcessDO {
 
     @Column(value = "file_row_number")
     @ColDefine(type = ColType.INT)
-    @Comment("日志文件行号")
+    @Comment("Log file line number")
     private Integer fileRowNumber;
 
     @Column(value = "pointer")
@@ -53,17 +53,17 @@ public class MilogLogProcessDO {
 
     @Column(value = "collect_time")
     @ColDefine(customType = "bigint")
-    @Comment("日志收集时间")
+    @Comment("Log collection time")
     private Long collectTime;
 
     @Column(value = "ctime")
     @ColDefine(customType = "bigint")
-    @Comment("创建时间")
+    @Comment("Creation time")
     private Long ctime;
 
     @Column(value = "utime")
     @ColDefine(customType = "bigint")
-    @Comment("更新时间")
+    @Comment("Update time")
     private Long utime;
 
 }

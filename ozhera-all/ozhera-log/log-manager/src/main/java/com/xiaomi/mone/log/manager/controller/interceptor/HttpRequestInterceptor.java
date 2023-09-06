@@ -84,7 +84,7 @@ public class HttpRequestInterceptor extends EnhanceInterceptor {
     @Override
     public void before(AopContext aopContext, Method method, Object[] args) {
         /**
-         * 上下文中会拿不到用户信息
+         * User information will not be available in the context
          */
         if (filterUrlList.contains(method.getName())) {
             return;

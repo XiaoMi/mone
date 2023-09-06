@@ -21,7 +21,7 @@ package com.xiaomi.mone.log.agent.channel;
  */
 public interface Closeable {
     /**
-     * 关闭
+     * Shut down
      */
     void close();
 }

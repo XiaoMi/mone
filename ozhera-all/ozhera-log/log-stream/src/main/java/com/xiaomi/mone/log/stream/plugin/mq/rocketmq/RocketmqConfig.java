@@ -19,7 +19,7 @@ import com.xiaomi.mone.log.stream.plugin.mq.MQConfig;
 import lombok.Data;
 
 /**
- * RocketMq的一些配置
+ * Some configurations of RocketMq
  */
 @Data
 public class RocketmqConfig extends MQConfig {

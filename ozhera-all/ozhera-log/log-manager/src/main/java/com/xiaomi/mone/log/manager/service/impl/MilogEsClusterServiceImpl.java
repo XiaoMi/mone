@@ -22,10 +22,6 @@ import com.xiaomi.mone.log.manager.service.IMilogEsClusterService;
 import com.xiaomi.youpin.docean.anno.Service;
 
 /**
- * <p>
- * 服务实现类
- * </p>
- *
  * @author wanghaoyang
  * @since 2021-09-18
  */

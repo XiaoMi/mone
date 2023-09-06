@@ -27,41 +27,41 @@ import java.util.List;
 @Data
 public class LogCollectMeta implements Serializable {
     /**
-     * agent标识
+     * agent mark
      */
     private String agentId;
     /**
-     * agent机器名
+     * agent machine name
      */
     private String agentMachine;
     /**
-     * agent机器物理机ip
+     * agent physical machine ip
      */
     private String agentIp;
     /**
-     * agent收集的应用元数据
+     * Application metadata collected by the agent
      */
     private List<AppLogMeta> appLogMetaList;
 
     private AgentDefine agentDefine;
     /**
-     * 如果是k8s的时候，当前node的所有pod集合,专门用来处理opentelemetry日志，由于配置的*，会扫描到很多已经结束的
-     * pod的日志文件，导致起很多线程而线程池满了后放入不了任务的问题
-     * <p>
-     * 启动时为当前机器上全量挂载了日志的podName
-     * 运行过程中为删除的pod
+     * If it is K8s, all pod collections of the current node,
+     * specifically used to process OpenTelemetry logs, due to configuration,
+     * will scan the log files of many pods that have ended,
+     * resulting in the problem that many threads cannot be put into tasks after the thread pool is full <p>
      */
     private List<String> podNames;
 
     /**
-     * 单个配置数据，默认该机器下的全量配置
+     * A single configuration data is configured by default to the full configuration of the machine
      */
     private Boolean singleMetaData;
 
     private String podType;
 
     /**
-     * 某个机器下线的时候需要删除的该目录下的日志采集,只有当某个应用的机器下线时才有值
+     * Log collection in this directory that needs to be deleted when a machine is offline has a value only when
+     * the machine of an application is offline
      */
     private String delDirectory;
 

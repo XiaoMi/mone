@@ -44,7 +44,7 @@ public class LogAgentServerBootstrap {
         log.info("nacos:{} name:{}", nacosAddr, serverName);
         RpcServer rpcServer = new RpcServer(nacosAddr, serverName);
         rpcServer.setListenPort(9899);
-        //注册处理器
+        //Register the processor
         rpcServer.setProcessorList(Lists.newArrayList(
                 new Pair<>(RpcCmd.pingReq, new PingProcessor()),
                 new Pair<>(Constant.RPCCMD_AGENT_CODE, new AgentCollectProgressProcessor()),

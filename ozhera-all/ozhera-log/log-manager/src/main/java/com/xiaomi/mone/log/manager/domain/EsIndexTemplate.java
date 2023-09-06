@@ -59,29 +59,29 @@ public class EsIndexTemplate {
     private MilogEsClusterMapper milogEsClusterMapper;
 
     /**
-     * 创建索引模板
+     * Create an index template
      *
      * @param command
      * @return
      * @throws IOException
      */
     public boolean createIndexTemplate(CreateOrUpdateLogStoreCmd command) throws IOException {
-        // 校验模板是否存在
+        // Verify that the template exists
         if (existTemplate(command.getEsIndex())) {
             return false;
         }
         PutIndexTemplateRequest request = new PutIndexTemplateRequest(command.getEsIndex());
-        // 匹配名称
+        // Match the name
         request.patterns(Arrays.asList(command.getEsIndex() + "*"));
-        // 设置别名别名
+        // Set up an alias alias
         request.alias(new Alias(command.getEsIndex()));
-        // 优先级
+        // Priority
         request.order(20);
-        // 版本号
+        // Version number
         request.version(0);
-        // 模板设置
+        // Template settings
         buildSetting(request, command);
-        // 模板映射
+        // Template mapping
         buildMapping(request, command);
         EsService esService = esCluster.getEsService(null);
         return esService.createIndexTemplate(request) && createIndex(command.getEsIndex());
@@ -98,42 +98,42 @@ public class EsIndexTemplate {
     }
 
     /**
-     * 构建setting
+     * Build the setting
      *
      * @param request
      * @param command
      */
     public void buildSetting(PutIndexTemplateRequest request, CreateOrUpdateLogStoreCmd command) {
 //        request.settings(Settings.builder()
-//                // 分片数
+//                // Number of shards
 //                .put("index.number_of_shards" , command.getShardCnt())
-//                // ILM名称
+//                // ILM name
 //                .put("index.lifecycle.name", command.getStorePeriod() + "Del")
-//                // 回滚索引别名
+//                // Rollback index aliases
 ////                .put("index.lifecycle.rollover_alias", createIndexTemplateCommand.getIndexTemplateName() + indexTemplate.getIndexPostfix())
 //        );
     }
 
     /**
-     * 构建setting
+     * Build the setting
      *
      * @param request
      * @param updateIndexTemplateCommand
      */
     public void buildSetting(PutIndexTemplateRequest request, UpdateIndexTemplateCommand updateIndexTemplateCommand) {
 //        request.settings(Settings.builder()
-//                // 分片数
+//                // Number of shards
 //                .put("index.number_of_shards" , updateIndexTemplateCommand.getIndexShards())
 //                .put("index.number_of_replicas", updateIndexTemplateCommand.getIndexReplicas())
-//                // ILM名称
+//                // ILM name
 //                .put("index.lifecycle.name",updateIndexTemplateCommand.getLifecycle())
-        // 回滚索引别名
+        // Rollback index aliases
 //                .put("index.lifecycle.rollover_alias", updateIndexTemplateCommand.getIndexTemplateName() + indexTemplate.getIndexPostfix())
 //        );
     }
 
     /**
-     * 构建mapping
+     * Build mapping
      *
      * @param request
      * @param command
@@ -154,7 +154,7 @@ public class EsIndexTemplate {
     }
 
     /**
-     * 构建mapping
+     * Build mapping
      *
      * @param request
      * @param updateIndexTemplateCommand
@@ -177,7 +177,7 @@ public class EsIndexTemplate {
     }
 
     /**
-     * 模板是否存在
+     * Whether the template exists
      *
      * @param templateName
      * @return
@@ -193,7 +193,7 @@ public class EsIndexTemplate {
     }
 
     /**
-     * 获取区域下此类型的索引
+     * Gets the index of this type under the region
      *
      * @return
      */
@@ -206,7 +206,7 @@ public class EsIndexTemplate {
     }
 
     /**
-     * 获取机房下此类型的索引
+     * Obtain the index of this type under the data center
      *
      * @return
      */
@@ -219,7 +219,7 @@ public class EsIndexTemplate {
     }
 
     /**
-     * 获取es集群下此类型的索引
+     * Obtain the index of this type under the ES cluster
      *
      * @param logType
      * @return
@@ -236,7 +236,7 @@ public class EsIndexTemplate {
     }
 
     /**
-     * 索引选择逻辑
+     * Index selection logic
      *
      * @param indexList
      * @return
@@ -246,7 +246,7 @@ public class EsIndexTemplate {
     }
 
     /**
-     * 随机选择索引
+     * Randomly select an index
      *
      * @param indexList
      * @return
@@ -259,7 +259,7 @@ public class EsIndexTemplate {
     }
 
     /**
-     * 获取ES信息
+     * Get ES information
      *
      * @param machineRoom
      * @param logType
@@ -267,7 +267,7 @@ public class EsIndexTemplate {
      */
     public EsInfoDTO getEsInfo(String machineRoom, Integer logType) {
         MilogEsClusterDO cluster;
-        // 没有机房，按照国内的逻辑处理
+        // There is no machine room, it is processed according to domestic logic
         if (StringUtils.isEmpty(machineRoom)) {
             cluster = esCluster.getCurEsCluster();
         } else {
@@ -288,7 +288,7 @@ public class EsIndexTemplate {
         if (CollectionUtils.isEmpty(milogEsIndexDOS)) {
             MilogEsClusterDO milogEsClusterDO = milogEsClusterMapper.selectById(clusterId);
             throw new MilogManageException(String.format(
-                    "ES:%s,日志类型:%s索引不存在,请先去资源管理页配置", milogEsClusterDO.getName(), LogTypeEnum.queryNameByType(logType)));
+                    "ES:%s,log type:%s The index does not exist, go to the Resource Management page to configure it first", milogEsClusterDO.getName(), LogTypeEnum.queryNameByType(logType)));
         }
         if (StringUtils.isNotEmpty(exIndex)) {
             Optional<MilogEsIndexDO> doOptional = milogEsIndexDOS.stream()
@@ -310,7 +310,7 @@ public class EsIndexTemplate {
         if (CollectionUtils.isEmpty(milogEsIndexDOS)) {
             MilogEsClusterDO milogEsClusterDO = milogEsClusterMapper.selectById(clusterId);
             throw new MilogManageException(String.format(
-                    "ES:%s,日志类型:%s索引不存在,请先去资源管理页配置", milogEsClusterDO.getName(), LogTypeEnum.queryNameByType(logType)));
+                    "ES:%s,log type:%s The index does not exist, go to the Resource Management page to configure it first", milogEsClusterDO.getName(), LogTypeEnum.queryNameByType(logType)));
         }
         if (StringUtils.isNotEmpty(exIndex)) {
             Optional<MilogEsIndexDO> doOptional = milogEsIndexDOS.stream()
@@ -320,7 +320,7 @@ public class EsIndexTemplate {
                 return new EsInfoDTO(doOptional.get().getClusterId(), exIndex);
             }
         }
-        // 随机选择一个
+        // Choose one at random
         MilogEsIndexDO milogEsIndexDO = milogEsIndexDOS.get(getRandomNum(milogEsIndexDOS.size()));
         return new EsInfoDTO(clusterId, milogEsIndexDO.getIndexName());
     }

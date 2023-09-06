@@ -59,11 +59,11 @@ public class LogParserFactory {
     @Getter
     public enum LogParserEnum {
 
-        SEPARATOR_PARSE(2, "分割符"),
-        CUSTOM_PARSE(5, "自定义脚本"),
-        REGEX_PARSE(6, "正则表达式"),
-        JSON_PARSE(7, "JSON解析"),
-        NGINX_PARSE(8, "Nginx解析");
+        SEPARATOR_PARSE(2, "Separator Parsing"),
+        CUSTOM_PARSE(5, "Custom scripts Parsing"),
+        REGEX_PARSE(6, "Regular Expression Parsing"),
+        JSON_PARSE(7, "JSON Parsing"),
+        NGINX_PARSE(8, "Nginx Parsing");
 
         private Integer code;
         private String name;

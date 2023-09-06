@@ -19,7 +19,7 @@ import java.util.List;
 
 public interface FetchStreamMachineService {
     /**
-     * 获取stream机器的标识
+     * Gets the identity of the stream machine
      *
      * @return
      */

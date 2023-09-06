@@ -77,7 +77,7 @@ public class StatisticsServiceImpl {
 
 
     /**
-     * 单个tail每小时数据量统计
+     * Hourly data volume statistics for a single tail
      */
     public Result<Map<String, Long>> queryTailStatisticsByHour(StatisticsQuery statisticsQuery) throws IOException {
 
@@ -121,7 +121,7 @@ public class StatisticsServiceImpl {
 
 
     /**
-     * 当日单个store内所有tail的数据量排序top5
+     * Top 5 in the data volume of all tails in a single store on the day
      */
     public Result<Map<String, Long>> queryStoreTopTailStatisticsByDay(StatisticsQuery statisticsQuery) throws IOException {
 
@@ -159,7 +159,7 @@ public class StatisticsServiceImpl {
     }
 
     /**
-     * 单个space内所有store数据量排序top5
+     * Top 5 in the volume of data of all stores in a single space
      */
     public Result<Map<String, Long>> querySpaceTopStoreByDay(StatisticsQuery statisticsQuery) throws IOException {
 
@@ -200,14 +200,14 @@ public class StatisticsServiceImpl {
     public Result<List<EsStatisticsKeyWord>> queryEsStatisticsRation(LogQuery logQuery) {
         List<EsStatisticsKeyWord> results = Lists.newArrayList();
         if (null == logQuery.getStoreId()) {
-            return Result.failParam("storeId 不能为空");
+            return Result.failParam("The storeId cannot be empty");
         }
         MilogLogStoreDO logStoreDO = logstoreDao.queryById(logQuery.getStoreId());
         if (null == logStoreDO) {
-            return Result.fail(CommonError.NOT_EXISTS_DATA.getCode(), "store不存在");
+            return Result.fail(CommonError.NOT_EXISTS_DATA.getCode(), "The store does not exist");
         }
         if (null == logStoreDO.getEsClusterId() || StringUtils.isEmpty(logStoreDO.getEsIndex())) {
-            return Result.fail(CommonError.NOT_EXISTS_DATA.getCode(), "es 索引相关信息不存在");
+            return Result.fail(CommonError.NOT_EXISTS_DATA.getCode(), "ES index-related information does not exist");
         }
         EsService esService = esCluster.getEsService(logStoreDO.getEsClusterId());
         String esIndexName = logStoreDO.getEsIndex();
@@ -220,14 +220,14 @@ public class StatisticsServiceImpl {
                 String aggregationName = String.format("%s-%s", field, "static-name");
                 BoolQueryBuilder boolQueryBuilder = searchLog.getQueryBuilder(logQuery, getKeyColonPrefix(logStoreDO.getKeyList()));
 
-                // 创建搜索请求
+                // Create a search request
                 SearchRequest searchRequest = new SearchRequest(esIndexName);
                 SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
                 searchSourceBuilder.query(boolQueryBuilder);
                 searchSourceBuilder.size(5);
                 searchRequest.source(searchSourceBuilder);
 
-                // 执行搜索请求
+                // Perform a search request
                 SearchResponse searchResponse = esService.search(searchRequest);
 
                 SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
