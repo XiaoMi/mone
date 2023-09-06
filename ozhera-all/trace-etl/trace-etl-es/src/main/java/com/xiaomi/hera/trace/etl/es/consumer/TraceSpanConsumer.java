@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * @Description
  * @Author dingtao
- * @Date 2021/11/5 10:05 上午
+ * @Date 2021/11/5 10:05 am
  */
 @Component
 public class TraceSpanConsumer {
@@ -45,7 +45,7 @@ public class TraceSpanConsumer {
 
     @PostConstruct
     public void takeMessage() throws MQClientException {
-        // 初始化rocketmq consumer
+        // init rocketmq consumer
         log.info("init consumer start ...");
         DefaultMQPushConsumer consumer=new DefaultMQPushConsumer(group);
         consumer.setNamesrvAddr(nameSerAddr);

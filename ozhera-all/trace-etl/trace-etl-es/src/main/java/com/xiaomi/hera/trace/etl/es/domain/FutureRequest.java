@@ -6,7 +6,7 @@ import com.xiaomi.hera.tspandata.TSpanData;
 /**
  * @Description
  * @Author dingtao
- * @Date 2022/5/23 10:16 上午
+ * @Date 2022/5/23 10:16 am
  */
 public class FutureRequest {
     private String traceId;
@@ -15,7 +15,7 @@ public class FutureRequest {
     private String spanName;
     private int redisKeyIndex;
     /**
-     * 区分rocks first second
+     * Distinguish rocks first second.
      */
     private String order;
 

@@ -93,7 +93,7 @@ public class RocksdbStoreServiceImpl implements DiskStoreService {
                 .setCompactionStyle(CompactionStyle.LEVEL)
                 .setWalTtlSeconds(60L);
         try {
-            rocksDB = TtlDB.open(options, path, 60 , false);
+            rocksDB = TtlDB.open(options, path, 60, false);
         } catch (RocksDBException e) {
             log.error("RocksdbStoreService init error:{}", e);
             throw new RuntimeException("rocksdb init failed");
@@ -135,7 +135,7 @@ public class RocksdbStoreServiceImpl implements DiskStoreService {
         String beginPrefix = beginArr[0];
         long lastkeySuffix = Long.valueOf(beginArr[1]);
         while (true) {
-            try (RocksIterator iterator = rocksDB.newIterator()){
+            try (RocksIterator iterator = rocksDB.newIterator()) {
                 long latestKeyTime = 0L;
                 for (iterator.seek(beginPrefix.getBytes(StandardCharsets.UTF_8)); iterator.isValid(); iterator.next()) {
                     String key = new String(iterator.key(), StandardCharsets.UTF_8);
@@ -147,11 +147,11 @@ public class RocksdbStoreServiceImpl implements DiskStoreService {
                     latestKeyTime = Long.valueOf(keyArr[0]);
                     long suffix = Long.valueOf(keyArr[1]);
                     if (beginPrefix.equals(String.valueOf(latestKeyTime)) && lastkeySuffix >= suffix) {
-                        // 已经处理了，break
+                        // Already handled, break.
                         continue;
                     }
                     if (latestKeyTime > latestTime) {
-                        //本次数据已取完，break
+                        // The data for this session has been exhausted, break.
                         lastkeySuffix = 0;
                         break;
                     } else {
