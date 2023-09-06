@@ -37,10 +37,10 @@ import java.util.UUID;
 /**
  * @author goodjava@qq.com
  * <p>
- * 负责处理上传(优化的点是上传一部分就存储一部分,尽量少的占用内存)
- * 如果用FullHttpRequest 代码会简单些,但这会占用大量内存,不可取
- * 这里处理的并不是data-from那种标准的表单
- * 现在默认没有开启(等未来遇到性能问题再开启)
+ * Responsible for handling uploads (the optimization point is to store a part of the upload as soon as possible, minimizing memory usage).
+ * If using FullHttpRequest code will be simpler, but it will consume a large amount of memory, which is not advisable.
+ * This is not dealing with the standard form like data-from.
+ * Currently, it is not enabled by default (it will be enabled in the future if there are performance issues).
  */
 @Slf4j
 public class HttpUploadHandler extends SimpleChannelInboundHandler<HttpObject> {
@@ -105,7 +105,7 @@ public class HttpUploadHandler extends SimpleChannelInboundHandler<HttpObject> {
                     return;
                 }
                 DefaultHttpContent chunk = (DefaultHttpContent) httpObject;
-                //处理到这里,可能client 还在发送数据,所以这里需要有error 的处理逻辑
+                //rate limited or exceeded quota
                 if (!error) {
                     ByteBuf buf = chunk.content();
                     ByteBuffer buffer = buf.nioBuffer();
@@ -125,7 +125,7 @@ public class HttpUploadHandler extends SimpleChannelInboundHandler<HttpObject> {
                 return;
             }
         } finally {
-            //改为自己手动释放
+            //rate limited or exceeded quota
             int count = ReferenceCountUtil.refCnt(httpObject);
             log.debug("ref count:{}", count);
             if (count > 0) {

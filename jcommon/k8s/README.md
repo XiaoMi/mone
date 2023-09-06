@@ -1,10 +1,12 @@
-# K8s操作库
+# K8s operation library
+
 # K8s operation library k8s operator lib
-# 目前建议使用docean(docean里边有一个k8s plugin,都已经封装好了),建议使用(docean-plugin -> docean-plugin-k8s)
+
+# Currently, it is recommended to use docean (which includes a k8s plugin that has already been packaged). It is recommended to use docean-plugin -> docean-plugin-k8s.
+
 # It is currently recommended to use Docean (Docean has a built-in k8s plugin, which is already well-packaged), recommended to use (docean-plugin -> docean-plugin-k8s)
-提供了使用Java代码操作K8S集群的方法。
 
-
+Provides methods for operating K8S clusters using Java code.
 
 1. build images
 
@@ -17,26 +19,26 @@ docker tag k8s-demo:0.1 riskers/k8s-demo:0.1
 
 2. deploy k8s
 
-执行 test1: com.xiaomi.youpin.k8s.K8sTest.test1
+Execute test1: com.xiaomi.youpin.k8s.K8sTest.test1
 
-等同于:
+Equivalent to:
 
 ```shell
 cd src/test/resources/k8s-demo/k8s
 kubectl create -f deployment.yaml
 ```
 
-3. 验证命令
+3. verify command
 
-执行 test2: com.xiaomi.youpin.k8s.K8sTest.test2
+Execute test2: com.xiaomi.youpin.k8s.K8sTest.test2
 
-等同于:
+Equivalent to:
 
 ```shell
 kubectl scale -n default deployment k8s-demo-deployment --replicas=3
 ```
 
-验证是否成功:
+Verify if successful:
 
 ```shell
 kubectl get deployments

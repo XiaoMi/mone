@@ -1,4 +1,4 @@
-# 池化工具
+# Pooling Tool
 
-以`GenericObjectPool`为基础，实现`BeanMap`的池化。
+Implement pooling for `BeanMap` based on `GenericObjectPool`.
 

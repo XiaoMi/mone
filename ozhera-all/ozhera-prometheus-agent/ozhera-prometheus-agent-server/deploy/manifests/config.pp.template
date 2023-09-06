@@ -1,5 +1,5 @@
 class base {
-#默认配置，必须，不可修改。
+#Default configuration，Required，Uneditable。
     $basedir = "$<path>"
     $user = "$< user >"
     $mod_ver = "$< version >"

@@ -4,7 +4,7 @@ public enum ErrorCode {
     success(0, "success"),
     unknownError(1, "unknown error"),
 
-    // 参数问题
+    // Parameter issue
     invalidParamError(1001, "无效的参数"),
     OperationFailed(1014,"操作失败"),
     INVALID_USER(4001,"用户身份无效"),

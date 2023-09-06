@@ -13,7 +13,7 @@ public class Http {
             URL requestUrl = new URL(url);
             HttpURLConnection conn = (HttpURLConnection) requestUrl.openConnection();
             PrintWriter out = null;
-            //设置URLConnection的参数和普通的请求属性
+            // Setting parameters and regular request properties for URLConnection.
             conn.setRequestProperty("Expect", "");
             conn.setRequestProperty("Accept", "application/json");
             conn.setRequestProperty("Content-Type", "application/json; charset=utf-8");
@@ -23,7 +23,7 @@ public class Http {
             conn.setRequestMethod(method);
             conn.connect();
             if ("POST".equals(method)) {
-                //POST请求
+                // POST request
                 BufferedWriter out1 = new BufferedWriter(new OutputStreamWriter(conn.getOutputStream(), "UTF-8"));
                 out1.write(data);
                 out1.flush();

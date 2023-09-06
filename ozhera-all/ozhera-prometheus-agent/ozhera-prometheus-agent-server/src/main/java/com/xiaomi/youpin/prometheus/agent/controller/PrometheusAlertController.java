@@ -11,7 +11,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-//报警规则相关接口
+//APIs related to alarm rules.
+
 /**
  * @author zhangxiaowei6
  */
@@ -25,7 +26,7 @@ public class PrometheusAlertController {
 
     public static final Gson gson = new Gson();
 
-    @RequestMapping(value = "/alert",method = RequestMethod.POST)
+    @RequestMapping(value = "/alert", method = RequestMethod.POST)
     public Result createRuleAlert(@RequestBody RuleAlertParam param) {
         if (param == null) {
             return Result.fail(ErrorCode.invalidParamError);
@@ -34,16 +35,16 @@ public class PrometheusAlertController {
         return result;
     }
 
-    @RequestMapping(value = "/alert/{id}",method = RequestMethod.PUT)
-    public Result UpdateRuleAlert(@PathVariable String id ,@RequestBody RuleAlertParam param) {
+    @RequestMapping(value = "/alert/{id}", method = RequestMethod.PUT)
+    public Result UpdateRuleAlert(@PathVariable String id, @RequestBody RuleAlertParam param) {
         if (id == null || param == null) {
             return Result.fail(ErrorCode.invalidParamError);
         }
-        Result result = ruleAlertService.UpdateRuleAlert(id,param);
+        Result result = ruleAlertService.UpdateRuleAlert(id, param);
         return result;
     }
 
-    @RequestMapping(value = "/alert/{id}",method = RequestMethod.DELETE)
+    @RequestMapping(value = "/alert/{id}", method = RequestMethod.DELETE)
     public Result DeleteRuleAlert(@PathVariable String id) {
         if (id == null) {
             return Result.fail(ErrorCode.invalidParamError);
@@ -52,7 +53,7 @@ public class PrometheusAlertController {
         return result;
     }
 
-    @RequestMapping(value = "/alert/{id}",method = RequestMethod.GET)
+    @RequestMapping(value = "/alert/{id}", method = RequestMethod.GET)
     public Result GetRuleAlert(@PathVariable String id) {
         if (id == null) {
             return Result.fail(ErrorCode.invalidParamError);
@@ -61,8 +62,8 @@ public class PrometheusAlertController {
         return result;
     }
 
-    @RequestMapping(value = "/alert/list",method = RequestMethod.GET)
-    public Result GetRuleAlertList(Integer pageSize,Integer pageNo) {
+    @RequestMapping(value = "/alert/list", method = RequestMethod.GET)
+    public Result GetRuleAlertList(Integer pageSize, Integer pageNo) {
         if (pageSize == null && pageNo == null) {
             return Result.fail(ErrorCode.invalidParamError);
         }
@@ -76,16 +77,16 @@ public class PrometheusAlertController {
         return result;
     }
 
-    @RequestMapping(value = "/alert/enabled/{id}",method = RequestMethod.PUT)
+    @RequestMapping(value = "/alert/enabled/{id}", method = RequestMethod.PUT)
     public Result EnabledRuleAlert(@PathVariable String id, String enabled) {
-        if (id == null || StringUtils.isBlank(enabled) || ( !enabled.equals("0") && !enabled.equals("1"))) {
+        if (id == null || StringUtils.isBlank(enabled) || (!enabled.equals("0") && !enabled.equals("1"))) {
             return Result.fail(ErrorCode.invalidParamError);
         }
-        Result result = ruleAlertService.EnabledRuleAlert(id,enabled);
+        Result result = ruleAlertService.EnabledRuleAlert(id, enabled);
         return result;
     }
 
-    @RequestMapping(value = "/alert/sendAlert",method = RequestMethod.POST)
+    @RequestMapping(value = "/alert/sendAlert", method = RequestMethod.POST)
     public Result sendAlert(@RequestBody String body) {
         Result result = ruleAlertService.SendAlert(body);
         return result;

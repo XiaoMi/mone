@@ -21,7 +21,7 @@ package run.mone.hera.operator.common;
  */
 public enum ResourceTypeEnum {
     /**
-     * 集群对外访问service选择，默认只支持：NodePort、LoadBalancer
+     * Cluster external access service selection, by default, only supports NodePort and LoadBalancer.
      */
     SERVICE_CHECK(0, "serviceCheck", 0),
 
@@ -30,14 +30,14 @@ public enum ResourceTypeEnum {
     ES(3, "ES", 7),
     ROCKETMQ(4, "RocketMQ", 7),
     Nacos(5, "Nacos", 8),
-    PROMETHEUS(6,"prometheus", 9),
+    PROMETHEUS(6, "prometheus", 9),
 
-    GRAFANA(7,"grafana", 9),
+    GRAFANA(7, "grafana", 9),
 
-    ALERT_MANAGER(8,"alertManager", 9),
-    CADVISOR(9,"cadvisor", 9),
+    ALERT_MANAGER(8, "alertManager", 9),
+    CADVISOR(9, "cadvisor", 9),
 
-    NODE_EXPORTER(10,"node-exporter", 9),
+    NODE_EXPORTER(10, "node-exporter", 9),
 
     HERA_APP(11, "HeraApp", 10),
 
@@ -45,18 +45,18 @@ public enum ResourceTypeEnum {
 
     HERA_WEBHOOK(13, "HeraWebhook", 12),
 
-    OTHER(99, "Other", 19)
-    ;
+    OTHER(99, "Other", 19);
 
     private Integer type;
 
     private String typeName;
 
     /**
-     * 初始化顺序，越小优先级越高
-     * 下一优先级 会等 上一优先级全部启动完成 才会开始启动，解决资源前后依赖问题
+     * Initialization order, the smaller the priority, the higher it is.
+     * Next priority will wait for all previous priorities to finish before starting, solving resource dependency issues.
      */
     private int order;
+
     private ResourceTypeEnum(int type, String typeName, int order) {
         this.type = type;
         this.typeName = typeName;
@@ -84,5 +84,5 @@ public enum ResourceTypeEnum {
 
         return null;
     }
-    
+
 }

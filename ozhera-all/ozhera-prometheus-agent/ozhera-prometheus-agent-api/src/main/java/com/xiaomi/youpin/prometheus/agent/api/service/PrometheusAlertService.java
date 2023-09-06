@@ -7,7 +7,7 @@ import com.xiaomi.youpin.prometheus.agent.result.Result;
  * @author zhangxiaowei6
  */
 
-//提供给alertManager告警相关dubbo接口
+//Provide alertManager with alarm-related dubbo interfaces.
 public interface PrometheusAlertService {
     Result createRuleAlert(RuleAlertParam param);
     Result UpdateRuleAlert(String id ,RuleAlertParam param);

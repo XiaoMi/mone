@@ -19,7 +19,8 @@ import java.lang.reflect.Method;
 public class ArgCheckAspect {
 
     @Pointcut("@annotation(com.xiaomi.youpin.prometheus.agent.aop.ArgCheck)")
-    public void argCheck(){}
+    public void argCheck() {
+    }
 
     @Around("argCheck()")
     public Object doAround(ProceedingJoinPoint joinPoint) throws Throwable {
@@ -30,7 +31,7 @@ public class ArgCheckAspect {
         MethodSignature methodSignature = (MethodSignature) joinPoint.getSignature();
         Method method = methodSignature.getMethod();
         ArgCheck argCheck = method.getAnnotation(ArgCheck.class);
-        //http请求标记
+        //HTTP request header
         RequestMapping reqMapping = method.getAnnotation(RequestMapping.class);
         Class<?> resultCls = method.getReturnType();
         for (Object arg : args) {
@@ -66,6 +67,6 @@ public class ArgCheckAspect {
     }
 
     private Object getResult(Class<?> resultCls, ErrorCode responseCode) {
-            return responseCode;
+        return responseCode;
     }
 }

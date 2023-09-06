@@ -28,7 +28,7 @@ import java.util.List;
 /**
  * @author goodjava@qq.com
  * @date 2022/5/27
- * 性能一般(但简单)
+ * rate limited or exceeded quota
  */
 public class Upload {
 

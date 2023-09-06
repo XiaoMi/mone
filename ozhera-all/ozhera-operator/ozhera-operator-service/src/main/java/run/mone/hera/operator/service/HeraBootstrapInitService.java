@@ -74,7 +74,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * 初始化mone全家桶namespance
+ * Initialize the mone family bucket namespace.
  *
  * @author shanwb
  * @date 2022-06-17
@@ -114,13 +114,13 @@ public class HeraBootstrapInitService {
                     .defaultYamlPath("/ozhera_init/mysql/ozhera_mysql.yaml")
                     .resourceType(ResourceTypeEnum.MYSQL.getTypeName())
                     .resourceName("hera-mysql")
-                    .remark("local pv，确保磁盘目录已提前创建好")
+                    .remark("local pv, Make sure the disk directory has been created in advance.")
                     .build();
             mysql.setDefaultYaml();
             List<Map<String, String>> mysqlConnectionMapList = new ArrayList<>();
-            mysqlConnectionMapList.add(kvMap(HoConstant.KEY_DATASOURCE_URL, "mone-db-all:3306", "mysql地址，host:port"));
-            mysqlConnectionMapList.add(kvMap(HoConstant.KEY_DATASOURCE_USERNAME, "root", "用于连接mysql的用户名"));
-            mysqlConnectionMapList.add(kvMap(HoConstant.KEY_DATASOURCE_PASSWORD, "Mone_123456", "用于连接mysql的密码"));
+            mysqlConnectionMapList.add(kvMap(HoConstant.KEY_DATASOURCE_URL, "mone-db-all:3306", "mysql address，host:port"));
+            mysqlConnectionMapList.add(kvMap(HoConstant.KEY_DATASOURCE_USERNAME, "root", "user name"));
+            mysqlConnectionMapList.add(kvMap(HoConstant.KEY_DATASOURCE_PASSWORD, "Mone_123456", "password"));
             mysql.setConnectionMapList(mysqlConnectionMapList);
             resourceList.add(mysql);
 
@@ -130,12 +130,12 @@ public class HeraBootstrapInitService {
                     .defaultYamlPath("/ozhera_init/redis/ozhera_redis.yaml")
                     .resourceType(ResourceTypeEnum.REDIS.getTypeName())
                     .resourceName("hera-redis")
-                    .remark("local pv，确保磁盘目录已提前创建好")
+                    .remark("local pv, Make sure the disk directory has been created in advance.")
                     .build();
             redis.setDefaultYaml();
             List<Map<String, String>> redisConnectionMapList = new ArrayList<>();
-            redisConnectionMapList.add(kvMap(HoConstant.KEY_REDIS_URL, "redis-service:6379", "redis连接地址，host:port"));
-            redisConnectionMapList.add(kvMap(HoConstant.KEY_REDIS_PASSWORD, "", "redis密码，可不填", "0"));
+            redisConnectionMapList.add(kvMap(HoConstant.KEY_REDIS_URL, "redis-service:6379", "redis address, host:port"));
+            redisConnectionMapList.add(kvMap(HoConstant.KEY_REDIS_PASSWORD, "", "redis pwd, optional", "0"));
             redis.setConnectionMapList(redisConnectionMapList);
             resourceList.add(redis);
 
@@ -149,9 +149,9 @@ public class HeraBootstrapInitService {
                     .build();
             es.setDefaultYaml();
             List<Map<String, String>> esConnectionMapList = new ArrayList<>();
-            esConnectionMapList.add(kvMap(HoConstant.KEY_ES_URL, "elasticsearch:9200", "es连接地址，host:port"));
-            esConnectionMapList.add(kvMap(HoConstant.KEY_ES_USERNAME, "", "es账号，可不填", "0"));
-            esConnectionMapList.add(kvMap(HoConstant.KEY_ES_PASSWORD, "", "es密码，可不填", "0"));
+            esConnectionMapList.add(kvMap(HoConstant.KEY_ES_URL, "elasticsearch:9200", "es address, host:port"));
+            esConnectionMapList.add(kvMap(HoConstant.KEY_ES_USERNAME, "", "es user name, optional", "0"));
+            esConnectionMapList.add(kvMap(HoConstant.KEY_ES_PASSWORD, "", "es password, optional", "0"));
             es.setConnectionMapList(esConnectionMapList);
             resourceList.add(es);
 
@@ -165,9 +165,9 @@ public class HeraBootstrapInitService {
                     .build();
             rocketMQ.setDefaultYaml();
             List<Map<String, String>> rocketMQConnectionMapList = new ArrayList<>();
-            rocketMQConnectionMapList.add(kvMap(HoConstant.KEY_ROCKETMQ_NAMESERVER, "rocketmq-name-server-service:9876", "rocketMQ连接地址，host:port"));
-            rocketMQConnectionMapList.add(kvMap(HoConstant.KEY_ROCKETMQ_AK, "", "rocketMQ accessKey，可不填", "0"));
-            rocketMQConnectionMapList.add(kvMap(HoConstant.KEY_ROCKETMQ_SK, "", "rocketMQ secretKey，可不填", "0"));
+            rocketMQConnectionMapList.add(kvMap(HoConstant.KEY_ROCKETMQ_NAMESERVER, "rocketmq-name-server-service:9876", "rocketMQ address，host:port"));
+            rocketMQConnectionMapList.add(kvMap(HoConstant.KEY_ROCKETMQ_AK, "", "rocketMQ accessKey，optional", "0"));
+            rocketMQConnectionMapList.add(kvMap(HoConstant.KEY_ROCKETMQ_SK, "", "rocketMQ secretKey，optional", "0"));
             rocketMQ.setConnectionMapList(rocketMQConnectionMapList);
             resourceList.add(rocketMQ);
 
@@ -193,9 +193,9 @@ public class HeraBootstrapInitService {
             nacos.setDefaultExtendConfig();
 
             List<Map<String, String>> connectionMapList = new ArrayList<>();
-            connectionMapList.add(kvMap(HoConstant.KEY_NACOS_ADDRESS, "nacos:80", "nacos地址 host:ip"));
-            connectionMapList.add(kvMap(HoConstant.KEY_NACOS_USERNAME, "nacos", "nacos账号，可不填", "0"));
-            connectionMapList.add(kvMap(HoConstant.KEY_NACOS_PASSWORD, "nacos", "nacos密码，可不填", "0"));
+            connectionMapList.add(kvMap(HoConstant.KEY_NACOS_ADDRESS, "nacos:80", "nacos address, host:ip"));
+            connectionMapList.add(kvMap(HoConstant.KEY_NACOS_USERNAME, "nacos", "nacos user name, optional", "0"));
+            connectionMapList.add(kvMap(HoConstant.KEY_NACOS_PASSWORD, "nacos", "nacos password, optional", "0"));
             nacos.setConnectionMapList(connectionMapList);
 
             resourceList.add(nacos);
@@ -210,7 +210,6 @@ public class HeraBootstrapInitService {
                     .build();
             tpcLoginFe.setDefaultYaml();
             List<Map<String, String>> tpcLoginFeConnectionMapList = new ArrayList<>();
-            //tpcLoginFeConnectionMapList.add(kvMap(HoConstant.KEY_TPC_LOGIN_FE_URL, "", "tpc登录页面的地址，host:port，用于hera各系统未登录之后的跳转"));
             tpcLoginFe.setConnectionMapList(tpcLoginFeConnectionMapList);
             resourceList.add(tpcLoginFe);
 
@@ -220,11 +219,10 @@ public class HeraBootstrapInitService {
                     .defaultYamlPath("/ozhera_init/grafana/ozhera_grafana.yaml")
                     .resourceType(ResourceTypeEnum.GRAFANA.getTypeName())
                     .resourceName("hera-grafana")
-                    .remark("local pv，确保磁盘目录已提前创建好")
+                    .remark("local pv, Make sure the disk directory has been created in advance.")
                     .build();
             grafana.setDefaultYaml();
             List<Map<String, String>> grafanaConnectionMapList = new ArrayList<>();
-            //grafanaConnectionMapList.add(kvMap(HoConstant.KEY_GRAFANA_URL, "", "Grafana页面的地址，host:port"));
             grafana.setConnectionMapList(grafanaConnectionMapList);
             resourceList.add(grafana);
 
@@ -234,11 +232,10 @@ public class HeraBootstrapInitService {
                     .defaultYamlPath("/ozhera_init/prometheus/ozhera_prometheus.yaml")
                     .resourceType(ResourceTypeEnum.PROMETHEUS.getTypeName())
                     .resourceName("hera-prometheus")
-                    .remark("local pv，确保磁盘目录已提前创建好")
+                    .remark("local pv, Make sure the disk directory has been created in advance.")
                     .build();
             prometheus.setDefaultYaml();
             List<Map<String, String>> prometheusConnectionMapList = new ArrayList<>();
-            //prometheusConnectionMapList.add(kvMap(HoConstant.KEY_PROMETHEUS_URL, "", "Prometheus的地址，host:port"));
             prometheus.setConnectionMapList(prometheusConnectionMapList);
             resourceList.add(prometheus);
 
@@ -252,7 +249,6 @@ public class HeraBootstrapInitService {
                     .build();
             heraFe.setDefaultYaml();
             List<Map<String, String>> heraFeConnectionMapList = new ArrayList<>();
-            //heraFeConnectionMapList.add(kvMap(HoConstant.KEY_HERA_URL, "", "hera首页的地址，host:port"));
             heraFe.setConnectionMapList(heraFeConnectionMapList);
             resourceList.add(heraFe);
 
@@ -262,7 +258,7 @@ public class HeraBootstrapInitService {
                     .defaultYamlPath("/ozhera_init/alertManager/ozhera_alertmanager.yaml")
                     .resourceType(ResourceTypeEnum.ALERT_MANAGER.getTypeName())
                     .resourceName("hera-alertmanager")
-                    .remark("local pv，确保磁盘目录已提前创建好")
+                    .remark("local pv, Make sure the disk directory has been created in advance.")
                     .build();
             alertManager.setDefaultYaml();
             resourceList.add(alertManager);
@@ -296,7 +292,7 @@ public class HeraBootstrapInitService {
                     .defaultYamlPath("/ozhera_init/cadvisor/ozhera_cadvisor.yaml")
                     .resourceType(ResourceTypeEnum.CADVISOR.getTypeName())
                     .resourceName("hera-cadvisor")
-                    .remark("local pv，确保磁盘目录已提前创建好")
+                    .remark("local pv, Make sure the disk directory has been created in advance.")
                     .build();
             cadvisor.setDefaultYaml();
             List<Map<String, String>> cadvisorConnectionMapList = new ArrayList<>();
@@ -309,7 +305,7 @@ public class HeraBootstrapInitService {
                     .defaultYamlPath("/ozhera_init/node-exporter/ozhera_node-exporter.yaml")
                     .resourceType(ResourceTypeEnum.NODE_EXPORTER.getTypeName())
                     .resourceName("hera-node-exporter")
-                    .remark("local pv，确保磁盘目录已提前创建好")
+                    .remark("local pv, Make sure the disk directory has been created in advance.")
                     .build();
             node_exporter.setDefaultYaml();
             List<Map<String, String>> node_exporterConnectionMapList = new ArrayList<>();
@@ -448,7 +444,7 @@ public class HeraBootstrapInitService {
             demoClient.setDefaultYaml();
             resourceList.add(demoClient);
 
-            //todo 其它资源
+            //todo other resource
             heraOperatorDefine.setHeraSpec(heraSpec);
             heraOperatorDefine.setHeraMeta(heraMeta);
 
@@ -521,7 +517,6 @@ public class HeraBootstrapInitService {
             }
         }
     }
-
 
 
     public List<DeployStateDTO> crState() {
@@ -655,7 +650,7 @@ public class HeraBootstrapInitService {
     }
 
     public List<io.fabric8.kubernetes.api.model.Service> createAndListService(List<String> serviceNameList, String namespace, String yamlPath, String serviceType) throws InterruptedException {
-        //按名称过滤service
+        // Filter service by name
         List<io.fabric8.kubernetes.api.model.Service> serviceList = listService(serviceNameList, namespace);
         if (CollectionUtils.isEmpty(serviceList)) {
             String yaml = FileUtils.readResourceFile(yamlPath);
@@ -663,7 +658,7 @@ public class HeraBootstrapInitService {
         }
 
         TimeUnit.SECONDS.sleep(2);
-        //按名称+类型 过滤service
+        // Filter service by name + type.
         return listService(serviceNameList, namespace, serviceType);
     }
 
@@ -680,8 +675,8 @@ public class HeraBootstrapInitService {
         for (io.fabric8.kubernetes.api.model.Service s : serviceList) {
             String timestamp = s.getMetadata().getCreationTimestamp();
 
-            Long seconds = diffSeconds(timestamp) ;
-            //37秒还未成功判定为service创建失败
+            Long seconds = diffSeconds(timestamp);
+            // 37 seconds have not yet been determined as a failed service creation.
             if (seconds > 37) {
                 log.warn("serviceType:{} create failed : cost too many time:{}s", serviceType, seconds);
                 return true;
@@ -724,7 +719,7 @@ public class HeraBootstrapInitService {
             List<Node> nodeList = kubernetesClient.nodes().list().getItems();
             Optional<NodeAddress> nodeAddress = nodeList.get(0).getStatus().getAddresses().stream()
                     .filter(address -> "InternalIP".equals(address.getType())).findAny();
-            if(!nodeAddress.isPresent()) {
+            if (!nodeAddress.isPresent()) {
                 throw new RuntimeException("cluster node have no internalIP");
             }
             nodePortIP = nodeAddress.get().getAddress();
@@ -744,7 +739,7 @@ public class HeraBootstrapInitService {
                 LoadBalancerStatus lsStatus = service.getStatus().getLoadBalancer();
                 List<LoadBalancerIngress> lbIngress = lsStatus.getIngress();
                 if (CollectionUtils.isNotEmpty(lbIngress)) {
-                    //todo 端口暂时写死
+                    //todo The port is temporarily hardcoded.
                     ipPortMap.put(serviceName, lbIngress.get(0).getIp() + ":80");
                 }
             }
@@ -752,6 +747,7 @@ public class HeraBootstrapInitService {
 
         return ipPortMap;
     }
+
     public String getServiceType(List<io.fabric8.kubernetes.api.model.Service> serviceList) {
         for (io.fabric8.kubernetes.api.model.Service service : serviceList) {
             ServiceSpec serviceSpec = service.getSpec();

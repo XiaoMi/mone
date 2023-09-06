@@ -48,12 +48,12 @@ public class Bean implements Comparable<Bean>, Serializable {
     private int type;
 
     /**
-     * 被引用的次数
+     * Number of citations
      */
     private int referenceCnt;
 
     /**
-     * 依赖我的那些Bean
+     * The beans that depend on me.
      */
     private List<String> dependenceList = new ArrayList<>();
 

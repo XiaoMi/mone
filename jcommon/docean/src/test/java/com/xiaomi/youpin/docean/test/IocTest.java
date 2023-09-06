@@ -49,7 +49,7 @@ public class IocTest {
 
 
     /**
-     * 测试移除某个bean
+     * Remove a bean for testing.
      */
     @Test
     public void testRemoveBean() {
@@ -63,14 +63,14 @@ public class IocTest {
         System.out.println(controller.call());
 
         Bean bean = Ioc.ins().getBeanInfo(ServiceDemo.class.getName());
-        //依赖我的
+        //rate limited or exceeded quota
         Map<String, Field> dependenceMap = bean.getDependenceFieldMap();
 
-        //删除一个bean
+        //rate limited or exceeded quota
         Ioc.ins().removeBean(ServiceDemo.class.getName());
-        //会空指针
+        //NPE
         Safe.runAndLog(() -> System.out.println(controller.call()));
-        //加入一个bean
+        //add bean
         ServiceDemo sd2 = new ServiceDemo() {
             @Override
             public String call() {

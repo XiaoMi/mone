@@ -22,20 +22,20 @@ public class PrometheusController {
     private MioneMachineService mioneMachineService;
 
     @GetMapping("/prometheus/getips")
-    public List<Ips> getips(String type){
-        //1 prometheusStarter(自定义指标) 2 javaagent(业务JVM) 3 jaegerquery(业务普通指标)  4 moneStarter（线程池指标）
+    public List<Ips> getips(String type) {
+        //1 prometheusStarter (custom metrics) 2 javaagent (business JVM) 3 jaegerquery (business general metrics) 4 moneStarter (thread pool metrics)
         return prometheusIpService.getByType(type);
     }
 
     @GetMapping("/prometheus/getMachineList")
-    public List<Ips> getMachineList(String type){
-        //1 物理机  2容器
+    public List<Ips> getMachineList(String type) {
+        //1 Physical machine 2 Container
         return mioneMachineService.queryMachineList(type);
     }
 
     @GetMapping("/prometheus/getIpsByAppName")
     public List<Ips> getIpsByAppName(String appName) {
-        //根据服务名获取nacos上该服务的所有实例ip
+        //Get all instance IPs of the service on Nacos based on the service name.
         Set<String> tmpResult = prometheusIpService.getIpsByAppName(appName);
         List<String> result = new ArrayList<>(tmpResult);
         List<Ips> defaultResult = new ArrayList<>();
@@ -45,7 +45,7 @@ public class PrometheusController {
         return defaultResult;
     }
 
-    //获取所有etcd的监控
+    //Get all etcd monitoring
     @GetMapping("/prometheus/getEtcd")
     public List<Ips> getEtcd() {
         Set<String> tmpresult = prometheusIpService.getEtcdHosts();
@@ -58,9 +58,9 @@ public class PrometheusController {
     }
 
 
-    //获取k8s node节点ip
+    //Get the IP address of the k8s node.
     @GetMapping("/prometheus/getK8sNodeIp")
-    public List<Ips> getK8sNodeIp(String type){
-       return prometheusIpService.getK8sNodeIp(type);
+    public List<Ips> getK8sNodeIp(String type) {
+        return prometheusIpService.getK8sNodeIp(type);
     }
 }

@@ -9,7 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-//抓取exporter job相关接口
+//Grab exporter job related interfaces.
 
 /**
  * @author zhangxiaowei6
@@ -22,29 +22,29 @@ public class PrometheusScrapeJobController {
     @Autowired
     ScrapeJobService scrapeJobService;
 
-    @RequestMapping(value = "/scrape-config",method = RequestMethod.POST)
+    @RequestMapping(value = "/scrape-config", method = RequestMethod.POST)
     public Result CreateScrapeConfig(@RequestBody ScrapeConfigParam param) {
         return scrapeJobService.CreateScrapeConfig(param);
     }
 
-    @RequestMapping(value = "/scrape-config/{id}",method = RequestMethod.DELETE)
+    @RequestMapping(value = "/scrape-config/{id}", method = RequestMethod.DELETE)
     public Result DeleteScrapeConfig(@PathVariable String id) {
         return scrapeJobService.DeleteScrapeConfig(id);
     }
 
-    @RequestMapping(value = "/scrape-config/{id}",method = RequestMethod.PUT)
+    @RequestMapping(value = "/scrape-config/{id}", method = RequestMethod.PUT)
     public Result UpdateScrapeConfig(@PathVariable String id, @RequestBody ScrapeConfigParam entity) {
-        Result result = scrapeJobService.UpdateScrapeConfig(id,entity);
+        Result result = scrapeJobService.UpdateScrapeConfig(id, entity);
         return result;
     }
 
-    @RequestMapping(value = "/scrape-config/{id}",method = RequestMethod.GET)
-    public Result GetScrapeConfig(@PathVariable  String id) {
+    @RequestMapping(value = "/scrape-config/{id}", method = RequestMethod.GET)
+    public Result GetScrapeConfig(@PathVariable String id) {
         return scrapeJobService.GetScrapeConfig(id);
     }
 
-    @RequestMapping(value = "/scrape-config/list",method = RequestMethod.GET)
-    public Result GetScrapeConfigList(Integer page_size,Integer page_no) {
+    @RequestMapping(value = "/scrape-config/list", method = RequestMethod.GET)
+    public Result GetScrapeConfigList(Integer page_size, Integer page_no) {
         if (page_size == null && page_no == null) {
             return Result.fail(ErrorCode.invalidParamError);
         }
