@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Dubbo 配置
+ * Dubbo Configuration
  */
 @Configuration
 public class DubboConfiguration {
@@ -24,7 +24,7 @@ public class DubboConfiguration {
     private String dubboProviderGroup;
 
     /**
-     * Dubbo应用配置
+     * Dubbo application configuration
      */
     @Bean
     public ApplicationConfig applicationConfig() {
@@ -35,7 +35,7 @@ public class DubboConfiguration {
     }
 
     /**
-     * 配置注册中心
+     * Configure registry center
      */
     @Bean
     public RegistryConfig registryConfig() {
@@ -46,7 +46,7 @@ public class DubboConfiguration {
     }
 
     /**
-     * 配置注册中心
+     * Configure registry center
      */
     @Bean
     public ProviderConfig providerConfig() {
@@ -59,13 +59,13 @@ public class DubboConfiguration {
     }
 
     /**
-     * 配置协议
+     * Configuration protocol
      */
     @Bean
     public ProtocolConfig protocolConfig() {
         ProtocolConfig protocolConfig = new ProtocolConfig();
         protocolConfig.setName("dubbo");
-        //自动尝试
+        //Automatic attempt
         protocolConfig.setPort(-1);
         protocolConfig.setTransporter("netty4");
         protocolConfig.setThreadpool("fixed");
