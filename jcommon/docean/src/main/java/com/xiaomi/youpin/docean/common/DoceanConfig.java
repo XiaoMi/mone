@@ -24,8 +24,8 @@ import java.util.Properties;
 /**
  * @Author goodjava@qq.com
  * @Date 2021/6/7 10:03
- *
- * 用来加载框架的配置
+ * <p>
+ * Configuration for loading frameworks
  */
 @Slf4j
 public class DoceanConfig {

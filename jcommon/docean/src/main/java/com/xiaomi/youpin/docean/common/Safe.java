@@ -65,15 +65,16 @@ public class Safe {
     }
 
     /**
-     * 执行并记录Error,但不会抛出异常
+     * Execute and log the error, but do not throw an exception.
+     *
      * @param callable
      * @param defaultValue
-     * @return
      * @param <T>
+     * @return
      */
     public static <T> T callAndLog(ExCallable callable, T defaultValue) {
         try {
-            return (T)callable.call();
+            return (T) callable.call();
         } catch (Throwable ex) {
             log.error(ex.getMessage(), ex);
         }
