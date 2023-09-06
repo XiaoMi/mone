@@ -138,6 +138,7 @@ public class HeraAppEnvServiceImpl implements HeraAppEnvService {
         envIpFetch = defaultEnvIpFetch.getEnvFetch(bindId);
         HeraAppEnvVo heraAppEnvVo = envIpFetch.fetch(id.longValue(),
                 Long.valueOf(bindId), appName);
+        log.debug("heraAppEnvVo,result:{}", GSON.toJson(heraAppEnvVo));
         for (HeraAppEnvVo.EnvVo envVo : heraAppEnvVo.getEnvVos()) {
             LambdaQueryWrapper<HeraAppEnv> queryWrapper = new LambdaQueryWrapper<HeraAppEnv>()
                     .eq(HeraAppEnv::getHeraAppId, id)
