@@ -32,26 +32,6 @@
 
 ## 🔗 Mone introduction
 
-### [Home Page]
-
-<div align='center'>
-  <a href="https://github.com/XiaoMi/mone">
-    <img width=500" src="https://img.youpin.mi-img.com/middlewareGroup/79896da74b1a269a3a88455ab0439103.png?w=1306&h=851">
-  </a>
-</div>
-
-### [Application Management]
-![mone-miline](readme/image/miline01.png)
-![mone-miline](readme/image/miline02.png)
-![mone-miline](readme/image/miline03.png)
-![mone-miline](readme/image/miline05.png)
-![mone-miline](readme/image/miline04.png)
-
-### [Tesla Gateway]
-![mone-miline](readme/image/gw01.png)
-![mone-miline](readme/image/gw02.png)
-![mone-miline](readme/image/gw04.png)
-
 ### [OzHera - Application Observability Platform]
 ![mone-hera](readme/image/en/hera_en01.jpeg)
 ![mone-hera](readme/image/en/hera_en02.jpeg)
@@ -60,11 +40,6 @@
 ![mone-hera](readme/image/en/hera_en05.jpeg)
 ![mone-hera](readme/image/en/hera_en06.jpeg)
 ![mone-hera](readme/image/en/hera_en07.jpeg)
-
-### [API Management Platform]
-![mone-hera](readme/image/miapi01.png)
-![mone-hera](readme/image/miapi02.png)
-![mone-hera](readme/image/miapi03.png)
 
 
 ## Getting started
