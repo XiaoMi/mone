@@ -29,8 +29,8 @@ public class ServiceCheckResource implements Serializable {
 
     private String serviceType;
     /**
-     * 0: 创建完成
-     * 1：创建中
+     * 0: Creation completed.
+     * 1：Creating
      */
     private Integer status;
 

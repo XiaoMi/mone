@@ -119,11 +119,11 @@ public class OzHeraOperatorController {
                         .required(true)
                         .resourceType(ResourceTypeEnum.SERVICE_CHECK.getTypeName())
                         .resourceName("k8s-serviceType")
-                        .remark("k8s service方式获取")
+                        .remark("k8sService‘s Way to obtain")
                         .build();
                 List<Map<String, String>> connectionMapList = new ArrayList<>();
                 for (Map.Entry<String, String> entry : ipPortMap.entrySet()) {
-                    connectionMapList.add(kvMap(serviceMap.get(entry.getKey()), entry.getValue(), "对外访问地址"));
+                    connectionMapList.add(kvMap(serviceMap.get(entry.getKey()), entry.getValue(), "External access address"));
                 }
                 heraResource.setConnectionMapList(connectionMapList);
 
@@ -138,7 +138,6 @@ public class OzHeraOperatorController {
     }
 
 
-
     private Map<String, String> kvMap(String key, String value, String remark) {
         Map<String, String> map = new HashMap<>();
         map.put("key", key);
@@ -146,7 +145,6 @@ public class OzHeraOperatorController {
         map.put("remark", remark);
         return map;
     }
-
 
 
     @RequestMapping(path = "/hera/operator/resource/update", method = "post", timeout = 5000L)
