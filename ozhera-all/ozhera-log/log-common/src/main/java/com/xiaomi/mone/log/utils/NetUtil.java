@@ -16,6 +16,7 @@
 package com.xiaomi.mone.log.utils;
 
 import com.xiaomi.mone.log.common.NetUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author shanwb
@@ -23,7 +24,7 @@ import com.xiaomi.mone.log.common.NetUtils;
  */
 public class NetUtil {
 
-    private static final String HERA_K8S_ENV = "hera.buildin.k8s";
+    private static final String HERA_K8S_ENV = "hera_buildin_k8s";
 
     public static String getLocalIp() {
         String localIp = System.getenv("host.ip") == null ? NetUtils.getLocalHost() : System.getenv("host.ip");
@@ -31,7 +32,11 @@ public class NetUtil {
     }
 
     public static String getHeraK8sEnv() {
-        return System.getenv(HERA_K8S_ENV);
+        String envStatus = null == System.getenv(HERA_K8S_ENV) ? System.getProperty(HERA_K8S_ENV) : System.getenv(HERA_K8S_ENV);
+        if (StringUtils.isEmpty(envStatus)) {
+            return System.getenv(HERA_K8S_ENV.toUpperCase());
+        }
+        return envStatus;
     }
 
 }

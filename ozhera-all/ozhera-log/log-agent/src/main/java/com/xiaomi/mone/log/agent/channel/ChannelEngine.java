@@ -143,10 +143,10 @@ public class ChannelEngine {
                         }
                     }
                 }
-                if (serviceTimeList.size() > 100) {
+                if (serviceTimeList.size() > 500) {
                     serviceTimeList = serviceTimeList.stream().sorted(Comparator.comparing(o -> o.getValue().getValue())).collect(Collectors.toList());
                     for (int i = 0; i < serviceTimeList.size(); i++) {
-                        if (i < 80) {
+                        if (i < 100) {
                             serviceTimeList.get(i).getKey().cancelFile(serviceTimeList.get(i).getValue().getKey());
                         }
                     }
