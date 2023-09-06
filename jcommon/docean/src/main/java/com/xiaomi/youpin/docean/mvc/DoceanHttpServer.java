@@ -46,7 +46,7 @@ import java.util.concurrent.CountDownLatch;
  * @author goodjava@qq.com
  * @date 2020/6/21
  * <p>
- * 一个简单的http服务器,为了支撑mvc
+ * rate limited or exceeded quota
  */
 @Slf4j
 public class DoceanHttpServer {
@@ -95,7 +95,7 @@ public class DoceanHttpServer {
         boolean useEpoll = NetUtils.useEpoll();
         EventLoopGroup eventLoopGroupBoss = null;
         EventLoopGroup eventLoopGroupWorker = null;
-        //是否使用原生的epoll
+        //Whether to use the native epoll.
         int nThreads = Runtime.getRuntime().availableProcessors() * 2 + 1;
         if (useEpoll) {
             log.info("use epollEventLoopGroup nThreads:{}", nThreads);

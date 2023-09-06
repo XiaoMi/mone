@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 import java.util.Set;
 
 /**
- * 过滤逻辑
+ * Filter logic
  */
 @Service
 @Slf4j
@@ -43,42 +43,42 @@ public class FilterService {
 
     public FilterResult filterBefore(String statusCode, String traceId, String spanName, String heraContext, String serviceName, long duration, TSpanData tSpanData) {
         FilterResult filterResult = new FilterResult();
-        // spanName 黑名单
+        // spanName Blacklist
         if (filterSpanName.contains(spanName)) {
             filterResult.setDiscard(true);
             return filterResult;
         }
         if (filterIsOpen) {
-            // 判断是否错误
+            // Determine if it is incorrect.
             if (MessageUtil.ERROR_CODE.equals(statusCode)) {
                 filterResult.setResult(true);
                 filterResult.setAddBloom(true);
                 return filterResult;
             }
             HeraTraceEtlConfig config = traceConfig.getConfig(serviceName);
-            // 判断heraContext中是否有需要保留的key
+            // Check if there are any keys that need to be preserved in heraContext.
             if (checkHeraContext(heraContext, config)) {
                 filterResult.setResult(true);
                 filterResult.setAddBloom(true);
                 return filterResult;
             }
-            // 判断耗时是否超过阈值
+            // Check if the execution time exceeds the threshold.
             int durationThreshold = config == null ? defDurationThreshold : config.getTraceDurationThreshold();
             if (duration / (1000 * 1000) > durationThreshold) {
                 filterResult.setResult(true);
                 filterResult.setAddBloom(true);
                 return filterResult;
             }
-            // 进行TraceID随机采样
+            // Perform random sampling for TraceID.
             boolean filterRandom = filterRandom(serviceName, traceId);
-            if(filterRandom){
+            if (filterRandom) {
                 filterResult.setResult(true);
                 filterResult.setAddBloom(false);
                 return filterResult;
             }
-            // 判断boolean过滤器
+            // Boolean filter judgement
             if (traceIdRedisBloomUtil.isExistLocal(traceId)) {
-                // bloom filter里面存在，则不需要再保存
+                // If it exists in the bloom filter, there is no need to save it again.
                 filterResult.setResult(true);
                 filterResult.setAddBloom(false);
                 return filterResult;
@@ -96,7 +96,7 @@ public class FilterService {
     public boolean filterRandom(String serviceName, String traceId) {
         HeraTraceEtlConfig config = traceConfig.getConfig(serviceName);
         int i = HashUtil.consistentHash(traceId, randomBase);
-        // 根据阈值，进行随机取样
+        // Perform random sampling based on the threshold.
         int threshold = config == null ? defThreshold : config.getTraceFilter();
         if (i < threshold) {
             return true;
@@ -109,9 +109,9 @@ public class FilterService {
         if (config != null && StringUtils.isNotEmpty(heraContext) && StringUtils.isNotEmpty(config.getTraceDebugFlag())) {
             String[] flags = config.getTraceDebugFlag().split("\\|");
             Set<String> heraContextKeys = heraContextService.getHeraContextKeys(heraContext);
-            for(String flag : flags){
-                for(String heraContextKey : heraContextKeys){
-                    if(flag.equals(heraContextKey)){
+            for (String flag : flags) {
+                for (String heraContextKey : heraContextKeys) {
+                    if (flag.equals(heraContextKey)) {
                         return true;
                     }
                 }

@@ -20,7 +20,7 @@ public class MethodFinder {
             return hrm;
         }
 
-        //支持模糊匹配
+        //Support fuzzy matching.
         String[] array = path.split("/");
         if (array.length > 1) {
             array[array.length - 1] = "*";
@@ -31,7 +31,7 @@ public class MethodFinder {
             }
         }
 
-        //多层次模糊匹配(/a/** 匹配 /a/b/c /a/b/d)
+        //rate limited or exceeded quota(/a/** match /a/b/c /a/b/d)
         final String p = path;
         Optional<Map.Entry<String, HttpRequestMethod>> optional = requestMethodMap.entrySet().stream().filter(it -> {
             String key = it.getKey();

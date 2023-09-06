@@ -100,27 +100,27 @@ public class MvcRunnable implements Runnable {
             request.setPath(req.getPath());
             request.setBody(new Gson().toJson(req.getParams()).getBytes());
         }
-        //查找favicon.ioc 的直接返回找不到
+        //Directly returning not found when searching for favicon.ico.
         if (isFaviconIco(request)) {
             response.writeAndFlush(context, HttpResponseStatus.NOT_FOUND, "");
             return;
         }
         String path = request.getPath();
 
-        //支持文件下载(/download) 并且必须开启下载
+        //Support file download (/download) and must enable downloads.
         if (isDownload(path) && mvc.getMvcConfig().isDownload()) {
             Download.download(context, request, response);
             return;
         }
 
-        //支持上传文件(/upload)
+        //Support uploading files (/upload)
         if (isUpload(path)) {
             MvcUpload.upload(mvc, request, response, context);
             return;
         }
 
-        HttpRequestMethod method = MethodFinder.find(path,this.requestMethodMap);
-        //支持指定path执行
+        HttpRequestMethod method = MethodFinder.find(path, this.requestMethodMap);
+        //rate limited or exceeded quota
         if (null != method) {
             mvc.callMethod(context, request, response, new MvcResult<>(), method);
             return;
@@ -133,7 +133,7 @@ public class MvcRunnable implements Runnable {
             response.writeAndFlush(context, gson.toJson(result));
             return;
         }
-        //直接调用服务
+        //rate limited or exceeded quota
         mvc.callService(context, request, response);
     }
 

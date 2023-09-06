@@ -28,9 +28,12 @@ public class SpanToLogUtil {
 
   private static final String split = " ### ";
   private static String hostName = "";
-  private static String ipv4Env = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_HOST_IP.getKey());
-  private static final String env = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_NAME.getKey());
-  private static String envId = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_ID.getKey());
+  private static String ipv4Env = SystemCommon.getEnvOrProperties(
+      EnvOrJvmProperties.ENV_HOST_IP.getKey());
+  private static final String env = SystemCommon.getEnvOrProperties(
+      EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_NAME.getKey());
+  private static String envId = SystemCommon.getEnvOrProperties(
+      EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_ID.getKey());
   private static final String FUNCTION_MODULE_KEY = "service.function.module";
   private static final String FUNCTION_NAME_KEY = "service.function.name";
   private static final String FUNCTION_ID_KEY = "service.function.id";
@@ -40,7 +43,7 @@ public class SpanToLogUtil {
   static final String KEY_HERACONTEXT = "span.hera_context";
 
   static {
-    if(envId == null){
+    if (envId == null) {
       envId = "";
     }
     try {
@@ -54,7 +57,7 @@ public class SpanToLogUtil {
   }
 
   /**
-   * 日志格式：
+   * Log format:
    * 0：startTime|
    * 1：duration|
    * 2：ip|
@@ -72,10 +75,11 @@ public class SpanToLogUtil {
     StringBuilder sb = new StringBuilder();
     Resource resource = spanData.getResource();
     String applicationName = "";
-    if(resource != null){
+    if (resource != null) {
       applicationName = resource.getAttributes().get(ResourceAttributes.SERVICE_NAME);
       if (applicationName == null || applicationName.isEmpty()) {
-        applicationName = Resource.getDefault().getAttributes().get(ResourceAttributes.SERVICE_NAME);
+        applicationName = Resource.getDefault().getAttributes()
+            .get(ResourceAttributes.SERVICE_NAME);
       }
     }
     sb.append(spanData.getStartEpochNanos()).append(split)
@@ -91,7 +95,7 @@ public class SpanToLogUtil {
     sb.append("[");
     if (tagsAttributes != null || tagsAttributes.size() > 0) {
       tagsAttributes.forEach((key, value) -> {
-        if(filterTagsByKey(key.toString())) {
+        if (filterTagsByKey(key.toString())) {
           sb.append("{");
           sb.append("\"").append("key").append("\"").append(":").append("\"").append(key)
               .append("\"")
@@ -99,7 +103,8 @@ public class SpanToLogUtil {
               .append("\"").append("type").append("\"").append(":").append("\"")
               .append(getType(key))
               .append("\"").append(",")
-              .append("\"").append("value").append("\"").append(":").append("\"").append(subString(encodeLineBreak(value)))
+              .append("\"").append("value").append("\"").append(":").append("\"")
+              .append(subString(encodeLineBreak(value)))
               .append("\"")
               .append("}").append(",");
         }
@@ -107,42 +112,51 @@ public class SpanToLogUtil {
     }
     if (spanData.getKind() != SpanKind.INTERNAL) {
       sb.append("{");
-      sb.append("\"").append("key").append("\"").append(":").append("\"").append("span.kind").append("\"")
+      sb.append("\"").append("key").append("\"").append(":").append("\"").append("span.kind")
+          .append("\"")
           .append(",")
           .append("\"").append("type").append("\"").append(":").append("\"").append("string")
           .append("\"").append(",")
-          .append("\"").append("value").append("\"").append(":").append("\"").append(spanData.getKind().name().toLowerCase(Locale.ROOT))
+          .append("\"").append("value").append("\"").append(":").append("\"")
+          .append(spanData.getKind().name().toLowerCase(Locale.ROOT))
           .append("\"")
           .append("}").append(",");
     }
     if (spanData.getStatus().getStatusCode() == StatusCode.ERROR) {
       sb.append("{");
-      sb.append("\"").append("key").append("\"").append(":").append("\"").append("error").append("\"")
+      sb.append("\"").append("key").append("\"").append(":").append("\"").append("error")
+          .append("\"")
           .append(",")
           .append("\"").append("type").append("\"").append(":").append("\"").append("bool")
           .append("\"").append(",")
-          .append("\"").append("value").append("\"").append(":").append("\"").append(true).append("\"")
+          .append("\"").append("value").append("\"").append(":").append("\"").append(true)
+          .append("\"")
           .append("}").append(",");
     }
     // heraContext
     SpanContext spanContext = spanData.getSpanContext();
-    String heraContext = spanContext.getHeraContext() == null ? "" : spanContext.getHeraContext().get("heracontext");
-    if(heraContext == null){
+    String heraContext =
+        spanContext.getHeraContext() == null ? "" : spanContext.getHeraContext().get("heracontext");
+    if (heraContext == null) {
       heraContext = "";
     }
     sb.append("{");
-    sb.append("\"").append("key").append("\"").append(":").append("\"").append(KEY_HERACONTEXT).append("\"")
+    sb.append("\"").append("key").append("\"").append(":").append("\"").append(KEY_HERACONTEXT)
+        .append("\"")
         .append(",")
         .append("\"").append("type").append("\"").append(":").append("\"").append("string")
         .append("\"").append(",")
-        .append("\"").append("value").append("\"").append(":").append("\"").append(heraContext).append("\"")
+        .append("\"").append("value").append("\"").append(":").append("\"").append(heraContext)
+        .append("\"")
         .append("}").append(",");
     sb.append("{");
-    sb.append("\"").append("key").append("\"").append(":").append("\"").append(KEY_INSTRUMENTATION_LIBRARY_NAME).append("\"")
+    sb.append("\"").append("key").append("\"").append(":").append("\"")
+        .append(KEY_INSTRUMENTATION_LIBRARY_NAME).append("\"")
         .append(",")
         .append("\"").append("type").append("\"").append(":").append("\"").append("string")
         .append("\"").append(",")
-        .append("\"").append("value").append("\"").append(":").append("\"").append(spanData.getInstrumentationLibraryInfo().getName()).append("\"")
+        .append("\"").append("value").append("\"").append(":").append("\"")
+        .append(spanData.getInstrumentationLibraryInfo().getName()).append("\"")
         .append("}").append(",");
     sb.deleteCharAt(sb.length() - 1);
     sb.append("]");
@@ -174,7 +188,8 @@ public class SpanToLogUtil {
                   .append("\"").append(",")
                   .append("\"").append("type").append("\"").append(":").append("\"")
                   .append(getType(key)).append("\"").append(",")
-                  .append("\"").append("value").append("\"").append(":").append("\"").append(encodeLineBreak(value))
+                  .append("\"").append("value").append("\"").append(":").append("\"")
+                  .append(encodeLineBreak(value))
                   .append("\"");
               sb.append("}").append(",");
             });
@@ -183,7 +198,7 @@ public class SpanToLogUtil {
           sb.append("]").append("}").append(",");
         }
       }
-      if(sb.toString().endsWith(",")){
+      if (sb.toString().endsWith(",")) {
         sb.deleteCharAt(sb.length() - 1);
       }
     }
@@ -221,7 +236,7 @@ public class SpanToLogUtil {
       Attributes resouceAttributes = resource.getAttributes();
       if (resouceAttributes != null && resouceAttributes.size() > 0) {
         resouceAttributes.forEach((key, value) -> {
-          if(filterProcessByKey(key.toString())) {
+          if (filterProcessByKey(key.toString())) {
             sb.append("{")
                 .append("\"").append("key").append("\"").append(":").append("\"").append(key)
                 .append("\"").append(",")
@@ -240,7 +255,7 @@ public class SpanToLogUtil {
     // reference
     sb.append("[");
     List<LinkData> links = spanData.getLinks();
-    if(links != null && links.size() > 0) {
+    if (links != null && links.size() > 0) {
       for (LinkData linkData : links) {
         sb.append("{")
             .append("\"").append("traceID").append("\"").append(":").append("\"")
@@ -289,51 +304,53 @@ public class SpanToLogUtil {
     }
   }
 
-  private static String encodeLineBreak(Object value){
+  private static String encodeLineBreak(Object value) {
     String s = String.valueOf(value);
-    if(!StringUtils.isNullOrEmpty(s)){
-      return s.replaceAll("\\n","##n").replaceAll("\\r","##r").replaceAll("\\t","##t").replaceAll("\\tat","##tat").replaceAll("\\\\\"","##r'").replaceAll("\"","##'").replaceAll("\\\\","\\\\\\\\");
+    if (!StringUtils.isNullOrEmpty(s)) {
+      return s.replaceAll("\\n", "##n").replaceAll("\\r", "##r").replaceAll("\\t", "##t")
+          .replaceAll("\\tat", "##tat").replaceAll("\\\\\"", "##r'").replaceAll("\"", "##'")
+          .replaceAll("\\\\", "\\\\\\\\");
     }
     return s;
   }
 
-  private static String subString(String value){
-    if(value != null && value.length() > STRING_MAX_LENGTH){
+  private static String subString(String value) {
+    if (value != null && value.length() > STRING_MAX_LENGTH) {
       return value.substring(0, STRING_MAX_LENGTH) + "......";
     }
     return value;
   }
 
-  private static boolean filterProcessByKey(String key){
-    if(StringUtils.isNullOrEmpty(key)){
+  private static boolean filterProcessByKey(String key) {
+    if (StringUtils.isNullOrEmpty(key)) {
       return false;
     }
-    if("telemetry.sdk.name".equals(key)){
+    if ("telemetry.sdk.name".equals(key)) {
       return false;
     }
-    if("telemetry.sdk.language".equals(key)){
+    if ("telemetry.sdk.language".equals(key)) {
       return false;
     }
-    if("telemetry.sdk.version".equals(key)){
+    if ("telemetry.sdk.version".equals(key)) {
       return false;
     }
-    if("telemetry.auto.version".equals(key)){
+    if ("telemetry.auto.version".equals(key)) {
       return false;
     }
-    if("ip".equals(key)){
+    if ("ip".equals(key)) {
       return false;
     }
     return true;
   }
 
-  private static boolean filterTagsByKey(String key){
-    if(StringUtils.isNullOrEmpty(key)){
+  private static boolean filterTagsByKey(String key) {
+    if (StringUtils.isNullOrEmpty(key)) {
       return false;
     }
-    if("thread.id".equals(key)){
+    if ("thread.id".equals(key)) {
       return false;
     }
-    if("thread.name".equals(key)){
+    if ("thread.name".equals(key)) {
       return false;
     }
     return true;

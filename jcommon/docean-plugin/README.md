@@ -1,6 +1,5 @@
 # docean-pulgin
 
-本模块为docean微服务框架提供了一些常用的依赖扩展的支持，如db、dubbo、nacos、es等等。
+This module provides support for some commonly used dependency extensions for the Docean microservice framework, such as db, dubbo, nacos, es, and so on.
 
-官网地址：https://xmmione.be.mi.com/web/index
 

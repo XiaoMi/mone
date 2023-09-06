@@ -44,24 +44,32 @@ final class MetricExporterConfiguration {
       new ThrottlingLogger(Logger.getLogger(MetricExporterConfiguration.class.getName()));
 
   private static String applicationName;
-  private static String serverIp = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_HOST_IP.getKey());
-  private static final String projectEnv = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_NAME.getKey());
-  private static final String BUILDIN_K8S = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_HERA_BUILD_K8S.getKey());
-  private static final String NODE_IP = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_NODE_IP.getKey());
-  private static final String ENV_ID = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_ID.getKey());
+  private static String serverIp = SystemCommon.getEnvOrProperties(
+      EnvOrJvmProperties.ENV_HOST_IP.getKey());
+  private static final String projectEnv = SystemCommon.getEnvOrProperties(
+      EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_NAME.getKey());
+  private static final String BUILDIN_K8S = SystemCommon.getEnvOrProperties(
+      EnvOrJvmProperties.ENV_HERA_BUILD_K8S.getKey());
+  private static final String NODE_IP = SystemCommon.getEnvOrProperties(
+      EnvOrJvmProperties.ENV_NODE_IP.getKey());
+  private static final String ENV_ID = SystemCommon.getEnvOrProperties(
+      EnvOrJvmProperties.ENV_MIONE_PROJECT_ENV_ID.getKey());
   private static final String ENV_DEFAULT = "default_env";
   private static final String LOG_AGENT_NACOS_KET = "prometheus_server_10010_log_agent";
   private static final String LOG_AGENT_ENV_ID = "1";
 
   static void configureExporter(
       String name, ConfigProperties config, SdkMeterProvider meterProvider) {
-      applicationName = config.getString(EnvOrJvmProperties.JVM_OTEL_RESOURCE_ATTRIBUTES.getKey());
-      if (StringUtils.isNotEmpty(applicationName)) {
-        applicationName = applicationName.split("=")[1];
-      }else{
-        applicationName = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.MIONE_PROJECT_NAME.getKey()) == null ? EnvOrJvmProperties.MIONE_PROJECT_NAME.getDefaultValue() : SystemCommon.getEnvOrProperties(EnvOrJvmProperties.MIONE_PROJECT_NAME.getKey());
-      }
-    // 替换项目名称中的-为_
+    applicationName = config.getString(EnvOrJvmProperties.JVM_OTEL_RESOURCE_ATTRIBUTES.getKey());
+    if (StringUtils.isNotEmpty(applicationName)) {
+      applicationName = applicationName.split("=")[1];
+    } else {
+      applicationName =
+          SystemCommon.getEnvOrProperties(EnvOrJvmProperties.MIONE_PROJECT_NAME.getKey()) == null
+              ? EnvOrJvmProperties.MIONE_PROJECT_NAME.getDefaultValue()
+              : SystemCommon.getEnvOrProperties(EnvOrJvmProperties.MIONE_PROJECT_NAME.getKey());
+    }
+    // Replace the "-" with "_" in the project name.
     applicationName = applicationName.replaceAll("-", "_");
     if (StringUtils.isEmpty(serverIp)) {
       serverIp = config.getString(EnvOrJvmProperties.JVM_OTEL_SERVICE_IP.getKey());
@@ -173,9 +181,11 @@ final class MetricExporterConfiguration {
   @SuppressWarnings({"BooleanParameter", "UnnecessaryParentheses"})
   private static void configureJcommonPrometheusMetrics(ConfigProperties config) {
     // regist nacos for prometheus port
-    String javaagentPrometheusPort = SystemCommon.getEnvOrProperties(EnvOrJvmProperties.ENV_JAVAAGENT_PROMETHEUS_PORT.getKey());
+    String javaagentPrometheusPort = SystemCommon.getEnvOrProperties(
+        EnvOrJvmProperties.ENV_JAVAAGENT_PROMETHEUS_PORT.getKey());
     if (StringUtils.isEmpty(javaagentPrometheusPort)) {
-      javaagentPrometheusPort = config.getString(EnvOrJvmProperties.JVM_OTEL_METRICS_PROMETHEUS_PORT.getKey());
+      javaagentPrometheusPort = config.getString(
+          EnvOrJvmProperties.JVM_OTEL_METRICS_PROMETHEUS_PORT.getKey());
     }
     String nacosAddr = config.getString(EnvOrJvmProperties.JVM_OTEL_NACOS_ADDRESS.getKey());
     registJvmNacos(javaagentPrometheusPort, nacosAddr);

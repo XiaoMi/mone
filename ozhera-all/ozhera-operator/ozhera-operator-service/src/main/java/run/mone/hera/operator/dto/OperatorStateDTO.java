@@ -26,7 +26,7 @@ import java.util.List;
 @Data
 public class OperatorStateDTO {
 
-    // 0: 成功、1：进行中
+    // 0: success、1：In progress
     private Integer status;
 
     List<DeployStateDTO> deployStateList;

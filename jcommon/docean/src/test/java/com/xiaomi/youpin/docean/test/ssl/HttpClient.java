@@ -67,11 +67,11 @@ public class HttpClient {
             }
 
             public void checkClientTrusted(X509Certificate[] chain, String authType) {
-                // 检查客户端证书
+                // Check client certificate.
             }
 
             public void checkServerTrusted(X509Certificate[] chain, String authType) {
-                // 检查服务器证书
+                // Check server certificate.
             }
         };
 

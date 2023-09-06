@@ -13,12 +13,12 @@ import java.io.StringWriter;
 @Slf4j
 public class YamlUtil {
     /**
-     * 将yaml字符串转成类对象
+     * Convert YAML string to class object
      *
-     * @param yamlStr 字符串
-     * @param clazz 目标类
-     * @param <T> 泛型
-     * @return 目标类
+     * @param yamlStr String
+     * @param clazz Target class
+     * @param <T> Generic
+     * @return Target class
      */
 
     public static Object obj = new Object();
@@ -36,10 +36,10 @@ public class YamlUtil {
     }
 
     /**
-     * 将类对象转yaml字符串
+     * Convert class object to YAML string
      *
-     * @param object 对象
-     * @return yaml字符串
+     * @param object Object
+     * @return YAML string
      */
     public static synchronized String toYaml(Object object) {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());

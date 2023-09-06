@@ -35,8 +35,8 @@ import java.util.Map;
 
 @Slf4j
 public class HttpClientUtil {
-	
-	private PoolingHttpClientConnectionManager pool =null;
+
+	private PoolingHttpClientConnectionManager pool = null;
 	private int TIMEOUT = 5 * 1000;
 	private int MAX_HTTP_TOTAL_CONNECTION = 1000;
 	private int MAX_CONNECTION_PER_HOST = 200;
@@ -45,51 +45,54 @@ public class HttpClientUtil {
 
 	private HttpClientUtil() {
 		requestConfig = RequestConfig.custom()
-	                .setSocketTimeout(TIMEOUT)
-	                .setConnectTimeout(TIMEOUT)
-	                .setConnectionRequestTimeout(TIMEOUT)
-	                .build();
-		
+				.setSocketTimeout(TIMEOUT)
+				.setConnectTimeout(TIMEOUT)
+				.setConnectionRequestTimeout(TIMEOUT)
+				.build();
+
 		//
 		ConnectionKeepAliveStrategy keepAliveStrategy = new ConnectionKeepAliveStrategy() {
 			@Override
 			public long getKeepAliveDuration(HttpResponse response, HttpContext context) {
-				return 20*1000;
+				return 20 * 1000;
 			}
 		};
 		//
-		pool =  new PoolingHttpClientConnectionManager();
+		pool = new PoolingHttpClientConnectionManager();
 		pool.setMaxTotal(MAX_HTTP_TOTAL_CONNECTION);
 		pool.setDefaultMaxPerRoute(MAX_CONNECTION_PER_HOST);
-	    singleHttpClient = HttpClients.custom().setConnectionManager(pool)
-	    		.setKeepAliveStrategy(keepAliveStrategy)
-	    		.setMaxConnTotal(MAX_HTTP_TOTAL_CONNECTION)
-	    		.setMaxConnPerRoute(MAX_CONNECTION_PER_HOST)
-	    		.setDefaultRequestConfig(requestConfig)
-	    		.setUserAgent("Mozilla/4.0")
-	    		.build();
+		singleHttpClient = HttpClients.custom().setConnectionManager(pool)
+				.setKeepAliveStrategy(keepAliveStrategy)
+				.setMaxConnTotal(MAX_HTTP_TOTAL_CONNECTION)
+				.setMaxConnPerRoute(MAX_CONNECTION_PER_HOST)
+				.setDefaultRequestConfig(requestConfig)
+				.setUserAgent("Mozilla/4.0")
+				.build();
 	}
-	
+
 	/**
-	 * 获取HttpClient实例
+	 * Get HttpClient instance
+	 *
 	 * @return
 	 */
-	public static HttpClientUtil getInstance(){
+	public static HttpClientUtil getInstance() {
 		return HttpUtilSingle.instance;
 	}
-	
+
 	/**
-	 * 线程池中获取获取一个CloseableHttpClient
+	 * Get a CloseableHttpClient from the thread pool.
+	 *
 	 * @return
 	 */
-	public CloseableHttpClient getHttpClient(){
+	public CloseableHttpClient getHttpClient() {
 
 		return singleHttpClient;
 	}
-	
+
 	/**
-	 * 释放CloseableHttpResponse
-	 * 打印调用详细日志
+	 * Release CloseableHttpResponse
+	 * Print detailed logs when calling
+	 *
 	 * @param hur
 	 * @param chr
 	 * @param startTime
@@ -100,11 +103,11 @@ public class HttpClientUtil {
 		long endTime = System.currentTimeMillis();
 		long useTime = endTime - startTime;
 		try {
-			
+
 			if (null != hur) {
 				url = hur.getURI().getPath();
 			}
-			
+
 			if (null != chr) {
 				stateCode = chr.getStatusLine().getStatusCode();
 				chr.close();
@@ -112,41 +115,42 @@ public class HttpClientUtil {
 		} catch (Exception e) {
 
 		}
-		
+
 	}
-	
+
 	/**
-	 * 获取默认的RequestConfig
+	 * Get the default RequestConfig.
+	 *
 	 * @return
 	 */
 	public RequestConfig getRequestConfig() {
-		
+
 		return requestConfig;
 	}
-	
+
 	/**
-	 * 单例模式
-	 *
+	 * Singleton pattern
 	 */
 	private static class HttpUtilSingle {
 		private static HttpClientUtil instance = new HttpClientUtil();
 	}
-	
+
 	/**
-	 * 获取当前时间
+	 * Get current time
+	 *
 	 * @return
 	 */
 	public static long currentTimeMillis() {
-		
+
 		return System.currentTimeMillis();
 	}
 
-	public static String sendPostRequest(String url, String body, Map<String,String> headers) {
+	public static String sendPostRequest(String url, String body, Map<String, String> headers) {
 		CloseableHttpClient client = getInstance().getHttpClient();
 		try {
 			RequestBuilder requestBuilder = RequestBuilder.post(url);
-			if(headers != null) {
-				for(String headerKey : headers.keySet()) {
+			if (headers != null) {
+				for (String headerKey : headers.keySet()) {
 					requestBuilder.setHeader(headerKey, headers.get(headerKey));
 				}
 			}
@@ -161,7 +165,7 @@ public class HttpClientUtil {
 			try {
 				response = client.execute(httpUriRequest);
 				responseBody = EntityUtils.toString(response.getEntity(), "utf-8");
-				log.info("response body : "+responseBody);
+				log.info("response body : " + responseBody);
 				return responseBody;
 			} catch (Exception e) {
 				log.error(e.getMessage() + ":" + url);
@@ -171,7 +175,7 @@ public class HttpClientUtil {
 				}
 			}
 		} catch (Exception e) {
-			log.error("调用post失败：url : "+url + " body : "+body, e);
+			log.error("Failed to call post : url : " + url + " body : " + body, e);
 		}
 		return null;
 	}

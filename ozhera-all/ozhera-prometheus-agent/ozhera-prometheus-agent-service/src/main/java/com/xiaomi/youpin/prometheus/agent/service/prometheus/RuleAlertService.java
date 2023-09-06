@@ -186,13 +186,13 @@ public class RuleAlertService {
         }
     }
 
-    //TODO:通过不同模板 创建不同飞书卡片
-    //TODO:通过不同type，构造飞书、邮件等报警触达
+    //TODO: Create different Feishu cards through different templates
+    //TODO: Construct alarm notifications through different types, such as Feishu and email
     public Result SendAlert(String body) {
         JsonObject jsonObject = gson.fromJson(body, JsonObject.class);
         log.info("SendAlert jsonObject:{}", gson.toJson(jsonObject));
         AlertManagerFireResult fireResult = gson.fromJson(body, AlertManagerFireResult.class);
-        //分type构建报警触达
+        //Build alarm triggers by type.
         switch (alertTYPE) {
             case "feishu":
                 feishuAlertContact.Reach(fireResult);
@@ -206,7 +206,7 @@ public class RuleAlertService {
         return Result.success("发送告警");
     }
 
-    //TODO: 提供给alertManagerClient使用的临时方法，以后需要重构
+    //TODO: Temporary method provided to alertManagerClient, which needs to be refactored in the future.
     public List<RuleAlertEntity> GetAllRuleAlertList() {
         log.info("RuleAlertService.GetAllRuleAlertList");
         List<RuleAlertEntity> list = dao.GetAllRuleAlertList();

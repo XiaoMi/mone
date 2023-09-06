@@ -190,7 +190,7 @@ HeraContextInstrumentation implements TypeInstrumentation {
                         System.out.println("set HeraContext size break bounds");
                         result = false;
                     } else {
-                        // key是否重复校验
+                        // the key duplicate validation
                         if (heraContext.contains(key)) {
                             StringBuilder newSb = new StringBuilder();
                             for (String entry : entrys) {
