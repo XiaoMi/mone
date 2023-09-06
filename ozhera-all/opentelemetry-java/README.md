@@ -1,6 +1,7 @@
-# 概况
-这是opentelemetry-java-instrumentation项目所依赖的sdk工程。
+# Overview
+This is the SDK project that opentelemetry-java-instrumentation depends on.
 
-更多细节、配置、设计原理可以查看开源版opentelemetry-java：
+For more details, configurations, and design principles, please refer to the open-source version of opentelemetry-java:
+
 
 https://github.com/open-telemetry/opentelemetry-java
