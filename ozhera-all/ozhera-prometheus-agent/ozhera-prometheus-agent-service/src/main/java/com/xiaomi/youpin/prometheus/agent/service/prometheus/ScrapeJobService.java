@@ -33,7 +33,7 @@ public class ScrapeJobService {
         ScrapeConfigEntity scrapeConfigEntity = new ScrapeConfigEntity();
         scrapeConfigEntity.setEnv(param.getEnv());
         scrapeConfigEntity.setBody(gson.toJson(getScrapeJobBody(param)));
-        scrapeConfigEntity.setCreatedBy("xxx");  //TODO:换成真实用户
+        scrapeConfigEntity.setCreatedBy("xxx");  //TODO:Replace with real user
         scrapeConfigEntity.setCreateTime(new Date());
         scrapeConfigEntity.setJobName(param.getJob_name());
         scrapeConfigEntity.setRegion(param.getRegion());
@@ -92,7 +92,7 @@ public class ScrapeJobService {
         return Result.success(pdo);
     }
 
-    //TODO: 提供给prometheusClient使用的临时方法，以后需要重构
+    //TODO: Temporary method provided to prometheusClient and needs to be refactored in the future
     public List<ScrapeConfigEntity> getAllScrapeConfigList(String status) {
         List<ScrapeConfigEntity> scrapeConfigEntities = dao.GetAllScrapeConfigList(status);
         return scrapeConfigEntities;

@@ -48,7 +48,7 @@ public class PrometheusClient implements Client {
     @NacosValue(value = "${job.prometheus.enabled}", autoRefreshed = true)
     private String enabled;
 
-    //第一次GetLocalConfigs后置位true
+    // Set to true after the first GetLocalConfigs
     private boolean firstInitSign = false;
 
     @Autowired
@@ -61,12 +61,12 @@ public class PrometheusClient implements Client {
     public void init() {
         backFilePath = filePath + ".bak";
         if (enabled.equals("true")) {
-            //初始化，请求health接口验证是否可用
+            // Initialization, request the health interface to verify if it is available.
             log.info("PrometheusClient request health url :{}", healthAddr);
             String getHealthRes = Http.innerRequest("", healthAddr, HTTP_GET);
             log.info("PrometheusClient request health res :{}", getHealthRes);
             if (getHealthRes.equals("200")) {
-                //一期先不做状态管理，直接转为pending并reload
+                // In the first phase, we will not do status management, just convert to pending and reload
                 scrapeJobService.setPendingScrapeConfig();
                 GetLocalConfigs();
                 CompareAndReload();
@@ -82,13 +82,13 @@ public class PrometheusClient implements Client {
 
     @Override
     public void GetLocalConfigs() {
-        //30s一次从从db里获取所有pending的采集任务
+        // Get all pending collection tasks from the db every 30 seconds.
         new ScheduledThreadPoolExecutor(1).scheduleAtFixedRate(() -> {
             try {
 
                 log.info("PrometheusClient start GetLocalConfigs");
                 List<ScrapeConfigEntity> allScrapeConfigList = scrapeJobService.getAllScrapeConfigList(ScrapeJobStatusEnum.PENDING.getDesc());
-                //先清空上一次结果
+                // First, clear the results from the last time
                 localConfigs.clear();
                 allScrapeConfigList.forEach(item -> {
                     ScrapeConfigDetail detail = gson.fromJson(item.getBody(), ScrapeConfigDetail.class);
@@ -120,12 +120,12 @@ public class PrometheusClient implements Client {
             try {
 
                 if (localConfigs.size() <= 0) {
-                    //无pending的抓取job，直接返回
+                    // no pending crawl jobs, return directly
                     log.info("prometheus scrapeJob no need to reload");
                     return;
                 }
-                //如果有变动，调用reload接口
-                //读取本地prometheus配置文件
+                // If there are changes, call the reload interface
+                // Read the local Prometheus configuration file
                 if (!firstInitSign) {
                     log.info("PrometheusClient CompareAndReload waiting..");
                     return;
@@ -133,19 +133,19 @@ public class PrometheusClient implements Client {
                 log.info("PrometheusClient start CompareAndReload");
                 PrometheusConfig prometheusConfig = getPrometheusConfig(filePath);
                 if (prometheusConfig == null || prometheusConfig.getScrape_configs().size() == 0 || prometheusConfig.getGlobal() == null) {
-                    //如果配置出现问题，直接结束
+                    // problem with the configuration, end directly
                     log.error("prometheusConfig null and return");
                     return;
                 }
-                //prometheus数据与待reload数据进行对比去重
+                // Compare and deduplicate the Prometheus data with the data to be reloaded
                 List<Scrape_configs> promScrapeConfig = prometheusConfig.getScrape_configs();
                 HashSet<Scrape_configs> configSet = new HashSet<>(promScrapeConfig);
                 configSet.addAll(localConfigs);
                 ArrayList<Scrape_configs> configList = new ArrayList<>(configSet);
                 log.info("prometheusYMLJobNum: {},dbPEndingJobNum: {},after Deduplication JobNum: {}", promScrapeConfig.size(), localConfigs.size(), configSet.size());
-                //替换scrapeConfig部分
+                // Replace the scrapeConfig part
                 prometheusConfig.setScrape_configs(configList);
-                //生成yaml 并覆盖配置
+                // Generate yaml and overwrite the configuration
                 log.info("PrometheusClient write final config:{}", gson.toJson(prometheusConfig));
                 writePrometheusConfig2Yaml(prometheusConfig);
                 log.info("PrometheusClient request reload url :{}", reloadAddr);
@@ -153,11 +153,11 @@ public class PrometheusClient implements Client {
                 log.info("PrometheusClient request reload res :{}", getReloadRes);
                 if (getReloadRes.equals("200")) {
                     log.info("PrometheusClient request reload success");
-                    //成功后，删除备份，并将数据写回数据库状态为success
+                    // After success, delete the backup and write the data back to the database with the status as success
                     scrapeJobService.updateAllScrapeConfigListStatus(ScrapeJobStatusEnum.SUCCESS.getDesc(), configList);
                     deleteBackConfig();
                 } else {
-                    //如果reload失败，用备份恢复配置
+                    // restore the configuration using the backup
                     log.info("PrometheusClient request reload fail and begin rollback config");
                     boolean rollbackRes = restoreConfiguration(backFilePath, filePath);
                     log.info("PrometheusClient request reload fail and rollbackRes: {}", rollbackRes);
@@ -175,22 +175,22 @@ public class PrometheusClient implements Client {
         PrometheusConfig prometheusConfig = YamlUtil.toObject(content, PrometheusConfig.class);
         log.info("PrometheusClient config : {}", prometheusConfig);
         //System.out.println(content);
-        //转换成prometheus配置类
+        // Convert to Prometheus configuration class
         return prometheusConfig;
     }
 
     private void writePrometheusConfig2Yaml(PrometheusConfig prometheusConfig) {
-        //转换成yaml
+        // Convert to yaml
         String promYml = YamlUtil.toYaml(prometheusConfig);
         log.info("checkNull promyml");
-        //检验文件是否存在
+        // Check if the file exists.
         if (!isFileExists(filePath)) {
             log.error("PrometheusClient PrometheusClient no files here path: {}", filePath);
             return;
         }
-        //备份
+        // backup
         backUpConfig();
-        //覆盖写配置
+        // Overwrite configuration
         String writeRes = FileUtil.WriteFile(filePath, promYml);
         if (StringUtils.isEmpty(writeRes)) {
             log.error("PrometheusClient WriteFile Error");
@@ -198,23 +198,23 @@ public class PrometheusClient implements Client {
         log.info("PrometheusClient WriteFile res : {}", writeRes);
     }
 
-    //备份配置文件
+    // back config file
     private void backUpConfig() {
-        //检验文件是否存在
+        // Check if the file exists
         if (!isFileExists(filePath)) {
             log.error("PrometheusClient backUpConfig no files here path: {}", filePath);
             return;
         }
 
-        //如果没有备份文件则创建
+        // Create a backup file if it does not exist
         if (!isFileExists(backFilePath)) {
             log.info("PrometheusClient backUpConfig backFile does not exist and begin create");
             FileUtil.GenerateFile(backFilePath);
         }
 
-        //获取当前配置文件
+        // Get the current configuration file
         String content = FileUtil.LoadFile(filePath);
-        //写备份
+        // write backup
         String writeRes = FileUtil.WriteFile(backFilePath, content);
         if (StringUtils.isEmpty(writeRes)) {
             log.error("PrometheusClient backUpConfig WriteFile Error");
@@ -223,14 +223,14 @@ public class PrometheusClient implements Client {
         }
     }
 
-    //reload成功后，删除备份配置
+    // After the reload is successful, delete the backup configuration
     private void deleteBackConfig() {
-        //检验文件是否存在
+        //Check if the file exists.
         if (!isFileExists(backFilePath)) {
             log.error("PrometheusClient deleteBackConfig no files here path: {}", backFilePath);
             return;
         }
-        //删除备份文件
+        //Delete backup files.
         boolean deleteRes = FileUtil.DeleteFile(backFilePath);
         if (deleteRes) {
             log.info("PrometheusClient deleteBackConfig delete success");
@@ -239,12 +239,12 @@ public class PrometheusClient implements Client {
         }
     }
 
-    //校验文件是否存在
+    //Check if the file exists.
     private boolean isFileExists(String filePath) {
         return FileUtil.IsHaveFile(filePath);
     }
 
-    //用备份文件恢复原文件
+    //Restore the original file using the backup file.
     private boolean restoreConfiguration(String oldFilePath, String newFilePath) {
         log.info("PrometheusClient restoreConfiguration oldPath: {}, newPath: {}", oldFilePath, newFilePath);
         boolean b = FileUtil.RenameFile(oldFilePath, newFilePath);

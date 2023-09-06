@@ -77,7 +77,7 @@ public class FeishuAlertContact extends BaseAlertContact {
                     Object fieldValue = null;
                     try {
                         // convert fieldValue to String
-                        fieldValue = field.get(commonLabels); // 获取字段值
+                        fieldValue = field.get(commonLabels); // Get field value
                         if (fieldValue == null) {
                             continue;
                         }

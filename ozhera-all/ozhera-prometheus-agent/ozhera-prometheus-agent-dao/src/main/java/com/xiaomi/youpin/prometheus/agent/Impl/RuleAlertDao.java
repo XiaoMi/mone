@@ -21,7 +21,7 @@ public class RuleAlertDao extends BaseDao {
 
     public String UpdateRuleAlert(String id, RuleAlertEntity entity) {
         try {
-            //更新
+            //update
             int update = dao.updateIgnoreNull(entity);
             return String.valueOf(update);
         } catch (Exception e) {
@@ -30,14 +30,14 @@ public class RuleAlertDao extends BaseDao {
     }
 
     public int DeleteRuleAlert(String id) {
-        //软删除
+        //soft delete
         SqlExpressionGroup sqlExpr = Cnd.cri().where().andEquals("id", id).andIsNull("deleted_time");
         Cnd cnd = Cnd.where(sqlExpr);
         RuleAlertEntity dbRes = dao.fetch(RuleAlertEntity.class, cnd);
         if (dbRes == null) {
             return -1;
         }
-        dbRes.setDeletedBy("xxx");  // TODO:加上真是用户名
+        dbRes.setDeletedBy("xxx");  // TODO:use real user name
         dbRes.setUpdatedTime(new Date());
         dbRes.setDeletedTime(new Date());
         int updateRes = dao.updateIgnoreNull(dbRes);
