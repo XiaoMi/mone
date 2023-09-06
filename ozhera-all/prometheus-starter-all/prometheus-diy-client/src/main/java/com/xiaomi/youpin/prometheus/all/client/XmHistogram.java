@@ -4,16 +4,16 @@ package com.xiaomi.youpin.prometheus.all.client;
  */
 public interface XmHistogram {
     /**
-     * 填充label的value值
+     * padding label value
      *
-     * @param labelValues 标签值
+     * @param labelValues
      * @return XmHistogram
      */
     XmHistogram with(String... labelValues);
 
     /**
-     * 填入桶中的数据
-     * @param delta 设置增量
+     * Fill the data in the bucket
+     * @param delta Increment
      */
     void observe(double delta,String... labelValue);
 }

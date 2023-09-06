@@ -1,12 +1,9 @@
-#封装了金山云文件存储的SDK
-提供了
+#Encapsulated the SDK for Kingsoft Cloud file storage
+Provided operations such as:
 
-获取文件
+- Getting files
+- Writing files
+- Uploading files
+- Generating file access URLs
 
-写入文件
-
-上传文件
-
-生成文件访问地址
-
-等操作
+and so on.

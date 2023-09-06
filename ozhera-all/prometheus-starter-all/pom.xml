@@ -55,7 +55,6 @@
 <!--            </plugin>-->
 
 
-            <!-- 打包源码，需要加入这个插件 -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>

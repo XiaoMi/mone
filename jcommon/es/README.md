@@ -1,5 +1,5 @@
-# ES工具类。
+# ES utility class.
 
-`EsClient`封装了对es增删改查的基本Api。
+`EsClient` encapsulates the basic API for adding, deleting, modifying, and querying ES.
 
-`EsProcessor`是在EsClient的基础上，完善了ES的批量操作。
+`EsProcessor` is built on top of EsClient and enhances batch operations in ES.

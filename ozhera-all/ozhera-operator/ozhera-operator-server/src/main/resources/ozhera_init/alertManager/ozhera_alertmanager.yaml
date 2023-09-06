@@ -6,18 +6,18 @@ metadata:
 data:
   alertmanager.yml: |
     global:
-      ## 持续多少时间没有触发告警,则认为处于告警问题已经解决状态的时间
+      ## The duration of time without triggering an alarm is considered as the time when the alarm issue is resolved.
       resolve_timeout: 5m
     route:
-      ## 这里的标签列表是接收到报警信息后的重新分组标签,例如接收到的报警信息里面有许多具有 cluster=A 这样的标签,可以根据这些标签,将告警信息批量聚合到一个分组里面中
+      ## The label list here is the re-grouped label after receiving the alarm information. For example, there are many labels with cluster=A in the received alarm information. Based on these labels, the alarm information can be aggregated in batches into one group.
       group_by: ['...']
-      ## 当一个新的报警分组被创建后,需要等待至少group_wait时间来初始化通知,这种方式可以确保能有足够的时间为同一分组来汇入尽可能多的告警信息,然后将这些汇集的告警信息一次性触发
+      ## When a new alert group is created, it is necessary to wait for at least the group_wait time to initialize the notifications. This ensures that there is enough time for the same group to gather as many alert messages as possible before triggering them all at once.
       ##group_wait: 10s
-      ## 当第一个报警发送后，等待 group_interval 时间来发送新的一组报警信息
+      ## After the first alarm is sent, wait for the group_interval time to send a new set of alarm messages.
       ##group_interval: 1m
-      ## 如果一个报警信息已经发送成功了,则需要等待 repeat_interval 时间才能重新发送
+      ## If an alarm message has been successfully sent, you need to wait for the repeat_interval time to resend it.
       ##repeat_interval: 3h
-      ## 配置默认的路由规则
+      ## Configure default routing rules.
       receiver: 'web.hook2'
       routes:
       - receiver: 'web.hook'
@@ -142,13 +142,13 @@ spec:
             - name: http
               containerPort: 9093
           args:
-            ## 指定容器中AlertManager配置文件存放地址 (Docker容器中的绝对位置)
+            ## The specified location for the AlertManager configuration file in the container (absolute path in the Docker container).
             - "--config.file=/etc/alertmanager/alertmanager.yml"
-            ## 指定AlertManager管理界面地址，用于在发生的告警信息中,附加AlertManager告警信息页面地址
+            ## Specify the AlertManager management interface address to attach the AlertManager alert information page address to the occurred alert messages.
             - "--web.external-url=http://replace your correct AlertManager ip:30903"
-            ## 指定监听的地址及端口
+            ## The specified listening address and port.
             - '--cluster.advertise-address=0.0.0.0:9093'
-            ## 指定数据存储位置 (Docker容器中的绝对位置)
+            ## Specified data storage location (absolute location in Docker container)
             - "--storage.path=/alertmanager"
             - "--log.level=debug"
           resources:

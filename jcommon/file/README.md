@@ -1,8 +1,9 @@
-# 文件操作库
+# File Operation Library
 
+`LogFile` is based on `MoneRandomAccessFile` to read the file content into memory and process it further
+through `ReadListener`.
 
-`LogFile`是以`MoneRandomAccessFile`为基础，将文件内容读取到内存，并通过`ReadListener`将文件内容进行后续的处理。
+`MLog` is used to handle exception stack information. It collects exception stack information into a local queue,
+waiting to be retrieved.
 
-`MLog`是处理异常栈信息。收集异常栈信息至本地队列中，等待被取走。
-
-这个库是MiLog（自研日志系统）的基础。
+This library serves as the foundation for MiLog (self-developed logging system).

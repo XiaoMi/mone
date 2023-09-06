@@ -37,19 +37,19 @@ public class ESIndexConst {
 
     public static final String ERROR_SLOW_INDEX = "zgq_common_staging_private_prometheus";
     /**
-     * 多行应用日志默认索引
+     * Default index for multiline application logs
      */
     private static final String LOG_APP_MULTIPLE_INDEX = "mione_hera_log_multiple_app_log01";
     /**
-     * 单行应用日志默认索引
+     * Single-line application logs default index
      */
     private static final String LOG_APP_SINGLE_INDEX = "mione_hera_log_single_app_log01";
     /**
-     * nginx应用日志默认索引
+     * nginx application log default index
      */
     private static final String LOG_APP_NGINX_INDEX = "mione_hera_log_nginx_app_log01";
     /**
-     * 其它的应用日志默认索引
+     * Other application logs default index
      */
     private static final String LOG_APP_OTHER_INDEX = "mione_hera_log_other_app_log01";
 
@@ -1067,7 +1067,7 @@ public class ESIndexConst {
         templates.put(ERROR_SLOW_INDEX, ERROR_SLOW_JSON);
 
         /**
-         * 日志初始化每种类型初始化一个索引
+         * Initialize a separate index for each type during log initialization.
          */
         templates.put(LOG_APP_MULTIPLE_INDEX, LOG_APP_MULTIPLE_INDEX_MAPPING);
         templates.put(LOG_APP_SINGLE_INDEX, LOG_APP_SINGLE_INDEX_MAPPING);

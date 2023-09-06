@@ -13,10 +13,10 @@ public class ExceptionUtil {
     }
 
     /**
-     * 拆解InvocationTargetException和UndeclaredThrowableException异常的包装，从而得到被包装的真正异常
+     * Unwrapping InvocationTargetException and UndeclaredThrowableException exceptions to obtain the underlying wrapped exception.
      *
-     * @param wrapped 包装后的异常
-     * @return 拆解出的被包装异常
+     * @param wrapped Abnormal packaging
+     * @return Abnormal packaging of disassembled components.
      */
     public static Throwable unwrapThrowable(Throwable wrapped) {
         Throwable unwrapped = wrapped;

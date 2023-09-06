@@ -1,6 +1,6 @@
-#提供健康监测相关功能
+#Provide health monitoring related functions
 
-#包括
-http 健康监测
+#Including
+http health monitoring
 
-dubbo 健康监测
+dubbo health monitoring

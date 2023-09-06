@@ -51,7 +51,8 @@ public abstract class HttpResponseUtils {
     }
 
     /**
-     * 效率不高,谨慎使用
+     * rate limited or exceeded quota
+     *
      * @param res
      * @param content
      * @return

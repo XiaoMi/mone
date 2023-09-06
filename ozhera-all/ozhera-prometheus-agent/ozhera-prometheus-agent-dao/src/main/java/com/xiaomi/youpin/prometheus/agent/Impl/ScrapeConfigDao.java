@@ -21,14 +21,14 @@ public class ScrapeConfigDao extends BaseDao {
     }
 
     public int DeleteScrapeConfig(String id) {
-        //软删除
+        // soft delete
         SqlExpressionGroup sqlExpr = Cnd.cri().where().andEquals("id", id).andIsNull("deleted_time");
         Cnd cnd = Cnd.where(sqlExpr);
         ScrapeConfigEntity dbRes = dao.fetch(ScrapeConfigEntity.class, cnd);
         if (dbRes == null) {
             return -1;
         }
-        dbRes.setDeletedBy("xxx");  // TODO:加上真是用户名
+        dbRes.setDeletedBy("xxx");  // TODO:use real user name
         dbRes.setDeletedTime(new Date());
         int updateRes = dao.update(dbRes);
         return updateRes;
@@ -56,7 +56,7 @@ public class ScrapeConfigDao extends BaseDao {
     }
 
     public List<ScrapeConfigEntity> GetAllScrapeConfigList(String status) {
-        //获取pending状态且已删除的数据
+        // Retrieve data in pending status and already deleted
         SqlExpressionGroup sqlExpr = Cnd.cri().where().andIsNull("deleted_time");//.andEquals("status", status);
         Cnd cnd = Cnd.where(sqlExpr);
         List<ScrapeConfigEntity> datas = dao.query(ScrapeConfigEntity.class, cnd.desc("id"));
@@ -78,7 +78,7 @@ public class ScrapeConfigDao extends BaseDao {
             if (data == null) {
                 return ErrorCode.invalidParamError.getMessage();
             }
-            //更新
+            // update
             int update = dao.updateIgnoreNull(entity);
             return String.valueOf(update);
         } catch (Exception e) {
@@ -92,7 +92,7 @@ public class ScrapeConfigDao extends BaseDao {
         try {
             ScrapeConfigEntity data = dao.fetch(ScrapeConfigEntity.class, cnd);
             data.setStatus(status);
-            //更新
+            // update
             int update = dao.updateIgnoreNull(data);
             return update;
         } catch (Exception e) {

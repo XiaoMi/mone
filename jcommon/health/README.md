@@ -1,3 +1,3 @@
-# 心跳检测。
+# Heartbeat detection.
 
-提供了HTTP、DUBBO的心跳检测方法。
+Provides heartbeat detection methods for HTTP and DUBBO.

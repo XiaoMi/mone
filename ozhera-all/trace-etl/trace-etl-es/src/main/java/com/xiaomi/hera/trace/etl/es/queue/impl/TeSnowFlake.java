@@ -40,15 +40,15 @@ public class TeSnowFlake extends SnowFlake implements InitializingBean {
     public void init() {
         super.datacenterId = makeDatacenterId1(maxDatacenterId);
         super.workerId = makeWorkerId1(datacenterId, maxWorkerId);
-        //从redis恢复上次时间
+        // Restore last time from redis
         afterPropertiesSet();
-        // 从环境变量获取机器编号
+        // Get machine number from environment variables.
         String podName = System.getenv("MONE_CONTAINER_S_POD_NAME");
-        if(StringUtils.isEmpty(podName)){
+        if (StringUtils.isEmpty(podName)) {
             log.error("this pod con't get podName!");
             throw new RuntimeException("this pod con't get podName!");
         }
-        mId = podName.substring(podName.lastIndexOf("-")+1);
+        mId = podName.substring(podName.lastIndexOf("-") + 1);
     }
 
     private long makeDatacenterId1(long maxDatacenterId) {
@@ -58,13 +58,14 @@ public class TeSnowFlake extends SnowFlake implements InitializingBean {
     }
 
     /**
-     * 利用nginx进行workId选择
+     * Using nginx for workId selection.
+     *
      * @param datacenterId
      * @param maxWorkerId
      * @return
      */
     private long makeWorkerId1(long datacenterId, long maxWorkerId) {
-        for(int i=0; i<maxWorkerId; i++) {
+        for (int i = 0; i < maxWorkerId; i++) {
             long workId = super.makeWorkerId(datacenterId, maxWorkerId);
             SN_KEY_WORK_ID = SN_KEY_PREFIX + "_workId" + workId;
 
@@ -84,7 +85,7 @@ public class TeSnowFlake extends SnowFlake implements InitializingBean {
 
     public String recoverLastTimestamp(String keyPrefix) {
         try {
-            String value = redis.get(keyPrefix+"_"+SN_KEY_STMP+"_"+mId);
+            String value = redis.get(keyPrefix + "_" + SN_KEY_STMP + "_" + mId);
             if (StringUtils.isEmpty(keyPrefix)) {
                 return null;
             } else {
@@ -97,14 +98,14 @@ public class TeSnowFlake extends SnowFlake implements InitializingBean {
     }
 
     /**
-     * 扩展方法
-     * 保存最新时间戳，保存至redis等
+     * extension method
+     * Save the latest timestamp and save it to Redis, etc.
      */
-    public void storeLastTimestamp(String keyPrefix,String lastRocksKey) {
+    public void storeLastTimestamp(String keyPrefix, String lastRocksKey) {
         long cnt = STORE_CNT.addAndGet(1);
         long lastTimestamp = Long.parseLong(lastRocksKey.split("_")[0]);
         boolean needSave = false;
-        // 请求77次或者距离上次保存超过5秒时间 则执行redis保存
+        // If the request has been made 77 times or the time since the last save exceeds 5 seconds, then execute the Redis save operation.
         if (cnt % BATCH_CNT == 0) {
             needSave = true;
         } else if (lastTimestamp - SAVED_LAST_STMP.get() > 5000) {
@@ -112,7 +113,7 @@ public class TeSnowFlake extends SnowFlake implements InitializingBean {
         }
 
         if (needSave) {
-            redis.set(keyPrefix+"_"+SN_KEY_STMP+"_"+mId, lastRocksKey);
+            redis.set(keyPrefix + "_" + SN_KEY_STMP + "_" + mId, lastRocksKey);
             SAVED_LAST_STMP.set(lastTimestamp);
         }
     }
@@ -123,7 +124,7 @@ public class TeSnowFlake extends SnowFlake implements InitializingBean {
 
     public static void main(String[] args) {
         JSONObject json = new JSONObject();
-        json.put("refer",new ArrayList<>());
+        json.put("refer", new ArrayList<>());
         System.out.println(json.toJSONString());
     }
 }

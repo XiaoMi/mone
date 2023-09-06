@@ -17,7 +17,6 @@
 package com.xiaomi.youpin.prometheus.agent.api.service;
 
 
-
 import com.xiaomi.youpin.prometheus.agent.api.bo.PrometheusReq;
 import com.xiaomi.youpin.prometheus.agent.api.bo.Result;
 
@@ -31,7 +30,8 @@ import java.util.Set;
 public interface PrometheusDubboService {
 
     /**
-     * 获取流量列表
+     * Get traffic list.
+     *
      * @return
      */
     Result<Set<String>> getIpsByAppName(PrometheusReq req);
