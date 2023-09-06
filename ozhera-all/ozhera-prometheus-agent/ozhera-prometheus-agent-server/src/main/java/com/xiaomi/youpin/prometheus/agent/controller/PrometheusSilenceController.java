@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import com.xiaomi.youpin.prometheus.agent.result.Result;
 
-//告警屏蔽相关接口
+//Alarm suppression related interface
 
 /**
  * @author zhangxiaowei6

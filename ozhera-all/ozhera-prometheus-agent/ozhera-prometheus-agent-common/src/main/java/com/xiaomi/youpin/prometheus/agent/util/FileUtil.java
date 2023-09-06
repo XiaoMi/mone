@@ -14,7 +14,7 @@ public class FileUtil {
         log.info("FileUtil LoadFile path: {}", path);
         File file = new File(path);
         if (!file.exists() || !isCanReadFile(file)) {
-            //不可读，不存在，则退出
+            //Unreadable, non-existent, then exit.
             return "";
         }
         String content = FileUtils.readFileToString(file, "UTF-8");
@@ -26,7 +26,7 @@ public class FileUtil {
         log.info("FileUtil WriteFile path: {}", path);
         File file = new File(path);
         if (!file.exists() || !isCanWriteFile(file)) {
-            //不存在，不可写，则退出
+            //Does not exist, cannot be written, then exit.
             return "";
         }
         if (path.equals("/usr/local/etc/prometheus.yml")) {
@@ -36,7 +36,7 @@ public class FileUtil {
         return "success";
     }
 
-    //检验文件存在
+    //Check file existence
     @SneakyThrows
     public static boolean IsHaveFile(String path) {
         log.info("FileUtil IsHaveFile path: {}", path);
@@ -44,7 +44,7 @@ public class FileUtil {
         return file.exists();
     }
 
-    //删除文件
+    //Delete file.
     @SneakyThrows
     public static synchronized boolean DeleteFile(String path) {
         log.info("FileUtil DeleteFile path: {}", path);
@@ -53,23 +53,23 @@ public class FileUtil {
         return delete;
     }
 
-    //检验文件可读性
+    //Check the readability of the document.
     @SneakyThrows
     private static boolean isCanReadFile(File file) {
         log.info("FileUtil isCanReadFile file: {}", file.getAbsoluteFile());
-        //文件不可读
+        //The file is unreadable.
         return file.canRead();
     }
 
-    //检验文件可写性
+    //Check file writability
     @SneakyThrows
     private static boolean isCanWriteFile(File file) {
         log.info("FileUtil isCanWriteFile file: {}", file.getAbsoluteFile());
-        //文件不可写
+        //The file is not writable.
         return file.canWrite();
     }
 
-    //重命名文件
+    //Rename file
     @SneakyThrows
     public static synchronized boolean RenameFile(String oldPath, String newPath) {
         log.info("FileUtil RenameFile oldPath: {},newPath: {}", oldPath, newPath);

@@ -80,7 +80,7 @@
             <version>1.4.4</version>
         </dependency>
 
-        <!--阿里巴巴nacos-->
+        <!--alibaba nacos-->
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>dubbo-registry-nacos</artifactId>

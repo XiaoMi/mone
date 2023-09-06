@@ -21,20 +21,20 @@ public class RuleSilenceParam extends BaseParam {
     private String comment;
 
     public boolean argCheck() {
-        //comment不能为空
+        //The comment cannot be empty.
         if (comment.equals("") || comment.isEmpty()) {
             return false;
         }
-        // alertId和matcher不能同时有或者同时为空
+        // alertId and matcher cannot both be present or both be empty.
         if ((alertId == null || alertId.isEmpty()) && matcher.isEmpty() || (!alertId.isEmpty() && !matcher.isEmpty())) {
             return false;
         }
-        //检验Matchers
+        //Check Matchers
         if (!ValidateMatchers(matcher)) {
             return false;
         }
-        //时间校验
-        if (startTime == null || endTime == null || startTime < endTime ) {
+        //Time synchronization
+        if (startTime == null || endTime == null || startTime < endTime) {
             return false;
         }
 
@@ -43,7 +43,7 @@ public class RuleSilenceParam extends BaseParam {
 
     private boolean ValidateMatchers(List<Matcher> matchers) {
         AtomicBoolean valid = new AtomicBoolean(true);
-        //name、value字段不可为空，isEqual与isRegex不传默认false
+        //The ame and value fields cannot be empty, isEqual and isRegex default to false if not passed.
         matchers.forEach(matcher -> {
             if (matcher.getName().isEmpty() || matcher.getValue().isEmpty() || (!matcher.isEqual() && matcher.isRegex())) {
                 valid.set(false);

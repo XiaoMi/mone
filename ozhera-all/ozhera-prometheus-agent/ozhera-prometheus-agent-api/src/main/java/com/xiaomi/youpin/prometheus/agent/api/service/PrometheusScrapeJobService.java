@@ -7,12 +7,17 @@ import com.xiaomi.youpin.prometheus.agent.result.Result;
  * @author zhangxiaowei6
  */
 
-//提供prometheus 抓取job相关的dubbo api
+// Provide Prometheus with the Dubbo API for job scraping.
 public interface PrometheusScrapeJobService {
     Result CreateScrapeConfig(ScrapeConfigParam param);
+
     Result DeleteScrapeConfig(String id);
+
     Result UpdateScrapeConfig(String id, ScrapeConfigParam entity);
+
     Result GetScrapeConfig(String id);
+
     Result GetScrapeConfigByName(String name);
-    Result GetScrapeConfigList(Integer page_size,Integer page_no);
+
+    Result GetScrapeConfigList(Integer page_size, Integer page_no);
 }
