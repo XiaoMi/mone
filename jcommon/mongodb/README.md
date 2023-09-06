@@ -1,15 +1,15 @@
-# 提供了mongoDB客户端相关的操作。
+# Operations related to the MongoDB client are provided.
 
-## 支持的操作如下所示:
+## The supported operations are as follows:
 
-getCollection--获取集合
+getCollection - Get a collection
 
-insertMany--插入多个文档
+insertMany - Insert multiple documents
 
-findFirst--查找第一个文档
+findFirst - Find the first document
 
-findAll--查找所有文档
+findAll - Find all documents
 
-delete--删除文档
+delete - Delete documents
 
-count--统计文档数量
+count - Count the number of documents

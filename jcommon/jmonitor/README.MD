@@ -1,15 +1,15 @@
-#提供检测机器资源详情的功能
+# Function to provide details of machine resources
 
-#例如：
+# For example:
 
-getMonitorInfo--->获取机器资源详情
+getMonitorInfo--->Get machine resource details
 
-getNetworkInfo--->获取网络资源详情
+getNetworkInfo--->Get network resource details
 
-getJps--->获取进程资源详情
+getJps--->Get process resource details
 
-getJstat--->获取内存资源详情
+getJstat--->Get memory resource details
 
-getJstack--->获取堆栈资源详情
+getJstack--->Get stack resource details
 
-threadTotal--->获取线程资源详情
+threadTotal--->Get thread resource details

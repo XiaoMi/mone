@@ -1,6 +1,7 @@
 # Log
 
-本模块提供了对包括日志相关的包括日志读写、通用类定义、talos交互的一些接口。
+This module provides interfaces for logging, including log reading and writing, general class definitions, and
+interaction with Talos.
 
 
 

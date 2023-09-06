@@ -1,6 +1,6 @@
 # ByteBuddy
 
-是一款轻量级、高效的字节码生成、操作库。Opentelemetry中的字节码操作以ByteBuddy为基础，进行了封装。
+It is a lightweight and efficient bytecode generation and manipulation library. The bytecode manipulation in
+Opentelemetry is based on ByteBuddy and has been encapsulated.
 
-官网地址：https://bytebuddy.net/#/
 

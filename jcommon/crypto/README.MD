@@ -1,2 +1,1 @@
-#提供加解密的包
-目前支持：AES加解密
+# Provide a toolkit for encryption and decryption.
