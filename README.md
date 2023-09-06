@@ -14,7 +14,7 @@
 
 ## ✨ Architecture
 ### Product Architecture
-![mone](readme/image/mione产品架构.png)
+![mone](readme/image/mione_architect.png)
 ### Improving Efficiency Across the Entire R&D Process
 ![mone](readme/image/mione_devflow.png)
 
