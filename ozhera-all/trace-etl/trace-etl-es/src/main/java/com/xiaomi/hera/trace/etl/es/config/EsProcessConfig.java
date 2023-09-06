@@ -56,7 +56,8 @@ public class EsProcessConfig {
     }
 
     /**
-     * 当前es工程并未用到
+     * The current ES project is not being used.
+     *
      * @return
      */
     @Bean("errorEsProcessor")

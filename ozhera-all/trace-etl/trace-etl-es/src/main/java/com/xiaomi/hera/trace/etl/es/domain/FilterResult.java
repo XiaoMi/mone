@@ -3,20 +3,20 @@ package com.xiaomi.hera.trace.etl.es.domain;
 /**
  * @Description
  * @Author dingtao
- * @Date 2022/5/23 2:58 下午
+ * @Date 2022/5/23 2:58 pm
  */
 public class FilterResult {
     /**
-     * 是否直接丢弃，连rocksDB都不需要保存
+     * Whether to discard directly without even saving to rocksDB.
      */
     private boolean discard;
     /**
-     * 是否应该保存
+     * Should it be saved
      */
     private boolean result;
     /**
-     *  是否需要添加至bloom filter。如果是由bloom filter判断出来的，则不需要添加
-     *  减少bloom filter请求次数
+     * Do you need to add it to the bloom filter? If it is determined by the bloom filter, then there is no need to add it.
+     * Reduce the number of bloom filter requests.
      */
     private boolean addBloom;
 

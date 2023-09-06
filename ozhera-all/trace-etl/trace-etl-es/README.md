@@ -1,26 +1,24 @@
-# 概述
-# 如何部署
-## 部署依赖
-（1）MySQL，建表语句同trace-etl-manager
+# Overview
+# How to Deploy
+## Deployment Dependencies
+(1) MySQL, table creation statements are the same as trace-etl-manager
 
-（2）Redis
+(2) Redis
 
-（3）Nacos
+(3) Nacos
 
-（4）ES
+(4) ES
 
-（5）RocketMQ
+(5) RocketMQ
 
-### 容器化
-`k8s Stateful Set`：trace-etl-es目前需要部署在k8s中，并且类型是Stateful Set。
+### Containerization
+`k8s Stateful Set`: trace-etl-es currently needs to be deployed in k8s, and the type is Stateful Set.
 
-### 文件磁盘挂载目录
+### File Disk Mount Directory
+`/home/rocksdb`: This directory contains the span data cached by rocksdb. It requires persistent storage and won't be deleted even if the container restarts. It's necessary to set the trace-etl-es deployment service as Stateful Set and then create a pvc to mount this directory.
 
-`/home/rocksdb`：这个目录下是rocksdb缓存的span数据，需要持久化存储，不会因为容器重启而被删除。需要将trace-etl-es部署的服务设置为Stateful Set，然后创建pvc，将此目录挂载出去。
-
-### 环境变量
-
-`CONTAINER_S_POD_NAME`：这个是k8s Stateful Set 的podName。k8s的Stateful Set类型的pod，会在podName后面自动拼接从0开始的递增数，比如
+### Environment Variables
+`CONTAINER_S_POD_NAME`: This is the podName of k8s Stateful Set. The pods of the k8s Stateful Set type will automatically append an incrementing number starting from 0 to the podName, for example,
 
 `trace-etl-es-podname-0`
 
@@ -28,15 +26,16 @@
 
 `trace-etl-es-podname-2...`
 
-## 使用maven构建
-在项目根目录下（trace-etl）执行：
+## Building with Maven
+Execute in the project root directory (trace-etl):
 
 `mvn clean install -U -P opensource -DskipTests`
 
-会在trace-etl-es模块下生成target目录，target目录中的trace-etl-es-1.0.0-SNAPSHOT.jar就是运行的jar文件。
-## 运行
-执行：
+This will generate a target directory under the trace-etl-es module. The trace-etl-es-1.0.0-SNAPSHOT.jar in the target directory is the executable jar file.
+
+## Running
+Execute:
 
 `java -jar trace-etl-es-1.0.0-SNAPSHOT.jar`
 
-就可以运行trace-etl-es。
+to run trace-etl-es.

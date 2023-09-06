@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 /**
  * @Description
  * @Author dingtao
- * @Date 2022/4/25 3:09 下午
+ * @Date 2022/4/25 3:09 pm
  */
 @Service(cluster = "broadcast",group = "${dubbo.group}")
 public class TraceEtlServiceImpl implements TraceEtlService {

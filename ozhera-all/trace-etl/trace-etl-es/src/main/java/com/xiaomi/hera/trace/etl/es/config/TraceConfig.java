@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * @Description trace config
  * @Author dingtao
- * @Date 2022/4/25 3:12 下午
+ * @Date 2022/4/25 3:12 pm
  */
 @Configuration
 @Slf4j
