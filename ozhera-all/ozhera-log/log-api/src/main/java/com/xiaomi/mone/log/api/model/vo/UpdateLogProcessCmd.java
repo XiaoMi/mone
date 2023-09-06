@@ -21,12 +21,12 @@ import java.io.Serializable;
 import java.util.List;
 
 /**
- * docker 对应一个ip没关系,k8s一个node下有多个pod，因此一个tail可能会有多个ip的情况
+ * It doesn't matter if docker corresponds to one IP, K8S has multiple pods under a node, so a tail may have multiple IPs
  */
 @Data
 public class UpdateLogProcessCmd implements Serializable {
     /**
-     * 机器ip->k8s对应node ip
+     * Machine IP->K8S corresponds to Node IP
      */
     private String ip;
 
@@ -40,11 +40,11 @@ public class UpdateLogProcessCmd implements Serializable {
 
         private String tailName;
         /**
-         * k8s可能有多个ip
+         * k8s may have multiple IPs
          */
         private List<String> ipList;
         /**
-         * 配置的路径(原始路径)
+         * Configured path (original path)
          */
         private String path;
 
@@ -60,22 +60,22 @@ public class UpdateLogProcessCmd implements Serializable {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class FileProgressDetail implements Serializable {
-        // 真实采集文件路径
+        // The path to the real acquisition file
         private String pattern;
-        // 设计配置的ip
+        // Design the configured IP
         private String configIp;
 
-        // 日志文件行号
+        // Log file line number
         private Long fileRowNumber;
 
         private Long pointer;
 
         private Long fileMaxPointer;
 
-        // 收集时间
+        // Collection time
         private Long collectTime;
 
-        // 收集进度
+        // Collect progress
         private String collectPercentage;
     }
 }

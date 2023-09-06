@@ -46,7 +46,7 @@ public class StreamConfigNacosPublisher implements DynamicConfigPublisher<MiLogS
         try {
             configService.publishConfig(CommonExtensionServiceFactory.getCommonExtensionService().getLogManagePrefix() + NAMESPACE_CONFIG_DATA_ID, DEFAULT_GROUP_ID, gson.toJson(config));
         } catch (NacosException e) {
-            log.error(String.format("创建namespace推送数据异常,参数：%s", gson.toJson(config)), e);
+            log.error(String.format("Create namespace push data exceptions, parameters：%s", gson.toJson(config)), e);
         }
     }
 

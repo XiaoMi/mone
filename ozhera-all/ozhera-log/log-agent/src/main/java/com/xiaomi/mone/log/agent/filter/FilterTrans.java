@@ -24,7 +24,7 @@ import com.xiaomi.mone.log.api.model.meta.FilterName;
 import java.util.Map;
 
 /**
- * @author milog
+ * Filter packaging conversion class
  */
 public class FilterTrans {
     public static FilterConf filterConfTrans(FilterDefine define) {

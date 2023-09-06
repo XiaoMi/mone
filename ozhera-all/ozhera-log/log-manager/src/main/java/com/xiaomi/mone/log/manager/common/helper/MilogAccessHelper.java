@@ -44,7 +44,7 @@ public class MilogAccessHelper {
         for (Field field : fields) {
             Object fieldValue = ReflectUtil.getFieldValue(milogParam, field);
             if (null == fieldValue) {
-                builder.add(String.format("%s不能为空", field.getName()));
+                builder.add(String.format("%s cannot be empty", field.getName()));
             }
         }
         return builder.stream().collect(Collectors.joining(SYMBOL_COMMA));

@@ -20,7 +20,7 @@ import com.xiaomi.mone.log.api.model.vo.UpdateLogProcessCmd;
 public interface LogProcessService {
 
     /**
-     * 更新日志收集进度
+     * Update log collection progress
      * @param cmd
      */
     void updateLogProcess(UpdateLogProcessCmd cmd);

@@ -26,8 +26,8 @@ import lombok.Getter;
 @Getter
 public enum LogParserEnum {
 
-    SEPARATOR_PARSE(2, "分割符"),
-    CUSTOM_PARSE(5, "自定义脚本");
+    SEPARATOR_PARSE(2, "Separator"),
+    CUSTOM_PARSE(5, "Custom scripts");
 
     private final Integer code;
     private final String name;

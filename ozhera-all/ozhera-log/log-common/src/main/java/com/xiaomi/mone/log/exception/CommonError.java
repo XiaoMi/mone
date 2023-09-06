@@ -26,11 +26,11 @@ public enum CommonError {
 
     ParamsError(2, "parameter error"),
 
-    NOT_EXISTS_DATA(3, "数据不存在"),
+    NOT_EXISTS_DATA(3, "The data does not exist"),
 
-    SERVER_ERROR(4, "服务器异常"),
+    SERVER_ERROR(4, "Server exception"),
 
-    UNAUTHORIZED(5, "没有操作权限");
+    UNAUTHORIZED(5, "No operation permissions");
 
     private int code;
     private String message;

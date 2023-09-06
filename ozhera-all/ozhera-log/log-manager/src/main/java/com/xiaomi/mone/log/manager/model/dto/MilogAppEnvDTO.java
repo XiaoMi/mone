@@ -35,15 +35,15 @@ import java.util.List;
 @AllArgsConstructor
 public class MilogAppEnvDTO implements Serializable {
     /**
-     * 环境名称
+     * Environment name
      */
     private String label;
     /**
-     * 环境主键
+     * Environment primary key
      */
     private Long value;
     /**
-     * 环境下的ips集合
+     * IPS collection in the environment
      */
     private List<String> ips;
 }

@@ -24,7 +24,7 @@ import java.util.List;
 
 /**
  * <p>
- * Mapper 接口
+ * Mapper
  * </p>
  *
  * @author wanghaoyang

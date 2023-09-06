@@ -15,7 +15,6 @@
  */
 package com.xiaomi.mone.log.manager.service.bind;
 
-import com.xiaomi.mone.log.api.enums.LogTypeEnum;
 import com.xiaomi.mone.log.common.Config;
 
 import java.util.Arrays;
@@ -25,7 +24,7 @@ import java.util.stream.Collectors;
 /**
  * @author wtt
  * @version 1.0
- * @description 读取配置文件的方式判断
+ * @description Determine how to read the configuration file
  * @date 2022/12/23 14:02
  */
 //@Processor(isDefault = true, order = 100)

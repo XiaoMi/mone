@@ -25,7 +25,7 @@ import java.util.Objects;
 /**
  * @author wtt
  * @version 1.0
- * @description 读取数据库的方式判断
+ * @description Judgment of how to read the database
  * @date 2022/12/23 14:03
  */
 @Processor(isDefault = true, order = 1000)

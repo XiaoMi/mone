@@ -142,7 +142,7 @@ public class EsPlugin {
                                 compensateMqDTO.setEsIndex(x.index());
                                 compensateMqDTOS.add(compensateMqDTO);
                             });
-                    //消息发送到mq中消费--数据不能大于10M,不然写不进去,分2部分
+                    //The message is sent to mq for consumption - the data cannot be larger than 10M, otherwise it cannot be written, divided into 2 parts
                     int length = JSON.toJSONString(compensateMqDTOS).getBytes().length;
                     if (length > SINGLE_MESSAGE_BYTES_MAXIMAL) {
                         List<List<MqMessageDTO.CompensateMqDTO>> splitList = CollectionUtil.splitList(compensateMqDTOS, 2);

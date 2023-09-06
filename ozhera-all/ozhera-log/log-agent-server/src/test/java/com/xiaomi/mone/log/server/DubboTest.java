@@ -28,7 +28,7 @@ import static com.xiaomi.mone.log.common.Constant.GSON;
 /**
  * @author wtt
  * @version 1.0
- * @description dubbo泛化调用
+ * @description dubbo generalization call
  * @date 2022/12/21 16:08
  */
 @Slf4j

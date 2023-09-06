@@ -27,6 +27,9 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
+/**
+ * Filter chain implementation class
+ */
 @Slf4j
 public class FilterChain {
     private CopyOnWriteArrayList<MilogFilter> filterList = new CopyOnWriteArrayList<>();
@@ -41,7 +44,7 @@ public class FilterChain {
             Invoker curr = () -> {
             };
             int size = filterList.size();
-            // 在前的元素在后执行，即order越大越后执行
+            // The element that comes before is executed later, i.e. the larger the order, the later it is executed
             for (int i = 0; i < size; i++) {
                 MilogFilter filter = filterList.get(i);
                 Invoker last = curr;
@@ -63,10 +66,10 @@ public class FilterChain {
         List<FilterConf> sortedConf = confs.stream().filter(Objects::nonNull).sorted((a, b) -> {
             Integer x = a.getOrder();
             Integer y = b.getOrder();
-            // order值大的在前
+            // The order value is large first
             return y.compareTo(x);
         }).sorted((a, b) -> {
-            // global 属性的filter在后
+            // The filter for the global attribute comes last
             if (FilterType.GLOBAL.equals(a.getType()) && FilterType.GLOBAL.equals(b.getType())) {
                 return 0;
             } else if (FilterType.GLOBAL.equals(a.getType())) {

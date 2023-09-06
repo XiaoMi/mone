@@ -24,7 +24,7 @@ import java.util.List;
 
 /**
  * <p>
- *  Mapper 接口
+ *  Mapper
  * </p>
  *
  * @author wanghaoyang
@@ -34,14 +34,14 @@ import java.util.List;
 public interface MilogEsIndexMapper extends BaseMapper<MilogEsIndexDO> {
 
     /**
-     * 查询region下的所有es索引
+     * Query all ES indexes under region
      * @param region
      * @return
      */
     List<MilogEsIndexDO> selectRegionIndexList(@Param(value = "region") String region);
 
     /**
-     * 查询区域下所有的es索引
+     * Query all ES indexes under region...
      * @param area
      * @return
      */

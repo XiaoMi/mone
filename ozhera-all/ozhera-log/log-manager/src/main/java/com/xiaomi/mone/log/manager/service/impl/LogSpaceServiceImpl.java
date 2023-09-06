@@ -73,7 +73,7 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
     private Tpc tpc;
 
     /**
-     * 新建
+     * new
      *
      * @param param
      * @return
@@ -81,12 +81,12 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
     @Override
     public Result<String> newMilogSpace(MilogSpaceParam param) {
         if (Objects.isNull(param) || StringUtils.isBlank(param.getSpaceName())) {
-            return Result.failParam("参数错误");
+            return Result.failParam("Parameter error");
         }
 
         String spaceName = param.getSpaceName();
         if (milogSpaceDao.verifyExistByName(spaceName)) {
-            return Result.failParam("存在同名spaceName");
+            return Result.failParam("There is a space name of the same name");
         }
 
         MilogSpaceDO milogSpaceDO = wrapMilogSpaceDO(param);
@@ -94,7 +94,7 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
 
         MilogSpaceDO dbDO = milogSpaceDao.newMilogSpace(milogSpaceDO);
         if (Objects.isNull(dbDO.getId())) {
-            return Result.failParam("space未保存成功，请重试");
+            return Result.failParam("Space is not saved successfully, please try again");
         }
         String creator = MoneUserContext.getCurrentUser().getUser();
         List<String> otherAdmins = Lists.newArrayList();
@@ -109,8 +109,8 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
 
         if (tpcResult == null || tpcResult.getCode() != 0) {
             milogSpaceDao.deleteMilogSpace(dbDO.getId());
-            log.error("新建space未关联权限系统,space:[{}], tpcResult:[{}]", dbDO, tpcResult);
-            return Result.failParam("space未关联权限系统");
+            log.error("The new space is not associated with a permission system,space:[{}], tpcResult:[{}]", dbDO, tpcResult);
+            return Result.failParam("Space is not associated with a permission system");
         }
 
         return Result.success();
@@ -142,7 +142,7 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
     @Override
     public Result<MilogSpaceDTO> getMilogSpaceById(Long id) {
         if (null == id) {
-            return new Result<>(CommonError.ParamsError.getCode(), "id不能为空");
+            return new Result<>(CommonError.ParamsError.getCode(), "ID cannot be empty");
         }
         MilogSpaceDO milogSpace = milogSpaceDao.getMilogSpaceById(id);
         if (null != milogSpace) {
@@ -161,7 +161,7 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
     }
 
     /**
-     * 分页查询
+     * Paginated queries
      *
      * @param spaceName
      * @param page
@@ -207,7 +207,7 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
     }
 
     /**
-     * 更新
+     * update
      *
      * @param param
      * @return
@@ -216,25 +216,25 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
     @Override
     public Result<String> updateMilogSpace(MilogSpaceParam param) {
         if (null == param || StringUtils.isBlank(param.getSpaceName())) {
-            return new Result<>(CommonError.ParamsError.getCode(), "参数错误", "");
+            return new Result<>(CommonError.ParamsError.getCode(), "Parameter error", "");
         }
         if (!tpc.hasPerm(MoneUserContext.getCurrentUser(), param.getId())) {
             return Result.fail(CommonError.UNAUTHORIZED);
         }
         if (milogSpaceDao.verifyExistByName(param.getSpaceName(), param.getId())) {
-            return new Result<>(CommonError.UnknownError.getCode(), "存在同名spaceName", "");
+            return new Result<>(CommonError.UnknownError.getCode(), "There is a space name of the same name", "");
         }
         MilogSpaceDO milogSpace = milogSpaceDao.queryById(param.getId());
         if (null == milogSpace) {
-            return new Result<>(CommonError.ParamsError.getCode(), "logSpace 不存在", "");
+            return new Result<>(CommonError.ParamsError.getCode(), "logSpace does not exist", "");
         }
         wrapMilogSpace(milogSpace, param);
         wrapBaseCommon(milogSpace, OperateEnum.UPDATE_OPERATE);
         if (milogSpaceDao.update(milogSpace)) {
             com.xiaomi.youpin.infra.rpc.Result tpcResult = spaceAuthService.updateSpaceTpc(param, MoneUserContext.getCurrentUser().getUser());
             if (tpcResult == null || tpcResult.getCode() != 0) {
-                log.error("修改space未关联权限系统,space:[{}], tpcResult:[{}]", milogSpace, tpcResult);
-                return Result.success("修改space未关联权限系统，请联系服务端效能组");
+                log.error("Modify the space permission system not associated with it,space:[{}], tpcResult:[{}]", milogSpace, tpcResult);
+                return Result.success("To modify the unassociated permission system of space, contact the server-side performance group");
             }
             return Result.success();
         } else {
@@ -247,31 +247,31 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
     @Override
     public Result<String> deleteMilogSpace(Long id) {
         if (null == id) {
-            return new Result<>(CommonError.ParamsError.getCode(), "id不能为空", "");
+            return new Result<>(CommonError.ParamsError.getCode(), "ID cannot be empty", "");
         }
         if (!tpc.hasPerm(MoneUserContext.getCurrentUser(), id)) {
             return Result.fail(CommonError.UNAUTHORIZED);
         }
         MilogSpaceDO milogSpace = milogSpaceDao.getMilogSpaceById(id);
         if (null == milogSpace) {
-            return new Result<>(CommonError.ParamsError.getCode(), "logSpace 不存在", "");
+            return new Result<>(CommonError.ParamsError.getCode(), "logSpace does not exist", "");
         }
         List<MilogLogStoreDO> stores = milogLogstoreDao.getMilogLogstoreBySpaceId(id);
         if (stores != null && stores.size() != 0) {
-            return new Result<>(CommonError.ParamsError.getCode(), "该space 下存在store，无法删除", "");
+            return new Result<>(CommonError.ParamsError.getCode(), "There is a store under this space and cannot be deleted", "");
         }
         if (milogSpaceDao.deleteMilogSpace(id)) {
             logTailService.deleteConfigRemote(id, id, MachineRegionEnum.CN_MACHINE.getEn(), LogStructureEnum.SPACE);
 
             com.xiaomi.youpin.infra.rpc.Result tpcResult = spaceAuthService.deleteSpaceTpc(id, MoneUserContext.getCurrentUser().getUser(), MoneUserContext.getCurrentUser().getUserType());
             if (tpcResult == null || tpcResult.getCode() != 0) {
-                log.error("删除space未关联权限系统,space:[{}], tpcResult:[{}]", milogSpace, tpcResult);
-                return Result.failParam("删除space未关联权限系统，请联系服务端效能组");
+                log.error("Remove the space without associated permission system,space:[{}], tpcResult:[{}]", milogSpace, tpcResult);
+                return Result.failParam("To delete a space system that is not associated with it, contact the server performance group");
             }
             return Result.success();
         } else {
             log.warn("[MilogSpaceService.deleteMilogSpace] delete MilogSpace err,spaceId:{}", id);
-            return Result.failParam("space删除失败，请重试");
+            return Result.failParam("Space deletion failed, please try again");
         }
     }
 
@@ -282,7 +282,7 @@ public class LogSpaceServiceImpl extends BaseService implements LogSpaceService 
         }
         MilogSpaceDO space = milogSpaceDao.getMilogSpaceById(spaceId);
         if (!permDeptIds.contains(space.getCreateDeptId())) {
-            return Result.fail(CommonError.ParamsError.getCode(), "创建部门权限不可被取消");
+            return Result.fail(CommonError.ParamsError.getCode(), "The Create Department permission cannot be revoked");
         }
         space.setPermDeptId(permDeptIds);
         boolean update = milogSpaceDao.update(space);

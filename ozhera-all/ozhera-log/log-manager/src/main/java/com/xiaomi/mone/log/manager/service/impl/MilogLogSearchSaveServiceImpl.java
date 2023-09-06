@@ -45,9 +45,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * <p>
- * 服务实现类
- * </p>
  *
  * @author wanghaoyang
  * @since 2022-03-29
@@ -88,23 +85,23 @@ public class MilogLogSearchSaveServiceImpl implements IMilogLogSearchSaveService
 
     public Result<Integer> save(SearchSaveInsertCmd cmd) {
         if (cmd.getSort() == null) {
-            return Result.failParam("分类字段sort不能为空");
+            return Result.failParam("The classification field sort cannot be empty");
         }
         switch (FavouriteSearchEnum.queryByCode(cmd.getSort())) {
             case TEXT:
                 if (isRepeatName(cmd.getName())) {
-                    return Result.failParam("名称不能重复");
+                    return Result.failParam("Names cannot be duplicated");
                 }
                 break;
             case STORE:
                 Integer isMyFavouriteStore = logSearchSaveMapper.isMyFavouriteStore(MoneUserContext.getCurrentUser().getUser(), cmd.getStoreId());
                 if (isMyFavouriteStore >= 1) {
-                    return Result.failParam("已收藏");
+                    return Result.failParam("Bookmarked");
                 }
             case TAIL:
                 Integer isMyFavouriteTail = logSearchSaveMapper.isMyFavouriteTail(MoneUserContext.getCurrentUser().getUser(), cmd.getTailId());
                 if (isMyFavouriteTail >= 1) {
-                    return Result.failParam("已收藏");
+                    return Result.failParam("Bookmarked");
                 }
                 break;
         }
@@ -125,10 +122,10 @@ public class MilogLogSearchSaveServiceImpl implements IMilogLogSearchSaveService
     public Result<Integer> update(SearchSaveUpdateCmd cmd) {
         MilogLogSearchSaveDO milogLogSearchSaveDO = logSearchSaveMapper.selectById(cmd.getId());
         if (milogLogSearchSaveDO == null) {
-            return Result.failParam("找不到数据");
+            return Result.failParam("Data not found");
         }
         if (!cmd.getName().equals(milogLogSearchSaveDO.getName()) && isRepeatName(cmd.getName())) {
-            return Result.failParam("名称不能重复");
+            return Result.failParam("Names cannot be duplicated");
         }
         milogLogSearchSaveDO.setName(cmd.getName());
         milogLogSearchSaveDO.setQueryText(cmd.getQueryText());
@@ -165,7 +162,7 @@ public class MilogLogSearchSaveServiceImpl implements IMilogLogSearchSaveService
 
     public Result<Integer> defavourite(Integer sort, Long id) {
         if (sort == null || id == null) {
-            Result.failParam("参数不能为空");
+            Result.failParam("The parameter cannot be empty");
         }
         Map<String, Object> paramMap = new HashMap<>();
         switch (FavouriteSearchEnum.queryByCode(sort)) {
@@ -176,7 +173,7 @@ public class MilogLogSearchSaveServiceImpl implements IMilogLogSearchSaveService
                 paramMap.put("tail_id", id);
                 break;
             default:
-                return Result.failParam("无效的sort字段");
+                return Result.failParam("Invalid sort field");
         }
         paramMap.put("creator", MoneUserContext.getCurrentUser().getUser());
         paramMap.put("sort", sort);

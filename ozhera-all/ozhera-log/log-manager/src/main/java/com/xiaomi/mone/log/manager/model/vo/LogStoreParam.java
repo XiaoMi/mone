@@ -36,18 +36,18 @@ public class LogStoreParam {
     private String keyList;
     private String columnTypeList;
     /**
-     * 1. 服务应用日志
+     * 1. Service application logs
      */
     private Integer logType;
     private Boolean isMatrixApp;
     private String esIndex;
     private String machineRoom;
     /**
-     * mq资源ID
+     * mq resource ID
      */
     private Long mqResourceId;
     /**
-     * es资源ID
+     * es resource ID
      */
     private Long esResourceId;
 

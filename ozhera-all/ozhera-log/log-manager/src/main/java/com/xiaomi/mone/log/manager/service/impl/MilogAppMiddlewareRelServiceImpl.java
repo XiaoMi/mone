@@ -63,8 +63,8 @@ public class MilogAppMiddlewareRelServiceImpl implements MilogAppMiddlewareRelSe
 
     @Override
     public void bindingTailConfigRel(Long tailId, Long milogAppId, Long middlewareConfigId, String topicName) {
-        //1.查询配置的配型组装config信息
-        //2.入库
+        //1.Query the configuration configuration configuration
+        //2.Storage
         MilogMiddlewareConfig wareConfig = queryMiddlewareConfig(middlewareConfigId);
         if (null != wareConfig) {
             middlewareConfigId = wareConfig.getId();
@@ -85,7 +85,7 @@ public class MilogAppMiddlewareRelServiceImpl implements MilogAppMiddlewareRelSe
             config.setConsumerGroup(DEFAULT_CONSUMER_GROUP + tag);
             milogAppMiddlewareRelDao.insertUpdate(generateMiddlewareRel(tailId, milogAppId, middlewareConfigId, config));
         } else {
-            log.error("当前环境的中间件配置为空,tailId:{},milogAppId:{},middlewareConfigId:{}", tailId, milogAppId, middlewareConfigId);
+            log.error("The middleware configuration for the current environment is empty,tailId:{},milogAppId:{},middlewareConfigId:{}", tailId, milogAppId, middlewareConfigId);
         }
     }
 
@@ -110,9 +110,9 @@ public class MilogAppMiddlewareRelServiceImpl implements MilogAppMiddlewareRelSe
             }
             handleTailMqRel(id, milogAppId, wareConfig, config);
         } else {
-            log.error("当前部门没有配置MQ配置信息，请配置当前部门的消息配置信息,tailId：{},storeId:{},middleWareId:{}",
+            log.error("If the current organization does not have MQ configuration information configured, configure the message configuration information of the current organization,tailId：{},storeId:{},middleWareId:{}",
                     id, milogAppId, middleWareId);
-            throw new MilogManageException("当前部门没有配置MQ配置信息，请配置当前部门的资源配置信息");
+            throw new MilogManageException("If the current organization does not configure MQ configuration information, configure the resource configuration information of the current department");
         }
     }
 
@@ -145,7 +145,7 @@ public class MilogAppMiddlewareRelServiceImpl implements MilogAppMiddlewareRelSe
     }
 
     /**
-     * middlewareConfigId 不为空找寻自己对应的 否则选择默认的
+     * middlewareConfigId does not look for its own correspondence for empty Otherwise, select the default
      *
      * @param middlewareConfigId
      * @return

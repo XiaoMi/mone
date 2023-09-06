@@ -31,9 +31,9 @@ import java.util.Objects;
 @Getter
 public enum ProjectSourceEnum {
 
-    ONE_SOURCE(0, "test1", "测试1"),
-    TWO_SOURCE(1, "test2", "测试2"),
-    NO_KNOW_SOURCE(-1, "no_know", "未知");
+    ONE_SOURCE(0, "test1", "test1"),
+    TWO_SOURCE(1, "test2", "test2"),
+    NO_KNOW_SOURCE(-1, "un_know", "Unknown");
 
     private final Integer code;
     private final String source;

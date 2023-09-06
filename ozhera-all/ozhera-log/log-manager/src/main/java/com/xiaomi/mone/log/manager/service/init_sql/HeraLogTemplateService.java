@@ -51,7 +51,7 @@ public class HeraLogTemplateService extends BaseService {
 
     public void init() {
         for (LogTypeEnum typeEnum : LogTypeEnum.values()) {
-            //查询日志类型
+            //Query the log type
             QueryWrapper<MilogLogTemplateDO> queryWrapper = new QueryWrapper<>();
             queryWrapper.eq("type", typeEnum.getType());
             List<MilogLogTemplateDO> templateDOS = milogLogTemplateMapper.selectList(queryWrapper);
@@ -59,7 +59,7 @@ public class HeraLogTemplateService extends BaseService {
                 MilogLogTemplateDO logTemplateDO = getInsertLogTemplateDO(typeEnum,
                         Arrays.stream(MachineRegionEnum.values()).map(MachineRegionEnum::getEn)
                                 .collect(Collectors.joining(SYMBOL_COMMA)));
-                //查询类型模板是否存在
+                //The query type template exists
                 MilogLogTemplateDetailDO detailDO = milogLogTemplateDetailMapper.getByTemplateId(logTemplateDO.getId());
                 if (null == detailDO) {
                     insertTemplateDetail(typeEnum, logTemplateDO);

@@ -22,7 +22,7 @@ public enum ErrorCode {
     SUBMIT_FLINK_JOB(3, "failed to submit flink job"),
     ALERT_NOT_FOUND(4, "Alert not found"),
     ALERT_REMOVE_FAILED(5, "failed to remove alert"),
-    FAIL_PARAM(6, "参数异常");
+    FAIL_PARAM(6, "Parameter exceptions");
 
     private int code;
     private String message;

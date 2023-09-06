@@ -67,18 +67,18 @@ public class RegexLogParser implements LogParser {
             return ret;
         }
         try {
-            // 按正则提取出的内容列表
+            // A list of extracted contents by regular regex
             List<String> logArray = parseLogData(logData);
-            // 索引列名列表
+            // Index the list of column names
             List<String> keyNameList = IndexUtils.getKeyListSlice(parserData.getKeyList());
-            // 每个索引列名对应的内容在正则提取出的内容列表的索引值的数组
+            // Each index column name corresponds to an array of index values for the content in the regular extracted content list
             int[] valueIndexList = Arrays.stream(parserData.getValueList().split(",")).mapToInt(Integer::parseInt).toArray();
             for (int i = 0; i < keyNameList.size(); i++) {
-                // 如果 key 的索引超出 value 的范围，或 value 对应索引为 -1，则跳过当前 key
+                // If the index of the key is outside the range of value, or the index corresponding to value is -1, the current key is skipped
                 if (i >= valueIndexList.length || valueIndexList[i] == -1) {
                     continue;
                 }
-                // value 的索引未超出正则解析后的内容数组，则该 key 有对应的解析值，否则为""
+                // If the index of value does not exceed the regular parsed content array, the key has a corresponding resolution value, otherwise it is ""
                 String value = "";
                 if (valueIndexList[i] < logArray.size()) {
                     value = logArray.get(valueIndexList[i]);
@@ -87,7 +87,7 @@ public class RegexLogParser implements LogParser {
             }
             validTimestamp(ret, logData, collectStamp);
         } catch (Exception e) {
-            // 如果出现异常则保留原始日志到 logsource 字段
+            // If an exception occurs, the original log is kept to the logsource field
             ret.put(esKeyMap_logSource, logData);
         }
         return ret;
@@ -102,8 +102,8 @@ public class RegexLogParser implements LogParser {
 //        List<Matcher> matchers = filter.filter(logData);
         Matcher matcher = pattern.matcher(logData);
         if (matcher.find()) {
-            // matcher.groupCount() 获取的是 matcher 对象当前有多少个捕获组，不包括 group(0)，所以 groupCount 与 group(i) 索引是不对应的
-            // group(0) 不支持用户获取，用户使用时，valueList 顺序仍从 0 开始即可
+            // matcher.groupCount() gets how many capture groups the matcher object currently has, excluding group(0), so groupCount does not correspond to the group(i) index
+            // group(0) does not support user acquisition, and the valueList order can still start from 0 when the user uses it
             for (int i = 1; i <= matcher.groupCount(); i++) {
                 ret.add(matcher.group(i));
             }

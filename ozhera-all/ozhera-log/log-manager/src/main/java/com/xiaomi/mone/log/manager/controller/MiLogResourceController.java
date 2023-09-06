@@ -32,7 +32,7 @@ import javax.annotation.Resource;
 /**
  * @author wtt
  * @version 1.0
- * @description 资源管理controller
+ * @description resource management controller
  * @date 2022/5/10 11:03
  */
 @Slf4j
@@ -49,7 +49,7 @@ public class MiLogResourceController {
     }
 
     /**
-     * 资源操作
+     * resource operation
      */
     @RequestMapping(path = "/milog/resource/operate", method = "POST")
     public Result<String> resourceOperate(@RequestParam(value = "resource") MiLogResource miLogResource) {
@@ -57,7 +57,7 @@ public class MiLogResourceController {
     }
 
     /**
-     * 资源详情
+     * Resource details
      */
     @RequestMapping(path = "/milog/resource/detail", method = "GET")
     public Result<ResourceInfo> resourceDetail(@RequestParam(value = "resourceCode") Integer resourceCode,
@@ -66,7 +66,7 @@ public class MiLogResourceController {
     }
 
     /**
-     * 当新建store时查询资源是否已经初始化
+     * Query whether the resource has been initialized when creating a new store
      */
     @RequestMapping(path = "/milog/resource/initialized/user/dept", method = "GET")
     public Result<ResourceUserSimple> userResourceList(

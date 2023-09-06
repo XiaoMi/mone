@@ -27,7 +27,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * 用于manage到agent 之间 filter 参数传输
+ * Used to transfer filter parameters between manage and agent
  *
  * @author milog
  */
@@ -36,7 +36,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class FilterDefine implements Serializable {
     /**
-     * 和FilterConf中的code一一对应
+     * One-to-one correspondence with the code in Filter Conf
      */
     private String code;
 

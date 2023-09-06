@@ -24,7 +24,7 @@ package com.xiaomi.mone.log.manager.service.nacos;
 @FunctionalInterface
 public interface Converter<S, T> {
     /**
-     * 数据转化
+     * Data transformation
      * @param source
      * @return
      */

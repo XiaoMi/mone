@@ -32,7 +32,7 @@ import java.util.List;
 /**
  * @author wtt
  * @version 1.0
- * @description 中间件配置controller
+ * @description Middleware configuration controller
  * @date 2021/9/22 11:41
  */
 @Controller

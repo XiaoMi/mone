@@ -1,4 +1,4 @@
-# milog
+# ozhera-log
 
 # log-agent supports JDK20 (2023-08-29)
 + Remember to include the following start-up parameters:

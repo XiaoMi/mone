@@ -65,11 +65,11 @@ public class EsPlugin implements IPlugin {
                     Ioc.ins().putBean(Constant.ES_SERV_BEAN_PRE + cluster.getId(), esService);
                     break;
                 default:
-                    log.warn("ES集群录入异常:[{}]", cluster);
+                    log.warn("The ES cluster entered an exception:[{}]", cluster);
                     return;
             }
             Ioc.ins().putBean(Constant.ES_SERV_BEAN_PRE + cluster.getId(), esService);
-            log.info("ES客户端[{}]生成成功[{}]", cluster.getName(), Constant.ES_SERV_BEAN_PRE + cluster.getId());
+            log.info("ES client[{}]Generated successfully[{}]", cluster.getName(), Constant.ES_SERV_BEAN_PRE + cluster.getId());
         } catch (Exception e) {
             log.error("init es cluster client error,cluster{}", GSON.toJson(cluster), e);
         }

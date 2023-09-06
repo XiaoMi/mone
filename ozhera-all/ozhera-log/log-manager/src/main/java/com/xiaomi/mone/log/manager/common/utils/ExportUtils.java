@@ -22,11 +22,11 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * 日志下载工具类
+ * Log download utility class
  */
 public class ExportUtils {
 
-    // HSSFWorkbook4Map 方法写 xls 有最大单元格长度限制 32767，对于超长的内容做分割
+    // The HSSFWorkbook4Map method writes xls with a maximum cell length limit of 32767, which splits very long content
     public static Map<String, Object> SplitTooLongContent(LogDataDTO logDataDto) {
         int maxCellLen = 32767;
         Map<String, Object> logOfKV = logDataDto.getLogOfKV();

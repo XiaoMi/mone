@@ -26,7 +26,7 @@ import javax.annotation.Resource;
 /**
  * @author wtt
  * @version 1.0
- * @description store 授权
+ * @description store authorized
  * @date 2022/7/14 16:12
  */
 @Controller

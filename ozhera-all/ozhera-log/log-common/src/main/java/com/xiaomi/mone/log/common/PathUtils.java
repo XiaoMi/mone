@@ -22,7 +22,6 @@ import org.apache.commons.lang3.StringUtils;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -39,11 +38,11 @@ import static com.xiaomi.mone.log.common.Constant.SYMBOL_MULTI;
 public class PathUtils {
 
     /**
-     * 最小目录层级数
+     * Minimum number of directory hierarchies
      */
     private static final int MINIMUM_LEVELS = 3;
     /**
-     * 目录通配符
+     * Directory wildcards
      */
     public static final String PATH_WILDCARD = "*";
 
@@ -57,7 +56,7 @@ public class PathUtils {
     public static final String SEPARATOR = "/";
 
     /**
-     * 用于解析倒数第二级目录通配符 example:/home/work/log/xapp/ * /server.log
+     * Used to parse the penultimate directory wildcard character example: /home/work/log/xapp/ * /server.log
      *
      * @param origPath
      * @return
@@ -74,7 +73,6 @@ public class PathUtils {
             String fileName = path.substring(path.lastIndexOf(SEPARATOR) + 1);
             String[] fileArray = path.split(SEPARATOR);
             if (fileArray.length < MINIMUM_LEVELS) {
-                //todo 是否抛异常
                 pathList.add(path);
             } else {
                 String fixedBasePath = basePath.substring(0, basePath.lastIndexOf(SEPARATOR));
@@ -83,7 +81,7 @@ public class PathUtils {
                     regexPattern = MULTI_FILE_PREFIX + StringUtils.substringBetween(fixedBasePath, MULTI_FILE_PREFIX, MULTI_FILE_SUFFIX) + MULTI_FILE_SUFFIX;
                     fixedBasePath = NEO_FILE_PREFIX.substring(0, NEO_FILE_PREFIX.length() - 2);
                 }
-                // *通配 读取多级目录
+                // * Wildcard reads multi-level directories
                 if (regexPattern.trim().equals(PATH_WILDCARD)) {
                     try {
                         readFile(fixedBasePath, fileName, pathList);
@@ -98,7 +96,7 @@ public class PathUtils {
                     String directorySuffix = StringUtils.substringAfter(basePath, MULTI_FILE_SUFFIX);
                     handleMultiDirectories(multiDirectories, fileName, directoryPrefix, directorySuffix, SEPARATOR, pathList);
                 } else if (fileName.contains(PATH_WILDCARD)) {
-                    //匹配很多个文件
+                    //Matches many files
                     handleMultipleDirectoryFile(basePath, fileName, pathList);
                 } else {
                     if (origPath.contains(PATH_WILDCARD)) {
@@ -167,7 +165,7 @@ public class PathUtils {
     }
 
     /**
-     * 返回监控文件夹列表
+     * Return to the list of monitoring folders
      *
      * @param origPath
      * @return`
@@ -196,7 +194,8 @@ public class PathUtils {
                 String patterns = regexPattern.substring(1, regexPattern.length() - 1);
                 String[] patternArr = patterns.split(SPLIT_VERTICAL_LINE);
                 String originFilePrefix = fixedBasePath + SEPARATOR + regexPattern;
-                //适配正则右侧剩余目录 /home/work/logs/neo-logs/(xxx|yy)/zz/server.log => 加 /zz
+                //Adapt the remaining directories on the right side of the regular rule
+                // /home/work/logs/neo-logs/(xxx|yy)/zz/server.log => add /zz
                 String regexRightPath = path.substring(originFilePrefix.length() + 1);
                 String rightDir = "";
                 if (regexRightPath.split(SEPARATOR).length > 1) {
@@ -313,7 +312,7 @@ public class PathUtils {
      * /home/work/log/log-agent/server.log.*
      * /logSplitExpress:/home/work/log/log-agent/(server.log.*|error.log.*)
      * /logSplitExpress:/home/work/log/(log-agent|log-stream)/(a|b)/server.log.*
-     * 清晰带符号的路径
+     * Clean the marked path
      *
      * @param originStr
      * @return

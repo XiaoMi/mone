@@ -42,7 +42,8 @@ public class FieldStrategy implements AggrCalcuStrategy {
         AggregationBuilder groupAggBuilder = AggregationBuilders.terms("group_aggs")
                 .size(Integer.MAX_VALUE)
                 .field(param.getBead())
-                .executionHint("map");  // 若可知该层聚合结果数量很小，设置成map可提升性能。
+                // If you know that the number of aggregation results in this layer is very small, set it to map to improve performance.
+                .executionHint("map");
 
         return groupAggBuilder;
     }

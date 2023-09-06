@@ -54,7 +54,7 @@ public class DefaultPublishConfigService implements PublishConfigService {
     private RpcServer rpcServer;
 
     /**
-     * dubbo接口，超时时间不能太长
+     * dubbo interface, the timeout period cannot be too long
      *
      * @param agentIp
      * @param logCollectMeta
@@ -70,20 +70,20 @@ public class DefaultPublishConfigService implements PublishConfigService {
                 if (CollectionUtils.isNotEmpty(logCollectMeta.getAppLogMetaList())) {
                     RemotingCommand req = RemotingCommand.createRequestCommand(LogCmd.logReq);
                     req.setBody(sendStr.getBytes());
-                    log.info("发送配置：agent ip:{},配置信息:{}", agentCurrentIp, sendStr);
+                    log.info("Send the configuration,agent ip:{},Configuration information:{}", agentCurrentIp, sendStr);
                     Stopwatch started = Stopwatch.createStarted();
                     RemotingCommand res = rpcServer.sendMessage(logAgentMap.get(agentCurrentIp), req, 10000);
                     started.stop();
                     String response = new String(res.getBody());
-                    log.info("配置发送成功---->{},时长：{}s,agentIp:{}", response, started.elapsed().getSeconds(), agentCurrentIp);
+                    log.info("The configuration is sent successfully---->{},duration：{}s,agentIp:{}", response, started.elapsed().getSeconds(), agentCurrentIp);
                     if (Objects.equals(response, "ok")) {
                         break;
                     }
                 }
             } else {
-                log.info("当前agent ip没有连接，ip:{},配置数据：{}", agentIp, GSON.toJson(logCollectMeta));
+                log.info("The current agent IP is not connected,ip:{},configuration data:{}", agentIp, GSON.toJson(logCollectMeta));
             }
-            //重试策略-重试4次，每次休眠500ms
+            //Retry policy - Retry 4 times, sleep 500 ms each time
             try {
                 TimeUnit.MILLISECONDS.sleep(500L);
             } catch (final InterruptedException ignored) {
@@ -103,7 +103,7 @@ public class DefaultPublishConfigService implements PublishConfigService {
                 }
         );
         if (COUNT_INCR.getAndIncrement() % 200 == 0) {
-            log.info("连接的agent机器远程地址集合为:{}", GSON.toJson(remoteAddress));
+            log.info("The set of remote addresses of the connected agent machine is:{}", GSON.toJson(remoteAddress));
         }
         return remoteAddress;
     }
@@ -116,7 +116,7 @@ public class DefaultPublishConfigService implements PublishConfigService {
 
     private String queryCurrentDockerAgentIP(String agentIp, Map<String, AgentChannel> logAgentMap) {
         if (Objects.equals(agentIp, NetUtil.getLocalIp())) {
-            //for docker 处理当前机器上有agent
+            //for Docker handles the agent on the current machine
             final String tempIp = agentIp;
             List<String> ipList = getAgentChannelMap().keySet()
                     .stream().filter(ip -> ip.startsWith("172"))

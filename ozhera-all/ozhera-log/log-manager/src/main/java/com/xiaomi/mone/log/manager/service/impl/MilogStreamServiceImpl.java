@@ -87,7 +87,7 @@ public class MilogStreamServiceImpl implements MilogStreamService {
     @Override
     public Result<String> configIssueStream(String ip) {
         if (StringUtils.isEmpty(ip)) {
-            return Result.failParam("ip不能为空");
+            return Result.failParam("IP cannot be empty");
         }
         streamConfigNacosProvider = new StreamConfigNacosProvider();
         spaceConfigNacosProvider = new SpaceConfigNacosProvider();
@@ -109,7 +109,7 @@ public class MilogStreamServiceImpl implements MilogStreamService {
                             if (null == milogSpaceData) {
                                 milogSpaceData = new MilogSpaceData();
                             }
-                            //找到这个space下的所有配置
+                            //Find all configurations under this space
                             List<SinkConfig> sinkConfigs = generateSinkConfig(spaceKey, milogMiddlewareConfig.getRegionEn());
                             milogSpaceData.setSpaceConfig(sinkConfigs);
                             spaceConfigNacosPublisher.publish(spaceKey.toString(), milogSpaceData);
@@ -134,7 +134,7 @@ public class MilogStreamServiceImpl implements MilogStreamService {
                 SinkConfig sinkConfig = milogConfigNacosService.assembleSinkConfig(milogLogstoreDO.getId(), logtailDo.getId(), MachineRegionEnum.CN_MACHINE.getEn());
                 sameStoreSinkConfigs.add(sinkConfig);
             }
-            // 合并
+            // merge
             sameStoreSinkConfigs.stream().forEach(sinkConfig -> {
                 logtailConfigs.addAll(sinkConfig.getLogtailConfigs());
             });

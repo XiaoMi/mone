@@ -42,12 +42,12 @@ public class SpaceConfigNacosProvider implements DynamicConfigProvider<MilogSpac
         String dataId = CommonExtensionServiceFactory.getCommonExtensionService().getLogManagePrefix() + TAIL_CONFIG_DATA_ID + uniqueSpace;
         try {
             rules = configService.getConfig(dataId, DEFAULT_GROUP_ID, DEFAULT_TIME_OUT_MS);
-            log.info("nacos中查询日志配置,dataId:{},data:{}", dataId, rules);
+            log.info("Query the log configuration in NACOS,dataId:{},data:{}", dataId, rules);
             if (StringUtils.isNotEmpty(rules)) {
                 return gson.fromJson(rules, MilogSpaceData.class);
             }
         } catch (Exception e) {
-            log.error(String.format("查询日志配置数据数据异常,参数：%s", dataId), e);
+            log.error(String.format("Query log configuration data data exceptions, parameters:%s", dataId), e);
         }
         return null;
     }

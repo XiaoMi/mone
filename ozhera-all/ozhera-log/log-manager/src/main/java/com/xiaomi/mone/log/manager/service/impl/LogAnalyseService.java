@@ -116,7 +116,7 @@ public class LogAnalyseService {
             int res = dgRefMapper.insert(DGRefConvert.INSTANCE.toDo(cmd));
             return res == 1 ? Result.success(true) : Result.fail(CommonError.ParamsError);
         }
-        return Result.fail(CommonError.ParamsError.getCode(), "图表已存在此仪表盘");
+        return Result.fail(CommonError.ParamsError.getCode(), "The chart already exists for this dashboard");
     }
 
     public Result<Boolean> delRef(DGRefDelCmd cmd) {
@@ -155,12 +155,12 @@ public class LogAnalyseService {
         dashboardDO.setCreateTime(System.currentTimeMillis());
         dashboardDO.setCreator(MoneUserContext.getCurrentUser().getUser());
 
-        // TODO 设置默认名字，后期需要多个dashboard再更改
+        // Set the default name, and change it later if you need multiple dashboards
         MilogLogStoreDO logstore = logstoreDao.queryById(cmd.getStoreId());
         if (logstore == null) {
-            return Result.failParam("创建失败, logstore不存在");
+            return Result.failParam("Create failed, logstore does not exist");
         }
-        dashboardDO.setName(logstore.getLogstoreName() + "仪表盘");
+        dashboardDO.setName(logstore.getLogstoreName() + "dashboard");
 
         dashboardMapper.insert(dashboardDO);
         return Result.success(dashboardDO.getId());

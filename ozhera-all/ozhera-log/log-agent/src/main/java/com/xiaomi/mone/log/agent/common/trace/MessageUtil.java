@@ -17,12 +17,12 @@ package com.xiaomi.mone.log.agent.common.trace;
 
 public class MessageUtil {
 
-    // 消息体分隔符
+    // Message body delimiter
     public static final String SPLIT = " ### ";
-    // rocksdb消息分隔符
+    // rocksdb message delimiter
     public static final String ROCKS_SPLIT = " #### ";
     public static final String ERROR_CODE = "ERROR";
-    // 各个字段的角标，方便修改
+    // The corner labels of each field are easy to modify
     public static final int START_TIME = 0;
     public static final int DURATION = 1;
     public static final int IP = 2;
@@ -35,11 +35,11 @@ public class MessageUtil {
     public static final int EVENTS = 9;
     public static final int REOUSCES = 10;
     public static final int REFERERNCES = 11;
-    // 消息按分割之后的总数
+    // The total number of messages after splitting
     public static final int COUNT = 12;
 
-    // 用于缓存serviceName与operationName的redis key
+    // Redis keys used to cache serviceName and operationName
     public static final String TRACE_SERVICE_REDIS_KEY = "trace_service_";
-    // 缓存serviceName与operationName的redis key的过期时间
+    // Cache the expiration time of the redis key of serviceName and operationName
     public static final int TRACE_SERVICE_REDIS_KEY_EXPIRE = 60 * 60 * 24;
 }

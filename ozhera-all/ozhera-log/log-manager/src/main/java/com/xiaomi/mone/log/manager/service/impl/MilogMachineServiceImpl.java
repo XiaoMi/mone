@@ -46,10 +46,10 @@ public class MilogMachineServiceImpl implements MilogMachineService {
     @Override
     public Result<String> addMachineInfo(MachineParamParam param) {
         if (StringUtils.isEmpty(param.getIp())) {
-            return Result.fail(CommonError.ParamsError.getCode(), "IP地址不能为空");
+            return Result.fail(CommonError.ParamsError.getCode(), "The IP address cannot be empty");
         }
         if (null == param.getType()) {
-            return Result.fail(CommonError.ParamsError.getCode(), "机器类型不能为空");
+            return Result.fail(CommonError.ParamsError.getCode(), "Machine type cannot be empty");
         }
         milogMachineDao.insert(param);
         return Result.success();
@@ -58,7 +58,7 @@ public class MilogMachineServiceImpl implements MilogMachineService {
     @Override
     public Result<String> deleteMachineInfo(Long id) {
         if (null == id) {
-            return Result.fail(CommonError.ParamsError.getCode(), "Id不能为空");
+            return Result.fail(CommonError.ParamsError.getCode(), "ID cannot be empty");
         }
         milogMachineDao.deleteMachineInfo(id);
         return Result.success();
@@ -77,7 +77,7 @@ public class MilogMachineServiceImpl implements MilogMachineService {
     @Override
     public Result<MachineParamParam> queryMachineInfoById(Long id) {
         if (null == id) {
-            return Result.fail(CommonError.ParamsError.getCode(), "Id不能为空");
+            return Result.fail(CommonError.ParamsError.getCode(), "ID cannot be empty");
         }
         MiLogMachine miLogMachine = milogMachineDao.queryById(id);
         return Result.success((MachineParamParam) miLogMachine);

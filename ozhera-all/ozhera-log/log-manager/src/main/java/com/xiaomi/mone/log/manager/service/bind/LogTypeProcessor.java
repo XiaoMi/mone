@@ -25,7 +25,7 @@ import com.xiaomi.mone.log.api.enums.LogTypeEnum;
  */
 public interface LogTypeProcessor {
     /**
-     * 是否支持消费
+     * Whether consumption is supported
      *
      * @param logTypeCode
      * @return

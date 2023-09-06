@@ -44,8 +44,8 @@ public class MilogConfigServiceTest {
         Ioc.ins().init("com.xiaomi");
         LogSpaceServiceImpl milogSpaceService = Ioc.ins().getBean(LogSpaceServiceImpl.class);
         MilogSpaceParam ms = new MilogSpaceParam();
-        ms.setSpaceName("上山打老虎楼");
-        ms.setDescription("我是测试人员啊");
+        ms.setSpaceName("test space");
+        ms.setDescription("space describe");
         milogSpaceService.newMilogSpace(ms);
         Assert.assertNotNull(milogSpaceService);
     }
@@ -85,7 +85,7 @@ public class MilogConfigServiceTest {
     public void testDubbo() {
         Ioc.ins().init("com.xiaomi");
         MilogConfigNacosServiceImpl service = Ioc.ins().getBean(MilogConfigNacosServiceImpl.class);
-        log.info("机器信息:{}");
+        log.info("machine information:{}");
     }
 
     @Test
@@ -93,7 +93,7 @@ public class MilogConfigServiceTest {
         Ioc.ins().init("com.xiaomi");
         LogTailServiceImpl service = Ioc.ins().getBean(LogTailServiceImpl.class);
         Result<List<MilogAppEnvDTO>> query = service.getEnInfosByAppId(305L, 1);
-        log.info("机器信息:{}", new Gson().toJson(query.getData()));
+        log.info("machine information:{}", new Gson().toJson(query.getData()));
         Assert.assertNotNull(query);
     }
 }

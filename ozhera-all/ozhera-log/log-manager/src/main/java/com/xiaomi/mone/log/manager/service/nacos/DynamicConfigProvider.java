@@ -27,7 +27,7 @@ public interface DynamicConfigProvider<T> {
 
     Gson gson = new Gson();
     /**
-     * 获取配置
+     * Get the configuration
      * @param appName
      * @return
      */

@@ -51,42 +51,42 @@ public class MilogEsClusterDO extends BaseCommon implements Serializable {
     private Long id;
 
     /**
-     * 集群类型
+     * Cluster type
      */
     private String tag;
 
     /**
-     * 集群名称
+     * Cluster name
      */
     private String name;
 
     /**
-     * 融合云上集群名
+     * Cluster name
      */
     private String clusterName;
 
     /**
-     * 机房
+     * room
      */
     private String region;
 
     /**
-     * 地区
+     * area
      */
     private String area;
 
     /**
-     * ES地址
+     * ES address
      */
     private String addr;
 
     /**
-     * ES用户名
+     * ES username
      */
     private String user;
 
     /**
-     * ES密码
+     * ES password
      */
     private String pwd;
 

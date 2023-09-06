@@ -28,7 +28,7 @@ import java.lang.reflect.Method;
 /**
  * @author wtt
  * @version 1.0
- * @description 内省技术测试
+ * @description Introspection Technology Test
  * @date 2021/9/22 10:19
  */
 public class IntrospectorTest {

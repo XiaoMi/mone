@@ -25,17 +25,17 @@ import java.util.List;
 public class RegionDTO {
 
     /**
-     * 英文名
+     * English name
      */
     private String regionNameEN;
 
     /**
-     * 中文名
+     * Chinese name
      */
     private String regionNameCN;
 
     /**
-     * zone集合
+     * Zone collection
      */
     private List<ZoneDTO> zoneDTOList;
 }

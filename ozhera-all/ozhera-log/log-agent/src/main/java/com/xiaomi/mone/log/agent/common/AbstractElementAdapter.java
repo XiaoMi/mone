@@ -40,7 +40,7 @@ public class AbstractElementAdapter implements
 
         Class<?> clz = type.getClass();
         switch (implType) {
-            /**以下是log type**/
+            /**The following is log type**/
             case "APP_LOG":
             case "APP_LOG_MULTI":
             case "APP_LOG_SIGNAL":
@@ -64,7 +64,7 @@ public class AbstractElementAdapter implements
             case "ORIGIN_LOG":
                 clz = OriginLogInput.class;
                 break;
-            /**以下是mq type**/
+            /**The following is mq type**/
             case "rocketmq":
                 clz = RmqOutput.class;
                 break;

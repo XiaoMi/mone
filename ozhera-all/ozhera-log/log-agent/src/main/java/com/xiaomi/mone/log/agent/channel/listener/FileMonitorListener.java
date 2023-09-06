@@ -25,12 +25,12 @@ import com.xiaomi.mone.log.agent.channel.ChannelService;
  */
 public interface FileMonitorListener {
     /**
-     * 新增
+     * Add
      */
     void addChannelService(ChannelService channelService);
 
     /**
-     * 删除
+     * Delete
      */
     void removeChannelService(ChannelService channelService);
 }

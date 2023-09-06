@@ -137,7 +137,7 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
     }
 
     /**
-     * 读取ES索引的数据
+     * Read the data of the ES index
      *
      * @param logQuery
      * @return
@@ -153,22 +153,22 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
             MilogLogStoreDO milogLogstoreDO = logstoreDao.queryById(logQuery.getStoreId());
             if (milogLogstoreDO == null) {
                 log.warn("[EsDataService.logQuery] not find logStore:[{}]", logQuery.getLogstore());
-                return Result.failParam("找不到[" + logQuery.getLogstore() + "]对应的数据");
+                return Result.failParam("not found[" + logQuery.getLogstore() + "]The corresponding data");
             }
             EsService esService = esCluster.getEsService(milogLogstoreDO.getEsClusterId());
 
             String esIndexName = commonExtensionService.getSearchIndex(logQuery.getStoreId(), milogLogstoreDO.getEsIndex());
             if (esService == null || StringUtils.isEmpty(esIndexName)) {
-                log.warn("[EsDataService.logQuery] logStore:[{}]配置异常", logQuery.getLogstore());
-                return Result.failParam("logStore配置异常");
+                log.warn("[EsDataService.logQuery] logStore:[{}] configuration exceptions", logQuery.getLogstore());
+                return Result.failParam("logStore configuration exceptions");
             }
             List<String> keyList = getKeyList(milogLogstoreDO.getKeyList(), milogLogstoreDO.getColumnTypeList());
-            // 构建查询参数
+            // Build query parameters
             BoolQueryBuilder boolQueryBuilder = searchLog.getQueryBuilder(logQuery, getKeyColonPrefix(milogLogstoreDO.getKeyList()));
             SearchSourceBuilder builder = assembleSearchSourceBuilder(logQuery, keyList, boolQueryBuilder);
 
             searchRequest = new SearchRequest(new String[]{esIndexName}, builder);
-            // 查询
+            // query
             stopWatch.start("search-query");
             SearchResponse searchResponse = esService.search(searchRequest);
             stopWatch.stop();
@@ -178,7 +178,7 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
                 log.warn("##LONG-COST-QUERY##{} cost:{} ms, msg:{}", stopWatch.getLastTaskName(), stopWatch.getLastTaskTimeMillis());
             }
 
-            //结果转换
+            //Result transformation
             stopWatch.start("data-assemble");
             transformSearchResponse(searchResponse, dto, keyList);
             stopWatch.stop();
@@ -189,11 +189,11 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
 
             return Result.success(dto);
         } catch (ElasticsearchStatusException e) {
-            log.error("日志查询错误，日志搜索报错, 错误类型[{}], logQuery:[{}], searchRequest:[{}], user:[{}]", e.status(), logQuery, searchRequest, MoneUserContext.getCurrentUser(), e);
-            return Result.failParam("ES资源权限配置错误，请检查用户名密码或Token");
+            log.error("Log query error, log search error, error type[{}], logQuery:[{}], searchRequest:[{}], user:[{}]", e.status(), logQuery, searchRequest, MoneUserContext.getCurrentUser(), e);
+            return Result.failParam("If the permissions of ES resources are configured incorrectly, check the username and password or token");
         } catch (Throwable e) {
-            log.error("日志查询错误，日志搜索报错,logQuery:[{}],searchRequest:[{}],user:[{}]", logQuery, searchRequest, MoneUserContext.getCurrentUser(), e);
-            return Result.failParam("搜索词输入错误，请检查");
+            log.error("Log query error, log search error,logQuery:[{}],searchRequest:[{}],user:[{}]", logQuery, searchRequest, MoneUserContext.getCurrentUser(), e);
+            return Result.failParam("Search term input error, please check");
         }
     }
 
@@ -206,7 +206,7 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
             builder.from((logQuery.getPage() - 1) * logQuery.getPageSize());
         }
         builder.size(logQuery.getPageSize());
-        // 高亮
+        // highlight
         builder.highlighter(getHighlightBuilder(keyList));
         builder.timeout(TimeValue.timeValueMinutes(2L));
         return builder;
@@ -220,7 +220,7 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
         List<LogDataDTO> logDataList = Lists.newArrayList();
         for (SearchHit hit : hits) {
             LogDataDTO logData = hit2DTO(hit, keyList);
-            // 封装高亮
+            // Package highlighted
             logData.setHighlight(getHightlinghtMap(hit));
             logDataList.add(logData);
         }
@@ -228,7 +228,7 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
         logDTO.setLogDataDTOList(logDataList);
     }
 
-    // 高亮
+    // highlight
     private HighlightBuilder getHighlightBuilder(List<String> keyList) {
         HighlightBuilder highlightBuilder = new HighlightBuilder();
         for (Pair<String, String> requiredField : requiredFields) {
@@ -248,7 +248,7 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
 
 
     /**
-     * 插入数据
+     * Insert data
      *
      * @param indexName
      * @param data
@@ -274,7 +274,7 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
             EsService esService = esCluster.getEsService(logStore.getEsClusterId());
             String esIndex = commonExtensionService.getSearchIndex(logStore.getId(), logStore.getEsIndex());
             if (esService == null || StringUtils.isEmpty(esIndex)) {
-                return Result.failParam("logStore或tail配置异常");
+                return Result.failParam("Log Store or tail configuration exceptions");
             }
             if (!StringUtils.isEmpty(interval)) {
                 BoolQueryBuilder queryBuilder = searchLog.getQueryBuilder(logQuery, getKeyColonPrefix(logStore.getKeyList()));
@@ -289,11 +289,11 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
                 return new Result<>(CommonError.UnknownError.getCode(), "The minimum time interval is 10s", null);
             }
         } catch (ElasticsearchStatusException e) {
-            log.error("日志查询错误，日志柱状图统计报错:[{}], 错误类型[{}], logQuery:[{}], user:[{}]", e, e.status(), logQuery, MoneUserContext.getCurrentUser(), e);
-            return Result.failParam("ES资源权限配置错误，请检查用户名密码或Token");
+            log.error("Log query errors and log bar chart statistics report errors:[{}], Error type[{}], logQuery:[{}], user:[{}]", e, e.status(), logQuery, MoneUserContext.getCurrentUser(), e);
+            return Result.failParam("ES resource permissions are misconfigured, please check the username password or token");
         } catch (Exception e) {
-            log.error("日志查询错误，日志柱状图统计报错[{}],logQuery:[{}],user:[{}]", e, logQuery, MoneUserContext.getCurrentUser(), e);
-            return Result.failParam("搜索词输入错误，请检查");
+            log.error("Log query errors and log bar chart statistics report errors[{}],logQuery:[{}],user:[{}]", e, logQuery, MoneUserContext.getCurrentUser(), e);
+            return Result.failParam("Search term input error, please check");
         }
 
     }
@@ -311,7 +311,7 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
 
 
     /**
-     * 获取trace日志
+     * Get trace logs
      *
      * @param logQuery
      * @return
@@ -322,7 +322,7 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
             log.info("getTraceLog,param data:{}", GSON.toJson(logQuery));
             return traceLog.getTraceLog(logQuery.getTraceId(), "", logQuery.getGenerationTime(), logQuery.getLevel());
         } catch (Exception e) {
-            log.error("日志查询错误，查询trace日志报错, logQuery:[{}]", e, GSON.toJson(logQuery), e);
+            log.error("Log query error, query trace log error, logQuery:[{}]", e, GSON.toJson(logQuery), e);
             return TraceLogDTO.emptyData();
         }
     }
@@ -333,7 +333,7 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
             tailDoList = tailDoList.stream().filter(logTailDo -> Objects.equals(query.getEnvId(), logTailDo.getEnvId())).collect(Collectors.toList());
         }
         if (tailDoList == null || tailDoList.isEmpty()) {
-            return Result.failParam("应用未接入日志");
+            return Result.failParam("The application is not connected to the log");
         }
         String tailName = "";
         for (MilogLogTailDo tail : tailDoList) {
@@ -351,7 +351,7 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
     }
 
     /**
-     * 获取机房内trace日志
+     * Obtain trace logs in the data center
      *
      * @param regionTraceLogQuery
      * @return
@@ -362,7 +362,7 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
     }
 
     /**
-     * 获取trace日志
+     * Get trace logs
      *
      * @param logQuery
      * @return
@@ -375,11 +375,11 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
         SearchRequest searchRequest = null;
         try {
             if (searchLog.isLegalParam(logContextQuery) == false) {
-                return Result.failParam("必要参数缺失");
+                return Result.failParam("Required parameters are missing");
             }
             MilogLogStoreDO milogLogstoreDO = logstoreDao.getByName(logContextQuery.getLogstore());
             if (milogLogstoreDO.getEsClusterId() == null || StringUtils.isEmpty(milogLogstoreDO.getEsIndex())) {
-                return Result.failParam("store 配置异常");
+                return Result.failParam("store Configuration exceptions");
             }
             EsService esService = esCluster.getEsService(milogLogstoreDO.getEsClusterId());
             String esIndexName = milogLogstoreDO.getEsIndex();
@@ -439,8 +439,8 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
             dto.setLogDataDTOList(logDataList);
             return Result.success(dto);
         } catch (Exception e) {
-            log.error("日志查询错误，日志上下文报错, logContextQuery:[{}], searchRequest:[{}], user:[{}]", logContextQuery, searchRequest, MoneUserContext.getCurrentUser(), e);
-            return Result.failParam("系统错误，请重试");
+            log.error("Log query error, log context error, logContextQuery:[{}], searchRequest:[{}], user:[{}]", logContextQuery, searchRequest, MoneUserContext.getCurrentUser(), e);
+            return Result.failParam("System error, please try again");
         }
     }
 
@@ -463,18 +463,18 @@ public class EsDataServiceImpl implements EsDataService, LogDataService, EsDataB
 
 
     public void logExport(LogQuery logQuery) throws Exception {
-        // 生成excel
+        // Generate Excel
         int maxLogNum = 10000;
         logQuery.setPageSize(maxLogNum);
         Result<LogDTO> logDTOResult = this.logQuery(logQuery);
         List<Map<String, Object>> exportData = logDTOResult.getCode() != CommonError.Success.getCode() || logDTOResult.getData().getLogDataDTOList() == null || logDTOResult.getData().getLogDataDTOList().isEmpty() ? null : logDTOResult.getData().getLogDataDTOList().stream().map(logDataDto -> ExportUtils.SplitTooLongContent(logDataDto)).collect(Collectors.toList());
         HSSFWorkbook excel = ExportExcel.HSSFWorkbook4Map(exportData, generateTitle(logQuery));
-        // 下载
+        // Download
         String fileName = String.format("%s_log.xls", logQuery.getLogstore());
         searchLog.downLogFile(excel, fileName);
     }
 
     private String generateTitle(LogQuery logQuery) {
-        return String.format("%s日志，搜索词:[%s]，时间范围%d-%d", logQuery.getLogstore(), logQuery.getFullTextSearch() == null ? "" : logQuery.getFullTextSearch(), logQuery.getStartTime(), logQuery.getEndTime());
+        return String.format("%sLogs, search terms:[%s],time range%d-%d", logQuery.getLogstore(), logQuery.getFullTextSearch() == null ? "" : logQuery.getFullTextSearch(), logQuery.getStartTime(), logQuery.getEndTime());
     }
 }

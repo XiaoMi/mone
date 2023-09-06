@@ -27,15 +27,15 @@ import lombok.Data;
 @Data
 public class LogStoreDTO extends MilogLogStoreDO {
     /**
-     * 日志类型名称中文
+     * Log type name Chinese
      */
     private String logTypeName;
     /**
-     * 机房名称中文
+     * The name of the computer room Chinese
      */
     private String machineRoomName;
     /**
-     * 是否选择自定义索引
+     * Whether to select a custom index
      */
     private Boolean selectCustomIndex;
 

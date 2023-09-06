@@ -73,7 +73,7 @@ public class ExecutorUtil {
     }
 
     static {
-        //定时打印 线程池信息
+        //Regularly print thread pool information
         STP_EXECUTOR.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {

@@ -19,7 +19,7 @@ import lombok.Data;
 
 /**
  * @author zhangjuan
- * @Description 数据工场返回的 matrix es 域名
+ * @Description The matrix es domain name returned by the data factory
  * @date 2022-06-17
  */
 @Data

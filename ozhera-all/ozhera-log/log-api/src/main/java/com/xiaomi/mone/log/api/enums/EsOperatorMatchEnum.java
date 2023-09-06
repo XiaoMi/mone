@@ -20,11 +20,11 @@ import lombok.Getter;
 @Getter
 public enum EsOperatorMatchEnum {
     /**
-     * 非 K:v匹配，不指定field
+     * Non-K:v matching, no field is specified
      */
     ALL_MATCH_OPERATOR,
     /**
-     * 指定field字段
+     * Specifies the field field
      */
     KV_MATCH_OPERATOR,
     ;

@@ -27,7 +27,7 @@ import java.util.List;
 public interface LogSpaceService {
 
     /**
-     * 新建
+     * new
      *
      * @param cmd
      * @return
@@ -43,7 +43,7 @@ public interface LogSpaceService {
     Result<MilogSpaceDTO> getMilogSpaceById(Long id);
 
     /**
-     * 分页查询
+     * Paging query
      *
      * @param spaceName
      * @param page
@@ -56,7 +56,7 @@ public interface LogSpaceService {
     Result<List<MapDTO<String, Long>>> getMilogSpaces(Long tenantId);
 
     /**
-     * 更新
+     * update
      *
      * @param cmd
      * @return

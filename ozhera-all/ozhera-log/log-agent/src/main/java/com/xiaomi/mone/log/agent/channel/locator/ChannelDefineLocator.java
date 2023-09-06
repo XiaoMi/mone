@@ -26,7 +26,7 @@ import java.util.List;
 public interface ChannelDefineLocator {
 
     /**
-     * 获取channel配置元数据
+     * Get channel configuration metadata
      *
      * @return
      */

@@ -20,7 +20,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import java.util.List;
 
 /**
- * es 语句匹配
+ * es Statement matching
  */
 public interface StatementMatchParse {
 

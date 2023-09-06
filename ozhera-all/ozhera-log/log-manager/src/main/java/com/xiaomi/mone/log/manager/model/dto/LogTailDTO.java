@@ -40,12 +40,12 @@ public class LogTailDTO {
     private String valueList;
     private String tailRate;
     /**
-     * 服务 部署空间
+     * Service deployment space
      **/
     private String deploySpace;
 
     /**
-     * 行首正则
+     * Row regex
      **/
     private String firstLineReg;
 
@@ -54,15 +54,15 @@ public class LogTailDTO {
      */
     private String source;
     /**
-     * 应用类型 0:mione应用
+     * App type 0: Mione app
      **/
     private Integer appType;
     /**
-     * 机器类型 0.容器 1.物理机
+     * Machine Type 0. Container 1. Physical machine
      */
     private Integer machineType;
     /**
-     *  应用所在的机房 节点信息
+     *  The node information of the data center where the application resides
      */
     private List<MotorRoomDTO> motorRooms;
 

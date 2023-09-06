@@ -51,7 +51,7 @@ public class LogParserTest {
         String log = "";
         String pattern = "[%s]-[%s]-[%s]-[%s]-[%s]-%s";
         List<String> keys = Arrays.asList("timeStamp", "appName", "thread", "level", "bizId", "message");
-        // 获取字符串的前缀和后缀
+        // Gets the prefix and suffix of the string
         Map<Integer, List<String>> map = new HashMap<>();
         String[] split = StringUtils.split(pattern, "-");
         for (int i = 0; i < split.length; i++) {
@@ -107,23 +107,13 @@ public class LogParserTest {
         }
     }
 
-    //    List<String> sparator = Arrays.asList("|", )
-//
-//    private String parseLog(String pattern, String data, List<String> keys) {
-//        //1.解析patter,解析出来每一对（相邻的开始和结束）
-//
-//        //2.取每一对
-//        Stack<Character> stack = new Stack<Character>();
-//
-//    }
-//
     @Test
     public void isPattern() {
         String content = "I am pratice from runoob.com";
         String regex = ".*runoob.*";
 
         boolean isMatch = Pattern.matches(regex, content);
-        System.out.println("字符串是否包含了“runoob”" + isMatch);
+        System.out.println("Whether the string contains “runoob”" + isMatch);
 
     }
 }

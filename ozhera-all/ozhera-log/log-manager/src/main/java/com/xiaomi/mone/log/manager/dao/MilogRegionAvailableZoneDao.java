@@ -26,7 +26,7 @@ import java.util.List;
 
 /**
  * @author zhangping17
- * @date 2021-10-15 Region，AZ查询
+ * @date 2021-10-15 Region，AZ query
  */
 @Service
 @Slf4j
@@ -36,7 +36,7 @@ public class MilogRegionAvailableZoneDao {
     private NutDao dao;
 
     /**
-     * 根据zone英文名或者region和zone信息
+     * According to zone English name or region and zone information
      *
      * @param zoneNameENs
      * @return

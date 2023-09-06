@@ -30,7 +30,7 @@ import static com.xiaomi.mone.log.common.Constant.GSON;
 /**
  * @author wtt
  * @version 1.0
- * @description 与agent通信的接收器----agent启动获取配置
+ * @description The receiver that communicates with the agent ---- the agent starts to get the configuration
  * @date 2021/8/19 15:32
  */
 @Slf4j

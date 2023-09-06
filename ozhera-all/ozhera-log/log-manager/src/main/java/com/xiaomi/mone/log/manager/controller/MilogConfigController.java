@@ -144,9 +144,9 @@ public class MilogConfigController {
     }
 
     /**
-     * 小于progressRation进度的所有采集信息
+     * All collection information less than progress Ration progress
      *
-     * @param progressRation 进度 0.80
+     * @param progressRation progress 0.80
      * @return
      */
     @RequestMapping(path = "/milog/col/process/imperfect", method = "get")
@@ -212,7 +212,7 @@ public class MilogConfigController {
     }
 
     /**
-     * TODO 收集速率字典（后期需要迁移到字典接口中）
+     * Collection rate dictionary (need to be migrated to the dictionary interface later)
      *
      * @return
      */
@@ -232,7 +232,7 @@ public class MilogConfigController {
     }
 
     /**
-     * 查询该store下接入的所有应用
+     * Query all applications connected to the store
      *
      * @param storeId
      * @return
@@ -243,7 +243,7 @@ public class MilogConfigController {
     }
 
     /**
-     * 根据appId获取项目配置的所有环境信息
+     * Get all environment information of project configuration based on app ID
      *
      * @param milogAppId
      * @return
@@ -255,7 +255,7 @@ public class MilogConfigController {
     }
 
     /**
-     * 首页
+     * front page
      */
     @RequestMapping(path = "/milog/index/access", method = "get")
     public Result<Map<String, Object>> getAccess() {
@@ -268,7 +268,7 @@ public class MilogConfigController {
     }
 
     /**
-     * 获取space下边的store列表
+     * Get the store list under the space
      *
      * @param spaceId
      * @return
@@ -283,7 +283,7 @@ public class MilogConfigController {
         return heralogHomePageService.getMiloglogAccessPattern();
     }
 
-    // 快速接入
+    // Quick access
     @RequestMapping(path = "/milog/index/fastaccess")
     public Result<Void> fastAccess() {
         return null;
@@ -302,7 +302,7 @@ public class MilogConfigController {
     }
 
     /**
-     * 测试解析规则
+     * Test parsing rules
      *
      * @param mlogParseParam
      * @return
@@ -313,7 +313,7 @@ public class MilogConfigController {
     }
 
     /**
-     * 根据示例解析出索引内容
+     * Parse the index content according to the example
      *
      * @param mlogParseParam
      * @return
@@ -324,7 +324,7 @@ public class MilogConfigController {
     }
 
     /**
-     * 根据应用快速查询
+     * Quick query by application
      *
      * @param milogAppId
      * @return
@@ -335,7 +335,7 @@ public class MilogConfigController {
     }
 
     /**
-     * 查询当前应用的space和store
+     * Query the space and store of the current application
      *
      * @param appId
      * @param platFormCode
@@ -348,7 +348,7 @@ public class MilogConfigController {
     }
 
     /**
-     * 查询当前创建用户所在部门的下的es索引列表
+     * Query the es index list under the department where the currently created user is located
      *
      * @param regionCode
      * @param logTypeCode

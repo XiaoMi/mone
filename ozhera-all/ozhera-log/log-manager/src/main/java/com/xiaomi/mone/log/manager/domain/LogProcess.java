@@ -48,7 +48,7 @@ public class LogProcess {
     private LogProcessCollector logProcessCollector;
 
     /**
-     * 更新日志收集进度
+     * Update log collection progress
      *
      * @param cmd
      */
@@ -61,7 +61,7 @@ public class LogProcess {
     }
 
     /**
-     * 获取agent日志收集进度
+     * Get the progress of agent log collection
      *
      * @param ip
      * @return
@@ -71,7 +71,7 @@ public class LogProcess {
     }
 
     /**
-     * 获取tail的日志收集进度
+     * Get the log collection progress of tail
      *
      * @param tailId
      * @return
@@ -88,7 +88,7 @@ public class LogProcess {
     }
 
     /**
-     * 获取store的日志收集进度
+     * Get the log collection progress of the store
      *
      * @param storeId
      * @return

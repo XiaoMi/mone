@@ -33,7 +33,7 @@ public class RmqOutput extends Output implements Serializable {
     private String serviceName = "RocketMQService";
 
     /**
-     * mq填：namesrv_addr
+     * mq fill：namesrv_addr
      */
     private String clusterInfo;
 

@@ -18,7 +18,7 @@ package com.xiaomi.mone.log.agent.input;
 import java.io.Serializable;
 
 /**
- * 应用日志类型输入
+ * Apply log type input
  *
  * @author shanwb
  * @date 2021-07-19

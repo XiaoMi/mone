@@ -26,22 +26,22 @@ import org.nutz.dao.entity.annotation.*;
  * @date 2022/7/14 16:01
  */
 @Table("milog_store_space_auth")
-@Comment("milog store授权表,store可绑定额外的space")
+@Comment("milog Store authorization form, store can bind additional space")
 @Data
 public class MilogStoreSpaceAuth extends BaseCommon {
     @Id
-    @Comment("主键Id")
+    @Comment("Primary key Id")
     @ColDefine(customType = "bigint")
     private Long id;
 
     @Column(value = "store_id")
     @ColDefine(customType = "bigint")
-    @Comment("store主键")
+    @Comment("Store primary key")
     private Long storeId;
 
     @Column(value = "space_id")
     @ColDefine(customType = "bigint")
-    @Comment("space主键")
+    @Comment("Space primary key")
     private Long spaceId;
 
 }

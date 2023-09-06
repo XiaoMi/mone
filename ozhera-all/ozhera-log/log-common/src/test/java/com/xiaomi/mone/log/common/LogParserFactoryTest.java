@@ -42,7 +42,7 @@ public class LogParserFactoryTest {
         String valueList = "0";
         String parseScript = "@##$%";
         String topicName = "3424";
-        String tailName = "发射点发射点";
+        String tailName = "test name";
         String mqTag = "fsfsd";
         String logStoreName = "testet";
         String message = "{}";

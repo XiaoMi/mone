@@ -44,7 +44,7 @@ public class ChannelMemory implements Serializable {
     private Long currentTime;
 
     /**
-     * todo 消息缓存列表，改为文件地址，需要时再加载
+     * Message cache list, changed to file address, loaded again when needed
      */
     private List<LineMessage> messageList;
 
@@ -53,45 +53,44 @@ public class ChannelMemory implements Serializable {
 
         private String currentFile;
         /**
-         * 采集时间
+         * collection time
          */
         private Long ctTime;
 
         /**
-         * 当前文件列表索引号，
-         * 不是最大，表示采集有延迟
+         * The index number of the current file list is not the largest, indicating that the collection is delayed
          */
         private Integer currentFileIdx;
         /**
-         * unix中标识文件唯一性
+         * Identify the uniqueness of files in unix
          */
         private UnixFileNode unixFileNode;
 
         /**
-         * 当前采集的最新行号
+         * The latest line number currently collected
          */
         private Long currentRowNum;
         /**
-         * 当前采集的最新字符号
+         * The latest character symbol currently collected
          */
         private Long pointer;
         /**
-         * 当前文件的最新字符号
+         * The latest character symbol of the current file
          */
         private Long fileMaxPointer;
         /**
-         * 文件列表，一般日志都会配split规则，拆成多个文件
+         * File list. Generally, logs will be equipped with split rules and split into multiple files.
          */
         private List<String> fileList;
 
         /**
-         * 是否停止采集
-         * - 停止采集的，agent重启时也会忽略采集
-         * - 停止采集的，如果文件不存在，也会删除掉该memory记录
+         * Whether to stop the collection
+         * - if the collection is stopped, the agent will ignore the collection when it restarts
+         * - if the collection is stopped, if the file does not exist, the memory record will also be deleted
          */
         private Boolean finished;
         /**
-         * 只有当部署在k8s上时才有值
+         * Only has value when deployed on k8s
          */
         private String podType;
 

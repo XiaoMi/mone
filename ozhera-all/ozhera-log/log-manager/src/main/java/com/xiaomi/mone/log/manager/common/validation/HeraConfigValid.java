@@ -72,25 +72,25 @@ public class HeraConfigValid {
 
     public String verifyLogTailParam(LogTailParam param) {
         if (null == param.getMilogAppId()) {
-            return "选择的应用不能为空";
+            return "The selected app cannot be empty";
         }
         if (null == param || StringUtils.isBlank(param.getLogPath())) {
-            return "路径不能为空";
+            return "The path cannot be empty";
         }
         if (null == param.getSpaceId()) {
-            return "spaceId不能为空";
+            return "The space ID cannot be empty";
         }
         if (null == param.getStoreId()) {
-            return "storeId不能为空";
+            return "The store ID cannot be empty";
         }
         String path = param.getLogPath();
         MilogLogStoreDO milogLogstoreDO = milogLogstoreDao.queryById(param.getStoreId());
         if (Objects.equals("staging", serverType) &&
                 !MachineRegionEnum.CN_MACHINE.getEn().equals(milogLogstoreDO.getMachineRoom())) {
-            return "测试环境只支持大陆机房，其它机房由于网络问题不支持";
+            return "The test environment only supports mainland data centers, and other data centers are not supported due to network problems";
         }
         if (path.equals("/home/work/log/") || path.equals("/home/work/log") || path.startsWith("/home/work/log") && path.split("/").length < 4) {
-            return "日志路径错误，请确认后提交";
+            return "The log path is wrong, please confirm and submit";
         }
         String validMsg = tailExtensionService.validLogPath(param);
         return StringUtils.isNotEmpty(validMsg) ? validMsg : StringUtils.EMPTY;
@@ -99,16 +99,16 @@ public class HeraConfigValid {
     public String checkParseParam(MlogParseParam mlogParseParam) {
         StringBuilder sb = new StringBuilder();
         if (null == mlogParseParam.getStoreId()) {
-            sb.append("store不能为空;");
+            sb.append("The store cannot be empty;");
         }
         if (null == mlogParseParam.getParseScript()) {
-            sb.append("解析脚本不能为空;");
+            sb.append("The parsing script cannot be empty;");
         }
         if (null == mlogParseParam.getValueList()) {
-            sb.append("索引规则不能为空;");
+            sb.append("Indexing rules cannot be empty;");
         }
         if (null == mlogParseParam.getMsg()) {
-            sb.append("日志信息不能为空;");
+            sb.append("Log information cannot be empty;");
         }
         return sb.toString();
     }
@@ -117,16 +117,16 @@ public class HeraConfigValid {
         StringBuilder sb = new StringBuilder();
         if (!LogParserFactory.LogParserEnum.JSON_PARSE.getCode().equals(mlogParseParam.getParseType())
                 && (null == mlogParseParam.getParseScript() || "" == mlogParseParam.getParseScript())) {
-            sb.append("解析脚本不能为空;");
+            sb.append("The parsing script cannot be empty;");
         }
         if (null == mlogParseParam.getMsg()) {
-            sb.append("日志信息不能为空;");
+            sb.append("Log information cannot be empty;");
         }
         return sb.toString();
     }
 
     public boolean checkTailNameSame(String tailName, Long id, String machineRoom) {
-        // 校验同名日志文件
+        // Verify the log file with the same name
         List<MilogLogTailDo> logtailDoList = milogLogtailDao.queryTailNameExists(tailName, machineRoom);
         if (null == id) {
             return CollectionUtils.isNotEmpty(logtailDoList);

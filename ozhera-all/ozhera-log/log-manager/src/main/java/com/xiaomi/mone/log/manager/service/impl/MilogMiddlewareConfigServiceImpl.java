@@ -123,13 +123,13 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
         }
         List<MilogMiddlewareConfig> milogMiddlewareConfigs = milogMiddlewareConfigDao.queryMiddlewareConfigByCondition(Cnd.where("alias", "=", middlewareAddParam.getAlias()), null);
         if (CollectionUtils.isNotEmpty(milogMiddlewareConfigs)) {
-            return Result.failParam("别名已经存在了，请修改后保存");
+            return Result.failParam("The alias already exists, please modify it and save it");
         }
-        //默认值只会有一个
+        //There will only be one default value
         if (accurateTypes.contains(middlewareAddParam.getType())) {
             MilogMiddlewareConfig config = milogMiddlewareConfigDao.queryDefaultMiddlewareConfig();
             if (null != config && middlewareAddParam.getIsDefault() == 1) {
-                return Result.failParam("默认值只会有一个,请把其它的默认的默认值关掉");
+                return Result.failParam("There will only be one default value, please turn off the other default defaults");
             }
         }
         milogMiddlewareConfigDao.addMiddlewareConfig(AddParamToAddEntity(middlewareAddParam));
@@ -144,20 +144,20 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
         }
         MilogMiddlewareConfig milogMiddlewareConfig = milogMiddlewareConfigDao.queryById(middlewareUpdateParam.getId());
         if (null == milogMiddlewareConfig) {
-            return Result.failParam("修改的对象不存在，请确保Id正确");
+            return Result.failParam("The modified object does not exist, make sure the id is correct");
         }
         List<MilogMiddlewareConfig> milogMiddlewareConfigs = milogMiddlewareConfigDao.queryMiddlewareConfigByCondition(Cnd.where("alias", "=", middlewareUpdateParam.getAlias()), null);
         if (CollectionUtils.isNotEmpty(milogMiddlewareConfigs)) {
             List<MilogMiddlewareConfig> middlewareConfigs = milogMiddlewareConfigs.stream().filter(config -> config.getId().longValue() != middlewareUpdateParam.getId().longValue()).collect(Collectors.toList());
             if (CollectionUtils.isNotEmpty(middlewareConfigs)) {
-                return Result.failParam("别名已经存在了，请修改后保存");
+                return Result.failParam("The alias already exists, please modify it and save it");
             }
         }
-        //默认值只会有一个
+        //There will only be one default value
         if (accurateTypes.contains(middlewareUpdateParam.getType())) {
             MilogMiddlewareConfig config = milogMiddlewareConfigDao.queryDefaultMiddlewareConfig();
             if (null != config && middlewareUpdateParam.getIsDefault() == 1 && !config.getId().equals(middlewareUpdateParam.getId())) {
-                return Result.failParam("默认值只会有一个,请把其它的默认值关掉后修改");
+                return Result.failParam("There will only be one default value, please turn off the other default values and modify it");
             }
         }
         milogMiddlewareConfigDao.updateMiddlewareConfig(updateParamToUpdateEntity(middlewareUpdateParam, milogMiddlewareConfig));
@@ -171,11 +171,11 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
         }
         MilogMiddlewareConfig milogMiddlewareConfig = milogMiddlewareConfigDao.queryById(id);
         if (null == milogMiddlewareConfig) {
-            return Result.failParam("删除的对象不存在，请确保Id正确");
+            return Result.failParam("The deleted object does not exist, make sure the Id is correct");
         }
         List<MilogAppMiddlewareRel> milogAppMiddlewareRels = milogAppMiddlewareRelDao.queryByCondition(null, id, null);
         if (CollectionUtils.isNotEmpty(milogAppMiddlewareRels)) {
-            return Result.failParam("关联的tail存在，请确保tail已变更");
+            return Result.failParam("The associated tail exists, make sure the tail has changed");
         }
         milogMiddlewareConfigDao.deleteMiddlewareConfig(id);
         return Result.success();
@@ -211,20 +211,16 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
 
         Pager pager = new Pager(resourcePage.getPage(), resourcePage.getPageSize());
 
-        List<MilogMiddlewareConfig> milogMiddlewareConfigs = milogMiddlewareConfigDao
-                .queryMiddlewareConfigByCondition(mqCnd, pager);
+        List<MilogMiddlewareConfig> milogMiddlewareConfigs = milogMiddlewareConfigDao.queryMiddlewareConfigByCondition(mqCnd, pager);
         Integer mqResourceTotal = milogMiddlewareConfigDao.queryMiddlewareConfigCountByCondition(mqCnd);
 
         Long esResourceTotal = queryEsResource(milogMiddlewareConfigs, resourcePage);
 
 //        milogMiddlewareConfigs = userShowAuthority(milogMiddlewareConfigs);
         milogMiddlewareConfigs = resourceExtensionService.userShowAuthority(milogMiddlewareConfigs);
-        List<ResourceInfo> resourceInfos = milogMiddlewareConfigs.stream()
-                .map(MilogMiddlewareConfig::configToResourceVO)
-                .collect(Collectors.toList());
+        List<ResourceInfo> resourceInfos = milogMiddlewareConfigs.stream().map(MilogMiddlewareConfig::configToResourceVO).collect(Collectors.toList());
 
-        return new PageInfo(resourcePage.getPage(), resourcePage.getPageSize(),
-                mqResourceTotal + esResourceTotal.intValue(), resourceInfos);
+        return new PageInfo(resourcePage.getPage(), resourcePage.getPageSize(), mqResourceTotal + esResourceTotal.intValue(), resourceInfos);
     }
 
     private Cnd generateMqQueryCnd(ResourcePage resourcePage) {
@@ -242,20 +238,16 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     }
 
     /**
-     * 处理es资源，由于历史原理，es资源在单独的表中，我们需要合并数据
+     * Dealing with ES resources, due to historical principles, ES resources are in separate tables and we need to combine data
      */
-    private Long queryEsResource(List<MilogMiddlewareConfig> milogMiddlewareConfigs,
-                                 ResourcePage resourcePage) {
+    private Long queryEsResource(List<MilogMiddlewareConfig> milogMiddlewareConfigs, ResourcePage resourcePage) {
         Long count = 0L;
         if (MiddlewareEnum.ELASTICSEARCH.getCode().equals(resourcePage.getResourceCode())) {
             PageDTO page = new PageDTO<MilogEsClusterDO>(resourcePage.getPage(), resourcePage.getPageSize());
             Wrapper queryWrapper = generateEsQueryWrapper(resourcePage);
 
-            PageDTO<MilogEsClusterDO> esClusterPage = milogEsClusterMapper.selectPage(
-                    page, queryWrapper);
-            List<MilogMiddlewareConfig> configEsList = esClusterPage.getRecords().stream()
-                    .map(MilogEsClusterDO::miLogEsResourceToConfig)
-                    .collect(Collectors.toList());
+            PageDTO<MilogEsClusterDO> esClusterPage = milogEsClusterMapper.selectPage(page, queryWrapper);
+            List<MilogMiddlewareConfig> configEsList = esClusterPage.getRecords().stream().map(MilogEsClusterDO::miLogEsResourceToConfig).collect(Collectors.toList());
             milogMiddlewareConfigs.addAll(configEsList);
 
             count = milogEsClusterMapper.selectCount(queryWrapper);
@@ -346,20 +338,20 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     }
 
     /**
-     * 当前用户的资源信息
-     * 1.是否初始化
-     * 2.是否展示
-     * 3.资源列表
+     * Resource information of the current user
+     * 1. Whether to initialize
+     * 2. Whether to display
+     * 3. Resource list
      *
      * @return
      */
     @Override
     public ResourceUserSimple userResourceList(String regionCode, Integer logTypeCode) {
         if (StringUtils.isBlank(regionCode)) {
-            throw new MilogManageException("regionCode不能为空");
+            throw new MilogManageException("Region Code cannot be empty");
         }
         if (null == logTypeCode) {
-            throw new MilogManageException("logTypeCode不能为空");
+            throw new MilogManageException("Log Type Code cannot be empty");
         }
         ResourceUserSimple resourceUserSimple = new ResourceUserSimple();
 
@@ -386,29 +378,23 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     @NotNull
     public List<MilogMiddlewareConfig> getESConfigs(String regionCode) {
         QueryWrapper queryWrapper = new QueryWrapper<>().eq("area", regionCode);
-        List<MilogEsClusterDO> esClusterDOS = milogEsClusterMapper
-                .selectList(queryWrapper);
-        List<MilogMiddlewareConfig> middlewareConfigEss = esClusterDOS.stream()
-                .map(MilogEsClusterDO::miLogEsResourceToConfig)
-                .collect(Collectors.toList());
+        List<MilogEsClusterDO> esClusterDOS = milogEsClusterMapper.selectList(queryWrapper);
+        List<MilogMiddlewareConfig> middlewareConfigEss = esClusterDOS.stream().map(MilogEsClusterDO::miLogEsResourceToConfig).collect(Collectors.toList());
         return middlewareConfigEss;
     }
 
     /**
-     * 查询当前用户下的资源是否已经初始化
+     * Query whether the resources under the current user have been initialized
      */
-    private Boolean queryResourceInitialized(ResourceUserSimple configResource, String regionCode,
-                                             Integer logTypeCode) {
+    private Boolean queryResourceInitialized(ResourceUserSimple configResource, String regionCode, Integer logTypeCode) {
         List<MilogMiddlewareConfig> milogMiddlewareConfigs = milogMiddlewareConfigDao.queryByResourceCode(resourceExtensionService.getResourceCode(), regionCode);
         List<MilogMiddlewareConfig> middlewareMqConfigs = resourceExtensionService.currentUserConfigFilter(milogMiddlewareConfigs);
 
         List<MilogEsClusterDO> esClusterDOS = milogEsClusterMapper.selectList(Wrappers.lambdaQuery());
-        List<MilogMiddlewareConfig> middlewareConfigEss = esClusterDOS.stream()
-                .map(logEsClusterDO -> {
-                    MilogMiddlewareConfig milogMiddlewareConfig = MilogEsClusterDO.miLogEsResourceToConfig(logEsClusterDO);
-                    return milogMiddlewareConfig;
-                })
-                .collect(Collectors.toList());
+        List<MilogMiddlewareConfig> middlewareConfigEss = esClusterDOS.stream().map(logEsClusterDO -> {
+            MilogMiddlewareConfig milogMiddlewareConfig = MilogEsClusterDO.miLogEsResourceToConfig(logEsClusterDO);
+            return milogMiddlewareConfig;
+        }).collect(Collectors.toList());
 
         List<MilogMiddlewareConfig> middlewareEsConfigs = resourceExtensionService.currentUserConfigFilter(middlewareConfigEss);
 
@@ -423,14 +409,13 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
         }
         String msg = "";
         if (CollectionUtils.isEmpty(middlewareMqConfigs)) {
-            msg = "mq资源没有初始化";
+            msg = "MQ resource is not initialized";
         }
         if (CollectionUtils.isEmpty(middlewareEsConfigs) || CollectionUtils.isEmpty(milogEsIndexDOS)) {
-            msg = "ES资源没有初始化或者当前类型的日志索引没有初始化";
+            msg = "The ES resource is not initialized or the log index of the current type is not initialized";
         }
         configResource.setInitializedFlag(Boolean.FALSE);
-        configResource.setNotInitializedMsg(String.format(
-                "%s%s", msg, RESOURCE_NOT_INITIALIZED_MESSAGE));
+        configResource.setNotInitializedMsg(String.format("%s%s", msg, RESOURCE_NOT_INITIALIZED_MESSAGE));
         return Boolean.FALSE;
     }
 
@@ -442,17 +427,13 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     }
 
     /**
-     * 查询当前用户的资源列表
+     * Query the list of resources for the current user
      *
      * @param configResource
      */
-    private void queryCurrentUserResourceList(ResourceUserSimple configResource,
-                                              List<MilogMiddlewareConfig> milogMiddlewareConfigs, Integer code) {
+    private void queryCurrentUserResourceList(ResourceUserSimple configResource, List<MilogMiddlewareConfig> milogMiddlewareConfigs, Integer code) {
         milogMiddlewareConfigs = resourceExtensionService.currentUserConfigFilter(milogMiddlewareConfigs);
-        List valueKeyObjs = milogMiddlewareConfigs.stream()
-                .map(milogMiddlewareConfig -> new ValueKeyObj(
-                        milogMiddlewareConfig.getId(), milogMiddlewareConfig.getAlias()))
-                .collect(Collectors.toList());
+        List valueKeyObjs = milogMiddlewareConfigs.stream().map(milogMiddlewareConfig -> new ValueKeyObj(milogMiddlewareConfig.getId(), milogMiddlewareConfig.getAlias())).collect(Collectors.toList());
         if (Objects.equals(MiddlewareEnum.ELASTICSEARCH.getCode(), code)) {
             configResource.setEsResourceList(valueKeyObjs);
             return;
@@ -487,12 +468,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
         MilogEsClusterDO esClusterDO = milogEsClusterMapper.selectById(id);
         if (null != esClusterDO) {
             List<MilogEsIndexDO> milogEsIndexDOS = milogEsIndexMapper.selectList(new QueryWrapper<MilogEsIndexDO>().eq("cluster_id", esClusterDO.getId()));
-            List<EsIndexVo> multipleEsIndex = milogEsIndexDOS.stream()
-                    .map(MilogEsIndexDO::getLogType)
-                    .distinct()
-                    .sorted(Integer::compareTo)
-                    .map(getIntegerEsIndexVoFunction(milogEsIndexDOS))
-                    .collect(Collectors.toList());
+            List<EsIndexVo> multipleEsIndex = milogEsIndexDOS.stream().map(MilogEsIndexDO::getLogType).distinct().sorted(Integer::compareTo).map(getIntegerEsIndexVoFunction(milogEsIndexDOS)).collect(Collectors.toList());
 
             return esClusterDO.configToResourceVO(multipleEsIndex);
         }
@@ -505,18 +481,14 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
             EsIndexVo esIndexVo = new EsIndexVo();
             esIndexVo.setLogTypeCode(logTypeCode);
             esIndexVo.setLogTypeName(LogTypeEnum.queryNameByType(logTypeCode));
-            List<String> esIndexList = milogEsIndexDOS.stream()
-                    .filter(milogEsIndexDO -> Objects.equals(
-                            logTypeCode, milogEsIndexDO.getLogType()))
-                    .map(MilogEsIndexDO::getIndexName)
-                    .collect(Collectors.toList());
+            List<String> esIndexList = milogEsIndexDOS.stream().filter(milogEsIndexDO -> Objects.equals(logTypeCode, milogEsIndexDO.getLogType())).map(MilogEsIndexDO::getIndexName).collect(Collectors.toList());
             esIndexVo.setEsIndexList(esIndexList);
             return esIndexVo;
         };
     }
 
     /**
-     * 更新每一列资源的标签
+     * Update the label for each column of resources
      *
      * @param milogMiddlewareConfig
      */
@@ -532,14 +504,10 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
 
     private void updateEsResourceLabel(MilogEsClusterDO clusterDO) {
         List<String> labels = clusterDO.getLabels();
-        if (StringUtils.isBlank(clusterDO.getUpdater()) &&
-                StringUtils.isBlank(clusterDO.getCreator())) {
+        if (StringUtils.isBlank(clusterDO.getUpdater()) && StringUtils.isBlank(clusterDO.getCreator())) {
             return;
         }
-        List<String> newLabels = generateResourceLabels(
-                StringUtils.isBlank(clusterDO.getUpdater()) ?
-                        clusterDO.getCreator() : clusterDO.getUpdater(),
-                labels);
+        List<String> newLabels = generateResourceLabels(StringUtils.isBlank(clusterDO.getUpdater()) ? clusterDO.getCreator() : clusterDO.getUpdater(), labels);
         clusterDO.setLabels(newLabels);
         milogEsClusterMapper.updateById(clusterDO);
     }
@@ -547,19 +515,17 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     private List<String> generateResourceLabels(String updaterUId, List<String> existLabels) {
         List<String> resourceDeptLabels = resourceExtensionService.generateResourceLabels(updaterUId);
         if (CollectionUtils.isNotEmpty(existLabels)) {
-            List<String> userLabelList = existLabels.stream().filter(label ->
-                            !label.startsWith(DEPT_LEVEL_PREFIX) || !label.contains(DEPT_NAME_PREFIX))
-                    .collect(Collectors.toList());
+            List<String> userLabelList = existLabels.stream().filter(label -> !label.startsWith(DEPT_LEVEL_PREFIX) || !label.contains(DEPT_NAME_PREFIX)).collect(Collectors.toList());
             resourceDeptLabels.addAll(userLabelList);
         }
         return resourceDeptLabels;
     }
 
     /**
-     * 添加资源
-     * 1.如果是mq创建3个公共topic且开始标签过滤
-     * 2.标签处理
-     * 2.信息入库
+     * Add resources
+     * 1.If MQ is MQ, create 3 public topics and start tag filtering
+     * 2.Label processing
+     * 2.Information is stored
      *
      * @param miLogResource
      */
@@ -577,8 +543,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
 
         resourceExtensionService.addResourceMiddleProcessing(miLogResource);
 
-        MilogMiddlewareConfig milogMiddlewareConfig = MilogMiddlewareConfig
-                .miLogMqResourceToConfig(miLogResource);
+        MilogMiddlewareConfig milogMiddlewareConfig = MilogMiddlewareConfig.miLogMqResourceToConfig(miLogResource);
 
         wrapBaseCommon(milogMiddlewareConfig, OperateEnum.ADD_OPERATE);
 
@@ -593,7 +558,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
         milogEsClusterMapper.insert(esClusterDO);
 
         addEsIndex(esClusterDO.getId(), miLogResource.getMultipleEsIndex());
-        //添加es客户端
+        //Add the ES client
         esPlugin.buildEsClient(esClusterDO);
     }
 
@@ -629,8 +594,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
         List<MilogEsIndexDO> milogEsIndexDOS = Lists.newArrayList();
         if (CollectionUtils.isNotEmpty(multipleEsIndex)) {
             for (EsIndexVo esIndexVo : multipleEsIndex) {
-                milogEsIndexDOS.addAll(
-                        MilogEsIndexDO.essIndexVoToIndexDO(esClusterId, esIndexVo));
+                milogEsIndexDOS.addAll(MilogEsIndexDO.essIndexVoToIndexDO(esClusterId, esIndexVo));
             }
         }
         for (MilogEsIndexDO milogEsIndexDO : milogEsIndexDOS) {
@@ -639,9 +603,9 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     }
 
     /**
-     * 修改资源
-     * 1.比较talos的信息是否变化，如果变化，则需要创建3个公共topic且开始标签过滤
-     * 2.信息修改入库
+     * Modify the resource
+     * 1.To compare whether the information in MQ, if so, you need to create 3 public topics and start tag filtering
+     * 2.Information modification into storage
      *
      * @param miLogResource
      */
@@ -655,15 +619,14 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
             resourceExtensionService.addEsResourcePreProcessing(esClusterDO);
             milogEsClusterMapper.updateById(esClusterDO);
             handleEsIndexStore(miLogResource, esClusterDO.getId(), changed);
-            //修改es客户端信息
+            // Modify the ES client information
             esPlugin.buildEsClient(esClusterDO);
             return;
         }
 
         updateCompareMqInfo(miLogResource);
 
-        MilogMiddlewareConfig milogMiddlewareConfig = MilogMiddlewareConfig
-                .miLogMqResourceToConfig(miLogResource);
+        MilogMiddlewareConfig milogMiddlewareConfig = MilogMiddlewareConfig.miLogMqResourceToConfig(miLogResource);
 
         buildCommonAttr(miLogResource.getId(), milogMiddlewareConfig);
 
@@ -675,32 +638,29 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
             return true;
         }
         if (Objects.equals(ES_CONWAY_PWD, miLogResource.getConWay())) {
-            return !Objects.equals(clusterDO.getUser(), miLogResource.getAk()) ||
-                    !Objects.equals(clusterDO.getPwd(), miLogResource.getSk());
+            return !Objects.equals(clusterDO.getUser(), miLogResource.getAk()) || !Objects.equals(clusterDO.getPwd(), miLogResource.getSk());
         }
         if (Objects.equals(ES_CONWAY_TOKEN, miLogResource.getConWay())) {
-            return !Objects.equals(clusterDO.getToken(), miLogResource.getEsToken()) ||
-                    !Objects.equals(clusterDO.getDtCatalog(), miLogResource.getCatalog()) ||
-                    !Objects.equals(clusterDO.getDtDatabase(), miLogResource.getDatabase());
+            return !Objects.equals(clusterDO.getToken(), miLogResource.getEsToken()) || !Objects.equals(clusterDO.getDtCatalog(), miLogResource.getCatalog()) || !Objects.equals(clusterDO.getDtDatabase(), miLogResource.getDatabase());
         }
         return false;
     }
 
     /**
-     * 1.查询该es是不是已经被使用了
-     * 2.如果使用了，查看使用的索引是否变化了
-     * 3.如果变化了，则修改
-     * 4.否则，，删掉新增
+     * 1.Check if the ES has already been used
+     * 2.If so, see if the index used has changed
+     * 3.If it changes, modify
+     * 4.Otherwise, delete the new one
      *
      * @param miLogResource
      */
     private void handleEsIndexStore(MiLogResource miLogResource, Long esClusterId, boolean changed) {
-        //删除旧的es索引，新增新的es索引(比较如果已经存在的有，进来的没有，删除，已经存在的没有，进来的有新增)
+        //Delete the old ES index, add a new ES index (compare if there is already one, there is no incoming one, delete, there is no existing one, and there is a new one that comes in)
         handleEsIndex(esClusterId, miLogResource.getMultipleEsIndex());
         if (changed) {
             List<MilogLogStoreDO> storeDOS = logstoreDao.queryByEsInfo(miLogResource.getRegionEn(), esClusterId);
             if (changed && CollectionUtils.isNotEmpty(storeDOS)) {
-                //同步到stream
+                //Sync to stream
                 for (MilogLogStoreDO storeDO : storeDOS) {
                     logTail.handleStoreTail(storeDO.getId());
                 }
@@ -722,9 +682,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
         queryWrapper.eq("log_type", logTypeCode);
         List<MilogEsIndexDO> existEsIndexDO = milogEsIndexMapper.selectList(queryWrapper);
         if (CollectionUtils.isEmpty(existEsIndexDO)) {
-            addExIndexDo = esIndexList.stream()
-                    .map(indexName -> getMilogEsIndexDO(esClusterId, logTypeCode, indexName))
-                    .collect(Collectors.toList());
+            addExIndexDo = esIndexList.stream().map(indexName -> getMilogEsIndexDO(esClusterId, logTypeCode, indexName)).collect(Collectors.toList());
         } else {
             for (MilogEsIndexDO milogEsIndexDO : existEsIndexDO) {
                 if (!esIndexList.contains(milogEsIndexDO.getIndexName())) {
@@ -732,9 +690,7 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
                 }
             }
             List<String> existIndexes = existEsIndexDO.stream().map(MilogEsIndexDO::getIndexName).collect(Collectors.toList());
-            addExIndexDo = esIndexList.stream().filter(indexName -> !existIndexes.contains(indexName))
-                    .map(indexName -> getMilogEsIndexDO(esClusterId, logTypeCode, indexName))
-                    .collect(Collectors.toList());
+            addExIndexDo = esIndexList.stream().filter(indexName -> !existIndexes.contains(indexName)).map(indexName -> getMilogEsIndexDO(esClusterId, logTypeCode, indexName)).collect(Collectors.toList());
         }
         if (CollectionUtils.isNotEmpty(delExIndexDo)) {
             milogEsIndexMapper.deleteBatchIds(delExIndexDo.stream().map(MilogEsIndexDO::getId).collect(Collectors.toList()));
@@ -773,18 +729,14 @@ public class MilogMiddlewareConfigServiceImpl extends BaseService implements Mil
     }
 
     /**
-     * 比较mq的信息是否变化
-     * 变化后需要修改公共topic的信息
+     * Compare whether the information in the MQ changes
+     * After the change, you need to modify the information of the public topic
      *
      * @param miLogResource
      */
     private void updateCompareMqInfo(MiLogResource miLogResource) {
         MilogMiddlewareConfig config = milogMiddlewareConfigDao.queryById(miLogResource.getId());
-        if (!Objects.equals(miLogResource.getAk(), config.getAk()) ||
-                !Objects.equals(miLogResource.getSk(), config.getSk()) ||
-                !Objects.equals(miLogResource.getServiceUrl(), config.getServiceUrl()) ||
-                !Objects.equals(miLogResource.getOrgId(), config.getOrgId()) ||
-                !Objects.equals(miLogResource.getTeamId(), config.getTeamId())) {
+        if (!Objects.equals(miLogResource.getAk(), config.getAk()) || !Objects.equals(miLogResource.getSk(), config.getSk()) || !Objects.equals(miLogResource.getServiceUrl(), config.getServiceUrl()) || !Objects.equals(miLogResource.getOrgId(), config.getOrgId()) || !Objects.equals(miLogResource.getTeamId(), config.getTeamId())) {
             resourceExtensionService.addResourceMiddleProcessing(miLogResource);
         }
     }

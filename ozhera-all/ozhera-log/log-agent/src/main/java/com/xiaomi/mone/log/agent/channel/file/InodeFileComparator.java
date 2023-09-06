@@ -36,7 +36,7 @@ public class InodeFileComparator extends DefaultFileComparator {
             return sort;
         }
         if (sort == 0 && filePaths.contains(file1.getAbsolutePath())) {
-            //文件名称相同
+            //The file name is the same
             Long oldInode;
             if (INODE_MAP.containsKey(file1.getAbsolutePath())) {
                 oldInode = INODE_MAP.get(file1.getAbsolutePath());

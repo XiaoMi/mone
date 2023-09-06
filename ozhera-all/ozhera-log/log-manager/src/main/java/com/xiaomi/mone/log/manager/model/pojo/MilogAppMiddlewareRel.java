@@ -32,7 +32,7 @@ import java.io.Serializable;
  * @date 2021/9/17 16:55
  */
 @Table("milog_app_middleware_rel")
-@Comment("应用app与中间件配置关联表")
+@Comment("The application and middleware configuration association table")
 @Data
 @Builder
 @NoArgsConstructor
@@ -40,28 +40,28 @@ import java.io.Serializable;
 public class MilogAppMiddlewareRel extends BaseCommon implements Serializable {
 
     @Id
-    @Comment("主键Id")
+    @Comment("Primary key Id")
     @ColDefine(customType = "bigint")
     private Long id;
 
     @Column(value = "milog_app_id")
     @ColDefine(customType = "bigint")
-    @Comment("milog app表主键")
+    @Comment("milog app talble Primary key Id")
     private Long milogAppId;
 
     @Column(value = "middleware_id")
     @ColDefine(customType = "bigint")
-    @Comment("中间件配置表ID")
+    @Comment("The middleware configuration table ID")
     private Long middlewareId;
 
     @Column(value = "tail_id")
     @ColDefine(customType = "bigint")
-    @Comment("采集日志路径tailId")
+    @Comment("Collect the trail ID of the log path")
     private Long tailId;
 
     @Column(value = "config")
     @ColDefine(type = ColType.MYSQL_JSON)
-    @Comment("配置信息，json格式")
+    @Comment("Configuration information, in JSON format")
     @JsonField
     private Config config;
 
@@ -77,7 +77,7 @@ public class MilogAppMiddlewareRel extends BaseCommon implements Serializable {
         private Integer partitionCnt;
 
         /**
-         * es消费group，后续可以扩展其它group用于其它分析场景
+         * es consumption group, which can be extended to other groups for other analysis scenarios
          */
         private String esConsumerGroup;
 

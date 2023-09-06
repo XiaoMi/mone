@@ -51,7 +51,7 @@ public class MilogAgentServiceImplTest {
 
 
     /**
-     * 测试删除配置-通知log-agent停止收集
+     * Test Delete Configuration - Notify Log Agent to Stop Collection
      */
     @Test
     public void testDelConfigStopColl() {
@@ -67,7 +67,7 @@ public class MilogAgentServiceImplTest {
         AgentConfigService agentConfigService = Ioc.ins().getBean(AgentConfigServiceImpl.class);
         LogCollectMeta logCollectMeta = agentConfigService.getLogCollectMetaFromManager("127.0.0.1");
         String responseInfo = new Gson().toJson(logCollectMeta);
-        log.info("agent启动获取配置,获取到的配置信息:{}", responseInfo);
+        log.info("The agent starts to obtain the configuration information obtained by obtaining the configuration information:{}", responseInfo);
     }
 
 }

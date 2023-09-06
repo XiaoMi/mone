@@ -40,7 +40,7 @@ public class DateUtils {
     }
 
     /**
-     * 获取今天第一毫秒
+     * Get the first millisecond today
      *
      * @return
      */
@@ -59,7 +59,7 @@ public class DateUtils {
     }
 
     /**
-     * 获取昨天第一毫秒
+     * Get yesterday's first millisecond
      *
      * @return]
      */
@@ -68,7 +68,7 @@ public class DateUtils {
     }
 
     /**
-     * 获取前天第一毫秒
+     * Get the first millisecond of the day before yesterday
      *
      * @return]
      */
@@ -77,7 +77,7 @@ public class DateUtils {
     }
 
     /**
-     * 获取当天第一毫秒
+     * Gets the first millisecond of the day
      *
      * @param thisDay
      * @return
@@ -94,7 +94,7 @@ public class DateUtils {
     }
 
     /**
-     * 获取n天前日期(yyyy-MM-dd)
+     * Get n days ago date (yyyy-MM-dd)
      *
      * @param n
      * @return

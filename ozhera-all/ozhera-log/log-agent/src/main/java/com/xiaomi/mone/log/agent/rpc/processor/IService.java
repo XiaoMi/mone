@@ -22,7 +22,7 @@ package com.xiaomi.mone.log.agent.rpc.processor;
 public interface IService {
 
     /**
-     * 服务初始化
+     * Service initialization
      */
     void init();
 }

@@ -48,7 +48,7 @@ public class LogProcessServiceImpl implements LogProcessService {
     private MilogLogTailDao logtailDao;
 
     /**
-     * 更新日志收集进度
+     * Update log collection progress
      *
      * @param cmd
      */
@@ -64,7 +64,7 @@ public class LogProcessServiceImpl implements LogProcessService {
     }
 
     /**
-     * 获取store的日志收集进度
+     * Get the log collection progress of the store
      *
      * @param type
      * @param value
@@ -72,7 +72,7 @@ public class LogProcessServiceImpl implements LogProcessService {
      */
     public Result<List<TailLogProcessDTO>> getStoreLogProcess(String type, String value) {
         if (StringUtils.isEmpty(type) || StringUtils.isEmpty(value)) {
-            return Result.failParam("type及value不能为空");
+            return Result.failParam("Type and value cannot be empty");
         }
         List<TailLogProcessDTO> dtoList;
         switch (type) {
@@ -91,14 +91,14 @@ public class LogProcessServiceImpl implements LogProcessService {
                 dtoList = logProcess.getTailLogProcess(Long.parseLong(params2[0]), params2[1]);
                 break;
             default:
-                return Result.failParam("type类型不合法");
+                return Result.failParam("The type type is not legal");
         }
         return Result.success(dtoList);
     }
 
     public Result<List<UpdateLogProcessCmd.CollectDetail>> getColProcessImperfect(Double progressRation) {
         if (null == progressRation) {
-            return Result.failParam("参数不能为空");
+            return Result.failParam("The parameter cannot be empty");
         }
         return Result.success(upColProcessTailName(logProcess.getColProcessImperfect(progressRation)));
     }

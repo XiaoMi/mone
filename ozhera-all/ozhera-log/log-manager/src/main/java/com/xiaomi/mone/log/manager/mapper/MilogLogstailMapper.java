@@ -23,7 +23,7 @@ import java.util.Map;
 
 /**
  * <p>
- *  Mapper 接口
+ *  Mapper
  * </p>
  *
  * @author wanghaoyang
@@ -31,7 +31,7 @@ import java.util.Map;
  */
 public interface MilogLogstailMapper extends BaseMapper<MilogLogstailDO> {
     /**
-     * 获取统计日志条数所用的tail
+     * Obtain the tail used to count the number of log entries
      * @return
      */
     List<Map<String, Object>> getAllTailForCount();

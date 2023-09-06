@@ -41,7 +41,7 @@ public class ProjectInfo implements Serializable {
 
     private String domain;
     /**
-     * 项目重要程度 1.一级项目 2.2级别项目 3.3级项目
+     * Project Importance 1. Level 1 Project 2.2 Level Project Level 3.3 Project
      */
     private Integer importLevel;
 

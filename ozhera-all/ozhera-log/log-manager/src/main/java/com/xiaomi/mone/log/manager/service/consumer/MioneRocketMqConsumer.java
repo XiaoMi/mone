@@ -32,7 +32,7 @@ import javax.annotation.Resource;
 /**
  * @author wtt
  * @version 1.0
- * @description mq消费 ip变更
+ * @description MQ consumption IP changes
  * @date 2021/7/14 20:15
  */
 @Slf4j
@@ -53,7 +53,7 @@ public class MioneRocketMqConsumer extends RocketMqConsumer {
         try {
             consumer.subscribe(consumeTopic, "");
         } catch (MQClientException e) {
-            log.error("订阅ip变更Mq消费异常", e);
+            log.error("Subscription IP address changed Mq consumption abnormality", e);
         }
         consumer.registerMessageListener((MessageListenerOrderly) (list, consumeOrderlyContext) -> {
             list.stream().forEach(ele -> {
@@ -65,7 +65,7 @@ public class MioneRocketMqConsumer extends RocketMqConsumer {
         try {
             consumer.start();
         } catch (Exception e) {
-            log.error("订阅创建项目时的RocketMq客户端启动异常", e);
+            log.error("The Rocket Mq client starts unexpectedly when the subscription creates a project", e);
         }
     }
 
@@ -73,11 +73,11 @@ public class MioneRocketMqConsumer extends RocketMqConsumer {
         try {
             byte[] body = message.getBody();
             HeraEnvIpVo heraEnvIpVo = new Gson().fromJson(new String(body), HeraEnvIpVo.class);
-            log.info("【动态扩缩容】RocketMq消费的消息数据转化为对象: {}", heraEnvIpVo.toString());
+            log.info("【Dynamic expansion】The message data consumed by Rocket Mq is converted into objects: {}", heraEnvIpVo.toString());
             logTailService.machineIpChange(heraEnvIpVo);
-            log.info("【动态扩缩容】RocketMq消费的消息消费结束");
+            log.info("【Dynamic Expansion】The news consumption of Rocket Mq consumption ends");
         } catch (Throwable ex) {
-            log.error("【动态扩缩容】RocketMq消费的消息消费异常:" + ex.getMessage(), ex);
+            log.error("【Dynamic Scaling】Rocket Mq consumption of messages is abnormal:" + ex.getMessage(), ex);
         }
     }
 

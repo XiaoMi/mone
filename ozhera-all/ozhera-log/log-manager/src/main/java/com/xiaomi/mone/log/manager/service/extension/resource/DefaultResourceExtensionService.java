@@ -86,7 +86,7 @@ public class DefaultResourceExtensionService implements ResourceExtensionService
     @Override
     public void addResourcePostProcessing(MilogMiddlewareConfig milogMiddlewareConfig) {
         /**
-         * 目前默认共用一个配置
+         * Currently, one configuration is shared by default
          */
         if (MoneUserContext.getCurrentUser().getIsAdmin()) {
             milogMiddlewareConfig.setIsDefault(YES);

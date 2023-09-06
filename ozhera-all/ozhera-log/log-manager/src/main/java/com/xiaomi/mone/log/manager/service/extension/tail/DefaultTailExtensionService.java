@@ -103,11 +103,11 @@ public class DefaultTailExtensionService implements TailExtensionService {
     @Override
     public void sendMessageOnCreate(LogTailParam param, MilogLogTailDo mt, Long milogAppId, boolean supportedConsume) {
         /**
-         * 发送配置信息---log-agent
+         * Send configuration information ---log-agent
          */
         CompletableFuture.runAsync(() -> logTailService.sengMessageToAgent(milogAppId, mt));
         /**
-         * 发送最终配置信息---log-stream-- 查看日志模板类型，如果是opentelemetry日志，只发送mq不消费
+         * Send final configuration information ---log-stream -- View the log template type, if it is OpenTelemetry logs, only send MQ and do not consume
          */
         if (supportedConsume) {
             logTailService.sengMessageToStream(mt, OperateEnum.ADD_OPERATE.getCode());
@@ -117,11 +117,11 @@ public class DefaultTailExtensionService implements TailExtensionService {
     @Override
     public void updateSendMsg(MilogLogTailDo milogLogtailDo, List<String> oldIps, boolean supportedConsume) {
         /**
-         * 同步log-agent
+         * Synchronous log-agent
          */
         CompletableFuture.runAsync(() -> milogAgentService.publishIncrementConfig(milogLogtailDo.getId(), milogLogtailDo.getMilogAppId(), milogLogtailDo.getIps()));
         /**
-         * 同步 log-stream 如果是opentelemetry日志，只发送mq不消费
+         * Synchronous log-stream If it is OpenTelemetry logs, only send MQ and do not consume it
          */
         if (supportedConsume) {
 //            List<MilogAppMiddlewareRel> middlewareRels = milogAppMiddlewareRelDao.queryByCondition(milogLogtailDo.getMilogAppId(), null, milogLogtailDo.getId());
@@ -178,11 +178,11 @@ public class DefaultTailExtensionService implements TailExtensionService {
     @Override
     public String validLogPath(LogTailParam param) {
         if (Objects.equals(ProjectTypeEnum.MIONE_TYPE.getCode(), param.getAppType())) {
-            // 校验同名日志文件
+            // Verify the log file with the same name
             List<MilogLogTailDo> appLogTails = milogLogtailDao.queryByMilogAppAndEnv(param.getMilogAppId(), param.getEnvId());
             for (int i = 0; i < appLogTails.size() && null == param.getId(); i++) {
                 if (appLogTails.get(i).getLogPath().equals(param.getLogPath())) {
-                    return "当前部署环境该文件" + param.getLogPath() + "已配置日志采集,别名为：" + appLogTails.get(i).getTail();
+                    return "The current deployment environment for the file " + param.getLogPath() + " Log collection is configured with the following aliases:" + appLogTails.get(i).getTail();
                 }
             }
         }

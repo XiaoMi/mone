@@ -27,7 +27,7 @@ import java.util.Set;
 @NoArgsConstructor
 public class LogAnalyseDataDateDTO extends LogAnalyseDataDTO {
 
-// 数据结构
+// data structure
 //    data:
 //        [
 //            ['2022-10-22', 44, 55, 66, 2],

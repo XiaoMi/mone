@@ -36,10 +36,8 @@ public class MilogLogProcessMapperTest {
     @Test
     public void getById() throws IOException {
         String resource = "mybatis-config.xml";
-        //SqlMapConfig.xml读给输入流，使用mybitis的Resources类下的getResourceAsStream实现
         InputStream inputStream = null;
         inputStream = Resources.getResourceAsStream(resource);
-        //创建Mybitis的SqlSessionFactory工厂类
         SqlSessionFactory sqlsessionfactory = new SqlSessionFactoryBuilder().build(inputStream);
         SqlSession sqlsession = sqlsessionfactory.openSession();
 //        MilogLogProcessMapper mapper = sqlsession.getMapper(MilogLogProcessMapper.class);

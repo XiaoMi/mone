@@ -63,10 +63,8 @@ public class AgentMemoryServiceImpl implements AgentMemoryService {
     public AgentMemoryServiceImpl(String basePath) {
         this.basePath = basePath;
         initFolder(this.basePath + MEMORY_DIR);
-//        这么清理有问题，不能清理
-//        cleanMemoryHistoryFile(channelIds);
         initChannelMemory();
-        //30s定期刷盘
+        //Brush the disc regularly for 30 s
         initFlushTask(this);
     }
 
@@ -109,9 +107,9 @@ public class AgentMemoryServiceImpl implements AgentMemoryService {
 
     @Override
     public void refreshMemory(ChannelMemory channelMemory) {
-        //刷新内存
+        //refresh memory
         channelMemoryMap.put(channelMemory.getChannelId(), channelMemory);
-        //刷新磁盘
+        //refresh disk
         this.flush2disk(Lists.newArrayList(channelMemory));
     }
 
@@ -224,7 +222,7 @@ public class AgentMemoryServiceImpl implements AgentMemoryService {
     }
 
     /**
-     * 修复数据使用，这个可以不用
+     * Repair data usage, this does not need to be used
      */
     private void fixedData() {
         channelMemoryMap.entrySet().stream().forEach(memoryEntry -> {

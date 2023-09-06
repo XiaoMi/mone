@@ -21,7 +21,7 @@ import java.util.Date;
 public class Es {
 
     /**
-     * 获取索引后缀
+     * Gets the index suffix
      * @return
      */
     public static String indexPostfix() {

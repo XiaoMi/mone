@@ -27,13 +27,13 @@ CREATE TABLE `alert`
     `id`             bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
     `name`           varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
     `type`           varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
-    `milog_app_id`   bigint(20) NULL DEFAULT NULL COMMENT 'milogApp表主键',
+    `milog_app_id`   bigint(20) NULL DEFAULT NULL COMMENT 'milogApp table primary key',
     `app`            varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
     `app_name`       varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
     `log_path`       varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
     `contacts`       varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
     `feishu_groups`  varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
-    `job_id`         int(10) NULL DEFAULT NULL COMMENT '数据工厂任务Id',
+    `job_id`         int(10) NULL DEFAULT NULL COMMENT 'task Id',
     `flink_job_name` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
     `arguments`      json NULL,
     `status`         tinyint(3) UNSIGNED NOT NULL DEFAULT 0,
@@ -76,13 +76,13 @@ CREATE TABLE `alert_copy1`
     `id`             bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
     `name`           varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
     `type`           varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
-    `milog_app_id`   bigint(20) NULL DEFAULT NULL COMMENT 'milogApp表主键',
+    `milog_app_id`   bigint(20) NULL DEFAULT NULL COMMENT 'milogApp table primary key',
     `app`            varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
     `app_name`       varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
     `log_path`       varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
     `contacts`       varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
     `feishu_groups`  varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
-    `job_id`         int(10) NULL DEFAULT NULL COMMENT '数据工厂任务Id',
+    `job_id`         int(10) NULL DEFAULT NULL COMMENT 'task Id',
     `flink_job_name` varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
     `arguments`      json NULL,
     `status`         tinyint(3) UNSIGNED NOT NULL DEFAULT 0,
@@ -252,15 +252,15 @@ CREATE TABLE `milog_analyse_graph_type`
 DROP TABLE IF EXISTS `milog_app_middleware_rel`;
 CREATE TABLE `milog_app_middleware_rel`
 (
-    `id`            bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
-    `milog_app_id`  bigint(20) NOT NULL COMMENT 'milog app表主键\r\n',
-    `middleware_id` bigint(20) NOT NULL COMMENT '中间件配置表ID\r\n',
-    `tail_id`       bigint(20) NOT NULL COMMENT '采集日志路径tailId\r\n',
-    `config`        json NULL COMMENT '配置信息，json格式',
-    `ctime`         bigint(20) NOT NULL COMMENT '创建时间\r\n',
-    `utime`         bigint(20) NOT NULL COMMENT '更新时间',
-    `creator`       varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '创建人\r\n',
-    `updater`       varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '更新人',
+    `id`            bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+    `milog_app_id`  bigint(20) NOT NULL COMMENT 'milog app table primary key',
+    `middleware_id` bigint(20) NOT NULL COMMENT 'Middleware configuration table ID',
+    `tail_id`       bigint(20) NOT NULL COMMENT 'Collection log path tail ID',
+    `config`        json NULL COMMENT 'Configuration information, json format',
+    `ctime`         bigint(20) NOT NULL COMMENT 'create time',
+    `utime`         bigint(20) NOT NULL COMMENT 'update time',
+    `creator`       varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'creator',
+    `updater`       varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'updater',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 167010 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = Compact;
 
@@ -271,18 +271,18 @@ DROP TABLE IF EXISTS `milog_app_topic_rel`;
 CREATE TABLE `milog_app_topic_rel`
 (
     `id`          bigint(20) NOT NULL AUTO_INCREMENT,
-    `ctime`       bigint(20) NULL DEFAULT NULL COMMENT '创建时间\r\n',
-    `utime`       bigint(20) NULL DEFAULT NULL COMMENT '更新时间\r\n',
-    `tenant_id`   bigint(20) NULL DEFAULT NULL COMMENT '租户Id\r\n',
-    `app_id`      bigint(20) NOT NULL COMMENT '应用id\r\n',
-    `iam_tree_id` bigint(20) NULL DEFAULT NULL COMMENT 'mione应用Iam treeId',
-    `app_name`    varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'app名称\r\n',
-    `operator`    varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '操作者\r\n',
-    `mq_config`   json NULL COMMENT 'mq配置信息，json格式',
-    `source`      varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin  NOT NULL COMMENT 'app来源\r\n',
-    `type`        smallint(6) NULL DEFAULT NULL COMMENT '0.mione 项目 1.mis项目\r\n',
-    `tree_ids`    json NULL COMMENT 'mis 项目的挂载的树ids',
-    `node_ips`    json NULL COMMENT '应用所在的物理机ips',
+    `ctime`       bigint(20) NULL DEFAULT NULL COMMENT 'create time',
+    `utime`       bigint(20) NULL DEFAULT NULL COMMENT 'update time',
+    `tenant_id`   bigint(20) NULL DEFAULT NULL COMMENT 'TenantId',
+    `app_id`      bigint(20) NOT NULL COMMENT 'app id',
+    `iam_tree_id` bigint(20) NULL DEFAULT NULL COMMENT 'mione appIam treeId',
+    `app_name`    varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'app name',
+    `operator`    varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'operator',
+    `mq_config`   json NULL COMMENT 'mq configuration information, json format',
+    `source`      varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin  NOT NULL COMMENT 'app source',
+    `type`        smallint(6) NULL DEFAULT NULL COMMENT '0.mione project 1.mis project',
+    `tree_ids`    json NULL COMMENT 'The project''s mounted tree ids',
+    `node_ips`    json NULL COMMENT 'The physical machine ips where the application is located',
     `creator`     varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
     `updater`     varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
     PRIMARY KEY (`id`) USING BTREE
@@ -295,23 +295,23 @@ DROP TABLE IF EXISTS `milog_es_cluster`;
 CREATE TABLE `milog_es_cluster`
 (
     `id`           bigint(20) NOT NULL AUTO_INCREMENT,
-    `tag`          varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '集群类型\r\n',
-    `name`         varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '集群名称\r\n集群名称\r\n集群名称\r\n',
-    `region`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '机房',
-    `cluster_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '融合云上集群名',
-    `addr`         varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'ES地址\r\n',
-    `user`         varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'ES用户名\r\n',
-    `pwd`          varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'ES密码\r\n',
+    `tag`          varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'Cluster type',
+    `name`         varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'Cluster name',
+    `region`       varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'engine room',
+    `cluster_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'Fusion cloud cluster name',
+    `addr`         varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'ES address',
+    `user`         varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'ES username',
+    `pwd`          varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'ES password',
     `token`        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
     `dt_catalog`   varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
     `dt_database`  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
-    `area`         varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '地区\r\n',
-    `ctime`        bigint(20) NULL DEFAULT NULL COMMENT '创建时间\r\n',
-    `utime`        bigint(20) NULL DEFAULT NULL COMMENT '更新时间\r\n',
-    `creator`      varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '创建人\r\n',
-    `updater`      varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '更新人\r\n',
-    `labels`       json NULL COMMENT '标签',
-    `con_way`      varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '连接方式:pwd,token',
+    `area`         varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'area',
+    `ctime`        bigint(20) NULL DEFAULT NULL COMMENT 'create time',
+    `utime`        bigint(20) NULL DEFAULT NULL COMMENT 'update time',
+    `creator`      varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'creator',
+    `updater`      varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'updater',
+    `labels`       json NULL COMMENT 'labels',
+    `con_way`      varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'Connection method: pwd, token',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 90003 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = Compact;
 
@@ -321,10 +321,10 @@ CREATE TABLE `milog_es_cluster`
 DROP TABLE IF EXISTS `milog_es_index`;
 CREATE TABLE `milog_es_index`
 (
-    `id`         bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
-    `cluster_id` bigint(20) NULL DEFAULT NULL COMMENT '所属集群id\r\n',
-    `log_type`   int(11) NULL DEFAULT NULL COMMENT '日志类型\r\n',
-    `index_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'es索引名',
+    `id`         bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+    `cluster_id` bigint(20) NULL DEFAULT NULL COMMENT 'The cluster id to which it belongs',
+    `log_type`   int(11) NULL DEFAULT NULL COMMENT 'log type',
+    `index_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'es index name',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1525057282467098526 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = Compact;
 
@@ -334,10 +334,10 @@ CREATE TABLE `milog_es_index`
 DROP TABLE IF EXISTS `milog_es_index_online`;
 CREATE TABLE `milog_es_index_online`
 (
-    `id`         bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
-    `cluster_id` bigint(20) NULL DEFAULT NULL COMMENT '所属集群id\r\n',
-    `log_type`   int(11) NULL DEFAULT NULL COMMENT '日志类型\r\n',
-    `index_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'es索引名',
+    `id`         bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+    `cluster_id` bigint(20) NULL DEFAULT NULL COMMENT 'The cluster id to which it belongs',
+    `log_type`   int(11) NULL DEFAULT NULL COMMENT 'Log type',
+    `index_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'es index name',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = Compact;
 
@@ -363,10 +363,10 @@ DROP TABLE IF EXISTS `milog_log_count`;
 CREATE TABLE `milog_log_count`
 (
     `id`       bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT,
-    `tail_id`  bigint(20) NULL DEFAULT NULL COMMENT 'tail的ID',
-    `es_index` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'es索引名',
-    `day`      date NULL DEFAULT NULL COMMENT '日志数据产生日yyyy-MM-dd',
-    `number`   bigint(20) NULL DEFAULT NULL COMMENT '日志条数',
+    `tail_id`  bigint(20) NULL DEFAULT NULL COMMENT 'tail id',
+    `es_index` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'es index name',
+    `day`      date NULL DEFAULT NULL COMMENT 'Log data generation date yyyy-MM-dd',
+    `number`   bigint(20) NULL DEFAULT NULL COMMENT 'Number of logs',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 191782 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = Compact;
 
@@ -393,17 +393,17 @@ CREATE TABLE `milog_log_num_alert`
 DROP TABLE IF EXISTS `milog_log_process`;
 CREATE TABLE `milog_log_process`
 (
-    `id`              bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键Id',
+    `id`              bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'primary keyId',
     `tailId`          bigint(20) NULL DEFAULT NULL COMMENT 'tailId',
     `agent_id`        bigint(20) NULL DEFAULT NULL COMMENT 'agentId',
     `ip`              varchar(256) CHARACTER SET utf8 COLLATE utf8_bin NULL DEFAULT NULL COMMENT 'ip',
-    `file_row_number` int(32) NULL DEFAULT NULL COMMENT '日志文件行号',
+    `file_row_number` int(32) NULL DEFAULT NULL COMMENT 'Log file line number',
     `pointer`         int(32) NULL DEFAULT NULL,
-    `collect_time`    bigint(20) NULL DEFAULT NULL COMMENT '日志收集时间',
-    `ctime`           bigint(20) NULL DEFAULT NULL COMMENT '创建时间',
-    `utime`           bigint(20) NULL DEFAULT NULL COMMENT '更新时间',
+    `collect_time`    bigint(20) NULL DEFAULT NULL COMMENT 'Log collection time',
+    `ctime`           bigint(20) NULL DEFAULT NULL COMMENT 'creation time',
+    `utime`           bigint(20) NULL DEFAULT NULL COMMENT 'Update time',
     PRIMARY KEY (`id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin COMMENT = '日志收集进度' ROW_FORMAT = Compact;
+) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8 COLLATE = utf8_bin COMMENT = 'Log collection progress' ROW_FORMAT = Compact;
 
 -- ----------------------------
 -- Table structure for milog_log_search_save
@@ -417,14 +417,14 @@ CREATE TABLE `milog_log_search_save`
     `store_id`    bigint(20) NULL DEFAULT NULL,
     `tail_id`     int(11) NULL DEFAULT NULL,
     `query_text`  varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
-    `is_fix_time` int(11) NULL DEFAULT NULL COMMENT '1-保存了时间参数；0-没有保存',
-    `start_time`  bigint(20) NULL DEFAULT NULL COMMENT '搜索开始时间',
-    `end_time`    bigint(20) NULL DEFAULT NULL COMMENT '搜索结束时间',
-    `common`      varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '备注',
-    `sort`        bigint(20) NULL DEFAULT NULL COMMENT '分类;1-搜索词,2-tail,3-store',
-    `order_num`   bigint(20) NULL DEFAULT NULL COMMENT '排序',
-    `creator`     varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '创建人',
-    `updater`     varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '最后更新人',
+    `is_fix_time` int(11) NULL DEFAULT NULL COMMENT '1-The time parameter is saved; 0-It is not saved',
+    `start_time`  bigint(20) NULL DEFAULT NULL COMMENT 'Search start time',
+    `end_time`    bigint(20) NULL DEFAULT NULL COMMENT 'Search end time',
+    `common`      varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'Remark',
+    `sort`        bigint(20) NULL DEFAULT NULL COMMENT 'Classification;1-search word,2-tail,3-store',
+    `order_num`   bigint(20) NULL DEFAULT NULL COMMENT 'sort',
+    `creator`     varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'creator',
+    `updater`     varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'updater',
     `create_time` bigint(20) NULL DEFAULT NULL,
     `update_time` bigint(20) NULL DEFAULT NULL,
     PRIMARY KEY (`id`) USING BTREE
@@ -436,13 +436,13 @@ CREATE TABLE `milog_log_search_save`
 DROP TABLE IF EXISTS `milog_log_template`;
 CREATE TABLE `milog_log_template`
 (
-    `id`            bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
-    `ctime`         bigint(20) NULL DEFAULT NULL COMMENT '创建时间',
-    `utime`         bigint(20) NULL DEFAULT NULL COMMENT '更新时间',
-    `template_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '日志模板名称\r\n',
-    `type`          int(11) NULL DEFAULT NULL COMMENT '日志模板类型0-自定义日志;1-app;2-nginx',
-    `support_area`  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '支持机房',
-    `order_col`     int(11) NULL DEFAULT NULL COMMENT '排序',
+    `id`            bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+    `ctime`         bigint(20) NULL DEFAULT NULL COMMENT 'create time',
+    `utime`         bigint(20) NULL DEFAULT NULL COMMENT 'update time',
+    `template_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'log template name',
+    `type`          int(11) NULL DEFAULT NULL COMMENT 'Log template type 0-custom log;1-app;2-nginx',
+    `support_area`  varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'Support computer room',
+    `order_col`     int(11) NULL DEFAULT NULL COMMENT 'sort',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 60003 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = Compact;
 
@@ -452,12 +452,12 @@ CREATE TABLE `milog_log_template`
 DROP TABLE IF EXISTS `milog_log_template_detail`;
 CREATE TABLE `milog_log_template_detail`
 (
-    `id`              bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
-    `ctime`           bigint(20) NULL DEFAULT NULL COMMENT '创建时间',
-    `utime`           bigint(20) NULL DEFAULT NULL COMMENT '更新时间',
-    `template_id`     varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '日志模板ID\r\n',
-    `properties_key`  varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '日志模板属性名；1-必选；2-建议；3-隐藏',
-    `properties_type` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '日志模板属性类型\r\n',
+    `id`              bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+    `ctime`           bigint(20) NULL DEFAULT NULL COMMENT 'create time',
+    `utime`           bigint(20) NULL DEFAULT NULL COMMENT 'update time',
+    `template_id`     varchar(256) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'Log template ID',
+    `properties_key`  varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'Log template attribute name; 1-required; 2-suggestion; 3-hidden',
+    `properties_type` varchar(512) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'Log template attribute type',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 60086 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = Compact;
 
@@ -468,32 +468,32 @@ DROP TABLE IF EXISTS `milog_logstail`;
 CREATE TABLE `milog_logstail`
 (
     `id`                bigint(20) NOT NULL AUTO_INCREMENT,
-    `ctime`             bigint(20) NULL DEFAULT NULL COMMENT '创建时间\r\n',
-    `utime`             bigint(20) NULL DEFAULT NULL COMMENT '更新时间\r\n',
-    `creator`           varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '创建人\r\n',
-    `updater`           varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '更新人\r\n',
+    `ctime`             bigint(20) NULL DEFAULT NULL COMMENT 'create time',
+    `utime`             bigint(20) NULL DEFAULT NULL COMMENT 'update time',
+    `creator`           varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'creator',
+    `updater`           varchar(80) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'updater',
     `space_id`          bigint(20) NULL DEFAULT NULL COMMENT 'spaceId',
     `store_id`          bigint(20) NULL DEFAULT NULL COMMENT 'storeId',
-    `tail`              varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '应用别名\r\n',
-    `milog_app_id`      bigint(20) NULL DEFAULT NULL COMMENT 'milog表主键',
-    `app_id`            bigint(20) NULL DEFAULT NULL COMMENT '应用id\r\n',
-    `app_name`          varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '应用名\r\n',
-    `app_type`          smallint(4) NULL DEFAULT NULL COMMENT '0.mione项目 1.mis项目',
-    `machine_type`      smallint(4) NULL DEFAULT NULL COMMENT 'mis应用 机器类型 0.容器 1.物理机',
-    `env_id`            int(11) NULL DEFAULT NULL COMMENT '环境Id\r\n',
-    `env_name`          varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '环境名称\r\n',
-    `parse_type`        int(11) NULL DEFAULT NULL COMMENT '日志解析类型：1:服务应用日志，2.分隔符，3：单行，4：多行，5：自定义',
-    `parse_script`      text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '对于分隔符，该字段指定分隔符；对于自定义，该字段指定日志读取脚本\r\n',
-    `log_path`          varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '逗号分割，多个日志文件路径,e.g.:/home/work/log/xxx/server.log\r\n',
-    `log_split_express` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '日志切分表达式',
-    `value_list`        varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'value列表，多个用逗号分隔\r\n',
-    `ips`               json NULL COMMENT 'ip列表\r\n',
-    `motor_rooms`       json NULL COMMENT 'mis 应用机房信息',
-    `filter`            json NULL COMMENT 'filter配置\r\n',
-    `en_es_index`       json NULL COMMENT 'mis应用索引配置',
-    `deploy_way`        int(11) NULL DEFAULT NULL COMMENT '部署方式：1-mione; 2-miline; 3-k8s',
-    `deploy_space`      varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'matrix服务部署空间',
-    `first_line_reg`    varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '行首正则表达式',
+    `tail`              varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'app alias',
+    `milog_app_id`      bigint(20) NULL DEFAULT NULL COMMENT 'milog table primary key',
+    `app_id`            bigint(20) NULL DEFAULT NULL COMMENT 'app id',
+    `app_name`          varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'app name',
+    `app_type`          smallint(4) NULL DEFAULT NULL COMMENT '0.mione project ',
+    `machine_type`      smallint(4) NULL DEFAULT NULL COMMENT 'Machine type 0.Container 1.Physical machine',
+    `env_id`            int(11) NULL DEFAULT NULL COMMENT 'environment id',
+    `env_name`          varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'environment name',
+    `parse_type`        int(11) NULL DEFAULT NULL COMMENT 'Log parsing type: 1: Service application log, 2. Delimiter, 3: Single line, 4: Multi-line, 5: Custom',
+    `parse_script`      text CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT 'For Delimiter, this field specifies the delimiter; for Custom, this field specifies the log reading script',
+    `log_path`          varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'Comma separated, multiple log file paths,e.g.:/home/work/log/xxx/server.log',
+    `log_split_express` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'log splitting expression',
+    `value_list`        varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'value list, multiple comma-separated',
+    `ips`               json NULL COMMENT 'ip list',
+    `motor_rooms`       json NULL COMMENT 'Application room information',
+    `filter`            json NULL COMMENT 'filter config',
+    `en_es_index`       json NULL COMMENT 'app index configuration',
+    `deploy_way`        int(11) NULL DEFAULT NULL COMMENT 'deployment type：1-mione; 2-miline; 3-k8s',
+    `deploy_space`      varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'service deployment space',
+    `first_line_reg`    varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'Beginning of line regular expression',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 90210 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = Compact;
 
@@ -504,22 +504,22 @@ DROP TABLE IF EXISTS `milog_logstore`;
 CREATE TABLE `milog_logstore`
 (
     `id`               bigint(20) NOT NULL AUTO_INCREMENT,
-    `ctime`            bigint(20) NULL DEFAULT NULL COMMENT '创建时间\r\n',
-    `utime`            bigint(20) NULL DEFAULT NULL COMMENT '更新时间\r\n',
+    `ctime`            bigint(20) NULL DEFAULT NULL COMMENT 'create time',
+    `utime`            bigint(20) NULL DEFAULT NULL COMMENT 'update time',
     `space_id`         bigint(20) NOT NULL COMMENT 'spaceId',
-    `logstoreName`     varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '日志存储名称\r\n',
-    `store_period`     int(255) NULL DEFAULT NULL COMMENT '存储周期:1-3-5-7',
-    `shard_cnt`        int(255) NULL DEFAULT NULL COMMENT '存储分片数\r\n',
-    `key_list`         varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'key列表，多个用逗号分隔\r\n',
-    `column_type_list` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '段类型，多个用逗号分隔\r\n',
+    `logstoreName`     varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'log store name',
+    `store_period`     int(255) NULL DEFAULT NULL COMMENT 'Storage period:1-3-5-7',
+    `shard_cnt`        int(255) NULL DEFAULT NULL COMMENT 'Number of storage shards',
+    `key_list`         varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'Key list, multiple separated by commas',
+    `column_type_list` varchar(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'Segment type, multiple separated by commas',
     `log_type`         varchar(11) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '1:app,2:ngx..',
     `es_index`         varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'es index:milog_logstoreName',
     `es_cluster_id`    bigint(20) NULL DEFAULT NULL,
-    `machine_room`     varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '机房信息',
+    `machine_room`     varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'Computer room information',
     `creator`          varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
     `updater`          varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
-    `mq_resource_id`   bigint(20) NULL DEFAULT NULL COMMENT '资源表中mq的Id',
-    `is_matrix_app`    int(11) NULL DEFAULT 0 COMMENT '是否是matrix应用：0=false，1=true',
+    `mq_resource_id`   bigint(20) NULL DEFAULT NULL COMMENT 'The Id of mq in the resource table',
+    `is_matrix_app`    int(11) NULL DEFAULT 0 COMMENT 'Whether it is a matrix application: 0=false, 1=true',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 90092 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = Compact;
 
@@ -530,10 +530,10 @@ DROP TABLE IF EXISTS `milog_matrix_esinfo`;
 CREATE TABLE `milog_matrix_esinfo`
 (
     `id`          bigint(20) NOT NULL AUTO_INCREMENT,
-    `cluster`     varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '日志配置集群',
-    `es_catalog`  varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '集群catalog',
-    `es_database` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '默认default',
-    `es_token`    varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '查询dt用的ESToken',
+    `cluster`     varchar(128) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'Log configuration cluster',
+    `es_catalog`  varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'Cluster catalog',
+    `es_database` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'default',
+    `es_token`    varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'Query the ES Token used by dt',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = Compact;
 
@@ -543,26 +543,26 @@ CREATE TABLE `milog_matrix_esinfo`
 DROP TABLE IF EXISTS `milog_middleware_config`;
 CREATE TABLE `milog_middleware_config`
 (
-    `id`            bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键',
-    `type`          smallint(6) NOT NULL COMMENT '配置 1. rocketmq 2.talos',
-    `region_en`     varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '不同的机房\r\n',
-    `alias`         varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '别名\r\n',
-    `name_server`   varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'nameServer地址\r\n',
-    `service_url`   varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '域名\r\n',
+    `id`            bigint(20) NOT NULL AUTO_INCREMENT COMMENT 'primary key',
+    `type`          smallint(6) NOT NULL COMMENT 'config 1. rocketmq 2.talos',
+    `region_en`     varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'Different computer rooms',
+    `alias`         varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'alias',
+    `name_server`   varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'nameServer address',
+    `service_url`   varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'domain name',
     `ak`            varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'ak',
     `sk`            varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'sk',
     `token`         varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
     `dt_catalog`    varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
     `dt_database`   varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
-    `authorization` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT '授权信息(http接口请求头需要)\r\n',
-    `org_id`        varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '组织Id\r\n',
-    `team_id`       varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '用户组Id\r\n',
-    `is_default`    smallint(2) NULL DEFAULT 0 COMMENT '是否默认当不选择mq的时候采用这个配置(1.是 0.否)',
-    `ctime`         bigint(20) NOT NULL COMMENT '创建时间\r\n',
-    `utime`         bigint(20) NOT NULL COMMENT '更新时间\r\n',
-    `creator`       varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '创建人\r\n',
-    `updater`       varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT '更新人\r\n',
-    `labels`        json NULL COMMENT '标签',
+    `authorization` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL COMMENT 'Authorization information (required by http interface request header)',
+    `org_id`        varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'OrganizationId',
+    `team_id`       varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'User group ID',
+    `is_default`    smallint(2) NULL DEFAULT 0 COMMENT 'Whether to use this configuration by default when mq is not selected (1. Yes 0. No)',
+    `ctime`         bigint(20) NOT NULL COMMENT 'create time',
+    `utime`         bigint(20) NOT NULL COMMENT 'update time',
+    `creator`       varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'creator',
+    `updater`       varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL COMMENT 'updater',
+    `labels`        json NULL COMMENT 'labels',
     PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 90003 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_bin ROW_FORMAT = Compact;
 
@@ -573,10 +573,10 @@ DROP TABLE IF EXISTS `milog_region_zone`;
 CREATE TABLE `milog_region_zone`
 (
     `id`             bigint(20) NOT NULL AUTO_INCREMENT,
-    `region_name_en` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'region英文名',
-    `region_name_cn` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'region中文名',
-    `zone_name_en`   varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'zone英文名',
-    `zone_name_cn`   varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'zone中文名',
+    `region_name_en` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'region en',
+    `region_name_cn` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'region cn',
+    `zone_name_en`   varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'zone en',
+    `zone_name_cn`   varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'zone cn',
     `ctime`          bigint(20) NULL DEFAULT NULL,
     `utime`          bigint(20) NULL DEFAULT NULL,
     `creator`        varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
@@ -591,15 +591,15 @@ DROP TABLE IF EXISTS `milog_space`;
 CREATE TABLE `milog_space`
 (
     `id`             bigint(20) NOT NULL AUTO_INCREMENT,
-    `ctime`          bigint(20) NULL DEFAULT NULL COMMENT '创建时间\r\n',
-    `utime`          bigint(20) NULL DEFAULT NULL COMMENT '更新时间\r\n',
-    `tenant_id`      int(20) NULL DEFAULT NULL COMMENT '租户Id\r\n',
-    `space_name`     varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '项目空间名称\r\n',
-    `source`         varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '来源：开源',
-    `creator`        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '创建者\r\n',
-    `dept_id`        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '创建者所在三级部门',
-    `updater`        varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '更新人',
-    `description`    varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT '备注说明\r\n',
+    `ctime`          bigint(20) NULL DEFAULT NULL COMMENT 'create time',
+    `utime`          bigint(20) NULL DEFAULT NULL COMMENT 'update time',
+    `tenant_id`      int(20) NULL DEFAULT NULL COMMENT 'TenantId',
+    `space_name`     varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'Project space name',
+    `source`         varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'Source: open source',
+    `creator`        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'creator',
+    `dept_id`        varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'The creator’s third-level department',
+    `updater`        varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'updater',
+    `description`    varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL COMMENT 'instruction manual',
     `create_dept_id` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
     `perm_dept_id`   varchar(2000) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NULL DEFAULT NULL,
     PRIMARY KEY (`id`) USING BTREE

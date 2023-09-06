@@ -21,5 +21,6 @@
  */
 package com.xiaomi.mone.log.manager.service.bind;
 /**
- * 采用注解机制选用配置元数据信息是否写入nacos(用户判断是这中类型的日志topic是否需要消费)
+ * Use the annotation mechanism to select whether to write the configuration metadata information to NACOS
+ * (the user determines whether this type of log topic needs to be consumed)
  */

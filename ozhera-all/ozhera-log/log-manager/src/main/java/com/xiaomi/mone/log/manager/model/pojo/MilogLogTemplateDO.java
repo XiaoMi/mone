@@ -25,7 +25,7 @@ import java.io.Serializable;
 
 /**
  * <p>
- * milog日志模板
+ * milog Log templates
  * </p>
  *
  * @author wanghaoyang
@@ -37,39 +37,39 @@ import java.io.Serializable;
 public class MilogLogTemplateDO implements Serializable {
 
     /**
-     * 主键Id
+     * Primary key Id
      */
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
     /**
-     * 创建时间
+     * create time
      */
     private Long ctime;
 
     /**
-     * 更新时间
+     * update time
      */
     private Long utime;
 
     /**
-     * 日志模板名称
+     * Log template name
      */
     private String templateName;
 
     /**
-     * 日志模板类型0-自定义日志;1-app;2-nginx
+     * Log template type 0 - Custom log; 1-app; 2-nginx ...
      */
     private Integer type;
 
     private String supportArea;
 
     /**
-     * 排序
+     * sort
      */
     private Integer orderCol;
     /**
-     * 是否自持消费，1.支持
+     * Whether self-sustaining consumption, 1. Support
      */
     private Integer supportedConsume;
 

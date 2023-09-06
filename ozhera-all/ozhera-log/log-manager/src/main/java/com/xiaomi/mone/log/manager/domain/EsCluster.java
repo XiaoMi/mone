@@ -44,7 +44,7 @@ public class EsCluster {
     }
 
     /**
-     * 获取ES客户端
+     * Get the ES client
      *
      * @param esClusterId
      * @return
@@ -61,7 +61,7 @@ public class EsCluster {
     }
 
     /**
-     * 获取ES客户端
+     * Get the ES client
      *
      * @return
      */
@@ -78,7 +78,7 @@ public class EsCluster {
     }
 
     /**
-     * 获取当前用户对应的ES客户端
+     * Obtain the ES client corresponding to the current user
      *
      * @return
      */
@@ -101,7 +101,7 @@ public class EsCluster {
         return esClusterDO;
     }
 
-    // 获取所在区域支持的ES集群
+    // Obtain the supported ES clusters in your region
     public MilogEsClusterDO getByArea4China(String area) {
         if (StringUtils.isEmpty(area)) {
             return null;

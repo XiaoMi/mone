@@ -42,12 +42,12 @@ public class StreamConfigNacosProvider implements DynamicConfigProvider<MiLogStr
         String rules = null;
         try {
             rules = configService.getConfig(CommonExtensionServiceFactory.getCommonExtensionService().getLogManagePrefix() + NAMESPACE_CONFIG_DATA_ID, DEFAULT_GROUP_ID, DEFAULT_TIME_OUT_MS);
-            log.info("nacos中查询日志最初配置：{}", rules);
+            log.info("The NACOS query log is initially configured：{}", rules);
             if (StringUtils.isNotEmpty(rules)) {
                 return gson.fromJson(rules, MiLogStreamConfig.class);
             }
         } catch (Exception e) {
-            log.error(String.format("查询命名空间配置数据数据异常,参数：%s", rules), e);
+            log.error(String.format("Query namespace configuration data data exceptions, parameters:%s", rules), e);
         }
         return null;
     }

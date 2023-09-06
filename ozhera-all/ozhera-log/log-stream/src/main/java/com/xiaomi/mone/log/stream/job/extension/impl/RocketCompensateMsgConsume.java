@@ -60,7 +60,7 @@ public class RocketCompensateMsgConsume implements CompensateMsgConsume {
         try {
             consumer.subscribe(topic, "");
         } catch (MQClientException e) {
-            log.error("【RocketMqMessageConsume】订阅RocketMq消费异常", e);
+            log.error("【RocketMqMessageConsume】Subscription to Rocket Mq consumption exception", e);
         }
         consumer.registerMessageListener((MessageListenerOrderly) (list, consumeOrderlyContext) -> {
             list.stream().forEach(ele -> {
@@ -75,7 +75,7 @@ public class RocketCompensateMsgConsume implements CompensateMsgConsume {
         try {
             consumer.start();
         } catch (MQClientException e) {
-            log.error("【RocketMqMessageConsume】RocketMq客户端启动异常", e);
+            log.error("【RocketMqMessageConsume】Subscription to Rocket Mq consumption exception", e);
         }
     }
 
@@ -105,7 +105,7 @@ public class RocketCompensateMsgConsume implements CompensateMsgConsume {
 
     private void sendMessageReply(MqMessageDTO mqMessageDTO) {
         log.info("Compensate Message content: " + GSON.toJson(mqMessageDTO));
-        //直接写入es no handle
+        //write directly es no handle
         List<MqMessageDTO.CompensateMqDTO> compensateMqDTOS = mqMessageDTO.getCompensateMqDTOS();
         if (CollectionUtils.isNotEmpty(compensateMqDTOS)) {
             compensateMqDTOS.forEach(compensateMqDTO -> {
@@ -122,7 +122,7 @@ public class RocketCompensateMsgConsume implements CompensateMsgConsume {
                 } catch (Exception e) {
                     hashMap.put(LogParser.esKeyMap_timestamp, Instant.now().toEpochMilli());
                 }
-                log.info("mq索引时间戳数据：{},当前时间戳：{}", timestampObject, Instant.now().toEpochMilli());
+                log.info("mq index timestamp data:{},current timestamp:{}", timestampObject, Instant.now().toEpochMilli());
                 EsProcessor esProcessor = EsPlugin.getEsProcessor(mqMessageDTO.getEsInfo(),
                         mqMessageDTO1 -> log.error("compensate msg store failed, data size:{}", mqMessageDTO1.getCompensateMqDTOS().size()));
                 esProcessor.bulkInsert(esIndex, hashMap);

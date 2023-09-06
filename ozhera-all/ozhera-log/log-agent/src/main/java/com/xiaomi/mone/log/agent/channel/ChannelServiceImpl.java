@@ -96,8 +96,6 @@ public class ChannelServiceImpl extends AbstractChannelService {
 
     private ScheduledFuture<?> scheduledFuture;
 
-    private ScheduledFuture<?> fileDelFuture;
-
     /**
      * collect once flag
      */
@@ -106,7 +104,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
     private FilterChain chain;
 
     /**
-     * 监听的文件路径
+     * The file path to monitor
      */
     private List<MonitorFile> monitorFileList;
 
@@ -153,7 +151,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
                     futureMap.get(filePath).cancel(false);
                     log.warn("channel:{} stop file:{} success", channelDefine.getChannelId(), filePath);
                     ChannelMemory.FileProgress fileProgress = fileProgressMap.get(filePath);
-                    //刷新内存记录，防止agent重启，重新采集该文件
+                    //Refresh the memory record to prevent the agent from restarting and recollect the file.
                     if (null != fileProgress) {
                         fileProgress.setFinished(true);
                     }
@@ -217,7 +215,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
 
     private void startExportQueueDataThread() {
         scheduledFuture = ExecutorUtil.scheduleAtFixedRate(() -> {
-            // 超过10s 未发送mq消息，才进行异步发送
+            // If the mq message is not sent for more than 10 seconds, it will be sent asynchronously.
             if (System.currentTimeMillis() - lastSendTime < 10 * 1000) {
                 return;
             }
@@ -252,7 +250,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
      * 1.logSplitExpress:/home/work/log/log-agent/server.log.* realFilePaths: ["/home/work/log/log-agent/server.log"]
      * 2.logSplitExpress:/home/work/log/log-agent/(server.log.*|error.log.*) realFilePaths: ["/home/work/log/log-agent/server.log","/home/work/log/log-agent/server.log"]
      * 2.logSplitExpress:/home/work/log/(log-agent|log-stream)/server.log.* realFilePaths: ["/home/work/log/log-agent/server.log","/home/work/log/log-stream/server.log"]
-     * 真实的文件不存在，也应该监听
+     * The real file does not exist, it should also listen
      *
      * @param logSplitExpress
      * @param realFilePaths
@@ -275,7 +273,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
             try {
                 perFilePathExpress = cleanedPathList.get(i);
                 /**
-                 * 兼容当前文件创建的时候可以监听到
+                 * Compatible with the current file, it can be monitored when it is created.
                  */
                 perFilePathExpress = String.format("(%s|%s)", perFilePathExpress, String.format("%s.*", realFilePaths.get(i)));
             } catch (Exception e) {
@@ -327,11 +325,11 @@ public class ChannelServiceImpl extends AbstractChannelService {
             readResult.get().getLines().stream().forEach(l -> {
                 String logType = channelDefine.getInput().getType();
                 LogTypeEnum logTypeEnum = LogTypeEnum.name2enum(logType);
-                // 多行应用日志类型和opentelemetry类型才判断异常堆栈
+                // Multi-line application log type and opentelemetry type are used to determine the exception stack
                 if (LogTypeEnum.APP_LOG_MULTI == logTypeEnum || LogTypeEnum.OPENTELEMETRY == logTypeEnum) {
                     l = mLog.append2(l);
                 } else {
-                    // tail 单行模式
+                    // tail single line mode
                 }
                 if (null != l) {
                     synchronized (lock) {
@@ -349,26 +347,24 @@ public class ChannelServiceImpl extends AbstractChannelService {
 
     private void lastLineRemainSendSchedule(String patternCode) {
         /**
-         * 采集所有最后一行数据内存中超 10s 没有发送的数据
+         * Collect all data in the last row of data that has not been sent for more than 10 seconds.
          */
-        lastFileLineScheduledFuture = ExecutorUtil.scheduleAtFixedRate(() -> {
-            SafeRun.run(() -> {
-                for (Map.Entry<String, Pair<MLog, AtomicReference<ReadResult>>> referenceEntry : resultMap.entrySet()) {
-                    MLog mLog = referenceEntry.getValue().getKey();
-                    String pattern = referenceEntry.getKey();
-                    Long appendTime = mLog.getAppendTime();
-                    if (null != appendTime && Instant.now().toEpochMilli() - appendTime > 10 * 1000) {
-                        String remainMsg = mLog.takeRemainMsg2();
-                        if (null != remainMsg) {
-                            synchronized (lock) {
-                                log.info("start send last line,pattern:{},patternCode:{},data:{}", pattern, patternCode, remainMsg);
-                                wrapDataToSend(remainMsg, referenceEntry.getValue().getValue(), pattern, patternCode, getTailPodIp(pattern), appendTime);
-                            }
+        lastFileLineScheduledFuture = ExecutorUtil.scheduleAtFixedRate(() -> SafeRun.run(() -> {
+            for (Map.Entry<String, Pair<MLog, AtomicReference<ReadResult>>> referenceEntry : resultMap.entrySet()) {
+                MLog mLog = referenceEntry.getValue().getKey();
+                String pattern = referenceEntry.getKey();
+                Long appendTime = mLog.getAppendTime();
+                if (null != appendTime && Instant.now().toEpochMilli() - appendTime > 10 * 1000) {
+                    String remainMsg = mLog.takeRemainMsg2();
+                    if (null != remainMsg) {
+                        synchronized (lock) {
+                            log.info("start send last line,pattern:{},patternCode:{},data:{}", pattern, patternCode, remainMsg);
+                            wrapDataToSend(remainMsg, referenceEntry.getValue().getValue(), pattern, patternCode, getTailPodIp(pattern), appendTime);
                         }
                     }
                 }
-            });
-        }, 30, 30, TimeUnit.SECONDS);
+            }
+        }), 30, 30, TimeUnit.SECONDS);
     }
 
     private void wrapDataToSend(String lineMsg, AtomicReference<ReadResult> readResult, String pattern, String patternCode, String localIp, long ct) {
@@ -428,7 +424,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
             log.warn("file:{} marked stop to collect", filePath);
             return;
         }
-        //判断文件是否存在
+        //Determine whether the file exists
         if (FileUtil.exist(filePath)) {
             stopOldCurrentFileThread(filePath);
             log.info("start to collect file,channelId:{},fileName:{}", channelId, filePath);
@@ -464,7 +460,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
         if (fileProgress != null) {
             if (null != fileProgress.getFinished() && fileProgress.getFinished()) {
                 /**
-                 * k8s 中 stateful 的pod不用通过finished判断
+                 * Stateful pods in k8s do not need to be judged by finished
                  */
                 if (StringUtils.isNotBlank(channelDefine.getPodType())) {
                     if (K8sPodTypeEnum.valueOf(channelDefine.getPodType().toUpperCase()) != K8sPodTypeEnum.STATEFUL) {
@@ -474,11 +470,11 @@ public class ChannelServiceImpl extends AbstractChannelService {
             }
             pointer = fileProgress.getPointer();
             lineNumber = fileProgress.getCurrentRowNum();
-            //比较inode值是否变化，变化则从头开始读
+            //Compare whether the inode value changes, and read from the beginning if the change
             ChannelMemory.UnixFileNode memoryUnixFileNode = fileProgress.getUnixFileNode();
             if (null != memoryUnixFileNode && null != memoryUnixFileNode.getSt_ino()) {
                 log.info("memory file inode info,filePath:{},:{}", filePath, gson.toJson(memoryUnixFileNode));
-                //获取当前文件inode信息
+                //Get current file inode information
                 ChannelMemory.UnixFileNode currentUnixFileNode = ChannelUtil.buildUnixFileNode(filePath);
                 if (null != currentUnixFileNode && null != currentUnixFileNode.getSt_ino()) {
                     log.info("current file inode info,filePath:{},file node info:{}", filePath, gson.toJson(currentUnixFileNode));
@@ -498,7 +494,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
             if (CollectionUtils.isEmpty(subList)) {
                 return;
             }
-            //限流处理
+            //Current limiting processing
             chain.doFilter();
 
             long current = System.currentTimeMillis();
@@ -517,17 +513,17 @@ public class ChannelServiceImpl extends AbstractChannelService {
 
     @Override
     public void close() {
-        log.info("删除当前采集任务，channelId:{}", getChannelId());
-        //1.停止日志抓取
+        log.info("Delete the current collection task,channelId:{}", getChannelId());
+        //1.Stop log capture
         for (Map.Entry<String, LogFile> fileEntry : logFileMap.entrySet()) {
             fileEntry.getValue().setStop(true);
             InodeFileComparator.removeFile(fileEntry.getKey());
         }
-        //2. 停止export
+        //2. stop exporting
         this.msgExporter.close();
-        //3. 刷新缓存
+        //3. refresh cache
         memoryService.refreshMemory(channelMemory);
-        // 停止任务
+        // stop task
         if (null != scheduledFuture) {
             scheduledFuture.cancel(false);
         }
@@ -542,9 +538,6 @@ public class ChannelServiceImpl extends AbstractChannelService {
         reOpenMap.clear();
         fileReadMap.clear();
         resultMap.clear();
-        if (null != fileDelFuture) {
-            fileDelFuture.cancel(false);
-        }
     }
 
     public Long getChannelId() {
@@ -567,7 +560,7 @@ public class ChannelServiceImpl extends AbstractChannelService {
 
     @Override
     public synchronized void reOpen(String filePath) {
-        //打开次数判断10s内只能重新打开1次
+        //Judging the number of openings, it can only be reopened once within 10 seconds.
         if (reOpenMap.containsKey(filePath) && Instant.now().toEpochMilli() - reOpenMap.get(filePath) < 10 * 1000) {
             log.info("The file has been opened too frequently.Please try again in 10 seconds.fileName:{}," +
                     "last time opening time.:{}", filePath, reOpenMap.get(filePath));
@@ -583,13 +576,13 @@ public class ChannelServiceImpl extends AbstractChannelService {
         String tailPodIp = getTailPodIp(filePath);
         String ip = StringUtils.isBlank(tailPodIp) ? NetUtil.getLocalIp() : tailPodIp;
         if (null == logFile) {
-            // 新增日志文件
+            // Add new log file
             readFile(channelDefine.getInput().getPatternCode(), ip, filePath, getChannelId());
             log.info("watch new file create for channelId:{},ip:{},path:{}", getChannelId(), filePath, ip);
         } else {
-            // 正常日志切分
+            // Normal log segmentation
             try {
-                //延迟5s切分文件, todo @shanwb 保证文件采集完再切换
+                //Delay 5 seconds to split files, todo @shanwb Ensure that the files are collected before switching
                 TimeUnit.SECONDS.sleep(5);
             } catch (InterruptedException e) {
                 e.printStackTrace();

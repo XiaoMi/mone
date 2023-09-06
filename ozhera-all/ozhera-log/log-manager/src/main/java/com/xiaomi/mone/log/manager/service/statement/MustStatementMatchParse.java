@@ -23,7 +23,7 @@ import java.util.List;
 import static com.xiaomi.mone.log.manager.service.statement.StatementMatchParseFactory.DOUBLE_QUOTATION_MARK_SEPARATOR;
 
 /**
- * must语句匹配
+ * Must statement match
  */
 public class MustStatementMatchParse implements StatementMatchParse {
     @Override

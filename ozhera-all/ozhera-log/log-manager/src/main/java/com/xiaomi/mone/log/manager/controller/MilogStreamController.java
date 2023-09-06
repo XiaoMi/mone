@@ -42,7 +42,7 @@ public class MilogStreamController {
     }
 
     /**
-     * 配置下发给stream
+     * Configuration is sent to stream
      *
      * @return
      */

@@ -66,7 +66,7 @@ public class TraceLog {
         qb.query(queryBuilder);
         List<MilogEsIndexDO> indexList;
         if (StringUtils.isEmpty(region)) {
-            // region为空查询国内所有region
+            // Region is empty to query all regions in the country
             indexList = esIndexMapper.selectAreaIndexList("cn");
         } else {
             indexList = esIndexMapper.selectRegionIndexList(region);
@@ -102,7 +102,7 @@ public class TraceLog {
             EsService esService = esCluster.getEsService(esIndexDO.getClusterId());
             if (esService == null) {
                 countDownLatch.countDown();
-                log.warn("[Esdata.getTraceLog] es客户端[{}]未生成", Constant.ES_SERV_BEAN_PRE + esIndexDO.getClusterId());
+                log.warn("[Esdata.getTraceLog] es client [{}] is not generated", Constant.ES_SERV_BEAN_PRE + esIndexDO.getClusterId());
                 continue;
             }
             SearchRequest searchRequest = new SearchRequest(esIndexDO.getIndexName());
@@ -112,7 +112,7 @@ public class TraceLog {
         try {
             countDownLatch.await(10, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
-            log.error("日志查询错误, 查询trace日志报错 countdownlatch timeout, error is [{}]", e.getMessage(), e);
+            log.error("Log query error, query trace log error countdownlatch timeout, error is [{}]", e.getMessage(), e);
         }
         Set<String> logSet = asyncSearchObj.getLogSet();
         return new TraceLogDTO(sortedLogWithTime(logSet));
@@ -160,7 +160,6 @@ public class TraceLog {
                     }
                     int res = (int) (Double.parseDouble(String.valueOf(gson.fromJson(o1, Map.class).get("timestamp"))) - Double.parseDouble((String.valueOf(gson.fromJson(o2, Map.class).get("timestamp")))));
                     if (res == 0) {
-                        // TODO 比较ID
                         // return (int) (Double.parseDouble(String.valueOf(gson.fromJson(o1, Map.class).get("_id"))) - Double.parseDouble((String.valueOf(gson.fromJson(o2, Map.class).get("_id")))));
                         return 1;
                     }

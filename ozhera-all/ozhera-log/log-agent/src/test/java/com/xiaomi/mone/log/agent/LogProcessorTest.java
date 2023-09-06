@@ -51,7 +51,7 @@ public class LogProcessorTest {
     }
 
     /**
-     * 停止不了的
+     * Can't stop
      *
      * @throws IOException
      */

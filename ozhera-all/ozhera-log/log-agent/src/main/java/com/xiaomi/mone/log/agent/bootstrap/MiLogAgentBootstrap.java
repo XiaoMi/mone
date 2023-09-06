@@ -49,7 +49,7 @@ public class MiLogAgentBootstrap {
                 Integer.parseInt(Config.ins().get("port", "9799")),
                 new Version() + ":" + serviceName + ":" + nacosAddr);
         final RpcClient client = new RpcClient(nacosAddr, serviceName);
-        //即使没有服务信息,也使用老的注册信息(容错处理)
+        //Even if there is no service information, the old registration information is used (fault tolerance processing)
         client.setClearServerAddr(false);
         client.setReconnection(false);
         client.setClientInfo(clientInfo);
@@ -59,7 +59,7 @@ public class MiLogAgentBootstrap {
         client.waitStarted();
         log.info("create rpc client finish");
         Ioc.ins().putBean(client).init("com.xiaomi.mone.log.agent", "com.xiaomi.youpin.docean");
-        //因为client生命周期提前,这里需要从新注册processor
+        //Because the client life cycle is advanced, the processor needs to be re-registered here
         client.registerProcessor();
         System.in.read();
     }

@@ -44,7 +44,7 @@ public class RpcTest {
         ChannelDefineRpcLocator channelDefineRpcLocator = Ioc.ins().getBean(ChannelDefineRpcLocator.class);
         System.out.println(channelDefineRpcLocator);
         List<ChannelDefine> channelDefine = channelDefineRpcLocator.getChannelDefine();
-        log.info("返回数据：{}", channelDefine);
+        log.info("Returns data：{}", channelDefine);
         Assert.assertNotNull(channelDefine);
     }
 
@@ -65,7 +65,7 @@ public class RpcTest {
         List<LineMessage> messageList = Arrays.asList(lineMessage);
         List<LineMessage> cloneList = messageList.stream().map(message -> ObjectUtil.clone(message)).collect(Collectors.toList());
 //        List<LineMessage> cloneList = messageList.stream().collect(Collectors.toList());
-        log.info("返回数据：{}", cloneList);
+        log.info("return data：{}", cloneList);
         Assert.assertNotNull(cloneList);
     }
 
@@ -79,7 +79,7 @@ public class RpcTest {
 //        TalosProducer talosProducer = channelEngine.initTalosProducer(talosOutput, "");
 //        TalosProducer talosProducer2 = channelEngine.initTalosProducer(talosOutput, "");
 //        List<Message> messages = Lists.newArrayList();
-//        Message message = new Message(ByteBuffer.wrap("我们都是好孩子！！！！！！".getBytes(StandardCharsets.UTF_8)));
+//        Message message = new Message(ByteBuffer.wrap("helllo ！！！！！！".getBytes(StandardCharsets.UTF_8)));
 //        messages.add(message);
 //        IntStream.range(0, 10).forEach(value -> {
 //            try {
@@ -89,7 +89,7 @@ public class RpcTest {
 //            }
 //        });
 //        List<Message> messages2 = Lists.newArrayList();
-//        Message message2 = new Message(ByteBuffer.wrap("测试我们都是好孩子！！！！！！".getBytes(StandardCharsets.UTF_8)));
+//        Message message2 = new Message(ByteBuffer.wrap("test test！！！！！！".getBytes(StandardCharsets.UTF_8)));
 //        messages2.add(message2);
 //        talosProducer2.addUserMessage(messages2);
 //        talosProducer.shutdown();

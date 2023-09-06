@@ -26,14 +26,14 @@ import java.util.List;
 
 public interface LogTemplateService extends IService<MilogLogTemplateDO> {
     /**
-     * 日志模板列表
+     * Log template list
      *
      * @return
      */
     Result<List<LogTemplateDTO>> getLogTemplateList(String area);
 
     /**
-     * 获取日志模板
+     * Get log template
      *
      * @param logTemplateId
      * @return

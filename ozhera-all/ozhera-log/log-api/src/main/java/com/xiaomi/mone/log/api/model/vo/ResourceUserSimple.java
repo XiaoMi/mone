@@ -34,23 +34,23 @@ import java.util.List;
 @Builder
 public class ResourceUserSimple {
     /**
-     * 资源列表是否初始化
+     * Whether the resource list is initialized
      */
     private Boolean initializedFlag = false;
     /**
-     * 没有初始化展示消息内容
+     * The presentation message content is not initialized
      */
     private String notInitializedMsg;
     /**
-     * 资源列表是否展示
+     * Whether the list of resources is displayed
      */
     private Boolean showFlag = false;
     /**
-     * MQ资源列表展示后筛选列表
+     * After displaying the MQ resource list, the list is filtered
      */
     private List<ValueKeyObj<Integer>> mqResourceList;
     /**
-     * ES资源列表展示后筛选列表
+     * After displaying the ES resource list, the list is filtered
      */
     private List<ValueKeyObj<Integer>> esResourceList;
 

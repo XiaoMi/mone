@@ -21,7 +21,7 @@ import lombok.EqualsAndHashCode;
 import java.util.List;
 
 /**
- * logstore 配置，对应一个es index
+ * LogStore configuration, corresponding to an ES index
  */
 @Data
 @EqualsAndHashCode
@@ -29,7 +29,7 @@ public class SinkConfig {
     private Long logstoreId;
     private String logstoreName;
     /**
-     * timestamp 必选
+     * timestamp is required
      */
     private String keyList;
     /**

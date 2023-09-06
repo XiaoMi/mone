@@ -51,11 +51,11 @@ public class PageInfo<T> implements Serializable {
     }
 
     /**
-     * @param page     // 当前第多少页
-     * @param pageSize // 每页大小
-     * @param total    // 总数
-     * @param list     // 数据载体
-     * @param hasPaged // 是否已经分页
+     * @param page     // How many pages are current
+     * @param pageSize // Per page size
+     * @param total    // total
+     * @param list     // Data carriers
+     * @param hasPaged // Whether pagination has been made
      */
     public PageInfo(int page, int pageSize, int total, List<T> list, boolean hasPaged) {
         this.page = page;
@@ -65,22 +65,22 @@ public class PageInfo<T> implements Serializable {
     }
 
     private void initPage(int pageIndex, int pageSize, int totalItemCount, List<T> data, boolean hasPaged) {
-        // 计算总页数
+        // Calculate the total number of pages
         if (totalItemCount > 0 && pageSize > 0) {
             this.totalPageCount = totalItemCount / pageSize + 1;
         }
-        // 截取当前页数据
+        // Intercepts the current page data
         if (null == data) {
             this.list = new ArrayList<T>();
         } else if (data.isEmpty() || hasPaged) {
             this.list = data;
         } else {
-            if (pageIndex == this.totalPageCount) { // 最后一页
+            if (pageIndex == this.totalPageCount) { // Last page
                 this.list = data.subList((pageIndex - 1) * pageSize, data.size());
-            } else if (pageIndex < this.totalPageCount) { // 不是最后一页
+            } else if (pageIndex < this.totalPageCount) { // Not the last page
                 this.list = data.subList((pageIndex - 1) * pageSize, pageIndex * pageSize);
-            } else { // 当前页超出总页数
-                throw new IndexOutOfBoundsException("当前页数超出总页数范围");
+            } else { // The current page exceeds the total number of pages
+                throw new IndexOutOfBoundsException("The current number of pages exceeds the total number of pages");
             }
         }
     }
