@@ -33,7 +33,7 @@
 ## 🔗 Mone introduction
 
 ### [OzHera - Application Observability Platform]
-![mone-hera](readme/image/en/hera_en01.jpeg)
+![mone-hera](readme/image/en/hera_en01_new.jpeg)
 ![mone-hera](readme/image/en/hera_en02.jpeg)
 ![mone-hera](readme/image/en/hera_en03.jpeg)
 ![mone-hera](readme/image/en/hera_en04.jpeg)
