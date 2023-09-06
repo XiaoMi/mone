@@ -1,7 +1,9 @@
-### 提供gitlab操作相关的接口
-#### 例如：
-+ createBranch-->创建分支
-+ deleteBranch-->删除分支
-+ mergeBranch-->合并分支
-+ acceptMerge-->同意合并
-+ addHook-->添加hook
+### Provide gitlab operation related interfaces
+
+#### For example:
+
++ createBranch-->Create branch
++ deleteBranch-->Delete branch
++ mergeBranch-->Merge branch
++ acceptMerge-->Accept merge
++ addHook-->Add hook

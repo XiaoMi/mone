@@ -1,19 +1,19 @@
-#提供docker客户端的相关操作
+# Docker client operations
 
-#例如：
+# For example:
 
-pullimage--->docker pull image  拉取镜像
+pullimage--->docker pull image Pull an image
 
-pushimage--->docker push image  推送镜像
+pushimage--->docker push image Push an image
 
-listContainers--->docker ps  查看容器
+listContainers--->docker ps List containers
 
-createNetwork--->docker network create  创建网络
+createNetwork--->docker network create Create a network
 
-listNetwork--->docker network ls  查看网络
+listNetwork--->docker network ls List networks
 
-stopContainer--->docker stop container  关闭容器
+stopContainer--->docker stop container Stop a container
 
-createContainer--->docker create --name containerName  创建容器
+createContainer--->docker create --name containerName Create a container
 
-等操作
+and so on.

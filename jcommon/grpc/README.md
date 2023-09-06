@@ -1,8 +1,7 @@
 # grpc
 
-+ 本模块提供了使用Grpc进行服务调用的一些示例、包括Server端以及Client端。
-+ 官网地址：https://xmmione.be.mi.com/web/index
-+ gen_golang.sh 用来生成golang代码
-+ golang文件夹里有生成好的代码
-+ sidecar_golang (project名称)
++ This module provides some examples of using Grpc for service invocation, including Server-side and Client-side.
++ gen_golang.sh is used to generate golang code.
++ The generated code is in the golang folder.
++ sidecar_golang (project name)
 
