@@ -25,11 +25,11 @@ import org.nutz.dao.entity.annotation.*;
  */
 
 @Table("milog_logstore")
-@Comment("milog日志存储")
+@Comment("Milog log storage")
 @Data
 public class MilogLogStoreDO extends BaseCommon {
     @Id
-    @Comment("主键Id")
+    @Comment("Primary key Id")
     @ColDefine(customType = "bigint")
     private Long id;
 
@@ -40,35 +40,35 @@ public class MilogLogStoreDO extends BaseCommon {
 
     @Column(value = "mq_resource_id")
     @ColDefine(customType = "bigint")
-    @Comment("mq资源的主键Id")
+    @Comment("The primary key ID of the mq resource")
     private Long mqResourceId;
 
 
     @Column(value = "logstoreName")
     @ColDefine(type = ColType.VARCHAR, width = 256)
-    @Comment("日志存储名称")
+    @Comment("Log storage name")
     private String logstoreName;
 
 
     @Column(value = "store_period")
     @ColDefine(type = ColType.INT)
-    @Comment("存储周期:1-3-5-7")
+    @Comment("Storage period: 1-3-5-7")
     private Integer storePeriod;
 
 
     @Column(value = "shard_cnt")
     @ColDefine(type = ColType.INT)
-    @Comment("存储分片数")
+    @Comment("Number of storage shards")
     private Integer shardCnt;
 
     @Column(value = "key_list")
     @ColDefine(type = ColType.VARCHAR, width = 1024)
-    @Comment("key列表，多个用逗号分隔")
+    @Comment("A list of keys, multiple separated by commas")
     private String keyList;
 
     @Column(value = "column_type_list")
     @ColDefine(type = ColType.VARCHAR, width = 128)
-    @Comment("字段类型，多个用逗号分隔")
+    @Comment("Field types, multiple separated by commas")
     private String columnTypeList;
 
     @Column(value = "log_type")
@@ -88,12 +88,12 @@ public class MilogLogStoreDO extends BaseCommon {
 
     @Column(value = "es_cluster_id")
     @ColDefine(customType = "bigint")
-    @Comment("logstore 对应es集群id")
+    @Comment("logstore corresponds to the ES cluster ID")
     private Long esClusterId;
 
     @Column(value = "machine_room")
     @ColDefine(type = ColType.VARCHAR, width = 50)
-    @Comment("机房信息")
+    @Comment("Computer room information")
     private String machineRoom;
 
     public MilogLogStoreDO() {

@@ -24,7 +24,7 @@ import lombok.*;
 @EqualsAndHashCode
 public class PodDTO {
     /**
-     * pod名称
+     * pod name
      */
     private String podName;
     /**
@@ -32,11 +32,11 @@ public class PodDTO {
      */
     private String podIP;
     /**
-     * 物理机名称
+     * Physical machine name
      */
     private String nodeName;
     /**
-     * 物理机IP
+     * Physical IP
      */
     private String nodeIP;
 }

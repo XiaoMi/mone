@@ -42,7 +42,7 @@ import static com.xiaomi.mone.log.common.Constant.SYMBOL_COMMA;
 /**
  * @author: wtt
  * @date: 2022/5/12 17:10
- * @description: store 中参数校验
+ * @description: Parameter validation in the store
  */
 @Slf4j
 @Component
@@ -69,31 +69,31 @@ public class StoreValidation {
         }
         List<String> errorInfos = Lists.newArrayList();
         if (null == storeParam.getSpaceId()) {
-            errorInfos.add("space信息 不能为空");
+            errorInfos.add("Space information cannot be empty");
         }
         if (null == storeParam || StringUtils.isBlank(storeParam.getLogstoreName())) {
-            errorInfos.add("logStore 不能为空");
+            errorInfos.add("logStore  cannot be empty");
         }
         if (StringUtils.isEmpty(storeParam.getMachineRoom())) {
-            errorInfos.add("机房信息 不能为空");
+            errorInfos.add("Computer room information  cannot be empty");
             return errorInfos.stream().collect(Collectors.joining(SYMBOL_COMMA));
         }
         if (null == storeParam.getLogType()) {
-            errorInfos.add("日志类型 不能为空");
+            errorInfos.add("Log type  cannot be empty");
         }
         if (StringUtils.isEmpty(storeParam.getKeyList())) {
-            errorInfos.add("索引列 不能为空");
+            errorInfos.add("Index columns  cannot be empty");
         }
         List<String> duplicatedKeyList = getDuplicatedKeys(storeParam.getKeyList());
         if (!duplicatedKeyList.isEmpty()) {
-            errorInfos.add("索引列字段有重复，请删除重复字段：" + duplicatedKeyList);
+            errorInfos.add("Index column fields are duplicated, remove the duplicate fields:" + duplicatedKeyList);
         }
         // Additional field inspection
         if (storeExtensionService.storeInfoCheck(storeParam)) {
             return errorInfos.stream().collect(Collectors.joining(SYMBOL_COMMA));
         }
         if (null == storeParam.getMqResourceId() || null == storeParam.getEsResourceId()) {
-            //校验当前用户所属部门是否初始化资源
+            //Verify whether the department to which the current user belongs initializes the resource
             ResourceUserSimple resourceUserSimple = milogMiddlewareConfigService.userResourceList(storeParam.getMachineRoom(), storeParam.getLogType());
             if (!resourceUserSimple.getInitializedFlag()) {
                 errorInfos.add(resourceUserSimple.getNotInitializedMsg());
@@ -101,19 +101,19 @@ public class StoreValidation {
             boolean resourceChosen = null == storeParam.getMqResourceId() || null == storeParam.getEsResourceId();
             if (resourceUserSimple.getInitializedFlag() &&
                     resourceUserSimple.getShowFlag() && resourceChosen) {
-                errorInfos.add("请先选择所需要的资源信息");
+                errorInfos.add("Please select the required resource information first");
             }
         } else {
             if (null != storeParam.getMqResourceId()) {
                 MilogMiddlewareConfig milogMiddlewareConfig = milogMiddlewareConfigDao.queryById(storeParam.getMqResourceId());
                 if (null == milogMiddlewareConfig) {
-                    errorInfos.add("MQ资源信息不能为空");
+                    errorInfos.add("MQ resource information cannot be empty");
                 }
             }
             if (null != storeParam.getEsResourceId()) {
                 MilogEsClusterDO esClusterDO = esCluster.getById(storeParam.getEsResourceId());
                 if (null == esClusterDO) {
-                    errorInfos.add("ES资源信息不能为空");
+                    errorInfos.add("ES resource information cannot be empty");
                 }
             }
         }

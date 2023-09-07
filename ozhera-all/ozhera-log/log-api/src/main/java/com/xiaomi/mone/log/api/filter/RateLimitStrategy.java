@@ -27,8 +27,8 @@ import lombok.Getter;
 @Getter
 public enum RateLimitStrategy {
     /**
-     * permitsPerSecond 每秒限流次数
-     * 对于日志采集场景，限流条数 = permitsPerSecond * batchSize
+     * permitsPerSecond Number of throttling times per second
+     * For the log collection scenario, limit the number of strips = permitsPerSecond batchSize
      */
     REGINAL_FAST(Common.RATE_LIMIT_CODE + 0, FilterType.REGIONAL, 100, "", 1500),
     REGINAL_MEDIUM(Common.RATE_LIMIT_CODE + 1, FilterType.REGIONAL, 100, "", 100),

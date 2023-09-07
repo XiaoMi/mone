@@ -18,10 +18,9 @@ package com.xiaomi.mone.log.model;
 import lombok.Data;
 
 import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 封装 同步到nacos的milog space 配置
+ * Encapsulation syncs to NACOS' milog space configuration
  * key:spaceID
  */
 @Data

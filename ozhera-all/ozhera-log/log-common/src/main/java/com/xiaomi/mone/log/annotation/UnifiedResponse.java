@@ -23,7 +23,7 @@ import java.lang.annotation.Target;
 /**
  * @author wtt
  * @version 1.0
- * @description 统一包装响应
+ * @description Uniform packaging response
  * @date 2022/5/10 11:33
  */
 @Target({ElementType.TYPE, ElementType.METHOD})

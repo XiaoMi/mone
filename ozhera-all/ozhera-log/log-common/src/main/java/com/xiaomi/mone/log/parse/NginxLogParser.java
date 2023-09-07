@@ -56,11 +56,14 @@ public class NginxLogParser implements LogParser {
         Pattern regexSpaceChar = Pattern.compile("\\\\[tnvfr]");
         Pattern regexSpacePlus = Pattern.compile("\\s+");
         Pattern regexVar = Pattern.compile("\\$\\{?[a-zA-Z0-9_]+\\}?");
-        Pattern regexSVar = Pattern.compile("([\\[\\{\\(\"])(\\$\\{?[a-zA-Z0-9_]+\\}?)([\\]\\}\\)\"])"); // 匹配可能包含空格的列（即在 nginx 日志格式中需要用引号括起来的列）
+        // Matches columns that may contain spaces (that is, columns that need to be enclosed in quotation marks in the nginx log format)
+        Pattern regexSVar = Pattern.compile("([\\[\\{\\(\"])(\\$\\{?[a-zA-Z0-9_]+\\}?)([\\]\\}\\)\"])");
         Pattern regexNginxConfBodyGroup = Pattern.compile("'(.*?)'");
 
-        String varPlaceHolder = "__VAR_PLACE_HOLDER__"; // 不包含空格的列的占位符
-        String svarPlaceholder = "__SVAR_PLACE_HOLDER__"; // 可能包含空格的列的占位符
+        // Placeholder for columns that do not contain spaces
+        String varPlaceHolder = "__VAR_PLACE_HOLDER__";
+        // Placeholders for columns that may contain spaces
+        String svarPlaceholder = "__SVAR_PLACE_HOLDER__";
 
         String bodyStr = "";
         Matcher bodyMatcher = regexNginxConfBodyGroup.matcher(nginxFormatStr);
@@ -71,33 +74,34 @@ public class NginxLogParser implements LogParser {
         }
 
         String valueRegex = "";
-        // 1. 取代所有的空格
+        // 1.  Replaces all spaces
         valueRegex = regexSpace.matcher(bodyStr).replaceAll(" ");
-        // 2. 取代所有表示空格的制表符
+        // 2. Replaces all tabs that represent spaces
         valueRegex = regexSpaceChar.matcher(valueRegex).replaceAll(" ");
-        // 3. 将包含空格的列替换成占位符
+        // 3. Replace columns that contain spaces with placeholders
         valueRegex = regexSVar.matcher(valueRegex).replaceAll("$1" + svarPlaceholder + "$3");
-        // 4. 将所有的变量替换成占位符
+        // 4. Replace all variables with placeholders
         valueRegex = regexVar.matcher(valueRegex).replaceAll(varPlaceHolder);
         valueRegex = escapeExprSpecialWord(valueRegex);
-        // 5. 将所有的空格替换成正则表达式语法
+        // 5. Replace all spaces with regular expression syntax
         valueRegex = regexSpacePlus.matcher(valueRegex).replaceAll("\\\\s+");
-        // 6. 将占位符替换成对应的正则表达式分组
+        // 6. Replace the placeholders with the corresponding regular expression groupings
         valueRegex = valueRegex.replaceAll(svarPlaceholder, "(.*?)");
         valueRegex = valueRegex.replaceAll(varPlaceHolder, "(\\\\S*)");
-        // 7. 匹配结尾多余的换行符
+        // 7. Matches the extra line breaks at the end
         valueRegex += "\\s*$";
         return valueRegex;
     }
 
     /**
-     * 转义特殊字符
+     * Escape special characters
+     *
      * @param keyword
      * @return
      */
     public static String escapeExprSpecialWord(String keyword) {
         if (StringUtils.isNotBlank(keyword)) {
-            String[] fbsArr = { "\\", "$", "(", ")", "*", "+", ".", "[", "]", "?", "^", "{", "}", "|" };
+            String[] fbsArr = {"\\", "$", "(", ")", "*", "+", ".", "[", "]", "?", "^", "{", "}", "|"};
             for (String key : fbsArr) {
                 if (keyword.contains(key)) {
                     keyword = keyword.replace(key, "\\" + key);

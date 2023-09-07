@@ -30,14 +30,14 @@ import java.util.List;
 public interface LogProcessCollector {
 
     /**
-     * 更新日志收集进度
+     * Update log collection progress
      *
      * @param cmd
      */
     void collectLogProcess(UpdateLogProcessCmd cmd);
 
     /**
-     * 查询tail的日志收集进度
+     * Query the log collection progress of tail
      *
      * @param tailId
      * @param tailName
@@ -55,15 +55,15 @@ public interface LogProcessCollector {
     List<AgentLogProcessDTO> getAgentLogProcess(String ip);
 
     /**
-     * 采集进度小于progressRatio
+     * The acquisition progress is less than the progress ratio
      *
-     * @param progressRation 匹配采集进度
+     * @param progressRation Match the collection progress
      * @return
      */
     List<UpdateLogProcessCmd.CollectDetail> getColProcessImperfect(Double progressRation);
 
     /**
-     * 获取一个tail下的采集详情
+     * Get the collection details under a tail
      *
      * @param tailId
      * @return

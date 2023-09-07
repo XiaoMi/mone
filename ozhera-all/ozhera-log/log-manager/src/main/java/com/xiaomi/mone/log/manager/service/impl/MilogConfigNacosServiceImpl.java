@@ -102,29 +102,29 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
     }
 
     /**
-     * 推送namespace配置
+     * Push namespace configuration
      *
      * @param spaceId spaceId
      */
 
     @Override
     public void publishStreamConfig(Long spaceId, Integer type, Integer projectTypeCode, String motorRoomEn) {
-        //1.查询所有的stream的机器Ip--实时查询
+        //1.Query all stream machine IPs - real-time query
         List<String> mioneStreamIpList = fetchStreamMachineService.streamMachineUnique();
         if (CollectionUtils.isEmpty(mioneStreamIpList)) {
             mioneStreamIpList = tailExtensionService.getStreamMachineUniqueList(projectTypeCode, motorRoomEn);
         }
-        log.info("查询到log-stream的机器列表：{}", new Gson().toJson(mioneStreamIpList));
-        //2.发送数据
+        log.info("Query the list of machines in log-stream：{}", new Gson().toJson(mioneStreamIpList));
+        //2.send msg
         streamConfigNacosPublisher.publish(DEFAULT_APP_NAME, dealStreamConfigByRule(mioneStreamIpList, spaceId, type));
     }
 
     private synchronized MiLogStreamConfig dealStreamConfigByRule(List<String> ipList, Long spaceId, Integer type) {
         MiLogStreamConfig existConfig = streamConfigNacosProvider.getConfig(DEFAULT_APP_NAME);
-        // 新增配置
+        // New configuration
         String spaceKey = CommonExtensionServiceFactory.getCommonExtensionService().getLogManagePrefix() + TAIL_CONFIG_DATA_ID + spaceId;
         if (null == existConfig || OperateEnum.ADD_OPERATE.getCode().equals(type) || OperateEnum.UPDATE_OPERATE.getCode().equals(type)) {
-            // 配置还没有配置，初始化配置
+            // The configuration is not configured yet, initialize the configuration
             if (null == existConfig) {
                 existConfig = new MiLogStreamConfig();
                 Map<String, Map<Long, String>> config = new HashMap<>();
@@ -145,8 +145,8 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
                         .anyMatch(s -> s.equals(spaceKey))) {
                     return existConfig;
                 }
-                // 1.先平均数量
-                // 2.新增nameSpace
+                // 1.Average the quantity first
+                // 2.Added name Space
                 if (CollectionUtils.isNotEmpty(ipList)) {
                     for (String ip : ipList) {
                         if (!config.containsKey(ip)) {
@@ -154,7 +154,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
                         }
                     }
                 }
-                // 每个机器容纳的nameSpace数量
+                // The number of name spaces held per machine
                 Map<String, Integer> ipSizeMap = config.entrySet().stream()
                         .collect(Collectors.toMap(Map.Entry::getKey, stringMapEntry -> stringMapEntry.getValue().size()));
                 String key = ipSizeMap.entrySet().stream()
@@ -163,7 +163,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
                 config.get(key).put(spaceId, spaceKey);
             }
         }
-        // 删除配置
+        // Delete the configuration
         if (OperateEnum.DELETE_OPERATE.getCode().equals(type)) {
             if (null != existConfig) {
                 Map<String, Map<Long, String>> config = existConfig.getConfig();
@@ -180,13 +180,13 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
     public void publishNameSpaceConfig(String motorRoomEn, Long spaceId, Long storeId, Long tailId, Integer type, String changeType) {
         Assert.notNull(spaceId, "logSpaceId not empty");
         Assert.notNull(storeId, "storeId not empty");
-        //发送数据
+        //send msg
         spaceConfigNacosPublisher.publish(spaceId.toString(),
                 dealSpaceConfigByRule(motorRoomEn, spaceId, storeId, tailId, type, changeType));
     }
 
     /**
-     * 选择合适的nacos环境地址
+     * Select the appropriate NACOS environment address
      *
      * @param motorRoomEn
      */
@@ -229,7 +229,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
                 streamServiceUniqueMap.put(STREAM_PREFIX + motorRoomEn, fetchStreamMachineService);
             }
         } else {
-            log.info("当前机房：{}没有nacos配置信息", motorRoomEn);
+            log.info("Current data center: {} does not have NACOS configuration information", motorRoomEn);
         }
     }
 
@@ -241,9 +241,9 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
     private synchronized MilogSpaceData dealSpaceConfigByRule(
             String motorRoomEn, Long spaceId, Long storeId, Long tailId, Integer type, String changeType) {
         MilogSpaceData existConfig = spaceConfigNacosProvider.getConfig(spaceId.toString());
-        // 新增配置
+        // New configuration
         if (null == existConfig || OperateEnum.ADD_OPERATE.getCode().equals(type)) {
-            // 配置还没有配置，初始化配置
+            // The configuration is not configured yet, initialize the configuration
             if (null == existConfig || null == existConfig.getSpaceConfig()) {
                 existConfig = new MilogSpaceData();
                 existConfig.setMilogSpaceId(spaceId);
@@ -264,12 +264,12 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
                     logtailConfigs.add(assembleLogTailConfigs(tailId));
                     currentStoreConfig.setLogtailConfigs(logtailConfigs);
                 } else {
-                    //新加入的logStore
+                    //New addition to the log Store
                     spaceConfig.add(assembleSinkConfig(storeId, tailId, motorRoomEn));
                 }
             }
         }
-        // 删除配置--删除log-tail
+        // Delete configuration -- Delete log-tail
         if (OperateEnum.DELETE_OPERATE.getCode().equals(type) && !LOG_STORE.equalsIgnoreCase(changeType)) {
             if (null != existConfig) {
                 List<SinkConfig> spaceConfig = existConfig.getSpaceConfig();
@@ -285,7 +285,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
                 }
             }
         }
-        // 删除log-store
+        // Delete configuration -- Delete log-tail
         if (OperateEnum.DELETE_OPERATE.getCode().equals(type) && LOG_STORE.equalsIgnoreCase(changeType)) {
             if (null != existConfig) {
                 List<SinkConfig> sinkConfigListDelStore = existConfig.getSpaceConfig().stream()
@@ -294,11 +294,11 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
                 existConfig.setSpaceConfig(sinkConfigListDelStore);
             }
         }
-        // 修改配置--找到这个store下特定的tail进行修改
+        // Modify the configuration -- find a specific tail under this store to make changes
         if (OperateEnum.UPDATE_OPERATE.getCode().equals(type)) {
             if (null != existConfig) {
                 List<SinkConfig> spaceConfig = existConfig.getSpaceConfig();
-                //比较store是否变化
+                //Compare whether the store has changed
                 SinkConfig newSinkConfig = assembleSinkConfig(storeId, tailId, motorRoomEn);
                 SinkConfig currentStoreConfig = spaceConfig.stream()
                         .filter(sinkConfig -> sinkConfig.getLogstoreId().equals(storeId))
@@ -308,7 +308,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
                     if (!newSinkConfig.equals(currentStoreConfig)) {
                         currentStoreConfig.updateStoreParam(newSinkConfig);
                     }
-                    // 找到旧store下的特定的tail
+                    // Find the specific tail under the old store
                     LogtailConfig filterLogTailConfig = currentStoreConfig.getLogtailConfigs().stream()
                             .filter(logTailConfig -> Objects.equals(tailId, logTailConfig.getLogtailId()))
                             .findFirst()
@@ -320,8 +320,8 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
                         currentStoreConfig.getLogtailConfigs().add(assembleLogTailConfigs(tailId));
                     }
                 } else {
-                    //不存在，新增
-                    //新加入的logstore
+                    //Does not exist, new
+                    //New addition to the logstore
                     spaceConfig.add(assembleSinkConfig(storeId, tailId, motorRoomEn));
                 }
             }
@@ -332,7 +332,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
     public SinkConfig assembleSinkConfig(Long storeId, Long tailId, String motorRoomEn) {
         SinkConfig sinkConfig = new SinkConfig();
         sinkConfig.setLogstoreId(storeId);
-        // 查询logStore
+        // Query the log Store
         MilogLogStoreDO logStoreDO = logstoreDao.queryById(storeId);
         if (null != logStoreDO) {
             sinkConfig.setLogstoreName(logStoreDO.getLogstoreName());
@@ -367,7 +367,7 @@ public class MilogConfigNacosServiceImpl implements MilogConfigNacosService {
             logtailConfig.setParseScript(milogLogTail.getParseScript());
             logtailConfig.setValueList(milogLogTail.getValueList());
             logtailConfig.setAppType(milogLogTail.getAppType());
-            // 查询mq信息
+            // Query MQ information
             handleTailConfig(tailId, milogLogTail.getStoreId(), milogLogTail.getSpaceId(),
                     milogLogTail.getMilogAppId(), logtailConfig, milogLogTail.getAppType());
         }

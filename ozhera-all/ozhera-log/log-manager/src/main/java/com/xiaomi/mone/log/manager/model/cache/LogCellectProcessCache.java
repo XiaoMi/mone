@@ -35,16 +35,16 @@ public class LogCellectProcessCache {
 
     private String appName;
 
-    // 日志文件行号
+    // Log file line number
     private Long fileRowNumber;
 
     private Long pointer;
 
     private Long fileMaxPointer;
 
-    // 收集进度
+    // Collect progress
     private String collectPercentage;
 
-    // 收集时间
+    // Collection time
     private Long collectTime;
 }

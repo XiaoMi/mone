@@ -44,7 +44,7 @@ import static com.xiaomi.mone.log.common.Constant.GSON;
 import static com.xiaomi.mone.log.common.Constant.SYMBOL_COLON;
 
 /**
- * rpc方式从log-manager获取channel元数据
+ * RPC method to obtain channel metadata from log-manager
  *
  * @author shanwb
  * @date 2021-07-20
@@ -72,7 +72,7 @@ public class ChannelDefineRpcLocator implements ChannelDefineLocator {
             while (true) {
                 meta = getLogCollectMeta(ip);
                 if (null == meta || CollectionUtils.isEmpty(meta.getAppLogMetaList())) {
-                    //重试10次，每次停止1s
+                    //Retry 10 times, stopping for 1 s each time
                     TimeUnit.SECONDS.sleep(1);
                     count++;
                 } else {
@@ -153,7 +153,7 @@ public class ChannelDefineRpcLocator implements ChannelDefineLocator {
     }
 
     /**
-     * 将global filter 加入到channelDefine的filterlist中
+     * Add the global filter to the filterlist of channelDefine
      *
      * @param conf
      * @return

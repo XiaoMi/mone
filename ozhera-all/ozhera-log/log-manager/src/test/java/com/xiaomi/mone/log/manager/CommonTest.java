@@ -18,7 +18,7 @@ public class CommonTest {
 
     @Test
     public void testCollection() {
-        List<String> list = Lists.newArrayList("张三", "里斯", "test", "john");
+        List<String> list = Lists.newArrayList("zhangsan", "lisi", "test", "john");
         List<String> otherAdmins = CollectionUtil.sub(list, 1, list.size());
         log.info("result:{}", otherAdmins);
     }

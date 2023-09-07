@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.Map;
 
 /**
- * 限制log agent 发送日志速率
+ * Limit the log agent sending log rate
  */
 @Slf4j
 public class RatelimitFilter implements MilogFilter {

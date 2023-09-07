@@ -23,6 +23,7 @@ import java.util.List;
 /**
  * @author shanwb
  * @date 2021-07-19
+ * @describe Exposed encapsulation of log messages
  */
 public interface MsgExporter extends Closeable {
     int BATCH_EXPORT_SIZE = 200;

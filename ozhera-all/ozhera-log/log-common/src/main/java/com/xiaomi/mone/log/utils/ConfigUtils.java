@@ -49,7 +49,7 @@ public class ConfigUtils {
     }
 
     /**
-     * data数据映射到0到max之间的值
+     *  The data data maps to a value between 0 and max
      *
      * @param data
      * @param max

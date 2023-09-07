@@ -40,7 +40,7 @@ import static com.xiaomi.mone.log.manager.service.extension.store.StoreExtension
 /**
  * @author wtt
  * @version 1.0
- * @description store资源绑定
+ * @description Store resource binding
  * @date 2023/4/10 16:19
  */
 @Service(name = DEFAULT_STORE_EXTENSION_SERVICE_KEY)
@@ -74,7 +74,7 @@ public class DefaultStoreExtensionService implements StoreExtensionService {
         }
         ResourceUserSimple resourceUserConfig = resourceConfigService.userResourceList(cmd.getMachineRoom(), cmd.getLogType());
         if (resourceUserConfig.getInitializedFlag()) {
-            //选择es集群
+            //Select the ES cluster
             if (null == cmd.getEsResourceId()) {
                 List<MilogEsClusterDO> esClusterDOS = milogEsClusterMapper.selectList(Wrappers.lambdaQuery());
                 cmd.setEsResourceId(esClusterDOS.get(esClusterDOS.size() - 1).getId());

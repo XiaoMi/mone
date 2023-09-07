@@ -31,7 +31,7 @@ public class MQConfig implements Serializable {
     private String type;
 
     /**
-     * mq填：namesrv_addr
+     * mq：namesrv_addr
      */
     private String clusterInfo;
 
@@ -48,7 +48,7 @@ public class MQConfig implements Serializable {
     private Integer partitionCnt;
 
     /**
-     * es消费group，后续可以扩展其它group用于其它分析场景
+     * es consumption group, which can be extended to other groups for other analysis scenarios
      */
     private String esConsumerGroup;
 

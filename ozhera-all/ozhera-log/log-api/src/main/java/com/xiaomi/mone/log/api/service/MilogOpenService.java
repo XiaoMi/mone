@@ -27,7 +27,7 @@ import com.xiaomi.mone.log.api.model.vo.MiLogMoneEnv;
  */
 public interface MilogOpenService {
     /**
-     * 查询是否接入了日志系统
+     * Query whether the log system is connected
      *
      * @param iamTreeId
      * @return
@@ -35,7 +35,7 @@ public interface MilogOpenService {
     MontorAppDTO queryHaveAccessMilog(Long iamTreeId, String bingId, Integer platformType);
 
     /**
-     * 查询接入的spaceId 最后一个
+     * Query the last spaceId accessed
      *
      * @param iamTreeId
      * @return
@@ -43,7 +43,7 @@ public interface MilogOpenService {
     Long querySpaceIdByIamTreeId(Long iamTreeId);
 
     /**
-     * mione迁移 数据清洗
+     * Mione Migration Data Cleansing
      */
     MiLogMoneTransfer ypMoneEnvTransfer(MiLogMoneEnv logMoneEnv);
 }

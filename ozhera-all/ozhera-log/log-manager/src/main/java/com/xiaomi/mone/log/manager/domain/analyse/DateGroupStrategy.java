@@ -36,13 +36,13 @@ public class DateGroupStrategy implements AggrCalcuStrategy {
 
     @Override
     public AggregationBuilder getAggr(CalcuAggrParam param) {
-        // 时间戳参数取到秒位，抵消分桶误差
+        // The timestamp parameter is taken to the second bit to offset the bucketing error
         Long startTime = param.getStartTime() / 1000 * 1000;
         Long endTime = param.getEndTime() / 1000 * 1000;
 
         int interval = (int) Math.ceil((endTime - startTime) / 1000 / Double.parseDouble(param.getGraphParam()));
         String offset = startTime % (interval * 1000) + "ms";
-        // 时间分桶聚合
+        // Time binning aggregation
         DateHistogramAggregationBuilder dateGroupAggs = AggregationBuilders
                 .dateHistogram("dateAggs")
                 .field("timestamp")
@@ -52,13 +52,13 @@ public class DateGroupStrategy implements AggrCalcuStrategy {
                 .timeZone(TimeZone.getTimeZone("GMT+8").toZoneId())
                 .fixedInterval(new DateHistogramInterval(interval + "s"))
                 .extendedBounds(new LongBounds(startTime, endTime - 1000));
-        // 字段聚合
+        // Field aggregation
         AggregationBuilder topAggs = AggregationBuilders
                 .terms("fieldAggs")
                 .size(4)
                 .field(param.getBead())
                 .executionHint("map");
-        // 结合聚合
+        // Combine aggregations
         dateGroupAggs.subAggregation(topAggs);
 
         return dateGroupAggs;
@@ -73,7 +73,7 @@ public class DateGroupStrategy implements AggrCalcuStrategy {
         if (dateAggs == null) {
             return null;
         }
-        // 解决term和数据不对应-初次遍历，封装到中间数据
+        // Solve the term and data do not correspond - the first traversal, encapsulated into intermediate data
         Map<String, Map<String, String>> ferryMap = new LinkedHashMap<>();
         Map<String, String> ferryTermMap;
         Set<String> termKeySet = new HashSet<>();
@@ -87,12 +87,12 @@ public class DateGroupStrategy implements AggrCalcuStrategy {
             for (int j = 0; j < filedAggs.getBuckets().size(); j++) {
                 Terms.Bucket filedAggsBucket = filedAggs.getBuckets().get(j);
                 ferryTermMap.put(filedAggsBucket.getKeyAsString(), String.valueOf(filedAggsBucket.getDocCount()));
-                // 收集所有的key
+                // Collect all the keys
                 termKeySet.add(filedAggsBucket.getKeyAsString());
             }
             ferryMap.put(bucket.getKeyAsString(), ferryTermMap);
         }
-        // 解决term和数据不对应-二次遍历，封装到dto
+        // Solve the term and data do not correspond - secondary traversal, encapsulated into dto
         List<List<String>> date = new ArrayList<>();
         List<String> ferryDate;
         for (Map.Entry<String, Map<String, String>> entry : ferryMap.entrySet()) {

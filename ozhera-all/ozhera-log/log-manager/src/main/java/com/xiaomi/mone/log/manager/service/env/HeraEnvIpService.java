@@ -29,7 +29,7 @@ import java.util.Map;
  */
 public interface HeraEnvIpService {
     /**
-     * 查询该node下所有的pod信息
+     * Query all pod information in the node
      *
      * @param nodeIp
      * @return
@@ -39,7 +39,7 @@ public interface HeraEnvIpService {
     Map<String, List<LogAgentListBo>> queryAgentIpByPodIps(List<String> podIps);
 
     /**
-     * 根据pode Ip查询node ip
+     * Query the node IP based on the pode IP
      *
      * @param ips
      * @return

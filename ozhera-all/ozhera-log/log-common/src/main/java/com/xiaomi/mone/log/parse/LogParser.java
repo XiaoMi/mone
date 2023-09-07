@@ -60,7 +60,7 @@ public interface LogParser {
     String esKyeMap_fileName = "filename";
 
     /**
-     * 兼容22-10-19 11:14:29这种
+     * Compatible with 22-10-19 11:14:29 of this kind
      *
      * @param logTime
      * @param collectStamp
@@ -100,7 +100,7 @@ public interface LogParser {
     }
 
     /**
-     * if message not exist,add it,全量message不能和logsource同时存在，减少数据量的存储
+     * if message not exist,add it,Full messages cannot exist at the same time as logsource, reducing the storage of data volume
      */
     default void checkMessageExist(Map<String, Object> ret, String originData) {
         if (!ret.containsKey(esKeyMap_MESSAGE)) {
@@ -110,11 +110,11 @@ public interface LogParser {
     }
 
     /**
-     * 时间提取
+     * Time extraction
      */
     default void extractTimeStamp(Map<String, Object> ret, String logData, Long collectStamp) {
         /**
-         * 提取文本中第一个[2022XXXX]这种，第一个默认是时间处理
+         * The first [2022 XXXX] in extracted text, the first default is time processing
          */
         if (!ret.containsKey(esKeyMap_timestamp) && logData.startsWith(LOG_PREFIX)) {
             String timeStamp = StringUtils.substringBetween(logData, LOG_PREFIX, LOG_SUFFFIX);
@@ -122,7 +122,7 @@ public interface LogParser {
             ret.put(esKeyMap_timestamp, time);
         }
         /**
-         * 特殊处理，只会提取文件中以日期开始且yyyy-MM-dd HH:mm:ss这样的日期
+         * Special handling, only dates starting with a date in the file such as yyyy-mm-dd HH:mm:ss will be extracted
          */
         if (!ret.containsKey(esKeyMap_timestamp) && logData.startsWith(specialTimePrefix)) {
             String timeStamp = StringUtils.substring(logData, 0, specialTimeLength);
@@ -133,7 +133,7 @@ public interface LogParser {
 
     default void validTimestamp(Map<String, Object> ret, String logData, Long collectStamp) {
         /**
-         * 如果用户配置了解析 timestamp 字段，则校验时间格式是否正确，不正确就设为当前时间
+         * If the user configures the parse timestamp field, the time format is checked to be correct, and the incorrect time is set to the current time
          */
         if (ret.containsKey(esKeyMap_timestamp)) {
             Long time = getTimestampFromString(ret.get(esKeyMap_timestamp).toString(), collectStamp);
@@ -141,17 +141,9 @@ public interface LogParser {
         }
     }
 
-    public static void main(String[] args) {
-        LogParser logParser = new SeparatorLogParser();
-        String msg = "[22-10-19 10:19:35] [mi.com.i18n.mi_com_i18n] [] [NOTICE] [923973969695] Controller[Registration] Action[Index] App_local[hk] sesion_server_init[0] newxmuuid[true] MiRedisProxy::_init[1|3536] MiRedisProxy::get[1|8014] GUESTID[XMGUEST-20CBCA55-2E94-1697-51DB-DC787EF9055A] HOSTNAME[sgp1-b2c-mishop-order-web03.alisgp] Request Finished";
-        String timeStamp = StringUtils.substringBetween(msg, LOG_PREFIX, LOG_SUFFFIX);
-        Long time = logParser.getTimestampFromString(timeStamp, Instant.now().toEpochMilli());
-        System.out.println(time);
-    }
-
     /**
-     * 字段配置错误校验
-     * 如果结果中有 key 对应的 value 为空，说明对应 key 没有提取出内容，那么就把完整日志保留
+     * Field configuration error check If the value corresponding to the key is empty in the result,
+     * indicating that the corresponding key has not been extracted, the complete log is retained
      */
     default void validRet(Map<String, Object> ret, String logData) {
         if (ret.values().stream().filter(Objects::nonNull).map(String::valueOf).anyMatch(StringUtils::isEmpty)) {

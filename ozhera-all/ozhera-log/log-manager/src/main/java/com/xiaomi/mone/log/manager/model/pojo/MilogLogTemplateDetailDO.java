@@ -25,7 +25,7 @@ import java.io.Serializable;
 
 /**
  * <p>
- * milog日志模板详细
+ * milogLog templates are verbose
  * </p>
  *
  * @author wanghaoyang
@@ -39,33 +39,33 @@ public class MilogLogTemplateDetailDO implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 主键Id
+     * Primary key Id
      */
     @TableId(value = "id", type = IdType.AUTO)
     private Long id;
 
     /**
-     * 创建时间
+     * create time
      */
     private Long ctime;
 
     /**
-     * 更新时间
+     * update time
      */
     private Long utime;
 
     /**
-     * 日志模板ID
+     * Log template ID
      */
     private String templateId;
 
     /**
-     * 日志模板属性名
+     * Log template property name
      */
     private String propertiesKey;
 
     /**
-     * 日志模板属性类型
+     * Log template property type
      */
     private String propertiesType;
 

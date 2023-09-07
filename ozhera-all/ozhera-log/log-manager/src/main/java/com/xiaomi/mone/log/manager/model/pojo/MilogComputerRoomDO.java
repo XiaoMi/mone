@@ -19,32 +19,32 @@ import lombok.Data;
 import org.nutz.dao.entity.annotation.*;
 
 @Table("milog_log_computer_room")
-@Comment("机房")
+@Comment("machine Room")
 @Data
 public class MilogComputerRoomDO {
     @Id
-    @Comment("主键Id")
+    @Comment("Primary key Id")
     @ColDefine(customType = "bigint")
     private Long id;
 
     @Column(value = "room_name")
     @ColDefine(type = ColType.VARCHAR, width = 128)
-    @Comment("机房名")
+    @Comment("machine name")
     private String roomName;
 
     @Column(value = "room_type")
     @ColDefine(type = ColType.INT)
-    @Comment("机房类别")
+    @Comment("machine room type")
     private Integer roomType;
 
     @Column(value = "ctime")
     @ColDefine(customType = "bigint")
-    @Comment("创建时间")
+    @Comment("create tine")
     private Long ctime;
 
     @Column(value = "utime")
     @ColDefine(customType = "bigint")
-    @Comment("更新时间")
+    @Comment("update time")
     private Long utime;
 
 }

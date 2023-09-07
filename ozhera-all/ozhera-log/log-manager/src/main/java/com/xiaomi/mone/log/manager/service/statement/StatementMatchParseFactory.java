@@ -46,7 +46,7 @@ public class StatementMatchParseFactory {
     private static Map<EsOperatorEnum, Map<EsOperatorMatchEnum, StatementMatchParse>> operateMatchMap = Maps.newHashMap();
 
     /**
-     * 组装对应的关系
+     * Assemble the corresponding relationship
      */
     static {
         Map<EsOperatorMatchEnum, StatementMatchParse> andOperateMap = Maps.newHashMap();
@@ -156,7 +156,7 @@ public class StatementMatchParseFactory {
     }
 
     /**
-     * 处理包含and的逻辑
+     * Handle logic that contains ands
      *
      * @param message
      * @param operatorSlices
@@ -164,7 +164,7 @@ public class StatementMatchParseFactory {
     private static void handleAndLogic(String message, List<OperatorSlice> operatorSlices) {
         List<String> andList = splitBySeparator(message, AND_MATCH_KEY);
         for (String andPer : andList) {
-            //判断是否是匹配到了关键字，如果是则需要
+            //Determine whether the keyword has been matched, and if so, you need to
             if (!andPer.contains(NOT_MATCH_KEY) && !andPer.contains(OR_MATCH_KEY)) {
                 buildOperatorToSlices(operatorSlices, AND_OPERATOR, andPer);
             } else if (andPer.contains(NOT_MATCH_KEY) && !andPer.contains(OR_MATCH_KEY)) {
@@ -199,7 +199,7 @@ public class StatementMatchParseFactory {
     }
 
     /**
-     * 处理不包含and只包含not的逻辑
+     * Handle logic that does not contain AND and contains only NOT
      *
      * @param message
      * @param operatorSlices

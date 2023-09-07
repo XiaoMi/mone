@@ -29,7 +29,7 @@ import static com.xiaomi.mone.log.common.Constant.TAIL_CONFIG_DATA_ID;
 /**
  * @author wtt
  * @version 1.0
- * @description namespace 配置推送nacos
+ * @description namespace Configure push NACOS
  * @date 2021/7/16 10:36
  */
 @Slf4j
@@ -40,12 +40,12 @@ public class SpaceConfigNacosPublisher implements DynamicConfigPublisher<MilogSp
 
     @Override
     public void publish(String uniqueSpace, MilogSpaceData config) {
-        log.info("写入的创建namespace配置：{}", gson.toJson(config));
+        log.info("Write the creation namespace configuration:{}", gson.toJson(config));
         String dataId = CommonExtensionServiceFactory.getCommonExtensionService().getLogManagePrefix() + TAIL_CONFIG_DATA_ID + uniqueSpace;
         try {
             configService.publishConfig(dataId, DEFAULT_GROUP_ID, gson.toJson(config));
         } catch (NacosException e) {
-            log.error(String.format("推送日志配置数据数据异常,dataId:{},data:%s", dataId, gson.toJson(config)), e);
+            log.error(String.format("Write the creation namespace configuration...,dataId:{},data:%s", dataId, gson.toJson(config)), e);
         }
     }
 
@@ -55,7 +55,7 @@ public class SpaceConfigNacosPublisher implements DynamicConfigPublisher<MilogSp
         try {
             configService.removeConfig(dataId, DEFAULT_GROUP_ID);
         } catch (NacosException e) {
-            log.error(String.format("删除日志配置数据数据异常,参数：%s", dataId), e);
+            log.error(String.format("Delete log configuration data data exceptions,param：%s", dataId), e);
         }
     }
 }

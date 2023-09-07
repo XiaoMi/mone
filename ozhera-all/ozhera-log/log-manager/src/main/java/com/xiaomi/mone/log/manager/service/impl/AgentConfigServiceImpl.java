@@ -41,8 +41,8 @@ public class AgentConfigServiceImpl implements AgentConfigService {
     }
 
     /**
-     * 1.查询出该物理机下的接入过日志的所有应用
-     * 2.封装信息
+     * 1.Query all applications that have access logs on the physical machine
+     * 2.Package information
      *
      * @param ip
      * @return

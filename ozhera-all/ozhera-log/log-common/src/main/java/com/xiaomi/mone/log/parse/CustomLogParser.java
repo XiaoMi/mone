@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 /**
  * @Author: wtt
  * @Date: 2021/12/28 21:59
- * @Description: 自定义表达式解析
+ * @Description: Custom expression parsing
  */
 @Data
 @NoArgsConstructor
@@ -95,7 +95,7 @@ public class CustomLogParser implements LogParser {
                 ret.put(esKeyMap_logSource, originLog);
             }
             /**
-             * 兜底 不包含 esKeyMap_timestamp，esKeyMap_topic ，esKeyMap_tag ，esKeyMap_logstoreName
+             * Pocket does not include esKeyMap_timestamp, esKeyMap_topic, esKeyMap_tag, esKeyMap_logstoreName
              */
             if (ret.containsKey(esKeyMap_timestamp)) {
                 Long time = getTimestampFromString(ret.get(esKeyMap_timestamp).toString(), collectStamp);
@@ -108,7 +108,7 @@ public class CustomLogParser implements LogParser {
     }
 
     /**
-     * 根据解析脚本解析出的日志内容数组
+     * An array of log contents parsed according to the parsing script
      *
      * @param logData
      * @return
@@ -123,7 +123,7 @@ public class CustomLogParser implements LogParser {
             if (StringUtils.isNotEmpty(list.get(0)) && StringUtils.isNotEmpty(list.get(1))) {
                 parsedData = StringUtils.substringBetween(logData, list.get(0), list.get(1));
             } else {
-                //下一个索引的前部分不为空的话依赖它
+                //Depend on the next index if the first part is not empty
                 if (i + 1 < mapPattern.size() && StringUtils.isNotEmpty(mapPattern.get(i + 1).get(0))) {
                     parsedData = StringUtils.substringBetween(logData, "", mapPattern.get(i + 1).get(0));
                 } else {

@@ -108,14 +108,14 @@ public class ChannelEngine {
                 }
                 return channelService;
             }).filter(channelService -> null != channelService).collect(Collectors.toList());
-            // 删除失败的channel
+            // Delete failed channel
             deleteFailedChannel(failedChannelId, this.channelDefineList, this.channelServiceList);
             channelServiceList = new CopyOnWriteArrayList<>(channelServiceList);
-            // 启动channel
+            // start channel
             channelStart(channelServiceList);
-            //关机-回调操作
+            //Shutdown - callback action
             graceShutdown();
-            //10s一次 上报channel进度
+            //Report channel progress once every 10 seconds
             exportChannelState();
             log.info("current channelDefineList:{},current channelServiceList:{}", gson.toJson(this.channelDefineList), gson.toJson(this.channelServiceList.stream().map(ChannelService::instanceId).collect(Collectors.toList())));
             monitorFilesClean();
@@ -185,7 +185,7 @@ public class ChannelEngine {
         ExecutorUtil.scheduleAtFixedRate(() -> {
             SafeRun.run(() -> {
                 List<ChannelState> channelStateList = channelServiceList.stream().map(c -> c.state()).collect(Collectors.toList());
-                // 发送收集进度
+                // Send the collection progress
                 sendCollectionProgress(channelStateList);
             });
         }, 10, 10, TimeUnit.SECONDS);
@@ -194,7 +194,6 @@ public class ChannelEngine {
     private List<Long> channelStart(List<ChannelService> channelServiceList) {
         List<Long> failedChannelIds = Lists.newArrayList();
         List<Long> successChannelIds = Lists.newArrayList();
-        // 启动channel
         for (ChannelService channelService : channelServiceList) {
             ChannelServiceImpl realChannelService = (ChannelServiceImpl) channelService;
             log.info("realChannelService,id:{}", realChannelService.getChannelId());
@@ -216,7 +215,7 @@ public class ChannelEngine {
 
     private void deleteFailedChannel(List<Long> failedChannelId, List<ChannelDefine> defineList, List<ChannelService> serviceList) {
         if (CollectionUtils.isNotEmpty(failedChannelId)) {
-            //处理从当前队列中摘掉
+            //Processing is removed from the current queue
             for (Long delChannelId : failedChannelId) {
                 defineList.removeIf(channelDefine -> Objects.equals(delChannelId, channelDefine.getChannelId()));
                 serviceList.removeIf(channelService -> Objects.equals(delChannelId, ((ChannelServiceImpl) channelService).getChannelId()));
@@ -225,7 +224,7 @@ public class ChannelEngine {
     }
 
     private void graceShutdown() {
-        //关闭操作
+        //Close operation
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             log.info("shutdown hook begin!");
             for (ChannelService c : channelServiceList) {
@@ -298,15 +297,15 @@ public class ChannelEngine {
         try {
             if (CollectionUtils.isNotEmpty(channelDefines) && !CollectionUtils.isEqualCollection(channelDefines, channelDefineList)) {
                 if (channelDefines.stream().allMatch(channelDefine -> null != channelDefine.getOperateEnum() && channelDefine.getOperateEnum().getCode().equals(OperateEnum.DELETE_OPERATE.getCode()))) {
-                    // 指定目录下文件采集删除
+                    // Collect and delete files in the specified directory
                     log.info("delSpecialFileColl,config:{}", gson.toJson(channelDefines));
                     delSpecialFileColl(channelDefines);
                     return;
                 }
                 log.info("refresh,config:{}", gson.toJson(channelDefines));
-                // 新增配置
+                // add config
                 addConfig(channelDefines, false);
-                // 修改的的更新
+                // update config
                 updateConfig(channelDefines);
                 /**
                  * Single configuration processing without deletion.
@@ -314,7 +313,7 @@ public class ChannelEngine {
                 if (channelDefines.size() == 1 && channelDefines.get(0).getSingleMetaData() != null && channelDefines.get(0).getSingleMetaData()) {
                     return;
                 }
-                // 删除的配置
+                // delete config
                 deleteConfig(channelDefines, false);
             }
         } catch (Exception e) {
@@ -329,7 +328,7 @@ public class ChannelEngine {
      */
     private void addConfig(List<ChannelDefine> channelDefines, boolean directAdd) {
         try {
-            // 新增的，进行初始化
+            // Newly added, initialize
             List<ChannelDefine> channelDefinesDifference = differenceSet(channelDefines, channelDefineList);
             if (directAdd) {
                 channelDefinesDifference = channelDefines;
@@ -360,11 +359,11 @@ public class ChannelEngine {
             Iterator<ChannelDefine> iterator = channelDefinesIntersection.iterator();
             while (iterator.hasNext()) {
                 ChannelDefine newChannelDefine = iterator.next();
-                // 旧channelDefine
+                // old channelDefine
                 Long channelId = newChannelDefine.getChannelId();
                 ChannelDefine oldChannelDefine = channelDefineList.stream().filter(channelDefine -> channelDefine.getChannelId().equals(channelId)).findFirst().orElse(null);
                 if (null != oldChannelDefine) {
-                    // 比较器
+                    // Comparator
                     SimilarComparator appSimilarComparator = new AppSimilarComparator(oldChannelDefine.getAppId());
                     SimilarComparator inputSimilarComparator = new InputSimilarComparator(oldChannelDefine.getInput());
                     SimilarComparator outputSimilarComparator = new OutputSimilarComparator(oldChannelDefine.getOutput());
@@ -416,7 +415,7 @@ public class ChannelEngine {
                         tempChannelServiceList.add(channelService);
                         this.channelDefineList.removeIf(channelDefine -> {
                             if (channelDefine.getChannelId().equals(channelId)) {
-                                //删除mq
+                                //delete mq
                                 Output output = channelDefine.getOutput();
                                 OutPutServiceFactory.getOutPutService(output.getServiceName()).removeMQ(output);
                                 return true;
@@ -440,7 +439,7 @@ public class ChannelEngine {
      * @param channelDefines
      */
     private void delSpecialFileColl(List<ChannelDefine> channelDefines) {
-        //找出某个机器下线时需要删除的pod
+        //Find out the pods that need to be deleted when a machine goes offline
         List<ChannelDefine> delSpecialFiles = channelDefines.stream().filter(channelDefine -> null != channelDefine.getOperateEnum() && channelDefine.getOperateEnum().getCode().equals(OperateEnum.DELETE_OPERATE.getCode()) && StringUtils.isNotEmpty(channelDefine.getDelDirectory())).collect(Collectors.toList());
         if (CollectionUtils.isNotEmpty(delSpecialFiles)) {
             try {
@@ -563,7 +562,7 @@ public class ChannelEngine {
                 collectDetail.setFileProgressDetails(progressDetails);
                 finalCollects.add(collectDetail);
             });
-            //进度去重
+            //Progress deduplication
             collects = collects.stream().distinct().collect(Collectors.toList());
             cmd.setCollectList(collects);
             return cmd;

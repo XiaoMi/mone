@@ -80,7 +80,7 @@ public class AnalyseLog {
         EsService esService = esCluster.getEsService(logStore.getEsClusterId());
         String esIndex = commonExtensionService.getSearchIndex(logStore.getId(), logStore.getEsIndex());
 
-        // 过滤条件
+        // Filter criteria
         LogQuery logQuery = new LogQuery();
         logQuery.setStoreId(logStore.getId());
         logQuery.setStartTime(startTime);
@@ -93,7 +93,7 @@ public class AnalyseLog {
             return null;
         }
 
-        // 构造查询对象
+        // Construct the query object
         SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
         searchSourceBuilder.query(boolQueryBuilder);
         searchSourceBuilder.size(0);
@@ -102,7 +102,7 @@ public class AnalyseLog {
         SearchRequest request = new SearchRequest(esIndex);
         request.source(searchSourceBuilder);
 
-        // 查询
+        // query
         SearchResponse response = esService.search(request);
 
         return aggrCalcu.formatRes(graphType, response);

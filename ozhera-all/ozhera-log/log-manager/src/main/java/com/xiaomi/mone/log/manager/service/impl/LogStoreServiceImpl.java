@@ -122,18 +122,18 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
             return Result.failParam(errorInfos);
         }
         if (!cmd.getNameSameStatus() && logStoreDao.verifyExistByName(cmd.getLogstoreName(), null)) {
-            return new Result<>(CommonError.UnknownError.getCode(), "存在同名storeName", "");
+            return new Result<>(CommonError.UnknownError.getCode(), "There is a store name with the same name", "");
         }
         List<MilogLogStoreDO> logStoreDOS = logStoreDao.queryBySpaceIdNamed(cmd.getSpaceId(), cmd.getLogstoreName());
         if (CollectionUtils.isNotEmpty(logStoreDOS)) {
-            return Result.failParam("store名称重复，请重新填写名称");
+            return Result.failParam("The store name is duplicated, please fill in the name again");
         }
         MilogLogStoreDO storeDO = MilogLogstoreConvert.INSTANCE.fromCommad(cmd);
         wrapBaseCommon(storeDO, OperateEnum.ADD_OPERATE);
-        // 绑定资源
+        // Bind resources
         storeExtensionService.storeResourceBinding(storeDO, cmd, OperateEnum.ADD_OPERATE);
         checkRequiredFieldExist(storeDO);
-        // 存储
+        // storage
         boolean res = logStoreDao.newMilogLogStore(storeDO);
         if (res == true) {
             storeExtensionService.postProcessing(storeDO, cmd);
@@ -215,17 +215,17 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
     public Result<String> updateLogStore(LogStoreParam param) {
         MilogLogStoreDO milogLogstoreDO = logStoreDao.queryById(param.getId());
         if (null == milogLogstoreDO) {
-            return new Result<>(CommonError.ParamsError.getCode(), "logstore 不存在");
+            return new Result<>(CommonError.ParamsError.getCode(), "logstore not found ");
         }
         if (!param.getLogType().equals(milogLogstoreDO.getLogType()) && 0 != milogLogtailDao.getTailCount(param.getId())) {
-            return new Result<>(CommonError.ParamsError.getCode(), "logstore 下已经创建 logtail，不允许修改日志类型");
+            return new Result<>(CommonError.ParamsError.getCode(), "Logtail has been created under logstore and does not allow you to change the log type");
         }
         String errorInfos = storeValidation.logStoreParamValid(param);
         if (StringUtils.isNotEmpty(errorInfos)) {
             return Result.failParam(errorInfos);
         }
         if (logStoreDao.verifyExistByName(param.getLogstoreName(), param.getId())) {
-            return new Result(CommonError.UnknownError.getCode(), "存在同名storeName", "");
+            return new Result(CommonError.UnknownError.getCode(), "There is a store name with the same name", "");
         }
 
         MilogLogStoreDO ml = MilogLogstoreConvert.INSTANCE.fromCommad(param);
@@ -233,13 +233,13 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
         ml.setEsIndex(milogLogstoreDO.getEsIndex());
         ml.setCtime(milogLogstoreDO.getCtime());
         ml.setCreator(milogLogstoreDO.getCreator());
-        // 选择对应的索引
+        // Select the corresponding index
         storeExtensionService.storeResourceBinding(ml, param, OperateEnum.UPDATE_OPERATE);
         wrapBaseCommon(ml, OperateEnum.UPDATE_OPERATE);
         checkRequiredFieldExist(ml);
         boolean updateRes = storeExtensionService.updateLogStore(ml);
         if (updateRes && storeExtensionService.sendConfigSwitch(param)) {
-            //查看是否有tail 如果有重新发送配置信息（nacos 和 agent）
+            //Check to see if there is a tail and if there is a resend configuration information (nacos and agent)
             logTail.handleStoreTail(milogLogstoreDO.getId());
             return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage());
         }
@@ -249,15 +249,15 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
     public Result<Void> deleteLogStore(Long id) {
         MilogLogStoreDO logStore = logStoreDao.queryById(id);
         if (null == logStore) {
-            return new Result<>(CommonError.ParamsError.getCode(), "logstore 不存在");
+            return new Result<>(CommonError.ParamsError.getCode(), "logstore not found");
         }
         List<MilogLogTailDo> tails = milogLogtailDao.getMilogLogtailByStoreId(id);
         if (tails != null && tails.size() != 0) {
-            return new Result<>(CommonError.ParamsError.getCode(), "该 log store 下存在tail，无法删除");
+            return new Result<>(CommonError.ParamsError.getCode(), "There is a tail under the log store and cannot be deleted");
         }
         storeExtensionService.deleteStorePostProcessing(logStore);
         if (logStoreDao.deleteMilogSpace(id)) {
-            //删除nacos中的配置
+            //Delete the configuration in NACOS
             logTailService.deleteConfigRemote(logStore.getSpaceId(), id, logStore.getMachineRoom(), LogStructureEnum.STORE);
             return new Result<>(CommonError.Success.getCode(), CommonError.Success.getMessage());
         } else {
@@ -269,7 +269,7 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
 
     public Result<List<Map<String, String>>> getStoreIps(Long storeId) {
         if (storeId == null) {
-            return Result.failParam("参数不能为空");
+            return Result.failParam("The parameter cannot be empty");
         }
         final List<MilogLogTailDo> logtailDoList = milogLogtailDao.getMilogLogtailByStoreId(storeId);
         List<Map<String, String>> res = new ArrayList<>();
@@ -297,7 +297,7 @@ public class LogStoreServiceImpl extends BaseService implements LogStoreService 
         if (StringUtils.isBlank(regionCode) || null == logTypeCode) {
             return Result.failParam("regionCode or logTypeCode can not empty");
         }
-        //查询当前用户所属的部门下的es信息
+        //Query the ES information under the department to which the current user belongs
         List<MilogMiddlewareConfig> middlewareConfigEs = milogMiddlewareConfigService.getESConfigs(regionCode);
         middlewareConfigEs = resourceExtensionService.currentUserConfigFilter(middlewareConfigEs);
         List<MenuDTO<Long, String>> menuDTOS = middlewareConfigEs.stream().map(config -> {

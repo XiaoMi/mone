@@ -24,7 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * @author wtt
  * @version 1.0
- * @description 通过dubbo接口从dashboard中获取配置
+ * @description Obtain configuration from dashboard through dubbo interface
  * @date 2022/12/6 14:30
  */
 @Component

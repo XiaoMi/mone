@@ -22,7 +22,7 @@ public class SearchSaveInsertCmd {
     private Long spaceId;
     private Long storeId;
     /**
-     * 多个以,分割
+     * Multiple to, split
      */
     private String tailId;
     private String name;

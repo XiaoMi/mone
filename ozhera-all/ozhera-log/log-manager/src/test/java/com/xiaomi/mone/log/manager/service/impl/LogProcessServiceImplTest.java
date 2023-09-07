@@ -33,10 +33,8 @@ public class LogProcessServiceImplTest {
     public void testGet() {
         try {
             String resource = "mybatis-config.xml";
-            //SqlMapConfig.xml读给输入流，使用mybitis的Resources类下的getResourceAsStream实现
             InputStream inputStream = null;
             inputStream = Resources.getResourceAsStream(resource);
-            //创建Mybitis的SqlSessionFactory工厂类
             SqlSessionFactory sqlsessionfactory = new SqlSessionFactoryBuilder().build(inputStream);
             SqlSession sqlsession = sqlsessionfactory.openSession();
             MilogLogProcessDO processDO = sqlsession.selectOne("com.xiaomi.mone.log.manager.mapper.MilogLogProcessMapper.getById", 1l);

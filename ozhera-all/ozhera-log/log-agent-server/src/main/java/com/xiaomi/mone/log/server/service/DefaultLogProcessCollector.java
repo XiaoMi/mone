@@ -197,7 +197,7 @@ public class DefaultLogProcessCollector implements LogProcessCollector {
 
     private List<TailLogProcessDTO> getTailLogProcessDTOS(List<TailLogProcessDTO> dtoList, List<TailLogProcessDTO> perOneIpProgressList) {
         if (CollectionUtils.isNotEmpty(dtoList)) {
-            // 去重取时间最新的一条
+            // Go to retrieve the latest one
             Map<String, List<TailLogProcessDTO>> collect = dtoList.stream()
                     .collect(Collectors
                             .groupingBy(processDTO ->

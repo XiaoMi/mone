@@ -28,42 +28,42 @@ import java.util.List;
 /**
  * @author wtt
  * @version 1.0
- * @description 中间件配置
+ * @description Middleware configuration
  * @date 2021/9/17 15:51
  */
 @Table("milog_middleware_config")
-@Comment("milog配置中间件配置")
+@Comment("Milog configures middleware configuration")
 @Data
 public class MilogMiddlewareConfig extends BaseCommon implements Serializable {
 
     @Id
-    @Comment("主键Id")
+    @Comment("Primary key Id")
     @ColDefine(customType = "bigint")
     private Long id;
 
     @Column(value = "type")
     @ColDefine(customType = "smallint")
-    @Comment("类型  MiddlewareEnum.code")
+    @Comment("type  MiddlewareEnum.code")
     public Integer type;
 
     @Column(value = "region_en")
     @ColDefine(type = ColType.VARCHAR, width = 40)
-    @Comment("类型  MachineRegionEnum.en")
+    @Comment("type  MachineRegionEnum.en")
     private String regionEn;
 
     @Column(value = "alias")
     @ColDefine(type = ColType.VARCHAR, width = 128)
-    @Comment("别名")
+    @Comment("alias")
     public String alias;
 
     @Column(value = "name_server")
     @ColDefine(type = ColType.VARCHAR, width = 128)
-    @Comment("nameServer地址")
+    @Comment("nameServer address")
     private String nameServer;
 
     @Column(value = "service_url")
     @ColDefine(type = ColType.VARCHAR, width = 128)
-    @Comment("nameServer地址")
+    @Comment("nameServer address")
     private String serviceUrl;
 
     @Column(value = "ak")
@@ -83,27 +83,27 @@ public class MilogMiddlewareConfig extends BaseCommon implements Serializable {
 
     @Column(value = "authorization")
     @ColDefine(type = ColType.VARCHAR, width = 1024)
-    @Comment("授权信息")
+    @Comment("Authorization Information")
     private String authorization;
 
     @Column(value = "org_id")
     @ColDefine(type = ColType.INT, width = 20)
-    @Comment("团队Id")
+    @Comment("team Id")
     private String orgId;
 
     @Column(value = "team_id")
     @ColDefine(type = ColType.INT, width = 20)
-    @Comment("用户组ID")
+    @Comment("user group ID")
     private String teamId;
 
     @Column(value = "is_default")
     @ColDefine(type = ColType.INT, width = 20)
-    @Comment("是否默认当不选择mq的时候采用这个配置(1.是 0.否)")
+    @Comment("Whether to default this configuration when mq is not selected (1.Yes 0.No)")
     private Integer isDefault;
 
     @Column(value = "labels")
     @ColDefine(type = ColType.MYSQL_JSON)
-    @Comment("标签列表")
+    @Comment("A list of tags")
     private List<String> labels;
 
     @Column(value = "token")

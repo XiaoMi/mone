@@ -49,7 +49,7 @@ public class SearchLog {
     }
 
     /**
-     * 获取查询参数
+     * Gets the query parameters
      *
      * @param logQuery
      * @param keyList
@@ -71,7 +71,7 @@ public class SearchLog {
 
     private BoolQueryBuilder buildCommonBuilder(LogQuery logQuery) {
         BoolQueryBuilder boolQueryBuilder = commonExtensionService.commonRangeQuery(logQuery);
-        // 支持tail多选
+        // Support tail multi-selection
         if (StringUtils.isNotEmpty(logQuery.getTail())) {
             BoolQueryBuilder tailQueryBuilder = QueryBuilders.boolQuery();
             String[] tailLimitArray = logQuery.getTail().split(",");
@@ -85,7 +85,7 @@ public class SearchLog {
     }
 
     /**
-     * 获取 matrix es 数据的查询参数
+     * Gets the query parameters for the matrix es data
      *
      * @param logQuery
      * @param keyList
@@ -95,10 +95,10 @@ public class SearchLog {
     public BoolQueryBuilder getMatrixQueryBuilder(LogQuery logQuery, List<String> keyList) throws Exception {
         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
         Instant fromStartUnixTimestamp = Instant.ofEpochMilli((logQuery.getStartTime()));
-        //申明时区，否则默认为UTC0时区
+        //Declare the time zone, otherwise the default is UTC 0 time zone
         String startTime = fromStartUnixTimestamp.atZone(ZoneId.of("+08:00")).toString();
         Instant fromEndUnixTimestamp = Instant.ofEpochMilli((logQuery.getEndTime()));
-        //申明时区，否则默认为UTC0时区
+        //Declare the time zone, otherwise the default is UTC 0 time zone
         String endTime = fromEndUnixTimestamp.atZone(ZoneId.of("+08:00")).toString();
         boolQueryBuilder.filter(QueryBuilders.rangeQuery("alpha_timestamp").from(startTime).to(endTime));
         if (StringUtils.isEmpty(logQuery.getFullTextSearch())) {
@@ -130,32 +130,32 @@ public class SearchLog {
             isGrantQuery = i < mustQueryTextList.size();
             queryText = isGrantQuery ? mustQueryTextList.get(i) : mustNotQueryTextList.get(i - mustQueryTextList.size());
             i++;
-            // 特定关键词搜索
+            // Specific keyword searches
             if (queryText.startsWith("\"")) {
                 queryText = queryText.substring(1, queryText.length() - 1);
                 thisQueryBuilder = precisionQueryBuilder(queryText);
                 queryBuilder = isGrantQuery ? queryBuilder.must(thisQueryBuilder) : queryBuilder.mustNot(thisQueryBuilder);
                 continue;
             }
-            // k-v搜索
+            // k-v search
             if (queryText.contains(":")) {
                 int kvApartIndex = queryText.indexOf(":");
                 String key = queryText.substring(0, kvApartIndex).trim();
                 String value = kvApartIndex == queryText.length() ? "" : queryText.substring(kvApartIndex + 1).trim();
-                // k-v特定关键词搜索
+                // Specific keyword searches...
                 if (value.startsWith("\"") && value.endsWith("\"")) {
                     value = value.substring(1, value.length() - 1);
                     thisQueryBuilder = kvPrecisionQueryBuilder(key, value);
                     queryBuilder = isGrantQuery ? queryBuilder.must(thisQueryBuilder) : queryBuilder.mustNot(thisQueryBuilder);
                     continue;
                 } else {
-                    // k-v普通搜索
+                    // K-V normal search
                     thisQueryBuilder = kvMatchQueryBuilder(key, value);
                     queryBuilder = isGrantQuery ? queryBuilder.must(thisQueryBuilder) : queryBuilder.mustNot(thisQueryBuilder);
                     continue;
                 }
             }
-            // 分词搜索
+            // Participle search
             thisQueryBuilder = multiMatchQueryBuilder(queryText, keyList);
             queryBuilder = isGrantQuery ? queryBuilder.must(thisQueryBuilder) : queryBuilder.mustNot(thisQueryBuilder);
         }
@@ -163,14 +163,14 @@ public class SearchLog {
     }
 
     private static void queryAnalyse(String querytext, List<String> mustQueryTextList, List<String> mustNotQueryTextList) {
-        boolean isGrantQuery; // 判断搜索词是否加了not
+        boolean isGrantQuery; // Determine whether the search term is added not
         do {
             querytext = querytext.trim();
             isGrantQuery = true;
-            // 如果搜索词加了not 那not后的所有搜索条件都是not的逻辑
+            // If the search term is added with NOT, then all search conditions after NOT are NOT logic
             if (isGrantQuery && (querytext.trim().toLowerCase().startsWith("not "))) {
                 isGrantQuery = false;
-                // 搜索语句去掉”not “
+                // Remove "not" from the search statement
                 querytext = querytext.substring(4);
             }
             int endIndex = getEndIndex(querytext);
@@ -181,7 +181,7 @@ public class SearchLog {
                 mustNotQueryTextList.add(thisQuerytext);
             }
             querytext = querytext.substring(endIndex).trim();
-            // 搜索语句去掉” and “
+            // Remove the "and" from the search statement.
             if (querytext.toLowerCase().startsWith("and ")) {
                 querytext = querytext.substring(4);
             }
@@ -199,7 +199,7 @@ public class SearchLog {
 
     private static QueryBuilder multiMatchQueryBuilder(String querytext, List<String> keyList) {
         BoolQueryBuilder textQueryBuilder = QueryBuilders.boolQuery();
-        // 全部加上正则表达式查询
+        // All plus regular expression queries
         textQueryBuilder.should(regexpQuery(querytext));
         QueryBuilder queryBuilder = QueryBuildChain.doChain(querytext, keyList);
         textQueryBuilder.should(queryBuilder);
@@ -207,12 +207,12 @@ public class SearchLog {
         return textQueryBuilder;
     }
 
-    // 正则表达式查询
+    // Regular expression queries
     private static QueryBuilder regexpQuery(String querytext) {
         return QueryBuilders.regexpQuery("message", querytext.toLowerCase());
     }
 
-    // 精准+前缀查询
+    // Precise + prefix query
     private static QueryBuilder precisionQueryBuilder(String querytext) {
         BoolQueryBuilder phraseQueryBuilder = QueryBuilders.boolQuery();
         phraseQueryBuilder.should(QueryBuilders.matchPhrasePrefixQuery("message", querytext));
@@ -221,7 +221,7 @@ public class SearchLog {
         return phraseQueryBuilder;
     }
 
-    // kv精确+前缀查询
+    // kv exact + prefix query
     private static QueryBuilder kvPrecisionQueryBuilder(String key, String value) {
         return QueryBuilders.matchPhrasePrefixQuery(key, value);
     }
@@ -235,7 +235,7 @@ public class SearchLog {
             return simpleQueryString(querytext, keyList);
         }
 
-        // 简单语句查询
+        // Simple statement queries
         private static QueryBuilder simpleQueryString(String querytext, List<String> keyList) {
             for (String symble : simpleQueryStringSymble) {
                 if (querytext.contains(symble)) {
@@ -250,7 +250,7 @@ public class SearchLog {
             return wildcardQuery(querytext, keyList);
         }
 
-        // 模糊查询
+        // Fuzzy queries
         private static QueryBuilder wildcardQuery(String querytext, List<String> keyList) {
             for (String symble : wildcardQuerySymble) {
                 if (querytext.contains(symble)) {
@@ -260,7 +260,7 @@ public class SearchLog {
             return multiMatchQuery(querytext, keyList);
         }
 
-        // 多字段查询
+        // Multi-field queries
         private static QueryBuilder multiMatchQuery(String querytext, List<String> keyList) {
             return QueryBuilders.multiMatchQuery(querytext, keyList.toArray(new String[keyList.size()]));
         }
@@ -268,19 +268,19 @@ public class SearchLog {
 
     private static int getEndIndex(String querytext) {
         querytext = querytext.toLowerCase();
-        // 短语查询 返回第二个引号的坐标
+        // Phrase query Returns the coordinates of the second quotation mark
         if (querytext.startsWith("\"")) {
             return querytext.substring(1).indexOf("\"") + 2;
         }
-        // 多条件查询
+        // Multi-criteria queries
         int endIndex = querytext.indexOf("and ");
         if (endIndex == -1 || querytext.substring(0, endIndex).contains("not ")) {
             endIndex = querytext.indexOf("not ");
         }
         if (endIndex == -1) {
-            return querytext.length(); // 单条件查询
+            return querytext.length(); // Single-condition queries
         }
-        // k-v查询的v包含”and“,例如：a:"1 and b"
+        // The v of a k-v query contains "and", for example: a: "1 and b"
         String thisQueryText = querytext.substring(0, endIndex);
         if (thisQueryText.contains(":")) {
             String queryValue = querytext.substring(querytext.indexOf(":") + 1);

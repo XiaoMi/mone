@@ -25,7 +25,7 @@ import java.util.Map;
 
 /**
  * <p>
- *  Mapper 接口
+ *  Mapper
  * </p>
  *
  * @author wanghaoyang
@@ -34,50 +34,50 @@ import java.util.Map;
 @Mapper
 public interface MilogLogCountMapper extends BaseMapper<LogCountDO> {
     /**
-     * 批量插入
+     * Bulk insertion
      * @param logCountList
      * @return
      */
     Long batchInsert(@Param("logCountList") List<LogCountDO> logCountList);
 
     /**
-     * 统计日志存储top10
+     * Top 10 statistical log storage
      * @return
      */
     List<Map<String, Object>> collectTopCount(@Param("fromDay") String fromDay, @Param("toDay") String toDay);
 
     /**
-     * 统计日志存储趋势
+     * Statistics on log storage trends
      */
     List<Map<String, Object>> collectTrend(@Param("fromDay") String fromDay, @Param("toDay") String toDay, @Param("tailId") Long tailId);
 
     /**
-     * 统计space日志存储趋势
+     * Statistics on the storage trend of SPACE logs
      */
     List<Map<String, Object>> collectSpaceTrend(@Param("fromDay") String fromDay, @Param("toDay") String toDay);
 
 
     /**
-     * 此天是否已统计
+     * Whether this day has been counted
      * @param day
      * @return
      */
     Long isLogtailCountDone(@Param("day") String day);
 
     /**
-     * 删除指定日期之前的数据
+     * Deletes data older than the specified date
      * @param day
      */
     void deleteBeforeDay(@Param("day") String day);
 
     /**
-     * 删除此天的统计数据
+     * Delete statistics for this day
      * @param day
      */
     void deleteThisDay(@Param("day") String day);
 
     /**
-     * space日志统计量top10
+     * Space log statistics top 10
      * @param fromDay
      * @param toDay
      * @return
@@ -85,7 +85,7 @@ public interface MilogLogCountMapper extends BaseMapper<LogCountDO> {
     List<Map<String, Object>> collectSpaceCount(@Param("fromDay") String fromDay, @Param("toDay") String toDay);
 
     /**
-     * app日志量统计
+     * App log statistics
      */
     List<Map<String, Object>> collectAppLog(@Param("day") String day, @Param("threshold") Long threshold);
 }

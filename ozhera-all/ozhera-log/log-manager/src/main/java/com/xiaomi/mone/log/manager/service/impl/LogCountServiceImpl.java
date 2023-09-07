@@ -67,7 +67,7 @@ public class LogCountServiceImpl implements LogCountService {
     private Map<Long, List<SpaceCollectTrendDTO>> spaceCollectTrendCache = new HashMap<>();
 
     /**
-     * 日志收集排行
+     * Top log collections
      *
      * @return
      */
@@ -77,7 +77,7 @@ public class LogCountServiceImpl implements LogCountService {
     }
 
     /**
-     * 日志收集趋势
+     * Log collection trends
      *
      * @param tailId
      * @return
@@ -126,7 +126,7 @@ public class LogCountServiceImpl implements LogCountService {
             LogtailCollectTrendDTO dto;
             for (Map<String, Object> res : resList) {
                 dto = new LogtailCollectTrendDTO();
-                dto.setDay(String.valueOf(res.get("day")).split("-")[2] + "日");
+                dto.setDay(String.valueOf(res.get("day")).split("-")[2] + "day");
                 dto.setNumber(String.valueOf(res.get("number")));
                 dto.setShowNumber(getLogNumberFormat(Long.parseLong(String.valueOf(res.get("number")))));
                 trendlist.add(dto);
@@ -137,7 +137,7 @@ public class LogCountServiceImpl implements LogCountService {
 
     @Override
     public void collectLogCount(String thisDay) throws IOException {
-        log.info("统计日志开始");
+        log.info("Statistics log starts");
         logCountMapper.deleteThisDay(thisDay);
         if (StringUtils.isEmpty(thisDay)) {
             thisDay = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
@@ -158,7 +158,7 @@ public class LogCountServiceImpl implements LogCountService {
                 } else {
                     esService = esCluster.getEsService(Long.parseLong(String.valueOf(tail.get("es_cluster_id"))));
                     if (esService == null) {
-                        log.warn("统计日志warn,tail:{}日志未统计，es客户端未生成", tail);
+                        log.warn("Statistics logs warn,tail:{} the logs are not counted and the ES client is not generated", tail);
                         continue;
                     }
                     SearchSourceBuilder builder = new SearchSourceBuilder();
@@ -166,7 +166,7 @@ public class LogCountServiceImpl implements LogCountService {
                     boolQueryBuilder.filter(QueryBuilders.termQuery("tail", tail.get("tail")));
                     boolQueryBuilder.filter(QueryBuilders.rangeQuery("timestamp").from(thisDayFirstMillisecond).to(thisDayFirstMillisecond + DateUtils.dayms - 1));
                     builder.query(boolQueryBuilder);
-                    // 统计
+                    // statistics
                     CountRequest countRequest = new CountRequest();
                     countRequest.indices(esIndex);
                     countRequest.source(builder);
@@ -186,7 +186,7 @@ public class LogCountServiceImpl implements LogCountService {
         if (CollectionUtils.isNotEmpty(logCountDOList)) {
             res = logCountMapper.batchInsert(logCountDOList);
         }
-        log.info("统计日志结束,应统计{}行，共统计{}行", tailList.size(), res);
+        log.info("End of statistics log,Should be counted{}，Total statistics{}", tailList.size(), res);
     }
 
     @Override
@@ -218,13 +218,13 @@ public class LogCountServiceImpl implements LogCountService {
         format.setMaximumFractionDigits(2);
         format.setMinimumFractionDigits(2);
         if (number >= 100000000) {
-            return format.format((float) number / 100000000) + "亿";
+            return format.format((float) number / 100000000) + "hundred million";
         } else if (number >= 1000000) {
-            return format.format((float) number / 1000000) + "百万";
+            return format.format((float) number / 1000000) + "million";
         } else if (number >= 10000) {
-            return format.format((float) number / 10000) + "万";
+            return format.format((float) number / 10000) + "ten thousand";
         } else {
-            return number + "条";
+            return number + "strip";
         }
     }
 
@@ -276,7 +276,7 @@ public class LogCountServiceImpl implements LogCountService {
             dto.setNumber(String.valueOf(spaceTrend.get("number")));
             dto.setShowNumber(getLogNumberFormat(Long.parseLong(String.valueOf(spaceTrend.get("number")))));
             dto.setOrgName(tpc.getSpaceLastOrg(Long.parseLong(String.valueOf(spaceTrend.get("spaceId")))));
-            dto.setDay(String.valueOf(spaceTrend.get("day")).split("-")[2] + "日");
+            dto.setDay(String.valueOf(spaceTrend.get("day")).split("-")[2] + "day");
             dtoList.add(dto);
             lastSpaceId = thisSpaceId;
         }

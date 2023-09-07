@@ -224,7 +224,7 @@ public class MilogLogTailDao {
     }
 
     /**
-     * 获取ip配置的logtail
+     * Get the logtail of ip configuration
      *
      * @param ip
      * @return
@@ -333,8 +333,7 @@ public class MilogLogTailDao {
 
 
     /**
-     * 查询所有包含的 matrix 类型应用的 logTail
-     * //todo sql优化
+     * Query the logTail for all included matrix type apps
      */
     public List<MilogLogTailDo> queryTailsByStores(List<Long> storeIds) {
         return dao.query(MilogLogTailDo.class, Cnd.where("store_id", "in", storeIds));

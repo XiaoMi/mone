@@ -26,5 +26,5 @@ public class LogContectQuery implements Serializable {
     private Integer pageSize;
     private Object[] beginSortValue;
     private String logip;
-    private Integer sort; //1 正序 2 倒序
+    private Integer sort; //1 positive order 2 reverse order
 }

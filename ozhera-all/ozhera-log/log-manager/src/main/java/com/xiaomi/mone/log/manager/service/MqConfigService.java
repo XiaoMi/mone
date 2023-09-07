@@ -49,10 +49,10 @@ public interface MqConfigService {
 
     default String generateSimpleTopicName(Long appId, String appName, String source, Long tailId) {
         if (StringUtils.isNotEmpty(appName)) {
-            // 汉字转拼音
+            // Chinese characters are converted to pinyin
             appName = PinYin4jUtils.getAllPinyin(appName);
         }
-        // 处理特殊字符
+        // Handle special characters
         List<String> collect = ReUtil.RE_KEYS.stream()
                 .map(character -> character.toString()).collect(Collectors.toList());
         String topicName = String.format("%s_%s_%s_%s", appId, appName, tailId, source);
@@ -62,10 +62,10 @@ public interface MqConfigService {
 
     default String generateSimpleTopicName(Long id, String name) {
         if (StringUtils.isNotEmpty(name)) {
-            // 汉字转拼音
+            // Chinese characters are converted to pinyin
             name = PinYin4jUtils.getAllPinyin(name);
         }
-        // 处理特殊字符
+        // Handle special characters
         List<String> collect = ReUtil.RE_KEYS.stream()
                 .map(character -> character.toString()).collect(Collectors.toList());
         String topicName = String.format("%s_%s", id, name);
@@ -81,7 +81,7 @@ public interface MqConfigService {
                                          String authorization, String orgId, String teamId);
 
     /**
-     * 创建几个公共topic,且开启标签过滤
+     * Create several public topics and enable tag filtering
      *
      * @return
      */

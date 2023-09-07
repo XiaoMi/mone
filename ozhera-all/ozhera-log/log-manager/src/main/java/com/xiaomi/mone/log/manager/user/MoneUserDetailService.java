@@ -31,7 +31,7 @@ public interface MoneUserDetailService {
     Gson GSON = new Gson();
 
     /**
-     * 查询用户详情
+     * Query user details
      *
      * @param userName
      * @return
@@ -39,7 +39,7 @@ public interface MoneUserDetailService {
     UseDetailInfo queryUserByUserName(String userName);
 
     /**
-     * 查询用户详情
+     * Query user details
      *
      * @param uId
      * @return
@@ -47,7 +47,7 @@ public interface MoneUserDetailService {
     UseDetailInfo queryUser(String uId);
 
     /**
-     * 根据手机查询用户唯一Id
+     * Query the user's unique ID based on the mobile phone
      *
      * @param phone
      * @return
@@ -55,7 +55,7 @@ public interface MoneUserDetailService {
     String queryUserUIdByPhone(String phone);
 
     /**
-     * 根据员工号查询用户唯一Id
+     * Query the user's unique ID based on the employee number
      *
      * @param empId
      * @return
@@ -63,7 +63,8 @@ public interface MoneUserDetailService {
     String queryUserUIdByEmpId(String empId);
 
     /**
-     * 根据用户名查询用户唯一Id
+     * Query the user's unique ID based on the user name
+     *
      * @param email
      * @return
      */

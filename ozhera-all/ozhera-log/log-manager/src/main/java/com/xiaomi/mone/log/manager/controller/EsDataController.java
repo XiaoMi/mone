@@ -84,7 +84,7 @@ public class EsDataController {
     }
 
     /**
-     * tail日志收集排行
+     * tail log collection ranking
      *
      * @return
      */
@@ -94,7 +94,7 @@ public class EsDataController {
     }
 
     /**
-     * space日志收集排行
+     * space log collection trends
      *
      * @return
      */
@@ -104,7 +104,7 @@ public class EsDataController {
     }
 
     /**
-     * tail日志收集趋势
+     * tail log collection trends
      *
      * @param tailId
      * @return
@@ -116,7 +116,7 @@ public class EsDataController {
     }
 
     /**
-     * space日志收集趋势
+     * Space log collection trends
      *
      * @param spaceId
      * @return
@@ -128,7 +128,7 @@ public class EsDataController {
     }
 
     /**
-     * 执行脚本-tail日志收集趋势缓存刷新
+     * Execute the script-tail log collection trend cache flush
      */
     @RequestMapping(path = "/log/statistics/collectTrendRefresh", method = "get")
     public void collectTrendRefresh() {
@@ -136,7 +136,7 @@ public class EsDataController {
     }
 
     /**
-     * 执行脚本-space日志收集趋势缓存刷新
+     * Perform a script-space log collection trend cache flush
      */
     @RequestMapping(path = "/log/statistics/spaceCollectTrendRefresh", method = "get")
     public void spaceCollectTrendRefresh() {
@@ -144,7 +144,7 @@ public class EsDataController {
     }
 
     /**
-     * 执行脚本-统计指定日期的日志量
+     * Execute script - Counts the number of logs for a specified date
      *
      * @param thisDay
      * @throws IOException
@@ -154,13 +154,13 @@ public class EsDataController {
         try {
             logCountService.collectLogCount(thisDay);
         } catch (Exception e) {
-            log.error("日志统计失败,error:[{}]", e.getMessage());
+            log.error("Log statistics failed,error:[{}]", e.getMessage());
         }
 
     }
 
     /**
-     * 执行脚本-统计日志排行缓存刷新
+     * Perform a script - statistics log ranking cache flush
      *
      * @throws IOException
      */
@@ -170,7 +170,7 @@ public class EsDataController {
     }
 
     /**
-     * 执行脚本-space日志量缓存刷新
+     * Perform a script-space log volume cache flush
      */
     @RequestMapping(path = "/log/statistics/collectSpaceTopRefresh", method = "get")
     public void collectSpaceTopRefresh() {
@@ -178,7 +178,7 @@ public class EsDataController {
     }
 
     /**
-     * 执行脚本-删除指定日期的日志量统计
+     * Execute script - Deletes log volume statistics for the specified date
      *
      * @param thisDay
      * @throws IOException
@@ -189,7 +189,7 @@ public class EsDataController {
     }
 
     /**
-     * 执行脚本-查看日志统计缓存
+     * Execute script - View log statistics cache
      *
      * @throws IOException
      */
@@ -199,7 +199,7 @@ public class EsDataController {
     }
 
     /**
-     * 保存查询-列表展示
+     * Save the query - list display
      *
      * @throws IOException
      */
@@ -210,7 +210,7 @@ public class EsDataController {
     }
 
     /**
-     * 保存查询-查询参数
+     * Save the query - query parameters
      *
      * @throws IOException
      */
@@ -220,7 +220,7 @@ public class EsDataController {
     }
 
     /**
-     * 保存查询-保存
+     * Save Query - Save
      *
      * @throws IOException
      */
@@ -230,7 +230,7 @@ public class EsDataController {
     }
 
     /**
-     * 保存查询-取消收藏
+     * Save Query - Unfavorite
      *
      * @throws IOException
      */
@@ -240,7 +240,7 @@ public class EsDataController {
     }
 
     /**
-     * 保存查询-更新
+     * Save Query - Update
      *
      * @throws IOException
      */
@@ -250,7 +250,7 @@ public class EsDataController {
     }
 
     /**
-     * 保存查询-交换顺序
+     * Save the query-swap order
      */
     @RequestMapping(path = "/log/save/swap", method = "get")
     public Result<Boolean> swap(@RequestParam(value = "idFrom") Long idFrom, @RequestParam(value = "idTo") Long idTo) {
@@ -258,7 +258,7 @@ public class EsDataController {
     }
 
     /**
-     * 保存查询-删除
+     * Save Query - Delete
      *
      * @throws IOException
      */

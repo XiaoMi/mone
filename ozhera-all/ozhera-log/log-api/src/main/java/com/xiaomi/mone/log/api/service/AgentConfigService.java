@@ -27,7 +27,7 @@ import java.util.List;
  */
 public interface AgentConfigService {
     /**
-     * 获取日志配置信息
+     * Obtain log configuration information
      * @param ip
      * @return
      */

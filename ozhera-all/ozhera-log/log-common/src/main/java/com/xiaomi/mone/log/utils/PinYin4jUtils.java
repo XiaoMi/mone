@@ -31,31 +31,31 @@ import net.sourceforge.pinyin4j.format.exception.BadHanyuPinyinOutputFormatCombi
 public class PinYin4jUtils {
 
     public static String getAllPinyin(String hanzi) {
-        //输出格式设置
+        //Output formatting
         HanyuPinyinOutputFormat format = new HanyuPinyinOutputFormat();
         /**
-         * 输出大小写设置
+         * Output case settings
          *
-         * LOWERCASE:输出小写
-         * UPPERCASE:输出大写
+         * LOWERCASE:Output lowercase
+         * UPPERCASE:Output uppercase
          */
         format.setCaseType(HanyuPinyinCaseType.LOWERCASE);
 
         /**
-         * 输出音标设置
+         * Output phonetic transcription settings
          *
-         * WITH_TONE_MARK:直接用音标符（必须设置WITH_U_UNICODE，否则会抛出异常）
-         * WITH_TONE_NUMBER：1-4数字表示音标
-         * WITHOUT_TONE：没有音标
+         * WITH_TONE_MARK:Directly with phonetic symbols (WITH U_UNICODE must be set, otherwise an exception will be thrown)
+         * WITH_TONE_NUMBER：Numbers 1-4 indicate phonetic transcription
+         * WITHOUT_TONE：There is no phonetic transcription
          */
         format.setToneType(HanyuPinyinToneType.WITHOUT_TONE);
 
         /**
-         * 特殊音标ü设置
+         * Special phonetic transcription U setting
          *
-         * WITH_V：用v表示ü
-         * WITH_U_AND_COLON：用"u:"表示ü
-         * WITH_U_UNICODE：直接用ü
+         * WITH_V：Use v to indicate ü
+         * WITH_U_AND_COLON：Use "u:" for ü
+         * WITH_U_UNICODE：Use ü directly
          */
         format.setVCharType(HanyuPinyinVCharType.WITH_U_UNICODE);
 
@@ -64,9 +64,9 @@ public class PinYin4jUtils {
 
         try {
             for (int i = 0, len = hanYuArr.length; i < len; i++) {
-                //匹配是否是汉字
+                //Whether the match is a Chinese character or not
                 if (Character.toString(hanYuArr[i]).matches("[\\u4E00-\\u9FA5]+")) {
-                    //如果是多音字，返回多个拼音，这里只取第一个
+                    //If it is a polyphonetic word, return multiple pinyin, here only the first one is taken
                     String[] pys = PinyinHelper.toHanyuPinyinStringArray(hanYuArr[i], format);
                     pinYin.append(pys[0]).append("");
                 } else {

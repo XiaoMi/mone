@@ -36,7 +36,7 @@ public class MilogLoginController {
 
 
     /**
-     * 获取用户信息--登录后才会有
+     * Obtain user information - only after login
      *
      * @return
      */
@@ -51,7 +51,7 @@ public class MilogLoginController {
     }
 
     /**
-     * 用户退出清理信息
+     * User exit cleanup information
      *
      * @param mvcContext
      * @return

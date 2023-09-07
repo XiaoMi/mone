@@ -36,7 +36,7 @@ public class MilogSpaceParam {
     private String description;
     private String permDeptId;
     /**
-     * 管理员,取第一个人为创建人,其它的为管理员
+     * Administrator, the first person is the creator, and the others are administrators
      */
     private List<String> admins;
 }

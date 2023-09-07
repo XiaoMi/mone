@@ -22,7 +22,7 @@ import java.io.IOException;
 public interface EsIndexTemplateService {
 
     /**
-     * 更新索引模板
+     * Update index template
      *
      * @param updateIndexTemplateCommand
      * @return
@@ -30,7 +30,7 @@ public interface EsIndexTemplateService {
     public boolean updateIndexTemplate(UpdateIndexTemplateCommand updateIndexTemplateCommand) throws IOException;
 
     /**
-     * 创建索引
+     * Create index
      *
      * @param indexName
      * @return

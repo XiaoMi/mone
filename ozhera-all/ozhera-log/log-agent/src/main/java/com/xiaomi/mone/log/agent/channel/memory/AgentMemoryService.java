@@ -28,21 +28,21 @@ public interface AgentMemoryService {
     String DEFAULT_BASE_PATH = "/tmp/";
 
     /**
-     * 刷新内存进度
+     * Refresh memory progress
      *
      * @param channelMemory
      */
     void refreshMemory(ChannelMemory channelMemory);
 
     /**
-     * 获取缓存信息
+     * Get cache information
      *
      * @return
      */
     List<ChannelMemory> getMemory();
 
     /**
-     * 获取缓存信息
+     * Get cache information
      *
      * @param channelId
      * @return
@@ -50,31 +50,31 @@ public interface AgentMemoryService {
     ChannelMemory getMemory(Long channelId);
 
     /**
-     * 从磁盘恢复内存
+     * Restore memory from disk
      *
      * @return
      */
     List<ChannelMemory> restoreFromDisk();
 
     /**
-     * 刷新到磁盘
+     * Flush to disk
      *
      * @param channelMemoryList
      */
     void flush2disk(List<ChannelMemory> channelMemoryList);
 
     /**
-     * 比较文件，防止文件过大
+     * Compare files to prevent them from becoming too large
      *
-     * @param filePaths 真实已经存在的所有文件
+     * @param filePaths All files that actually exist
      * @param channelId
      */
     void cleanChannelMemoryContent(Long channelId, List<String> filePaths);
 
     /**
-     * 清理已经删除的tail 内存文件
+     * Manage deleted tail memory files
      *
-     * @param channelIds 全量chanelIds集合
+     * @param channelIds Full collection of chanel IDs
      */
     void cleanMemoryHistoryFile(List<Long> channelIds);
 

@@ -58,7 +58,7 @@ public class MiLogAgentBootstrap {
         client.waitStarted();
         log.info("create rpc client finish");
         Ioc.ins().putBean(client).init("com.xiaomi.mone.log.agent", "com.xiaomi.youpin.docean");
-        //Because the client lifecycle is advanced, it is necessary to re-register the processor here.
+        //Because the client life cycle is advanced, the processor needs to be re-registered here
         client.registerProcessor();
         System.in.read();
     }

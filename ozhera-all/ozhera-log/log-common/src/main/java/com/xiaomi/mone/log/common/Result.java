@@ -20,7 +20,7 @@ import com.xiaomi.mone.log.exception.CommonException;
 
 /**
  * Created by zhangzhiyong on 29/05/2018.
- * http json 返回结果
+ * http json returns the result
  */
 public class Result<T> {
 

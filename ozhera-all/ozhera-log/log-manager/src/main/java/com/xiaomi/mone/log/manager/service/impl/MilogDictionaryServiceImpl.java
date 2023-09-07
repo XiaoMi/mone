@@ -74,26 +74,26 @@ public class MilogDictionaryServiceImpl implements MilogDictionaryService {
 
     /**
      * @param dictionaryParam code :
-     *                        1001:创建tail的时候选择采集的mq配置
-     *                        1002：mq类型
-     *                        1003: mq类型及下边的topic信息
-     *                        1004：应用类型
-     *                        1005: 机房下的store及应用
-     *                        1006:机房信息
-     *                        1007:部署方式
-     *                        1008:资源tab页码
+     *                        1001:When creating a tail, select the MQ configuration for collection
+     *                        1002：mq type
+     *                        1003: MQ type and the topic information below
+     *                        1004：app type
+     *                        1005: Store and applications under the computer room
+     *                        1006:Computer room information
+     *                        1007:Deployment method
+     *                        1008:Resource tab page number
      * @return
      */
     @Override
     public Result<Map<Integer, List<DictionaryDTO<?>>>> queryDictionaryList(MilogDictionaryParam dictionaryParam) {
         if (null == dictionaryParam || CollectionUtils.isEmpty(dictionaryParam.getCodes())) {
-            return Result.failParam("code 不能为空");
+            return Result.failParam("code Cannot be empty");
         }
         if (CollectionUtils.isNotEmpty(dictionaryParam.getCodes().stream().filter(code -> code.intValue() == 1003).collect(Collectors.toList())) && null == dictionaryParam.getMiddlewareId()) {
-            return Result.failParam("middlewareId 不能为空");
+            return Result.failParam("middlewareId Cannot be empty");
         }
         if (CollectionUtils.isNotEmpty(dictionaryParam.getCodes().stream().filter(code -> code.intValue() == 1005).collect(Collectors.toList())) && StringUtils.isEmpty(dictionaryParam.getNameEn())) {
-            return Result.failParam("nameEn 不能为空");
+            return Result.failParam("nameEn Cannot be empty");
         }
         Map<Integer, List<DictionaryDTO<?>>> dictionaryDTO = Maps.newHashMap();
         dictionaryParam.getCodes().stream().forEach(code -> {
@@ -122,7 +122,7 @@ public class MilogDictionaryServiceImpl implements MilogDictionaryService {
                     dictionaryDTO.put(code, dictionaryExtensionService.queryResourceTypeDictionary());
             }
         });
-        log.debug("返回值：{}", new Gson().toJson(dictionaryDTO));
+        log.debug("return val：{}", new Gson().toJson(dictionaryDTO));
         return Result.success(dictionaryDTO);
     }
 
@@ -179,17 +179,17 @@ public class MilogDictionaryServiceImpl implements MilogDictionaryService {
     @Override
     public Result<String> fixLogTailMilogAppId(String appName) {
         List<MilogLogTailDo> milogLogtailDos = milogLogtailDao.queryTailByAppName(appName);
-        log.info("同步修复tail的milogAppId,共有{}条", milogLogtailDos.size());
+        log.info("Synchronously repair tail's milogAppId, with {} entries", milogLogtailDos.size());
         int count = 0;
         Stopwatch stopwatch = Stopwatch.createStarted();
         for (MilogLogTailDo milogLogtailDo : milogLogtailDos) {
             ++count;
-            log.info("开始同步修复tail的第{}条，还剩下{}跳", count, milogLogtailDos.size() - count);
+            log.info("Start synchronizing the {} article of the tail, and there are {} articles left", count, milogLogtailDos.size() - count);
             if (null == milogLogtailDo.getMilogAppId()) {
             }
         }
         stopwatch.stop();
-        log.info("同步修复tail的milogAppId，花费时间：{} s", stopwatch.elapsed().getSeconds());
+        log.info("Synchronously repair tail's milogAppId, which takes time: {} s", stopwatch.elapsed().getSeconds());
         return Result.success();
     }
 

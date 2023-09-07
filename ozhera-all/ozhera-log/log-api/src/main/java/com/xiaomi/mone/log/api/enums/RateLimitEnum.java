@@ -49,7 +49,7 @@ public enum RateLimitEnum {
 
 
     public static String consTailRate(List<FilterDefine> defines) {
-        // 默认 MEDIUM 速度采集
+        // DEFAULT MEDIUM SPEED ACQUISITION
         if (defines == null) {
             return RATE_LIMIT_MEDIUM.getRateLimit();
         }

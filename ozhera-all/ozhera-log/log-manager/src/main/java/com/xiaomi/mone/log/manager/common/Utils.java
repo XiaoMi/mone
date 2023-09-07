@@ -84,7 +84,7 @@ public class Utils {
     }
 
     /**
-     * 简单的创建tag
+     * Simple creation of tags
      *
      * @param spaceId
      * @param storeId
@@ -96,7 +96,7 @@ public class Utils {
     }
 
     /**
-     * 简单的组装一个topic名称
+     * Simply assemble a topic name
      *
      * @param appId
      * @param appName
@@ -122,7 +122,7 @@ public class Utils {
                     map.put(orderValue, keyListSlice.get(i));
                 }
             } catch (Exception e) {
-                log.error(String.format("数据解析异常，keyList:%s,valueList:%s", keyList, valueS), e);
+                log.error(String.format("Data parsing exception,keyList:%s,valueList:%s", keyList, valueS), e);
             }
         }
         return map.entrySet().stream()

@@ -43,7 +43,7 @@ public class MilogSpaceDao {
     private NutDao dao;
 
     /**
-     * 新建
+     * new build
      *
      * @param ms
      * @return
@@ -66,7 +66,7 @@ public class MilogSpaceDao {
     }
 
     /**
-     * 更新
+     * update
      *
      * @param id
      * @param tenantId
@@ -90,7 +90,7 @@ public class MilogSpaceDao {
     }
 
     /**
-     * 删除
+     * delete
      *
      * @param id
      */
@@ -104,7 +104,7 @@ public class MilogSpaceDao {
     }
 
     /**
-     * 查询
+     * search
      *
      * @param ids
      * @return
@@ -168,7 +168,7 @@ public class MilogSpaceDao {
     }
 
     /**
-     * 查询所有
+     * query all
      *
      * @return
      */

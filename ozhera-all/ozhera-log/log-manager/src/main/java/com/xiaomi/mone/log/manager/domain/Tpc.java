@@ -105,7 +105,7 @@ public class Tpc {
             param.setNodeName(spaceName);
         }
         param.setStatus(NodeStatusEnum.ENABLE.getCode());
-        // 管理员用户查询所有
+        // The admin user queries all
         param.setMyNode(currentUser.getIsAdmin() ? false : true);
         return tpcService.orgNodelist(param);
     }
@@ -232,8 +232,7 @@ public class Tpc {
             return "";
         }
         String spaceOrg = spaceNode.getOrgInfoVo().getNamePath();
-        // system显示本组名称
-        return spaceOrg.lastIndexOf('/') == -1 ? "公用space" : spaceOrg.substring(spaceOrg.lastIndexOf('/') + 1, spaceOrg.length());
+        return spaceOrg.lastIndexOf('/') == -1 ? "Public space" : spaceOrg.substring(spaceOrg.lastIndexOf('/') + 1, spaceOrg.length());
     }
 
     public OrgInfoVo getOrg(String account, Integer userType) {
@@ -242,7 +241,7 @@ public class Tpc {
         param.setUserType(userType);
         Result<OrgInfoVo> res = userOrgFacade.getOrgByAccount(param);
         if (res == null || res.getCode() != 0) {
-            log.warn("查找用户部门失败,account:[{}], userType:[{}], res:[{}]", account, userType, res);
+            log.warn("Failed to find user department,account:[{}], userType:[{}], res:[{}]", account, userType, res);
             return new OrgInfoVo();
         }
         return res.getData();

@@ -18,7 +18,7 @@ package com.xiaomi.mone.log.agent.input;
 import java.io.Serializable;
 
 /**
- * opentelemetry类型输入
+ * opentelemetry type input
  *
  * @author shanwb
  * @date 2021-09-13

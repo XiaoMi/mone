@@ -2,7 +2,7 @@
   "header": {
     "title": {
       "tag": "plain_text",
-      "content": "logAgent存活报告"
+      "content": "Log Agent Survivorship Report"
     },
     "template": "red"
   },
@@ -11,14 +11,14 @@
       "tag": "div",
       "text": {
         "tag": "plain_text",
-        "content": "\uD83E\uDD10 同学你好："
+        "content": "\uD83E\uDD10 Hello classmates："
       },
       "fields": [
         {
           "is_short": false,
           "text": {
             "tag": "lark_md",
-            "content": "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;log-agent已经2分钟没有发送心跳报告了，可能已经挂掉了，麻烦看看呗，log-agent ip:%s,环境:%s"
+            "content": "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;The log-agent has not sent a heartbeat report for 2 minutes, it may have been hung up, please take a look，log-agent ip:%s"
           }
         }
       ]

@@ -26,7 +26,7 @@ import com.xiaomi.mone.log.api.model.meta.LogCollectMeta;
 public interface AgentConfigAcquirer {
 
     /**
-     * 获取日志配置信息
+     * Get log configuration information
      * @param ip
      * @return
      */

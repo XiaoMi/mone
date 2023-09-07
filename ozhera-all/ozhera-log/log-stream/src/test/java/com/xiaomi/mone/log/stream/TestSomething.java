@@ -47,7 +47,7 @@ public class TestSomething {
         String topic = "";
         String tag = "";
         String logstoreName = "";
-        String tail = "order-center(生产)";
+        String tail = "order-center(produce)";
         String ip = "";
         String msgBody = "";
 //        Map<String, Object> parse = LogParse.parse(msgBody, keyList, valueList, parseScript, topic, tag, logstoreName, tail, ip);

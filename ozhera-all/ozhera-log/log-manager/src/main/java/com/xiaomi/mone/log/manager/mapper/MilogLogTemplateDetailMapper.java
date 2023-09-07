@@ -22,7 +22,7 @@ import org.apache.ibatis.annotations.Param;
 
 /**
  * <p>
- * milog日志模板详细 Mapper 接口
+ * milog log template detail Mapper
  * </p>
  *
  * @author wanghaoyang
@@ -33,7 +33,7 @@ import org.apache.ibatis.annotations.Param;
 public interface MilogLogTemplateDetailMapper extends BaseMapper<MilogLogTemplateDetailDO> {
 
     /**
-     * 查询模板的detail
+     * Query the details of the template
      * @param templateId
      * @return
      */

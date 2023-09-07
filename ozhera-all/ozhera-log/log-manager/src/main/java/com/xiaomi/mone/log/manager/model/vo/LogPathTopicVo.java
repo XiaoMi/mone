@@ -29,7 +29,7 @@ import lombok.Data;
 @Builder
 public class LogPathTopicVo {
     /**
-     * 日志路径
+     * Log path
      */
     private String logPath;
     /**
@@ -39,19 +39,19 @@ public class LogPathTopicVo {
 
     private String source;
     /**
-     * 解析脚本
+     * Parse the script
      */
     private String parseScript;
     /**
-     * 日志格式
+     * Log format
      */
     private String valueList;
     /**
-     * mq相关配置
+     * MQ-related configuration
      */
     private MQConfig mqConfig;
     /**
-     * 服务别名
+     * Service alias
      */
     private String serveAlias;
 

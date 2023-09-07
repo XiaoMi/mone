@@ -29,9 +29,9 @@ import java.util.Objects;
 @Getter
 public enum OperateEnum {
 
-    ADD_OPERATE(1, "新增"),
-    UPDATE_OPERATE(2, "修改"),
-    DELETE_OPERATE(3, "删除");
+    ADD_OPERATE(1, "Add"),
+    UPDATE_OPERATE(2, "Update"),
+    DELETE_OPERATE(3, "Delete");
 
     private final Integer code;
     private final String describe;

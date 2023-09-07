@@ -26,9 +26,9 @@ public class TraceLogQuery implements Serializable {
     private String traceId;
     private String generationTime;
     private String level;
-    // 最大返回数据条数
+    // The maximum number of returned data bars
     private Integer total = 1000;
-    // es查询过期时间（毫秒）
+    // ES query expiration time (ms)
     private Long timeout = 2000L;
 
     public TraceLogQuery(Long appId, String ip, String traceId) {

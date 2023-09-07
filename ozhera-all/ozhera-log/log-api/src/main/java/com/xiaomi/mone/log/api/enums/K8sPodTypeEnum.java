@@ -26,7 +26,7 @@ import lombok.Getter;
 @Getter
 public enum K8sPodTypeEnum {
     /**
-     * pod 名称不变即日志路径不变
+     * The pod name does not change, that is, the log path does not change
      */
     STATEFUL,
     STATELESS

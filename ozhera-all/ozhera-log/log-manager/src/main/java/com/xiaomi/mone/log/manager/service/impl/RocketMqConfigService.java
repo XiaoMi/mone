@@ -106,10 +106,6 @@ public class RocketMqConfigService implements MqConfigService, CommonRocketMqSer
         return commonTagTopicNames;
     }
 
-    /**
-     * 1.先查询是否存在
-     * 2.不存在则创建
-     */
     public boolean createSubscribeGroup(String serviceUrl, String authorization, String orgId,
                                         Long spaceId, Long storeId, Long tailId, Long milogAppId) {
         return false;

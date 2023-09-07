@@ -74,13 +74,10 @@ public class ChannelServiceTest {
             log.warn("newFilePath:{}", newFilePath);
             LogFile logFile = logFileMap.get(newFilePath);
             if (null == logFile) {
-                // 新增日志文件
 //                readFile(input.getPatternCode(), localIp, newFilePath, channelId);
                 log.info("watch new file create for chnnelId:{},ip:{},path:{}", channelId, localIp, newFilePath);
             } else {
-                // 正常日志切分
                 try {
-                    //延迟7s切分文件, todo @shanwb 保证文件采集完再切换
                     TimeUnit.SECONDS.sleep(7);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
@@ -95,7 +92,6 @@ public class ChannelServiceTest {
 
     public Pattern makeLogPattern(String logPattern, String logSplitExpress) {
         if (StringUtils.isNotEmpty(logSplitExpress)) {
-            log.info("用户自定义的日志切分表达式：{}", logSplitExpress);
             return Pattern.compile(logSplitExpress);
         }
         String separator = FileSystems.getDefault().getSeparator();

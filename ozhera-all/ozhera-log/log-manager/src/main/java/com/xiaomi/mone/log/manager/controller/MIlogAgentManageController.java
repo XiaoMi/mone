@@ -36,7 +36,7 @@ public class MIlogAgentManageController {
     }
 
     /**
-     * 日志收集进度
+     * Log Collection Progress
      *
      * @param ip
      * @return
@@ -47,7 +47,7 @@ public class MIlogAgentManageController {
     }
 
     /**
-     * agent下发配置--全量下发
+     * Agent distribution configuration - full distribution
      *
      * @param agentId
      * @param agentIp
@@ -62,36 +62,27 @@ public class MIlogAgentManageController {
     }
 
     /**
-     * 部署
-     *
      * @param agentIpParam
      * @return
      */
-    //TODO 待完成
     @RequestMapping(path = "/milog/agent/deployee")
     public Result<String> agentDeploy(@RequestParam("ips") MilogAgentIpParam agentIpParam) {
         return null;
     }
 
     /**
-     * 下线
-     *
      * @param agentIpParam
      * @return
      */
-    //TODO 待完成
     @RequestMapping(path = "/milog/agent/offline/batch")
     public Result<String> agentOfflineBatch(@RequestParam("param") MilogAgentIpParam agentIpParam) {
         return milogAgentService.agentOfflineBatch(agentIpParam);
     }
 
     /**
-     * 升级
-     *
      * @param ip
      * @return
      */
-    //TODO 待完成
     @RequestMapping(path = "/milog/agent/upgrade")
     public Result<String> agentUpgrade(@RequestParam("ip") String ip) {
         return null;

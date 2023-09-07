@@ -25,46 +25,46 @@ import org.nutz.dao.entity.annotation.*;
  */
 
 @Table("milog_space")
-@Comment("milog项目空间表")
+@Comment("Milog project space table")
 @Data
 public class MilogSpaceDO extends BaseCommon {
     @Id
-    @Comment("主键Id")
+    @Comment("Primary key Id")
     @ColDefine(customType = "bigint")
     private Long id;
 
 
     @Column(value = "tenant_id")
     @ColDefine(customType = "bigint")
-    @Comment("租户Id")
+    @Comment("Tenant ID")
     private Long tenantId;
 
 
     @Column(value = "space_name")
     @ColDefine(type = ColType.VARCHAR, width = 256)
-    @Comment("项目空间名称")
+    @Comment("Project space name")
     private String spaceName;
 
 
     @Column(value = "source")
     @ColDefine(type = ColType.VARCHAR, width = 128)
-    @Comment("来源")
+    @Comment("source")
     private String source;
 
     @Column(value = "perm_dept_id")
     @ColDefine(type = ColType.VARCHAR, width = 2000)
-    @Comment("可查看此space的三级部门ID")
+    @Comment("You can view the third-level department ID of this space")
     private String permDeptId;
 
 
     @Column(value = "create_dept_id")
     @ColDefine(type = ColType.VARCHAR, width = 50)
-    @Comment("创建的三级部门ID")
+    @Comment("The created three-level department ID")
     private String createDeptId;
 
 
     @Column(value = "description")
     @ColDefine(type = ColType.VARCHAR, width = 1024)
-    @Comment("备注说明")
+    @Comment("Remarks description")
     private String description;
 }

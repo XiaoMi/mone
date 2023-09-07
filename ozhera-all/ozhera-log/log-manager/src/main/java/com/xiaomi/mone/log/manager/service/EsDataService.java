@@ -28,7 +28,7 @@ import java.util.Map;
 public interface EsDataService {
 
     /**
-     * 读取ES索引中数据
+     * Read the data in the ES index
      *
      * @param logQuery
      * @return
@@ -36,7 +36,7 @@ public interface EsDataService {
     Result<LogDTO> logQuery(LogQuery logQuery);
 
     /**
-     * 插入数据
+     * Insert data
      *
      * @param indexName
      * @param data
@@ -47,7 +47,7 @@ public interface EsDataService {
     Result<EsStatisticResult> EsStatistic(LogQuery param) throws Exception;
 
     /**
-     * 获取机房内trace日志
+     * Obtain trace logs in the data center
      *
      * @param regionTraceLogQuery
      * @return

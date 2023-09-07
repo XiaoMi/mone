@@ -17,16 +17,14 @@ package com.xiaomi.mone.log.model;
 
 import lombok.Data;
 
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Data
 public class MiLogStreamConfig {
     /**
-     * 用于维护logstream 实例管理的logSpace
-     * key: logstream 实例ip
+     * logSpace used to maintain logStream instance management
+     * key: logstream Instance IP
      */
     private Map<String, Map<Long, String>> config = new ConcurrentHashMap<>();
 }

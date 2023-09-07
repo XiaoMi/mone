@@ -67,7 +67,7 @@ public interface CommonRocketMqService {
     String MQ_CONTENT_TYPE = "Content-Type";
 
     /**
-     * 封装mq的header陈map
+     * Encapsulate mq header Chen map
      *
      * @return
      */
@@ -85,7 +85,7 @@ public interface CommonRocketMqService {
     }
 
     /**
-     * 封装mq的header成list
+     * Encapsulate the header of mq into a list
      *
      * @return
      */
@@ -99,7 +99,7 @@ public interface CommonRocketMqService {
     }
 
     /**
-     * 创建mq中topic的一些公共参数
+     * Create some public parameters of topic in mq
      *
      * @param topicName
      * @return
@@ -115,7 +115,7 @@ public interface CommonRocketMqService {
     }
 
     /**
-     * 创建consumerGroup的参数
+     * Parameters for creating consumer Group
      *
      * @param name
      * @return

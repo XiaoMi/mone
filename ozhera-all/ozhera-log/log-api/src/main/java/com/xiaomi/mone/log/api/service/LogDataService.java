@@ -22,7 +22,7 @@ import java.io.IOException;
 
 public interface LogDataService {
     /**
-     * 获取trace日志
+     * Get trace logs
      * @param logQuery
      * @return
      */

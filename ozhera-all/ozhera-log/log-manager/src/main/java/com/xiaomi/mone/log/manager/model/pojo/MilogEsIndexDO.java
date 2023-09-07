@@ -43,26 +43,26 @@ public class MilogEsIndexDO implements Serializable {
 
     private static final long serialVersionUID = -4651856748263697198L;
     /**
-     * 主键
+     *  primary key
      */
     @TableId(value = "id", type = IdType.AUTO)
     @Column(value = "id")
     private Long id;
 
     /**
-     * 所属集群id
+     * The ID of the cluster to which it belongs
      */
     @Column(value = "cluster_id")
     private Long clusterId;
 
     /**
-     * 日志类型
+     * Log type
      */
     @Column(value = "log_type")
     private Integer logType;
 
     /**
-     * es索引名
+     * es index name
      */
     @Column(value = "index_name")
     private String indexName;

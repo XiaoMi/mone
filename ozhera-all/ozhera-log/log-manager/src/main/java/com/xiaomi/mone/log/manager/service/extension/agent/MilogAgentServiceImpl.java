@@ -120,9 +120,9 @@ public class MilogAgentServiceImpl implements MilogAgentService {
     @Override
     public Result<String> configIssueAgent(String agentId, String agentIp, String agentMachine) {
         if (StringUtils.isEmpty(agentIp)) {
-            return Result.failParam("agentIp不能为空");
+            return Result.failParam("The agent IP cannot be empty");
         }
-        // 1.查询该物理机下全量的配置
+        // 1.Query the full configuration of the physical machine
         LogCollectMeta logCollectMeta = queryMilogAgentConfig(agentId, agentIp, agentMachine);
         log.info("{},this ip config data:{}", agentIp, gson.toJson(logCollectMeta));
         String k8sNodeIP = queryNodeIpByPodIp(agentIp);
@@ -137,13 +137,13 @@ public class MilogAgentServiceImpl implements MilogAgentService {
                 }
         );
         log.info("agent ip list:{}", gson.toJson(ipAddress));
-        //2.下发配置
+        //2.Delivery configuration
         sengConfigToAgent(agentIp, logCollectMeta);
         return Result.success("success");
     }
 
     /**
-     * 下发配置到指定的ip
+     * Deliver the configuration to the specified IP address
      *
      * @param logCollectMeta
      * @param agentIp
@@ -153,16 +153,16 @@ public class MilogAgentServiceImpl implements MilogAgentService {
                 .stream().allMatch(appLogMeta -> CollectionUtils.isEmpty(appLogMeta.getLogPatternList()))) {
             return;
         }
-        // 放在线程池中 执行
+        // Placed in the thread pool for execution
         THREAD_POOL_EXECUTOR.execute(() -> {
             publishConfigService.sengConfigToAgent(agentIp, logCollectMeta);
         });
     }
 
     /**
-     * 发送增量的配置
-     * 1.找到部署这台app的所有物理机ip
-     * 2.这条新增的配置推送给这些物理机或者容器
+     * Send the configuration of the delta
+     * 1.Find all the physical IP addresses where the app is deployed
+     * 2.This new configuration is pushed to these physical machines or containers
      *
      * @param milogAppId
      * @param ips
@@ -198,7 +198,7 @@ public class MilogAgentServiceImpl implements MilogAgentService {
     private void printMangerInfo() {
         List<String> remoteAddress = publishConfigService.getAllAgentList();
         if (COUNT_INCR.getAndIncrement() % 200 == 0) {
-            log.info("连接的agent机器远程地址集合为:{}", gson.toJson(remoteAddress));
+            log.info("The set of remote addresses for the connected agent machine is:{}", gson.toJson(remoteAddress));
         }
     }
 
@@ -209,7 +209,7 @@ public class MilogAgentServiceImpl implements MilogAgentService {
 
     @Override
     public void publishIncrementDel(Long tailId, Long milogAppId, List<String> ips) {
-        log.info("删除配置同步到 logAgent,tailId:{},milogAppId:{},ips:{}", tailId, milogAppId, gson.toJson(ips));
+        log.info("Delete the configuration synchronization to logAgent,tailId:{},milogAppId:{},ips:{}", tailId, milogAppId, gson.toJson(ips));
         AppLogMeta appLogMeta = new AppLogMeta();
         LogPattern logPattern = new LogPattern();
         assemblyAppInfo(milogAppId, appLogMeta);
@@ -255,7 +255,7 @@ public class MilogAgentServiceImpl implements MilogAgentService {
     @Override
     public Result<String> agentOfflineBatch(MilogAgentIpParam agentIpParam) {
         if (null == agentIpParam || CollectionUtils.isEmpty(agentIpParam.getIps())) {
-            return Result.failParam("ip不能为空");
+            return Result.failParam("IP cannot be empty");
         }
         return null;
     }
@@ -266,10 +266,10 @@ public class MilogAgentServiceImpl implements MilogAgentService {
     }
 
     /**
-     * 查询该物理机IP下的全量配置
+     * Query the full configuration of the IP address of the physical machine
      *
      * @param agentId
-     * @param agentIp      物理机IP
+     * @param agentIp      Physical IP
      * @param agentMachine
      * @return
      */
@@ -300,7 +300,7 @@ public class MilogAgentServiceImpl implements MilogAgentService {
     }
 
     /**
-     * 组装增量配置
+     * Assemble incremental configurations
      *
      * @param milogAppId
      * @param logPatternList
@@ -332,7 +332,7 @@ public class MilogAgentServiceImpl implements MilogAgentService {
                 fillMqConfigData(mqConfig, MiddlewareEnum.ROCKETMQ.getName(), middlewareConfig, milogAppMiddlewareRel.getConfig());
             }
         } catch (Exception e) {
-            log.error("组装mq配置信息异常,data:{}", gson.toJson(milogLogtailDo), e);
+            log.error("The assembly MQ configuration information is abnormal,data:{}", gson.toJson(milogLogtailDo), e);
         }
         return mqConfig;
     }
@@ -366,7 +366,7 @@ public class MilogAgentServiceImpl implements MilogAgentService {
                 } catch (Exception e) {
                     log.error("assemble log path data error:", e);
                 }
-                //设置mq配置
+                //Set the MQ configuration
                 MQConfig mqConfig = decorateMQConfig(milogLogtailDo);
                 logPattern.setMQConfig(mqConfig);
                 return logPattern;

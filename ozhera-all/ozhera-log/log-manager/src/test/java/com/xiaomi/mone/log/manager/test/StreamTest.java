@@ -81,20 +81,11 @@ public class StreamTest {
         }.getType());
 
         Double dd = (Double) map.get("code");
-        log.info("返回值：{}", dd.compareTo(1210.0));
-//        if (!Strings.isEmpty(data) &&
-//                Constant.SUCCESS_CODE == (int) gson.fromJson(data, new TypeToken<TreeMap<String, Object>>() {
-//                }.getType()).get("code")
-//                && Strings.equals(Constant.SUCCESS_MESSAGE, (String) gson.fromJson(data, Map.class).get("message"))) {
-//            log.info("【RocketMQ创建topic】:成功", data);
-//            //入库
-//        } else {
-//            log.error("【RocketMQ创建topic】:失败,失败原因：{}", data);
-//        }
+        log.info("return data:{}", dd.compareTo(1210.0));
     }
 
     /**
-     * 测试hutools工具类
+     * Test hutools tool class
      */
     @Test
     public void testHutool() {
@@ -102,9 +93,9 @@ public class StreamTest {
     }
 
     @Test
-    public void testIncrement(){
-        int i=1;
-        i=i++;
+    public void testIncrement() {
+        int i = 1;
+        i = i++;
         System.out.println(i);
 
         System.out.println(Instant.now().toEpochMilli());

@@ -35,7 +35,7 @@ public class MiLogMoneEnv implements Serializable {
     private Long newEnvId;
     private String newEnvName;
     /**
-     * 如果会滚则rollback = 1
+     * If it rolls, rollback = 1
      */
     private Integer rollback;
 }
