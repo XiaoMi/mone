@@ -83,8 +83,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class HeraBootstrapInitService {
 
-    private static final String MONE_NAMESPACE = "hera-namespace";
-
     private Gson gson = new Gson();
 
     @javax.annotation.Resource
@@ -130,7 +128,7 @@ public class HeraBootstrapInitService {
                     .defaultYamlPath("/ozhera_init/redis/ozhera_redis.yaml")
                     .resourceType(ResourceTypeEnum.REDIS.getTypeName())
                     .resourceName("hera-redis")
-                    .remark("local pv, Make sure the disk directory has been created in advance.")
+                    .remark("local redis.")
                     .build();
             redis.setDefaultYaml();
             List<Map<String, String>> redisConnectionMapList = new ArrayList<>();
@@ -179,9 +177,9 @@ public class HeraBootstrapInitService {
                     .resourceName("hera-nacos")
                     .remark("load nacos")
                     .defaultExtendConfigPath(new String[]{
-                            "/ozhera_init/nacos/config/ozhera_app_config_#_DEFAULT_GROUP.properties",
-                            "/ozhera_init/nacos/config/ozhera_log_manager_open_#_DEFAULT_GROUP.properties",
-                            "/ozhera_init/nacos/config/ozhera_trace_config_#_DEFAULT_GROUP.properties",
+                            "/ozhera_init/nacos/config/hera_app_config_#_DEFAULT_GROUP.properties",
+                            "/ozhera_init/nacos/config/hera_log_manager_open_#_DEFAULT_GROUP.properties",
+                            "/ozhera_init/nacos/config/hera_trace_config_#_DEFAULT_GROUP.properties",
                             "/ozhera_init/nacos/config/log_stream_dataId_open_#_DEFAULT_GROUP.properties",
                             "/ozhera_init/nacos/config/mi_tpc_#_DEFAULT_GROUP.properties",
                             "/ozhera_init/nacos/config/mi_tpc_login_#_DEFAULT_GROUP.properties",
