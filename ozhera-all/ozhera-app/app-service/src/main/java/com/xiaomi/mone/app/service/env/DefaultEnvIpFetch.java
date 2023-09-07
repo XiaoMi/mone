@@ -9,6 +9,7 @@ import com.xiaomi.mone.app.common.TpcLabelRes;
 import com.xiaomi.mone.app.common.TpcPageRes;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -80,13 +81,17 @@ public class DefaultEnvIpFetch {
             Response response = okHttpClient.newCall(request).execute();
             if (response.isSuccessful()) {
                 String rstJson = response.body().string();
+                log.debug("getEnvFetchFromRemote result:{}",rstJson);
                 Result<TpcPageRes<TpcLabelRes>> pageResponseResult = gson.fromJson(rstJson, new TypeToken<Result<TpcPageRes<TpcLabelRes>>>() {
                 }.getType());
-                for (TpcLabelRes tpcLabelRes : pageResponseResult.getData().getList()) {
-                    if (Objects.equals(Boolean.TRUE.toString(), tpcLabelRes.getFlagVal())) {
-                        return defaultHttpEnvIpFetch;
+                if (null != pageResponseResult &&
+                        null != pageResponseResult.getData() &&
+                        CollectionUtils.isNotEmpty(pageResponseResult.getData().getList()))
+                    for (TpcLabelRes tpcLabelRes : pageResponseResult.getData().getList()) {
+                        if (Objects.equals(Boolean.TRUE.toString(), tpcLabelRes.getFlagVal())) {
+                            return defaultHttpEnvIpFetch;
+                        }
                     }
-                }
             }
         } catch (Exception e) {
             log.error("getEnvFetchFromRemote error,appId:{}", appId, e);
