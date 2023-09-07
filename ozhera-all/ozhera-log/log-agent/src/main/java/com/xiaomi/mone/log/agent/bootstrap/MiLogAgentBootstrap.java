@@ -40,8 +40,7 @@ public class MiLogAgentBootstrap {
     public static void main(String[] args) throws IOException {
         String nacosAddr = getConfigValue("nacosAddr");
         String serviceName = getConfigValue("serviceName");
-        log.info("nacosAddr:{},serviceName:{}", nacosAddr, serviceName);
-        log.info("hera log agent version:{}", new Version());
+        log.info("nacosAddr:{},serviceName:{},version:{}", nacosAddr, serviceName, new Version());
         String appName = Config.ins().get("app_name", "milog_agent");
         ClientInfo clientInfo = new ClientInfo(
                 String.format("%s_%d", appName, getDataHashKey(NetUtil.getLocalIp(), Integer.parseInt(Config.ins().get("app_max_index", "30")))),
@@ -49,7 +48,7 @@ public class MiLogAgentBootstrap {
                 Integer.parseInt(Config.ins().get("port", "9799")),
                 new Version() + ":" + serviceName + ":" + nacosAddr);
         final RpcClient client = new RpcClient(nacosAddr, serviceName);
-        //Even if there is no service information, the old registration information is used (fault tolerance processing)
+        //Even without service information, use the old registration information (fault tolerance processing).
         client.setClearServerAddr(false);
         client.setReconnection(false);
         client.setClientInfo(clientInfo);
