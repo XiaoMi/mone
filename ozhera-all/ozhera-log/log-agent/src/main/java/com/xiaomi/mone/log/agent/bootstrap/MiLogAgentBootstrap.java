@@ -40,8 +40,7 @@ public class MiLogAgentBootstrap {
     public static void main(String[] args) throws IOException {
         String nacosAddr = getConfigValue("nacosAddr");
         String serviceName = getConfigValue("serviceName");
-        log.info("nacosAddr:{},serviceName:{}", nacosAddr, serviceName);
-        log.info("hera log agent version:{}", new Version());
+        log.info("nacosAddr:{},serviceName:{},version:{}", nacosAddr, serviceName, new Version());
         String appName = Config.ins().get("app_name", "milog_agent");
         ClientInfo clientInfo = new ClientInfo(
                 String.format("%s_%d", appName, getDataHashKey(NetUtil.getLocalIp(), Integer.parseInt(Config.ins().get("app_max_index", "30")))),
@@ -49,7 +48,7 @@ public class MiLogAgentBootstrap {
                 Integer.parseInt(Config.ins().get("port", "9799")),
                 new Version() + ":" + serviceName + ":" + nacosAddr);
         final RpcClient client = new RpcClient(nacosAddr, serviceName);
-        //即使没有服务信息,也使用老的注册信息(容错处理)
+        //Even without service information, use the old registration information (fault tolerance processing).
         client.setClearServerAddr(false);
         client.setReconnection(false);
         client.setClientInfo(clientInfo);
@@ -59,7 +58,7 @@ public class MiLogAgentBootstrap {
         client.waitStarted();
         log.info("create rpc client finish");
         Ioc.ins().putBean(client).init("com.xiaomi.mone.log.agent", "com.xiaomi.youpin.docean");
-        //因为client生命周期提前,这里需要从新注册processor
+        //Because the client lifecycle is advanced, it is necessary to re-register the processor here.
         client.registerProcessor();
         System.in.read();
     }

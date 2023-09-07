@@ -1,6 +1,7 @@
 package com.xiaomi.hera.trace.etl.es.consumer;
 
 import com.alibaba.nacos.api.config.annotation.NacosValue;
+import com.google.common.base.Joiner;
 import com.xiaomi.hera.trace.etl.es.domain.FilterResult;
 import com.xiaomi.hera.trace.etl.es.domain.LocalStorages;
 import com.xiaomi.hera.trace.etl.es.queue.impl.RocksdbStoreServiceImpl;
@@ -16,6 +17,7 @@ import com.xiaomi.hera.tspandata.TSpanData;
 import com.xiaomi.hera.tspandata.TValue;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.apache.thrift.TDeserializer;
 import org.apache.thrift.TSerializer;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,8 @@ import org.springframework.stereotype.Service;
 import javax.annotation.PostConstruct;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 /**
@@ -59,16 +63,19 @@ public class ConsumerService {
 
     private RocksdbStoreServiceImpl firstRocksdbStoreService;
     private RocksdbStoreServiceImpl secondRocksdbStoreService;
-    private StringBuilder firstBatchRocksMessage = new StringBuilder();
-    private StringBuilder secondBatchRocksMessage = new StringBuilder();
 
     /**
-     * Control the number of rocksDB messages stored in each batch 
-	 * to prevent memory overflow caused by too many single key messages
+     * Control the number of rocksDB messages stored in each batch
+     * to prevent memory overflow caused by too many single key messages
      */
-    private int firstCount = 0;
-    private int secondCount = 0;
+    private AtomicInteger firstCount = new AtomicInteger();
+    private AtomicInteger secondCount = new AtomicInteger();
+
+    private CopyOnWriteArrayList<String> firstList = new CopyOnWriteArrayList<>();
+    private CopyOnWriteArrayList<String> secondList = new CopyOnWriteArrayList<>();
+
     private static final int BATCH_ROCKSDB_COUNT = 20;
+
     /**
      * The first lock is isolated from the second lock
      */
@@ -138,7 +145,7 @@ public class ConsumerService {
             String spanName = tSpanData.getName();
             Long duration = tSpanData.getEndEpochNanos() - tSpanData.getStartEpochNanos();
             FilterResult filter = filterService.filterBefore(status, traceId, spanName, heraContext, serviceName, duration, tSpanData);
-            if(filter.isDiscard()){
+            if (filter.isDiscard()) {
                 return;
             }
             if (filter.isResult()) {
@@ -160,57 +167,92 @@ public class ConsumerService {
     private void insertRocks(String traceId, String serviceName, String spanName, TSpanData tSpanData, String order) {
         if (filterIsOpen) {
             if (RocksdbStoreServiceImpl.FIRST_ORDER.equals(order)) {
-                synchronized (FIRST_LOCK) {
-                    internatInset(traceId, serviceName, spanName, tSpanData, order);
-                }
+                internatInset(traceId, serviceName, spanName, tSpanData, order);
             } else if (RocksdbStoreServiceImpl.SECOND_ORDER.equals(order)) {
-                synchronized (SECOND_LOCK) {
-                    internatInset(traceId, serviceName, spanName, tSpanData, order);
-                }
+                internatInset(traceId, serviceName, spanName, tSpanData, order);
             }
         }
     }
 
+    //Use optimistic locking to try to improve performance a bit.
     private void internatInset(String traceId, String serviceName, String spanName, TSpanData tSpanData, String order) {
-        buildRocksDBMessage(traceId, serviceName, spanName, tSpanData, order);
+        String m = buildRocksDBMessage(traceId, serviceName, spanName, tSpanData, order);
+        if (StringUtils.isEmpty(m)) {
+            return;
+        }
         // Check the second level match
         long currSeconds = System.currentTimeMillis() / 1000;
         if (RocksdbStoreServiceImpl.FIRST_ORDER.equals(order)) {
-            if (LocalStorages.firstCurrentSeconds != currSeconds || firstCount >= BATCH_ROCKSDB_COUNT) {
-                String key = firstRocksdbStoreService.getKey(currSeconds, LocalStorages.firstRocksKeySuffix.addAndGet(1));
-                firstRocksdbStoreService.put(key, firstBatchRocksMessage.toString().getBytes(StandardCharsets.UTF_8));
-                firstBatchRocksMessage = new StringBuilder();
-                LocalStorages.firstCurrentSeconds = currSeconds;
-                firstCount = 0;
+            int j = firstCount.getAndUpdate(i -> {
+                if (i >= BATCH_ROCKSDB_COUNT) {
+                    return 0;
+                }
+                return i;
+            });
+
+            MutableObject<String> mo = new MutableObject<>();
+            synchronized (firstList) {
+                firstList.add(m);
+                if (j >= BATCH_ROCKSDB_COUNT) {
+                    String msg = Joiner.on("").join(firstList);
+                    mo.setValue(msg);
+                    firstList.clear();
+                }
             }
+
+            if (j >= BATCH_ROCKSDB_COUNT) {
+                String key = firstRocksdbStoreService.getKey(currSeconds, LocalStorages.firstRocksKeySuffix.addAndGet(1));
+                firstRocksdbStoreService.put(key, mo.getValue().getBytes(StandardCharsets.UTF_8));
+            }
+
         } else if (RocksdbStoreServiceImpl.SECOND_ORDER.equals(order)) {
-            if (LocalStorages.secondCurrentSeconds != currSeconds || secondCount >= BATCH_ROCKSDB_COUNT) {
+            int j = secondCount.getAndUpdate(i -> {
+                if (i >= BATCH_ROCKSDB_COUNT) {
+                    return 0;
+                }
+                return i;
+            });
+
+            MutableObject<String> mo = new MutableObject<>();
+            synchronized (secondList) {
+                secondList.add(m);
+                if (j >= BATCH_ROCKSDB_COUNT) {
+                    String msg = Joiner.on("").join(secondList);
+                    mo.setValue(msg);
+                    secondList.clear();
+                }
+            }
+
+            if (j >= BATCH_ROCKSDB_COUNT) {
                 String key = secondRocksdbStoreService.getKey(currSeconds, LocalStorages.secondRocksKeySuffix.addAndGet(1));
-                secondRocksdbStoreService.put(key, secondBatchRocksMessage.toString().getBytes(StandardCharsets.UTF_8));
-                secondBatchRocksMessage = new StringBuilder();
-                LocalStorages.secondCurrentSeconds = currSeconds;
-                secondCount = 0;
+                secondRocksdbStoreService.put(key, mo.getValue().getBytes(StandardCharsets.UTF_8));
             }
         }
+
     }
 
-    private void buildRocksDBMessage(String traceId, String serviceName, String spanName, TSpanData tSpanData, String order) {
+    private String buildRocksDBMessage(String traceId, String serviceName, String spanName, TSpanData tSpanData, String order) {
         String serialize = serializeToString(tSpanData);
         if (serialize != null) {
             if (RocksdbStoreServiceImpl.FIRST_ORDER.equals(order)) {
-                firstBatchRocksMessage.append(traceId).append(MessageUtil.SPLIT)
+                StringBuilder sb = new StringBuilder();
+                sb.append(traceId).append(MessageUtil.SPLIT)
                         .append(serviceName).append(MessageUtil.SPLIT)
                         .append(spanName).append(MessageUtil.SPLIT)
                         .append(serialize).append(MessageUtil.ROCKS_SPLIT);
-                firstCount++;
+                firstCount.incrementAndGet();
+                return sb.toString();
             } else if (RocksdbStoreServiceImpl.SECOND_ORDER.equals(order)) {
-                secondBatchRocksMessage.append(traceId).append(MessageUtil.SPLIT)
+                StringBuilder sb = new StringBuilder();
+                sb.append(traceId).append(MessageUtil.SPLIT)
                         .append(serviceName).append(MessageUtil.SPLIT)
                         .append(spanName).append(MessageUtil.SPLIT)
                         .append(serialize).append(MessageUtil.ROCKS_SPLIT);
-                secondCount++;
+                secondCount.incrementAndGet();
+                return sb.toString();
             }
         }
+        return "";
     }
 
     private void initFirstRocksTask() {
