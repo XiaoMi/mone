@@ -42,9 +42,6 @@
 ![mone-hera](readme/image/en/hera_en07.jpeg)
 
 
-## Getting started
-    todo...
-
 ## 📃 Document
 
 To learn more or get started quickly [Quick Start](http://mone.xiaomiyoupin.com/#/doc/1)，please refer to the [Mone Official Website](http://mone.xiaomiyoupin.com/#/index)
