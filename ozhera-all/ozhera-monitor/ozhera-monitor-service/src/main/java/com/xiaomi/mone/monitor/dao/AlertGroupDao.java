@@ -171,7 +171,7 @@ public class AlertGroupDao {
         pageData.setPageSize(pageSize);
         try {
             StringBuilder sqlB = new StringBuilder();
-            sqlB.append("select ").append("ag.id,ag.rel_id,ag.name,ag.chat_id,ag.creater,ag.create_time,ag.update_time,ag.type,ag.desc").append(" from ")
+            sqlB.append("select ").append("ag.id,ag.rel_id,ag.name,ag.chat_id,ag.creater,ag.create_time,ag.update_time,ag.type,ag.desc,ag.duty_info").append(" from ")
                     .append("alert_group ag left join alert_group_member agm on ag.id=agm.alert_group_id")
                     .append(" where ag.deleted=0 and agm.deleted=0 ");
             if(!isAdmin){
@@ -210,6 +210,7 @@ public class AlertGroupDao {
                         ag.setCreateTime(rs.getTimestamp("create_time"));
                         ag.setType(rs.getString("type"));
                         ag.setDesc(rs.getString("desc"));
+                        ag.setDutyInfo(rs.getString("duty_info"));
                         list.add(ag);
                         agMap.put(ag.getId(), ag);
                     }
