@@ -15,8 +15,6 @@
  */
 package com.xiaomi.mone.log.manager.service.bind;
 
-import com.xiaomi.mone.log.api.enums.LogTypeEnum;
-
 /**
  * @author wtt
  * @version 1.0

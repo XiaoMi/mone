@@ -29,8 +29,8 @@ import java.util.Objects;
 @Getter
 public enum MachineTypeEnum {
 
-    CONTAINER_MACHINE(0, "Container"),
-    PHYSICAL_MACHINE(1, "Physical Machines");
+    CONTAINER_MACHINE(0, "容器"),
+    PHYSICAL_MACHINE(1, "物理机");
 
     private final Integer type;
     private final String name;
