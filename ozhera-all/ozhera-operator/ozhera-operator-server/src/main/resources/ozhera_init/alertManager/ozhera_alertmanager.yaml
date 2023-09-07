@@ -145,7 +145,7 @@ spec:
             ## The specified location for the AlertManager configuration file in the container (absolute path in the Docker container).
             - "--config.file=/etc/alertmanager/alertmanager.yml"
             ## Specify the AlertManager management interface address to attach the AlertManager alert information page address to the occurred alert messages.
-            - "--web.external-url=http://replace your correct AlertManager ip:30903"
+            - "--web.external-url=http://alertmanager:30903"
             ## The specified listening address and port.
             - '--cluster.advertise-address=0.0.0.0:9093'
             ## Specified data storage location (absolute location in Docker container)

@@ -21,9 +21,9 @@ package run.mone.hera.operator.common;
  */
 public class HoConstant {
 
-    public static final String HERA_NAMESPACE = "hera-namespace";
+    public static final String HERA_NAMESPACE = "ozhera-namespace";
 
-    public static final String HERA_CR_NAME = "hera-bootstrap";
+    public static final String HERA_CR_NAME = "ozhera-bootstrap";
 
     public static final String DEPLOYMENT_NAME_REDIS = "";
 
