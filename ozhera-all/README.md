@@ -23,7 +23,7 @@ OzHera is an Application Observable Platform in the Cloud Native Era. open-sourc
 ## Features
 - Accurate: Extract usability metrics based on business error codes.
 - Fast: Integrated metrics-tracing-logging.
-- Economical: <5% storage cost, meets 99.9% of tracing demands.
+- Economical: <0.1% storage cost, meets 99.9% of tracing demands.
 - Cloud-native Friendly: Adheres to the Opentracing standard, deeply adapts to K8S, and integrates multiple star open-source products like Opentelemetry, Grafana, Prometheus, ES, and more.
 - Enterprise-level observability product.
 
