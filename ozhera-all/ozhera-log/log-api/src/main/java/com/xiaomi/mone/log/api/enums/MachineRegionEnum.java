@@ -29,7 +29,7 @@ import java.util.List;
 @Getter
 public enum MachineRegionEnum {
 
-    CN_MACHINE("cn", "Continental machine", Arrays.asList("c1", "c2", "c3"));
+    CN_MACHINE("cn", "大陆机房", Arrays.asList("c1", "c2", "c3"));
 
     private final String en;
 

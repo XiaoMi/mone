@@ -24,15 +24,16 @@ import org.apache.commons.lang3.StringUtils;
  */
 @Getter
 public enum LogTypeEnum {
-    APP_LOG_MULTI(1, "Multi-line application log",
+    APP_LOG_MULTI(1, "多行应用日志",
             1, 1,
-            "Logs starting in time format can be collected in multiple lines, such as 2022 or [2022], etc., if they do not start with time, multiple lines will be grouped together"),
-    NGINX(2, "nginx log", 3, 1, "Single-line acquisition, which is collected into a column by each line of the file"),
-    OPENTELEMETRY(3, "opentelemetry log", 4, 0, "Multi-line acquisition, collected into a fixed topic"),
-    DOCKER(4, "docker log", 5, 1, ""),
-    APP_LOG_SIGNAL(8, "Single-line application log", 2, 1, "Single-line acquisition, which is collected into a column by each line of the file"),
-    ORIGIN_LOG(9, "Raw format log", 6, 1, "Raw data is written to a fixed topic, and HERA is not consumed"),
-    FREE(0, "Custom log", 7, 1, "Single-line acquisition, which is collected into a column by each line of the file");
+            "时间格式开始的日志可以多行采集，例如2022或者[2022]等，如果不是以时间开始,则会多行糅合在一起"),
+    NGINX(2, "nginx日志", 3, 1, "单行采集，按文件的每一行采集成一列"),
+    OPENTELEMETRY(3, "opentelemetry日志", 4, 0, "多行采集，采集到固定的topic中"),
+    DOCKER(4, "docker日志", 5, 1, ""),
+    APP_LOG_SIGNAL(8, "单行应用日志", 2, 1, "单行采集，按文件的每一行采集成一列"),
+    ORIGIN_LOG(9, "原始格式日志", 6, 1, "向固定的topic中写入原始数据,hera不消费"),
+    FREE(0, "自定义日志", 7, 1, "单行采集，按文件的每一行采集成一列");
+
 
     private final Integer type;
     private final String typeName;
