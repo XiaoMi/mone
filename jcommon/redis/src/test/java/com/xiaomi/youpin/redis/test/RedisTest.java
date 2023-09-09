@@ -47,7 +47,7 @@ public class RedisTest {
         redis.setRedisHosts("127.0.0.1:6379");
         redis.init();
         //单位毫秒
-        String v = redis.set("name11", "zzy", 15000);
+        String v = redis.setV2("name11", "zzy", 15000);
         System.out.println(v);
     }
 
@@ -115,10 +115,10 @@ public class RedisTest {
     public void testMonitor() throws Exception {
 //        HTTPServer server = new HTTPServer(4857);
         RedisMonitor redisMonitor = new RedisMonitor();
-        redisMonitor.recordMonitorInfo(false,null,true,false,"INIT",MetricTypes.Gauge,"init",null,true);
+        redisMonitor.recordMonitorInfo(false,true,false,"INIT",MetricTypes.Gauge,"init",null,true);
         while(true){
-            redisMonitor.recordMonitorInfo(false,null,true,false,"TestMonitor", MetricTypes.Counter,"get","testKeys",true);
-            redisMonitor.recordMonitorInfo(false,null,true,false,"TestMonitor",MetricTypes.Counter,"get","testKeys",false);
+            redisMonitor.recordMonitorInfo(false,true,false,"TestMonitor", MetricTypes.Counter,"get","testKeys",true);
+            redisMonitor.recordMonitorInfo(false,true,false,"TestMonitor",MetricTypes.Counter,"get","testKeys",false);
             Thread.sleep(2000l);
 
         }
