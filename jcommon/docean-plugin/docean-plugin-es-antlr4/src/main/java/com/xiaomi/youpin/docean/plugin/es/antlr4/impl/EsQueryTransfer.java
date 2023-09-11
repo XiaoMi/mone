@@ -534,7 +534,7 @@ public class EsQueryTransfer implements EsQueryListener {
     @Override
     public void exitIdentifierValue(EsQueryParser.IdentifierValueContext ctx) {
         if (ctx.getParent() instanceof EsQueryParser.EqExprContext) {
-            //属于等于下的值
+            //Belongs to the value that is equal to the following
             valueProperty.put(ctx, new ValueContext(ValueTypeEnum.EQUAL, ctx.getChild(0).getText()));
         } else if (ctx.getParent() instanceof EsQueryParser.NeExprContext) {
             valueProperty.put(ctx, new ValueContext(ValueTypeEnum.IDENTIFY, ctx.getChild(0).getText()));
