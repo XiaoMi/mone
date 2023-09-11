@@ -55,7 +55,7 @@ public class EsService {
     }
 
     /**
-     * 批量保存 可能会丢失数据，建议使用bulkProcessor
+     * Bulk saving may result in data loss, bulkProcessor is recommended
      *
      * @param index
      * @param dataList

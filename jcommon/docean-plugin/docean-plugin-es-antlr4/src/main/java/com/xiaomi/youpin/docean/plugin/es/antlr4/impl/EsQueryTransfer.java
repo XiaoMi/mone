@@ -356,7 +356,6 @@ public class EsQueryTransfer implements EsQueryListener {
     @Override
     public void exitArray(EsQueryParser.ArrayContext ctx) {
         List<ParseTree> children = ctx.children;
-        //ArrayList<Object> arr = new ArrayList<>();
         List<Object> list = children.stream().filter(x -> x.getChildCount() >= 1).map(x -> valueProperty.get(x).getValue()).collect(Collectors.toList());
         valueProperty.put(ctx, new ValueContext(ValueTypeEnum.ARRAY, list));
     }
