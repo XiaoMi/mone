@@ -46,6 +46,9 @@ public class AlertGroup {
     @Column
     private Integer deleted;
 
+    @Column(value = "duty_info")
+    private String dutyInfo;
+
     @Many(target = AlertGroupMember.class, field = "alertGroupId")
     private List<AlertGroupMember> members;
 

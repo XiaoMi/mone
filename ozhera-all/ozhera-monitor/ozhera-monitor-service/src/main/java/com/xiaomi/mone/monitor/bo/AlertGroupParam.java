@@ -1,5 +1,6 @@
 package com.xiaomi.mone.monitor.bo;
 
+import com.xiaomi.mone.monitor.service.model.alarm.duty.DutyInfo;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
@@ -21,7 +22,9 @@ public class AlertGroupParam {
     private String chatId;
     private List<Long> memberIds;
     private String type;
-
+    private DutyInfo dutyInfo;
+    private Long start;
+    private Long end;
     public void pageQryInit() {
         if (page == null || page <= 0) {
             page = 1;
