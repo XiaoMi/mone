@@ -210,7 +210,7 @@ public class EsQueryTransfer implements EsQueryListener {
         ValueContext value = valueProperty.get(ctx.getChild(2));
         BoolQueryBuilder boolQueryBuilder = QueryBuilders.boolQuery();
         if (null == value) {
-            //不区分field
+            //Field-indiscriminate
             boolQueryBuilder.filter(QueryBuilders.queryStringQuery(param));
         } else {
             switch (value.getType()) {
