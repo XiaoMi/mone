@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
  * @date 2023/8/3 17:25
  */
 public class EsQueryTransfer implements EsQueryListener {
-    //波浪线
+    //Wavy lines
     private static final String WAVY_LINE_MARK = "~";
 
     private static final String DOUBLE_QUOTATION_MARK = "\"";
