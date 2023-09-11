@@ -1,5 +1,6 @@
 package com.xiaomi.mone.monitor.controller;
 
+import com.google.gson.Gson;
 import com.xiaomi.mone.monitor.aop.HeraRequestMapping;
 import com.xiaomi.mone.monitor.bo.AlertGroupInfo;
 import com.xiaomi.mone.monitor.bo.AlertGroupParam;
@@ -101,8 +102,12 @@ public class AlertGroupController {
             }
             String user = userInfo.genFullAccount();
             user = userconfigService.getAssignUser(user);
-            log.info("AlertGroupController.alertGroupSearch param : {} ,user : {}", param, user);
-            return alertGroupService.alertGroupSearch(user, param);
+
+            Result<PageData<List<AlertGroupInfo>>> pageDataResult = alertGroupService.alertGroupSearch(user, param);
+            log.info("AlertGroupController.alertGroupSearch param : {} ,user : {} , result : {}", param, user, new Gson().toJson(pageDataResult));
+
+            return pageDataResult;
+
         } catch (Exception e) {
             log.error("AlertGroupController.alertGroupSearch异常 param : {} ,userInfo :{}", param, userInfo, e);
             return Result.fail(ErrorCode.unknownError);
