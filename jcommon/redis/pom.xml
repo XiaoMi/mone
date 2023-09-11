@@ -10,20 +10,14 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>redis</artifactId>
-    <version>1.8-SNAPSHOT</version>
+    <version>2.0-SNAPSHOT</version>
 
     <dependencies>
 
         <dependency>
             <groupId>redis.clients</groupId>
             <artifactId>jedis</artifactId>
-            <version>2.9.0</version>
-        </dependency>
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>catPlugin</artifactId>
-            <version>1.4-SNAPSHOT</version>
+            <version>3.5.2</version>
         </dependency>
 
         <dependency>
@@ -35,7 +29,7 @@
         <dependency>
             <groupId>com.alibaba</groupId>
             <artifactId>fastjson</artifactId>
-            <version>1.2.70</version>
+            <version>2.0.40</version>
         </dependency>
 
         <dependency>
