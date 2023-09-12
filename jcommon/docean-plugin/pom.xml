@@ -10,8 +10,16 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>docean-plugin</artifactId>
-    <version>1.4-SNAPSHOT</version>
+    <version>1.4.0</version>
     <packaging>pom</packaging>
+
+    <properties>
+        <docean.version>1.4.0</docean.version>
+        <docean-plugin.common.version>1.4.0</docean-plugin.common.version>
+        <docean-plugin-mybatis.version>1.4.7</docean-plugin-mybatis.version>
+        <docean-plugin-rocketmq.version>1.4.1</docean-plugin-rocketmq.version>
+    </properties>
+
     <modules>
         <module>docean-plugin-aop</module>
         <module>docean-plugin-db</module>
@@ -52,16 +60,206 @@
     </modules>
 
     <dependencies>
-
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>docean</artifactId>
-            <version>1.4-SNAPSHOT</version>
+            <version>1.4.0</version>
         </dependency>
-
-
-
     </dependencies>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-akka</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-aop</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-api</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-cat</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-classloader</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-config</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-configuration</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-datasource</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-datasource-serverless</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-db</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-dmesh</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-dubbo</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-dubbo-serverless</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-es</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-es-antlr4</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-etcd</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-grpc</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-http</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-http-server</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-influxdb</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-json</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-k8s</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-log</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-mesh-dubbo</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-mongodb</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-mvc</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-mybatis</artifactId>
+                <version>${docean-plugin-mybatis.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-mybatis-plus</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-nacos</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-redis</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-rocketmq</artifactId>
+                <version>${docean-plugin-rocketmq.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-rpc</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-sentinel</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-shardingSphere</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-spring</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>run.mone</groupId>
+                <artifactId>docean-plugin-sql</artifactId>
+                <version>${docean-plugin.common.version}</version>
+            </dependency>
+
+        </dependencies>
+    </dependencyManagement>
 
 
 </project>
