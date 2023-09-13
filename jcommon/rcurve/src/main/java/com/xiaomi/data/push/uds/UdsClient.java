@@ -54,17 +54,7 @@ public class UdsClient implements IClient<UdsCommand> {
 
     private static UdsWheelTimer wheelTimer = new UdsWheelTimer();
 
-    private ExecutorService pool = new ThreadPoolExecutor(200, 200, 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(100),
-            new ThreadFactory() {
-                private final AtomicInteger id = new AtomicInteger(0);
-
-                public Thread newThread(Runnable r) {
-                    String threadName = "udsClient" + this.id.getAndIncrement();
-                    Thread thread = new Thread(r, threadName);
-                    thread.setDaemon(true);
-                    return thread;
-                }
-            });
+    private ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor();
 
     @Getter
     private volatile Channel channel;
