@@ -8,6 +8,8 @@ import com.xiaomi.data.push.client.MoneHttpClient;
 import com.xiaomi.data.push.client.bo.HttpResult;
 import lombok.SneakyThrows;
 import okhttp3.Call;
+import okhttp3.Protocol;
+import org.jetbrains.annotations.NotNull;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -34,7 +36,7 @@ public class MoneHttpClientTest {
         MoneHttpClient client = new MoneHttpClient(10000, 5);
         IntStream.range(0, 10000).parallel().forEach(i -> {
 //            String res = client.get(url + "/" + i, ImmutableMap.of("connection","close"), 200000);
-            Call call = client.getCall("a:" + i % 5, "get", url + "/" + i, ImmutableMap.of(), null, 10000);
+            Call call = client.getCall("a:" + i % 5, "get", url + "/" + i, ImmutableMap.of(), null, 10000,null);
             new Thread(() -> {
                 try {
                     System.out.println("cancel");
@@ -67,5 +69,11 @@ public class MoneHttpClientTest {
             System.out.println(new String(res.getData()));
         });
         System.out.println(sw.elapsed(TimeUnit.MILLISECONDS));
+    }
+
+    @Test
+    public void testValueOf() {
+        @NotNull Protocol p = Protocol.valueOf("H2_PRIOR_KNOWLEDGE");
+        System.out.println(p);
     }
 }
