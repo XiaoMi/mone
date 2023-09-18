@@ -190,8 +190,8 @@ public class feishuCartTest {
             try {
                 String content = FreeMarkerUtil.getContent("/feishu", "feishuInterfalCart.ftl", map);
                 System.out.println(content);
-                FeiShu feiShu = new FeiShu("cli_9ef18a2d8c74500e", "58eASBLGw9IqBFyds5m93m4GmTDYBMMt");
-                feiShu.sendCardByEmail("zhangxiaowei6@xiaomi.com", content);
+                FeiShu feiShu = new FeiShu("x", "x");
+                feiShu.sendCardByEmail("xx@x.com", content);
             } catch (Exception e) {
 
             }
