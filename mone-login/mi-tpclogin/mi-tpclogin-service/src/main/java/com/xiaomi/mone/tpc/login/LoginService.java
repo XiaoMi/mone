@@ -64,10 +64,11 @@ public class LoginService {
         if (mgr == null) {
             return ResponseCode.OPER_ILLEGAL.build();
         }
-        AuthUserVo authUserVo = mgr.getUserVo(code, pageUrl, vcode, state);
-        if (authUserVo == null) {
-            return ResponseCode.NO_OPER_PERMISSION.build();
+        ResultVo<AuthUserVo> authUserVoRst = mgr.getUserVo(code, pageUrl, vcode, state);
+        if (!authUserVoRst.success()) {
+            return authUserVoRst;
         }
+        AuthUserVo authUserVo = authUserVoRst.getData();
         authUserVo.setState(state);
         Key key = null;
         if (StringUtils.isNotBlank(vcode)) {
@@ -82,7 +83,7 @@ public class LoginService {
         if (!cache.get().set(key, authUserVo)) {
             return ResponseCode.UNKNOWN_ERROR.build();
         }
-        return ResponseCode.SUCCESS.build(authUserVo);
+        return authUserVoRst;
     }
 
     public ResultVo logout(AuthTokenVo authToken) {
@@ -213,15 +214,15 @@ public class LoginService {
             return ResponseCode.USER_DISABLED.build();
         }
         AuthUserVo authUserVo = new AuthUserVo();
+        authUserVo.setExprTime((int)(ModuleEnum.LOGIN.getUnit().toSeconds(ModuleEnum.LOGIN.getTime())));
+        authUserVo.setAccount(entity.getAccount());
+        authUserVo.setUserType(accountTypeEnum.getUserType());
+        authUserVo.setToken(TokenUtil.createToken(authUserVo.getExprTime(), authUserVo.getAccount(), authUserVo.getUserType()));
         if (AccountTypeEnum.EMAIL.equals(accountTypeEnum)) {
             authUserVo.setEmail(param.getAccount());
         }
         authUserVo.setState(param.getState());
-        authUserVo.setAccount(entity.getAccount());
-        authUserVo.setUserType(accountTypeEnum.getUserType());
-        authUserVo.setExprTime((int)(ModuleEnum.LOGIN.getUnit().toSeconds(ModuleEnum.LOGIN.getTime())));
         authUserVo.setName(entity.getName());
-        authUserVo.setToken(TokenUtil.createToken(authUserVo.getExprTime(), authUserVo.getAccount(), authUserVo.getUserType()));
         Key key = null;
         //auth2 模式登陆，code缓存
         if (StringUtils.isNotBlank(param.getVcode())) {

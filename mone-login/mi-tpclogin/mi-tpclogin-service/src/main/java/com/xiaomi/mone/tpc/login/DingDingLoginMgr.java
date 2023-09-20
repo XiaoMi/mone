@@ -21,25 +21,35 @@ import java.util.Map;
 
 @Slf4j
 @Component
-public class GitlabLoginMgr extends LoginMgr {
+public class DingDingLoginMgr extends LoginMgr {
 
-    @NacosValue("${gitlab.client_id:}")
+    @NacosValue("${dingding.client_id:}")
     private String clientId;
-    @NacosValue("${gitlab.client_secret:''}")
+    @NacosValue("${dingding.client_secret:''}")
     private String clientSecret;
+
+    @NacosValue("${dingding.oauth.auth.url:''}")
+    private String oauthAuthUrl;
+
+    @NacosValue("${dingding.oauth.token.url:''}")
+    private String oauthTokenUrl;
+
+    @NacosValue("${dingding.oauth.user.url:''}")
+    private String oauthUserUrl;
 
     @Autowired
     private RestTemplate restTemplate;
 
     /**
      * 构建Auth2LoginInfo
+     *
      * @return
      */
     @Override
     public AuthAccountVo buildAuth2LoginInfo(String pageUrl, String vcode, String state) throws Exception {
         AuthAccountVo info = new AuthAccountVo();
-        info.setName("gitlab");
-        info.setDesc("gitlab账号授权登陆");
+        info.setName("feishu");
+        info.setDesc("feishu账号授权登陆");
         info.setUrl(this.buildAuthUrl(clientId, pageUrl, vcode, state));
         return info;
     }
@@ -62,52 +72,59 @@ public class GitlabLoginMgr extends LoginMgr {
             headers.add("Authorization", "Bearer " + responseMap.get("access_token"));
             HttpEntity<Map> entity = new HttpEntity<>(headers);
             ResponseEntity<Map> responseEntity = restTemplate.exchange(getUserUrl(), HttpMethod.GET, entity, Map.class);
-            log.info("userInfo.gatlab={}", responseEntity);
-            if (responseEntity.getBody() == null || !responseEntity.getBody().containsKey("email")) {
-                return ResponseCode.NO_OPER_PERMISSION.build("用户信息[email]获取失败，请设置并授权");
+            log.info("userInfo.feishu={}", responseEntity);
+            if (responseEntity.getBody() == null || !responseEntity.getBody().containsKey("union_id")) {
+                log.error("dingding没有拿到open_id字段， responseEntity={}", responseEntity);
+                return ResponseCode.NO_OPER_PERMISSION.build("用户信息[open_id]获取失败，请授权");
             }
             AuthUserVo userVo = new AuthUserVo();
-            userVo.setExprTime(Integer.parseInt(responseMap.get("expires_in").toString()));
-            userVo.setUserType(UserTypeEnum.GITLAB_TYPE.getCode());
-            userVo.setAccount(responseEntity.getBody().get("email").toString());
+            userVo.setExprTime(Integer.parseInt(responseMap.get("expireIn").toString()));
+            userVo.setUserType(UserTypeEnum.FEISHU_TYPE.getCode());
+            userVo.setAccount(responseEntity.getBody().get("union_id").toString());
             userVo.setToken(TokenUtil.createToken(userVo.getExprTime(), userVo.getAccount(), userVo.getUserType()));
-            if (responseEntity.getBody().containsKey("username")) {
-                userVo.setUserId(responseEntity.getBody().get("username").toString());
+            if (responseEntity.getBody().containsKey("union_id")) {
+                userVo.setUnionId(responseEntity.getBody().get("union_id").toString());
+            }
+            if (responseEntity.getBody().containsKey("open_id")) {
+                userVo.setOpenId(responseEntity.getBody().get("open_id").toString());
+            }
+            if (responseEntity.getBody().containsKey("nick")) {
+                userVo.setName(responseEntity.getBody().get("nick").toString());
+            }
+            if (responseEntity.getBody().containsKey("avatarUrl")) {
+                userVo.setAvatarUrl(responseEntity.getBody().get("avatarUrl").toString());
             }
             if (responseEntity.getBody().containsKey("email")) {
                 userVo.setEmail(responseEntity.getBody().get("email").toString());
             }
-            if (responseEntity.getBody().containsKey("avatar_url")) {
-                userVo.setAvatarUrl(responseEntity.getBody().get("avatar_url").toString());
-            }
-            if (responseEntity.getBody().containsKey("name")) {
-                userVo.setName(responseEntity.getBody().get("name").toString());
+            if (responseEntity.getBody().containsKey("mobile")) {
+                userVo.setMobile(responseEntity.getBody().get("mobile").toString());
             }
             return ResponseCode.SUCCESS.build(userVo);
         } catch (Throwable e) {
             log.error("gitlab_oauth2_failed", e);
-            return null;
+            return ResponseCode.UNKNOWN_ERROR.build("用户信息获取异常，请稍后重试");
         }
     }
 
     @Override
     public String getSource() {
-        return "gitlab";
+        return "feishu";
     }
 
     @Override
     public String getAuthUrl() {
-        return "https://gitlab.com/oauth/authorize?response_type=code&scope=api read_user";
+        return oauthAuthUrl + "?response_type=code&scope=openid&state=tpclogin&prompt=consent";
     }
 
     @Override
     public String getTokenUrl() {
-        return "https://gitlab.com/oauth/token";
+        return oauthTokenUrl;
     }
 
     @Override
     public String getUserUrl() {
-        return "https://gitlab.com/api/v4/user";
+        return oauthUserUrl;
     }
 
 }

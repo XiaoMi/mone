@@ -2,6 +2,8 @@ package com.xiaomi.mone.tpc.login;
 
 import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.xiaomi.mone.tpc.login.common.vo.AuthAccountVo;
+import com.xiaomi.mone.tpc.login.common.vo.ResponseCode;
+import com.xiaomi.mone.tpc.login.common.vo.ResultVo;
 import com.xiaomi.mone.tpc.login.enums.UserTypeEnum;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 import com.xiaomi.mone.tpc.util.TokenUtil;
@@ -40,6 +42,7 @@ public class FeiShuLoginMgr extends LoginMgr {
 
     /**
      * 构建Auth2LoginInfo
+     *
      * @return
      */
     @Override
@@ -52,7 +55,7 @@ public class FeiShuLoginMgr extends LoginMgr {
     }
 
     @Override
-    public AuthUserVo getUserVo(String code, String pageUrl, String vcode, String state) {
+    public ResultVo<AuthUserVo> getUserVo(String code, String pageUrl, String vcode, String state) {
         try {
             Map<String, String> map = new HashMap<>();
             map.put("grant_type", "authorization_code");
@@ -63,34 +66,56 @@ public class FeiShuLoginMgr extends LoginMgr {
             Map responseMap = restTemplate.postForObject(getTokenUrl(), map, Map.class);
             log.info("oauth2 code to token request={}, response={}", map, responseMap);
             if (responseMap == null || !responseMap.containsKey("access_token")) {
-                return null;
+                return ResponseCode.OUTER_CALL_FAILED.build("access_token获取失败");
             }
             HttpHeaders headers = new HttpHeaders();
             headers.add("Authorization", "Bearer " + responseMap.get("access_token"));
             HttpEntity<Map> entity = new HttpEntity<>(headers);
             ResponseEntity<Map> responseEntity = restTemplate.exchange(getUserUrl(), HttpMethod.GET, entity, Map.class);
             log.info("userInfo.feishu={}", responseEntity);
-            if (responseEntity.getBody().get("email") == null) {
-                log.error("feishu没有拿到email字段， responseEntity={}", responseEntity);
-                return null;
+            if (responseEntity.getBody() == null || !responseEntity.getBody().containsKey("user_id")) {
+                log.error("feishu没有拿到user_id字段， responseEntity={}", responseEntity);
+                return ResponseCode.NO_OPER_PERMISSION.build("用户信息[user_id]获取失败，请授权");
             }
-            String account = responseEntity.getBody().get("email").toString();
             AuthUserVo userVo = new AuthUserVo();
-            userVo.setEmail(account);
             userVo.setExprTime(3600 * 48);
             userVo.setUserType(UserTypeEnum.FEISHU_TYPE.getCode());
-            userVo.setAccount(account);
+            userVo.setAccount(responseEntity.getBody().get("user_id").toString());
             userVo.setToken(TokenUtil.createToken(userVo.getExprTime(), userVo.getAccount(), userVo.getUserType()));
-            if (responseEntity.getBody().get("avatar_url") != null) {
-                userVo.setAvatarUrl(responseEntity.getBody().get("avatar_url").toString());
+            if (responseEntity.getBody().containsKey("tenant_key")) {
+                userVo.setTenantKey(responseEntity.getBody().get("tenant_key").toString());
             }
-            if (responseEntity.getBody().get("name") != null) {
+            if (responseEntity.getBody().containsKey("union_id")) {
+                userVo.setUnionId(responseEntity.getBody().get("union_id").toString());
+            }
+            if (responseEntity.getBody().containsKey("open_id")) {
+                userVo.setOpenId(responseEntity.getBody().get("open_id").toString());
+            }
+            if (responseEntity.getBody().containsKey("user_id")) {
+                userVo.setUserId(responseEntity.getBody().get("user_id").toString());
+            }
+            if (responseEntity.getBody().containsKey("name")) {
                 userVo.setName(responseEntity.getBody().get("name").toString());
             }
-            return userVo;
+            if (responseEntity.getBody().containsKey("en_name")) {
+                userVo.setEnName(responseEntity.getBody().get("en_name").toString());
+            }
+            if (responseEntity.getBody().containsKey("picture")) {
+                userVo.setAvatarUrl(responseEntity.getBody().get("picture").toString());
+            }
+            if (responseEntity.getBody().containsKey("email")) {
+                userVo.setEmail(responseEntity.getBody().get("email").toString());
+            }
+            if (responseEntity.getBody().containsKey("employee_no")) {
+                userVo.setEmployeeNo(responseEntity.getBody().get("employee_no").toString());
+            }
+            if (responseEntity.getBody().containsKey("mobile")) {
+                userVo.setMobile(responseEntity.getBody().get("mobile").toString());
+            }
+            return ResponseCode.SUCCESS.build(userVo);
         } catch (Throwable e) {
             log.error("gitlab_oauth2_failed", e);
-            return null;
+            return ResponseCode.UNKNOWN_ERROR.build("用户信息获取异常，请稍后重试");
         }
     }
 
@@ -114,8 +139,4 @@ public class FeiShuLoginMgr extends LoginMgr {
         return oauthUserUrl;
     }
 
-    @Override
-    public String getEmailUrl() {
-        return null;
-    }
 }

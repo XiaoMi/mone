@@ -34,7 +34,7 @@ public class LoginController {
 
     @RequestMapping(value = "/enum/list")
     public ResultVo<Map<String, List<EnumData>>> enumList(@RequestBody NullParam param) {
-        Map<String,List<EnumData>> map = EnumUtil.getMapList();
+        Map<String, List<EnumData>> map = EnumUtil.getMapList();
         return ResponseCode.SUCCESS.build(map);
     }
 
@@ -56,6 +56,7 @@ public class LoginController {
             } else {
                 Auth2Util.setCookieUrl(resultVo.getData(), pageUrl);
             }
+            resultVo.setData(resultVo.getData().buildRst());
         }
         return resultVo;
     }
@@ -96,6 +97,7 @@ public class LoginController {
             } else {
                 Auth2Util.setCookieUrl(resultVo.getData(), param.getPageUrl());
             }
+            resultVo.setData(resultVo.getData().buildRst());
         }
         return resultVo;
     }
@@ -113,6 +115,7 @@ public class LoginController {
 
     /**
      * C端调用拦截
+     *
      * @param authToken
      * @param fullInfo
      * @return

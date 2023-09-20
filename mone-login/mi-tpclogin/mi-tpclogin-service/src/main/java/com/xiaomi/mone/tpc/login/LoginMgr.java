@@ -2,6 +2,7 @@ package com.xiaomi.mone.tpc.login;
 
 import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.xiaomi.mone.tpc.login.common.vo.AuthAccountVo;
+import com.xiaomi.mone.tpc.login.common.vo.ResultVo;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -26,7 +27,7 @@ public abstract class LoginMgr {
 
     public abstract AuthAccountVo buildAuth2LoginInfo(String pageUrl, String vcode, String state) throws Exception;
 
-    public abstract AuthUserVo getUserVo(String code, String pageUrl, String vcode, String state);
+    public abstract ResultVo<AuthUserVo> getUserVo(String code, String pageUrl, String vcode, String state);
 
     public String buildAuthUrl(String clientId, String pageUrl, String vcode, String state) throws Exception {
         if (StringUtils.isBlank(clientId)) {
@@ -79,6 +80,5 @@ public abstract class LoginMgr {
     public abstract String getAuthUrl();
     public abstract String getTokenUrl();
     public abstract String getUserUrl();
-    public abstract String getEmailUrl();
 
 }
