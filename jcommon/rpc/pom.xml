@@ -1,70 +1,61 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>jcommon</artifactId>
-        <groupId>run.mone</groupId>
-        <version>1.4-SNAPSHOT</version>
-    </parent>
-    <modelVersion>4.0.0</modelVersion>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>run.mone</groupId>
+    <artifactId>jcommon</artifactId>
+    <version>1.4-jdk20-SNAPSHOT</version>
+  </parent>
+  <artifactId>rpc</artifactId>
+  <version>1.7-jdk20-SNAPSHOT</version>
+  <dependencies>
+    <dependency>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
+      <version>1.3.2</version>
+    </dependency>
 
-    <artifactId>rpc</artifactId>
-    <version>1.7-SNAPSHOT</version>
-
-
-    <dependencies>
-
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.1.2</version>
-        </dependency>
-
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-            <version>1.1.2</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-all</artifactId>
-            <version>4.1.48.Final</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.28</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>nacos</artifactId>
-            <version>1.4-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.msgpack</groupId>
-            <artifactId>jackson-dataformat-msgpack</artifactId>
-            <version>0.8.21</version>
-        </dependency>
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>easy</artifactId>
-            <version>1.4-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>rpc-codes</artifactId>
-            <version>1.4-SNAPSHOT</version>
-        </dependency>
-
-    </dependencies>
-
-
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.1.2</version>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-core</artifactId>
+      <version>1.1.2</version>
+    </dependency>
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-all</artifactId>
+      <version>4.1.48.Final</version>
+    </dependency>
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>1.18.28</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>run.mone</groupId>
+      <artifactId>nacos</artifactId>
+      <version>1.4-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.msgpack</groupId>
+      <artifactId>jackson-dataformat-msgpack</artifactId>
+      <version>0.8.21</version>
+    </dependency>
+    <dependency>
+      <groupId>run.mone</groupId>
+      <artifactId>easy</artifactId>
+      <version>1.4-jdk20-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>run.mone</groupId>
+      <artifactId>rpc-codes</artifactId>
+      <version>1.4-jdk20-SNAPSHOT</version>
+    </dependency>
+  </dependencies>
 </project>
