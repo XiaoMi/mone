@@ -1,59 +1,57 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>docean-plugin</artifactId>
-        <groupId>run.mone</groupId>
-        <version>1.4-SNAPSHOT</version>
-    </parent>
-    <modelVersion>4.0.0</modelVersion>
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>run.mone</groupId>
+    <artifactId>docean-plugin</artifactId>
+    <version>1.4-jdk20-SNAPSHOT</version>
+  </parent>
+  <artifactId>docean-plugin-dmesh</artifactId>
+  <dependencies>
+    <dependency>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
+      <version>1.3.2</version>
+    </dependency>
 
-    <artifactId>docean-plugin-dmesh</artifactId>
+    <dependency>
+      <groupId>javax.annotation</groupId>
+      <artifactId>javax.annotation-api</artifactId>
+      <version>1.3.2</version>
+    </dependency>
 
-
-    <dependencies>
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>docean</artifactId>
-            <version>1.4-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>docean-plugin-api</artifactId>
-            <version>1.4-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>docean-plugin-config</artifactId>
-            <version>1.4-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>rcurve</artifactId>
-            <version>1.4-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>docean-plugin-mybatis</artifactId>
-            <version>1.4-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>docean-plugin-db</artifactId>
-            <version>1.4-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-
-    </dependencies>
-
-
+    <dependency>
+      <groupId>run.mone</groupId>
+      <artifactId>docean</artifactId>
+      <version>1.4-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>run.mone</groupId>
+      <artifactId>docean-plugin-api</artifactId>
+      <version>1.4-jdk20-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>run.mone</groupId>
+      <artifactId>docean-plugin-config</artifactId>
+      <version>1.4-jdk20-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>run.mone</groupId>
+      <artifactId>rcurve</artifactId>
+      <version>1.4-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>run.mone</groupId>
+      <artifactId>docean-plugin-mybatis</artifactId>
+      <version>1.4-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>run.mone</groupId>
+      <artifactId>docean-plugin-db</artifactId>
+      <version>1.4-jdk20-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
 </project>
