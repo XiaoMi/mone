@@ -6,7 +6,6 @@ import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.xml.bind.DatatypeConverter;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -18,10 +17,10 @@ import java.util.concurrent.TimeUnit;
  * @author goodjava@qq.com
  */
 @Slf4j
-public class LogFile {
+public class LogFile implements ILogFile{
 
     @Getter
-    private final String file;
+    private  String file;
 
     private MoneRandomAccessFile raf;
 
@@ -50,6 +49,10 @@ public class LogFile {
     private String md5;
 
     private static final int LINE_MAX_LENGTH = 50000;
+
+    public LogFile() {
+
+    }
 
     public LogFile(String file, ReadListener listener) {
         this.file = file;
@@ -157,6 +160,15 @@ public class LogFile {
         }
     }
 
+    @Override
+    public void initLogFile(String file, ReadListener listener, long pointer, long lineNumber) {
+        this.file = file;
+        this.md5 = md5(file);
+        this.listener = listener;
+        this.pointer = pointer;
+        this.lineNumber = lineNumber;
+    }
+
     private String lineCutOff(String line) {
         if (null != line) {
             //todo 大行文件先临时截断
@@ -225,8 +237,11 @@ public class LogFile {
         MessageDigest md = MessageDigest.getInstance("MD5");
         md.update(msg.getBytes());
         byte[] digest = md.digest();
-        return DatatypeConverter
-                .printHexBinary(digest).toUpperCase();
+        StringBuilder sb = new StringBuilder(2 * digest.length);
+        for(byte b : digest) {
+            sb.append(String.format("%02x", b & 0xff));
+        }
+        return sb.toString().toUpperCase();
     }
 
 
