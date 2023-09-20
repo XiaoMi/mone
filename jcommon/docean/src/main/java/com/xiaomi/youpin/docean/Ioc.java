@@ -72,10 +72,10 @@ public class Ioc {
     /**
      * It needs to be used when interacting with containers like spring
      */
-    private Function<String, Object> contextFunction = new Function<String, Object>() {
+    private Function<String, Object> contextFunction = new Function<>() {
         @Override
         public @Nullable Object apply(@Nullable String s) {
-            return new Object();
+            return null;
         }
     };
 
@@ -312,6 +312,12 @@ public class Ioc {
             o.getDependenceFieldMap().put(bean.getName(), field);
             ReflectUtils.setField(bean.getObj(), field, o.getObj());
         });
+
+        //If there is a parent container, try to retrieve it from the parent container (such as Spring).
+        if (!Optional.ofNullable(b).isPresent()) {
+            Object obj = Safe.callAndLog(()-> this.contextFunction.apply(name),null);
+            Optional.ofNullable(obj).ifPresent(o -> ReflectUtils.setField(bean.getObj(), field, o));
+        }
     }
 
     private void callInit(Bean it) {
