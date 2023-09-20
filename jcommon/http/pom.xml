@@ -11,6 +11,8 @@
 
     <artifactId>http</artifactId>
 
+    <version>1.4-jdk20-SNAPSHOT</version>
+
     <dependencies>
 
         <dependency>

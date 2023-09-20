@@ -40,9 +40,9 @@ import java.util.*;
 /**
  * @Author goodjava@qq.com
  * @Date 2022-07-12
- * 让docean用起来像spring
+ * Make Docean feel like Spring.
  * <p>
- * 适配spring 的注解(Service Repository Component Autowired PreDestroy PostConstruct)
+ * Annotations compatible with Spring(Service Repository Component Autowired PreDestroy PostConstruct)
  */
 @DOceanPlugin
 @Slf4j
@@ -80,7 +80,7 @@ public class SpringPlugin implements IPlugin {
     public String getInitMethodName(Object obj, Class clazz) {
         return Arrays.stream(clazz.getMethods())
                 .map(it -> Arrays.stream(it.getAnnotations()).filter(anno -> anno instanceof PostConstruct)
-                        .findAny().map(it2->it.getName()).orElse(Cons.INIT))
+                        .findAny().map(it2 -> it.getName()).orElse(Cons.INIT))
                 .filter(name -> !Cons.INIT.equals(name)).findAny().orElse(Cons.INIT);
     }
 
@@ -88,7 +88,7 @@ public class SpringPlugin implements IPlugin {
     public String getDestoryMethodName(Object obj, Class clazz) {
         return Arrays.stream(clazz.getMethods())
                 .map(it -> Arrays.stream(it.getAnnotations()).filter(anno -> anno instanceof PreDestroy)
-                .findAny().map(it2->it.getName()).orElse(Cons.DESTORY))
+                        .findAny().map(it2 -> it.getName()).orElse(Cons.DESTORY))
                 .filter(name -> !Cons.DESTORY.equals(name)).findAny().orElse(Cons.DESTORY);
     }
 
