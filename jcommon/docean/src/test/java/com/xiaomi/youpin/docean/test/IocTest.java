@@ -40,6 +40,7 @@ import org.junit.Test;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.stream.IntStream;
 
 /**
  * @author goodjava@qq.com
@@ -149,6 +150,20 @@ public class IocTest {
         System.out.println(service);
         Ioc.ins().getBeans(Bean.Type.component).forEach(it -> {
             System.out.println("component:" + it.getName());
+        });
+    }
+
+
+    @Test
+    public void testLookup() {
+        Aop.ins().init(Maps.newLinkedHashMap());
+        Ioc.ins().init("com.xiaomi.youpin.docean.test","com.xiaomi.youpin.docean.plugin.config");
+        DemoService ds = Ioc.ins().getBean(DemoService.class);
+        IntStream.range(0, 5).forEach(i -> {
+            DemoVo dv = ds.demoVo();
+            System.out.println(dv.getId());
+            dv.setId(System.currentTimeMillis()+"");
+            System.out.println(ds.demoVo());
         });
     }
 

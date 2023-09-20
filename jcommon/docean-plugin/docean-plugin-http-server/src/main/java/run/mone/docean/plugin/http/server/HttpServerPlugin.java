@@ -28,7 +28,6 @@ public class HttpServerPlugin implements IPlugin {
         if (!disable) {
             new Thread(() -> Safe.run(() -> {
                 DoceanHttpServer server = new DoceanHttpServer(HttpServerConfig.builder()
-                        .cookie(cookie)
                         .port(Integer.valueOf(config.get("docean_http_server_port", "8080")))
                         .websocket(false)
                         .build());

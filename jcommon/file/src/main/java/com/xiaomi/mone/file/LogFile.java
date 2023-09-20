@@ -17,10 +17,10 @@ import java.util.concurrent.TimeUnit;
  * @author goodjava@qq.com
  */
 @Slf4j
-public class LogFile {
+public class LogFile implements ILogFile{
 
     @Getter
-    private final String file;
+    private  String file;
 
     private MoneRandomAccessFile raf;
 
@@ -49,6 +49,10 @@ public class LogFile {
     private String md5;
 
     private static final int LINE_MAX_LENGTH = 50000;
+
+    public LogFile() {
+
+    }
 
     public LogFile(String file, ReadListener listener) {
         this.file = file;
@@ -154,6 +158,15 @@ public class LogFile {
                 break;
             }
         }
+    }
+
+    @Override
+    public void initLogFile(String file, ReadListener listener, long pointer, long lineNumber) {
+        this.file = file;
+        this.md5 = md5(file);
+        this.listener = listener;
+        this.pointer = pointer;
+        this.lineNumber = lineNumber;
     }
 
     private String lineCutOff(String line) {
