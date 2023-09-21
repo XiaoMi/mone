@@ -41,7 +41,7 @@ public class DoceanAutoConfigure {
     public void initConfig() {
         List<String> packageList = new ArrayList<>();
         Splitter.on(",").splitToList(extensionsConfig).forEach(it -> {
-            List<String> list = Splitter.on(":").splitToList(extensionsConfig);
+            List<String> list = Splitter.on(":").splitToList(it);
             extensionMap.put(list.get(0), list.get(1));
             packageList.add(list.get(2));
         });
