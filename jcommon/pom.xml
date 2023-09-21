@@ -85,6 +85,7 @@
     <module>excel</module>
     <module>match</module>
     <module>infra-common</module>
+    <module>docean-spring-starter</module>
   </modules>
   <distributionManagement>
     <repository>

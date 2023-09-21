@@ -13,6 +13,7 @@ import run.mone.docean.spring.extension.Extensions;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -38,16 +39,19 @@ public class DoceanAutoConfigure {
 
     @PostConstruct
     public void initConfig() {
-        List<String> list = Splitter.on(":").splitToList(extensionsConfig);
-        if (list.size() == 3) {
+        List<String> packageList = new ArrayList<>();
+        Splitter.on(",").splitToList(extensionsConfig).forEach(it -> {
+            List<String> list = Splitter.on(":").splitToList(extensionsConfig);
             extensionMap.put(list.get(0), list.get(1));
-            ioc = Ioc.ins().name("extension").setContextFunction(name -> {
-                if (ac.containsBean(name)) {
-                    return ac.getBean(name);
-                }
-                return Safe.callAndLog(() -> ac.getBean(Class.forName(name)), null);
-            }).init(list.get(2), "run.mone.docean.plugin.spring");
-        }
+            packageList.add(list.get(2));
+        });
+        packageList.add("run.mone.docean.plugin.spring");
+        ioc = Ioc.ins().name("extension").setContextFunction(name -> {
+            if (ac.containsBean(name)) {
+                return ac.getBean(name);
+            }
+            return Safe.callAndLog(() -> ac.getBean(Class.forName(name)), null);
+        }).init(packageList.toArray(new String[0]));
     }
 
 
