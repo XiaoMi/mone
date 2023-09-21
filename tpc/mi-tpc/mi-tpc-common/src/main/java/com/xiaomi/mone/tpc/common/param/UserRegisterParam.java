@@ -15,6 +15,8 @@ import org.apache.commons.lang3.StringUtils;
 @ToString(callSuper = true)
 public class UserRegisterParam extends BaseParam {
 
+    private String content;
+
     @Override
     public boolean argCheck() {
         if (StringUtils.isBlank(getAccount())) {

@@ -7,25 +7,27 @@ import com.xiaomi.mone.tpc.cache.Cache;
 import com.xiaomi.mone.tpc.cache.enums.ModuleEnum;
 import com.xiaomi.mone.tpc.cache.key.Key;
 import com.xiaomi.mone.tpc.common.param.UserRegisterParam;
+import com.xiaomi.mone.tpc.common.vo.UserVo;
+import com.xiaomi.mone.tpc.dao.entity.AccountEntity;
+import com.xiaomi.mone.tpc.dao.impl.AccountDao;
 import com.xiaomi.mone.tpc.login.common.enums.AccountStatusEnum;
 import com.xiaomi.mone.tpc.login.common.enums.AccountTypeEnum;
-import com.xiaomi.mone.tpc.login.common.util.MD5Util;
 import com.xiaomi.mone.tpc.login.common.param.*;
+import com.xiaomi.mone.tpc.login.common.util.GsonUtil;
+import com.xiaomi.mone.tpc.login.common.util.MD5Util;
 import com.xiaomi.mone.tpc.login.common.vo.AuthAccountVo;
 import com.xiaomi.mone.tpc.login.common.vo.LoginInfoVo;
 import com.xiaomi.mone.tpc.login.common.vo.ResponseCode;
 import com.xiaomi.mone.tpc.login.common.vo.ResultVo;
-import com.xiaomi.mone.tpc.dao.entity.AccountEntity;
-import com.xiaomi.mone.tpc.dao.impl.AccountDao;
 import com.xiaomi.mone.tpc.login.util.Auth2Util;
 import com.xiaomi.mone.tpc.login.vo.AuthTokenVo;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 import com.xiaomi.mone.tpc.util.EmailUtil;
 import com.xiaomi.mone.tpc.util.TokenUtil;
+import com.xiaomi.youpin.infra.rpc.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -69,6 +71,14 @@ public class LoginService {
             return authUserVoRst;
         }
         AuthUserVo authUserVo = authUserVoRst.getData();
+        UserRegisterParam registerParam = new UserRegisterParam();
+        registerParam.setAccount(authUserVo.getAccount());
+        registerParam.setUserType(authUserVo.getUserType());
+        registerParam.setContent(GsonUtil.gsonString(authUserVo));
+        Result<UserVo> result = userFacade.register(registerParam);
+        if (result.getCode() != 0) {
+            return ResponseCode.OPER_FAIL.build(result.getMessage());
+        }
         authUserVo.setState(state);
         Key key = null;
         if (StringUtils.isNotBlank(vcode)) {
@@ -163,7 +173,10 @@ public class LoginService {
         UserRegisterParam registerParam = new UserRegisterParam();
         registerParam.setAccount(entity.getAccount());
         registerParam.setUserType(accountTypeEnum.getUserType());
-        userFacade.register(registerParam);
+        Result<UserVo> userVoResult = userFacade.register(registerParam);
+        if (userVoResult.getCode() != 0) {
+            return ResponseCode.OPER_FAIL.build(userVoResult.getMessage());
+        }
         return ResponseCode.SUCCESS.build();
     }
 

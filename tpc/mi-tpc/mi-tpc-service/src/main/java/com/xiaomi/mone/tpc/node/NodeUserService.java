@@ -90,7 +90,7 @@ public class NodeUserService implements NodeUserHelper {
             if (userEntity == null) {
                 return ResponseCode.OPER_ILLEGAL.build();
             }
-            userVo = UserUtil.toVo(userEntity);
+            userVo = UserUtil.toVo(userEntity, true);
         } else {
             userVo = userHelper.register(param.getMemberAcc(), param.getMemberAccType());
             if (userVo == null) {
@@ -183,7 +183,7 @@ public class NodeUserService implements NodeUserHelper {
             if (userEntity == null) {
                 return ResponseCode.OPER_ILLEGAL.build();
             }
-            userVo = UserUtil.toVo(userEntity);
+            userVo = UserUtil.toVo(userEntity, true);
         } else {
             userVo = userHelper.register(param.getMemberAcc(), param.getMemberAccType());
             if (userVo == null) {
