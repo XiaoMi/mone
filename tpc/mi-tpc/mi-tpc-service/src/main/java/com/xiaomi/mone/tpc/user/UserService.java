@@ -93,13 +93,14 @@ public class UserService implements UserHelper {
     }
 
     @Override
-    public UserVo register(String account, Integer userType) {
+    public UserVo register(String account, Integer userType, String content) {
         UserEntity entity = userDao.getOneByAccount(account, userType);
         if (entity != null) {
             if (!UserStatusEnum.ENABLE.getCode().equals(entity.getStatus())) {
                 log.warn("用户已停用 entity={}", entity);
                 return null;
             }
+            userDao.updateById(entity.updateForContent(content));
             return UserUtil.toVo(entity);
         }
         //加锁处理，防止重复注册
@@ -113,7 +114,7 @@ public class UserService implements UserHelper {
             if (entity != null) {
                 return UserUtil.toVo(entity);
             }
-            UserVo userVo = convertUserVo(userType, account);
+            UserVo userVo = convertUserVo(userType, account, content);
             entity = UserUtil.toEntity(userVo);
             boolean result = userDao.insert(entity);
             if (!result) {
@@ -126,7 +127,7 @@ public class UserService implements UserHelper {
         }
     }
 
-    private UserVo convertUserVo(Integer userType, String account) {
+    private UserVo convertUserVo(Integer userType, String account, String content) {
         UserVo userVo = new UserVo();
         userVo.setType(userType);
         userVo.setAccount(account);
@@ -134,6 +135,7 @@ public class UserService implements UserHelper {
         userVo.setUpdaterAcc(account);
         userVo.setCreaterType(userType);
         userVo.setUpdaterType(userType);
+        userVo.setContent(content);
         return userVo;
     }
 
