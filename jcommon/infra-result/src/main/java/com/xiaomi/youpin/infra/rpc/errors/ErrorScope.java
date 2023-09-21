@@ -1,7 +1,6 @@
 package com.xiaomi.youpin.infra.rpc.errors;
 
 import lombok.Getter;
-import lombok.var;
 
 import java.util.Set;
 import java.util.TreeSet;
@@ -26,7 +25,7 @@ public class ErrorScope {
         if (scopes.contains(scopeId)) {
             throw new IllegalArgumentException("Duplicate scope id:" + scopeId);
         }
-        var scope = new ErrorScope(scopeId);
+        ErrorScope scope = new ErrorScope(scopeId);
         scopes.add(scopeId);
         return scope;
     }
