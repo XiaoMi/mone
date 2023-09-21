@@ -63,25 +63,25 @@ public class GitlabLoginMgr extends LoginMgr {
             HttpEntity<Map> entity = new HttpEntity<>(headers);
             ResponseEntity<Map> responseEntity = restTemplate.exchange(getUserUrl(), HttpMethod.GET, entity, Map.class);
             log.info("userInfo.gatlab={}", responseEntity);
-            if (responseEntity.getBody() == null || !responseEntity.getBody().containsKey("email")) {
-                return ResponseCode.NO_OPER_PERMISSION.build("用户信息[email]获取失败，请设置并授权");
+            if (responseEntity.getBody() == null || responseEntity.getBody().get("email") == null) {
+                return ResponseCode.NO_OPER_PERMISSION.build("公开资料[email]没有设置");
             }
             AuthUserVo userVo = new AuthUserVo();
             userVo.setExprTime(Integer.parseInt(responseMap.get("expires_in").toString()));
             userVo.setUserType(UserTypeEnum.GITLAB_TYPE.getCode());
             userVo.setAccount(responseEntity.getBody().get("email").toString());
             userVo.setToken(TokenUtil.createToken(userVo.getExprTime(), userVo.getAccount(), userVo.getUserType()));
-            if (responseEntity.getBody().containsKey("username")) {
+            userVo.setEmail(responseEntity.getBody().get("email").toString());
+            if (responseEntity.getBody().get("username") != null) {
                 userVo.setUserId(responseEntity.getBody().get("username").toString());
             }
-            if (responseEntity.getBody().containsKey("email")) {
-                userVo.setEmail(responseEntity.getBody().get("email").toString());
-            }
-            if (responseEntity.getBody().containsKey("avatar_url")) {
+            if (responseEntity.getBody().get("avatar_url") != null) {
                 userVo.setAvatarUrl(responseEntity.getBody().get("avatar_url").toString());
             }
-            if (responseEntity.getBody().containsKey("name")) {
+            if (responseEntity.getBody().get("name") != null) {
                 userVo.setName(responseEntity.getBody().get("name").toString());
+            } else {
+                userVo.setName(userVo.getUserId());
             }
             return ResponseCode.SUCCESS.build(userVo);
         } catch (Throwable e) {
@@ -97,7 +97,7 @@ public class GitlabLoginMgr extends LoginMgr {
 
     @Override
     public String getAuthUrl() {
-        return "https://gitlab.com/oauth/authorize?response_type=code&scope=api read_user";
+        return "https://gitlab.com/oauth/authorize?response_type=code&scope=email read_user";
     }
 
     @Override

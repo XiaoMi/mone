@@ -1,7 +1,5 @@
 package com.xiaomi.mone.tpc.login.common.enums;
 
-import lombok.ToString;
-
 /**
  * 枚举基类
  * @project: mi-tpc

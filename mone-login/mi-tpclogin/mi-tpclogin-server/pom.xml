@@ -88,6 +88,18 @@
             </build>
         </profile>
 
+        <profile>
+            <id>staging</id>
+            <properties>
+                <profiles.active>staging</profiles.active>
+            </properties>
+            <build>
+                <filters>
+                    <filter>src/main/resources/config/staging.properties</filter>
+                </filters>
+            </build>
+        </profile>
+
     </profiles>
 
 

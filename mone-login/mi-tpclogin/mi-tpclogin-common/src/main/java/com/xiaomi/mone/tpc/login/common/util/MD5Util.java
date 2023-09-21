@@ -2,7 +2,6 @@ package com.xiaomi.mone.tpc.login.common.util;
 
 import org.apache.commons.lang3.StringUtils;
 
-import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.security.MessageDigest;

@@ -10,7 +10,6 @@ import com.xiaomi.mone.tpc.util.TokenUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -36,6 +35,7 @@ public class GithubLoginMgr extends LoginMgr {
 
     /**
      * 构建Auth2LoginInfo
+     *
      * @return
      */
     @Override
@@ -60,29 +60,29 @@ public class GithubLoginMgr extends LoginMgr {
                 return ResponseCode.OUTER_CALL_FAILED.build("access_token获取失败");
             }
             HttpHeaders headers = new HttpHeaders();
-            headers.add("Authorization", "token " + responseMap.get("access_token"));
+            headers.add("Authorization", "Bearer " + responseMap.get("access_token"));
             HttpEntity<Map> entity = new HttpEntity<>(headers);
             ResponseEntity<Map> responseEntity = restTemplate.exchange(getUserUrl(), HttpMethod.GET, entity, Map.class);
             log.info("responseEntity.github={}", responseEntity);
-            if (responseEntity.getBody() == null || !responseEntity.getBody().containsKey("email")) {
-                return ResponseCode.NO_OPER_PERMISSION.build("用户信息[email]获取失败，请设置并授权");
+            if (responseEntity.getBody() == null || responseEntity.getBody().get("email") == null) {
+                return ResponseCode.NO_OPER_PERMISSION.build("公开资料[email]没有设置");
             }
             AuthUserVo userVo = new AuthUserVo();
             userVo.setExprTime(Integer.parseInt(responseMap.get("expires_in").toString()));
             userVo.setUserType(UserTypeEnum.GITHUB_TYPE.getCode());
             userVo.setAccount(responseEntity.getBody().get("email").toString());
             userVo.setToken(TokenUtil.createToken(userVo.getExprTime(), userVo.getAccount(), userVo.getUserType()));
-            if (responseEntity.getBody().containsKey("login")) {
+            userVo.setEmail(responseEntity.getBody().get("email").toString());
+            if (responseEntity.getBody().get("login") != null) {
                 userVo.setUserId(responseEntity.getBody().get("login").toString());
             }
-            if (responseEntity.getBody().containsKey("email")) {
-                userVo.setEmail(responseEntity.getBody().get("email").toString());
-            }
-            if (responseEntity.getBody().containsKey("avatar_url")) {
+            if (responseEntity.getBody().get("avatar_url") != null) {
                 userVo.setAvatarUrl(responseEntity.getBody().get("avatar_url").toString());
             }
-            if (responseEntity.getBody().containsKey("name")) {
+            if (responseEntity.getBody().get("name") != null) {
                 userVo.setName(responseEntity.getBody().get("name").toString());
+            } else {
+                userVo.setName(userVo.getUserId());
             }
             return ResponseCode.SUCCESS.build(userVo);
         } catch (Throwable e) {
@@ -98,7 +98,7 @@ public class GithubLoginMgr extends LoginMgr {
 
     @Override
     public String getAuthUrl() {
-        return "https://github.com/login/oauth/authorize?response_type=code&scope=user";
+        return "https://github.com/login/oauth/authorize?response_type=code&scope=read:user read:email";
     }
 
     @Override

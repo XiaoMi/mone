@@ -48,8 +48,8 @@ public class DingDingLoginMgr extends LoginMgr {
     @Override
     public AuthAccountVo buildAuth2LoginInfo(String pageUrl, String vcode, String state) throws Exception {
         AuthAccountVo info = new AuthAccountVo();
-        info.setName("feishu");
-        info.setDesc("feishu账号授权登陆");
+        info.setName("dingding");
+        info.setDesc("dingding账号授权登陆");
         info.setUrl(this.buildAuthUrl(clientId, pageUrl, vcode, state));
         return info;
     }
@@ -58,58 +58,55 @@ public class DingDingLoginMgr extends LoginMgr {
     public ResultVo<AuthUserVo> getUserVo(String code, String pageUrl, String vcode, String state) {
         try {
             Map<String, String> map = new HashMap<>();
-            map.put("grant_type", "authorization_code");
-            map.put("redirect_uri", getAuth2CallbackUrlFull(pageUrl, vcode, state));
-            map.put("client_id", clientId);
-            map.put("client_secret", clientSecret);
+            map.put("grantType", "authorization_code");
+            map.put("clientId", clientId);
+            map.put("clientSecret", clientSecret);
             map.put("code", code);
-            Map responseMap = restTemplate.postForObject(getTokenUrl(), map, Map.class);
-            log.info("oauth2 code to token request={}, response={}", map, responseMap);
-            if (responseMap == null || !responseMap.containsKey("access_token")) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Content-Type", "application/json");
+            HttpEntity<Map> entity = new HttpEntity<>(map, headers);
+            ResponseEntity<Map> tokenResponseEntity = restTemplate.exchange(getTokenUrl(), HttpMethod.POST, entity, Map.class);
+            log.info("oauth2 code to token request={}, response={}", map, tokenResponseEntity);
+            if (tokenResponseEntity.getBody() == null || !tokenResponseEntity.getBody().containsKey("accessToken")) {
                 return ResponseCode.OUTER_CALL_FAILED.build("access_token获取失败");
             }
-            HttpHeaders headers = new HttpHeaders();
-            headers.add("Authorization", "Bearer " + responseMap.get("access_token"));
-            HttpEntity<Map> entity = new HttpEntity<>(headers);
+            headers = new HttpHeaders();
+            headers.add("x-acs-dingtalk-access-token", tokenResponseEntity.getBody().get("accessToken").toString());
+            headers.add("Content-Type", "application/json");
+            entity = new HttpEntity<>(headers);
             ResponseEntity<Map> responseEntity = restTemplate.exchange(getUserUrl(), HttpMethod.GET, entity, Map.class);
             log.info("userInfo.feishu={}", responseEntity);
-            if (responseEntity.getBody() == null || !responseEntity.getBody().containsKey("union_id")) {
+            if (responseEntity.getBody() == null || responseEntity.getBody().get("unionId") == null) {
                 log.error("dingding没有拿到open_id字段， responseEntity={}", responseEntity);
                 return ResponseCode.NO_OPER_PERMISSION.build("用户信息[open_id]获取失败，请授权");
             }
             AuthUserVo userVo = new AuthUserVo();
-            userVo.setExprTime(Integer.parseInt(responseMap.get("expireIn").toString()));
+            userVo.setExprTime(Integer.parseInt(tokenResponseEntity.getBody().get("expireIn").toString()));
             userVo.setUserType(UserTypeEnum.FEISHU_TYPE.getCode());
-            userVo.setAccount(responseEntity.getBody().get("union_id").toString());
+            userVo.setAccount(responseEntity.getBody().get("unionId").toString());
             userVo.setToken(TokenUtil.createToken(userVo.getExprTime(), userVo.getAccount(), userVo.getUserType()));
-            if (responseEntity.getBody().containsKey("union_id")) {
-                userVo.setUnionId(responseEntity.getBody().get("union_id").toString());
+            if (responseEntity.getBody().get("unionId") != null) {
+                userVo.setUnionId(responseEntity.getBody().get("unionId").toString());
             }
-            if (responseEntity.getBody().containsKey("open_id")) {
-                userVo.setOpenId(responseEntity.getBody().get("open_id").toString());
+            if (responseEntity.getBody().get("openId") != null) {
+                userVo.setOpenId(responseEntity.getBody().get("openId").toString());
             }
-            if (responseEntity.getBody().containsKey("nick")) {
+            if (responseEntity.getBody().get("nick") != null) {
                 userVo.setName(responseEntity.getBody().get("nick").toString());
             }
-            if (responseEntity.getBody().containsKey("avatarUrl")) {
+            if (responseEntity.getBody().get("avatarUrl") != null) {
                 userVo.setAvatarUrl(responseEntity.getBody().get("avatarUrl").toString());
-            }
-            if (responseEntity.getBody().containsKey("email")) {
-                userVo.setEmail(responseEntity.getBody().get("email").toString());
-            }
-            if (responseEntity.getBody().containsKey("mobile")) {
-                userVo.setMobile(responseEntity.getBody().get("mobile").toString());
             }
             return ResponseCode.SUCCESS.build(userVo);
         } catch (Throwable e) {
-            log.error("gitlab_oauth2_failed", e);
+            log.error("dingding_oauth2_failed", e);
             return ResponseCode.UNKNOWN_ERROR.build("用户信息获取异常，请稍后重试");
         }
     }
 
     @Override
     public String getSource() {
-        return "feishu";
+        return "dingding";
     }
 
     @Override

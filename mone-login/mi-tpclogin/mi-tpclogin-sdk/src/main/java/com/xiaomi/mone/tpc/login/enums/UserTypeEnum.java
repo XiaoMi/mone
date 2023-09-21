@@ -14,6 +14,7 @@ public enum UserTypeEnum {
     GITEE_TYPE(4, "GITEE"),
     SERVICE_TYPE(5, "服务用户"),
     FEISHU_TYPE(6, "飞书"),
+    DINGDING_TYPE(7, "钉钉"),
     ;
     private Integer code;
     private String desc;

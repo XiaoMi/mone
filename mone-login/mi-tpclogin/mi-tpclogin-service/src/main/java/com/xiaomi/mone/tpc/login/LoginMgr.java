@@ -21,6 +21,9 @@ public abstract class LoginMgr {
     @NacosValue("${home.url:http://localhost:80}")
     private String homeUrl;
 
+    @Value("${code.callback.path}")
+    private String codeCallbackPath;
+
     public LoginMgr() {
         mgrMap.put(getSource(), this);
     }
@@ -42,7 +45,7 @@ public abstract class LoginMgr {
 
     protected String getAuth2CallbackUrlFull(String pageUrl, String vcode, String state) throws Exception {
         StringBuilder auth2CallbackUrlFull = new StringBuilder();
-        auth2CallbackUrlFull.append(homeUrl).append("/user-manage/login/code")
+        auth2CallbackUrlFull.append(homeUrl).append(codeCallbackPath)
                 .append("?source=").append(getSource())
                 .append("&pageUrl=").append(URLEncoder.encode(pageUrl, "UTF-8"));
         if (StringUtils.isNotBlank(vcode)) {

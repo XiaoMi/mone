@@ -7,10 +7,10 @@ import com.xiaomi.mone.tpc.login.common.vo.LoginInfoVo;
 import com.xiaomi.mone.tpc.login.common.vo.ResponseCode;
 import com.xiaomi.mone.tpc.login.common.vo.ResultVo;
 import com.xiaomi.mone.tpc.login.util.Auth2Util;
-import com.xiaomi.mone.tpc.util.CookieUtil;
 import com.xiaomi.mone.tpc.login.util.TokenUtil;
 import com.xiaomi.mone.tpc.login.vo.AuthTokenVo;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
+import com.xiaomi.mone.tpc.util.CookieUtil;
 import com.xiaomi.mone.tpc.util.EnumUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -44,11 +44,18 @@ public class LoginController {
     }
 
     @RequestMapping(value = "/code")
-    public ResultVo<AuthUserVo> code(@RequestParam(name = "code", required = true) String code,
+    public ResultVo<AuthUserVo> code(@RequestParam(name = "code", required = false) String code,
+                                     @RequestParam(name = "authCode", required = false) String authCode,
                                      @RequestParam(name = "source", required = true) String source,
                                      @RequestParam(name = "pageUrl", required = true) String pageUrl,
                                      @RequestParam(name = "state", required = false) String state,
                                      @RequestParam(name = "vcode", required = false) String vcode) throws Throwable {
+        if (StringUtils.isBlank(code)) {
+            code = authCode;
+        }
+        if (StringUtils.isBlank(code)) {
+            return ResponseCode.ARG_ERROR.build();
+        }
         ResultVo<AuthUserVo> resultVo = loginService.code(code, source, vcode, state, pageUrl);
         if (resultVo.success()) {
             if (StringUtils.isBlank(vcode)) {
