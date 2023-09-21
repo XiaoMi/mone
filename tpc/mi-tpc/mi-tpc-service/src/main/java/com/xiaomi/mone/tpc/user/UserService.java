@@ -41,10 +41,10 @@ public class UserService implements UserHelper {
     @Autowired
     private Cache cache;
 
-    public ResultVo<PageDataVo<UserVo>> list(UserQryParam param) {
+    public ResultVo<PageDataVo<UserVo>> list(UserQryParam param, boolean isFront) {
         PageDataVo<UserVo> pageData = param.buildPageDataVo();
         List<UserEntity> entityList = userDao.getListByPage(param.getUserAcc(), param.getType(), param.getStatus(), pageData);
-        pageData.setList(UserUtil.toVoList(entityList));
+        pageData.setList(UserUtil.toVoList(entityList, isFront));
         return ResponseCode.SUCCESS.build(pageData);
     }
 
@@ -56,7 +56,7 @@ public class UserService implements UserHelper {
     public ResultVo<UserVo> my(NullParam param) {
         UserEntity entity = userDao.getById(param.getUserId(), UserEntity.class);
         NodeUserRelEntity nodeUserRelEntity = nodeUserRelDao.getOneByUserIdAndNodeType(param.getUserId(), NodeTypeEnum.TOP_TYPE.getCode(), NodeUserRelTypeEnum.MANAGER.getCode());
-        UserVo userVo = UserUtil.toVo(entity);
+        UserVo userVo = UserUtil.toVo(entity, true);
         if (nodeUserRelEntity != null) {
             userVo.setTopMgr(true);
         }
@@ -65,7 +65,7 @@ public class UserService implements UserHelper {
 
     public ResultVo<UserVo> get(UserQryParam param) {
         UserEntity entity = userDao.getById(param.getId(), UserEntity.class);
-        return ResponseCode.SUCCESS.build(UserUtil.toVo(entity));
+        return ResponseCode.SUCCESS.build(UserUtil.toVo(entity, true));
     }
     public ResultVo<UserVo> status(UserStatusParam param) {
         UserEntity entity = userDao.getById(param.getId(), UserEntity.class);
@@ -80,18 +80,6 @@ public class UserService implements UserHelper {
         return ResponseCode.SUCCESS.build();
     }
 
-    public UserVo getVoByAccount(String account, Integer userType) {
-        if (StringUtils.isBlank(account) || UserTypeEnum.getEnum(userType) == null) {
-            return null;
-        }
-        UserEntity entity = userDao.getOneByAccount(account, userType);
-        if (entity == null || !UserStatusEnum.ENABLE.getCode().equals(entity.getStatus())) {
-            log.warn("用户不存在或停用 account={}, userType={}, entity={}", account, userType, entity);
-            return null;
-        }
-        return UserUtil.toVo(entity);
-    }
-
     @Override
     public UserVo register(String account, Integer userType, String content) {
         UserEntity entity = userDao.getOneByAccount(account, userType);
@@ -100,8 +88,10 @@ public class UserService implements UserHelper {
                 log.warn("用户已停用 entity={}", entity);
                 return null;
             }
-            userDao.updateById(entity.updateForContent(content));
-            return UserUtil.toVo(entity);
+            if (StringUtils.isNotBlank(content)) {
+                userDao.updateById(entity.updateForContent(content));
+            }
+            return UserUtil.toVo(entity, false);
         }
         //加锁处理，防止重复注册
         Key key = Key.build(ModuleEnum.USER_ACC_TYPE_LOCK).keys(account, userType);
@@ -112,7 +102,7 @@ public class UserService implements UserHelper {
         try {
             entity = userDao.getOneByAccount(account, userType);
             if (entity != null) {
-                return UserUtil.toVo(entity);
+                return UserUtil.toVo(entity, false);
             }
             UserVo userVo = convertUserVo(userType, account, content);
             entity = UserUtil.toEntity(userVo);
@@ -121,7 +111,7 @@ public class UserService implements UserHelper {
                 log.error("注册用户失败 entity={}", entity);
                 return null;
             }
-            return UserUtil.toVo(entity);
+            return UserUtil.toVo(entity, false);
         } finally{
             cache.get().unlock(key);
         }
