@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hera-app
+  namespace: ozhera-namespace
+  labels:
+    app: hera-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hera-app
+  template:
+    metadata:
+      labels:
+        app: hera-app
+    spec:
+      containers:
+      - name: hera-app-container
+        image: herahub/opensource-pub:hera-app-v1-release
+        resources:
+          limits:
+            cpu: '300m'
+            memory: 1Gi

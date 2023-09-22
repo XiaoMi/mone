@@ -3,6 +3,8 @@ package com.xiaomi.youpin.gitlab;
 import com.xiaomi.youpin.gitlab.bo.*;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 /**
  * @Author wmin
  * @Date 2021-09-01
@@ -102,6 +104,23 @@ public class GitlabTest {
     public void getCommitIds() {
         String commitIds = gitlab.getCommitInfoByBranch("https://xxx.com", "1", "test", "xxx");
         System.out.println(commitIds);
+    }
+
+    @Test
+    public void getBranchInfo() {
+        String branchInfo = gitlab.getBranchInfo("https://xxx.com","1","master","xxx");
+        System.out.println(branchInfo);
+    }
+
+    @Test
+    public void getRepositoryCompare() {
+        String repositoryCompare = gitlab.getRepositoryCompare("https://xxx.com", "1", "xxx", "test2", "test1");
+        System.out.println(repositoryCompare);
+    }
+
+    @Test
+    public void getDomainByIP() {
+        gitlab.getDomainByIP("https://xxx.com","xx","", Arrays.asList("127.0.0.1"),"token");
     }
 
 }

@@ -1,57 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>jcommon</artifactId>
-        <groupId>run.mone</groupId>
-        <version>1.4-SNAPSHOT</version>
-    </parent>
-    <modelVersion>4.0.0</modelVersion>
-
-    <artifactId>health</artifactId>
-
-
-    <dependencies>
-
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>nacos</artifactId>
-            <version>1.4-v1-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-web</artifactId>
-            <version>5.1.2.RELEASE</version>
-            <scope>provided</scope>
-        </dependency>
-
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>dubbo</artifactId>
-            <version>2.7.12-mone-v8-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>struct</artifactId>
-            <version>1.4.1-SNAPSHOT</version>
-        </dependency>
-
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>aop</artifactId>
-            <version>1.4-SNAPSHOT</version>
-        </dependency>
-
-
-    </dependencies>
-
-
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>run.mone</groupId>
+    <artifactId>jcommon</artifactId>
+    <version>1.4-jdk20-SNAPSHOT</version>
+  </parent>
+  <artifactId>health</artifactId>
+  <dependencies>
+    <dependency>
+      <groupId>run.mone</groupId>
+      <artifactId>nacos</artifactId>
+      <version>1.4-v1-jdk20-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-web</artifactId>
+      <version>5.1.2.RELEASE</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>run.mone</groupId>
+      <artifactId>dubbo</artifactId>
+      <version>2.7.12-mone-v8-SNAPSHOT</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>run.mone</groupId>
+      <artifactId>struct</artifactId>
+      <version>1.4.1-jdk20-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>run.mone</groupId>
+      <artifactId>aop</artifactId>
+      <version>1.4-jdk20-SNAPSHOT</version>
+    </dependency>
+  </dependencies>
 </project>

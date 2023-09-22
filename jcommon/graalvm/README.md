@@ -1,6 +1,5 @@
 # grpc
 
-本模块尝试于使用docean框架的项目下使用GraalVM的示例，GraalVM是由Oracle创建的Java虚拟机（JVM）和Java开发工具包（JDK）。它是一个高性能的运行时，可以提高应用程序的性能和效率。
-
-官网地址：https://xmmione.be.mi.com/web/index
-
+This module attempts to provide an example of using GraalVM in a project using the Docean framework. GraalVM is a Java
+Virtual Machine (JVM) and Java Development Kit (JDK) created by Oracle. It is a high-performance runtime that can
+improve the performance and efficiency of applications.

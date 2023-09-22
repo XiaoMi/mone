@@ -25,7 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 
 /**
  * @author goodjava@qq.com
- * 支持长连接
+ * rate limited or exceeded quota
  */
 @Slf4j
 public class TextWebSocketHandler extends SimpleChannelInboundHandler<TextWebSocketFrame> {
@@ -34,7 +34,7 @@ public class TextWebSocketHandler extends SimpleChannelInboundHandler<TextWebSoc
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         if (evt == WebSocketServerProtocolHandler.ServerHandshakeStateEvent.HANDSHAKE_COMPLETE) {
-            //移除http的操作
+            //Remove the operation of http.
             ctx.pipeline().remove(HttpHandler.class);
         } else {
             super.userEventTriggered(ctx, evt);

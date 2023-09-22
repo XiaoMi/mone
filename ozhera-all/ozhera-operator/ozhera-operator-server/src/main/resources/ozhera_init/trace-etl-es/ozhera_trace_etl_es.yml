@@ -1,0 +1,101 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: hera-trace-etl-local-storage
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: trace-etl-es-pv
+  labels:
+    app: trace-etl-es-pv
+spec:
+  capacity:
+    storage: 10Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: hera-trace-etl-local-storage
+  local:
+    path: /home/work/rocksdb
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - replace your correct node name
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: trace-etl-es-pv-claim
+  namespace: ozhera-namespace
+  labels:
+    app: trace-etl-es-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 8Gi
+  storageClassName: hera-trace-etl-local-storage
+  selector:
+    matchLabels:
+      app: trace-etl-es-pv
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: trace-etl-es
+  namespace: ozhera-namespace
+  labels:
+    app: trace-etl-es
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trace-etl-es
+  template:
+    metadata:
+      labels:
+        app: trace-etl-es
+    spec:
+      containers:
+      - name: trace-etl-es-container
+        image: herahub/opensource-pub:trace-etl-es-v1-release
+        imagePullPolicy: Always
+        env:
+          - name: MONE_CONTAINER_S_POD_NAME
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.name
+        volumeMounts:
+            - name: trace-etl-es-persistent-storage
+              mountPath: /home/rocksdb
+        resources:
+          limits:
+            cpu: '200m'
+            memory: 2Gi
+      volumes:
+        - name: trace-etl-es-persistent-storage
+          persistentVolumeClaim:
+            claimName: trace-etl-es-pv-claim
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 1
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - trace-etl-es
+                topologyKey: kubernetes.io/hostname
+  serviceName: ''

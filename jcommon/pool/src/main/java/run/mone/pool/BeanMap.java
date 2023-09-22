@@ -1,6 +1,7 @@
 package run.mone.pool;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author goodjava@qq.com
@@ -8,7 +9,7 @@ import java.util.HashMap;
  */
 public class BeanMap {
 
-    private HashMap<String, Object> m = new HashMap<>();
+    private Map<String, Object> m = new HashMap<>();
 
     public <T> T get(String key) {
         return (T) m.get(key);

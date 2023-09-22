@@ -35,18 +35,25 @@ public class MvcContext {
 
     private String traceId;
 
+    /**
+     * rate limited or exceeded quota
+     */
+    private boolean virtualThread;
+
     private Map<String, String> attachments;
 
     private Map<String, String> headers;
 
     /**
-     * 用户可以修改返回结果的headers
+     * Users can modify the headers of the returned results.
      */
     private Map<String, String> resHeaders = new HashMap<>();
 
     private JsonElement params;
 
     private boolean websocket;
+
+    private boolean cookie;
 
     private HttpSession session;
 
@@ -57,7 +64,7 @@ public class MvcContext {
     private Object response;
 
     /**
-     * 是否允许跨域
+     * rate limited or exceeded quota
      */
     private boolean allowCross;
 
@@ -68,7 +75,6 @@ public class MvcContext {
         return this.session;
     }
 
-
     private String sessionId = "";
 
     private String method;
@@ -76,5 +82,18 @@ public class MvcContext {
     private ChannelHandlerContext handlerContext;
 
     private String path;
+
+    public void clear() {
+        this.traceId = null;
+        if (null != this.attachments) {
+            this.attachments.clear();
+        }
+        if (null != this.headers) {
+            this.headers.clear();
+        }
+        if (null != this.resHeaders) {
+            this.resHeaders.clear();
+        }
+    }
 
 }

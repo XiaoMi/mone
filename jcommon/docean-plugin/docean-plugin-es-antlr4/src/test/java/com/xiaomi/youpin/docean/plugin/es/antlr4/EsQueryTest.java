@@ -207,4 +207,31 @@ public class EsQueryTest {
         SearchSourceBuilder esQuery = EsQueryUtils.getSearchSourceBuilder(str);
         System.out.println(esQuery.query());
     }
+
+    /**
+     * 正则查询
+     */
+    @Test
+    public void testReg(){
+        String message = "message :~\"version=6*\"";
+        SearchSourceBuilder esQuery = EsQueryUtils.getSearchSourceBuilder(message);
+        System.out.println(esQuery.query());
+    }
+
+    /**
+     * 模糊查询
+     */
+    @Test
+    public void testFuzzy(){
+        String message = "message like \"cd2b0f9cbe8ecd1d\"";
+        SearchSourceBuilder esQuery = EsQueryUtils.getSearchSourceBuilder(message);
+        System.out.println(esQuery.query());
+    }
+
+    @Test
+    public void testMulQuery(){
+        String message = "message like \"xiaomiyoupbn\"  and message :~ \"4CWYnR8wM*\"";
+        SearchSourceBuilder esQuery = EsQueryUtils.getSearchSourceBuilder(message);
+        System.out.println(esQuery.query());
+    }
 }

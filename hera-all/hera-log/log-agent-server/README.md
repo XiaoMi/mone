@@ -1,1 +1,0 @@
-这个模块负责和agent进行rpc通信，和manager进行dubbo通信，只能单机部署

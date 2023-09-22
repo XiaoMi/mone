@@ -24,11 +24,13 @@ public class HttpServerPlugin implements IPlugin {
         log.info("start http server plugin");
         final Config config = ioc.getBean(Config.class);
         boolean disable = Boolean.valueOf(config.get("docean_http_server_plugin", "false"));
+        boolean cookie = Boolean.valueOf(config.get("docean_http_server_cookie", "true"));
         if (!disable) {
             new Thread(() -> Safe.run(() -> {
                 DoceanHttpServer server = new DoceanHttpServer(HttpServerConfig.builder()
                         .port(Integer.valueOf(config.get("docean_http_server_port", "8080")))
-                        .websocket(false).build());
+                        .websocket(false)
+                        .build());
                 server.start();
             })).start();
         }

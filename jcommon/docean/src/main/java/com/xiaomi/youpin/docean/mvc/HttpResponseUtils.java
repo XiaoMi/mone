@@ -47,12 +47,12 @@ public abstract class HttpResponseUtils {
         } else {
             res.headers().set(HttpHeaderNames.CONTENT_LENGTH, content.readableBytes());
         }
-        res.headers().set(HttpHeaderNames.CONNECTION, "close");
         return res;
     }
 
     /**
-     * 效率不高,谨慎使用
+     * rate limited or exceeded quota
+     *
      * @param res
      * @param content
      * @return

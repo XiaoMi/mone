@@ -22,7 +22,6 @@ import com.xiaomi.youpin.docean.anno.RequestMapping;
 import com.xiaomi.youpin.docean.bo.Bean;
 import com.xiaomi.youpin.docean.bo.MvcConfig;
 import com.xiaomi.youpin.docean.common.MethodInvoker;
-import com.xiaomi.youpin.docean.common.MutableObject;
 import com.xiaomi.youpin.docean.common.NamedThreadFactory;
 import com.xiaomi.youpin.docean.common.Safe;
 import com.xiaomi.youpin.docean.config.HttpServerConfig;
@@ -32,75 +31,82 @@ import com.xiaomi.youpin.docean.listener.event.EventType;
 import com.xiaomi.youpin.docean.mvc.*;
 import com.xiaomi.youpin.docean.mvc.common.MvcConst;
 import com.xiaomi.youpin.docean.mvc.util.ExceptionUtil;
-import io.netty.handler.codec.http.*;
-import lombok.Getter;
+import com.xiaomi.youpin.docean.mvc.util.Jump;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.FullHttpRequest;
+import io.netty.handler.codec.http.FullHttpResponse;
+import io.netty.handler.codec.http.HttpResponseStatus;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Optional;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * @author goodjava@qq.com
  * @date 2020/6/20
  */
 @Slf4j
+@Data
 public class Mvc {
 
-    private ThreadPoolExecutor executor;
+    private ExecutorService executor;
 
-    @Getter
     private ConcurrentHashMap<String, HttpRequestMethod> requestMethodMap = new ConcurrentHashMap<>();
 
-    @Getter
     private Ioc ioc;
 
     private static Gson gson = new Gson();
 
-    @Getter
     private MvcConfig mvcConfig = new MvcConfig();
 
     private MethodInvoker methodInvoker = new MethodInvoker();
 
+    private String name = "mvc";
+
     private Mvc(Ioc ioc) {
         this.ioc = ioc;
+        this.name = this.ioc.getName();
         setConfig(ioc);
+        this.executor = createPool();
         initHttpRequestMethod();
     }
 
     private void setConfig(Ioc ioc) {
         this.mvcConfig.setAllowCross(Boolean.valueOf(ioc.getBean(MvcConst.ALLOW_CROSS_DOMAIN, MvcConst.FALSE)));
         this.mvcConfig.setDownload(Boolean.valueOf(ioc.getBean(MvcConst.MVC_DOWNLOAD, MvcConst.FALSE)));
-        Boolean.valueOf(ioc.getBean(MvcConst.RESPONSE_ORIGINAL_VALUE, MvcConst.FALSE));
         this.mvcConfig.setUseCglib(Boolean.valueOf(ioc.getBean(MvcConst.CGLIB, MvcConst.TRUE)));
         this.mvcConfig.setResponseOriginalValue(Boolean.valueOf(ioc.getBean(MvcConst.RESPONSE_ORIGINAL_VALUE, MvcConst.FALSE)));
         this.mvcConfig.setPoolSize(Integer.valueOf(ioc.getBean(MvcConst.MVC_POOL_SIZE, String.valueOf(MvcConst.DEFAULT_MVC_POOL_SIZE))));
-        if (mvcConfig.getPoolSize() > 0) {
-            executor = new ThreadPoolExecutor(this.mvcConfig.getPoolSize(), this.mvcConfig.getPoolSize(), 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(HttpServerConfig.HTTP_POOL_QUEUE_SIZE), new NamedThreadFactory("docean_mvc"));
-        }
+        this.mvcConfig.setVirtualThread(Boolean.valueOf(ioc.getBean(MvcConst.VIRTUAL_THREAD, MvcConst.TRUE)));
         ioc.publishEvent(new Event(EventType.mvcBegin, this.mvcConfig));
+    }
+
+    private ExecutorService createPool() {
+        if (mvcConfig.isVirtualThread()) {
+            return Executors.newVirtualThreadPerTaskExecutor();
+        } else {
+            return new ThreadPoolExecutor(this.mvcConfig.getPoolSize(), this.mvcConfig.getPoolSize(), 0L, TimeUnit.MILLISECONDS, new ArrayBlockingQueue<>(HttpServerConfig.HTTP_POOL_QUEUE_SIZE), new NamedThreadFactory("docean_mvc"));
+        }
     }
 
     private void initHttpRequestMethod() {
         ioc.beans().entrySet().stream().forEach(entry -> {
             Bean bean = entry.getValue();
             if (bean.getType() == Bean.Type.controller.ordinal()) {
-                Arrays.stream(bean.getClazz().getMethods()).forEach(m -> {
-                    Optional.ofNullable(m.getAnnotation(RequestMapping.class)).ifPresent(rm -> {
-                        String path = rm.path();
-                        HttpRequestMethod hrm = new HttpRequestMethod();
-                        hrm.setTimeout(rm.timeout());
-                        hrm.setPath(path);
-                        hrm.setObj(bean.getObj());
-                        hrm.setMethod(m);
-                        hrm.setHttpMethod(rm.method());
-                        ioc.publishEvent(new Event(EventType.initController, path));
-                        requestMethodMap.put(path, hrm);
-                    });
-                });
+                Arrays.stream(bean.getClazz().getMethods()).forEach(m -> Optional.ofNullable(m.getAnnotation(RequestMapping.class)).ifPresent(rm -> {
+                    String path = rm.path();
+                    HttpRequestMethod hrm = new HttpRequestMethod();
+                    hrm.setTimeout(rm.timeout());
+                    hrm.setPath(path);
+                    hrm.setObj(bean.getObj());
+                    hrm.setMethod(m);
+                    hrm.setHttpMethod(rm.method());
+                    ioc.publishEvent(new Event(EventType.initController, path));
+                    requestMethodMap.put(path, hrm);
+                }));
             }
             if (bean.getObj() instanceof MvcServlet) {
                 MvcServlet ms = (MvcServlet) bean.getObj();
@@ -122,7 +128,6 @@ public class Mvc {
         private static final Mvc ins = new Mvc(Ioc.ins());
     }
 
-
     public static final Mvc ins() {
         return LazyHolder.ins;
     }
@@ -138,6 +143,10 @@ public class Mvc {
         } else {
             executor.submit(new MvcRunnable(this, context, request, response, requestMethodMap));
         }
+    }
+
+    public void dispatcher(HttpServerConfig config, ChannelHandlerContext ctx, FullHttpRequest httpRequest, String uri, byte[] body) {
+        executor.submit(new MvcRunnable(this, config, ctx, httpRequest, uri, body, requestMethodMap));
     }
 
 
@@ -160,11 +169,8 @@ public class Mvc {
 
     public void callMethod(MvcContext context, MvcRequest request, MvcResponse response, MvcResult<Object> result, HttpRequestMethod method) {
         Safe.run(() -> {
-            JsonElement arguments = gson.fromJson(new String(request.getBody()), JsonElement.class);
-            String m = method.getHttpMethod();
-            MutableObject mo = getArgs(method, arguments, m);
-            Safe.run(() -> context.setParams(arguments));
-            JsonElement args = mo.getObj();
+            JsonElement args = getArgs(method, request.getMethod().toLowerCase(Locale.ROOT), request);
+            context.setParams(args);
             Object[] params = methodInvoker.getMethodParams(method.getMethod(), args);
             setMvcContext(context, params);
             Object data = this.mvcConfig.isUseCglib() ? methodInvoker.invokeFastMethod(method.getObj(), method.getMethod(), params) :
@@ -183,12 +189,7 @@ public class Mvc {
                 }
                 // need to jump (302)
                 if (mr.getCode() == HttpResponseStatus.FOUND.code()) {
-                    FullHttpResponse response302 = new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, HttpResponseStatus.FOUND);
-                    response302.headers().set(HttpHeaderNames.CONTENT_LENGTH, 0);
-                    response302.headers().set(HttpHeaderNames.CONNECTION, "keep-alive");
-                    response302.headers().set(HttpHeaderNames.LOCATION, mr.getData());
-                    HttpUtil.setKeepAlive(response302, true);
-                    response.getCtx().writeAndFlush(response302);
+                    Jump.jump(response, mr.getData());
                     return;
                 }
             }
@@ -225,20 +226,17 @@ public class Mvc {
      * parsing parameters
      *
      * @param method
-     * @param arguments
-     * @param m
+     * @param httpMethod
      * @return
      */
-    private MutableObject getArgs(HttpRequestMethod method, JsonElement arguments, String m) {
-        MutableObject mo = new MutableObject();
-        if (m.equalsIgnoreCase("get")) {
-            mo.setObj(Get.getParams(method, arguments));
-        } else if (m.equalsIgnoreCase("post")) {
-            mo.setObj(Post.getParams(method, arguments));
+    private JsonElement getArgs(HttpRequestMethod method, String httpMethod, MvcRequest req) {
+        if (httpMethod.equalsIgnoreCase("get")) {
+            return Get.getParams(method, req.getUri());
+        } else if (httpMethod.equalsIgnoreCase("post")) {
+            return Post.getParams(method, req.getBody());
         } else {
-            throw new DoceanException(m);
+            throw new DoceanException("don't support:" + httpMethod);
         }
-        return mo;
     }
 
     private void setMvcContext(MvcContext context, Object[] params) {

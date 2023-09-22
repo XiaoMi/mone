@@ -25,9 +25,8 @@ import redis.clients.jedis.exceptions.JedisAskDataException;
 import redis.clients.jedis.exceptions.JedisException;
 import redis.clients.jedis.exceptions.JedisMovedDataException;
 import redis.clients.jedis.exceptions.JedisRedirectionException;
-import redis.clients.util.JedisClusterCRC16;
+import redis.clients.jedis.util.JedisClusterCRC16;
 
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.*;
 
@@ -97,10 +96,7 @@ public abstract class PipelineClusterCommand<T> {
                         logger.error(e.getMessage(), e);
                     } finally {
                         if (pipeline != null) {
-                            try {
-                                pipeline.close();
-                            } catch (IOException e) {
-                            }
+                            pipeline.close();
                         }
                         //释放jedis对象
                         if (jedis != null) {

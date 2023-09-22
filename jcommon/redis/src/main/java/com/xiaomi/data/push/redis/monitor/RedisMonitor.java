@@ -1,6 +1,5 @@
 package com.xiaomi.data.push.redis.monitor;
 
-import com.xiaomi.youpin.cat.CatPlugin;
 import com.xiaomi.youpin.prometheus.client.Metrics;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -19,21 +18,10 @@ public class RedisMonitor {
     private static final String RESULT_SUCCESS = "success";
     private static final String RESULT_FAILED = "failed";
 
-    public void recordMonitorInfo(boolean catEnabled,CatPlugin cat,boolean prometheusEnable,boolean isCatStart,
+    public void recordMonitorInfo(boolean catEnabled, boolean prometheusEnable, boolean isCatStart,
                                   String metricName,MetricTypes metricType,String action,String keys,boolean value){
         log.info("monitor start catEnabled={},prometheusEnable={},isCatStart={},metricName={},metricType={},action={},keys={},value={}"
                 ,catEnabled,prometheusEnable,isCatStart,metricName,metricType,action,keys,value);
-        if(catEnabled){
-            try {
-                if(isCatStart){
-                    cat.before(keys);
-                }else{
-                    cat.after(value);
-                }
-            } catch (Exception e) {
-                log.info("RedisMonitor.CAT.recordMonitorInfo error",e);
-            }
-        }
 
         if (prometheusEnable){
             try {

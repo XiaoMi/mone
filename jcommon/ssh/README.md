@@ -1,3 +1,3 @@
-# ssh服务
+# SSH Service
 
-使用Java代码创建ssh服务。支持Windows、Linux
+Create an SSH service using Java code. Supports Windows and Linux.

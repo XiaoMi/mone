@@ -1,1 +1,1 @@
-#提供数据库乐观锁写操作的封装
+# Encapsulation of optimistic locking write operations for database.

@@ -1,0 +1,104 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hera-webhook-tls-sh
+  namespace: ozhera-namespace
+data:
+  generate_csr_by_openssl.sh: |
+    #! /bin/sh
+    set -o errexit
+    
+    export APP="${1:-hera-webhook-server}"
+    export NAMESPACE="${2:-hera-namespace}"
+    export FILEPATH="${3:-/tmp/hera-webhook-tls/}"
+    export CSR_NAME="${4:-default_csr.svc}"
+    
+    if [ ! -d ${FILEPATH}  ];then
+    mkdir ${FILEPATH}
+    fi
+    
+    echo "... creating ${FILEPATH}${APP}.key"
+    openssl genrsa -out ${FILEPATH}${APP}.key 2048
+    
+    echo "... creating ${APP}.csr"
+    cat >${FILEPATH}csr.conf<<EOF
+    [req]
+    req_extensions = v3_req
+    distinguished_name = req_distinguished_name
+    [req_distinguished_name]
+    [ v3_req ]
+    basicConstraints = CA:FALSE
+    keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+    extendedKeyUsage = serverAuth
+    subjectAltName = @alt_names
+    [alt_names]
+    DNS.1 = ${APP}
+    DNS.2 = ${APP}.${NAMESPACE}
+    DNS.3 = ${CSR_NAME}
+    DNS.4 = ${CSR_NAME}.cluster.local
+    EOF
+    echo "openssl req -new -key ${FILEPATH}${APP}.key -subj \"/CN=${CSR_NAME}\" -out ${FILEPATH}${APP}.csr -config ${FILEPATH}csr.conf"
+    openssl req -new -key ${FILEPATH}${APP}.key -out ${FILEPATH}${APP}.csr -subj "/CN=system:node:${APP}/O=system:nodes" -config ${FILEPATH}csr.conf
+    
+    echo "csr base64 is :$(cat ${FILEPATH}${APP}.csr | base64 | tr -d '\n')"
+
+  generate_pem_p12_by_openssl.sh: |
+    #! /bin/sh
+    set -o errexit
+    
+    export APP="${1:-hera-webhook-server}"
+    export FILEPATH="${2:-/tmp/hera-webhook-tls/}"
+    export serverCert="${3:-unknow}"
+    export p12Pass="${4:-unknow}"
+    
+    echo "... creating ${app}.pem cert file"
+    echo "serverCert is : ${serverCert} | openssl base64 -d -A -out ${FILEPATH}${APP}.pem"
+    echo ${serverCert} | openssl base64 -d -A -out ${FILEPATH}${APP}.pem
+    
+    echo "... creating ${APP}.p12 password is ${p12Pass}"
+    openssl pkcs12 -export -in ${FILEPATH}${APP}.pem -inkey ${FILEPATH}${APP}.key -out ${FILEPATH}${APP}.p12 -password pass:${p12Pass}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hera-webhook-server
+  namespace: ozhera-namespace
+  labels:
+    app: hera-webhook-server
+spec:
+  ports:
+    - port: 443
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: hera-webhook-server
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hera-webhook-server
+  namespace: ozhera-namespace
+spec:
+  selector:
+    matchLabels:
+      app: hera-webhook-server
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: hera-webhook-server
+    spec:
+      imagePullSecrets:
+        - name: mione-opensource-credential
+      volumes:
+        - name: hera-webhook-tls-sh-volume
+          configMap:
+            name: hera-webhook-tls-sh
+      containers:
+        - name: hera-webhook-server
+          image: herahub/opensource-pub:hera-webhook-server-v1-release
+          volumeMounts:
+            - name: hera-webhook-tls-sh-volume
+              mountPath: /tmp/hera-webhook-tls-sh
+      serviceAccountName: admin-mone

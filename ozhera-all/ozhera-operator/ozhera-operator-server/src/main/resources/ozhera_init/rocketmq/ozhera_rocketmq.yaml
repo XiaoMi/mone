@@ -1,0 +1,435 @@
+kind: Deployment
+
+apiVersion: apps/v1
+
+metadata:
+
+  name: rocketmq-name-service
+
+  namespace: ozhera-namespace
+
+spec:
+
+  replicas: 1
+
+  selector:
+
+    matchLabels:
+
+      app: rocketmq-name-service
+
+      name_service_cr: rocketmq-name-service
+
+  template:
+
+    metadata:
+
+      labels:
+
+        app: rocketmq-name-service
+
+        name_service_cr: rocketmq-name-service
+
+    spec:
+
+      volumes:
+
+        - name: host-time
+
+          hostPath:
+
+            path: /etc/localtime
+
+            type: ''
+
+      containers:
+
+        - name: rocketmq-name-service
+
+          image: 'apache/rocketmq'
+
+          command:
+
+            - /bin/sh
+
+          args:
+
+            - mqnamesrv
+
+          ports:
+
+            - name: tcp-9876
+
+              containerPort: 9876
+
+              protocol: TCP
+
+          resources:
+
+            limits:
+
+              cpu: 500m
+
+              memory: 1Gi
+
+            requests:
+
+              cpu: 250m
+
+              memory: 512Mi
+
+          volumeMounts:
+
+            - name: host-time
+
+              readOnly: true
+
+              mountPath: /etc/localtime
+
+          imagePullPolicy: Always
+
+---
+kind: Service
+
+apiVersion: v1
+
+metadata:
+
+  name: rocketmq-name-server-service
+
+  namespace: ozhera-namespace
+
+spec:
+
+  ports:
+
+    - name: tcp-9876
+
+      protocol: TCP
+
+      port: 9876
+
+      targetPort: 9876
+
+  selector:
+
+    name_service_cr: rocketmq-name-service
+
+  type: ClusterIP
+
+---
+kind: ConfigMap
+
+apiVersion: v1
+
+metadata:
+
+  name: rocketmq-broker-config
+
+  namespace: ozhera-namespace
+
+data:
+
+  BROKER_MEM: ' -Xms2g -Xmx2g -Xmn1g '
+
+  broker-common.conf: |-
+
+    brokerClusterName = DefaultCluster
+
+    brokerName = broker-0
+
+    brokerId = 0
+
+    deleteWhen = 04
+
+    fileReservedTime = 48
+
+    brokerRole = ASYNC_MASTER
+
+    flushDiskType = ASYNC_FLUSH    
+
+---
+kind: Deployment
+
+apiVersion: apps/v1
+
+metadata:
+
+  name: rocketmq-broker-0-master
+
+  namespace: ozhera-namespace
+
+spec:
+
+  replicas: 1
+
+  selector:
+
+    matchLabels:
+
+      app: rocketmq-broker
+
+      broker_cr: rocketmq-broker
+
+  template:
+
+    metadata:
+
+      labels:
+
+        app: rocketmq-broker
+
+        broker_cr: rocketmq-broker
+
+    spec:
+
+      volumes:
+
+        - name: rocketmq-broker-config
+
+          configMap:
+
+            name: rocketmq-broker-config
+
+            items:
+
+              - key: broker-common.conf
+
+                path: broker-common.conf
+
+            defaultMode: 420
+
+        - name: host-time
+
+          hostPath:
+
+            path: /etc/localtime
+
+            type: ''
+
+      containers:
+
+        - name: rocketmq-broker
+
+          image: 'apache/rocketmq:4.9.4'
+
+          command:
+
+            - /bin/sh
+
+          args:
+
+            - mqbroker
+
+            - "-c"
+
+            - /home/rocketmq/conf/broker-common.conf
+
+          ports:
+
+            - name: tcp-vip-10909
+
+              containerPort: 10909
+
+              protocol: TCP
+
+            - name: tcp-main-10911
+
+              containerPort: 10911
+
+              protocol: TCP
+
+            - name: tcp-ha-10912
+
+              containerPort: 10912
+
+              protocol: TCP
+
+          env:
+
+            - name: NAMESRV_ADDR
+
+              value: 'rocketmq-name-server-service.hera-namespace:9876'
+
+            - name: BROKER_MEM
+
+              valueFrom:
+
+                configMapKeyRef:
+
+                  name: rocketmq-broker-config
+
+                  key: BROKER_MEM
+
+          resources:
+
+            requests:
+
+              cpu: 1
+
+              memory: 8Gi
+
+          volumeMounts:
+
+            - name: host-time
+
+              readOnly: true
+
+              mountPath: /etc/localtime
+
+            - name: rocketmq-broker-config
+
+              mountPath: /home/rocketmq/conf/broker-common.conf
+
+              subPath: broker-common.conf
+
+          imagePullPolicy: Always
+
+---
+kind: Service
+
+apiVersion: v1
+
+metadata:
+
+  name: rocketmq-broker-0-master
+
+  namespace: ozhera-namespace
+
+spec:
+
+  ports:
+
+    - name: tcp-vip-10909
+
+      protocol: TCP
+
+      port: 10909
+
+      targetPort: 10909
+
+    - name: tcp-main-10911
+
+      protocol: TCP
+
+      port: 10911
+
+      targetPort: 10911
+
+    - name: tcp-ha-10912
+
+      protocol: TCP
+
+      port: 10912
+
+      targetPort: 10912
+
+  selector:
+
+    app: rocketmq-broker
+
+  type: ClusterIP
+
+---
+kind: Deployment
+
+apiVersion: apps/v1
+
+metadata:
+
+  name: rocketmq-dashboard
+
+  namespace: ozhera-namespace
+
+spec:
+
+  replicas: 1
+
+  selector:
+
+    matchLabels:
+
+      app: rocketmq-dashboard
+
+  template:
+
+    metadata:
+
+      labels:
+
+        app: rocketmq-dashboard
+
+    spec:
+
+      containers:
+
+        - name: rocketmq-dashboard
+
+          image: 'apacherocketmq/rocketmq-dashboard:1.0.0'
+
+          ports:
+
+            - name: http-8080
+
+              containerPort: 8080
+
+              protocol: TCP
+
+          env:
+
+            - name: JAVA_OPTS
+
+              value: >-
+
+                -Drocketmq.namesrv.addr=rocketmq-name-server-service.hera-namespace:9876
+
+                -Dcom.rocketmq.sendMessageWithVIPChannel=false                
+
+          resources:
+
+            limits:
+
+              cpu: 500m
+
+              memory: 2Gi
+
+            requests:
+
+              cpu: 50m
+
+              memory: 512Mi
+
+          imagePullPolicy: Always
+
+
+
+---
+kind: Service
+
+apiVersion: v1
+
+metadata:
+
+  name: rocketmq-dashboard-service
+
+  namespace: ozhera-namespace
+
+spec:
+
+  ports:
+
+    - name: http-8080
+
+      protocol: TCP
+
+      port: 8080
+
+      targetPort: 8080
+
+      nodePort: 31081
+
+  selector:
+
+    app: rocketmq-dashboard
+
+  type: NodePort
