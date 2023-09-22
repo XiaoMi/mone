@@ -6,6 +6,7 @@ import com.xiaomi.mone.tpc.login.common.vo.ResponseCode;
 import com.xiaomi.mone.tpc.login.common.vo.ResultVo;
 import com.xiaomi.mone.tpc.login.enums.UserTypeEnum;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
+import com.xiaomi.mone.tpc.util.ImgUtil;
 import com.xiaomi.mone.tpc.util.TokenUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -51,6 +53,7 @@ public class DingDingLoginMgr extends LoginMgr {
         info.setName("dingding");
         info.setDesc("dingding账号授权登陆");
         info.setUrl(this.buildAuthUrl(clientId, pageUrl, vcode, state));
+        info.setIcon(getLogoData());
         return info;
     }
 
@@ -82,7 +85,7 @@ public class DingDingLoginMgr extends LoginMgr {
             }
             AuthUserVo userVo = new AuthUserVo();
             userVo.setExprTime(Integer.parseInt(tokenResponseEntity.getBody().get("expireIn").toString()));
-            userVo.setUserType(UserTypeEnum.FEISHU_TYPE.getCode());
+            userVo.setUserType(UserTypeEnum.DINGDING_TYPE.getCode());
             userVo.setAccount(responseEntity.getBody().get("unionId").toString());
             userVo.setToken(TokenUtil.createToken(userVo.getExprTime(), userVo.getAccount(), userVo.getUserType()));
             if (responseEntity.getBody().get("unionId") != null) {

@@ -4,5 +4,8 @@ import com.xiaomi.mone.tpc.common.vo.UserVo;
 
 public interface UserHelper {
 
-    UserVo register(String account, Integer userType);
+    default UserVo register(String account, Integer userType) {
+        return register(account, userType, null);
+    }
+    UserVo register(String account, Integer userType, String content);
 }

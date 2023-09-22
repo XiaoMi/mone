@@ -29,7 +29,7 @@ CREATE TABLE `user_entity` (
   `type` int(1) DEFAULT '0' COMMENT '类型',
   `status` int(1) DEFAULT '0' COMMENT '状态',
   `desc` varchar(128) DEFAULT NULL COMMENT '描述',
-  `content` varchar(128) DEFAULT NULL COMMENT '内容',
+  `content` text DEFAULT NULL COMMENT '内容',
   `creater_id` int(20) DEFAULT '0' COMMENT '创建人ID',
   `creater_acc` varchar(64) DEFAULT NULL COMMENT '创建人账号',
   `creater_type` int(1) DEFAULT '0' COMMENT '创建人类型',

@@ -51,6 +51,7 @@ public class FeiShuLoginMgr extends LoginMgr {
         info.setName("feishu");
         info.setDesc("feishu账号授权登陆");
         info.setUrl(this.buildAuthUrl(clientId, pageUrl, vcode, state));
+        info.setIcon(getLogoData());
         return info;
     }
 

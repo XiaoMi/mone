@@ -6,6 +6,7 @@ import com.xiaomi.mone.tpc.login.common.vo.ResponseCode;
 import com.xiaomi.mone.tpc.login.common.vo.ResultVo;
 import com.xiaomi.mone.tpc.login.enums.UserTypeEnum;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
+import com.xiaomi.mone.tpc.util.ImgUtil;
 import com.xiaomi.mone.tpc.util.TokenUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -17,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +46,7 @@ public class GithubLoginMgr extends LoginMgr {
         info.setName("github");
         info.setDesc("github账号授权登陆");
         info.setUrl(this.buildAuthUrl(clientId, pageUrl, vcode, state));
+        info.setIcon(getLogoData());
         return info;
     }
 

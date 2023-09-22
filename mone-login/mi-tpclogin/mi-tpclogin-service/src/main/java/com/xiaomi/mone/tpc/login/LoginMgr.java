@@ -4,10 +4,12 @@ import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.xiaomi.mone.tpc.login.common.vo.AuthAccountVo;
 import com.xiaomi.mone.tpc.login.common.vo.ResultVo;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
+import com.xiaomi.mone.tpc.util.ImgUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public abstract class LoginMgr {
 
     private static final Map<String, LoginMgr> mgrMap = new ConcurrentHashMap<>();
+    private volatile String imgData;
     @NacosValue("${home.url:http://localhost:80}")
     private String homeUrl;
 
@@ -59,6 +62,7 @@ public abstract class LoginMgr {
 
     public static List<AuthAccountVo> buildAuth2LoginInfos(String pageUrl, String vcode, String state) {
         List<AuthAccountVo> infos = new ArrayList<>();
+
         mgrMap.forEach((k, v) -> {
             try {
                 AuthAccountVo authAccountVo = v.buildAuth2LoginInfo(pageUrl, vcode, state);
@@ -79,9 +83,21 @@ public abstract class LoginMgr {
         return mgrMap.get(source);
     }
 
+
+
     public abstract String getSource();
     public abstract String getAuthUrl();
     public abstract String getTokenUrl();
     public abstract String getUserUrl();
+    protected String getLogoData() {
+        if (imgData != null) {
+            return imgData;
+        }
+        StringBuilder path = new StringBuilder();
+        path.append("images/").append(getSource()).append(".png");
+        URL url = this.getClass().getClassLoader().getResource(path.toString());
+        imgData = ImgUtil.convertToBase64(url.getPath());
+        return imgData;
+    }
 
 }
