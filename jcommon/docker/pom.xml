@@ -5,10 +5,10 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>jcommon</artifactId>
-    <version>1.4-jdk20-SNAPSHOT</version>
+    <version>1.4-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>docker</artifactId>
-  <version>1.6-jdk20-SNAPSHOT</version>
+  <version>1.6-jdk21-SNAPSHOT</version>
   <dependencies>
     <dependency>
       <groupId>com.kohlschutter.junixsocket</groupId>

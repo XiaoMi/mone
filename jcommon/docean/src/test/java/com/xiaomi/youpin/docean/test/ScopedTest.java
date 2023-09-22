@@ -1,7 +1,6 @@
 package com.xiaomi.youpin.docean.test;
 
 import com.xiaomi.youpin.docean.test.bo.M;
-import jdk.incubator.concurrent.ScopedValue;
 import lombok.SneakyThrows;
 import org.checkerframework.checker.units.qual.C;
 import org.junit.Test;

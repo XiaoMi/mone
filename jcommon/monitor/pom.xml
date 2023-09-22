@@ -5,14 +5,14 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>jcommon</artifactId>
-    <version>1.4-jdk20-SNAPSHOT</version>
+    <version>1.4-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>monitor</artifactId>
   <dependencies>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>http</artifactId>
-      <version>1.4-jdk20-SNAPSHOT</version>
+      <version>1.4-jdk21-SNAPSHOT</version>
     </dependency>
   </dependencies>
 
@@ -22,8 +22,8 @@
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.11.0</version>
         <configuration>
-          <source>20</source>
-          <target>20</target>
+          <source>21</source>
+          <target>21</target>
           <encoding>UTF-8</encoding>
           <compilerArgs>
             <arg>--add-exports=jdk.internal.jvmstat/sun.jvmstat.monitor=ALL-UNNAMED</arg>

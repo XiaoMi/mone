@@ -5,10 +5,10 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>jcommon</artifactId>
-    <version>1.4-jdk20-SNAPSHOT</version>
+    <version>1.4-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>prometheus</artifactId>
-  <version>0.0.6-jdk20-SNAPSHOT</version>
+  <version>0.0.6-jdk21-SNAPSHOT</version>
   <packaging>pom</packaging>
   <modules>
     <module>prometheus-client</module>
@@ -21,7 +21,7 @@
   </modules>
   <properties>
     <java.version>1.8</java.version>
-    <prometheus-all.version>0.0.6-jdk20-SNAPSHOT</prometheus-all.version>
+    <prometheus-all.version>0.0.6-jdk21-SNAPSHOT</prometheus-all.version>
   </properties>
   <dependencies>
     <dependency>

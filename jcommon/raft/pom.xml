@@ -5,7 +5,7 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>jcommon</artifactId>
-    <version>1.4-jdk20-SNAPSHOT</version>
+    <version>1.4-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>raft</artifactId>
   <properties>
@@ -16,7 +16,7 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>rpc</artifactId>
-      <version>1.7-jdk20-SNAPSHOT</version>
+      <version>1.7-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -46,7 +46,7 @@
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
-      <version>1.18.28</version>
+      <version>1.18.30</version>
       <scope>provided</scope>
     </dependency>
     <dependency>

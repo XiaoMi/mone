@@ -5,15 +5,15 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>jcommon</artifactId>
-    <version>1.4-jdk20-SNAPSHOT</version>
+    <version>1.4-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>annotation</artifactId>
-  <version>1.6.1-jdk20-SNAPSHOT</version>
+  <version>1.6.1-jdk21-SNAPSHOT</version>
   <dependencies>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>common</artifactId>
-      <version>1.7.2-jdk20-SNAPSHOT</version>
+      <version>1.7.2-jdk21-SNAPSHOT</version>
       <exclusions>
         <exclusion>
           <artifactId>fastjson</artifactId>

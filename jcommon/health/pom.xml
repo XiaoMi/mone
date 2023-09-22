@@ -5,14 +5,14 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>jcommon</artifactId>
-    <version>1.4-jdk20-SNAPSHOT</version>
+    <version>1.4-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>health</artifactId>
   <dependencies>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>nacos</artifactId>
-      <version>1.4-v1-jdk20-SNAPSHOT</version>
+      <version>1.4-v1-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.springframework</groupId>
@@ -29,12 +29,12 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>struct</artifactId>
-      <version>1.4.1-jdk20-SNAPSHOT</version>
+      <version>1.4.1-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>aop</artifactId>
-      <version>1.4-jdk20-SNAPSHOT</version>
+      <version>1.4-jdk21-SNAPSHOT</version>
     </dependency>
   </dependencies>
 </project>

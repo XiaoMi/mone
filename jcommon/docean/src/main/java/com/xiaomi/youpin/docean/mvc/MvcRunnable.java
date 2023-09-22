@@ -14,7 +14,6 @@ import com.xiaomi.youpin.docean.mvc.util.RequestUtils;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpResponseStatus;
-import jdk.incubator.concurrent.ScopedValue;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.ConcurrentHashMap;
