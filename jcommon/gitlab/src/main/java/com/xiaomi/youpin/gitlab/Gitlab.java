@@ -16,9 +16,9 @@
 
 package com.xiaomi.youpin.gitlab;
 
-import com.alibaba.fastjson.JSON;
-import com.google.common.collect.Maps;
+import com.github.odiszapc.nginxparser.*;
 import com.google.gson.Gson;
+import com.google.common.collect.Maps;
 import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import com.xiaomi.data.push.client.HttpClientV2;
@@ -61,6 +61,8 @@ public class Gitlab {
     private static final String GIT_PUSH_PATH = "/tmp/git/push/";
     private static final String username = "";
     private static final String password = "";
+
+    private static Gson gson = new Gson();
 
     public Gitlab(String gitlabBaseUrl) {
         if (StringUtils.isBlank(gitlabBaseUrl)) {
@@ -1174,7 +1176,8 @@ public class Gitlab {
         }
         String url = GIT_API_URL + "projects/" + gitWebhook.getId() + "/hooks/" + gitWebhook.getHook_id();
         try {
-            String body = JSON.toJSONString(gitWebhook);
+            //String body = JSON.toJSONString(gitWebhook);
+            String body = gson.toJson(gitWebhook);
             Map<String, String> headers = new HashMap<>();
             headers.put("Content-Type", "application/json");
             headers.put("PRIVATE-TOKEN", token);
@@ -1223,5 +1226,126 @@ public class Gitlab {
         headers.put("PRIVATE-TOKEN", token);
 
         return HttpClientV2.get(url, headers, 10000);
+    }
+
+    // Get branch information of a repository
+    public String getBranchInfo(String gitHost,String projectId,String branch,String token) {
+        String url = gitHost + GIT_API_URI + "projects/" + projectId + "/repository/branches/" + branch;
+        log.info("getBranchInfo url:{}", url);
+        Map<String, String> headers = new HashMap<>(1);
+        headers.put("PRIVATE-TOKEN", token);
+        return HttpClientV2.get(url, headers, 10000);
+    }
+
+    //Compare branches, tags or commits
+    public String getRepositoryCompare(String gitHost,String projectId,String token,String from,String to) {
+        String url = gitHost + GIT_API_URI + "projects/" + projectId + "/repository/compare?from=" + from + "&to=" + to;
+        log.info("getBranchInfo url:{}", url);
+        Map<String, String> headers = new HashMap<>(1);
+        headers.put("PRIVATE-TOKEN", token);
+        return HttpClientV2.get(url, headers, 10000);
+    }
+
+    /**
+     * 在gitlab搜索关键字，根据返回内容进行upstream语法树解析
+     * @param gitHost
+     * @param project
+     * @param branch
+     * @param keywords
+     * @param token
+     * @return
+     */
+    public List<String> getDomainByIP(String gitHost, String project, String branch, List<String> keywords, String token) {
+        List<String> domains = new ArrayList<>();
+        if (StringUtils.isEmpty(gitHost) || StringUtils.isEmpty(project)) {
+            return domains;
+        }
+        if (keywords == null || keywords.size() < 1) {
+            return domains;
+        }
+        String url = gitHost + GIT_API_URI + "projects?search="+ project +"&search_namespaces=true";
+        log.info("getBranchInfo url:{}", url);
+        Map<String, String> headers = new HashMap<>(1);
+        headers.put("PRIVATE-TOKEN", token);
+        String projectInfo = HttpClientV2.get(url, headers, 10000);
+        Gson gson = new Gson();
+        List<Map> projectList = gson.fromJson(projectInfo, List.class);
+        if (projectList != null && projectList.size() > 0) {
+            Object id = projectList.get(0).get("id");
+            if (id == null) {
+                return domains;
+            }
+            long projectId = Math.round((Double) id);
+            for (String key : keywords) {
+                url = gitHost + GIT_API_URI + "projects/"+ projectId +"/search?scope=blobs&search="+key;
+                String fileInfo = HttpClientV2.get(url, headers, 10000);
+                List<Map> fileList = gson.fromJson(fileInfo, List.class);
+                if (fileList == null || fileList.size() < 1) {
+                    continue;
+                }
+                fileList.forEach(file -> {
+                    if (getServers(String.valueOf(file.get("data")), key)) {
+                        domains.add(String.valueOf(file.get("filename")));
+                    }
+                });
+            }
+        }
+        return domains;
+    }
+
+    public List<String> getDomainByIP(String gitHost, String projectId, List<String> keywords, String token) {
+        List<String> domains = new ArrayList<>();
+        if (StringUtils.isEmpty(projectId)) {
+            return domains;
+        }
+        if (keywords == null || keywords.size() < 1) {
+            return domains;
+        }
+        String url = null;
+        Map<String, String> headers = new HashMap<>(1);
+        headers.put("PRIVATE-TOKEN", token);
+        for (String key : keywords) {
+            url = gitHost + GIT_API_URI + "projects/"+ projectId +"/search?scope=blobs&search="+key;
+            String fileInfo = HttpClientV2.get(url, headers, 10000);
+            List<Map> fileList = gson.fromJson(fileInfo, List.class);
+            if (fileList == null || fileList.size() < 1) {
+                continue;
+            }
+            fileList.forEach(file -> {
+                if (getServers(String.valueOf(file.get("data")), key)) {
+                    domains.add(String.valueOf(file.get("filename")));
+                }
+            });
+        }
+        return domains;
+    }
+
+    private boolean getServers(String config, String name) {
+        boolean res = false;
+        try {
+            NgxConfig conf = NgxConfig.read(new ByteArrayInputStream(config.getBytes()));
+            List<NgxEntry> ngxEntrys = conf.findAll(NgxConfig.BLOCK, "upstream");
+            if (ngxEntrys == null || ngxEntrys.size() < 1) {
+                return res;
+            }
+            for (NgxEntry ngxEntry : ngxEntrys) {
+                NgxBlock nb0 = NgxBlock.class.cast(ngxEntry);
+                Collection<NgxEntry> entryCollection = nb0.getEntries();
+                for (NgxEntry entry : entryCollection) {
+                    if (entry instanceof NgxParam) {
+                        Collection<NgxToken> ngxTokens = ((NgxParam) entry).getTokens();
+                        for (NgxToken ngxToken : ngxTokens) {
+                            String token = ngxToken.getToken();
+                            if (token != null && token.contains(name) && !token.startsWith("#")) {
+                                return true;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Throwable ex) {
+            throw new RuntimeException(ex);
+        }
+        return res;
     }
 }

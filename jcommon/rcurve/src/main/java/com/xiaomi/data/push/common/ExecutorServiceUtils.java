@@ -14,28 +14,14 @@ public class ExecutorServiceUtils {
         if (size <= 0) {
             return defaultPool;
         }
-        return new ThreadPoolExecutor(size, size,
-                0L, TimeUnit.MILLISECONDS,
-                new ArrayBlockingQueue<>(100));
+        return Executors.newVirtualThreadPerTaskExecutor();
     }
 
     public static ExecutorService creatThreadPoolHasName(int size, String name, ExecutorService defaultPool) {
         if (size <= 0) {
             return defaultPool;
         }
-        return new ThreadPoolExecutor(size, size,
-                0L, TimeUnit.MILLISECONDS,
-                new ArrayBlockingQueue<>(100),
-                new ThreadFactory() {
-                    private final AtomicInteger id = new AtomicInteger(0);
-
-                    public Thread newThread(Runnable r) {
-                        String threadName = name + this.id.getAndIncrement();
-                        Thread thread = new Thread(r, threadName);
-                        thread.setDaemon(true);
-                        return thread;
-                    }
-                });
+        return Executors.newVirtualThreadPerTaskExecutor();
     }
 
 

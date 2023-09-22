@@ -30,17 +30,23 @@ public class HttpServerConfig {
 
     private boolean ssl;
 
+    @Builder.Default
+    private HttpVersion httpVersion = HttpVersion.http1;
+
     private boolean websocket;
 
     private int port;
 
+    @Builder.Default
+    private boolean cookie = true;
+
     /**
-     * 允许上传文件
+     * Allow file upload
      */
     private boolean upload;
 
     /**
-     * 上传的路径
+     * Upload path
      */
     private String uploadDir;
 
@@ -49,6 +55,11 @@ public class HttpServerConfig {
 
     public static int HTTP_POOL_SIZE = 500;
     public static int HTTP_POOL_QUEUE_SIZE = 1000;
+
+
+    public enum HttpVersion {
+        http1, http2
+    }
 
     public HttpServerConfig(boolean ssl, boolean websocket, int port) {
         this.ssl = ssl;

@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisCluster;
+import redis.clients.jedis.params.SetParams;
 
 import javax.annotation.PostConstruct;
 import java.util.Collections;
@@ -109,8 +110,10 @@ public class LockUtils {
     public boolean lock(String key, String value, long expireMilliSeconds, long retryMilliSeconds) {
         long start = System.currentTimeMillis();
         try {
+            SetParams setParams = new SetParams();
+            setParams.nx().px(expireMilliSeconds);
             String result;
-            result = cluster.set(key, value, "NX", "PX", expireMilliSeconds);
+            result = cluster.set(key, value, setParams);
             if ("OK".equals(result)) {
                 return true;
             }
@@ -118,7 +121,7 @@ public class LockUtils {
                 return false;
             }
             while (System.currentTimeMillis() - start < retryMilliSeconds) {
-                result = cluster.set(key, value, "NX", "PX", expireMilliSeconds);
+                result = cluster.set(key, value, setParams);
                 if ("OK".equals(result)) {
                     return true;
                 }
@@ -128,6 +131,7 @@ public class LockUtils {
         }
         return false;
     }
+
 
     public boolean unlock(String key, String value) {
         String script = "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end";

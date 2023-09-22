@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mi-tpc
+  namespace: ozhera-namespace
+  labels:
+    app: mi-tpc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mi-tpc
+  template:
+    metadata:
+      labels:
+        app: mi-tpc
+    spec:
+      containers:
+      - name: mi-tpc-container
+        image: herahub/opensource-pub:mi-tpc-v1-release
+        resources:
+          limits:
+            cpu: '500m'
+            memory: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mi-tpc
+  namespace: ozhera-namespace
+  labels:
+    app: mi-tpc-service
+spec:
+  ports:
+    - port: 8097
+      targetPort: 8097
+      protocol: TCP
+  selector:
+    app: mi-tpc
+  clusterIP: None

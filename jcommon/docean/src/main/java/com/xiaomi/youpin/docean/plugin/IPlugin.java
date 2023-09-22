@@ -45,7 +45,7 @@ public interface IPlugin {
     }
 
     /**
-     * 销毁操作
+     * Destroy operation
      *
      * @param ioc
      */
@@ -54,7 +54,7 @@ public interface IPlugin {
     }
 
     /**
-     * 过滤的注解
+     * rate limited or exceeded quota
      *
      * @return
      */
@@ -67,7 +67,7 @@ public interface IPlugin {
     }
 
     /**
-     * 初始化需要被接管的bean
+     * Initialization requires the takeover of the bean.
      *
      * @param bean
      * @return
@@ -103,7 +103,7 @@ public interface IPlugin {
     }
 
     /**
-     * plugin 启动操作(可以理解为依赖注入都完成后,想要完成的操作都可以放到这里)
+     * plugin Start operation (after all dependencies are injected, any desired operations can be placed here)
      *
      * @param ioc
      * @return

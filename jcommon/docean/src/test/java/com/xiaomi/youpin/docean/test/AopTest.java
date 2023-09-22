@@ -37,7 +37,7 @@ public class AopTest {
 
 
     /**
-     * 底层使用cglib增强或者动态代理
+     * The bottom layer uses cglib enhancement or dynamic proxy.
      */
     @Test
     public void testAop() {

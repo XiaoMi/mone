@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hera-demo-client
+  namespace: ozhera-namespace
+  labels:
+    app: hera-demo-client
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hera-demo-client
+  template:
+    metadata:
+      labels:
+        app: hera-demo-client
+    spec:
+      containers:
+      - name: hera-demo-client-container
+        image: herahub/opensource-pub:hera-demo-client-v1-release
+        env:
+          - name: MIONE_PROJECT_ENV_NAME
+            value: dev
+          - name: MIONE_PROJECT_ENV_ID
+            value: '2'
+          - name: MIONE_PROJECT_NAME
+            value: 2-hera-demo-client
+        volumeMounts:
+          - name: log-path
+            mountPath: /home/work/log
+        resources:
+          limits:
+            cpu: '500m'
+            memory: 2Gi
+
+      - name: log-agent
+        image: herahub/opensource-pub:log-agent-v1-release
+        volumeMounts:
+        - mountPath: "/home/work/log"
+          name: log-path
+        resources:
+          limits:
+            cpu: '300m'
+            memory: 1Gi
+      volumes:
+      - name: log-path
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hera-demo-client
+  namespace: ozhera-namespace
+  labels:
+    app: hera-demo-client
+spec:
+  ports:
+    - port: 8085
+      targetPort: 8085
+      protocol: TCP
+  selector:
+    app: hera-demo-client
+  clusterIP: None

@@ -1,0 +1,1 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=run.mone.docean.spring.config.DoceanAutoConfigure

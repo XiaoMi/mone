@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trace-etl-manager
+  namespace: ozhera-namespace
+  labels:
+    app: trace-etl-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trace-etl-manager
+  template:
+    metadata:
+      labels:
+        app: trace-etl-manager
+    spec:
+      containers:
+      - name: trace-etl-manager-container
+        image: herahub/opensource-pub:trace-etl-manager-v1-release
+        resources:
+          limits:
+            cpu: '500m'
+            memory: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trace-etl-manager
+  namespace: ozhera-namespace
+  labels:
+    app: trace-etl-manager
+spec:
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: trace-etl-manager
+  clusterIP: None

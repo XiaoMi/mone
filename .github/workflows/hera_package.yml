@@ -12,7 +12,7 @@ on:
   
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  check-build:
+  check-build-8:
     name: hera test
     runs-on: ubuntu-latest
     steps:
@@ -56,7 +56,7 @@ jobs:
       - if: always() && steps.changes.outputs.hera-tspandata == 'true' || github.event == 'workflow_dispatch'
         run: cd hera-all/hera-tspandata; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
       - if: always() && steps.changes.outputs.hera-log == 'true' || github.event == 'workflow_dispatch'
-        run: cd hera-all/hera-log; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
+        run: cd hera-all/hera-log; mvn -U clean package --fail-at-end -Dmaven.test.skip=true -pl '!log-agent'; cd ../..
       - if: always() && steps.changes.outputs.hera-monitor == 'true' || github.event == 'workflow_dispatch'
         run: cd hera-all/hera-monitor; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..\
       - if: always() && steps.changes.outputs.hera-prometheus-agent == 'true' || github.event == 'workflow_dispatch'
@@ -69,3 +69,24 @@ jobs:
         run: cd hera-all/hera-demo-client; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
       - if: always() && steps.changes.outputs.hera-webhook == 'true' || github.event == 'workflow_dispatch'
         run: cd hera-all/hera-webhook; mvn -U clean package --fail-at-end -Dmaven.test.skip=true; cd ../..
+  check-build-20:
+    name: hera test 20
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Maven Action
+        uses: s4u/setup-maven-action@v1.7.0
+        with:
+          java-version: 20
+          #settings-properties: '[{"propertyName1": "propertyValue1"}, {"propertyName2": "propertyValue2"}]'
+
+      - run: echo '<settings>    <interactiveMode>false</interactiveMode>    <profiles>        <profile>            <repositories>                <repository>                    <snapshots />                    <id>ossrh</id>                    <name>ossrh-snapshot</name>                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>                </repository>            </repositories>            <pluginRepositories>                <pluginRepository>                    <snapshots />                    <id>ossrh</id>                    <name>ossrh-snapshot</name>                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>                </pluginRepository>            </pluginRepositories>            <id>artifactory</id>        </profile>    </profiles>    <activeProfiles>        <activeProfile>artifactory</activeProfile>    </activeProfiles>    <servers>        <server>            <id>github</id>            <username>${env.GITHUB_ACTOR}</username>            <password>${env.GITHUB_TOKEN}</password>        </server>    </servers>    <mirrors/>    <proxies/></settings>' > ~/.m2/settings.xml
+
+      - uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            hera-log:
+              - 'hera-all/hera-log/**'
+        # run only if some file in 'src' folder was changed
+      - if: always() && steps.changes.outputs.hera-log == 'true' || github.event == 'workflow_dispatch'
+        run: cd hera-all/hera-log; mvn -U clean package --fail-at-end -Dmaven.test.skip=true -pl 'log-agent'; cd ../..

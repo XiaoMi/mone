@@ -1,0 +1,200 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: ozhera-namespace
+data:
+  alertmanager.yml: |
+    global:
+      ## The duration of time without triggering an alarm is considered as the time when the alarm issue is resolved.
+      resolve_timeout: 5m
+    route:
+      ## The label list here is the re-grouped label after receiving the alarm information. For example, there are many labels with cluster=A in the received alarm information. Based on these labels, the alarm information can be aggregated in batches into one group.
+      group_by: ['...']
+      ## When a new alert group is created, it is necessary to wait for at least the group_wait time to initialize the notifications. This ensures that there is enough time for the same group to gather as many alert messages as possible before triggering them all at once.
+      ##group_wait: 10s
+      ## After the first alarm is sent, wait for the group_interval time to send a new set of alarm messages.
+      ##group_interval: 1m
+      ## If an alarm message has been successfully sent, you need to wait for the repeat_interval time to resend it.
+      ##repeat_interval: 3h
+      ## Configure default routing rules.
+      receiver: 'web.hook2'
+      routes:
+      - receiver: 'web.hook'
+        match:
+          send_interval: 5m
+        group_interval: 30s
+        repeat_interval: 5m
+        group_wait: 10s
+        group_by: ['alertname','group_key','__alert_id__']
+        continue: false
+      - receiver: 'web.hook'
+        match:
+          send_interval: 15m
+        group_interval: 30s
+        repeat_interval: 15m
+        group_wait: 10s
+        group_by: ['alertname','group_key','__alert_id__']
+        continue: false
+      - receiver: 'web.hook'
+        match:
+          send_interval: 30m
+        group_interval: 30s
+        repeat_interval: 30m
+        group_wait: 10s
+        group_by: ['alertname','group_key','__alert_id__']
+        continue: false
+      - receiver: 'web.hook'
+        match:
+          send_interval: 1h
+        group_interval: 30s
+        repeat_interval: 1h
+        group_wait: 10s
+        group_by: ['alertname','group_key','__alert_id__']
+        continue: false
+      - receiver: 'web.hook'
+        match:
+          send_interval: 2h
+        group_interval: 30s
+        repeat_interval: 2h
+        group_wait: 10s
+        group_by: ['alertname','group_key','__alert_id__']
+        continue: false
+    receivers:
+      - name: 'web.hook'
+        webhook_configs:
+          - url: 'http://prometheus-agent:8080/api/v1/rules/alert/sendAlert'
+      - name: 'web.hook2'
+        webhook_configs:
+          - url: 'http://prometheus-agent:8080/api/v1/rules/alert/sendAlert2'
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: alertmanager-hera-namespace
+  labels:
+    k8s-app: alertmanager-hera-namespace
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /home/work/alertmanager_hera_namespace_pv
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - replace your correct node name
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: alertmanager-hera-namespace
+  namespace: ozhera-namespace
+  labels:
+    k8s-app: alertmanager-hera-namespace
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-storage
+  resources:
+    requests:
+      storage: 2Gi
+  selector:
+    matchLabels:
+      k8s-app: alertmanager-hera-namespace
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alertmanager
+  namespace: ozhera-namespace
+  labels:
+    k8s-app: alertmanager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      k8s-app: alertmanager
+  template:
+    metadata:
+      labels:
+        k8s-app: alertmanager
+    spec:
+      securityContext:
+        fsGroup: 0
+        runAsUser: 0
+        supplementalGroups:
+          - 0
+      containers:
+        - name: alertmanager
+          image: prom/alertmanager:v0.24.0
+          ports:
+            - name: http
+              containerPort: 9093
+          args:
+            ## The specified location for the AlertManager configuration file in the container (absolute path in the Docker container).
+            - "--config.file=/etc/alertmanager/alertmanager.yml"
+            ## Specify the AlertManager management interface address to attach the AlertManager alert information page address to the occurred alert messages.
+            - "--web.external-url=http://alertmanager:30903"
+            ## The specified listening address and port.
+            - '--cluster.advertise-address=0.0.0.0:9093'
+            ## Specified data storage location (absolute location in Docker container)
+            - "--storage.path=/alertmanager"
+            - "--log.level=debug"
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+            requests:
+              cpu: 1000m
+              memory: 512Mi
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: 9093
+            initialDelaySeconds: 5
+            timeoutSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: 9093
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+          volumeMounts:
+            - name: data
+              mountPath: /alertmanager
+            - name: config
+              mountPath: /etc/alertmanager
+        - name: configmap-reload
+          image: jimmidyson/configmap-reload:v0.7.1
+          args:
+            - "--volume-dir=/etc/config"
+            - "--webhook-url=http://localhost:9093/-/reload"
+          resources:
+            limits:
+              cpu: 100m
+              memory: 100Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+          volumeMounts:
+            - name: config
+              mountPath: /etc/config
+              readOnly: true
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: alertmanager-hera-namespace
+        - name: config
+          configMap:
+            name: alertmanager-config

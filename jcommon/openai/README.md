@@ -1,0 +1,1 @@
++ Handling some things that call to chatgpt.

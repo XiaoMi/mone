@@ -1,0 +1,1 @@
+This module is responsible for RPC communication with the agent and Dubbo communication with the manager. It can only be deployed on a single machine.

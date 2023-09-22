@@ -12,25 +12,30 @@ import java.io.Serializable;
 public class MvcConfig implements Serializable {
 
     /**
-     * 是否使用cglib
+     * Whether to use cglib
      */
     private boolean useCglib;
 
     /**
-     * 是否允许跨域
+     * Allow cross-origin
      */
     private boolean allowCross;
 
     /**
-     * 返回结果不包装
+     * The return result is not wrapped.
      */
     private boolean responseOriginalValue;
 
     private int poolSize = 200;
 
     /**
-     * 是否支持下载
+     * Do you support downloading
      */
     private boolean download;
+
+    /**
+     * whether to use coroutines
+     */
+    private boolean virtualThread;
 
 }

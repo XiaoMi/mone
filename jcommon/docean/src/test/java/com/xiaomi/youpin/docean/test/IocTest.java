@@ -40,6 +40,7 @@ import org.junit.Test;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.stream.IntStream;
 
 /**
  * @author goodjava@qq.com
@@ -49,7 +50,7 @@ public class IocTest {
 
 
     /**
-     * 测试移除某个bean
+     * Remove a bean for testing.
      */
     @Test
     public void testRemoveBean() {
@@ -63,14 +64,14 @@ public class IocTest {
         System.out.println(controller.call());
 
         Bean bean = Ioc.ins().getBeanInfo(ServiceDemo.class.getName());
-        //依赖我的
+        //rate limited or exceeded quota
         Map<String, Field> dependenceMap = bean.getDependenceFieldMap();
 
-        //删除一个bean
+        //rate limited or exceeded quota
         Ioc.ins().removeBean(ServiceDemo.class.getName());
-        //会空指针
+        //NPE
         Safe.runAndLog(() -> System.out.println(controller.call()));
-        //加入一个bean
+        //add bean
         ServiceDemo sd2 = new ServiceDemo() {
             @Override
             public String call() {
@@ -149,6 +150,20 @@ public class IocTest {
         System.out.println(service);
         Ioc.ins().getBeans(Bean.Type.component).forEach(it -> {
             System.out.println("component:" + it.getName());
+        });
+    }
+
+
+    @Test
+    public void testLookup() {
+        Aop.ins().init(Maps.newLinkedHashMap());
+        Ioc.ins().init("com.xiaomi.youpin.docean.test","com.xiaomi.youpin.docean.plugin.config");
+        DemoService ds = Ioc.ins().getBean(DemoService.class);
+        IntStream.range(0, 5).forEach(i -> {
+            DemoVo dv = ds.demoVo();
+            System.out.println(dv.getId());
+            dv.setId(System.currentTimeMillis()+"");
+            System.out.println(ds.demoVo());
         });
     }
 

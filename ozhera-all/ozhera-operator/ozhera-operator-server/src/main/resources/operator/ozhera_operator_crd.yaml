@@ -1,0 +1,78 @@
+# mone bootstrap Custom resources
+# apply Install the entire mione system directly.
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: heras.k8s.mone.run
+spec:
+  group: k8s.mone.run
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                resourceList:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      needCreate:
+                        type: boolean
+                      required:
+                        type: boolean
+                      resourceType:
+                        type: string
+                      yamlStr:
+                        type: string
+                      defaultYamlPath:
+                        type: string
+                      remark:
+                        type: string
+                      connectionMapList:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            value:
+                              type: string
+                            remark:
+                              type: string
+                            required:
+                              type: string
+                      defaultExtendConfigPath:
+                        type: array
+                        items:
+                          type: string
+                      propList:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            key:
+                              type: string
+                            value:
+                              type: string
+            status:
+              type: object
+              properties:
+                status:
+                  type: integer
+                msg:
+                  type: string
+      subresources:
+        status: { }
+  names:
+    kind: HeraBootstrap
+    plural: heras
+    singular: hera
+    shortNames:
+      - mb
+  scope: Namespaced

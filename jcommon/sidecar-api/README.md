@@ -1,1 +1,1 @@
-+ sidecar 模式尽量用protobuf作为编码格式(性能好,跨语言)
++ Use protobuf as the encoding format as much as possible in sidecar mode (good performance, cross-language).
