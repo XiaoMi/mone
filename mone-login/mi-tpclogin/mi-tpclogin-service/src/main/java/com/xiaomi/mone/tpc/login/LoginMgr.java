@@ -97,7 +97,7 @@ public abstract class LoginMgr {
         path.append("images/").append(getSource()).append(".png");
         URL url = this.getClass().getClassLoader().getResource(path.toString());
         imgData = ImgUtil.convertToBase64(url.getPath());
-        return imgData;
+        return "data:image/png;base64," + imgData;
     }
 
 }

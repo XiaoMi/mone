@@ -12,7 +12,7 @@ public class ImgUtil {
 
     @SneakyThrows
     public static String convertToBase64(String imagePath) {
-        return "data:image/png;base64," + Base64.getEncoder().encodeToString(readImageFile(imagePath));
+        return Base64.getEncoder().encodeToString(readImageFile(imagePath));
     }
 
     private static byte[] readImageFile(String imagePath) throws IOException {
