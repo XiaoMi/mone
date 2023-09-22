@@ -77,15 +77,8 @@ public class LogFileTest {
 
         @Override
         public void onEvent(ReadEvent event) {
-            List<String> m = mLog.append(event.getReadResult().getLines().get(0));
-            if (m.size() > 0) {
-                System.out.println("--->" + m);
-            }
-//            try {
-//                TimeUnit.MILLISECONDS.sleep(2);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
+            String m = event.getReadResult().getLines().get(0);
+            System.out.println(m);
         }
 
         @Override
@@ -99,13 +92,11 @@ public class LogFileTest {
     public void testLog2() throws IOException {
         LogFile log = new LogFile("/tmp/zzytest/zzytest/server.log", new MyReadListener());
         log.readLine();
-        System.in.read();
     }
 
 
     @Test
     public void testReadFileCutting() throws IOException {
-        System.out.println("111111");
         LogFile log = new LogFile("/home/work/log/hera-operator/server.log", new MyReadListener());
         log.readLine();
         System.in.read();
