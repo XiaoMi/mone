@@ -41,6 +41,7 @@ public class UserUtil {
             vo.setUpdateTime(entity.getUpdateTime().getTime());
         }
         StringBuilder showAccount = new StringBuilder();
+        showAccount.append(entity.getAccount());
         UserTypeEnum typeEnum = UserTypeEnum.getEnum(entity.getType());
         if (UserTypeEnum.CAS_TYPE.equals(typeEnum)
                 || UserTypeEnum.EMAIL.equals(typeEnum)
@@ -48,19 +49,11 @@ public class UserUtil {
                 || UserTypeEnum.GITLAB_TYPE.equals(typeEnum)
                 || UserTypeEnum.GITEE_TYPE.equals(typeEnum)
                 || UserTypeEnum.GITHUB_TYPE.equals(typeEnum)) {
-            showAccount.append(entity.getAccount()).append("(").append(typeEnum.getDesc()).append(")");
+            showAccount.append("(").append(typeEnum.getDesc()).append(")");
         } else if (UserTypeEnum.FEISHU_TYPE.equals(typeEnum) || UserTypeEnum.DINGDING_TYPE.equals(typeEnum)) {
             AuthUserVo userVo = GsonUtil.gsonToBean(entity.getContent(), AuthUserVo.class);
-            if (userVo != null && !StringUtils.isEmpty(userVo.getEmail())) {
-                showAccount.append(userVo.getEmail());
-            } else if (userVo != null && !StringUtils.isEmpty(userVo.getMobile())) {
-                showAccount.append(userVo.getMobile());
-            } else if (userVo != null && !StringUtils.isEmpty(userVo.getName())) {
-                showAccount.append(entity.getId()).append("[").append(userVo.getName()).append("]");
-            } else if (userVo != null && !StringUtils.isEmpty(userVo.getEnName())) {
-                showAccount.append(entity.getId()).append("[").append(userVo.getEnName()).append("]");
-            } else {
-                showAccount.append(entity.getAccount());
+            if (userVo != null && !StringUtils.isEmpty(userVo.getName())) {
+                showAccount.append("[").append(userVo.getName()).append("]");
             }
             showAccount.append("(").append(typeEnum.getDesc()).append(")");
         } else {

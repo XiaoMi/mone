@@ -26,13 +26,13 @@ public class UserFacadeImpl implements UserFacade {
     @ArgCheck
     @Override
     public Result<PageDataVo<UserVo>> list(UserQryParam param) {
-        ResultVo<PageDataVo<UserVo>> resultVo = userService.list(param);
+        ResultVo<PageDataVo<UserVo>> resultVo = userService.list(param, false);
         return ResultUtil.build(resultVo);
     }
 
     @Override
     public Result<UserVo> register(UserRegisterParam param) {
-        UserVo userVo = userService.register(param.getAccount(), param.getUserType());
+        UserVo userVo = userService.register(param.getAccount(), param.getUserType(), param.getContent());
         if (userVo == null) {
             return ResultUtil.build(ResponseCode.OPER_FAIL.build());
         }
