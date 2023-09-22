@@ -85,7 +85,7 @@ public class DingDingLoginMgr extends LoginMgr {
             }
             AuthUserVo userVo = new AuthUserVo();
             userVo.setExprTime(Integer.parseInt(tokenResponseEntity.getBody().get("expireIn").toString()));
-            userVo.setUserType(UserTypeEnum.FEISHU_TYPE.getCode());
+            userVo.setUserType(UserTypeEnum.DINGDING_TYPE.getCode());
             userVo.setAccount(responseEntity.getBody().get("unionId").toString());
             userVo.setToken(TokenUtil.createToken(userVo.getExprTime(), userVo.getAccount(), userVo.getUserType()));
             if (responseEntity.getBody().get("unionId") != null) {

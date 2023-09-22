@@ -13,6 +13,7 @@ import com.xiaomi.mone.tpc.dao.impl.AccountDao;
 import com.xiaomi.mone.tpc.login.common.enums.AccountStatusEnum;
 import com.xiaomi.mone.tpc.login.common.enums.AccountTypeEnum;
 import com.xiaomi.mone.tpc.login.common.param.*;
+import com.xiaomi.mone.tpc.login.common.util.GsonUtil;
 import com.xiaomi.mone.tpc.login.common.util.MD5Util;
 import com.xiaomi.mone.tpc.login.common.vo.AuthAccountVo;
 import com.xiaomi.mone.tpc.login.common.vo.LoginInfoVo;
@@ -73,7 +74,7 @@ public class LoginService {
         UserRegisterParam registerParam = new UserRegisterParam();
         registerParam.setAccount(authUserVo.getAccount());
         registerParam.setUserType(authUserVo.getUserType());
-        //TODO content
+        registerParam.setContent(GsonUtil.gsonString(authUserVo));
         Result<UserVo> result = userFacade.register(registerParam);
         if (result.getCode() != 0) {
             return ResponseCode.OPER_FAIL.build(result.getMessage());
@@ -172,7 +173,6 @@ public class LoginService {
         UserRegisterParam registerParam = new UserRegisterParam();
         registerParam.setAccount(entity.getAccount());
         registerParam.setUserType(accountTypeEnum.getUserType());
-        //TODO content
         Result<UserVo> userVoResult = userFacade.register(registerParam);
         if (userVoResult.getCode() != 0) {
             return ResponseCode.OPER_FAIL.build(userVoResult.getMessage());
