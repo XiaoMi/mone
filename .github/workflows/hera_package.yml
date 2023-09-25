@@ -15,6 +15,7 @@ jobs:
   check-build-8:
     name: hera test
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/jdk8' || github.ref == 'refs/heads/jdk8' || github.event == 'workflow_dispatch'
     steps:
       - name: Setup Maven Action
         uses: s4u/setup-maven-action@v1.7.0
@@ -72,6 +73,7 @@ jobs:
   check-build-20:
     name: hera test 20
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/mastaer' || github.ref == 'refs/heads/main' || github.event == 'workflow_dispatch'
     steps:
       - name: Setup Maven Action
         uses: s4u/setup-maven-action@v1.7.0
