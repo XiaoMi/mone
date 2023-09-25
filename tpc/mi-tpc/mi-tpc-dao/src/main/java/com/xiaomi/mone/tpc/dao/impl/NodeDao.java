@@ -293,6 +293,33 @@ public class NodeDao extends BaseDao{
         return getListByPage(sqlExpr, param, pageData, NodeEntity.class);
     }
 
+
+    public List<NodeEntity> getListByPageByFlagKey(String flagKey, Integer type, Integer status, PageDataVo pageData) {
+        Map<String,Object> param = Maps.newHashMap();
+        setParam(param, "type", type);
+        setParam(param, "status", status);
+        setParam(param, "flagKey", flagKey);
+        StringBuilder sqlExpr = new StringBuilder();
+        sqlExpr.append("select node.* from node_entity node ");
+        if (StringUtils.isNotBlank(flagKey)) {
+            sqlExpr.append(",flag_entity flag ");
+        }
+        sqlExpr.append("where node.deleted=0 ");
+        if (type != null) {
+            sqlExpr.append("and node.type=@type ");
+        }
+        if (status != null) {
+            sqlExpr.append("and node.status=@status ");
+        }
+        if (StringUtils.isNotBlank(flagKey)) {
+            sqlExpr.append("and node.id=flag.parent_id and flag.type=0 and flag.deleted=0 ");
+            sqlExpr.append("and flag.flag_key=@flagKey ");
+        }
+        sqlExpr.append("order by id desc");
+        return getListByPage(sqlExpr, param, pageData, NodeEntity.class);
+    }
+
+
     public List<NodeEntity> getListByPageByOrgIdsAndUserId(String[] orgIds, Long userId, Long parentId, String nodeName, Integer type, Integer status, PageDataVo pageData) {
         if ((orgIds==null || orgIds.length == 0) && userId == null) {
             return getListByPage(parentId, nodeName, type, status, pageData);
