@@ -28,6 +28,7 @@ jobs:
   check-build-20:
     name: Jcommon test 20
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || github.event == 'workflow_dispatch'
     steps:
       - name: Setup Maven Action
         uses: s4u/setup-maven-action@v1.7.0
@@ -41,7 +42,6 @@ jobs:
   check-build-21:
     name: Jcommon test 21
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || github.event == 'workflow_dispatch'
     steps:
       - name: Setup Maven Action
         uses: s4u/setup-maven-action@v1.7.0
