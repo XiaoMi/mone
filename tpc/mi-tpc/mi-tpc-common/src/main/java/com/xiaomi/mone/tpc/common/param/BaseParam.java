@@ -23,7 +23,7 @@ public abstract class BaseParam implements ArgCheck, Serializable {
     private Boolean pager;
 
     public <T> PageDataVo<T> buildPageDataVo() {
-      return buildPageDataVo(300);
+      return buildPageDataVo(999);
     }
 
     public <T> PageDataVo<T> buildPageDataVo(int maxPageSize) {
