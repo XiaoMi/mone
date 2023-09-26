@@ -5,10 +5,14 @@ import com.xiaomi.mone.tpc.login.common.vo.AuthAccountVo;
 import com.xiaomi.mone.tpc.login.common.vo.ResultVo;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 import com.xiaomi.mone.tpc.util.ImgUtil;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.util.ResourceUtils;
 
+import java.io.File;
+import java.io.InputStream;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -89,14 +93,15 @@ public abstract class LoginMgr {
     public abstract String getAuthUrl();
     public abstract String getTokenUrl();
     public abstract String getUserUrl();
+
+    @SneakyThrows
     protected String getLogoData() {
         if (imgData != null) {
             return imgData;
         }
         StringBuilder path = new StringBuilder();
         path.append("images/").append(getSource()).append(".png");
-        URL url = this.getClass().getClassLoader().getResource(path.toString());
-        imgData = ImgUtil.convertToBase64(url.getPath());
+        imgData = ImgUtil.convertToBase64(path.toString());
         return imgData;
     }
 
