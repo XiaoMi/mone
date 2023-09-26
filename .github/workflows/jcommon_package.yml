@@ -15,7 +15,7 @@ jobs:
   check-build-8:
     name: Jcommon test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/jdk8'
+    if: (github.event == 'pull_request' && github.head_ref == 'refs/heads/jdk8')
     steps:
       - name: Setup Maven Action
         uses: s4u/setup-maven-action@v1.7.0
@@ -28,7 +28,7 @@ jobs:
   check-build-20:
     name: Jcommon test 20
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' || github.ref == 'refs/heads/main' || github.event == 'workflow_dispatch'
+    if: (github.event == 'pull_request' && github.head_ref == 'refs/heads/master')
     steps:
       - name: Setup Maven Action
         uses: s4u/setup-maven-action@v1.7.0
