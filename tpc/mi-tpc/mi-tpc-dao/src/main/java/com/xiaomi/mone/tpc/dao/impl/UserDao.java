@@ -88,7 +88,7 @@ public class UserDao extends BaseDao{
         if (StringUtils.isNotBlank(account)) {
             SqlExpressionGroup subSqlExpr = new SqlExpressionGroup();
             subSqlExpr = subSqlExpr.orLike("account", account);
-            subSqlExpr = subSqlExpr.orLike("content->'$.name'", account);
+            subSqlExpr = subSqlExpr.orLike("json_value(content,'$.name')", account);
             sqlExpr.and(subSqlExpr);
         }
         return getListByPage(sqlExpr, pageData, UserEntity.class);

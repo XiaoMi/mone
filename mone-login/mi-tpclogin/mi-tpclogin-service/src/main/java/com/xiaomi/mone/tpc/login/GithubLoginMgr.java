@@ -90,7 +90,7 @@ public class GithubLoginMgr extends LoginMgr {
             return ResponseCode.SUCCESS.build(userVo);
         } catch (Throwable e) {
             log.error("github_oauth2_failed", e);
-            return null;
+            return ResponseCode.UNKNOWN_ERROR.build("用户信息获取异常，请稍后重试");
         }
     }
 

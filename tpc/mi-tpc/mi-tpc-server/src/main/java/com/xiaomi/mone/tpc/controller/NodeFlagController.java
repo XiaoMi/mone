@@ -36,7 +36,7 @@ public class NodeFlagController {
         return nodeFlagService.list(param);
     }
 
-    @ArgCheck(needUser = false)
+    @ArgCheck(needUser = false, needToken = true)
     @RequestMapping(value = "/inner_list")
     public ResultVo<PageDataVo<FlagVo>> innerList(@RequestBody FlagQryParam param) {
         param.setType(FlagTypeEnum.NODE.getCode());

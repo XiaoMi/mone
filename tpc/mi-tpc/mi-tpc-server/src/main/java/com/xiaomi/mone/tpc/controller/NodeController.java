@@ -48,10 +48,10 @@ public class NodeController {
         return nodeService.list(param);
     }
 
-    @ArgCheck(needUser = false)
-    @RequestMapping(value = "/inner_list_by_flagkey")
-    public ResultVo<PageDataVo<NodeVo>> innerListByFlagKey(@RequestBody NodeQryByFlagParam param) {
-        return nodeService.innerListByFlagKey(param);
+    @ArgCheck(needUser = false, needToken = true)
+    @RequestMapping(value = "/inner_list")
+    public ResultVo<PageDataVo<NodeVo>> innerList(@RequestBody NodeQryParam param) {
+        return nodeService.list(param);
     }
 
     @ArgCheck

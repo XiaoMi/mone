@@ -135,19 +135,6 @@ public class NodeService implements NodeHelper{
      * @param param
      * @return
      */
-    public ResultVo<PageDataVo<NodeVo>> innerListByFlagKey(NodeQryByFlagParam param) {
-        PageDataVo<NodeVo> pageData = param.buildPageDataVo();
-        List<NodeEntity> entityList = nodeDao.getListByPageByFlagKey(param.getFlagKey(), param.getType(), param.getStatus(), pageData);
-        List<NodeVo> voList = NodeUtil.toVoList(entityList);
-        pageData.setList(voList);
-        return ResponseCode.SUCCESS.build(pageData);
-    }
-
-    /**
-     * 分页查询
-     * @param param
-     * @return
-     */
     public ResultVo<PageDataVo<NodeVo>> orgNodelist(NodeQryParam param) {
         PageDataVo<NodeVo> pageData = param.buildPageDataVo();
         if (param.getParentOutId() != null && param.getParentOutIdType() != null) {
