@@ -52,6 +52,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -79,8 +80,9 @@ public class RpcClient implements Service {
     @Setter
     private List<Pair<Integer, NettyRequestProcessor>> processorList = Lists.newLinkedList();
 
-
     private AtomicReference<String> serverAddrs = new AtomicReference<>("");
+
+    private AtomicReference<List<String>> serverList = new AtomicReference<>(Lists.newArrayList());
 
     private int pooSize = Runtime.getRuntime().availableProcessors() * 2 + 1;
 
@@ -215,6 +217,15 @@ public class RpcClient implements Service {
             //在nacos查找ip列表并且是enable的
             List<Instance> list = nacosNaming.getAllInstances(serverName)
                     .stream().filter(it -> it.isHealthy() && it.isEnabled()).collect(Collectors.toList());
+
+            if (list.size() > 0) {
+                List<String> addrList = list.stream().map(it -> {
+                    String addr = it.getIp() + ":" + it.getPort();
+                    return addr;
+                }).collect(Collectors.toList());
+                this.serverList.set(addrList);
+            }
+
             if (list.size() > 0) {
                 String serverIp = list.get(0).getIp();
                 int serverPort = list.get(0).getPort();
@@ -338,6 +349,67 @@ public class RpcClient implements Service {
             throw new RpcException(e.getMessage(), e);
         }
     }
+
+
+    /**
+     * Send messages to all server nodes.
+     *
+     * @param req
+     */
+    public void sendToAllMessage(RemotingCommand req) {
+        this.serverList.get().stream().forEach(addr -> {
+            if (StringUtils.isEmpty(addr)) {
+                logger.warn("send message addr is null");
+                return;
+            }
+            try {
+                this.client.invokeOneway(addr, req, req.getTimeout());
+            } catch (Exception e) {
+                throw new RpcException(e.getMessage(), e);
+            }
+        });
+    }
+
+    public void sendToAllMessage(int code, byte[] body, InvokeCallback invokeCallback) {
+        this.serverList.get().stream().forEach(addr -> {
+            if (StringUtils.isEmpty(addr)) {
+                logger.warn("send message addr is null");
+                return;
+            }
+            try {
+                RemotingCommand req = RemotingCommand.createRequestCommand(code);
+                req.setBody(body);
+                this.client.invokeAsync(addr, req, req.getTimeout(), invokeCallback);
+            } catch (Exception e) {
+                throw new RpcException(e.getMessage(), e);
+            }
+        });
+    }
+
+    /**
+     * Send messages according to your own routing rules.
+     *
+     * @param code
+     * @param body
+     * @param function
+     * @param invokeCallback
+     */
+    public void sendMessageWithSelect(int code, byte[] body, Function<List<String>, String> function, InvokeCallback invokeCallback) {
+        List<String> list = this.serverList.get();
+        String addr = function.apply(list);
+        if (StringUtils.isEmpty(addr)) {
+            logger.warn("send message addr is null");
+            return;
+        }
+        try {
+            RemotingCommand req = RemotingCommand.createRequestCommand(code);
+            req.setBody(body);
+            this.client.invokeAsync(addr, req, req.getTimeout(), invokeCallback);
+        } catch (Exception e) {
+            throw new RpcException(e.getMessage(), e);
+        }
+    }
+
 
     public void tell(String addr, int code, String message) {
         try {
