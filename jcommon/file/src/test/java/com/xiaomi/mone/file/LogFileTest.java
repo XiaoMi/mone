@@ -25,6 +25,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 /**
  * @Author goodjava@qq.com
@@ -63,14 +64,19 @@ public class LogFileTest {
     @SneakyThrows
     @Test
     public void testLogFileMonitor() {
-        FileInfoCache.ins().load();
-        Runtime.getRuntime().addShutdownHook(new Thread(()->{
+//        FileInfoCache.ins().load();
+        FileInfoCache.ins().load("/home/work/log/log-agent/milog/memory/.ozhera_pointer");
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             log.info("shutdown");
             FileInfoCache.ins().shutdown();
         }));
         HeraFileMonitor monitor = new HeraFileMonitor();
-        monitor.setListener(new DefaultMonitorListener(monitor));
-        monitor.reg("/tmp/e/");
+        monitor.setListener(new DefaultMonitorListener(monitor, readEvent -> {
+            System.out.println(readEvent.getReadResult().getLines());
+        }));
+        String fileName = "/home/work/log/log-manager/.*.log";
+        Pattern pattern = Pattern.compile(fileName);
+        monitor.reg("/home/work/log/log-manager/", it -> true);
         log.info("reg finish");
         System.in.read();
     }

@@ -12,6 +12,8 @@ public class ReadResult {
 
     private List<String> lines;
 
+    private String filePathName;
+
     private long pointer;
 
     private Long fileMaxPointer;

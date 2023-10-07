@@ -15,9 +15,12 @@ public abstract class FileUtils {
 
     @SneakyThrows
     public static Object fileKey(File file) {
-        BasicFileAttributeView basicview = Files.getFileAttributeView(file.toPath(), BasicFileAttributeView.class);
-        BasicFileAttributes attr = basicview.readAttributes();
-        return attr.fileKey();
+        BasicFileAttributeView basicView = Files.getFileAttributeView(file.toPath(), BasicFileAttributeView.class);
+        BasicFileAttributes attr = basicView.readAttributes();
+        if (null != attr && null != attr.fileKey()) {
+            return attr.fileKey();
+        }
+        return file.getPath();
     }
 
 

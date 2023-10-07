@@ -1,6 +1,7 @@
 package com.xiaomi.mone.file.listener;
 
 import com.xiaomi.mone.file.LogFile2;
+import com.xiaomi.mone.file.ReadEvent;
 import com.xiaomi.mone.file.common.SafeRun;
 import com.xiaomi.mone.file.event.EventListener;
 import com.xiaomi.mone.file.event.EventType;
@@ -10,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
 
 /**
  * @author goodjava@qq.com
@@ -20,10 +22,13 @@ public class DefaultMonitorListener implements EventListener {
 
     private HeraFileMonitor monitor;
 
+    private Consumer<ReadEvent> consumer;
+
     private ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor();
 
-    public DefaultMonitorListener(HeraFileMonitor monitor) {
+    public DefaultMonitorListener(HeraFileMonitor monitor, Consumer<ReadEvent> consumer) {
         this.monitor = monitor;
+        this.consumer = consumer;
     }
 
     @Override
@@ -32,7 +37,7 @@ public class DefaultMonitorListener implements EventListener {
             log.info("log file:{}", event.getFileName());
             LogFile2 logFile = new LogFile2(event.getFileName());
             pool.submit(() -> {
-                logFile.setListener(new OzHeraReadListener(monitor, logFile));
+                logFile.setListener(new OzHeraReadListener(monitor, logFile, consumer));
                 SafeRun.run(() -> logFile.readLine());
             });
         }
@@ -55,7 +60,7 @@ public class DefaultMonitorListener implements EventListener {
             log.info("create:{}", event.getFileName());
             LogFile2 logFile = new LogFile2(event.getFileName());
             pool.submit(() -> {
-                logFile.setListener(new OzHeraReadListener(monitor, logFile));
+                logFile.setListener(new OzHeraReadListener(monitor, logFile, consumer));
                 SafeRun.run(() -> logFile.readLine());
             });
         }

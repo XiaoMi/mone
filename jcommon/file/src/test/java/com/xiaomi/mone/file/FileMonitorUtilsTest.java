@@ -1,7 +1,5 @@
 package com.xiaomi.mone.file;
 
-import com.xiaomi.mone.file.event.EventListener;
-import com.xiaomi.mone.file.event.FileEvent;
 import com.xiaomi.mone.file.ozhera.HeraFileMonitor;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
@@ -18,7 +16,7 @@ public class FileMonitorUtilsTest {
 
     @Test
     public void test1() throws IOException, InterruptedException {
-        new HeraFileMonitor(event -> log.info("{}", event)).reg("/tmp/e/");
+        new HeraFileMonitor(event -> log.info("{}", event)).reg("/tmp/e/", it -> true);
         System.in.read();
     }
 

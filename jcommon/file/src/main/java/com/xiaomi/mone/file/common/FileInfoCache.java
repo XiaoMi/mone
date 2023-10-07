@@ -4,6 +4,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import lombok.Setter;
 import lombok.SneakyThrows;
 
 import java.io.File;
@@ -23,8 +24,8 @@ public class FileInfoCache {
 
     private Gson gson = new Gson();
 
-    private static final String filePath = "/tmp/.ozhera_pointer";
-
+    @Setter
+    private String filePath = "/tmp/.ozhera_pointer";
 
     private static final class LazyHolder {
         private static final FileInfoCache ins = new FileInfoCache();
@@ -61,4 +62,9 @@ public class FileInfoCache {
         }
     }
 
+    @SneakyThrows
+    public void load(String filePath) {
+        this.filePath = filePath;
+        this.load();
+    }
 }
