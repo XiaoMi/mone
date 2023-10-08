@@ -21,6 +21,8 @@ public class UserEntity extends BaseEntity{
     public UserEntity updateForContent(String content) {
         UserEntity entity = new UserEntity();
         entity.setId(this.getId());
+        entity.setType(this.getType());
+        entity.setAccount(this.getAccount());
         entity.setContent(content);
         return entity;
     }
