@@ -79,11 +79,11 @@ public class HeraFileMonitor {
             WatchKey key = watchService.take();
             for (WatchEvent<?> event : key.pollEvents()) {
                 Path modifiedFile = (Path) event.context();
-                if (!predicate.test(modifiedFile.getFileName().toString()) || modifiedFile.getFileName().toString().startsWith(".")) {
+                String filePath = String.format("%s%s", path, modifiedFile.getFileName().toString());
+                if (!predicate.test(filePath) || modifiedFile.getFileName().toString().startsWith(".")) {
                     continue;
                 }
-                String filePath = path + modifiedFile.getFileName();
-                log.info(event.kind() + filePath);
+                log.debug("epoll result,path:{}", event.kind() + filePath);
                 HeraFile hfile = fileMap.get(filePath);
 
                 if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
