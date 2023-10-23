@@ -176,6 +176,7 @@ public class LogFile2 implements ILogFile {
                 readResult.setLines(Lists.newArrayList(line));
                 readResult.setPointer(pointer);
                 readResult.setFileMaxPointer(maxPointer);
+                readResult.setFilePathName(file);
                 readResult.setLineNumber(++lineNumber);
                 ReadEvent event = new ReadEvent(readResult);
 
