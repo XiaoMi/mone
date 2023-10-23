@@ -9,6 +9,7 @@ import com.xiaomi.mone.file.ozhera.HeraFileMonitor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * @author goodjava@qq.com
@@ -21,14 +22,17 @@ public class OzHeraReadListener implements ReadListener {
 
     private LogFile2 logFile;
 
-    public OzHeraReadListener(HeraFileMonitor monitor, LogFile2 logFile) {
+    private Consumer<ReadEvent> consumer;
+
+    public OzHeraReadListener(HeraFileMonitor monitor, LogFile2 logFile, Consumer<ReadEvent> consumer) {
         this.monitor = monitor;
         this.logFile = logFile;
+        this.consumer = consumer;
     }
 
     @Override
     public void onEvent(ReadEvent event) {
-        System.out.println(event.getReadResult().getLines());
+        consumer.accept(event);
     }
 
     @Override

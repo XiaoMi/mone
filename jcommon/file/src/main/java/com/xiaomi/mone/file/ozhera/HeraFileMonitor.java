@@ -17,10 +17,12 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
 
 /**
  * @author goodjava@qq.com
@@ -69,7 +71,7 @@ public class HeraFileMonitor {
         this.listener = listener;
     }
 
-    public void reg(String path) throws IOException, InterruptedException {
+    public void reg(String path, Predicate<String> predicate) throws IOException, InterruptedException {
         Path directory = Paths.get(path);
         File f = directory.toFile();
 
@@ -78,7 +80,7 @@ public class HeraFileMonitor {
             Files.createDirectories(directory);
         }
 
-        Arrays.stream(f.listFiles()).forEach(it -> initFile(it));
+        Arrays.stream(Objects.requireNonNull(f.listFiles())).filter(it -> predicate.test(it.getPath())).forEach(this::initFile);
 
         WatchService watchService = FileSystems.getDefault().newWatchService();
         directory.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_CREATE);
@@ -86,11 +88,11 @@ public class HeraFileMonitor {
             WatchKey key = watchService.take();
             for (WatchEvent<?> event : key.pollEvents()) {
                 Path modifiedFile = (Path) event.context();
-                if (modifiedFile.getFileName().toString().startsWith(".")) {
+                String filePath = String.format("%s%s", path, modifiedFile.getFileName().toString());
+                if (!predicate.test(filePath) || modifiedFile.getFileName().toString().startsWith(".")) {
                     continue;
                 }
-                String filePath = path + "" + modifiedFile.getFileName();
-                log.info(event.kind() + " " + filePath);
+                log.debug("epoll result,path:{}", event.kind() + filePath);
                 HeraFile hfile = fileMap.get(filePath);
 
                 if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
