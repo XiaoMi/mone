@@ -40,14 +40,17 @@ public class HeraFileMonitor {
     @Setter
     private EventListener listener;
 
-
     public HeraFileMonitor() {
+        this(TimeUnit.SECONDS.toMillis(30));
+    }
+
+    public HeraFileMonitor(long removeTime) {
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
             try {
                 List<Pair<String, Object>> remList = Lists.newArrayList();
                 long now = System.currentTimeMillis();
                 fileMap.values().forEach(it -> {
-                    if (now - it.getUtime().get() >= TimeUnit.SECONDS.toMillis(5)) {
+                    if (now - it.getUtime().get() >= removeTime) {
                         remList.add(Pair.of(it.getFileName(), it.getFileKey()));
                     }
                 });
@@ -62,6 +65,7 @@ public class HeraFileMonitor {
         }, 5, 10, TimeUnit.SECONDS);
     }
 
+
     public HeraFileMonitor(EventListener listener) {
         this();
         this.listener = listener;
@@ -70,6 +74,11 @@ public class HeraFileMonitor {
     public void reg(String path, Predicate<String> predicate) throws IOException, InterruptedException {
         Path directory = Paths.get(path);
         File f = directory.toFile();
+
+        if (!f.exists()) {
+            log.info("create directory:{}", directory);
+            Files.createDirectories(directory);
+        }
 
         Arrays.stream(Objects.requireNonNull(f.listFiles())).filter(it -> predicate.test(it.getPath())).forEach(this::initFile);
 
