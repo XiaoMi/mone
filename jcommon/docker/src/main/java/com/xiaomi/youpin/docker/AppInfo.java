@@ -31,4 +31,8 @@ public class AppInfo {
 
     private String appName;
 
+    private int cpuNum;
+
+    private long mem;
+
 }

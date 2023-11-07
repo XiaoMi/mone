@@ -24,6 +24,7 @@ import com.github.dockerjava.core.InvocationBuilder;
 import com.github.dockerjava.core.command.*;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.CollectionUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -472,6 +473,28 @@ public class YpDockerClient {
      */
     public UseInfo containerUseInfo(String ip) {
         final List<Container> list = this.listContainers(Lists.newArrayList(), false);
+
+        Map<String, String> cpuAndMem = new HashMap<>();//envId:cpu,mem
+
+        List<String> ids = list.stream().map(it -> it.getId()).collect(Collectors.toList());
+        Optional<UseInfo> res = ids.stream().map(it -> {
+                    try {
+                        InspectContainerResponse info = this.inspectContainer(it);
+                        UseInfo ui = UseInfo.builder().useCpuNum(getCpuNum(info.getHostConfig().getCpusetCpus()))
+                                .useMemNum(info.getHostConfig().getMemory())
+                                .build();
+                        Map<String, String> labels = info.getConfig().getLabels();
+                        if (!CollectionUtils.isEmpty(labels) && labels.containsKey("ENV_ID")){
+                            cpuAndMem.put(labels.get("ENV_ID"), ui.getUseCpuNum()+","+ui.getUseMemNum());
+                        }
+                        return ui;
+                    } catch (Throwable ex) {
+                        log.warn("error:{}", ex.getMessage());
+                        return new UseInfo(0, 0, new HashSet<>(), Lists.newArrayList());
+                    }
+                }
+        ).reduce((a, b) -> UseInfo.builder().useCpuNum(a.getUseCpuNum() + b.getUseCpuNum()).useMemNum(a.getUseMemNum() + b.getUseMemNum()).build());
+
         List<AppInfo> appList = Lists.newLinkedList();
         Safe.run(() -> appList.addAll(list.stream().filter(it -> {
             Map<String, String> labels = it.getLabels();
@@ -486,25 +509,15 @@ public class YpDockerClient {
             info.setEnvId(labels.get("ENV_ID"));
             info.setAppName(getAppName(it.getImage()));
             info.setIp(ip);
+            if (cpuAndMem.containsKey(info.getEnvId())){
+                String[] cpuMem = cpuAndMem.get(info.getEnvId()).split(",");
+                info.setCpuNum(Integer.parseInt(cpuMem[0]));
+                info.setMem(Long.parseLong(cpuMem[1]));
+            }
             return info;
         }).collect(Collectors.toList())));
 
         log.info("docker app list size:{}", appList.size());
-
-        List<String> ids = list.stream().map(it -> it.getId()).collect(Collectors.toList());
-        Optional<UseInfo> res = ids.stream().map(it -> {
-                    try {
-                        InspectContainerResponse info = this.inspectContainer(it);
-                        UseInfo ui = UseInfo.builder().useCpuNum(getCpuNum(info.getHostConfig().getCpusetCpus()))
-                                .useMemNum(info.getHostConfig().getMemory())
-                                .build();
-                        return ui;
-                    } catch (Throwable ex) {
-                        log.warn("error:{}", ex.getMessage());
-                        return new UseInfo(0, 0, new HashSet<>(), Lists.newArrayList());
-                    }
-                }
-        ).reduce((a, b) -> UseInfo.builder().useCpuNum(a.getUseCpuNum() + b.getUseCpuNum()).useMemNum(a.getUseMemNum() + b.getUseMemNum()).build());
 
         Set<String> appNames = list.stream().map(it -> getAppName(it.getImage())).collect(Collectors.toSet());
         UseInfo info = null;
