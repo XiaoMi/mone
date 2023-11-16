@@ -178,7 +178,7 @@ public class OpenApiTest {
             public void end() {
                 latch.countDown();
             }
-        });
+        }, ReqConfig.builder().model("gpt-4-1106-preview").build());
         latch.await();
     }
 

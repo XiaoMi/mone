@@ -80,6 +80,18 @@ public class JavaPoetTest {
         System.out.println(cu.getType(0).getName().getIdentifier());
     }
 
+    @SneakyThrows
+    @Test
+    public void testParseClass() {
+        JavaParser javaParser = new JavaParser();
+        CompilationUnit cu = javaParser.parse(new File("/tmp/e")).getResult().get();
+        cu.findAll(ClassOrInterfaceDeclaration.class).stream().limit(300).forEach(c->{
+            System.out.println(c.getName());
+            System.out.println(c);
+            System.out.println("-------");
+        });
+    }
+
 
     @Test
     public void test0() {
