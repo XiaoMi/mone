@@ -307,6 +307,18 @@ public class Ioc {
     private void initIoc0(String name, Bean bean, Field field) {
         String realName = getRealName(name);
         Bean b = this.beans.get(realName);
+
+        //If it is an implemented interface, check whether a unique implementation class can be matched.
+        if (!Optional.ofNullable(b).isPresent() && getBean(Cons.AUTO_FIND_IMPL, "false").equals("true")) {
+            Class clazz = field.getType();
+            if (clazz.isInterface()) {
+                Set<Bean> set = getBeanSet(clazz);
+                if (set.size() == 1) {
+                    b = set.toArray(new Bean[]{})[0];
+                }
+            }
+        }
+
         Optional.ofNullable(b).ifPresent(o -> {
             o.incrReferenceCnt();
             o.getDependenceList().add(bean.getName());
@@ -511,6 +523,10 @@ public class Ioc {
 
     public <T> Set<T> getBeans(Class<T> clazz) {
         return beans.values().stream().filter(it -> (clazz.isAssignableFrom(it.getClazz()))).map(it -> (T) it.getObj()).collect(Collectors.toSet());
+    }
+
+    public Set<Bean> getBeanSet(Class<?> clazz) {
+        return beans.values().stream().filter(it -> (clazz.isAssignableFrom(it.getClazz()))).collect(Collectors.toSet());
     }
 
     /**
