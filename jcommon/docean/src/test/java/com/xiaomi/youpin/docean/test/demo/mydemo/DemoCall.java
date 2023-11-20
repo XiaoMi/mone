@@ -16,15 +16,19 @@ public class DemoCall {
     @Resource(name = "$demoName")
     private MyDemo demo;
 
+
     //This is just an interface, but if it only has one implementation class, then Ioc will automatically find this unique implementation class.
     @Resource
     private ICall call;
+
 
 
     public String hi() {
         return demo.hi();
     }
 
+
+  
     public String call() {
         return call.call();
     }
