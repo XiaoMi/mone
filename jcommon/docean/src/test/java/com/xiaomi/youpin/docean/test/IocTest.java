@@ -30,6 +30,7 @@ import com.xiaomi.youpin.docean.test.demo.Demo2Service;
 import com.xiaomi.youpin.docean.test.demo.DemoA;
 import com.xiaomi.youpin.docean.test.demo.DemoService;
 import com.xiaomi.youpin.docean.test.demo.DemoVo;
+import com.xiaomi.youpin.docean.test.demo.mydemo.DemoCall;
 import com.xiaomi.youpin.docean.test.demo3.ControllerDemo;
 import com.xiaomi.youpin.docean.test.demo3.DaoDemo;
 import com.xiaomi.youpin.docean.test.demo3.ServiceDemo;
@@ -140,6 +141,13 @@ public class IocTest {
             list.add(it.getValue().getClazz().toString());
         });
         System.out.println(list);
+    }
+
+    @Test
+    public void testIoc7() {
+        Ioc ioc = Ioc.ins().putBean("$demoName", "com.xiaomi.youpin.docean.test.demo.mydemo.MyDemo1").init("com.xiaomi.youpin.docean.test.demo.mydemo");
+        DemoCall dc = ioc.getBean(DemoCall.class);
+        System.out.println(dc.hi());
     }
 
 

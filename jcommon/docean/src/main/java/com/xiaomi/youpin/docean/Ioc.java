@@ -305,7 +305,8 @@ public class Ioc {
 
 
     private void initIoc0(String name, Bean bean, Field field) {
-        Bean b = this.beans.get(name);
+        String realName = getRealName(name);
+        Bean b = this.beans.get(realName);
         Optional.ofNullable(b).ifPresent(o -> {
             o.incrReferenceCnt();
             o.getDependenceList().add(bean.getName());
@@ -315,9 +316,20 @@ public class Ioc {
 
         //If there is a parent container, try to retrieve it from the parent container (such as Spring).
         if (!Optional.ofNullable(b).isPresent()) {
-            Object obj = Safe.callAndLog(()-> this.contextFunction.apply(name),null);
+            Object obj = Safe.callAndLog(() -> this.contextFunction.apply(realName), null);
             Optional.ofNullable(obj).ifPresent(o -> ReflectUtils.setField(bean.getObj(), field, o));
         }
+    }
+
+    private String getRealName(String name) {
+        //替换成配置中的值
+        if (name.startsWith("$")) {
+            Bean bean = this.beans.get(name);
+            if (null != bean) {
+                return bean.getObj().toString();
+            }
+        }
+        return name;
     }
 
     private void callInit(Bean it) {
