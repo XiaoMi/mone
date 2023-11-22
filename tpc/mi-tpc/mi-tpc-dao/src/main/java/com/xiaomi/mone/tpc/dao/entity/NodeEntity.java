@@ -42,4 +42,7 @@ public class NodeEntity extends BaseEntity{
     @Column(value = "code", wrap = true)
     private String code;
 
+    @Column(value = "env")
+    private String env;
+
 }

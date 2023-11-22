@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.ToString;
 
 import java.util.List;
+import java.util.Map;
 
 @ToString
 @Data
@@ -18,4 +19,5 @@ public class NodeChangeVo {
     private List<String> joinedMembers;
     private Integer iamTreeId;
     private Integer iamTreeType;
+    private Map<String, String> env;
 }

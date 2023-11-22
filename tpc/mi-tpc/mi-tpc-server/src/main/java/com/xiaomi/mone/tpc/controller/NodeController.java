@@ -31,6 +31,12 @@ public class NodeController {
     private NodeService nodeService;
 
     @ArgCheck
+    @RequestMapping(value = "/env")
+    public ResultVo<List<String>> env(@RequestBody NullParam param) {
+        return nodeService.env(param);
+    }
+
+    @ArgCheck
     @RequestMapping(value = "/fast")
     public ResultVo<NodeVo> fast(@RequestBody NullParam param) {
         return nodeService.fast(param);

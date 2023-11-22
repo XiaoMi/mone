@@ -113,6 +113,7 @@ CREATE TABLE `node_entity` (
   `out_id_type` int(2) DEFAULT '0' COMMENT '外部ID类型',
   `env_flag` int(2) DEFAULT '0' COMMENT '环境标记',
   `code` varchar(64) DEFAULT '' COMMENT '节点编码',
+  `env` text DEFAULT NULL COMMENT '环境变量',
   PRIMARY KEY (`id`),
   KEY `idx_parent_id` (`parent_id`),
   KEY `idx_top_id` (`top_id`),

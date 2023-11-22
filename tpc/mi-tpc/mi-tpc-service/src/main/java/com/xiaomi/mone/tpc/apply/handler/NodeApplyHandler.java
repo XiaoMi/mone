@@ -72,6 +72,9 @@ public class NodeApplyHandler extends BaseHandler<ApplyAddNodeParam>{
         param.setMgrUserId(applyEntity.getApplyUserId());
         param.setOrgParam(arg.getOrgParam());
         param.setCode(arg.getCode());
+        if (arg.getEnv() != null) {
+            param.setEnv(arg.getEnv());
+        }
         return nodeHelper.add(true, param);
     }
 }

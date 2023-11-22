@@ -5,6 +5,7 @@ import com.xiaomi.mone.tpc.common.enums.NodeTypeEnum;
 import com.xiaomi.mone.tpc.common.enums.OperActionEnum;
 import com.xiaomi.mone.tpc.common.param.NodeAddParam;
 import com.xiaomi.mone.tpc.common.param.NodeResourceSyncParam;
+import com.xiaomi.mone.tpc.common.util.GsonUtil;
 import com.xiaomi.mone.tpc.common.vo.NodeResourceVo;
 import com.xiaomi.mone.tpc.common.vo.ResponseCode;
 import com.xiaomi.mone.tpc.common.vo.ResultVo;
@@ -90,6 +91,9 @@ public class NodeResourceService {
                 if (curNode == null) {
                     return ResponseCode.OPER_FAIL.build("当前节点不存在");
                 }
+            }
+            if (param.getEnv() != null) {
+                curNode.setEnv(GsonUtil.gsonString(param.getEnv()));
             }
             curNode.setNodeName(param.getNodeName());
             curNode.setDesc(param.getDesc());

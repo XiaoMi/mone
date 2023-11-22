@@ -72,6 +72,7 @@ public class ProNodeChangeRocketMQHelper extends ProNodeChangeHelper {
     @Override
     void realChange(NodeChangeEnum nodeChange, NodeVo nodeVo) throws Throwable {
         NodeChangeVo eventVo = new NodeChangeVo();
+        eventVo.setEnv(nodeVo.getEnv());
         eventVo.setIamTreeType(1);//0-米IAM;1-TPC
         eventVo.setIamTreeId(nodeVo.getId().intValue());
         eventVo.setId(nodeVo.getOutId() != null && nodeVo.getOutId() > 0L ? nodeVo.getOutId() : nodeVo.getId());
