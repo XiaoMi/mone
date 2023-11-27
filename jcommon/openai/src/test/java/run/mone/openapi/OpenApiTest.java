@@ -26,6 +26,7 @@ import io.reactivex.SingleObserver;
 import io.reactivex.disposables.Disposable;
 import lombok.Data;
 import lombok.SneakyThrows;
+import okhttp3.Response;
 import okhttp3.logging.HttpLoggingInterceptor;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
@@ -168,7 +169,7 @@ public class OpenApiTest {
     public void testCallStream() {
         String key = System.getenv("open_api_key");
         CountDownLatch latch = new CountDownLatch(1);
-        OpenaiCall.callStream(key, null, "天空为什么是蓝色的", new String[]{}, new StreamListener() {
+        OpenaiCall.callStream(key, "", "天空为什么是蓝色的", new String[]{}, new StreamListener() {
             @Override
             public void onEvent(String str) {
                 System.out.println(str);
@@ -177,6 +178,11 @@ public class OpenApiTest {
             @Override
             public void end() {
                 latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t, Response response) {
+                System.out.println(t + "" + response);
             }
         });
         latch.await();
