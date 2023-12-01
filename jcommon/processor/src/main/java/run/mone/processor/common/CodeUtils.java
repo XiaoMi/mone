@@ -77,7 +77,7 @@ public abstract class CodeUtils {
                     codeBlockBuilder.addStatement(mm.getCode());
                     CodeBlock newCode = codeBlockBuilder.build();
                     NodeList<Statement> newStatements = javaParser.parseBlock("{" + newCode.toString() + "}").getResult().get().getStatements();
-                    // 在方法的开头插入新代码
+                    //Insert new code at the beginning of the method.
                     method.getBody().ifPresent(body -> {
                         NodeList<Statement> statements = body.getStatements();
                         statements.addAll(0, newStatements);
@@ -89,7 +89,6 @@ public abstract class CodeUtils {
             throw new RuntimeException(e);
         }
     }
-
 
 
     public static List<String> readImports(String code) {
@@ -145,6 +144,7 @@ public abstract class CodeUtils {
 
     /**
      * 是否是class
+     *
      * @param code
      * @return
      */
