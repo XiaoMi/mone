@@ -146,13 +146,12 @@ public class IocTest {
 
     @Test
     public void testIoc7() {
-
         Ioc ioc = Ioc.ins()
                 .putBean("$demoName", "com.xiaomi.youpin.docean.test.demo.mydemo.MyDemo1")
                 .init("com.xiaomi.youpin.docean.test.demo.mydemo");
-
         DemoCall dc = ioc.getBean(DemoCall.class);
         System.out.println(dc.hi());
+        System.out.println(dc.getVal());
     }
 
 

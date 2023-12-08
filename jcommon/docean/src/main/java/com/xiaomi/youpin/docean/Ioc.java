@@ -307,7 +307,7 @@ public class Ioc {
     private void initIoc0(String name, Bean bean, Field field) {
         String realName = getRealName(name);
         Bean b = this.beans.get(realName);
-      
+
         //If it is an implemented interface, check whether a unique implementation class can be matched.
         if (!Optional.ofNullable(b).isPresent() && getBean(Cons.AUTO_FIND_IMPL, "false").equals("true")) {
             Class clazz = field.getType();
@@ -334,8 +334,9 @@ public class Ioc {
     }
 
     private String getRealName(String name) {
-        //替换成配置中的值
-        if (name.startsWith("$")) {
+        //替换成配置中的值(Resource中的name)
+        if (name.startsWith("^")) {
+            name = "$" + name.substring(1);
             Bean bean = this.beans.get(name);
             if (null != bean) {
                 return bean.getObj().toString();
