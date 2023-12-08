@@ -1,6 +1,8 @@
 package com.xiaomi.youpin.docean.test.demo.mydemo;
 
 import com.xiaomi.youpin.docean.anno.Service;
+import lombok.Getter;
+import org.springframework.beans.factory.annotation.Value;
 
 import javax.annotation.Resource;
 
@@ -15,6 +17,11 @@ public class DemoCall {
 
     @Resource(name = "$demoName")
     private MyDemo demo;
+
+
+    @Getter
+    @Value("$val")
+    private String val;
 
 
     //This is just an interface, but if it only has one implementation class, then Ioc will automatically find this unique implementation class.
