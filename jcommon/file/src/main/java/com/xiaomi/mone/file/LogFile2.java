@@ -79,6 +79,15 @@ public class LogFile2 implements ILogFile {
         this.pointer = readPointer();
     }
 
+    public LogFile2(String file, long pointer, long lineNumber) {
+        this.file = file;
+        File f = new File(this.file);
+        this.fileKey = FileUtils.fileKey(f);
+        this.md5 = md5(file);
+        this.pointer = pointer;
+        this.lineNumber = lineNumber;
+    }
+
 
     public LogFile2(String file, ReadListener listener, long pointer, long lineNumber) {
         this.file = file;
@@ -114,6 +123,7 @@ public class LogFile2 implements ILogFile {
             } catch (Exception e) {
                 log.error("file.length() IOException, file:{}", this.file, e);
             }
+            log.info("rel open file:{},pointer:{}", file, this.pointer);
             raf.seek(pointer);
 
             while (true) {

@@ -38,7 +38,7 @@ public class DefaultMonitorListener implements EventListener {
             LogFile2 logFile = new LogFile2(event.getFileName());
             pool.submit(() -> {
                 logFile.setListener(new OzHeraReadListener(monitor, logFile, consumer));
-                SafeRun.run(() -> logFile.readLine());
+                SafeRun.run(logFile::readLine);
             });
         }
 
@@ -58,10 +58,12 @@ public class DefaultMonitorListener implements EventListener {
 
         if (event.getType().equals(EventType.create)) {
             log.info("create:{}", event.getFileName());
-            LogFile2 logFile = new LogFile2(event.getFileName());
+
+//            LogFile2 logFile = new LogFile2(event.getFileName());
+            LogFile2 logFile = new LogFile2(event.getFileName(), 0, 0);
             pool.submit(() -> {
                 logFile.setListener(new OzHeraReadListener(monitor, logFile, consumer));
-                SafeRun.run(() -> logFile.readLine());
+                SafeRun.run(logFile::readLine);
             });
         }
     }
