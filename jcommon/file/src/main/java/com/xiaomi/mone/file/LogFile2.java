@@ -46,7 +46,7 @@ public class LogFile2 implements ILogFile {
     private int beforePointerHashCode;
 
     @Setter
-    private long pointer;
+    private volatile long pointer;
 
     //行号
     private long lineNumber;
@@ -174,7 +174,6 @@ public class LogFile2 implements ILogFile {
                     continue;
                 }
 
-
                 try {
                     pointer = raf.getFilePointer();
                     maxPointer = raf.length();
@@ -194,8 +193,8 @@ public class LogFile2 implements ILogFile {
             }
             raf.close();
             if (stop) {
-                log.info("stop:{}", this.file);
-                FileInfoCache.ins().put(this.fileKey.toString(), FileInfo.builder().pointer(this.pointer).build());
+                log.info("stop:{},pointer:{},fileKey:{}", this.file, this.pointer, this.fileKey);
+                FileInfoCache.ins().put(this.fileKey.toString(), FileInfo.builder().pointer(this.pointer).fileName(this.file).build());
                 break;
             }
         }
@@ -245,11 +244,16 @@ public class LogFile2 implements ILogFile {
         return false;
     }
 
+    public void saveProgress() {
+        if (!stop) {
+            FileInfoCache.ins().put(this.fileKey.toString(), FileInfo.builder().pointer(this.pointer).fileName(this.file).build());
+        }
+    }
 
     public void shutdown() {
         try {
             this.stop = true;
-            FileInfoCache.ins().put(this.fileKey.toString(), FileInfo.builder().pointer(this.pointer).build());
+            FileInfoCache.ins().put(this.fileKey.toString(), FileInfo.builder().pointer(this.pointer).fileName(this.file).build());
         } catch (Throwable ex) {
             log.error(ex.getMessage());
         }

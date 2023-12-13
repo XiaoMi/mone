@@ -13,4 +13,6 @@ public class FileInfo {
 
     private long pointer;
 
+    private String fileName;
+
 }

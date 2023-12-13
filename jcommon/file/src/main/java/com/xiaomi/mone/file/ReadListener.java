@@ -34,4 +34,7 @@ public interface ReadListener {
 
     }
 
+    default void saveProgress() {
+    }
+
 }

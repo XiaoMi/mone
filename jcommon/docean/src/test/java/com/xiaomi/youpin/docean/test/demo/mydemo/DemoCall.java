@@ -23,6 +23,9 @@ public class DemoCall {
     @Value("$val")
     private String val;
 
+    @Resource
+    private DemoInterface demoInterface;
+
 
     //This is just an interface, but if it only has one implementation class, then Ioc will automatically find this unique implementation class.
     @Resource
@@ -31,6 +34,7 @@ public class DemoCall {
 
 
     public String hi() {
+        System.out.println(demoInterface.hi());
         return demo.hi();
     }
 
