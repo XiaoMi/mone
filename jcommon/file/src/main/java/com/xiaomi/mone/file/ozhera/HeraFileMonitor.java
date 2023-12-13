@@ -31,7 +31,6 @@ import java.util.function.Predicate;
 @Slf4j
 public class HeraFileMonitor {
 
-
     @Getter
     private ConcurrentHashMap<Object, HeraFile> map = new ConcurrentHashMap<>();
 
@@ -113,15 +112,15 @@ public class HeraFileMonitor {
                     File file = new File(filePath);
                     Object k = FileUtils.fileKey(file);
 
-                    log.info("ENTRY_CREATE filePath:{},fileKey:{}", filePath, k);
-                    HeraFile hf = HeraFile.builder().file(file).fileKey(k).fileName(filePath).build();
-                    map.putIfAbsent(k, hf);
-                    fileMap.put(filePath, hf);
-
                     if (map.containsKey(k)) {
                         log.info("change name " + map.get(k) + "--->" + file);
                         listener.onEvent(FileEvent.builder().fileKey(k).type(EventType.rename).build());
                     } else {
+                        log.info("ENTRY_CREATE filePath:{},fileKey:{}", filePath, k);
+                        HeraFile hf = HeraFile.builder().file(file).fileKey(k).fileName(filePath).build();
+                        map.putIfAbsent(k, hf);
+                        fileMap.put(filePath, hf);
+
                         listener.onEvent(FileEvent.builder().type(EventType.create).fileName(file.getPath()).build());
                     }
                 }
@@ -150,6 +149,7 @@ public class HeraFileMonitor {
                 if (null != fi) {
                     pointer = fi.getPointer();
                 }
+                log.info("initFile fileName:{},fileKey:{}", name, fileKey);
                 map.put(hf.getFileKey(), hf);
                 fileMap.put(hf.getFileName(), hf);
                 this.listener.onEvent(FileEvent.builder().pointer(pointer).type(EventType.init).fileName(hf.getFileName()).build());

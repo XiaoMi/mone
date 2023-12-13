@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -43,6 +44,8 @@ public class MLog {
      */
     private Pattern customLinePattern;
 
+    private ReentrantLock lock = new ReentrantLock();
+
     /**
      * 匹配 20xx or [20xx
      */
@@ -52,8 +55,7 @@ public class MLog {
     /**
      * 最多聚合200行错误栈，避免queue无限增长
      */
-    private static final int MAX_MERGE_LINE = 200;
-    private byte[] lock = new byte[0];
+    private static final int MAX_MERGE_LINE = 400;
 
     @Deprecated
     public List<String> append(String msg) {
@@ -61,7 +63,8 @@ public class MLog {
         List<String> res = new ArrayList<>();
         boolean isNew = isNew(msg);
         if (isNew) {
-            synchronized (lock) {
+            try {
+                lock.lock();
                 if (msgQueue.size() > 0) {
                     String e = msgQueue.stream().collect(Collectors.joining("\r\n"));
                     res.add(e);
@@ -69,9 +72,12 @@ public class MLog {
                 }
                 //消息入队列
                 msgQueue.offer(msg);
+            } finally {
+                lock.unlock();
             }
         } else {
-            synchronized (lock) {
+            try {
+                lock.lock();
                 //最大错误栈行数判断
                 if (msgQueue.size() >= MAX_MERGE_LINE) {
                     String e = msgQueue.stream().collect(Collectors.joining("\r\n"));
@@ -80,6 +86,8 @@ public class MLog {
                 }
                 //消息入队列
                 msgQueue.offer(msg);
+            } finally {
+                lock.unlock();
             }
         }
 
@@ -91,16 +99,21 @@ public class MLog {
         String res = null;
         boolean isNew = isNew(msg);
         if (isNew) {
-            synchronized (lock) {
+
+            try {
+                lock.lock();
                 if (msgQueue.size() > 0) {
                     res = msgQueue.stream().collect(Collectors.joining("\r\n"));
                     msgQueue.clear();
                 }
                 //消息入队列
                 msgQueue.offer(msg);
+            } finally {
+                lock.unlock();
             }
         } else {
-            synchronized (lock) {
+            try {
+                lock.lock();
                 //最大错误栈行数判断
                 if (msgQueue.size() >= MAX_MERGE_LINE) {
                     res = msgQueue.stream().collect(Collectors.joining("\r\n"));
@@ -108,6 +121,8 @@ public class MLog {
                 }
                 //消息入队列
                 msgQueue.offer(msg);
+            } finally {
+                lock.unlock();
             }
         }
 
@@ -122,26 +137,30 @@ public class MLog {
     @Deprecated
     public List<String> takeRemainMsg() {
         List<String> res = new ArrayList<>();
-        synchronized (lock) {
+        try {
+            lock.lock();
             if (msgQueue.size() > 0) {
                 String e = msgQueue.stream().collect(Collectors.joining("\r\n"));
                 res.add(e);
                 msgQueue.clear();
             }
+        } finally {
+            lock.unlock();
         }
-
         return res;
     }
 
     public String takeRemainMsg2() {
         String res = null;
-        synchronized (lock) {
+        try {
+            lock.lock();
             if (msgQueue.size() > 0) {
                 res = msgQueue.stream().collect(Collectors.joining("\r\n"));
                 msgQueue.clear();
             }
+        } finally {
+            lock.unlock();
         }
-
         return res;
     }
 
