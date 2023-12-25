@@ -17,10 +17,10 @@ import java.util.concurrent.TimeUnit;
  * @author goodjava@qq.com
  */
 @Slf4j
-public class LogFile implements ILogFile{
+public class LogFile implements ILogFile {
 
     @Getter
-    private  String file;
+    private String file;
 
     private MoneRandomAccessFile raf;
 
@@ -38,13 +38,15 @@ public class LogFile implements ILogFile{
     @Getter
     private int beforePointerHashCode;
 
-    private long pointer;
+    @Getter
+    private volatile long pointer;
 
     //行号
     private long lineNumber;
 
     //每次读取时文件的最大偏移量
-    private long maxPointer;
+    @Getter
+    private volatile long maxPointer;
 
     private String md5;
 
@@ -71,14 +73,14 @@ public class LogFile implements ILogFile{
 
     private void open() {
         try {
-            //日志文件进行切分时，减少FileNotFoundException概率
-            TimeUnit.SECONDS.sleep(5);
+            //日志文件进行切分时，减少FileNotFoundException概率,这个应该删掉了,在使用前保证就好了，由于历史原因,降低了休眠时间
+//            TimeUnit.SECONDS.sleep(1);
             //4kb
             this.raf = new MoneRandomAccessFile(file, "r", 1024 * 4);
             reOpen = false;
             reFresh = false;
-        } catch (InterruptedException e) {
-            log.error("open file InterruptedException", e);
+//        } catch (InterruptedException e) {
+//            log.error("open file InterruptedException", e);
         } catch (FileNotFoundException e) {
             log.error("open file FileNotFoundException", e);
         } catch (IOException e) {
@@ -238,7 +240,7 @@ public class LogFile implements ILogFile{
         md.update(msg.getBytes());
         byte[] digest = md.digest();
         StringBuilder sb = new StringBuilder(2 * digest.length);
-        for(byte b : digest) {
+        for (byte b : digest) {
             sb.append(String.format("%02x", b & 0xff));
         }
         return sb.toString().toUpperCase();

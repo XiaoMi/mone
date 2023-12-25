@@ -1,9 +1,7 @@
 package com.xiaomi.youpin.docean.test;
 
 import com.xiaomi.youpin.docean.test.bo.M;
-import jdk.incubator.concurrent.ScopedValue;
 import lombok.SneakyThrows;
-import org.checkerframework.checker.units.qual.C;
 import org.junit.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -30,23 +28,21 @@ public class ScopedTest {
 
         ScopedValue<M> sv = ScopedValue.newInstance();
 
-        IntStream.range(0, num).parallel().forEach(it -> {
-            pool.submit(() -> {
-                M m = new M();
-                m.setId(it);
-                ScopedValue.where(sv, m).run(() -> {
-                    try {
-                        TimeUnit.SECONDS.sleep(1);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
-                    }
-                    i.incrementAndGet();
-                    System.out.println(sv.get().getId());
-                    latch.countDown();
-                });
-
+        IntStream.range(0, num).parallel().forEach(it -> pool.submit(() -> {
+            M m = new M();
+            m.setId(it);
+            ScopedValue.where(sv, m).run(() -> {
+                try {
+                    TimeUnit.SECONDS.sleep(1);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                i.incrementAndGet();
+                System.out.println(sv.get().getId());
+                latch.countDown();
             });
-        });
+
+        }));
         latch.await();
         ;
         System.out.println(i);

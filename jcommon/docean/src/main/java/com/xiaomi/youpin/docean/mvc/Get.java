@@ -17,9 +17,7 @@
 package com.xiaomi.youpin.docean.mvc;
 
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.xiaomi.youpin.docean.anno.RequestParam;
-import com.xiaomi.youpin.docean.exception.DoceanException;
 import com.xiaomi.youpin.docean.mvc.httpmethod.HttpMethodUtils;
 import io.netty.handler.codec.http.QueryStringDecoder;
 
@@ -47,9 +45,11 @@ public abstract class Get {
                 RequestParam param = getRequestParam(it);
                 String name = param.value();
                 if (!params.containsKey(name)) {
-                    throw new DoceanException("Missing parameter:" + name);
+                    array.add("");
+//                    throw new DoceanException("Missing parameter:" + name);
+                } else {
+                    array.add(params.get(name));
                 }
-                array.add(params.get(name));
             }
         });
         return array;
