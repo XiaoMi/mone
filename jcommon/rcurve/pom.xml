@@ -8,12 +8,12 @@
     <version>1.4-jdk20-SNAPSHOT</version>
   </parent>
   <artifactId>rcurve</artifactId>
-  <version>1.4.2-jdk20-jdk20-SNAPSHOT</version>
+  <version>1.4-jdk21-SNAPSHOT</version>
   <dependencies>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>hera-trace</artifactId>
-      <version>1.4-jdk20-SNAPSHOT</version>
+      <version>1.4-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>io.protostuff</groupId>
@@ -39,7 +39,7 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>easy</artifactId>
-      <version>1.4-jdk20-SNAPSHOT</version>
+      <version>1.4-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
@@ -49,13 +49,7 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.1.2</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-core</artifactId>
-      <version>1.1.2</version>
+      <version>1.2.3</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -69,9 +63,9 @@
           <compilerArgs>
             <arg>--enable-preview</arg>
           </compilerArgs>
-          <compilerVersion>20</compilerVersion>
-          <source>20</source>
-          <target>20</target>
+          <compilerVersion>21</compilerVersion>
+          <source>21</source>
+          <target>21</target>
         </configuration>
       </plugin>
     </plugins>
