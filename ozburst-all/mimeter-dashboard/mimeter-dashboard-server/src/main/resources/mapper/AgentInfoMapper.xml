@@ -1,0 +1,538 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="run.mone.mimeter.dashboard.mapper.AgentInfoMapper">
+  <resultMap id="BaseResultMap" type="run.mone.mimeter.dashboard.pojo.AgentInfo">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="server_name" jdbcType="VARCHAR" property="serverName" />
+    <result column="ip" jdbcType="VARCHAR" property="ip" />
+    <result column="port" jdbcType="INTEGER" property="port" />
+    <result column="cpu" jdbcType="INTEGER" property="cpu" />
+    <result column="mem" jdbcType="BIGINT" property="mem" />
+    <result column="use_cpu" jdbcType="INTEGER" property="useCpu" />
+    <result column="use_mem" jdbcType="BIGINT" property="useMem" />
+    <result column="hostname" jdbcType="VARCHAR" property="hostname" />
+    <result column="client_desc" jdbcType="VARCHAR" property="clientDesc" />
+    <result column="ctime" jdbcType="BIGINT" property="ctime" />
+    <result column="utime" jdbcType="BIGINT" property="utime" />
+    <result column="enable" jdbcType="BIT" property="enable" />
+    <result column="node_ip" jdbcType="VARCHAR" property="nodeIp" />
+    <result column="tenant" jdbcType="VARCHAR" property="tenant" />
+    <result column="tenant_cn" jdbcType="VARCHAR" property="tenantCn" />
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="run.mone.mimeter.dashboard.pojo.AgentInfo">
+    <result column="domain_conf" jdbcType="LONGVARCHAR" property="domainConf" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    id, server_name, ip, port, cpu, mem, use_cpu, use_mem, hostname, client_desc, ctime, 
+    utime, enable, node_ip, tenant, tenant_cn
+  </sql>
+  <sql id="Blob_Column_List">
+    domain_conf
+  </sql>
+  <select id="selectByExampleWithBLOBs" parameterType="run.mone.mimeter.dashboard.pojo.AgentInfoExample" resultMap="ResultMapWithBLOBs">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from agent_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByExample" parameterType="run.mone.mimeter.dashboard.pojo.AgentInfoExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from agent_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="ResultMapWithBLOBs">
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from agent_info
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from agent_info
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <delete id="deleteByExample" parameterType="run.mone.mimeter.dashboard.pojo.AgentInfoExample">
+    delete from agent_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="run.mone.mimeter.dashboard.pojo.AgentInfo">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into agent_info (server_name, ip, port, 
+      cpu, mem, use_cpu, use_mem, 
+      hostname, client_desc, ctime, 
+      utime, enable, node_ip, tenant, 
+      tenant_cn, domain_conf)
+    values (#{serverName,jdbcType=VARCHAR}, #{ip,jdbcType=VARCHAR}, #{port,jdbcType=INTEGER}, 
+      #{cpu,jdbcType=INTEGER}, #{mem,jdbcType=BIGINT}, #{useCpu,jdbcType=INTEGER}, #{useMem,jdbcType=BIGINT}, 
+      #{hostname,jdbcType=VARCHAR}, #{clientDesc,jdbcType=VARCHAR}, #{ctime,jdbcType=BIGINT}, 
+      #{utime,jdbcType=BIGINT}, #{enable,jdbcType=BIT}, #{nodeIp,jdbcType=VARCHAR}, #{tenant,jdbcType=VARCHAR}, 
+      #{tenantCn,jdbcType=VARCHAR}, #{domainConf,jdbcType=LONGVARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="run.mone.mimeter.dashboard.pojo.AgentInfo">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into agent_info
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="serverName != null">
+        server_name,
+      </if>
+      <if test="ip != null">
+        ip,
+      </if>
+      <if test="port != null">
+        port,
+      </if>
+      <if test="cpu != null">
+        cpu,
+      </if>
+      <if test="mem != null">
+        mem,
+      </if>
+      <if test="useCpu != null">
+        use_cpu,
+      </if>
+      <if test="useMem != null">
+        use_mem,
+      </if>
+      <if test="hostname != null">
+        hostname,
+      </if>
+      <if test="clientDesc != null">
+        client_desc,
+      </if>
+      <if test="ctime != null">
+        ctime,
+      </if>
+      <if test="utime != null">
+        utime,
+      </if>
+      <if test="enable != null">
+        enable,
+      </if>
+      <if test="nodeIp != null">
+        node_ip,
+      </if>
+      <if test="tenant != null">
+        tenant,
+      </if>
+      <if test="tenantCn != null">
+        tenant_cn,
+      </if>
+      <if test="domainConf != null">
+        domain_conf,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="serverName != null">
+        #{serverName,jdbcType=VARCHAR},
+      </if>
+      <if test="ip != null">
+        #{ip,jdbcType=VARCHAR},
+      </if>
+      <if test="port != null">
+        #{port,jdbcType=INTEGER},
+      </if>
+      <if test="cpu != null">
+        #{cpu,jdbcType=INTEGER},
+      </if>
+      <if test="mem != null">
+        #{mem,jdbcType=BIGINT},
+      </if>
+      <if test="useCpu != null">
+        #{useCpu,jdbcType=INTEGER},
+      </if>
+      <if test="useMem != null">
+        #{useMem,jdbcType=BIGINT},
+      </if>
+      <if test="hostname != null">
+        #{hostname,jdbcType=VARCHAR},
+      </if>
+      <if test="clientDesc != null">
+        #{clientDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="ctime != null">
+        #{ctime,jdbcType=BIGINT},
+      </if>
+      <if test="utime != null">
+        #{utime,jdbcType=BIGINT},
+      </if>
+      <if test="enable != null">
+        #{enable,jdbcType=BIT},
+      </if>
+      <if test="nodeIp != null">
+        #{nodeIp,jdbcType=VARCHAR},
+      </if>
+      <if test="tenant != null">
+        #{tenant,jdbcType=VARCHAR},
+      </if>
+      <if test="tenantCn != null">
+        #{tenantCn,jdbcType=VARCHAR},
+      </if>
+      <if test="domainConf != null">
+        #{domainConf,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="run.mone.mimeter.dashboard.pojo.AgentInfoExample" resultType="java.lang.Long">
+    select count(*) from agent_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update agent_info
+    <set>
+      <if test="record.id != null">
+        id = #{record.id,jdbcType=INTEGER},
+      </if>
+      <if test="record.serverName != null">
+        server_name = #{record.serverName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.ip != null">
+        ip = #{record.ip,jdbcType=VARCHAR},
+      </if>
+      <if test="record.port != null">
+        port = #{record.port,jdbcType=INTEGER},
+      </if>
+      <if test="record.cpu != null">
+        cpu = #{record.cpu,jdbcType=INTEGER},
+      </if>
+      <if test="record.mem != null">
+        mem = #{record.mem,jdbcType=BIGINT},
+      </if>
+      <if test="record.useCpu != null">
+        use_cpu = #{record.useCpu,jdbcType=INTEGER},
+      </if>
+      <if test="record.useMem != null">
+        use_mem = #{record.useMem,jdbcType=BIGINT},
+      </if>
+      <if test="record.hostname != null">
+        hostname = #{record.hostname,jdbcType=VARCHAR},
+      </if>
+      <if test="record.clientDesc != null">
+        client_desc = #{record.clientDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="record.ctime != null">
+        ctime = #{record.ctime,jdbcType=BIGINT},
+      </if>
+      <if test="record.utime != null">
+        utime = #{record.utime,jdbcType=BIGINT},
+      </if>
+      <if test="record.enable != null">
+        enable = #{record.enable,jdbcType=BIT},
+      </if>
+      <if test="record.nodeIp != null">
+        node_ip = #{record.nodeIp,jdbcType=VARCHAR},
+      </if>
+      <if test="record.tenant != null">
+        tenant = #{record.tenant,jdbcType=VARCHAR},
+      </if>
+      <if test="record.tenantCn != null">
+        tenant_cn = #{record.tenantCn,jdbcType=VARCHAR},
+      </if>
+      <if test="record.domainConf != null">
+        domain_conf = #{record.domainConf,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExampleWithBLOBs" parameterType="map">
+    update agent_info
+    set id = #{record.id,jdbcType=INTEGER},
+      server_name = #{record.serverName,jdbcType=VARCHAR},
+      ip = #{record.ip,jdbcType=VARCHAR},
+      port = #{record.port,jdbcType=INTEGER},
+      cpu = #{record.cpu,jdbcType=INTEGER},
+      mem = #{record.mem,jdbcType=BIGINT},
+      use_cpu = #{record.useCpu,jdbcType=INTEGER},
+      use_mem = #{record.useMem,jdbcType=BIGINT},
+      hostname = #{record.hostname,jdbcType=VARCHAR},
+      client_desc = #{record.clientDesc,jdbcType=VARCHAR},
+      ctime = #{record.ctime,jdbcType=BIGINT},
+      utime = #{record.utime,jdbcType=BIGINT},
+      enable = #{record.enable,jdbcType=BIT},
+      node_ip = #{record.nodeIp,jdbcType=VARCHAR},
+      tenant = #{record.tenant,jdbcType=VARCHAR},
+      tenant_cn = #{record.tenantCn,jdbcType=VARCHAR},
+      domain_conf = #{record.domainConf,jdbcType=LONGVARCHAR}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update agent_info
+    set id = #{record.id,jdbcType=INTEGER},
+      server_name = #{record.serverName,jdbcType=VARCHAR},
+      ip = #{record.ip,jdbcType=VARCHAR},
+      port = #{record.port,jdbcType=INTEGER},
+      cpu = #{record.cpu,jdbcType=INTEGER},
+      mem = #{record.mem,jdbcType=BIGINT},
+      use_cpu = #{record.useCpu,jdbcType=INTEGER},
+      use_mem = #{record.useMem,jdbcType=BIGINT},
+      hostname = #{record.hostname,jdbcType=VARCHAR},
+      client_desc = #{record.clientDesc,jdbcType=VARCHAR},
+      ctime = #{record.ctime,jdbcType=BIGINT},
+      utime = #{record.utime,jdbcType=BIGINT},
+      enable = #{record.enable,jdbcType=BIT},
+      node_ip = #{record.nodeIp,jdbcType=VARCHAR},
+      tenant = #{record.tenant,jdbcType=VARCHAR},
+      tenant_cn = #{record.tenantCn,jdbcType=VARCHAR}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="run.mone.mimeter.dashboard.pojo.AgentInfo">
+    update agent_info
+    <set>
+      <if test="serverName != null">
+        server_name = #{serverName,jdbcType=VARCHAR},
+      </if>
+      <if test="ip != null">
+        ip = #{ip,jdbcType=VARCHAR},
+      </if>
+      <if test="port != null">
+        port = #{port,jdbcType=INTEGER},
+      </if>
+      <if test="cpu != null">
+        cpu = #{cpu,jdbcType=INTEGER},
+      </if>
+      <if test="mem != null">
+        mem = #{mem,jdbcType=BIGINT},
+      </if>
+      <if test="useCpu != null">
+        use_cpu = #{useCpu,jdbcType=INTEGER},
+      </if>
+      <if test="useMem != null">
+        use_mem = #{useMem,jdbcType=BIGINT},
+      </if>
+      <if test="hostname != null">
+        hostname = #{hostname,jdbcType=VARCHAR},
+      </if>
+      <if test="clientDesc != null">
+        client_desc = #{clientDesc,jdbcType=VARCHAR},
+      </if>
+      <if test="ctime != null">
+        ctime = #{ctime,jdbcType=BIGINT},
+      </if>
+      <if test="utime != null">
+        utime = #{utime,jdbcType=BIGINT},
+      </if>
+      <if test="enable != null">
+        enable = #{enable,jdbcType=BIT},
+      </if>
+      <if test="nodeIp != null">
+        node_ip = #{nodeIp,jdbcType=VARCHAR},
+      </if>
+      <if test="tenant != null">
+        tenant = #{tenant,jdbcType=VARCHAR},
+      </if>
+      <if test="tenantCn != null">
+        tenant_cn = #{tenantCn,jdbcType=VARCHAR},
+      </if>
+      <if test="domainConf != null">
+        domain_conf = #{domainConf,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="run.mone.mimeter.dashboard.pojo.AgentInfo">
+    update agent_info
+    set server_name = #{serverName,jdbcType=VARCHAR},
+      ip = #{ip,jdbcType=VARCHAR},
+      port = #{port,jdbcType=INTEGER},
+      cpu = #{cpu,jdbcType=INTEGER},
+      mem = #{mem,jdbcType=BIGINT},
+      use_cpu = #{useCpu,jdbcType=INTEGER},
+      use_mem = #{useMem,jdbcType=BIGINT},
+      hostname = #{hostname,jdbcType=VARCHAR},
+      client_desc = #{clientDesc,jdbcType=VARCHAR},
+      ctime = #{ctime,jdbcType=BIGINT},
+      utime = #{utime,jdbcType=BIGINT},
+      enable = #{enable,jdbcType=BIT},
+      node_ip = #{nodeIp,jdbcType=VARCHAR},
+      tenant = #{tenant,jdbcType=VARCHAR},
+      tenant_cn = #{tenantCn,jdbcType=VARCHAR},
+      domain_conf = #{domainConf,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="run.mone.mimeter.dashboard.pojo.AgentInfo">
+    update agent_info
+    set server_name = #{serverName,jdbcType=VARCHAR},
+      ip = #{ip,jdbcType=VARCHAR},
+      port = #{port,jdbcType=INTEGER},
+      cpu = #{cpu,jdbcType=INTEGER},
+      mem = #{mem,jdbcType=BIGINT},
+      use_cpu = #{useCpu,jdbcType=INTEGER},
+      use_mem = #{useMem,jdbcType=BIGINT},
+      hostname = #{hostname,jdbcType=VARCHAR},
+      client_desc = #{clientDesc,jdbcType=VARCHAR},
+      ctime = #{ctime,jdbcType=BIGINT},
+      utime = #{utime,jdbcType=BIGINT},
+      enable = #{enable,jdbcType=BIT},
+      node_ip = #{nodeIp,jdbcType=VARCHAR},
+      tenant = #{tenant,jdbcType=VARCHAR},
+      tenant_cn = #{tenantCn,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    insert into agent_info
+    (server_name, ip, port, cpu, mem, use_cpu, use_mem, hostname, client_desc, ctime, 
+      utime, enable, node_ip, tenant, tenant_cn, domain_conf)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.serverName,jdbcType=VARCHAR}, #{item.ip,jdbcType=VARCHAR}, #{item.port,jdbcType=INTEGER}, 
+        #{item.cpu,jdbcType=INTEGER}, #{item.mem,jdbcType=BIGINT}, #{item.useCpu,jdbcType=INTEGER}, 
+        #{item.useMem,jdbcType=BIGINT}, #{item.hostname,jdbcType=VARCHAR}, #{item.clientDesc,jdbcType=VARCHAR}, 
+        #{item.ctime,jdbcType=BIGINT}, #{item.utime,jdbcType=BIGINT}, #{item.enable,jdbcType=BIT}, 
+        #{item.nodeIp,jdbcType=VARCHAR}, #{item.tenant,jdbcType=VARCHAR}, #{item.tenantCn,jdbcType=VARCHAR}, 
+        #{item.domainConf,jdbcType=LONGVARCHAR})
+    </foreach>
+  </insert>
+  <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
+    insert into agent_info (
+    <foreach collection="selective" item="column" separator=",">
+      ${column.escapedColumnName}
+    </foreach>
+    )
+    values
+    <foreach collection="list" item="item" separator=",">
+      (
+      <foreach collection="selective" item="column" separator=",">
+        <if test="'server_name'.toString() == column.value">
+          #{item.serverName,jdbcType=VARCHAR}
+        </if>
+        <if test="'ip'.toString() == column.value">
+          #{item.ip,jdbcType=VARCHAR}
+        </if>
+        <if test="'port'.toString() == column.value">
+          #{item.port,jdbcType=INTEGER}
+        </if>
+        <if test="'cpu'.toString() == column.value">
+          #{item.cpu,jdbcType=INTEGER}
+        </if>
+        <if test="'mem'.toString() == column.value">
+          #{item.mem,jdbcType=BIGINT}
+        </if>
+        <if test="'use_cpu'.toString() == column.value">
+          #{item.useCpu,jdbcType=INTEGER}
+        </if>
+        <if test="'use_mem'.toString() == column.value">
+          #{item.useMem,jdbcType=BIGINT}
+        </if>
+        <if test="'hostname'.toString() == column.value">
+          #{item.hostname,jdbcType=VARCHAR}
+        </if>
+        <if test="'client_desc'.toString() == column.value">
+          #{item.clientDesc,jdbcType=VARCHAR}
+        </if>
+        <if test="'ctime'.toString() == column.value">
+          #{item.ctime,jdbcType=BIGINT}
+        </if>
+        <if test="'utime'.toString() == column.value">
+          #{item.utime,jdbcType=BIGINT}
+        </if>
+        <if test="'enable'.toString() == column.value">
+          #{item.enable,jdbcType=BIT}
+        </if>
+        <if test="'node_ip'.toString() == column.value">
+          #{item.nodeIp,jdbcType=VARCHAR}
+        </if>
+        <if test="'tenant'.toString() == column.value">
+          #{item.tenant,jdbcType=VARCHAR}
+        </if>
+        <if test="'tenant_cn'.toString() == column.value">
+          #{item.tenantCn,jdbcType=VARCHAR}
+        </if>
+        <if test="'domain_conf'.toString() == column.value">
+          #{item.domainConf,jdbcType=LONGVARCHAR}
+        </if>
+      </foreach>
+      )
+    </foreach>
+  </insert>
+</mapper>

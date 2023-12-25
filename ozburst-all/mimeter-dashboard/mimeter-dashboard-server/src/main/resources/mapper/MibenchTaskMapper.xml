@@ -1,0 +1,894 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="run.mone.mimeter.dashboard.mapper.MibenchTaskMapper">
+  <resultMap id="BaseResultMap" type="run.mone.mimeter.dashboard.pojo.MibenchTask">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="qps" jdbcType="INTEGER" property="qps" />
+    <result column="origin_qps" jdbcType="INTEGER" property="originQps" />
+    <result column="max_qps" jdbcType="INTEGER" property="maxQps" />
+    <result column="scene_id" jdbcType="INTEGER" property="sceneId" />
+    <result column="serial_link_id" jdbcType="INTEGER" property="serialLinkId" />
+    <result column="scene_api_id" jdbcType="INTEGER" property="sceneApiId" />
+    <result column="time" jdbcType="INTEGER" property="time" />
+    <result column="agent_num" jdbcType="INTEGER" property="agentNum" />
+    <result column="finish_agent_num" jdbcType="INTEGER" property="finishAgentNum" />
+    <result column="ctime" jdbcType="BIGINT" property="ctime" />
+    <result column="utime" jdbcType="BIGINT" property="utime" />
+    <result column="state" jdbcType="INTEGER" property="state" />
+    <result column="version" jdbcType="INTEGER" property="version" />
+    <result column="success_num" jdbcType="BIGINT" property="successNum" />
+    <result column="failure_num" jdbcType="BIGINT" property="failureNum" />
+    <result column="task_type" jdbcType="INTEGER" property="taskType" />
+    <result column="parent_task_id" jdbcType="INTEGER" property="parentTaskId" />
+    <result column="report_id" jdbcType="VARCHAR" property="reportId" />
+    <result column="req_param_type" jdbcType="INTEGER" property="reqParamType" />
+    <result column="ok" jdbcType="BIT" property="ok" />
+    <result column="connect_task_num" jdbcType="INTEGER" property="connectTaskNum" />
+    <result column="debug_rt" jdbcType="INTEGER" property="debugRt" />
+    <result column="debug_size" jdbcType="INTEGER" property="debugSize" />
+    <result column="bench_mode" jdbcType="INTEGER" property="benchMode" />
+    <result column="increase_mode" jdbcType="INTEGER" property="increaseMode" />
+    <result column="increase_percent" jdbcType="INTEGER" property="increasePercent" />
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="run.mone.mimeter.dashboard.pojo.MibenchTask">
+    <result column="debug_result" jdbcType="LONGVARCHAR" property="debugResult" />
+    <result column="debug_result_header" jdbcType="LONGVARCHAR" property="debugResultHeader" />
+    <result column="request_params" jdbcType="LONGVARCHAR" property="requestParams" />
+    <result column="debug_trigger_cp" jdbcType="LONGVARCHAR" property="debugTriggerCp" />
+    <result column="debug_trigger_filter_condition" jdbcType="LONGVARCHAR" property="debugTriggerFilterCondition" />
+    <result column="debug_req_headers" jdbcType="LONGVARCHAR" property="debugReqHeaders" />
+    <result column="debug_url" jdbcType="LONGVARCHAR" property="debugUrl" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    id, qps, origin_qps, max_qps, scene_id, serial_link_id, scene_api_id, time, agent_num, 
+    finish_agent_num, ctime, utime, state, version, success_num, failure_num, task_type, 
+    parent_task_id, report_id, req_param_type, ok, connect_task_num, debug_rt, debug_size, 
+    bench_mode, increase_mode, increase_percent
+  </sql>
+  <sql id="Blob_Column_List">
+    debug_result, debug_result_header, request_params, debug_trigger_cp, debug_trigger_filter_condition, 
+    debug_req_headers, debug_url
+  </sql>
+  <select id="selectByExampleWithBLOBs" parameterType="run.mone.mimeter.dashboard.pojo.MibenchTaskExample" resultMap="ResultMapWithBLOBs">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from mibench_task
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByExample" parameterType="run.mone.mimeter.dashboard.pojo.MibenchTaskExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from mibench_task
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="ResultMapWithBLOBs">
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from mibench_task
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from mibench_task
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <delete id="deleteByExample" parameterType="run.mone.mimeter.dashboard.pojo.MibenchTaskExample">
+    delete from mibench_task
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="run.mone.mimeter.dashboard.pojo.MibenchTask">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into mibench_task (qps, origin_qps, max_qps, 
+      scene_id, serial_link_id, scene_api_id, 
+      time, agent_num, finish_agent_num, 
+      ctime, utime, state, 
+      version, success_num, failure_num, 
+      task_type, parent_task_id, report_id, 
+      req_param_type, ok, connect_task_num, 
+      debug_rt, debug_size, bench_mode, 
+      increase_mode, increase_percent, debug_result, 
+      debug_result_header, request_params, 
+      debug_trigger_cp, debug_trigger_filter_condition, 
+      debug_req_headers, debug_url)
+    values (#{qps,jdbcType=INTEGER}, #{originQps,jdbcType=INTEGER}, #{maxQps,jdbcType=INTEGER}, 
+      #{sceneId,jdbcType=INTEGER}, #{serialLinkId,jdbcType=INTEGER}, #{sceneApiId,jdbcType=INTEGER}, 
+      #{time,jdbcType=INTEGER}, #{agentNum,jdbcType=INTEGER}, #{finishAgentNum,jdbcType=INTEGER}, 
+      #{ctime,jdbcType=BIGINT}, #{utime,jdbcType=BIGINT}, #{state,jdbcType=INTEGER}, 
+      #{version,jdbcType=INTEGER}, #{successNum,jdbcType=BIGINT}, #{failureNum,jdbcType=BIGINT}, 
+      #{taskType,jdbcType=INTEGER}, #{parentTaskId,jdbcType=INTEGER}, #{reportId,jdbcType=VARCHAR}, 
+      #{reqParamType,jdbcType=INTEGER}, #{ok,jdbcType=BIT}, #{connectTaskNum,jdbcType=INTEGER}, 
+      #{debugRt,jdbcType=INTEGER}, #{debugSize,jdbcType=INTEGER}, #{benchMode,jdbcType=INTEGER}, 
+      #{increaseMode,jdbcType=INTEGER}, #{increasePercent,jdbcType=INTEGER}, #{debugResult,jdbcType=LONGVARCHAR}, 
+      #{debugResultHeader,jdbcType=LONGVARCHAR}, #{requestParams,jdbcType=LONGVARCHAR}, 
+      #{debugTriggerCp,jdbcType=LONGVARCHAR}, #{debugTriggerFilterCondition,jdbcType=LONGVARCHAR}, 
+      #{debugReqHeaders,jdbcType=LONGVARCHAR}, #{debugUrl,jdbcType=LONGVARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="run.mone.mimeter.dashboard.pojo.MibenchTask">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into mibench_task
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="qps != null">
+        qps,
+      </if>
+      <if test="originQps != null">
+        origin_qps,
+      </if>
+      <if test="maxQps != null">
+        max_qps,
+      </if>
+      <if test="sceneId != null">
+        scene_id,
+      </if>
+      <if test="serialLinkId != null">
+        serial_link_id,
+      </if>
+      <if test="sceneApiId != null">
+        scene_api_id,
+      </if>
+      <if test="time != null">
+        time,
+      </if>
+      <if test="agentNum != null">
+        agent_num,
+      </if>
+      <if test="finishAgentNum != null">
+        finish_agent_num,
+      </if>
+      <if test="ctime != null">
+        ctime,
+      </if>
+      <if test="utime != null">
+        utime,
+      </if>
+      <if test="state != null">
+        state,
+      </if>
+      <if test="version != null">
+        version,
+      </if>
+      <if test="successNum != null">
+        success_num,
+      </if>
+      <if test="failureNum != null">
+        failure_num,
+      </if>
+      <if test="taskType != null">
+        task_type,
+      </if>
+      <if test="parentTaskId != null">
+        parent_task_id,
+      </if>
+      <if test="reportId != null">
+        report_id,
+      </if>
+      <if test="reqParamType != null">
+        req_param_type,
+      </if>
+      <if test="ok != null">
+        ok,
+      </if>
+      <if test="connectTaskNum != null">
+        connect_task_num,
+      </if>
+      <if test="debugRt != null">
+        debug_rt,
+      </if>
+      <if test="debugSize != null">
+        debug_size,
+      </if>
+      <if test="benchMode != null">
+        bench_mode,
+      </if>
+      <if test="increaseMode != null">
+        increase_mode,
+      </if>
+      <if test="increasePercent != null">
+        increase_percent,
+      </if>
+      <if test="debugResult != null">
+        debug_result,
+      </if>
+      <if test="debugResultHeader != null">
+        debug_result_header,
+      </if>
+      <if test="requestParams != null">
+        request_params,
+      </if>
+      <if test="debugTriggerCp != null">
+        debug_trigger_cp,
+      </if>
+      <if test="debugTriggerFilterCondition != null">
+        debug_trigger_filter_condition,
+      </if>
+      <if test="debugReqHeaders != null">
+        debug_req_headers,
+      </if>
+      <if test="debugUrl != null">
+        debug_url,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="qps != null">
+        #{qps,jdbcType=INTEGER},
+      </if>
+      <if test="originQps != null">
+        #{originQps,jdbcType=INTEGER},
+      </if>
+      <if test="maxQps != null">
+        #{maxQps,jdbcType=INTEGER},
+      </if>
+      <if test="sceneId != null">
+        #{sceneId,jdbcType=INTEGER},
+      </if>
+      <if test="serialLinkId != null">
+        #{serialLinkId,jdbcType=INTEGER},
+      </if>
+      <if test="sceneApiId != null">
+        #{sceneApiId,jdbcType=INTEGER},
+      </if>
+      <if test="time != null">
+        #{time,jdbcType=INTEGER},
+      </if>
+      <if test="agentNum != null">
+        #{agentNum,jdbcType=INTEGER},
+      </if>
+      <if test="finishAgentNum != null">
+        #{finishAgentNum,jdbcType=INTEGER},
+      </if>
+      <if test="ctime != null">
+        #{ctime,jdbcType=BIGINT},
+      </if>
+      <if test="utime != null">
+        #{utime,jdbcType=BIGINT},
+      </if>
+      <if test="state != null">
+        #{state,jdbcType=INTEGER},
+      </if>
+      <if test="version != null">
+        #{version,jdbcType=INTEGER},
+      </if>
+      <if test="successNum != null">
+        #{successNum,jdbcType=BIGINT},
+      </if>
+      <if test="failureNum != null">
+        #{failureNum,jdbcType=BIGINT},
+      </if>
+      <if test="taskType != null">
+        #{taskType,jdbcType=INTEGER},
+      </if>
+      <if test="parentTaskId != null">
+        #{parentTaskId,jdbcType=INTEGER},
+      </if>
+      <if test="reportId != null">
+        #{reportId,jdbcType=VARCHAR},
+      </if>
+      <if test="reqParamType != null">
+        #{reqParamType,jdbcType=INTEGER},
+      </if>
+      <if test="ok != null">
+        #{ok,jdbcType=BIT},
+      </if>
+      <if test="connectTaskNum != null">
+        #{connectTaskNum,jdbcType=INTEGER},
+      </if>
+      <if test="debugRt != null">
+        #{debugRt,jdbcType=INTEGER},
+      </if>
+      <if test="debugSize != null">
+        #{debugSize,jdbcType=INTEGER},
+      </if>
+      <if test="benchMode != null">
+        #{benchMode,jdbcType=INTEGER},
+      </if>
+      <if test="increaseMode != null">
+        #{increaseMode,jdbcType=INTEGER},
+      </if>
+      <if test="increasePercent != null">
+        #{increasePercent,jdbcType=INTEGER},
+      </if>
+      <if test="debugResult != null">
+        #{debugResult,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="debugResultHeader != null">
+        #{debugResultHeader,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="requestParams != null">
+        #{requestParams,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="debugTriggerCp != null">
+        #{debugTriggerCp,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="debugTriggerFilterCondition != null">
+        #{debugTriggerFilterCondition,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="debugReqHeaders != null">
+        #{debugReqHeaders,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="debugUrl != null">
+        #{debugUrl,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="run.mone.mimeter.dashboard.pojo.MibenchTaskExample" resultType="java.lang.Long">
+    select count(*) from mibench_task
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update mibench_task
+    <set>
+      <if test="record.id != null">
+        id = #{record.id,jdbcType=INTEGER},
+      </if>
+      <if test="record.qps != null">
+        qps = #{record.qps,jdbcType=INTEGER},
+      </if>
+      <if test="record.originQps != null">
+        origin_qps = #{record.originQps,jdbcType=INTEGER},
+      </if>
+      <if test="record.maxQps != null">
+        max_qps = #{record.maxQps,jdbcType=INTEGER},
+      </if>
+      <if test="record.sceneId != null">
+        scene_id = #{record.sceneId,jdbcType=INTEGER},
+      </if>
+      <if test="record.serialLinkId != null">
+        serial_link_id = #{record.serialLinkId,jdbcType=INTEGER},
+      </if>
+      <if test="record.sceneApiId != null">
+        scene_api_id = #{record.sceneApiId,jdbcType=INTEGER},
+      </if>
+      <if test="record.time != null">
+        time = #{record.time,jdbcType=INTEGER},
+      </if>
+      <if test="record.agentNum != null">
+        agent_num = #{record.agentNum,jdbcType=INTEGER},
+      </if>
+      <if test="record.finishAgentNum != null">
+        finish_agent_num = #{record.finishAgentNum,jdbcType=INTEGER},
+      </if>
+      <if test="record.ctime != null">
+        ctime = #{record.ctime,jdbcType=BIGINT},
+      </if>
+      <if test="record.utime != null">
+        utime = #{record.utime,jdbcType=BIGINT},
+      </if>
+      <if test="record.state != null">
+        state = #{record.state,jdbcType=INTEGER},
+      </if>
+      <if test="record.version != null">
+        version = #{record.version,jdbcType=INTEGER},
+      </if>
+      <if test="record.successNum != null">
+        success_num = #{record.successNum,jdbcType=BIGINT},
+      </if>
+      <if test="record.failureNum != null">
+        failure_num = #{record.failureNum,jdbcType=BIGINT},
+      </if>
+      <if test="record.taskType != null">
+        task_type = #{record.taskType,jdbcType=INTEGER},
+      </if>
+      <if test="record.parentTaskId != null">
+        parent_task_id = #{record.parentTaskId,jdbcType=INTEGER},
+      </if>
+      <if test="record.reportId != null">
+        report_id = #{record.reportId,jdbcType=VARCHAR},
+      </if>
+      <if test="record.reqParamType != null">
+        req_param_type = #{record.reqParamType,jdbcType=INTEGER},
+      </if>
+      <if test="record.ok != null">
+        ok = #{record.ok,jdbcType=BIT},
+      </if>
+      <if test="record.connectTaskNum != null">
+        connect_task_num = #{record.connectTaskNum,jdbcType=INTEGER},
+      </if>
+      <if test="record.debugRt != null">
+        debug_rt = #{record.debugRt,jdbcType=INTEGER},
+      </if>
+      <if test="record.debugSize != null">
+        debug_size = #{record.debugSize,jdbcType=INTEGER},
+      </if>
+      <if test="record.benchMode != null">
+        bench_mode = #{record.benchMode,jdbcType=INTEGER},
+      </if>
+      <if test="record.increaseMode != null">
+        increase_mode = #{record.increaseMode,jdbcType=INTEGER},
+      </if>
+      <if test="record.increasePercent != null">
+        increase_percent = #{record.increasePercent,jdbcType=INTEGER},
+      </if>
+      <if test="record.debugResult != null">
+        debug_result = #{record.debugResult,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.debugResultHeader != null">
+        debug_result_header = #{record.debugResultHeader,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.requestParams != null">
+        request_params = #{record.requestParams,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.debugTriggerCp != null">
+        debug_trigger_cp = #{record.debugTriggerCp,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.debugTriggerFilterCondition != null">
+        debug_trigger_filter_condition = #{record.debugTriggerFilterCondition,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.debugReqHeaders != null">
+        debug_req_headers = #{record.debugReqHeaders,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.debugUrl != null">
+        debug_url = #{record.debugUrl,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExampleWithBLOBs" parameterType="map">
+    update mibench_task
+    set id = #{record.id,jdbcType=INTEGER},
+      qps = #{record.qps,jdbcType=INTEGER},
+      origin_qps = #{record.originQps,jdbcType=INTEGER},
+      max_qps = #{record.maxQps,jdbcType=INTEGER},
+      scene_id = #{record.sceneId,jdbcType=INTEGER},
+      serial_link_id = #{record.serialLinkId,jdbcType=INTEGER},
+      scene_api_id = #{record.sceneApiId,jdbcType=INTEGER},
+      time = #{record.time,jdbcType=INTEGER},
+      agent_num = #{record.agentNum,jdbcType=INTEGER},
+      finish_agent_num = #{record.finishAgentNum,jdbcType=INTEGER},
+      ctime = #{record.ctime,jdbcType=BIGINT},
+      utime = #{record.utime,jdbcType=BIGINT},
+      state = #{record.state,jdbcType=INTEGER},
+      version = #{record.version,jdbcType=INTEGER},
+      success_num = #{record.successNum,jdbcType=BIGINT},
+      failure_num = #{record.failureNum,jdbcType=BIGINT},
+      task_type = #{record.taskType,jdbcType=INTEGER},
+      parent_task_id = #{record.parentTaskId,jdbcType=INTEGER},
+      report_id = #{record.reportId,jdbcType=VARCHAR},
+      req_param_type = #{record.reqParamType,jdbcType=INTEGER},
+      ok = #{record.ok,jdbcType=BIT},
+      connect_task_num = #{record.connectTaskNum,jdbcType=INTEGER},
+      debug_rt = #{record.debugRt,jdbcType=INTEGER},
+      debug_size = #{record.debugSize,jdbcType=INTEGER},
+      bench_mode = #{record.benchMode,jdbcType=INTEGER},
+      increase_mode = #{record.increaseMode,jdbcType=INTEGER},
+      increase_percent = #{record.increasePercent,jdbcType=INTEGER},
+      debug_result = #{record.debugResult,jdbcType=LONGVARCHAR},
+      debug_result_header = #{record.debugResultHeader,jdbcType=LONGVARCHAR},
+      request_params = #{record.requestParams,jdbcType=LONGVARCHAR},
+      debug_trigger_cp = #{record.debugTriggerCp,jdbcType=LONGVARCHAR},
+      debug_trigger_filter_condition = #{record.debugTriggerFilterCondition,jdbcType=LONGVARCHAR},
+      debug_req_headers = #{record.debugReqHeaders,jdbcType=LONGVARCHAR},
+      debug_url = #{record.debugUrl,jdbcType=LONGVARCHAR}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update mibench_task
+    set id = #{record.id,jdbcType=INTEGER},
+      qps = #{record.qps,jdbcType=INTEGER},
+      origin_qps = #{record.originQps,jdbcType=INTEGER},
+      max_qps = #{record.maxQps,jdbcType=INTEGER},
+      scene_id = #{record.sceneId,jdbcType=INTEGER},
+      serial_link_id = #{record.serialLinkId,jdbcType=INTEGER},
+      scene_api_id = #{record.sceneApiId,jdbcType=INTEGER},
+      time = #{record.time,jdbcType=INTEGER},
+      agent_num = #{record.agentNum,jdbcType=INTEGER},
+      finish_agent_num = #{record.finishAgentNum,jdbcType=INTEGER},
+      ctime = #{record.ctime,jdbcType=BIGINT},
+      utime = #{record.utime,jdbcType=BIGINT},
+      state = #{record.state,jdbcType=INTEGER},
+      version = #{record.version,jdbcType=INTEGER},
+      success_num = #{record.successNum,jdbcType=BIGINT},
+      failure_num = #{record.failureNum,jdbcType=BIGINT},
+      task_type = #{record.taskType,jdbcType=INTEGER},
+      parent_task_id = #{record.parentTaskId,jdbcType=INTEGER},
+      report_id = #{record.reportId,jdbcType=VARCHAR},
+      req_param_type = #{record.reqParamType,jdbcType=INTEGER},
+      ok = #{record.ok,jdbcType=BIT},
+      connect_task_num = #{record.connectTaskNum,jdbcType=INTEGER},
+      debug_rt = #{record.debugRt,jdbcType=INTEGER},
+      debug_size = #{record.debugSize,jdbcType=INTEGER},
+      bench_mode = #{record.benchMode,jdbcType=INTEGER},
+      increase_mode = #{record.increaseMode,jdbcType=INTEGER},
+      increase_percent = #{record.increasePercent,jdbcType=INTEGER}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="run.mone.mimeter.dashboard.pojo.MibenchTask">
+    update mibench_task
+    <set>
+      <if test="qps != null">
+        qps = #{qps,jdbcType=INTEGER},
+      </if>
+      <if test="originQps != null">
+        origin_qps = #{originQps,jdbcType=INTEGER},
+      </if>
+      <if test="maxQps != null">
+        max_qps = #{maxQps,jdbcType=INTEGER},
+      </if>
+      <if test="sceneId != null">
+        scene_id = #{sceneId,jdbcType=INTEGER},
+      </if>
+      <if test="serialLinkId != null">
+        serial_link_id = #{serialLinkId,jdbcType=INTEGER},
+      </if>
+      <if test="sceneApiId != null">
+        scene_api_id = #{sceneApiId,jdbcType=INTEGER},
+      </if>
+      <if test="time != null">
+        time = #{time,jdbcType=INTEGER},
+      </if>
+      <if test="agentNum != null">
+        agent_num = #{agentNum,jdbcType=INTEGER},
+      </if>
+      <if test="finishAgentNum != null">
+        finish_agent_num = #{finishAgentNum,jdbcType=INTEGER},
+      </if>
+      <if test="ctime != null">
+        ctime = #{ctime,jdbcType=BIGINT},
+      </if>
+      <if test="utime != null">
+        utime = #{utime,jdbcType=BIGINT},
+      </if>
+      <if test="state != null">
+        state = #{state,jdbcType=INTEGER},
+      </if>
+      <if test="version != null">
+        version = #{version,jdbcType=INTEGER},
+      </if>
+      <if test="successNum != null">
+        success_num = #{successNum,jdbcType=BIGINT},
+      </if>
+      <if test="failureNum != null">
+        failure_num = #{failureNum,jdbcType=BIGINT},
+      </if>
+      <if test="taskType != null">
+        task_type = #{taskType,jdbcType=INTEGER},
+      </if>
+      <if test="parentTaskId != null">
+        parent_task_id = #{parentTaskId,jdbcType=INTEGER},
+      </if>
+      <if test="reportId != null">
+        report_id = #{reportId,jdbcType=VARCHAR},
+      </if>
+      <if test="reqParamType != null">
+        req_param_type = #{reqParamType,jdbcType=INTEGER},
+      </if>
+      <if test="ok != null">
+        ok = #{ok,jdbcType=BIT},
+      </if>
+      <if test="connectTaskNum != null">
+        connect_task_num = #{connectTaskNum,jdbcType=INTEGER},
+      </if>
+      <if test="debugRt != null">
+        debug_rt = #{debugRt,jdbcType=INTEGER},
+      </if>
+      <if test="debugSize != null">
+        debug_size = #{debugSize,jdbcType=INTEGER},
+      </if>
+      <if test="benchMode != null">
+        bench_mode = #{benchMode,jdbcType=INTEGER},
+      </if>
+      <if test="increaseMode != null">
+        increase_mode = #{increaseMode,jdbcType=INTEGER},
+      </if>
+      <if test="increasePercent != null">
+        increase_percent = #{increasePercent,jdbcType=INTEGER},
+      </if>
+      <if test="debugResult != null">
+        debug_result = #{debugResult,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="debugResultHeader != null">
+        debug_result_header = #{debugResultHeader,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="requestParams != null">
+        request_params = #{requestParams,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="debugTriggerCp != null">
+        debug_trigger_cp = #{debugTriggerCp,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="debugTriggerFilterCondition != null">
+        debug_trigger_filter_condition = #{debugTriggerFilterCondition,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="debugReqHeaders != null">
+        debug_req_headers = #{debugReqHeaders,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="debugUrl != null">
+        debug_url = #{debugUrl,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="run.mone.mimeter.dashboard.pojo.MibenchTask">
+    update mibench_task
+    set qps = #{qps,jdbcType=INTEGER},
+      origin_qps = #{originQps,jdbcType=INTEGER},
+      max_qps = #{maxQps,jdbcType=INTEGER},
+      scene_id = #{sceneId,jdbcType=INTEGER},
+      serial_link_id = #{serialLinkId,jdbcType=INTEGER},
+      scene_api_id = #{sceneApiId,jdbcType=INTEGER},
+      time = #{time,jdbcType=INTEGER},
+      agent_num = #{agentNum,jdbcType=INTEGER},
+      finish_agent_num = #{finishAgentNum,jdbcType=INTEGER},
+      ctime = #{ctime,jdbcType=BIGINT},
+      utime = #{utime,jdbcType=BIGINT},
+      state = #{state,jdbcType=INTEGER},
+      version = #{version,jdbcType=INTEGER},
+      success_num = #{successNum,jdbcType=BIGINT},
+      failure_num = #{failureNum,jdbcType=BIGINT},
+      task_type = #{taskType,jdbcType=INTEGER},
+      parent_task_id = #{parentTaskId,jdbcType=INTEGER},
+      report_id = #{reportId,jdbcType=VARCHAR},
+      req_param_type = #{reqParamType,jdbcType=INTEGER},
+      ok = #{ok,jdbcType=BIT},
+      connect_task_num = #{connectTaskNum,jdbcType=INTEGER},
+      debug_rt = #{debugRt,jdbcType=INTEGER},
+      debug_size = #{debugSize,jdbcType=INTEGER},
+      bench_mode = #{benchMode,jdbcType=INTEGER},
+      increase_mode = #{increaseMode,jdbcType=INTEGER},
+      increase_percent = #{increasePercent,jdbcType=INTEGER},
+      debug_result = #{debugResult,jdbcType=LONGVARCHAR},
+      debug_result_header = #{debugResultHeader,jdbcType=LONGVARCHAR},
+      request_params = #{requestParams,jdbcType=LONGVARCHAR},
+      debug_trigger_cp = #{debugTriggerCp,jdbcType=LONGVARCHAR},
+      debug_trigger_filter_condition = #{debugTriggerFilterCondition,jdbcType=LONGVARCHAR},
+      debug_req_headers = #{debugReqHeaders,jdbcType=LONGVARCHAR},
+      debug_url = #{debugUrl,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="run.mone.mimeter.dashboard.pojo.MibenchTask">
+    update mibench_task
+    set qps = #{qps,jdbcType=INTEGER},
+      origin_qps = #{originQps,jdbcType=INTEGER},
+      max_qps = #{maxQps,jdbcType=INTEGER},
+      scene_id = #{sceneId,jdbcType=INTEGER},
+      serial_link_id = #{serialLinkId,jdbcType=INTEGER},
+      scene_api_id = #{sceneApiId,jdbcType=INTEGER},
+      time = #{time,jdbcType=INTEGER},
+      agent_num = #{agentNum,jdbcType=INTEGER},
+      finish_agent_num = #{finishAgentNum,jdbcType=INTEGER},
+      ctime = #{ctime,jdbcType=BIGINT},
+      utime = #{utime,jdbcType=BIGINT},
+      state = #{state,jdbcType=INTEGER},
+      version = #{version,jdbcType=INTEGER},
+      success_num = #{successNum,jdbcType=BIGINT},
+      failure_num = #{failureNum,jdbcType=BIGINT},
+      task_type = #{taskType,jdbcType=INTEGER},
+      parent_task_id = #{parentTaskId,jdbcType=INTEGER},
+      report_id = #{reportId,jdbcType=VARCHAR},
+      req_param_type = #{reqParamType,jdbcType=INTEGER},
+      ok = #{ok,jdbcType=BIT},
+      connect_task_num = #{connectTaskNum,jdbcType=INTEGER},
+      debug_rt = #{debugRt,jdbcType=INTEGER},
+      debug_size = #{debugSize,jdbcType=INTEGER},
+      bench_mode = #{benchMode,jdbcType=INTEGER},
+      increase_mode = #{increaseMode,jdbcType=INTEGER},
+      increase_percent = #{increasePercent,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    insert into mibench_task
+    (qps, origin_qps, max_qps, scene_id, serial_link_id, scene_api_id, time, agent_num, 
+      finish_agent_num, ctime, utime, state, version, success_num, failure_num, task_type, 
+      parent_task_id, report_id, req_param_type, ok, connect_task_num, debug_rt, debug_size, 
+      bench_mode, increase_mode, increase_percent, debug_result, debug_result_header, 
+      request_params, debug_trigger_cp, debug_trigger_filter_condition, debug_req_headers, 
+      debug_url)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.qps,jdbcType=INTEGER}, #{item.originQps,jdbcType=INTEGER}, #{item.maxQps,jdbcType=INTEGER}, 
+        #{item.sceneId,jdbcType=INTEGER}, #{item.serialLinkId,jdbcType=INTEGER}, #{item.sceneApiId,jdbcType=INTEGER}, 
+        #{item.time,jdbcType=INTEGER}, #{item.agentNum,jdbcType=INTEGER}, #{item.finishAgentNum,jdbcType=INTEGER}, 
+        #{item.ctime,jdbcType=BIGINT}, #{item.utime,jdbcType=BIGINT}, #{item.state,jdbcType=INTEGER}, 
+        #{item.version,jdbcType=INTEGER}, #{item.successNum,jdbcType=BIGINT}, #{item.failureNum,jdbcType=BIGINT}, 
+        #{item.taskType,jdbcType=INTEGER}, #{item.parentTaskId,jdbcType=INTEGER}, #{item.reportId,jdbcType=VARCHAR}, 
+        #{item.reqParamType,jdbcType=INTEGER}, #{item.ok,jdbcType=BIT}, #{item.connectTaskNum,jdbcType=INTEGER}, 
+        #{item.debugRt,jdbcType=INTEGER}, #{item.debugSize,jdbcType=INTEGER}, #{item.benchMode,jdbcType=INTEGER}, 
+        #{item.increaseMode,jdbcType=INTEGER}, #{item.increasePercent,jdbcType=INTEGER}, 
+        #{item.debugResult,jdbcType=LONGVARCHAR}, #{item.debugResultHeader,jdbcType=LONGVARCHAR}, 
+        #{item.requestParams,jdbcType=LONGVARCHAR}, #{item.debugTriggerCp,jdbcType=LONGVARCHAR}, 
+        #{item.debugTriggerFilterCondition,jdbcType=LONGVARCHAR}, #{item.debugReqHeaders,jdbcType=LONGVARCHAR}, 
+        #{item.debugUrl,jdbcType=LONGVARCHAR})
+    </foreach>
+  </insert>
+  <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
+    insert into mibench_task (
+    <foreach collection="selective" item="column" separator=",">
+      ${column.escapedColumnName}
+    </foreach>
+    )
+    values
+    <foreach collection="list" item="item" separator=",">
+      (
+      <foreach collection="selective" item="column" separator=",">
+        <if test="'qps'.toString() == column.value">
+          #{item.qps,jdbcType=INTEGER}
+        </if>
+        <if test="'origin_qps'.toString() == column.value">
+          #{item.originQps,jdbcType=INTEGER}
+        </if>
+        <if test="'max_qps'.toString() == column.value">
+          #{item.maxQps,jdbcType=INTEGER}
+        </if>
+        <if test="'scene_id'.toString() == column.value">
+          #{item.sceneId,jdbcType=INTEGER}
+        </if>
+        <if test="'serial_link_id'.toString() == column.value">
+          #{item.serialLinkId,jdbcType=INTEGER}
+        </if>
+        <if test="'scene_api_id'.toString() == column.value">
+          #{item.sceneApiId,jdbcType=INTEGER}
+        </if>
+        <if test="'time'.toString() == column.value">
+          #{item.time,jdbcType=INTEGER}
+        </if>
+        <if test="'agent_num'.toString() == column.value">
+          #{item.agentNum,jdbcType=INTEGER}
+        </if>
+        <if test="'finish_agent_num'.toString() == column.value">
+          #{item.finishAgentNum,jdbcType=INTEGER}
+        </if>
+        <if test="'ctime'.toString() == column.value">
+          #{item.ctime,jdbcType=BIGINT}
+        </if>
+        <if test="'utime'.toString() == column.value">
+          #{item.utime,jdbcType=BIGINT}
+        </if>
+        <if test="'state'.toString() == column.value">
+          #{item.state,jdbcType=INTEGER}
+        </if>
+        <if test="'version'.toString() == column.value">
+          #{item.version,jdbcType=INTEGER}
+        </if>
+        <if test="'success_num'.toString() == column.value">
+          #{item.successNum,jdbcType=BIGINT}
+        </if>
+        <if test="'failure_num'.toString() == column.value">
+          #{item.failureNum,jdbcType=BIGINT}
+        </if>
+        <if test="'task_type'.toString() == column.value">
+          #{item.taskType,jdbcType=INTEGER}
+        </if>
+        <if test="'parent_task_id'.toString() == column.value">
+          #{item.parentTaskId,jdbcType=INTEGER}
+        </if>
+        <if test="'report_id'.toString() == column.value">
+          #{item.reportId,jdbcType=VARCHAR}
+        </if>
+        <if test="'req_param_type'.toString() == column.value">
+          #{item.reqParamType,jdbcType=INTEGER}
+        </if>
+        <if test="'ok'.toString() == column.value">
+          #{item.ok,jdbcType=BIT}
+        </if>
+        <if test="'connect_task_num'.toString() == column.value">
+          #{item.connectTaskNum,jdbcType=INTEGER}
+        </if>
+        <if test="'debug_rt'.toString() == column.value">
+          #{item.debugRt,jdbcType=INTEGER}
+        </if>
+        <if test="'debug_size'.toString() == column.value">
+          #{item.debugSize,jdbcType=INTEGER}
+        </if>
+        <if test="'bench_mode'.toString() == column.value">
+          #{item.benchMode,jdbcType=INTEGER}
+        </if>
+        <if test="'increase_mode'.toString() == column.value">
+          #{item.increaseMode,jdbcType=INTEGER}
+        </if>
+        <if test="'increase_percent'.toString() == column.value">
+          #{item.increasePercent,jdbcType=INTEGER}
+        </if>
+        <if test="'debug_result'.toString() == column.value">
+          #{item.debugResult,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'debug_result_header'.toString() == column.value">
+          #{item.debugResultHeader,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'request_params'.toString() == column.value">
+          #{item.requestParams,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'debug_trigger_cp'.toString() == column.value">
+          #{item.debugTriggerCp,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'debug_trigger_filter_condition'.toString() == column.value">
+          #{item.debugTriggerFilterCondition,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'debug_req_headers'.toString() == column.value">
+          #{item.debugReqHeaders,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'debug_url'.toString() == column.value">
+          #{item.debugUrl,jdbcType=LONGVARCHAR}
+        </if>
+      </foreach>
+      )
+    </foreach>
+  </insert>
+</mapper>
