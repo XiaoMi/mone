@@ -32,7 +32,7 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-db</artifactId>
-      <version>1.4-jdk20-SNAPSHOT</version>
+      <version>1.4-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>

@@ -8,4 +8,5 @@
     <version>1.4-jdk20-SNAPSHOT</version>
   </parent>
   <artifactId>docean-plugin-config</artifactId>
+  <version>1.4-jdk21-SNAPSHOT</version>
 </project>
