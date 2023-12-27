@@ -5,10 +5,9 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>docean-plugin</artifactId>
-    <version>1.4-jdk20-SNAPSHOT</version>
+    <version>1.4-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>docean-plugin-sql</artifactId>
-  <version>1.4-jdk21-SNAPSHOT</version>
   <dependencies>
     <dependency>
       <groupId>run.mone</groupId>
