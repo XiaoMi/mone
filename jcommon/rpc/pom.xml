@@ -8,7 +8,7 @@
     <version>1.4-jdk20-SNAPSHOT</version>
   </parent>
   <artifactId>rpc</artifactId>
-  <version>1.7-jdk20-SNAPSHOT</version>
+  <version>1.4-jdk21-SNAPSHOT</version>
   <dependencies>
     <dependency>
       <groupId>javax.annotation</groupId>
@@ -19,12 +19,7 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
-      <version>1.1.2</version>
-    </dependency>
-    <dependency>
-      <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-core</artifactId>
-      <version>1.1.2</version>
+      <version>1.2.3</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>
@@ -50,12 +45,12 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>easy</artifactId>
-      <version>1.4-jdk20-SNAPSHOT</version>
+      <version>1.4-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>rpc-codes</artifactId>
-      <version>1.4-jdk20-SNAPSHOT</version>
+      <version>1.4-jdk21-SNAPSHOT</version>
     </dependency>
   </dependencies>
 </project>
