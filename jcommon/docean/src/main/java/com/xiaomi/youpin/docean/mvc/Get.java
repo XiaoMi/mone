@@ -17,6 +17,8 @@
 package com.xiaomi.youpin.docean.mvc;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.xiaomi.youpin.docean.anno.RequestParam;
 import com.xiaomi.youpin.docean.mvc.httpmethod.HttpMethodUtils;
 import io.netty.handler.codec.http.QueryStringDecoder;
@@ -31,14 +33,18 @@ import java.util.stream.Collectors;
  */
 public abstract class Get {
 
-    public static JsonArray getParams(HttpRequestMethod method, String uri) {
+    public static JsonElement getParams(HttpRequestMethod method, String uri) {
         QueryStringDecoder decoder = new QueryStringDecoder(uri);
         Map<String, String> params = decoder.parameters().entrySet().stream().collect(Collectors.toMap(it -> it.getKey(), it -> it.getValue().get(0)));
-        JsonArray array = new JsonArray();
-        HttpMethodUtils.addMvcContext(method, array);
-        if (null == params) {
-            return array;
+
+        //只有一个参数,并且是MvcContext
+        if (HttpMethodUtils.paramIsMvcContext(method)) {
+            JsonObject res = new JsonObject();
+            params.entrySet().forEach(it-> res.addProperty(it.getKey(),it.getValue()));
+            return res;
         }
+
+        JsonArray array = new JsonArray();
         Annotation[][] anns = method.getMethod().getParameterAnnotations();
         Arrays.stream(anns).forEach(it -> {
             if (it.length > 0) {
@@ -46,7 +52,6 @@ public abstract class Get {
                 String name = param.value();
                 if (!params.containsKey(name)) {
                     array.add("");
-//                    throw new DoceanException("Missing parameter:" + name);
                 } else {
                     array.add(params.get(name));
                 }
