@@ -20,20 +20,24 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.xiaomi.youpin.docean.mvc.httpmethod.HttpMethodUtils;
+import com.xiaomi.youpin.docean.mvc.util.GsonUtils;
 
 /**
  * @author goodjava@qq.com
  */
 public abstract class Post {
 
-    private static Gson gson = new Gson();
 
-    public static JsonArray getParams(HttpRequestMethod method, byte[] data) {
-        JsonElement arguments = (null == data || data.length == 0) ? null : gson.fromJson(new String(data), JsonElement.class);
+    public static JsonArray getParams(HttpRequestMethod method, byte[] data, MvcContext context) {
+        JsonElement arguments = (null == data || data.length == 0) ? null : GsonUtils.gson.fromJson(new String(data), JsonElement.class);
+
+        context.setParams(arguments);
+
         JsonArray array = new JsonArray();
         HttpMethodUtils.addMvcContext(method, array);
 
         if (null == arguments) {
+            context.setParams(array);
             return array;
         }
 

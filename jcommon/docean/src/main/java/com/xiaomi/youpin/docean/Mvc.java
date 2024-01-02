@@ -169,10 +169,13 @@ public class Mvc {
 
     public void callMethod(MvcContext context, MvcRequest request, MvcResponse response, MvcResult<Object> result, HttpRequestMethod method) {
         Safe.run(() -> {
-            JsonElement args = getArgs(method, request.getMethod().toLowerCase(Locale.ROOT), request);
-            context.setParams(args);
-            Object[] params = methodInvoker.getMethodParams(method.getMethod(), args);
-            setMvcContext(context, params);
+            JsonElement args = getArgs(method, request.getMethod().toLowerCase(Locale.ROOT), request, context);
+            Object[] params = new Object[]{null};
+            if (method.getMethod().getParameterTypes().length == 1 && method.getMethod().getParameterTypes()[0].equals(MvcContext.class)) {
+                params[0] = context;
+            } else {
+                params = methodInvoker.getMethodParams(method.getMethod(), args);
+            }
             Object data = this.mvcConfig.isUseCglib() ? methodInvoker.invokeFastMethod(method.getObj(), method.getMethod(), params) :
                     methodInvoker.invokeMethod(method.getObj(), method.getMethod(), params);
 
@@ -229,11 +232,11 @@ public class Mvc {
      * @param httpMethod
      * @return
      */
-    private JsonElement getArgs(HttpRequestMethod method, String httpMethod, MvcRequest req) {
+    private JsonElement getArgs(HttpRequestMethod method, String httpMethod, MvcRequest req, MvcContext context) {
         if (httpMethod.equalsIgnoreCase("get")) {
-            return Get.getParams(method, req.getUri());
+            return Get.getParams(method, req.getUri(), context);
         } else if (httpMethod.equalsIgnoreCase("post")) {
-            return Post.getParams(method, req.getBody());
+            return Post.getParams(method, req.getBody(), context);
         } else {
             throw new DoceanException("don't support:" + httpMethod);
         }
