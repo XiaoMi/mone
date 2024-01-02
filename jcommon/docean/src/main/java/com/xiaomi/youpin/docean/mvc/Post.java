@@ -28,12 +28,13 @@ public abstract class Post {
 
     private static Gson gson = new Gson();
 
-    public static JsonArray getParams(HttpRequestMethod method, byte[] data) {
+    public static JsonArray getParams(HttpRequestMethod method, byte[] data, MvcContext context) {
         JsonElement arguments = (null == data || data.length == 0) ? null : gson.fromJson(new String(data), JsonElement.class);
         JsonArray array = new JsonArray();
         HttpMethodUtils.addMvcContext(method, array);
 
         if (null == arguments) {
+            context.setParams(array);
             return array;
         }
 
@@ -48,6 +49,8 @@ public abstract class Post {
         if (arguments.isJsonPrimitive()) {
             array.add(arguments.getAsJsonPrimitive());
         }
+
+        context.setParams(array);
 
         return array;
     }
