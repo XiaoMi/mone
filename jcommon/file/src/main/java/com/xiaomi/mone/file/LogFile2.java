@@ -46,7 +46,7 @@ public class LogFile2 implements ILogFile {
     private int beforePointerHashCode;
 
     @Setter
-    private long pointer;
+    private volatile long pointer;
 
     //行号
     private long lineNumber;
@@ -77,6 +77,15 @@ public class LogFile2 implements ILogFile {
         this.fileKey = FileUtils.fileKey(f);
         this.md5 = md5(file);
         this.pointer = readPointer();
+    }
+
+    public LogFile2(String file, long pointer, long lineNumber) {
+        this.file = file;
+        File f = new File(this.file);
+        this.fileKey = FileUtils.fileKey(f);
+        this.md5 = md5(file);
+        this.pointer = pointer;
+        this.lineNumber = lineNumber;
     }
 
 
@@ -114,6 +123,7 @@ public class LogFile2 implements ILogFile {
             } catch (Exception e) {
                 log.error("file.length() IOException, file:{}", this.file, e);
             }
+            log.info("rel open file:{},pointer:{}", file, this.pointer);
             raf.seek(pointer);
 
             while (true) {
@@ -164,7 +174,6 @@ public class LogFile2 implements ILogFile {
                     continue;
                 }
 
-
                 try {
                     pointer = raf.getFilePointer();
                     maxPointer = raf.length();
@@ -184,8 +193,8 @@ public class LogFile2 implements ILogFile {
             }
             raf.close();
             if (stop) {
-                log.info("stop:{}", this.file);
-                FileInfoCache.ins().put(this.fileKey.toString(), FileInfo.builder().pointer(this.pointer).build());
+                log.info("stop:{},pointer:{},fileKey:{}", this.file, this.pointer, this.fileKey);
+                FileInfoCache.ins().put(this.fileKey.toString(), FileInfo.builder().pointer(this.pointer).fileName(this.file).build());
                 break;
             }
         }
@@ -235,11 +244,16 @@ public class LogFile2 implements ILogFile {
         return false;
     }
 
+    public void saveProgress() {
+        if (!stop) {
+            FileInfoCache.ins().put(this.fileKey.toString(), FileInfo.builder().pointer(this.pointer).fileName(this.file).build());
+        }
+    }
 
     public void shutdown() {
         try {
             this.stop = true;
-            FileInfoCache.ins().put(this.fileKey.toString(), FileInfo.builder().pointer(this.pointer).build());
+            FileInfoCache.ins().put(this.fileKey.toString(), FileInfo.builder().pointer(this.pointer).fileName(this.file).build());
         } catch (Throwable ex) {
             log.error(ex.getMessage());
         }

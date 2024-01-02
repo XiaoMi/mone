@@ -45,10 +45,16 @@ public class OzHeraReadListener implements ReadListener {
     }
 
     @Override
+    public void saveProgress() {
+        logFile.saveProgress();
+    }
+
+    @Override
     public boolean isBreak(String line) {
         if (null == line) {
             HeraFile f = monitor.getMap().get(logFile.getFileKey());
             if (null == f || f.getState().get() == 1) {
+                log.info("file isBreak,file:{},f:{}", logFile.getFile(), f);
                 return true;
             }
         }

@@ -1,0 +1,401 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="run.mone.mimeter.dashboard.mapper.SlaRuleMapper">
+  <resultMap id="BaseResultMap" type="run.mone.mimeter.dashboard.pojo.SlaRule">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="sla_id" jdbcType="INTEGER" property="slaId" />
+    <result column="name" jdbcType="VARCHAR" property="name" />
+    <result column="rule_item_type" jdbcType="VARCHAR" property="ruleItemType" />
+    <result column="rule_item" jdbcType="VARCHAR" property="ruleItem" />
+    <result column="compare_condition" jdbcType="VARCHAR" property="compareCondition" />
+    <result column="compare_value" jdbcType="INTEGER" property="compareValue" />
+    <result column="degree" jdbcType="INTEGER" property="degree" />
+    <result column="action_level" jdbcType="VARCHAR" property="actionLevel" />
+    <result column="ctime" jdbcType="BIGINT" property="ctime" />
+    <result column="utime" jdbcType="BIGINT" property="utime" />
+    <result column="creator" jdbcType="VARCHAR" property="creator" />
+    <result column="updater" jdbcType="VARCHAR" property="updater" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    id, sla_id, name, rule_item_type, rule_item, compare_condition, compare_value, degree, 
+    action_level, ctime, utime, creator, updater
+  </sql>
+  <select id="selectByExample" parameterType="run.mone.mimeter.dashboard.pojo.SlaRuleExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from sla_rule
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from sla_rule
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from sla_rule
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <delete id="deleteByExample" parameterType="run.mone.mimeter.dashboard.pojo.SlaRuleExample">
+    delete from sla_rule
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="run.mone.mimeter.dashboard.pojo.SlaRule">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into sla_rule (sla_id, name, rule_item_type, 
+      rule_item, compare_condition, compare_value, 
+      degree, action_level, ctime, 
+      utime, creator, updater
+      )
+    values (#{slaId,jdbcType=INTEGER}, #{name,jdbcType=VARCHAR}, #{ruleItemType,jdbcType=VARCHAR}, 
+      #{ruleItem,jdbcType=VARCHAR}, #{compareCondition,jdbcType=VARCHAR}, #{compareValue,jdbcType=INTEGER}, 
+      #{degree,jdbcType=INTEGER}, #{actionLevel,jdbcType=VARCHAR}, #{ctime,jdbcType=BIGINT}, 
+      #{utime,jdbcType=BIGINT}, #{creator,jdbcType=VARCHAR}, #{updater,jdbcType=VARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="run.mone.mimeter.dashboard.pojo.SlaRule">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into sla_rule
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="slaId != null">
+        sla_id,
+      </if>
+      <if test="name != null">
+        name,
+      </if>
+      <if test="ruleItemType != null">
+        rule_item_type,
+      </if>
+      <if test="ruleItem != null">
+        rule_item,
+      </if>
+      <if test="compareCondition != null">
+        compare_condition,
+      </if>
+      <if test="compareValue != null">
+        compare_value,
+      </if>
+      <if test="degree != null">
+        degree,
+      </if>
+      <if test="actionLevel != null">
+        action_level,
+      </if>
+      <if test="ctime != null">
+        ctime,
+      </if>
+      <if test="utime != null">
+        utime,
+      </if>
+      <if test="creator != null">
+        creator,
+      </if>
+      <if test="updater != null">
+        updater,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="slaId != null">
+        #{slaId,jdbcType=INTEGER},
+      </if>
+      <if test="name != null">
+        #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="ruleItemType != null">
+        #{ruleItemType,jdbcType=VARCHAR},
+      </if>
+      <if test="ruleItem != null">
+        #{ruleItem,jdbcType=VARCHAR},
+      </if>
+      <if test="compareCondition != null">
+        #{compareCondition,jdbcType=VARCHAR},
+      </if>
+      <if test="compareValue != null">
+        #{compareValue,jdbcType=INTEGER},
+      </if>
+      <if test="degree != null">
+        #{degree,jdbcType=INTEGER},
+      </if>
+      <if test="actionLevel != null">
+        #{actionLevel,jdbcType=VARCHAR},
+      </if>
+      <if test="ctime != null">
+        #{ctime,jdbcType=BIGINT},
+      </if>
+      <if test="utime != null">
+        #{utime,jdbcType=BIGINT},
+      </if>
+      <if test="creator != null">
+        #{creator,jdbcType=VARCHAR},
+      </if>
+      <if test="updater != null">
+        #{updater,jdbcType=VARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="run.mone.mimeter.dashboard.pojo.SlaRuleExample" resultType="java.lang.Long">
+    select count(*) from sla_rule
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update sla_rule
+    <set>
+      <if test="record.id != null">
+        id = #{record.id,jdbcType=INTEGER},
+      </if>
+      <if test="record.slaId != null">
+        sla_id = #{record.slaId,jdbcType=INTEGER},
+      </if>
+      <if test="record.name != null">
+        name = #{record.name,jdbcType=VARCHAR},
+      </if>
+      <if test="record.ruleItemType != null">
+        rule_item_type = #{record.ruleItemType,jdbcType=VARCHAR},
+      </if>
+      <if test="record.ruleItem != null">
+        rule_item = #{record.ruleItem,jdbcType=VARCHAR},
+      </if>
+      <if test="record.compareCondition != null">
+        compare_condition = #{record.compareCondition,jdbcType=VARCHAR},
+      </if>
+      <if test="record.compareValue != null">
+        compare_value = #{record.compareValue,jdbcType=INTEGER},
+      </if>
+      <if test="record.degree != null">
+        degree = #{record.degree,jdbcType=INTEGER},
+      </if>
+      <if test="record.actionLevel != null">
+        action_level = #{record.actionLevel,jdbcType=VARCHAR},
+      </if>
+      <if test="record.ctime != null">
+        ctime = #{record.ctime,jdbcType=BIGINT},
+      </if>
+      <if test="record.utime != null">
+        utime = #{record.utime,jdbcType=BIGINT},
+      </if>
+      <if test="record.creator != null">
+        creator = #{record.creator,jdbcType=VARCHAR},
+      </if>
+      <if test="record.updater != null">
+        updater = #{record.updater,jdbcType=VARCHAR},
+      </if>
+    </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update sla_rule
+    set id = #{record.id,jdbcType=INTEGER},
+      sla_id = #{record.slaId,jdbcType=INTEGER},
+      name = #{record.name,jdbcType=VARCHAR},
+      rule_item_type = #{record.ruleItemType,jdbcType=VARCHAR},
+      rule_item = #{record.ruleItem,jdbcType=VARCHAR},
+      compare_condition = #{record.compareCondition,jdbcType=VARCHAR},
+      compare_value = #{record.compareValue,jdbcType=INTEGER},
+      degree = #{record.degree,jdbcType=INTEGER},
+      action_level = #{record.actionLevel,jdbcType=VARCHAR},
+      ctime = #{record.ctime,jdbcType=BIGINT},
+      utime = #{record.utime,jdbcType=BIGINT},
+      creator = #{record.creator,jdbcType=VARCHAR},
+      updater = #{record.updater,jdbcType=VARCHAR}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="run.mone.mimeter.dashboard.pojo.SlaRule">
+    update sla_rule
+    <set>
+      <if test="slaId != null">
+        sla_id = #{slaId,jdbcType=INTEGER},
+      </if>
+      <if test="name != null">
+        name = #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="ruleItemType != null">
+        rule_item_type = #{ruleItemType,jdbcType=VARCHAR},
+      </if>
+      <if test="ruleItem != null">
+        rule_item = #{ruleItem,jdbcType=VARCHAR},
+      </if>
+      <if test="compareCondition != null">
+        compare_condition = #{compareCondition,jdbcType=VARCHAR},
+      </if>
+      <if test="compareValue != null">
+        compare_value = #{compareValue,jdbcType=INTEGER},
+      </if>
+      <if test="degree != null">
+        degree = #{degree,jdbcType=INTEGER},
+      </if>
+      <if test="actionLevel != null">
+        action_level = #{actionLevel,jdbcType=VARCHAR},
+      </if>
+      <if test="ctime != null">
+        ctime = #{ctime,jdbcType=BIGINT},
+      </if>
+      <if test="utime != null">
+        utime = #{utime,jdbcType=BIGINT},
+      </if>
+      <if test="creator != null">
+        creator = #{creator,jdbcType=VARCHAR},
+      </if>
+      <if test="updater != null">
+        updater = #{updater,jdbcType=VARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="run.mone.mimeter.dashboard.pojo.SlaRule">
+    update sla_rule
+    set sla_id = #{slaId,jdbcType=INTEGER},
+      name = #{name,jdbcType=VARCHAR},
+      rule_item_type = #{ruleItemType,jdbcType=VARCHAR},
+      rule_item = #{ruleItem,jdbcType=VARCHAR},
+      compare_condition = #{compareCondition,jdbcType=VARCHAR},
+      compare_value = #{compareValue,jdbcType=INTEGER},
+      degree = #{degree,jdbcType=INTEGER},
+      action_level = #{actionLevel,jdbcType=VARCHAR},
+      ctime = #{ctime,jdbcType=BIGINT},
+      utime = #{utime,jdbcType=BIGINT},
+      creator = #{creator,jdbcType=VARCHAR},
+      updater = #{updater,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    insert into sla_rule
+    (sla_id, name, rule_item_type, rule_item, compare_condition, compare_value, degree, 
+      action_level, ctime, utime, creator, updater)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.slaId,jdbcType=INTEGER}, #{item.name,jdbcType=VARCHAR}, #{item.ruleItemType,jdbcType=VARCHAR}, 
+        #{item.ruleItem,jdbcType=VARCHAR}, #{item.compareCondition,jdbcType=VARCHAR}, #{item.compareValue,jdbcType=INTEGER}, 
+        #{item.degree,jdbcType=INTEGER}, #{item.actionLevel,jdbcType=VARCHAR}, #{item.ctime,jdbcType=BIGINT}, 
+        #{item.utime,jdbcType=BIGINT}, #{item.creator,jdbcType=VARCHAR}, #{item.updater,jdbcType=VARCHAR}
+        )
+    </foreach>
+  </insert>
+  <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
+    insert into sla_rule (
+    <foreach collection="selective" item="column" separator=",">
+      ${column.escapedColumnName}
+    </foreach>
+    )
+    values
+    <foreach collection="list" item="item" separator=",">
+      (
+      <foreach collection="selective" item="column" separator=",">
+        <if test="'sla_id'.toString() == column.value">
+          #{item.slaId,jdbcType=INTEGER}
+        </if>
+        <if test="'name'.toString() == column.value">
+          #{item.name,jdbcType=VARCHAR}
+        </if>
+        <if test="'rule_item_type'.toString() == column.value">
+          #{item.ruleItemType,jdbcType=VARCHAR}
+        </if>
+        <if test="'rule_item'.toString() == column.value">
+          #{item.ruleItem,jdbcType=VARCHAR}
+        </if>
+        <if test="'compare_condition'.toString() == column.value">
+          #{item.compareCondition,jdbcType=VARCHAR}
+        </if>
+        <if test="'compare_value'.toString() == column.value">
+          #{item.compareValue,jdbcType=INTEGER}
+        </if>
+        <if test="'degree'.toString() == column.value">
+          #{item.degree,jdbcType=INTEGER}
+        </if>
+        <if test="'action_level'.toString() == column.value">
+          #{item.actionLevel,jdbcType=VARCHAR}
+        </if>
+        <if test="'ctime'.toString() == column.value">
+          #{item.ctime,jdbcType=BIGINT}
+        </if>
+        <if test="'utime'.toString() == column.value">
+          #{item.utime,jdbcType=BIGINT}
+        </if>
+        <if test="'creator'.toString() == column.value">
+          #{item.creator,jdbcType=VARCHAR}
+        </if>
+        <if test="'updater'.toString() == column.value">
+          #{item.updater,jdbcType=VARCHAR}
+        </if>
+      </foreach>
+      )
+    </foreach>
+  </insert>
+</mapper>

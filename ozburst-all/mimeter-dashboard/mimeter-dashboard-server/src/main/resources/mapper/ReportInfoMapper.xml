@@ -1,0 +1,635 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="run.mone.mimeter.dashboard.mapper.ReportInfoMapper">
+  <resultMap id="BaseResultMap" type="run.mone.mimeter.dashboard.pojo.ReportInfo">
+    <id column="id" jdbcType="BIGINT" property="id" />
+    <result column="scene_id" jdbcType="BIGINT" property="sceneId" />
+    <result column="snapshot_id" jdbcType="VARCHAR" property="snapshotId" />
+    <result column="report_id" jdbcType="VARCHAR" property="reportId" />
+    <result column="report_name" jdbcType="VARCHAR" property="reportName" />
+    <result column="duration" jdbcType="INTEGER" property="duration" />
+    <result column="concurrency" jdbcType="INTEGER" property="concurrency" />
+    <result column="concurrency_max" jdbcType="INTEGER" property="concurrencyMax" />
+    <result column="create_by" jdbcType="VARCHAR" property="createBy" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+    <result column="status" jdbcType="INTEGER" property="status" />
+    <result column="task_id" jdbcType="BIGINT" property="taskId" />
+    <result column="file_path" jdbcType="VARCHAR" property="filePath" />
+    <result column="finish_time" jdbcType="BIGINT" property="finishTime" />
+    <result column="tenant" jdbcType="VARCHAR" property="tenant" />
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="run.mone.mimeter.dashboard.pojo.ReportInfo">
+    <result column="agents" jdbcType="LONGVARCHAR" property="agents" />
+    <result column="extra" jdbcType="LONGVARCHAR" property="extra" />
+    <result column="sla_event_list" jdbcType="LONGVARCHAR" property="slaEventList" />
+    <result column="total_stat_analysis_event_list" jdbcType="LONGVARCHAR" property="totalStatAnalysisEventList" />
+    <result column="link_to_dag_id" jdbcType="LONGVARCHAR" property="linkToDagId" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    id, scene_id, snapshot_id, report_id, report_name, duration, concurrency, concurrency_max, 
+    create_by, create_time, update_time, status, task_id, file_path, finish_time, tenant
+  </sql>
+  <sql id="Blob_Column_List">
+    agents, extra, sla_event_list, total_stat_analysis_event_list, link_to_dag_id
+  </sql>
+  <select id="selectByExampleWithBLOBs" parameterType="run.mone.mimeter.dashboard.pojo.ReportInfoExample" resultMap="ResultMapWithBLOBs">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from report_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+    <if test="limit != null">
+      <if test="offset != null">
+        limit ${offset}, ${limit}
+      </if>
+      <if test="offset == null">
+        limit ${limit}
+      </if>
+    </if>
+  </select>
+  <select id="selectByExample" parameterType="run.mone.mimeter.dashboard.pojo.ReportInfoExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from report_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+    <if test="limit != null">
+      <if test="offset != null">
+        limit ${offset}, ${limit}
+      </if>
+      <if test="offset == null">
+        limit ${limit}
+      </if>
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Long" resultMap="ResultMapWithBLOBs">
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from report_info
+    where id = #{id,jdbcType=BIGINT}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Long">
+    delete from report_info
+    where id = #{id,jdbcType=BIGINT}
+  </delete>
+  <delete id="deleteByExample" parameterType="run.mone.mimeter.dashboard.pojo.ReportInfoExample">
+    delete from report_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="run.mone.mimeter.dashboard.pojo.ReportInfo">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Long">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into report_info (scene_id, snapshot_id, report_id, 
+      report_name, duration, concurrency, 
+      concurrency_max, create_by, create_time, 
+      update_time, status, task_id, 
+      file_path, finish_time, tenant, 
+      agents, extra, sla_event_list, 
+      total_stat_analysis_event_list, link_to_dag_id
+      )
+    values (#{sceneId,jdbcType=BIGINT}, #{snapshotId,jdbcType=VARCHAR}, #{reportId,jdbcType=VARCHAR}, 
+      #{reportName,jdbcType=VARCHAR}, #{duration,jdbcType=INTEGER}, #{concurrency,jdbcType=INTEGER}, 
+      #{concurrencyMax,jdbcType=INTEGER}, #{createBy,jdbcType=VARCHAR}, #{createTime,jdbcType=TIMESTAMP}, 
+      #{updateTime,jdbcType=TIMESTAMP}, #{status,jdbcType=INTEGER}, #{taskId,jdbcType=BIGINT}, 
+      #{filePath,jdbcType=VARCHAR}, #{finishTime,jdbcType=BIGINT}, #{tenant,jdbcType=VARCHAR}, 
+      #{agents,jdbcType=LONGVARCHAR}, #{extra,jdbcType=LONGVARCHAR}, #{slaEventList,jdbcType=LONGVARCHAR}, 
+      #{totalStatAnalysisEventList,jdbcType=LONGVARCHAR}, #{linkToDagId,jdbcType=LONGVARCHAR}
+      )
+  </insert>
+  <insert id="insertSelective" parameterType="run.mone.mimeter.dashboard.pojo.ReportInfo">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Long">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into report_info
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="sceneId != null">
+        scene_id,
+      </if>
+      <if test="snapshotId != null">
+        snapshot_id,
+      </if>
+      <if test="reportId != null">
+        report_id,
+      </if>
+      <if test="reportName != null">
+        report_name,
+      </if>
+      <if test="duration != null">
+        duration,
+      </if>
+      <if test="concurrency != null">
+        concurrency,
+      </if>
+      <if test="concurrencyMax != null">
+        concurrency_max,
+      </if>
+      <if test="createBy != null">
+        create_by,
+      </if>
+      <if test="createTime != null">
+        create_time,
+      </if>
+      <if test="updateTime != null">
+        update_time,
+      </if>
+      <if test="status != null">
+        status,
+      </if>
+      <if test="taskId != null">
+        task_id,
+      </if>
+      <if test="filePath != null">
+        file_path,
+      </if>
+      <if test="finishTime != null">
+        finish_time,
+      </if>
+      <if test="tenant != null">
+        tenant,
+      </if>
+      <if test="agents != null">
+        agents,
+      </if>
+      <if test="extra != null">
+        extra,
+      </if>
+      <if test="slaEventList != null">
+        sla_event_list,
+      </if>
+      <if test="totalStatAnalysisEventList != null">
+        total_stat_analysis_event_list,
+      </if>
+      <if test="linkToDagId != null">
+        link_to_dag_id,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="sceneId != null">
+        #{sceneId,jdbcType=BIGINT},
+      </if>
+      <if test="snapshotId != null">
+        #{snapshotId,jdbcType=VARCHAR},
+      </if>
+      <if test="reportId != null">
+        #{reportId,jdbcType=VARCHAR},
+      </if>
+      <if test="reportName != null">
+        #{reportName,jdbcType=VARCHAR},
+      </if>
+      <if test="duration != null">
+        #{duration,jdbcType=INTEGER},
+      </if>
+      <if test="concurrency != null">
+        #{concurrency,jdbcType=INTEGER},
+      </if>
+      <if test="concurrencyMax != null">
+        #{concurrencyMax,jdbcType=INTEGER},
+      </if>
+      <if test="createBy != null">
+        #{createBy,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null">
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="status != null">
+        #{status,jdbcType=INTEGER},
+      </if>
+      <if test="taskId != null">
+        #{taskId,jdbcType=BIGINT},
+      </if>
+      <if test="filePath != null">
+        #{filePath,jdbcType=VARCHAR},
+      </if>
+      <if test="finishTime != null">
+        #{finishTime,jdbcType=BIGINT},
+      </if>
+      <if test="tenant != null">
+        #{tenant,jdbcType=VARCHAR},
+      </if>
+      <if test="agents != null">
+        #{agents,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="extra != null">
+        #{extra,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="slaEventList != null">
+        #{slaEventList,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="totalStatAnalysisEventList != null">
+        #{totalStatAnalysisEventList,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="linkToDagId != null">
+        #{linkToDagId,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="run.mone.mimeter.dashboard.pojo.ReportInfoExample" resultType="java.lang.Long">
+    select count(*) from report_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update report_info
+    <set>
+      <if test="record.id != null">
+        id = #{record.id,jdbcType=BIGINT},
+      </if>
+      <if test="record.sceneId != null">
+        scene_id = #{record.sceneId,jdbcType=BIGINT},
+      </if>
+      <if test="record.snapshotId != null">
+        snapshot_id = #{record.snapshotId,jdbcType=VARCHAR},
+      </if>
+      <if test="record.reportId != null">
+        report_id = #{record.reportId,jdbcType=VARCHAR},
+      </if>
+      <if test="record.reportName != null">
+        report_name = #{record.reportName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.duration != null">
+        duration = #{record.duration,jdbcType=INTEGER},
+      </if>
+      <if test="record.concurrency != null">
+        concurrency = #{record.concurrency,jdbcType=INTEGER},
+      </if>
+      <if test="record.concurrencyMax != null">
+        concurrency_max = #{record.concurrencyMax,jdbcType=INTEGER},
+      </if>
+      <if test="record.createBy != null">
+        create_by = #{record.createBy,jdbcType=VARCHAR},
+      </if>
+      <if test="record.createTime != null">
+        create_time = #{record.createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="record.updateTime != null">
+        update_time = #{record.updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="record.status != null">
+        status = #{record.status,jdbcType=INTEGER},
+      </if>
+      <if test="record.taskId != null">
+        task_id = #{record.taskId,jdbcType=BIGINT},
+      </if>
+      <if test="record.filePath != null">
+        file_path = #{record.filePath,jdbcType=VARCHAR},
+      </if>
+      <if test="record.finishTime != null">
+        finish_time = #{record.finishTime,jdbcType=BIGINT},
+      </if>
+      <if test="record.tenant != null">
+        tenant = #{record.tenant,jdbcType=VARCHAR},
+      </if>
+      <if test="record.agents != null">
+        agents = #{record.agents,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.extra != null">
+        extra = #{record.extra,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.slaEventList != null">
+        sla_event_list = #{record.slaEventList,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.totalStatAnalysisEventList != null">
+        total_stat_analysis_event_list = #{record.totalStatAnalysisEventList,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.linkToDagId != null">
+        link_to_dag_id = #{record.linkToDagId,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExampleWithBLOBs" parameterType="map">
+    update report_info
+    set id = #{record.id,jdbcType=BIGINT},
+      scene_id = #{record.sceneId,jdbcType=BIGINT},
+      snapshot_id = #{record.snapshotId,jdbcType=VARCHAR},
+      report_id = #{record.reportId,jdbcType=VARCHAR},
+      report_name = #{record.reportName,jdbcType=VARCHAR},
+      duration = #{record.duration,jdbcType=INTEGER},
+      concurrency = #{record.concurrency,jdbcType=INTEGER},
+      concurrency_max = #{record.concurrencyMax,jdbcType=INTEGER},
+      create_by = #{record.createBy,jdbcType=VARCHAR},
+      create_time = #{record.createTime,jdbcType=TIMESTAMP},
+      update_time = #{record.updateTime,jdbcType=TIMESTAMP},
+      status = #{record.status,jdbcType=INTEGER},
+      task_id = #{record.taskId,jdbcType=BIGINT},
+      file_path = #{record.filePath,jdbcType=VARCHAR},
+      finish_time = #{record.finishTime,jdbcType=BIGINT},
+      tenant = #{record.tenant,jdbcType=VARCHAR},
+      agents = #{record.agents,jdbcType=LONGVARCHAR},
+      extra = #{record.extra,jdbcType=LONGVARCHAR},
+      sla_event_list = #{record.slaEventList,jdbcType=LONGVARCHAR},
+      total_stat_analysis_event_list = #{record.totalStatAnalysisEventList,jdbcType=LONGVARCHAR},
+      link_to_dag_id = #{record.linkToDagId,jdbcType=LONGVARCHAR}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update report_info
+    set id = #{record.id,jdbcType=BIGINT},
+      scene_id = #{record.sceneId,jdbcType=BIGINT},
+      snapshot_id = #{record.snapshotId,jdbcType=VARCHAR},
+      report_id = #{record.reportId,jdbcType=VARCHAR},
+      report_name = #{record.reportName,jdbcType=VARCHAR},
+      duration = #{record.duration,jdbcType=INTEGER},
+      concurrency = #{record.concurrency,jdbcType=INTEGER},
+      concurrency_max = #{record.concurrencyMax,jdbcType=INTEGER},
+      create_by = #{record.createBy,jdbcType=VARCHAR},
+      create_time = #{record.createTime,jdbcType=TIMESTAMP},
+      update_time = #{record.updateTime,jdbcType=TIMESTAMP},
+      status = #{record.status,jdbcType=INTEGER},
+      task_id = #{record.taskId,jdbcType=BIGINT},
+      file_path = #{record.filePath,jdbcType=VARCHAR},
+      finish_time = #{record.finishTime,jdbcType=BIGINT},
+      tenant = #{record.tenant,jdbcType=VARCHAR}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="run.mone.mimeter.dashboard.pojo.ReportInfo">
+    update report_info
+    <set>
+      <if test="sceneId != null">
+        scene_id = #{sceneId,jdbcType=BIGINT},
+      </if>
+      <if test="snapshotId != null">
+        snapshot_id = #{snapshotId,jdbcType=VARCHAR},
+      </if>
+      <if test="reportId != null">
+        report_id = #{reportId,jdbcType=VARCHAR},
+      </if>
+      <if test="reportName != null">
+        report_name = #{reportName,jdbcType=VARCHAR},
+      </if>
+      <if test="duration != null">
+        duration = #{duration,jdbcType=INTEGER},
+      </if>
+      <if test="concurrency != null">
+        concurrency = #{concurrency,jdbcType=INTEGER},
+      </if>
+      <if test="concurrencyMax != null">
+        concurrency_max = #{concurrencyMax,jdbcType=INTEGER},
+      </if>
+      <if test="createBy != null">
+        create_by = #{createBy,jdbcType=VARCHAR},
+      </if>
+      <if test="createTime != null">
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="updateTime != null">
+        update_time = #{updateTime,jdbcType=TIMESTAMP},
+      </if>
+      <if test="status != null">
+        status = #{status,jdbcType=INTEGER},
+      </if>
+      <if test="taskId != null">
+        task_id = #{taskId,jdbcType=BIGINT},
+      </if>
+      <if test="filePath != null">
+        file_path = #{filePath,jdbcType=VARCHAR},
+      </if>
+      <if test="finishTime != null">
+        finish_time = #{finishTime,jdbcType=BIGINT},
+      </if>
+      <if test="tenant != null">
+        tenant = #{tenant,jdbcType=VARCHAR},
+      </if>
+      <if test="agents != null">
+        agents = #{agents,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="extra != null">
+        extra = #{extra,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="slaEventList != null">
+        sla_event_list = #{slaEventList,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="totalStatAnalysisEventList != null">
+        total_stat_analysis_event_list = #{totalStatAnalysisEventList,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="linkToDagId != null">
+        link_to_dag_id = #{linkToDagId,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="run.mone.mimeter.dashboard.pojo.ReportInfo">
+    update report_info
+    set scene_id = #{sceneId,jdbcType=BIGINT},
+      snapshot_id = #{snapshotId,jdbcType=VARCHAR},
+      report_id = #{reportId,jdbcType=VARCHAR},
+      report_name = #{reportName,jdbcType=VARCHAR},
+      duration = #{duration,jdbcType=INTEGER},
+      concurrency = #{concurrency,jdbcType=INTEGER},
+      concurrency_max = #{concurrencyMax,jdbcType=INTEGER},
+      create_by = #{createBy,jdbcType=VARCHAR},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP},
+      status = #{status,jdbcType=INTEGER},
+      task_id = #{taskId,jdbcType=BIGINT},
+      file_path = #{filePath,jdbcType=VARCHAR},
+      finish_time = #{finishTime,jdbcType=BIGINT},
+      tenant = #{tenant,jdbcType=VARCHAR},
+      agents = #{agents,jdbcType=LONGVARCHAR},
+      extra = #{extra,jdbcType=LONGVARCHAR},
+      sla_event_list = #{slaEventList,jdbcType=LONGVARCHAR},
+      total_stat_analysis_event_list = #{totalStatAnalysisEventList,jdbcType=LONGVARCHAR},
+      link_to_dag_id = #{linkToDagId,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="run.mone.mimeter.dashboard.pojo.ReportInfo">
+    update report_info
+    set scene_id = #{sceneId,jdbcType=BIGINT},
+      snapshot_id = #{snapshotId,jdbcType=VARCHAR},
+      report_id = #{reportId,jdbcType=VARCHAR},
+      report_name = #{reportName,jdbcType=VARCHAR},
+      duration = #{duration,jdbcType=INTEGER},
+      concurrency = #{concurrency,jdbcType=INTEGER},
+      concurrency_max = #{concurrencyMax,jdbcType=INTEGER},
+      create_by = #{createBy,jdbcType=VARCHAR},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      update_time = #{updateTime,jdbcType=TIMESTAMP},
+      status = #{status,jdbcType=INTEGER},
+      task_id = #{taskId,jdbcType=BIGINT},
+      file_path = #{filePath,jdbcType=VARCHAR},
+      finish_time = #{finishTime,jdbcType=BIGINT},
+      tenant = #{tenant,jdbcType=VARCHAR}
+    where id = #{id,jdbcType=BIGINT}
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    insert into report_info
+    (scene_id, snapshot_id, report_id, report_name, duration, concurrency, concurrency_max, 
+      create_by, create_time, update_time, status, task_id, file_path, finish_time, tenant, 
+      agents, extra, sla_event_list, total_stat_analysis_event_list, link_to_dag_id)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.sceneId,jdbcType=BIGINT}, #{item.snapshotId,jdbcType=VARCHAR}, #{item.reportId,jdbcType=VARCHAR}, 
+        #{item.reportName,jdbcType=VARCHAR}, #{item.duration,jdbcType=INTEGER}, #{item.concurrency,jdbcType=INTEGER}, 
+        #{item.concurrencyMax,jdbcType=INTEGER}, #{item.createBy,jdbcType=VARCHAR}, #{item.createTime,jdbcType=TIMESTAMP}, 
+        #{item.updateTime,jdbcType=TIMESTAMP}, #{item.status,jdbcType=INTEGER}, #{item.taskId,jdbcType=BIGINT}, 
+        #{item.filePath,jdbcType=VARCHAR}, #{item.finishTime,jdbcType=BIGINT}, #{item.tenant,jdbcType=VARCHAR}, 
+        #{item.agents,jdbcType=LONGVARCHAR}, #{item.extra,jdbcType=LONGVARCHAR}, #{item.slaEventList,jdbcType=LONGVARCHAR}, 
+        #{item.totalStatAnalysisEventList,jdbcType=LONGVARCHAR}, #{item.linkToDagId,jdbcType=LONGVARCHAR}
+        )
+    </foreach>
+  </insert>
+  <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
+    insert into report_info (
+    <foreach collection="selective" item="column" separator=",">
+      ${column.escapedColumnName}
+    </foreach>
+    )
+    values
+    <foreach collection="list" item="item" separator=",">
+      (
+      <foreach collection="selective" item="column" separator=",">
+        <if test="'scene_id'.toString() == column.value">
+          #{item.sceneId,jdbcType=BIGINT}
+        </if>
+        <if test="'snapshot_id'.toString() == column.value">
+          #{item.snapshotId,jdbcType=VARCHAR}
+        </if>
+        <if test="'report_id'.toString() == column.value">
+          #{item.reportId,jdbcType=VARCHAR}
+        </if>
+        <if test="'report_name'.toString() == column.value">
+          #{item.reportName,jdbcType=VARCHAR}
+        </if>
+        <if test="'duration'.toString() == column.value">
+          #{item.duration,jdbcType=INTEGER}
+        </if>
+        <if test="'concurrency'.toString() == column.value">
+          #{item.concurrency,jdbcType=INTEGER}
+        </if>
+        <if test="'concurrency_max'.toString() == column.value">
+          #{item.concurrencyMax,jdbcType=INTEGER}
+        </if>
+        <if test="'create_by'.toString() == column.value">
+          #{item.createBy,jdbcType=VARCHAR}
+        </if>
+        <if test="'create_time'.toString() == column.value">
+          #{item.createTime,jdbcType=TIMESTAMP}
+        </if>
+        <if test="'update_time'.toString() == column.value">
+          #{item.updateTime,jdbcType=TIMESTAMP}
+        </if>
+        <if test="'status'.toString() == column.value">
+          #{item.status,jdbcType=INTEGER}
+        </if>
+        <if test="'task_id'.toString() == column.value">
+          #{item.taskId,jdbcType=BIGINT}
+        </if>
+        <if test="'file_path'.toString() == column.value">
+          #{item.filePath,jdbcType=VARCHAR}
+        </if>
+        <if test="'finish_time'.toString() == column.value">
+          #{item.finishTime,jdbcType=BIGINT}
+        </if>
+        <if test="'tenant'.toString() == column.value">
+          #{item.tenant,jdbcType=VARCHAR}
+        </if>
+        <if test="'agents'.toString() == column.value">
+          #{item.agents,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'extra'.toString() == column.value">
+          #{item.extra,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'sla_event_list'.toString() == column.value">
+          #{item.slaEventList,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'total_stat_analysis_event_list'.toString() == column.value">
+          #{item.totalStatAnalysisEventList,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'link_to_dag_id'.toString() == column.value">
+          #{item.linkToDagId,jdbcType=LONGVARCHAR}
+        </if>
+      </foreach>
+      )
+    </foreach>
+  </insert>
+</mapper>

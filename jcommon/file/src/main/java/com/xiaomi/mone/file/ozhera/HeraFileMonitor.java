@@ -31,7 +31,6 @@ import java.util.function.Predicate;
 @Slf4j
 public class HeraFileMonitor {
 
-
     @Getter
     private ConcurrentHashMap<Object, HeraFile> map = new ConcurrentHashMap<>();
 
@@ -92,7 +91,6 @@ public class HeraFileMonitor {
                 if (!predicate.test(filePath) || modifiedFile.getFileName().toString().startsWith(".")) {
                     continue;
                 }
-                log.debug("epoll result,path:{}", event.kind() + filePath);
                 HeraFile hfile = fileMap.get(filePath);
 
                 if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
@@ -111,17 +109,20 @@ public class HeraFileMonitor {
                 }
 
                 if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
-                    File file = new File(path + "" + modifiedFile.getFileName());
+                    File file = new File(filePath);
                     Object k = FileUtils.fileKey(file);
+
                     if (map.containsKey(k)) {
                         log.info("change name " + map.get(k) + "--->" + file);
                         listener.onEvent(FileEvent.builder().fileKey(k).type(EventType.rename).build());
                     } else {
+                        log.info("ENTRY_CREATE filePath:{},fileKey:{}", filePath, k);
+                        HeraFile hf = HeraFile.builder().file(file).fileKey(k).fileName(filePath).build();
+                        map.putIfAbsent(k, hf);
+                        fileMap.put(filePath, hf);
+
                         listener.onEvent(FileEvent.builder().type(EventType.create).fileName(file.getPath()).build());
                     }
-                    HeraFile hf = HeraFile.builder().file(file).fileKey(k).fileName(filePath).build();
-                    map.putIfAbsent(k, hf);
-                    fileMap.put(filePath, hf);
                 }
             }
             key.reset();
@@ -136,9 +137,9 @@ public class HeraFileMonitor {
             if (name.startsWith(".")) {
                 return null;
             }
-            Object fileKey = FileUtils.fileKey(it);
             lock.lock();
             try {
+                Object fileKey = FileUtils.fileKey(it);
                 if (map.containsKey(fileKey)) {
                     return map.get(fileKey);
                 }
@@ -148,10 +149,13 @@ public class HeraFileMonitor {
                 if (null != fi) {
                     pointer = fi.getPointer();
                 }
+                log.info("initFile fileName:{},fileKey:{}", name, fileKey);
                 map.put(hf.getFileKey(), hf);
                 fileMap.put(hf.getFileName(), hf);
                 this.listener.onEvent(FileEvent.builder().pointer(pointer).type(EventType.init).fileName(hf.getFileName()).build());
                 return hf;
+            } catch (Exception e) {
+                log.error("init file error,fileName:{}", name, e);
             } finally {
                 lock.unlock();
             }

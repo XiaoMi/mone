@@ -5,10 +5,9 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>docean-plugin</artifactId>
-    <version>1.4-jdk20-SNAPSHOT</version>
+    <version>1.4-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>docean-plugin-mybatis</artifactId>
-  <version>1.4.8-jdk20-SNAPSHOT</version>
   <dependencies>
     <dependency>
       <groupId>com.alibaba</groupId>
@@ -19,18 +18,18 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-datasource</artifactId>
-      <version>1.4-jdk20-SNAPSHOT</version>
+      <version>1.4-jdk21-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-cat</artifactId>
-      <version>1.4-jdk20-SNAPSHOT</version>
+      <version>1.4-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-config</artifactId>
-      <version>1.4-jdk20-SNAPSHOT</version>
+      <version>1.4-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.mybatis</groupId>
