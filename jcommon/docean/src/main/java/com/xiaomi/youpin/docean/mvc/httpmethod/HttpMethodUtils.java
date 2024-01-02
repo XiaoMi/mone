@@ -12,17 +12,10 @@ import com.xiaomi.youpin.docean.mvc.MvcContext;
 public class HttpMethodUtils {
 
     public static void addMvcContext(HttpRequestMethod method, JsonArray array) {
-        if (paramIsMvcContext(method)) {
-            array.add(new JsonObject());
-        }
-    }
-
-    public static boolean paramIsMvcContext(HttpRequestMethod method) {
         Class<?>[] types = method.getMethod().getParameterTypes();
         if (types.length > 0 && types[0] == MvcContext.class) {
-            return true;
+            array.add(new JsonObject());
         }
-        return false;
     }
 
 

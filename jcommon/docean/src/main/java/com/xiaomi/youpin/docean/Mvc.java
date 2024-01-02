@@ -171,12 +171,8 @@ public class Mvc {
         Safe.run(() -> {
             JsonElement args = getArgs(method, request.getMethod().toLowerCase(Locale.ROOT), request);
             context.setParams(args);
-            Object[] params = new Object[]{null};
-            if (method.getMethod().getParameterTypes().length == 1 && method.getMethod().getParameterTypes()[0].equals(MvcContext.class)) {
-                params[0] = context;
-            } else {
-                params = methodInvoker.getMethodParams(method.getMethod(), args);
-            }
+            Object[] params = methodInvoker.getMethodParams(method.getMethod(), args);
+            setMvcContext(context, params);
             Object data = this.mvcConfig.isUseCglib() ? methodInvoker.invokeFastMethod(method.getObj(), method.getMethod(), params) :
                     methodInvoker.invokeMethod(method.getObj(), method.getMethod(), params);
 
