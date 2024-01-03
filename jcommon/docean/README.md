@@ -4,7 +4,7 @@
 * Based on Java20
 * Fully utilized coroutines and ScopeValue
 * JVM parameters that need to be added:
-  --enable-preview --add-modulesjdk.incubator.concurrent -ea --add-opensjava.base/java.lang=ALL-UNNAMED--add-opensjava.base/jdk.internal.misc=ALL-UNNAMED-Dio.netty.tryReflectionSetAccessible=true
+  --enable-preview--add-modulesjdk.incubator.concurrent-ea--add-opensjava.base/java.lang=ALL-UNNAMED--add-opensjava.base/jdk.internal.misc=ALL-UNNAMED-Dio.netty.tryReflectionSetAccessible=true
 * A lightweight microservices development framework. It can be embedded into the Spring framework.
 * Features: Compliant with Java standards, lightweight, no unnecessary libraries, low memory footprint, fast service
   requests, high maintainability, and supports plugin extensions.
