@@ -53,8 +53,6 @@ public abstract class Post {
             array.add(arguments.getAsJsonPrimitive());
         }
 
-        context.setParams(array);
-
         return array;
     }
 
