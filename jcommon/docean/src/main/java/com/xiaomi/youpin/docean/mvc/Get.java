@@ -20,7 +20,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.xiaomi.youpin.docean.anno.RequestParam;
-import com.xiaomi.youpin.docean.mvc.httpmethod.HttpMethodUtils;
 import io.netty.handler.codec.http.QueryStringDecoder;
 
 import java.lang.annotation.Annotation;
