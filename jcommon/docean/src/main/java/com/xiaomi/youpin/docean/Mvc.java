@@ -161,8 +161,14 @@ public class Mvc {
 
     public void callMethod(MvcContext context, MvcRequest request, MvcResponse response, MvcResult<Object> result, HttpRequestMethod method) {
         Safe.run(() -> {
-            JsonElement arguments = gson.fromJson(new String(request.getBody()), JsonElement.class);
+            //GET、POST
+            String reqMethod = request.getMethod();
             String m = method.getHttpMethod();
+            if (!m.equalsIgnoreCase(reqMethod)) {
+                throw new IllegalArgumentException(String.format("unmatched request type:%s, expect:%s", reqMethod, m.toUpperCase()));
+            }
+
+            JsonElement arguments = gson.fromJson(new String(request.getBody()), JsonElement.class);
             MutableObject mo = getArgs(method, arguments, m);
             Safe.run(() -> context.setParams(arguments));
             JsonElement args = mo.getObj();

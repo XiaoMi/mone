@@ -261,7 +261,7 @@
                         </goals>
                         <configuration>
                             <executable>gpg</executable>
-                            <keyname>your-gpg-key</keyname>
+<!--                            <keyname>your-gpg-key</keyname>-->
                         </configuration>
                     </execution>
                 </executions>
