@@ -17,7 +17,6 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-config</artifactId>
-      <version>1.4-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
@@ -38,7 +37,6 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>infra-result</artifactId>
-      <version>1.4-jdk21-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
