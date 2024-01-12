@@ -8,4 +8,5 @@
     <version>1.4-jdk20-SNAPSHOT</version>
   </parent>
   <artifactId>hera-trace</artifactId>
+  <version>1.4-jdk21-SNAPSHOT</version>
 </project>

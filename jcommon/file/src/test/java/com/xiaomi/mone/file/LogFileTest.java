@@ -16,16 +16,22 @@
 
 package com.xiaomi.mone.file;
 
+import com.xiaomi.mone.file.common.FileInfoCache;
+import com.xiaomi.mone.file.listener.DefaultMonitorListener;
+import com.xiaomi.mone.file.ozhera.HeraFileMonitor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 /**
  * @Author goodjava@qq.com
  * @Date 2021/7/8 14:42
  */
+@Slf4j
 public class LogFileTest {
 
 
@@ -51,6 +57,31 @@ public class LogFileTest {
             log.shutdown();
         }).start();
         log.readLine();
+        System.in.read();
+    }
+
+
+    @SneakyThrows
+    @Test
+    public void testLogFileMonitor() {
+//        FileInfoCache.ins().load();
+        FileInfoCache.ins().load("/home/work/log/log-agent/milog/memory/.ozhera_pointer");
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            log.info("shutdown");
+            FileInfoCache.ins().shutdown();
+        }));
+        HeraFileMonitor monitor = new HeraFileMonitor();
+        monitor.setListener(new DefaultMonitorListener(monitor, readEvent -> {
+            System.out.println(readEvent.getReadResult().getLines());
+        }));
+        String fileName = "/home/work/log/test/provider/server.log.*";
+        Pattern pattern = Pattern.compile(fileName);
+        monitor.reg("/home/work/log/test/provider/", it -> {
+            boolean matches = pattern.matcher(it).matches();
+            log.info("file:{},matches:{}", it, matches);
+            return matches;
+        });
+        log.info("reg finish");
         System.in.read();
     }
 

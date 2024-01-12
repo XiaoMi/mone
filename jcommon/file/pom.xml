@@ -9,7 +9,7 @@
         <version>1.4-jdk20-SNAPSHOT</version>
     </parent>
     <artifactId>file</artifactId>
-
+    <version>1.4-jdk21-SNAPSHOT</version>
 
     <dependencies>
 
@@ -21,5 +21,22 @@
         </dependency>
 
     </dependencies>
+
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <compilerVersion>21</compilerVersion>
+                    <source>21</source>
+                    <target>21</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
 
 </project>

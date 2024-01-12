@@ -305,7 +305,20 @@ public class Ioc {
 
 
     private void initIoc0(String name, Bean bean, Field field) {
-        Bean b = this.beans.get(name);
+        String realName = getRealName(name);
+        Bean b = this.beans.get(realName);
+
+        //If it is an implemented interface, check whether a unique implementation class can be matched.
+        if (!Optional.ofNullable(b).isPresent() && getBean(Cons.AUTO_FIND_IMPL, "false").equals("true")) {
+            Class clazz = field.getType();
+            if (clazz.isInterface()) {
+                Set<Bean> set = getBeanSet(clazz);
+                if (set.size() == 1) {
+                    b = set.toArray(new Bean[]{})[0];
+                }
+            }
+        }
+
         Optional.ofNullable(b).ifPresent(o -> {
             o.incrReferenceCnt();
             o.getDependenceList().add(bean.getName());
@@ -315,9 +328,21 @@ public class Ioc {
 
         //If there is a parent container, try to retrieve it from the parent container (such as Spring).
         if (!Optional.ofNullable(b).isPresent()) {
-            Object obj = Safe.callAndLog(()-> this.contextFunction.apply(name),null);
+            Object obj = Safe.callAndLog(() -> this.contextFunction.apply(realName), null);
             Optional.ofNullable(obj).ifPresent(o -> ReflectUtils.setField(bean.getObj(), field, o));
         }
+    }
+
+    private String getRealName(String name) {
+        //替换成配置中的值(Resource中的name)
+        if (name.startsWith("^")) {
+            name = "$" + name.substring(1);
+            Bean bean = this.beans.get(name);
+            if (null != bean) {
+                return bean.getObj().toString();
+            }
+        }
+        return name;
     }
 
     private void callInit(Bean it) {
@@ -499,6 +524,10 @@ public class Ioc {
 
     public <T> Set<T> getBeans(Class<T> clazz) {
         return beans.values().stream().filter(it -> (clazz.isAssignableFrom(it.getClazz()))).map(it -> (T) it.getObj()).collect(Collectors.toSet());
+    }
+
+    public Set<Bean> getBeanSet(Class<?> clazz) {
+        return beans.values().stream().filter(it -> (clazz.isAssignableFrom(it.getClazz()))).collect(Collectors.toSet());
     }
 
     /**

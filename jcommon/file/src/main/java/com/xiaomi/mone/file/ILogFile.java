@@ -16,4 +16,5 @@ public interface ILogFile {
 
     void initLogFile(String file, ReadListener listener, long pointer, long lineNumber);
 
+
 }

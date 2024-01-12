@@ -22,9 +22,19 @@ package com.xiaomi.mone.file;
  */
 public interface ReadListener {
 
-
     void onEvent(ReadEvent event);
 
     boolean isContinue(String line);
+
+    default boolean isBreak(String line) {
+        return false;
+    }
+
+    default void setPointer(Object obj) {
+
+    }
+
+    default void saveProgress() {
+    }
 
 }

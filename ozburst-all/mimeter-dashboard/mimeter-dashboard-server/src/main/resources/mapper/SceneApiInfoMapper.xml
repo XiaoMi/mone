@@ -1,0 +1,779 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="run.mone.mimeter.dashboard.mapper.SceneApiInfoMapper">
+  <resultMap id="BaseResultMap" type="run.mone.mimeter.dashboard.pojo.SceneApiInfo">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="scene_id" jdbcType="INTEGER" property="sceneId" />
+    <result column="api_order" jdbcType="INTEGER" property="apiOrder" />
+    <result column="api_name" jdbcType="VARCHAR" property="apiName" />
+    <result column="source_type" jdbcType="INTEGER" property="sourceType" />
+    <result column="api_type" jdbcType="INTEGER" property="apiType" />
+    <result column="request_method" jdbcType="INTEGER" property="requestMethod" />
+    <result column="request_timeout" jdbcType="INTEGER" property="requestTimeout" />
+    <result column="need_login" jdbcType="BIT" property="needLogin" />
+    <result column="token_type" jdbcType="INTEGER" property="tokenType" />
+    <result column="content_type" jdbcType="VARCHAR" property="contentType" />
+    <result column="nacos_type" jdbcType="INTEGER" property="nacosType" />
+    <result column="service_name" jdbcType="VARCHAR" property="serviceName" />
+    <result column="method_name" jdbcType="VARCHAR" property="methodName" />
+    <result column="param_type_list" jdbcType="VARCHAR" property="paramTypeList" />
+    <result column="dubbo_group" jdbcType="VARCHAR" property="dubboGroup" />
+    <result column="dubbo_version" jdbcType="VARCHAR" property="dubboVersion" />
+    <result column="serial_link_id" jdbcType="INTEGER" property="serialLinkId" />
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="run.mone.mimeter.dashboard.pojo.SceneApiInfo">
+    <result column="api_url" jdbcType="LONGVARCHAR" property="apiUrl" />
+    <result column="api_header" jdbcType="LONGVARCHAR" property="apiHeader" />
+    <result column="request_param_info" jdbcType="LONGVARCHAR" property="requestParamInfo" />
+    <result column="output_param_info" jdbcType="LONGVARCHAR" property="outputParamInfo" />
+    <result column="request_body" jdbcType="LONGVARCHAR" property="requestBody" />
+    <result column="dubbo_param_json" jdbcType="LONGVARCHAR" property="dubboParamJson" />
+    <result column="check_point" jdbcType="LONGVARCHAR" property="checkPoint" />
+    <result column="filter_condition" jdbcType="LONGVARCHAR" property="filterCondition" />
+    <result column="api_tsp_auth" jdbcType="LONGVARCHAR" property="apiTspAuth" />
+    <result column="api_traffic_info" jdbcType="LONGVARCHAR" property="apiTrafficInfo" />
+    <result column="api_x5_info" jdbcType="LONGVARCHAR" property="apiX5Info" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    id, scene_id, api_order, api_name, source_type, api_type, request_method, request_timeout, 
+    need_login, token_type, content_type, nacos_type, service_name, method_name, param_type_list, 
+    dubbo_group, dubbo_version, serial_link_id
+  </sql>
+  <sql id="Blob_Column_List">
+    api_url, api_header, request_param_info, output_param_info, request_body, dubbo_param_json, 
+    check_point, filter_condition, api_tsp_auth, api_traffic_info, api_x5_info
+  </sql>
+  <select id="selectByExampleWithBLOBs" parameterType="run.mone.mimeter.dashboard.pojo.SceneApiInfoExample" resultMap="ResultMapWithBLOBs">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from scene_api_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByExample" parameterType="run.mone.mimeter.dashboard.pojo.SceneApiInfoExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from scene_api_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="ResultMapWithBLOBs">
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from scene_api_info
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from scene_api_info
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <delete id="deleteByExample" parameterType="run.mone.mimeter.dashboard.pojo.SceneApiInfoExample">
+    delete from scene_api_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="run.mone.mimeter.dashboard.pojo.SceneApiInfo">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into scene_api_info (scene_id, api_order, api_name, 
+      source_type, api_type, request_method, 
+      request_timeout, need_login, token_type, 
+      content_type, nacos_type, service_name, 
+      method_name, param_type_list, dubbo_group, 
+      dubbo_version, serial_link_id, api_url, 
+      api_header, request_param_info, output_param_info, 
+      request_body, dubbo_param_json, check_point, 
+      filter_condition, api_tsp_auth, api_traffic_info, 
+      api_x5_info)
+    values (#{sceneId,jdbcType=INTEGER}, #{apiOrder,jdbcType=INTEGER}, #{apiName,jdbcType=VARCHAR}, 
+      #{sourceType,jdbcType=INTEGER}, #{apiType,jdbcType=INTEGER}, #{requestMethod,jdbcType=INTEGER}, 
+      #{requestTimeout,jdbcType=INTEGER}, #{needLogin,jdbcType=BIT}, #{tokenType,jdbcType=INTEGER}, 
+      #{contentType,jdbcType=VARCHAR}, #{nacosType,jdbcType=INTEGER}, #{serviceName,jdbcType=VARCHAR}, 
+      #{methodName,jdbcType=VARCHAR}, #{paramTypeList,jdbcType=VARCHAR}, #{dubboGroup,jdbcType=VARCHAR}, 
+      #{dubboVersion,jdbcType=VARCHAR}, #{serialLinkId,jdbcType=INTEGER}, #{apiUrl,jdbcType=LONGVARCHAR}, 
+      #{apiHeader,jdbcType=LONGVARCHAR}, #{requestParamInfo,jdbcType=LONGVARCHAR}, #{outputParamInfo,jdbcType=LONGVARCHAR}, 
+      #{requestBody,jdbcType=LONGVARCHAR}, #{dubboParamJson,jdbcType=LONGVARCHAR}, #{checkPoint,jdbcType=LONGVARCHAR}, 
+      #{filterCondition,jdbcType=LONGVARCHAR}, #{apiTspAuth,jdbcType=LONGVARCHAR}, #{apiTrafficInfo,jdbcType=LONGVARCHAR}, 
+      #{apiX5Info,jdbcType=LONGVARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="run.mone.mimeter.dashboard.pojo.SceneApiInfo">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into scene_api_info
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="sceneId != null">
+        scene_id,
+      </if>
+      <if test="apiOrder != null">
+        api_order,
+      </if>
+      <if test="apiName != null">
+        api_name,
+      </if>
+      <if test="sourceType != null">
+        source_type,
+      </if>
+      <if test="apiType != null">
+        api_type,
+      </if>
+      <if test="requestMethod != null">
+        request_method,
+      </if>
+      <if test="requestTimeout != null">
+        request_timeout,
+      </if>
+      <if test="needLogin != null">
+        need_login,
+      </if>
+      <if test="tokenType != null">
+        token_type,
+      </if>
+      <if test="contentType != null">
+        content_type,
+      </if>
+      <if test="nacosType != null">
+        nacos_type,
+      </if>
+      <if test="serviceName != null">
+        service_name,
+      </if>
+      <if test="methodName != null">
+        method_name,
+      </if>
+      <if test="paramTypeList != null">
+        param_type_list,
+      </if>
+      <if test="dubboGroup != null">
+        dubbo_group,
+      </if>
+      <if test="dubboVersion != null">
+        dubbo_version,
+      </if>
+      <if test="serialLinkId != null">
+        serial_link_id,
+      </if>
+      <if test="apiUrl != null">
+        api_url,
+      </if>
+      <if test="apiHeader != null">
+        api_header,
+      </if>
+      <if test="requestParamInfo != null">
+        request_param_info,
+      </if>
+      <if test="outputParamInfo != null">
+        output_param_info,
+      </if>
+      <if test="requestBody != null">
+        request_body,
+      </if>
+      <if test="dubboParamJson != null">
+        dubbo_param_json,
+      </if>
+      <if test="checkPoint != null">
+        check_point,
+      </if>
+      <if test="filterCondition != null">
+        filter_condition,
+      </if>
+      <if test="apiTspAuth != null">
+        api_tsp_auth,
+      </if>
+      <if test="apiTrafficInfo != null">
+        api_traffic_info,
+      </if>
+      <if test="apiX5Info != null">
+        api_x5_info,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="sceneId != null">
+        #{sceneId,jdbcType=INTEGER},
+      </if>
+      <if test="apiOrder != null">
+        #{apiOrder,jdbcType=INTEGER},
+      </if>
+      <if test="apiName != null">
+        #{apiName,jdbcType=VARCHAR},
+      </if>
+      <if test="sourceType != null">
+        #{sourceType,jdbcType=INTEGER},
+      </if>
+      <if test="apiType != null">
+        #{apiType,jdbcType=INTEGER},
+      </if>
+      <if test="requestMethod != null">
+        #{requestMethod,jdbcType=INTEGER},
+      </if>
+      <if test="requestTimeout != null">
+        #{requestTimeout,jdbcType=INTEGER},
+      </if>
+      <if test="needLogin != null">
+        #{needLogin,jdbcType=BIT},
+      </if>
+      <if test="tokenType != null">
+        #{tokenType,jdbcType=INTEGER},
+      </if>
+      <if test="contentType != null">
+        #{contentType,jdbcType=VARCHAR},
+      </if>
+      <if test="nacosType != null">
+        #{nacosType,jdbcType=INTEGER},
+      </if>
+      <if test="serviceName != null">
+        #{serviceName,jdbcType=VARCHAR},
+      </if>
+      <if test="methodName != null">
+        #{methodName,jdbcType=VARCHAR},
+      </if>
+      <if test="paramTypeList != null">
+        #{paramTypeList,jdbcType=VARCHAR},
+      </if>
+      <if test="dubboGroup != null">
+        #{dubboGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="dubboVersion != null">
+        #{dubboVersion,jdbcType=VARCHAR},
+      </if>
+      <if test="serialLinkId != null">
+        #{serialLinkId,jdbcType=INTEGER},
+      </if>
+      <if test="apiUrl != null">
+        #{apiUrl,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="apiHeader != null">
+        #{apiHeader,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="requestParamInfo != null">
+        #{requestParamInfo,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="outputParamInfo != null">
+        #{outputParamInfo,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="requestBody != null">
+        #{requestBody,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="dubboParamJson != null">
+        #{dubboParamJson,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="checkPoint != null">
+        #{checkPoint,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="filterCondition != null">
+        #{filterCondition,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="apiTspAuth != null">
+        #{apiTspAuth,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="apiTrafficInfo != null">
+        #{apiTrafficInfo,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="apiX5Info != null">
+        #{apiX5Info,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="run.mone.mimeter.dashboard.pojo.SceneApiInfoExample" resultType="java.lang.Long">
+    select count(*) from scene_api_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update scene_api_info
+    <set>
+      <if test="record.id != null">
+        id = #{record.id,jdbcType=INTEGER},
+      </if>
+      <if test="record.sceneId != null">
+        scene_id = #{record.sceneId,jdbcType=INTEGER},
+      </if>
+      <if test="record.apiOrder != null">
+        api_order = #{record.apiOrder,jdbcType=INTEGER},
+      </if>
+      <if test="record.apiName != null">
+        api_name = #{record.apiName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.sourceType != null">
+        source_type = #{record.sourceType,jdbcType=INTEGER},
+      </if>
+      <if test="record.apiType != null">
+        api_type = #{record.apiType,jdbcType=INTEGER},
+      </if>
+      <if test="record.requestMethod != null">
+        request_method = #{record.requestMethod,jdbcType=INTEGER},
+      </if>
+      <if test="record.requestTimeout != null">
+        request_timeout = #{record.requestTimeout,jdbcType=INTEGER},
+      </if>
+      <if test="record.needLogin != null">
+        need_login = #{record.needLogin,jdbcType=BIT},
+      </if>
+      <if test="record.tokenType != null">
+        token_type = #{record.tokenType,jdbcType=INTEGER},
+      </if>
+      <if test="record.contentType != null">
+        content_type = #{record.contentType,jdbcType=VARCHAR},
+      </if>
+      <if test="record.nacosType != null">
+        nacos_type = #{record.nacosType,jdbcType=INTEGER},
+      </if>
+      <if test="record.serviceName != null">
+        service_name = #{record.serviceName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.methodName != null">
+        method_name = #{record.methodName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.paramTypeList != null">
+        param_type_list = #{record.paramTypeList,jdbcType=VARCHAR},
+      </if>
+      <if test="record.dubboGroup != null">
+        dubbo_group = #{record.dubboGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="record.dubboVersion != null">
+        dubbo_version = #{record.dubboVersion,jdbcType=VARCHAR},
+      </if>
+      <if test="record.serialLinkId != null">
+        serial_link_id = #{record.serialLinkId,jdbcType=INTEGER},
+      </if>
+      <if test="record.apiUrl != null">
+        api_url = #{record.apiUrl,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.apiHeader != null">
+        api_header = #{record.apiHeader,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.requestParamInfo != null">
+        request_param_info = #{record.requestParamInfo,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.outputParamInfo != null">
+        output_param_info = #{record.outputParamInfo,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.requestBody != null">
+        request_body = #{record.requestBody,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.dubboParamJson != null">
+        dubbo_param_json = #{record.dubboParamJson,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.checkPoint != null">
+        check_point = #{record.checkPoint,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.filterCondition != null">
+        filter_condition = #{record.filterCondition,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.apiTspAuth != null">
+        api_tsp_auth = #{record.apiTspAuth,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.apiTrafficInfo != null">
+        api_traffic_info = #{record.apiTrafficInfo,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.apiX5Info != null">
+        api_x5_info = #{record.apiX5Info,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExampleWithBLOBs" parameterType="map">
+    update scene_api_info
+    set id = #{record.id,jdbcType=INTEGER},
+      scene_id = #{record.sceneId,jdbcType=INTEGER},
+      api_order = #{record.apiOrder,jdbcType=INTEGER},
+      api_name = #{record.apiName,jdbcType=VARCHAR},
+      source_type = #{record.sourceType,jdbcType=INTEGER},
+      api_type = #{record.apiType,jdbcType=INTEGER},
+      request_method = #{record.requestMethod,jdbcType=INTEGER},
+      request_timeout = #{record.requestTimeout,jdbcType=INTEGER},
+      need_login = #{record.needLogin,jdbcType=BIT},
+      token_type = #{record.tokenType,jdbcType=INTEGER},
+      content_type = #{record.contentType,jdbcType=VARCHAR},
+      nacos_type = #{record.nacosType,jdbcType=INTEGER},
+      service_name = #{record.serviceName,jdbcType=VARCHAR},
+      method_name = #{record.methodName,jdbcType=VARCHAR},
+      param_type_list = #{record.paramTypeList,jdbcType=VARCHAR},
+      dubbo_group = #{record.dubboGroup,jdbcType=VARCHAR},
+      dubbo_version = #{record.dubboVersion,jdbcType=VARCHAR},
+      serial_link_id = #{record.serialLinkId,jdbcType=INTEGER},
+      api_url = #{record.apiUrl,jdbcType=LONGVARCHAR},
+      api_header = #{record.apiHeader,jdbcType=LONGVARCHAR},
+      request_param_info = #{record.requestParamInfo,jdbcType=LONGVARCHAR},
+      output_param_info = #{record.outputParamInfo,jdbcType=LONGVARCHAR},
+      request_body = #{record.requestBody,jdbcType=LONGVARCHAR},
+      dubbo_param_json = #{record.dubboParamJson,jdbcType=LONGVARCHAR},
+      check_point = #{record.checkPoint,jdbcType=LONGVARCHAR},
+      filter_condition = #{record.filterCondition,jdbcType=LONGVARCHAR},
+      api_tsp_auth = #{record.apiTspAuth,jdbcType=LONGVARCHAR},
+      api_traffic_info = #{record.apiTrafficInfo,jdbcType=LONGVARCHAR},
+      api_x5_info = #{record.apiX5Info,jdbcType=LONGVARCHAR}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update scene_api_info
+    set id = #{record.id,jdbcType=INTEGER},
+      scene_id = #{record.sceneId,jdbcType=INTEGER},
+      api_order = #{record.apiOrder,jdbcType=INTEGER},
+      api_name = #{record.apiName,jdbcType=VARCHAR},
+      source_type = #{record.sourceType,jdbcType=INTEGER},
+      api_type = #{record.apiType,jdbcType=INTEGER},
+      request_method = #{record.requestMethod,jdbcType=INTEGER},
+      request_timeout = #{record.requestTimeout,jdbcType=INTEGER},
+      need_login = #{record.needLogin,jdbcType=BIT},
+      token_type = #{record.tokenType,jdbcType=INTEGER},
+      content_type = #{record.contentType,jdbcType=VARCHAR},
+      nacos_type = #{record.nacosType,jdbcType=INTEGER},
+      service_name = #{record.serviceName,jdbcType=VARCHAR},
+      method_name = #{record.methodName,jdbcType=VARCHAR},
+      param_type_list = #{record.paramTypeList,jdbcType=VARCHAR},
+      dubbo_group = #{record.dubboGroup,jdbcType=VARCHAR},
+      dubbo_version = #{record.dubboVersion,jdbcType=VARCHAR},
+      serial_link_id = #{record.serialLinkId,jdbcType=INTEGER}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="run.mone.mimeter.dashboard.pojo.SceneApiInfo">
+    update scene_api_info
+    <set>
+      <if test="sceneId != null">
+        scene_id = #{sceneId,jdbcType=INTEGER},
+      </if>
+      <if test="apiOrder != null">
+        api_order = #{apiOrder,jdbcType=INTEGER},
+      </if>
+      <if test="apiName != null">
+        api_name = #{apiName,jdbcType=VARCHAR},
+      </if>
+      <if test="sourceType != null">
+        source_type = #{sourceType,jdbcType=INTEGER},
+      </if>
+      <if test="apiType != null">
+        api_type = #{apiType,jdbcType=INTEGER},
+      </if>
+      <if test="requestMethod != null">
+        request_method = #{requestMethod,jdbcType=INTEGER},
+      </if>
+      <if test="requestTimeout != null">
+        request_timeout = #{requestTimeout,jdbcType=INTEGER},
+      </if>
+      <if test="needLogin != null">
+        need_login = #{needLogin,jdbcType=BIT},
+      </if>
+      <if test="tokenType != null">
+        token_type = #{tokenType,jdbcType=INTEGER},
+      </if>
+      <if test="contentType != null">
+        content_type = #{contentType,jdbcType=VARCHAR},
+      </if>
+      <if test="nacosType != null">
+        nacos_type = #{nacosType,jdbcType=INTEGER},
+      </if>
+      <if test="serviceName != null">
+        service_name = #{serviceName,jdbcType=VARCHAR},
+      </if>
+      <if test="methodName != null">
+        method_name = #{methodName,jdbcType=VARCHAR},
+      </if>
+      <if test="paramTypeList != null">
+        param_type_list = #{paramTypeList,jdbcType=VARCHAR},
+      </if>
+      <if test="dubboGroup != null">
+        dubbo_group = #{dubboGroup,jdbcType=VARCHAR},
+      </if>
+      <if test="dubboVersion != null">
+        dubbo_version = #{dubboVersion,jdbcType=VARCHAR},
+      </if>
+      <if test="serialLinkId != null">
+        serial_link_id = #{serialLinkId,jdbcType=INTEGER},
+      </if>
+      <if test="apiUrl != null">
+        api_url = #{apiUrl,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="apiHeader != null">
+        api_header = #{apiHeader,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="requestParamInfo != null">
+        request_param_info = #{requestParamInfo,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="outputParamInfo != null">
+        output_param_info = #{outputParamInfo,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="requestBody != null">
+        request_body = #{requestBody,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="dubboParamJson != null">
+        dubbo_param_json = #{dubboParamJson,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="checkPoint != null">
+        check_point = #{checkPoint,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="filterCondition != null">
+        filter_condition = #{filterCondition,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="apiTspAuth != null">
+        api_tsp_auth = #{apiTspAuth,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="apiTrafficInfo != null">
+        api_traffic_info = #{apiTrafficInfo,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="apiX5Info != null">
+        api_x5_info = #{apiX5Info,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="run.mone.mimeter.dashboard.pojo.SceneApiInfo">
+    update scene_api_info
+    set scene_id = #{sceneId,jdbcType=INTEGER},
+      api_order = #{apiOrder,jdbcType=INTEGER},
+      api_name = #{apiName,jdbcType=VARCHAR},
+      source_type = #{sourceType,jdbcType=INTEGER},
+      api_type = #{apiType,jdbcType=INTEGER},
+      request_method = #{requestMethod,jdbcType=INTEGER},
+      request_timeout = #{requestTimeout,jdbcType=INTEGER},
+      need_login = #{needLogin,jdbcType=BIT},
+      token_type = #{tokenType,jdbcType=INTEGER},
+      content_type = #{contentType,jdbcType=VARCHAR},
+      nacos_type = #{nacosType,jdbcType=INTEGER},
+      service_name = #{serviceName,jdbcType=VARCHAR},
+      method_name = #{methodName,jdbcType=VARCHAR},
+      param_type_list = #{paramTypeList,jdbcType=VARCHAR},
+      dubbo_group = #{dubboGroup,jdbcType=VARCHAR},
+      dubbo_version = #{dubboVersion,jdbcType=VARCHAR},
+      serial_link_id = #{serialLinkId,jdbcType=INTEGER},
+      api_url = #{apiUrl,jdbcType=LONGVARCHAR},
+      api_header = #{apiHeader,jdbcType=LONGVARCHAR},
+      request_param_info = #{requestParamInfo,jdbcType=LONGVARCHAR},
+      output_param_info = #{outputParamInfo,jdbcType=LONGVARCHAR},
+      request_body = #{requestBody,jdbcType=LONGVARCHAR},
+      dubbo_param_json = #{dubboParamJson,jdbcType=LONGVARCHAR},
+      check_point = #{checkPoint,jdbcType=LONGVARCHAR},
+      filter_condition = #{filterCondition,jdbcType=LONGVARCHAR},
+      api_tsp_auth = #{apiTspAuth,jdbcType=LONGVARCHAR},
+      api_traffic_info = #{apiTrafficInfo,jdbcType=LONGVARCHAR},
+      api_x5_info = #{apiX5Info,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="run.mone.mimeter.dashboard.pojo.SceneApiInfo">
+    update scene_api_info
+    set scene_id = #{sceneId,jdbcType=INTEGER},
+      api_order = #{apiOrder,jdbcType=INTEGER},
+      api_name = #{apiName,jdbcType=VARCHAR},
+      source_type = #{sourceType,jdbcType=INTEGER},
+      api_type = #{apiType,jdbcType=INTEGER},
+      request_method = #{requestMethod,jdbcType=INTEGER},
+      request_timeout = #{requestTimeout,jdbcType=INTEGER},
+      need_login = #{needLogin,jdbcType=BIT},
+      token_type = #{tokenType,jdbcType=INTEGER},
+      content_type = #{contentType,jdbcType=VARCHAR},
+      nacos_type = #{nacosType,jdbcType=INTEGER},
+      service_name = #{serviceName,jdbcType=VARCHAR},
+      method_name = #{methodName,jdbcType=VARCHAR},
+      param_type_list = #{paramTypeList,jdbcType=VARCHAR},
+      dubbo_group = #{dubboGroup,jdbcType=VARCHAR},
+      dubbo_version = #{dubboVersion,jdbcType=VARCHAR},
+      serial_link_id = #{serialLinkId,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    insert into scene_api_info
+    (scene_id, api_order, api_name, source_type, api_type, request_method, request_timeout, 
+      need_login, token_type, content_type, nacos_type, service_name, method_name, param_type_list, 
+      dubbo_group, dubbo_version, serial_link_id, api_url, api_header, request_param_info, 
+      output_param_info, request_body, dubbo_param_json, check_point, filter_condition, 
+      api_tsp_auth, api_traffic_info, api_x5_info)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.sceneId,jdbcType=INTEGER}, #{item.apiOrder,jdbcType=INTEGER}, #{item.apiName,jdbcType=VARCHAR}, 
+        #{item.sourceType,jdbcType=INTEGER}, #{item.apiType,jdbcType=INTEGER}, #{item.requestMethod,jdbcType=INTEGER}, 
+        #{item.requestTimeout,jdbcType=INTEGER}, #{item.needLogin,jdbcType=BIT}, #{item.tokenType,jdbcType=INTEGER}, 
+        #{item.contentType,jdbcType=VARCHAR}, #{item.nacosType,jdbcType=INTEGER}, #{item.serviceName,jdbcType=VARCHAR}, 
+        #{item.methodName,jdbcType=VARCHAR}, #{item.paramTypeList,jdbcType=VARCHAR}, #{item.dubboGroup,jdbcType=VARCHAR}, 
+        #{item.dubboVersion,jdbcType=VARCHAR}, #{item.serialLinkId,jdbcType=INTEGER}, #{item.apiUrl,jdbcType=LONGVARCHAR}, 
+        #{item.apiHeader,jdbcType=LONGVARCHAR}, #{item.requestParamInfo,jdbcType=LONGVARCHAR}, 
+        #{item.outputParamInfo,jdbcType=LONGVARCHAR}, #{item.requestBody,jdbcType=LONGVARCHAR}, 
+        #{item.dubboParamJson,jdbcType=LONGVARCHAR}, #{item.checkPoint,jdbcType=LONGVARCHAR}, 
+        #{item.filterCondition,jdbcType=LONGVARCHAR}, #{item.apiTspAuth,jdbcType=LONGVARCHAR}, 
+        #{item.apiTrafficInfo,jdbcType=LONGVARCHAR}, #{item.apiX5Info,jdbcType=LONGVARCHAR}
+        )
+    </foreach>
+  </insert>
+  <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
+    insert into scene_api_info (
+    <foreach collection="selective" item="column" separator=",">
+      ${column.escapedColumnName}
+    </foreach>
+    )
+    values
+    <foreach collection="list" item="item" separator=",">
+      (
+      <foreach collection="selective" item="column" separator=",">
+        <if test="'scene_id'.toString() == column.value">
+          #{item.sceneId,jdbcType=INTEGER}
+        </if>
+        <if test="'api_order'.toString() == column.value">
+          #{item.apiOrder,jdbcType=INTEGER}
+        </if>
+        <if test="'api_name'.toString() == column.value">
+          #{item.apiName,jdbcType=VARCHAR}
+        </if>
+        <if test="'source_type'.toString() == column.value">
+          #{item.sourceType,jdbcType=INTEGER}
+        </if>
+        <if test="'api_type'.toString() == column.value">
+          #{item.apiType,jdbcType=INTEGER}
+        </if>
+        <if test="'request_method'.toString() == column.value">
+          #{item.requestMethod,jdbcType=INTEGER}
+        </if>
+        <if test="'request_timeout'.toString() == column.value">
+          #{item.requestTimeout,jdbcType=INTEGER}
+        </if>
+        <if test="'need_login'.toString() == column.value">
+          #{item.needLogin,jdbcType=BIT}
+        </if>
+        <if test="'token_type'.toString() == column.value">
+          #{item.tokenType,jdbcType=INTEGER}
+        </if>
+        <if test="'content_type'.toString() == column.value">
+          #{item.contentType,jdbcType=VARCHAR}
+        </if>
+        <if test="'nacos_type'.toString() == column.value">
+          #{item.nacosType,jdbcType=INTEGER}
+        </if>
+        <if test="'service_name'.toString() == column.value">
+          #{item.serviceName,jdbcType=VARCHAR}
+        </if>
+        <if test="'method_name'.toString() == column.value">
+          #{item.methodName,jdbcType=VARCHAR}
+        </if>
+        <if test="'param_type_list'.toString() == column.value">
+          #{item.paramTypeList,jdbcType=VARCHAR}
+        </if>
+        <if test="'dubbo_group'.toString() == column.value">
+          #{item.dubboGroup,jdbcType=VARCHAR}
+        </if>
+        <if test="'dubbo_version'.toString() == column.value">
+          #{item.dubboVersion,jdbcType=VARCHAR}
+        </if>
+        <if test="'serial_link_id'.toString() == column.value">
+          #{item.serialLinkId,jdbcType=INTEGER}
+        </if>
+        <if test="'api_url'.toString() == column.value">
+          #{item.apiUrl,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'api_header'.toString() == column.value">
+          #{item.apiHeader,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'request_param_info'.toString() == column.value">
+          #{item.requestParamInfo,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'output_param_info'.toString() == column.value">
+          #{item.outputParamInfo,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'request_body'.toString() == column.value">
+          #{item.requestBody,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'dubbo_param_json'.toString() == column.value">
+          #{item.dubboParamJson,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'check_point'.toString() == column.value">
+          #{item.checkPoint,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'filter_condition'.toString() == column.value">
+          #{item.filterCondition,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'api_tsp_auth'.toString() == column.value">
+          #{item.apiTspAuth,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'api_traffic_info'.toString() == column.value">
+          #{item.apiTrafficInfo,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'api_x5_info'.toString() == column.value">
+          #{item.apiX5Info,jdbcType=LONGVARCHAR}
+        </if>
+      </foreach>
+      )
+    </foreach>
+  </insert>
+</mapper>

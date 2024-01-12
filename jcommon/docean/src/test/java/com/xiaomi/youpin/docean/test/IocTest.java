@@ -22,6 +22,7 @@ import com.xiaomi.youpin.docean.Aop;
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.aop.EnhanceInterceptor;
 import com.xiaomi.youpin.docean.bo.Bean;
+import com.xiaomi.youpin.docean.common.Cons;
 import com.xiaomi.youpin.docean.common.Safe;
 import com.xiaomi.youpin.docean.listener.event.EventType;
 import com.xiaomi.youpin.docean.test.anno.TAnno;
@@ -30,6 +31,7 @@ import com.xiaomi.youpin.docean.test.demo.Demo2Service;
 import com.xiaomi.youpin.docean.test.demo.DemoA;
 import com.xiaomi.youpin.docean.test.demo.DemoService;
 import com.xiaomi.youpin.docean.test.demo.DemoVo;
+import com.xiaomi.youpin.docean.test.demo.mydemo.DemoCall;
 import com.xiaomi.youpin.docean.test.demo3.ControllerDemo;
 import com.xiaomi.youpin.docean.test.demo3.DaoDemo;
 import com.xiaomi.youpin.docean.test.demo3.ServiceDemo;
@@ -142,6 +144,27 @@ public class IocTest {
         System.out.println(list);
     }
 
+    @Test
+    public void testIoc7() {
+        Ioc ioc = Ioc.ins()
+                .putBean("$demoName", "com.xiaomi.youpin.docean.test.demo.mydemo.MyDemo1")
+                .init("com.xiaomi.youpin.docean.test.demo.mydemo");
+        DemoCall dc = ioc.getBean(DemoCall.class);
+        System.out.println(dc.hi());
+        System.out.println(dc.getVal());
+    }
+
+
+    @Test
+    public void testIoc8() {
+        Ioc ioc = Ioc.ins()
+                .putBean(Cons.AUTO_FIND_IMPL, "true")
+                .init("com.xiaomi.youpin.docean.test.demo.mydemo");
+        DemoCall dc = ioc.getBean(DemoCall.class);
+        System.out.println(dc.call());
+    }
+
+
 
     @Test
     public void testIoc44() {
@@ -157,12 +180,12 @@ public class IocTest {
     @Test
     public void testLookup() {
         Aop.ins().init(Maps.newLinkedHashMap());
-        Ioc.ins().init("com.xiaomi.youpin.docean.test","com.xiaomi.youpin.docean.plugin.config");
+        Ioc.ins().init("com.xiaomi.youpin.docean.test", "com.xiaomi.youpin.docean.plugin.config");
         DemoService ds = Ioc.ins().getBean(DemoService.class);
         IntStream.range(0, 5).forEach(i -> {
             DemoVo dv = ds.demoVo();
             System.out.println(dv.getId());
-            dv.setId(System.currentTimeMillis()+"");
+            dv.setId(System.currentTimeMillis() + "");
             System.out.println(ds.demoVo());
         });
     }
