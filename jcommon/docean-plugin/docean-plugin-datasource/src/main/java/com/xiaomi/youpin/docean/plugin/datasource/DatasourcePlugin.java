@@ -186,7 +186,7 @@ public class DatasourcePlugin implements IPlugin {
         config.setDefaultInitialPoolSize(Integer.valueOf(c.get(prefix + "db_pool_size", "1")));
         config.setDefaultMaxPoolSize(Integer.valueOf(c.get(prefix + "db_pool_size", "1")));
         config.setDefaultMinPoolSize(Integer.valueOf(c.get(prefix + "db_pool_size", "1")));
-        config.setDriverClass("com.mysql.jdbc.Driver");
+        config.setDriverClass(c.get(prefix + "db_driver", "com.mysql.jdbc.Driver"));
         return config;
     }
 
