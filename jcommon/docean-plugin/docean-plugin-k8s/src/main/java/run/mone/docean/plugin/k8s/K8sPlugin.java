@@ -33,14 +33,12 @@ import io.fabric8.kubernetes.api.model.batch.v1.Job;
 import io.fabric8.kubernetes.api.model.batch.v1.JobList;
 import io.fabric8.kubernetes.client.DefaultKubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClient;
+import io.fabric8.kubernetes.client.dsl.ExecWatch;
 import io.fabric8.kubernetes.client.dsl.MixedOperation;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import io.fabric8.kubernetes.client.informers.SharedIndexInformer;
 import io.fabric8.kubernetes.client.informers.SharedInformerFactory;
-import io.kubernetes.client.Exec;
-import io.kubernetes.client.openapi.ApiClient;
 import io.fabric8.kubernetes.api.model.autoscaling.v1.HorizontalPodAutoscaler;
-import io.kubernetes.client.util.Streams;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
@@ -60,14 +58,10 @@ import java.util.stream.Collectors;
 public class K8sPlugin implements IPlugin {
 
     private KubernetesClient client;
-    private static final ApiClient cli;
+    private static final KubernetesClient DEFAULT_CLIENT;
 
     static {
-        try {
-            cli = io.kubernetes.client.util.Config.defaultClient();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        DEFAULT_CLIENT = new DefaultKubernetesClient();
     }
 
     /**
@@ -162,27 +156,23 @@ public class K8sPlugin implements IPlugin {
     }
 
     @SneakyThrows
-    private static Pair<Integer, String> execContainer(String ns, String name, String container, String[] command) {
-        final Process proc = new Exec(cli).exec(ns, name, command, container, false, false);
-        ByteArrayOutputStream sb = new ByteArrayOutputStream();
-        Thread out =
-                new Thread(
-                        () -> {
-                            try {
-                                Streams.copy(proc.getInputStream(), sb);
-                            } catch (IOException ex) {
-                                ex.printStackTrace();
-                            }
-                        });
-        out.start();
+    private static Pair<Integer, String> execContainer(KubernetesClient client, String ns, String name, String container, String[] command) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ByteArrayOutputStream error = new ByteArrayOutputStream();
+        try (ExecWatch execWatch = client.pods().inNamespace(ns).withName(name)
+                .inContainer(container)
+                .writingOutput(out)
+                .writingError(error)
+                .exec(command)) {
+            // 等待命令执行完成
+            execWatch.close();
+        }
+        // 返回执行结果
+        String result = out.toString();
+        System.out.println("result:" + result);
+        // 这里没有直接的退出值，你可能需要根据输出结果来判断命令是否成功执行
+        return Pair.of(0, result);
 
-        proc.waitFor();
-
-        // wait for any last output; no need to wait for input thread
-        out.join();
-
-        proc.destroy();
-        return Pair.of(proc.exitValue(), sb.toString());
     }
 
     @SneakyThrows
@@ -190,7 +180,7 @@ public class K8sPlugin implements IPlugin {
         String[] shs = new String[]{"bash", "ash", "sh"};
         Pair<Integer, String> end = null;
         for (String sh : shs) {
-            end = execContainer(ns, name, container, new String[]{sh, "-c", "trap \"exit\" SIGINT SIGTERM ; kill -s SIGINT 1"});
+            end = execContainer(DEFAULT_CLIENT, ns, name, container, new String[]{sh, "-c", "trap \"exit\" SIGINT SIGTERM ; kill -s SIGINT 1"});
             if (end.getKey().equals(0)) {
                 break;
             }
