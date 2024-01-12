@@ -8,7 +8,7 @@
     <version>1.4-jdk20-SNAPSHOT</version>
   </parent>
   <artifactId>docean-plugin</artifactId>
-  <version>1.4-jdk21-SNAPSHOT</version>
+  <version>${submodule-release.version}</version>
   <packaging>pom</packaging>
   <modules>
     <module>docean-plugin-aop</module>

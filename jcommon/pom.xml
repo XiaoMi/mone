@@ -98,9 +98,10 @@
     </snapshotRepository>
   </distributionManagement>
   <properties>
-    <maven.jcommonDirectory>~/</maven.jcommonDirectory>
+    <maven.jcommonDirectory>./</maven.jcommonDirectory>
     <maven.compiler.source>8</maven.compiler.source>
     <maven.compiler.target>8</maven.compiler.target>
+    <submodule-release.version>1.5.0-jdk21</submodule-release.version>
   </properties>
   <dependencies>
     <dependency>
@@ -175,6 +176,31 @@
           </execution>
         </executions>
       </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>3.4.0</version>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.5.0</version> <!-- 版本号根据您的 Maven 版本可能有所不同 -->
+        <configuration>
+          <failOnError>false</failOnError>
+        </configuration>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.11.0</version>
@@ -202,6 +228,25 @@
         <configuration>
           <attach>true</attach>
         </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-gpg-plugin</artifactId>
+        <version>1.6</version>
+        <executions>
+          <execution>
+            <id>sign-artifacts</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>sign</goal>
+            </goals>
+            <configuration>
+              <executable>gpg</executable>
+              <keyname>your key</keyname>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>

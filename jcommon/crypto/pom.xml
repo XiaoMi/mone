@@ -8,6 +8,7 @@
     <version>1.4-jdk20-SNAPSHOT</version>
   </parent>
   <artifactId>crypto</artifactId>
+  <version>${submodule-release.version}</version>
   <dependencies>
     <dependency>
       <groupId>org.projectlombok</groupId>
