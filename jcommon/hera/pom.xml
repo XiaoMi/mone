@@ -8,6 +8,7 @@
     <version>1.4-jdk20-SNAPSHOT</version>
   </parent>
   <artifactId>hera</artifactId>
+  <version>${submodule-release.version}</version>
   <packaging>pom</packaging>
   <modules>
     <module>hera-trace</module>
