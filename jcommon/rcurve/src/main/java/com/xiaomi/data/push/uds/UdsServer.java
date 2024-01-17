@@ -56,19 +56,7 @@ public class UdsServer implements IServer<UdsCommand> {
 
     private ConcurrentHashMap<String, Pair<UdsProcessor, ExecutorService>> processorMap = new ConcurrentHashMap<>();
 
-    private ExecutorService pool = new ThreadPoolExecutor(200, 200,
-            0L, TimeUnit.MILLISECONDS,
-            new ArrayBlockingQueue<>(100),
-            new ThreadFactory() {
-                private final AtomicInteger id = new AtomicInteger(0);
-
-                public Thread newThread(Runnable r) {
-                    String threadName = "udsServer" + this.id.getAndIncrement();
-                    Thread thread = new Thread(r, threadName);
-                    thread.setDaemon(true);
-                    return thread;
-                }
-            });
+    private ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor();
 
     /**
      * 是否使用remote模式(标准tcp)

@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="run.mone.mimeter.dashboard.mapper.AgentApplyInfoMapper">
+  <resultMap id="BaseResultMap" type="run.mone.mimeter.dashboard.pojo.AgentApplyInfo">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="apply_user" jdbcType="VARCHAR" property="applyUser" />
+    <result column="apply_org_id" jdbcType="VARCHAR" property="applyOrgId" />
+    <result column="apply_org_name" jdbcType="VARCHAR" property="applyOrgName" />
+    <result column="agent_ip" jdbcType="VARCHAR" property="agentIp" />
+    <result column="agent_hostname" jdbcType="VARCHAR" property="agentHostname" />
+    <result column="apply_status" jdbcType="INTEGER" property="applyStatus" />
+    <result column="ctime" jdbcType="BIGINT" property="ctime" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    id, apply_user, apply_org_id, apply_org_name, agent_ip, agent_hostname, apply_status, 
+    ctime
+  </sql>
+  <select id="selectByExample" parameterType="run.mone.mimeter.dashboard.pojo.AgentApplyInfoExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from agent_apply_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select 
+    <include refid="Base_Column_List" />
+    from agent_apply_info
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from agent_apply_info
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <delete id="deleteByExample" parameterType="run.mone.mimeter.dashboard.pojo.AgentApplyInfoExample">
+    delete from agent_apply_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="run.mone.mimeter.dashboard.pojo.AgentApplyInfo">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into agent_apply_info (apply_user, apply_org_id, apply_org_name, 
+      agent_ip, agent_hostname, apply_status, 
+      ctime)
+    values (#{applyUser,jdbcType=VARCHAR}, #{applyOrgId,jdbcType=VARCHAR}, #{applyOrgName,jdbcType=VARCHAR}, 
+      #{agentIp,jdbcType=VARCHAR}, #{agentHostname,jdbcType=VARCHAR}, #{applyStatus,jdbcType=INTEGER}, 
+      #{ctime,jdbcType=BIGINT})
+  </insert>
+  <insert id="insertSelective" parameterType="run.mone.mimeter.dashboard.pojo.AgentApplyInfo">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into agent_apply_info
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="applyUser != null">
+        apply_user,
+      </if>
+      <if test="applyOrgId != null">
+        apply_org_id,
+      </if>
+      <if test="applyOrgName != null">
+        apply_org_name,
+      </if>
+      <if test="agentIp != null">
+        agent_ip,
+      </if>
+      <if test="agentHostname != null">
+        agent_hostname,
+      </if>
+      <if test="applyStatus != null">
+        apply_status,
+      </if>
+      <if test="ctime != null">
+        ctime,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="applyUser != null">
+        #{applyUser,jdbcType=VARCHAR},
+      </if>
+      <if test="applyOrgId != null">
+        #{applyOrgId,jdbcType=VARCHAR},
+      </if>
+      <if test="applyOrgName != null">
+        #{applyOrgName,jdbcType=VARCHAR},
+      </if>
+      <if test="agentIp != null">
+        #{agentIp,jdbcType=VARCHAR},
+      </if>
+      <if test="agentHostname != null">
+        #{agentHostname,jdbcType=VARCHAR},
+      </if>
+      <if test="applyStatus != null">
+        #{applyStatus,jdbcType=INTEGER},
+      </if>
+      <if test="ctime != null">
+        #{ctime,jdbcType=BIGINT},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="run.mone.mimeter.dashboard.pojo.AgentApplyInfoExample" resultType="java.lang.Long">
+    select count(*) from agent_apply_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update agent_apply_info
+    <set>
+      <if test="record.id != null">
+        id = #{record.id,jdbcType=INTEGER},
+      </if>
+      <if test="record.applyUser != null">
+        apply_user = #{record.applyUser,jdbcType=VARCHAR},
+      </if>
+      <if test="record.applyOrgId != null">
+        apply_org_id = #{record.applyOrgId,jdbcType=VARCHAR},
+      </if>
+      <if test="record.applyOrgName != null">
+        apply_org_name = #{record.applyOrgName,jdbcType=VARCHAR},
+      </if>
+      <if test="record.agentIp != null">
+        agent_ip = #{record.agentIp,jdbcType=VARCHAR},
+      </if>
+      <if test="record.agentHostname != null">
+        agent_hostname = #{record.agentHostname,jdbcType=VARCHAR},
+      </if>
+      <if test="record.applyStatus != null">
+        apply_status = #{record.applyStatus,jdbcType=INTEGER},
+      </if>
+      <if test="record.ctime != null">
+        ctime = #{record.ctime,jdbcType=BIGINT},
+      </if>
+    </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update agent_apply_info
+    set id = #{record.id,jdbcType=INTEGER},
+      apply_user = #{record.applyUser,jdbcType=VARCHAR},
+      apply_org_id = #{record.applyOrgId,jdbcType=VARCHAR},
+      apply_org_name = #{record.applyOrgName,jdbcType=VARCHAR},
+      agent_ip = #{record.agentIp,jdbcType=VARCHAR},
+      agent_hostname = #{record.agentHostname,jdbcType=VARCHAR},
+      apply_status = #{record.applyStatus,jdbcType=INTEGER},
+      ctime = #{record.ctime,jdbcType=BIGINT}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="run.mone.mimeter.dashboard.pojo.AgentApplyInfo">
+    update agent_apply_info
+    <set>
+      <if test="applyUser != null">
+        apply_user = #{applyUser,jdbcType=VARCHAR},
+      </if>
+      <if test="applyOrgId != null">
+        apply_org_id = #{applyOrgId,jdbcType=VARCHAR},
+      </if>
+      <if test="applyOrgName != null">
+        apply_org_name = #{applyOrgName,jdbcType=VARCHAR},
+      </if>
+      <if test="agentIp != null">
+        agent_ip = #{agentIp,jdbcType=VARCHAR},
+      </if>
+      <if test="agentHostname != null">
+        agent_hostname = #{agentHostname,jdbcType=VARCHAR},
+      </if>
+      <if test="applyStatus != null">
+        apply_status = #{applyStatus,jdbcType=INTEGER},
+      </if>
+      <if test="ctime != null">
+        ctime = #{ctime,jdbcType=BIGINT},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="run.mone.mimeter.dashboard.pojo.AgentApplyInfo">
+    update agent_apply_info
+    set apply_user = #{applyUser,jdbcType=VARCHAR},
+      apply_org_id = #{applyOrgId,jdbcType=VARCHAR},
+      apply_org_name = #{applyOrgName,jdbcType=VARCHAR},
+      agent_ip = #{agentIp,jdbcType=VARCHAR},
+      agent_hostname = #{agentHostname,jdbcType=VARCHAR},
+      apply_status = #{applyStatus,jdbcType=INTEGER},
+      ctime = #{ctime,jdbcType=BIGINT}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    insert into agent_apply_info
+    (apply_user, apply_org_id, apply_org_name, agent_ip, agent_hostname, apply_status, 
+      ctime)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.applyUser,jdbcType=VARCHAR}, #{item.applyOrgId,jdbcType=VARCHAR}, #{item.applyOrgName,jdbcType=VARCHAR}, 
+        #{item.agentIp,jdbcType=VARCHAR}, #{item.agentHostname,jdbcType=VARCHAR}, #{item.applyStatus,jdbcType=INTEGER}, 
+        #{item.ctime,jdbcType=BIGINT})
+    </foreach>
+  </insert>
+  <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
+    insert into agent_apply_info (
+    <foreach collection="selective" item="column" separator=",">
+      ${column.escapedColumnName}
+    </foreach>
+    )
+    values
+    <foreach collection="list" item="item" separator=",">
+      (
+      <foreach collection="selective" item="column" separator=",">
+        <if test="'apply_user'.toString() == column.value">
+          #{item.applyUser,jdbcType=VARCHAR}
+        </if>
+        <if test="'apply_org_id'.toString() == column.value">
+          #{item.applyOrgId,jdbcType=VARCHAR}
+        </if>
+        <if test="'apply_org_name'.toString() == column.value">
+          #{item.applyOrgName,jdbcType=VARCHAR}
+        </if>
+        <if test="'agent_ip'.toString() == column.value">
+          #{item.agentIp,jdbcType=VARCHAR}
+        </if>
+        <if test="'agent_hostname'.toString() == column.value">
+          #{item.agentHostname,jdbcType=VARCHAR}
+        </if>
+        <if test="'apply_status'.toString() == column.value">
+          #{item.applyStatus,jdbcType=INTEGER}
+        </if>
+        <if test="'ctime'.toString() == column.value">
+          #{item.ctime,jdbcType=BIGINT}
+        </if>
+      </foreach>
+      )
+    </foreach>
+  </insert>
+</mapper>

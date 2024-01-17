@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>mimeter-engine</artifactId>
+        <groupId>run.mone</groupId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>mimeter-api</artifactId>
+
+    <properties>
+        <maven.compiler.source>20</maven.compiler.source>
+        <maven.compiler.target>20</maven.compiler.target>
+    </properties>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>struct</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.nutz</groupId>
+            <artifactId>nutz</artifactId>
+            <version>1.r.68-youpin-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.mone</groupId>
+            <version>1.0.0-SNAPSHOT</version>
+            <artifactId>sautumn-api</artifactId>
+        </dependency>
+
+
+    </dependencies>
+
+</project>

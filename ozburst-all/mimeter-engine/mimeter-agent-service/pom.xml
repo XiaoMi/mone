@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>mimeter-engine</artifactId>
+        <groupId>run.mone</groupId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>mimeter-agent-service</artifactId>
+
+<!--    <properties>-->
+<!--        <maven.compiler.source>19</maven.compiler.source>-->
+<!--        <maven.compiler.target>19</maven.compiler.target>-->
+<!--    </properties>-->
+
+
+    <dependencies>
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>mimeter-api</artifactId>
+            <version>1.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>tesla-filter-api</artifactId>
+            <version>1.0.1-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>mimeter-dashboard-api</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.xiaomi.youpin</groupId>
+                    <artifactId>youpin-infra-rpc</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.annotation</groupId>
+            <artifactId>javax.annotation-api</artifactId>
+            <version>1.3.2</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.1.2</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>1.1.2</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>log</artifactId>
+            <version>1.6.1-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>event</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.mone</groupId>
+            <artifactId>sautumn-serverless-api</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>docean</artifactId>
+            <version>1.4-SNAPSHOT</version>
+<!--            <scope>provided</scope>-->
+        </dependency>
+
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>http</artifactId>
+            <version>1.4-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <artifactId>fastjson</artifactId>
+                    <groupId>com.alibaba</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>docean-plugin-rpc</artifactId>
+            <version>1.4-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>prometheus-client</artifactId>
+            <version>0.0.5-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>25.1-jre</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>antlr</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>hera-trace</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.xiaomi.youpin</groupId>
+            <artifactId>tesla-traffic-recording-api</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.apache.dubbo</groupId>
+                    <artifactId>dubbo</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+    </dependencies>
+
+</project>

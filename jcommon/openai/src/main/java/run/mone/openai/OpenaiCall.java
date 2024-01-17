@@ -265,7 +265,7 @@ public class OpenaiCall {
 
             @Override
             public void onFailure(EventSource eventSource, @Nullable Throwable t, @Nullable Response response) {
-                log.error("on failure error:" + t, t);
+                log.error("on failure error:" + response, t);
             }
         });
     }

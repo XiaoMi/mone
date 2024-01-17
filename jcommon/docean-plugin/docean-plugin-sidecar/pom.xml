@@ -1,56 +1,45 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <parent>
-        <artifactId>jcommon</artifactId>
-        <groupId>run.mone</groupId>
-        <version>1.4-SNAPSHOT</version>
-        <relativePath>../../pom.xml</relativePath>
-    </parent>
-    <modelVersion>4.0.0</modelVersion>
-
-    <artifactId>docean-plugin-sidecar</artifactId>
-    <version>1.4.2-SNAPSHOT</version>
-
-    <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
-    </properties>
-
-    <dependencies>
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>docean-plugin-config</artifactId>
-            <version>1.4-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>rcurve</artifactId>
-            <version>1.4.2-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>grpc</artifactId>
-            <version>1.4-SNAPSHOT</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>run.mone</groupId>
-                    <artifactId>api</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>infra-result</artifactId>
-            <version>1.4-SNAPSHOT</version>
-            <scope>provided</scope>
-        </dependency>
-
-    </dependencies>
-
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>run.mone</groupId>
+    <artifactId>jcommon</artifactId>
+    <version>1.4-jdk21-SNAPSHOT</version>
+    <relativePath>../../pom.xml</relativePath>
+  </parent>
+  <artifactId>docean-plugin-sidecar</artifactId>
+  <properties>
+    <maven.compiler.source>8</maven.compiler.source>
+    <maven.compiler.target>8</maven.compiler.target>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>run.mone</groupId>
+      <artifactId>docean-plugin-config</artifactId>
+      <version>1.5.0-jdk21</version>
+    </dependency>
+    <dependency>
+      <groupId>run.mone</groupId>
+      <artifactId>rcurve</artifactId>
+      <version>1.4.2-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>run.mone</groupId>
+      <artifactId>grpc</artifactId>
+      <version>1.4-jdk21-SNAPSHOT</version>
+      <exclusions>
+        <exclusion>
+          <artifactId>api</artifactId>
+          <groupId>run.mone</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <dependency>
+      <groupId>run.mone</groupId>
+      <artifactId>infra-result</artifactId>
+      <version>1.5.0-jdk21</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
 </project>

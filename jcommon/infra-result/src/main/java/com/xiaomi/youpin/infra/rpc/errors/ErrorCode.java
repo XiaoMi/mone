@@ -3,7 +3,6 @@ package com.xiaomi.youpin.infra.rpc.errors;
 import com.xiaomi.youpin.infra.rpc.Result;
 import com.xiaomi.youpin.infra.rpc.errors.ErrorScope;
 import lombok.Getter;
-import lombok.var;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -45,7 +44,7 @@ public class ErrorCode {
         if (internalCode < 0 || internalCode >= 1000) {
             throw new IllegalArgumentException("Bad internal code range. " + internalCode);
         }
-        var code = new ErrorCode(Integer.valueOf(String.format("%03d%03d%03d", ERROR_CODE_PREFIX, errorScope.getScopeId(), internalCode)));
+        ErrorCode code = new ErrorCode(Integer.valueOf(String.format("%03d%03d%03d", ERROR_CODE_PREFIX, errorScope.getScopeId(), internalCode)));
         if (allCodes.contains(code.getCode())) {
             throw new IllegalArgumentException("Duplicated error code defination.");
         }

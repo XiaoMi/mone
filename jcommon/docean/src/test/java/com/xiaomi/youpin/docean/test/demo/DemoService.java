@@ -59,7 +59,8 @@ public class DemoService {
         return demoVo().toString();
     }
 
-    @Lookup
+//    @Lookup("com.xiaomi.youpin.docean.test.demo.DemoVo")
+    @Lookup("$demoVo")
     public DemoVo demoVo() {
         return null;
     }
