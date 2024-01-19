@@ -7,6 +7,7 @@ import com.xiaomi.mone.tpc.login.common.vo.LoginInfoVo;
 import com.xiaomi.mone.tpc.login.common.vo.ResponseCode;
 import com.xiaomi.mone.tpc.login.common.vo.ResultVo;
 import com.xiaomi.mone.tpc.login.util.Auth2Util;
+import com.xiaomi.mone.tpc.login.util.GsonUtil;
 import com.xiaomi.mone.tpc.login.util.TokenUtil;
 import com.xiaomi.mone.tpc.login.vo.AuthTokenVo;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
@@ -57,6 +58,7 @@ public class LoginController {
             return ResponseCode.ARG_ERROR.build();
         }
         ResultVo<AuthUserVo> resultVo = loginService.code(code, source, vcode, state, pageUrl);
+        log.info("LoginController.code 三方授权登陆 code={}, authCode={}, source={}, pageUrl={}, state={}, vcode={}, response={}", code, authCode, source, pageUrl, state, vcode, GsonUtil.gsonString(resultVo));
         if (resultVo.success()) {
             if (StringUtils.isBlank(vcode)) {
                 CookieUtil.setCookieUrl(resultVo.getData(), pageUrl);
@@ -86,7 +88,9 @@ public class LoginController {
 
     @RequestMapping(value = "/register")
     public ResultVo register(@RequestBody LoginRegisterParam param) {
-        return loginService.register(param);
+        ResultVo resultVo = loginService.register(param);
+        log.info("LoginController.register request={}, response={}", GsonUtil.gsonString(param), GsonUtil.gsonString(resultVo));
+        return resultVo;
     }
 
     @RequestMapping(value = "/register_code")
@@ -98,6 +102,7 @@ public class LoginController {
     @RequestMapping(value = "/session")
     public ResultVo<AuthUserVo> session(@RequestBody LoginSessionParam param) throws Throwable {
         ResultVo<AuthUserVo> resultVo = loginService.session(param);
+        log.info("LoginController.session 登陆 request={}, response={}", GsonUtil.gsonString(param), GsonUtil.gsonString(resultVo));
         if (resultVo.success()) {
             if (StringUtils.isBlank(param.getVcode())) {
                 CookieUtil.setCookieUrl(resultVo.getData(), param.getPageUrl());
