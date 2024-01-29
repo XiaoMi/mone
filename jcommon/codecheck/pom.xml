@@ -15,11 +15,11 @@
       <artifactId>dom4j</artifactId>
       <version>1.6.1</version>
     </dependency>
-    <dependency>
-      <groupId>run.mone</groupId>
-      <artifactId>infra-result</artifactId>
-      <version>1.4-jdk21-SNAPSHOT</version>
-    </dependency>
+<!--    <dependency>-->
+<!--      <groupId>run.mone</groupId>-->
+<!--      <artifactId>infra-result</artifactId>-->
+<!--      <version>1.5-jdk21-SNAPSHOT</version>-->
+<!--    </dependency>-->
     <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
@@ -46,4 +46,5 @@
       </plugin>
     </plugins>
   </build>
+
 </project>

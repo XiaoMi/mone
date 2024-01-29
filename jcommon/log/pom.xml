@@ -8,7 +8,7 @@
     <version>1.4-jdk20-SNAPSHOT</version>
   </parent>
   <artifactId>log</artifactId>
-  <version>1.7-jdk20-SNAPSHOT</version>
+  <version>1.7-jdk21</version>
   <dependencies>
     <dependency>
       <groupId>com.lmax</groupId>

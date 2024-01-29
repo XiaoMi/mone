@@ -8,7 +8,7 @@
     <version>1.4-jdk20-SNAPSHOT</version>
   </parent>
   <artifactId>docean</artifactId>
-  <version>1.4-jdk21-SNAPSHOT</version>
+  <version>${submodule-release.version}</version>
   <properties>
     <netty.version>4.1.97.Final</netty.version>
   </properties>
@@ -16,7 +16,8 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>easy</artifactId>
-      <version>1.4-jdk21-SNAPSHOT</version>
+<!--      <version>1.4-jdk21-SNAPSHOT</version>-->
+      <version>1.5.0-jdk21</version>
     </dependency>
     <dependency>
       <groupId>cglib</groupId>
@@ -61,6 +62,14 @@
             <arg>--enable-preview</arg>
           </compilerArgs>
           <compilerVersion>21</compilerVersion>
+          <source>21</source>
+          <target>21</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
           <source>21</source>
           <target>21</target>
         </configuration>
