@@ -107,6 +107,16 @@ public interface GoParserListener extends ParseTreeListener {
 	 */
 	void exitExpressionList(GoParser.ExpressionListContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link GoParser#comment}.
+	 * @param ctx the parse tree
+	 */
+	void enterComment(GoParser.CommentContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link GoParser#comment}.
+	 * @param ctx the parse tree
+	 */
+	void exitComment(GoParser.CommentContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link GoParser#typeDecl}.
 	 * @param ctx the parse tree
 	 */
@@ -186,16 +196,6 @@ public interface GoParserListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitTypeTerm(GoParser.TypeTermContext ctx);
-	/**
-	 * Enter a parse tree produced by {@link GoParser#comment}.
-	 * @param ctx the parse tree
-	 */
-	void enterComment(GoParser.CommentContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link GoParser#comment}.
-	 * @param ctx the parse tree
-	 */
-	void exitComment(GoParser.CommentContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link GoParser#functionDecl}.
 	 * @param ctx the parse tree

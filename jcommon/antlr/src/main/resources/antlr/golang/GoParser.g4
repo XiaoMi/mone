@@ -79,8 +79,13 @@ expressionList
     : expression (COMMA expression)*
     ;
 
+comment
+    : COMMENT
+    | LINE_COMMENT
+    ;
+
 typeDecl
-    : TYPE (typeSpec | L_PAREN (typeSpec eos)* R_PAREN)
+    : comment* TYPE (typeSpec | L_PAREN (typeSpec eos)* R_PAREN)
     ;
 
 typeSpec
@@ -114,18 +119,16 @@ typeTerm
 
 // Function declarations
 
-comment
-    : COMMENT
-    | LINE_COMMENT
-    ;
+
+
 
 
 functionDecl
-    : comment? FUNC IDENTIFIER typeParameters? signature block?
+    : comment* NEWLINE*  FUNC IDENTIFIER typeParameters? signature block?
     ;
 
 methodDecl
-    : comment? FUNC receiver IDENTIFIER signature block?
+    : comment* NEWLINE* FUNC receiver IDENTIFIER signature block?
     ;
 
 receiver

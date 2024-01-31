@@ -135,6 +135,18 @@ public class GoParserBaseListener implements GoParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterComment(GoParser.CommentContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitComment(GoParser.CommentContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterTypeDecl(GoParser.TypeDeclContext ctx) { }
 	/**
 	 * {@inheritDoc}
@@ -226,18 +238,6 @@ public class GoParserBaseListener implements GoParserListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitTypeTerm(GoParser.TypeTermContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterComment(GoParser.CommentContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitComment(GoParser.CommentContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

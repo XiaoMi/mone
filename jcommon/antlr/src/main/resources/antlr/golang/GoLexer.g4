@@ -180,6 +180,8 @@ TERMINATOR   : [\r\n]+       -> channel(HIDDEN);
 //LINE_COMMENT : '//' ~[\r\n]* -> channel(HIDDEN);
 
 
+NEWLINE : '\r'? '\n' | '\r'+ | '\n'+;
+
 COMMENT      : '/*' .*? '*/';
 LINE_COMMENT : '//' ~[\r\n]*;
 
