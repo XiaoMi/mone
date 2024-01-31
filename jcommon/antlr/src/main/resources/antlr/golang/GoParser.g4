@@ -118,17 +118,12 @@ typeTerm
     ;
 
 // Function declarations
-
-
-
-
-
 functionDecl
-    : comment* NEWLINE*  FUNC IDENTIFIER typeParameters? signature block?
+    : FUNC IDENTIFIER typeParameters? signature block?
     ;
 
 methodDecl
-    : comment* NEWLINE* FUNC receiver IDENTIFIER signature block?
+    : FUNC receiver IDENTIFIER signature block?
     ;
 
 receiver

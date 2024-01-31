@@ -1,13 +1,7 @@
 package comxiaomi.data.push.test;
 
-import com.xiaomi.data.push.antlr.expr.ExprLexer;
-import com.xiaomi.data.push.antlr.expr.ExprListenerImpl;
-import com.xiaomi.data.push.antlr.expr.ExprParser;
-import com.xiaomi.data.push.antlr.java.Java8Expr;
 import lombok.SneakyThrows;
-import org.antlr.v4.runtime.ANTLRInputStream;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.junit.Test;
@@ -30,9 +24,17 @@ public class GolangTest {
         GoLexer lexer = new GoLexer(new ANTLRInputStream(code));
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         GoParser parser = new GoParser(tokens);
+
+        parser.addErrorListener(new BaseErrorListener() {
+            @Override
+            public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) {
+                System.out.println("line:" + line + " msg:" + msg);
+            }
+        });
+
         ParseTree tree = parser.sourceFile();
         ParseTreeWalker walker = new ParseTreeWalker();
-        GoParserListener listener = new GoParserBaseListener(){
+        GoParserListener listener = new GoParserBaseListener() {
 
 
             @Override
@@ -51,8 +53,21 @@ public class GolangTest {
                 for (Token token : t) {
                     functionText.append(token.getText());
                 }
+
+                // 获取函数声明前的隐藏注释
+                List<Token> hiddenTokens = tokens.getHiddenTokensToLeft(startIndex);
+                StringBuilder comments = new StringBuilder();
+                if (hiddenTokens != null) {
+                    for (Token hiddenToken : hiddenTokens) {
+                        if (hiddenToken.getChannel() == Lexer.HIDDEN) {
+                            comments.append(hiddenToken.getText());
+                        }
+                    }
+                }
+
+
                 // 打印格式化的函数体
-                System.out.println("Function content with formatting: " + functionText.toString());
+                System.out.println("Function content with formatting: \n" + comments + functionText.toString());
             }
 
 
@@ -68,6 +83,19 @@ public class GolangTest {
                     // 获取原始的、格式化的方法签名文本
                     int startIndex = startToken.getTokenIndex();
                     int stopIndex = openBraceToken.getTokenIndex() - 1; // 方法体之前的最后一个token
+
+                    // 获取函数声明前的隐藏注释
+                    List<Token> hiddenTokens = tokens.getHiddenTokensToLeft(startIndex);
+                    StringBuilder comments = new StringBuilder();
+                    if (hiddenTokens != null) {
+                        for (Token hiddenToken : hiddenTokens) {
+                            if (hiddenToken.getChannel() == Lexer.HIDDEN) {
+                                comments.append(hiddenToken.getText());
+                            }
+                        }
+                    }
+
+
                     List<Token> tokens2 = tokens.getTokens(startIndex, stopIndex);
                     StringBuilder methodSignature = new StringBuilder();
                     for (Token token : tokens2) {
@@ -75,7 +103,7 @@ public class GolangTest {
                     }
 
                     // 打印格式化的方法签名
-                    System.out.println("Formatted Method Signature: " + methodSignature.toString().trim());
+                    System.out.println("Formatted Method Signature: \n" + comments + methodSignature.toString().trim());
                 }
 
             }
@@ -86,7 +114,7 @@ public class GolangTest {
 
     @SneakyThrows
     @Test
-    public void test2(){
+    public void test2() {
         String code = new String(Files.readAllBytes(Paths.get("/tmp/test.go")));
         System.out.println(GoCode.methods(code));
     }

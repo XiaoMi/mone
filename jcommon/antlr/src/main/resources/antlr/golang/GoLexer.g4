@@ -175,15 +175,15 @@ INTERPRETED_STRING_LIT : '"' (~["\\] | ESCAPED_VALUE)* '"' -> mode(NLSEMI);
 // Hidden tokens
 
 WS           : [ \t]+        -> channel(HIDDEN);
-//COMMENT      : '/*' .*? '*/' -> channel(HIDDEN);
+COMMENT      : '/*' .*? '*/' -> channel(HIDDEN);
 TERMINATOR   : [\r\n]+       -> channel(HIDDEN);
-//LINE_COMMENT : '//' ~[\r\n]* -> channel(HIDDEN);
+LINE_COMMENT : '//' ~[\r\n]* -> channel(HIDDEN);
 
 
 NEWLINE : '\r'? '\n' | '\r'+ | '\n'+;
 
-COMMENT      : '/*' .*? '*/';
-LINE_COMMENT : '//' ~[\r\n]*;
+//COMMENT      : '/*' .*? '*/';
+//LINE_COMMENT : '//' ~[\r\n]*;
 
 
 fragment UNICODE_VALUE: ~[\r\n'] | LITTLE_U_VALUE | BIG_U_VALUE | ESCAPED_VALUE;
