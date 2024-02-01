@@ -199,11 +199,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_sourceFile; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterSourceFile(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterSourceFile(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitSourceFile(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitSourceFile(this);
 		}
 	}
 
@@ -295,11 +295,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_packageClause; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterPackageClause(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterPackageClause(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitPackageClause(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitPackageClause(this);
 		}
 	}
 
@@ -348,11 +348,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_importDecl; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterImportDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterImportDecl(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitImportDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitImportDecl(this);
 		}
 	}
 
@@ -430,11 +430,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_importSpec; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterImportSpec(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterImportSpec(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitImportSpec(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitImportSpec(this);
 		}
 	}
 
@@ -489,11 +489,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_importPath; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterImportPath(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterImportPath(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitImportPath(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitImportPath(this);
 		}
 	}
 
@@ -534,11 +534,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_declaration; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterDeclaration(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterDeclaration(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitDeclaration(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitDeclaration(this);
 		}
 	}
 
@@ -609,11 +609,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_constDecl; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterConstDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterConstDecl(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitConstDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitConstDecl(this);
 		}
 	}
 
@@ -692,11 +692,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_constSpec; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterConstSpec(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterConstSpec(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitConstSpec(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitConstSpec(this);
 		}
 	}
 
@@ -759,11 +759,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_identifierList; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterIdentifierList(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterIdentifierList(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitIdentifierList(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitIdentifierList(this);
 		}
 	}
 
@@ -824,11 +824,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_expressionList; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterExpressionList(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterExpressionList(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitExpressionList(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitExpressionList(this);
 		}
 	}
 
@@ -881,11 +881,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_comment; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterComment(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterComment(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitComment(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitComment(this);
 		}
 	}
 
@@ -947,11 +947,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_typeDecl; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterTypeDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterTypeDecl(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitTypeDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitTypeDecl(this);
 		}
 	}
 
@@ -1040,11 +1040,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_typeSpec; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterTypeSpec(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterTypeSpec(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitTypeSpec(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitTypeSpec(this);
 		}
 	}
 
@@ -1094,11 +1094,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_aliasDecl; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterAliasDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterAliasDecl(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitAliasDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitAliasDecl(this);
 		}
 	}
 
@@ -1141,11 +1141,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_typeDef; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterTypeDef(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterTypeDef(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitTypeDef(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitTypeDef(this);
 		}
 	}
 
@@ -1201,11 +1201,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_typeParameters; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterTypeParameters(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterTypeParameters(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitTypeParameters(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitTypeParameters(this);
 		}
 	}
 
@@ -1264,11 +1264,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_typeParameterDecl; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterTypeParameterDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterTypeParameterDecl(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitTypeParameterDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitTypeParameterDecl(this);
 		}
 	}
 
@@ -1312,11 +1312,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_typeElement; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterTypeElement(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterTypeElement(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitTypeElement(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitTypeElement(this);
 		}
 	}
 
@@ -1371,11 +1371,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_typeTerm; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterTypeTerm(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterTypeTerm(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitTypeTerm(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitTypeTerm(this);
 		}
 	}
 
@@ -1429,11 +1429,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_functionDecl; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterFunctionDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterFunctionDecl(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitFunctionDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitFunctionDecl(this);
 		}
 	}
 
@@ -1501,11 +1501,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_methodDecl; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterMethodDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterMethodDecl(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitMethodDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitMethodDecl(this);
 		}
 	}
 
@@ -1556,11 +1556,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_receiver; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterReceiver(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterReceiver(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitReceiver(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitReceiver(this);
 		}
 	}
 
@@ -1607,11 +1607,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_varDecl; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterVarDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterVarDecl(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitVarDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitVarDecl(this);
 		}
 	}
 
@@ -1690,11 +1690,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_varSpec; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterVarSpec(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterVarSpec(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitVarSpec(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitVarSpec(this);
 		}
 	}
 
@@ -1772,11 +1772,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_block; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterBlock(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterBlock(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitBlock(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitBlock(this);
 		}
 	}
 
@@ -1840,11 +1840,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_statementList; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterStatementList(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterStatementList(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitStatementList(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitStatementList(this);
 		}
 	}
 
@@ -1981,11 +1981,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_statement; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterStatement(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterStatement(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitStatement(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitStatement(this);
 		}
 	}
 
@@ -2136,11 +2136,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_simpleStmt; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterSimpleStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterSimpleStmt(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitSimpleStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitSimpleStmt(this);
 		}
 	}
 
@@ -2209,11 +2209,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_expressionStmt; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterExpressionStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterExpressionStmt(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitExpressionStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitExpressionStmt(this);
 		}
 	}
 
@@ -2253,11 +2253,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_sendStmt; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterSendStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterSendStmt(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitSendStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitSendStmt(this);
 		}
 	}
 
@@ -2298,11 +2298,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_incDecStmt; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterIncDecStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterIncDecStmt(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitIncDecStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitIncDecStmt(this);
 		}
 	}
 
@@ -2354,11 +2354,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_assignment; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterAssignment(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterAssignment(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitAssignment(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitAssignment(this);
 		}
 	}
 
@@ -2406,11 +2406,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_assign_op; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterAssign_op(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterAssign_op(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitAssign_op(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitAssign_op(this);
 		}
 	}
 
@@ -2468,11 +2468,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_shortVarDecl; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterShortVarDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterShortVarDecl(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitShortVarDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitShortVarDecl(this);
 		}
 	}
 
@@ -2513,11 +2513,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_labeledStmt; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterLabeledStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterLabeledStmt(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitLabeledStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitLabeledStmt(this);
 		}
 	}
 
@@ -2565,11 +2565,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_returnStmt; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterReturnStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterReturnStmt(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitReturnStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitReturnStmt(this);
 		}
 	}
 
@@ -2613,11 +2613,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_breakStmt; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterBreakStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterBreakStmt(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitBreakStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitBreakStmt(this);
 		}
 	}
 
@@ -2661,11 +2661,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_continueStmt; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterContinueStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterContinueStmt(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitContinueStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitContinueStmt(this);
 		}
 	}
 
@@ -2709,11 +2709,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_gotoStmt; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterGotoStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterGotoStmt(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitGotoStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitGotoStmt(this);
 		}
 	}
 
@@ -2748,11 +2748,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_fallthroughStmt; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterFallthroughStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterFallthroughStmt(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitFallthroughStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitFallthroughStmt(this);
 		}
 	}
 
@@ -2788,11 +2788,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_deferStmt; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterDeferStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterDeferStmt(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitDeferStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitDeferStmt(this);
 		}
 	}
 
@@ -2846,11 +2846,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_ifStmt; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterIfStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterIfStmt(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitIfStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitIfStmt(this);
 		}
 	}
 
@@ -2946,11 +2946,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_switchStmt; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterSwitchStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterSwitchStmt(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitSwitchStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitSwitchStmt(this);
 		}
 	}
 
@@ -3013,11 +3013,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_exprSwitchStmt; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterExprSwitchStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterExprSwitchStmt(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitExprSwitchStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitExprSwitchStmt(this);
 		}
 	}
 
@@ -3119,11 +3119,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_exprCaseClause; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterExprCaseClause(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterExprCaseClause(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitExprCaseClause(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitExprCaseClause(this);
 		}
 	}
 
@@ -3172,11 +3172,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_exprSwitchCase; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterExprSwitchCase(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterExprSwitchCase(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitExprSwitchCase(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitExprSwitchCase(this);
 		}
 	}
 
@@ -3243,11 +3243,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_typeSwitchStmt; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterTypeSwitchStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterTypeSwitchStmt(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitTypeSwitchStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitTypeSwitchStmt(this);
 		}
 	}
 
@@ -3335,11 +3335,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_typeSwitchGuard; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterTypeSwitchGuard(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterTypeSwitchGuard(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitTypeSwitchGuard(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitTypeSwitchGuard(this);
 		}
 	}
 
@@ -3398,11 +3398,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_typeCaseClause; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterTypeCaseClause(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterTypeCaseClause(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitTypeCaseClause(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitTypeCaseClause(this);
 		}
 	}
 
@@ -3451,11 +3451,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_typeSwitchCase; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterTypeSwitchCase(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterTypeSwitchCase(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitTypeSwitchCase(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitTypeSwitchCase(this);
 		}
 	}
 
@@ -3518,11 +3518,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_typeList; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterTypeList(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterTypeList(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitTypeList(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitTypeList(this);
 		}
 	}
 
@@ -3632,11 +3632,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_selectStmt; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterSelectStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterSelectStmt(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitSelectStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitSelectStmt(this);
 		}
 	}
 
@@ -3694,11 +3694,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_commClause; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterCommClause(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterCommClause(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitCommClause(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitCommClause(this);
 		}
 	}
 
@@ -3750,11 +3750,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_commCase; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterCommCase(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterCommCase(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitCommCase(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitCommCase(this);
 		}
 	}
 
@@ -3829,11 +3829,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_recvStmt; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterRecvStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterRecvStmt(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitRecvStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitRecvStmt(this);
 		}
 	}
 
@@ -3898,11 +3898,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_forStmt; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterForStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterForStmt(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitForStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitForStmt(this);
 		}
 	}
 
@@ -3992,11 +3992,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_forClause; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterForClause(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterForClause(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitForClause(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitForClause(this);
 		}
 	}
 
@@ -4073,11 +4073,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_rangeClause; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterRangeClause(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterRangeClause(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitRangeClause(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitRangeClause(this);
 		}
 	}
 
@@ -4135,11 +4135,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_goStmt; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterGoStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterGoStmt(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitGoStmt(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitGoStmt(this);
 		}
 	}
 
@@ -4187,11 +4187,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_type_; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterType_(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterType_(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitType_(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitType_(this);
 		}
 	}
 
@@ -4272,11 +4272,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_typeArgs; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterTypeArgs(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterTypeArgs(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitTypeArgs(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitTypeArgs(this);
 		}
 	}
 
@@ -4327,11 +4327,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_typeName; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterTypeName(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterTypeName(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitTypeName(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitTypeName(this);
 		}
 	}
 
@@ -4400,11 +4400,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_typeLit; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterTypeLit(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterTypeLit(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitTypeLit(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitTypeLit(this);
 		}
 	}
 
@@ -4499,11 +4499,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_arrayType; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterArrayType(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterArrayType(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitArrayType(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitArrayType(this);
 		}
 	}
 
@@ -4544,11 +4544,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_arrayLength; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterArrayLength(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterArrayLength(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitArrayLength(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitArrayLength(this);
 		}
 	}
 
@@ -4583,11 +4583,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_elementType; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterElementType(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterElementType(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitElementType(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitElementType(this);
 		}
 	}
 
@@ -4623,11 +4623,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_pointerType; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterPointerType(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterPointerType(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitPointerType(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitPointerType(this);
 		}
 	}
 
@@ -4682,11 +4682,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_interfaceType; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterInterfaceType(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterInterfaceType(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitInterfaceType(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitInterfaceType(this);
 		}
 	}
 
@@ -4758,11 +4758,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_sliceType; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterSliceType(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterSliceType(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitSliceType(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitSliceType(this);
 		}
 	}
 
@@ -4807,11 +4807,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_mapType; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterMapType(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterMapType(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitMapType(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitMapType(this);
 		}
 	}
 
@@ -4856,11 +4856,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_channelType; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterChannelType(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterChannelType(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitChannelType(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitChannelType(this);
 		}
 	}
 
@@ -4925,11 +4925,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_methodSpec; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterMethodSpec(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterMethodSpec(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitMethodSpec(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitMethodSpec(this);
 		}
 	}
 
@@ -4984,11 +4984,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_functionType; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterFunctionType(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterFunctionType(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitFunctionType(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitFunctionType(this);
 		}
 	}
 
@@ -5028,11 +5028,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_signature; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterSignature(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterSignature(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitSignature(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitSignature(this);
 		}
 	}
 
@@ -5080,11 +5080,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_result; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterResult(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterResult(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitResult(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitResult(this);
 		}
 	}
 
@@ -5141,11 +5141,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_parameters; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterParameters(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterParameters(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitParameters(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitParameters(this);
 		}
 	}
 
@@ -5226,11 +5226,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_parameterDecl; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterParameterDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterParameterDecl(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitParameterDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitParameterDecl(this);
 		}
 	}
 
@@ -5317,11 +5317,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_expression; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterExpression(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterExpression(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitExpression(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitExpression(this);
 		}
 	}
 
@@ -5520,11 +5520,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_primaryExpr; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterPrimaryExpr(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterPrimaryExpr(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitPrimaryExpr(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitPrimaryExpr(this);
 		}
 	}
 
@@ -5651,11 +5651,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_conversion; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterConversion(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterConversion(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitConversion(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitConversion(this);
 		}
 	}
 
@@ -5718,11 +5718,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_operand; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterOperand(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterOperand(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitOperand(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitOperand(this);
 		}
 	}
 
@@ -5797,11 +5797,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_literal; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterLiteral(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterLiteral(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitLiteral(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitLiteral(this);
 		}
 	}
 
@@ -5875,11 +5875,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_basicLit; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterBasicLit(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterBasicLit(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitBasicLit(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitBasicLit(this);
 		}
 	}
 
@@ -5952,11 +5952,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_integer; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterInteger(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterInteger(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitInteger(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitInteger(this);
 		}
 	}
 
@@ -5998,11 +5998,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_operandName; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterOperandName(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterOperandName(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitOperandName(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitOperandName(this);
 		}
 	}
 
@@ -6039,11 +6039,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_qualifiedIdent; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterQualifiedIdent(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterQualifiedIdent(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitQualifiedIdent(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitQualifiedIdent(this);
 		}
 	}
 
@@ -6085,11 +6085,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_compositeLit; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterCompositeLit(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterCompositeLit(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitCompositeLit(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitCompositeLit(this);
 		}
 	}
 
@@ -6147,11 +6147,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_literalType; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterLiteralType(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterLiteralType(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitLiteralType(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitLiteralType(this);
 		}
 	}
 
@@ -6247,11 +6247,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_literalValue; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterLiteralValue(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterLiteralValue(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitLiteralValue(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitLiteralValue(this);
 		}
 	}
 
@@ -6316,11 +6316,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_elementList; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterElementList(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterElementList(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitElementList(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitElementList(this);
 		}
 	}
 
@@ -6378,11 +6378,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_keyedElement; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterKeyedElement(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterKeyedElement(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitKeyedElement(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitKeyedElement(this);
 		}
 	}
 
@@ -6432,11 +6432,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_key; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterKey(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterKey(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitKey(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitKey(this);
 		}
 	}
 
@@ -6513,11 +6513,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_element; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterElement(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterElement(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitElement(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitElement(this);
 		}
 	}
 
@@ -6603,11 +6603,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_structType; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterStructType(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterStructType(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitStructType(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitStructType(this);
 		}
 	}
 
@@ -6673,11 +6673,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_fieldDecl; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterFieldDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterFieldDecl(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitFieldDecl(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitFieldDecl(this);
 		}
 	}
 
@@ -6737,11 +6737,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_string_; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterString_(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterString_(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitString_(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitString_(this);
 		}
 	}
 
@@ -6789,11 +6789,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_embeddedField; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterEmbeddedField(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterEmbeddedField(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitEmbeddedField(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitEmbeddedField(this);
 		}
 	}
 
@@ -6853,11 +6853,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_functionLit; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterFunctionLit(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterFunctionLit(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitFunctionLit(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitFunctionLit(this);
 		}
 	}
 
@@ -6898,11 +6898,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_index; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterIndex(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterIndex(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitIndex(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitIndex(this);
 		}
 	}
 
@@ -6950,11 +6950,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_slice_; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterSlice_(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterSlice_(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitSlice_(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitSlice_(this);
 		}
 	}
 
@@ -7047,11 +7047,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_typeAssertion; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterTypeAssertion(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterTypeAssertion(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitTypeAssertion(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitTypeAssertion(this);
 		}
 	}
 
@@ -7102,11 +7102,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_arguments; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterArguments(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterArguments(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitArguments(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitArguments(this);
 		}
 	}
 
@@ -7202,11 +7202,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_methodExpr; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterMethodExpr(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterMethodExpr(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitMethodExpr(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitMethodExpr(this);
 		}
 	}
 
@@ -7245,11 +7245,11 @@ public class GoParser extends GoParserBase {
 		@Override public int getRuleIndex() { return RULE_eos; }
 		@Override
 		public void enterRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).enterEos(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).enterEos(this);
 		}
 		@Override
 		public void exitRule(ParseTreeListener listener) {
-			if ( listener instanceof GoParserListener ) ((GoParserListener)listener).exitEos(this);
+			if ( listener instanceof GoParserListener) ((GoParserListener)listener).exitEos(this);
 		}
 	}
 
