@@ -1,0 +1,134 @@
+<idea-plugin>
+
+    <id>com.xiaomi.youpin.code.generate</id>
+
+    <name>Athena</name>
+
+    <vendor email="goodjava@qq.com" url="http://mone.run">mone</vendor>
+
+    <description><![CDATA[Athena Plugin. Produced by Mione]]></description>
+
+    <change-notes><![CDATA[Athena, an AI programming assistant. Produced by Mione]]>
+    </change-notes>
+
+
+    <applicationListeners>
+        <listener class="run.mone.ultraman.listener.AthenaProjectManagerListener"
+                  topic="com.intellij.openapi.project.ProjectManagerListener"/>
+
+        <listener class="run.mone.ultraman.listener.AthenaApplicationActivationListener"
+                  topic="com.intellij.openapi.application.ApplicationActivationListener"/>
+    </applicationListeners>
+
+
+    <extensions defaultExtensionNs="com.intellij">
+
+        <!--        <typedHandler implementation="run.mone.ultraman.manager.AthenaTypedActionHandler"/>-->
+
+        <!--        <localInspection language="JAVA" groupPath="Java" shortName="MyInspection" displayName="My Inspection" implementationClass="run.mone.ultraman.quickfix.AthenaInspection"/>-->
+
+        <statusBarWidgetFactory implementation="run.mone.ultraman.statusbar.AthenaStatusBarWidgetFactory"/>
+
+        <localInspection
+                language="JAVA"
+                displayName="test displayer"
+                groupPath="Java"
+                groupBundle="messages.InspectionsBundle"
+                groupKey="group.names.probable.bugs"
+                enabledByDefault="true"
+                level="ERROR"
+                implementationClass="run.mone.ultraman.AthenaInspection"/>
+
+
+        <localInspection
+                language="JAVA"
+                displayName="test displayer"
+                groupPath="Java"
+                groupBundle="messages.InspectionsBundle"
+                groupKey="group.names.probable.bugs"
+                enabledByDefault="true"
+                level="ERROR"
+                implementationClass="run.mone.ultraman.AthenaSuggestionInspection"/>
+
+
+        <searchEverywhereContributor
+                implementation="run.mone.m78.ip.search.AthenaSearchEverywhereContributorFactory"/>
+
+        <gotoClassContributor implementation="run.mone.m78.ip.search.MyChooseByNameContributor"/>
+
+        <applicationConfigurable groupId="other" instance="run.mone.m78.ip.common.TeslaConfigurable"/>
+
+        <applicationService serviceInterface="run.mone.m78.ip.service.UltramanService"
+                            serviceImplementation="run.mone.m78.ip.service.UltramanServiceImpl"/>
+
+        <toolWindow canCloseContents="false" anchor="right" id="Athena" icon="/icons/a.svg"
+                    factoryClass="run.mone.m78.ip.window.UltramanWindowFactory">
+        </toolWindow>
+
+        <toolWindow canCloseContents="false" anchor="bottom" id="AthenaConsole" icon="/icons/a.svg"
+                    factoryClass="run.mone.m78.ip.window.UltramanConsoleWindowFactory">
+        </toolWindow>
+
+        <!--    <localInspection-->
+        <!--      language="JAVA"-->
+        <!--      displayName="test displayer"-->
+        <!--      groupPath="Java"-->
+        <!--      groupBundle="messages.InspectionsBundle"-->
+        <!--      groupKey="group.names.probable.bugs"-->
+        <!--      enabledByDefault="true"-->
+        <!--      level="ERROR"-->
+        <!--      implementationClass="run.mone.ultraman.UltramanInspection"/>-->
+
+        <!--    <completion.contributor-->
+        <!--            language="JAVA"-->
+        <!--            implementationClass="run.mone.ultraman.UltramanCompletionContributor"/>-->
+
+        <!--        <completion.contributor language="JAVA" implementationClass="run.mone.ultraman.ai.MyCompletionContributor"/>-->
+        <notificationGroup displayType="NONE" id="Athena Notifications"/>
+
+    </extensions>
+
+    <project-components>
+        <component>
+            <implementation-class>run.mone.m78.ip.component.project.AthenaProjectComment
+            </implementation-class>
+        </component>
+    </project-components>
+
+
+    <application-components>
+
+        <component>
+            <implementation-class>run.mone.m78.ip.component.PluginComponent</implementation-class>
+        </component>
+
+        <component>
+            <implementation-class>run.mone.m78.ip.component.TeslaAppComponent</implementation-class>
+        </component>
+
+
+        <component>
+            <implementation-class>run.mone.m78.ip.component.VersionComponent</implementation-class>
+        </component>
+
+        <component>
+            <implementation-class>run.mone.m78.ip.component.UltramanComponent</implementation-class>
+        </component>
+
+    </application-components>
+
+
+    <actions>
+
+        <group id="MyPlugin.MenuActionGroup" class="run.mone.m78.ip.action.MenuActionGroup" popup="true"
+               text="Prompt">
+            <add-to-group group-id="GenerateGroup" anchor="first"/>
+        </group>
+
+        <action id="AthenaAction" class="run.mone.m78.ip.action.AthenaAction" text="Athena">
+            <add-to-group group-id="GenerateGroup" anchor="first"/>
+        </action>
+
+    </actions>
+
+</idea-plugin>

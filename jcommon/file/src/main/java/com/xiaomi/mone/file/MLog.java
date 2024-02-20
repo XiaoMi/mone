@@ -38,7 +38,7 @@ public class MLog {
     @Getter
     private Queue<String> msgQueue = new LinkedList<>();
     @Getter
-    private Long appendTime;
+    private volatile Long appendTime;
     /**
      * 用户自定义的行首正则
      */

@@ -174,7 +174,12 @@ public class Mvc {
             if (method.getMethod().getParameterTypes().length == 1 && method.getMethod().getParameterTypes()[0].equals(MvcContext.class)) {
                 params[0] = context;
             } else {
-                params = methodInvoker.getMethodParams(method.getMethod(), args);
+                try {
+                    params = methodInvoker.getMethodParams(method.getMethod(), args);
+                } catch (Exception e) {
+                    log.error("getMethodParams error,path:{},params:{},method:{}", context.getPath(),
+                            new Gson().toJson(context.getParams()), request.getMethod().toLowerCase(Locale.ROOT), e);
+                }
             }
             Object data = this.mvcConfig.isUseCglib() ? methodInvoker.invokeFastMethod(method.getObj(), method.getMethod(), params) :
                     methodInvoker.invokeMethod(method.getObj(), method.getMethod(), params);
