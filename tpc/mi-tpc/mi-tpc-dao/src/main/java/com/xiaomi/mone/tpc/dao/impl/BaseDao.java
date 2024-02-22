@@ -142,7 +142,7 @@ public abstract class BaseDao {
 
     public <T> List<T> query(SqlExpressionGroup sqlExpr, Class<T> clazz, int limit) {
         sqlExpr = sqlExpr.andEquals("deleted",0);
-        return dao.query(clazz, Cnd.where(sqlExpr).desc("create_time"), new Pager(1, limit));
+        return dao.query(clazz, Cnd.where(sqlExpr).desc("create_time").desc("id"), new Pager(1, limit));
     }
 
     public <T> List<T> getListByPage(SqlExpressionGroup sqlExpr, PageDataVo pageData, Class<T> clazz) {
@@ -155,7 +155,7 @@ public abstract class BaseDao {
                 return null;
             }
         }
-        return dao.query(clazz, cnd.desc("create_time"), buildPager(pageData));
+        return dao.query(clazz, cnd.desc("create_time").desc("id"), buildPager(pageData));
     }
 
     public <T> List<T> getListByPage(StringBuilder sqlExpr, Map<String, Object> params, PageDataVo pageData, Class<T> clazz) {

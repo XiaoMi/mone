@@ -289,7 +289,7 @@ public class NodeDao extends BaseDao{
         if (StringUtils.isNotBlank(nodeName)) {
             sqlExpr.append("and node.node_name like @nodeName ");
         }
-        sqlExpr.append("order by create_time desc");
+        sqlExpr.append("order by create_time desc, id desc");
         return getListByPage(sqlExpr, param, pageData, NodeEntity.class);
     }
 
@@ -356,7 +356,7 @@ public class NodeDao extends BaseDao{
         if (StringUtils.isNotBlank(nodeName)) {
             sqlExpr.append("and node.node_name like @nodeName ");
         }
-        sqlExpr.append("group by node.id order by create_time desc");
+        sqlExpr.append("group by node.id order by create_time desc, id desc");
         String str =sqlExpr.toString();
         return getListByPage(sqlExpr, param, pageData, NodeEntity.class);
     }
@@ -409,7 +409,7 @@ public class NodeDao extends BaseDao{
         if (StringUtils.isNotBlank(nodeName)) {
             sqlExpr.append("and node.node_name like @nodeName ");
         }
-        sqlExpr.append("group by node.id order by create_time desc");
+        sqlExpr.append("group by node.id order by create_time desc, id desc");
         return getListByPage(sqlExpr, param, pageData, NodeEntity.class);
     }
 
