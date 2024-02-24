@@ -2,11 +2,14 @@ package com.xiaomi.youpin.docean.mvc;
 
 import com.google.gson.Gson;
 import com.xiaomi.youpin.docean.Mvc;
+import com.xiaomi.youpin.docean.bo.MvcConfig;
 import com.xiaomi.youpin.docean.common.Cons;
 import com.xiaomi.youpin.docean.common.Safe;
+import com.xiaomi.youpin.docean.common.StringUtils;
 import com.xiaomi.youpin.docean.config.HttpServerConfig;
 import com.xiaomi.youpin.docean.mvc.common.MvcConst;
 import com.xiaomi.youpin.docean.mvc.download.Download;
+import com.xiaomi.youpin.docean.mvc.html.Html;
 import com.xiaomi.youpin.docean.mvc.upload.MvcUpload;
 import com.xiaomi.youpin.docean.mvc.util.ExceptionUtil;
 import com.xiaomi.youpin.docean.mvc.util.MethodFinder;
@@ -31,6 +34,8 @@ public class MvcRunnable implements Runnable {
 
     private MvcResponse response;
 
+    private MvcConfig config;
+
     private ConcurrentHashMap<String, HttpRequestMethod> requestMethodMap;
 
     private Mvc mvc;
@@ -43,6 +48,7 @@ public class MvcRunnable implements Runnable {
         this.response = response;
         this.requestMethodMap = requestMethodMap;
         this.mvc = mvc;
+        this.config = this.mvc.getMvcConfig();
     }
 
 
@@ -65,6 +71,7 @@ public class MvcRunnable implements Runnable {
         this.request.setBody(body);
         this.response.setCtx(ctx);
         this.mvc = mvc;
+        this.config = this.mvc.getMvcConfig();
         this.requestMethodMap = requestMethodMap;
     }
 
@@ -107,6 +114,17 @@ public class MvcRunnable implements Runnable {
         }
         String path = request.getPath();
 
+
+        if (config.isOpenStaticFile() && Html.isHtmlFile(path)) {
+            String content = Html.view(config.getStaticFilePath() + path);
+            if (StringUtils.isEmpty(content)) {
+                sendNotFoundResponse();
+                return;
+            }
+            response.writeAndFlush(context, content);
+            return;
+        }
+
         //Support file download (/download) and must enable downloads.
         if (isDownload(path) && mvc.getMvcConfig().isDownload()) {
             Download.download(context, request, response);
@@ -127,14 +145,18 @@ public class MvcRunnable implements Runnable {
         }
 
         if (!path.equals(Cons.Service)) {
-            MvcResult<Object> result = new MvcResult<>();
-            result.setCode(HttpResponseStatus.NOT_FOUND.code());
-            result.setMessage(HttpResponseStatus.NOT_FOUND.reasonPhrase());
-            response.writeAndFlush(context, gson.toJson(result));
+            sendNotFoundResponse();
             return;
         }
         //rate limited or exceeded quota
         mvc.callService(context, request, response);
+    }
+
+    private void sendNotFoundResponse() {
+        MvcResult<Object> result = new MvcResult<>();
+        result.setCode(HttpResponseStatus.NOT_FOUND.code());
+        result.setMessage(HttpResponseStatus.NOT_FOUND.reasonPhrase());
+        response.writeAndFlush(context, gson.toJson(result));
     }
 
 

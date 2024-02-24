@@ -38,4 +38,8 @@ public class MvcConfig implements Serializable {
      */
     private boolean virtualThread;
 
+    private String staticFilePath;
+
+    private boolean openStaticFile;
+
 }
