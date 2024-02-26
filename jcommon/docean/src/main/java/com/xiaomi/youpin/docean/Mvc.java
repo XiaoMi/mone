@@ -210,24 +210,14 @@ public class Mvc {
                 return;
             }
             // get whether the configuration returns an unwrapped value
-            if (this.mvcConfig.isResponseOriginalValue()) {
-                if (data instanceof String) {
-                    response.writeAndFlush(context, (String) data);
-                } else {
-                    response.writeAndFlush(context, gson.toJson(data));
-                }
-            } else if (StringUtils.isNotBlank(this.mvcConfig.getResponseOriginalPath())) {
-                boolean needOriginalValue = Arrays.stream(mvcConfig.getResponseOriginalPath().split(",")).anyMatch(i -> i.equals(method.getPath()));
-                if (needOriginalValue) {
-                    if (data instanceof String) {
-                        response.writeAndFlush(context, (String) data);
-                    } else {
-                        response.writeAndFlush(context, gson.toJson(data));
-                    }
-                } else {
-                    result.setData(data);
-                    response.writeAndFlush(context, gson.toJson(result));
-                }
+            boolean needOriginalValue = this.mvcConfig.isResponseOriginalValue();
+            if (!needOriginalValue && StringUtils.isNotBlank(this.mvcConfig.getResponseOriginalPath())) {
+                needOriginalValue = Arrays.stream(mvcConfig.getResponseOriginalPath().split(","))
+                        .anyMatch(i -> i.equals(method.getPath()));
+            }
+            if (needOriginalValue) {
+                String responseData = data instanceof String ? (String) data : gson.toJson(data);
+                response.writeAndFlush(context, responseData);
             } else {
                 result.setData(data);
                 response.writeAndFlush(context, gson.toJson(result));
