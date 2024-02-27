@@ -24,6 +24,7 @@ import com.xiaomi.youpin.docean.bo.MvcConfig;
 import com.xiaomi.youpin.docean.common.MethodInvoker;
 import com.xiaomi.youpin.docean.common.NamedThreadFactory;
 import com.xiaomi.youpin.docean.common.Safe;
+import com.xiaomi.youpin.docean.common.StringUtils;
 import com.xiaomi.youpin.docean.config.HttpServerConfig;
 import com.xiaomi.youpin.docean.exception.DoceanException;
 import com.xiaomi.youpin.docean.listener.event.Event;
@@ -81,6 +82,7 @@ public class Mvc {
         this.mvcConfig.setResponseOriginalValue(Boolean.valueOf(ioc.getBean(MvcConst.RESPONSE_ORIGINAL_VALUE, MvcConst.FALSE)));
         this.mvcConfig.setPoolSize(Integer.valueOf(ioc.getBean(MvcConst.MVC_POOL_SIZE, String.valueOf(MvcConst.DEFAULT_MVC_POOL_SIZE))));
         this.mvcConfig.setVirtualThread(Boolean.valueOf(ioc.getBean(MvcConst.VIRTUAL_THREAD, MvcConst.TRUE)));
+        this.mvcConfig.setResponseOriginalPath(ioc.getBean(MvcConst.RESPONSE_ORIGINAL_PATH, ""));
         ioc.publishEvent(new Event(EventType.mvcBegin, this.mvcConfig));
     }
 
@@ -208,12 +210,14 @@ public class Mvc {
                 return;
             }
             // get whether the configuration returns an unwrapped value
-            if (this.mvcConfig.isResponseOriginalValue()) {
-                if (data instanceof String) {
-                    response.writeAndFlush(context, (String) data);
-                } else {
-                    response.writeAndFlush(context, gson.toJson(data));
-                }
+            boolean needOriginalValue = this.mvcConfig.isResponseOriginalValue();
+            if (!needOriginalValue && StringUtils.isNotBlank(this.mvcConfig.getResponseOriginalPath())) {
+                needOriginalValue = Arrays.stream(mvcConfig.getResponseOriginalPath().split(","))
+                        .anyMatch(i -> i.equals(method.getPath()));
+            }
+            if (needOriginalValue) {
+                String responseData = data instanceof String ? (String) data : gson.toJson(data);
+                response.writeAndFlush(context, responseData);
             } else {
                 result.setData(data);
                 response.writeAndFlush(context, gson.toJson(result));
