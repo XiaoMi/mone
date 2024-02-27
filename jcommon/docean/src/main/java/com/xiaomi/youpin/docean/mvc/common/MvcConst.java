@@ -30,6 +30,8 @@ public abstract class MvcConst {
 
     public static final String VIRTUAL_THREAD = "$virtual-threaad";
 
+    public static final String RESPONSE_ORIGINAL_PATH = "$response-original-path";
+
     public static final int DEFAULT_MVC_POOL_SIZE = 200;
 
     public static ScopedValue<MvcContext> MVC_CONTEXT = ScopedValue.newInstance();

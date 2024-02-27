@@ -8,7 +8,7 @@
     <version>1.4-jdk20-SNAPSHOT</version>
   </parent>
   <artifactId>gitlab</artifactId>
-  <version>1.6-jdk21</version>
+  <version>1.6.1-jdk21-SNAPSHOT</version>
   <dependencies>
     <dependency>
       <groupId>com.github.odiszapc</groupId>
@@ -34,7 +34,7 @@
     <dependency>
       <groupId>org.gitlab4j</groupId>
       <artifactId>gitlab4j-api</artifactId>
-      <version>4.12.2</version>
+      <version>5.5.0</version>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>

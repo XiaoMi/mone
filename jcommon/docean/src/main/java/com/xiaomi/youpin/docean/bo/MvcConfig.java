@@ -42,4 +42,9 @@ public class MvcConfig implements Serializable {
 
     private boolean openStaticFile;
 
+    /**
+     * url that need to return original data like"/test1,/test2"
+     */
+    private String responseOriginalPath;
+
 }
