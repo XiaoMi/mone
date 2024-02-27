@@ -17,7 +17,7 @@ public class HttpHandlerRead {
 
     public static void read(ChannelHandlerContext ctx, HttpObject httpObject, HttpServerConfig config) {
         if (httpObject instanceof FullHttpRequest request) {
-            var uri = HttpRequestUtils.getBasePath(request);
+            String uri = HttpRequestUtils.getBasePath(request);
             byte[] body = RequestUtils.getData(config, uri, request);
             Mvc.ins().dispatcher(config, ctx, request, uri, body);
         }

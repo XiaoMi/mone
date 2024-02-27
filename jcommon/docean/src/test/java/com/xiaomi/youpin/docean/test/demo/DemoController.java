@@ -182,6 +182,12 @@ public class DemoController {
         return "session:" + name;
     }
 
+    //Test the scenario where only a single parameter is passed, and it is of type String.
+    @RequestMapping(path = "/string")
+    public String string(String str) {
+        return str;
+    }
+
 
     public void destory() {
         log.info("destory controller");

@@ -79,7 +79,7 @@ public class HttpServerTest {
         }
 
 
-        Ioc.ins().putBean("$response-original-value", "true");
+        Ioc.ins().putBean("$response-original-value", "true").putBean("$openStaticFile","true").putBean("$staticFilePath","/tmp/");
 //        Ioc.ins().putBean("$ssl_domain", "zzy.com");
 //        Ioc.ins().putBean("$ssl_self_sign", "false");
 //        Ioc.ins().putBean("$ssl_certificate","/Users/zhangzhiyong/key/zzy.com/certificate.crt");
@@ -88,8 +88,8 @@ public class HttpServerTest {
         Mvc.ins();
         DoceanHttpServer server = new DoceanHttpServer(HttpServerConfig.builder()
                 .httpVersion(HttpServerConfig.HttpVersion.http1)
-//                .ssl(true)
-                .port(8999)
+                .ssl(false)
+                .port(8899)
                 .websocket(false)
                 .uploadDir("/tmp/v").upload(false)
                 .build());

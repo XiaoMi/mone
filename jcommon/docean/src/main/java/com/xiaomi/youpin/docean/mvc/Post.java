@@ -16,7 +16,6 @@
 
 package com.xiaomi.youpin.docean.mvc;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.xiaomi.youpin.docean.mvc.httpmethod.HttpMethodUtils;
