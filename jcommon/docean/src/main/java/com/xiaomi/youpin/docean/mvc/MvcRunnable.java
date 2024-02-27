@@ -116,8 +116,6 @@ public class MvcRunnable implements Runnable {
         }
         String path = request.getPath();
 
-
-        //Directly render static pages.
         if (config.isOpenStaticFile() && Html.isHtmlFile(path)) {
             String content = Html.view(config.getStaticFilePath() + path);
             if (StringUtils.isEmpty(content)) {

@@ -123,4 +123,12 @@ public class GitlabTest {
         gitlab.getDomainByIP("https://xxx.com","xx","", Arrays.asList("127.0.0.1"),"token");
     }
 
+
+    @Test
+    public void getProjectCode() {
+
+        gitlab.getDomainByIP("https://xxx.com","xx","", Arrays.asList("127.0.0.1"),"token");
+    }
+
+
 }

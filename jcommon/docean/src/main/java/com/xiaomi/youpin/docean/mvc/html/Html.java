@@ -29,7 +29,8 @@ public class Html {
 
     //判断一个文件是否是.html文件,并且返回boolean值(class)
     public static boolean isHtmlFile(String filePath) {
-        return filePath != null && filePath.toLowerCase().endsWith(".html");
+        //.html .css .js .png .jpeg 都算静态文件
+        return filePath != null && (filePath.toLowerCase().endsWith(".html") || filePath.toLowerCase().endsWith(".css") || filePath.toLowerCase().endsWith(".js") || filePath.toLowerCase().endsWith(".png") || filePath.toLowerCase().endsWith(".jpeg"));
     }
 
 }
