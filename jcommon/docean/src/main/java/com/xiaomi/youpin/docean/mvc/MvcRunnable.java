@@ -12,6 +12,7 @@ import com.xiaomi.youpin.docean.mvc.download.Download;
 import com.xiaomi.youpin.docean.mvc.html.Html;
 import com.xiaomi.youpin.docean.mvc.upload.MvcUpload;
 import com.xiaomi.youpin.docean.mvc.util.ExceptionUtil;
+import com.xiaomi.youpin.docean.mvc.util.GsonUtils;
 import com.xiaomi.youpin.docean.mvc.util.MethodFinder;
 import com.xiaomi.youpin.docean.mvc.util.RequestUtils;
 import io.netty.channel.ChannelHandlerContext;
@@ -105,8 +106,9 @@ public class MvcRunnable implements Runnable {
         if (context.isWebsocket()) {
             WsRequest req = new Gson().fromJson(new String(request.getBody()), WsRequest.class);
             request.setPath(req.getPath());
-            request.setBody(new Gson().toJson(req.getParams()).getBytes());
+            request.setBody(GsonUtils.gson.toJson(req.getParams()).getBytes());
         }
+
         //Directly returning not found when searching for favicon.ico.
         if (isFaviconIco(request)) {
             response.writeAndFlush(context, HttpResponseStatus.NOT_FOUND, "");
@@ -115,6 +117,7 @@ public class MvcRunnable implements Runnable {
         String path = request.getPath();
 
 
+        //Directly render static pages.
         if (config.isOpenStaticFile() && Html.isHtmlFile(path)) {
             String content = Html.view(config.getStaticFilePath() + path);
             if (StringUtils.isEmpty(content)) {
