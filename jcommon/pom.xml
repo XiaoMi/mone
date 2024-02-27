@@ -97,6 +97,7 @@
         <module>excel</module>
         <module>match</module>
         <module>infra-common</module>
+        <module>mockjs</module>
     </modules>
 
 
