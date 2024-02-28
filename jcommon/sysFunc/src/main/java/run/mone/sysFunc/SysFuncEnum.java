@@ -1,13 +1,13 @@
 package run.mone.sysFunc;
 
-import static run.mone.sysFunc.SysFuncConst.FUNC_NAME_SUBSTRING;
-import static run.mone.sysFunc.SysFuncConst.FUNC_NAME_UUID;
+import static run.mone.sysFunc.SysFuncConst.*;
 
 public enum SysFuncEnum {
 
     //报警级别
     SUBSTRING(FUNC_NAME_SUBSTRING, "common", "截取字符串", "返回从指定开始索引到结束索引之间的子字符串，但不包括结束索引位置的字符"),
-    UUID(FUNC_NAME_UUID, "common", "唯一标识符", "标准化的唯一标识符");
+    UUID(FUNC_NAME_UUID, "common", "唯一标识符", "标准化的唯一标识符"),
+    RANDOM_NUMBER(FUNC_NAME_RANDOM_NUMBER, "common", "随机数", "标准化的唯一标识符");
 
     public String cname;
     public String name;

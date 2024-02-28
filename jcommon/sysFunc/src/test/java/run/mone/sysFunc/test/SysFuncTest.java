@@ -19,5 +19,12 @@ public class SysFuncTest {
         System.out.println(res);
     }
 
+    @Test
+    public void testRandomNumber() {
+        String res = SysFuncUtils.gen("${java.randomNumber(2,11)}");
+        System.out.println(res);
+    }
+
+
 
 }

@@ -5,10 +5,10 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
-import static run.mone.sysFunc.SysFuncConst.FUNC_NAME_SUBSTRING;
-import static run.mone.sysFunc.SysFuncConst.FUNC_NAME_UUID;
+import static run.mone.sysFunc.SysFuncConst.*;
 
 public class SysFuncUtils {
 
@@ -40,6 +40,9 @@ public class SysFuncUtils {
             case FUNC_NAME_UUID: {
                 return uuid();
             }
+            case FUNC_NAME_RANDOM_NUMBER: {
+                return randomNumber(funcParamList, funcParams);
+            }
             default:
                 return funcDesc;
         }
@@ -63,5 +66,19 @@ public class SysFuncUtils {
     private static String uuid() {
         UUID uuid = UUID.randomUUID();
         return uuid.toString();
+    }
+
+    private static String randomNumber(List<String> funcParamList, String defaultStr) {
+        if (funcParamList.size() == 2) {
+            int randomNumberInRange = ThreadLocalRandom.current().nextInt(Integer.valueOf(funcParamList.get(0)), Integer.valueOf(funcParamList.get(1)));
+            return String.valueOf(randomNumberInRange);
+        }
+
+        if (funcParamList.size() == 1) {
+            int randomNumberInRange = ThreadLocalRandom.current().nextInt(Integer.valueOf(funcParamList.get(0)));
+            return String.valueOf(randomNumberInRange);
+        }
+
+        return defaultStr;
     }
 }
