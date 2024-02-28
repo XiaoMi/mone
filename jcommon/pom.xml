@@ -98,6 +98,7 @@
         <module>match</module>
         <module>infra-common</module>
         <module>mockjs</module>
+        <module>sysFunc</module>
     </modules>
 
 
