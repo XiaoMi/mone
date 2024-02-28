@@ -104,7 +104,7 @@ public class MvcRunnable implements Runnable {
 
     private void call() {
         if (context.isWebsocket()) {
-            WsRequest req = new Gson().fromJson(new String(request.getBody()), WsRequest.class);
+            WsRequest req = GsonUtils.gson.fromJson(new String(request.getBody()), WsRequest.class);
             request.setPath(req.getPath());
             request.setBody(GsonUtils.gson.toJson(req.getParams()).getBytes());
         }
@@ -121,6 +121,9 @@ public class MvcRunnable implements Runnable {
             if (StringUtils.isEmpty(content)) {
                 sendNotFoundResponse();
                 return;
+            }
+            if(path.endsWith(".html")) {
+                context.setContentType("text/html; charset=utf-8");
             }
             response.writeAndFlush(context, content);
             return;

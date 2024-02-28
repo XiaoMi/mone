@@ -186,7 +186,7 @@ public class Mvc {
         Safe.run(() -> {
             Object[] params = new Object[]{null};
             //If there is only one parameter and it is a String, no further parsing is necessary; it can be used directly.
-            if (isSingleStringParameterMethod(method)) {
+            if (isSingleStringParameterMethod(method) && request.getMethod().toUpperCase().equals("POST")) {
                 params[0] = new String(request.getBody());
             } else {
                 JsonElement args = getArgs(method, request.getMethod().toLowerCase(Locale.ROOT), request, context);

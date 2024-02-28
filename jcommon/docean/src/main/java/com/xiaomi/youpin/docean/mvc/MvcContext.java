@@ -63,6 +63,8 @@ public class MvcContext {
 
     private Object response;
 
+    private String contentType;
+
     /**
      * rate limited or exceeded quota
      */

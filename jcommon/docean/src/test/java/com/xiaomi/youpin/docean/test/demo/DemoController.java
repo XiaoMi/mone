@@ -157,6 +157,12 @@ public class DemoController {
         return String.valueOf(a + b);
     }
 
+    @TAnno
+    @RequestMapping(path = "/testv", method = "get")
+    public String testV(@RequestParam("a") String a) {
+        return a;
+    }
+
     @RequestMapping(path = "/testpost")
     public String testPost(String b) {
         log.info("b={}", b);
