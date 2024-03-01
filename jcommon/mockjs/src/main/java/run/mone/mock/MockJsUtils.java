@@ -43,7 +43,7 @@ public class MockJsUtils {
         template = StringUtils.trimToEmpty(template);
 
         try {
-            String result = MOCK_JS_ENGINE.eval("JSON.stringify(Mock.mock(" + template + "))").toString();
+            String result = MOCK_JS_ENGINE.eval("JSON.stringify(" + template + ")").toString();
             return result;
         } catch (Throwable e) {
             log.error("执行Mock.mock错误", e);
@@ -53,14 +53,12 @@ public class MockJsUtils {
     }
 
     public static List<String> batchMock(String template, int number) {
-        return batchOperation(() -> mock(template), number);
+        return batchOperation(new ArrayList<>(), () -> mock(template), number);
     }
 
-    public static List<String> batchOperation(Supplier<String> supplier, int number) {
+    public static List<String> batchOperation(List<String> res, Supplier<String> supplier, int number) {
         int batchNumber = 1000;
-        List<String> res = new ArrayList<>();
-
-        int n = (number / batchNumber) + 1;
+        int n = ((number - res.size()) / batchNumber) + 1;
 
         for (int j = 0; j <= n; j++) {
             int defaultNumber = batchNumber;
@@ -73,29 +71,13 @@ public class MockJsUtils {
                     });
         }
 
-        if (res.size() > number) {
+        if (res.size() >= number) {
             List<String> res1 = res.subList(0, number);
             return res1;
+        } else {
+            return batchOperation(res, supplier, number);
         }
-
-        return res;
     }
 
-    public static String random(String template) {
-        template = StringUtils.trimToEmpty(template);
-
-        try {
-            String result = MOCK_JS_ENGINE.eval("JSON.stringify(Mock." + template + ")").toString();
-            return result;
-        } catch (Throwable e) {
-            log.error("执行Mock.mock错误", e);
-        }
-
-        return null;
-    }
-
-    public static List<String> batchRandom(String template, int number) {
-        return batchOperation(() -> random(template), number);
-    }
 
 }
