@@ -43,7 +43,7 @@ public class MockJsUtils {
         template = StringUtils.trimToEmpty(template);
 
         try {
-            String result = MOCK_JS_ENGINE.eval("JSON.stringify(Mock.mock(" + template + "))").toString();
+            String result = MOCK_JS_ENGINE.eval("JSON.stringify(" + template + ")").toString();
             return result;
         } catch (Throwable e) {
             log.error("执行Mock.mock错误", e);
@@ -79,21 +79,5 @@ public class MockJsUtils {
         }
     }
 
-    public static String random(String template) {
-        template = StringUtils.trimToEmpty(template);
-
-        try {
-            String result = MOCK_JS_ENGINE.eval("JSON.stringify(Mock." + template + ")").toString();
-            return result;
-        } catch (Throwable e) {
-            log.error("执行Mock.mock错误", e);
-        }
-
-        return null;
-    }
-
-    public static List<String> batchRandom(String template, int number) {
-        return batchOperation(new ArrayList<>(), () -> random(template), number);
-    }
 
 }
