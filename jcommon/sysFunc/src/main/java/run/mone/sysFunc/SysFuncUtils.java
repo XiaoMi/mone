@@ -5,8 +5,11 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static run.mone.sysFunc.SysFuncConst.*;
 
@@ -46,6 +49,30 @@ public class SysFuncUtils {
             default:
                 return funcDesc;
         }
+    }
+
+    public static List<String> batchGen(String funcDesc, int number) {
+        return batchOperation(() -> gen(funcDesc), number);
+    }
+
+    public static List<String> batchOperation(Supplier<String> supplier, int number) {
+        List<String> res = new CopyOnWriteArrayList<>();
+
+        int batchNumber = 1000;
+        int n = (number / batchNumber) + 1;
+
+        for (int j = 0; j <= n; j++) {
+            int defaultNumber = batchNumber;
+            IntStream.range(0, defaultNumber)
+                    .parallel() // 将流转换为并行流
+                    .forEach(i -> {
+                        // 这里是要并行执行的操作
+                        String mockData = supplier.get();
+                        res.add(mockData);
+                    });
+        }
+
+        return res.subList(0, number);
     }
 
     private static String subString(List<String> funcParamList, String defaultStr) {
