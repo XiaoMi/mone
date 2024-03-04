@@ -44,7 +44,7 @@ public class MockTest {
     public void mockjsTestRandomBatch() {
         String input = "Mock.Random.title(3, 5)";
         long begin = System.currentTimeMillis();
-        List<String> output = MockJsUtils.batchMock(input, 9999);
+        List<String> output = MockJsUtils.batchMock(input, 99999);
         long costtime = System.currentTimeMillis() - begin;
         System.out.println(output);
     }

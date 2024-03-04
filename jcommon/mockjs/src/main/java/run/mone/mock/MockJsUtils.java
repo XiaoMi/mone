@@ -9,8 +9,8 @@ import javax.script.ScriptException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
@@ -53,12 +53,14 @@ public class MockJsUtils {
     }
 
     public static List<String> batchMock(String template, int number) {
-        return batchOperation(new ArrayList<>(), () -> mock(template), number);
+        return batchOperation(() -> mock(template), number);
     }
 
-    public static List<String> batchOperation(List<String> res, Supplier<String> supplier, int number) {
+    public static List<String> batchOperation(Supplier<String> supplier, int number) {
+        List<String> res = new CopyOnWriteArrayList<>();
+
         int batchNumber = 1000;
-        int n = ((number - res.size()) / batchNumber) + 1;
+        int n = (number / batchNumber) + 1;
 
         for (int j = 0; j <= n; j++) {
             int defaultNumber = batchNumber;
@@ -71,12 +73,7 @@ public class MockJsUtils {
                     });
         }
 
-        if (res.size() >= number) {
-            List<String> res1 = res.subList(0, number);
-            return res1;
-        } else {
-            return batchOperation(res, supplier, number);
-        }
+        return res.subList(0, number);
     }
 
 
