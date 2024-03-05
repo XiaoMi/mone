@@ -54,6 +54,7 @@
         <module>docean-plugin-mesh-dubbo</module>
         <module>docean-plugin-es-antlr4</module>
         <module>docean-plugin-storage</module>
+        <module>docean-plugin-junit</module>
     </modules>
     <dependencies>
         <dependency>

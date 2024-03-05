@@ -52,10 +52,9 @@ public class HttpServerConfig {
 
     private boolean userWs;
 
-
     public static int HTTP_POOL_SIZE = 500;
-    public static int HTTP_POOL_QUEUE_SIZE = 1000;
 
+    public static int HTTP_POOL_QUEUE_SIZE = 1000;
 
     public enum HttpVersion {
         http1, http2

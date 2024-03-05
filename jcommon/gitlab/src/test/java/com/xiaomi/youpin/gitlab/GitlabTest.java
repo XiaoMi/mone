@@ -144,5 +144,4 @@ public class GitlabTest {
         System.out.println(new Gson().toJson(treeItemList));
     }
 
-
 }

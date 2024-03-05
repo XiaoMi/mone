@@ -157,6 +157,12 @@ public class DemoController {
         return String.valueOf(a + b);
     }
 
+    @TAnno
+    @RequestMapping(path = "/testv", method = "get")
+    public String testV(@RequestParam("a") String a) {
+        return a;
+    }
+
     @RequestMapping(path = "/testpost")
     public String testPost(String b) {
         log.info("b={}", b);
@@ -180,6 +186,12 @@ public class DemoController {
     public String testSession2(MvcContext context) {
         String name = String.valueOf(context.session().getAttribute("name"));
         return "session:" + name;
+    }
+
+    //Test the scenario where only a single parameter is passed, and it is of type String.
+    @RequestMapping(path = "/string")
+    public String string(String str) {
+        return str;
     }
 
 
