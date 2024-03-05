@@ -5,14 +5,14 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>docean-plugin</artifactId>
-    <version>1.5.0-jdk21</version>
+    <version>1.6.0-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>docean-plugin-test</artifactId>
   <dependencies>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean</artifactId>
-      <version>1.5.0-jdk21</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>org.msgpack</groupId>
@@ -34,7 +34,7 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-spring</artifactId>
-      <version>1.5.0-jdk21</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
@@ -43,7 +43,7 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-dubbo</artifactId>
-      <version>1.5.0-jdk21</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
@@ -52,37 +52,37 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-http</artifactId>
-      <version>1.5.0-jdk21</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-rocketmq</artifactId>
-      <version>1.5.0-jdk21</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-sql</artifactId>
-      <version>1.5.0-jdk21</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-aop</artifactId>
-      <version>1.5.0-jdk21</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-json</artifactId>
-      <version>1.5.0-jdk21</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-redis</artifactId>
-      <version>1.5.0-jdk21</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-mybatis</artifactId>
-      <version>1.5.0-jdk21</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
@@ -91,27 +91,27 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-log</artifactId>
-      <version>1.5.0-jdk21</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-mvc</artifactId>
-      <version>1.5.0-jdk21</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-dmesh</artifactId>
-      <version>1.5.0-jdk21</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-sidecar</artifactId>
-      <version>1.4-jdk21-SNAPSHOT</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-http-server</artifactId>
-      <version>1.5.0-jdk21</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
   </dependencies>
   <build>
