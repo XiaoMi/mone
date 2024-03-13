@@ -270,6 +270,9 @@ public class OpenaiCall {
         });
     }
 
+    public static void callStream2(String req, StreamListener sl, ReqConfig config) {
+        callStream2(req, sl, config, null);
+    }
 
     /**
      * 原生的调用,底层只依赖okhttp
@@ -278,10 +281,11 @@ public class OpenaiCall {
      * @param sl
      * @param config
      */
-    public static void callStream2(String req, StreamListener sl, ReqConfig config) {
+    public static void callStream2(String req, StreamListener sl, ReqConfig config, Headers headers) {
         MediaType mediaType = MediaType.parse("application/json; charset=utf-8");
 
         Request request = new Request.Builder()
+                .headers(headers)
                 .url(config.getAskUrl())
                 .post(RequestBody.create(mediaType, req.getBytes(Charset.forName("utf8"))))
                 .build();

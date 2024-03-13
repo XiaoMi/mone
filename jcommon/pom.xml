@@ -86,6 +86,7 @@
     <module>match</module>
     <module>infra-common</module>
     <module>docean-spring-starter</module>
+      <module>ai</module>
   </modules>
 
 <!--  <distributionManagement>-->
