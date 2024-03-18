@@ -236,5 +236,6 @@ public class EsClientTest {
         IndexTemplatesExistRequest request = new IndexTemplatesExistRequest(templateName);
         boolean res = client.existsTemplate(request);
         System.out.println("result:" + res);
+        System.in.read();
     }
 }
