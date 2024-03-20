@@ -63,7 +63,14 @@ public class NodeUserService implements NodeUserHelper {
     public ResultVo<PageDataVo<NodeUserRelVo>> list(NodeUserQryParam param) {
         PageDataVo<NodeUserRelVo> pageData = param.buildPageDataVo();
         if (param.getNodeId() == null) {
-            return ResponseCode.SUCCESS.build(pageData);
+            if (param.getOutId() == null || param.getOutIdType() == null) {
+                return ResponseCode.SUCCESS.build(pageData);
+            }
+            NodeEntity nodeEntity = nodeDao.getOneByOutId(param.getOutIdType(), param.getOutId());
+            if (nodeEntity == null) {
+                return ResponseCode.SUCCESS.build(pageData);
+            }
+            param.setNodeId(nodeEntity.getId());
         }
         List<NodeUserRelEntity> entityList = nodeUserRelDao.getListByPage(param.getNodeId(), param.getType(), param.getMemberId(), param.getTester(), pageData);
         pageData.setList(NodeUserRelUtil.toVoList(entityList));
