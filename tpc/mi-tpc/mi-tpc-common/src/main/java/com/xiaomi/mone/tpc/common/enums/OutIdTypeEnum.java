@@ -18,6 +18,10 @@ public enum OutIdTypeEnum implements Base {
     SPACE(6, "日志SPACE"),
     STORE(7, "日志STORE"),
     GATE_REGION(8, "区域"),
+    APP_CHANGE(9, "应用变更"),
+    APP_DELIVER(10, "应用交付"),
+    APP_SPACE(11, "应用空间"),
+    BOT_SAPCE(12, "BOT_SPACE"),
     ;
     private Integer code;
     private String desc;
