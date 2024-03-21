@@ -7,7 +7,6 @@ import com.xiaomi.mone.tpc.api.service.UserFacade;
 import com.xiaomi.mone.tpc.common.param.UserQryParam;
 import com.xiaomi.mone.tpc.common.param.UserRegisterParam;
 import com.xiaomi.mone.tpc.common.vo.PageDataVo;
-import com.xiaomi.mone.tpc.common.vo.ResponseCode;
 import com.xiaomi.mone.tpc.common.vo.ResultVo;
 import com.xiaomi.mone.tpc.common.vo.UserVo;
 import com.xiaomi.mone.tpc.user.UserService;
@@ -32,11 +31,8 @@ public class UserFacadeImpl implements UserFacade {
 
     @Override
     public Result<UserVo> register(UserRegisterParam param) {
-        UserVo userVo = userService.register(param.getAccount(), param.getUserType(), param.getContent());
-        if (userVo == null) {
-            return ResultUtil.build(ResponseCode.OPER_FAIL.build());
-        }
-        return ResultUtil.build(ResponseCode.SUCCESS.build(userVo));
+        ResultVo<UserVo> resultVo = userService.registerV2(param.getAccount(), param.getUserType(), param.getContent(), param.getInitUserStat());
+        return ResultUtil.build(resultVo);
     }
 
 }

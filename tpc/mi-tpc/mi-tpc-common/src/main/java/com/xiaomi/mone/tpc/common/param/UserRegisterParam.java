@@ -16,6 +16,7 @@ import org.apache.commons.lang3.StringUtils;
 public class UserRegisterParam extends BaseParam {
 
     private String content;
+    private Integer initUserStat;
 
     @Override
     public boolean argCheck() {
@@ -24,6 +25,12 @@ public class UserRegisterParam extends BaseParam {
         }
         UserTypeEnum type = UserTypeEnum.getEnum(getUserType());
         if (type == null) {
+            return false;
+        }
+        if (initUserStat == null) {
+            initUserStat = UserStatusEnum.ENABLE.getCode();
+        }
+        if (UserStatusEnum.getEnum(initUserStat) == null) {
             return false;
         }
         return true;
