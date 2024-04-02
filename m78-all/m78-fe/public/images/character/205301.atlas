@@ -1,0 +1,307 @@
+
+205301.png
+size: 512,256
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+body1
+  rotate: false
+  xy: 2, 11
+  size: 48, 50
+  orig: 48, 50
+  offset: 0, 0
+  index: -1
+body2
+  rotate: false
+  xy: 117, 36
+  size: 76, 60
+  orig: 76, 60
+  offset: 0, 0
+  index: -1
+eyebrow
+  rotate: true
+  xy: 487, 119
+  size: 89, 9
+  orig: 89, 9
+  offset: 0, 0
+  index: -1
+eyebrow_happy
+  rotate: true
+  xy: 473, 118
+  size: 90, 12
+  orig: 90, 12
+  offset: 0, 0
+  index: -1
+glass
+  rotate: false
+  xy: 2, 63
+  size: 113, 33
+  orig: 113, 33
+  offset: 0, 0
+  index: -1
+hat1
+  rotate: false
+  xy: 2, 98
+  size: 200, 156
+  orig: 200, 156
+  offset: 0, 0
+  index: -1
+hat2
+  rotate: true
+  xy: 367, 58
+  size: 196, 104
+  orig: 196, 104
+  offset: 0, 0
+  index: -1
+head
+  rotate: true
+  xy: 204, 101
+  size: 153, 161
+  orig: 153, 161
+  offset: 0, 0
+  index: -1
+l_arm1
+  rotate: true
+  xy: 473, 210
+  size: 44, 37
+  orig: 44, 37
+  offset: 0, 0
+  index: -1
+l_arm2
+  rotate: false
+  xy: 473, 47
+  size: 34, 22
+  orig: 34, 22
+  offset: 0, 0
+  index: -1
+l_eye
+  rotate: false
+  xy: 104, 2
+  size: 38, 32
+  orig: 38, 32
+  offset: 0, 0
+  index: -1
+l_eye2
+  rotate: false
+  xy: 253, 66
+  size: 34, 33
+  orig: 34, 33
+  offset: 0, 0
+  index: -1
+l_eye3
+  rotate: false
+  xy: 326, 59
+  size: 28, 11
+  orig: 28, 11
+  offset: 0, 0
+  index: -1
+l_eye_happy
+  rotate: false
+  xy: 263, 37
+  size: 30, 27
+  orig: 30, 27
+  offset: 0, 0
+  index: -1
+l_eye_sad
+  rotate: false
+  xy: 325, 35
+  size: 24, 22
+  orig: 24, 22
+  offset: 0, 0
+  index: -1
+l_eye_sad2
+  rotate: false
+  xy: 310, 12
+  size: 22, 21
+  orig: 22, 21
+  offset: 0, 0
+  index: -1
+l_eye_sad3
+  rotate: true
+  xy: 286, 12
+  size: 23, 22
+  orig: 23, 22
+  offset: 0, 0
+  index: -1
+l_eyeball
+  rotate: true
+  xy: 397, 41
+  size: 15, 19
+  orig: 15, 19
+  offset: 0, 0
+  index: -1
+l_eyeball2
+  rotate: false
+  xy: 376, 39
+  size: 19, 17
+  orig: 19, 17
+  offset: 0, 0
+  index: -1
+l_eyebrow_sad
+  rotate: false
+  xy: 214, 2
+  size: 31, 10
+  orig: 31, 10
+  offset: 0, 0
+  index: -1
+l_leg
+  rotate: true
+  xy: 217, 43
+  size: 18, 44
+  orig: 18, 44
+  offset: 0, 0
+  index: -1
+mouth1
+  rotate: false
+  xy: 295, 37
+  size: 19, 5
+  orig: 19, 5
+  offset: 0, 0
+  index: -1
+mouth2
+  rotate: true
+  xy: 104, 45
+  size: 16, 11
+  orig: 16, 11
+  offset: 0, 0
+  index: -1
+mouth3
+  rotate: false
+  xy: 334, 11
+  size: 22, 22
+  orig: 22, 22
+  offset: 0, 0
+  index: -1
+mouth_happy
+  rotate: false
+  xy: 418, 46
+  size: 18, 10
+  orig: 18, 10
+  offset: 0, 0
+  index: -1
+mouth_sad
+  rotate: false
+  xy: 2, 2
+  size: 10, 7
+  orig: 10, 7
+  offset: 0, 0
+  index: -1
+mouth_uneasy1
+  rotate: false
+  xy: 257, 2
+  size: 36, 8
+  orig: 36, 8
+  offset: 0, 0
+  index: -1
+mouth_uneasy2
+  rotate: true
+  xy: 247, 5
+  size: 36, 8
+  orig: 36, 8
+  offset: 0, 0
+  index: -1
+r_arm1
+  rotate: false
+  xy: 217, 63
+  size: 34, 36
+  orig: 34, 36
+  offset: 0, 0
+  index: -1
+r_arm2
+  rotate: false
+  xy: 289, 69
+  size: 35, 30
+  orig: 35, 30
+  offset: 0, 0
+  index: -1
+r_eye
+  rotate: false
+  xy: 52, 28
+  size: 50, 33
+  orig: 50, 33
+  offset: 0, 0
+  index: -1
+r_eye2
+  rotate: true
+  xy: 473, 71
+  size: 45, 35
+  orig: 45, 35
+  offset: 0, 0
+  index: -1
+r_eye3
+  rotate: true
+  xy: 498, 168
+  size: 40, 12
+  orig: 40, 12
+  offset: 0, 0
+  index: -1
+r_eye_happy
+  rotate: false
+  xy: 326, 72
+  size: 35, 27
+  orig: 35, 27
+  offset: 0, 0
+  index: -1
+r_eye_sad
+  rotate: false
+  xy: 295, 44
+  size: 28, 23
+  orig: 28, 23
+  offset: 0, 0
+  index: -1
+r_eye_sad2
+  rotate: false
+  xy: 257, 12
+  size: 27, 23
+  orig: 27, 23
+  offset: 0, 0
+  index: -1
+r_eye_sad3
+  rotate: false
+  xy: 52, 2
+  size: 29, 24
+  orig: 29, 24
+  offset: 0, 0
+  index: -1
+r_eyeball
+  rotate: false
+  xy: 83, 5
+  size: 19, 21
+  orig: 19, 21
+  offset: 0, 0
+  index: -1
+r_eyeball2
+  rotate: false
+  xy: 351, 39
+  size: 23, 17
+  orig: 23, 17
+  offset: 0, 0
+  index: -1
+r_eyebrow_sad
+  rotate: true
+  xy: 498, 127
+  size: 39, 12
+  orig: 39, 12
+  offset: 0, 0
+  index: -1
+r_leg
+  rotate: false
+  xy: 195, 51
+  size: 20, 45
+  orig: 20, 45
+  offset: 0, 0
+  index: -1
+ribbon
+  rotate: false
+  xy: 214, 14
+  size: 31, 27
+  orig: 31, 27
+  offset: 0, 0
+  index: -1
+umbrella
+  rotate: true
+  xy: 144, 5
+  size: 29, 68
+  orig: 29, 68
+  offset: 0, 0
+  index: -1

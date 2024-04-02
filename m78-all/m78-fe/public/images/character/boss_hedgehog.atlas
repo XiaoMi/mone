@@ -1,0 +1,209 @@
+
+boss_hedgehog.png
+size: 1024,512
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+angry
+  rotate: false
+  xy: 256, 364
+  size: 252, 144
+  orig: 252, 144
+  offset: 0, 0
+  index: -1
+bak_leg
+  rotate: false
+  xy: 612, 481
+  size: 122, 27
+  orig: 122, 27
+  offset: 0, 0
+  index: -1
+body1
+  rotate: false
+  xy: 2, 256
+  size: 252, 252
+  orig: 252, 252
+  offset: 0, 0
+  index: -1
+body2
+  rotate: false
+  xy: 256, 296
+  size: 158, 66
+  orig: 158, 66
+  offset: 0, 0
+  index: -1
+eff_01
+  rotate: false
+  xy: 358, 244
+  size: 50, 50
+  orig: 50, 50
+  offset: 0, 0
+  index: -1
+eff_02
+  rotate: false
+  xy: 338, 192
+  size: 50, 50
+  orig: 50, 50
+  offset: 0, 0
+  index: -1
+eff_stern_01
+  rotate: false
+  xy: 510, 458
+  size: 100, 50
+  orig: 100, 50
+  offset: 0, 0
+  index: -1
+eff_stern_02
+  rotate: false
+  xy: 256, 244
+  size: 100, 50
+  orig: 100, 50
+  offset: 0, 0
+  index: -1
+eff_stern_03
+  rotate: false
+  xy: 510, 406
+  size: 100, 50
+  orig: 100, 50
+  offset: 0, 0
+  index: -1
+head
+  rotate: false
+  xy: 2, 2
+  size: 252, 252
+  orig: 252, 252
+  offset: 0, 0
+  index: -1
+l_ear
+  rotate: false
+  xy: 256, 9
+  size: 40, 40
+  orig: 40, 40
+  offset: 0, 0
+  index: -1
+l_eye1
+  rotate: false
+  xy: 338, 140
+  size: 50, 50
+  orig: 50, 50
+  offset: 0, 0
+  index: -1
+r_eye1
+  rotate: false
+  xy: 338, 140
+  size: 50, 50
+  orig: 50, 50
+  offset: 0, 0
+  index: -1
+l_eye2
+  rotate: false
+  xy: 694, 429
+  size: 50, 50
+  orig: 50, 50
+  offset: 0, 0
+  index: -1
+l_eye3
+  rotate: false
+  xy: 498, 296
+  size: 50, 50
+  orig: 50, 50
+  offset: 0, 0
+  index: -1
+l_eye4
+  rotate: false
+  xy: 579, 354
+  size: 50, 50
+  orig: 50, 50
+  offset: 0, 0
+  index: -1
+r_eye4
+  rotate: false
+  xy: 579, 354
+  size: 50, 50
+  orig: 50, 50
+  offset: 0, 0
+  index: -1
+l_eye5
+  rotate: false
+  xy: 631, 367
+  size: 50, 50
+  orig: 50, 50
+  offset: 0, 0
+  index: -1
+l_leg
+  rotate: false
+  xy: 256, 51
+  size: 56, 67
+  orig: 56, 67
+  offset: 0, 0
+  index: -1
+mouth1
+  rotate: false
+  xy: 416, 302
+  size: 80, 60
+  orig: 80, 60
+  offset: 0, 0
+  index: -1
+mouth2
+  rotate: false
+  xy: 256, 182
+  size: 80, 60
+  orig: 80, 60
+  offset: 0, 0
+  index: -1
+mouth3
+  rotate: false
+  xy: 612, 419
+  size: 80, 60
+  orig: 80, 60
+  offset: 0, 0
+  index: -1
+mouth4
+  rotate: false
+  xy: 256, 120
+  size: 80, 60
+  orig: 80, 60
+  offset: 0, 0
+  index: -1
+nose
+  rotate: false
+  xy: 746, 434
+  size: 22, 22
+  orig: 22, 22
+  offset: 0, 0
+  index: -1
+r_ear
+  rotate: false
+  xy: 798, 468
+  size: 40, 40
+  orig: 40, 40
+  offset: 0, 0
+  index: -1
+r_eye2
+  rotate: false
+  xy: 550, 296
+  size: 50, 50
+  orig: 50, 50
+  offset: 0, 0
+  index: -1
+r_eye3
+  rotate: false
+  xy: 314, 68
+  size: 50, 50
+  orig: 50, 50
+  offset: 0, 0
+  index: -1
+r_eye5
+  rotate: false
+  xy: 746, 458
+  size: 50, 50
+  orig: 50, 50
+  offset: 0, 0
+  index: -1
+r_leg
+  rotate: true
+  xy: 510, 348
+  size: 56, 67
+  orig: 56, 67
+  offset: 0, 0
+  index: -1
