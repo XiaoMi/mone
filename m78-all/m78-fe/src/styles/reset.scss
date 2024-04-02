@@ -1,0 +1,232 @@
+/*
+KISSY CSS Reset
+理念：清除和重置是紧密不可分的
+特色：1.适应中文 2.基于最新主流浏览器
+*/
+
+body {
+  *,
+  *::after,
+  *::before {
+    box-sizing: border-box;
+  }
+}
+
+/* 清除内外边距 */
+
+body,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+hr,
+p,
+blockquote,
+
+/* structural elements 结构元素 */
+
+dl,
+dt,
+dd,
+ul,
+ol,
+li,
+
+/* list elements 列表元素 */
+
+pre,
+
+/* text formatting elements 文本格式元素 */
+
+fieldset,
+lengend,
+button,
+input,
+textarea,
+
+/* form elements 表单元素 */
+
+th,
+td {
+  /* table elements 表格元素 */
+  margin: 0;
+  padding: 0;
+}
+
+/* 设置默认字体 */
+
+body,
+button,
+input,
+select,
+textarea {
+  /* for ie */
+  font-size: 12px;
+  border: none;
+  outline: none;
+  font-family: Arial, Helvetica, sans-serif, "Microsoft YaHei";
+}
+
+input,
+select,
+textarea {
+  outline: none;
+  resize: none;
+}
+
+i {
+  font-style: normal;
+}
+
+button {
+  cursor: pointer;
+}
+
+input::-ms-clear {
+  display: none;
+}
+
+h1 {
+  font-size: 18px;
+  /* 18px / 12px = 1.5 */
+}
+
+h2 {
+  font-size: 16px;
+}
+
+h3 {
+  font-size: 14px;
+}
+
+h4,
+h5,
+h6 {
+  font-size: 100%;
+}
+
+address,
+cite,
+dfn,
+em,
+var {
+  font-style: normal;
+}
+
+/* 将斜体扶正 */
+
+small {
+  font-size: 12px;
+}
+
+/* 小于 12px 的中文很难阅读，让 small 正常化 */
+
+/* 重置列表元素 */
+
+ul,
+ol {
+  list-style: none;
+}
+
+/* 重置文本格式元素 */
+
+a {
+  text-decoration: none;
+}
+
+abbr[title],
+acronym[title] {
+  /* 注：1.ie6 不支持 abbr; 2.这里用了属性选择符，ie6 下无效果 */
+  border-bottom: 1px dotted;
+  cursor: help;
+}
+
+q:before,
+q:after {
+  content: "";
+}
+
+/* 重置表单元素 */
+
+legend {
+  color: #000;
+}
+
+/* for ie6 */
+
+fieldset,
+img {
+  border: none;
+}
+
+/* img 搭车：让链接里的 img 无边框 */
+
+/* 注：optgroup 无法扶正 */
+
+button,
+input,
+select,
+textarea {
+  font-size: 100%;
+  /* 使得表单元素在 ie 下能继承字体大小 */
+}
+
+/* 重置表格元素 */
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+/* 重置 hr */
+
+hr {
+  border: none;
+  height: 1px;
+}
+
+/* 让非ie浏览器默认也显示垂直滚动条，防止因滚动条引起的闪烁 */
+
+html {
+  //overflow-y: scroll;
+}
+
+/* 解决safari中input现实小人的问题 */
+
+input::-webkit-contacts-auto-fill-button {
+  visibility: hidden;
+  display: none !important;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+}
+
+/* 解决ie10以上版本下默认关闭和眼睛图标 */
+
+::-ms-clear,
+::-ms-reveal {
+  display: none;
+}
+
+//去chrome input框黄色背景
+input:-webkit-autofill,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0 1000px white inset;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+textarea:focus {
+  -webkit-box-shadow: 0 0 0 1000px white inset;
+}
+
+.switch-container.flow-switch-container .el-switch__core:before {
+  content: "否";
+}
+.switch-container.flow-switch-container.el-switch.is-checked
+  .el-switch__core:before {
+  content: "是";
+}
