@@ -1,0 +1,12 @@
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+
+
+def execute(JsonObject obj) {
+    println(obj)
+    String a = obj.get("a").getAsString()
+    String b = obj.get("b").getAsString()
+    JsonObject res = new JsonObject()
+    res.addProperty("sum", a + b)
+    return res
+}
