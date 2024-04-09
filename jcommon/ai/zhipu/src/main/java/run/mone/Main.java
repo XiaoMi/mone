@@ -35,9 +35,11 @@ public class Main {
     public static void main(String[] args) {
         List<ChatMessage> messages = new ArrayList<>();
 
+
         String promptName = "prompt.txt";
 
         String content = Files.readString(Paths.get("/Users/zhangzhiyong/IdeaProjects/goodjava/mone/jcommon/ai/zhipu/src/main/resources/" + promptName));
+
 
         ChatMessage chatMessage = new ChatMessage(ChatMessageRole.USER.value(), content);
         messages.add(chatMessage);

@@ -126,7 +126,12 @@ public class Mvc {
 
     private void registerControllerMethods(Bean bean) {
         Arrays.stream(bean.getClazz().getMethods()).forEach(m -> Optional.ofNullable(m.getAnnotation(RequestMapping.class)).ifPresent(rm -> {
+            //支持类上添加RequestMapping
+            RequestMapping classMapping = bean.getClazz().getAnnotation(RequestMapping.class);
             String path = rm.path();
+            if (Optional.ofNullable(classMapping).isPresent()) {
+                path = classMapping.path() + path;
+            }
             HttpRequestMethod hrm = new HttpRequestMethod();
             hrm.setTimeout(rm.timeout());
             hrm.setPath(path);

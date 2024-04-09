@@ -165,22 +165,6 @@ public class ExportExcel {
         }
         return fieldValues;
     }
-//    public static void main(String[] args) throws IOException {
-//        List<Map<String, Object>> dataList = new ArrayList<>();
-//        Map<String, Object> data1 = new HashMap<>();
-//        Map<String, Object> data2 = new HashMap<>();
-//        data1.put("name", "j");
-//        data1.put("age", 11);
-//        dataList.add(data1);
-//
-//        data2.put("name", "l");
-//        data2.put("age", 2);
-//        dataList.add(data2);
-//
-//        HSSFWorkbook sheets = HSSFWorkbook4Map(dataList, "log-manager日志，搜索词:message:223 and ddd");
-//        FileOutputStream fos = new FileOutputStream("D://t//t"+ UUID.randomUUID() +".xls");
-//        sheets.write(fos);
-//
-//    }
+
 
 }

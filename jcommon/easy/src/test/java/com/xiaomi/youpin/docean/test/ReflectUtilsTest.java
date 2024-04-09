@@ -20,6 +20,7 @@ import com.google.common.base.Stopwatch;
 import com.xiaomi.youpin.docean.common.ReflectUtils;
 import org.junit.Test;
 
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.stream.IntStream;
@@ -29,6 +30,14 @@ import java.util.stream.IntStream;
  * @Date 2021/1/29 15:19
  */
 public class ReflectUtilsTest {
+
+    @Test
+    public void test1() {
+        Arrays.stream(ReflectUtils.fields(AA.class)).forEach(it->{
+            System.out.println(it);
+        });
+    }
+
 
     //3000
     @Test

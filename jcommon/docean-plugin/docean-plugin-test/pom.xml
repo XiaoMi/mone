@@ -49,15 +49,30 @@
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-nacos</artifactId>
     </dependency>
+
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-http</artifactId>
       <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
+
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-rocketmq</artifactId>
       <version>1.6.0-jdk21-SNAPSHOT</version>
+    </dependency>
+
+
+    <dependency>
+      <groupId>run.mone</groupId>
+      <artifactId>docean-plugin-mongodb</artifactId>
+      <version>1.5.0-jdk21</version>
+    </dependency>
+
+    <dependency>
+      <groupId>wsdl4j</groupId>
+      <artifactId>wsdl4j</artifactId>
+      <version>1.6.3</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>

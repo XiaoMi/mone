@@ -5,22 +5,27 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>run.mone</groupId>
-        <artifactId>jcommon</artifactId>
+        <artifactId>ai</artifactId>
         <version>1.4-jdk20-SNAPSHOT</version>
     </parent>
 
-    <artifactId>ai</artifactId>
-    <packaging>pom</packaging>
-    <modules>
-        <module>zhipu</module>
-        <module>moonshot</module>
-        <module>google</module>
-    </modules>
+    <artifactId>moonshot</artifactId>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.10.0</version>
+        </dependency>
+
+
+    </dependencies>
 
 </project>

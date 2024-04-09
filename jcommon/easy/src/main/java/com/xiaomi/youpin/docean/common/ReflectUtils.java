@@ -55,7 +55,18 @@ public abstract class ReflectUtils {
 
 
     public static Field[] fields(Class clazz) {
-        return clazz.getDeclaredFields();
+        Class superClazz = clazz.getSuperclass();
+        Field[] superFields = new Field[]{};
+        if (superClazz != null && !superClazz.equals(Object.class)) {
+            superFields = superClazz.getDeclaredFields();
+        }
+
+        Field[] fields = clazz.getDeclaredFields();
+        //合并fields和superFields
+        Field[] allFields = new Field[fields.length + superFields.length];
+        System.arraycopy(superFields, 0, allFields, 0, superFields.length);
+        System.arraycopy(fields, 0, allFields, superFields.length, fields.length);
+        return allFields;
     }
 
     public static void setField(Object obj, Field field, Object val) {
