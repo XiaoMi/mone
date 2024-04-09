@@ -5,10 +5,10 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>jcommon</artifactId>
-    <version>1.4-jdk20-SNAPSHOT</version>
+    <version>1.6.0-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>codegen</artifactId>
-  <version>1.4-jdk21-SNAPSHOT</version>
+  <version>1.6.0-jdk21-SNAPSHOT</version>
   <dependencies>
     <dependency>
       <groupId>commons-io</groupId>
@@ -36,7 +36,7 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>infra-result</artifactId>
-      <version>1.4-jdk21-SNAPSHOT</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
       <exclusions>
         <exclusion>
           <artifactId>thrift</artifactId>

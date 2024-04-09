@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Agent</title>
+    <link href="../static/css/knowledge.css" rel="stylesheet" type="text/css">
+    <script src="../static/common/common.js" type="application/javascript"></script>
+</head>
+<body>
+<div id="app">
+    <div class="information">
+        <section class="base-info">
+            <h3 class="title">个人信息</h3>
+            <el-form :inline="false" :model="formInline" class="user-form">
+                <el-form-item label="头像：">
+                    <el-image class="photo" />
+                </el-form-item>
+                <el-form-item label="别名：">
+                    <el-input v-if="baseInfo.isEdit" v-model="formInline.user" placeholder="请输入别名" clearable ></el-input>
+                    <span v-else>
+                        {{ formInline.user }}
+                    </span>
+                </el-form-item>
+                <el-form-item label="其他信息：">
+                    xxxx
+                </el-form-item>
+                <el-form-item>
+                    <template v-if="baseInfo.isEdit">
+                        <el-button  @click="onSubmit" size="small" v-on:click="baseInfo.isEdit = false">取消</el-button>
+                        <el-button type="primary" size="small" v-on:click="onSubmit">提交</el-button>
+                    </template>
+                    <el-button v-else @click="onSubmit" size="small" v-on:click="baseInfo.isEdit = true">编辑</el-button>
+                </el-form-item>
+            </el-form>
+        </section>
+        <section class="interactive">
+            <h3 class="title">任务列表</h3>
+            <ul v-infinite-scroll="load" class="infinite-list" style="overflow: auto">
+                <li v-for="i in count" :key="i" class="infinite-list-item">{{ i }}</li>
+            </ul>
+        </section>
+    </div>
+
+    <div class="task-wrap">
+        <section class="task-list">
+            <h3 class="title">互动信息</h3>
+            <ul v-infinite-scroll="load" class="infinite-list" style="overflow: auto">
+                <li v-for="i in count" :key="i" class="infinite-list-item">{{ i }}</li>
+            </ul>
+        </section>
+        <section class="create-task">
+            <h3 class="title">创建任务</h3>
+            <el-form :inline="false" :model="task" class="task-form" ref="ruleFormRef" :rules="rules">
+                <el-form-item label="任务名称：" prop="name">
+                    <el-input v-model="task.name" placeholder="请输入任务名称" clearable />
+                </el-form-item>
+                <el-form-item label="任务类型：" prop="type">
+                    <el-input v-model="task.type" placeholder="请输入任务类型" clearable />
+                </el-form-item>
+                <el-form-item label="任务：" prop="content">
+                    <el-input
+                            v-model="task.content"
+                            :autosize="{ minRows: 2, maxRows: 4 }"
+                            type="textarea"
+                            placeholder="请输入任务"
+                    />
+                </el-form-item>
+                <el-form-item>
+                    <div class="btns">
+                        <el-button type="primary" @click="onSubmit">提交</el-button>
+                    </div>
+                </el-form-item>
+            </el-form>
+        </section>
+    </div>
+</div>
+
+<script>
+    let vm = null
+	const app =Vue.createApp({
+		data(){
+			return {
+			    baseInfo: {
+			        isEdit: false
+			    },
+                count: 10,
+                formInline: {
+                    user: "woshishei"
+                },
+                task: {
+                    name: undefined,
+                    type: undefined,
+                    content: undefined
+                },
+                ruleFormRef: null,
+                rules: {
+                    name: { required: true, message: '请输入名称', trigger: ['blur', 'change'] },
+                    type: { required: true, message: '请输入类型', trigger: ['blur', 'change'] },
+                    content: { required: true, message: '请输入内容', trigger: ['blur', 'change'] },
+                }
+			}
+		},
+		computed: {},
+		beforeCreate: function () {
+            axios.get('/agent/getAgentInfo').then(res => {
+                console.log(res)
+            },err => {
+                console.log(err);
+            });
+		},
+		created: function () {
+		},
+		mounted: function () {
+		},
+		watch: {},
+		methods: {
+            load: function () {
+                this.count.value += 2
+            },
+            onEdit: function (bool) {
+                console.log(bool)
+                this.baseInfo.isEdit = bool
+            },
+            onSubmit: function () {
+                this.baseInfo.isEdit = false;
+                vm.$refs.ruleFormRef.validate((bool) => {
+                    console.log(bool)
+                })
+            }
+		}
+	})
+	app.use(ElementPlus)
+	vm = app.mount('#app')
+</script>
+</body>
+</html>
