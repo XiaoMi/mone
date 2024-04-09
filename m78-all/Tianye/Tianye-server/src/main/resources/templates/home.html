@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Agent</title>
+    <link href="../static/css/index.css" rel="stylesheet" type="text/css">
+    <script src="../static/common/common.js" type="application/javascript"></script>
+</head>
+<body>
+<div id="app">
+    <div class="information">
+        <section class="base-info">
+            <h3 class="title">个人信息</h3>
+            <el-form :inline="false" :model="formInline" class="user-form">
+                <el-form-item label="头像：">
+                    <el-image class="photo" />
+                </el-form-item>
+                <el-form-item label="别名：">
+                    <el-input v-if="baseInfo.isEdit" v-model="formInline.user" placeholder="请输入别名" clearable ></el-input>
+                    <span v-else>
+                        {{ formInline.user }}
+                    </span>
+                </el-form-item>
+                <el-form-item>
+                    <template v-if="baseInfo.isEdit">
+                        <el-button  @click="onSubmit" size="small" v-on:click="baseInfo.isEdit = false">取消</el-button>
+                        <el-button type="primary" size="small" v-on:click="onSubmit">提交</el-button>
+                    </template>
+                    <el-button v-else size="small" @click="baseInfo.isEdit = true">编辑</el-button>
+                </el-form-item>
+            </el-form>
+        </section>
+        <section class="interactive">
+            <h3 class="title">
+                <span>任务列表</span>
+                <el-button text type="primary" size="small" @click="onCreateTask">创建任务</el-button>
+            </h3>
+            <el-table :data="[]" stripe border size="small">
+                <el-table-column prop="name" label="名称" width="180" ></el-table-column>
+                <el-table-column prop="date" label="时间" width="180" ></el-table-column>
+                <el-table-column prop="creator" label="创建人" ></el-table-column>
+            </el-table>
+        </section>
+    </div>
+
+    <div class="files-wrap">
+        <section class="info-list">
+            <h3 class="title">互动信息</h3>
+            <template v-if="this.msgList?.length">
+                <ul v-infinite-scroll="()=>{}" class="infinite-list" style="overflow: auto">
+                    <li v-for="(v, i) in this.msgList" :key="i" class="infinite-list-item">
+                        <strong v-if="v.type=='title'">用户：{{v.value || '--'}}</strong>
+                        <span v-else-if="v.value.role === 'user'">问：{{v.value.data || '--'}}</span>
+                        <span v-else>答：{{v.value.data?.data || '--'}}</span>
+                    </li>
+                </ul>
+            </template>
+            <el-empty v-else :image-size="80" description="暂无信息"/>
+        </section>
+        <section class="file-list">
+            <h3 class="title">文件列表</h3>
+            <el-table :data="fileList" stripe border size="small">
+                <el-table-column prop="fileName" label="文件名称"></el-table-column>
+                <el-table-column prop="fileType" label="类型" width="80"></el-table-column>
+                <el-table-column prop="gmtCreate" label="创建时间" width="200" >
+                    <template #default="scope">
+                        {{timeFormat(scope.row.gmtCreate)}}
+                    </template>
+                </el-table-column>
+                <el-table-column prop="creator" label="创建人" width="120" ></el-table-column>
+                <el-table-column label="操作" width="114">
+                    <template #default="scope">
+                        <el-button size="small" text type="primary" @click="handleLook(scope.row)">查看</el-button>
+                        <el-popconfirm @confirm="handleDelFile(scope.row)" title="确定要删除文件吗?" confirm-button-text="确定" cancel-button-text="取消">
+                            <template #reference>
+                                <el-button type="text" size="small">删除</el-button>
+                            </template>
+                        </el-popconfirm>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </section>
+    </div>
+
+<!--    文件内容展示-->
+    <el-drawer v-model="editFile" size="740px" direction="rtl" :close-on-click-modal="false" :close-on-press-escape="false" :destroy-on-close="true" :show-close="false">
+        <template #header>
+            <div class="editFile-header">
+                <h3>文件内容</h3>
+                <el-button type="primary" size="small" @click="handleEdit({})">新增</el-button>
+            </div>
+        </template>
+        <template #default>
+            <ul class="files-content-list" v-if="blockContentList.length > 0" v-loading="loading">
+                <li v-for="item in blockContentList" :key="item.id">
+                    <div class="btn-wrap">
+                        <el-button type="text" size="small" @click="handleEdit(item)">编辑</el-button>
+                        <el-popconfirm @confirm="handleDelBlock(item)" title="确认删除?" confirm-button-text="确定" cancel-button-text="取消">
+                            <template #reference>
+                                <el-button type="text" size="small">删除</el-button>
+                            </template>
+                        </el-popconfirm>
+                    </div>
+                    <p>{{item.blockContent}}</p>
+                </li>
+            </ul>
+            <el-empty v-else></el-empty>
+        </template>
+        <template #footer>
+            <div style="flex: auto">
+                <el-button @click="handleCancelLook">关闭</el-button>
+            </div>
+        </template>
+    </el-drawer>
+
+<!--    修改文件内容-->
+    <el-dialog
+            v-model="updateBlockContent"
+            width="500px"
+            :title="fileContent.dto.id ? '内容编辑' : '新增'"
+            :before-close="handleCloseUpdate"
+            :destroy-on-close="true"
+    >
+        <el-input :autosize="{minRows: 4,maxRows: 8}" placeholder="请输入内容" v-model="fileContent.dto.blockContent" :show-word-limit="true" type="textarea" ></el-input>
+        <template #footer>
+            <div class="dialog-footer">
+                <el-button @click="handleCloseUpdate">取消</el-button>
+                <el-button type="primary" @click="handleSubmitFile">
+                    提交
+                </el-button>
+            </div>
+        </template>
+    </el-dialog>
+
+<!--    创建任务-->
+    <el-drawer v-model="createTask" size="640px" direction="rtl" :close-on-click-modal="false" :close-on-press-escape="false" :destroy-on-close="true" :show-close="false">
+        <template #header>
+            <h3>创建任务</h3>
+        </template>
+        <template #default>
+            <el-form :inline="false" :model="task" :rules="rules" ref="ruleFormRef">
+                <el-form-item label="名称：" prop="name">
+                    <el-input v-model="task.name" placeholder="请输入名称" ></el-input>
+                </el-form-item>
+                <el-form-item label="类型：" prop="type">
+                    <el-input v-model="task.type" placeholder="请输入名称" ></el-input>
+                </el-form-item>
+                <el-form-item label="内容：" prop="content">
+                    <el-input v-model="task.content" placeholder="请输入内容" ></el-input>
+                </el-form-item>
+            </el-form>
+        </template>
+        <template #footer>
+            <div style="flex: auto">
+                <el-button @click="createTask = false">取消</el-button>
+                <el-button @click="onSubmit" type="primary">提交</el-button>
+            </div>
+        </template>
+    </el-drawer>
+</div>
+
+<script>
+    let vm = null
+	const app =Vue.createApp({
+		data(){
+			return {
+			    editFile: false,
+			    updateBlockContent: false,
+			    loading:false,
+			    fileContent: {
+			        id: undefined,
+			        account: undefined,
+			        knowledgeId: null,
+			        dto: {
+			            fileName: undefined,
+			            fileId: undefined,
+			            creator: undefined,
+			            blockContent: undefined,
+			            blockId: undefined,
+			            gmtCreate: undefined,
+			            gmtModified: undefined,
+			            id: undefined
+			        }
+			    },
+			    blockContentList: [],
+			    baseInfo: {
+			        isEdit: false
+			    },
+                count: 10,
+                formInline: {
+                    user: window.utils.getQuery("username")
+                },
+                fileList: [],
+                createTask: false,
+                task: {
+                    name: undefined,
+                    type: undefined,
+                    content: undefined
+                },
+                ruleFormRef: null,
+                rules: {
+                    name: { required: true, message: '请输入名称', trigger: ['blur', 'change'] },
+                    type: { required: true, message: '请输入类型', trigger: ['blur', 'change'] },
+                    content: { required: true, message: '请输入内容', trigger: ['blur', 'change'] },
+                },
+                msgList: []
+			}
+		},
+		computed: {},
+		beforeCreate: function () {
+		    if(!window.utils.getQuery("username")) {
+		        this.$message.error("用户名为空")
+		        return;
+		    }
+            this.fileList = []
+            axios.get(`/knowledge/list?username=${window.utils.getQuery("username")}`).then(res => {
+                if (res.data.data?.data?.length) {
+                    // 默认用第一条
+                    return res.data.data.data[0].id
+                } else {
+                    return Promise.reject()
+                }
+            }).then((id) => axios.get(`/knowledge/file/list?username=${window.utils.getQuery("username")}&knowledgeId=${id}`),(err)=>{
+                return Promise.reject(err)
+            }).then(res => {
+                if (res.data.data?.data?.length) {
+                    this.fileList = res.data.data.data
+                }
+            }, (err) => {
+                return Promise.reject(err)
+            }).catch(e => {
+                console.log(e)
+            });
+		},
+		created: function () {
+		},
+		mounted: function () {
+		    this.getMsgList()
+		},
+		watch: {},
+		methods: {
+		    timeFormat: function (time) {
+		        return moment(time).format("YYYY-MM-DD HH:mm:ss");
+		    },
+            load: function () {
+                this.count.value += 2
+            },
+            getMsgList: function () {
+                axios.get(`/agent/getMsgs?username=${this.formInline.user}`).then(res => {
+                    if(res.data.data.message == "ok") {
+                        let arr = []
+                        Object.keys(res.data.data.data || {}).forEach((k) => {
+                            arr.push({
+                                type: "title",
+                                value: k
+                            })
+                            res.data.data.data[k].forEach(item => {
+                                try{
+                                    item.data = JSON.parse(item.data)
+                                }catch(e){}
+                                arr.push({
+                                    type: "content",
+                                    value: item
+                                })
+                            })
+                        })
+                        this.msgList = arr
+                    } else {
+                        this.$message.error(res.data?.data?.message)
+                    }
+                }).catch(e => {
+                    console.log(e)
+                })
+            },
+            handleLook: function (v) {
+                this.editFile = true
+                this.fileContent.dto.fileName = v.fileName
+                this.fileContent.dto.fileId = v.id
+                this.fileContent.account = this.formInline.user
+                this.fileContent.knowledgeId = v.knowledgeBaseId
+                axios.get(`/knowledge/file/details?account=${this.formInline.user}&knowledgeId=${v.knowledgeBaseId}&fileId=${v.id}`).then(res => {
+                    if(res.data?.data?.data) {
+                        this.blockContentList = res.data?.data?.data
+                    } else {
+                        this.blockContentList = []
+                    }
+                }).catch(e => {
+                    console.log(e)
+                })
+            },
+            handleCancelLook: function () {
+                this.editFile = false
+                this.fileContent = {
+			        id: undefined,
+			        account: "",
+			        knowledgeId: null,
+			        dto: {
+			            fileName: undefined,
+			            blockContent: undefined,
+			            blockId: undefined,
+			            creator: undefined,
+			            fileId: undefined,
+			            gmtCreate: undefined,
+			            gmtModified: undefined,
+			            id: undefined
+			        }
+                }
+            },
+            handleEdit: function (item) {
+                if (item.id) {
+                    this.fileContent.id = item.id;
+                    this.fileContent.dto = {...item, fileName: this.fileContent.dto.fileName, creator: this.formInline.user};
+                }
+                this.updateBlockContent = true;
+            },
+            handleDelFile: function (item) {
+                axios.get(`/knowledge/delete/file?account=${this.formInline.user}&knowledgeId=${item.knowledgeBaseId}&fileId=${item.id}`).then(res => {
+                    if (res.data?.data?.message == "ok") {
+                        this.fileList = this.fileList.filter(v => v.id != item.id)
+                        this.$message.success("删除成功")
+                    } else {
+                        this.$message.error(res.data?.data?.message || "删除失败")
+                    }
+                }).catch(e => {
+                    console.log(e)
+                })
+            },
+            handleDelBlock: function (item) {
+                axios.get(`/knowledge/delete/block?account=${this.formInline.user}&knowledgeId=${this.fileContent.knowledgeId}&fileId=${item.fileId}&blockId=${item.blockId}`).then(res => {
+                    if (res.data?.data?.data) {
+                        this.$message.success("删除成功")
+                        this.handleLook({knowledgeBaseId: this.fileContent.knowledgeId, id: this.fileContent.dto.fileId})
+                    } else {
+                        this.$message.error(res.data?.data?.message || "删除失败")
+                    }
+                }).catch(e => {
+                    console.log(e)
+                })
+            },
+            handleCloseUpdate: function () {
+                this.updateBlockContent = false;
+                this.fileContent.id = undefined;
+                this.fileContent.dto.blockContent = undefined;
+                this.fileContent.dto.blockId = undefined;
+                this.fileContent.dto.gmtCreate = undefined;
+                this.fileContent.dto.gmtModified = undefined;
+                this.fileContent.dto.id = undefined;
+            },
+            handleSubmitFile: function (v) {
+                axios.post(`/knowledge/update/file`, this.fileContent, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                }).then(res => {
+                    if (res.data?.data?.message == "ok") {
+                        if (this.fileContent.id && this.fileContent.dto.id) {
+                            this.blockContentList.filter(v => v.id == this.fileContent.id)[0].blockContent = this.fileContent.dto.blockContent
+                        } else {
+                            this.loading = true
+                            setTimeout(()=>{
+                                this.handleLook({knowledgeBaseId: this.fileContent.knowledgeId, id: this.fileContent.dto.fileId})
+                                this.loading = false
+                            },3000)
+                        }
+                        this.handleCloseUpdate()
+                        this.$message.success(this.fileContent.dto.id ? "更新成功" : "新增成功")
+                    } else {
+                        this.$message.error(res.data?.data?.message || "更新失败")
+                    }
+                }).catch(e => {
+                    console.log(e)
+                })
+            },
+            onCreateTask: function () {
+                this.createTask = true
+                this.task = {
+                    name: undefined,
+                    type: undefined,
+                    content: undefined
+                }
+            },
+            onEdit: function (bool) {
+                console.log(bool)
+                this.baseInfo.isEdit = bool
+            },
+            onSubmit: function () {
+                this.baseInfo.isEdit = false;
+                vm.$refs.ruleFormRef.validate((bool) => {
+                    console.log(bool)
+                })
+            }
+		}
+	})
+	app.use(ElementPlus)
+	vm = app.mount('#app')
+</script>
+</body>
+</html>

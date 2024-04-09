@@ -1,0 +1,209 @@
+
+boss_wildpig2.png
+size: 1024,512
+format: RGBA8888
+filter: Linear,Linear
+repeat: none
+angry
+  rotate: false
+  xy: 602, 397
+  size: 161, 113
+  orig: 161, 113
+  offset: 0, 0
+  index: -1
+bak_leg
+  rotate: false
+  xy: 240, 343
+  size: 125, 46
+  orig: 125, 46
+  offset: 0, 0
+  index: -1
+body1
+  rotate: false
+  xy: 2, 304
+  size: 236, 206
+  orig: 236, 206
+  offset: 0, 0
+  index: -1
+body2
+  rotate: false
+  xy: 240, 391
+  size: 172, 119
+  orig: 172, 119
+  offset: 0, 0
+  index: -1
+eff_01
+  rotate: false
+  xy: 953, 460
+  size: 50, 50
+  orig: 50, 50
+  offset: 0, 0
+  index: -1
+eff_02
+  rotate: false
+  xy: 906, 356
+  size: 50, 50
+  orig: 50, 50
+  offset: 0, 0
+  index: -1
+eff_stern_01
+  rotate: false
+  xy: 851, 460
+  size: 100, 50
+  orig: 100, 50
+  offset: 0, 0
+  index: -1
+eff_stern_02
+  rotate: false
+  xy: 240, 291
+  size: 100, 50
+  orig: 100, 50
+  offset: 0, 0
+  index: -1
+eff_stern_03
+  rotate: false
+  xy: 414, 368
+  size: 100, 50
+  orig: 100, 50
+  offset: 0, 0
+  index: -1
+head
+  rotate: false
+  xy: 2, 88
+  size: 206, 214
+  orig: 206, 214
+  offset: 0, 0
+  index: -1
+l_ear
+  rotate: true
+  xy: 210, 97
+  size: 36, 57
+  orig: 36, 57
+  offset: 0, 0
+  index: -1
+l_eye1
+  rotate: false
+  xy: 598, 345
+  size: 70, 50
+  orig: 70, 50
+  offset: 0, 0
+  index: -1
+l_eye2
+  rotate: false
+  xy: 670, 345
+  size: 70, 50
+  orig: 70, 50
+  offset: 0, 0
+  index: -1
+l_eye3
+  rotate: false
+  xy: 210, 239
+  size: 70, 50
+  orig: 70, 50
+  offset: 0, 0
+  index: -1
+l_eye4
+  rotate: false
+  xy: 210, 187
+  size: 70, 50
+  orig: 70, 50
+  offset: 0, 0
+  index: -1
+l_eye5
+  rotate: true
+  xy: 282, 219
+  size: 70, 50
+  orig: 70, 50
+  offset: 0, 0
+  index: -1
+l_leg
+  rotate: false
+  xy: 516, 352
+  size: 80, 66
+  orig: 80, 66
+  offset: 0, 0
+  index: -1
+mouth1
+  rotate: true
+  xy: 2, 2
+  size: 84, 70
+  orig: 84, 70
+  offset: 0, 0
+  index: -1
+mouth2
+  rotate: true
+  xy: 74, 2
+  size: 84, 70
+  orig: 84, 70
+  offset: 0, 0
+  index: -1
+mouth3
+  rotate: true
+  xy: 146, 2
+  size: 84, 70
+  orig: 84, 70
+  offset: 0, 0
+  index: -1
+mouth4
+  rotate: false
+  xy: 765, 440
+  size: 84, 70
+  orig: 84, 70
+  offset: 0, 0
+  index: -1
+nose
+  rotate: false
+  xy: 414, 420
+  size: 186, 90
+  orig: 186, 90
+  offset: 0, 0
+  index: -1
+r_ear
+  rotate: true
+  xy: 847, 370
+  size: 36, 57
+  orig: 36, 57
+  offset: 0, 0
+  index: -1
+r_eye1
+  rotate: false
+  xy: 210, 135
+  size: 70, 50
+  orig: 70, 50
+  offset: 0, 0
+  index: -1
+r_eye2
+  rotate: true
+  xy: 282, 147
+  size: 70, 50
+  orig: 70, 50
+  offset: 0, 0
+  index: -1
+r_eye3
+  rotate: true
+  xy: 218, 25
+  size: 70, 50
+  orig: 70, 50
+  offset: 0, 0
+  index: -1
+r_eye4
+  rotate: false
+  xy: 851, 408
+  size: 70, 50
+  orig: 70, 50
+  offset: 0, 0
+  index: -1
+r_eye5
+  rotate: false
+  xy: 923, 408
+  size: 70, 50
+  orig: 70, 50
+  offset: 0, 0
+  index: -1
+r_leg
+  rotate: false
+  xy: 765, 372
+  size: 80, 66
+  orig: 80, 66
+  offset: 0, 0
+  index: -1
