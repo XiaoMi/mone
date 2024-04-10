@@ -87,7 +87,7 @@ public class LogFileTest {
 
     @Test
     public void testLogWS() throws IOException {
-        LogFileWS log = new LogFileWS("D:\\t", new ReadListener() {
+        LogFile log = new LogFile("D:\\test.log", new ReadListener() {
             @Override
             public void onEvent(ReadEvent event) {
                 System.out.println(event.getReadResult().getLines());
@@ -132,4 +132,5 @@ public class LogFileTest {
         log.readLine();
         System.in.read();
     }
+
 }
