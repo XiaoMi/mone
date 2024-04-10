@@ -8,6 +8,7 @@
     <version>1.6.0-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>docean-plugin-mongodb</artifactId>
+  <version>1.5.0-jdk21-SNAPSHOT</version>
   <dependencies>
     <dependency>
       <groupId>run.mone</groupId>

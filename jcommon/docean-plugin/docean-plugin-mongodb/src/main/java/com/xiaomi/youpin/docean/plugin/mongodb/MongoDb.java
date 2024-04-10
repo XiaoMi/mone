@@ -20,8 +20,8 @@ package com.xiaomi.youpin.docean.plugin.mongodb;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.MongoException;
+import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
 import com.xiaomi.youpin.cat.CatPlugin;
 import org.bson.Document;
@@ -130,29 +130,39 @@ public class MongoDb {
     }
 
     public List<Document> findAll(String collectionName, Document doc) {
-        CatPlugin cat = new CatPlugin("findAll", catEnabled, CAT_TYPE);
-        boolean success = true;
-        cat.before(null);
         try {
             MongoCollection<Document> collection = this.getCollection(collectionName);
-            MongoCursor<Document> cursor = collection.find().iterator();
             List<Document> res = new ArrayList<>();
-            for (Document cur : collection.find()) {
+            for (Document cur : collection.find(doc)) {
                 res.add(cur);
             }
-
             return res;
         } catch (MongoException e) {
-            success = false;
             logger.error(e.getMessage(), e);
         } catch (Exception e) {
-            success = false;
             logger.error(e.getMessage(), e);
-        } finally {
-            cat.after(success);
         }
         return null;
     }
+
+
+    public List<Document> findDocumentsWithPagination(String collectionName, Document doc, int page, int pageSize) {
+        try {
+            MongoCollection<Document> collection = this.getCollection(collectionName);
+            List<Document> res = new ArrayList<>();
+            FindIterable<Document> data = collection.find(doc).skip((page - 1) * pageSize).limit(pageSize);
+            for (Document cur : data) {
+                res.add(cur);
+            }
+            return res;
+        } catch (MongoException e) {
+            logger.error(e.getMessage(), e);
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
+        return null;
+    }
+
 
     public void delete(String collectionName, Document doc) {
         CatPlugin cat = new CatPlugin("delete", catEnabled, CAT_TYPE);
