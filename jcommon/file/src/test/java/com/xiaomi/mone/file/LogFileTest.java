@@ -133,14 +133,4 @@ public class LogFileTest {
         System.in.read();
     }
 
-    public static void main(String[] args) {
-        while(true){
-            System.out.println("111");
-            while(true){
-                System.out.println("222");
-                break;
-            }
-            System.out.println("33");
-        }
-    }
 }
