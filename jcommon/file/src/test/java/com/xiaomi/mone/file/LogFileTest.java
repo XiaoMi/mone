@@ -87,7 +87,7 @@ public class LogFileTest {
 
     @Test
     public void testLogWS() throws IOException {
-        LogFileWS log = new LogFileWS("D:\\t", new ReadListener() {
+        LogFile log = new LogFile("D:\\test.log", new ReadListener() {
             @Override
             public void onEvent(ReadEvent event) {
                 System.out.println(event.getReadResult().getLines());
@@ -131,5 +131,16 @@ public class LogFileTest {
         LogFile log = new LogFile("/home/work/log/hera-operator/server.log", new MyReadListener());
         log.readLine();
         System.in.read();
+    }
+
+    public static void main(String[] args) {
+        while(true){
+            System.out.println("111");
+            while(true){
+                System.out.println("222");
+                break;
+            }
+            System.out.println("33");
+        }
     }
 }
