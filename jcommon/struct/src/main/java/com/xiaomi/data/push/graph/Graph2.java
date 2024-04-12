@@ -58,6 +58,22 @@ public class Graph2<D> {
         return vertexMap.get(id);
     }
 
+    //获取当前节点(vertex)的前置节点列表(class)
+    public List<Integer> getPredecessors(int vertex) {
+        // Check if the vertex exists in the graph
+        if (!vertexMap.containsKey(vertex)) {
+            throw new IllegalArgumentException("Vertex does not exist.");
+        }
+        List<Integer> predecessors = new ArrayList<>();
+        // Iterate over the adjacency map to find all vertices that point to the current vertex
+        for (Map.Entry<Integer, List<Integer>> entry : adjMap.entrySet()) {
+            if (entry.getValue().contains(vertex)) {
+                predecessors.add(entry.getKey());
+            }
+        }
+        return predecessors;
+    }
+
 
     //帮我实现下拓扑排序(class)
     public List<Integer> topologicalSort() {
