@@ -5,10 +5,10 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>mv-plugin</artifactId>
-    <version>1.4-jdk20-SNAPSHOT</version>
+    <version>1.6.0-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>codecheck-maven-plugin</artifactId>
-  <version>1.4-jdk21-SNAPSHOT</version>
+  <version>1.6.0-jdk21-SNAPSHOT</version>
   <packaging>maven-plugin</packaging>
   <name>codecheck-maven-plugin Maven Plugin</name>
   <url>http://maven.apache.org</url>
@@ -19,7 +19,7 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>codecheck</artifactId>
-      <version>1.4-jdk21-SNAPSHOT</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
       <exclusions>
         <exclusion>
           <artifactId>tools</artifactId>

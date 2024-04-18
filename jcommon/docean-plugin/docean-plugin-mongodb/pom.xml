@@ -5,9 +5,10 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>docean-plugin</artifactId>
-    <version>1.5.0-jdk21</version>
+    <version>1.6.0-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>docean-plugin-mongodb</artifactId>
+  <version>1.5.0-jdk21-SNAPSHOT</version>
   <dependencies>
     <dependency>
       <groupId>run.mone</groupId>
@@ -21,7 +22,7 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>catPlugin</artifactId>
-      <version>1.4-jdk21-SNAPSHOT</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
   </dependencies>
 </project>

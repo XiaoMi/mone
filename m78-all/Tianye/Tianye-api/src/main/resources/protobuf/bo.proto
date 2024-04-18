@@ -1,0 +1,138 @@
+syntax = "proto3";
+option java_multiple_files = true;
+package run.mone.local.docean.protobuf;
+
+message HelloRequest {
+  string firstName = 1;
+  string lastName = 2;
+}
+
+message ListRequest {
+  //list
+  string namespaceId = 1;
+  string serviceName = 2;
+  string agent = 3;
+  string clusters = 4;
+  string clientIP = 5;
+  int32 udpPort = 6;
+  string env = 7;
+  bool isCheck = 8;
+  string app = 9;
+  string tid = 10;
+  string tenant = 11;
+  bool healthyOnly = 12;
+  string cmd = 13;
+
+  //detail
+  string cluster = 14;
+  string ip = 15;
+  int32 port = 16;
+
+  //list_service
+  int32 pageNo = 17;
+  int32 pageSize = 18;
+  string groupName = 19;
+  string selectorString = 20;
+
+
+}
+
+message ListResponse {
+  string data = 1;
+
+  //detail
+  repeated InstanceProto instances = 2;
+  int32 code = 3;
+  InstanceProto instance = 4;
+}
+
+
+message CheckSum {
+  map<string, string> data = 1;
+}
+
+message BeatInfoData {
+  string serviceName = 1;
+  string namespaceId = 2;
+  string clusterName = 3;
+  string ip = 4;
+  int32 port = 5;
+  string beat = 6;
+  string appName = 7;
+  string agent = 8;
+  string source = 9;
+}
+
+message DatumMapData {
+  map<string, InstancesProto> datumMap = 1;
+}
+
+message InstanceProto {
+  string key = 1;
+  int64  timestamp = 2;
+  int64 lastBeat = 3;
+  bool marked = 4;
+  string tenant = 5;
+  string app = 6;
+  string instanceId = 7;
+  string ip = 8;
+  int32 port = 9;
+  double weight = 10;
+  bool healthy = 11;
+  bool enabled = 12;
+  bool ephemeral = 13;
+  string clusterName = 14;
+  string serviceName = 15;
+  map<string, string> metadata = 16;
+
+}
+
+message InstancesProto {
+  repeated InstanceProto instances = 1;
+  string key = 2;
+  int64 timestamp = 3;
+}
+
+message NacosReqProto {
+  string cmd = 1;
+  BeatInfoData beatinfo = 2;
+  string from = 3;
+  CheckSum checkSum = 4;
+  bool showErrorMessage = 5;
+  string source = 6;
+  repeated string datumKeys = 7;
+  map<string, InstancesProto> instances = 8;
+}
+
+
+message AiMessage {
+  string cmd = 1;
+  map<string, string> messageMeta = 2 ;
+  string message = 3;
+  int64 time = 4;
+  string data = 5;
+  string from = 6;
+  string to = 7;
+  string topicId = 8;
+}
+
+message AiCmd {
+  string cmd = 1;
+  map<string, string> cmdMeta = 2;
+}
+
+message AiResult {
+  int32 code = 1;
+  string message = 2;
+  map<string, string> data = 3;
+}
+
+message PingMsg {
+  string userName = 1;
+  string role = 2;
+  int64 time = 3;
+  string alias = 4;
+  map<string, string> pingMeta = 5;
+}
+
+

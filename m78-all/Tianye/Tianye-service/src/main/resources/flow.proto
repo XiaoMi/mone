@@ -1,0 +1,18 @@
+syntax = "proto3";
+option java_multiple_files = true;
+package run.mone.local.docean.grpc;
+
+message FlowStatusRequest {
+  string flowRecordId = 1;
+}
+
+message FlowStatusResponse {
+  string flowRecordId = 1;
+  int32 status = 2;
+}
+
+service FlowStatusService {
+  rpc FlowStatus(FlowStatusRequest) returns (stream FlowStatusResponse);
+}
+
+

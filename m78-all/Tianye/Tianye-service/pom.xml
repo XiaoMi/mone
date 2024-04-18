@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>Tianye</artifactId>
+        <groupId>run.mone.local.docean</groupId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>Tianye-service</artifactId>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>1.10.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun.mail</groupId>
+            <artifactId>javax.mail</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>http</artifactId>
+        </dependency>
+        <dependency>
+            <artifactId>docean</artifactId>
+            <groupId>run.mone</groupId>
+        </dependency>
+        <dependency>
+            <artifactId>docean-plugin</artifactId>
+            <groupId>run.mone</groupId>
+            <type>pom</type>
+        </dependency>
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>docean-plugin-dubbo</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>docean-plugin-junit</artifactId>
+            <version>1.5.0-jdk21-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>docean-plugin-configuration</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>docean-plugin-db</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>nacos</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.dubbo</groupId>
+            <artifactId>dubbo</artifactId>
+        </dependency>
+        <dependency>
+            <artifactId>Tianye-api</artifactId>
+            <groupId>run.mone.local.docean</groupId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <artifactId>Tianye-common</artifactId>
+            <groupId>run.mone.local.docean</groupId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.13.1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>com.github.binarywang</groupId>
+            <artifactId>weixin-java-mp</artifactId>
+            <version>4.6.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-chrome-driver</artifactId>
+            <version>4.18.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.seleniumhq.selenium</groupId>
+            <artifactId>selenium-devtools-v122</artifactId>
+            <version>4.18.1</version> <!-- 或者更高版本 -->
+        </dependency>
+
+
+        <dependency>
+            <groupId>run.mone.ai</groupId>
+            <artifactId>z-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <artifactId>m78-api</artifactId>
+            <groupId>run.mone</groupId>
+            <version>1.0.0-SNAPSHOT</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.12.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+            <version>1.4.2.Final</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct-jdk8</artifactId>
+            <version>1.4.1.Final</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct-processor</artifactId>
+            <version>1.4.1.Final</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>struct</artifactId>
+            <version>1.4.1-jdk20-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.groovy</groupId>
+            <artifactId>groovy-all</artifactId>
+            <version>4.0.15</version>
+            <type>pom</type>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.ibeetl</groupId>
+            <artifactId>beetl-core</artifactId>
+            <version>3.16.0.RELEASE</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.ibeetl</groupId>
+            <artifactId>beetl-default-antlr4.9-support</artifactId>
+            <version>3.16.0.RELEASE</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.ibeetl</groupId>
+            <artifactId>beetl-ext</artifactId>
+            <version>3.16.0.RELEASE</version>
+        </dependency>
+
+
+
+    </dependencies>
+
+
+</project>

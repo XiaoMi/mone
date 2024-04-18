@@ -1,0 +1,123 @@
+body{
+    background: #faf9f9;
+    padding: 12px !important;
+}
+.title {
+    height: 30px;
+    display:flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.btns {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+.infinite-list {
+    height: calc(100% - 30px);
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+.infinite-list::-webkit-scrollbar {
+    display: none;
+}
+.infinite-list .infinite-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  height: 50px;
+  background: var(--el-color-primary-light-9);
+  margin: 10px;
+  color: #333;
+  padding: 0 12px;
+}
+.infinite-list .infinite-list-item + .list-item {
+  margin-top: 10px;
+}
+.information {
+    display: flex;
+    align-items: stretch;
+    justify-content: flex-start;
+    margin-bottom: 20px;
+    height: calc(50vh - 22px);
+}
+.information .base-info {
+    width: 460px;
+    margin-right: 20px;
+    background: #fff;
+    padding: 12px 16px;
+    border-radius: 5px;
+}
+.information .base-info .photo {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+}
+.information .interactive {
+    flex: 1;
+    background: #fff;
+    border-radius: 5px;
+    padding: 12px 16px;
+}
+.files-wrap {
+    display: flex;
+    align-items: stretch;
+    justify-content: flex-start;
+    height: calc(50vh - 22px);
+}
+.files-wrap .info-list {
+    width: 460px;
+    margin-right: 20px;
+    background: #fff;
+    padding: 12px 16px;
+    border-radius: 5px;
+}
+.files-wrap .file-list {
+    flex: 1;
+    background: #fff;
+    padding: 12px 16px;
+    border-radius: 5px;
+}
+.files-content-list {
+    font-size: 14px;
+    color: #333;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    flex-flow: wrap;
+}
+.files-content-list li {
+    margin-bottom: 12px;
+    border: 1px solid rgb(232, 234, 246);
+    width: calc(50% - 6px);
+}
+.files-content-list li:nth-child(2n) {
+    margin-left: 12px;
+}
+.files-content-list li .btn-wrap {
+    background: rgb(232, 234, 246);
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+.file-list .el-button+.el-button, .files-content-list .el-button+.el-button {
+    margin-left: 0px;
+}
+
+.files-content-list li p {
+    padding: 12px;
+    white-space: pre-line;
+    height: 260px;
+    overflow-y: auto;
+    &::-webkit-scrollbar{
+        display: none;
+    }
+}
+.editFile-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}

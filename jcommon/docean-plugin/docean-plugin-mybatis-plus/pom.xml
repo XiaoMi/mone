@@ -5,7 +5,7 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>docean-plugin</artifactId>
-    <version>1.5.0-jdk21</version>
+    <version>1.6.0-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>docean-plugin-mybatis-plus</artifactId>
   <properties>
@@ -20,7 +20,7 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-cat</artifactId>
-      <version>1.4-jdk21-SNAPSHOT</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>

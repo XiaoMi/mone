@@ -1,0 +1,96 @@
+@use './reset.scss';
+@use './chat/highlight.scss';
+@use './chat/github-markdown.scss';
+@use 'element-plus/theme-chalk/src/dark/css-vars.scss' as *;
+
+html,
+body {
+  height: 100%;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+body {
+  font-family: Inter, system-ui, Avenir, 'Helvetica Neue', Helvetica, 'PingFang SC',
+    'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  margin: 0;
+  background: linear-gradient(to bottom, #f8f9fa 0%, #e9ecef 50%, #dee2e6 100%);
+  background-blend-mode: normal, color-burn;
+}
+
+.dark {
+  body {
+    background: linear-gradient(to bottom, #323232 0%, #3f3f3f 40%, #1c1c1c 150%),
+      linear-gradient(to top, rgba(255, 255, 255, 0.4) 0%, rgba(0, 0, 0, 0.25) 200%);
+    background-blend-mode: multiply;
+  }
+}
+.oz-table tr.oz-table__row,
+.oz-table tr th.oz-table__cell,
+.oz-dialog {
+  background-color: #fff;
+}
+
+a,
+.oz-dialog__headerbtn .oz-dialog__close {
+  color: var(--oz-color-primary);
+}
+
+.oz-popper.is-dark {
+  color: #fff;
+}
+
+// 超过一行，省略号展示，父级要加overflow:hidden
+@mixin text-ellipsis {
+  width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+// 超过两行省略
+@mixin two-line-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; // 控制多行的行数
+  -webkit-box-orient: vertical;
+}
+.oz-dropdown > .oz-tooltip__trigger {
+  outline: none;
+}
+:root {
+  --oz-color-danger: #f56c6c;
+  --oz-drawer-bg-color: #fff;
+  --oz-bg-color: #fff;
+}
+.oz-overlay {
+  .oz-drawer__header {
+    border-bottom: solid 1px #b9babb;
+    padding-bottom: 20px;
+    margin-bottom: 0;
+  }
+}
+
+.common-dialog {
+  .oz-dialog__body {
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+}
+.user-select-multiple {
+  .oz-tag.oz-tag--info {
+    color: initial;
+  }
+}
+
+.oz-input .oz-input__count,
+.oz-textarea .oz-input__count {
+  color: rgba(0, 0, 0, 0.3);
+}
