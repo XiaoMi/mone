@@ -172,13 +172,6 @@ public class LoginService {
         if (!result) {
             return ResponseCode.OPER_FAIL.build();
         }
-        UserRegisterParam registerParam = new UserRegisterParam();
-        registerParam.setAccount(entity.getAccount());
-        registerParam.setUserType(accountTypeEnum.getUserType());
-        Result<UserVo> userVoResult = userFacade.register(registerParam);
-        if (userVoResult.getCode() != 0) {
-            return ResponseCode.OPER_FAIL.build(userVoResult.getMessage());
-        }
         return ResponseCode.SUCCESS.build();
     }
 
@@ -227,6 +220,14 @@ public class LoginService {
         }
         if (AccountStatusEnum.DISABLE.getCode().equals(entity.getStatus())) {
             return ResponseCode.USER_DISABLED.build();
+        }
+        UserRegisterParam registerParam = new UserRegisterParam();
+        registerParam.setAccount(entity.getAccount());
+        registerParam.setUserType(accountTypeEnum.getUserType());
+        registerParam.setInitUserStat(UserStatusEnum.DISABLE.getCode());
+        Result<UserVo> userVoResult = userFacade.register(registerParam);
+        if (userVoResult.getCode() != 0) {
+            return ResponseCode.OPER_FAIL.build(userVoResult.getMessage());
         }
         AuthUserVo authUserVo = new AuthUserVo();
         authUserVo.setExprTime((int)(ModuleEnum.LOGIN.getUnit().toSeconds(ModuleEnum.LOGIN.getTime())));

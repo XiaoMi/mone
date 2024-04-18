@@ -12,6 +12,7 @@ import com.xiaomi.youpin.docean.mvc.MvcContext;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.CollectionUtils;
 
 import java.util.Map;
 
@@ -50,7 +51,7 @@ public class DoceanAuthCasFilter extends DoceanFilter {
                 log.info("配置为忽略的路径,url:{}", url);
                 return true;
             }
-            String verifyIdentitySignData = mvcContext.getHeaders().get(ConstUtil.HEADER_KEY_SIGN_VERIFY_IDENTITY);
+            String verifyIdentitySignData = getHeaderVal(mvcContext.getHeaders(), ConstUtil.HEADER_KEY_SIGN_VERIFY_IDENTITY);
             if (StringUtils.isEmpty(verifyIdentitySignData)) {
                 log.error("没有标识身份的签名数据,url:{}", url);
                 noAuthResponse(mvcContext);
@@ -71,7 +72,7 @@ public class DoceanAuthCasFilter extends DoceanFilter {
                 return false;
             }
             log.info("账号登录,url:{}", url);
-            String signAndUserSignData = mvcContext.getHeaders().get(ConstUtil.HEADER_KEY_SIGN_AND_USER_DATA);
+            String signAndUserSignData = getHeaderVal(mvcContext.getHeaders(), ConstUtil.HEADER_KEY_SIGN_AND_USER_DATA);
             //没有签名信息不做验签
             if (StringUtils.isEmpty(signAndUserSignData)) {
                 log.info("确认请求，没有签名用户数据(bypass|静态资源)，url:{}", url);
@@ -101,6 +102,18 @@ public class DoceanAuthCasFilter extends DoceanFilter {
             log.error("AuthCasFilter check exception", e);
             throw new RuntimeException(e);
         }
+    }
+
+    private String getHeaderVal(Map<String, String> headers, String key) {
+        if (headers == null) {
+            return null;
+        }
+        for (Map.Entry<String, String> entry : headers.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(key)) {
+                return entry.getValue();
+            }
+        }
+        return null;
     }
 
     /**
