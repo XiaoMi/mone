@@ -80,8 +80,13 @@ public class MongoDb {
         return db.getCollection(collectionName);
     }
 
+    public <T> MongoCollection<T> getCollection(String collectionName, Class<T> clazz) {
+        return db.getCollection(collectionName, clazz);
+    }
+
     /**
      * Inserts a document under the specified collection
+     *
      * @param collectionName
      * @param doc
      */
@@ -106,6 +111,7 @@ public class MongoDb {
 
     /**
      * Inserts a list of documents under the specified collection
+     *
      * @param collectionName
      * @param docList
      */
@@ -129,6 +135,7 @@ public class MongoDb {
 
     /**
      * Finds the first document under the specified collection
+     *
      * @param collectionName
      * @return
      */
@@ -153,6 +160,7 @@ public class MongoDb {
 
     /**
      * Finds all documents under the specified collection according to the criteria
+     *
      * @param collectionName
      * @param doc
      * @return
@@ -184,6 +192,7 @@ public class MongoDb {
 
     /**
      * Deletes a document under a specified collection under specified conditions
+     *
      * @param collectionName
      * @param doc
      */
@@ -207,6 +216,7 @@ public class MongoDb {
 
     /**
      * Returns the number of documents under the specified collection
+     *
      * @param collectionName
      * @return
      */

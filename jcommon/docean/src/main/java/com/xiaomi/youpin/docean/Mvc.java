@@ -16,6 +16,7 @@
 
 package com.xiaomi.youpin.docean;
 
+import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.xiaomi.youpin.docean.anno.RequestMapping;
@@ -41,10 +42,12 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.Optional;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 /**
  * @author goodjava@qq.com
@@ -138,9 +141,30 @@ public class Mvc {
             hrm.setObj(bean.getObj());
             hrm.setMethod(m);
             hrm.setHttpMethod(rm.method());
+            hrm.setGenericSuperclassTypeArguments(getGenericSuperclassTypeArguments(bean.getClazz()));
             ioc.publishEvent(new Event(EventType.initController, path));
             requestMethodMap.put(path, hrm);
         }));
+    }
+
+    public static Map<String, Class> getGenericSuperclassTypeArguments(Class clazz) {
+        List<String> list = Arrays.stream(clazz.getSuperclass().getTypeParameters()).map(it -> it.getName()).collect(Collectors.toList());
+        if (list.size() == 0) {
+            return Maps.newHashMap();
+        }
+        Map<String, Class> map = new HashMap<>();
+        Type genericSuperclass = clazz.getGenericSuperclass();
+        if (genericSuperclass instanceof ParameterizedType) {
+            ParameterizedType parameterizedType = (ParameterizedType) genericSuperclass;
+            Type[] typeArguments = parameterizedType.getActualTypeArguments();
+            for (int i = 0; i < typeArguments.length; i++) {
+                Type argument = typeArguments[i];
+                if (argument instanceof Class<?>) {
+                    map.put(list.get(i), (Class) argument);
+                }
+            }
+        }
+        return map;
     }
 
 
@@ -187,6 +211,16 @@ public class Mvc {
         response.writeAndFlush(context, new Gson().toJson(mr));
     }
 
+    public List<Class> mapMethodParametersToClasses(Method method, Map<String, Class> map) {
+        return Arrays.stream(method.getParameters()).map(it -> {
+            String name = it.getParameterizedType().getTypeName();
+            if ((it.getType() instanceof Object) && map.containsKey(name)) {
+                return map.get(name);
+            }
+            return it.getType();
+        }).collect(Collectors.toList());
+    }
+
     public void callMethod(MvcContext context, MvcRequest request, MvcResponse response, MvcResult<Object> result, HttpRequestMethod method) {
         Safe.run(() -> {
             Object[] params = new Object[]{null};
@@ -199,7 +233,10 @@ public class Mvc {
                     params[0] = context;
                 } else {
                     try {
-                        params = methodInvoker.getMethodParams(method.getMethod(), args);
+                        //可能方法中有泛型,这里给fix调,用实际的Class
+                        List<Class> list = mapMethodParametersToClasses(method.getMethod(), method.getGenericSuperclassTypeArguments());
+                        Class[] types = list.toArray(new Class[]{});
+                        params = methodInvoker.getMethodParams(args, types);
                     } catch (Exception e) {
                         log.error("getMethodParams error,path:{},params:{},method:{}", context.getPath(),
                                 GsonUtils.gson.toJson(context.getParams()), request.getMethod().toLowerCase(Locale.ROOT), e);
