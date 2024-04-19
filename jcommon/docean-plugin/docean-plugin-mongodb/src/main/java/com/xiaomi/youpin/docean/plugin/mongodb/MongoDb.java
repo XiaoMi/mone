@@ -25,6 +25,7 @@ import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.xiaomi.youpin.cat.CatPlugin;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,6 +74,10 @@ public class MongoDb {
         return db.getCollection(collectionName);
     }
 
+    public <T> MongoCollection<T> getCollection(String collectionName, Class<T> clazz) {
+        return db.getCollection(collectionName, clazz);
+    }
+
     public void insert(String collectionName, Document doc) {
         CatPlugin cat = new CatPlugin("insert", catEnabled, CAT_TYPE);
         boolean success = true;
@@ -111,29 +116,25 @@ public class MongoDb {
     }
 
     public Document findFirst(String collectionName) {
-        CatPlugin cat = new CatPlugin("findFirst", catEnabled, CAT_TYPE);
-        boolean success = true;
-        cat.before(null);
-        try {
-            MongoCollection<Document> collection = this.getCollection(collectionName);
-            return collection.find().first();
-        } catch (MongoException e) {
-            success = false;
-            logger.error(e.getMessage(), e);
-        } catch (Exception e) {
-            success = false;
-            logger.error(e.getMessage(), e);
-        } finally {
-            cat.after(success);
-        }
-        return null;
+        MongoCollection<Document> collection = this.getCollection(collectionName);
+        return collection.find().first();
     }
 
-    public List<Document> findAll(String collectionName, Document doc) {
+    public Document findFirst(String collectionName, Bson filter) {
+        MongoCollection<Document> collection = this.getCollection(collectionName);
+        return collection.find(filter).first();
+    }
+
+    public <T> T findFirst(String collectionName, Bson filter, Class<T> clazz) {
+        MongoCollection<T> collection = this.getCollection(collectionName, clazz);
+        return collection.find(filter).first();
+    }
+
+    public List<Document> findAll(String collectionName, Bson filter) {
         try {
             MongoCollection<Document> collection = this.getCollection(collectionName);
             List<Document> res = new ArrayList<>();
-            for (Document cur : collection.find(doc)) {
+            for (Document cur : collection.find(filter)) {
                 res.add(cur);
             }
             return res;

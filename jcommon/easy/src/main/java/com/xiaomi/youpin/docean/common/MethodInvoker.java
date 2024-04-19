@@ -166,6 +166,10 @@ public class MethodInvoker {
 
     public Object[] getMethodParams(Method method, JsonElement params) {
         Class<?>[] types = method.getParameterTypes();
+        return getMethodParams(params, types);
+    }
+
+    public Object[] getMethodParams(JsonElement params, Class<?>[] types) {
         if (types.length == 0) {
             return new Object[]{};
         }
