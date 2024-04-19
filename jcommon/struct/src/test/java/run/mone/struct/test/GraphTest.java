@@ -26,12 +26,17 @@ public class GraphTest {
         graph.addEdge(33,44);
         graph.addEdge(44,22);
         graph.addEdge(22,88);
+        graph.addEdge(44,88);
 
 
 //        graph.removeVertex(44);
 
         List<Integer> list = graph.topologicalSort();
         System.out.println(list);
+
+
+        System.out.println(graph.getPredecessors(88));
+
     }
 
     @Test

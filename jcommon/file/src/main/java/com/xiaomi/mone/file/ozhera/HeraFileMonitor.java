@@ -84,48 +84,57 @@ public class HeraFileMonitor {
         WatchService watchService = FileSystems.getDefault().newWatchService();
         directory.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_CREATE);
         while (true) {
-            WatchKey key = watchService.take();
-            for (WatchEvent<?> event : key.pollEvents()) {
-                Path modifiedFile = (Path) event.context();
-                String filePath = String.format("%s%s", path, modifiedFile.getFileName().toString());
-                if (!predicate.test(filePath) || modifiedFile.getFileName().toString().startsWith(".")) {
-                    continue;
-                }
-                HeraFile hfile = fileMap.get(filePath);
+            try {
+                WatchKey key = watchService.take();
+                try {
+                    for (WatchEvent<?> event : key.pollEvents()) {
+                        Path modifiedFile = (Path) event.context();
+                        String filePath = String.format("%s%s", path, modifiedFile.getFileName().toString());
+                        if (!predicate.test(filePath) || modifiedFile.getFileName().toString().startsWith(".")) {
+                            continue;
+                        }
+                        HeraFile hfile = fileMap.get(filePath);
 
-                if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
-                    if (null == hfile) {
-                        hfile = initFile(new File(filePath));
+                        if (event.kind() == StandardWatchEventKinds.ENTRY_MODIFY) {
+                            if (null == hfile) {
+                                hfile = initFile(new File(filePath));
+                            }
+                            modify(hfile);
+                        }
+
+                        if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
+                            fileMap.remove(filePath);
+                            if (null != hfile) {
+                                map.remove(hfile.getFileKey());
+                                listener.onEvent(FileEvent.builder().type(EventType.delete).fileName(filePath).fileKey(hfile.getFileKey()).build());
+                            }
+                        }
+
+                        if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
+                            File file = new File(filePath);
+                            Object k = FileUtils.fileKey(file);
+
+                            if (map.containsKey(k)) {
+                                log.info("change name " + map.get(k) + "--->" + file);
+                                listener.onEvent(FileEvent.builder().fileKey(k).type(EventType.rename).build());
+                            } else {
+                                log.info("ENTRY_CREATE filePath:{},fileKey:{}", filePath, k);
+                                HeraFile hf = HeraFile.builder().file(file).fileKey(k).fileName(filePath).build();
+                                map.putIfAbsent(k, hf);
+                                fileMap.put(filePath, hf);
+
+                                listener.onEvent(FileEvent.builder().type(EventType.create).fileName(file.getPath()).build());
+                            }
+                        }
                     }
-                    modify(hfile);
+                } catch (Exception e1) {
+                    log.error("watchService poll events error", e1);
+                } finally {
+                    key.reset();
                 }
-
-                if (event.kind() == StandardWatchEventKinds.ENTRY_DELETE) {
-                    fileMap.remove(filePath);
-                    if (null != hfile) {
-                        map.remove(hfile.getFileKey());
-                        listener.onEvent(FileEvent.builder().type(EventType.delete).fileName(filePath).fileKey(hfile.getFileKey()).build());
-                    }
-                }
-
-                if (event.kind() == StandardWatchEventKinds.ENTRY_CREATE) {
-                    File file = new File(filePath);
-                    Object k = FileUtils.fileKey(file);
-
-                    if (map.containsKey(k)) {
-                        log.info("change name " + map.get(k) + "--->" + file);
-                        listener.onEvent(FileEvent.builder().fileKey(k).type(EventType.rename).build());
-                    } else {
-                        log.info("ENTRY_CREATE filePath:{},fileKey:{}", filePath, k);
-                        HeraFile hf = HeraFile.builder().file(file).fileKey(k).fileName(filePath).build();
-                        map.putIfAbsent(k, hf);
-                        fileMap.put(filePath, hf);
-
-                        listener.onEvent(FileEvent.builder().type(EventType.create).fileName(file.getPath()).build());
-                    }
-                }
+            } catch (Exception e) {
+                log.error("watchService error", e);
             }
-            key.reset();
         }
     }
 
@@ -165,11 +174,13 @@ public class HeraFileMonitor {
 
 
     private void modify(HeraFile hfile) {
-        hfile.getUtime().set(System.currentTimeMillis());
-        if (hfile.getFile().length() == 0) {
-            listener.onEvent(FileEvent.builder().type(EventType.empty).fileName(hfile.getFileName()).fileKey(hfile.getFileKey()).build());
-        } else {
-            listener.onEvent(FileEvent.builder().type(EventType.modify).build());
+        if (null != hfile) {
+            hfile.getUtime().set(System.currentTimeMillis());
+            if (hfile.getFile().length() == 0) {
+                listener.onEvent(FileEvent.builder().type(EventType.empty).fileName(hfile.getFileName()).fileKey(hfile.getFileKey()).build());
+            } else {
+                listener.onEvent(FileEvent.builder().type(EventType.modify).build());
+            }
         }
     }
 
