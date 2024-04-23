@@ -112,6 +112,7 @@ public class Mvc {
                 initializeControllerMapping(bean);
             }
         });
+        ioc.publishEvent(new Event(EventType.initControllerFinish, this.requestMethodMap));
         log.info("requestMethodMap size:{}", this.requestMethodMap.size());
     }
 
@@ -223,26 +224,7 @@ public class Mvc {
 
     public void callMethod(MvcContext context, MvcRequest request, MvcResponse response, MvcResult<Object> result, HttpRequestMethod method) {
         Safe.run(() -> {
-            Object[] params = new Object[]{null};
-            //If there is only one parameter and it is a String, no further parsing is necessary; it can be used directly.
-            if (isSingleStringParameterMethod(method) && request.getMethod().toUpperCase().equals("POST")) {
-                params[0] = new String(request.getBody());
-            } else {
-                JsonElement args = getArgs(method, request.getMethod().toLowerCase(Locale.ROOT), request, context);
-                if (isSingleMvcContextParameterMethod(method)) {
-                    params[0] = context;
-                } else {
-                    try {
-                        //可能方法中有泛型,这里给fix调,用实际的Class
-                        List<Class> list = mapMethodParametersToClasses(method.getMethod(), method.getGenericSuperclassTypeArguments());
-                        Class[] types = list.toArray(new Class[]{});
-                        params = methodInvoker.getMethodParams(args, types);
-                    } catch (Exception e) {
-                        log.error("getMethodParams error,path:{},params:{},method:{}", context.getPath(),
-                                GsonUtils.gson.toJson(context.getParams()), request.getMethod().toLowerCase(Locale.ROOT), e);
-                    }
-                }
-            }
+            Object[] params = getMethodParams(context, request, method);
 
             Object data = invokeControllerMethod(method, params);
 
@@ -292,6 +274,45 @@ public class Mvc {
             result.setMessage(unwrapThrowable.getMessage());
             response.writeAndFlush(context, gson.toJson(result));
         });
+    }
+
+    private Object[] getMethodParams(MvcContext context, MvcRequest request, HttpRequestMethod method) {
+        Object[] params = new Object[]{null};
+        //If there is only one parameter and it is a String, no further parsing is necessary; it can be used directly.
+        if (isSingleStringParameterMethod(method) && request.getMethod().toUpperCase().equals("POST")) {
+            params[0] = new String(request.getBody());
+        } else {
+            JsonElement args = getArgs(method, request.getMethod().toLowerCase(Locale.ROOT), request, context);
+            if (isSingleMvcContextParameterMethod(method)) {
+                params[0] = context;
+            } else {
+                try {
+                    Class[] types = getClasses(method);
+                    //参数有可能从session中取
+                    params = methodInvoker.getMethodParams(args, types, name -> {
+                        Object obj = context.session().getAttribute(name);
+                        //提取失败,用户需要登录
+                        if (null == obj) {
+                            throw new DoceanException("You are required to log in first.");
+                        }
+                        return obj;
+                    });
+                } catch (DoceanException doceanException) {
+                    throw doceanException;
+                } catch (Exception e) {
+                    log.error("getMethodParams error,path:{},params:{},method:{}", context.getPath(),
+                            GsonUtils.gson.toJson(context.getParams()), request.getMethod().toLowerCase(Locale.ROOT), e);
+                }
+            }
+        }
+        return params;
+    }
+
+    private Class[] getClasses(HttpRequestMethod method) {
+        //可能方法中有泛型,这里给fix调,用实际的Class
+        List<Class> list = mapMethodParametersToClasses(method.getMethod(), method.getGenericSuperclassTypeArguments());
+        Class[] types = list.toArray(new Class[]{});
+        return types;
     }
 
     private Object invokeControllerMethod(HttpRequestMethod method, Object[] params) {

@@ -16,10 +16,7 @@
 
 package com.xiaomi.youpin.docean.common;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
+import com.google.gson.*;
 import com.xiaomi.youpin.docean.adapter.DoubleDefaultAdapter;
 import com.xiaomi.youpin.docean.adapter.IntegerDefaultAdapter;
 import com.xiaomi.youpin.docean.adapter.LongDefaultAdapter;
@@ -37,6 +34,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -166,23 +164,38 @@ public class MethodInvoker {
 
     public Object[] getMethodParams(Method method, JsonElement params) {
         Class<?>[] types = method.getParameterTypes();
-        return getMethodParams(params, types);
+        return getMethodParams(params, types, str -> null);
     }
 
-    public Object[] getMethodParams(JsonElement params, Class<?>[] types) {
+    public Object[] getMethodParams(JsonElement params, Class<?>[] types, Function<String, Object> function) {
+        //没有参数
         if (types.length == 0) {
             return new Object[]{};
         }
-        //一个参数,不需要用参数列表
+        //一个参数
         if (params.isJsonObject()) {
-            return Stream.of(gson.fromJson(gson.toJson(params), types[0])).toArray();
+            return Stream.of(getObj(params, types[0], function)).toArray();
         }
         //参数列表
         if (params.isJsonArray()) {
             JsonArray array = params.getAsJsonArray();
-            return IntStream.range(0, types.length).mapToObj(i -> gson.fromJson(gson.toJson(array.get(i)), types[i])).collect(Collectors.toList()).toArray();
+            return IntStream.range(0, types.length).mapToObj(i -> {
+                JsonElement ele = array.get(i);
+                return getObj(ele, types[i], function);
+            }).collect(Collectors.toList()).toArray();
         }
-        throw new DoceanException();
+        throw new DoceanException("getMethodParams error");
+    }
+
+    private Object getObj(JsonElement params, Class<?> type, Function<String, Object> function) {
+        if (params.isJsonObject()) {
+            JsonObject obj = params.getAsJsonObject();
+            if (obj.has("__type__") && obj.get("__type__").getAsString().equals("session")) {
+                String name = obj.get("__name__").getAsString();
+                return function.apply(name);
+            }
+        }
+        return gson.fromJson(params, type);
     }
 
 
