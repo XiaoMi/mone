@@ -73,14 +73,15 @@ public class Aop {
     public Aop useAspect(Ioc ioc, String... packages) {
         Ioc.create(Thread.currentThread().getContextClassLoader()).cleanAnnos().setAnnos(Aspect.class).init(packages).getBeansWithAnnotation(Aspect.class).values().forEach(it -> {
             Arrays.stream(it.getClass().getDeclaredMethods()).forEach(m -> {
-
                 Optional.ofNullable(m.getAnnotation(Before.class)).ifPresent(a -> {
+                    log.info("aop before class:{}", it.getClass());
                     EnhanceInterceptor interceptor = new EnhanceInterceptor() {
                         @SneakyThrows
                         @Override
                         public void before(AopContext aopContext, Method method, Object[] args) {
                             ProceedingJoinPoint point = new ProceedingJoinPoint();
                             point.setArgs(args);
+                            point.setMethod(method);
                             m.invoke(it, point);
                         }
                     };
@@ -93,6 +94,7 @@ public class Aop {
                         @Override
                         public Object after(AopContext context, Method method, Object res) {
                             ProceedingJoinPoint point = new ProceedingJoinPoint();
+                            point.setMethod(method);
                             point.setRes(res);
                             return m.invoke(it, point);
                         }
@@ -156,6 +158,7 @@ public class Aop {
             }
         }
         if (interceptors.size() > 0) {
+            log.info("enhance class:{}", clazz);
             return enhance(clazz, interceptors);
         }
         return (T) Optional.ofNullable(obj).orElse(ReflectUtils.getInstance(clazz));

@@ -14,23 +14,20 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.youpin.docean.aop;
+package run.mone.auth;
 
-import lombok.Data;
-
-import java.lang.reflect.Method;
+import java.lang.annotation.*;
 
 /**
  * @author goodjava@qq.com
- * @date 5/14/22
+ * @date 2020/7/5
  */
-@Data
-public class ProceedingJoinPoint {
+@Target({ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface Auth {
 
-    private Object[]args;
+    String name() default "name";
 
-    private Method method;
-
-    private Object res;
-
+    String role() default "admin";
 }

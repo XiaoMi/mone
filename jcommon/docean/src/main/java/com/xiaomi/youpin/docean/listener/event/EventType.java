@@ -14,6 +14,7 @@ public enum EventType {
     initFinish("initFinish"),
     mvcBegin("mvcBegin"),
     initController("initController"),
+    initControllerFinish("initControllerFinish"),
     mvcUploadFinish("mvcUploadFinish"),
     custom("custom");
 

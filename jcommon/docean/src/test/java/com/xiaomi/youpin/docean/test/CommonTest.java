@@ -20,10 +20,13 @@ import com.google.common.collect.Lists;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.JsonArray;
 import com.xiaomi.youpin.docean.anno.Component;
+import com.xiaomi.youpin.docean.anno.ModelAttribute;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.bo.Bean;
 import com.xiaomi.youpin.docean.common.ReflectUtils;
+import com.xiaomi.youpin.docean.test.bo.M;
 import com.xiaomi.youpin.docean.test.demo.DemoVo;
+import lombok.SneakyThrows;
 import net.sf.cglib.beans.BeanGenerator;
 import net.sf.cglib.beans.BeanMap;
 import net.sf.cglib.proxy.Mixin;
@@ -49,6 +52,20 @@ public class CommonTest {
     }
 
 
+    @SneakyThrows
+    @Test
+    public void testMethod() {
+        Method method = M.class.getMethod("sum", int.class, int.class);
+        Arrays.stream(method.getParameters()).forEach(it -> {
+            System.out.println(it.getName());
+            ModelAttribute ma = it.getAnnotation(ModelAttribute.class);
+            if (null != ma) {
+                System.out.println(ma.value());
+            }
+        });
+    }
+
+
     @Test
     public void testTypeToken() {
         TypeToken<List<String>> typeToken = new TypeToken<List<String>>() {
@@ -60,7 +77,7 @@ public class CommonTest {
 
     @Test
     public void testOptional() {
-        Optional.ofNullable(null).ifPresent(it->{
+        Optional.ofNullable(null).ifPresent(it -> {
             System.out.println(it);
         });
     }
