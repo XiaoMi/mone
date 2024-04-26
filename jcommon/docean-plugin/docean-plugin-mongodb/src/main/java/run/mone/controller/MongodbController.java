@@ -1,5 +1,6 @@
 package run.mone.controller;
 
+import com.xiaomi.youpin.docean.anno.ModelAttribute;
 import com.xiaomi.youpin.docean.anno.RequestMapping;
 import com.xiaomi.youpin.docean.anno.RequestParam;
 import com.xiaomi.youpin.docean.mvc.ContextHolder;
@@ -46,6 +47,12 @@ public class MongodbController<T extends MongoBo> {
         return datastore.find(this.clazz).filter(Filters.eq("id", id)).first();
     }
 
+
+    @RequestMapping(path = "/getByIdAndUid", method = "get")
+    public T getByIdAndUid(@ModelAttribute("user") User user, @RequestParam("id") String id) {
+        return datastore.find(this.clazz).filter(Filters.and(Filters.eq("id", id), Filters.eq("uid", user.getId()))).first();
+    }
+
     //按id删除(class)
     @Auth
     @RequestMapping(path = "/deleteById", method = "get")
@@ -54,10 +61,8 @@ public class MongodbController<T extends MongoBo> {
         return true;
     }
 
-    @Auth(role = "user")
-    @RequestMapping(path = "/deleteByIdAndUid", method = "get")
-    public boolean deleteByIdAndUid(@RequestParam("id") String id) {
-        User user = getCurrentUser();
+    @RequestMapping(path = "/deleteByIdAndUid")
+    public boolean deleteByIdAndUid(@ModelAttribute("user") User user, String id) {
         this.datastore.find(this.clazz).filter(Filters.and(Filters.eq("id", id), Filters.eq("uid", user.getId()))).delete();
         return true;
     }

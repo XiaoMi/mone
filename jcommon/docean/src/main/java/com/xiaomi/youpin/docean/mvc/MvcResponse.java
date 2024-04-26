@@ -70,6 +70,17 @@ public class MvcResponse {
             responseStatus = HttpResponseStatus.valueOf(Integer.valueOf(status));
         }
         writeAndFlush(context, responseStatus, message);
+
+        writeAndFlush(context, message, HttpResponseStatus.OK.code());
+    }
+
+    public void writeAndFlush(MvcContext context, String message, int code) {
+        HttpResponseStatus responseStatus = HttpResponseStatus.valueOf(code);
+        String status = context.getResHeaders().get("x-status");
+        if (null != status) {
+            responseStatus = HttpResponseStatus.valueOf(Integer.valueOf(status));
+        }
+        writeAndFlush(context, responseStatus, message);
     }
 
     public void clear() {

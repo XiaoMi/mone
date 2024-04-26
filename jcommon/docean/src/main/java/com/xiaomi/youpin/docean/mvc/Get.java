@@ -19,10 +19,13 @@ package com.xiaomi.youpin.docean.mvc;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.xiaomi.youpin.docean.anno.ModelAttribute;
 import com.xiaomi.youpin.docean.anno.RequestParam;
+import com.xiaomi.youpin.docean.mvc.util.RequestUtils;
 import io.netty.handler.codec.http.QueryStringDecoder;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Parameter;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -38,21 +41,28 @@ public abstract class Get {
         JsonObject res = new JsonObject();
         params.entrySet().forEach(it -> res.addProperty(it.getKey(), it.getValue()));
         context.setParams(res);
+        JsonArray resArray = new JsonArray();
 
-        JsonArray array = new JsonArray();
+        //get 只允许第一个参数是session user
+        Parameter[] methodParameters = method.getMethod().getParameters();
+        if (methodParameters.length > 0 && (methodParameters[0].getAnnotation(ModelAttribute.class) != null)) {
+            resArray.add(RequestUtils.createSessionJsonObject(methodParameters[0].getAnnotation(ModelAttribute.class).value()));
+        }
+
         Annotation[][] anns = method.getMethod().getParameterAnnotations();
         Arrays.stream(anns).forEach(it -> {
             if (it.length > 0) {
                 RequestParam param = getRequestParam(it);
                 String name = param.value();
                 if (!params.containsKey(name)) {
-                    array.add("");
+                    resArray.add("");
                 } else {
-                    array.add(params.get(name));
+                    resArray.add(params.get(name));
                 }
             }
         });
-        return array;
+
+        return resArray;
     }
 
     private static RequestParam getRequestParam(Annotation[] annos) {
