@@ -271,8 +271,16 @@ public class Mvc {
             }
             Throwable unwrapThrowable = ExceptionUtil.unwrapThrowable(ex);
             result.setCode(500);
+            int httpCode = 200;
+            if (ex instanceof DoceanException de) {
+                int code = de.getCode();
+                if (0 != code) {
+                    result.setCode(code);
+                    httpCode = code;
+                }
+            }
             result.setMessage(unwrapThrowable.getMessage());
-            response.writeAndFlush(context, gson.toJson(result));
+            response.writeAndFlush(context, gson.toJson(result), httpCode);
         });
     }
 
@@ -293,7 +301,7 @@ public class Mvc {
                         Object obj = context.session().getAttribute(name);
                         //提取失败,用户需要登录
                         if (null == obj) {
-                            throw new DoceanException("You are required to log in first.");
+                            throw new DoceanException("You are required to log in first.", 401);
                         }
                         return obj;
                     });

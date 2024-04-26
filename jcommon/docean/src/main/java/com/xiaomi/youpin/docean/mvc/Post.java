@@ -20,9 +20,16 @@ import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+
 import com.xiaomi.youpin.docean.anno.ModelAttribute;
 import com.xiaomi.youpin.docean.mvc.httpmethod.HttpMethodUtils;
 import com.xiaomi.youpin.docean.mvc.util.GsonUtils;
+import com.xiaomi.youpin.docean.mvc.util.RequestUtils;
+
+import java.lang.reflect.Parameter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
@@ -49,7 +56,7 @@ public abstract class Post {
             if (null == arguments) {
                 Arrays.stream(methodParameters).forEach(it -> {
                     if (it.getAnnotation(ModelAttribute.class) != null) {
-                        arrayRes.add(obj(it.getAnnotation(ModelAttribute.class).value()));
+                        arrayRes.add(RequestUtils.createSessionJsonObject(it.getAnnotation(ModelAttribute.class).value()));
                     }
                 });
                 return arrayRes;
@@ -60,7 +67,7 @@ public abstract class Post {
                 AtomicInteger i = new AtomicInteger(0);
                 Arrays.stream(methodParameters).forEach(it -> {
                     if (it.getAnnotation(ModelAttribute.class) != null) {
-                        arrayRes.add(obj(it.getAnnotation(ModelAttribute.class).value()));
+                        arrayRes.add(RequestUtils.createSessionJsonObject(it.getAnnotation(ModelAttribute.class).value()));
                     } else {
                         arrayRes.add(list.get(i.get()));
                         i.incrementAndGet();
@@ -72,7 +79,7 @@ public abstract class Post {
             if (arguments.isJsonObject()) {
                 Arrays.stream(methodParameters).forEach(it -> {
                     if (it.getAnnotation(ModelAttribute.class) != null) {
-                        arrayRes.add(obj(it.getAnnotation(ModelAttribute.class).value()));
+                        arrayRes.add(RequestUtils.createSessionJsonObject(it.getAnnotation(ModelAttribute.class).value()));
                     } else {
                         arrayRes.add(arguments.getAsJsonObject());
                     }
@@ -83,7 +90,7 @@ public abstract class Post {
             if (arguments.isJsonPrimitive()) {
                 Arrays.stream(methodParameters).forEach(it -> {
                     if (it.getAnnotation(ModelAttribute.class) != null) {
-                        arrayRes.add(obj(it.getAnnotation(ModelAttribute.class).value()));
+                        arrayRes.add(RequestUtils.createSessionJsonObject(it.getAnnotation(ModelAttribute.class).value()));
                     } else {
                         arrayRes.add(arguments.getAsJsonPrimitive());
                     }
@@ -112,6 +119,7 @@ public abstract class Post {
         }
 
         return arrayRes;
+
     }
 
     private static JsonObject obj(String name) {
@@ -120,5 +128,7 @@ public abstract class Post {
         obj.addProperty("__name__", name);
         return obj;
     }
+
+
 
 }
