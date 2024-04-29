@@ -38,7 +38,7 @@ public class MongodbController<T extends MongoBo> {
     //查询一条记录
     //{"name":"$eq","field":"name","value":"bbb"}
     @Auth
-    @RequestMapping(path = "/one", method = "get")
+    @RequestMapping(path = "/one")
     public T one(Filter filter) {
         return this.datastore.find(this.clazz).filter(filter).first();
     }
@@ -48,7 +48,6 @@ public class MongodbController<T extends MongoBo> {
     public T getById(@RequestParam("id") String id) {
         return datastore.find(this.clazz).filter(Filters.eq("id", id)).first();
     }
-
 
 
     @RequestMapping(path = "/getByIdAndUid", method = "get")
@@ -126,10 +125,8 @@ public class MongodbController<T extends MongoBo> {
     }
 
     //删除
-    @Auth(role = "user")
-    @RequestMapping(path = "/delete")
-    public boolean deleteWithUid(T t) {
-        User user = getCurrentUser();
+    @RequestMapping(path = "/deleteWithUid")
+    public boolean deleteWithUid(@ModelAttribute("user") User user, T t) {
         t.setUid(user.getUid());
         this.datastore.delete(t);
         return true;
@@ -146,9 +143,8 @@ public class MongodbController<T extends MongoBo> {
 
     //更新
     @Auth(role = "user")
-    @RequestMapping(path = "/update")
-    public boolean updateWithUid(T t) {
-        User user = getCurrentUser();
+    @RequestMapping(path = "/updateWithUid")
+    public boolean updateWithUid(@ModelAttribute("user") User user, T t) {
         t.setUtime(System.currentTimeMillis());
         t.setUid(user.getUid());
         this.datastore.merge(t);
@@ -168,9 +164,8 @@ public class MongodbController<T extends MongoBo> {
     }
 
     @Auth(role = "user")
-    @RequestMapping(path = "/add")
-    public boolean addWithUid(T t) {
-        User user = getCurrentUser();
+    @RequestMapping(path = "/addWithUid")
+    public boolean addWithUid(@ModelAttribute("user") User user, T t) {
         long now = System.currentTimeMillis();
         t.setState(0);
         t.setUid(user.getUid());

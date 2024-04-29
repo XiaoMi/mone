@@ -1,6 +1,8 @@
 package com.xiaomi.youpin.docean.mvc;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import com.xiaomi.youpin.docean.Mvc;
 import com.xiaomi.youpin.docean.bo.MvcConfig;
 import com.xiaomi.youpin.docean.common.Cons;
@@ -104,9 +106,16 @@ public class MvcRunnable implements Runnable {
 
     private void call() {
         if (context.isWebsocket()) {
-            WsRequest req = GsonUtils.gson.fromJson(new String(request.getBody()), WsRequest.class);
-            request.setPath(req.getPath());
-            request.setBody(GsonUtils.gson.toJson(req.getParams()).getBytes());
+            String reqBody = new String(request.getBody());
+            JsonElement element = GsonUtils.gson.toJsonTree(reqBody);
+            if (element.isJsonPrimitive()) {
+                request.setPath(Cons.WebSocketPath);
+            }
+            if (element.isJsonObject()) {
+                WsRequest req = GsonUtils.gson.fromJson(new String(request.getBody()), WsRequest.class);
+                request.setPath(req.getPath());
+                request.setBody(GsonUtils.gson.toJson(req.getParams()).getBytes());
+            }
         }
 
         //Directly returning not found when searching for favicon.ico.

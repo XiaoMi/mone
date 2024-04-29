@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 /**
  * 用户
  *
- * @author mone
+ * @author goodjava@qq.com
  */
 @Data
 @Builder
@@ -54,6 +54,8 @@ public class User implements MongoBo{
 
     //版本(用于乐观锁)
     private int version;
+
+    private String token;
 
     public User(String username, String password) {
         this.username = username;

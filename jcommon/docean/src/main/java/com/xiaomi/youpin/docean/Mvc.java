@@ -286,6 +286,10 @@ public class Mvc {
 
     private Object[] getMethodParams(MvcContext context, MvcRequest request, HttpRequestMethod method) {
         Object[] params = new Object[]{null};
+        if (context.isWebsocket()) {
+            params[0] = new String(request.getBody());
+            return params;
+        }
         //If there is only one parameter and it is a String, no further parsing is necessary; it can be used directly.
         if (isSingleStringParameterMethod(method) && request.getMethod().toUpperCase().equals("POST")) {
             params[0] = new String(request.getBody());
