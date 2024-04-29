@@ -79,7 +79,7 @@ public class HttpServerTest {
         }
 
 
-        Ioc.ins().putBean("$response-original-value", "true").putBean("$openStaticFile","true").putBean("$staticFilePath","/tmp/");
+        Ioc.ins().putBean("$response-original-value", "true").putBean("$openStaticFile", "true").putBean("$staticFilePath", "/tmp/");
 //        Ioc.ins().putBean("$ssl_domain", "zzy.com");
 //        Ioc.ins().putBean("$ssl_self_sign", "false");
 //        Ioc.ins().putBean("$ssl_certificate","/Users/zhangzhiyong/key/zzy.com/certificate.crt");
@@ -94,6 +94,56 @@ public class HttpServerTest {
                 .uploadDir("/tmp/v").upload(false)
                 .build());
         server.start();
+    }
+
+    @SneakyThrows
+    @Test
+    public void testWebSocketServer() {
+        Ioc ioc = Ioc.ins();
+        ioc.putBean(ioc).init("com.xiaomi.youpin.docean");
+        Mvc.ins();
+        DoceanHttpServer server = new DoceanHttpServer(HttpServerConfig.builder()
+                .httpVersion(HttpServerConfig.HttpVersion.http1)
+                .port(8899)
+                .websocket(true)
+                .useWs(true)
+                .build());
+        server.start();
+    }
+
+    //用OkHttp写一个websocket客户端,然后发一个ok过去
+    @SneakyThrows
+    @Test
+    public void testWebSocketClient() {
+        OkHttpClient client = new OkHttpClient();
+        Request request = new Request.Builder().url("ws://127.0.0.1:8899/ws").build();
+        WebSocketListener listener = new WebSocketListener() {
+            @Override
+            public void onOpen(WebSocket webSocket, Response response) {
+//                webSocket.send("ok");
+            }
+
+            @Override
+            public void onMessage(WebSocket webSocket, String text) {
+                System.out.println("Received: " + text);
+            }
+
+            @Override
+            public void onClosing(WebSocket webSocket, int code, String reason) {
+                webSocket.close(1000, null);
+                System.out.println("Closing: " + code + " / " + reason);
+            }
+
+            @Override
+            public void onFailure(WebSocket webSocket, Throwable t, Response response) {
+                System.err.println("Error: " + t.getMessage());
+            }
+        };
+
+        WebSocket ws = client.newWebSocket(request, listener);
+        ws.send("ok2");
+        System.in.read();
+//        client.dispatcher().executorService().shutdown();
     }
 
 
