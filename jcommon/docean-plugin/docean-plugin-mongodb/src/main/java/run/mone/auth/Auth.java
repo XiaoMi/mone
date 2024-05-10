@@ -14,33 +14,20 @@
  *    limitations under the License.
  */
 
-package com.xiaomi.youpin.docean.exception;
+package run.mone.auth;
 
-import lombok.Getter;
+import java.lang.annotation.*;
 
 /**
  * @author goodjava@qq.com
- * @date 2020/6/20
+ * @date 2020/7/5
  */
-public class DoceanException extends RuntimeException {
+@Target({ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface Auth {
 
-    @Getter
-    private int code;
+    String name() default "name";
 
-    public DoceanException(Throwable ex) {
-        super(ex);
-    }
-
-
-    public DoceanException() {
-    }
-
-    public DoceanException(String m) {
-        super(m);
-    }
-
-    public DoceanException(String message, int code) {
-        super(message);
-        this.code = code;
-    }
+    String role() default "admin";
 }

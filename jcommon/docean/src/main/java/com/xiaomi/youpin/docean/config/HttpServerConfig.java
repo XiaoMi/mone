@@ -50,7 +50,7 @@ public class HttpServerConfig {
      */
     private String uploadDir;
 
-    private boolean userWs;
+    private boolean useWs;
 
     public static int HTTP_POOL_SIZE = 500;
 

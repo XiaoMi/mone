@@ -18,6 +18,8 @@ package com.xiaomi.youpin.docean.aop;
 
 import lombok.Data;
 
+import java.lang.reflect.Method;
+
 /**
  * @author goodjava@qq.com
  * @date 5/14/22
@@ -26,6 +28,8 @@ import lombok.Data;
 public class ProceedingJoinPoint {
 
     private Object[]args;
+
+    private Method method;
 
     private Object res;
 

@@ -64,7 +64,11 @@ public class MvcResponse {
 
 
     public void writeAndFlush(MvcContext context, String message) {
-        HttpResponseStatus responseStatus = HttpResponseStatus.OK;
+        writeAndFlush(context, message, HttpResponseStatus.OK.code());
+    }
+
+    public void writeAndFlush(MvcContext context, String message, int code) {
+        HttpResponseStatus responseStatus = HttpResponseStatus.valueOf(code);
         String status = context.getResHeaders().get("x-status");
         if (null != status) {
             responseStatus = HttpResponseStatus.valueOf(Integer.valueOf(status));
