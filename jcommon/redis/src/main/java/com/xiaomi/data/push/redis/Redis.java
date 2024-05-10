@@ -208,7 +208,6 @@ public class Redis {
     }
 
     public Map<String, String> mget(final List<String> keys) {
-        boolean success = true;
         try {
             if (serverType.equals("dev")) {
                 Map<String, String> result = new HashMap<>();
@@ -224,7 +223,6 @@ public class Redis {
                 return cluster.mget(keys);
             }
         } catch (Exception e) {
-            success = false;
             throw e;
         }
     }

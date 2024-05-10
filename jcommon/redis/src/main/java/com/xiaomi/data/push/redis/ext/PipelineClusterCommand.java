@@ -126,6 +126,7 @@ public abstract class PipelineClusterCommand<T> {
         Map<JedisPool, List<String>> poolKeysMap = new LinkedHashMap<JedisPool, List<String>>();
         try {
             Field field = JedisClusterConnectionHandler.class.getDeclaredField("cache");
+            field.setAccessible(true);
             for (String key : keys) {
                 JedisPool jedisPool;
                 int slot = JedisClusterCRC16.getSlot(key);
