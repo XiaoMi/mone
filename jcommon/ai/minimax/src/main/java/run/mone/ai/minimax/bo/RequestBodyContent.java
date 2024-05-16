@@ -35,5 +35,5 @@ public class RequestBodyContent {
      * 默认值为mp3，可选范围：mp3、wav、pcm、flac、aac
      */
     @Builder.Default
-    private String output_format = "mp3";
+    private String output_format = OutputFormat.mp3.outputFormat;
 }

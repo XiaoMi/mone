@@ -24,7 +24,7 @@ public class MiniMax {
             throw new RuntimeException("content is null");
         }
 
-        if (content.getText() == null) {
+        if (content.getText() == null || content.getText().trim().length() < 1) {
             throw new RuntimeException("content.text is null");
         }
 
