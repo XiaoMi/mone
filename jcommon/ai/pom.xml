@@ -16,6 +16,7 @@
         <module>moonshot</module>
         <module>google</module>
         <module>aws</module>
+        <module>minimax</module>
     </modules>
 
     <properties>
