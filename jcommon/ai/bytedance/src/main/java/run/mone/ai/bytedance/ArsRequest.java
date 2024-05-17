@@ -18,7 +18,7 @@ public class ArsRequest {
     private String cluster;
 
     @Builder.Default
-    private String audio_format = "mp3";
+    private String audio_format = "wav";
 
     private byte[] audio;
 }
