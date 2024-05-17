@@ -17,6 +17,7 @@
         <module>google</module>
         <module>aws</module>
         <module>minimax</module>
+        <module>bytedance</module>
     </modules>
 
     <properties>
