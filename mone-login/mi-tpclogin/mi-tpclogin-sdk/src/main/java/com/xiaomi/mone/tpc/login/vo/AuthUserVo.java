@@ -2,6 +2,8 @@ package com.xiaomi.mone.tpc.login.vo;
 
 import com.xiaomi.mone.tpc.login.util.UserUtil;
 
+import java.util.Map;
+
 public class AuthUserVo {
     private String account;
     private Integer userType;
@@ -24,6 +26,7 @@ public class AuthUserVo {
     private String logoutUrl;
     private String code;
     private String state;
+    private Map<String, Object> attachments;
 
     public AuthUserVo buildRst() {
         AuthUserVo userVo = new AuthUserVo();
@@ -201,6 +204,21 @@ public class AuthUserVo {
 
     public String genFullAccount() {
         return UserUtil.getFullAccount(account, userType);
+    }
+
+    public Map<String, Object> getAttachments() {
+        return attachments;
+    }
+
+    public void setAttachments(Map<String, Object> attachments) {
+        this.attachments = attachments;
+    }
+
+    public <T> T getAttachmentVal(String key) {
+        if (attachments == null || attachments.isEmpty()) {
+            return null;
+        }
+        return (T)attachments.get(key);
     }
 
     @Override
