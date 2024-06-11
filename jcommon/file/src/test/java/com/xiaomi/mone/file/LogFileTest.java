@@ -74,12 +74,12 @@ public class LogFileTest {
         monitor.setListener(new DefaultMonitorListener(monitor, readEvent -> {
             System.out.println(readEvent.getReadResult().getLines());
         }));
-        String fileName = "/home/work/log/test/provider/server.log.*";
+        String fileName = "/home/work/log/file.log.*";
         Pattern pattern = Pattern.compile(fileName);
-        monitor.reg("/home/work/log/test/provider/", it -> {
+        monitor.reg("/home/work/log", it -> {
             boolean matches = pattern.matcher(it).matches();
             log.info("file:{},matches:{}", it, matches);
-            return matches;
+            return true;
         });
         log.info("reg finish");
         System.in.read();

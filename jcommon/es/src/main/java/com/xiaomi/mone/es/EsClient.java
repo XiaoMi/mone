@@ -58,8 +58,8 @@ import java.util.concurrent.TimeUnit;
 public class EsClient {
 
     private static Sniffer sniffer;
-    private static final int SNIFF_INTERVAL_MILLIS = 30 * 1000;
-    private static final int SNIFF_AFTER_FAILURE_DELAY_MILLIS = 30 * 1000;
+    private static final int SNIFF_INTERVAL_MILLIS = 60 * 1000 * 3;
+    private static final int SNIFF_AFTER_FAILURE_DELAY_MILLIS = 60 * 1000;
     private static final int MAX_CONN_PER_ROUTE = 500;
     private static final int MAX_CONN_TOTAL = 500;
     private static final int SOCKET_TIMEOUT_MS = 10 * 60 * 1000;
@@ -196,7 +196,7 @@ public class EsClient {
                 .setSniffAfterFailureDelayMillis(SNIFF_AFTER_FAILURE_DELAY_MILLIS)
                 .setNodesSniffer(new ElasticsearchNodesSniffer(
                         restClient,
-                        TimeUnit.SECONDS.toMillis(5),
+                        TimeUnit.SECONDS.toMillis(60),
                         ElasticsearchNodesSniffer.Scheme.HTTP))
                 .build();
         sniffOnFailureListener.setSniffer(sniffer);

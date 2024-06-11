@@ -226,8 +226,9 @@ public class EsClientTest {
 
     @Test
     public void queryIndexMetadataTest() throws IOException {
-        GetMappingsResponse metadata = client.queryIndexMapping("zgq_common_milog_staging_app_private_1");
-        System.out.println(String.format("result:%s", gson.toJson(metadata)));
+        GetMappingsResponse metadata = client.queryIndexMapping("test_scf_log_index");
+//        Map<String, MappingMetadata> mappings = metadata.mappings();
+//        System.out.println(String.format("result:%s", gson.toJson(metadata)));
     }
 
     @Test
