@@ -35,6 +35,8 @@ public class LogFile implements ILogFile {
     @Setter
     private volatile boolean reFresh;
 
+    private volatile boolean exceptionFinish;
+
     @Getter
     private int beforePointerHashCode;
 
@@ -169,6 +171,16 @@ public class LogFile implements ILogFile {
         this.listener = listener;
         this.pointer = pointer;
         this.lineNumber = lineNumber;
+    }
+
+    @Override
+    public void setExceptionFinish() {
+        exceptionFinish = true;
+    }
+
+    @Override
+    public boolean getExceptionFinish() {
+        return exceptionFinish;
     }
 
     private String lineCutOff(String line) {
