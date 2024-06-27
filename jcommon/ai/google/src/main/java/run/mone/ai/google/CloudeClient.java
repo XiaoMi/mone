@@ -40,9 +40,9 @@ public class CloudeClient {
 
 
     @SneakyThrows
-    public String token() {
+    public String token(String model) {
         GoogleCredentials credentials = GoogleCredentials.fromStream(
-                        new FileInputStream("/tmp/key.json"))
+                        new FileInputStream("/tmp/key-"+model+".json"))
                 .createScoped(Collections.singleton("https://" + googleUrl + "/auth/cloud-platform"));
         // Use the credentials to authenticate and generate an access token
         credentials.refreshIfExpired();
