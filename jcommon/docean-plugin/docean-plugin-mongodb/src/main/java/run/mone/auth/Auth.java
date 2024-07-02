@@ -29,5 +29,5 @@ public @interface Auth {
 
     String name() default "name";
 
-    String role() default "admin";
+    String role() default "user";
 }
