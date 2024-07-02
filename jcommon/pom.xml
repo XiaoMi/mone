@@ -232,21 +232,21 @@
                 </configuration>
             </plugin>
 
-            <!--      <plugin>-->
-            <!--        <artifactId>maven-source-plugin</artifactId>-->
-            <!--        <version>2.1</version>-->
-            <!--        <executions>-->
-            <!--          <execution>-->
-            <!--            <phase>compile</phase>-->
-            <!--            <goals>-->
-            <!--              <goal>jar</goal>-->
-            <!--            </goals>-->
-            <!--          </execution>-->
-            <!--        </executions>-->
-            <!--        <configuration>-->
-            <!--          <attach>true</attach>-->
-            <!--        </configuration>-->
-            <!--      </plugin>-->
+            <plugin>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.1</version>
+                <executions>
+                    <execution>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <attach>true</attach>
+                </configuration>
+            </plugin>
 
             <!--      <plugin>-->
             <!--        <groupId>org.apache.maven.plugins</groupId>-->

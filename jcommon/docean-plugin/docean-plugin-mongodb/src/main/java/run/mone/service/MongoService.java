@@ -3,6 +3,7 @@ package run.mone.service;
 import com.xiaomi.youpin.docean.anno.Service;
 import dev.morphia.Datastore;
 import dev.morphia.UpdateOptions;
+import dev.morphia.query.FindOptions;
 import dev.morphia.query.filters.Filter;
 import dev.morphia.query.filters.Filters;
 import dev.morphia.query.updates.UpdateOperator;
@@ -64,6 +65,27 @@ public class MongoService<T extends MongoBo> {
     public List<T> findAll(Filter filter) {
         return datastore.find(this.clazz).filter(filter).iterator().toList();
     }
+
+    public List<T> findAll() {
+        return datastore.find(this.clazz).iterator().toList();
+    }
+
+    //实现分页查询(class)
+	public List<T> findWithPagination(Filter filter, int page, int size) {
+	    FindOptions options = new FindOptions()
+	            .skip((page - 1) * size)
+	            .limit(size);
+	    return datastore.find(this.clazz)
+	            .filter(filter)
+	            .iterator(options)
+	            .toList();
+	}
+
+    //查询总页数(class)
+	public long getTotalPages(Filter filter, int pageSize) {
+	    long totalRecords = datastore.find(this.clazz).filter(filter).count();
+	    return (totalRecords + pageSize - 1) / pageSize;
+	}
 
     public boolean delete(T t) {
         datastore.delete(t);

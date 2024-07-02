@@ -7,6 +7,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
+
 /**
  * 用户
  *
@@ -17,7 +19,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity("user")
-public class User implements MongoBo{
+public class User implements MongoBo {
 
     @Id
     private String id;
@@ -56,6 +58,8 @@ public class User implements MongoBo{
     private int version;
 
     private String token;
+
+    private Map<String, String> meta;
 
     public User(String username, String password) {
         this.username = username;

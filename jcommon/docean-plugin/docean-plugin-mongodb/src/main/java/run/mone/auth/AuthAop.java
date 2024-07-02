@@ -68,6 +68,11 @@ public class AuthAop {
             }
         }
 
+        //没有就当普通用户处理
+        if (null == user.getRole()) {
+            user.setRole("user");
+        }
+
         //必须有后台管理权限
         if (role.equals("admin")) {
             if (null == user || !user.getRole().equals("admin")) {
