@@ -116,7 +116,8 @@ public class HttpServerTest {
     @Test
     public void testWebSocketClient() {
         OkHttpClient client = new OkHttpClient();
-        Request request = new Request.Builder().url("ws://127.0.0.1:8899/ws").build();
+//        Request request = new Request.Builder().url("ws://127.0.0.1:8899/ws").build();
+        Request request = new Request.Builder().url("").build();
         WebSocketListener listener = new WebSocketListener() {
             @Override
             public void onOpen(WebSocket webSocket, Response response) {
