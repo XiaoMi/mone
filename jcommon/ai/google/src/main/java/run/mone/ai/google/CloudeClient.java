@@ -40,9 +40,9 @@ public class CloudeClient {
 
 
     @SneakyThrows
-    public String token() {
+    public String token(String model) {
         GoogleCredentials credentials = GoogleCredentials.fromStream(
-                        new FileInputStream("/tmp/key.json"))
+                        new FileInputStream("/tmp/key-"+model+".json"))
                 .createScoped(Collections.singleton("https://" + googleUrl + "/auth/cloud-platform"));
         // Use the credentials to authenticate and generate an access token
         credentials.refreshIfExpired();
@@ -59,6 +59,37 @@ public class CloudeClient {
         RequestBody body = RequestBody.create(mediaType, new Gson().toJson(requestPayload));
         Request request = new Request.Builder()
                 .url(url + projectId + "/locations/us-central1/publishers/anthropic/models/" + model + ":streamRawPredict")
+                .post(body)
+                .addHeader("Authorization", "Bearer " + token)
+                .addHeader("Content-Type", "application/json; charset=utf-8")
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            if (response.code() == 429) {
+                ResponsePayload res = new ResponsePayload();
+                Content content = new Content();
+                content.setText(gson.toJson(ImmutableMap.of("message", "被claude3限流了", "code", "429")));
+                log.info("claude res:{}", content.getText());
+                res.setContent(Lists.newArrayList(content));
+                return res;
+            }
+            if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
+            // Handle the response
+            String res = response.body().string();
+            log.info("claude3 res:{}", res);
+            return new Gson().fromJson(res, ResponsePayload.class);
+        } catch (Throwable e) {
+            log.error(e.getMessage(), e);
+        }
+        return null;
+    }
+
+    public ResponsePayload call(String url ,String token, RequestPayload requestPayload) {
+        OkHttpClient client = new OkHttpClient.Builder().readTimeout(5, TimeUnit.MINUTES).build();
+        MediaType mediaType = MediaType.parse("application/json; charset=utf-8");
+        RequestBody body = RequestBody.create(mediaType, new Gson().toJson(requestPayload));
+        Request request = new Request.Builder()
+                .url(url)
                 .post(body)
                 .addHeader("Authorization", "Bearer " + token)
                 .addHeader("Content-Type", "application/json; charset=utf-8")

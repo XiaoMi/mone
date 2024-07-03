@@ -16,5 +16,12 @@ public interface ILogFile {
 
     void initLogFile(String file, ReadListener listener, long pointer, long lineNumber);
 
+    /**
+     * It only needs to be called when an exception occurs and can only be called externally.
+     */
+    void setExceptionFinish();
+
+    boolean getExceptionFinish();
+
 
 }

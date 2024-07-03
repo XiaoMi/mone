@@ -42,6 +42,8 @@ public class LogFile2 implements ILogFile {
     @Setter
     private volatile boolean reFresh;
 
+    private volatile boolean exceptionFinish;
+
     @Getter
     private int beforePointerHashCode;
 
@@ -110,12 +112,13 @@ public class LogFile2 implements ILogFile {
         }
     }
 
+    @Override
     public void readLine() throws IOException {
         while (true) {
             open();
             //兼容文件切换时，缓存的pointer
             try {
-                log.info("open file:{},pointer:{}", file, this.pointer);
+                log.info("open file:{},pointer:{},lineNumber:{},", file, this.pointer, this.lineNumber);
                 if (pointer > raf.length()) {
                     pointer = 0;
                     lineNumber = 0;
@@ -123,7 +126,7 @@ public class LogFile2 implements ILogFile {
             } catch (Exception e) {
                 log.error("file.length() IOException, file:{}", this.file, e);
             }
-            log.info("rel open file:{},pointer:{}", file, this.pointer);
+            log.info("rel open file:{},pointer:{},lineNumber:{}", file, this.pointer, this.lineNumber);
             raf.seek(pointer);
 
             while (true) {
@@ -166,6 +169,7 @@ public class LogFile2 implements ILogFile {
                 }
 
                 if (listener.isBreak(line)) {
+                    log.info("isBreak:{},pointer:{},lineNumber:{},fileKey:{}", this.file, this.pointer, this.lineNumber, this.fileKey);
                     stop = true;
                     break;
                 }
@@ -193,7 +197,7 @@ public class LogFile2 implements ILogFile {
             }
             raf.close();
             if (stop) {
-                log.info("stop:{},pointer:{},fileKey:{}", this.file, this.pointer, this.fileKey);
+                log.info("stop:{},pointer:{},lineNumber:{},fileKey:{}", this.file, this.pointer, this.lineNumber, this.fileKey);
                 FileInfoCache.ins().put(this.fileKey.toString(), FileInfo.builder().pointer(this.pointer).fileName(this.file).build());
                 break;
             }
@@ -207,6 +211,16 @@ public class LogFile2 implements ILogFile {
         this.listener = listener;
         this.pointer = pointer;
         this.lineNumber = lineNumber;
+    }
+
+    @Override
+    public void setExceptionFinish() {
+        exceptionFinish = true;
+    }
+
+    @Override
+    public boolean getExceptionFinish() {
+        return exceptionFinish;
     }
 
     private String lineCutOff(String line) {
