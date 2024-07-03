@@ -37,6 +37,9 @@ public class HttpRequestMethod {
 
     private long timeout;
 
+    //结果不封装
+    private boolean originalRes;
+
     private Map<String, Class> genericSuperclassTypeArguments;
 
 

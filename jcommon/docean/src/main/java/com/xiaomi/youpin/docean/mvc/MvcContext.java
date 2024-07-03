@@ -63,7 +63,7 @@ public class MvcContext {
 
     private Object response;
 
-    private String contentType;
+    private String contentType = "application/json; charset=utf-8";
 
     /**
      * rate limited or exceeded quota
