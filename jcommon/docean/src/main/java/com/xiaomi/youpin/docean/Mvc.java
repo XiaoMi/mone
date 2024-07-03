@@ -16,6 +16,7 @@
 
 package com.xiaomi.youpin.docean;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -138,6 +139,7 @@ public class Mvc {
             }
             HttpRequestMethod hrm = new HttpRequestMethod();
             hrm.setTimeout(rm.timeout());
+            hrm.setOriginalRes(rm.originalRes());
             hrm.setPath(path);
             hrm.setObj(bean.getObj());
             hrm.setMethod(m);
@@ -252,11 +254,8 @@ public class Mvc {
                 return;
             }
             // get whether the configuration returns an unwrapped value
-            boolean needOriginalValue = this.mvcConfig.isResponseOriginalValue();
-            if (!needOriginalValue && StringUtils.isNotBlank(this.mvcConfig.getResponseOriginalPath())) {
-                needOriginalValue = Arrays.stream(mvcConfig.getResponseOriginalPath().split(","))
-                        .anyMatch(i -> i.equals(method.getPath()));
-            }
+            boolean needOriginalValue = isNeedOriginalValue(method);
+
             if (needOriginalValue) {
                 String responseData = data instanceof String ? (String) data : gson.toJson(data);
                 response.writeAndFlush(context, responseData);
@@ -269,6 +268,7 @@ public class Mvc {
                 context.setResponse(ex);
                 return;
             }
+            ex = Throwables.getRootCause(ex);
             Throwable unwrapThrowable = ExceptionUtil.unwrapThrowable(ex);
             result.setCode(500);
             int httpCode = 200;
@@ -282,6 +282,19 @@ public class Mvc {
             result.setMessage(unwrapThrowable.getMessage());
             response.writeAndFlush(context, gson.toJson(result), httpCode);
         });
+    }
+
+    private boolean isNeedOriginalValue(HttpRequestMethod method) {
+        //优先级最高
+        if (method.isOriginalRes()) {
+            return true;
+        }
+        boolean needOriginalValue = this.mvcConfig.isResponseOriginalValue();
+        if (!needOriginalValue && StringUtils.isNotBlank(this.mvcConfig.getResponseOriginalPath())) {
+            needOriginalValue = Arrays.stream(mvcConfig.getResponseOriginalPath().split(","))
+                    .anyMatch(i -> i.equals(method.getPath()));
+        }
+        return needOriginalValue;
     }
 
     private Object[] getMethodParams(MvcContext context, MvcRequest request, HttpRequestMethod method) {
