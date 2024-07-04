@@ -2,6 +2,7 @@ package run.mone.service;
 
 import com.xiaomi.youpin.docean.anno.Service;
 import dev.morphia.Datastore;
+import dev.morphia.DeleteOptions;
 import dev.morphia.UpdateOptions;
 import dev.morphia.query.FindOptions;
 import dev.morphia.query.filters.Filter;
@@ -98,6 +99,11 @@ public class MongoService<T extends MongoBo> {
 
     public boolean delete(Filter filter) {
         datastore.find(this.clazz).filter(filter).delete();
+        return true;
+    }
+
+    public boolean delete(Filter filter, DeleteOptions options) {
+        datastore.find(this.clazz).filter(filter).delete(options);
         return true;
     }
 
