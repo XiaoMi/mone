@@ -28,6 +28,23 @@
       <version>2.7.14</version>
     </dependency>
     <dependency>
+      <groupId>com.mybatis-flex</groupId>
+      <artifactId>mybatis-flex-codegen</artifactId>
+      <version>1.7.8</version>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-jdbc</artifactId>
+      <version>5.3.29</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP</artifactId>
+      <version>4.0.3</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
       <version>3.8.1</version>
