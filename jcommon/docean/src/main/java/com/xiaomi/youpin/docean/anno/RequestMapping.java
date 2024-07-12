@@ -33,4 +33,7 @@ public @interface RequestMapping {
 
     long timeout() default 2000;
 
+    //是否是原始res
+    boolean originalRes() default false;
+
 }

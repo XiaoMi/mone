@@ -22,7 +22,7 @@ public class EsProcessorClientTest {
 
         NacosConfig config = new NacosConfig();
         config.setDataId("zzy_new");
-        config.init();
+//        config.init();
 
         String ip = config.getConfig("es_ip");
         String user = config.getConfig("es_user");
@@ -53,13 +53,14 @@ public class EsProcessorClientTest {
             int count = 0;
             while (true) {
 //                processor.bulkInsert(indexName, data);
-                processor.bulkUpsert(indexName, "YpzPE4UBt3Uy5NFQ1V5e", data);
+                processor.bulkInsert(indexName, data);
                 count++;
                 if (count == n) {
                     break;
                 }
             }
-            Thread.sleep(10000l);
+//            Thread.sleep(10000l);
+            System.in.read();
         }catch (Exception e){
             e.printStackTrace();
         }

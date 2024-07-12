@@ -4,6 +4,7 @@ import com.xiaomi.youpin.docean.anno.Controller;
 import com.xiaomi.youpin.docean.anno.ModelAttribute;
 import com.xiaomi.youpin.docean.anno.RequestMapping;
 import com.xiaomi.youpin.docean.anno.RequestParam;
+import com.xiaomi.youpin.docean.common.StringUtils;
 import com.xiaomi.youpin.docean.mvc.ContextHolder;
 import com.xiaomi.youpin.docean.mvc.MvcContext;
 import run.mone.bo.User;
@@ -104,6 +105,9 @@ public class UserController extends MongodbController<User> {
             return "error";
         }
         user.setPassword("");
+        if (StringUtils.isEmpty(user.getRole())) {
+            user.setRole("user");
+        }
         context.session().setAttribute("user", user);
         return "ok";
     }
