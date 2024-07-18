@@ -2,9 +2,12 @@ package run.mone.ultraman.common;
 
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.project.Project;
-import run.mone.m78.ip.service.CodeService;
+import com.xiaomi.youpin.tesla.ip.service.CodeService;
+import com.xiaomi.youpin.tesla.ip.util.MarkdownFilter;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.function.Consumer;
 
 /**
  * @author goodjava@qq.com
@@ -23,6 +26,13 @@ public class ImportCode {
 
     private boolean isImport = false;
 
+    private MarkdownFilter markdownFilter = new MarkdownFilter(new Consumer<String>() {
+        @Override
+        public void accept(String s) {
+            CodeService.writeCode2(project, editor, s);
+        }
+    });
+
     public void append(String str) {
         if (isImportBegin(str)) {
             isImport = true;
@@ -33,7 +43,8 @@ public class ImportCode {
         } else if (isImport) {
             importBuilder.append(str);
         } else {
-            CodeService.writeCode2(project, editor, str);
+            //过滤不必要的markdown标签
+            markdownFilter.accept(str);
         }
     }
 

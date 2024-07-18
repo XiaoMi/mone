@@ -32,10 +32,18 @@ public class CodeCheckTest {
     @Test
     public void testCheckIP() {
         CodeCheck codeCheck = new CodeCheck();
-        Map<String, List<CheckResult>> map = codeCheck.check("/home/work/code/dubbo-demo/springboot-nacos-client-demo");
+        Map<String, List<CheckResult>> map = codeCheck.check("/Users/ericgreen/mycode/ultraman");
         map.entrySet().stream().forEach(it ->  {
             System.out.println(it.getKey());
-            it.getValue().stream().forEach(it1->System.out.println(it1));
+            it.getValue().stream().forEach(it1->{
+                String level = it1.getLevel();
+                String name = it1.getName();
+                if(!name.contains("idea-sandbox")) {
+                    if (level.contains("ERROR")) {
+                        System.out.println(it1);
+                    }
+                }
+            });
             System.out.println("\n");
         });
     }

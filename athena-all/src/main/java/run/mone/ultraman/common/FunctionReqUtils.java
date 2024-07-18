@@ -2,8 +2,8 @@ package run.mone.ultraman.common;
 
 import com.google.common.collect.Maps;
 import com.intellij.openapi.project.Project;
-import run.mone.m78.ip.common.ConfigUtils;
-import run.mone.m78.ip.util.GitUtils;
+import com.xiaomi.youpin.tesla.ip.common.ConfigUtils;
+import com.xiaomi.youpin.tesla.ip.util.GitUtils;
 import run.mone.ultraman.AthenaContext;
 
 import java.util.List;

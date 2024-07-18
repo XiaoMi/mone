@@ -4,8 +4,8 @@ import com.google.common.base.Stopwatch;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import run.mone.m78.ip.common.ConfigUtils;
-import run.mone.m78.ip.common.NotificationCenter;
+import com.xiaomi.youpin.tesla.ip.common.ConfigUtils;
+import com.xiaomi.youpin.tesla.ip.common.NotificationCenter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
@@ -70,16 +70,19 @@ public class HttpClient {
         return callHttpServer(url, action, req, notify, false);
     }
 
+    public static String callHttpServer(String url, String action, String req, boolean notify, boolean useToken) {
+        return callHttpServer(url, action, req, notify, useToken, 10);
+    }
 
     @SneakyThrows
-    public static String callHttpServer(String url, String action, String req, boolean notify, boolean useToken) {
+    public static String callHttpServer(String url, String action, String req, boolean notify, boolean useToken, int timeout) {
         log.info("call action:{}", action);
         Stopwatch sw = Stopwatch.createStarted();
         try {
             OkHttpClient client = new OkHttpClient.Builder()
-                    .connectTimeout(5, TimeUnit.SECONDS)
-                    .readTimeout(5, TimeUnit.SECONDS)
-                    .writeTimeout(5, TimeUnit.SECONDS)
+                    .connectTimeout(timeout, TimeUnit.SECONDS)
+                    .readTimeout(timeout, TimeUnit.SECONDS)
+                    .writeTimeout(timeout, TimeUnit.SECONDS)
                     .build();
             RequestBody body = RequestBody.create(MediaType.parse("application/json"), req);
             Request.Builder requestBuilder = new Request.Builder();

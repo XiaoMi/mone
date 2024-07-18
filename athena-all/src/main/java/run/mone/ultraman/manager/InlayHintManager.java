@@ -3,8 +3,11 @@ package run.mone.ultraman.manager;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.Inlay;
 import com.intellij.openapi.editor.InlayModel;
-import lombok.Getter;
+import org.apache.commons.lang3.StringUtils;
 import run.mone.ultraman.render.AthenaInlayRenderer;
+
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 /**
  * @author goodjava@qq.com
@@ -12,12 +15,40 @@ import run.mone.ultraman.render.AthenaInlayRenderer;
  */
 public class InlayHintManager {
 
-    @Getter
     private Inlay inlay;
 
-    @Getter
     private String hintText;
 
+    private AtomicInteger caretOffsetWhenTriggered = new AtomicInteger();
+
+
+    public synchronized Inlay getInlay() {
+        return inlay;
+    }
+
+
+    public synchronized void setInlay(Inlay inlay, String hintText) {
+        this.inlay = inlay;
+        this.hintText = hintText;
+    }
+
+    public void removeBlockInlay() {
+        if (inlay != null) {
+            inlay.dispose();
+        }
+    }
+
+    public synchronized boolean hasInlay() {
+        return null != this.inlay;
+    }
+
+    public int getCaretOffsetWhenTriggered() {
+        return caretOffsetWhenTriggered.get();
+    }
+
+    public void setCaretOffsetWhenTriggered(int offset) {
+        this.caretOffsetWhenTriggered.set(offset);
+    }
 
     private static final class LazyHolder {
         private static final InlayHintManager ins = new InlayHintManager();
@@ -27,12 +58,29 @@ public class InlayHintManager {
         return LazyHolder.ins;
     }
 
-    public void dispose() {
+    public synchronized void dispose() {
         if (null != inlay) {
             inlay.dispose();
+            inlay = null;
             this.hintText = null;
         }
     }
+
+
+    public synchronized void dispose(Consumer<String> consumer) {
+        if (null != inlay) {
+            if (StringUtils.isEmpty(this.hintText)) {
+                this.hintText = "null";
+            }
+            consumer.accept(this.hintText);
+            inlay.dispose();
+            inlay = null;
+            this.hintText = null;
+        } else {
+            consumer.accept("");
+        }
+    }
+
 
 
     public Inlay addInlayHint(Editor editor, int offset, String hintText) {

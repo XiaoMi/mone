@@ -7,7 +7,9 @@ import com.intellij.openapi.editor.colors.EditorColorsManager;
 import com.intellij.openapi.editor.colors.EditorColorsScheme;
 import com.intellij.openapi.editor.colors.EditorFontType;
 import com.intellij.openapi.editor.ex.util.EditorUtil;
+import com.intellij.openapi.editor.impl.EditorImpl;
 import com.intellij.openapi.editor.markup.TextAttributes;
+import com.xiaomi.youpin.tesla.ip.service.CodeService;
 import org.jetbrains.annotations.NotNull;
 
 import java.awt.*;
@@ -25,6 +27,7 @@ public class AthenaInlayRenderer implements EditorCustomElementRenderer {
     public AthenaInlayRenderer(String hintText, Editor editor) {
         this.hintText = hintText;
         this.editor = editor;
+        
     }
 
     @Override
