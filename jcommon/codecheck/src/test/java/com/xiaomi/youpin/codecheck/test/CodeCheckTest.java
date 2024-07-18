@@ -32,7 +32,7 @@ public class CodeCheckTest {
     @Test
     public void testCheckIP() {
         CodeCheck codeCheck = new CodeCheck();
-        Map<String, List<CheckResult>> map = codeCheck.check("/Users/ericgreen/mycode/ultraman");
+        Map<String, List<CheckResult>> map = codeCheck.check("/home/work/mycode/ultraman");
         map.entrySet().stream().forEach(it ->  {
             System.out.println(it.getKey());
             it.getValue().stream().forEach(it1->{
