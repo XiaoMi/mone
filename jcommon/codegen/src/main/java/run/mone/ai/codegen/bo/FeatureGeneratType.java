@@ -36,4 +36,7 @@ public enum FeatureGeneratType {
         return desc;
     }
 
+    public static FeatureGeneratType getGenerateTypeByCode(int code) {
+        return valMap.getOrDefault(code, CODE_WITH_TEMPLATE);
+    }
 }
