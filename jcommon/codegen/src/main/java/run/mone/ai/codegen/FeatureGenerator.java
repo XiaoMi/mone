@@ -37,10 +37,10 @@ public class FeatureGenerator {
             FeatureGenerateBo featureGenerateBo = mapToGenBo(map);
             switch (generateType) {
                 case CODE_WITH_GENERATOR:
+                case TABLE:
                     generateWithGenerator(featureGenerateBo);
                     break;
                 case CODE_WITH_TEMPLATE:
-                case TABLE:
                     generateByTemplate(featureGenerateBo);
                     break;
                 default:
