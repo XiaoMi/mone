@@ -8,7 +8,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
-import run.mone.ai.codegen.bo.FeatureGeneratType;
+import run.mone.ai.codegen.bo.FeatureGenerateType;
 import run.mone.ai.codegen.bo.FeatureGenerateBo;
 import run.mone.ai.codegen.util.TemplateUtils;
 
@@ -17,9 +17,6 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-
-import static run.mone.ai.codegen.bo.FeatureGeneratType.CODE_WITH_GENERATOR;
-import static run.mone.ai.codegen.bo.FeatureGeneratType.CODE_WITH_TEMPLATE;
 
 /**
  * @author goodjava@qq.com, HawickMason@xiaomi.com
@@ -36,7 +33,7 @@ public class FeatureGenerator {
             if (type == null) {
                 return;
             }
-            FeatureGeneratType generateType = FeatureGeneratType.getGenerateTypeByCode(Integer.parseInt(type));
+            FeatureGenerateType generateType = FeatureGenerateType.getGenerateTypeByCode(Integer.parseInt(type));
             FeatureGenerateBo featureGenerateBo = mapToGenBo(map);
             switch (generateType) {
                 case CODE_WITH_GENERATOR:
@@ -128,9 +125,9 @@ public class FeatureGenerator {
             log.warn("Empty generation type, will do noting!");
             return;
         }
-        FeatureGeneratType featureGenType = featureGenerateBo.getType();
-        if (FeatureGeneratType.CODE_WITH_TEMPLATE != featureGenType
-                && FeatureGeneratType.TABLE != featureGenType) {
+        FeatureGenerateType featureGenType = featureGenerateBo.getType();
+        if (FeatureGenerateType.CODE_WITH_TEMPLATE != featureGenType
+                && FeatureGenerateType.TABLE != featureGenType) {
             log.warn("generate type:{} is not match with current call", featureGenType);
             return;
         }
@@ -142,7 +139,7 @@ public class FeatureGenerator {
         dataSource.setPassword(featureGenerateBo.getPassword());
 
         //创建mapper相关代码
-        if (FeatureGeneratType.CODE_WITH_TEMPLATE == featureGenType) {
+        if (FeatureGenerateType.CODE_WITH_TEMPLATE == featureGenType) {
             GlobalConfig globalConfig = createGlobalConfigUseStyle(featureGenerateBo);
             Generator generator = new Generator(dataSource, globalConfig);
             generator.generate();
@@ -150,7 +147,7 @@ public class FeatureGenerator {
         }
 
         //创建table
-        if (FeatureGeneratType.TABLE == featureGenType) {
+        if (FeatureGenerateType.TABLE == featureGenType) {
             JdbcTemplate jt = new JdbcTemplate(dataSource);
             jt.update(featureGenerateBo.getSql());
         }

@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
  * @author goodjava@qq.com, HawickMason@xiaomi.com
  * @date 7/12/24 14:15
  */
-public enum FeatureGeneratType {
+public enum FeatureGenerateType {
 
     CODE_WITH_GENERATOR(1, "使用mybatis-flex-generator生成"),
 
@@ -21,9 +21,9 @@ public enum FeatureGeneratType {
 
     private final String desc;
 
-    private static final Map<Integer, FeatureGeneratType> valMap = Arrays.stream(values()).collect(Collectors.toMap(FeatureGeneratType::getCode, Function.identity()));
+    private static final Map<Integer, FeatureGenerateType> valMap = Arrays.stream(values()).collect(Collectors.toMap(FeatureGenerateType::getCode, Function.identity()));
 
-    FeatureGeneratType(int code, String desc) {
+    FeatureGenerateType(int code, String desc) {
         this.code = code;
         this.desc = desc;
     }
@@ -36,7 +36,7 @@ public enum FeatureGeneratType {
         return desc;
     }
 
-    public static FeatureGeneratType getGenerateTypeByCode(int code) {
+    public static FeatureGenerateType getGenerateTypeByCode(int code) {
         return valMap.getOrDefault(code, CODE_WITH_TEMPLATE);
     }
 }

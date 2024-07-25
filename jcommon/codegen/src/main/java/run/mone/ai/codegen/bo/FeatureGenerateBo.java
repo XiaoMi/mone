@@ -16,7 +16,7 @@ import lombok.NoArgsConstructor;
 public class FeatureGenerateBo {
 
     @Builder.Default
-    private FeatureGeneratType type = FeatureGeneratType.CODE_WITH_GENERATOR;
+    private FeatureGenerateType type = FeatureGenerateType.CODE_WITH_GENERATOR;
 
     @Builder.Default
     private String tableName = "";
