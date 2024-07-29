@@ -40,6 +40,8 @@ public class FeatureGenerateBo {
     @Builder.Default
     private String className = "Dummy";
 
+    private String testName = "T";
+
     @Builder.Default
     private String auth = "";
 

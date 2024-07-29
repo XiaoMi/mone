@@ -67,6 +67,9 @@ public class FeatureGenerator {
         if (map.containsKey("tableName")) {
             builder.tableName(map.get("tableName"));
         }
+        if (map.containsKey("testName")) {
+            builder.sql(map.get("testName"));
+        }
         if (map.containsKey("sql")) {
             builder.sql(map.get("sql"));
         }
@@ -221,7 +224,7 @@ public class FeatureGenerator {
         }
 
         if (featureGenerateBo.isCreateTest()) {
-            String cn = className + "ServiceTest.java";
+            String cn = featureGenerateBo.getTestName();
             String test = TemplateUtils.renderTemplateFromFile("tlp/test.java", data);
             TemplateUtils.writeStringToFile(test, basePath + "/" + featureGenerateBo.getServerModulePath() + "/src/test/java/run/mone/test/service/" + cn);
         }
