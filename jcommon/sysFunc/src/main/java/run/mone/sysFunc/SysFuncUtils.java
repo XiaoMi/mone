@@ -155,10 +155,15 @@ public class SysFuncUtils {
         if (range <= 0) {
             return "";
         }
+        String exclusion = (funcParams.length > 1)?funcParams[1]:null;
         ThreadLocalRandom localRandom = ThreadLocalRandom.current();
         StringBuilder builder = new StringBuilder();
-        for (int i = 0; i < range; i++) {
-            builder.append(charSeeds[localRandom.nextInt(charSeeds.length)]);
+        int n = 0;//prevent infinite loops
+        while (builder.length() < range && n++ < 10000){
+            char randomChar = charSeeds[localRandom.nextInt(charSeeds.length)];
+            if(exclusion == null || !exclusion.contains(String.valueOf(randomChar))){
+                builder.append(randomChar);
+            }
         }
         return builder.toString();
     }
