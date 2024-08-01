@@ -7,8 +7,8 @@ import com.intellij.openapi.project.Project;
 import com.intellij.patterns.PlatformPatterns;
 import com.intellij.psi.*;
 import com.intellij.util.ProcessingContext;
-import run.mone.m78.ip.common.ProjectCache;
-import run.mone.m78.ip.service.CodeService;
+import com.xiaomi.youpin.tesla.ip.common.ProjectCache;
+import com.xiaomi.youpin.tesla.ip.service.CodeService;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;

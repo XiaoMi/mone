@@ -5,7 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.io.Resources;
 import com.google.gson.Gson;
-import run.mone.m78.ip.service.ScriptService;
+import com.xiaomi.youpin.tesla.ip.service.ScriptService;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;

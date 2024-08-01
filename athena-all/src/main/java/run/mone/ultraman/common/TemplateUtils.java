@@ -2,6 +2,7 @@ package run.mone.ultraman.common;
 
 import com.google.common.collect.Maps;
 import org.apache.commons.compress.utils.Lists;
+import org.apache.commons.lang3.tuple.Pair;
 import org.beetl.core.Configuration;
 import org.beetl.core.Function;
 import org.beetl.core.GroupTemplate;
@@ -23,12 +24,12 @@ public class TemplateUtils {
         return renderTemplate(template, m, Lists.newArrayList());
     }
 
-    public static String renderTemplate(String template, Map<String, Object> m, List<Function> functionList) {
+    public static String renderTemplate(String template, Map<String, Object> m, List<Pair<String, Function>> functionList) {
         try {
             StringTemplateResourceLoader resourceLoader = new StringTemplateResourceLoader();
             Configuration cfg = Configuration.defaultConfiguration();
             GroupTemplate gt = new GroupTemplate(resourceLoader, cfg, cfg.getClass().getClassLoader());
-            functionList.forEach(it -> gt.registerFunction(it.toString(), it));
+            functionList.forEach(it -> gt.registerFunction(it.getKey(), it.getValue()));
             Template t = gt.getTemplate(template);
             m.forEach((k, v) -> t.binding(k, v));
             String str = t.render();

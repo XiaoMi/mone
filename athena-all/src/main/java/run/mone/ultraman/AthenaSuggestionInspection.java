@@ -6,12 +6,13 @@ import com.intellij.openapi.project.Project;
 import com.intellij.psi.JavaElementVisitor;
 import com.intellij.psi.PsiElementVisitor;
 import com.intellij.psi.PsiMethod;
-import run.mone.m78.ip.bo.GenerateCodeReq;
-import run.mone.m78.ip.bo.Message;
-import run.mone.m78.ip.bo.PromptInfo;
-import run.mone.m78.ip.common.Prompt;
-import run.mone.m78.ip.common.PromptType;
-import run.mone.m78.ip.service.PromptService;
+import com.xiaomi.youpin.tesla.ip.bo.GenerateCodeReq;
+import com.xiaomi.youpin.tesla.ip.bo.Message;
+import com.xiaomi.youpin.tesla.ip.bo.PromptInfo;
+import com.xiaomi.youpin.tesla.ip.common.Prompt;
+import com.xiaomi.youpin.tesla.ip.common.PromptType;
+import com.xiaomi.youpin.tesla.ip.service.PromptService;
+import com.xiaomi.youpin.tesla.ip.util.ResourceUtils;
 import org.jetbrains.annotations.NotNull;
 
 /**
@@ -20,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
  */
 public class AthenaSuggestionInspection extends AbstractBaseJavaLocalInspectionTool {
 
+    //代码修改建议
     private static final String promptName = "hi2";
 
     @NotNull
@@ -29,10 +31,10 @@ public class AthenaSuggestionInspection extends AbstractBaseJavaLocalInspectionT
 
             @Override
             public void visitMethod(PsiMethod method) {
-                if (true) {
-                    return;
-                }
                 super.visitMethod(method);
+
+                if (ResourceUtils.checkDisableCodeCompletionStatus()) return;
+
                 holder.registerProblem(method, "", ProblemHighlightType.INFORMATION, new LocalQuickFix() {
 
                     @Override
@@ -44,12 +46,12 @@ public class AthenaSuggestionInspection extends AbstractBaseJavaLocalInspectionT
                     public void applyFix(@NotNull Project project, @NotNull ProblemDescriptor descriptor) {
                         PromptInfo promptInfo = Prompt.getPromptInfo(promptName);
                         PromptType promptType = Prompt.getPromptType(promptInfo);
-                        PromptService.inlayHint(GenerateCodeReq.builder()
-                                .promptName(promptName)
-                                .promptInfo(promptInfo)
-                                .promptType(promptType)
-                                .project(project)
-                                .projectName(project.getName()).build());
+                        PromptService.dynamicInvoke(GenerateCodeReq.builder()
+                                        .promptName(promptName)
+                                        .promptInfo(promptInfo)
+                                        .promptType(promptType)
+                                        .project(project)
+                                        .projectName(project.getName()).build());
                     }
                 });
             }

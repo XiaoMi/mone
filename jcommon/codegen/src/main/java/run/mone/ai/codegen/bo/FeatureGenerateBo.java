@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 /**
  * @author goodjava@qq.com, HawickMason@xiaomi.com
@@ -13,6 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Data
 @Builder
+@ToString
 public class FeatureGenerateBo {
 
     @Builder.Default
@@ -72,5 +74,17 @@ public class FeatureGenerateBo {
 
     @Builder.Default
     private boolean createController = false;
-    
+
+    /**
+     * 目前使用module所在的绝对路径
+     */
+    @Builder.Default
+    private String mybatisDaoModule = "";
+    @Builder.Default
+    private String mybatisXMLPath = "";
+    @Builder.Default
+    private String mybatisDaoPath = "";
+    @Builder.Default
+    private String mybatisEntityPath = "";
+
 }

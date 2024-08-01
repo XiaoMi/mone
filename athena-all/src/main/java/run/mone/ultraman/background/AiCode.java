@@ -3,12 +3,13 @@ package run.mone.ultraman.background;
 import com.google.gson.Gson;
 import com.intellij.openapi.progress.ProgressIndicator;
 import com.intellij.openapi.project.Project;
-import run.mone.m78.ip.bo.AiMessage;
-import run.mone.m78.ip.bo.MessageConsumer;
-import run.mone.m78.ip.common.ChromeUtils;
-import run.mone.m78.ip.common.Safe;
-import run.mone.m78.ip.util.UltramanConsole;
+import com.xiaomi.youpin.tesla.ip.bo.AiMessage;
+import com.xiaomi.youpin.tesla.ip.bo.MessageConsumer;
+import com.xiaomi.youpin.tesla.ip.common.ChromeUtils;
+import com.xiaomi.youpin.tesla.ip.common.Safe;
+import com.xiaomi.youpin.tesla.ip.util.UltramanConsole;
 import lombok.Data;
+import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
