@@ -15,7 +15,9 @@ public enum FeatureGeneratType {
 
     CODE_WITH_TEMPLATE(2, "使用预制模板生成"),
 
-    TABLE(3, "创建表");
+    TABLE(3, "创建表"),
+
+    CODE_WITH_MYBATIS_GENERATOR(4,"使用mybatis-generator生成");
 
     private final int code;
 
