@@ -3,22 +3,24 @@ package run.mone.ultraman.state;
 import com.google.common.base.Stopwatch;
 import com.google.gson.JsonObject;
 import com.intellij.openapi.project.Project;
-import run.mone.m78.ip.bo.GenerateCodeReq;
-import run.mone.m78.ip.bo.PromptContext;
-import run.mone.m78.ip.bo.PromptInfo;
-import run.mone.m78.ip.bo.chatgpt.Completions;
-import run.mone.m78.ip.bo.chatgpt.Format;
-import run.mone.m78.ip.bo.chatgpt.Message;
-import run.mone.m78.ip.bo.robot.*;
-import run.mone.m78.ip.common.ChromeUtils;
-import run.mone.m78.ip.common.Const;
-import run.mone.m78.ip.common.Prompt;
-import run.mone.m78.ip.service.AiService;
-import run.mone.m78.ip.service.PromptService;
-import run.mone.m78.ip.service.RobotService;
-import run.mone.m78.ip.util.ResourceUtils;
-import run.mone.m78.ip.util.UltramanConsole;
+import com.xiaomi.youpin.tesla.ip.bo.GenerateCodeReq;
+import com.xiaomi.youpin.tesla.ip.bo.PromptContext;
+import com.xiaomi.youpin.tesla.ip.bo.PromptInfo;
+import com.xiaomi.youpin.tesla.ip.bo.chatgpt.Completions;
+import com.xiaomi.youpin.tesla.ip.bo.chatgpt.Format;
+import com.xiaomi.youpin.tesla.ip.bo.chatgpt.Message;
+import com.xiaomi.youpin.tesla.ip.bo.robot.*;
+import com.xiaomi.youpin.tesla.ip.common.ChromeUtils;
+import com.xiaomi.youpin.tesla.ip.common.Const;
+import com.xiaomi.youpin.tesla.ip.common.Prompt;
+import com.xiaomi.youpin.tesla.ip.service.AiService;
+import com.xiaomi.youpin.tesla.ip.service.PromptService;
+import com.xiaomi.youpin.tesla.ip.service.RobotService;
+import com.xiaomi.youpin.tesla.ip.util.LabelUtils;
+import com.xiaomi.youpin.tesla.ip.util.ResourceUtils;
+import com.xiaomi.youpin.tesla.ip.util.UltramanConsole;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import run.mone.ultraman.AthenaContext;
 import run.mone.ultraman.common.FunctionReqUtils;
@@ -31,6 +33,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import static com.xiaomi.youpin.tesla.ip.common.Const.USE_BOT_MODEL;
 
 /**
  * @author goodjava@qq.com
@@ -71,7 +75,15 @@ public class PromptAndFunctionProcessor {
         Completions completions = Completions.builder().stream(false).response_format(Format.builder().build()).messages(messageList).build();
         UltramanConsole.append(project, "call ai prompt:" + promptInfo.getPromptName());
         Stopwatch swCallAi = Stopwatch.createStarted();
-        JsonObject jsonObj = AiService.call(GsonUtils.gson.toJson(completions), Long.parseLong(promptInfo.getLabels().getOrDefault("timeout", "50000")), vip);
+
+        boolean jsonResult = promptInfo.open("json_result", "true");
+        //如果是local,使用自己定义的模型
+        if (LabelUtils.open(Const.OPEN_AI_TEST)) {
+            completions.setModel(ResourceUtils.getAthenaConfig().getOrDefault(Const.OPEN_AI_MODEL, "gpt4_o"));
+        } else {
+            completions.setModel(StringUtils.isNotBlank(AthenaContext.ins().getNoChatModel()) || !USE_BOT_MODEL.equals(AthenaContext.ins().getNoChatModel()) ? AthenaContext.ins().getNoChatModel() : "gpt4_o");
+        }
+        JsonObject jsonObj = AiService.call(GsonUtils.gson.toJson(completions), Long.parseLong(promptInfo.getLabels().getOrDefault("timeout", "50000")), vip, jsonResult);
         UltramanConsole.append(project, "call ai prompt:" + promptInfo.getPromptName() + " finish res:" + jsonObj + " use time:" + swCallAi.elapsed(TimeUnit.SECONDS) + "s");
         return jsonObj;
     }

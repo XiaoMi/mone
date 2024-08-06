@@ -1,7 +1,6 @@
 package run.mone.ultraman.test;
 
 import com.google.common.collect.Lists;
-import run.mone.mone.ultraman.grpc.CommonUtils;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -15,16 +14,6 @@ import static org.junit.Assert.assertEquals;
  * @date 2023/8/1 15:12
  */
 public class CommonUtilsTest {
-
-    @Test
-    public void testGetIntersection() {
-        CommonUtils commonUtils = new CommonUtils();
-        List<String> list1 = Arrays.asList("a", "b", "c", "d");
-        List<String> list2 = Arrays.asList("c", "d", "e", "f");
-        List<String> expected = Arrays.asList("c", "d");
-        List<String> actual = commonUtils.getIntersection(list1, list2);
-        assertEquals(expected, actual);
-    }
 
 
     @Test

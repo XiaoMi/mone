@@ -1,6 +1,6 @@
 package run.mone.ultraman.state;
 
-import run.mone.m78.ip.bo.robot.ProjectAiMessageManager;
+import com.xiaomi.youpin.tesla.ip.bo.robot.ProjectAiMessageManager;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;

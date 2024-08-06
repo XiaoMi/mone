@@ -9,8 +9,8 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.util.Computable;
 import com.intellij.openapi.util.TextRange;
 import com.intellij.psi.*;
-import run.mone.m78.ip.bo.PromptInfo;
-import run.mone.m78.ip.service.CodeService;
+import com.xiaomi.youpin.tesla.ip.bo.PromptInfo;
+import com.xiaomi.youpin.tesla.ip.service.CodeService;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 

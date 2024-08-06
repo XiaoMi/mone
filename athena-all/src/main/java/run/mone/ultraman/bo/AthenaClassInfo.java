@@ -16,6 +16,8 @@ public class AthenaClassInfo {
 
     private String name;
 
+    private String packagePath;
+
     private String classCode;
 
     private String md5;
@@ -24,7 +26,13 @@ public class AthenaClassInfo {
 
     private List<String> publicMethodList;
 
+    private List<String> imports;
+
     @Builder.Default
     private List<String> interfaceList = new ArrayList<>();
+
+    public String getClassName() {
+        return this.getPackagePath() + "." + this.getName();
+    }
 
 }

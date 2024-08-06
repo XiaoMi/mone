@@ -37,6 +37,7 @@ public class FeatureGenerator {
 
         //配置数据源
         HikariDataSource dataSource = new HikariDataSource();
+        dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
         dataSource.setJdbcUrl(featureGenerateBo.getJdbcUrl());
         dataSource.setUsername(featureGenerateBo.getUserName());
         dataSource.setPassword(featureGenerateBo.getPassword());

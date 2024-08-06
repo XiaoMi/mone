@@ -1,6 +1,6 @@
 package run.mone.ultraman.test;
 
-import run.mone.m78.ip.util.XmlUtils;
+import com.xiaomi.youpin.tesla.ip.util.XmlUtils;
 import org.junit.Test;
 
 import java.util.Map;
@@ -13,12 +13,12 @@ public class XmlUtilsTest {
 
     @Test
     public void test1() {
-        XmlUtils.updateGeneratorConfig("/tmp/generatorConfig.xml","Abc");
+        XmlUtils.updateGeneratorConfig("/your path/generatorConfig.xml","Abc");
     }
 
     @Test
     public void test2() {
-        Map<String, String> m = XmlUtils.getMysqlConfigFromMybatisConfig("/tmp/generatorConfig.xml");
+        Map<String, String> m = XmlUtils.getMysqlConfigFromMybatisConfig("/your path/generatorConfig.xml");
         System.out.println(m);
     }
 }

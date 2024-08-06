@@ -1,8 +1,8 @@
 package run.mone.ultraman;
 
 import com.intellij.openapi.project.Project;
-import run.mone.m78.ip.bo.ModelRes;
-import run.mone.m78.ip.listener.UltrmanTreeKeyAdapter;
+import com.xiaomi.youpin.tesla.ip.bo.ModelRes;
+import com.xiaomi.youpin.tesla.ip.listener.UltrmanTreeKeyAdapter;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 import run.mone.ultraman.bo.ClientData;
@@ -29,9 +29,15 @@ public class AthenaContext {
 
     private String zAddr;
 
+    private String userName;
+
     private List<ModelRes> models;
 
     private Map<String, ModelRes> modelMap;
+
+    private String localAddress;
+
+    private String localPort;
 
 
     //models 直接 转换为 modelMap,key是 ModelRes中的 value(class)
@@ -60,12 +66,21 @@ public class AthenaContext {
     }
 
     /**
-     * chatgpt的模型
+     * 聊天模型
      */
     private String gptModel = "";
 
+    /**
+     * 非聊天模型
+     */
+    private String noChatModel = "";
+
     public int getMaxTokenNum() {
         return getModel(gptModel).getMaxToken();
+    }
+
+    public int getNoChatMaxTokenNum() {
+        return getModel(noChatModel).getMaxToken();
     }
 
     public ModelRes gptModel() {
@@ -73,6 +88,13 @@ public class AthenaContext {
             return null;
         }
         return getModel(this.gptModel);
+    }
+
+    public ModelRes noChatModel() {
+        if (StringUtils.isEmpty(this.noChatModel)) {
+            return null;
+        }
+        return getModel(this.noChatModel);
     }
 
     private List<String> modelList = new ArrayList<>();
