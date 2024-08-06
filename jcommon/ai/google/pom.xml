@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>google</artifactId>
-    <version>1.4-jdk8-SNAPSHOT</version>
+    <version>1.5-jdk8-SNAPSHOT</version>
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>

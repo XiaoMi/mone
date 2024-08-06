@@ -12,6 +12,7 @@ import okhttp3.*;
 import run.mone.ai.google.bo.Content;
 import run.mone.ai.google.bo.RequestPayload;
 import run.mone.ai.google.bo.ResponsePayload;
+import run.mone.ai.google.bo.multiModal.GVisionRequest;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -38,7 +39,6 @@ public class CloudeClient {
 
     private static Gson gson = new Gson();
 
-
     @SneakyThrows
     public String token(String model) {
         GoogleCredentials credentials = GoogleCredentials.fromStream(
@@ -52,42 +52,23 @@ public class CloudeClient {
         return this.token;
     }
 
-
-    public ResponsePayload call(String token, RequestPayload requestPayload) {
-        OkHttpClient client = new OkHttpClient.Builder().readTimeout(5, TimeUnit.MINUTES).build();
-        MediaType mediaType = MediaType.parse("application/json; charset=utf-8");
-        RequestBody body = RequestBody.create(mediaType, new Gson().toJson(requestPayload));
-        Request request = new Request.Builder()
-                .url(url + projectId + "/locations/us-central1/publishers/anthropic/models/" + model + ":streamRawPredict")
-                .post(body)
-                .addHeader("Authorization", "Bearer " + token)
-                .addHeader("Content-Type", "application/json; charset=utf-8")
-                .build();
-
-        try (Response response = client.newCall(request).execute()) {
-            if (response.code() == 429) {
-                ResponsePayload res = new ResponsePayload();
-                Content content = new Content();
-                content.setText(gson.toJson(ImmutableMap.of("message", "被claude3限流了", "code", "429")));
-                log.info("claude res:{}", content.getText());
-                res.setContent(Lists.newArrayList(content));
-                return res;
-            }
-            if (!response.isSuccessful()) throw new IOException("Unexpected code " + response);
-            // Handle the response
-            String res = response.body().string();
-            log.info("claude3 res:{}", res);
-            return new Gson().fromJson(res, ResponsePayload.class);
-        } catch (Throwable e) {
-            log.error(e.getMessage(), e);
-        }
-        return null;
+    public ResponsePayload visionCall(String url, String token, GVisionRequest GVisionRequest) {
+        return baseCall(url, token, gson.toJson(GVisionRequest));
     }
 
-    public ResponsePayload call(String url ,String token, RequestPayload requestPayload) {
+    public ResponsePayload call(String token, RequestPayload requestPayload) {
+        String callUrl = url + projectId + "/locations/us-central1/publishers/anthropic/models/" + model + ":streamRawPredict";
+        return call(callUrl, token, requestPayload);
+    }
+
+    public ResponsePayload call(String url, String token, RequestPayload requestPayload) {
+        return baseCall(url, token, gson.toJson(requestPayload));
+    }
+
+    private ResponsePayload baseCall(String url, String token, String bodyStr) {
         OkHttpClient client = new OkHttpClient.Builder().readTimeout(5, TimeUnit.MINUTES).build();
         MediaType mediaType = MediaType.parse("application/json; charset=utf-8");
-        RequestBody body = RequestBody.create(mediaType, new Gson().toJson(requestPayload));
+        RequestBody body = RequestBody.create(mediaType, bodyStr);
         Request request = new Request.Builder()
                 .url(url)
                 .post(body)
