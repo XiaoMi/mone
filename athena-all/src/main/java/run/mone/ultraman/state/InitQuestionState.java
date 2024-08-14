@@ -1,7 +1,7 @@
 package run.mone.ultraman.state;
 
 import com.google.common.base.Splitter;
-import run.mone.m78.ip.bo.PromptInfo;
+import com.xiaomi.youpin.tesla.ip.bo.PromptInfo;
 import org.apache.commons.lang3.StringUtils;
 import run.mone.ultraman.common.GsonUtils;
 

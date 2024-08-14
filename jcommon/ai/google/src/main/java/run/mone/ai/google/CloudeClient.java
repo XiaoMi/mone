@@ -12,6 +12,7 @@ import okhttp3.*;
 import run.mone.ai.google.bo.Content;
 import run.mone.ai.google.bo.RequestPayload;
 import run.mone.ai.google.bo.ResponsePayload;
+import run.mone.ai.google.bo.multiModal.GVisionRequest;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -38,11 +39,10 @@ public class CloudeClient {
 
     private static Gson gson = new Gson();
 
-
     @SneakyThrows
-    public String token() {
+    public String token(String model) {
         GoogleCredentials credentials = GoogleCredentials.fromStream(
-                        new FileInputStream("/tmp/key.json"))
+                        new FileInputStream("/tmp/key-"+model+".json"))
                 .createScoped(Collections.singleton("https://" + googleUrl + "/auth/cloud-platform"));
         // Use the credentials to authenticate and generate an access token
         credentials.refreshIfExpired();
@@ -52,13 +52,25 @@ public class CloudeClient {
         return this.token;
     }
 
+    public ResponsePayload visionCall(String url, String token, GVisionRequest GVisionRequest) {
+        return baseCall(url, token, gson.toJson(GVisionRequest));
+    }
 
     public ResponsePayload call(String token, RequestPayload requestPayload) {
+        String callUrl = url + projectId + "/locations/us-central1/publishers/anthropic/models/" + model + ":streamRawPredict";
+        return call(callUrl, token, requestPayload);
+    }
+
+    public ResponsePayload call(String url, String token, RequestPayload requestPayload) {
+        return baseCall(url, token, gson.toJson(requestPayload));
+    }
+
+    private ResponsePayload baseCall(String url, String token, String bodyStr) {
         OkHttpClient client = new OkHttpClient.Builder().readTimeout(5, TimeUnit.MINUTES).build();
         MediaType mediaType = MediaType.parse("application/json; charset=utf-8");
-        RequestBody body = RequestBody.create(mediaType, new Gson().toJson(requestPayload));
+        RequestBody body = RequestBody.create(mediaType, bodyStr);
         Request request = new Request.Builder()
-                .url(url + projectId + "/locations/us-central1/publishers/anthropic/models/" + model + ":streamRawPredict")
+                .url(url)
                 .post(body)
                 .addHeader("Authorization", "Bearer " + token)
                 .addHeader("Content-Type", "application/json; charset=utf-8")

@@ -1,8 +1,8 @@
 package run.mone.ultraman.event;
 
 import com.google.common.eventbus.Subscribe;
-import run.mone.m78.ip.bo.ClassInfo;
-import run.mone.m78.ip.bo.ValueInfo;
+import com.xiaomi.youpin.tesla.ip.bo.ClassInfo;
+import com.xiaomi.youpin.tesla.ip.bo.ValueInfo;
 import lombok.Getter;
 import run.mone.ultraman.bo.PackageInfo;
 import run.mone.ultraman.bo.ParamsInfo;

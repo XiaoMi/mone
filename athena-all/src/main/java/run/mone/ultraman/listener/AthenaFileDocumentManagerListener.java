@@ -8,6 +8,9 @@ import org.jetbrains.annotations.NotNull;
 /**
  * @author goodjava@qq.com
  * @date 2023/7/14 10:25
+ *
+ * 保存document的时候,会回调回来,以后做统计用
+ *
  */
 @Slf4j
 public class AthenaFileDocumentManagerListener implements FileDocumentManagerListener {
