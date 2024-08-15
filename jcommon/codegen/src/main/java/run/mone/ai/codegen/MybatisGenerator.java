@@ -15,6 +15,8 @@ import org.mybatis.generator.config.SqlMapGeneratorConfiguration;
 import org.mybatis.generator.config.TableConfiguration;
 import org.mybatis.generator.internal.DefaultShellCallback;
 import run.mone.ai.codegen.bo.FeatureGenerateBo;
+import run.mone.ai.codegen.bo.MybatisGeneratorResult;
+import run.mone.ai.codegen.holder.MybatisGeneratorHolder;
 
 import java.util.ArrayList;
 import java.util.Base64;
@@ -31,19 +33,19 @@ public class MybatisGenerator {
         //方便ai调用的时候,设置表名
         if (args.length > 0) {
             featureGenerateBo = parseArgsAndExtractData(args);
+            generateMyBatisFiles(featureGenerateBo);
         }
-        generateMyBatisFiles(featureGenerateBo);
     }
 
     // 使用mybatis-generator生成指定表对应的XML、Mapper和Entity类
-    public static void generateMyBatisFiles(FeatureGenerateBo featureGenerateBo) {
+    public static MybatisGeneratorResult generateMyBatisFiles(FeatureGenerateBo featureGenerateBo) {
+        MybatisGeneratorResult result = new MybatisGeneratorResult();
         if (Objects.isNull(featureGenerateBo.getTableName())) {
             log.warn("Table name is empty, cannot generate MyBatis files!");
-            return;
+            return result;
         }
         // 配置MyBatis Generator
         List<String> warnings = new ArrayList<>();
-        boolean overwrite = true;
         Configuration config = new Configuration();
 
         Context context = new Context(ModelType.FLAT);
@@ -60,7 +62,7 @@ public class MybatisGenerator {
 
         // 配置Java模型生成器
         JavaModelGeneratorConfiguration javaModelGeneratorConfiguration = new JavaModelGeneratorConfiguration();
-        javaModelGeneratorConfiguration.setTargetPackage(featureGenerateBo.getMybatisDaoPath());
+        javaModelGeneratorConfiguration.setTargetPackage(featureGenerateBo.getMybatisEntityPath());
         javaModelGeneratorConfiguration.setTargetProject(featureGenerateBo.getMybatisDaoModule() + "/src/main/java");
         context.setJavaModelGeneratorConfiguration(javaModelGeneratorConfiguration);
 
@@ -100,13 +102,29 @@ public class MybatisGenerator {
         removeGetSetMethodsPlugin.setConfigurationType("run.mone.ai.codegen.plugin.RemoveGetSetMethodsPlugin");
         context.addPluginConfiguration(removeGetSetMethodsPlugin);
 
+        if(!featureGenerateBo.isOverwrite()) {
+            // 使得xml文件不会被覆盖
+            PluginConfiguration unmergeXML = new PluginConfiguration();
+            unmergeXML.setConfigurationType("org.mybatis.generator.plugins.UnmergeableXmlMappersPlugin");
+            context.addPluginConfiguration(unmergeXML);
+        }
+
+        // 存储这次生成的类名，以便返回
+        PluginConfiguration classNamePlugin = new PluginConfiguration();
+        classNamePlugin.setConfigurationType("run.mone.ai.codegen.plugin.ClassNamePlugin");
+        context.addPluginConfiguration(classNamePlugin);
+
         config.addContext(context);
 
-        DefaultShellCallback callback = new DefaultShellCallback(overwrite);
+        DefaultShellCallback callback = new DefaultShellCallback(featureGenerateBo.isOverwrite());
         MyBatisGenerator myBatisGenerator;
         try {
             myBatisGenerator = new MyBatisGenerator(config, callback, warnings);
             myBatisGenerator.generate(null);
+
+            // 获取返回结果
+            result.setEntity(MybatisGeneratorHolder.entity);
+            result.setMapper(MybatisGeneratorHolder.mapper);
         } catch (Exception e) {
             log.error("Error generating MyBatis files", e);
         }
@@ -114,6 +132,7 @@ public class MybatisGenerator {
         if (!warnings.isEmpty()) {
             warnings.forEach(log::warn);
         }
+        return result;
     }
 
     private static FeatureGenerateBo parseArgsAndExtractData(String[] args) {

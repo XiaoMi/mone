@@ -1,5 +1,6 @@
 package run.mone.ai.codegen;
 
+import com.google.gson.Gson;
 import com.mybatisflex.codegen.Generator;
 import com.mybatisflex.codegen.config.GlobalConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -10,6 +11,7 @@ import run.mone.ai.codegen.bo.FeatureGeneratType;
 import run.mone.ai.codegen.bo.FeatureGenerateBo;
 import run.mone.ai.codegen.util.TemplateUtils;
 
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -20,6 +22,17 @@ import java.util.Objects;
  */
 @Slf4j
 public class FeatureGenerator {
+
+    private static final Gson gson = new Gson();
+
+    public static void main(String[] args) {
+        FeatureGenerateBo featureGenerateBo = null;
+        //方便ai调用的时候,设置表名
+        if (args.length > 0) {
+            featureGenerateBo = parseArgsAndExtractData(args);
+            generateWithTemplate(featureGenerateBo);
+        }
+    }
 
     public static void generateWithTemplate(FeatureGenerateBo featureGenerateBo) {
 
@@ -146,5 +159,16 @@ public class FeatureGenerator {
             return null;
         }
         return input.replace(".", "/");
+    }
+
+    private static FeatureGenerateBo parseArgsAndExtractData(String[] args) {
+        String jsonStr = args[0];
+
+        jsonStr = new String(Base64.getDecoder().decode(jsonStr));
+        log.info("jsonStr:{}", jsonStr);
+
+        FeatureGenerateBo bo = gson.fromJson(jsonStr, FeatureGenerateBo.class);
+        log.info("map:{}", bo);
+        return bo;
     }
 }
