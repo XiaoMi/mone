@@ -87,4 +87,10 @@ public class FeatureGenerateBo {
     @Builder.Default
     private String mybatisEntityPath = "";
 
+    /**
+     * mybatis 是否覆盖现有类，默认不覆盖，如果存在现有类则跳过
+     */
+    @Builder.Default
+    private boolean overwrite = false;
+
 }
