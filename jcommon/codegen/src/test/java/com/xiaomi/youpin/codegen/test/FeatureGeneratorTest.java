@@ -16,7 +16,6 @@ public class FeatureGeneratorTest {
 	@Test
 	public void testCreateTable() {
 	    FeatureGenerateBo featureGenerateBo = new FeatureGenerateBo();
-	    featureGenerateBo.setType(FeatureGeneratType.TABLE);
 	    featureGenerateBo.setJdbcUrl(dbUrl);
 	    featureGenerateBo.setUserName(dbUser);
 	    featureGenerateBo.setPassword(dbPwd);
@@ -27,13 +26,12 @@ public class FeatureGeneratorTest {
 				"  PRIMARY KEY (`id`)\n" +
 				");";
 		featureGenerateBo.setSql(sql);
-		FeatureGenerator.generateWithTemplate(featureGenerateBo);
+		FeatureGenerator.generateWithGenerator(featureGenerateBo);
 	}
 
 	@Test
 	public void testGenerateWithMybatis() {
 	    FeatureGenerateBo featureGenerateBo = new FeatureGenerateBo();
-	    featureGenerateBo.setType(FeatureGeneratType.CODE_WITH_MYBATIS_GENERATOR);
 		featureGenerateBo.setJdbcUrl(dbUrl);
 		featureGenerateBo.setUserName(dbUser);
 		featureGenerateBo.setPassword(dbPwd);

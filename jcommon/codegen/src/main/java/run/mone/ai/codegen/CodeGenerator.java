@@ -24,7 +24,17 @@ public class CodeGenerator {
 
     private static String serviceName = "s";
 
-    private static String basePath = "/Users/wodiwudi/java/nr-car-account";
+    private static String testPackageName = "TP";
+
+    private static String testPath = "";
+
+    private static String mainClass = "";
+
+    private static String author = "";
+
+    private static String testType = "";
+
+    private static String basePath = "you base path";
 
     private static boolean createPojo = false;
 
@@ -37,6 +47,8 @@ public class CodeGenerator {
     private static boolean createTest = true;
 
     private static boolean createController = false;
+
+    private static final String SPRING_BOOT_TEST_TYPE = "springboot";
 
     /**
      * 主方法
@@ -53,6 +65,11 @@ public class CodeGenerator {
             className = map.get("pojoName");
             testName = map.get("testName");
             serviceName = map.get("serviceName");
+            testPackageName = map.get("testPackageName");
+            testPath = map.get("testPath");
+            mainClass = map.get("mainClass");
+            author = map.get("author");
+            testType = map.get("testType");
         }
         if (StringUtils.isEmpty(className)) {
             return;
@@ -61,6 +78,11 @@ public class CodeGenerator {
         data.put("className", className);
         data.put("author", "goodjava@qq.com");
         data.put("serviceName", serviceName);
+        data.put("testPackageName", testPackageName);
+        data.put("testPath", testPath);
+        data.put("mainClass", mainClass);
+        data.put("testAuthor", author);
+        data.put("testType", testType);
         Optional<String> first = Arrays.stream(testName.split("\\.")).findFirst();
         data.put("testName", first.get());
         // 调用方法并获取结果
@@ -86,10 +108,14 @@ public class CodeGenerator {
 
         if (createTest) {
             String cn = testName;
-            System.out.println("create test:" + cn);
-            String test = TemplateUtils.renderTemplateFromFile("tlp/test.java", data);
-            TemplateUtils.writeStringToFile(test, basePath + "/your project/src/test/java/com/xiaomi/nr/car/account/constant/" + cn);
-
+            System.out.println("create test cn :" + cn + "path:" + testPath);
+            String test;
+            if (SPRING_BOOT_TEST_TYPE.equals(testType)) {
+                test = TemplateUtils.renderTemplateFromFile("tlp/testSpring.java", data);
+            } else {
+                test = TemplateUtils.renderTemplateFromFile("tlp/test.java", data);
+            }
+            TemplateUtils.writeStringToFile(test, testPath + cn);
         }
 
         if (createController) {
