@@ -4,6 +4,7 @@ import com.intellij.openapi.project.Project;
 import com.intellij.openapi.wm.StatusBar;
 import com.intellij.openapi.wm.StatusBarWidget;
 import com.intellij.openapi.wm.StatusBarWidgetFactory;
+import com.xiaomi.youpin.tesla.ip.common.Const;
 import org.jetbrains.annotations.Nls;
 import org.jetbrains.annotations.NonNls;
 import org.jetbrains.annotations.NotNull;
@@ -20,7 +21,7 @@ public class AthenaStatusBarWidgetFactory implements StatusBarWidgetFactory {
 
     @Override
     public @Nls @NotNull String getDisplayName() {
-        return "Athena";
+        return Const.PLUGIN_NAME;
     }
 
     @Override

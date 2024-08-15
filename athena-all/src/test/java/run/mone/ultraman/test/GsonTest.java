@@ -18,7 +18,6 @@ public class GsonTest {
         System.out.println(jsonObject.get("a").getAsString());
     }
 
-    //计算两数和1
 
 
 

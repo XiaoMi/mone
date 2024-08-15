@@ -13,6 +13,10 @@ import run.mone.ai.codegen.bo.FeatureGenerateBo;
 import run.mone.ai.codegen.util.TemplateUtils;
 
 import java.lang.reflect.Type;
+import run.mone.ai.codegen.bo.FeatureGeneratType;
+import run.mone.ai.codegen.bo.FeatureGenerateBo;
+import run.mone.ai.codegen.util.TemplateUtils;
+
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -128,6 +132,7 @@ public class FeatureGenerator {
             log.warn("Empty generation type, will do noting!");
             return;
         }
+
         FeatureGenerateType featureGenType = featureGenerateBo.getType();
         if (FeatureGenerateType.CODE_WITH_TEMPLATE != featureGenType
                 && FeatureGenerateType.TABLE != featureGenType) {
@@ -137,11 +142,13 @@ public class FeatureGenerator {
 
         //配置数据源
         HikariDataSource dataSource = new HikariDataSource();
+        dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
         dataSource.setJdbcUrl(featureGenerateBo.getJdbcUrl());
         dataSource.setUsername(featureGenerateBo.getUserName());
         dataSource.setPassword(featureGenerateBo.getPassword());
 
         //创建mapper相关代码
+
         if (FeatureGenerateType.CODE_WITH_TEMPLATE == featureGenType) {
             GlobalConfig globalConfig = createGlobalConfigUseStyle(featureGenerateBo);
             Generator generator = new Generator(dataSource, globalConfig);
@@ -150,6 +157,7 @@ public class FeatureGenerator {
         }
 
         //创建table
+
         if (FeatureGenerateType.TABLE == featureGenType) {
             JdbcTemplate jt = new JdbcTemplate(dataSource);
             jt.update(featureGenerateBo.getSql());
@@ -254,6 +262,7 @@ public class FeatureGenerator {
         String jsonStr = args[0];
         Type typeOfT = new TypeToken<Map<String, String>>() {
         }.getType();
+
 
         jsonStr = new String(Base64.getDecoder().decode(jsonStr));
         log.info("jsonStr:{}", jsonStr);

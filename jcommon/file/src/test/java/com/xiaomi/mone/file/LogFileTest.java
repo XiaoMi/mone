@@ -78,7 +78,7 @@ public class LogFileTest {
         Pattern pattern = Pattern.compile(fileName);
         monitor.reg("/home/work/log", it -> {
             boolean matches = pattern.matcher(it).matches();
-            log.info("file:{},matches:{}", it, matches);
+            log.info("file:{},matches:{}", it, true);
             return true;
         });
         log.info("reg finish");

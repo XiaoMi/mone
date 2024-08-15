@@ -5,6 +5,9 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import lombok.ToString;
+
+
 /**
  * @author goodjava@qq.com, HawickMason@xiaomi.com
  * @date 7/12/24 14:10
@@ -74,5 +77,24 @@ public class FeatureGenerateBo {
 
     @Builder.Default
     private boolean createController = false;
-    
+
+
+    /**
+     * 目前使用module所在的绝对路径
+     */
+    @Builder.Default
+    private String mybatisDaoModule = "";
+    @Builder.Default
+    private String mybatisXMLPath = "";
+    @Builder.Default
+    private String mybatisDaoPath = "";
+    @Builder.Default
+    private String mybatisEntityPath = "";
+
+    /**
+     * mybatis 是否覆盖现有类，默认不覆盖，如果存在现有类则跳过
+     */
+    @Builder.Default
+    private boolean overwrite = false;
+
 }

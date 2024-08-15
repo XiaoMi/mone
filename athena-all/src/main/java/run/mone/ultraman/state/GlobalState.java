@@ -1,6 +1,6 @@
 package run.mone.ultraman.state;
 
-import run.mone.m78.ip.util.UltramanConsole;
+import com.xiaomi.youpin.tesla.ip.util.UltramanConsole;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import run.mone.ultraman.common.GsonUtils;
@@ -28,8 +28,8 @@ public class GlobalState extends AthenaState {
     @Override
     public void execute(StateReq req, StateContext context) {
         //10秒一打印
-        if (System.currentTimeMillis() - lastUpdateTime > 10000) {
-            log.info("project:{} state:{}", context.getProject(), this.fsm.getCurrentState());
+        if (System.currentTimeMillis() - lastUpdateTime > 100000) {
+            log.debug("project:{} state:{}", context.getProject(), this.fsm.getCurrentState());
             if (StringUtils.isNotEmpty(context.getProject())) {
                 UltramanConsole.append(context.getProject(), "ai fsm state:" + this.fsm.getCurrentState() + " step:(" + context.getStep() + "/" + context.getFinishStep() + ") question:" + context.getQuestion() + "(" + context.getPromptStep() + "/" + context.getFinishPromptStep() + ")");
             }

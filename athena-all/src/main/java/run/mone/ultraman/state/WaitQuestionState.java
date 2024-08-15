@@ -1,9 +1,9 @@
 package run.mone.ultraman.state;
 
 import com.google.gson.reflect.TypeToken;
-import run.mone.m78.ip.bo.robot.AiChatMessage;
-import run.mone.m78.ip.bo.robot.ProjectAiMessageManager;
-import run.mone.m78.ip.bo.robot.Role;
+import com.xiaomi.youpin.tesla.ip.bo.robot.AiChatMessage;
+import com.xiaomi.youpin.tesla.ip.bo.robot.ProjectAiMessageManager;
+import com.xiaomi.youpin.tesla.ip.bo.robot.Role;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;

@@ -78,9 +78,12 @@ public class FileInfoCache {
         }
     }
 
-    @SneakyThrows
     public void load(String filePath) {
-        this.filePath = filePath;
-        this.load();
+        try {
+            this.filePath = filePath;
+            this.load();
+        } catch (Exception e) {
+            log.error("load cache error,filePath:{}", filePath, e);
+        }
     }
 }

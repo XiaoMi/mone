@@ -1,10 +1,10 @@
 package run.mone.ultraman.state;
 
-import run.mone.m78.ip.bo.robot.AiChatMessage;
-import run.mone.m78.ip.bo.robot.MessageType;
-import run.mone.m78.ip.bo.robot.ProjectAiMessageManager;
-import run.mone.m78.ip.bo.robot.Role;
-import run.mone.m78.ip.common.ChromeUtils;
+import com.xiaomi.youpin.tesla.ip.bo.robot.AiChatMessage;
+import com.xiaomi.youpin.tesla.ip.bo.robot.MessageType;
+import com.xiaomi.youpin.tesla.ip.bo.robot.ProjectAiMessageManager;
+import com.xiaomi.youpin.tesla.ip.bo.robot.Role;
+import com.xiaomi.youpin.tesla.ip.common.ChromeUtils;
 import lombok.extern.slf4j.Slf4j;
 
 /**

@@ -4,9 +4,9 @@ import com.intellij.openapi.fileEditor.FileDocumentManager;
 import com.intellij.openapi.fileEditor.FileEditorManager;
 import com.intellij.openapi.fileEditor.FileEditorManagerListener;
 import com.intellij.openapi.vfs.VirtualFile;
-import run.mone.m78.ip.bo.ValueInfo;
-import run.mone.m78.ip.common.Const;
-import run.mone.m78.ip.common.Safe;
+import com.xiaomi.youpin.tesla.ip.bo.ValueInfo;
+import com.xiaomi.youpin.tesla.ip.common.Const;
+import com.xiaomi.youpin.tesla.ip.common.Safe;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -31,6 +31,7 @@ public class AthenaFileEditorManagerListener implements FileEditorManagerListene
                     log.info(text);
                     ValueInfo pi = new ValueInfo();
                     pi.setValue(text);
+                    //自己实现了一套event时间,以后都需要且成ide自带那套
                     AthenaEventBus.ins().post(pi);
                 }
             });

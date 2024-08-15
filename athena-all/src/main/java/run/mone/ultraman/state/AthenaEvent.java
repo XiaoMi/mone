@@ -1,7 +1,7 @@
 package run.mone.ultraman.state;
 
-import run.mone.m78.ip.bo.PromptInfo;
-import run.mone.m78.ip.common.PromptType;
+import com.xiaomi.youpin.tesla.ip.bo.PromptInfo;
+import com.xiaomi.youpin.tesla.ip.common.PromptType;
 import lombok.Builder;
 import lombok.Data;
 
