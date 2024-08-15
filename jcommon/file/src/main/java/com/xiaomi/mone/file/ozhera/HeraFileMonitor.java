@@ -39,6 +39,9 @@ public class HeraFileMonitor {
     @Setter
     private EventListener listener;
 
+    @Setter
+    private volatile boolean stop;
+
     public HeraFileMonitor() {
         this(TimeUnit.SECONDS.toMillis(30));
     }
@@ -53,10 +56,12 @@ public class HeraFileMonitor {
                         remList.add(Pair.of(it.getFileName(), it.getFileKey()));
                     }
                 });
+
                 remList.forEach(it -> {
                     log.info("remove file:{}", it.getKey());
                     fileMap.remove(it.getKey());
                     map.remove(it.getValue());
+                    listener.remove(it.getValue());
                 });
             } catch (Throwable ex) {
                 log.error(ex.getMessage(), ex);
@@ -85,6 +90,7 @@ public class HeraFileMonitor {
         directory.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_CREATE);
         while (true) {
             try {
+
                 WatchKey key = watchService.take();
                 try {
                     for (WatchEvent<?> event : key.pollEvents()) {
