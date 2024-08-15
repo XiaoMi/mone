@@ -1,12 +1,18 @@
 package run.mone.ai.codegen;
 
 import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.mybatisflex.codegen.Generator;
 import com.mybatisflex.codegen.config.GlobalConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
+import run.mone.ai.codegen.bo.FeatureGenerateType;
+import run.mone.ai.codegen.bo.FeatureGenerateBo;
+import run.mone.ai.codegen.util.TemplateUtils;
+
+import java.lang.reflect.Type;
 import run.mone.ai.codegen.bo.FeatureGeneratType;
 import run.mone.ai.codegen.bo.FeatureGenerateBo;
 import run.mone.ai.codegen.util.TemplateUtils;
@@ -23,27 +29,113 @@ import java.util.Objects;
 @Slf4j
 public class FeatureGenerator {
 
-    private static final Gson gson = new Gson();
-
     public static void main(String[] args) {
-        FeatureGenerateBo featureGenerateBo = null;
-        //方便ai调用的时候,设置表名
+        Map<String, String> map;
         if (args.length > 0) {
-            featureGenerateBo = parseArgsAndExtractData(args);
-            generateWithTemplate(featureGenerateBo);
+            map = parseArgsAndExtractData(args);
+            String type = getGenType(map);
+            if (type == null) {
+                return;
+            }
+            FeatureGenerateType generateType = FeatureGenerateType.getGenerateTypeByCode(Integer.parseInt(type));
+            FeatureGenerateBo featureGenerateBo = mapToGenBo(map);
+            switch (generateType) {
+                case CODE_WITH_GENERATOR:
+                case TABLE:
+                    generateWithGenerator(featureGenerateBo);
+                    break;
+                case CODE_WITH_TEMPLATE:
+                    generateByTemplate(featureGenerateBo);
+                    break;
+                default:
+                    log.info("did not match any gen type, will do nothing...");
+            }
         }
     }
 
-    public static void generateWithTemplate(FeatureGenerateBo featureGenerateBo) {
+    private static String getGenType(Map<String, String> map) {
+        String type = map.get("type");
+        if (StringUtils.isBlank(type)) {
+            log.error("generate type is not specified!");
+            return null;
+        }
+        if (!StringUtils.isNumeric(type)) {
+            log.error("generate type is not valid, must be number! See @FeatureGenerateType.code");
+            return null;
+        }
+        return type;
+    }
+
+    private static FeatureGenerateBo mapToGenBo(Map<String, String> map) {
+        FeatureGenerateBo.FeatureGenerateBoBuilder builder = FeatureGenerateBo.builder();
+        if (map.containsKey("tableName")) {
+            builder.tableName(map.get("tableName"));
+        }
+        if (map.containsKey("testName")) {
+            builder.sql(map.get("testName"));
+        }
+        if (map.containsKey("sql")) {
+            builder.sql(map.get("sql"));
+        }
+        if (map.containsKey("jdbcUrl")) {
+            builder.jdbcUrl(map.get("jdbcUrl"));
+        }
+        if (map.containsKey("userName")) {
+            builder.userName(map.get("userName"));
+        }
+        if (map.containsKey("password")) {
+            builder.password(map.get("password"));
+        }
+        if (map.containsKey("basePackage")) {
+            builder.basePackage(map.get("basePackage"));
+        }
+        if (map.containsKey("className")) {
+            builder.className(map.get("className"));
+        }
+        if (map.containsKey("auth")) {
+            builder.auth(map.get("auth"));
+        }
+        if (map.containsKey("basePath")) {
+            builder.basePath(map.get("basePath"));
+        }
+        if (map.containsKey("serverModulePath")) {
+            builder.serverModulePath(map.get("serverModulePath"));
+        }
+        if (map.containsKey("serviceModulePath")) {
+            builder.serviceModulePath(map.get("serviceModulePath"));
+        }
+        if (map.containsKey("apiModulePath")) {
+            builder.apiModulePath(map.get("apiModulePath"));
+        }
+        if (map.containsKey("createPojo")) {
+            builder.createPojo(Boolean.parseBoolean(map.get("createPojo")));
+        }
+        if (map.containsKey("createVo")) {
+            builder.createVo(Boolean.parseBoolean(map.get("createVo")));
+        }
+        if (map.containsKey("createTransfer")) {
+            builder.createTransfer(Boolean.parseBoolean(map.get("createTransfer")));
+        }
+        if (map.containsKey("createTest")) {
+            builder.createTest(Boolean.parseBoolean(map.get("createTest")));
+        }
+        if (map.containsKey("createController")) {
+            builder.createController(Boolean.parseBoolean(map.get("createController")));
+        }
+        return builder.build();
+    }
+
+    public static void generateWithGenerator(FeatureGenerateBo featureGenerateBo) {
 
         // 类型检查
         if (Objects.isNull(featureGenerateBo.getType())) {
             log.warn("Empty generation type, will do noting!");
             return;
         }
-        FeatureGeneratType featureGenType = featureGenerateBo.getType();
-        if (FeatureGeneratType.CODE_WITH_TEMPLATE != featureGenType
-                && FeatureGeneratType.TABLE != featureGenType) {
+
+        FeatureGenerateType featureGenType = featureGenerateBo.getType();
+        if (FeatureGenerateType.CODE_WITH_TEMPLATE != featureGenType
+                && FeatureGenerateType.TABLE != featureGenType) {
             log.warn("generate type:{} is not match with current call", featureGenType);
             return;
         }
@@ -56,7 +148,8 @@ public class FeatureGenerator {
         dataSource.setPassword(featureGenerateBo.getPassword());
 
         //创建mapper相关代码
-        if (FeatureGeneratType.CODE_WITH_TEMPLATE == featureGenType) {
+
+        if (FeatureGenerateType.CODE_WITH_TEMPLATE == featureGenType) {
             GlobalConfig globalConfig = createGlobalConfigUseStyle(featureGenerateBo);
             Generator generator = new Generator(dataSource, globalConfig);
             generator.generate();
@@ -64,7 +157,8 @@ public class FeatureGenerator {
         }
 
         //创建table
-        if (FeatureGeneratType.TABLE == featureGenType) {
+
+        if (FeatureGenerateType.TABLE == featureGenType) {
             JdbcTemplate jt = new JdbcTemplate(dataSource);
             jt.update(featureGenerateBo.getSql());
         }
@@ -138,7 +232,7 @@ public class FeatureGenerator {
         }
 
         if (featureGenerateBo.isCreateTest()) {
-            String cn = className + "ServiceTest.java";
+            String cn = featureGenerateBo.getTestName();
             String test = TemplateUtils.renderTemplateFromFile("tlp/test.java", data);
             TemplateUtils.writeStringToFile(test, basePath + "/" + featureGenerateBo.getServerModulePath() + "/src/test/java/run/mone/test/service/" + cn);
         }
@@ -161,14 +255,20 @@ public class FeatureGenerator {
         return input.replace(".", "/");
     }
 
-    private static FeatureGenerateBo parseArgsAndExtractData(String[] args) {
+    private static Map<String, String> parseArgsAndExtractData(String[] args) {
+        if (StringUtils.isBlank(args[0])) {
+            log.warn("no valid input params, will do nothing!");
+        }
         String jsonStr = args[0];
+        Type typeOfT = new TypeToken<Map<String, String>>() {
+        }.getType();
+
 
         jsonStr = new String(Base64.getDecoder().decode(jsonStr));
         log.info("jsonStr:{}", jsonStr);
 
-        FeatureGenerateBo bo = gson.fromJson(jsonStr, FeatureGenerateBo.class);
-        log.info("map:{}", bo);
-        return bo;
+        Map<String, String> map = new Gson().fromJson(jsonStr, typeOfT);
+        log.info("map:{}", map);
+        return map;
     }
 }
