@@ -22,7 +22,7 @@ public class ClientTest {
         RequestPayload payload = RequestPayload.builder().maxTokens(4000).anthropicVersion("vertex-2023-10-16").messages(Lists.newArrayList(Message.builder().role("user")
                 .content(content)
                 .build())).build();
-        ResponsePayload r = c.call(c.token(), payload);
+        ResponsePayload r = c.call(c.token(""), payload);
         System.out.println(r.getContent().get(0).getText());
     }
 }

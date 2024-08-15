@@ -4,7 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import lombok.ToString;
+
 
 /**
  * @author goodjava@qq.com, HawickMason@xiaomi.com
@@ -14,11 +16,10 @@ import lombok.ToString;
 @AllArgsConstructor
 @Data
 @Builder
-@ToString
 public class FeatureGenerateBo {
 
     @Builder.Default
-    private FeatureGeneratType type = FeatureGeneratType.CODE_WITH_GENERATOR;
+    private FeatureGenerateType type = FeatureGenerateType.CODE_WITH_GENERATOR;
 
     @Builder.Default
     private String tableName = "";
@@ -41,6 +42,8 @@ public class FeatureGenerateBo {
 
     @Builder.Default
     private String className = "Dummy";
+
+    private String testName = "T";
 
     @Builder.Default
     private String auth = "";
@@ -74,6 +77,7 @@ public class FeatureGenerateBo {
 
     @Builder.Default
     private boolean createController = false;
+
 
     /**
      * 目前使用module所在的绝对路径

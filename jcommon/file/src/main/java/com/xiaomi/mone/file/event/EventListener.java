@@ -8,4 +8,7 @@ public interface EventListener {
 
     void onEvent(FileEvent event);
 
+    default void remove(Object fileKey) {
+    }
+
 }

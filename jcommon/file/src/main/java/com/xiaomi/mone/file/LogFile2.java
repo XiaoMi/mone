@@ -58,8 +58,6 @@ public class LogFile2 implements ILogFile {
 
     private String md5;
 
-    private static final int LINE_MAX_LENGTH = 50000;
-
     public LogFile2() {
 
     }

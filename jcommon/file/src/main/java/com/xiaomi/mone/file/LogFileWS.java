@@ -40,8 +40,6 @@ public class LogFileWS extends LogFile {
 
     private String md5;
 
-    private static final int LINE_MAX_LENGTH = 50000;
-
     private WatchService ws;
 
     {
