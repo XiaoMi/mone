@@ -88,6 +88,7 @@
         <module>infra-common</module>
         <module>docean-spring-starter</module>
         <module>ai</module>
+        <module>ai/neo4j</module>
     </modules>
 
     <!--  <distributionManagement>-->
