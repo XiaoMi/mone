@@ -5,6 +5,7 @@ import run.mone.ai.codegen.FeatureGenerator;
 import run.mone.ai.codegen.MybatisGenerator;
 import run.mone.ai.codegen.bo.FeatureGeneratType;
 import run.mone.ai.codegen.bo.FeatureGenerateBo;
+import run.mone.ai.codegen.bo.FeatureGenerateType;
 import run.mone.ai.codegen.bo.MybatisGeneratorResult;
 
 public class FeatureGeneratorTest {
@@ -16,7 +17,7 @@ public class FeatureGeneratorTest {
 	@Test
 	public void testCreateTable() {
 	    FeatureGenerateBo featureGenerateBo = new FeatureGenerateBo();
-	    featureGenerateBo.setType(FeatureGeneratType.TABLE);
+	    featureGenerateBo.setType(FeatureGenerateType.TABLE);
 	    featureGenerateBo.setJdbcUrl(dbUrl);
 	    featureGenerateBo.setUserName(dbUser);
 	    featureGenerateBo.setPassword(dbPwd);
@@ -27,13 +28,12 @@ public class FeatureGeneratorTest {
 				"  PRIMARY KEY (`id`)\n" +
 				");";
 		featureGenerateBo.setSql(sql);
-		FeatureGenerator.generateWithTemplate(featureGenerateBo);
+		FeatureGenerator.generateWithGenerator(featureGenerateBo);
 	}
 
 	@Test
 	public void testGenerateWithMybatis() {
 	    FeatureGenerateBo featureGenerateBo = new FeatureGenerateBo();
-	    featureGenerateBo.setType(FeatureGeneratType.CODE_WITH_MYBATIS_GENERATOR);
 		featureGenerateBo.setJdbcUrl(dbUrl);
 		featureGenerateBo.setUserName(dbUser);
 		featureGenerateBo.setPassword(dbPwd);
