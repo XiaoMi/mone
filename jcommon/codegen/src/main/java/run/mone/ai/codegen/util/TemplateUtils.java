@@ -14,6 +14,8 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.Channels;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -55,6 +57,39 @@ public class TemplateUtils {
             InputStream is = TemplateUtils.class.getClassLoader().getResourceAsStream(templateFileName);
             //读取is成String
             String template = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            return renderTemplate(template, m);
+        } catch (IOException ex) {
+            log.error("Error reading template file", ex);
+        }
+        return "";
+    }
+
+    @SneakyThrows
+    public static String renderTemplateFromFileV2(String templateFileName, Map<String, ? extends Object> m) {
+        try {
+            InputStream is = TemplateUtils.class.getClassLoader().getResourceAsStream(templateFileName);
+            if (is == null) {
+                throw new IOException("Resource not found: " + templateFileName);
+            }
+
+            // 使用Channels和ByteBuffer读取所有字节
+            ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
+            int bytesRead;
+            while ((bytesRead = Channels.newChannel(is).read(byteBuffer)) != -1) {
+                if (byteBuffer.remaining() == 0) {
+                    ByteBuffer newBuffer = ByteBuffer.allocate(byteBuffer.capacity() * 2);
+                    byteBuffer.flip();
+                    newBuffer.put(byteBuffer);
+                    byteBuffer = newBuffer;
+                }
+            }
+            byteBuffer.flip();
+            byte[] bytes = new byte[byteBuffer.limit()];
+            byteBuffer.get(bytes);
+
+            // 将字节数组转换为字符串
+            String template = new String(bytes, StandardCharsets.UTF_8);
+
             return renderTemplate(template, m);
         } catch (IOException ex) {
             log.error("Error reading template file", ex);
