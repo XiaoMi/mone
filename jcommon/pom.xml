@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>run.mone</groupId>
     <artifactId>jcommon</artifactId>
-    <version>1.6.2-jdk17-SNAPSHOT</version>
+    <version>1.6.0-jdk21-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>${project.artifactId}</name>
     <description>The parent project of jcommon</description>

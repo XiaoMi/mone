@@ -124,6 +124,48 @@ public class CodeGenerator {
         }
     }
 
+    public static void createAllUnitTest(Map<String, String> map) {
+        if (map.isEmpty()) {
+            return;
+        }
+        //方便ai调用的时候,设置表名
+        className = map.get("pojoName");
+        testName = map.get("testName");
+        serviceName = map.get("serviceName");
+        testPackageName = map.get("testPackageName");
+        testPath = map.get("testPath");
+        mainClass = map.get("mainClass");
+        author = map.get("author");
+        testType = map.get("testType");
+
+        if (StringUtils.isEmpty(className)) {
+            return;
+        }
+        Map<String, Object> data = new HashMap<>();
+        data.put("className", className);
+        data.put("author", "goodjava@qq.com");
+        data.put("serviceName", serviceName);
+        data.put("testPackageName", testPackageName);
+        data.put("testPath", testPath);
+        data.put("mainClass", mainClass);
+        data.put("testAuthor", author);
+        data.put("testType", testType);
+        Optional<String> first = Arrays.stream(testName.split("\\.")).findFirst();
+        data.put("testName", first.get());
+
+        if (createTest) {
+            String cn = testName;
+            System.out.println("create test cn :" + cn + "path:" + testPath);
+            String test;
+            if (SPRING_BOOT_TEST_TYPE.equals(testType)) {
+                test = TemplateUtils.renderTemplateFromFileV2("tlp/testSpring.java", data);
+            } else {
+                test = TemplateUtils.renderTemplateFromFileV2("tlp/test.java", data);
+            }
+            TemplateUtils.writeStringToFile(test, testPath + cn);
+        }
+    }
+
 
     private static Map<String, String> parseArgsAndExtractData(String[] args) {
         String jsonStr = args[0];
