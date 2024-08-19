@@ -55,7 +55,7 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>infra-result</artifactId>
-            <version>1.6.1-jdk17-SNAPSHOT</version>
+            <version>1.6.0-jdk21-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <artifactId>thrift</artifactId>
