@@ -8,15 +8,11 @@ import com.zaxxer.hikari.HikariDataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.jdbc.core.JdbcTemplate;
-import run.mone.ai.codegen.bo.FeatureGenerateType;
 import run.mone.ai.codegen.bo.FeatureGenerateBo;
+import run.mone.ai.codegen.bo.FeatureGenerateType;
 import run.mone.ai.codegen.util.TemplateUtils;
 
 import java.lang.reflect.Type;
-import run.mone.ai.codegen.bo.FeatureGeneratType;
-import run.mone.ai.codegen.bo.FeatureGenerateBo;
-import run.mone.ai.codegen.util.TemplateUtils;
-
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
@@ -141,26 +137,29 @@ public class FeatureGenerator {
         }
 
         //配置数据源
-        HikariDataSource dataSource = new HikariDataSource();
-        dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
-        dataSource.setJdbcUrl(featureGenerateBo.getJdbcUrl());
-        dataSource.setUsername(featureGenerateBo.getUserName());
-        dataSource.setPassword(featureGenerateBo.getPassword());
+        try (HikariDataSource dataSource = new HikariDataSource()) {
+            dataSource.setDriverClassName("com.mysql.cj.jdbc.Driver");
+            dataSource.setJdbcUrl(featureGenerateBo.getJdbcUrl());
+            dataSource.setUsername(featureGenerateBo.getUserName());
+            dataSource.setPassword(featureGenerateBo.getPassword());
 
-        //创建mapper相关代码
+            //创建mapper相关代码
 
-        if (FeatureGenerateType.CODE_WITH_TEMPLATE == featureGenType) {
-            GlobalConfig globalConfig = createGlobalConfigUseStyle(featureGenerateBo);
-            Generator generator = new Generator(dataSource, globalConfig);
-            generator.generate();
-            return;
-        }
+            if (FeatureGenerateType.CODE_WITH_TEMPLATE == featureGenType) {
+                GlobalConfig globalConfig = createGlobalConfigUseStyle(featureGenerateBo);
+                Generator generator = new Generator(dataSource, globalConfig);
+                generator.generate();
+                return;
+            }
 
-        //创建table
+            //创建table
 
-        if (FeatureGenerateType.TABLE == featureGenType) {
-            JdbcTemplate jt = new JdbcTemplate(dataSource);
-            jt.update(featureGenerateBo.getSql());
+            if (FeatureGenerateType.TABLE == featureGenType) {
+                JdbcTemplate jt = new JdbcTemplate(dataSource);
+                jt.update(featureGenerateBo.getSql());
+            }
+        } catch (Exception e) {
+            log.error("generate with template error", e);
         }
     }
 
