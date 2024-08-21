@@ -8,6 +8,7 @@ import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.comments.Comment;
 import com.github.javaparser.ast.comments.JavadocComment;
 import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.javaparser.ast.nodeTypes.NodeWithName;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -21,9 +22,10 @@ import org.neo4j.driver.Record;
 import org.neo4j.driver.*;
 import org.neo4j.driver.types.Node;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Data
@@ -34,13 +36,18 @@ public class MoneCodeParser {
 
     private String NEO4J_USER = "neo4j";
 
-    private String NEO4J_PASSWORD = "";
+    private String password = "";
 
     private String embeddingUrl = "";
 
+    public MoneCodeParser setPassword(String password) {
+        this.password = password;
+        return this;
+    }
+
 
     public void queryEntityClasses() {
-        try (Driver driver = GraphDatabase.driver(NEO4J_URI, AuthTokens.basic(NEO4J_USER, NEO4J_PASSWORD));
+        try (Driver driver = GraphDatabase.driver(NEO4J_URI, AuthTokens.basic(NEO4J_USER, password));
              Session session = driver.session()) {
             // 查询 type 为 'entity' 的所有 Class 节点
             String query = "MATCH (c:Class {type: 'entity'}) RETURN c";
@@ -61,10 +68,15 @@ public class MoneCodeParser {
         }
     }
 
+    //获取session(class)
+    public Session getSession() {
+        return GraphDatabase.driver(NEO4J_URI, AuthTokens.basic(NEO4J_USER, password)).session();
+    }
+
 
     //查询所有Comment的信息(使用neo4j),返回是个List(class)
     public List<Map<String, Object>> getAllComments() {
-        try (Driver driver = GraphDatabase.driver(NEO4J_URI, AuthTokens.basic(NEO4J_USER, NEO4J_PASSWORD));
+        try (Driver driver = GraphDatabase.driver(NEO4J_URI, AuthTokens.basic(NEO4J_USER, password));
              Session session = driver.session()) {
             List<Map<String, Object>> comments = new ArrayList<>();
             Result result = session.run("MATCH (comment:Comment) RETURN comment, id(comment) as commentId");
@@ -102,7 +114,7 @@ public class MoneCodeParser {
         // 替换为你的查询向量
         double[] queryVector = getTextVectorFromHttp(text);
 
-        try (Driver driver = GraphDatabase.driver(NEO4J_URI, AuthTokens.basic(NEO4J_USER, NEO4J_PASSWORD));
+        try (Driver driver = GraphDatabase.driver(NEO4J_URI, AuthTokens.basic(NEO4J_USER, password));
              Session session = driver.session()) {
 
             // 执行查询
@@ -186,7 +198,7 @@ public class MoneCodeParser {
 
     //把Comment的修改,刷新回neo4j(class)
     public void updateCommentsInNeo4j(List<Map<String, Object>> comments) {
-        try (Driver driver = GraphDatabase.driver(NEO4J_URI, AuthTokens.basic(NEO4J_USER, NEO4J_PASSWORD));
+        try (Driver driver = GraphDatabase.driver(NEO4J_URI, AuthTokens.basic(NEO4J_USER, password));
              Session session = driver.session()) {
             for (Map<String, Object> comment : comments) {
                 Long commentId = (Long) comment.get("commentId");
@@ -271,7 +283,7 @@ public class MoneCodeParser {
 
     //删除所有节点(class)
     public void deleteAllNodes() {
-        try (Driver driver = GraphDatabase.driver(NEO4J_URI, AuthTokens.basic(NEO4J_USER, NEO4J_PASSWORD));
+        try (Driver driver = GraphDatabase.driver(NEO4J_URI, AuthTokens.basic(NEO4J_USER, password));
              Session session = driver.session()) {
             session.run("MATCH (n) DETACH DELETE n");
         }
@@ -288,7 +300,7 @@ public class MoneCodeParser {
         // 替换成你的 Java 文件路径
         String projectName = "MyProject";
 
-        try (Driver driver = GraphDatabase.driver(NEO4J_URI, AuthTokens.basic(NEO4J_USER, NEO4J_PASSWORD));
+        try (Driver driver = GraphDatabase.driver(NEO4J_URI, AuthTokens.basic(NEO4J_USER, password));
              Session session = driver.session()) {
 
             // 解析 Java 文件
@@ -309,6 +321,31 @@ public class MoneCodeParser {
         Map<String, Object> projectParams = new HashMap<>();
         projectParams.put("name", projectName);
         session.run("MERGE (p:Project {name: $name})", projectParams);
+    }
+
+    /**
+     * 查找具有指定注解的类
+     *
+     * @param session 数据库会话
+     * @param annotationToFind 要查找的注解
+     * @return 具有指定注解的类的列表，每个类以Map形式表示
+     */
+	public List<Map<String, Object>> findClassesWithAnnotation(Session session, String annotationToFind) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("annotation", annotationToFind);
+        Result result = session.run(
+                "MATCH (c:Class) " +
+                        "WHERE ANY(anno IN c.anno WHERE anno = $annotation) " +
+                        "RETURN c",
+                params
+        );
+        List<Map<String,Object>> list = new ArrayList<>();
+        while (result.hasNext()) {
+            Record record = result.next();
+            System.out.println(record.get("c").asMap());
+            list.add(record.get("c").asMap());
+        }
+        return list;
     }
 
 
@@ -341,6 +378,7 @@ public class MoneCodeParser {
             this.filePath = filePath;
         }
 
+
         @Override
         public void visit(ClassOrInterfaceDeclaration n, Void arg) {
             // 创建 Class/Interface 节点
@@ -360,13 +398,20 @@ public class MoneCodeParser {
 
             classParams.put("code", code);
 
-            System.out.println(classParams);
+            //获取ClassOrInterfaceDeclaration中的注解
+            List<String> annoList = n.getAnnotations().stream().peek(annotation -> {
+                System.out.println("Annotation: " + annotation.getNameAsString());
+            }).map(NodeWithName::getNameAsString).toList();
 
+            //注解
+            classParams.put("annotations", annoList);
+
+            System.out.println(classParams);
 
             session.run(
                     "MERGE (c:Class {name: $name}) " +
-                            "ON CREATE SET c.full_name = $fullName, c.type = $type, c.code = $code " +
-                            "ON MATCH SET c.full_name = $fullName, c.type = $type, c.code = $code",
+                            "ON CREATE SET c.full_name = $fullName, c.type = $type, c.code = $code, c.anno = $annotations " +
+                            "ON MATCH SET c.full_name = $fullName, c.type = $type, c.code = $code, c.anno = $annotations",
                     classParams
             );
 
@@ -394,7 +439,7 @@ public class MoneCodeParser {
                         dependsOnParams.put("fieldName", fieldName);
 
 
-                        session.run("MERGE (c:Class {name: $name})", ImmutableMap.of("name",fieldType));
+                        session.run("MERGE (c:Class {name: $name})", ImmutableMap.of("name", fieldType));
 
                         session.run("MATCH (c:Class {name: $className}) " +
                                         "MATCH (s:Class {name: $serviceName}) " +
@@ -403,7 +448,6 @@ public class MoneCodeParser {
                     }
                 });
             });
-
 
 
             super.visit(n, arg);
@@ -488,6 +532,18 @@ public class MoneCodeParser {
 
         return type;
     }
+
+    //读取resource下某个文件的文本内容(class)
+    public String readResourceFileContent(String fileName) {
+        try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream(fileName);
+             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+            return reader.lines().collect(Collectors.joining(System.lineSeparator()));
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
 
 
 }
