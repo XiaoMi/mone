@@ -22,8 +22,8 @@ import static org.mockito.ArgumentMatchers.*;
 public class ${testName} {
 
 
-@Resource
-private ${serviceName} ${strutil.toLowerCase(serviceName)}Service;
+    @Resource
+    private ${serviceName} ${strutil.toLowerCase(serviceName)}Service;
 
 
 }
