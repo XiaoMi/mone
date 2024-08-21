@@ -8,4 +8,7 @@ import run.mone.neo4j.test.anno.Table;
  */
 @Table
 public class Dog {
+
+    private int id;
+
 }

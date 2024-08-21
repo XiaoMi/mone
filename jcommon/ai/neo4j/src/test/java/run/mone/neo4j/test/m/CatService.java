@@ -1,6 +1,7 @@
 package run.mone.neo4j.test.m;
 
 import run.mone.neo4j.test.anno.RestController;
+import run.mone.neo4j.test.anno.Service;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -9,7 +10,7 @@ import java.util.Map;
  * @author goodjava@qq.com
  * @date 2024/8/19 18:21
  */
-@RestController
+@Service
 public class CatService {
 
     private Map<String,String> data = new HashMap<>();
