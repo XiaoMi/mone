@@ -1,11 +1,19 @@
-package run.mone.neo4j.test;
+package run.mone.neo4j.test.m;
+
+import run.mone.neo4j.test.anno.Resource;
+import run.mone.neo4j.test.anno.RestController;
+import run.mone.neo4j.test.anno.Service;
 
 /**
  * @author goodjava@qq.com
  * @date 2024/8/16 10:16
- * AAA
  */
-public class A {
+@Service
+public class PersonService {
+
+
+    @Resource
+    private CatService catService;
 
 
     /**
