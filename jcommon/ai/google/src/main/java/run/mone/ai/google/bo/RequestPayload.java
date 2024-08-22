@@ -14,6 +14,8 @@ import java.util.List;
 @Builder
 public class RequestPayload {
 
+        @SerializedName("system")
+        private String system;
 
         @SerializedName("anthropic_version")
         private String anthropicVersion;
