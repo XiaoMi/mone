@@ -18,6 +18,7 @@
         <module>aws</module>
         <module>minimax</module>
         <module>bytedance</module>
+        <module>gpt</module>
     </modules>
 
     <properties>
