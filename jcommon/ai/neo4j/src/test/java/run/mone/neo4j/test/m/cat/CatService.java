@@ -17,7 +17,6 @@ public class CatService {
 
 
     //获取小猫的数量
-    //获取小猫的数量
     public int getCatCount() {
         log.info("abc");
         System.out.println("123");

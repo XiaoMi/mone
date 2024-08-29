@@ -8,10 +8,11 @@ import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.comments.Comment;
 import com.github.javaparser.ast.comments.JavadocComment;
-import com.github.javaparser.ast.expr.*;
+import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.javaparser.ast.expr.FieldAccessExpr;
+import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.nodeTypes.NodeWithName;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
-import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -607,29 +608,7 @@ public class MoneCodeParser {
             // 处理注释
             processComments(n);
 
-            // 处理方法调用
-            processMethodCalls(n);
-
         }
-
-        // 处理方法调用
-        private void processMethodCalls(MethodDeclaration n) {
-            n.findAll(MethodCallExpr.class).forEach(methodCall -> {
-                Map<String, Object> callParams = new HashMap<>();
-                callParams.put("callerName", getFullMethodName(n));
-                callParams.put("calleeName", getFullMethodPath(methodCall));
-
-                // 创建目标方法节点（如果不存在）
-                session.run("MERGE (callee:Method {name: $calleeName})", callParams);
-
-                // 创建 CALLS 关系
-                session.run("MATCH (caller:Method {name: $callerName}) " +
-                                "MATCH (callee:Method {name: $calleeName}) " +
-                                "MERGE (caller)-[:CALLS]->(callee)",
-                        callParams);
-            });
-        }
-
 
         // 处理注释
         private void processComments(MethodDeclaration n) {
