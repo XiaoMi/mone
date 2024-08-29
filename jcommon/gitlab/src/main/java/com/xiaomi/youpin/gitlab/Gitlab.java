@@ -516,7 +516,7 @@ public class Gitlab {
         return true;
     }
 
-    private static boolean clone(String gitUrl, String branch, String username, String token, String gitPath) {
+    public static boolean clone(String gitUrl, String branch, String username, String token, String gitPath) {
         clearIfPresent(gitPath);
         CloneCommand cloneCommand = Git.cloneRepository().setURI(gitUrl)
                 .setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, token))

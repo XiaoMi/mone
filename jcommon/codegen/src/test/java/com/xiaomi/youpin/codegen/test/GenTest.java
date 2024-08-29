@@ -16,18 +16,26 @@
 
 package com.xiaomi.youpin.codegen.test;
 
+import com.google.common.collect.Lists;
 import com.xiaomi.youpin.codegen.*;
 import com.xiaomi.youpin.codegen.bo.ApiHeaderBo;
 import com.xiaomi.youpin.codegen.bo.Dependency;
 import com.xiaomi.youpin.infra.rpc.Result;
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
+import run.mone.ai.codegen.util.TemplateUtils;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class GenTest {
 
+
+    @Resource
+    private TemplateUtils templateUtils;
 
     @Test
     public void testFilter() throws Exception {
@@ -38,8 +46,8 @@ public class GenTest {
     @Test
     public void testHttpRequestGen() throws Exception {
         HttpRequestGen httpRequestGen = new HttpRequestGen();
-        httpRequestGen.generateJavaReq("getUserInfo",2,13,"[{\"paramNotNull\":\"0\",\"paramType\":\"13\",\"paramName\":\"obj\",\"paramKey\":\"subObj\",\"paramValue\":\"\",\"paramLimit\":\"\",\"paramNote\":\"\",\"paramValueList\":[],\"default\":0,\"childList\":[{\"paramNotNull\":\"0\",\"paramType\":\"0\",\"paramName\":\"sub_dzx\",\"paramKey\":\"subName\",\"paramValue\":\"\",\"paramLimit\":\"\",\"paramNote\":\"\",\"paramValueList\":[],\"default\":0,\"childList\":[]},{\"paramNotNull\":\"0\",\"paramType\":\"3\",\"paramName\":\"666\",\"paramKey\":\"subID\",\"paramValue\":\"\",\"paramLimit\":\"\",\"paramNote\":\"\",\"paramValueList\":[],\"default\":0,\"childList\":[]}]}]");
-        httpRequestGen.generateJavaReq("getUserInfo",2,13,"[{\"paramNotNull\":\"0\",\"paramType\":\"13\",\"paramName\":\"obj\",\"paramKey\":\"subObj\",\"paramValue\":\"\",\"paramLimit\":\"\",\"paramNote\":\"\",\"paramValueList\":[],\"default\":0,\"childList\":[{\"paramNotNull\":\"0\",\"paramType\":\"0\",\"paramName\":\"sub_dzx\",\"paramKey\":\"subName\",\"paramValue\":\"\",\"paramLimit\":\"\",\"paramNote\":\"\",\"paramValueList\":[],\"default\":0,\"childList\":[]},{\"paramNotNull\":\"0\",\"paramType\":\"3\",\"paramName\":\"666\",\"paramKey\":\"subID\",\"paramValue\":\"\",\"paramLimit\":\"\",\"paramNote\":\"\",\"paramValueList\":[],\"default\":0,\"childList\":[]}]},{\"paramNotNull\":\"0\",\"paramType\":\"0\",\"paramName\":\"dzx\",\"paramKey\":\"userName\",\"paramValue\":\"\",\"paramLimit\":\"\",\"paramNote\":\"\",\"paramValueList\":[],\"default\":0,\"childList\":[]}]");
+        httpRequestGen.generateJavaReq("getUserInfo", 2, 13, "[{\"paramNotNull\":\"0\",\"paramType\":\"13\",\"paramName\":\"obj\",\"paramKey\":\"subObj\",\"paramValue\":\"\",\"paramLimit\":\"\",\"paramNote\":\"\",\"paramValueList\":[],\"default\":0,\"childList\":[{\"paramNotNull\":\"0\",\"paramType\":\"0\",\"paramName\":\"sub_dzx\",\"paramKey\":\"subName\",\"paramValue\":\"\",\"paramLimit\":\"\",\"paramNote\":\"\",\"paramValueList\":[],\"default\":0,\"childList\":[]},{\"paramNotNull\":\"0\",\"paramType\":\"3\",\"paramName\":\"666\",\"paramKey\":\"subID\",\"paramValue\":\"\",\"paramLimit\":\"\",\"paramNote\":\"\",\"paramValueList\":[],\"default\":0,\"childList\":[]}]}]");
+        httpRequestGen.generateJavaReq("getUserInfo", 2, 13, "[{\"paramNotNull\":\"0\",\"paramType\":\"13\",\"paramName\":\"obj\",\"paramKey\":\"subObj\",\"paramValue\":\"\",\"paramLimit\":\"\",\"paramNote\":\"\",\"paramValueList\":[],\"default\":0,\"childList\":[{\"paramNotNull\":\"0\",\"paramType\":\"0\",\"paramName\":\"sub_dzx\",\"paramKey\":\"subName\",\"paramValue\":\"\",\"paramLimit\":\"\",\"paramNote\":\"\",\"paramValueList\":[],\"default\":0,\"childList\":[]},{\"paramNotNull\":\"0\",\"paramType\":\"3\",\"paramName\":\"666\",\"paramKey\":\"subID\",\"paramValue\":\"\",\"paramLimit\":\"\",\"paramNote\":\"\",\"paramValueList\":[],\"default\":0,\"childList\":[]}]},{\"paramNotNull\":\"0\",\"paramType\":\"0\",\"paramName\":\"dzx\",\"paramKey\":\"userName\",\"paramValue\":\"\",\"paramLimit\":\"\",\"paramNote\":\"\",\"paramValueList\":[],\"default\":0,\"childList\":[]}]");
 
         List<ApiHeaderBo> headers = new ArrayList<>();
         ApiHeaderBo header1 = new ApiHeaderBo();
@@ -50,7 +58,7 @@ public class GenTest {
         header2.setHeaderValue("true");
         headers.add(header1);
         headers.add(header2);
-        Result<String> result = httpRequestGen.generateCurlReq(0,"/Api/getUserInfo",1,"[{\"paramNotNull\":\"0\",\"paramType\":\"13\",\"paramName\":\"obj\",\"paramKey\":\"subObj\",\"paramValue\":\"\",\"paramLimit\":\"\",\"paramNote\":\"\",\"paramValueList\":[],\"default\":0,\"childList\":[{\"paramNotNull\":\"0\",\"paramType\":\"0\",\"paramName\":\"sub_dzx\",\"paramKey\":\"subName\",\"paramValue\":\"\",\"paramLimit\":\"\",\"paramNote\":\"\",\"paramValueList\":[],\"default\":0,\"childList\":[]},{\"paramNotNull\":\"0\",\"paramType\":\"3\",\"paramName\":\"666\",\"paramKey\":\"subID\",\"paramValue\":\"\",\"paramLimit\":\"\",\"paramNote\":\"\",\"paramValueList\":[],\"default\":0,\"childList\":[]}]}]",headers);
+        Result<String> result = httpRequestGen.generateCurlReq(0, "/Api/getUserInfo", 1, "[{\"paramNotNull\":\"0\",\"paramType\":\"13\",\"paramName\":\"obj\",\"paramKey\":\"subObj\",\"paramValue\":\"\",\"paramLimit\":\"\",\"paramNote\":\"\",\"paramValueList\":[],\"default\":0,\"childList\":[{\"paramNotNull\":\"0\",\"paramType\":\"0\",\"paramName\":\"sub_dzx\",\"paramKey\":\"subName\",\"paramValue\":\"\",\"paramLimit\":\"\",\"paramNote\":\"\",\"paramValueList\":[],\"default\":0,\"childList\":[]},{\"paramNotNull\":\"0\",\"paramType\":\"3\",\"paramName\":\"666\",\"paramKey\":\"subID\",\"paramValue\":\"\",\"paramLimit\":\"\",\"paramNote\":\"\",\"paramValueList\":[],\"default\":0,\"childList\":[]}]}]", headers);
         System.out.print(result.getData());
     }
 
@@ -137,9 +145,10 @@ public class GenTest {
         new DDDProGen().generateAndZip("/tmp/work", "abcd", "com.xiaomi.youpin", "com.xiaomi.youpin.abcdefg", "dfz", "1.0.0", dep);
         //new CNSalesCrmGen().generateAndZip("/home/work", "testt", "com.xiaomi.test", "com.xiaomi.test.testt", "dfz", "1.0.0", dep);
     }
+
     @Test
     public void testFaas() throws Exception {
         FaasGen gen = new FaasGen();
-        gen.generateAndZip("/tmp/work", "project-faas", "com.xiaomi.youpin", "com.xiaomi.youpin.projectmimimi", "dfz", "1.0.0","modulex","functiony");
+        gen.generateAndZip("/tmp/work", "project-faas", "com.xiaomi.youpin", "com.xiaomi.youpin.projectmimimi", "dfz", "1.0.0", "modulex", "functiony");
     }
 }

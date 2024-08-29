@@ -4,7 +4,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
 import lombok.ToString;
+
 
 /**
  * @author goodjava@qq.com, HawickMason@xiaomi.com
@@ -14,11 +16,10 @@ import lombok.ToString;
 @AllArgsConstructor
 @Data
 @Builder
-@ToString
 public class FeatureGenerateBo {
 
     @Builder.Default
-    private FeatureGeneratType type = FeatureGeneratType.CODE_WITH_GENERATOR;
+    private FeatureGenerateType type = FeatureGenerateType.CODE_WITH_GENERATOR;
 
     @Builder.Default
     private String tableName = "";
@@ -41,6 +42,8 @@ public class FeatureGenerateBo {
 
     @Builder.Default
     private String className = "Dummy";
+
+    private String testName = "T";
 
     @Builder.Default
     private String auth = "";
@@ -75,6 +78,7 @@ public class FeatureGenerateBo {
     @Builder.Default
     private boolean createController = false;
 
+
     /**
      * 目前使用module所在的绝对路径
      */
@@ -86,5 +90,11 @@ public class FeatureGenerateBo {
     private String mybatisDaoPath = "";
     @Builder.Default
     private String mybatisEntityPath = "";
+
+    /**
+     * mybatis 是否覆盖现有类，默认不覆盖，如果存在现有类则跳过
+     */
+    @Builder.Default
+    private boolean overwrite = false;
 
 }
