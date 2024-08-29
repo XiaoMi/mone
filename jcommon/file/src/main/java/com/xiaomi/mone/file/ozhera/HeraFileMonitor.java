@@ -34,6 +34,7 @@ public class HeraFileMonitor {
     @Getter
     private ConcurrentHashMap<Object, HeraFile> map = new ConcurrentHashMap<>();
 
+    @Getter
     private ConcurrentHashMap<String, HeraFile> fileMap = new ConcurrentHashMap<>();
 
     @Setter
@@ -52,7 +53,7 @@ public class HeraFileMonitor {
                 List<Pair<String, Object>> remList = Lists.newArrayList();
                 long now = System.currentTimeMillis();
                 fileMap.values().forEach(it -> {
-                    if (now - it.getUtime().get() >= removeTime) {
+                    if (now - it.getUtime().get() >= removeTime && now - it.getReadTime().get() >= removeTime) {
                         remList.add(Pair.of(it.getFileName(), it.getFileKey()));
                     }
                 });
@@ -129,7 +130,7 @@ public class HeraFileMonitor {
                                 map.putIfAbsent(k, hf);
                                 fileMap.put(filePath, hf);
 
-                                listener.onEvent(FileEvent.builder().type(EventType.create).fileName(file.getPath()).build());
+                                listener.onEvent(FileEvent.builder().type(EventType.create).fileKey(k).fileName(file.getPath()).build());
                             }
                         }
                     }
@@ -167,7 +168,12 @@ public class HeraFileMonitor {
                 log.info("initFile fileName:{},fileKey:{}", name, fileKey);
                 map.put(hf.getFileKey(), hf);
                 fileMap.put(hf.getFileName(), hf);
-                this.listener.onEvent(FileEvent.builder().pointer(pointer).type(EventType.init).fileName(hf.getFileName()).build());
+                this.listener.onEvent(FileEvent.builder()
+                        .pointer(pointer)
+                        .type(EventType.init)
+                        .fileName(hf.getFileName())
+                        .fileKey(hf.getFileKey())
+                        .build());
                 return hf;
             } catch (Exception e) {
                 log.error("init file error,fileName:{}", name, e);

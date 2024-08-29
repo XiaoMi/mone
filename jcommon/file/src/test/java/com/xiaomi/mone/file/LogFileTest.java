@@ -24,6 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -74,15 +76,25 @@ public class LogFileTest {
         monitor.setListener(new DefaultMonitorListener(monitor, readEvent -> {
             System.out.println(readEvent.getReadResult().getLines());
         }));
-        String fileName = "/home/work/log/file.log.*";
+        String fileName = "/home/work/log/test/file*.txt";
         Pattern pattern = Pattern.compile(fileName);
-        monitor.reg("/home/work/log", it -> {
+
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+        scheduler.scheduleAtFixedRate(this::test, 1, 2, TimeUnit.SECONDS);
+
+        monitor.reg("/home/work/log/test", it -> {
             boolean matches = pattern.matcher(it).matches();
-            log.info("file:{},matches:{}", it, true);
+            log.info("file:{},matches:{}", it, matches);
             return true;
         });
         log.info("reg finish");
         System.in.read();
+    }
+
+    private void test() {
+        log.info("test save progress");
+        FileInfoCache.ins().shutdown();
     }
 
     @Test

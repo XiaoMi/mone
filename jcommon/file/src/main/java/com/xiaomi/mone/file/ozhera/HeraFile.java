@@ -30,4 +30,7 @@ public class HeraFile {
 
     @Builder.Default
     private AtomicLong utime = new AtomicLong(System.currentTimeMillis());
+
+    @Builder.Default
+    private AtomicLong readTime = new AtomicLong(System.currentTimeMillis());
 }
