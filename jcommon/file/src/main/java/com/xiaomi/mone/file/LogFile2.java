@@ -190,6 +190,7 @@ public class LogFile2 implements ILogFile {
                 readResult.setFilePathName(file);
                 readResult.setLineNumber(++lineNumber);
                 ReadEvent event = new ReadEvent(readResult);
+                listener.setReadTime();
 
                 listener.onEvent(event);
             }

@@ -72,4 +72,12 @@ public class OzHeraReadListener implements ReadListener {
             }
         }
     }
+
+    @Override
+    public void setReadTime() {
+        HeraFile f = monitor.getFileMap().get(logFile.getFileKey());
+        if (null != f) {
+            f.getReadTime().set(System.currentTimeMillis());
+        }
+    }
 }
