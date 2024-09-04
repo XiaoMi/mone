@@ -23,7 +23,7 @@ public class ${testName} {
 
 
     @Resource
-    private ${serviceName} ${strutil.toLowerCase(serviceName)}Service;
+    private ${serviceName} ${className}Service;
 
 
 }
