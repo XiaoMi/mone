@@ -38,7 +38,7 @@ public class TemplateUtils {
             }
             StringTemplateResourceLoader resourceLoader = new StringTemplateResourceLoader();
             Configuration cfg = Configuration.defaultConfiguration();
-            GroupTemplate gt = new GroupTemplate(resourceLoader, cfg);
+            GroupTemplate gt = new GroupTemplate(resourceLoader, cfg, cfg.getClass().getClassLoader());
             functionList.forEach(it -> gt.registerFunction(it.getKey(), it.getValue()));
             Template t = gt.getTemplate(template);
             m.forEach((k, v) -> t.binding(k, v));
