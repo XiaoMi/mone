@@ -13,13 +13,13 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>feishu</artifactId>
-      <version>1.6.0-jdk21-SNAPSHOT</version>
+      <version>1.6.1-jdk21-SNAPSHOT</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>common</artifactId>
-      <version>1.7.1-SNAPSHOT</version>
+      <version>1.6.1-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>

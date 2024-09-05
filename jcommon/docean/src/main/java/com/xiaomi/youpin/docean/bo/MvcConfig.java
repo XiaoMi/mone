@@ -47,4 +47,6 @@ public class MvcConfig implements Serializable {
      */
     private String responseOriginalPath;
 
+    private boolean clusterSession;
+
 }
