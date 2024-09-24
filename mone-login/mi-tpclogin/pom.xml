@@ -38,6 +38,11 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>com.google.code.gson</groupId>
+                <artifactId>gson</artifactId>
+                <version>2.8.6</version>
+            </dependency>
+            <dependency>
                 <artifactId>fastjson</artifactId>
                 <groupId>com.alibaba</groupId>
                 <version>1.2.78</version>
