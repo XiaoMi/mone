@@ -13,6 +13,7 @@ import com.xiaomi.mone.tpc.dao.entity.NodeUserRelEntity;
 import com.xiaomi.mone.tpc.dao.entity.UserEntity;
 import com.xiaomi.mone.tpc.dao.impl.NodeUserRelDao;
 import com.xiaomi.mone.tpc.dao.impl.UserDao;
+import com.xiaomi.mone.tpc.node.NodeHelper;
 import com.xiaomi.mone.tpc.user.util.UserUtil;
 import com.xiaomi.mone.tpc.common.vo.UserVo;
 import com.xiaomi.mone.tpc.common.enums.*;
@@ -39,6 +40,8 @@ public class UserService implements UserHelper {
     private NodeUserRelDao nodeUserRelDao;
     @Autowired
     private Cache cache;
+    @Autowired
+    private NodeHelper nodeHelper;
 
     public ResultVo<PageDataVo<UserVo>> list(UserQryParam param, boolean isFront) {
         PageDataVo<UserVo> pageData = param.buildPageDataVo();
@@ -70,6 +73,9 @@ public class UserService implements UserHelper {
         UserEntity entity = userDao.getById(param.getId(), UserEntity.class);
         if (entity == null) {
             return ResponseCode.OPER_FAIL.build();
+        }
+        if (!nodeHelper.isTopMgr(param.getUserId())) {
+            return ResponseCode.NO_OPER_PERMISSION.build();
         }
         entity.setStatus(param.getStatus());
         boolean result = userDao.updateById(entity);
