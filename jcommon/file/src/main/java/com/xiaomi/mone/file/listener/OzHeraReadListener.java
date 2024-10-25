@@ -6,6 +6,7 @@ import com.xiaomi.mone.file.ReadListener;
 import com.xiaomi.mone.file.common.SafeRun;
 import com.xiaomi.mone.file.ozhera.HeraFile;
 import com.xiaomi.mone.file.ozhera.HeraFileMonitor;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.concurrent.TimeUnit;
@@ -20,6 +21,7 @@ public class OzHeraReadListener implements ReadListener {
 
     private HeraFileMonitor monitor;
 
+    @Getter
     private LogFile2 logFile;
 
     private Consumer<ReadEvent> consumer;

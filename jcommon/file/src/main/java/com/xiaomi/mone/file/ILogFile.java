@@ -10,7 +10,7 @@ public interface ILogFile {
 
     int LINE_MAX_LENGTH = 1100000;
 
-    void readLine() throws IOException;
+    void readLine() throws Exception;
 
     void setStop(boolean stop);
 
