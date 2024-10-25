@@ -91,27 +91,14 @@
         <module>ai/neo4j</module>
     </modules>
 
-    <!--  <distributionManagement>-->
-    <!--    <repository>-->
-    <!--      <id>ossrh</id>-->
-    <!--      <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>-->
-    <!--    </repository>-->
-    <!--    <snapshotRepository>-->
-    <!--      <id>ossrh</id>-->
-    <!--      <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>-->
-    <!--    </snapshotRepository>-->
-    <!--  </distributionManagement>-->
-
     <distributionManagement>
         <repository>
-            <id>central</id>
-            <name>maven-release-virtual</name>
-            <url>https://pkgs.d.xiaomi.net/artifactory/maven-release-virtual</url>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
         </repository>
         <snapshotRepository>
-            <id>snapshots</id>
-            <name>maven-snapshot-virtual</name>
-            <url>https://pkgs.d.xiaomi.net/artifactory/maven-snapshot-virtual</url>
+            <id>ossrh</id>
+            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
         </snapshotRepository>
     </distributionManagement>
 
@@ -201,22 +188,22 @@
                 <version>3.4.0</version>
             </plugin>
 
-            <!--      <plugin>-->
-            <!--        <groupId>org.apache.maven.plugins</groupId>-->
-            <!--        <artifactId>maven-javadoc-plugin</artifactId>-->
-            <!--        <version>3.5.0</version> &lt;!&ndash; 版本号根据您的 Maven 版本可能有所不同 &ndash;&gt;-->
-            <!--        <configuration>-->
-            <!--          <failOnError>false</failOnError>-->
-            <!--        </configuration>-->
-            <!--        <executions>-->
-            <!--          <execution>-->
-            <!--            <id>attach-javadocs</id>-->
-            <!--            <goals>-->
-            <!--              <goal>jar</goal>-->
-            <!--            </goals>-->
-            <!--          </execution>-->
-            <!--        </executions>-->
-            <!--      </plugin>-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.5.0</version> <!-- 版本号根据您的 Maven 版本可能有所不同 -->
+                <configuration>
+                    <failOnError>false</failOnError>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 
 
             <plugin>

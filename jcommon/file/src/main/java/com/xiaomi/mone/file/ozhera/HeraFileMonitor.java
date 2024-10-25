@@ -59,13 +59,13 @@ public class HeraFileMonitor {
                 });
 
                 remList.forEach(it -> {
-                    log.info("remove file:{}", it.getKey());
+                    log.info("remove file:{},fileKey:{}", it.getKey(), it.getValue());
                     fileMap.remove(it.getKey());
                     map.remove(it.getValue());
                     listener.remove(it.getValue());
                 });
             } catch (Throwable ex) {
-                log.error(ex.getMessage(), ex);
+                log.error("remove file error", ex);
             }
         }, 5, 10, TimeUnit.SECONDS);
     }
@@ -89,7 +89,7 @@ public class HeraFileMonitor {
 
         WatchService watchService = FileSystems.getDefault().newWatchService();
         directory.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_CREATE);
-        while (true) {
+        while (!stop) {
             try {
 
                 WatchKey key = watchService.take();
@@ -168,6 +168,7 @@ public class HeraFileMonitor {
                 log.info("initFile fileName:{},fileKey:{}", name, fileKey);
                 map.put(hf.getFileKey(), hf);
                 fileMap.put(hf.getFileName(), hf);
+                log.info("initFile hf:{},map size:{},fileMap size:{}", hf, map.size(), fileMap.size());
                 this.listener.onEvent(FileEvent.builder()
                         .pointer(pointer)
                         .type(EventType.init)
@@ -194,6 +195,11 @@ public class HeraFileMonitor {
                 listener.onEvent(FileEvent.builder().type(EventType.modify).build());
             }
         }
+    }
+
+    public void stop() {
+        this.stop = true;
+        listener.stop();
     }
 
 }
