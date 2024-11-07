@@ -25,6 +25,16 @@ public interface UdsProcessor<Request, Response> {
 
     Response processRequest(Request request);
 
+    // 新增：判断是否为流式处理器
+    default boolean isStreamProcessor() {
+        return false;
+    }
+
+    // 新增：流式处理方法
+    default void processStream(Request request, StreamCallback callback) {
+        throw new UnsupportedOperationException("Stream processing not supported");
+    }
+
 
     default String cmd() {
         return "";

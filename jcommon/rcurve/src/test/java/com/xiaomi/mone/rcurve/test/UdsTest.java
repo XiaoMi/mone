@@ -28,6 +28,8 @@ public class UdsTest {
 
     private String path = "/tmp/test.sock";
 
+    private boolean remote = false;
+
     /**
      * 模拟启动server
      */

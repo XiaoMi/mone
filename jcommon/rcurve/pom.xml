@@ -68,7 +68,14 @@
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
-            <version>4.1.48.Final</version>
+            <version>4.1.114.Final</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-transport-native-kqueue</artifactId>
+            <version>4.1.114.Final</version>
+            <classifier>osx-aarch_64</classifier>
         </dependency>
 
         <dependency>
