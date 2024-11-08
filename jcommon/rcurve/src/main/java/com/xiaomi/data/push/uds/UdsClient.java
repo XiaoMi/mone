@@ -22,6 +22,8 @@ import com.xiaomi.data.push.uds.WheelTimer.UdsWheelTimer;
 import com.xiaomi.data.push.uds.context.TraceContext;
 import com.xiaomi.data.push.uds.context.TraceEvent;
 import com.xiaomi.data.push.uds.context.UdsClientContext;
+import com.xiaomi.data.push.uds.handler.ClientStreamCallback;
+import com.xiaomi.data.push.uds.handler.MessageTypes;
 import com.xiaomi.data.push.uds.handler.UdsClientConnetManageHandler;
 import com.xiaomi.data.push.uds.handler.UdsClientHandler;
 import com.xiaomi.data.push.uds.po.UdsCommand;
@@ -141,6 +143,18 @@ public class UdsClient implements IClient<UdsCommand> {
     public void call(Object msg) {
         UdsCommand command = UdsCommand.createRequest();
         command.setObj(msg);
+        Send.send(this.channel, command);
+    }
+
+    /**
+     * 发送OpenAI流式请求
+     */
+    public void stream(UdsCommand command, ClientStreamCallback callback) {
+        Map<String, String> attachments = command.getAttachments();
+        // 注册回调
+        ((UdsClientHandler) channel.pipeline().last()).getStreamCallbacks()
+                .put(attachments.get(MessageTypes.STREAM_ID_KEY), callback);
+        // 发送请求
         Send.send(this.channel, command);
     }
 
