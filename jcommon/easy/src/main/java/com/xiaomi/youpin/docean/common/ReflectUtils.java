@@ -371,6 +371,9 @@ public abstract class ReflectUtils {
                     if (i.equals("boolean")) {
                         return boolean.class;
                     }
+                    if (i.equals("String")) {
+                        return String.class;
+                    }
                     try {
                         return Class.forName(i);
                     } catch (ClassNotFoundException e) {
