@@ -109,8 +109,8 @@ public class UdsServer implements IServer<UdsCommand> {
         this.path = path;
         delPath();
         boolean mac = CommonUtils.isMac();
-        EventLoopGroup bossGroup = NetUtils.getEventLoopGroup();
-        EventLoopGroup workerGroup = NetUtils.getEventLoopGroup();
+        EventLoopGroup bossGroup = NetUtils.getEventLoopGroup(this.remote);
+        EventLoopGroup workerGroup = NetUtils.getEventLoopGroup(this.remote);
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
