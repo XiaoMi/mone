@@ -13,10 +13,10 @@ import io.netty.channel.socket.nio.NioSocketChannel;
  */
 public class NetUtils {
 
-    public static EventLoopGroup getEventLoopGroup() {
-//        if (CommonUtils.isMac() && CommonUtils.isArch64()) {
-//            return new NioEventLoopGroup();
-//        }
+    public static EventLoopGroup getEventLoopGroup(boolean remote) {
+        if (remote) {
+            return new NioEventLoopGroup();
+        }
         if (CommonUtils.isWindows()) {
             return new NioEventLoopGroup();
         }
