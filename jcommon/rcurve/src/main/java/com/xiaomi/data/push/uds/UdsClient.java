@@ -95,7 +95,7 @@ public class UdsClient implements IClient<UdsCommand> {
 
 
     private EventLoopGroup getEventLoopGroup() {
-        return NetUtils.getEventLoopGroup();
+        return NetUtils.getEventLoopGroup(this.remote);
     }
 
 
