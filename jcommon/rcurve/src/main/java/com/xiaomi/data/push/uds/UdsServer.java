@@ -18,6 +18,7 @@ package com.xiaomi.data.push.uds;
 
 import com.google.common.base.Stopwatch;
 import com.xiaomi.data.push.common.*;
+import com.xiaomi.data.push.uds.WheelTimer.UdsWheelTimer;
 import com.xiaomi.data.push.uds.context.TraceContext;
 import com.xiaomi.data.push.uds.context.TraceEvent;
 import com.xiaomi.data.push.uds.context.UdsServerContext;
@@ -31,6 +32,8 @@ import io.netty.channel.*;
 import io.netty.channel.unix.DomainSocketAddress;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
+import io.netty.util.HashedWheelTimer;
+import io.netty.util.Timeout;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +45,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 /**
@@ -57,6 +59,10 @@ public class UdsServer implements IServer<UdsCommand> {
     private ConcurrentHashMap<String, Pair<UdsProcessor, ExecutorService>> processorMap = new ConcurrentHashMap<>();
 
     private ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor();
+
+    // 创建时间轮，可以根据需要调整tick时间和轮子大小
+    private UdsWheelTimer wheelTimer = new UdsWheelTimer();
+
 
     /**
      * 是否使用remote模式(标准tcp)
@@ -97,8 +103,8 @@ public class UdsServer implements IServer<UdsCommand> {
         this.path = path;
         delPath();
         boolean mac = CommonUtils.isMac();
-        EventLoopGroup bossGroup = NetUtils.getEventLoopGroup();
-        EventLoopGroup workerGroup = NetUtils.getEventLoopGroup();
+        EventLoopGroup bossGroup = NetUtils.getEventLoopGroup(this.remote);
+        EventLoopGroup workerGroup = NetUtils.getEventLoopGroup(this.remote);
         try {
             ServerBootstrap b = new ServerBootstrap();
             b.group(bossGroup, workerGroup)
@@ -187,9 +193,24 @@ public class UdsServer implements IServer<UdsCommand> {
         TraceContext context = new TraceContext();
         context.enter();
         long id = req.getId();
+
+        // 创建超时任务
+        Timeout timeout = wheelTimer.newTimeout(() -> {
+            CompletableFuture<UdsCommand> future = reqMap.remove(id);
+            if (future != null && !future.isDone()) {
+                future.completeExceptionally(
+                        new TimeoutException("Request timeout: " + req.getTimeout())
+                );
+            }
+        }, req.getTimeout());
+
         try {
             String app = req.getApp();
             CompletableFuture<UdsCommand> future = new CompletableFuture<>();
+
+            // 添加完成时取消定时任务的回调
+            future.whenComplete((k, v) -> timeout.cancel());
+
             reqMap.put(id, future);
             Channel channel = UdsServerContext.ins().channel(app);
             if (null == channel || !channel.isOpen()) {

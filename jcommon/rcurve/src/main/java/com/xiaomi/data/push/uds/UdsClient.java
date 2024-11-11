@@ -84,7 +84,7 @@ public class UdsClient implements IClient<UdsCommand> {
 
 
     private EventLoopGroup getEventLoopGroup() {
-        return NetUtils.getEventLoopGroup();
+        return NetUtils.getEventLoopGroup(this.remote);
     }
 
 
@@ -135,10 +135,6 @@ public class UdsClient implements IClient<UdsCommand> {
         Send.send(this.channel, command);
     }
 
-
-    /**
-     * 发送OpenAI流式请求
-     */
     public void stream(UdsCommand command, ClientStreamCallback callback) {
         Map<String, String> attachments = command.getAttachments();
         // 注册回调
@@ -169,13 +165,23 @@ public class UdsClient implements IClient<UdsCommand> {
             }
             log.debug("start send,id:{}", id);
             Send.send(channel, req);
+
+            wheelTimer.newTimeout(() -> {
+                log.warn("check async udsClient time out auto close:{},{}", req.getId(), req.getTimeout());
+                HashMap<String, Object> map = reqMap.remove(req.getId());
+                if (null != map) {
+                    CompletableFuture<Object> f = (CompletableFuture<Object>) map.get("future");
+                    if (null != f && !f.isDone()) {
+                        future.completeExceptionally(
+                                new TimeoutException("Request timeout: " + req.getTimeout())
+                        );
+                    }
+                }
+            }, req.getTimeout() + 350);
+
             //异步还是同步
             if (req.isAsync()) {
                 req.setCompletableFuture(future);
-                wheelTimer.newTimeout(() -> {
-                    log.warn("check async udsClient time out auto close:{},{}", req.getId(), req.getTimeout());
-                    reqMap.remove(req.getId());
-                }, req.getTimeout() + 350);
                 return req;
             }
             return (UdsCommand) future.get(req.getTimeout(), TimeUnit.MILLISECONDS);
