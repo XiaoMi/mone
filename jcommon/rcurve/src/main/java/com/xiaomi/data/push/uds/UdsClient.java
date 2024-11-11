@@ -33,6 +33,7 @@ import io.netty.channel.*;
 import io.netty.channel.unix.DomainSocketAddress;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
+import io.netty.util.Timeout;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -166,7 +167,7 @@ public class UdsClient implements IClient<UdsCommand> {
             log.debug("start send,id:{}", id);
             Send.send(channel, req);
 
-            wheelTimer.newTimeout(() -> {
+            Timeout timeout = wheelTimer.newTimeout(() -> {
                 log.warn("check async udsClient time out auto close:{},{}", req.getId(), req.getTimeout());
                 HashMap<String, Object> map = reqMap.remove(req.getId());
                 if (null != map) {
@@ -177,7 +178,10 @@ public class UdsClient implements IClient<UdsCommand> {
                         );
                     }
                 }
-            }, req.getTimeout() + 350);
+            }, req.getTimeout() + 200);
+
+            // 添加完成时取消定时任务的回调
+            future.whenComplete((k, v) -> timeout.cancel());
 
             //异步还是同步
             if (req.isAsync()) {
