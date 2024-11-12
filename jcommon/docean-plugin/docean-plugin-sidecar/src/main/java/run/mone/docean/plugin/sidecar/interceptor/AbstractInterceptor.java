@@ -16,9 +16,12 @@
 
 package run.mone.docean.plugin.sidecar.interceptor;
 
+import com.xiaomi.data.push.common.SafeRun;
 import com.xiaomi.data.push.uds.UdsClient;
 import com.xiaomi.data.push.uds.codes.CodesFactory;
 import com.xiaomi.data.push.uds.codes.ICodes;
+import com.xiaomi.data.push.uds.handler.ClientStreamCallback;
+import com.xiaomi.data.push.uds.handler.MessageTypes;
 import com.xiaomi.data.push.uds.po.UdsCommand;
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.plugin.config.Config;
@@ -26,10 +29,13 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
+import run.mone.docean.plugin.sidecar.bo.StreamMsg;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 /**
  * @author goodjava@qq.com
@@ -38,9 +44,9 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public abstract class AbstractInterceptor implements MethodInterceptor {
 
-    private Ioc ioc;
+    protected Ioc ioc;
 
-    private Config config;
+    protected Config config;
 
     @Setter
     private ExceptionProcessor exceptionProcessor = new ExceptionProcessor();
@@ -50,6 +56,9 @@ public abstract class AbstractInterceptor implements MethodInterceptor {
 
     @Setter
     private ParamProcessor paramProcessor = new ParamProcessor();
+
+    @Setter
+    private Consumer<StreamMsg> consumer;
 
 
     public AbstractInterceptor(Ioc ioc, Config config) {
@@ -61,6 +70,10 @@ public abstract class AbstractInterceptor implements MethodInterceptor {
 
     public void intercept1(Context ctx, UdsCommand req, Object o) {
 
+    }
+
+    public boolean isStream(Object obj, Method method, Object[] objects) {
+        return false;
     }
 
 
@@ -90,14 +103,43 @@ public abstract class AbstractInterceptor implements MethodInterceptor {
 
         this.intercept0(ctx, command, obj, method, objects);
         if (ctx.getData().getOrDefault("skip_code", "false").equals("false")) {
-            command.setParamTypes(Arrays.stream(method.getParameterTypes()).map(it -> it.getName()).toArray(String[]::new));
+            command.setParamTypes(Arrays.stream(method.getParameterTypes()).map(Class::getName).toArray(String[]::new));
             ICodes codes = CodesFactory.getCodes(command.getSerializeType());
-            command.setByteParams(Arrays.stream(objects).map(it -> codes.encode(it)).toArray(byte[][]::new));
+            command.setByteParams(Arrays.stream(objects).map(codes::encode).toArray(byte[][]::new));
         }
         this.intercept1(ctx, command, obj);
         //信息发送server(mesh)层
         UdsClient client = ioc.getBean("sideCarClient");
 
+        //流式处理(sidecar会陆续返回结果)
+        if (isStream(obj, method, objects)) {
+            log.info("is stream");
+            command.putAtt(MessageTypes.TYPE_KEY, MessageTypes.TYPE_OPENAI);
+            command.putAtt(MessageTypes.STREAM_ID_KEY, UUID.randomUUID().toString());
+            SafeRun.run(() -> client.stream(command, new ClientStreamCallback() {
+                @Override
+                public void onContent(String content) {
+                    log.debug("onContent: {}", content);
+                    consumer.accept(StreamMsg.builder().type("onContent").content(content).build());
+                }
+
+                @Override
+                public void onComplete() {
+                    log.info("onComplete");
+                    consumer.accept(StreamMsg.builder().type("onComplete").build());
+                }
+
+                @Override
+                public void onError(Throwable error) {
+                    log.error("Error in StreamSideCarCallMethodInterceptor", error);
+                    consumer.accept(StreamMsg.builder().type("onError").content(error.getMessage()).build());
+                }
+            }));
+            return null;
+        }
+
+
+        //单次调用的处理
         UdsCommand res = null;
         int retries = command.getRetries();
         int i = 0;
@@ -121,8 +163,7 @@ public abstract class AbstractInterceptor implements MethodInterceptor {
             }
         }
         //处理参数
-        paramProcessor.processResult(res,objects);
-
+        paramProcessor.processResult(res, objects);
         //处理结果
         return resultProcessor.processResult(command, res, method);
     }
