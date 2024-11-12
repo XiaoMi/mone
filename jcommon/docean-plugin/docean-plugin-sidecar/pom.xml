@@ -19,11 +19,13 @@
       <artifactId>docean-plugin-config</artifactId>
       <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
+
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>rcurve</artifactId>
-      <version>1.4.2-SNAPSHOT</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
+
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>grpc</artifactId>
