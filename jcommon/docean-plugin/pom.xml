@@ -55,6 +55,7 @@
         <module>docean-plugin-es-antlr4</module>
         <module>docean-plugin-storage</module>
         <module>docean-plugin-junit</module>
+        <module>docean-plugin-redisSession</module>
     </modules>
     <dependencies>
         <dependency>
