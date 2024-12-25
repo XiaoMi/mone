@@ -115,7 +115,7 @@ public class UdsClient implements IClient<UdsCommand> {
             f.sync();
         } catch (Throwable ex) {
             UdsClientContext.ins().exceptionCaught(ex);
-            log.error("start error:{} restart", ex.getMessage());
+            log.error("start error restart", ex);
             if (null != group) {
                 group.shutdownGracefully();
             }

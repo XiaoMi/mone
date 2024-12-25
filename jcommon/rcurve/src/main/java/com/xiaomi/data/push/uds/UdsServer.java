@@ -29,18 +29,14 @@ import com.xiaomi.data.push.uds.processor.UdsProcessor;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.*;
-import io.netty.channel.unix.DomainSocketAddress;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
-import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.api.IServer;
 
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Optional;
@@ -103,27 +99,38 @@ public class UdsServer implements IServer<UdsCommand> {
         this.path = path;
         delPath();
         boolean mac = CommonUtils.isMac();
-        EventLoopGroup bossGroup = NetUtils.getEventLoopGroup(this.remote);
-        EventLoopGroup workerGroup = NetUtils.getEventLoopGroup(this.remote);
         try {
-            ServerBootstrap b = new ServerBootstrap();
-            b.group(bossGroup, workerGroup)
-                    .option(ChannelOption.SO_BACKLOG, 5000)
-                    .option(ChannelOption.SO_RCVBUF, 65535)
-                    .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                    .channel(NetUtils.getServerChannelClass(mac, this.remote))
-                    .childHandler(new ChannelInitializer<Channel>() {
-                        @Override
-                        public void initChannel(Channel ch) throws Exception {
-                            ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
-                            ch.pipeline().addLast(new LengthFieldPrepender(4));
-                            ch.pipeline().addLast(new UdsServerHandler(processorMap));
-                        }
-                    });
+            EventLoopGroup bossGroup = NetUtils.getEventLoopGroup(this.remote);
+            EventLoopGroup workerGroup = NetUtils.getEventLoopGroup(this.remote);
 
-            SocketAddress s = this.remote ? new InetSocketAddress(this.host, this.port) : new DomainSocketAddress(path);
-            ChannelFuture f = b.bind(s);
-            log.info("bind:{}", this.remote ? this.host + ":" + this.port : path);
+            ServerBootstrap serverBootstrap =
+                    new ServerBootstrap().group(bossGroup, workerGroup)
+                            .channel(NetUtils.getServerChannelClass(mac, this.remote))
+                            .option(ChannelOption.SO_BACKLOG, 5000)
+                            .option(ChannelOption.SO_RCVBUF, 65535)
+                            .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
+
+            ChannelInitializer<Channel> initializer = new ChannelInitializer<Channel>() {
+                @Override
+                protected void initChannel(Channel ch) {
+                    ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
+                    ch.pipeline().addLast(new LengthFieldPrepender(4));
+                    ch.pipeline().addLast(new UdsServerHandler(processorMap));
+                }
+            };
+
+            serverBootstrap.childHandler(initializer);
+            ChannelFuture future =
+                    serverBootstrap.bind("0.0.0.0", this.port).addListener((ChannelFutureListener) future1 -> {
+                        if (future1.isSuccess()) {
+                            log.info("bind:{}", this.remote ? this.host + ":" + this.port : path);
+                        }
+                    }).awaitUninterruptibly();
+
+            Throwable cause = future.cause();
+            if (cause != null) {
+                log.error(cause.getMessage(), cause);
+            }
 
             if (Optional.ofNullable(this.regConsumer).isPresent()) {
                 RpcServerInfo si = this.getServerInfo();
@@ -131,7 +138,6 @@ public class UdsServer implements IServer<UdsCommand> {
                 this.regConsumer.accept(si);
             }
 
-            f.channel().closeFuture().sync();
         } catch (Throwable ex) {
             log.error(ex.getMessage(), ex);
         }
