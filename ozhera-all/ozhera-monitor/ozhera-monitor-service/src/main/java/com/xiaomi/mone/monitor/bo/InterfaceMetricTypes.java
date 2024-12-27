@@ -11,6 +11,13 @@ public enum InterfaceMetricTypes {
     slow_times("slow_times"),
     time_cost("time_cost"),
     basic("basic"),
+    jvm_runtime("jvm_runtime"),
+    application("application"),
+    mione_container("mione_container"),
+    container("container"),
+    instance("instance"),
+    matrix_deploy_unit("matrix_deploy_unit"),
+    proxy_mife("proxy_mife"),
     ;
 
     private String name;

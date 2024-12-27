@@ -1,5 +1,6 @@
 package com.xiaomi.mone.monitor.controller;
 
+import com.google.common.collect.Lists;
 import com.xiaomi.mone.monitor.bo.*;
 import com.xiaomi.mone.monitor.result.ErrorCode;
 import com.xiaomi.mone.monitor.result.Result;
@@ -79,9 +80,9 @@ public class AlarmStrategyController {
         AuthUserVo userInfo = null;
         try {
             log.info("AlarmStrategyController.deleteById param : {} ", param);
-            if (param.getId() <= 0) {
-                return Result.fail(ErrorCode.invalidParamError);
-            }
+//            if (param.getId() <= 0) {
+//                return Result.fail(ErrorCode.invalidParamError);
+//            }
             userInfo = UserUtil.getUser();
             if (userInfo == null) {
                 log.info("AlarmStrategyController.deleteById request info error no user info found! param : {} ", param);
@@ -89,7 +90,17 @@ public class AlarmStrategyController {
             }
             String user = userInfo.genFullAccount();
             log.info("AlarmStrategyController.deleteById param : {} ,user : {}", param, user);
-            return alarmStrategyService.deleteById(user, param.getId());
+            if(param.getIds() == null){
+                param.setIds(Lists.newArrayList());
+            }
+
+            //兼容单条删除的旧逻辑
+            if(param.getId() != null){
+                if(!param.getIds().contains(param.getId())){
+                    param.getIds().add(param.getId());
+                }
+            }
+            return alarmStrategyService.batchDeleteStrategy(user, param.getIds());
         } catch (Exception e) {
             log.error("AlarmStrategyController.deleteById异常 param : {} ,userInfo :{}", param, userInfo, e);
             return Result.fail(ErrorCode.unknownError);
