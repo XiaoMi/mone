@@ -26,6 +26,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.xiaomi.youpin.docean.anno.Component;
 import com.xiaomi.youpin.docean.anno.Controller;
+import com.xiaomi.youpin.docean.anno.IocConfiguration;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.bo.Bean;
 import com.xiaomi.youpin.docean.common.*;
@@ -68,6 +69,9 @@ public class Ioc {
 
     @Getter
     private String[] scanPackages;
+
+    @Getter
+    private Class<?> primarySource;
 
     /**
      * It needs to be used when interacting with containers like spring
@@ -355,6 +359,25 @@ public class Ioc {
     public Ioc classLoader(ClassLoader classLoader) {
         this.classLoader = classLoader;
         return this;
+    }
+
+    public static Ioc run(Class<?> primarySource, String... args) {
+        IocConfiguration configuration = primarySource.getAnnotation(IocConfiguration.class);
+        Ioc ioc = Ioc.ins();
+        ioc.primarySource = primarySource;
+        parseArgumentsAndPopulateIoc(args, ioc);
+        return ioc.init(configuration.basePackage());
+    }
+
+    private static void parseArgumentsAndPopulateIoc(String[] args, Ioc ioc) {
+        //Determine if args is an even number; if so, place it into a map.
+        Map<String, String> argsMap = new HashMap<>();
+        if (args.length % 2 == 0) {
+            for (int i = 0; i < args.length; i += 2) {
+                argsMap.put(args[i], args[i + 1]);
+            }
+        }
+        argsMap.entrySet().forEach(entry -> ioc.putBean("$" + entry.getKey(), entry.getValue()));
     }
 
     public Ioc init(String... scanPackages) {

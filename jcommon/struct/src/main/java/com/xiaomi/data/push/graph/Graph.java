@@ -62,6 +62,18 @@ public class Graph<D> {
         this.vertexMap.put(vertex.getV(), vertex.getData());
     }
 
+    //删除这个顶点,且删除和它相关的所有边(class)
+    public void removeVertex(int v) {
+        // 删除顶点数据
+        vertexMap.remove(v);
+        // 删除所有出边
+        adj[v].clear();
+        // 删除所有入边
+        for (List<Integer> edges : adj) {
+            edges.removeIf(edge -> edge == v);
+        }
+    }
+
 
     public List<Integer> dependList(int v) {
         List result = Lists.newArrayList();

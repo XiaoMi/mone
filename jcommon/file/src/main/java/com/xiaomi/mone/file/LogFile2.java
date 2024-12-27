@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.MessageDigest;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -42,6 +43,8 @@ public class LogFile2 implements ILogFile {
     @Setter
     private volatile boolean reFresh;
 
+    private volatile boolean exceptionFinish;
+
     @Getter
     private int beforePointerHashCode;
 
@@ -55,8 +58,6 @@ public class LogFile2 implements ILogFile {
     private long maxPointer;
 
     private String md5;
-
-    private static final int LINE_MAX_LENGTH = 50000;
 
     public LogFile2() {
 
@@ -110,12 +111,13 @@ public class LogFile2 implements ILogFile {
         }
     }
 
+    @Override
     public void readLine() throws IOException {
         while (true) {
             open();
             //兼容文件切换时，缓存的pointer
             try {
-                log.info("open file:{},pointer:{}", file, this.pointer);
+                log.info("open file:{},pointer:{},lineNumber:{},", file, this.pointer, this.lineNumber);
                 if (pointer > raf.length()) {
                     pointer = 0;
                     lineNumber = 0;
@@ -123,7 +125,7 @@ public class LogFile2 implements ILogFile {
             } catch (Exception e) {
                 log.error("file.length() IOException, file:{}", this.file, e);
             }
-            log.info("rel open file:{},pointer:{}", file, this.pointer);
+            log.info("rel open file:{},pointer:{},lineNumber:{}", file, this.pointer, this.lineNumber);
             raf.seek(pointer);
 
             while (true) {
@@ -166,6 +168,7 @@ public class LogFile2 implements ILogFile {
                 }
 
                 if (listener.isBreak(line)) {
+                    log.info("isBreak:{},pointer:{},lineNumber:{},fileKey:{}", this.file, this.pointer, this.lineNumber, this.fileKey);
                     stop = true;
                     break;
                 }
@@ -188,16 +191,21 @@ public class LogFile2 implements ILogFile {
                 readResult.setFilePathName(file);
                 readResult.setLineNumber(++lineNumber);
                 ReadEvent event = new ReadEvent(readResult);
+                listener.setReadTime();
 
                 listener.onEvent(event);
+                if (pointer % 100000 == 0 || pointer == 1) {
+                    log.info("file readResult:{}", readResult);
+                }
             }
             raf.close();
             if (stop) {
-                log.info("stop:{},pointer:{},fileKey:{}", this.file, this.pointer, this.fileKey);
+                log.info("stop:{},pointer:{},lineNumber:{},fileKey:{}", this.file, this.pointer, this.lineNumber, this.fileKey);
                 FileInfoCache.ins().put(this.fileKey.toString(), FileInfo.builder().pointer(this.pointer).fileName(this.file).build());
                 break;
             }
         }
+        log.info("read file:{},finished,,pointer:{},lineNumber:{},fileKey:{}", file, this.pointer, this.lineNumber, this.fileKey);
     }
 
     @Override
@@ -207,6 +215,16 @@ public class LogFile2 implements ILogFile {
         this.listener = listener;
         this.pointer = pointer;
         this.lineNumber = lineNumber;
+    }
+
+    @Override
+    public void setExceptionFinish() {
+        exceptionFinish = true;
+    }
+
+    @Override
+    public boolean getExceptionFinish() {
+        return exceptionFinish;
     }
 
     private String lineCutOff(String line) {
@@ -225,13 +243,13 @@ public class LogFile2 implements ILogFile {
             return false;
         }
 
-        long currentFileMaxPointer;
+        long currentFileMaxLength;
         try {
-            currentFileMaxPointer = raf.length();
-            if (currentFileMaxPointer == 0L) {
+            currentFileMaxLength = raf.length();
+            if (currentFileMaxLength == 0L) {
                 raf.getFD().sync();
                 TimeUnit.MILLISECONDS.sleep(30);
-                currentFileMaxPointer = raf.length();
+                currentFileMaxLength = raf.length();
             }
         } catch (IOException e) {
             log.error("get fileMaxPointer IOException", e);
@@ -263,12 +281,14 @@ public class LogFile2 implements ILogFile {
     public long readPointer() {
         try {
             FileInfo fi = FileInfoCache.ins().get(this.fileKey.toString());
-            if (null != fi) {
+            log.info("readPointer:{},file:{},fileKey:{}", fi, this.file, this.fileKey);
+            if (null != fi && Objects.equals(this.file, fi.getFileName())) {
                 return fi.getPointer();
             }
         } catch (Throwable e) {
-            log.error(e.getMessage());
+            log.error("readPointer error,file:{},fileKey:{}", file, fileKey, e);
         }
+        log.warn("readPointer from 0,file:{},fileKey:{}", file, fileKey);
         return 0;
     }
 

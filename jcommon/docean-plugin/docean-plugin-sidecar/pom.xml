@@ -5,7 +5,7 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>jcommon</artifactId>
-    <version>1.4-jdk21-SNAPSHOT</version>
+    <version>1.6.0-jdk21-SNAPSHOT</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <artifactId>docean-plugin-sidecar</artifactId>
@@ -17,17 +17,19 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-config</artifactId>
-      <version>1.5.0-jdk21</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
+
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>rcurve</artifactId>
-      <version>1.4.2-SNAPSHOT</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
+
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>grpc</artifactId>
-      <version>1.4-jdk21-SNAPSHOT</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
       <exclusions>
         <exclusion>
           <artifactId>api</artifactId>
@@ -38,7 +40,7 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>infra-result</artifactId>
-      <version>1.5.0-jdk21</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>

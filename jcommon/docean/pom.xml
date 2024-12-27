@@ -5,7 +5,7 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>jcommon</artifactId>
-    <version>1.4-jdk20-SNAPSHOT</version>
+    <version>1.6.0-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>docean</artifactId>
   <version>${submodule-release.version}</version>
@@ -16,8 +16,7 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>easy</artifactId>
-<!--      <version>1.4-jdk21-SNAPSHOT</version>-->
-      <version>1.5.0-jdk21</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>cglib</groupId>

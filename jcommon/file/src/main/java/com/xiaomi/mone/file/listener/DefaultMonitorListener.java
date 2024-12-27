@@ -8,11 +8,11 @@ import com.xiaomi.mone.file.event.EventListener;
 import com.xiaomi.mone.file.event.EventType;
 import com.xiaomi.mone.file.event.FileEvent;
 import com.xiaomi.mone.file.ozhera.HeraFileMonitor;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
@@ -28,8 +28,7 @@ public class DefaultMonitorListener implements EventListener {
 
     private Consumer<ReadEvent> consumer;
 
-    @Getter
-    private List<ReadListener> readListenerList = new CopyOnWriteArrayList<>();
+    private Map<Object, ReadListener> readListenerMap = new ConcurrentHashMap<>();
 
     private ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor();
 
@@ -44,7 +43,7 @@ public class DefaultMonitorListener implements EventListener {
             log.info("log file:{}", event.getFileName());
             LogFile2 logFile = new LogFile2(event.getFileName());
             OzHeraReadListener ozHeraReadListener = new OzHeraReadListener(monitor, logFile, consumer);
-            readListenerList.add(ozHeraReadListener);
+            readListenerMap.put(event.getFileKey(), ozHeraReadListener);
             pool.submit(() -> {
                 logFile.setListener(ozHeraReadListener);
                 SafeRun.run(logFile::readLine);
@@ -58,6 +57,7 @@ public class DefaultMonitorListener implements EventListener {
 
         if (event.getType().equals(EventType.delete)) {
             log.info("delete:{}", event.getFileName());
+            readListenerMap.remove(event.getFileKey());
         }
 
         if (event.getType().equals(EventType.empty)) {
@@ -71,11 +71,30 @@ public class DefaultMonitorListener implements EventListener {
 //            LogFile2 logFile = new LogFile2(event.getFileName());
             LogFile2 logFile = new LogFile2(event.getFileName(), 0, 0);
             OzHeraReadListener ozHeraReadListener = new OzHeraReadListener(monitor, logFile, consumer);
-            readListenerList.add(ozHeraReadListener);
+            readListenerMap.put(event.getFileKey(), ozHeraReadListener);
+
             pool.submit(() -> {
                 logFile.setListener(ozHeraReadListener);
                 SafeRun.run(logFile::readLine);
             });
         }
+    }
+
+    @Override
+    public void remove(Object fileKey) {
+        readListenerMap.remove(fileKey);
+    }
+
+    @Override
+    public void stop() {
+        List<ReadListener> readListenerList = getReadListenerList();
+        for (ReadListener readListener : readListenerList) {
+            OzHeraReadListener ozHeraReadListener = ((OzHeraReadListener) readListener);
+            ozHeraReadListener.getLogFile().shutdown();
+        }
+    }
+
+    public List<ReadListener> getReadListenerList() {
+        return this.readListenerMap.values().stream().toList();
     }
 }

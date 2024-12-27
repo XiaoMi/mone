@@ -38,7 +38,7 @@ public class MLog {
     @Getter
     private Queue<String> msgQueue = new LinkedList<>();
     @Getter
-    private Long appendTime;
+    private volatile Long appendTime;
     /**
      * 用户自定义的行首正则
      */
@@ -53,9 +53,9 @@ public class MLog {
 //    private static final Pattern ERROR_LINE_PATTERN = Pattern.compile(".*ERROR|.*(WARN|INFO).*(Exception|exception|error|Profiler)");
 //    private static final int MAX_ERROR_LINE_MATCH_LENGTH = 300;
     /**
-     * 最多聚合200行错误栈，避免queue无限增长
+     * 最多聚合800行错误栈，避免queue无限增长
      */
-    private static final int MAX_MERGE_LINE = 400;
+    private static final int MAX_MERGE_LINE = 800;
 
     @Deprecated
     public List<String> append(String msg) {

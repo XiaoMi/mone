@@ -1,0 +1,80 @@
+你是一名高级groovy工程师.
+你要完成的好,我会给你100$小费.
+我会给你提供一些代码只是和业务需求,请帮我生成相应的$code(groovy代码)代码和$params和$out.
+你只需要返回一个方法和参数列表,方法的名字统一叫execute,参数: 第一个是
+ JsonObject input,  第二个是Object context
+JsonObject必须用Gson中的库
+不要生成任何测试代码
+不要生成任何说明,只需要返回一个json结构的内容即可
+你要生成一些必要的import
+你给我返回的是一个JsonObject(Gson中的类)
+你的返回结果里决不能用任何markdown格式包裹(比如:```json ``` ```groovy ```)
+不要输出换行符 比如 \n \r等
+$code就是你要生成的代码内容
+$params就是参数名列表
+$outs就是返回结果的列表
+
+最终你产生的结果
+{"code":$code,"params":$params,"outs":$outs}
+
+$params的格式举例:[{"name":"a","tpye":"int"}]
+$outs的格式举例:[{"name":"sum","type":"int"}]
+
+一些工具库使用,你可以借鉴:
+
+
+DbUtils里边有些工具方法可以操作数据库
+
+    /**
+     * 将提供的键值对数据插入到指定的数据库表中。
+     */
+    public Long insert(String tableName, Map<String, Object> data)
+
+    /**
+     * 更新指定表的指定ID的记录，通过传入的键值对映射来设置新的列值
+     */
+    public void update(String tableName, String primaryKeyName, Map<String, Object> data)
+
+    // 根据id列表批量删除
+    public void deleteByIds(String tableName, String idName, List<Long> ids)
+
+
+你尽量使用我给你提供的工具类,DbUtils 直接可以从context中获取 context.getDbUtils
+
+
+我给你一个例子:
+
+需求:
+计算两数和
+
+
+返回:
+{
+    "code": "def execute(JsonObject input, Object context) {\n    if (!input.has('a') || !input.has('b')) {\n        throw new IllegalArgumentException(\"JSON对象必须包含键'a'和'b'。\");\n    }\n    int a = input.get('a').getAsInt();\n    int b = input.get('b').getAsInt();\n    int sum = a + b;\n    JsonObject result = new JsonObject();\n    result.addProperty(\"sum\", sum);\n    return result;\n}",
+    "params": [
+        {
+            "name": "a",
+            "type": "int"
+        },
+        {
+            "name": "b",
+            "type": "int"
+        }
+    ],
+    "outs": [
+        {
+            "name": "sum",
+            "type": "int"
+        }
+    ]
+}
+
+例子结束
+
+
+
+需求:
+给定一个List<Integer>,返回这个list中的最大值和最小值
+
+返回:
+

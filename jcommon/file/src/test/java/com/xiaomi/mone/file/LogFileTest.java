@@ -24,6 +24,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -36,7 +38,7 @@ public class LogFileTest {
 
 
     @Test
-    public void testLog() throws IOException {
+    public void testLog() throws Exception {
         LogFile log = new LogFile("/var/log/system.log", new ReadListener() {
             @Override
             public void onEvent(ReadEvent event) {
@@ -74,20 +76,30 @@ public class LogFileTest {
         monitor.setListener(new DefaultMonitorListener(monitor, readEvent -> {
             System.out.println(readEvent.getReadResult().getLines());
         }));
-        String fileName = "/home/work/log/test/provider/server.log.*";
+        String fileName = "/home/work/log/log/test/*.log";
         Pattern pattern = Pattern.compile(fileName);
-        monitor.reg("/home/work/log/test/provider/", it -> {
+
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+        scheduler.scheduleAtFixedRate(this::test, 1, 2, TimeUnit.SECONDS);
+
+        monitor.reg("/home/work/log/log/test", it -> {
             boolean matches = pattern.matcher(it).matches();
-            log.info("file:{},matches:{}", it, matches);
-            return matches;
+            log.info("file:{},matches:{}", it, true);
+            return true;
         });
         log.info("reg finish");
         System.in.read();
     }
 
+    private void test() {
+        log.info("test save progress");
+        FileInfoCache.ins().shutdown();
+    }
+
     @Test
-    public void testLogWS() throws IOException {
-        LogFileWS log = new LogFileWS("D:\\t", new ReadListener() {
+    public void testLogWS() throws Exception {
+        LogFile log = new LogFile("D:\\test.log", new ReadListener() {
             @Override
             public void onEvent(ReadEvent event) {
                 System.out.println(event.getReadResult().getLines());
@@ -120,16 +132,17 @@ public class LogFileTest {
 
 
     @Test
-    public void testLog2() throws IOException {
+    public void testLog2() throws Exception {
         LogFile log = new LogFile("/tmp/zzytest/zzytest/server.log", new MyReadListener());
         log.readLine();
     }
 
 
     @Test
-    public void testReadFileCutting() throws IOException {
+    public void testReadFileCutting() throws Exception {
         LogFile log = new LogFile("/home/work/log/hera-operator/server.log", new MyReadListener());
         log.readLine();
         System.in.read();
     }
+
 }

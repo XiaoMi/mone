@@ -20,9 +20,11 @@ import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.Controller;
 import com.xiaomi.youpin.docean.anno.RequestMapping;
 import com.xiaomi.youpin.docean.anno.RequestParam;
+import com.xiaomi.youpin.docean.common.Safe;
 import com.xiaomi.youpin.docean.mvc.ContextHolder;
 import com.xiaomi.youpin.docean.mvc.MvcContext;
 import com.xiaomi.youpin.docean.mvc.MvcResult;
+import com.xiaomi.youpin.docean.mvc.context.WebSocketContext;
 import com.xiaomi.youpin.docean.test.anno.TAnno;
 import com.xiaomi.youpin.docean.test.bo.M;
 import lombok.SneakyThrows;
@@ -31,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import javax.annotation.Resource;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -46,6 +49,14 @@ public class DemoController {
 
     public void init() {
         log.info("init controller");
+
+        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
+            Safe.runAndLog(() -> WebSocketContext.ins().getChannelMap().forEach((k, v) -> {
+                WebSocketContext.ins().sendMessage(k, "server_ping");
+            }));
+        }, 0, 5, TimeUnit.SECONDS);
+
+
     }
 
     @RequestMapping(path = "/test")
@@ -54,6 +65,11 @@ public class DemoController {
         vo.setId("1");
         vo.setName("test");
         return vo;
+    }
+
+    @RequestMapping(path = "/ws")
+    public String test(String req) {
+        return "ws:" + req;
     }
 
     @RequestMapping(path = "/header")
@@ -157,6 +173,12 @@ public class DemoController {
         return String.valueOf(a + b);
     }
 
+    @TAnno
+    @RequestMapping(path = "/testv", method = "get")
+    public String testV(@RequestParam("a") String a) {
+        return a;
+    }
+
     @RequestMapping(path = "/testpost")
     public String testPost(String b) {
         log.info("b={}", b);
@@ -180,6 +202,12 @@ public class DemoController {
     public String testSession2(MvcContext context) {
         String name = String.valueOf(context.session().getAttribute("name"));
         return "session:" + name;
+    }
+
+    //Test the scenario where only a single parameter is passed, and it is of type String.
+    @RequestMapping(path = "/string")
+    public String string(String str) {
+        return str;
     }
 
 

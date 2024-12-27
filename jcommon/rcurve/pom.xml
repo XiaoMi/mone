@@ -5,15 +5,15 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>jcommon</artifactId>
-    <version>1.4-jdk20-SNAPSHOT</version>
+    <version>1.6.0-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>rcurve</artifactId>
-  <version>1.4-jdk21-SNAPSHOT</version>
+  <version>1.6.0-jdk21-SNAPSHOT</version>
   <dependencies>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>hera-trace</artifactId>
-      <version>1.4-jdk21-SNAPSHOT</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>io.protostuff</groupId>
@@ -23,12 +23,12 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>api</artifactId>
-      <version>1.4.1-jdk20-SNAPSHOT</version>
+      <version>${submodule-release.version}</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>rpc-codes</artifactId>
-      <version>1.4-jdk20-SNAPSHOT</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
       <exclusions>
         <exclusion>
           <artifactId>api</artifactId>
@@ -39,19 +39,30 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>easy</artifactId>
-      <version>1.4-jdk21-SNAPSHOT</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
+
+
     <dependency>
       <groupId>io.netty</groupId>
       <artifactId>netty-all</artifactId>
-      <version>4.1.48.Final</version>
+      <version>4.1.114.Final</version>
     </dependency>
+
+    <dependency>
+      <groupId>io.netty</groupId>
+      <artifactId>netty-transport-native-kqueue</artifactId>
+      <version>4.1.114.Final</version>
+      <classifier>osx-aarch_64</classifier>
+    </dependency>
+
+
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-classic</artifactId>
       <version>1.2.3</version>
-      <scope>provided</scope>
     </dependency>
+
   </dependencies>
 
   <build>

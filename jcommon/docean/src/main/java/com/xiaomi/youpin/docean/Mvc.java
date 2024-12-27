@@ -16,6 +16,8 @@
 
 package com.xiaomi.youpin.docean;
 
+import com.google.common.base.Throwables;
+import com.google.common.collect.Maps;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.xiaomi.youpin.docean.anno.RequestMapping;
@@ -24,6 +26,7 @@ import com.xiaomi.youpin.docean.bo.MvcConfig;
 import com.xiaomi.youpin.docean.common.MethodInvoker;
 import com.xiaomi.youpin.docean.common.NamedThreadFactory;
 import com.xiaomi.youpin.docean.common.Safe;
+import com.xiaomi.youpin.docean.common.StringUtils;
 import com.xiaomi.youpin.docean.config.HttpServerConfig;
 import com.xiaomi.youpin.docean.exception.DoceanException;
 import com.xiaomi.youpin.docean.listener.event.Event;
@@ -31,6 +34,7 @@ import com.xiaomi.youpin.docean.listener.event.EventType;
 import com.xiaomi.youpin.docean.mvc.*;
 import com.xiaomi.youpin.docean.mvc.common.MvcConst;
 import com.xiaomi.youpin.docean.mvc.util.ExceptionUtil;
+import com.xiaomi.youpin.docean.mvc.util.GsonUtils;
 import com.xiaomi.youpin.docean.mvc.util.Jump;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpRequest;
@@ -39,10 +43,12 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Arrays;
-import java.util.Locale;
-import java.util.Optional;
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 /**
  * @author goodjava@qq.com
@@ -78,9 +84,14 @@ public class Mvc {
         this.mvcConfig.setAllowCross(Boolean.valueOf(ioc.getBean(MvcConst.ALLOW_CROSS_DOMAIN, MvcConst.FALSE)));
         this.mvcConfig.setDownload(Boolean.valueOf(ioc.getBean(MvcConst.MVC_DOWNLOAD, MvcConst.FALSE)));
         this.mvcConfig.setUseCglib(Boolean.valueOf(ioc.getBean(MvcConst.CGLIB, MvcConst.TRUE)));
+
+        this.mvcConfig.setOpenStaticFile(Boolean.valueOf(ioc.getBean(MvcConst.OPEN_STATIC_FILE, MvcConst.FALSE)));
+        this.mvcConfig.setStaticFilePath(ioc.getBean(MvcConst.STATIC_FILE_PATH, MvcConst.EMPTY));
+
         this.mvcConfig.setResponseOriginalValue(Boolean.valueOf(ioc.getBean(MvcConst.RESPONSE_ORIGINAL_VALUE, MvcConst.FALSE)));
         this.mvcConfig.setPoolSize(Integer.valueOf(ioc.getBean(MvcConst.MVC_POOL_SIZE, String.valueOf(MvcConst.DEFAULT_MVC_POOL_SIZE))));
         this.mvcConfig.setVirtualThread(Boolean.valueOf(ioc.getBean(MvcConst.VIRTUAL_THREAD, MvcConst.TRUE)));
+        this.mvcConfig.setResponseOriginalPath(ioc.getBean(MvcConst.RESPONSE_ORIGINAL_PATH, ""));
         ioc.publishEvent(new Event(EventType.mvcBegin, this.mvcConfig));
     }
 
@@ -96,31 +107,67 @@ public class Mvc {
         ioc.beans().entrySet().stream().forEach(entry -> {
             Bean bean = entry.getValue();
             if (bean.getType() == Bean.Type.controller.ordinal()) {
-                Arrays.stream(bean.getClazz().getMethods()).forEach(m -> Optional.ofNullable(m.getAnnotation(RequestMapping.class)).ifPresent(rm -> {
-                    String path = rm.path();
-                    HttpRequestMethod hrm = new HttpRequestMethod();
-                    hrm.setTimeout(rm.timeout());
-                    hrm.setPath(path);
-                    hrm.setObj(bean.getObj());
-                    hrm.setMethod(m);
-                    hrm.setHttpMethod(rm.method());
-                    ioc.publishEvent(new Event(EventType.initController, path));
-                    requestMethodMap.put(path, hrm);
-                }));
+                registerControllerMethods(bean);
             }
             if (bean.getObj() instanceof MvcServlet) {
-                MvcServlet ms = (MvcServlet) bean.getObj();
-                String path = ms.path();
-                HttpRequestMethod hrm = new HttpRequestMethod();
-                hrm.setPath(path);
-                hrm.setObj(ms);
-                hrm.setHttpMethod(ms.method());
-                Safe.runAndLog(() -> hrm.setMethod(ms.getClass().getMethod("execute", Object.class)));
-                ioc.publishEvent(new Event(EventType.initController, path));
-                requestMethodMap.put(path, hrm);
+                initializeControllerMapping(bean);
             }
         });
+        ioc.publishEvent(new Event(EventType.initControllerFinish, this.requestMethodMap));
         log.info("requestMethodMap size:{}", this.requestMethodMap.size());
+    }
+
+    private void initializeControllerMapping(Bean bean) {
+        MvcServlet ms = (MvcServlet) bean.getObj();
+        String path = ms.path();
+        HttpRequestMethod hrm = new HttpRequestMethod();
+        hrm.setPath(path);
+        hrm.setObj(ms);
+        hrm.setHttpMethod(ms.method());
+        Safe.runAndLog(() -> hrm.setMethod(ms.getClass().getMethod("execute", Object.class)));
+        ioc.publishEvent(new Event(EventType.initController, path));
+        requestMethodMap.put(path, hrm);
+    }
+
+    private void registerControllerMethods(Bean bean) {
+        Arrays.stream(bean.getClazz().getMethods()).forEach(m -> Optional.ofNullable(m.getAnnotation(RequestMapping.class)).ifPresent(rm -> {
+            //支持类上添加RequestMapping
+            RequestMapping classMapping = bean.getClazz().getAnnotation(RequestMapping.class);
+            String path = rm.path();
+            if (Optional.ofNullable(classMapping).isPresent()) {
+                path = classMapping.path() + path;
+            }
+            HttpRequestMethod hrm = new HttpRequestMethod();
+            hrm.setTimeout(rm.timeout());
+            hrm.setOriginalRes(rm.originalRes());
+            hrm.setPath(path);
+            hrm.setObj(bean.getObj());
+            hrm.setMethod(m);
+            hrm.setHttpMethod(rm.method());
+            hrm.setGenericSuperclassTypeArguments(getGenericSuperclassTypeArguments(bean.getClazz()));
+            ioc.publishEvent(new Event(EventType.initController, path));
+            requestMethodMap.put(path, hrm);
+        }));
+    }
+
+    public static Map<String, Class> getGenericSuperclassTypeArguments(Class clazz) {
+        List<String> list = Arrays.stream(clazz.getSuperclass().getTypeParameters()).map(it -> it.getName()).collect(Collectors.toList());
+        if (list.size() == 0) {
+            return Maps.newHashMap();
+        }
+        Map<String, Class> map = new HashMap<>();
+        Type genericSuperclass = clazz.getGenericSuperclass();
+        if (genericSuperclass instanceof ParameterizedType) {
+            ParameterizedType parameterizedType = (ParameterizedType) genericSuperclass;
+            Type[] typeArguments = parameterizedType.getActualTypeArguments();
+            for (int i = 0; i < typeArguments.length; i++) {
+                Type argument = typeArguments[i];
+                if (argument instanceof Class<?>) {
+                    map.put(list.get(i), (Class) argument);
+                }
+            }
+        }
+        return map;
     }
 
 
@@ -167,17 +214,21 @@ public class Mvc {
         response.writeAndFlush(context, new Gson().toJson(mr));
     }
 
+    public List<Class> mapMethodParametersToClasses(Method method, Map<String, Class> map) {
+        return Arrays.stream(method.getParameters()).map(it -> {
+            String name = it.getParameterizedType().getTypeName();
+            if ((it.getType() instanceof Object) && map.containsKey(name)) {
+                return map.get(name);
+            }
+            return it.getType();
+        }).collect(Collectors.toList());
+    }
+
     public void callMethod(MvcContext context, MvcRequest request, MvcResponse response, MvcResult<Object> result, HttpRequestMethod method) {
         Safe.run(() -> {
-            JsonElement args = getArgs(method, request.getMethod().toLowerCase(Locale.ROOT), request, context);
-            Object[] params = new Object[]{null};
-            if (method.getMethod().getParameterTypes().length == 1 && method.getMethod().getParameterTypes()[0].equals(MvcContext.class)) {
-                params[0] = context;
-            } else {
-                params = methodInvoker.getMethodParams(method.getMethod(), args);
-            }
-            Object data = this.mvcConfig.isUseCglib() ? methodInvoker.invokeFastMethod(method.getObj(), method.getMethod(), params) :
-                    methodInvoker.invokeMethod(method.getObj(), method.getMethod(), params);
+            Object[] params = getMethodParams(context, request, method);
+
+            Object data = invokeControllerMethod(method, params);
 
             if (context.isSync()) {
                 context.setResponse(data);
@@ -203,12 +254,11 @@ public class Mvc {
                 return;
             }
             // get whether the configuration returns an unwrapped value
-            if (this.mvcConfig.isResponseOriginalValue()) {
-                if (data instanceof String) {
-                    response.writeAndFlush(context, (String) data);
-                } else {
-                    response.writeAndFlush(context, gson.toJson(data));
-                }
+            boolean needOriginalValue = isNeedOriginalValue(method);
+
+            if (needOriginalValue) {
+                String responseData = data instanceof String ? (String) data : gson.toJson(data);
+                response.writeAndFlush(context, responseData);
             } else {
                 result.setData(data);
                 response.writeAndFlush(context, gson.toJson(result));
@@ -218,11 +268,90 @@ public class Mvc {
                 context.setResponse(ex);
                 return;
             }
+            ex = Throwables.getRootCause(ex);
             Throwable unwrapThrowable = ExceptionUtil.unwrapThrowable(ex);
             result.setCode(500);
+            int httpCode = 200;
+            if (ex instanceof DoceanException de) {
+                int code = de.getCode();
+                if (0 != code) {
+                    result.setCode(code);
+                    httpCode = code;
+                }
+            }
             result.setMessage(unwrapThrowable.getMessage());
-            response.writeAndFlush(context, gson.toJson(result));
+            response.writeAndFlush(context, gson.toJson(result), httpCode);
         });
+    }
+
+    private boolean isNeedOriginalValue(HttpRequestMethod method) {
+        //优先级最高
+        if (method.isOriginalRes()) {
+            return true;
+        }
+        boolean needOriginalValue = this.mvcConfig.isResponseOriginalValue();
+        if (!needOriginalValue && StringUtils.isNotBlank(this.mvcConfig.getResponseOriginalPath())) {
+            needOriginalValue = Arrays.stream(mvcConfig.getResponseOriginalPath().split(","))
+                    .anyMatch(i -> i.equals(method.getPath()));
+        }
+        return needOriginalValue;
+    }
+
+    private Object[] getMethodParams(MvcContext context, MvcRequest request, HttpRequestMethod method) {
+        Object[] params = new Object[]{null};
+        if (context.isWebsocket()) {
+            params[0] = new String(request.getBody());
+            return params;
+        }
+        //If there is only one parameter and it is a String, no further parsing is necessary; it can be used directly.
+        if (isSingleStringParameterMethod(method) && request.getMethod().toUpperCase().equals("POST")) {
+            params[0] = new String(request.getBody());
+        } else {
+            JsonElement args = getArgs(method, request.getMethod().toLowerCase(Locale.ROOT), request, context);
+            if (isSingleMvcContextParameterMethod(method)) {
+                params[0] = context;
+            } else {
+                try {
+                    Class[] types = getClasses(method);
+                    //参数有可能从session中取
+                    params = methodInvoker.getMethodParams(args, types, name -> {
+                        Object obj = context.session().getAttribute(name);
+                        //提取失败,用户需要登录
+                        if (null == obj) {
+                            throw new DoceanException("You are required to log in first.", 401);
+                        }
+                        return obj;
+                    });
+                } catch (DoceanException doceanException) {
+                    throw doceanException;
+                } catch (Exception e) {
+                    log.error("getMethodParams error,path:{},params:{},method:{}", context.getPath(),
+                            GsonUtils.gson.toJson(context.getParams()), request.getMethod().toLowerCase(Locale.ROOT), e);
+                }
+            }
+        }
+        return params;
+    }
+
+    private Class[] getClasses(HttpRequestMethod method) {
+        //可能方法中有泛型,这里给fix调,用实际的Class
+        List<Class> list = mapMethodParametersToClasses(method.getMethod(), method.getGenericSuperclassTypeArguments());
+        Class[] types = list.toArray(new Class[]{});
+        return types;
+    }
+
+    private Object invokeControllerMethod(HttpRequestMethod method, Object[] params) {
+        Object data = this.mvcConfig.isUseCglib() ? methodInvoker.invokeFastMethod(method.getObj(), method.getMethod(), params) :
+                methodInvoker.invokeMethod(method.getObj(), method.getMethod(), params);
+        return data;
+    }
+
+    private static boolean isSingleMvcContextParameterMethod(HttpRequestMethod method) {
+        return method.getMethod().getParameterTypes().length == 1 && method.getMethod().getParameterTypes()[0].equals(MvcContext.class);
+    }
+
+    private static boolean isSingleStringParameterMethod(HttpRequestMethod method) {
+        return method.getMethod().getParameterTypes().length == 1 && method.getMethod().getParameterTypes()[0].equals(String.class);
     }
 
     /**

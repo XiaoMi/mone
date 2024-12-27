@@ -35,6 +35,7 @@ public class HessianCodes implements ICodes {
     public <T> T decode(byte[] data, Type type) {
         ByteArrayInputStream is = new ByteArrayInputStream(data);
         Hessian2Input hi = new Hessian2Input(is);
+        hi.setSerializerFactory(DefaultHessian2FactoryInitializer.getSerializerFactory());
         try {
             return (T) hi.readObject();
         } catch (IOException e) {
@@ -53,6 +54,7 @@ public class HessianCodes implements ICodes {
     public <T> byte[] encode(T t) {
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         Hessian2Output ho = new Hessian2Output(os);
+        ho.setSerializerFactory(DefaultHessian2FactoryInitializer.getSerializerFactory());
         try {
             ho.writeObject(t);
             ho.flush();

@@ -1,7 +1,5 @@
 package com.xiaomi.mone.file.common;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -15,6 +13,7 @@ import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
@@ -24,7 +23,7 @@ import java.util.concurrent.ConcurrentMap;
 @Slf4j
 public class FileInfoCache {
 
-    private Cache<String, FileInfo> cache = CacheBuilder.newBuilder().maximumSize(50000).build();
+    private ConcurrentHashMap<String, FileInfo> cache = new ConcurrentHashMap<>();
 
     private Gson gson = new GsonBuilder().setLenient().create();
 
@@ -47,23 +46,25 @@ public class FileInfoCache {
 
 
     public FileInfo get(String key) {
-        return cache.getIfPresent(key);
+        return cache.get(key);
     }
 
     public void remove(String key) {
-        cache.invalidate(key);
+        cache.remove(key);
     }
 
     public ConcurrentMap<String, FileInfo> caches() {
-        return cache.asMap();
+        return cache;
     }
 
     @SneakyThrows
     public void shutdown() {
-        String str = gson.toJson(cache.asMap());
+        log.info("cache shutdown size:{}", cache.size());
+        String str = gson.toJson(cache);
         FileWriter writer = new FileWriter(filePath, false);
         writer.append(str);
         writer.flush();
+        writer.close();
     }
 
     @SneakyThrows
@@ -75,12 +76,16 @@ public class FileInfoCache {
             }.getType();
             Map<String, FileInfo> map = gson.fromJson(str, typeOfT);
             map.forEach((k, v) -> cache.put(k, v));
+            log.info("cache load size:{}", cache.size());
         }
     }
 
-    @SneakyThrows
     public void load(String filePath) {
-        this.filePath = filePath;
-        this.load();
+        try {
+            this.filePath = filePath;
+            this.load();
+        } catch (Exception e) {
+            log.error("load cache error,filePath:{}", filePath, e);
+        }
     }
 }

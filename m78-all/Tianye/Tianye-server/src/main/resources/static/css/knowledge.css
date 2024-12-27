@@ -1,0 +1,78 @@
+body{
+    background: #faf9f9;
+    padding: 12px !important;
+}
+.title {
+    height: 30px
+}
+.btns {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+.infinite-list {
+    height: calc(100% - 30px);
+    padding: 0;
+    margin: 0;
+    list-style: none;
+}
+.infinite-list::-webkit-scrollbar {
+    display: none;
+}
+.infinite-list .infinite-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 50px;
+  background: var(--el-color-primary-light-9);
+  margin: 10px;
+  color: #333;
+}
+.infinite-list .infinite-list-item + .list-item {
+  margin-top: 10px;
+}
+.information {
+    display: flex;
+    align-items: stretch;
+    justify-content: flex-start;
+    margin-bottom: 20px;
+    height: calc(50vh - 22px);
+}
+.information .base-info {
+    width: 460px;
+    margin-right: 20px;
+    background: #fff;
+    padding: 12px 16px;
+    border-radius: 5px;
+}
+.information .base-info .photo {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+}
+.information .interactive {
+    flex: 1;
+    background: #fff;
+    border-radius: 5px;
+    padding: 12px 16px;
+}
+.task-wrap {
+    display: flex;
+    align-items: stretch;
+    justify-content: flex-start;
+    height: calc(50vh - 22px);
+}
+.task-wrap .task-list {
+    width: 460px;
+    margin-right: 20px;
+    background: #fff;
+    padding: 12px 16px;
+    border-radius: 5px;
+}
+.task-wrap .create-task {
+    flex: 1;
+    background: #fff;
+    padding: 12px 16px;
+    border-radius: 5px;
+}

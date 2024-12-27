@@ -1,9 +1,11 @@
 package com.xiaomi.youpin.gitlab;
 
+import com.google.gson.Gson;
 import com.xiaomi.youpin.gitlab.bo.*;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.List;
 
 /**
  * @Author wmin
@@ -121,6 +123,25 @@ public class GitlabTest {
     @Test
     public void getDomainByIP() {
         gitlab.getDomainByIP("https://xxx.com","xx","", Arrays.asList("127.0.0.1"),"token");
+    }
+
+
+    @Test
+    public void getProjectCode() {
+
+        gitlab.getDomainByIP("https://xxx.com","xx","", Arrays.asList("127.0.0.1"),"token");
+    }
+
+    @Test
+    public void getFileContentTest() {
+        String content = gitlab.getFileContent("master", "git.xxx.com", "", "83504", "file path");
+        System.out.println(content);
+    }
+
+    @Test
+    public void getProjectStructureTreeTest() {
+        List<GitTreeItem> treeItemList = gitlab.getProjectStructureTree("master", "git.xxx.com", "", "83504");
+        System.out.println(new Gson().toJson(treeItemList));
     }
 
 }

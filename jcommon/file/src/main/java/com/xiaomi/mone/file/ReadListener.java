@@ -37,4 +37,7 @@ public interface ReadListener {
     default void saveProgress() {
     }
 
+    default void setReadTime() {
+    }
+
 }

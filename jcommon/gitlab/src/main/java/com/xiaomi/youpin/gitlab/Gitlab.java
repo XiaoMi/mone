@@ -17,6 +17,7 @@
 package com.xiaomi.youpin.gitlab;
 
 import com.github.odiszapc.nginxparser.*;
+import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.common.collect.Maps;
 import com.google.gson.JsonSyntaxException;
@@ -36,15 +37,22 @@ import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.PushResult;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.gitlab4j.api.GitLabApi;
+import org.gitlab4j.api.GitLabApiException;
+import org.gitlab4j.api.models.RepositoryFile;
+import org.gitlab4j.api.models.TreeItem;
+import org.springframework.beans.BeanUtils;
 
 import java.io.*;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -63,6 +71,25 @@ public class Gitlab {
     private static final String password = "";
 
     private static Gson gson = new Gson();
+
+    //帮我生成一个org.gitlab4j.api.GitLabApi类的缓存方法，避免每次都new一个对象，新建方式如下GitLabApi gitLabApi = new GitLabApi(baseUrl, gitToken); (method)
+    private static final ConcurrentHashMap<String, GitLabApi> gitLabApiCache = new ConcurrentHashMap<>();
+
+    public static GitLabApi getGitLabApi(String baseUrl, String gitToken) {
+        String key = baseUrl + "#" + gitToken;
+        return gitLabApiCache.computeIfAbsent(key, k -> new GitLabApi(baseUrl, gitToken));
+    }
+
+    private static List<String> SUPPORT_FILE_TYPES = Arrays.asList(
+            ".java", ".xml", ".html", ".css", ".js", ".json", ".md",
+            ".yml", ".yaml", ".properties", ".sql", ".txt", ".sh", ".bat", ".py", ".c", ".cpp",
+            ".h", ".rb", ".php", ".cs", ".swift", ".go", ".rs"
+    );
+
+    //给一个文件名，判断后缀是否在SUPPORT_FILE_TYPES 结合中 (class)
+    public boolean isSupportedFileType(String fileName) {
+        return SUPPORT_FILE_TYPES.stream().anyMatch(fileName::endsWith);
+    }
 
     public Gitlab(String gitlabBaseUrl) {
         if (StringUtils.isBlank(gitlabBaseUrl)) {
@@ -489,7 +516,7 @@ public class Gitlab {
         return true;
     }
 
-    private static boolean clone(String gitUrl, String branch, String username, String token, String gitPath) {
+    public static boolean clone(String gitUrl, String branch, String username, String token, String gitPath) {
         clearIfPresent(gitPath);
         CloneCommand cloneCommand = Git.cloneRepository().setURI(gitUrl)
                 .setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, token))
@@ -1348,4 +1375,88 @@ public class Gitlab {
         }
         return res;
     }
+
+    /**
+     * 获取指定远程git文件的raw内容
+     * @param branch
+     * @param gitDomain
+     * @param gitToken
+     * @param projectId
+     * @param filePath
+     * @return
+     */
+    public String getFileContent(String branch, String gitDomain, String gitToken, String projectId, String filePath) {
+        try {
+            Preconditions.checkArgument(null != gitDomain, "gitDomain can not be null");
+            Preconditions.checkArgument(null != gitToken, "gitToken can not be null");
+            Preconditions.checkArgument(null != projectId, "projectId can not be null");
+            Preconditions.checkArgument(null != filePath, "filePath can not be null");
+            Preconditions.checkArgument(isSupportedFileType(filePath), "not support this file type");
+
+            String baseUrl = "https://" + gitDomain;
+            GitLabApi gitLabApi = getGitLabApi(baseUrl, gitToken);
+
+            RepositoryFile file = gitLabApi.getRepositoryFileApi().getFile(projectId, filePath, branch);
+            String encodedContent = file.getContent();
+            byte[] decodedBytes = Base64.getDecoder().decode(encodedContent);
+
+            return new String(decodedBytes, StandardCharsets.UTF_8);
+        } catch (GitLabApiException e) {
+            throw new RuntimeException("Error retrieving file content from GitLab", e);
+        }
+    }
+
+
+    /**
+     * 获取git工程树结构
+     *
+     * @param branch
+     * @param gitDomain
+     * @param gitToken
+     * @param projectId
+     * @return
+     */
+    public List<GitTreeItem> getProjectStructureTree(String branch, String gitDomain, String gitToken, String projectId) {
+        try {
+            Preconditions.checkArgument(null != gitDomain, "gitDomain can not be null");
+            Preconditions.checkArgument(null != gitToken, "gitToken can not be null");
+            Preconditions.checkArgument(null != projectId, "projectId can not be null");
+
+            String baseUrl = "https://" + gitDomain;
+            GitLabApi gitLabApi = getGitLabApi(baseUrl, gitToken);
+            List<TreeItem> treeItems = gitLabApi.getRepositoryApi().getTree(projectId, null, branch, true);
+
+            List<GitTreeItem> treeItemList = transformProjectStructureTree(treeItems);
+
+            return treeItemList;
+        } catch (GitLabApiException e) {
+            throw new RuntimeException("Error retrieving project structure from GitLab", e);
+        }
+    }
+
+    //将调用getProjectStructureTree获取到的List<TreeItem>进行结构改造，新结构TreeItem2较TreeItem新增属性parentId,父子关系的判定基于TreeItem的path和type (class)
+    private List<GitTreeItem> transformProjectStructureTree(List<TreeItem> treeItems) {
+        Map<String, GitTreeItem> itemMap = new HashMap<>();
+        List<GitTreeItem> result = new ArrayList<>();
+
+        // First, convert all TreeItems to TreeItem2 and store them in a map for easy lookup
+        for (TreeItem item : treeItems) {
+            GitTreeItem gitTreeItem = new GitTreeItem();
+            BeanUtils.copyProperties(item, gitTreeItem);
+            gitTreeItem.setType(item.getType().name());
+            itemMap.put(item.getPath(), gitTreeItem);
+        }
+
+        // Next, establish parent-child relationships
+        for (GitTreeItem gitTreeItem : itemMap.values()) {
+            String path = gitTreeItem.getPath();
+            String parentPath = path.contains("/") ? path.substring(0, path.lastIndexOf('/')) : null;
+            gitTreeItem.setParentId(parentPath != null ? itemMap.get(parentPath).getId() : null);
+
+            result.add(gitTreeItem);
+        }
+
+        return result;
+    }
+
 }
