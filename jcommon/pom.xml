@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>run.mone</groupId>
     <artifactId>jcommon</artifactId>
-    <version>1.6.0-jdk21-SNAPSHOT</version>
+    <version>1.6.1-jdk21</version>
     <packaging>pom</packaging>
     <name>${project.artifactId}</name>
     <description>The parent project of jcommon</description>
@@ -18,6 +18,22 @@
             <distribution>repo</distribution>
         </license>
     </licenses>
+
+    <scm>
+        <connection>scm:git@github.com:XiaoMi/mone.git</connection>
+        <developerConnection>scm:git@github.com:XiaoMi/mone.git</developerConnection>
+        <url>https://github.com/XiaoMi/mone.git</url>
+    </scm>
+
+    <developers>
+        <developer>
+            <name>wtt</name>
+            <email>1136220284@qq.com</email>
+            <organization>xiaomi</organization>
+            <organizationUrl>https://www.mi.com</organizationUrl>
+        </developer>
+    </developers>
+
     <modules>
         <module>aliyun</module>
         <module>log</module>
@@ -31,11 +47,11 @@
         <module>struct</module>
         <module>gitlab</module>
         <module>api</module>
-        <module>nacos</module>
+<!--        <module>nacos</module>-->
         <module>mongodb</module>
-        <module>coloregg</module>
+<!--        <module>coloregg</module>-->
         <module>ks3</module>
-        <module>test</module>
+<!--        <module>test</module>-->
         <module>docker</module>
         <module>codegen</module>
         <module>jmonitor</module>
@@ -45,7 +61,7 @@
         <module>dbLocking</module>
         <module>aop</module>
         <module>crypto</module>
-        <module>catPlugin</module>
+<!--        <module>catPlugin</module>-->
         <module>feishu</module>
         <module>sre</module>
         <module>mistarter</module>
@@ -62,7 +78,7 @@
         <module>easy</module>
         <module>df</module>
         <module>monespring</module>
-        <module>graalvm</module>
+<!--        <module>graalvm</module>-->
         <module>mquic</module>
         <module>prometheus</module>
         <module>buddy</module>
@@ -81,14 +97,14 @@
         <module>infra-result</module>
         <module>rpc-codes</module>
         <module>mybatis-plugins</module>
-        <module>processor</module>
-        <module>openai</module>
-        <module>excel</module>
+<!--        <module>processor</module>-->
+<!--        <module>openai</module>-->
+<!--        <module>excel</module>-->
         <module>match</module>
         <module>infra-common</module>
         <module>docean-spring-starter</module>
-        <module>ai</module>
-        <module>ai/neo4j</module>
+<!--        <module>ai</module>-->
+<!--        <module>ai/neo4j</module>-->
     </modules>
 
     <distributionManagement>
@@ -106,7 +122,7 @@
         <maven.jcommonDirectory>~/</maven.jcommonDirectory>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
-        <submodule-release.version>1.6.0-jdk21-SNAPSHOT</submodule-release.version>
+        <submodule-release.version>1.6.1-jdk21</submodule-release.version>
     </properties>
     <dependencies>
         <dependency>
@@ -236,24 +252,24 @@
                 </configuration>
             </plugin>
 
-            <!--      <plugin>-->
-            <!--        <groupId>org.apache.maven.plugins</groupId>-->
-            <!--        <artifactId>maven-gpg-plugin</artifactId>-->
-            <!--        <version>1.6</version>-->
-            <!--        <executions>-->
-            <!--          <execution>-->
-            <!--            <id>sign-artifacts</id>-->
-            <!--            <phase>verify</phase>-->
-            <!--            <goals>-->
-            <!--              <goal>sign</goal>-->
-            <!--            </goals>-->
-            <!--            <configuration>-->
-            <!--              <executable>gpg</executable>-->
-            <!--              <keyname>your key</keyname>-->
-            <!--            </configuration>-->
-            <!--          </execution>-->
-            <!--        </executions>-->
-            <!--      </plugin>-->
+                  <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-gpg-plugin</artifactId>
+                    <version>1.6</version>
+                    <executions>
+                      <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                          <goal>sign</goal>
+                        </goals>
+                        <configuration>
+                          <executable>gpg</executable>
+                          <keyname>DF82E7BFD5C2F4EC1AE47C4F22E62F124F6BDA71</keyname>
+                        </configuration>
+                      </execution>
+                    </executions>
+                  </plugin>
 
         </plugins>
     </build>

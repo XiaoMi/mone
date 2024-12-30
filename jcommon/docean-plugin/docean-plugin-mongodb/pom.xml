@@ -6,10 +6,9 @@
     <parent>
         <groupId>run.mone</groupId>
         <artifactId>docean-plugin</artifactId>
-        <version>1.6.0-jdk21-SNAPSHOT</version>
+        <version>1.6.1-jdk21</version>
     </parent>
     <artifactId>docean-plugin-mongodb</artifactId>
-    <version>1.5.0-jdk21-SNAPSHOT</version>
     <dependencies>
 
         <dependency>
@@ -23,11 +22,11 @@
             <version>3.8.0</version>
         </dependency>
 
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>catPlugin</artifactId>
-            <version>1.6.0-jdk21-SNAPSHOT</version>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>run.mone</groupId>-->
+<!--            <artifactId>catPlugin</artifactId>-->
+<!--            <version>1.6.1-jdk21</version>-->
+<!--        </dependency>-->
 
         <dependency>
             <groupId>dev.morphia.morphia</groupId>

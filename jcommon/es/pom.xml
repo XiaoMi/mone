@@ -6,7 +6,7 @@
     <parent>
         <groupId>run.mone</groupId>
         <artifactId>jcommon</artifactId>
-        <version>1.6.0-jdk21-SNAPSHOT</version>
+        <version>1.6.1-jdk21</version>
     </parent>
     <artifactId>es</artifactId>
     <version>1.8-jdk8-SNAPSHOT</version>
@@ -33,12 +33,6 @@
             <version>${es.version}</version>
         </dependency>
 
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>nacos</artifactId>
-            <version>1.4-v1-jdk20-SNAPSHOT</version>
-            <scope>test</scope>
-        </dependency>
     </dependencies>
     <build>
         <plugins>

@@ -6,14 +6,14 @@
     <parent>
         <groupId>run.mone</groupId>
         <artifactId>jcommon</artifactId>
-        <version>1.6.0-jdk21-SNAPSHOT</version>
+        <version>1.6.1-jdk21</version>
     </parent>
     <artifactId>docean-plugin</artifactId>
-    <version>1.6.0-jdk21-SNAPSHOT</version>
+    <version>1.6.1-jdk21</version>
     <packaging>pom</packaging>
 
     <properties>
-        <docean-plugin.submodule.version>1.6.0-jdk21-SNAPSHOT</docean-plugin.submodule.version>
+        <docean-plugin.submodule.version>1.6.1-jdk21</docean-plugin.submodule.version>
     </properties>
 
     <modules>
@@ -60,7 +60,7 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>docean</artifactId>
-            <version>1.6.0-jdk21-SNAPSHOT</version>
+            <version>1.6.1-jdk21</version>
         </dependency>
     </dependencies>
 
@@ -69,27 +69,27 @@
             <dependency>
                 <groupId>run.mone</groupId>
                 <artifactId>docean</artifactId>
-                <version>1.6.0-jdk21-SNAPSHOT</version>
+                <version>1.6.1-jdk21</version>
             </dependency>
             <dependency>
                 <groupId>run.mone</groupId>
                 <artifactId>http</artifactId>
-                <version>1.6.0-jdk21-SNAPSHOT</version>
+                <version>1.6.1-jdk21</version>
             </dependency>
             <dependency>
                 <groupId>run.mone</groupId>
                 <artifactId>common</artifactId>
-                <version>1.6.0-jdk21-SNAPSHOT</version>
+                <version>1.6.1-jdk21</version>
             </dependency>
             <dependency>
                 <groupId>run.mone</groupId>
                 <artifactId>rpc</artifactId>
-                <version>1.6.0-jdk21-SNAPSHOT</version>
+                <version>1.6.1-jdk21</version>
             </dependency>
             <dependency>
                 <groupId>run.mone</groupId>
                 <artifactId>infra-result</artifactId>
-                <version>1.6.0-jdk21-SNAPSHOT</version>
+                <version>1.6.1-jdk21</version>
             </dependency>
 
             <dependency>

@@ -5,7 +5,7 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>jcommon</artifactId>
-    <version>1.6.0-jdk21-SNAPSHOT</version>
+    <version>1.6.1-jdk21</version>
   </parent>
   <artifactId>nacos</artifactId>
   <version>${submodule-release.version}</version>
@@ -24,7 +24,7 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>http</artifactId>
-      <version>1.6.0-jdk21-SNAPSHOT</version>
+      <version>1.6.1-jdk21</version>
     </dependency>
   </dependencies>
 </project>

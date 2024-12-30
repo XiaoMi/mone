@@ -10,7 +10,7 @@
     </parent>
 
     <artifactId>prometheus-trace-etl</artifactId>
-    <version>0.0.6-jdk21</version>
+<!--    <version>0.0.6-jdk21</version>-->
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>
