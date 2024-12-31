@@ -17,6 +17,7 @@
 package com.xiaomi.youpin.rpc.test.tcp;
 
 import com.google.common.collect.Lists;
+import com.google.gson.Gson;
 import com.xiaomi.data.push.bo.MPPing;
 import com.xiaomi.data.push.bo.User;
 import com.xiaomi.data.push.context.AgentContext;
@@ -33,6 +34,7 @@ import com.xiaomi.data.push.rpc.protocol.RemotingCommand;
 import com.xiaomi.data.push.task.Task;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 
 import java.util.List;
@@ -44,11 +46,18 @@ import java.util.List;
 @Slf4j
 public class TcpTest {
 
+    @Test
+    public void testServer3() {
+        testServer();
+    }
+
 
     @SneakyThrows
     @Test
     public void testServer() {
-        RpcServer rpcServer = new RpcServer("", "demo_server1", false);
+        String nacosAddr = System.getenv("nacos_addr");
+        boolean regNacos = StringUtils.isNotEmpty(nacosAddr) ? true : false;
+        RpcServer rpcServer = new RpcServer(null == nacosAddr ? "" : nacosAddr, "demo_server_zzy", regNacos);
         //注册处理器
         rpcServer.setProcessorList(Lists.newArrayList(
                 new Pair<>(RpcCmd.mpPingReq, new MPingProcessor()),
@@ -69,7 +78,7 @@ public class TcpTest {
                         log.info("res:{}", new String(res.getBody()));
                     }
 
-                }, 2)
+                }, 10)
         ));
         rpcServer.init();
         rpcServer.start();
@@ -121,7 +130,9 @@ public class TcpTest {
     @SneakyThrows
     @Test
     public void testClient() {
-        RpcClient client = new RpcClient("127.0.0.1:53442");
+        String nacosAddr = System.getenv("nacos_addr");
+        nacosAddr = null == nacosAddr ? "127.0.0.1:53442" : nacosAddr;
+        RpcClient client = new RpcClient(nacosAddr, "demo_server_zzy");
         client.setReconnection(false);
         client.setProcessorList(Lists.newArrayList(
                 new Pair<>(RpcCmd.getInfoReq, new GetInfoProcessor())
@@ -135,12 +146,21 @@ public class TcpTest {
                         user.setName("zzy");
                         p.setData("ping");
                         p.setUser(user);
-                        client.sendMessage(client.getServerAddrs(), RemotingCommand.createMsgPackRequest(RpcCmd.mpPingReq, p), responseFuture -> {
-                            MPPing pong = responseFuture.getResponseCommand().getReq(MPPing.class);
-                            log.info("--->" + pong.getData());
+                        RemotingCommand req = RemotingCommand.createRequestCommand(RpcCmd.pingReq);
+                        req.setTimeout(2000L);
+                        req.setBody(new Gson().toJson(p).getBytes());
+
+//                        client.sendMessage(client.getServerAddrs(), req, responseFuture -> {
+//                            log.info("--->" + responseFuture.getResponseCommand());
+//                        });
+
+//                        client.sendToAllMessage(req);
+                        client.sendToAllMessage(RpcCmd.pingReq, "ping".getBytes(), resFuture -> {
+                            log.info("----->{}", resFuture.getResponseCommand());
                         });
-                        RemotingCommand res = client.sendMessage(client.getServerAddrs(), RpcCmd.pingReq, "abc", 1000);
-                        log.info("res:{}", new String(res.getBody()));
+
+//                        RemotingCommand res = client.sendMessage(client.getServerAddrs(), RpcCmd.pingReq, "abc", 1000);
+//                        log.info("res:{}", new String(res.getBody()));
                     } catch (Exception ex) {
                         log.error(ex.getMessage());
                     }

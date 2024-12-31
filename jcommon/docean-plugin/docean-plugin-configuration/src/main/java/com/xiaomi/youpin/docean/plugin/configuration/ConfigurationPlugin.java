@@ -38,7 +38,7 @@ import java.util.Set;
  * @author shanwb
  * @date 2022-09-13
  */
-@DOceanPlugin(order = Integer.MAX_VALUE)
+@DOceanPlugin(order = Integer.MAX_VALUE - 2)
 @Slf4j
 public class ConfigurationPlugin implements IPlugin {
 

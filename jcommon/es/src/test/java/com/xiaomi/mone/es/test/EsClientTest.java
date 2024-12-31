@@ -13,7 +13,8 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.indices.GetMappingsResponse;
-import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.client.indices.IndexTemplatesExistRequest;
+import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
@@ -225,7 +226,16 @@ public class EsClientTest {
 
     @Test
     public void queryIndexMetadataTest() throws IOException {
-        GetMappingsResponse metadata = client.queryIndexMapping("zgq_common_milog_staging_app_private_1");
-        System.out.println(String.format("result:%s", gson.toJson(metadata)));
+        GetMappingsResponse metadata = client.queryIndexMapping("test_scf_log_index");
+//        Map<String, MappingMetadata> mappings = metadata.mappings();
+//        System.out.println(String.format("result:%s", gson.toJson(metadata)));
+    }
+
+    @Test
+    public void existsTemplateTest() throws IOException {
+        String templateName = "zgq_common_milog_app_private_1 ";
+        IndexTemplatesExistRequest request = new IndexTemplatesExistRequest(templateName);
+        boolean res = client.existsTemplate(request);
+        System.out.println("result:" + res);
     }
 }

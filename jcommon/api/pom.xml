@@ -5,8 +5,8 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>jcommon</artifactId>
-    <version>1.4-jdk20-SNAPSHOT</version>
+    <version>1.6.0-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>api</artifactId>
-  <version>1.4.1-jdk20-SNAPSHOT</version>
+  <version>${submodule-release.version}</version>
 </project>

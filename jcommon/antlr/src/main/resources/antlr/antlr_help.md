@@ -8,6 +8,8 @@
 
 + antlr4 -package com.xiaomi.data.push.antlr.java8 -o /Users/zzy/IdeaProjects/mione/jcommon/antlr/src/main/java/com/xiaomi/data/push/antlr/java8 *.g4
 
++ antlr4 -package run.mone.antlr.golang -o /Users/zhangzhiyong/IdeaProjects/goodjava/mone/jcommon/antlr/src/main/resources/antlr/golang/ GoParser.g4
+
 + antlr4 -package com.xiaomi.data.push.antlr.java8 -o /Users/zzy/IdeaProjects/mione/jcommon/antlr/src/main/java/com/xiaomi/data/push/antlr/java8 Java8.g4
 
 + https://github.com/antlr/codebuff/tree/master/grammars/org/antlr/codebuff

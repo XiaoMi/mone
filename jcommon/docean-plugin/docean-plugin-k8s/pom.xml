@@ -5,9 +5,10 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>docean-plugin</artifactId>
-    <version>1.4-jdk20-SNAPSHOT</version>
+    <version>1.6.0-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>docean-plugin-k8s</artifactId>
+  <version>1.5.1-jdk21</version>
   <properties>
     <maven.compiler.source>8</maven.compiler.source>
     <version.fabric8.client>5.11.2</version.fabric8.client>
@@ -17,17 +18,16 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-config</artifactId>
-      <version>1.4-jdk20-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>io.fabric8</groupId>
       <artifactId>kubernetes-client</artifactId>
       <version>${version.fabric8.client}</version>
     </dependency>
-    <dependency>
-      <groupId>io.kubernetes</groupId>
-      <artifactId>client-java</artifactId>
-      <version>15.0.1</version>
-    </dependency>
+<!--    <dependency>-->
+<!--      <groupId>io.kubernetes</groupId>-->
+<!--      <artifactId>client-java</artifactId>-->
+<!--      <version>15.0.1</version>-->
+<!--    </dependency>-->
   </dependencies>
 </project>

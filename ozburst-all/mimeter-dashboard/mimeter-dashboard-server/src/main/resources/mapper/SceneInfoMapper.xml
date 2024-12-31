@@ -1,0 +1,891 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="run.mone.mimeter.dashboard.mapper.SceneInfoMapper">
+  <resultMap id="BaseResultMap" type="run.mone.mimeter.dashboard.pojo.SceneInfo">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="name" jdbcType="VARCHAR" property="name" />
+    <result column="scene_status" jdbcType="INTEGER" property="sceneStatus" />
+    <result column="creator" jdbcType="VARCHAR" property="creator" />
+    <result column="updator" jdbcType="VARCHAR" property="updator" />
+    <result column="apiNum" jdbcType="INTEGER" property="apinum" />
+    <result column="remark" jdbcType="VARCHAR" property="remark" />
+    <result column="scene_type" jdbcType="INTEGER" property="sceneType" />
+    <result column="bench_mode" jdbcType="INTEGER" property="benchMode" />
+    <result column="Increment_mode" jdbcType="INTEGER" property="incrementMode" />
+    <result column="increase_percent" jdbcType="INTEGER" property="increasePercent" />
+    <result column="bench_time" jdbcType="INTEGER" property="benchTime" />
+    <result column="max_bench_qps" jdbcType="INTEGER" property="maxBenchQps" />
+    <result column="rps_rate" jdbcType="INTEGER" property="rpsRate" />
+    <result column="log_rate" jdbcType="INTEGER" property="logRate" />
+    <result column="request_timeout" jdbcType="INTEGER" property="requestTimeout" />
+    <result column="success_code" jdbcType="VARCHAR" property="successCode" />
+    <result column="ctime" jdbcType="BIGINT" property="ctime" />
+    <result column="utime" jdbcType="BIGINT" property="utime" />
+    <result column="scene_group_id" jdbcType="INTEGER" property="sceneGroupId" />
+    <result column="cur_report_id" jdbcType="VARCHAR" property="curReportId" />
+    <result column="scene_env" jdbcType="INTEGER" property="sceneEnv" />
+    <result column="tenant" jdbcType="VARCHAR" property="tenant" />
+    <result column="bench_count" jdbcType="INTEGER" property="benchCount" />
+    <result column="scene_source" jdbcType="INTEGER" property="sceneSource" />
+    <result column="last_bench_time" jdbcType="BIGINT" property="lastBenchTime" />
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="run.mone.mimeter.dashboard.pojo.SceneInfo">
+    <result column="api_bench_infos" jdbcType="LONGVARCHAR" property="apiBenchInfos" />
+    <result column="sla" jdbcType="LONGVARCHAR" property="sla" />
+    <result column="global_header" jdbcType="LONGVARCHAR" property="globalHeader" />
+    <result column="agent_list" jdbcType="LONGVARCHAR" property="agentList" />
+    <result column="ref_dataset_ids" jdbcType="LONGVARCHAR" property="refDatasetIds" />
+    <result column="person_in_charge" jdbcType="LONGVARCHAR" property="personInCharge" />
+    <result column="bench_calendar" jdbcType="LONGVARCHAR" property="benchCalendar" />
+    <result column="global_tsp_auth" jdbcType="LONGVARCHAR" property="globalTspAuth" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    id, name, scene_status, creator, updator, apiNum, remark, scene_type, bench_mode, 
+    Increment_mode, increase_percent, bench_time, max_bench_qps, rps_rate, log_rate, 
+    request_timeout, success_code, ctime, utime, scene_group_id, cur_report_id, scene_env, 
+    tenant, bench_count, scene_source, last_bench_time
+  </sql>
+  <sql id="Blob_Column_List">
+    api_bench_infos, sla, global_header, agent_list, ref_dataset_ids, person_in_charge, 
+    bench_calendar, global_tsp_auth
+  </sql>
+  <select id="selectByExampleWithBLOBs" parameterType="run.mone.mimeter.dashboard.pojo.SceneInfoExample" resultMap="ResultMapWithBLOBs">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from scene_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByExample" parameterType="run.mone.mimeter.dashboard.pojo.SceneInfoExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from scene_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="ResultMapWithBLOBs">
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from scene_info
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from scene_info
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <delete id="deleteByExample" parameterType="run.mone.mimeter.dashboard.pojo.SceneInfoExample">
+    delete from scene_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="run.mone.mimeter.dashboard.pojo.SceneInfo">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into scene_info (name, scene_status, creator, 
+      updator, apiNum, remark, 
+      scene_type, bench_mode, Increment_mode, 
+      increase_percent, bench_time, max_bench_qps, 
+      rps_rate, log_rate, request_timeout, 
+      success_code, ctime, utime, 
+      scene_group_id, cur_report_id, scene_env, 
+      tenant, bench_count, scene_source, 
+      last_bench_time, api_bench_infos, sla, 
+      global_header, agent_list, ref_dataset_ids, 
+      person_in_charge, bench_calendar, 
+      global_tsp_auth)
+    values (#{name,jdbcType=VARCHAR}, #{sceneStatus,jdbcType=INTEGER}, #{creator,jdbcType=VARCHAR}, 
+      #{updator,jdbcType=VARCHAR}, #{apinum,jdbcType=INTEGER}, #{remark,jdbcType=VARCHAR}, 
+      #{sceneType,jdbcType=INTEGER}, #{benchMode,jdbcType=INTEGER}, #{incrementMode,jdbcType=INTEGER}, 
+      #{increasePercent,jdbcType=INTEGER}, #{benchTime,jdbcType=INTEGER}, #{maxBenchQps,jdbcType=INTEGER}, 
+      #{rpsRate,jdbcType=INTEGER}, #{logRate,jdbcType=INTEGER}, #{requestTimeout,jdbcType=INTEGER}, 
+      #{successCode,jdbcType=VARCHAR}, #{ctime,jdbcType=BIGINT}, #{utime,jdbcType=BIGINT}, 
+      #{sceneGroupId,jdbcType=INTEGER}, #{curReportId,jdbcType=VARCHAR}, #{sceneEnv,jdbcType=INTEGER}, 
+      #{tenant,jdbcType=VARCHAR}, #{benchCount,jdbcType=INTEGER}, #{sceneSource,jdbcType=INTEGER}, 
+      #{lastBenchTime,jdbcType=BIGINT}, #{apiBenchInfos,jdbcType=LONGVARCHAR}, #{sla,jdbcType=LONGVARCHAR}, 
+      #{globalHeader,jdbcType=LONGVARCHAR}, #{agentList,jdbcType=LONGVARCHAR}, #{refDatasetIds,jdbcType=LONGVARCHAR}, 
+      #{personInCharge,jdbcType=LONGVARCHAR}, #{benchCalendar,jdbcType=LONGVARCHAR}, 
+      #{globalTspAuth,jdbcType=LONGVARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="run.mone.mimeter.dashboard.pojo.SceneInfo">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into scene_info
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="name != null">
+        name,
+      </if>
+      <if test="sceneStatus != null">
+        scene_status,
+      </if>
+      <if test="creator != null">
+        creator,
+      </if>
+      <if test="updator != null">
+        updator,
+      </if>
+      <if test="apinum != null">
+        apiNum,
+      </if>
+      <if test="remark != null">
+        remark,
+      </if>
+      <if test="sceneType != null">
+        scene_type,
+      </if>
+      <if test="benchMode != null">
+        bench_mode,
+      </if>
+      <if test="incrementMode != null">
+        Increment_mode,
+      </if>
+      <if test="increasePercent != null">
+        increase_percent,
+      </if>
+      <if test="benchTime != null">
+        bench_time,
+      </if>
+      <if test="maxBenchQps != null">
+        max_bench_qps,
+      </if>
+      <if test="rpsRate != null">
+        rps_rate,
+      </if>
+      <if test="logRate != null">
+        log_rate,
+      </if>
+      <if test="requestTimeout != null">
+        request_timeout,
+      </if>
+      <if test="successCode != null">
+        success_code,
+      </if>
+      <if test="ctime != null">
+        ctime,
+      </if>
+      <if test="utime != null">
+        utime,
+      </if>
+      <if test="sceneGroupId != null">
+        scene_group_id,
+      </if>
+      <if test="curReportId != null">
+        cur_report_id,
+      </if>
+      <if test="sceneEnv != null">
+        scene_env,
+      </if>
+      <if test="tenant != null">
+        tenant,
+      </if>
+      <if test="benchCount != null">
+        bench_count,
+      </if>
+      <if test="sceneSource != null">
+        scene_source,
+      </if>
+      <if test="lastBenchTime != null">
+        last_bench_time,
+      </if>
+      <if test="apiBenchInfos != null">
+        api_bench_infos,
+      </if>
+      <if test="sla != null">
+        sla,
+      </if>
+      <if test="globalHeader != null">
+        global_header,
+      </if>
+      <if test="agentList != null">
+        agent_list,
+      </if>
+      <if test="refDatasetIds != null">
+        ref_dataset_ids,
+      </if>
+      <if test="personInCharge != null">
+        person_in_charge,
+      </if>
+      <if test="benchCalendar != null">
+        bench_calendar,
+      </if>
+      <if test="globalTspAuth != null">
+        global_tsp_auth,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="name != null">
+        #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="sceneStatus != null">
+        #{sceneStatus,jdbcType=INTEGER},
+      </if>
+      <if test="creator != null">
+        #{creator,jdbcType=VARCHAR},
+      </if>
+      <if test="updator != null">
+        #{updator,jdbcType=VARCHAR},
+      </if>
+      <if test="apinum != null">
+        #{apinum,jdbcType=INTEGER},
+      </if>
+      <if test="remark != null">
+        #{remark,jdbcType=VARCHAR},
+      </if>
+      <if test="sceneType != null">
+        #{sceneType,jdbcType=INTEGER},
+      </if>
+      <if test="benchMode != null">
+        #{benchMode,jdbcType=INTEGER},
+      </if>
+      <if test="incrementMode != null">
+        #{incrementMode,jdbcType=INTEGER},
+      </if>
+      <if test="increasePercent != null">
+        #{increasePercent,jdbcType=INTEGER},
+      </if>
+      <if test="benchTime != null">
+        #{benchTime,jdbcType=INTEGER},
+      </if>
+      <if test="maxBenchQps != null">
+        #{maxBenchQps,jdbcType=INTEGER},
+      </if>
+      <if test="rpsRate != null">
+        #{rpsRate,jdbcType=INTEGER},
+      </if>
+      <if test="logRate != null">
+        #{logRate,jdbcType=INTEGER},
+      </if>
+      <if test="requestTimeout != null">
+        #{requestTimeout,jdbcType=INTEGER},
+      </if>
+      <if test="successCode != null">
+        #{successCode,jdbcType=VARCHAR},
+      </if>
+      <if test="ctime != null">
+        #{ctime,jdbcType=BIGINT},
+      </if>
+      <if test="utime != null">
+        #{utime,jdbcType=BIGINT},
+      </if>
+      <if test="sceneGroupId != null">
+        #{sceneGroupId,jdbcType=INTEGER},
+      </if>
+      <if test="curReportId != null">
+        #{curReportId,jdbcType=VARCHAR},
+      </if>
+      <if test="sceneEnv != null">
+        #{sceneEnv,jdbcType=INTEGER},
+      </if>
+      <if test="tenant != null">
+        #{tenant,jdbcType=VARCHAR},
+      </if>
+      <if test="benchCount != null">
+        #{benchCount,jdbcType=INTEGER},
+      </if>
+      <if test="sceneSource != null">
+        #{sceneSource,jdbcType=INTEGER},
+      </if>
+      <if test="lastBenchTime != null">
+        #{lastBenchTime,jdbcType=BIGINT},
+      </if>
+      <if test="apiBenchInfos != null">
+        #{apiBenchInfos,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="sla != null">
+        #{sla,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="globalHeader != null">
+        #{globalHeader,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="agentList != null">
+        #{agentList,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="refDatasetIds != null">
+        #{refDatasetIds,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="personInCharge != null">
+        #{personInCharge,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="benchCalendar != null">
+        #{benchCalendar,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="globalTspAuth != null">
+        #{globalTspAuth,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="run.mone.mimeter.dashboard.pojo.SceneInfoExample" resultType="java.lang.Long">
+    select count(*) from scene_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update scene_info
+    <set>
+      <if test="record.id != null">
+        id = #{record.id,jdbcType=INTEGER},
+      </if>
+      <if test="record.name != null">
+        name = #{record.name,jdbcType=VARCHAR},
+      </if>
+      <if test="record.sceneStatus != null">
+        scene_status = #{record.sceneStatus,jdbcType=INTEGER},
+      </if>
+      <if test="record.creator != null">
+        creator = #{record.creator,jdbcType=VARCHAR},
+      </if>
+      <if test="record.updator != null">
+        updator = #{record.updator,jdbcType=VARCHAR},
+      </if>
+      <if test="record.apinum != null">
+        apiNum = #{record.apinum,jdbcType=INTEGER},
+      </if>
+      <if test="record.remark != null">
+        remark = #{record.remark,jdbcType=VARCHAR},
+      </if>
+      <if test="record.sceneType != null">
+        scene_type = #{record.sceneType,jdbcType=INTEGER},
+      </if>
+      <if test="record.benchMode != null">
+        bench_mode = #{record.benchMode,jdbcType=INTEGER},
+      </if>
+      <if test="record.incrementMode != null">
+        Increment_mode = #{record.incrementMode,jdbcType=INTEGER},
+      </if>
+      <if test="record.increasePercent != null">
+        increase_percent = #{record.increasePercent,jdbcType=INTEGER},
+      </if>
+      <if test="record.benchTime != null">
+        bench_time = #{record.benchTime,jdbcType=INTEGER},
+      </if>
+      <if test="record.maxBenchQps != null">
+        max_bench_qps = #{record.maxBenchQps,jdbcType=INTEGER},
+      </if>
+      <if test="record.rpsRate != null">
+        rps_rate = #{record.rpsRate,jdbcType=INTEGER},
+      </if>
+      <if test="record.logRate != null">
+        log_rate = #{record.logRate,jdbcType=INTEGER},
+      </if>
+      <if test="record.requestTimeout != null">
+        request_timeout = #{record.requestTimeout,jdbcType=INTEGER},
+      </if>
+      <if test="record.successCode != null">
+        success_code = #{record.successCode,jdbcType=VARCHAR},
+      </if>
+      <if test="record.ctime != null">
+        ctime = #{record.ctime,jdbcType=BIGINT},
+      </if>
+      <if test="record.utime != null">
+        utime = #{record.utime,jdbcType=BIGINT},
+      </if>
+      <if test="record.sceneGroupId != null">
+        scene_group_id = #{record.sceneGroupId,jdbcType=INTEGER},
+      </if>
+      <if test="record.curReportId != null">
+        cur_report_id = #{record.curReportId,jdbcType=VARCHAR},
+      </if>
+      <if test="record.sceneEnv != null">
+        scene_env = #{record.sceneEnv,jdbcType=INTEGER},
+      </if>
+      <if test="record.tenant != null">
+        tenant = #{record.tenant,jdbcType=VARCHAR},
+      </if>
+      <if test="record.benchCount != null">
+        bench_count = #{record.benchCount,jdbcType=INTEGER},
+      </if>
+      <if test="record.sceneSource != null">
+        scene_source = #{record.sceneSource,jdbcType=INTEGER},
+      </if>
+      <if test="record.lastBenchTime != null">
+        last_bench_time = #{record.lastBenchTime,jdbcType=BIGINT},
+      </if>
+      <if test="record.apiBenchInfos != null">
+        api_bench_infos = #{record.apiBenchInfos,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.sla != null">
+        sla = #{record.sla,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.globalHeader != null">
+        global_header = #{record.globalHeader,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.agentList != null">
+        agent_list = #{record.agentList,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.refDatasetIds != null">
+        ref_dataset_ids = #{record.refDatasetIds,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.personInCharge != null">
+        person_in_charge = #{record.personInCharge,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.benchCalendar != null">
+        bench_calendar = #{record.benchCalendar,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="record.globalTspAuth != null">
+        global_tsp_auth = #{record.globalTspAuth,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExampleWithBLOBs" parameterType="map">
+    update scene_info
+    set id = #{record.id,jdbcType=INTEGER},
+      name = #{record.name,jdbcType=VARCHAR},
+      scene_status = #{record.sceneStatus,jdbcType=INTEGER},
+      creator = #{record.creator,jdbcType=VARCHAR},
+      updator = #{record.updator,jdbcType=VARCHAR},
+      apiNum = #{record.apinum,jdbcType=INTEGER},
+      remark = #{record.remark,jdbcType=VARCHAR},
+      scene_type = #{record.sceneType,jdbcType=INTEGER},
+      bench_mode = #{record.benchMode,jdbcType=INTEGER},
+      Increment_mode = #{record.incrementMode,jdbcType=INTEGER},
+      increase_percent = #{record.increasePercent,jdbcType=INTEGER},
+      bench_time = #{record.benchTime,jdbcType=INTEGER},
+      max_bench_qps = #{record.maxBenchQps,jdbcType=INTEGER},
+      rps_rate = #{record.rpsRate,jdbcType=INTEGER},
+      log_rate = #{record.logRate,jdbcType=INTEGER},
+      request_timeout = #{record.requestTimeout,jdbcType=INTEGER},
+      success_code = #{record.successCode,jdbcType=VARCHAR},
+      ctime = #{record.ctime,jdbcType=BIGINT},
+      utime = #{record.utime,jdbcType=BIGINT},
+      scene_group_id = #{record.sceneGroupId,jdbcType=INTEGER},
+      cur_report_id = #{record.curReportId,jdbcType=VARCHAR},
+      scene_env = #{record.sceneEnv,jdbcType=INTEGER},
+      tenant = #{record.tenant,jdbcType=VARCHAR},
+      bench_count = #{record.benchCount,jdbcType=INTEGER},
+      scene_source = #{record.sceneSource,jdbcType=INTEGER},
+      last_bench_time = #{record.lastBenchTime,jdbcType=BIGINT},
+      api_bench_infos = #{record.apiBenchInfos,jdbcType=LONGVARCHAR},
+      sla = #{record.sla,jdbcType=LONGVARCHAR},
+      global_header = #{record.globalHeader,jdbcType=LONGVARCHAR},
+      agent_list = #{record.agentList,jdbcType=LONGVARCHAR},
+      ref_dataset_ids = #{record.refDatasetIds,jdbcType=LONGVARCHAR},
+      person_in_charge = #{record.personInCharge,jdbcType=LONGVARCHAR},
+      bench_calendar = #{record.benchCalendar,jdbcType=LONGVARCHAR},
+      global_tsp_auth = #{record.globalTspAuth,jdbcType=LONGVARCHAR}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update scene_info
+    set id = #{record.id,jdbcType=INTEGER},
+      name = #{record.name,jdbcType=VARCHAR},
+      scene_status = #{record.sceneStatus,jdbcType=INTEGER},
+      creator = #{record.creator,jdbcType=VARCHAR},
+      updator = #{record.updator,jdbcType=VARCHAR},
+      apiNum = #{record.apinum,jdbcType=INTEGER},
+      remark = #{record.remark,jdbcType=VARCHAR},
+      scene_type = #{record.sceneType,jdbcType=INTEGER},
+      bench_mode = #{record.benchMode,jdbcType=INTEGER},
+      Increment_mode = #{record.incrementMode,jdbcType=INTEGER},
+      increase_percent = #{record.increasePercent,jdbcType=INTEGER},
+      bench_time = #{record.benchTime,jdbcType=INTEGER},
+      max_bench_qps = #{record.maxBenchQps,jdbcType=INTEGER},
+      rps_rate = #{record.rpsRate,jdbcType=INTEGER},
+      log_rate = #{record.logRate,jdbcType=INTEGER},
+      request_timeout = #{record.requestTimeout,jdbcType=INTEGER},
+      success_code = #{record.successCode,jdbcType=VARCHAR},
+      ctime = #{record.ctime,jdbcType=BIGINT},
+      utime = #{record.utime,jdbcType=BIGINT},
+      scene_group_id = #{record.sceneGroupId,jdbcType=INTEGER},
+      cur_report_id = #{record.curReportId,jdbcType=VARCHAR},
+      scene_env = #{record.sceneEnv,jdbcType=INTEGER},
+      tenant = #{record.tenant,jdbcType=VARCHAR},
+      bench_count = #{record.benchCount,jdbcType=INTEGER},
+      scene_source = #{record.sceneSource,jdbcType=INTEGER},
+      last_bench_time = #{record.lastBenchTime,jdbcType=BIGINT}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="run.mone.mimeter.dashboard.pojo.SceneInfo">
+    update scene_info
+    <set>
+      <if test="name != null">
+        name = #{name,jdbcType=VARCHAR},
+      </if>
+      <if test="sceneStatus != null">
+        scene_status = #{sceneStatus,jdbcType=INTEGER},
+      </if>
+      <if test="creator != null">
+        creator = #{creator,jdbcType=VARCHAR},
+      </if>
+      <if test="updator != null">
+        updator = #{updator,jdbcType=VARCHAR},
+      </if>
+      <if test="apinum != null">
+        apiNum = #{apinum,jdbcType=INTEGER},
+      </if>
+      <if test="remark != null">
+        remark = #{remark,jdbcType=VARCHAR},
+      </if>
+      <if test="sceneType != null">
+        scene_type = #{sceneType,jdbcType=INTEGER},
+      </if>
+      <if test="benchMode != null">
+        bench_mode = #{benchMode,jdbcType=INTEGER},
+      </if>
+      <if test="incrementMode != null">
+        Increment_mode = #{incrementMode,jdbcType=INTEGER},
+      </if>
+      <if test="increasePercent != null">
+        increase_percent = #{increasePercent,jdbcType=INTEGER},
+      </if>
+      <if test="benchTime != null">
+        bench_time = #{benchTime,jdbcType=INTEGER},
+      </if>
+      <if test="maxBenchQps != null">
+        max_bench_qps = #{maxBenchQps,jdbcType=INTEGER},
+      </if>
+      <if test="rpsRate != null">
+        rps_rate = #{rpsRate,jdbcType=INTEGER},
+      </if>
+      <if test="logRate != null">
+        log_rate = #{logRate,jdbcType=INTEGER},
+      </if>
+      <if test="requestTimeout != null">
+        request_timeout = #{requestTimeout,jdbcType=INTEGER},
+      </if>
+      <if test="successCode != null">
+        success_code = #{successCode,jdbcType=VARCHAR},
+      </if>
+      <if test="ctime != null">
+        ctime = #{ctime,jdbcType=BIGINT},
+      </if>
+      <if test="utime != null">
+        utime = #{utime,jdbcType=BIGINT},
+      </if>
+      <if test="sceneGroupId != null">
+        scene_group_id = #{sceneGroupId,jdbcType=INTEGER},
+      </if>
+      <if test="curReportId != null">
+        cur_report_id = #{curReportId,jdbcType=VARCHAR},
+      </if>
+      <if test="sceneEnv != null">
+        scene_env = #{sceneEnv,jdbcType=INTEGER},
+      </if>
+      <if test="tenant != null">
+        tenant = #{tenant,jdbcType=VARCHAR},
+      </if>
+      <if test="benchCount != null">
+        bench_count = #{benchCount,jdbcType=INTEGER},
+      </if>
+      <if test="sceneSource != null">
+        scene_source = #{sceneSource,jdbcType=INTEGER},
+      </if>
+      <if test="lastBenchTime != null">
+        last_bench_time = #{lastBenchTime,jdbcType=BIGINT},
+      </if>
+      <if test="apiBenchInfos != null">
+        api_bench_infos = #{apiBenchInfos,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="sla != null">
+        sla = #{sla,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="globalHeader != null">
+        global_header = #{globalHeader,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="agentList != null">
+        agent_list = #{agentList,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="refDatasetIds != null">
+        ref_dataset_ids = #{refDatasetIds,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="personInCharge != null">
+        person_in_charge = #{personInCharge,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="benchCalendar != null">
+        bench_calendar = #{benchCalendar,jdbcType=LONGVARCHAR},
+      </if>
+      <if test="globalTspAuth != null">
+        global_tsp_auth = #{globalTspAuth,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="run.mone.mimeter.dashboard.pojo.SceneInfo">
+    update scene_info
+    set name = #{name,jdbcType=VARCHAR},
+      scene_status = #{sceneStatus,jdbcType=INTEGER},
+      creator = #{creator,jdbcType=VARCHAR},
+      updator = #{updator,jdbcType=VARCHAR},
+      apiNum = #{apinum,jdbcType=INTEGER},
+      remark = #{remark,jdbcType=VARCHAR},
+      scene_type = #{sceneType,jdbcType=INTEGER},
+      bench_mode = #{benchMode,jdbcType=INTEGER},
+      Increment_mode = #{incrementMode,jdbcType=INTEGER},
+      increase_percent = #{increasePercent,jdbcType=INTEGER},
+      bench_time = #{benchTime,jdbcType=INTEGER},
+      max_bench_qps = #{maxBenchQps,jdbcType=INTEGER},
+      rps_rate = #{rpsRate,jdbcType=INTEGER},
+      log_rate = #{logRate,jdbcType=INTEGER},
+      request_timeout = #{requestTimeout,jdbcType=INTEGER},
+      success_code = #{successCode,jdbcType=VARCHAR},
+      ctime = #{ctime,jdbcType=BIGINT},
+      utime = #{utime,jdbcType=BIGINT},
+      scene_group_id = #{sceneGroupId,jdbcType=INTEGER},
+      cur_report_id = #{curReportId,jdbcType=VARCHAR},
+      scene_env = #{sceneEnv,jdbcType=INTEGER},
+      tenant = #{tenant,jdbcType=VARCHAR},
+      bench_count = #{benchCount,jdbcType=INTEGER},
+      scene_source = #{sceneSource,jdbcType=INTEGER},
+      last_bench_time = #{lastBenchTime,jdbcType=BIGINT},
+      api_bench_infos = #{apiBenchInfos,jdbcType=LONGVARCHAR},
+      sla = #{sla,jdbcType=LONGVARCHAR},
+      global_header = #{globalHeader,jdbcType=LONGVARCHAR},
+      agent_list = #{agentList,jdbcType=LONGVARCHAR},
+      ref_dataset_ids = #{refDatasetIds,jdbcType=LONGVARCHAR},
+      person_in_charge = #{personInCharge,jdbcType=LONGVARCHAR},
+      bench_calendar = #{benchCalendar,jdbcType=LONGVARCHAR},
+      global_tsp_auth = #{globalTspAuth,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="run.mone.mimeter.dashboard.pojo.SceneInfo">
+    update scene_info
+    set name = #{name,jdbcType=VARCHAR},
+      scene_status = #{sceneStatus,jdbcType=INTEGER},
+      creator = #{creator,jdbcType=VARCHAR},
+      updator = #{updator,jdbcType=VARCHAR},
+      apiNum = #{apinum,jdbcType=INTEGER},
+      remark = #{remark,jdbcType=VARCHAR},
+      scene_type = #{sceneType,jdbcType=INTEGER},
+      bench_mode = #{benchMode,jdbcType=INTEGER},
+      Increment_mode = #{incrementMode,jdbcType=INTEGER},
+      increase_percent = #{increasePercent,jdbcType=INTEGER},
+      bench_time = #{benchTime,jdbcType=INTEGER},
+      max_bench_qps = #{maxBenchQps,jdbcType=INTEGER},
+      rps_rate = #{rpsRate,jdbcType=INTEGER},
+      log_rate = #{logRate,jdbcType=INTEGER},
+      request_timeout = #{requestTimeout,jdbcType=INTEGER},
+      success_code = #{successCode,jdbcType=VARCHAR},
+      ctime = #{ctime,jdbcType=BIGINT},
+      utime = #{utime,jdbcType=BIGINT},
+      scene_group_id = #{sceneGroupId,jdbcType=INTEGER},
+      cur_report_id = #{curReportId,jdbcType=VARCHAR},
+      scene_env = #{sceneEnv,jdbcType=INTEGER},
+      tenant = #{tenant,jdbcType=VARCHAR},
+      bench_count = #{benchCount,jdbcType=INTEGER},
+      scene_source = #{sceneSource,jdbcType=INTEGER},
+      last_bench_time = #{lastBenchTime,jdbcType=BIGINT}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    insert into scene_info
+    (name, scene_status, creator, updator, apiNum, remark, scene_type, bench_mode, Increment_mode, 
+      increase_percent, bench_time, max_bench_qps, rps_rate, log_rate, request_timeout, 
+      success_code, ctime, utime, scene_group_id, cur_report_id, scene_env, tenant, bench_count, 
+      scene_source, last_bench_time, api_bench_infos, sla, global_header, agent_list, 
+      ref_dataset_ids, person_in_charge, bench_calendar, global_tsp_auth)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.name,jdbcType=VARCHAR}, #{item.sceneStatus,jdbcType=INTEGER}, #{item.creator,jdbcType=VARCHAR}, 
+        #{item.updator,jdbcType=VARCHAR}, #{item.apinum,jdbcType=INTEGER}, #{item.remark,jdbcType=VARCHAR}, 
+        #{item.sceneType,jdbcType=INTEGER}, #{item.benchMode,jdbcType=INTEGER}, #{item.incrementMode,jdbcType=INTEGER}, 
+        #{item.increasePercent,jdbcType=INTEGER}, #{item.benchTime,jdbcType=INTEGER}, #{item.maxBenchQps,jdbcType=INTEGER}, 
+        #{item.rpsRate,jdbcType=INTEGER}, #{item.logRate,jdbcType=INTEGER}, #{item.requestTimeout,jdbcType=INTEGER}, 
+        #{item.successCode,jdbcType=VARCHAR}, #{item.ctime,jdbcType=BIGINT}, #{item.utime,jdbcType=BIGINT}, 
+        #{item.sceneGroupId,jdbcType=INTEGER}, #{item.curReportId,jdbcType=VARCHAR}, #{item.sceneEnv,jdbcType=INTEGER}, 
+        #{item.tenant,jdbcType=VARCHAR}, #{item.benchCount,jdbcType=INTEGER}, #{item.sceneSource,jdbcType=INTEGER}, 
+        #{item.lastBenchTime,jdbcType=BIGINT}, #{item.apiBenchInfos,jdbcType=LONGVARCHAR}, 
+        #{item.sla,jdbcType=LONGVARCHAR}, #{item.globalHeader,jdbcType=LONGVARCHAR}, #{item.agentList,jdbcType=LONGVARCHAR}, 
+        #{item.refDatasetIds,jdbcType=LONGVARCHAR}, #{item.personInCharge,jdbcType=LONGVARCHAR}, 
+        #{item.benchCalendar,jdbcType=LONGVARCHAR}, #{item.globalTspAuth,jdbcType=LONGVARCHAR}
+        )
+    </foreach>
+  </insert>
+  <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
+    insert into scene_info (
+    <foreach collection="selective" item="column" separator=",">
+      ${column.escapedColumnName}
+    </foreach>
+    )
+    values
+    <foreach collection="list" item="item" separator=",">
+      (
+      <foreach collection="selective" item="column" separator=",">
+        <if test="'name'.toString() == column.value">
+          #{item.name,jdbcType=VARCHAR}
+        </if>
+        <if test="'scene_status'.toString() == column.value">
+          #{item.sceneStatus,jdbcType=INTEGER}
+        </if>
+        <if test="'creator'.toString() == column.value">
+          #{item.creator,jdbcType=VARCHAR}
+        </if>
+        <if test="'updator'.toString() == column.value">
+          #{item.updator,jdbcType=VARCHAR}
+        </if>
+        <if test="'apiNum'.toString() == column.value">
+          #{item.apinum,jdbcType=INTEGER}
+        </if>
+        <if test="'remark'.toString() == column.value">
+          #{item.remark,jdbcType=VARCHAR}
+        </if>
+        <if test="'scene_type'.toString() == column.value">
+          #{item.sceneType,jdbcType=INTEGER}
+        </if>
+        <if test="'bench_mode'.toString() == column.value">
+          #{item.benchMode,jdbcType=INTEGER}
+        </if>
+        <if test="'Increment_mode'.toString() == column.value">
+          #{item.incrementMode,jdbcType=INTEGER}
+        </if>
+        <if test="'increase_percent'.toString() == column.value">
+          #{item.increasePercent,jdbcType=INTEGER}
+        </if>
+        <if test="'bench_time'.toString() == column.value">
+          #{item.benchTime,jdbcType=INTEGER}
+        </if>
+        <if test="'max_bench_qps'.toString() == column.value">
+          #{item.maxBenchQps,jdbcType=INTEGER}
+        </if>
+        <if test="'rps_rate'.toString() == column.value">
+          #{item.rpsRate,jdbcType=INTEGER}
+        </if>
+        <if test="'log_rate'.toString() == column.value">
+          #{item.logRate,jdbcType=INTEGER}
+        </if>
+        <if test="'request_timeout'.toString() == column.value">
+          #{item.requestTimeout,jdbcType=INTEGER}
+        </if>
+        <if test="'success_code'.toString() == column.value">
+          #{item.successCode,jdbcType=VARCHAR}
+        </if>
+        <if test="'ctime'.toString() == column.value">
+          #{item.ctime,jdbcType=BIGINT}
+        </if>
+        <if test="'utime'.toString() == column.value">
+          #{item.utime,jdbcType=BIGINT}
+        </if>
+        <if test="'scene_group_id'.toString() == column.value">
+          #{item.sceneGroupId,jdbcType=INTEGER}
+        </if>
+        <if test="'cur_report_id'.toString() == column.value">
+          #{item.curReportId,jdbcType=VARCHAR}
+        </if>
+        <if test="'scene_env'.toString() == column.value">
+          #{item.sceneEnv,jdbcType=INTEGER}
+        </if>
+        <if test="'tenant'.toString() == column.value">
+          #{item.tenant,jdbcType=VARCHAR}
+        </if>
+        <if test="'bench_count'.toString() == column.value">
+          #{item.benchCount,jdbcType=INTEGER}
+        </if>
+        <if test="'scene_source'.toString() == column.value">
+          #{item.sceneSource,jdbcType=INTEGER}
+        </if>
+        <if test="'last_bench_time'.toString() == column.value">
+          #{item.lastBenchTime,jdbcType=BIGINT}
+        </if>
+        <if test="'api_bench_infos'.toString() == column.value">
+          #{item.apiBenchInfos,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'sla'.toString() == column.value">
+          #{item.sla,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'global_header'.toString() == column.value">
+          #{item.globalHeader,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'agent_list'.toString() == column.value">
+          #{item.agentList,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'ref_dataset_ids'.toString() == column.value">
+          #{item.refDatasetIds,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'person_in_charge'.toString() == column.value">
+          #{item.personInCharge,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'bench_calendar'.toString() == column.value">
+          #{item.benchCalendar,jdbcType=LONGVARCHAR}
+        </if>
+        <if test="'global_tsp_auth'.toString() == column.value">
+          #{item.globalTspAuth,jdbcType=LONGVARCHAR}
+        </if>
+      </foreach>
+      )
+    </foreach>
+  </insert>
+</mapper>

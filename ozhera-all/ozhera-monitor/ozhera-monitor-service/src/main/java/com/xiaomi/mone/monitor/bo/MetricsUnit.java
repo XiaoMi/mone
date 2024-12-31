@@ -14,6 +14,7 @@ public enum MetricsUnit {
     UNIT_MS("ms","毫秒"),
     UNIT_S("s","秒"),
     UNIT_COUNT("次","数量"),
+    GB_COUNT("GB","GB"),
     UNIT_NULL("","无单位"),
     UNIT_TAI("台","台"),
     ;

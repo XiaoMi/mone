@@ -42,7 +42,7 @@ public class HttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest request) {
-        if (config.isUserWs() && Cons.WebSocketPath.equalsIgnoreCase(request.uri())) {
+        if (config.isUseWs() && Cons.WebSocketPath.equalsIgnoreCase(request.uri())) {
             ctx.fireChannelRead(request.retain());
             return;
         }

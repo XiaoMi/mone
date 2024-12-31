@@ -39,6 +39,10 @@ import java.util.zip.ZipOutputStream;
  */
 public class FileUtils {
 
+    public static String join(String... ps) {
+        return String.join(File.separator, ps);
+    }
+
     public static void createDirectories(String path) {
         try {
             Files.createDirectories(Paths.get(path));

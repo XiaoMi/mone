@@ -19,6 +19,7 @@ package com.xiaomi.youpin.docean.mvc;
 import lombok.Data;
 
 import java.lang.reflect.Method;
+import java.util.Map;
 
 /**
  * @author goodjava@qq.com
@@ -35,6 +36,11 @@ public class HttpRequestMethod {
     private Object obj;
 
     private long timeout;
+
+    //结果不封装
+    private boolean originalRes;
+
+    private Map<String, Class> genericSuperclassTypeArguments;
 
 
 }

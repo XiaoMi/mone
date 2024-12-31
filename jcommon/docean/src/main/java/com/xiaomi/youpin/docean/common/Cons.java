@@ -28,4 +28,6 @@ public abstract class Cons {
     public static final String WebSocketPath = "/ws";
 
     public static final String Service = "/service";
+
+    public static final String AUTO_FIND_IMPL = "$autoFindImpl";
 }

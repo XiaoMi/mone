@@ -1,0 +1,63 @@
+$--colors: (
+  'white': #ffffff,
+  'black': #000000,
+  'primary': (
+    'base': #00a9ff
+  ),
+  'success': (
+    'base': #1ad000
+  ),
+  'warning': (
+    'base': #e19800
+  ),
+  'danger': (
+    'base': #d50031
+  ),
+  'error': (
+    'base': #d50031
+  ),
+  'info': (
+    'base': #a0e9ff
+  )
+);
+
+$--bg-color: (
+  '': '#E6FFFD',
+  'input': #fff
+);
+
+$text-color: (
+  'primary': #303133,
+  'regular': #606266,
+  'secondary': #909399,
+  'placeholder': #a8abb2,
+  'disabled': #c0c4cc
+);
+
+$--fill-color: (
+  '': #f0f2f5,
+  'light': #f5f7fa,
+  'lighter': #fafafa,
+  'extra-light': #fafcff,
+  'dark': #ebedf0,
+  'darker': #e6e8eb,
+  'blank': #ffffff
+);
+
+// we can add this to custom namespace, default is 'el'
+@forward 'element-plus/theme-chalk/src/mixins/config.scss' with (
+  $namespace: 'oz'
+);
+
+// You should use them in scss, because we calculate it by sass.
+// comment next lines to use default color
+@forward 'element-plus/theme-chalk/src/common/var.scss' with (
+    // do not use same name, it will override.
+    $colors: $--colors,
+    $button-padding-horizontal: ('default': 10px),
+    $bg-color: $--bg-color,
+    // $fill-color: $--fill-color,
+  );
+
+// custom dark variables
+@use './dark.scss';

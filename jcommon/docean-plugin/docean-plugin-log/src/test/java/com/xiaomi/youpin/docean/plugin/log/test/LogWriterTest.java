@@ -16,6 +16,7 @@
 
 package com.xiaomi.youpin.docean.plugin.log.test;
 
+import com.google.common.base.Strings;
 import com.xiaomi.youpin.docean.plugin.log.LogWriter;
 import org.junit.Test;
 
@@ -40,14 +41,14 @@ public class LogWriterTest {
     public void testWrite() {
         LogWriter logWriter = new LogWriter("/tmp/data");
         logWriter.init(1024 * 1024 * 10);
-        IntStream.range(0, 1000).forEach(it -> {
+        IntStream.range(0, 1000000).forEach(it -> {
             System.out.println("run:" + new Date());
-            logWriter.write(LocalDateTime.now(), "record:" + (new Date().toString()) + System.lineSeparator());
-            try {
-                TimeUnit.SECONDS.sleep(1);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            logWriter.write(LocalDateTime.now(), "record:" + (new Date().toString()) + System.lineSeparator()+ Strings.repeat("abc",10));
+//            try {
+//                TimeUnit.SECONDS.sleep(1);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
         });
         logWriter.force();
     }

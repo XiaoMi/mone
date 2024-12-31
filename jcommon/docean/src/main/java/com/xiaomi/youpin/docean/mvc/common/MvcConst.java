@@ -1,7 +1,6 @@
 package com.xiaomi.youpin.docean.mvc.common;
 
 import com.xiaomi.youpin.docean.mvc.MvcContext;
-import jdk.incubator.concurrent.ScopedValue;
 
 /**
  * @author goodjava@qq.com
@@ -11,7 +10,13 @@ public abstract class MvcConst {
 
     public static final String CGLIB = "$cglib";
 
+    public static final String STATIC_FILE_PATH = "$staticFilePath";
+
+    public static final String OPEN_STATIC_FILE = "$openStaticFile";
+
     public static final String TRUE = "true";
+
+    public static final String EMPTY = "";
 
     public static final String FALSE = "false";
 
@@ -24,6 +29,8 @@ public abstract class MvcConst {
     public static final String MVC_POOL_SIZE = "$mvc-pool-size";
 
     public static final String VIRTUAL_THREAD = "$virtual-threaad";
+
+    public static final String RESPONSE_ORIGINAL_PATH = "$response-original-path";
 
     public static final int DEFAULT_MVC_POOL_SIZE = 200;
 

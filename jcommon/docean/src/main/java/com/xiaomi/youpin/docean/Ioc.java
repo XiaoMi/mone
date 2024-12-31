@@ -26,6 +26,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import com.xiaomi.youpin.docean.anno.Component;
 import com.xiaomi.youpin.docean.anno.Controller;
+import com.xiaomi.youpin.docean.anno.IocConfiguration;
 import com.xiaomi.youpin.docean.anno.Service;
 import com.xiaomi.youpin.docean.bo.Bean;
 import com.xiaomi.youpin.docean.common.*;
@@ -68,6 +69,9 @@ public class Ioc {
 
     @Getter
     private String[] scanPackages;
+
+    @Getter
+    private Class<?> primarySource;
 
     /**
      * It needs to be used when interacting with containers like spring
@@ -305,7 +309,20 @@ public class Ioc {
 
 
     private void initIoc0(String name, Bean bean, Field field) {
-        Bean b = this.beans.get(name);
+        String realName = getRealName(name);
+        Bean b = this.beans.get(realName);
+
+        //If it is an implemented interface, check whether a unique implementation class can be matched.
+        if (!Optional.ofNullable(b).isPresent() && getBean(Cons.AUTO_FIND_IMPL, "false").equals("true")) {
+            Class clazz = field.getType();
+            if (clazz.isInterface()) {
+                Set<Bean> set = getBeanSet(clazz);
+                if (set.size() == 1) {
+                    b = set.toArray(new Bean[]{})[0];
+                }
+            }
+        }
+
         Optional.ofNullable(b).ifPresent(o -> {
             o.incrReferenceCnt();
             o.getDependenceList().add(bean.getName());
@@ -315,9 +332,21 @@ public class Ioc {
 
         //If there is a parent container, try to retrieve it from the parent container (such as Spring).
         if (!Optional.ofNullable(b).isPresent()) {
-            Object obj = Safe.callAndLog(()-> this.contextFunction.apply(name),null);
+            Object obj = Safe.callAndLog(() -> this.contextFunction.apply(realName), null);
             Optional.ofNullable(obj).ifPresent(o -> ReflectUtils.setField(bean.getObj(), field, o));
         }
+    }
+
+    private String getRealName(String name) {
+        //替换成配置中的值(Resource中的name)
+        if (name.startsWith("^")) {
+            name = "$" + name.substring(1);
+            Bean bean = this.beans.get(name);
+            if (null != bean) {
+                return bean.getObj().toString();
+            }
+        }
+        return name;
     }
 
     private void callInit(Bean it) {
@@ -330,6 +359,25 @@ public class Ioc {
     public Ioc classLoader(ClassLoader classLoader) {
         this.classLoader = classLoader;
         return this;
+    }
+
+    public static Ioc run(Class<?> primarySource, String... args) {
+        IocConfiguration configuration = primarySource.getAnnotation(IocConfiguration.class);
+        Ioc ioc = Ioc.ins();
+        ioc.primarySource = primarySource;
+        parseArgumentsAndPopulateIoc(args, ioc);
+        return ioc.init(configuration.basePackage());
+    }
+
+    private static void parseArgumentsAndPopulateIoc(String[] args, Ioc ioc) {
+        //Determine if args is an even number; if so, place it into a map.
+        Map<String, String> argsMap = new HashMap<>();
+        if (args.length % 2 == 0) {
+            for (int i = 0; i < args.length; i += 2) {
+                argsMap.put(args[i], args[i + 1]);
+            }
+        }
+        argsMap.entrySet().forEach(entry -> ioc.putBean("$" + entry.getKey(), entry.getValue()));
     }
 
     public Ioc init(String... scanPackages) {
@@ -499,6 +547,10 @@ public class Ioc {
 
     public <T> Set<T> getBeans(Class<T> clazz) {
         return beans.values().stream().filter(it -> (clazz.isAssignableFrom(it.getClazz()))).map(it -> (T) it.getObj()).collect(Collectors.toSet());
+    }
+
+    public Set<Bean> getBeanSet(Class<?> clazz) {
+        return beans.values().stream().filter(it -> (clazz.isAssignableFrom(it.getClazz()))).collect(Collectors.toSet());
     }
 
     /**

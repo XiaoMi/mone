@@ -1,0 +1,286 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="run.mone.mimeter.dashboard.mapper.CheckPointInfoMapper">
+  <resultMap id="BaseResultMap" type="run.mone.mimeter.dashboard.pojo.CheckPointInfo">
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="check_type" jdbcType="INTEGER" property="checkType" />
+    <result column="check_obj" jdbcType="VARCHAR" property="checkObj" />
+    <result column="check_condition" jdbcType="INTEGER" property="checkCondition" />
+  </resultMap>
+  <resultMap extends="BaseResultMap" id="ResultMapWithBLOBs" type="run.mone.mimeter.dashboard.pojo.CheckPointInfo">
+    <result column="check_content" jdbcType="LONGVARCHAR" property="checkContent" />
+  </resultMap>
+  <sql id="Example_Where_Clause">
+    <where>
+      <foreach collection="oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Update_By_Example_Where_Clause">
+    <where>
+      <foreach collection="example.oredCriteria" item="criteria" separator="or">
+        <if test="criteria.valid">
+          <trim prefix="(" prefixOverrides="and" suffix=")">
+            <foreach collection="criteria.criteria" item="criterion">
+              <choose>
+                <when test="criterion.noValue">
+                  and ${criterion.condition}
+                </when>
+                <when test="criterion.singleValue">
+                  and ${criterion.condition} #{criterion.value}
+                </when>
+                <when test="criterion.betweenValue">
+                  and ${criterion.condition} #{criterion.value} and #{criterion.secondValue}
+                </when>
+                <when test="criterion.listValue">
+                  and ${criterion.condition}
+                  <foreach close=")" collection="criterion.value" item="listItem" open="(" separator=",">
+                    #{listItem}
+                  </foreach>
+                </when>
+              </choose>
+            </foreach>
+          </trim>
+        </if>
+      </foreach>
+    </where>
+  </sql>
+  <sql id="Base_Column_List">
+    id, check_type, check_obj, check_condition
+  </sql>
+  <sql id="Blob_Column_List">
+    check_content
+  </sql>
+  <select id="selectByExampleWithBLOBs" parameterType="run.mone.mimeter.dashboard.pojo.CheckPointInfoExample" resultMap="ResultMapWithBLOBs">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from checkpoint_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByExample" parameterType="run.mone.mimeter.dashboard.pojo.CheckPointInfoExample" resultMap="BaseResultMap">
+    select
+    <if test="distinct">
+      distinct
+    </if>
+    <include refid="Base_Column_List" />
+    from checkpoint_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+    <if test="orderByClause != null">
+      order by ${orderByClause}
+    </if>
+  </select>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="ResultMapWithBLOBs">
+    select 
+    <include refid="Base_Column_List" />
+    ,
+    <include refid="Blob_Column_List" />
+    from checkpoint_info
+    where id = #{id,jdbcType=INTEGER}
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from checkpoint_info
+    where id = #{id,jdbcType=INTEGER}
+  </delete>
+  <delete id="deleteByExample" parameterType="run.mone.mimeter.dashboard.pojo.CheckPointInfoExample">
+    delete from checkpoint_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </delete>
+  <insert id="insert" parameterType="run.mone.mimeter.dashboard.pojo.CheckPointInfo">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into checkpoint_info (check_type, check_obj, check_condition, 
+      check_content)
+    values (#{checkType,jdbcType=INTEGER}, #{checkObj,jdbcType=VARCHAR}, #{checkCondition,jdbcType=INTEGER}, 
+      #{checkContent,jdbcType=LONGVARCHAR})
+  </insert>
+  <insert id="insertSelective" parameterType="run.mone.mimeter.dashboard.pojo.CheckPointInfo">
+    <selectKey keyProperty="id" order="AFTER" resultType="java.lang.Integer">
+      SELECT LAST_INSERT_ID()
+    </selectKey>
+    insert into checkpoint_info
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="checkType != null">
+        check_type,
+      </if>
+      <if test="checkObj != null">
+        check_obj,
+      </if>
+      <if test="checkCondition != null">
+        check_condition,
+      </if>
+      <if test="checkContent != null">
+        check_content,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="checkType != null">
+        #{checkType,jdbcType=INTEGER},
+      </if>
+      <if test="checkObj != null">
+        #{checkObj,jdbcType=VARCHAR},
+      </if>
+      <if test="checkCondition != null">
+        #{checkCondition,jdbcType=INTEGER},
+      </if>
+      <if test="checkContent != null">
+        #{checkContent,jdbcType=LONGVARCHAR},
+      </if>
+    </trim>
+  </insert>
+  <select id="countByExample" parameterType="run.mone.mimeter.dashboard.pojo.CheckPointInfoExample" resultType="java.lang.Long">
+    select count(*) from checkpoint_info
+    <if test="_parameter != null">
+      <include refid="Example_Where_Clause" />
+    </if>
+  </select>
+  <update id="updateByExampleSelective" parameterType="map">
+    update checkpoint_info
+    <set>
+      <if test="record.id != null">
+        id = #{record.id,jdbcType=INTEGER},
+      </if>
+      <if test="record.checkType != null">
+        check_type = #{record.checkType,jdbcType=INTEGER},
+      </if>
+      <if test="record.checkObj != null">
+        check_obj = #{record.checkObj,jdbcType=VARCHAR},
+      </if>
+      <if test="record.checkCondition != null">
+        check_condition = #{record.checkCondition,jdbcType=INTEGER},
+      </if>
+      <if test="record.checkContent != null">
+        check_content = #{record.checkContent,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExampleWithBLOBs" parameterType="map">
+    update checkpoint_info
+    set id = #{record.id,jdbcType=INTEGER},
+      check_type = #{record.checkType,jdbcType=INTEGER},
+      check_obj = #{record.checkObj,jdbcType=VARCHAR},
+      check_condition = #{record.checkCondition,jdbcType=INTEGER},
+      check_content = #{record.checkContent,jdbcType=LONGVARCHAR}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByExample" parameterType="map">
+    update checkpoint_info
+    set id = #{record.id,jdbcType=INTEGER},
+      check_type = #{record.checkType,jdbcType=INTEGER},
+      check_obj = #{record.checkObj,jdbcType=VARCHAR},
+      check_condition = #{record.checkCondition,jdbcType=INTEGER}
+    <if test="_parameter != null">
+      <include refid="Update_By_Example_Where_Clause" />
+    </if>
+  </update>
+  <update id="updateByPrimaryKeySelective" parameterType="run.mone.mimeter.dashboard.pojo.CheckPointInfo">
+    update checkpoint_info
+    <set>
+      <if test="checkType != null">
+        check_type = #{checkType,jdbcType=INTEGER},
+      </if>
+      <if test="checkObj != null">
+        check_obj = #{checkObj,jdbcType=VARCHAR},
+      </if>
+      <if test="checkCondition != null">
+        check_condition = #{checkCondition,jdbcType=INTEGER},
+      </if>
+      <if test="checkContent != null">
+        check_content = #{checkContent,jdbcType=LONGVARCHAR},
+      </if>
+    </set>
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKeyWithBLOBs" parameterType="run.mone.mimeter.dashboard.pojo.CheckPointInfo">
+    update checkpoint_info
+    set check_type = #{checkType,jdbcType=INTEGER},
+      check_obj = #{checkObj,jdbcType=VARCHAR},
+      check_condition = #{checkCondition,jdbcType=INTEGER},
+      check_content = #{checkContent,jdbcType=LONGVARCHAR}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="run.mone.mimeter.dashboard.pojo.CheckPointInfo">
+    update checkpoint_info
+    set check_type = #{checkType,jdbcType=INTEGER},
+      check_obj = #{checkObj,jdbcType=VARCHAR},
+      check_condition = #{checkCondition,jdbcType=INTEGER}
+    where id = #{id,jdbcType=INTEGER}
+  </update>
+  <insert id="batchInsert" keyColumn="id" keyProperty="id" parameterType="map" useGeneratedKeys="true">
+    insert into checkpoint_info
+    (check_type, check_obj, check_condition, check_content)
+    values
+    <foreach collection="list" item="item" separator=",">
+      (#{item.checkType,jdbcType=INTEGER}, #{item.checkObj,jdbcType=VARCHAR}, #{item.checkCondition,jdbcType=INTEGER}, 
+        #{item.checkContent,jdbcType=LONGVARCHAR})
+    </foreach>
+  </insert>
+  <insert id="batchInsertSelective" keyColumn="id" keyProperty="list.id" parameterType="map" useGeneratedKeys="true">
+    insert into checkpoint_info (
+    <foreach collection="selective" item="column" separator=",">
+      ${column.escapedColumnName}
+    </foreach>
+    )
+    values
+    <foreach collection="list" item="item" separator=",">
+      (
+      <foreach collection="selective" item="column" separator=",">
+        <if test="'check_type'.toString() == column.value">
+          #{item.checkType,jdbcType=INTEGER}
+        </if>
+        <if test="'check_obj'.toString() == column.value">
+          #{item.checkObj,jdbcType=VARCHAR}
+        </if>
+        <if test="'check_condition'.toString() == column.value">
+          #{item.checkCondition,jdbcType=INTEGER}
+        </if>
+        <if test="'check_content'.toString() == column.value">
+          #{item.checkContent,jdbcType=LONGVARCHAR}
+        </if>
+      </foreach>
+      )
+    </foreach>
+  </insert>
+</mapper>

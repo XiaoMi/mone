@@ -5,9 +5,10 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>jcommon</artifactId>
-    <version>1.4-jdk20-SNAPSHOT</version>
+    <version>1.6.0-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>http</artifactId>
+  <version>${submodule-release.version}</version>
   <dependencies>
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>

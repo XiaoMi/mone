@@ -1,0 +1,18 @@
+apply from: "$rootDir/gradle/instrumentation.gradle"
+
+dependencies {
+  compileOnly "javax.servlet:javax.servlet-api:3.0.1"
+
+  testInstrumentation "io.opentelemetry.javaagent.instrumentation:opentelemetry-javaagent-servlet-common:${versions.opentelemetryJavaagentAlpha}"
+  testInstrumentation "io.opentelemetry.javaagent.instrumentation:opentelemetry-javaagent-servlet-2.2:${versions.opentelemetryJavaagentAlpha}"
+  testInstrumentation "io.opentelemetry.javaagent.instrumentation:opentelemetry-javaagent-servlet-3.0:${versions.opentelemetryJavaagentAlpha}"
+
+  testImplementation("io.opentelemetry.javaagent:opentelemetry-testing-common:${versions.opentelemetryJavaagentAlpha}") {
+    exclude group: 'org.eclipse.jetty', module: 'jetty-server'
+  }
+
+  testImplementation "com.squareup.okhttp3:okhttp:3.12.12"
+  testImplementation "javax.servlet:javax.servlet-api:3.0.1"
+  testImplementation "org.eclipse.jetty:jetty-server:8.0.0.v20110901"
+  testImplementation "org.eclipse.jetty:jetty-servlet:8.0.0.v20110901"
+}

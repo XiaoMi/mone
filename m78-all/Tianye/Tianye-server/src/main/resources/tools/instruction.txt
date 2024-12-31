@@ -1,0 +1,3 @@
+下载地址： https://chromedriver.chromium.org/downloads
+1、查看chrome版本号，下载版本号对应的chromedriver，区分系统
+2、解压chromedriver.zip，修改config.properties文件中 chrome.driver.path 路径

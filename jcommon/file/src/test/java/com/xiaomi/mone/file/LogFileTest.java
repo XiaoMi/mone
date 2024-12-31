@@ -16,21 +16,29 @@
 
 package com.xiaomi.mone.file;
 
+import com.xiaomi.mone.file.common.FileInfoCache;
+import com.xiaomi.mone.file.listener.DefaultMonitorListener;
+import com.xiaomi.mone.file.ozhera.HeraFileMonitor;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 /**
  * @Author goodjava@qq.com
  * @Date 2021/7/8 14:42
  */
+@Slf4j
 public class LogFileTest {
 
 
     @Test
-    public void testLog() throws IOException {
+    public void testLog() throws Exception {
         LogFile log = new LogFile("/var/log/system.log", new ReadListener() {
             @Override
             public void onEvent(ReadEvent event) {
@@ -54,9 +62,44 @@ public class LogFileTest {
         System.in.read();
     }
 
+
+    @SneakyThrows
     @Test
-    public void testLogWS() throws IOException {
-        LogFileWS log = new LogFileWS("D:\\t", new ReadListener() {
+    public void testLogFileMonitor() {
+//        FileInfoCache.ins().load();
+        FileInfoCache.ins().load("/home/work/log/log-agent/milog/memory/.ozhera_pointer");
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            log.info("shutdown");
+            FileInfoCache.ins().shutdown();
+        }));
+        HeraFileMonitor monitor = new HeraFileMonitor();
+        monitor.setListener(new DefaultMonitorListener(monitor, readEvent -> {
+            System.out.println(readEvent.getReadResult().getLines());
+        }));
+        String fileName = "/home/work/log/log/test/*.log";
+        Pattern pattern = Pattern.compile(fileName);
+
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+        scheduler.scheduleAtFixedRate(this::test, 1, 2, TimeUnit.SECONDS);
+
+        monitor.reg("/home/work/log/log/test", it -> {
+            boolean matches = pattern.matcher(it).matches();
+            log.info("file:{},matches:{}", it, true);
+            return true;
+        });
+        log.info("reg finish");
+        System.in.read();
+    }
+
+    private void test() {
+        log.info("test save progress");
+        FileInfoCache.ins().shutdown();
+    }
+
+    @Test
+    public void testLogWS() throws Exception {
+        LogFile log = new LogFile("D:\\test.log", new ReadListener() {
             @Override
             public void onEvent(ReadEvent event) {
                 System.out.println(event.getReadResult().getLines());
@@ -77,15 +120,8 @@ public class LogFileTest {
 
         @Override
         public void onEvent(ReadEvent event) {
-            List<String> m = mLog.append(event.getReadResult().getLines().get(0));
-            if (m.size() > 0) {
-                System.out.println("--->" + m);
-            }
-//            try {
-//                TimeUnit.MILLISECONDS.sleep(2);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
+            String m = event.getReadResult().getLines().get(0);
+            System.out.println(m);
         }
 
         @Override
@@ -96,18 +132,17 @@ public class LogFileTest {
 
 
     @Test
-    public void testLog2() throws IOException {
+    public void testLog2() throws Exception {
         LogFile log = new LogFile("/tmp/zzytest/zzytest/server.log", new MyReadListener());
         log.readLine();
-        System.in.read();
     }
 
 
     @Test
-    public void testReadFileCutting() throws IOException {
-        System.out.println("111111");
+    public void testReadFileCutting() throws Exception {
         LogFile log = new LogFile("/home/work/log/hera-operator/server.log", new MyReadListener());
         log.readLine();
         System.in.read();
     }
+
 }

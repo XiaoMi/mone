@@ -46,7 +46,7 @@ public class HttpSessionManager {
                 long now = System.currentTimeMillis();
                 List<String> ids = SESSION_MAP.values().stream().filter(it -> {
                     DefaultHttpSession hs = (DefaultHttpSession) it;
-                    if (now - hs.getUpdateTime() > TimeUnit.MINUTES.toMillis(10)) {
+                    if (now - hs.getUpdateTime() > TimeUnit.MINUTES.toMillis(60)) {
                         return true;
                     }
                     return false;
@@ -82,7 +82,14 @@ public class HttpSessionManager {
     }
 
     public static HttpSession getSession(String sessionId) {
-        return SESSION_MAP.get(sessionId);
+        return SESSION_MAP.compute(sessionId, (k, v) -> {
+            if (null != v) {
+                if (v instanceof DefaultHttpSession dhs) {
+                    dhs.setUpdateTime(System.currentTimeMillis());
+                }
+            }
+            return v;
+        });
     }
 
 
@@ -105,7 +112,7 @@ public class HttpSessionManager {
 
     public static void setSessionId(MvcContext context, boolean exists, FullHttpResponse response) {
         if (!context.getSessionId().equals("")) {
-            Cookie cookie = new DefaultCookie(HttpSession.SESSIONID,context.getSessionId());
+            Cookie cookie = new DefaultCookie(HttpSession.SESSIONID, context.getSessionId());
             cookie.setPath("/");
             String encodeCookie = ServerCookieEncoder.STRICT.encode(cookie);
             response.headers().set(HttpHeaderNames.SET_COOKIE, encodeCookie);
@@ -113,7 +120,7 @@ public class HttpSessionManager {
         }
 
         if (exists == false) {
-            Cookie cookie = new DefaultCookie(HttpSession.SESSIONID,HttpSessionManager.createSession());
+            Cookie cookie = new DefaultCookie(HttpSession.SESSIONID, HttpSessionManager.createSession());
             cookie.setPath("/");
             String encodeCookie = ServerCookieEncoder.STRICT.encode(cookie);
             response.headers().set(HttpHeaderNames.SET_COOKIE, encodeCookie);

@@ -6,6 +6,7 @@
 package com.xiaomi.mone.monitor.service.helper;
 
 import com.alibaba.nacos.api.config.annotation.NacosValue;
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.xiaomi.mone.monitor.bo.*;
@@ -18,6 +19,7 @@ import com.xiaomi.mone.monitor.service.api.AlertHelperExtension;
 import com.xiaomi.mone.monitor.service.api.ReqErrorMetricsService;
 import com.xiaomi.mone.monitor.service.api.ReqSlowMetricsService;
 import com.xiaomi.mone.monitor.service.model.PageData;
+import com.xiaomi.mone.monitor.service.model.alarm.duty.DutyInfo;
 import com.xiaomi.mone.monitor.service.prometheus.AlarmService;
 import com.xiaomi.mone.monitor.utils.CommonUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -373,6 +375,7 @@ public class AlertHelper {
             agInfo.setDelete(true);
             agInfo.setEdit(true);
         }
+        agInfo.setDutyInfo(ag.getDutyInfo() == null ? null : new Gson().fromJson(ag.getDutyInfo(), DutyInfo.class));
         return agInfo;
     }
 
@@ -447,6 +450,9 @@ public class AlertHelper {
         }
         if (data.has("members")) {
             ag.setMembers(buildAlertGroupMemberList(data.get("members")));
+        }
+        if (data.has("duty_info")) {
+            ag.setDutyInfo(data.get("duty_info").getAsJsonObject().toString());
         }
         return ag;
     }

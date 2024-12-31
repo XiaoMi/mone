@@ -5,7 +5,7 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>docean-plugin</artifactId>
-    <version>1.4-jdk20-SNAPSHOT</version>
+    <version>1.6.0-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>docean-plugin-dmesh</artifactId>
   <dependencies>
@@ -24,17 +24,14 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean</artifactId>
-      <version>1.4-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-api</artifactId>
-      <version>1.4-jdk20-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-config</artifactId>
-      <version>1.4-jdk20-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
@@ -44,13 +41,11 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-mybatis</artifactId>
-      <version>1.4-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>docean-plugin-db</artifactId>
-      <version>1.4-jdk20-SNAPSHOT</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>

@@ -49,14 +49,14 @@ public class MoneRandomAccessFile extends RandomAccessFile {
      * @param filename The path of the file to open.
      * @param mode     Specifies the mode to use ("r", "rw", etc.) See the
      *                 BufferedLineReader documentation for more information.
-     * @param bufsize  The buffer size (in bytes) to use.
+     * @param bufSize  The buffer size (in bytes) to use.
      * @throws IOException
      */
-    public MoneRandomAccessFile(String filename, String mode, int bufsize)
+    public MoneRandomAccessFile(String filename, String mode, int bufSize)
             throws IOException {
         super(filename, mode);
         invalidate();
-        BUF_SIZE = bufsize;
+        BUF_SIZE = bufSize;
         buffer = new byte[BUF_SIZE];
     }
 
@@ -157,9 +157,9 @@ public class MoneRandomAccessFile extends RandomAccessFile {
      */
     @Override
     public void seek(long pos) throws IOException {
-        int n = (int) (real_pos - pos);
+        long n = real_pos - pos;
         if (n >= 0 && n <= buf_end) {
-            buf_pos = buf_end - n;
+            buf_pos = (int) (buf_end - n);
         } else {
             super.seek(pos);
             invalidate();

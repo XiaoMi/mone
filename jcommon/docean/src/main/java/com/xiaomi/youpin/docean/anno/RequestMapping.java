@@ -22,7 +22,7 @@ import java.lang.annotation.*;
 /**
  * @author goodjava@qq.com
  */
-@Target({ElementType.METHOD})
+@Target({ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface RequestMapping {
@@ -32,5 +32,8 @@ public @interface RequestMapping {
     String method() default "post";
 
     long timeout() default 2000;
+
+    //是否是原始res
+    boolean originalRes() default false;
 
 }

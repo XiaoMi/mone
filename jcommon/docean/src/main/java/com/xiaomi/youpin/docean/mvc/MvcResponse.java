@@ -42,6 +42,9 @@ public class MvcResponse {
         } else {
             FullHttpResponse response = HttpResponseUtils.create(new DefaultFullHttpResponse(HttpVersion.HTTP_1_1, status, Unpooled.wrappedBuffer(message.getBytes())));
             response.headers().set(HttpHeaderNames.CONTENT_LENGTH, message.getBytes().length);
+            if (StringUtils.isNotEmpty(context.getContentType())) {
+                response.headers().set(HttpHeaderNames.CONTENT_TYPE, context.getContentType());
+            }
             context.getResHeaders().forEach((k, v) -> response.headers().set(k, v));
             if (context.isAllowCross()) {
                 response.headers().set(HttpHeaderNames.ACCESS_CONTROL_ALLOW_ORIGIN, "*");
@@ -53,7 +56,7 @@ public class MvcResponse {
                 HttpSessionManager.setSessionId(context, HttpSessionManager.isHasSessionId(context.getHeaders()), response);
             }
             if (StringUtils.isNotEmpty(context.getRequest().headers().get(HttpHeaderNames.CONNECTION))) {
-                response.headers().add(HttpHeaderNames.CONNECTION,context.getRequest().headers().get(HttpHeaderNames.CONNECTION));
+                response.headers().add(HttpHeaderNames.CONNECTION, context.getRequest().headers().get(HttpHeaderNames.CONNECTION));
             }
             ctx.writeAndFlush(response);
         }
@@ -61,7 +64,11 @@ public class MvcResponse {
 
 
     public void writeAndFlush(MvcContext context, String message) {
-        HttpResponseStatus responseStatus = HttpResponseStatus.OK;
+        writeAndFlush(context, message, HttpResponseStatus.OK.code());
+    }
+
+    public void writeAndFlush(MvcContext context, String message, int code) {
+        HttpResponseStatus responseStatus = HttpResponseStatus.valueOf(code);
         String status = context.getResHeaders().get("x-status");
         if (null != status) {
             responseStatus = HttpResponseStatus.valueOf(Integer.valueOf(status));

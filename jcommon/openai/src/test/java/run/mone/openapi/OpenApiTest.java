@@ -26,6 +26,8 @@ import io.reactivex.SingleObserver;
 import io.reactivex.disposables.Disposable;
 import lombok.Data;
 import lombok.SneakyThrows;
+import okhttp3.Headers;
+import okhttp3.Response;
 import okhttp3.logging.HttpLoggingInterceptor;
 import okhttp3.sse.EventSource;
 import okhttp3.sse.EventSourceListener;
@@ -168,7 +170,7 @@ public class OpenApiTest {
     public void testCallStream() {
         String key = System.getenv("open_api_key");
         CountDownLatch latch = new CountDownLatch(1);
-        OpenaiCall.callStream(key, null, "天空为什么是蓝色的", new String[]{}, new StreamListener() {
+        OpenaiCall.callStream(key, "", "天空为什么是蓝色的", new String[]{}, new StreamListener() {
             @Override
             public void onEvent(String str) {
                 System.out.println(str);
@@ -177,6 +179,11 @@ public class OpenApiTest {
             @Override
             public void end() {
                 latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t, Response response) {
+                System.out.println(t + "" + response);
             }
         });
         latch.await();
@@ -290,6 +297,36 @@ public class OpenApiTest {
                 Message.builder().role(Message.Role.USER).content("c=a+b\n\n c=?").build()
         ));
         System.out.println(res.getChoices().get(0).getMessage().getContent());
+    }
+
+    @SneakyThrows
+    @Test
+    public void testMoonshot() {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        String question = Files.readString(Paths.get("/Users/zhangzhiyong/IdeaProjects/goodjava/mone/jcommon/ai/src/main/resources/prompt.txt"));
+        OpenAiClient client = OpenaiCall.client(System.getenv("moonshot_token"), "https://api.moonshot.cn/");
+        ChatCompletionResponse res = client.chatCompletion(ChatCompletion.builder().model("moonshot-v1-8k").messages(Lists.newArrayList(Message.builder()
+                .role(Message.Role.USER).content(question)
+                .build())).build());
+        System.out.println(res.getChoices().get(0).getMessage().getContent());
+        System.out.println("use time:" + stopwatch.elapsed(TimeUnit.MILLISECONDS));
+    }
+
+    @SneakyThrows
+    @Test
+    public void testMoonshot2() {
+        String question = Files.readString(Paths.get("/Users/zhangzhiyong/IdeaProjects/goodjava/mone/jcommon/ai/src/main/resources/prompt3.txt"));
+        ChatCompletion completion = ChatCompletion.builder().stream(true).model("moonshot-v1-8k").messages(Lists.newArrayList(Message.builder()
+                .role(Message.Role.USER).content(question)
+                .build())).build();
+
+        OpenaiCall.callStream2(new Gson().toJson(completion), new StreamListener() {
+            @Override
+            public void onEvent(String str) {
+                System.out.println(str);
+            }
+        }, ReqConfig.builder().model("moonshot-v1-8k").askUrl("https://api.moonshot.cn/v1/chat/completions").build(), Headers.of("Authorization", "Bearer " + System.getenv("moonshot_token")));
+        System.in.read();
     }
 
     /**

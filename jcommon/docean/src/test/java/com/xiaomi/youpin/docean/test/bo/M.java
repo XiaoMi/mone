@@ -1,5 +1,6 @@
 package com.xiaomi.youpin.docean.test.bo;
 
+import com.xiaomi.youpin.docean.anno.ModelAttribute;
 import io.netty.util.Recycler;
 import lombok.Data;
 
@@ -15,4 +16,8 @@ public class M {
     private String name;
 
     private Recycler.Handle<M> handle;
+
+    public int sum(@ModelAttribute("a") int a, int b) {
+        return a+b;
+    }
 }

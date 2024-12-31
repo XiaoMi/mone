@@ -16,11 +16,16 @@
 
 package com.xiaomi.youpin.docean.exception;
 
+import lombok.Getter;
+
 /**
  * @author goodjava@qq.com
  * @date 2020/6/20
  */
 public class DoceanException extends RuntimeException {
+
+    @Getter
+    private int code;
 
     public DoceanException(Throwable ex) {
         super(ex);
@@ -32,5 +37,10 @@ public class DoceanException extends RuntimeException {
 
     public DoceanException(String m) {
         super(m);
+    }
+
+    public DoceanException(String message, int code) {
+        super(message);
+        this.code = code;
     }
 }

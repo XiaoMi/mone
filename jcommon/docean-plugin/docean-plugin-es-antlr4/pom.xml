@@ -5,7 +5,7 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>docean-plugin</artifactId>
-    <version>1.4-jdk20-SNAPSHOT</version>
+    <version>1.6.0-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>docean-plugin-es-antlr4</artifactId>
   <properties>
@@ -22,7 +22,7 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>es</artifactId>
-      <version>1.4-SNAPSHOT</version>
+      <version>1.5-jdk21-SNAPSHOT</version>
       <scope>compile</scope>
     </dependency>
   </dependencies>

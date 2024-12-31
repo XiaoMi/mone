@@ -178,7 +178,7 @@ public class AlarmController {
             user = userConfigService.getAssignUser(user);
             param.setUser(user);
 
-            return appAlarmService.addRulesWithStrategy(param);
+            return appAlarmService.batchAddRulesWithStrategy(param);
 
         } catch (Exception e) {
             log.error("AlarmController.addAlarmRule param : {} ,exception :{}", param.toString(),e.getMessage(),e);

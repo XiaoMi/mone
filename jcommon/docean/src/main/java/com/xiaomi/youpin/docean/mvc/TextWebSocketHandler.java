@@ -17,6 +17,8 @@
 package com.xiaomi.youpin.docean.mvc;
 
 import com.xiaomi.youpin.docean.Mvc;
+import com.xiaomi.youpin.docean.mvc.context.WebSocketContext;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
@@ -57,7 +59,16 @@ public class TextWebSocketHandler extends SimpleChannelInboundHandler<TextWebSoc
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {
         super.channelInactive(ctx);
+        String id = ctx.channel().remoteAddress().toString();
+        WebSocketContext.ins().remove(id);
     }
 
 
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        super.channelActive(ctx);
+        String id = ctx.channel().remoteAddress().toString();
+        Channel channel = ctx.channel();
+        WebSocketContext.ins().put(id, channel);
+    }
 }

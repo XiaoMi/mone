@@ -16,6 +16,7 @@
 
 package com.xiaomi.youpin.docean.plugin.mybatisplus;
 
+import com.baomidou.mybatisplus.extension.plugins.MybatisPlusInterceptor;
 import com.xiaomi.youpin.docean.Aop;
 import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.anno.DOceanPlugin;
@@ -33,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.plugin.Interceptor;
 import org.apache.ibatis.session.SqlSession;
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.springframework.util.CollectionUtils;
 
 import javax.sql.DataSource;
 import java.lang.reflect.InvocationHandler;
@@ -47,7 +49,7 @@ import static org.apache.ibatis.reflection.ExceptionUtil.unwrapThrowable;
 /**
  * @author goodjava@qq.com
  */
-@DOceanPlugin
+@DOceanPlugin(order = Integer.MAX_VALUE - 1)
 @Slf4j
 public class MybatisPlugin implements IPlugin {
 
@@ -91,6 +93,11 @@ public class MybatisPlugin implements IPlugin {
                 InterceptorForQryAndUpdate interceptor = new InterceptorForQryAndUpdate(function);
                 interceptor.setDatasourceConfig(config);
                 bean.setPlugins(new Interceptor[]{interceptor});
+            }
+
+            Set<MybatisPlusInterceptor> plusInterceptors = ioc.getBeans(MybatisPlusInterceptor.class);
+            if (!CollectionUtils.isEmpty(plusInterceptors)) {
+                bean.setPlugins(plusInterceptors.toArray(new Interceptor[]{}));
             }
 
             SqlSessionFactory factory = bean.buildSqlSessionFactory();

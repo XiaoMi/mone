@@ -5,10 +5,10 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>jcommon</artifactId>
-    <version>1.4-jdk20-SNAPSHOT</version>
+    <version>1.6.0-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>common</artifactId>
-  <version>1.7.2-jdk20-SNAPSHOT</version>
+  <version>${submodule-release.version}</version>
   <dependencies>
     <dependency>
       <groupId>javax.annotation</groupId>
@@ -93,13 +93,13 @@
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
-      <version>1.18.28</version>
+      <version>1.18.30</version>
       <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>crypto</artifactId>
-      <version>1.4-jdk20-SNAPSHOT</version>
+      <version>1.6.0-jdk21-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>com.alibaba</groupId>

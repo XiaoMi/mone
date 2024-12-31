@@ -15,6 +15,7 @@ jobs:
   check-build-8:
     name: Jcommon test
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.head_ref == 'refs/heads/jdk8'
     steps:
       - name: Setup Maven Action
         uses: s4u/setup-maven-action@v1.7.0
@@ -27,6 +28,7 @@ jobs:
   check-build-20:
     name: Jcommon test 20
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && (github.head_ref == 'refs/heads/master' || github.ref == 'refs/heads/main')
     steps:
       - name: Setup Maven Action
         uses: s4u/setup-maven-action@v1.7.0
@@ -35,4 +37,17 @@ jobs:
           #settings-properties: '[{"propertyName1": "propertyValue1"}, {"propertyName2": "propertyValue2"}]'
 
       - run: echo '<settings>    <interactiveMode>false</interactiveMode>    <profiles>        <profile>            <repositories>                <repository>                    <snapshots />                    <id>ossrh</id>                    <name>ossrh-snapshot</name>                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>                </repository>            </repositories>            <pluginRepositories>                <pluginRepository>                    <snapshots />                    <id>ossrh</id>                    <name>ossrh-snapshot</name>                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>                </pluginRepository>            </pluginRepositories>            <id>artifactory</id>        </profile>    </profiles>    <activeProfiles>        <activeProfile>artifactory</activeProfile>    </activeProfiles>    <servers>        <server>            <id>github</id>            <username>${env.GITHUB_ACTOR}</username>            <password>${env.GITHUB_TOKEN}</password>        </server>    </servers>    <mirrors/>    <proxies/></settings>' > ~/.m2/settings.xml
-      - run: cd jcommon; mvn -U clean package --fail-at-end -Dmaven.test.skip=true -pl 'docean'
+      - run: cd jcommon; mvn -U clean package --fail-at-end -Dmaven.test.skip=true
+
+  check-build-21:
+    name: Jcommon test 21
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Maven Action
+        uses: s4u/setup-maven-action@v1.7.0
+        with:
+          java-version: 21
+          #settings-properties: '[{"propertyName1": "propertyValue1"}, {"propertyName2": "propertyValue2"}]'
+
+      - run: echo '<settings>    <interactiveMode>false</interactiveMode>    <profiles>        <profile>            <repositories>                <repository>                    <snapshots />                    <id>ossrh</id>                    <name>ossrh-snapshot</name>                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>                </repository>            </repositories>            <pluginRepositories>                <pluginRepository>                    <snapshots />                    <id>ossrh</id>                    <name>ossrh-snapshot</name>                    <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>                </pluginRepository>            </pluginRepositories>            <id>artifactory</id>        </profile>    </profiles>    <activeProfiles>        <activeProfile>artifactory</activeProfile>    </activeProfiles>    <servers>        <server>            <id>github</id>            <username>${env.GITHUB_ACTOR}</username>            <password>${env.GITHUB_TOKEN}</password>        </server>    </servers>    <mirrors/>    <proxies/></settings>' > ~/.m2/settings.xml
+      - run: cd jcommon; mvn -U clean package --fail-at-end -Dmaven.test.skip=true
