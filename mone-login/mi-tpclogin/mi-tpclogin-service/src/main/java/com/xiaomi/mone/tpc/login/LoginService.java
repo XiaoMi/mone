@@ -21,6 +21,7 @@ import com.xiaomi.mone.tpc.login.common.vo.LoginInfoVo;
 import com.xiaomi.mone.tpc.login.common.vo.ResponseCode;
 import com.xiaomi.mone.tpc.login.common.vo.ResultVo;
 import com.xiaomi.mone.tpc.login.util.Auth2Util;
+import com.xiaomi.mone.tpc.login.util.SignUtil;
 import com.xiaomi.mone.tpc.login.vo.AuthTokenVo;
 import com.xiaomi.mone.tpc.login.vo.AuthUserVo;
 import com.xiaomi.mone.tpc.util.EmailUtil;
@@ -42,6 +43,8 @@ public class LoginService {
     private Cache cache;
     @NacosValue("${home.url:http://localhost:80}")
     private String homeUrl;
+    @NacosValue("${account.sync.slat:!@#$%^}")
+    private String accountSyncSlat;
     @Autowired
     AccountDao accountDao;
     @Autowired
@@ -173,6 +176,49 @@ public class LoginService {
             return ResponseCode.OPER_FAIL.build();
         }
         return ResponseCode.SUCCESS.build();
+    }
+
+    public ResultVo accountSync(AccountSyncParam param) {
+        if (!param.argCheck()) {
+            return ResponseCode.ARG_ERROR.build();
+        }
+        AccountTypeEnum accountTypeEnum = AccountTypeEnum.getEnum(param.getType());
+        if (accountTypeEnum.equals(AccountTypeEnum.EMAIL)) {
+            if (!EmailUtil.check(param.getAccount())) {
+                return ResponseCode.CHECK_FAILED.build("邮箱格式错误");
+            }
+        } else {
+            return ResponseCode.CHECK_FAILED.build("账号类型暂不支持");
+        }
+        if (!checkSign(param)) {
+            return ResponseCode.CHECK_FAILED.build("sign校验失败");
+        }
+        AccountEntity entity = accountDao.getOneByAccount(param.getAccount(), param.getType());
+        if (entity != null) {
+            return ResponseCode.CHECK_FAILED.build("账号已经存在");
+        }
+        entity = new AccountEntity();
+        entity.setType(param.getType());
+        entity.setAccount(param.getAccount());
+        entity.setPwd(MD5Util.md5(param.getPassword()));
+        entity.setName(param.getName());
+        entity.setStatus(AccountStatusEnum.ENABLE.getCode());
+        boolean result = accountDao.insert(entity);
+        if (!result) {
+            return ResponseCode.OPER_FAIL.build();
+        }
+        return ResponseCode.SUCCESS.build();
+    }
+
+    private boolean checkSign(AccountSyncParam param) {
+        try {
+            String newSign = SignUtil.getDataSign(param.getAccount(), param.getType(), param.getPassword(), param.getName(), param.getReqTime(), accountSyncSlat);
+            log.info("checkSign sign={}, newSign={}", param.getSign(), newSign);
+            return newSign.equals(param.getSign());
+        } catch (Throwable e) {
+            log.error("checkSign param={}", param, e);
+            return false;
+        }
     }
 
     public ResultVo registerCode(LoginRegisterCodeParam param) {

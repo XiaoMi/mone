@@ -93,6 +93,13 @@ public class LoginController {
         return resultVo;
     }
 
+    @RequestMapping(value = "/account_sync")
+    public ResultVo accountSync(@RequestBody AccountSyncParam param) {
+        ResultVo resultVo = loginService.accountSync(param);
+        log.info("LoginController.accountSync request={}, response={}", GsonUtil.gsonString(param), GsonUtil.gsonString(resultVo));
+        return resultVo;
+    }
+
     @RequestMapping(value = "/register_code")
     public ResultVo registerCode(@RequestBody LoginRegisterCodeParam param) {
         return loginService.registerCode(param);
