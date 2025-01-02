@@ -29,6 +29,8 @@ public abstract class Role {
     protected String goal;
 
     protected String constraints;
+    @Getter
+    protected List<String> specializations;
 
     protected Planner planner;
 
@@ -84,6 +86,17 @@ public abstract class Role {
         init();
     }
 
+    public Role(String name, String profile, String goal, String constraints, List<String> specializations) {
+        this.name = name;
+        this.profile = profile;
+        this.goal = goal;
+        this.constraints = constraints;
+        this.specializations = specializations;
+        this.actions = new ArrayList<>();
+        this.watchList = new HashSet<>();
+        init();
+    }
+
     // 初始化方法
     protected void init() {
         this.rc = new RoleContext(profile);
@@ -121,6 +134,9 @@ public abstract class Role {
                 message.getReceivers().contains(profile);
     }
 
+    public boolean isCompatibleWithTask(String task) {
+        return specializations.stream().anyMatch(task.toLowerCase()::contains);
+    }
 
     // 创建规划器
     protected Planner createPlanner() {

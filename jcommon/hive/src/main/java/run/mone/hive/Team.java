@@ -18,6 +18,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 @Slf4j
@@ -26,6 +29,10 @@ import java.util.stream.IntStream;
 public class Team {
     private static final String MESSAGE_ROUTE_TO_ALL = "*";
     private static final Path SERDESER_PATH = Path.of("storage");
+
+    private static final ThreadPoolExecutor executor = new ThreadPoolExecutor(
+        10, 10, 
+        10, TimeUnit.SECONDS, new LinkedBlockingQueue<>(50));
 
     private Environment env;
     private double investment;
@@ -111,7 +118,7 @@ public class Team {
                 log.error("Error running team: {}", e.getMessage());
                 throw new RuntimeException("Team execution failed", e);
             }
-        });
+        }, executor);
     }
 
     public void serialize(Path stgPath) {
