@@ -5,10 +5,9 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>jcommon</artifactId>
-    <version>1.6.0-jdk21-SNAPSHOT</version>
+    <version>1.6.1-jdk21</version>
   </parent>
   <artifactId>gitlab</artifactId>
-  <version>1.6.1-jdk21-SNAPSHOT</version>
   <dependencies>
     <dependency>
       <groupId>com.github.odiszapc</groupId>

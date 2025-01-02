@@ -6,9 +6,9 @@
     <parent>
         <groupId>run.mone</groupId>
         <artifactId>jcommon</artifactId>
-        <version>1.6.0-jdk21-SNAPSHOT</version>
+        <version>1.6.1-jdk21</version>
     </parent>
-    <version>1.6.0-jdk21-SNAPSHOT</version>
+    <version>1.6.1-jdk21</version>
 
     <artifactId>docean-spring-starter</artifactId>
 
@@ -32,7 +32,7 @@
         <dependency>
             <groupId>run.mone</groupId>
             <artifactId>docean</artifactId>
-            <version>1.6.0-jdk21-SNAPSHOT</version>
+            <version>1.6.1-jdk21</version>
             <scope>provided</scope>
         </dependency>
 

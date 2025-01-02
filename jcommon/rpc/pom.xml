@@ -5,7 +5,7 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>jcommon</artifactId>
-    <version>1.6.0-jdk21-SNAPSHOT</version>
+    <version>1.6.1-jdk21</version>
   </parent>
   <artifactId>rpc</artifactId>
   <version>${submodule-release.version}</version>
@@ -35,7 +35,7 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>nacos</artifactId>
-      <version>1.6.0-jdk21-SNAPSHOT</version>
+      <version>1.5.0-jdk21</version>
     </dependency>
     <dependency>
       <groupId>org.msgpack</groupId>
@@ -45,12 +45,12 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>easy</artifactId>
-      <version>1.6.0-jdk21-SNAPSHOT</version>
+      <version>1.6.1-jdk21</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>rpc-codes</artifactId>
-      <version>1.6.0-jdk21-SNAPSHOT</version>
+      <version>1.6.1-jdk21</version>
     </dependency>
   </dependencies>
 </project>

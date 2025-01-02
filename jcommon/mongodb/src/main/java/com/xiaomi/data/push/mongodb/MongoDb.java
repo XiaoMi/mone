@@ -21,9 +21,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import com.mongodb.MongoException;
 import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.MongoDatabase;
-import com.xiaomi.youpin.cat.CatPlugin;
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -91,20 +89,14 @@ public class MongoDb {
      * @param doc
      */
     public void insert(String collectionName, Document doc) {
-        CatPlugin cat = new CatPlugin("insert", catEnabled, CAT_TYPE);
-        boolean success = true;
-        cat.before(null);
         try {
             MongoCollection<Document> collection = this.getCollection(collectionName);
             collection.insertOne(doc);
         } catch (MongoException e) {
-            success = false;
             logger.error(e.getMessage(), e);
         } catch (Exception e) {
-            success = false;
             logger.error(e.getMessage(), e);
         } finally {
-            cat.after(success);
         }
 
     }
@@ -116,20 +108,14 @@ public class MongoDb {
      * @param docList
      */
     public void insertMany(String collectionName, List<Document> docList) {
-        CatPlugin cat = new CatPlugin("insertMany", catEnabled, CAT_TYPE);
-        boolean success = true;
-        cat.before(null);
         try {
             MongoCollection<Document> collection = this.getCollection(collectionName);
             collection.insertMany(docList);
         } catch (MongoException e) {
-            success = false;
             logger.error(e.getMessage(), e);
         } catch (Exception e) {
-            success = false;
             logger.error(e.getMessage(), e);
         } finally {
-            cat.after(success);
         }
     }
 
@@ -140,20 +126,14 @@ public class MongoDb {
      * @return
      */
     public Document findFirst(String collectionName) {
-        CatPlugin cat = new CatPlugin("findFirst", catEnabled, CAT_TYPE);
-        boolean success = true;
-        cat.before(null);
         try {
             MongoCollection<Document> collection = this.getCollection(collectionName);
             return collection.find().first();
         } catch (MongoException e) {
-            success = false;
             logger.error(e.getMessage(), e);
         } catch (Exception e) {
-            success = false;
             logger.error(e.getMessage(), e);
         } finally {
-            cat.after(success);
         }
         return null;
     }
@@ -166,9 +146,6 @@ public class MongoDb {
      * @return
      */
     public List<Document> findAll(String collectionName, Document doc) {
-        CatPlugin cat = new CatPlugin("findAll", catEnabled, CAT_TYPE);
-        boolean success = true;
-        cat.before(null);
         try {
             MongoCollection<Document> collection = this.getCollection(collectionName);
             //MongoCursor<Document> cursor = collection.find().iterator();
@@ -179,13 +156,10 @@ public class MongoDb {
 
             return res;
         } catch (MongoException e) {
-            success = false;
             logger.error(e.getMessage(), e);
         } catch (Exception e) {
-            success = false;
             logger.error(e.getMessage(), e);
         } finally {
-            cat.after(success);
         }
         return null;
     }
@@ -197,20 +171,14 @@ public class MongoDb {
      * @param doc
      */
     public void delete(String collectionName, Document doc) {
-        CatPlugin cat = new CatPlugin("delete", catEnabled, CAT_TYPE);
-        boolean success = true;
-        cat.before(null);
         try {
             MongoCollection<Document> collection = this.getCollection(collectionName);
             collection.deleteOne(doc);
         } catch (MongoException e) {
-            success = false;
             logger.error(e.getMessage(), e);
         } catch (Exception e) {
-            success = false;
             logger.error(e.getMessage(), e);
         } finally {
-            cat.after(success);
         }
     }
 
@@ -221,20 +189,14 @@ public class MongoDb {
      * @return
      */
     public long count(String collectionName) {
-        CatPlugin cat = new CatPlugin("count", catEnabled, CAT_TYPE);
-        boolean success = true;
-        cat.before(null);
         try {
             MongoCollection<Document> collection = this.getCollection(collectionName);
             return collection.countDocuments();
         } catch (MongoException e) {
-            success = false;
             logger.error(e.getMessage(), e);
         } catch (Exception e) {
-            success = false;
             logger.error(e.getMessage(), e);
         } finally {
-            cat.after(success);
         }
         return -1;
     }

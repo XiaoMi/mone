@@ -5,10 +5,10 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>docean-plugin</artifactId>
-    <version>1.6.0-jdk21-SNAPSHOT</version>
+    <version>1.6.1-jdk21</version>
   </parent>
   <artifactId>docean-plugin-k8s</artifactId>
-  <version>1.5.1-jdk21</version>
+<!--  <version>1.5.1-jdk21</version>-->
   <properties>
     <maven.compiler.source>8</maven.compiler.source>
     <version.fabric8.client>5.11.2</version.fabric8.client>

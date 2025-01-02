@@ -5,7 +5,7 @@
   <parent>
     <groupId>run.mone</groupId>
     <artifactId>docean-plugin</artifactId>
-    <version>1.6.0-jdk21-SNAPSHOT</version>
+    <version>1.6.1-jdk21</version>
   </parent>
   <artifactId>docean-plugin-influxdb</artifactId>
   <dependencies>

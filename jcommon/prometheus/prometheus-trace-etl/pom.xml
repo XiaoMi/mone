@@ -6,11 +6,11 @@
     <parent>
         <groupId>run.mone</groupId>
         <artifactId>prometheus</artifactId>
-        <version>0.0.6-jdk20-SNAPSHOT</version>
+        <version>1.6.1-jdk21</version>
     </parent>
 
     <artifactId>prometheus-trace-etl</artifactId>
-    <version>0.0.6-jdk21</version>
+<!--    <version>0.0.6-jdk21</version>-->
 
     <properties>
         <maven.compiler.source>8</maven.compiler.source>

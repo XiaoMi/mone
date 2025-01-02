@@ -23,7 +23,6 @@ import com.mongodb.MongoException;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.xiaomi.youpin.cat.CatPlugin;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.slf4j.Logger;
@@ -79,28 +78,20 @@ public class MongoDb {
     }
 
     public void insert(String collectionName, Document doc) {
-        CatPlugin cat = new CatPlugin("insert", catEnabled, CAT_TYPE);
-        boolean success = true;
-        cat.before(null);
         try {
             MongoCollection<Document> collection = this.getCollection(collectionName);
             collection.insertOne(doc);
         } catch (MongoException e) {
-            success = false;
             logger.error(e.getMessage(), e);
         } catch (Exception e) {
-            success = false;
             logger.error(e.getMessage(), e);
         } finally {
-            cat.after(success);
         }
 
     }
 
     public void insertMany(String collectionName, List<Document> docList) {
-        CatPlugin cat = new CatPlugin("insertMany", catEnabled, CAT_TYPE);
         boolean success = true;
-        cat.before(null);
         try {
             MongoCollection<Document> collection = this.getCollection(collectionName);
             collection.insertMany(docList);
@@ -110,8 +101,6 @@ public class MongoDb {
         } catch (Exception e) {
             success = false;
             logger.error(e.getMessage(), e);
-        } finally {
-            cat.after(success);
         }
     }
 
@@ -166,38 +155,25 @@ public class MongoDb {
 
 
     public void delete(String collectionName, Document doc) {
-        CatPlugin cat = new CatPlugin("delete", catEnabled, CAT_TYPE);
-        boolean success = true;
-        cat.before(null);
         try {
             MongoCollection<Document> collection = this.getCollection(collectionName);
             collection.deleteOne(doc);
         } catch (MongoException e) {
-            success = false;
             logger.error(e.getMessage(), e);
         } catch (Exception e) {
-            success = false;
             logger.error(e.getMessage(), e);
-        } finally {
-            cat.after(success);
         }
     }
 
     public long count(String collectionName) {
-        CatPlugin cat = new CatPlugin("count", catEnabled, CAT_TYPE);
-        boolean success = true;
-        cat.before(null);
         try {
             MongoCollection<Document> collection = this.getCollection(collectionName);
             return collection.countDocuments();
         } catch (MongoException e) {
-            success = false;
             logger.error(e.getMessage(), e);
         } catch (Exception e) {
-            success = false;
             logger.error(e.getMessage(), e);
         } finally {
-            cat.after(success);
         }
         return -1;
     }
