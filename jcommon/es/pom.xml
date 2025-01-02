@@ -9,11 +9,11 @@
         <version>1.6.1-jdk21</version>
     </parent>
     <artifactId>es</artifactId>
-    <version>1.8-jdk8-SNAPSHOT</version>
+    <version>1.6.2-jdk21</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <es.version>7.17.21</es.version>
+        <es.version>7.10.0</es.version>
     </properties>
 
     <dependencies>

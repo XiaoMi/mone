@@ -8,7 +8,7 @@
     <version>1.6.1-jdk21</version>
   </parent>
   <artifactId>prometheus</artifactId>
-  <version>0.0.6-jdk20-SNAPSHOT</version>
+<!--  <version>0.0.6-jdk20-SNAPSHOT</version>-->
   <packaging>pom</packaging>
   <modules>
     <module>prometheus-client</module>
@@ -21,7 +21,7 @@
   </modules>
   <properties>
     <java.version>1.8</java.version>
-    <prometheus-all.version>0.0.6-jdk20-SNAPSHOT</prometheus-all.version>
+    <prometheus-all.version>1.6.1-jdk21</prometheus-all.version>
   </properties>
   <dependencies>
     <dependency>

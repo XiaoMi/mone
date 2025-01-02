@@ -47,7 +47,7 @@
         <module>struct</module>
         <module>gitlab</module>
         <module>api</module>
-<!--        <module>nacos</module>-->
+        <module>nacos</module>
         <module>mongodb</module>
 <!--        <module>coloregg</module>-->
         <module>ks3</module>
@@ -61,7 +61,7 @@
         <module>dbLocking</module>
         <module>aop</module>
         <module>crypto</module>
-<!--        <module>catPlugin</module>-->
+        <module>catPlugin</module>
         <module>feishu</module>
         <module>sre</module>
         <module>mistarter</module>
@@ -97,9 +97,9 @@
         <module>infra-result</module>
         <module>rpc-codes</module>
         <module>mybatis-plugins</module>
-<!--        <module>processor</module>-->
+        <module>processor</module>
 <!--        <module>openai</module>-->
-<!--        <module>excel</module>-->
+        <module>excel</module>
         <module>match</module>
         <module>infra-common</module>
         <module>docean-spring-starter</module>

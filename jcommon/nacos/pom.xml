@@ -19,7 +19,7 @@
     <dependency>
       <groupId>run.mone</groupId>
       <artifactId>nacos-client</artifactId>
-      <version>1.2.1-mone-v3-SNAPSHOT</version>
+      <version>1.2.1-mone-v3</version>
     </dependency>
     <dependency>
       <groupId>run.mone</groupId>
