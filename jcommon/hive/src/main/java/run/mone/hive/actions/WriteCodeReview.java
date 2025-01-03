@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 
 import java.util.List;
@@ -21,7 +22,7 @@ public class WriteCodeReview extends Action {
 
 
     @Override
-    public CompletableFuture<Message> run(Map<String, Object> map) {
+    public CompletableFuture<Message> run(ActionReq map) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String review = generateCodeReview(Lists.newArrayList());

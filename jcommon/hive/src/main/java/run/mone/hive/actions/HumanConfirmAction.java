@@ -4,6 +4,7 @@ import run.mone.hive.common.Constants;
 import run.mone.hive.llm.HumanProvider;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.memory.Memory;
+import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 
 import java.util.Map;
@@ -22,7 +23,7 @@ public class HumanConfirmAction extends Action {
 
 
     @Override
-    public CompletableFuture<Message> run(Map<String, Object> map) {
+    public CompletableFuture<Message> run(ActionReq map) {
         String prompt = getLastMessageContent(map);
 
         return CompletableFuture.supplyAsync(() -> {

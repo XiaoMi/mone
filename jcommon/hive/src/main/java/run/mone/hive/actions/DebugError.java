@@ -3,10 +3,10 @@ package run.mone.hive.actions;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RunCodeContext;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Data
@@ -24,7 +24,7 @@ public class DebugError extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run(Map<String, Object> map) {
+    public CompletableFuture<Message> run(ActionReq map) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String debugResult = analyzeAndDebug(context.getCode(), context.getTestCode(), context.getExecutionResult());

@@ -1,5 +1,6 @@
 package run.mone.hive.actions;
 
+import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -18,7 +19,7 @@ public class WritePRD extends Action {
 
 
     @Override
-    public CompletableFuture<Message> run(Map<String, Object> map) {
+    public CompletableFuture<Message> run(ActionReq map) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 List<Message> history = (List<Message>) map.get("history");

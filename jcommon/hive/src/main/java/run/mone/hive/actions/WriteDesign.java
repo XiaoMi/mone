@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import lombok.extern.slf4j.Slf4j;
+import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 
 /**
@@ -17,7 +18,7 @@ public class WriteDesign extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run(Map<String, Object> map) {
+    public CompletableFuture<Message> run(ActionReq map) {
         return CompletableFuture.supplyAsync(() -> {
             Message message = (Message) map.get("message");
             log.info("Creating technical design from message: {}", message);

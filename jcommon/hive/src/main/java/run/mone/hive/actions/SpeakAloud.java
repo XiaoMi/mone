@@ -4,6 +4,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.memory.Memory;
 import run.mone.hive.roles.Debator;
+import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 
 import java.util.Map;
@@ -33,7 +34,7 @@ public class SpeakAloud extends Action {
 
     @SneakyThrows
     @Override
-    public CompletableFuture<Message> run(Map<String, Object> map) {
+    public CompletableFuture<Message> run(ActionReq map) {
         String opponentName = "";
         if (this.getRole() instanceof Debator debator) {
             opponentName = debator.getOpponentName();

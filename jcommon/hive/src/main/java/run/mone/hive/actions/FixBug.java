@@ -1,9 +1,9 @@
 package run.mone.hive.actions;
 
 import lombok.extern.slf4j.Slf4j;
+import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
@@ -40,7 +40,7 @@ public class FixBug extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run(Map<String, Object> map) {
+    public CompletableFuture<Message> run(ActionReq map) {
         String codeContext = (String) map.getOrDefault("codeContext", "No code context provided");
         String bugDescription = (String) map.getOrDefault("bugDescription", "No bug description provided");
 

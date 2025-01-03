@@ -7,6 +7,7 @@ import run.mone.hive.actions.Action;
 import run.mone.hive.actions.WriteCode;
 import run.mone.hive.actions.WriteCodeReview;
 import run.mone.hive.actions.WriteTest;
+import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 
 import java.util.List;
@@ -46,13 +47,13 @@ public class Engineer extends Role {
     public CompletableFuture<Message> writeTest(Message message) {
         WriteTest action = new WriteTest();
         initAction(action);
-        return action.run(ImmutableMap.of());
+        return action.run(new ActionReq());
     }
 
     public CompletableFuture<Message> reviewCode(Message message) {
         WriteCodeReview action = new WriteCodeReview();
         initAction(action);
-        return action.run(ImmutableMap.of());
+        return action.run(new ActionReq());
     }
 
 }

@@ -2,6 +2,7 @@ package run.mone.hive.actions;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.CodeSummarizeContext;
 import run.mone.hive.schema.Message;
 import run.mone.hive.repository.Repository;
@@ -103,7 +104,7 @@ public class SummarizeCode extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run(Map<String, Object> map) {
+    public CompletableFuture<Message> run(ActionReq map) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 Path designPathname = Path.of(context.getDesignFilename());

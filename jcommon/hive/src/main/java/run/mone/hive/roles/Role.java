@@ -251,12 +251,12 @@ public abstract class Role {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 Action currentAction = rc.getTodo();
-                Map<String, Object> map = new HashMap<>();
+                ActionReq map = new ActionReq();
                 map.put("memory", rc.getMemory());
                 map.put("name", this.name);
                 map.put("profile", this.profile);
                 map.put("role", this);
-                map.put("message", rc.getMemory().getLastMessage());
+                map.setMessage(rc.getMemory().getLastMessage());
                 map.put("history", rc.getMessageList());
                 Message result = currentAction.run(map).join();
 

@@ -6,9 +6,9 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.roles.Role;
+import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Data
@@ -33,7 +33,7 @@ public abstract class Action {
     }
 
 
-    public CompletableFuture<Message> run(Map<String, Object> map) {
+    public CompletableFuture<Message> run(ActionReq map) {
         throw new RuntimeException();
     }
 

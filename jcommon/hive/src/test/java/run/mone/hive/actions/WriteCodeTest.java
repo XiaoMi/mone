@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.CodingContext;
 import run.mone.hive.schema.Message;
 
@@ -31,7 +32,7 @@ class WriteCodeTest {
     void testRun() throws ExecutionException, InterruptedException {
         writeCode = new WriteCode(context, baseLLM);
 
-        CompletableFuture<Message> future = writeCode.run(ImmutableMap.of());
+        CompletableFuture<Message> future = writeCode.run(new ActionReq());
         Message result = future.get();
 
         System.out.println(result);

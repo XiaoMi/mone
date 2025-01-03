@@ -3,6 +3,7 @@ package run.mone.hive.actions;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.CodingContext;
 import run.mone.hive.schema.Message;
 
@@ -44,7 +45,7 @@ public class WriteCodePlanAndChange extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run(Map<String, Object> map) {
+    public CompletableFuture<Message> run(ActionReq map) {
         Message message = (Message) map.get("message");
         return CompletableFuture.supplyAsync(() -> {
             try {

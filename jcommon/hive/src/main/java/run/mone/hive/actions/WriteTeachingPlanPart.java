@@ -1,6 +1,7 @@
 package run.mone.hive.actions;
 
 import run.mone.hive.llm.LLM;
+import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,7 +37,7 @@ public class WriteTeachingPlanPart extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run(Map<String, Object> map) {
+    public CompletableFuture<Message> run(ActionReq map) {
         String prompt = PROMPT_TEMPLATE
                 .replace("{topic}", topic)
                 .replace("{context}", context)

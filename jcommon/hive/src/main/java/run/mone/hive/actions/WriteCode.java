@@ -5,6 +5,7 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.common.Prompts;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.CodingContext;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.AiMessage;
@@ -55,7 +56,7 @@ public class WriteCode extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run(Map<String, Object> map) {
+    public CompletableFuture<Message> run(ActionReq map) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String generatedCode = generateCode();

@@ -1,5 +1,6 @@
 package run.mone.hive.actions;
 
+import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -18,16 +19,16 @@ public class WriteTest extends Action {
 
 
     @Override
-    public CompletableFuture<Message> run(Map<String, Object> map) {
+    public CompletableFuture<Message> run(ActionReq map) {
         return CompletableFuture.supplyAsync(() -> {
             List<Message> history = (List<Message>) map.get("history");
             try {
                 String testCode = generateTestCode(history);
                 return Message.builder()
-                    .content(testCode)
-                    .role("WriteTest")
-                    .causeBy(this.getClass().getName())
-                    .build();
+                        .content(testCode)
+                        .role("WriteTest")
+                        .causeBy(this.getClass().getName())
+                        .build();
             } catch (Exception e) {
                 throw new RuntimeException("Failed to generate test code", e);
             }
