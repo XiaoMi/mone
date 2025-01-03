@@ -14,10 +14,8 @@ import java.util.concurrent.CompletableFuture;
 public class AnalyzeArchitecture extends Action {
 
     @Override
-    public CompletableFuture<Message> run(ActionReq map) {
+    public CompletableFuture<Message> run(ActionReq req) {
         log.info("AnalyzeArchitecture");
-        Message message = map.getMessage();
-        log.info("message:{}", message);
-        return CompletableFuture.completedFuture(Message.builder().content("AnalyzeArchitecture").build());
+        return CompletableFuture.supplyAsync(() -> Message.builder().content(this.function.apply(req, this)).build());
     }
 }

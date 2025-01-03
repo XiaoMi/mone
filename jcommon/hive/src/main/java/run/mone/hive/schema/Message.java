@@ -94,4 +94,5 @@ public class Message implements Serializable {
     public void setSendTo(String recipient) {
         this.sendTo = Collections.singletonList(recipient);
     }
+
 }

@@ -66,9 +66,11 @@ public abstract class Role {
     }
 
     public Role(String name, String profile) {
-        this.name = name;
-        this.profile = profile;
-        init();
+        this(name, profile, "", "");
+    }
+
+    public Role(String name) {
+        this(name, name, "", "");
     }
 
     public Role(String name, String profile, String goal, String constraints, Consumer<Role> consumer) {

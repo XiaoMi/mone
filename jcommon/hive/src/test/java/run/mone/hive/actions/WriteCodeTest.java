@@ -1,6 +1,5 @@
 package run.mone.hive.actions;
 
-import com.google.common.collect.ImmutableMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.configs.LLMConfig;
@@ -30,7 +29,7 @@ class WriteCodeTest {
 
     @Test
     void testRun() throws ExecutionException, InterruptedException {
-        writeCode = new WriteCode(context, baseLLM);
+        writeCode = new WriteCode();
 
         CompletableFuture<Message> future = writeCode.run(new ActionReq());
         Message result = future.get();
