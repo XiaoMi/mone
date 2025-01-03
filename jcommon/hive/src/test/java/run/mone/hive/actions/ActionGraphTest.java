@@ -4,7 +4,7 @@ package run.mone.hive.actions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.configs.LLMConfig;
-import run.mone.hive.llm.BaseLLM;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.Expr;
 import run.mone.hive.schema.Message;
 
@@ -26,7 +26,7 @@ class ActionGraphTest {
     void testExecute() {
         boolean debug = false;
         // Create mock LLM
-        BaseLLM mockLLM = new BaseLLM(LLMConfig.builder().debug(debug).build()) {
+        LLM mockLLM = new LLM(LLMConfig.builder().debug(debug).build()) {
             @Override
             public CompletableFuture<String> ask(String prompt) {
                 if (debug) {

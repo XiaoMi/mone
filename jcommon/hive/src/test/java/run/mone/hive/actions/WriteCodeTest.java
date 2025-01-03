@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.configs.LLMConfig;
-import run.mone.hive.llm.BaseLLM;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.CodingContext;
 import run.mone.hive.schema.Message;
 
@@ -18,7 +18,7 @@ class WriteCodeTest {
     private WriteCode writeCode;
     private CodingContext context;
 
-    private BaseLLM baseLLM = new BaseLLM(LLMConfig.builder().json(false).build());
+    private LLM baseLLM = new LLM(LLMConfig.builder().json(false).build());
 
     @BeforeEach
     void setUp() {

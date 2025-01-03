@@ -1,6 +1,6 @@
 package run.mone.hive.actions;
 
-import run.mone.hive.llm.BaseLLM;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.Message;
 import lombok.extern.slf4j.Slf4j;
 
@@ -27,7 +27,7 @@ public class WriteTeachingPlanPart extends Action {
             4. Output in markdown format
             """;
 
-    public WriteTeachingPlanPart(String context, String topic, String language, BaseLLM llm) {
+    public WriteTeachingPlanPart(String context, String topic, String language, LLM llm) {
         super();
         this.context = context;
         this.topic = topic;

@@ -3,7 +3,7 @@ package run.mone.hive.examples;
 import run.mone.hive.actions.UserRequirement;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.context.Context;
-import run.mone.hive.llm.BaseLLM;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.roles.Teacher;
 import run.mone.hive.schema.Message;
 import lombok.extern.slf4j.Slf4j;
@@ -15,7 +15,7 @@ public class TeacherDemo {
         try {
             // 创建上下文
             Context context = new Context();
-            context.setDefaultLLM(new BaseLLM(new LLMConfig()) {
+            context.setDefaultLLM(new LLM(new LLMConfig()) {
                 @Override
                 public String chat(String prompt) {
                     return "chat";

@@ -1,7 +1,7 @@
 package run.mone.hive.actions;
 
 import lombok.extern.slf4j.Slf4j;
-import run.mone.hive.llm.BaseLLM;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.AiMessage;
 import run.mone.hive.schema.Message;
 
@@ -60,7 +60,7 @@ public class WritePlan extends Action {
         4. Include appropriate task types (CODE_REVIEW, CODE_TESTING, CODE_WRITING, etc.)
         """;
 
-    public WritePlan(BaseLLM llm) {
+    public WritePlan(LLM llm) {
         super(SYSTEM_PROMPT);
         this.llm = llm;
     }

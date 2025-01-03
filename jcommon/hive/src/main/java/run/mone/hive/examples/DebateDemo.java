@@ -4,7 +4,7 @@ import com.google.common.collect.Lists;
 import run.mone.hive.Team;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.context.Context;
-import run.mone.hive.llm.BaseLLM;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.roles.Debator;
 
 /**
@@ -15,7 +15,7 @@ public class DebateDemo {
 
     //辩论
     public static void main(String[] args) {
-        BaseLLM llm = new BaseLLM(LLMConfig.builder().debug(false).build());
+        LLM llm = new LLM(LLMConfig.builder().debug(false).build());
         Debator biden = new Debator("Biden", "Democrat", "Trump", llm);
         Debator trump = new Debator("Trump", "Republican", "Biden", llm);
 

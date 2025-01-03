@@ -4,7 +4,7 @@ package run.mone.hive.actions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.configs.LLMConfig;
-import run.mone.hive.llm.BaseLLM;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.Message;
 
 import java.util.ArrayList;
@@ -21,7 +21,7 @@ class WritePlanTest {
     @BeforeEach
     void setUp() {
         writePlan = new WritePlan();
-        writePlan.setLlm(new BaseLLM(LLMConfig.builder().json(true).build()));
+        writePlan.setLlm(new LLM(LLMConfig.builder().json(true).build()));
     }
 
     @Test

@@ -4,7 +4,7 @@ package run.mone.hive.strategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.configs.LLMConfig;
-import run.mone.hive.llm.BaseLLM;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.Plan;
 import run.mone.hive.schema.Task;
@@ -24,7 +24,7 @@ class PlannerTest {
     @BeforeEach
     void setUp() {
         planner = new Planner(TEST_GOAL);
-        planner.setLlm(new BaseLLM(LLMConfig.builder().json(true).build()));
+        planner.setLlm(new LLM(LLMConfig.builder().json(true).build()));
     }
 
     @Test

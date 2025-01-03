@@ -4,7 +4,7 @@ import com.google.common.collect.Lists;
 import lombok.Data;
 import run.mone.hive.actions.SpeakAloud;
 import run.mone.hive.actions.UserRequirement;
-import run.mone.hive.llm.BaseLLM;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.Message;
 
 import java.util.HashSet;
@@ -19,7 +19,7 @@ public class Debator extends Role {
     private String opponentName;
 
 
-    public Debator(String name, String profile, String opponentName, BaseLLM baseLLM) {
+    public Debator(String name, String profile, String opponentName, LLM baseLLM) {
         this.name = name;
         this.profile = profile;
         this.opponentName = opponentName;

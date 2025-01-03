@@ -13,7 +13,7 @@ import java.util.concurrent.Executors;
  * This enables replacing LLM anywhere in the framework with a human, thus introducing human interaction.
  */
 @Slf4j
-public class HumanProvider extends BaseLLM {
+public class HumanProvider extends LLM {
 
 
     private final ExecutorService executor;

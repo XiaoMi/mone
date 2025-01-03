@@ -3,7 +3,7 @@ package run.mone.hive.actions;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import run.mone.hive.common.Prompts;
-import run.mone.hive.llm.BaseLLM;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.CodingContext;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.AiMessage;
@@ -46,7 +46,7 @@ public class WriteCode extends Action {
         super("WriteCode", "Write elegant, readable, extensible, efficient code");
     }
 
-    public WriteCode(CodingContext context, BaseLLM llm) {
+    public WriteCode(CodingContext context, LLM llm) {
         this();
         this.iContext = context;
         this.llm = llm;

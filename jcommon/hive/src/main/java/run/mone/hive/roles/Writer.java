@@ -5,13 +5,13 @@ import com.google.common.collect.Lists;
 import lombok.Data;
 import run.mone.hive.actions.UserRequirement;
 import run.mone.hive.actions.WriteAction;
-import run.mone.hive.llm.BaseLLM;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.Message;
 
 @Data
 public class Writer extends Role {
 
-    public Writer(String name, String profile, BaseLLM baseLLM) {
+    public Writer(String name, String profile, LLM baseLLM) {
         this.name = name;
         this.profile = profile;
         this.llm = baseLLM;

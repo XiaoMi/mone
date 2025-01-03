@@ -3,10 +3,9 @@ package run.mone.hive.actions;
 import com.google.common.base.Joiner;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
-import run.mone.hive.llm.BaseLLM;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.roles.Role;
 import run.mone.hive.schema.Expr;
 import run.mone.hive.schema.Message;
@@ -42,7 +41,7 @@ public class ActionNode {
     // Action Context
     private String schema;  // raw/json/markdown
     private String context;  // all necessary context info
-    private BaseLLM llm;    // LLM with ask interface
+    private LLM llm;    // LLM with ask interface
     private Map<String, ActionNode> children;
 
     // Action Input
@@ -100,7 +99,7 @@ public class ActionNode {
         this.fillMode = FillMode.SINGLE_FILL;
     }
 
-    private BaseLLM llm() {
+    private LLM llm() {
         if (this.llm != null) {
             return this.llm;
         }

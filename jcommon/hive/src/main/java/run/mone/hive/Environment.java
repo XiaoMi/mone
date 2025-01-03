@@ -5,7 +5,7 @@ import com.google.common.collect.Lists;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.context.Context;
-import run.mone.hive.llm.BaseLLM;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.roles.Role;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.ProjectRepo;
@@ -85,7 +85,7 @@ public class Environment {
         return sendMessage(message);
     }
 
-    public CompletableFuture<Void> bootstrapProject(String workdir, BaseLLM llm) {
+    public CompletableFuture<Void> bootstrapProject(String workdir, LLM llm) {
         return CompletableFuture.runAsync(() -> {
             ProjectRepo projectRepo = new ProjectRepo(workdir);
         });

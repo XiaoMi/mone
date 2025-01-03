@@ -2,13 +2,17 @@
 package run.mone.hive.llm;
 
 import com.google.common.collect.Lists;
+import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.schema.AiMessage;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -16,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 class BaseLLMTest {
 
-    private BaseLLM baseLLM;
+    private LLM baseLLM;
 
     private LLMConfig config;
 
@@ -26,7 +30,7 @@ class BaseLLMTest {
         config.setDebug(false);
         config.setJson(false);
         config.setLlmProvider(LLMProvider.DEEPSEEK);
-        baseLLM = new BaseLLM(config);
+        baseLLM = new LLM(config);
     }
 
     @Test
@@ -63,4 +67,40 @@ class BaseLLMTest {
         String apiUrl = baseLLM.getApiUrl();
         assertEquals("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", apiUrl);
     }
+
+    @Test
+    void testChatCompletionStream() throws InterruptedException {
+        String apiKey = System.getenv(config.getLlmProvider().getEnvName());
+        List<AiMessage> messages = new ArrayList<>();
+        messages.add(AiMessage.builder().role("user").content("Hello, can you tell me a short joke?").build());
+        String model = config.getLlmProvider().getDefaultModel();
+
+        StringBuilder responseBuilder = new StringBuilder();
+        List<JsonObject> jsonResponses = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(1);
+
+        baseLLM.chatCompletionStream(
+                apiKey,
+                messages,
+                model,
+                (content, jsonResponse) -> {
+                    if ("[DONE]".equals(content)) {
+                        latch.countDown();
+                    } else {
+                        responseBuilder.append(content);
+                        jsonResponses.add(jsonResponse);
+                    }
+                },
+                line -> log.info("Received line: {}", line)
+        );
+
+        latch.await();
+
+        String fullResponse = responseBuilder.toString();
+        log.info("Full response: {}", fullResponse);
+
+        assertFalse(fullResponse.isEmpty(), "Response should not be empty");
+        assertFalse(jsonResponses.isEmpty(), "Should have received JSON responses");
+    }
 }
+

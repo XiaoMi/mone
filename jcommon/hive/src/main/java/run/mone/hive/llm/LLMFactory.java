@@ -4,7 +4,7 @@ import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.context.Context;
 
 public class LLMFactory {
-    public static BaseLLM createLLM(LLMConfig config, Context context) {
+    public static LLM createLLM(LLMConfig config, Context context) {
         if (context == null) {
             context = new Context();
         }

@@ -4,7 +4,7 @@ package run.mone.hive.actions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.configs.LLMConfig;
-import run.mone.hive.llm.BaseLLM;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.Message;
 
 import java.util.concurrent.CompletableFuture;
@@ -15,11 +15,11 @@ import static org.mockito.Mockito.*;
 class ActionNodeTest {
 
     private ActionNode actionNode;
-    private BaseLLM mockLLM;
+    private LLM mockLLM;
 
     @BeforeEach
     void setUp() {
-        mockLLM = mock(BaseLLM.class);
+        mockLLM = mock(LLM.class);
         actionNode = ActionNode.builder()
                 .key("testNode")
                 .instruction("Test instruction")
@@ -30,7 +30,7 @@ class ActionNodeTest {
     @Test
     public void testRun() {
         ActionNode an = new ActionNode();
-        an.setLlm(new BaseLLM(LLMConfig.builder().debug(false).build()));
+        an.setLlm(new LLM(LLMConfig.builder().debug(false).build()));
         an.setContext("11+22=?");
         Message msg = an.run().join();
         System.out.println(msg);

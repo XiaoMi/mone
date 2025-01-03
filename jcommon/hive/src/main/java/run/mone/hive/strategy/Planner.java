@@ -6,7 +6,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.actions.AskReview;
 import run.mone.hive.actions.WritePlan;
-import run.mone.hive.llm.BaseLLM;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.memory.Memory;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.Plan;
@@ -55,7 +55,7 @@ public class Planner {
     private Plan plan;
     private Memory workingMemory;
     private boolean autoRun;
-    private BaseLLM llm;
+    private LLM llm;
 
     public Planner(String goal) {
         this(goal, null);

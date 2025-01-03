@@ -3,7 +3,7 @@ package run.mone.hive.actions;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.common.Constants;
 import run.mone.hive.configs.LLMConfig;
-import run.mone.hive.llm.BaseLLM;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.memory.Memory;
 import run.mone.hive.roles.Role;
 import run.mone.hive.schema.Expr;
@@ -23,7 +23,7 @@ public class WriteAction extends Action {
     public CompletableFuture<Message> run(Map<String, Object> map) {
         return CompletableFuture.supplyAsync(() -> {
             ActionNode node0 = new ActionNode("node0", String.class, "准备信息", this.getRole());
-            node0.setLlm(new BaseLLM(LLMConfig.builder().build()) {
+            node0.setLlm(new LLM(LLMConfig.builder().build()) {
                 @Override
                 public CompletableFuture<String> ask(String prompt) {
                     StringBuilder instruction = new StringBuilder();

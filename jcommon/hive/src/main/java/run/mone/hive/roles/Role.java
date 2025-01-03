@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.Environment;
 import run.mone.hive.actions.Action;
 import run.mone.hive.context.Context;
-import run.mone.hive.llm.BaseLLM;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.*;
 import run.mone.hive.strategy.Planner;
 import run.mone.hive.utils.Config;
@@ -38,7 +38,7 @@ public abstract class Role {
 
     protected ProjectRepo projectRepo;
 
-    protected BaseLLM llm;
+    protected LLM llm;
 
     protected Queue<Action> actionQueue = new LinkedList<>();
 

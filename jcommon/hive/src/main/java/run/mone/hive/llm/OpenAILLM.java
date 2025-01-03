@@ -2,7 +2,7 @@ package run.mone.hive.llm;
 
 import run.mone.hive.configs.LLMConfig;
 
-public class OpenAILLM extends BaseLLM {
+public class OpenAILLM extends LLM {
     public OpenAILLM(LLMConfig config) {
         super(config);
     }

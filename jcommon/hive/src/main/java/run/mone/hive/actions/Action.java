@@ -4,11 +4,10 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
-import run.mone.hive.llm.BaseLLM;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.roles.Role;
 import run.mone.hive.schema.Message;
 
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
@@ -19,7 +18,7 @@ public abstract class Action {
     protected String systemPrompt;
     protected String name;
     protected String description;
-    protected BaseLLM llm;
+    protected LLM llm;
 
     @ToString.Exclude
     private Role role;

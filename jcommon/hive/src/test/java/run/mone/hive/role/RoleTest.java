@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import run.mone.hive.Team;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.context.Context;
-import run.mone.hive.llm.BaseLLM;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.roles.Debator;
 import run.mone.hive.roles.Developer;
 import run.mone.hive.roles.HumanRole;
@@ -24,7 +24,7 @@ public class RoleTest {
 
     @Test
     public void testWriter() {
-        BaseLLM llm = new BaseLLM(LLMConfig.builder().debug(false).build());
+        LLM llm = new LLM(LLMConfig.builder().debug(false).build());
         Context context = new Context();
         context.setDefaultLLM(llm);
         Team team = new Team(context);
@@ -41,7 +41,7 @@ public class RoleTest {
     //辩论,人类决定是否退出
     @Test
     public void testHumanAndDebatorDebate() {
-        BaseLLM llm = new BaseLLM(LLMConfig.builder().debug(false).build());
+        LLM llm = new LLM(LLMConfig.builder().debug(false).build());
         Context context = new Context();
         context.setDefaultLLM(llm);
         Team team = new Team(context);
@@ -82,7 +82,7 @@ public class RoleTest {
 
     @Test
     public void testLoginFunctionality() {
-        BaseLLM llm = new BaseLLM(LLMConfig.builder().debug(false).json(true).build());
+        LLM llm = new LLM(LLMConfig.builder().debug(false).json(true).build());
         Context context = new Context();
         context.setDefaultLLM(llm);
         Team team = new Team(context);
