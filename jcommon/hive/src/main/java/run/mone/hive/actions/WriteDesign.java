@@ -17,6 +17,6 @@ public class WriteDesign extends Action {
     @Override
     public CompletableFuture<Message> run(ActionReq req) {
         log.info("WriteDesign");
-        return CompletableFuture.supplyAsync(() -> Message.builder().sendTo(Lists.newArrayList("Engineer")).content(this.function.apply(req, this)).build());
+        return CompletableFuture.supplyAsync(() -> Message.builder().role(req.getRole().getProfile()).sendTo(Lists.newArrayList("Engineer")).content(this.function.apply(req, this)).build());
     }
 } 

@@ -253,14 +253,15 @@ public abstract class Role {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 Action currentAction = rc.getTodo();
-                ActionReq map = new ActionReq();
-                map.put("memory", rc.getMemory());
-                map.put("name", this.name);
-                map.put("profile", this.profile);
-                map.put("role", this);
-                map.setMessage(rc.getMemory().getLastMessage());
-                map.put("history", rc.getMessageList());
-                Message result = currentAction.run(map).join();
+                ActionReq req = new ActionReq();
+                req.put("memory", rc.getMemory());
+                req.put("name", this.name);
+                req.put("profile", this.profile);
+                req.setRole(this);
+                req.setMessage(rc.getMemory().getLastMessage());
+                req.setEnv(this.environment);
+                req.put("history", rc.getMessageList());
+                Message result = currentAction.run(req).join();
 
                 result = processMessage(result);
                 if (result != null) {

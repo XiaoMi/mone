@@ -19,7 +19,7 @@ public class WriteCode extends Action {
     @Override
     public CompletableFuture<Message> run(ActionReq req) {
         log.info("WriteCode");
-        return CompletableFuture.supplyAsync(() -> Message.builder().content(this.function.apply(req, this)).build());
+        return CompletableFuture.supplyAsync(() -> Message.builder().role(req.getRole().getProfile()).content(this.function.apply(req, this)).build());
     }
 
 }

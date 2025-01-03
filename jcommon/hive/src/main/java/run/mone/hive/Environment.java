@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class Environment {
     private final Map<String, ActorRef> roles;
     private final Map<String, CompletableFuture<Message>> pendingResponses;
-    private final Queue<Message> messageQueue;
+    private final LinkedList<Message> messageList;
     private boolean running;
 
     private final Map<Role, Set<String>> memberAddrs = new HashMap<>();
@@ -34,7 +34,7 @@ public class Environment {
     public Environment() {
         this.roles = new ConcurrentHashMap<>();
         this.pendingResponses = new ConcurrentHashMap<>();
-        this.messageQueue = new LinkedList<>();
+        this.messageList = new LinkedList<>();
         this.running = false;
     }
 
@@ -58,11 +58,11 @@ public class Environment {
     }
 
     public List<Message> getHistory() {
-        return new ArrayList<>(messageQueue);
+        return new ArrayList<>(messageList);
     }
 
     public void clearHistory() {
-        messageQueue.clear();
+        messageList.clear();
     }
 
     public boolean hasRole(String roleName) {
@@ -100,6 +100,7 @@ public class Environment {
 
     public void publishMessage(Message message) {
         log.debug("publish_message: {}", message.toString());
+        this.messageList.add(message);
         boolean found = false;
 
         // Iterate through all member addresses to find recipients
