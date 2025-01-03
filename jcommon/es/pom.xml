@@ -9,7 +9,7 @@
         <version>1.6.1-jdk21</version>
     </parent>
     <artifactId>es</artifactId>
-    <version>1.6.2-jdk21</version>
+    <version>1.6.3-jdk21</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
