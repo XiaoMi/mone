@@ -87,6 +87,7 @@ class BaseLLMTest {
                     if ("[DONE]".equals(content)) {
                         latch.countDown();
                     } else {
+                        System.out.println(content);
                         responseBuilder.append(content);
                         jsonResponses.add(jsonResponse);
                     }
