@@ -131,7 +131,7 @@ public abstract class Role {
     }
 
     // 设置可执行的动作
-    protected void setActions(List<Action> actions) {
+    public void setActions(List<Action> actions) {
         actions.forEach(it -> {
             it.setRole(this);
             it.setLlm(this.getLlm());

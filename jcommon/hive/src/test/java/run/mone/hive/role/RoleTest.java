@@ -48,6 +48,7 @@ public class RoleTest {
 
         Message message = Message.builder()
                 .id(java.util.UUID.randomUUID().toString())
+                .role("Human")
                 .sentFrom("user")
                 .sendTo(List.of("Architect"))
                 .content("帮我开发一个java的登录模块")
