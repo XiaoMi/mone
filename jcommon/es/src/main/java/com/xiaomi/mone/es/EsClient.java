@@ -56,7 +56,6 @@ import java.util.concurrent.TimeUnit;
  * @author goodjava@qq.com
  */
 public class EsClient {
-
     private static Sniffer sniffer;
     private static final int SNIFF_INTERVAL_MILLIS = 60 * 1000 * 3;
     private static final int SNIFF_AFTER_FAILURE_DELAY_MILLIS = 60 * 1000;
@@ -132,7 +131,7 @@ public class EsClient {
 
 
     public EsClient(String esAddr, String user, String pwd) {
-        validateParams(esAddr, user, pwd);
+//        validateParams(esAddr, user, pwd);
 
         List<HttpHost> hosts = createHttpHosts(esAddr);
 
