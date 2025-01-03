@@ -33,19 +33,9 @@ public abstract class Action {
         this.systemPrompt = systemPrompt;
     }
 
-    public CompletableFuture<Message> run() {
-        throw new RuntimeException();
-    }
 
     public CompletableFuture<Message> run(Map<String, Object> map) {
         throw new RuntimeException();
     }
 
-    public CompletableFuture<Message> run(Message message) {
-        throw new UnsupportedOperationException("This action doesn't support single message execution");
-    }
-
-    public CompletableFuture<Message> run(List<Message> history) {
-        throw new RuntimeException();
-    }
-} 
+}

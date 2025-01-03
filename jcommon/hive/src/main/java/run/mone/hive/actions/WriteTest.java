@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Data
@@ -15,14 +16,11 @@ public class WriteTest extends Action {
         super("WriteTest", "Write test cases for the code");
     }
 
-    @Override
-    public CompletableFuture<Message> run() {
-        return null;
-    }
 
     @Override
-    public CompletableFuture<Message> run(List<Message> history) {
+    public CompletableFuture<Message> run(Map<String, Object> map) {
         return CompletableFuture.supplyAsync(() -> {
+            List<Message> history = (List<Message>) map.get("history");
             try {
                 String testCode = generateTestCode(history);
                 return Message.builder()

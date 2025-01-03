@@ -4,6 +4,7 @@ import run.mone.hive.llm.BaseLLM;
 import run.mone.hive.schema.Message;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
@@ -35,7 +36,7 @@ public class WriteTeachingPlanPart extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run() {
+    public CompletableFuture<Message> run(Map<String, Object> map) {
         String prompt = PROMPT_TEMPLATE
                 .replace("{topic}", topic)
                 .replace("{context}", context)

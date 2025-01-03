@@ -3,6 +3,7 @@ package run.mone.hive.actions;
 import run.mone.hive.schema.Message;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -16,8 +17,9 @@ public class UserRequirement extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run(Message message) {
+    public CompletableFuture<Message> run(Map<String, Object> map) {
         return CompletableFuture.supplyAsync(() -> {
+            Message message = (Message) map.get("message");
             log.info("Processing user requirements from message: {}", message);
 
             // TODO: Implement requirement analysis logic

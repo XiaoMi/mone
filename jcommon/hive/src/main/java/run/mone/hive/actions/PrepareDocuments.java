@@ -3,6 +3,7 @@ package run.mone.hive.actions;
 import run.mone.hive.schema.Message;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -17,7 +18,7 @@ public class PrepareDocuments extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run(Message message) {
+    public CompletableFuture<Message> run(Map<String, Object> map) {
         return CompletableFuture.supplyAsync(() -> {
             // TODO: Implement document preparation logic
             log.info("Preparing documents...");

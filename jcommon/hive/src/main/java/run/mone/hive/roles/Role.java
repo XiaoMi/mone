@@ -237,6 +237,8 @@ public abstract class Role {
                 map.put("name", this.name);
                 map.put("profile", this.profile);
                 map.put("role", this);
+                map.put("message", rc.getMemory().getLastMessage());
+                map.put("history", rc.getMessageList());
                 Message result = currentAction.run(map).join();
 
                 result = act(result);

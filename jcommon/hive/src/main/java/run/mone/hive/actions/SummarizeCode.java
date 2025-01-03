@@ -9,6 +9,7 @@ import run.mone.hive.repository.Repository;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Data
@@ -102,7 +103,7 @@ public class SummarizeCode extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run() {
+    public CompletableFuture<Message> run(Map<String, Object> map) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 Path designPathname = Path.of(context.getDesignFilename());

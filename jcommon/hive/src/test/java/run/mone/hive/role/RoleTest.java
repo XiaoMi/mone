@@ -102,7 +102,6 @@ public class RoleTest {
 
         team.receiveMessage(initialMessage);
 
-        // Run the planning and execution process
         team.run(1);
     }
 

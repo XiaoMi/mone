@@ -10,6 +10,7 @@ import run.mone.hive.schema.AiMessage;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Data
@@ -52,7 +53,7 @@ public class WriteCode extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run() {
+    public CompletableFuture<Message> run(Map<String, Object> map) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String generatedCode = generateCode();

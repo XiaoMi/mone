@@ -6,6 +6,7 @@ import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RunCodeContext;
 import run.mone.hive.utils.JavaCodeExecutor;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.UUID;
 
@@ -13,6 +14,7 @@ import java.util.UUID;
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class RunCode extends Action {
+
     private RunCodeContext context;
 
     private static final String PROMPT_TEMPLATE = """
@@ -46,7 +48,7 @@ public class RunCode extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run() {
+    public CompletableFuture<Message> run(Map<String, Object> map) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String prompt = String.format(PROMPT_TEMPLATE, context.getCode(), context.getTestCode());

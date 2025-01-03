@@ -2,6 +2,7 @@ package run.mone.hive;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableMap;
 import run.mone.hive.actions.*;
 import run.mone.hive.roles.Role;
 import run.mone.hive.schema.CodingContext;
@@ -66,11 +67,11 @@ public class Engineer extends Role {
         return CompletableFuture.supplyAsync(() -> {
             for (WriteCode todo : codeTodos) {
                 try {
-                    CodingContext codingContext = (CodingContext) todo.run().join().getData();
+                    CodingContext codingContext = (CodingContext) todo.run(ImmutableMap.of()).join().getData();
                     if (review) {
                         WriteCodeReview action = new WriteCodeReview();
                         initAction(action);
-                        codingContext = (CodingContext) action.run().join().getData();
+                        codingContext = (CodingContext) action.run(ImmutableMap.of()).join().getData();
                     }
 
                     Set<String> dependencies = new HashSet<>();

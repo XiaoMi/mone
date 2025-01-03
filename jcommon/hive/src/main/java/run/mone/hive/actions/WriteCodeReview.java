@@ -1,10 +1,13 @@
 package run.mone.hive.actions;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import run.mone.hive.schema.Message;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Data
@@ -16,16 +19,12 @@ public class WriteCodeReview extends Action {
     }
 
 
-    @Override
-    public CompletableFuture<Message> run() {
-        return null;
-    }
 
     @Override
-    public CompletableFuture<Message> run(List<Message> history) {
+    public CompletableFuture<Message> run(Map<String, Object> map) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                String review = generateCodeReview(history);
+                String review = generateCodeReview(Lists.newArrayList());
                 return Message.builder()
                         .content(review)
                         .role("WriteCodeReview")

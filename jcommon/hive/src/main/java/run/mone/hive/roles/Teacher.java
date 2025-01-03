@@ -1,5 +1,6 @@
 package run.mone.hive.roles;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.actions.Action;
 import run.mone.hive.actions.TeachingPlanBlock;
@@ -61,7 +62,7 @@ public class Teacher extends Role {
                 // Execute all parts
                 StringBuilder fullPlan = new StringBuilder();
                 for (Action action : actions) {
-                    Message result = action.run().join();
+                    Message result = action.run(ImmutableMap.of()).join();
                     if (result != null) {
                         if (!fullPlan.isEmpty()) {
                             fullPlan.append("\n\n\n");

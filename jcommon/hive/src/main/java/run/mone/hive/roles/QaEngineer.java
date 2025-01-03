@@ -1,5 +1,6 @@
 package run.mone.hive.roles;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.actions.DebugError;
 import run.mone.hive.actions.RunCode;
@@ -47,7 +48,7 @@ public class QaEngineer extends Role {
                 TestingContext context = new TestingContext();
                 context.setMessage(message);
                 WriteTest writeTest = new WriteTest();
-                writeTest.run();
+                writeTest.run(ImmutableMap.of());
             } catch (Exception e) {
                 log.error("Error writing test: ", e);
             }
@@ -59,7 +60,7 @@ public class QaEngineer extends Role {
             try {
                 RunCodeContext context = RunCodeContext.fromJson(message.getContent());
                 RunCode runCode = new RunCode(context);
-                runCode.run();
+                runCode.run(ImmutableMap.of());
             } catch (Exception e) {
                 log.error("Error running code: ", e);
             }
@@ -71,7 +72,7 @@ public class QaEngineer extends Role {
             try {
                 RunCodeContext context = RunCodeContext.fromJson(message.getContent());
                 DebugError debugError = new DebugError(context);
-                debugError.run();
+                debugError.run(ImmutableMap.of());
             } catch (Exception e) {
                 log.error("Error debugging: ", e);
             }

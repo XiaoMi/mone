@@ -4,7 +4,9 @@ import lombok.Data;
 import run.mone.hive.actions.Action;
 import run.mone.hive.memory.Memory;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 
 @Data
 public class RoleContext {
@@ -26,6 +28,10 @@ public class RoleContext {
         this.profile = profile;
         this.memory = new Memory();
         this.isDone = false;
+    }
+
+    public List<Message> getMessageList() {
+        return new ArrayList<>(memory.getStorage());
     }
 
     /**

@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.schema.CodingContext;
 import run.mone.hive.schema.Message;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -43,7 +44,8 @@ public class WriteCodePlanAndChange extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run(Message message) {
+    public CompletableFuture<Message> run(Map<String, Object> map) {
+        Message message = (Message) map.get("message");
         return CompletableFuture.supplyAsync(() -> {
             try {
                 log.info("Planning and implementing code changes for: {}", message);

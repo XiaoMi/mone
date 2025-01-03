@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.actions.Action;
 import run.mone.hive.actions.WriteCode;
@@ -62,7 +63,7 @@ public class Engineer extends Role {
     public CompletableFuture<Message> writePRD(Message message) {
         WritePRD action = new WritePRD();
         initAction(action);
-        return action.run(Collections.singletonList(message));
+        return action.run(ImmutableMap.of());
     }
 
     public CompletableFuture<Message> writeCode(Message message) {
@@ -75,7 +76,7 @@ public class Engineer extends Role {
                     try {
                         WriteCode writeCode = new WriteCode(codingContext, llm);
                         initAction(writeCode);
-                        Message result = writeCode.run().join();
+                        Message result = writeCode.run(ImmutableMap.of()).join();
 
                         if (result != null) {
                             Message msg = Message.builder()
@@ -109,13 +110,13 @@ public class Engineer extends Role {
     public CompletableFuture<Message> writeTest(Message message) {
         WriteTest action = new WriteTest();
         initAction(action);
-        return action.run(Collections.singletonList(message));
+        return action.run(ImmutableMap.of());
     }
 
     public CompletableFuture<Message> reviewCode(Message message) {
         WriteCodeReview action = new WriteCodeReview();
         initAction(action);
-        return action.run(Collections.singletonList(message));
+        return action.run(ImmutableMap.of());
     }
 
     private List<CodingContext> parseTasks() {
