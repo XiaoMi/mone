@@ -21,19 +21,7 @@ public class WriteDesign extends Action {
         return CompletableFuture.supplyAsync(() -> {
             Message message = (Message) map.get("message");
             log.info("Creating technical design from message: {}", message);
-            StringBuilder design = new StringBuilder();
-            design.append("# Technical Design Document\n\n");
-            design.append("## System Architecture\n");
-            design.append("The system follows a layered architecture with the following components:\n\n");
-            design.append("1. Presentation Layer\n");
-            design.append("2. Business Logic Layer\n");
-            design.append("3. Data Access Layer\n\n");
-            design.append("## Component Design\n");
-            design.append("### Core Components\n");
-            design.append("- User Management\n");
-            design.append("- Authentication Service\n");
-            design.append("- Data Processing Engine\n");
-            return new Message(design.toString());
+            return new Message("Design");
         });
     }
 } 

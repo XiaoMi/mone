@@ -11,13 +11,11 @@ import java.util.HashSet;
 
 public class HumanRole extends Role {
 
-    private final HumanProvider humanProvider;
 
     public HumanRole(String name, String profile) {
         this.name = name;
         this.profile = profile;
         this.watchList = new HashSet<>();
-        this.humanProvider = new HumanProvider(new LLMConfig());
         init();
     }
 
@@ -30,7 +28,7 @@ public class HumanRole extends Role {
     }
 
     @Override
-    public Message act(Message message) {
+    public Message processMessage(Message message) {
         return message;
     }
 

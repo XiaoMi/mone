@@ -6,10 +6,7 @@ import run.mone.hive.Team;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.context.Context;
 import run.mone.hive.llm.LLM;
-import run.mone.hive.roles.Debator;
-import run.mone.hive.roles.Developer;
-import run.mone.hive.roles.HumanRole;
-import run.mone.hive.roles.Writer;
+import run.mone.hive.roles.*;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
 
@@ -38,6 +35,31 @@ public class RoleTest {
     }
 
 
+    /**
+     * 测试写代码
+     */
+    @Test
+    public void testWriteCode() {
+        LLM llm = new LLM(LLMConfig.builder().debug(false).build());
+        Context context = new Context();
+        context.setDefaultLLM(llm);
+        Team team = new Team(context);
+        team.hire(new Architect(), new Design(), new Engineer());
+
+        Message message = Message.builder()
+                .id(java.util.UUID.randomUUID().toString())
+                .sentFrom("user")
+                .sendTo(List.of("Architect"))
+                .content("帮我开发一个java的登录模块")
+                .build();
+
+        team.publishMessage(message);
+
+        team.run(3);
+        System.out.println(team);
+    }
+
+
     //辩论,人类决定是否退出
     @Test
     public void testHumanAndDebatorDebate() {
@@ -61,7 +83,7 @@ public class RoleTest {
                 .content("请就以下话题展开辩论: " + debateTopic)
                 .build();
 
-        team.receiveMessage(initialMessage);
+        team.publishMessage(initialMessage);
 
         for (int i = 0; i < 2; i++) {
             System.out.println("Round " + (i + 1) + ":");
@@ -87,7 +109,7 @@ public class RoleTest {
         context.setDefaultLLM(llm);
         Team team = new Team(context);
 
-        Developer developer = new Developer("DevRole", "Software Developer", "", "",role->{
+        Developer developer = new Developer("DevRole", "Software Developer", "", "", role -> {
             role.setLlm(llm);
         });
         developer.getRc().setReactMode(RoleContext.ReactMode.PLAN_AND_ACT);
@@ -100,7 +122,7 @@ public class RoleTest {
                 .content("Create a login functionality for our web application")
                 .build();
 
-        team.receiveMessage(initialMessage);
+        team.publishMessage(initialMessage);
 
         team.run(1);
     }

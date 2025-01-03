@@ -12,12 +12,12 @@ import java.util.HashSet;
 /**
  * @author goodjava@qq.com
  * @date 2024/12/26 13:57
+ * 辩论者
  */
 @Data
 public class Debator extends Role {
 
     private String opponentName;
-
 
     public Debator(String name, String profile, String opponentName, LLM baseLLM) {
         this.name = name;
@@ -37,7 +37,7 @@ public class Debator extends Role {
 
 
     @Override
-    public Message act(Message message) {
+    public Message processMessage(Message message) {
         message.setSentFrom(this.name);
         message.setSendTo(this.opponentName);
         return message;

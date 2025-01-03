@@ -1,6 +1,7 @@
 package run.mone.hive;
 
 import com.google.common.collect.Lists;
+import lombok.ToString;
 import run.mone.hive.actions.UserRequirement;
 import run.mone.hive.context.Context;
 import run.mone.hive.roles.Role;
@@ -12,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.FileNotFoundException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +22,7 @@ import java.util.stream.IntStream;
 
 @Slf4j
 @Data
+@ToString
 public class Team {
     private static final String MESSAGE_ROUTE_TO_ALL = "*";
     private static final Path SERDESER_PATH = Path.of("storage");
@@ -39,6 +42,11 @@ public class Team {
     public void hire(List<Role> roles) {
         roles.forEach(it -> this.roles.put(it.getName(), it));
         env.addRoles(roles);
+    }
+
+    public void hire(Role... roles) {
+        List<Role> roleList = Arrays.stream(roles).toList();
+        hire(roleList);
     }
 
     public void invest(double investment) {
@@ -138,13 +146,7 @@ public class Team {
         return team;
     }
 
-    @Override
-    public String toString() {
-        return String.format("Team(investment=%.2f, idea='%s')", investment, idea);
-    }
-
-    public void receiveMessage(Message message) {
+    public void publishMessage(Message message) {
         env.publishMessage(message);
-        roles.values().forEach(role -> role.putMessage(message));
     }
 }

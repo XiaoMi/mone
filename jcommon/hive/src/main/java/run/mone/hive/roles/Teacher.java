@@ -18,6 +18,10 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+
+/**
+ * @author goodjava@qq.com
+ */
 @Slf4j
 public class Teacher extends Role {
     private static final String DEFAULT_NAME = "Lily";

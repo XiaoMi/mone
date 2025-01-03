@@ -18,7 +18,7 @@ import java.util.concurrent.ExecutionException;
 import static org.junit.jupiter.api.Assertions.*;
 
 @Slf4j
-class BaseLLMTest {
+class LLMTest {
 
     private LLM baseLLM;
 

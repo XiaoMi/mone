@@ -8,11 +8,6 @@ import java.util.Collections;
 
 @Slf4j
 public class ProjectManager extends Role {
-    private String name = "Eve";
-    private String profile = "Project Manager";
-    private String goal = "break down tasks according to PRD/technical design, generate a task list, " +
-            "and analyze task dependencies to start with the prerequisite modules";
-    private String constraints = "use same language as user requirement";
 
     public ProjectManager() {
         super();

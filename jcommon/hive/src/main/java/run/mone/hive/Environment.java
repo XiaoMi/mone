@@ -3,6 +3,7 @@ package run.mone.hive;
 import akka.actor.ActorRef;
 import com.google.common.collect.Lists;
 import lombok.Data;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.context.Context;
 import run.mone.hive.llm.LLM;
@@ -16,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Data
+@ToString(of = "running")
 public class Environment {
     private final Map<String, ActorRef> roles;
     private final Map<String, CompletableFuture<Message>> pendingResponses;

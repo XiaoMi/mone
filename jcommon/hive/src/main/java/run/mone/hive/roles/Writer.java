@@ -8,6 +8,9 @@ import run.mone.hive.actions.WriteAction;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.Message;
 
+/**
+ * 作家
+ */
 @Data
 public class Writer extends Role {
 
@@ -27,7 +30,7 @@ public class Writer extends Role {
     }
 
     @Override
-    public Message act(Message message) {
+    public Message processMessage(Message message) {
         message.setSentFrom(this.name);
         return message;
     }

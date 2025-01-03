@@ -2,6 +2,7 @@ package run.mone.hive.actions;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.common.Prompts;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.CodingContext;
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+@Slf4j
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class WriteCode extends Action {
@@ -57,6 +59,7 @@ public class WriteCode extends Action {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String generatedCode = generateCode();
+                log.info("write code:{}", generatedCode);
                 return Message.builder()
                         .data(new CodingContext())
                         .content(generatedCode)
@@ -70,6 +73,9 @@ public class WriteCode extends Action {
     }
 
     private String generateCode() {
+        if (true) {
+            return "Code";
+        }
         String context = iContext.getContext();
         String requirements = iContext.getRequirements();
         String prompt = String.format(USER_PROMPT, context, requirements);

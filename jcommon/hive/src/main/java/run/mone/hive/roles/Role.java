@@ -23,8 +23,11 @@ import java.util.function.Consumer;
 public abstract class Role {
 
     protected String name;
+
     protected String profile;
+
     protected String goal;
+
     protected String constraints;
 
     protected Planner planner;
@@ -35,8 +38,6 @@ public abstract class Role {
     protected Set<String> watchList = new HashSet<>();
 
     protected RoleContext rc;
-
-    protected ProjectRepo projectRepo;
 
     protected LLM llm;
 
@@ -64,6 +65,12 @@ public abstract class Role {
         init();
     }
 
+    public Role(String name, String profile) {
+        this.name = name;
+        this.profile = profile;
+        init();
+    }
+
     public Role(String name, String profile, String goal, String constraints, Consumer<Role> consumer) {
         this.name = name;
         this.profile = profile;
@@ -83,22 +90,26 @@ public abstract class Role {
 
 
     // 观察环境
-    protected void observe() {
+    protected int observe() {
         log.info("observe");
         this.rc.news.forEach(msg -> this.rc.getMemory().add(msg));
         this.rc.news = new LinkedList<>(this.rc.news.stream().filter(this::isRelevantMessage).toList());
+        return this.rc.news.size();
     }
 
     // 思考下一步行动
-    protected void think() {
+    protected int think() {
         log.info("think");
-        this.observe();
+        if (this.observe() == 0) {
+            return -1;
+        }
         if (this.actions.size() == 1) {
             this.rc.setTodo(this.actions.get(0));
         } else {
             this.rc.setState(rc.getState() + 1);
             this.rc.setTodo(this.actions.get(this.rc.getState()));
         }
+        return 1;
     }
 
 
@@ -141,12 +152,16 @@ public abstract class Role {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 Message message = react().join();
-                //发送给其他订阅者
-                this.environment.publishMessage(message);
+                if (null != message) {
+                    //发送给其他订阅者
+                    this.environment.publishMessage(message);
+                }
                 return message;
             } catch (Exception e) {
                 log.error("Error in role execution", e);
                 throw new RuntimeException(e);
+            } finally {
+                this.rc.news.clear();
             }
         });
     }
@@ -160,9 +175,12 @@ public abstract class Role {
         int actionsToken = 0;
         Message res = null;
         while (actionsToken < rc.getMaxRetries()) {
-            this.think();
-            res = this.act().join();
-            actionsToken++;
+            if (this.think() > 0) {
+                res = this.act().join();
+                actionsToken++;
+            } else {
+                break;
+            }
         }
         return CompletableFuture.completedFuture(res);
     }
@@ -220,7 +238,8 @@ public abstract class Role {
     }
 
 
-    public Message act(Message message) {
+    //处理message
+    public Message processMessage(Message message) {
         return message;
     }
 
@@ -241,7 +260,7 @@ public abstract class Role {
                 map.put("history", rc.getMessageList());
                 Message result = currentAction.run(map).join();
 
-                result = act(result);
+                result = processMessage(result);
                 if (result != null) {
                     rc.getMemory().add(result);
                 }
@@ -280,4 +299,11 @@ public abstract class Role {
         this.rc.news.offer(message);
     }
 
+    @Override
+    public String toString() {
+        return "Role{" +
+                "name='" + name + '\'' +
+                ", profile='" + profile + '\'' +
+                '}';
+    }
 }
