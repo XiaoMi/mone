@@ -2,13 +2,17 @@ package run.mone.neo4j;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.comments.Comment;
 import com.github.javaparser.ast.comments.JavadocComment;
 import com.github.javaparser.ast.expr.AnnotationExpr;
+import com.github.javaparser.ast.expr.FieldAccessExpr;
+import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.nodeTypes.NodeWithName;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -326,11 +330,11 @@ public class MoneCodeParser {
     /**
      * 查找具有指定注解的类
      *
-     * @param session 数据库会话
+     * @param session          数据库会话
      * @param annotationToFind 要查找的注解
      * @return 具有指定注解的类的列表，每个类以Map形式表示
      */
-	public List<Map<String, Object>> findClassesWithAnnotation(Session session, String annotationToFind) {
+    public List<Map<String, Object>> findClassesWithAnnotation(Session session, String annotationToFind) {
         Map<String, Object> params = new HashMap<>();
         params.put("annotation", annotationToFind);
         Result result = session.run(
@@ -339,7 +343,7 @@ public class MoneCodeParser {
                         "RETURN c",
                 params
         );
-        List<Map<String,Object>> list = new ArrayList<>();
+        List<Map<String, Object>> list = new ArrayList<>();
         while (result.hasNext()) {
             Record record = result.next();
             System.out.println(record.get("c").asMap());
@@ -406,8 +410,6 @@ public class MoneCodeParser {
             //注解
             classParams.put("annotations", annoList);
 
-            System.out.println(classParams);
-
             session.run(
                     "MERGE (c:Class {name: $name}) " +
                             "ON CREATE SET c.full_name = $fullName, c.type = $type, c.code = $code, c.anno = $annotations " +
@@ -454,13 +456,135 @@ public class MoneCodeParser {
 
         }
 
+
+        private String getFullMethodName(MethodDeclaration method) {
+            String packageName = method.findCompilationUnit()
+                    .flatMap(cu -> cu.getPackageDeclaration())
+                    .map(pd -> pd.getNameAsString())
+                    .orElse("");
+            String className = method.findAncestor(com.github.javaparser.ast.body.ClassOrInterfaceDeclaration.class)
+                    .map(c -> c.getNameAsString())
+                    .orElse("");
+            String methodName = method.getNameAsString();
+            return packageName + "." + className + "." + methodName;
+        }
+
+        /**
+         * 获取方法调用的完整路径，包括包名、类名和方法名
+         *
+         * @param methodCall 方法调用表达式
+         * @return 方法调用的完整路径
+         */
+        public String getFullMethodPath(MethodCallExpr methodCall) {
+            StringBuilder fullPath = new StringBuilder();
+
+            // 获取包名
+            Optional<CompilationUnit> cu = methodCall.findCompilationUnit();
+            if (cu.isPresent()) {
+                cu.get().getPackageDeclaration().ifPresent(pkg ->
+                        fullPath.append(pkg.getNameAsString()).append(".")
+                );
+            }
+
+            // 获取类名
+            String className = methodCall.findAncestor(ClassOrInterfaceDeclaration.class)
+                    .map(ClassOrInterfaceDeclaration::getNameAsString)
+                    .orElse("");
+
+            // 获取方法调用的对象
+            String objectName = methodCall.getScope()
+                    .map(scope -> scope.toString())
+                    .orElse("");
+
+
+            //静态调用
+            if (methodCall.getScope().isPresent() && methodCall.getScope().get() instanceof FieldAccessExpr) {
+                return objectName + "." + methodCall.getNameAsString();
+            }
+
+            //lombok 的log
+            if (isLogCall(methodCall)) {
+                return objectName + "." + methodCall.getNameAsString();
+            }
+
+            // 如果对象名不为空，尝试找到它的类型
+            if (!objectName.isEmpty()) {
+                Optional<FieldDeclaration> field = methodCall.findAncestor(ClassOrInterfaceDeclaration.class)
+                        .flatMap(classDecl -> classDecl.getFieldByName(objectName));
+
+                if (field.isPresent()) {
+                    ClassOrInterfaceType type = field.get().getVariable(0).getType().asClassOrInterfaceType();
+                    String v = resolveTypePath(type);
+                    return v + "." + methodCall.getNameAsString();
+                }
+            }
+
+
+            // 构建完整路径
+            fullPath.append(className).append(".");
+            fullPath.append(methodCall.getNameAsString());
+
+            return fullPath.toString();
+        }
+
+        public static String resolveTypePath(ClassOrInterfaceType type) {
+            String typeName = type.getNameAsString();
+
+            Optional<CompilationUnit> cu = type.findAncestor(CompilationUnit.class);
+            if (cu.isPresent()) {
+                // 尝试从导入声明中查找匹配
+                Optional<String> importedPath = findMatchingImport(cu.get(), typeName);
+                if (importedPath.isPresent()) {
+                    return importedPath.get();
+                }
+
+                // 如果没有找到匹配的导入，检查是否在同一包中
+                Optional<String> currentPackage = getCurrentPackage(cu.get());
+                if (currentPackage.isPresent()) {
+                    return currentPackage.get() + "." + typeName;
+                }
+            }
+
+            // 如果无法解析，返回原始类型名称
+            return typeName;
+        }
+
+        private static Optional<String> findMatchingImport(CompilationUnit cu, String typeName) {
+            return cu.getImports().stream()
+                    .filter(importDecl -> !importDecl.isAsterisk() && importDecl.getNameAsString().endsWith("." + typeName))
+                    .map(ImportDeclaration::getNameAsString)
+                    .findFirst();
+        }
+
+        private static Optional<String> getCurrentPackage(CompilationUnit cu) {
+            return cu.getPackageDeclaration().map(pd -> pd.getNameAsString());
+        }
+
+        /**
+         * 判断方法调用是否为日志调用
+         *
+         * @param n 方法调用表达式
+         * @return 如果方法调用是日志调用则返回true，否则返回false
+         */
+        private boolean isLogCall(MethodCallExpr n) {
+            if (!n.getScope().isPresent()) {
+                return false;
+            }
+            String scope = n.getScope().get().toString();
+            String method = n.getNameAsString();
+            return scope.equals("log") &&
+                    (method.equals("trace") || method.equals("debug") || method.equals("info") ||
+                            method.equals("warn") || method.equals("error"));
+        }
+
+
         @Override
         public void visit(MethodDeclaration n, Void arg) {
             super.visit(n, arg);
 
             // 创建 Method 节点
             Map<String, Object> methodParams = new HashMap<>();
-            methodParams.put("name", n.getNameAsString());
+            methodParams.put("name", getFullMethodName(n));
             methodParams.put("signature", n.getSignature().asString());
             methodParams.put("code_vector", new float[]{}); // 替换为实际的代码向量
 
@@ -474,7 +598,7 @@ public class MoneCodeParser {
             }
 
             declaresParams.put("className", n.findAncestor(ClassOrInterfaceDeclaration.class).get().getNameAsString());
-            declaresParams.put("methodName", n.getNameAsString());
+            declaresParams.put("methodName", getFullMethodName(n));
 
             session.run("MATCH (c:Class {name: $className}) " +
                             "MATCH (m:Method {name: $methodName}) " +
@@ -482,6 +606,12 @@ public class MoneCodeParser {
                     declaresParams);
 
             // 处理注释
+            processComments(n);
+
+        }
+
+        // 处理注释
+        private void processComments(MethodDeclaration n) {
             for (Comment comment : n.getAllContainedComments()) {
                 createCommentNode(comment, n);
             }
@@ -495,7 +625,6 @@ public class MoneCodeParser {
             if (commentOptional.isPresent()) {
                 createCommentNode(commentOptional.get(), n);
             }
-
         }
 
         private void createCommentNode(Comment comment, MethodDeclaration n) {
@@ -508,7 +637,7 @@ public class MoneCodeParser {
             // 创建 DOCUMENTS 关系 (Comment -[:DOCUMENTS]-> Method)
             Map<String, Object> documentsParams = new HashMap<>();
             documentsParams.put("commentText", comment.getContent());
-            documentsParams.put("methodName", n.getNameAsString());
+            documentsParams.put("methodName", getFullMethodName(n));
             documentsParams.put("methodSignature", n.getSignature().asString());
             session.run("MATCH (comment:Comment {text: $commentText}) " +
                             "MATCH (m:Method {name: $methodName, signature: $methodSignature}) " +
@@ -543,7 +672,6 @@ public class MoneCodeParser {
             return null;
         }
     }
-
 
 
 }

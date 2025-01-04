@@ -3,26 +3,12 @@ package run.mone.neo4j.test;
 import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import org.junit.Test;
-import org.neo4j.driver.Record;
-import org.neo4j.driver.Result;
-import org.neo4j.driver.Session;
-import org.neo4j.driver.internal.InternalRecord;
-import org.neo4j.driver.internal.InternalResult;
-import org.neo4j.driver.internal.InternalSession;
 import run.mone.neo4j.BotCall;
 import run.mone.neo4j.MoneCodeParser;
-import run.mone.neo4j.test.MoneCodeParserTest;
+import run.mone.neo4j.MoneMethodCodeParser;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -43,6 +29,14 @@ public class MoneCodeParserTest {
 //        MoneCodeParser.writeJavaFilesToNeo4j("/Users/zhangzhiyong/IdeaProjects/ai/m78/m78-service/src/main/java/run/mone/m78/service/database/SqlParseUtil.java");
 //        new MoneCodeParser().writeJavaFilesToNeo4j("/Users/zhangzhiyong/IdeaProjects/goodjava/mone/jcommon/ai/neo4j/src/test/java/run/mone/neo4j/test/A.java");
         new MoneCodeParser().setPassword(System.getenv("password")).writeJavaFilesToNeo4j("/Users/zhangzhiyong/IdeaProjects/goodjava/mone/jcommon/ai/neo4j/src/test/java/run/mone/neo4j/test/m");
+//        new MoneCodeParser().setPassword(System.getenv("password")).writeJavaFilesToNeo4j("/Users/zhangzhiyong/IdeaProjects/goodjava/mone/jcommon/ai/neo4j/src/test/java/run/mone/neo4j/test/m/CatService.java");
+//        new MoneCodeParser().setPassword(System.getenv("password")).writeJavaFilesToNeo4j("/Users/zhangzhiyong/IdeaProjects/goodjava/mone/jcommon/ai/neo4j/src/test/java/run/mone/neo4j/test/m/PersonService.java");
+    }
+
+
+    @Test
+    public void testParserMethod() {
+        new MoneMethodCodeParser().setPassword(System.getenv("password")).writeJavaFilesToNeo4j("/Users/zhangzhiyong/IdeaProjects/goodjava/mone/jcommon/ai/neo4j/src/test/java/run/mone/neo4j/test/m");
     }
 
     @Test

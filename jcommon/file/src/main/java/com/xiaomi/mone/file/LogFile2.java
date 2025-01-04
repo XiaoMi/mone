@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.MessageDigest;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -190,8 +191,12 @@ public class LogFile2 implements ILogFile {
                 readResult.setFilePathName(file);
                 readResult.setLineNumber(++lineNumber);
                 ReadEvent event = new ReadEvent(readResult);
+                listener.setReadTime();
 
                 listener.onEvent(event);
+                if (pointer % 100000 == 0 || pointer == 1) {
+                    log.info("file readResult:{}", readResult);
+                }
             }
             raf.close();
             if (stop) {
@@ -200,6 +205,7 @@ public class LogFile2 implements ILogFile {
                 break;
             }
         }
+        log.info("read file:{},finished,,pointer:{},lineNumber:{},fileKey:{}", file, this.pointer, this.lineNumber, this.fileKey);
     }
 
     @Override
@@ -237,13 +243,13 @@ public class LogFile2 implements ILogFile {
             return false;
         }
 
-        long currentFileMaxPointer;
+        long currentFileMaxLength;
         try {
-            currentFileMaxPointer = raf.length();
-            if (currentFileMaxPointer == 0L) {
+            currentFileMaxLength = raf.length();
+            if (currentFileMaxLength == 0L) {
                 raf.getFD().sync();
                 TimeUnit.MILLISECONDS.sleep(30);
-                currentFileMaxPointer = raf.length();
+                currentFileMaxLength = raf.length();
             }
         } catch (IOException e) {
             log.error("get fileMaxPointer IOException", e);
@@ -275,12 +281,14 @@ public class LogFile2 implements ILogFile {
     public long readPointer() {
         try {
             FileInfo fi = FileInfoCache.ins().get(this.fileKey.toString());
-            if (null != fi) {
+            log.info("readPointer:{},file:{},fileKey:{}", fi, this.file, this.fileKey);
+            if (null != fi && Objects.equals(this.file, fi.getFileName())) {
                 return fi.getPointer();
             }
         } catch (Throwable e) {
-            log.error(e.getMessage());
+            log.error("readPointer error,file:{},fileKey:{}", file, fileKey, e);
         }
+        log.warn("readPointer from 0,file:{},fileKey:{}", file, fileKey);
         return 0;
     }
 

@@ -26,8 +26,10 @@ import com.xiaomi.data.push.uds.processor.UdsProcessor;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -41,6 +43,9 @@ import java.util.concurrent.ExecutorService;
 public class UdsClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
 
     private ConcurrentHashMap<String, Pair<UdsProcessor<UdsCommand, UdsCommand>,ExecutorService>> processorMap;
+
+    @Getter
+    private final Map<String, ClientStreamCallback> streamCallbacks = new ConcurrentHashMap<>();
 
 
     public UdsClientHandler(ConcurrentHashMap<String, Pair<UdsProcessor<UdsCommand, UdsCommand>,ExecutorService>> processorMap) {
@@ -70,27 +75,66 @@ public class UdsClientHandler extends SimpleChannelInboundHandler<ByteBuf> {
                 log.warn("processor is null cmd:{}", command.getCmd());
             }
         } else {
-            Optional.ofNullable(UdsClient.reqMap.get(command.getId())).ifPresent(f -> {
-                if (Boolean.TRUE.toString().equals(String.valueOf(f.get("async")))) {
-                    Object res = null;
-                    try {
-                        res = processResult(command, (Class<?>) f.get("returnType"));
-                        if (command.getCode() == 0) {
-                            ((CompletableFuture)f.get("future")).complete(res);
-                        } else {
-                            ((CompletableFuture)f.get("future")).completeExceptionally(new RuntimeException(res.toString()));
-                        }
-                    } catch (Exception e) {
-                        log.error("async response error,", e);
-                        ((CompletableFuture)f.get("future")).completeExceptionally(e);
-                    }
-                    UdsClient.reqMap.remove(command.getId());
-                } else {
-                    ((CompletableFuture)f.get("future")).complete(command);
-                }
-            });
+            String messageType = command.getAttachments()
+                    .getOrDefault(MessageTypes.TYPE_KEY, MessageTypes.TYPE_NORMAL);
+
+            //流式的操作
+            if (MessageTypes.TYPE_OPENAI.equals(messageType)) {
+                handleOpenAIResponse(command);
+            } else {
+                handleNormalResponse(command);
+            }
+
         }
     }
+
+    private void handleOpenAIResponse(UdsCommand command) {
+        Map<String, String> attachments = command.getAttachments();
+        String streamId = attachments.get(MessageTypes.STREAM_ID_KEY);
+        String content = attachments.get(MessageTypes.CONTENT_KEY);
+        String status = attachments.get(MessageTypes.STATUS_KEY);
+
+        ClientStreamCallback callback = streamCallbacks.get(streamId);
+        if (callback != null) {
+            if ("complete".equals(status)) {
+                callback.onComplete();
+                streamCallbacks.remove(streamId);
+            } else if ("error".equals(status)) {
+                callback.onError(new RuntimeException(content));
+                streamCallbacks.remove(streamId);
+            } else {
+                callback.onContent(content);
+            }
+        }
+    }
+
+
+    private void handleNormalResponse(UdsCommand command) {
+        // 保持原有的处理逻辑不变
+        Optional.ofNullable(UdsClient.reqMap.get(command.getId())).ifPresent(f -> {
+            if (Boolean.TRUE.toString().equals(String.valueOf(f.get("async")))) {
+                Object res = null;
+                try {
+                    res = processResult(command, (Class<?>) f.get("returnType"));
+                    if (command.getCode() == 0) {
+                        ((CompletableFuture)f.get("future")).complete(res);
+                    } else {
+                        ((CompletableFuture)f.get("future")).completeExceptionally(
+                                new RuntimeException(res.toString())
+                        );
+                    }
+                } catch (Exception e) {
+                    log.error("async response error,", e);
+                    ((CompletableFuture)f.get("future")).completeExceptionally(e);
+                }
+                UdsClient.reqMap.remove(command.getId());
+            } else {
+                ((CompletableFuture)f.get("future")).complete(command);
+            }
+        });
+    }
+
+
 
     @Override
     public void channelInactive(ChannelHandlerContext ctx) throws Exception {

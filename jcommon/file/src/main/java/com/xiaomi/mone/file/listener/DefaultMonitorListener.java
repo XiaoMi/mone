@@ -85,6 +85,15 @@ public class DefaultMonitorListener implements EventListener {
         readListenerMap.remove(fileKey);
     }
 
+    @Override
+    public void stop() {
+        List<ReadListener> readListenerList = getReadListenerList();
+        for (ReadListener readListener : readListenerList) {
+            OzHeraReadListener ozHeraReadListener = ((OzHeraReadListener) readListener);
+            ozHeraReadListener.getLogFile().shutdown();
+        }
+    }
+
     public List<ReadListener> getReadListenerList() {
         return this.readListenerMap.values().stream().toList();
     }

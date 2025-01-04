@@ -11,4 +11,7 @@ public interface EventListener {
     default void remove(Object fileKey) {
     }
 
+    default void stop() {
+    }
+
 }

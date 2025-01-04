@@ -1,19 +1,29 @@
 package run.mone.neo4j.test.m;
 
+import lombok.extern.slf4j.Slf4j;
 import run.mone.neo4j.test.anno.Resource;
-import run.mone.neo4j.test.anno.RestController;
 import run.mone.neo4j.test.anno.Service;
+import run.mone.neo4j.test.m.cat.CatService;
 
 /**
  * @author goodjava@qq.com
  * @date 2024/8/16 10:16
  */
 @Service
+@Slf4j
 public class PersonService {
 
 
     @Resource
     private CatService catService;
+
+
+    //获取猫的数量
+    public int getCatCount() {
+        log.info("info");
+        System.out.println("abc");
+        return catService.getCatCount();
+    }
 
 
     /**

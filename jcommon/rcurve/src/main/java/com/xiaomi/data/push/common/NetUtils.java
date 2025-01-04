@@ -13,9 +13,23 @@ import io.netty.channel.socket.nio.NioSocketChannel;
  */
 public class NetUtils {
 
-    public static EventLoopGroup getEventLoopGroup() {
-        if (CommonUtils.isMac() && CommonUtils.isArch64()) {
-            return new NioEventLoopGroup();
+    public static final String OS_NAME = System.getProperty("os.name");
+
+    private static boolean isLinuxPlatform = false;
+
+    static {
+        if (OS_NAME != null && OS_NAME.toLowerCase().indexOf("linux") >= 0) {
+            isLinuxPlatform = true;
+        }
+    }
+
+    public static EventLoopGroup getEventLoopGroup(boolean remote) {
+        if (remote) {
+            if(useEpoll()) {
+                return new EpollEventLoopGroup();
+            } else {
+                return new NioEventLoopGroup();
+            }
         }
         if (CommonUtils.isWindows()) {
             return new NioEventLoopGroup();
@@ -48,6 +62,14 @@ public class NetUtils {
             return mac ? KQueueSocketChannel.class : EpollSocketChannel.class;
         }
         return mac ? KQueueDomainSocketChannel.class : EpollDomainSocketChannel.class;
+    }
+
+    public static boolean useEpoll() {
+        return isLinuxPlatform() && Epoll.isAvailable();
+    }
+
+    public static boolean isLinuxPlatform() {
+        return isLinuxPlatform;
     }
 
 }
