@@ -1,9 +1,6 @@
 package run.mone.hive.roles;
 
 import lombok.extern.slf4j.Slf4j;
-import run.mone.hive.actions.WriteCode;
-
-import java.util.List;
 
 
 /**
@@ -13,11 +10,8 @@ import java.util.List;
 @Slf4j
 public class Engineer extends Role {
 
-
     public Engineer() {
         super("Engineer");
-        setActions(List.of(new WriteCode()));
     }
-
 
 }

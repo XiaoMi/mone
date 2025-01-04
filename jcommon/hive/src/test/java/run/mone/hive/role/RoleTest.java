@@ -3,6 +3,9 @@ package run.mone.hive.role;
 import com.google.common.collect.Lists;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.Team;
+import run.mone.hive.actions.AnalyzeArchitecture;
+import run.mone.hive.actions.WriteCode;
+import run.mone.hive.actions.WriteDesign;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.context.Context;
 import run.mone.hive.llm.LLM;
@@ -44,7 +47,7 @@ public class RoleTest {
         Context context = new Context();
         context.setDefaultLLM(llm);
         Team team = new Team(context);
-        team.hire(new Architect(), new Design(), new Engineer());
+        team.hire(new Architect().setActions(new AnalyzeArchitecture()), new Design().setActions(new WriteDesign()), new Engineer().setActions(new WriteCode()));
 
         Message message = Message.builder()
                 .id(java.util.UUID.randomUUID().toString())

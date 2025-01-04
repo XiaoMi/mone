@@ -131,13 +131,19 @@ public abstract class Role {
     }
 
     // 设置可执行的动作
-    public void setActions(List<Action> actions) {
+    public Role setActions(List<Action> actions) {
         actions.forEach(it -> {
             it.setRole(this);
             it.setLlm(this.getLlm());
         });
         this.actions = actions;
+        return this;
     }
+
+    public Role setActions(Action... actions) {
+        return setActions(Arrays.stream(actions).toList());
+    }
+
 
     // 添加要监听的消息类型
     protected void watch(String actionType) {
