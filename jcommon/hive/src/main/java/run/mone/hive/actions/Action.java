@@ -12,7 +12,7 @@ import java.util.function.BiFunction;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public abstract class Action {
+public class Action {
 
     protected String prompt;
 
@@ -33,9 +33,8 @@ public abstract class Action {
         this.description = description;
     }
 
-
-    public CompletableFuture<Message> run(ActionReq map) {
-        throw new RuntimeException();
+    public CompletableFuture<Message> run(ActionReq req) {
+        return CompletableFuture.supplyAsync(() -> Message.builder().role(req.getRole().getName()).content(this.function.apply(req, this)).build());
     }
 
 }

@@ -1,5 +1,6 @@
 package run.mone.hive.llm;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -114,11 +115,16 @@ public class LLM {
         requestBody.add("messages", msgArray);
         String apiUrl = getApiUrl();
 
+        String rb = requestBody.toString();
+
+        log.info("call llm:{}\nmessage:{}\n", model, rb);
+        Stopwatch sw = Stopwatch.createStarted();
+        String res = "";
 
         Request request = new Request.Builder()
                 .url(apiUrl)
                 .addHeader("Authorization", "Bearer " + apiKey)
-                .post(RequestBody.create(requestBody.toString(), JSON))
+                .post(RequestBody.create(rb, JSON))
                 .build();
 
         try (Response response = client.newCall(request).execute()) {
@@ -127,10 +133,13 @@ public class LLM {
             }
             String responseBody = response.body().string();
             JsonObject jsonResponse = gson.fromJson(responseBody, JsonObject.class);
-            return jsonResponse.getAsJsonArray("choices")
+            res = jsonResponse.getAsJsonArray("choices")
                     .get(0).getAsJsonObject()
                     .getAsJsonObject("message")
                     .get("content").getAsString();
+            return res;
+        } finally {
+            log.info("call llm res:\n{}\n use time:{}ms", res, sw.elapsed(TimeUnit.MILLISECONDS));
         }
     }
 

@@ -2,10 +2,7 @@ package run.mone.hive.roles;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.Environment;
 import run.mone.hive.actions.Action;
@@ -23,6 +20,9 @@ import java.util.function.Consumer;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @EqualsAndHashCode(of = {"name"})
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class Role {
 
     protected String name;
@@ -58,10 +58,6 @@ public class Role {
     private Config confg = new Config();
 
     private Context context;
-
-    public Role() {
-
-    }
 
     // 构造函数
     public Role(String name, String profile, String goal, String constraints) {
