@@ -27,13 +27,10 @@ public abstract class Action {
     @ToString.Exclude
     private Role role;
 
-    protected Action(String systemPrompt) {
-        this.prompt = systemPrompt;
-    }
 
-    public Action(String name, String systemPrompt) {
+    public Action(String name, String description) {
         this.name = name;
-        this.prompt = systemPrompt;
+        this.description = description;
     }
 
 

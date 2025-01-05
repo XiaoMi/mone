@@ -14,11 +14,16 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
+ * @author goodjava@qq.com
  * Action for breaking down requirements into specific tasks
+ * 本质上是允许Action 里边执行 Dag ActionNode
  */
 @Slf4j
 public class WriteAction extends Action {
 
+    public WriteAction() {
+        super("写作", "写出好的文章");
+    }
 
     @Override
     public CompletableFuture<Message> run(ActionReq map) {
@@ -28,13 +33,9 @@ public class WriteAction extends Action {
                 @Override
                 public CompletableFuture<String> ask(String prompt) {
                     StringBuilder instruction = new StringBuilder();
-                    if (map.get(Constants.ROLE) instanceof Role role) {
-                        instruction.append("你的角色:").append(role.getGoal()).append("\n");
-                    }
-                    if (map.get(Constants.MEMORY) instanceof Memory memory) {
-                        Message message = memory.getStorage().get(memory.getStorage().size() - 1);
-                        instruction.append("标题和要求:").append(message.getContent()).append("\n");
-                    }
+                    instruction.append("你的角色:").append(map.getRole().getProfile()).append("\n");
+                    Message message = map.getMessage();
+                    instruction.append("标题和要求:").append(message.getContent()).append("\n");
                     return CompletableFuture.completedFuture("[CONTENT]" + instruction + "[/CONTENT]");
                 }
             });

@@ -62,7 +62,7 @@ public class AskReview extends Action {
         """;
 
     public AskReview() {
-        super(SYSTEM_PROMPT);
+        this.setPrompt(SYSTEM_PROMPT);
     }
 
     public CompletableFuture<Message[]> run(List<Message> context, Plan plan, String trigger) {

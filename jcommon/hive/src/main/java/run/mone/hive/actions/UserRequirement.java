@@ -14,7 +14,7 @@ import java.util.concurrent.CompletableFuture;
 public class UserRequirement extends Action {
 
     public UserRequirement() {
-        super("Process and analyze user requirements");
+        super("user","Process and analyze user requirements");
     }
 
     @Override

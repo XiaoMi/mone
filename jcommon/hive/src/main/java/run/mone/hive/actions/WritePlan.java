@@ -66,12 +66,12 @@ public class WritePlan extends Action {
         """;
 
     public WritePlan(LLM llm) {
-        super(SYSTEM_PROMPT);
+        this.setPrompt(SYSTEM_PROMPT);
         this.llm = llm;
     }
 
     public WritePlan() {
-        super(SYSTEM_PROMPT);
+        this.setPrompt(SYSTEM_PROMPT);
     }
 
 

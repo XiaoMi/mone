@@ -37,12 +37,13 @@ public class TeamSelectionAction extends Action {
 
 
     public TeamSelectionAction(LLM llm) {
-        super(SYSTEM_PROMPT);
+        this();
         this.llm = llm;
     }
 
     public TeamSelectionAction() {
-        super(SYSTEM_PROMPT);
+        super("Role筛选","筛选出合理的的Role组建团队");
+        this.prompt = SYSTEM_PROMPT;
     }
 
     @Override
