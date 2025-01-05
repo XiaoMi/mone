@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 public class Architect extends Role {
 
     public Architect() {
-        super("Architect");
+        super("Architect","优秀的软件架构师,了解项目架构的");
     }
 
 }

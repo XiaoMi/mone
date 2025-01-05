@@ -46,11 +46,15 @@ public class LLM {
 
 
     public String chat(List<AiMessage> msgList) {
-        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), "");
+        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), "", null);
     }
 
     public String chat(List<AiMessage> msgList, String systemPrompt) {
-        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), systemPrompt);
+        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), systemPrompt, null);
+    }
+
+    public String chat(List<AiMessage> msgList, LLMConfig config) {
+        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), "", config);
     }
 
 
@@ -68,11 +72,11 @@ public class LLM {
     }
 
     public String chatCompletion(String apiKey, String content, String model) {
-        return chatCompletion(apiKey, Lists.newArrayList(AiMessage.builder().role("user").content(content).build()), model, "");
+        return chatCompletion(apiKey, Lists.newArrayList(AiMessage.builder().role("user").content(content).build()), model, "", null);
     }
 
     @SneakyThrows
-    public String chatCompletion(String apiKey, List<AiMessage> messages, String model, String systemPrompt) {
+    public String chatCompletion(String apiKey, List<AiMessage> messages, String model, String systemPrompt, LLMConfig clientConfig) {
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)
@@ -92,7 +96,7 @@ public class LLM {
         }
 
 
-        if (this.config.isJson()) {
+        if (this.config.isJson() || (null != clientConfig && clientConfig.isJson())) {
             String jsonSystemPrompt = """
                      返回结果请用JSON返回(如果用户没有指定json格式,则直接返回{"content":$res}),thx
                     """;

@@ -7,7 +7,7 @@ package run.mone.hive.roles;
 public class Design extends Role{
 
     public Design() {
-        super("Design");
+        super("Design","优秀的软件开发设计师,决定修改那些文件,决定创建那些文件");
     }
 
 }

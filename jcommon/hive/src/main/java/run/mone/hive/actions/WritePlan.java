@@ -9,6 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+
+/**
+ * @author goodjava@qq.com
+ * 规划任务
+ */
 @Slf4j
 public class WritePlan extends Action {
 
@@ -81,16 +86,19 @@ public class WritePlan extends Action {
 
         return CompletableFuture.supplyAsync(() -> {
             try {
-                List<AiMessage> list = new ArrayList<>();
-                list.add(AiMessage.builder().role("system").content(SYSTEM_PROMPT).build());
-                list.add(AiMessage.builder().role("user").content(userMessage.getContent()).build());
-                String response = llm.chat(list);
-                
+                String response = generateChatResponse(userMessage);
                 return new Message(response, "assistant", WritePlan.class.getName());
             } catch (Exception e) {
                 log.error("Error in WritePlan execution", e);
                 throw new RuntimeException("Failed to generate plan", e);
             }
         });
+    }
+
+    private String generateChatResponse(Message userMessage) {
+        List<AiMessage> list = new ArrayList<>();
+        list.add(AiMessage.builder().role("system").content(SYSTEM_PROMPT).build());
+        list.add(AiMessage.builder().role("user").content(userMessage.getContent()).build());
+        return llm.chat(list);
     }
 } 

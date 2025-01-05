@@ -11,7 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 public class Engineer extends Role {
 
     public Engineer() {
-        super("Engineer");
+        super("Engineer", "软件开发工程师");
     }
 
 }

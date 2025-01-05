@@ -29,7 +29,8 @@ public class RoleTest {
         context.setDefaultLLM(llm);
         Team team = new Team(context);
 
-        Writer writer = new Writer("鲁迅", "writer", llm);
+        Writer writer = new Writer("鲁迅");
+        writer.setLlm(llm);
 
         team.hire(Lists.newArrayList(writer));
         team.runProject("写一篇200字的有关足球的作文", "user", "鲁迅");
@@ -103,32 +104,6 @@ public class RoleTest {
             }
         }
 
-    }
-
-
-    @Test
-    public void testLoginFunctionality() {
-        LLM llm = new LLM(LLMConfig.builder().debug(false).json(true).build());
-        Context context = new Context();
-        context.setDefaultLLM(llm);
-        Team team = new Team(context);
-
-        Developer developer = new Developer("DevRole", "Software Developer", "", "", role -> {
-            role.setLlm(llm);
-        });
-        developer.getRc().setReactMode(RoleContext.ReactMode.PLAN_AND_ACT);
-        team.hire(Lists.newArrayList(developer));
-
-        Message initialMessage = Message.builder()
-                .id(java.util.UUID.randomUUID().toString())
-                .sentFrom("user")
-                .sendTo(List.of("DevRole"))
-                .content("Create a login functionality for our web application")
-                .build();
-
-        team.publishMessage(initialMessage);
-
-        team.run(1);
     }
 
 

@@ -1,5 +1,7 @@
 package run.mone.hive.roles;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -19,8 +21,9 @@ import java.util.function.Consumer;
 
 @Slf4j
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @EqualsAndHashCode(of = {"name"})
-public abstract class Role {
+public class Role {
 
     protected String name;
 
@@ -30,21 +33,27 @@ public abstract class Role {
 
     protected String constraints;
 
+    @JsonIgnore
     protected Planner planner;
 
+    @JsonIgnore
     @ToString.Exclude
     protected List<Action> actions;
 
     protected Set<String> watchList = new HashSet<>();
 
+    @JsonIgnore
     protected RoleContext rc;
 
+    @JsonIgnore
     protected LLM llm;
 
     protected Queue<Action> actionQueue = new LinkedList<>();
 
+    @JsonIgnore
     private Environment environment;
 
+    @JsonIgnore
     @Getter
     private Config confg = new Config();
 
