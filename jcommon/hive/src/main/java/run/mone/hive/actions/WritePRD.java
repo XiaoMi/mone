@@ -1,12 +1,11 @@
 package run.mone.hive.actions;
 
-import run.mone.hive.schema.ActionReq;
-import run.mone.hive.schema.Message;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import run.mone.hive.schema.ActionReq;
+import run.mone.hive.schema.Message;
 
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Data

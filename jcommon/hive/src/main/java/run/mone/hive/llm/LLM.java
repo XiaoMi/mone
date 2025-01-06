@@ -1,5 +1,6 @@
 package run.mone.hive.llm;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -46,11 +47,15 @@ public class LLM {
 
 
     public String chat(List<AiMessage> msgList) {
-        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), "");
+        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), "", null);
     }
 
     public String chat(List<AiMessage> msgList, String systemPrompt) {
-        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), systemPrompt);
+        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), systemPrompt, null);
+    }
+
+    public String chat(List<AiMessage> msgList, LLMConfig config) {
+        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), "", config);
     }
 
 
@@ -68,11 +73,11 @@ public class LLM {
     }
 
     public String chatCompletion(String apiKey, String content, String model) {
-        return chatCompletion(apiKey, Lists.newArrayList(AiMessage.builder().role("user").content(content).build()), model, "");
+        return chatCompletion(apiKey, Lists.newArrayList(AiMessage.builder().role("user").content(content).build()), model, "", null);
     }
 
     @SneakyThrows
-    public String chatCompletion(String apiKey, List<AiMessage> messages, String model, String systemPrompt) {
+    public String chatCompletion(String apiKey, List<AiMessage> messages, String model, String systemPrompt, LLMConfig clientConfig) {
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)
@@ -92,7 +97,7 @@ public class LLM {
         }
 
 
-        if (this.config.isJson()) {
+        if (this.config.isJson() || (null != clientConfig && clientConfig.isJson())) {
             String jsonSystemPrompt = """
                      返回结果请用JSON返回(如果用户没有指定json格式,则直接返回{"content":$res}),thx
                     """;
@@ -110,11 +115,16 @@ public class LLM {
         requestBody.add("messages", msgArray);
         String apiUrl = getApiUrl();
 
+        String rb = requestBody.toString();
+
+        log.info("call llm:{}\nmessage:{}\n", model, rb);
+        Stopwatch sw = Stopwatch.createStarted();
+        String res = "";
 
         Request request = new Request.Builder()
                 .url(apiUrl)
                 .addHeader("Authorization", "Bearer " + apiKey)
-                .post(RequestBody.create(requestBody.toString(), JSON))
+                .post(RequestBody.create(rb, JSON))
                 .build();
 
         try (Response response = client.newCall(request).execute()) {
@@ -123,10 +133,13 @@ public class LLM {
             }
             String responseBody = response.body().string();
             JsonObject jsonResponse = gson.fromJson(responseBody, JsonObject.class);
-            return jsonResponse.getAsJsonArray("choices")
+            res = jsonResponse.getAsJsonArray("choices")
                     .get(0).getAsJsonObject()
                     .getAsJsonObject("message")
                     .get("content").getAsString();
+            return res;
+        } finally {
+            log.info("call llm res:\n{}\n use time:{}ms", res, sw.elapsed(TimeUnit.MILLISECONDS));
         }
     }
 

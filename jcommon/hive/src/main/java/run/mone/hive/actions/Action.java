@@ -12,7 +12,7 @@ import java.util.function.BiFunction;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public abstract class Action {
+public class Action {
 
     protected String prompt;
 
@@ -27,18 +27,14 @@ public abstract class Action {
     @ToString.Exclude
     private Role role;
 
-    protected Action(String systemPrompt) {
-        this.prompt = systemPrompt;
-    }
 
-    public Action(String name, String systemPrompt) {
+    public Action(String name, String description) {
         this.name = name;
-        this.prompt = systemPrompt;
+        this.description = description;
     }
 
-
-    public CompletableFuture<Message> run(ActionReq map) {
-        throw new RuntimeException();
+    public CompletableFuture<Message> run(ActionReq req) {
+        return CompletableFuture.supplyAsync(() -> Message.builder().role(req.getRole().getName()).content(this.function.apply(req, this)).build());
     }
 
 }

@@ -27,9 +27,5 @@ public class HumanRole extends Role {
         }});
     }
 
-    @Override
-    public Message processMessage(Message message) {
-        return message;
-    }
 
 }

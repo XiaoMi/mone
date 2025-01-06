@@ -1,9 +1,8 @@
 package run.mone.hive.roles;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.Environment;
 import run.mone.hive.actions.Action;
@@ -19,8 +18,12 @@ import java.util.function.Consumer;
 
 @Slf4j
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @EqualsAndHashCode(of = {"name"})
-public abstract class Role {
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class Role {
 
     protected String name;
 
@@ -32,29 +35,31 @@ public abstract class Role {
     @Getter
     protected List<String> specializations;
 
+    @JsonIgnore
     protected Planner planner;
 
+    @JsonIgnore
     @ToString.Exclude
     protected List<Action> actions;
 
     protected Set<String> watchList = new HashSet<>();
 
+    @JsonIgnore
     protected RoleContext rc;
 
+    @JsonIgnore
     protected LLM llm;
 
     protected Queue<Action> actionQueue = new LinkedList<>();
 
+    @JsonIgnore
     private Environment environment;
 
+    @JsonIgnore
     @Getter
     private Config confg = new Config();
 
     private Context context;
-
-    public Role() {
-
-    }
 
     // 构造函数
     public Role(String name, String profile, String goal, String constraints) {
@@ -147,13 +152,19 @@ public abstract class Role {
     }
 
     // 设置可执行的动作
-    protected void setActions(List<Action> actions) {
+    public Role setActions(List<Action> actions) {
         actions.forEach(it -> {
             it.setRole(this);
             it.setLlm(this.getLlm());
         });
         this.actions = actions;
+        return this;
     }
+
+    public Role setActions(Action... actions) {
+        return setActions(Arrays.stream(actions).toList());
+    }
+
 
     // 添加要监听的消息类型
     protected void watch(String actionType) {
@@ -269,14 +280,15 @@ public abstract class Role {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 Action currentAction = rc.getTodo();
-                ActionReq map = new ActionReq();
-                map.put("memory", rc.getMemory());
-                map.put("name", this.name);
-                map.put("profile", this.profile);
-                map.put("role", this);
-                map.setMessage(rc.getMemory().getLastMessage());
-                map.put("history", rc.getMessageList());
-                Message result = currentAction.run(map).join();
+                ActionReq req = new ActionReq();
+                req.put("memory", rc.getMemory());
+                req.put("name", this.name);
+                req.put("profile", this.profile);
+                req.setRole(this);
+                req.setMessage(rc.getMemory().getLastMessage());
+                req.setEnv(this.environment);
+                req.put("history", rc.getMessageList());
+                Message result = currentAction.run(req).join();
 
                 result = processMessage(result);
                 if (result != null) {

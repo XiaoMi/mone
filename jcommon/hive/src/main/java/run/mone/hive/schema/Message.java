@@ -1,22 +1,22 @@
 package run.mone.hive.schema;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.UUID;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@ToString(of = {"content", "role"})
 public class Message implements Serializable {
 
-    private String id;
+    @Builder.Default
+    private String id = UUID.randomUUID().toString();
 
     private String content;
     private String role;

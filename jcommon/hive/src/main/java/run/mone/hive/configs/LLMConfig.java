@@ -26,8 +26,8 @@ public class LLMConfig {
     
     public LLMConfig() {
         this.model = "gpt-3.5-turbo";
-        this.temperature = 0.7;
-        this.maxTokens = 2000;
+        this.temperature = 0.1;
+        this.maxTokens = 4000;
         this.provider = "openai";
         this.debug = true;
     }

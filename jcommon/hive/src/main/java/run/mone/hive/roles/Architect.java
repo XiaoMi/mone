@@ -1,10 +1,6 @@
 package run.mone.hive.roles;
 
 import lombok.extern.slf4j.Slf4j;
-import run.mone.hive.actions.AnalyzeArchitecture;
-import run.mone.hive.schema.Message;
-
-import java.util.Collections;
 
 
 /**
@@ -15,14 +11,7 @@ import java.util.Collections;
 public class Architect extends Role {
 
     public Architect() {
-        super("Architect", "Architect", "design a concise, usable, complete software system", "make sure the architecture is simple enough and use appropriate open source \" +\n" +
-                "            \"libraries. Use same language as user requirement");
-        setActions(Collections.singletonList(new AnalyzeArchitecture()));
+        super("Architect","优秀的软件架构师,了解项目架构的");
     }
 
-    @Override
-    public Message processMessage(Message message) {
-        message.setSendTo("Design");
-        return message;
-    }
 }

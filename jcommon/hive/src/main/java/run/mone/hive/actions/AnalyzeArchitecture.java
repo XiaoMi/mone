@@ -1,5 +1,6 @@
 package run.mone.hive.actions;
 
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
@@ -16,6 +17,6 @@ public class AnalyzeArchitecture extends Action {
     @Override
     public CompletableFuture<Message> run(ActionReq req) {
         log.info("AnalyzeArchitecture");
-        return CompletableFuture.supplyAsync(() -> Message.builder().content(this.function.apply(req, this)).build());
+        return CompletableFuture.supplyAsync(() -> Message.builder().sendTo(Lists.newArrayList("Design")).role(req.getRole().getProfile()).content(this.function.apply(req, this)).build());
     }
 }

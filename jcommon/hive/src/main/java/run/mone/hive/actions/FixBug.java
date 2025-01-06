@@ -40,9 +40,9 @@ public class FixBug extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run(ActionReq map) {
-        String codeContext = (String) map.getOrDefault("codeContext", "No code context provided");
-        String bugDescription = (String) map.getOrDefault("bugDescription", "No bug description provided");
+    public CompletableFuture<Message> run(ActionReq req) {
+        String codeContext = (String) req.getOrDefault("codeContext", "No code context provided");
+        String bugDescription = (String) req.getOrDefault("bugDescription", "No bug description provided");
 
         String prompt = String.format(PROMPT_TEMPLATE, codeContext, bugDescription);
         String content = this.llm.ask(prompt).join();
