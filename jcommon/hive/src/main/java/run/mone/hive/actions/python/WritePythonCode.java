@@ -30,6 +30,8 @@ public class WritePythonCode extends WriteCode {
             """;
 
     public WritePythonCode() {
+        setName("WritePythonCode");
+        setDescription("");
         setFunction((req, action) -> {
             String message = req.getMessage().getContent();
             String str = AiTemplate.renderTemplate(prompt, ImmutableMap.of("requirements", message));
