@@ -4,7 +4,7 @@ package run.mone.hive.planner;
 import run.mone.hive.Team;
 import run.mone.hive.actions.ActionFactory;
 import run.mone.hive.context.Context;
-import run.mone.hive.llm.BaseLLM;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.roles.Role;
 import run.mone.hive.roles.RoleFactory;
 
@@ -20,11 +20,11 @@ import java.util.stream.Collectors;
 public class OptimalTeamStrategy implements PlanningStrategy {
 
     private final Context context;
-    private final BaseLLM llm;
+    private final LLM llm;
     private final Map<String, List<String>> roleToActionsMap;
     private TeamBuilder teamBuilder;
 
-    public OptimalTeamStrategy(TeamBuilder teamBuilder, Context context, BaseLLM llm) {
+    public OptimalTeamStrategy(TeamBuilder teamBuilder, Context context, LLM llm) {
         this.teamBuilder = teamBuilder;
         this.context = context;
         this.llm = llm;
