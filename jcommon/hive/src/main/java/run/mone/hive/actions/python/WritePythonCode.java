@@ -3,6 +3,14 @@ package run.mone.hive.actions.python;
 import com.google.common.collect.ImmutableMap;
 import run.mone.hive.actions.WriteCode;
 import run.mone.hive.common.AiTemplate;
+import run.mone.hive.common.StreamingXmlParser;
+import run.mone.hive.common.XmlParserCallbackAdapter;
+import run.mone.hive.schema.Message;
+import run.mone.hive.schema.MetaKey;
+import run.mone.hive.schema.MetaValue;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author goodjava@qq.com
@@ -15,25 +23,46 @@ public class WritePythonCode extends WriteCode {
             
                         ${requirements}
             
-                        Please provide only the function implementation without any additional explanations. Wrap the code in <code></code> tags.
+                        Please provide only the function implementation without any additional explanations. Wrap the code in <boltAction></boltAction> tags.
             
                         Here's an example of a sum function:
             
-                        <code>
+                        <boltAction>
                         def execute(params):
                             a = params.get('a', 0)
                             b = params.get('b', 0)
                             return a + b
-                        </code>
+                        </boltAction>
             
                         Now, please implement the function based on the given requirements.
             """;
 
     public WritePythonCode() {
+        setName("WritePythonCode");
+        setDescription("");
         setFunction((req, action) -> {
             String message = req.getMessage().getContent();
             String str = AiTemplate.renderTemplate(prompt, ImmutableMap.of("requirements", message));
-            return this.llm.chat(str);
+            List<String> codeList = new ArrayList<>();
+            StringBuilder sb = new StringBuilder();
+            new StreamingXmlParser(new XmlParserCallbackAdapter() {
+                @Override
+                public void onActionStart(String type, String subType, String filePath) {
+                    sb.setLength(0);
+                }
+
+                @Override
+                public void onActionEnd() {
+                    codeList.add(sb.toString());
+                    sb.setLength(0);
+                }
+
+                @Override
+                public void onContentChar(char c) {
+                    sb.append(c);
+                }
+            }).append(str);
+            return Message.builder().content(this.llm.chat(str)).meta(ImmutableMap.of(MetaKey.builder().key("code").build(), MetaValue.builder().value(codeList).build())).build();
         });
     }
 }

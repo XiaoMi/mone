@@ -3,10 +3,7 @@ package run.mone.hive.schema;
 import lombok.*;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Data
 @Builder
@@ -27,6 +24,8 @@ public class Message implements Serializable {
     private List<String> sendTo;
 
     private Object data;
+
+    private Map<MetaKey, MetaValue> meta = new HashMap<>();
 
     public Message(String content) {
         this(content, "user", null, null);

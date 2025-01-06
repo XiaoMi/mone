@@ -22,7 +22,7 @@ public class Action {
 
     protected LLM llm;
 
-    protected BiFunction<ActionReq, Action, String> function = (req, action) -> this.getClass().getName();
+    protected BiFunction<ActionReq, Action, Message> function = (req, action) -> Message.builder().content(this.getClass().getName()).build();
 
     @ToString.Exclude
     private Role role;
@@ -34,7 +34,7 @@ public class Action {
     }
 
     public CompletableFuture<Message> run(ActionReq req) {
-        return CompletableFuture.supplyAsync(() -> Message.builder().role(req.getRole().getName()).content(this.function.apply(req, this)).build());
+        return CompletableFuture.supplyAsync(() -> Message.builder().role(req.getRole().getName()).content(this.function.apply(req, this).getContent()).build());
     }
 
 }
