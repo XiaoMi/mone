@@ -11,7 +11,7 @@ public class RoleFactory {
             // case "productmanager" -> new ProductManager();
             case "architect" -> new Architect();
             // case "qaengineer" -> new QaEngineer();
-            case "writer" -> new Writer("DefaultWriter", "Writer", llm);
+            case "writer" -> new Writer("Writer");
             case "teacher" -> new Teacher(null);
             default -> throw new IllegalArgumentException("Unknown role type: " + roleType);
         };
