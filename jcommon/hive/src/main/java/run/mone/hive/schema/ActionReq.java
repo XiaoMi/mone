@@ -2,6 +2,7 @@ package run.mone.hive.schema;
 
 import lombok.Data;
 import run.mone.hive.Environment;
+import run.mone.hive.memory.Memory;
 import run.mone.hive.roles.Role;
 
 import java.util.HashMap;
@@ -16,6 +17,8 @@ public class ActionReq extends HashMap<String, Object> {
     private Message message;
 
     private Role role;
+
+    private Memory memory;
 
     private Environment env;
 

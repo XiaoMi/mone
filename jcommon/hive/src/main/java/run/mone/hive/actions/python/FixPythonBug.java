@@ -4,6 +4,7 @@ package run.mone.hive.actions.python;
 import com.google.common.collect.ImmutableMap;
 import run.mone.hive.actions.Action;
 import run.mone.hive.common.AiTemplate;
+import run.mone.hive.schema.Message;
 import run.mone.hive.utils.PythonExecutor;
 
 import java.util.regex.Matcher;
@@ -35,7 +36,7 @@ public class FixPythonBug extends Action {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-            return "<code>" + fixedCode + "</code>";
+            return Message.builder().content("<code>" + fixedCode + "</code>").build();
         });
     }
 
