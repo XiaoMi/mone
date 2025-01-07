@@ -6,6 +6,9 @@ import run.mone.hive.Team;
 import run.mone.hive.actions.AnalyzeArchitecture;
 import run.mone.hive.actions.WriteCode;
 import run.mone.hive.actions.WriteDesign;
+import run.mone.hive.actions.python.ExecutePythonCode;
+import run.mone.hive.actions.python.FixPythonBug;
+import run.mone.hive.actions.python.WritePythonCode;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.context.Context;
 import run.mone.hive.llm.LLM;
@@ -36,6 +39,16 @@ public class RoleTest {
         team.runProject("写一篇200字的有关足球的作文", "user", "鲁迅");
         team.run(1);
         System.out.println(team.getEnv().getDebugHistory());
+    }
+
+
+    @Test
+    public void testPython() {
+        Engineer engineer = new Engineer();
+        engineer.getRc().setReactMode(RoleContext.ReactMode.BY_ORDER);
+        engineer.setActions(new WritePythonCode(),new ExecutePythonCode(),new FixPythonBug());
+        engineer.putMessage(Message.builder().content("编写一个计算两数和的函数,thx").build());
+        engineer.run();
     }
 
 

@@ -2,12 +2,12 @@ package run.mone.hive.actions;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RunCodeContext;
 import run.mone.hive.utils.JavaCodeExecutor;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.UUID;
 
@@ -49,12 +49,12 @@ public class RunCode extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run(ActionReq map) {
+    public CompletableFuture<Message> run(ActionReq map, ActionContext context) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                String prompt = String.format(PROMPT_TEMPLATE, context.getCode(), context.getTestCode());
+                String prompt = String.format(PROMPT_TEMPLATE, this.context.getCode(), this.context.getTestCode());
                 String executionResult = this.llm.ask(prompt).join();
-                String javaExecutionResult = JavaCodeExecutor.execute(context.getCode(), context.getTestCode());
+                String javaExecutionResult = JavaCodeExecutor.execute(this.context.getCode(), this.context.getTestCode());
                 String finalResult = "LLM Execution Result:\n" + executionResult + "\n\nActual Java Execution Result:\n" + javaExecutionResult;
 
                 return Message.builder()

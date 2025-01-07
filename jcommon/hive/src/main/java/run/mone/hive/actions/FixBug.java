@@ -1,6 +1,7 @@
 package run.mone.hive.actions;
 
 import lombok.extern.slf4j.Slf4j;
+import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 
@@ -40,7 +41,7 @@ public class FixBug extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run(ActionReq req) {
+    public CompletableFuture<Message> run(ActionReq req, ActionContext context) {
         String codeContext = (String) req.getOrDefault("codeContext", "No code context provided");
         String bugDescription = (String) req.getOrDefault("bugDescription", "No bug description provided");
 

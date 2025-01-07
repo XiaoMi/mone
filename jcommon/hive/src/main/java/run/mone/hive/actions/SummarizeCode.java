@@ -2,6 +2,7 @@ package run.mone.hive.actions;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.CodeSummarizeContext;
 import run.mone.hive.schema.Message;
@@ -10,7 +11,6 @@ import run.mone.hive.repository.Repository;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Data
@@ -104,17 +104,17 @@ public class SummarizeCode extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run(ActionReq map) {
+    public CompletableFuture<Message> run(ActionReq map, ActionContext context) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                Path designPathname = Path.of(context.getDesignFilename());
+                Path designPathname = Path.of(this.context.getDesignFilename());
                 String designDoc = repository.getSystemDesign(designPathname.getFileName().toString());
 
-                Path taskPathname = Path.of(context.getTaskFilename());
+                Path taskPathname = Path.of(this.context.getTaskFilename());
                 String taskDoc = repository.getTask(taskPathname.getFileName().toString());
 
                 List<String> codeBlocks = new ArrayList<>();
-                for (String filename : context.getCodesFilenames()) {
+                for (String filename : this.context.getCodesFilenames()) {
                     String codeDoc = repository.getSourceCode(filename);
                     String codeBlock = String.format("```python\n%s\n```\n-----", codeDoc);
                     codeBlocks.add(codeBlock);

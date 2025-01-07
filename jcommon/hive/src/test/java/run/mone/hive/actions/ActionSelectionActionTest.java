@@ -43,7 +43,7 @@ class ActionSelectionActionTest {
         req.setMessage(new Message(roleInfoJson, "user", "test"));
 
         // Execute run method
-        CompletableFuture<Message> future = actionSelectionAction.run(req);
+        CompletableFuture<Message> future = actionSelectionAction.run(req, );
         Message result = future.get();
 
         // Verify results
@@ -60,7 +60,7 @@ class ActionSelectionActionTest {
         req.setMessage(new Message(invalidJson, "user", "test"));
 
         // Execute run method and expect an exception
-        CompletableFuture<Message> future = actionSelectionAction.run(req);
+        CompletableFuture<Message> future = actionSelectionAction.run(req, );
         
         Exception exception = assertThrows(ExecutionException.class, future::get);
         assertTrue(exception.getCause() instanceof RuntimeException);

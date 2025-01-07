@@ -31,7 +31,7 @@ class WriteCodeTest {
     void testRun() throws ExecutionException, InterruptedException {
         writeCode = new WriteCode();
 
-        CompletableFuture<Message> future = writeCode.run(new ActionReq());
+        CompletableFuture<Message> future = writeCode.run(new ActionReq(), );
         Message result = future.get();
 
         System.out.println(result);

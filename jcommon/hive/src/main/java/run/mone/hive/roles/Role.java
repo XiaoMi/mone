@@ -185,14 +185,19 @@ public class Role {
             this.observe();
             return planAndAct();
         }
+
+        //依次执行每个Action(按顺序)
         int actionsToken = 0;
         Message res = null;
-        while (actionsToken < rc.getMaxRetries()) {
-            if (this.think() > 0) {
-                res = this.act().join();
-                actionsToken++;
-            } else {
-                break;
+        ActionContext ac = new ActionContext();
+        if (this.rc.getReactMode().equals(RoleContext.ReactMode.BY_ORDER)) {
+            while (actionsToken < this.actions.size()) {
+                if (this.think() > 0) {
+                    res = this.act(ac).join();
+                    actionsToken++;
+                } else {
+                    break;
+                }
             }
         }
         return CompletableFuture.completedFuture(res);
@@ -256,7 +261,7 @@ public class Role {
         return message;
     }
 
-    protected CompletableFuture<Message> act() {
+    protected CompletableFuture<Message> act(ActionContext context) {
         if (rc.getTodo() == null) {
             return CompletableFuture.completedFuture(null);
         }
@@ -265,14 +270,13 @@ public class Role {
             try {
                 Action currentAction = rc.getTodo();
                 ActionReq req = new ActionReq();
-                req.put("memory", rc.getMemory());
-                req.put("name", this.name);
-                req.put("profile", this.profile);
+                req.setAc(context);
+                req.setMemory(rc.getMemory());
                 req.setRole(this);
                 req.setMessage(rc.getMemory().getLastMessage());
                 req.setEnv(this.environment);
-                req.put("history", rc.getMessageList());
-                Message result = currentAction.run(req).join();
+                req.setHistory(rc.getMessageList());
+                Message result = currentAction.run(req, context).join();
 
                 result = processMessage(result);
                 if (result != null) {
@@ -282,7 +286,7 @@ public class Role {
             } catch (Exception e) {
                 if (rc.canRetry()) {
                     rc.incrementRetries();
-                    return act().join();
+                    return act(context).join();
                 }
                 throw new RuntimeException("Action execution failed after retries", e);
             }

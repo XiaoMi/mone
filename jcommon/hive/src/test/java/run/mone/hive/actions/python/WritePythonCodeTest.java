@@ -34,7 +34,7 @@ class WritePythonCodeTest {
         req.setMessage(new Message(msg));
         req.setRole(Role.builder().name("user").build());
 
-        CompletableFuture<Message> future = writePythonCode.run(req);
+        CompletableFuture<Message> future = writePythonCode.run(req, );
         Message result = future.get();
 
         assertNotNull(result);
@@ -45,7 +45,7 @@ class WritePythonCodeTest {
         ActionReq req = new ActionReq();
         req.setMessage(new Message("Create a function that calculates the factorial of a number"));
 
-        CompletableFuture<Message> future = writePythonCode.run(req);
+        CompletableFuture<Message> future = writePythonCode.run(req, );
         Message result = future.get();
 
         assertNotNull(result);

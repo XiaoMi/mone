@@ -3,11 +3,11 @@ package run.mone.hive.actions;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.CodingContext;
 import run.mone.hive.schema.Message;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -45,7 +45,7 @@ public class WriteCodePlanAndChange extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run(ActionReq map) {
+    public CompletableFuture<Message> run(ActionReq map, ActionContext context) {
         Message message = (Message) map.get("message");
         return CompletableFuture.supplyAsync(() -> {
             try {
@@ -53,8 +53,8 @@ public class WriteCodePlanAndChange extends Action {
                 
                 // Format prompt with requirements and current code
                 String prompt = String.format(PROMPT_TEMPLATE, 
-                    context.getRequirements(),
-                    context.getCurrentCode());
+                    this.context.getRequirements(),
+                    this.context.getCurrentCode());
 
                 // Get plan and changes from LLM
                 String response = this.getLlm().ask(prompt).get();

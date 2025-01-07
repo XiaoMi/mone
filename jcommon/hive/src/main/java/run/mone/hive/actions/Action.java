@@ -3,6 +3,7 @@ package run.mone.hive.actions;
 import lombok.*;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.roles.Role;
+import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 
@@ -33,7 +34,7 @@ public class Action {
         this.description = description;
     }
 
-    public CompletableFuture<Message> run(ActionReq req) {
+    public CompletableFuture<Message> run(ActionReq req, ActionContext context) {
         return CompletableFuture.supplyAsync(() -> Message.builder().role(req.getRole().getName()).content(this.function.apply(req, this).getContent()).build());
     }
 

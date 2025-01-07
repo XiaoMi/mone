@@ -1,11 +1,9 @@
 package run.mone.hive.actions;
 
 import lombok.extern.slf4j.Slf4j;
-import run.mone.hive.common.Constants;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
-import run.mone.hive.memory.Memory;
-import run.mone.hive.roles.Role;
+import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Expr;
 import run.mone.hive.schema.Message;
@@ -26,7 +24,7 @@ public class WriteAction extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run(ActionReq map) {
+    public CompletableFuture<Message> run(ActionReq map, ActionContext context) {
         return CompletableFuture.supplyAsync(() -> {
             ActionNode node0 = new ActionNode("node0", String.class, "准备信息", this.getRole());
             node0.setLlm(new LLM(LLMConfig.builder().build()) {

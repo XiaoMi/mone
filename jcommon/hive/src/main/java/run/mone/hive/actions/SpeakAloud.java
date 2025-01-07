@@ -4,10 +4,10 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.memory.Memory;
 import run.mone.hive.roles.Debator;
+import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +34,7 @@ public class SpeakAloud extends Action {
 
     @SneakyThrows
     @Override
-    public CompletableFuture<Message> run(ActionReq map) {
+    public CompletableFuture<Message> run(ActionReq map, ActionContext context) {
         String opponentName = "";
         if (this.getRole() instanceof Debator debator) {
             opponentName = debator.getOpponentName();

@@ -45,7 +45,7 @@ class TeamSelectionActionTest {
         req.setMessage(new Message(rolesJson, "user", "test"));
 
         // 执行 run 方法
-        CompletableFuture<Message> future = teamSelectionAction.run(req);
+        CompletableFuture<Message> future = teamSelectionAction.run(req, );
         Message result = future.get();
 
         // 验证结果

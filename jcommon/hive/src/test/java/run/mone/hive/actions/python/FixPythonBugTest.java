@@ -40,7 +40,7 @@ class FixPythonBugTest {
         ActionReq req = new ActionReq();
         req.setMessage(new Message(buggyCode));
 
-        CompletableFuture<Message> future = fixPythonBug.run(req);
+        CompletableFuture<Message> future = fixPythonBug.run(req, );
         Message result = future.get();
 
         assertNotNull(result);
@@ -64,7 +64,7 @@ class FixPythonBugTest {
         req.setMessage(new Message(jo.toString()));
         req.setRole(Role.builder().name("user").build());
 
-        CompletableFuture<Message> future = fixPythonBug.run(req);
+        CompletableFuture<Message> future = fixPythonBug.run(req, );
         Message result = future.get();
 
         assertNotNull(result);
@@ -84,7 +84,7 @@ class FixPythonBugTest {
         ActionReq req = new ActionReq();
         req.setMessage(new Message(correctCode));
 
-        CompletableFuture<Message> future = fixPythonBug.run(req);
+        CompletableFuture<Message> future = fixPythonBug.run(req, );
         Message result = future.get();
 
         assertNotNull(result);

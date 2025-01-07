@@ -66,7 +66,7 @@ public class Teacher extends Role {
                 // Execute all parts
                 StringBuilder fullPlan = new StringBuilder();
                 for (Action action : actions) {
-                    Message result = action.run(new ActionReq()).join();
+                    Message result = action.run(new ActionReq(), ).join();
                     if (result != null) {
                         if (!fullPlan.isEmpty()) {
                             fullPlan.append("\n\n\n");
