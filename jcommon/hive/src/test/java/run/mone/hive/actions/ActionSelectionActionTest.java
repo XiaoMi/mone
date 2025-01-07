@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 
@@ -43,7 +44,7 @@ class ActionSelectionActionTest {
         req.setMessage(new Message(roleInfoJson, "user", "test"));
 
         // Execute run method
-        CompletableFuture<Message> future = actionSelectionAction.run(req, );
+        CompletableFuture<Message> future = actionSelectionAction.run(req, new ActionContext());
         Message result = future.get();
 
         // Verify results
@@ -60,7 +61,7 @@ class ActionSelectionActionTest {
         req.setMessage(new Message(invalidJson, "user", "test"));
 
         // Execute run method and expect an exception
-        CompletableFuture<Message> future = actionSelectionAction.run(req, );
+        CompletableFuture<Message> future = actionSelectionAction.run(req, new ActionContext());
         
         Exception exception = assertThrows(ExecutionException.class, future::get);
         assertTrue(exception.getCause() instanceof RuntimeException);

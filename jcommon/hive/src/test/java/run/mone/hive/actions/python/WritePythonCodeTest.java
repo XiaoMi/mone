@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.roles.Role;
+import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 
@@ -34,7 +35,7 @@ class WritePythonCodeTest {
         req.setMessage(new Message(msg));
         req.setRole(Role.builder().name("user").build());
 
-        CompletableFuture<Message> future = writePythonCode.run(req, );
+        CompletableFuture<Message> future = writePythonCode.run(req, new ActionContext());
         Message result = future.get();
 
         assertNotNull(result);
@@ -45,7 +46,7 @@ class WritePythonCodeTest {
         ActionReq req = new ActionReq();
         req.setMessage(new Message("Create a function that calculates the factorial of a number"));
 
-        CompletableFuture<Message> future = writePythonCode.run(req, );
+        CompletableFuture<Message> future = writePythonCode.run(req, new ActionContext());
         Message result = future.get();
 
         assertNotNull(result);
