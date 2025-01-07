@@ -326,6 +326,6 @@ public class Role {
     }
 
     public void sendMessage(Message message) {
-        log.info("msg:{}", message.getContent());
+        log.info("msg:{}", message);
     }
 }

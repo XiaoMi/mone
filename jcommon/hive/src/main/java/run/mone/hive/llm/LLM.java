@@ -18,6 +18,7 @@ import run.mone.hive.schema.Message;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -237,13 +238,15 @@ public class LLM {
     public String syncChat(Role role, String str) {
         StringBuilder sb = new StringBuilder();
         CountDownLatch latch = new CountDownLatch(1);
+        String msgId = UUID.randomUUID().toString();
         chat(Lists.newArrayList(AiMessage.builder().role("user").content(str).build()), (c, o) -> {
             String type = o.get("type").getAsString();
             if (type.equals("finish") || type.equals("failure")) {
                 latch.countDown();
+                role.sendMessage(Message.builder().type(type).id(msgId).role(role.getName()).build());
             } else {
                 sb.append(o.get("content").getAsString());
-                role.sendMessage(Message.builder().content(o.get("content").getAsString()).build());
+                role.sendMessage(Message.builder().type("event").id(msgId).role(role.getName()).content(o.get("content").getAsString()).build());
             }
         });
         try {
