@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import okio.BufferedSource;
 import org.apache.commons.lang3.StringUtils;
+import org.beetl.ext.fn.Json;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.roles.Role;
 import run.mone.hive.schema.AiMessage;
@@ -91,15 +92,23 @@ public class LLM {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("model", model);
 
+        if (clientConfig.isWebSearch()) {
+            JsonArray tools = new JsonArray();
+            JsonObject tool = new JsonObject();
+            tool.addProperty("type", "web_search");
+            JsonObject function = new JsonObject();
+            function.addProperty("description", "这个web_search用来搜索互联网的信息");
+            tool.add("function", function);
+            tools.add(tool);
+            requestBody.add("tools", tools);
+            systemPrompt = systemPrompt + "\n每个提问先通过web search，然后通过web search的结果，回答用户问题\n";
+        }
+
+
         if (this.config.isStream()) {
             requestBody.addProperty("stream", true);
         }
         JsonArray msgArray = new JsonArray();
-
-        for (AiMessage message : messages) {
-            msgArray.add(createMessageObject(message.getRole(), message.getContent()));
-        }
-
 
         if (this.config.isJson() || (null != clientConfig && clientConfig.isJson())) {
             String jsonSystemPrompt = """
@@ -114,6 +123,11 @@ public class LLM {
                 msgArray.add(createMessageObject("system", systemPrompt));
             }
         }
+
+        for (AiMessage message : messages) {
+            msgArray.add(createMessageObject(message.getRole(), message.getContent()));
+        }
+
 
 
         requestBody.add("messages", msgArray);

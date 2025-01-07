@@ -29,7 +29,7 @@ class LLMTest {
         config = new LLMConfig();
         config.setDebug(false);
         config.setJson(false);
-        config.setLlmProvider(LLMProvider.DEEPSEEK);
+        config.setLlmProvider(LLMProvider.STEPFUN);
         baseLLM = new LLM(config);
     }
 
@@ -66,6 +66,13 @@ class LLMTest {
         baseLLM.setGoogle(true);
         String apiUrl = baseLLM.getApiUrl();
         assertEquals("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", apiUrl);
+    }
+
+    @Test
+    public void testWebSearch() {
+        String apiKey = System.getenv(config.getLlmProvider().getEnvName());
+        String res = baseLLM.chatCompletion(apiKey, Lists.newArrayList(AiMessage.builder().role("user").content("苏轼最好的10首词").build()), config.getLlmProvider().getDefaultModel(), "", LLMConfig.builder().webSearch(true).build());
+        System.out.println(res);
     }
 
     @Test
