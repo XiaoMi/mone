@@ -24,18 +24,20 @@ public class FixPythonBug extends Action {
             ${error}
             
             Please provide the corrected code without any additional explanations. Wrap the code in <code></code> tags.
+            
+            如果你发现返回的并不是错误,则直接返回源代码即可,同时也是放到<code></code>中
             """;
 
     private final PythonExecutor pythonExecutor;
 
     public FixPythonBug() {
         this.pythonExecutor = new PythonExecutor();
-        setFunction((req, action) -> {
-            String buggyCode = req.getMessage().getContent();
-            JsonObject obj = new JsonParser().parse(buggyCode).getAsJsonObject();
+        setFunction((req, action, context) -> {
+            String code = context.getCtx().get("code").toString();
+            String error = context.getCtx().get("error").toString();
             String fixedCode = null;
             try {
-                fixedCode = fixBug(obj.get("code").getAsString(), obj.get("error").getAsString());
+                fixedCode = fixBug(code, error);
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

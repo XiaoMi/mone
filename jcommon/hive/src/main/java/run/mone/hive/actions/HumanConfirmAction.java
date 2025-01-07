@@ -36,12 +36,11 @@ public class HumanConfirmAction extends Action {
         });
     }
 
-    private static String getLastMessageContent(Map<String, Object> map) {
+    private static String getLastMessageContent(ActionReq map) {
         String prompt = "";
-        if (map.get(Constants.MEMORY) instanceof Memory memory) {
-            Message msg = memory.getStorage().get(memory.getStorage().size() - 1);
-            prompt = msg.getContent();
-        }
+        Memory memory = map.getMemory();
+        Message msg = memory.getStorage().get(memory.getStorage().size() - 1);
+        prompt = msg.getContent();
         return prompt + "\n";
     }
 }

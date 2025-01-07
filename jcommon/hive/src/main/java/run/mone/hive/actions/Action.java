@@ -1,6 +1,7 @@
 package run.mone.hive.actions;
 
 import lombok.*;
+import run.mone.hive.common.TriFunction;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.roles.Role;
 import run.mone.hive.schema.ActionContext;
@@ -8,7 +9,6 @@ import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiFunction;
 
 @Data
 @AllArgsConstructor
@@ -23,7 +23,7 @@ public class Action {
 
     protected LLM llm;
 
-    protected BiFunction<ActionReq, Action, Message> function = (req, action) -> Message.builder().content(this.getClass().getName()).build();
+    protected TriFunction<ActionReq, Action, ActionContext, Message> function = (req, action, context) -> Message.builder().content(this.getClass().getName()).build();
 
     @ToString.Exclude
     private Role role;
@@ -35,7 +35,7 @@ public class Action {
     }
 
     public CompletableFuture<Message> run(ActionReq req, ActionContext context) {
-        return CompletableFuture.supplyAsync(() -> Message.builder().role(req.getRole().getName()).content(this.function.apply(req, this).getContent()).build());
+        return CompletableFuture.supplyAsync(() -> Message.builder().role(req.getRole().getName()).content(this.function.apply(req, this, context).getContent()).build());
     }
 
 }

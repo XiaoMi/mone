@@ -21,7 +21,7 @@ public class WriteCode extends Action {
     public CompletableFuture<Message> run(ActionReq req, ActionContext context) {
         log.info("WriteCode");
         return CompletableFuture.supplyAsync(() -> {
-            Message msg = this.function.apply(req, this);
+            Message msg = this.function.apply(req, this, context);
             msg.setRole(req.getRole().getName());
             return msg;
         });

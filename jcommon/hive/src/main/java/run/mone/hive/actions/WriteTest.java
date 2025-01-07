@@ -21,7 +21,7 @@ public class WriteTest extends Action {
     @Override
     public CompletableFuture<Message> run(ActionReq map, ActionContext context) {
         return CompletableFuture.supplyAsync(() -> {
-            List<Message> history = (List<Message>) map.get("history");
+            List<Message> history = (List<Message>) map.getHistory();
             try {
                 String testCode = generateTestCode(history);
                 return Message.builder()

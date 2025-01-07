@@ -1,8 +1,10 @@
 package run.mone.hive.actions.python;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.JsonParser;
 import run.mone.hive.actions.WriteCode;
 import run.mone.hive.common.AiTemplate;
+import run.mone.hive.common.JsonUtils;
 import run.mone.hive.common.StreamingXmlParser;
 import run.mone.hive.common.XmlParserCallbackAdapter;
 import run.mone.hive.schema.Message;
@@ -40,7 +42,7 @@ public class WritePythonCode extends WriteCode {
     public WritePythonCode() {
         setName("WritePythonCode");
         setDescription("");
-        setFunction((req, action) -> {
+        setFunction((req, action, context) -> {
             String message = req.getMessage().getContent();
             String str = AiTemplate.renderTemplate(prompt, ImmutableMap.of("requirements", message));
             List<String> codeList = new ArrayList<>();
@@ -62,6 +64,7 @@ public class WritePythonCode extends WriteCode {
                     sb.append(c);
                 }
             }).append(str);
+            context.getCtx().add("code", JsonUtils.gson.toJsonTree(codeList));
             return Message.builder().content(this.llm.chat(str)).meta(ImmutableMap.of(MetaKey.builder().key("code").build(), MetaValue.builder().value(codeList).build())).build();
         });
     }

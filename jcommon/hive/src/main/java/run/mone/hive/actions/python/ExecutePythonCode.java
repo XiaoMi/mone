@@ -28,8 +28,8 @@ public class ExecutePythonCode extends Action {
 
 
     public ExecutePythonCode() {
-        setFunction((req, action) -> {
-            String code = req.getMessage().getContent();
+        setFunction((req, action, context) -> {
+            String code = context.getCtx().get("code").toString();
             String renderedPrompt = AiTemplate.renderTemplate(prompt, ImmutableMap.of(
                     "code", code
             ));
@@ -41,6 +41,7 @@ public class ExecutePythonCode extends Action {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+            context.getCtx().addProperty("code_result", result);
             return Message.builder().content(result).build();
         });
     }

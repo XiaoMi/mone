@@ -18,6 +18,6 @@ public class AnalyzeArchitecture extends Action {
     @Override
     public CompletableFuture<Message> run(ActionReq req, ActionContext context) {
         log.info("AnalyzeArchitecture");
-        return CompletableFuture.supplyAsync(() -> Message.builder().sendTo(Lists.newArrayList("Design")).role(req.getRole().getProfile()).content(this.function.apply(req, this).getContent()).build());
+        return CompletableFuture.supplyAsync(() -> Message.builder().sendTo(Lists.newArrayList("Design")).role(req.getRole().getProfile()).content(this.function.apply(req, this, context).getContent()).build());
     }
 }

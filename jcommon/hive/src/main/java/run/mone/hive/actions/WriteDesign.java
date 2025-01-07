@@ -10,6 +10,7 @@ import java.util.concurrent.CompletableFuture;
 
 /**
  * Action for creating technical design documentation
+ *
  * @author goodjava@qq.com
  */
 @Slf4j
@@ -18,6 +19,6 @@ public class WriteDesign extends Action {
     @Override
     public CompletableFuture<Message> run(ActionReq req, ActionContext context) {
         log.info("WriteDesign");
-        return CompletableFuture.supplyAsync(() -> Message.builder().role(req.getRole().getProfile()).sendTo(Lists.newArrayList("Engineer")).content(this.function.apply(req, this).getContent()).build());
+        return CompletableFuture.supplyAsync(() -> Message.builder().role(req.getRole().getProfile()).sendTo(Lists.newArrayList("Engineer")).content(this.function.apply(req, this, context).getContent()).build());
     }
 } 

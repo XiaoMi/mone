@@ -22,7 +22,7 @@ public class WritePRD extends Action {
     public CompletableFuture<Message> run(ActionReq map, ActionContext context) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                List<Message> history = (List<Message>) map.get("history");
+                List<Message> history = map.getHistory();
                 String prd = generatePRD(history);
                 return Message.builder()
                     .content(prd)

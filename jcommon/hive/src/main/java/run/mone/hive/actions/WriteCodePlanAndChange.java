@@ -46,7 +46,7 @@ public class WriteCodePlanAndChange extends Action {
 
     @Override
     public CompletableFuture<Message> run(ActionReq map, ActionContext context) {
-        Message message = (Message) map.get("message");
+        Message message = (Message) map.getMessage();
         return CompletableFuture.supplyAsync(() -> {
             try {
                 log.info("Planning and implementing code changes for: {}", message);

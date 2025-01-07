@@ -20,7 +20,7 @@ public class UserRequirement extends Action {
     @Override
     public CompletableFuture<Message> run(ActionReq map, ActionContext context) {
         return CompletableFuture.supplyAsync(() -> {
-            Message message = (Message) map.get("message");
+            Message message = map.getMessage();
             log.info("Processing user requirements from message: {}", message);
 
             // TODO: Implement requirement analysis logic
