@@ -1,16 +1,14 @@
 package run.mone.hive.actions.python;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import org.jetbrains.annotations.NotNull;
 import run.mone.hive.actions.WriteCode;
 import run.mone.hive.common.AiTemplate;
-import run.mone.hive.roles.Role;
-import run.mone.hive.schema.*;
+import run.mone.hive.schema.Message;
+import run.mone.hive.schema.MetaKey;
+import run.mone.hive.schema.MetaValue;
 import run.mone.hive.utils.XmlParser;
 
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * @author goodjava@qq.com
@@ -23,7 +21,8 @@ public class WritePythonCode extends WriteCode {
             
                         ${requirements}
             
-                        Please provide only the function implementation without any additional explanations. Wrap the code in <boltAction></boltAction> tags.
+                        Please provide only the function implementation without any additional explanations. 
+                        Wrap the code in <boltAction></boltAction> tags.
             
                         Here's an example of a sum function:
             
