@@ -1,6 +1,7 @@
 package run.mone.hive.role;
 
 import com.google.common.collect.Lists;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.Team;
 import run.mone.hive.actions.AnalyzeArchitecture;
@@ -42,13 +43,15 @@ public class RoleTest {
     }
 
 
+    @SneakyThrows
     @Test
     public void testPython() {
         Engineer engineer = new Engineer();
+        engineer.setLlm(new LLM(LLMConfig.builder().build()));
         engineer.getRc().setReactMode(RoleContext.ReactMode.BY_ORDER);
         engineer.setActions(new WritePythonCode(),new ExecutePythonCode(),new FixPythonBug());
-        engineer.putMessage(Message.builder().content("编写一个计算两数和的函数,thx").build());
-        engineer.run();
+        engineer.putMessage(Message.builder().content("编写一个计算两数和的函数,thx").sendTo(Lists.newArrayList("Engineer")).build());
+        engineer.run().get();
     }
 
 

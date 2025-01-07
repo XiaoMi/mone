@@ -123,7 +123,7 @@ public class Role {
     // 判断消息是否相关
     protected boolean isRelevantMessage(Message message) {
         return watchList.contains(message.getCauseBy()) ||
-                message.getReceivers().contains(profile);
+                message.getReceivers().contains(name);
     }
 
 
@@ -323,5 +323,9 @@ public class Role {
                 "name='" + name + '\'' +
                 ", profile='" + profile + '\'' +
                 '}';
+    }
+
+    public void sendMessage(Message message) {
+        log.info("msg:{}", message.getContent());
     }
 }

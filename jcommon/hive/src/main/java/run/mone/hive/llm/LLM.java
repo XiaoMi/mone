@@ -12,11 +12,14 @@ import okhttp3.*;
 import okio.BufferedSource;
 import org.apache.commons.lang3.StringUtils;
 import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.roles.Role;
 import run.mone.hive.schema.AiMessage;
+import run.mone.hive.schema.Message;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -151,6 +154,12 @@ public class LLM {
     }
 
 
+    public void chat(List<AiMessage> messages, BiConsumer<String, JsonObject> messageHandlerr) {
+        chatCompletionStream(System.getenv(llmProvider.getEnvName()), messages, llmProvider.getDefaultModel(), messageHandlerr, line -> {
+        });
+    }
+
+
     public void chatCompletionStream(String apiKey, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer) {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("model", model);
@@ -199,6 +208,7 @@ public class LLM {
                             if ("[DONE]".equals(data)) {
                                 JsonObject jsonResponse = new JsonObject();
                                 jsonResponse.addProperty("type", "finish");
+                                jsonResponse.addProperty("content", "[DONE]");
                                 messageHandler.accept("[DONE]", jsonResponse);
                                 break;
                             }
@@ -208,13 +218,40 @@ public class LLM {
                                     .getAsJsonObject("delta")
                                     .get("content").getAsString();
                             jsonResponse.addProperty("type", "event");
+                            jsonResponse.addProperty("content", content);
                             messageHandler.accept(content, jsonResponse);
                         }
                     }
                     System.out.println("FINISH");
+                } catch (Throwable ex) {
+                    JsonObject jsonResponse = new JsonObject();
+                    jsonResponse.addProperty("type", "failure");
+                    jsonResponse.addProperty("content", "");
+                    messageHandler.accept(ex.getMessage(), jsonResponse);
                 }
             }
         });
+    }
+
+
+    public String syncChat(Role role, String str) {
+        StringBuilder sb = new StringBuilder();
+        CountDownLatch latch = new CountDownLatch(1);
+        chat(Lists.newArrayList(AiMessage.builder().role("user").content(str).build()), (c, o) -> {
+            String type = o.get("type").getAsString();
+            if (type.equals("finish") || type.equals("failure")) {
+                latch.countDown();
+            } else {
+                sb.append(o.get("content").getAsString());
+                role.sendMessage(Message.builder().content(o.get("content").getAsString()).build());
+            }
+        });
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return sb.toString();
     }
 
     private static class SSEReader {

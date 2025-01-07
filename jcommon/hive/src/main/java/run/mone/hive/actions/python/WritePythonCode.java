@@ -1,18 +1,16 @@
 package run.mone.hive.actions.python;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.JsonParser;
+import com.google.common.collect.Lists;
+import org.jetbrains.annotations.NotNull;
 import run.mone.hive.actions.WriteCode;
 import run.mone.hive.common.AiTemplate;
-import run.mone.hive.common.JsonUtils;
-import run.mone.hive.common.StreamingXmlParser;
-import run.mone.hive.common.XmlParserCallbackAdapter;
-import run.mone.hive.schema.Message;
-import run.mone.hive.schema.MetaKey;
-import run.mone.hive.schema.MetaValue;
+import run.mone.hive.roles.Role;
+import run.mone.hive.schema.*;
+import run.mone.hive.utils.XmlParser;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * @author goodjava@qq.com
@@ -45,27 +43,13 @@ public class WritePythonCode extends WriteCode {
         setFunction((req, action, context) -> {
             String message = req.getMessage().getContent();
             String str = AiTemplate.renderTemplate(prompt, ImmutableMap.of("requirements", message));
-            List<String> codeList = new ArrayList<>();
-            StringBuilder sb = new StringBuilder();
-            new StreamingXmlParser(new XmlParserCallbackAdapter() {
-                @Override
-                public void onActionStart(String type, String subType, String filePath) {
-                    sb.setLength(0);
-                }
-
-                @Override
-                public void onActionEnd() {
-                    codeList.add(sb.toString());
-                    sb.setLength(0);
-                }
-
-                @Override
-                public void onContentChar(char c) {
-                    sb.append(c);
-                }
-            }).append(str);
-            context.getCtx().add("code", JsonUtils.gson.toJsonTree(codeList));
-            return Message.builder().content(this.llm.chat(str)).meta(ImmutableMap.of(MetaKey.builder().key("code").build(), MetaValue.builder().value(codeList).build())).build();
+            String res = llm.syncChat(req.getRole(), str);
+            List<String> list = XmlParser.parser(res);
+            String code = list.get(0);
+            context.getCtx().addProperty("code", code);
+            return Message.builder().content(this.llm.chat(str)).meta(ImmutableMap.of(MetaKey.builder().key("code").build(), MetaValue.builder().value(code).build())).build();
         });
     }
+
+
 }
