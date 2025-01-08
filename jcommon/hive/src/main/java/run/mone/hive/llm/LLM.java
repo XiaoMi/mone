@@ -92,7 +92,7 @@ public class LLM {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("model", model);
 
-        if (clientConfig.isWebSearch()) {
+        if (clientConfig != null && clientConfig.isWebSearch()) {
             JsonArray tools = new JsonArray();
             JsonObject tool = new JsonObject();
             tool.addProperty("type", "web_search");
@@ -215,6 +215,13 @@ public class LLM {
                     }
                     SSEReader reader = new SSEReader(responseBody.source());
                     String line;
+
+                    // 添加begin标识
+                    JsonObject beginResponse = new JsonObject();
+                    beginResponse.addProperty("type", "begin");
+                    beginResponse.addProperty("content", "[BEGIN]");
+                    messageHandler.accept("[BEGIN]", beginResponse);
+
                     while ((line = reader.readLine()) != null) {
                         System.out.println("===>" + line);
                         lineConsumer.accept(line);
@@ -255,12 +262,14 @@ public class LLM {
         String msgId = UUID.randomUUID().toString();
         chat(Lists.newArrayList(AiMessage.builder().role("user").content(str).build()), (c, o) -> {
             String type = o.get("type").getAsString();
-            if (type.equals("finish") || type.equals("failure")) {
+            if (type.equals("begin")){
+                role.sendMessage(Message.builder().type(type).id(msgId).role(role.getName()).build(), StreamMessageType.BOT_STREAM_BEGIN);
+            } else if (type.equals("finish") || type.equals("failure")) {
                 latch.countDown();
-                role.sendMessage(Message.builder().type(type).id(msgId).role(role.getName()).build());
+                role.sendMessage(Message.builder().type(type).id(msgId).role(role.getName()).build(), StreamMessageType.BOT_STREAM_END);
             } else {
                 sb.append(o.get("content").getAsString());
-                role.sendMessage(Message.builder().type("event").id(msgId).role(role.getName()).content(o.get("content").getAsString()).build());
+                role.sendMessage(Message.builder().type("event").id(msgId).role(role.getName()).content(o.get("content").getAsString()).build(), StreamMessageType.BOT_STREAM_EVENT);
             }
         });
         try {
