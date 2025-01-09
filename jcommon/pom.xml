@@ -89,6 +89,7 @@
         <module>docean-spring-starter</module>
         <module>ai</module>
         <module>ai/neo4j</module>
+        <module>ai/mcp</module>
     </modules>
 
     <distributionManagement>
