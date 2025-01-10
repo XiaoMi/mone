@@ -325,7 +325,7 @@ public class Role {
                 '}';
     }
 
-    public void sendMessage(Message msg, String messageType) {
-        log.info("msg:{}, messageType: {}", msg, messageType);
+    public void sendMessage(Message msg) {
+        log.info("msg:{}, ", msg);
     }
 }

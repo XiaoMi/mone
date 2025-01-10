@@ -52,11 +52,11 @@ public class LLM {
 
 
     public String chat(List<AiMessage> msgList) {
-        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), "", null);
+        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), "", config);
     }
 
     public String chat(List<AiMessage> msgList, String systemPrompt) {
-        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), systemPrompt, null);
+        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), systemPrompt, config);
     }
 
     public String chat(List<AiMessage> msgList, LLMConfig config) {
@@ -78,7 +78,7 @@ public class LLM {
     }
 
     public String chatCompletion(String apiKey, String content, String model) {
-        return chatCompletion(apiKey, Lists.newArrayList(AiMessage.builder().role("user").content(content).build()), model, "", null);
+        return chatCompletion(apiKey, Lists.newArrayList(AiMessage.builder().role("user").content(content).build()), model, "", config);
     }
 
     @SneakyThrows
@@ -92,7 +92,7 @@ public class LLM {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("model", model);
 
-        if (clientConfig != null && clientConfig.isWebSearch()) {
+        if (clientConfig.isWebSearch()) {
             JsonArray tools = new JsonArray();
             JsonObject tool = new JsonObject();
             tool.addProperty("type", "web_search");
@@ -110,7 +110,7 @@ public class LLM {
         }
         JsonArray msgArray = new JsonArray();
 
-        if (this.config.isJson() || (null != clientConfig && clientConfig.isJson())) {
+        if (this.config.isJson() || clientConfig.isJson()) {
             String jsonSystemPrompt = """
                      返回结果请用JSON返回(如果用户没有指定json格式,则直接返回{"content":$res}),thx
                     """;
@@ -263,13 +263,13 @@ public class LLM {
         chat(Lists.newArrayList(AiMessage.builder().role("user").content(str).build()), (c, o) -> {
             String type = o.get("type").getAsString();
             if (type.equals("begin")){
-                role.sendMessage(Message.builder().type(type).id(msgId).role(role.getName()).build(), StreamMessageType.BOT_STREAM_BEGIN);
+                role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_BEGIN).id(msgId).role(role.getName()).build());
             } else if (type.equals("finish") || type.equals("failure")) {
                 latch.countDown();
-                role.sendMessage(Message.builder().type(type).id(msgId).role(role.getName()).build(), StreamMessageType.BOT_STREAM_END);
+                role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_END).id(msgId).role(role.getName()).build());
             } else {
                 sb.append(o.get("content").getAsString());
-                role.sendMessage(Message.builder().type("event").id(msgId).role(role.getName()).content(o.get("content").getAsString()).build(), StreamMessageType.BOT_STREAM_EVENT);
+                role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_EVENT).id(msgId).role(role.getName()).content(o.get("content").getAsString()).build());
             }
         });
         try {
