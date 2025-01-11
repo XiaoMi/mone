@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>run.mone</groupId>
+        <artifactId>ai</artifactId>
+        <version>1.4-jdk20-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>mcp</artifactId>
+
+    <repositories>
+        <repository>
+            <id>spring-milestones</id>
+            <name>Spring Milestones</name>
+            <url>https://repo.spring.io/libs-milestone-local</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>org.springframework.experimental</groupId>
+            <artifactId>mcp</artifactId>
+            <version>0.4.1</version>
+        </dependency>
+
+        <!-- Spring WebFlux-based SSE client and server transport -->
+        <dependency>
+            <groupId>org.springframework.experimental</groupId>
+            <artifactId>mcp-webflux-sse-transport</artifactId>
+            <version>0.4.1</version>
+        </dependency>
+
+        <!-- Spring WebMVC-based SSE server transport -->
+        <dependency>
+            <groupId>org.springframework.experimental</groupId>
+            <artifactId>mcp-webmvc-sse-transport</artifactId>
+            <version>0.4.1</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.springframework.experimental</groupId>
+            <artifactId>spring-ai-mcp</artifactId>
+            <version>0.5.0-SNAPSHOT</version>
+        </dependency>
+
+
+
+
+    </dependencies>
+
+
+
+
+
+
+</project>

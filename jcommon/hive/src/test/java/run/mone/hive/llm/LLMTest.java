@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 class LLMTest {
 
-    private LLM baseLLM;
+    private LLM llm;
 
     private LLMConfig config;
 
@@ -29,14 +29,14 @@ class LLMTest {
         config = new LLMConfig();
         config.setDebug(false);
         config.setJson(false);
-        config.setLlmProvider(LLMProvider.STEPFUN);
-        baseLLM = new LLM(config);
+        config.setLlmProvider(LLMProvider.DOUBAO);
+        llm = new LLM(config);
     }
 
     @Test
     void testAskInDebugMode() throws ExecutionException, InterruptedException {
         String prompt = "Hello, world!";
-        CompletableFuture<String> future = baseLLM.ask(prompt);
+        CompletableFuture<String> future = llm.ask(prompt);
         String result = future.get();
         System.out.println(result);
     }
@@ -44,34 +44,40 @@ class LLMTest {
     @Test
     void testChat() {
         String prompt = "hi";
-        String result = baseLLM.chat(prompt);
+        String result = llm.chat(prompt);
         log.info("{}", result);
         assertNotNull(result);
     }
 
     @Test
+    public void testJson() {
+        String res = llm.chat(Lists.newArrayList(AiMessage.builder().role("user").content("1+1=?").build()), LLMConfig.builder().json(true).build());
+        System.out.println(res);
+    }
+
+    @Test
     public void testChat2() {
-        String res = baseLLM.chat(Lists.newArrayList(AiMessage.builder().role("user").content("a=12").build(), AiMessage.builder().role("user").content("2*a+a=?").build()));
+        String res = llm.chat(Lists.newArrayList(AiMessage.builder().role("user").content("a=12").build(), AiMessage.builder().role("user").content("2*a+a=?").build()));
         System.out.println(res);
     }
 
     @Test
     void testGetApiUrl() {
-        String apiUrl = baseLLM.getApiUrl();
+        String apiUrl = llm.getApiUrl();
         assertEquals("https://api.stepfun.com/v1/chat/completions", apiUrl);
     }
 
     @Test
     void testGetApiUrlGoogle() {
-        baseLLM.setGoogle(true);
-        String apiUrl = baseLLM.getApiUrl();
+        llm.setGoogle(true);
+        String apiUrl = llm.getApiUrl();
         assertEquals("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", apiUrl);
     }
 
     @Test
     public void testWebSearch() {
         String apiKey = System.getenv(config.getLlmProvider().getEnvName());
-        String res = baseLLM.chatCompletion(apiKey, Lists.newArrayList(AiMessage.builder().role("user").content("苏轼最好的10首词").build()), config.getLlmProvider().getDefaultModel(), "", LLMConfig.builder().webSearch(true).build());
+        String res = llm.chatCompletion(apiKey, Lists.newArrayList(AiMessage.builder().role("user").content("苏轼最好的10首词").build()), config.getLlmProvider().getDefaultModel(), "", LLMConfig.builder().webSearch(true).build());
         System.out.println(res);
     }
 
@@ -86,7 +92,7 @@ class LLMTest {
         List<JsonObject> jsonResponses = new ArrayList<>();
         CountDownLatch latch = new CountDownLatch(1);
 
-        baseLLM.chatCompletionStream(
+        llm.chatCompletionStream(
                 apiKey,
                 messages,
                 model,

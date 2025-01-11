@@ -110,6 +110,20 @@ public class Role {
         if (this.observe() == 0) {
             return -1;
         }
+
+        //思考模式
+        if (this.rc.getReactMode().equals(RoleContext.ReactMode.REACT)) {
+            String index = this.llm.chat("");
+            if (!index.equals("-1")) {
+                int i = Integer.parseInt(index);
+                this.rc.setState(i);
+                return 1;
+            } else {
+                return -1;
+            }
+        }
+
+        //Order模式
         if (this.actions.size() == 1) {
             this.rc.setTodo(this.actions.get(0));
         } else {
@@ -198,6 +212,11 @@ public class Role {
                 } else {
                     break;
                 }
+            }
+        } else {
+            //需要使用llm来选择action
+            if (this.think() > 0) {
+                res = this.act(ac).join();
             }
         }
         return CompletableFuture.completedFuture(res);
