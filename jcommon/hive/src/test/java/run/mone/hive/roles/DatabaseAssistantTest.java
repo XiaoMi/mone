@@ -1,7 +1,10 @@
 package run.mone.hive.roles;
 
+import com.google.common.collect.Lists;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import run.mone.hive.Environment;
 import run.mone.hive.actions.db.DesignSchemaAction;
 import run.mone.hive.actions.db.GenerateSQLAction;
 import run.mone.hive.actions.db.QueryDataAction;
@@ -22,7 +25,16 @@ class DatabaseAssistantTest {
     void setUp() {
         databaseAssistant = new DatabaseAssistant();
         databaseAssistant.setLlm(new LLM(LLMConfig.builder().build()));
+        databaseAssistant.setEnvironment(new Environment());
         databaseAssistant.init();
+    }
+
+    @SneakyThrows
+    @Test
+    public void testRole() {
+        this.databaseAssistant.putMessage(Message.builder().role("user").sendTo(Lists.newArrayList("DatabaseAssistant")).content("查询id为1的用户信息").build());
+        this.databaseAssistant.run();
+        System.in.read();
     }
 
     @Test

@@ -16,7 +16,7 @@ public class QueryDataAction extends Action {
     }
 
     private Message queryData(ActionReq req, Action action, ActionContext context) {
-        String queryResult = "Here are the results of your query:\n" +
+        String queryResult = "Here are the results of your query(你只需要返回查询的sql语句即可):\n" +
                 "${requirements}";
 
         String prompt = AiTemplate.renderTemplate(queryResult, ImmutableMap.of("requirements", req.getMessage().getContent()));

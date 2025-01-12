@@ -18,6 +18,8 @@ import run.mone.hive.utils.Config;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Slf4j
 @Data
@@ -110,17 +112,34 @@ public class Role {
     // 思考下一步行动
     protected int think() {
         log.info("think");
+        //观测消息
         if (this.observe() == 0) {
+            //没有消息
             return -1;
         }
 
-        //思考模式
+        //思考模式(让ai选出来用那个action来执行)
         if (this.rc.getReactMode().equals(RoleContext.ReactMode.REACT)) {
-            String prompt = AiTemplate.renderTemplate(Prompts.ACTION_SELECTION_PROMPT, ImmutableMap.of());
+            String states = IntStream.range(0, this.actions.size()).mapToObj(i -> {
+                Action action = this.actions.get(i);
+                return "state:%s desc:%s".formatted(i, action.getDescription());
+            }).collect(Collectors.joining("\n"));
+
+            Map<String, String> map = new HashMap<>();
+            map.put("profile", this.profile);
+            map.put("name", this.name);
+            map.put("history", this.rc.getMemory().getLastMessage().getContent());
+            map.put("previous_state", "0");
+            map.put("states", states);
+            map.put("n_states", (this.actions.size() - 1) + "");
+
+            String prompt = AiTemplate.renderTemplate(Prompts.ACTION_SELECTION_PROMPT, map);
+
             String index = this.llm.chat(prompt);
             if (!index.equals("-1")) {
                 int i = Integer.parseInt(index);
                 this.rc.setState(i);
+                this.rc.setTodo(this.actions.get(this.rc.getState()));
                 return 1;
             } else {
                 return -1;
