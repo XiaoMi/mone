@@ -2,10 +2,13 @@ package run.mone.hive.roles;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.google.common.collect.ImmutableMap;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.Environment;
 import run.mone.hive.actions.Action;
+import run.mone.hive.common.AiTemplate;
+import run.mone.hive.common.Prompts;
 import run.mone.hive.context.Context;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.*;
@@ -113,7 +116,8 @@ public class Role {
 
         //思考模式
         if (this.rc.getReactMode().equals(RoleContext.ReactMode.REACT)) {
-            String index = this.llm.chat("");
+            String prompt = AiTemplate.renderTemplate(Prompts.ACTION_SELECTION_PROMPT, ImmutableMap.of());
+            String index = this.llm.chat(prompt);
             if (!index.equals("-1")) {
                 int i = Integer.parseInt(index);
                 this.rc.setState(i);
