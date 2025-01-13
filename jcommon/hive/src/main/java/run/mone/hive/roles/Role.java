@@ -2,7 +2,6 @@ package run.mone.hive.roles;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.google.common.collect.ImmutableMap;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.Environment;
@@ -120,30 +119,7 @@ public class Role {
 
         //思考模式(让ai选出来用那个action来执行)
         if (this.rc.getReactMode().equals(RoleContext.ReactMode.REACT)) {
-            String states = IntStream.range(0, this.actions.size()).mapToObj(i -> {
-                Action action = this.actions.get(i);
-                return "state:%s desc:%s".formatted(i, action.getDescription());
-            }).collect(Collectors.joining("\n"));
-
-            Map<String, String> map = new HashMap<>();
-            map.put("profile", this.profile);
-            map.put("name", this.name);
-            map.put("history", this.rc.getMemory().getLastMessage().getContent());
-            map.put("previous_state", "0");
-            map.put("states", states);
-            map.put("n_states", (this.actions.size() - 1) + "");
-
-            String prompt = AiTemplate.renderTemplate(Prompts.ACTION_SELECTION_PROMPT, map);
-
-            String index = this.llm.chat(prompt);
-            if (!index.equals("-1")) {
-                int i = Integer.parseInt(index);
-                this.rc.setState(i);
-                this.rc.setTodo(this.actions.get(this.rc.getState()));
-                return 1;
-            } else {
-                return -1;
-            }
+            return selectActionBasedOnPrompt();
         }
 
         //Order模式
@@ -154,6 +130,37 @@ public class Role {
             this.rc.setTodo(this.actions.get(this.rc.getState()));
         }
         return 1;
+    }
+
+    private int selectActionBasedOnPrompt() {
+        //获取状态
+        String states = IntStream.range(0, this.actions.size()).mapToObj(i -> {
+            Action action = this.actions.get(i);
+            return "state:%s desc:%s action:%s".formatted(i, action.getDescription(), action.getClass().getName());
+        }).collect(Collectors.joining("\n"));
+
+        //获取历史记录
+        String history = this.rc.getMessageList().stream().map(it -> it.getRole() + ":" + it.getContent()).collect(Collectors.joining("\n"));
+
+        Map<String, String> map = new HashMap<>();
+        map.put("profile", this.profile);
+        map.put("name", this.name);
+        map.put("history", history);
+        map.put("previous_state", this.rc.getState() + "");
+        map.put("states", states);
+        map.put("n_states", (this.actions.size() - 1) + "");
+
+        String prompt = AiTemplate.renderTemplate(Prompts.ACTION_SELECTION_PROMPT, map);
+
+        String index = this.llm.chat(prompt);
+        if (!index.equals("-1")) {
+            int i = Integer.parseInt(index);
+            this.rc.setState(i);
+            this.rc.setTodo(this.actions.get(this.rc.getState()));
+            return 1;
+        } else {
+            return -1;
+        }
     }
 
 
@@ -227,6 +234,7 @@ public class Role {
         int actionsToken = 0;
         Message res = null;
         ActionContext ac = new ActionContext();
+        //挨个action去执行
         if (this.rc.getReactMode().equals(RoleContext.ReactMode.BY_ORDER)) {
             while (actionsToken < this.actions.size()) {
                 if (this.think() > 0) {
@@ -238,7 +246,8 @@ public class Role {
             }
         } else {
             //需要使用llm来选择action
-            if (this.think() > 0) {
+            int i = 0;
+            while (this.think() > 0 && i++ < 15) {
                 res = this.act(ac).join();
             }
         }
