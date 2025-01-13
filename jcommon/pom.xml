@@ -90,6 +90,7 @@
         <module>ai</module>
         <module>ai/neo4j</module>
         <module>hive</module>
+        <module>ai/m78</module>
     </modules>
 
 <!--    <distributionManagement>-->

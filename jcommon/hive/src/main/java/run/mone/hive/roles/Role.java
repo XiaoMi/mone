@@ -36,6 +36,8 @@ public class Role {
     protected String goal;
 
     protected String constraints;
+    @Getter
+    protected List<String> specializations;
 
     @JsonIgnore
     protected Planner planner;
@@ -90,6 +92,17 @@ public class Role {
         this.actions = new ArrayList<>();
         this.watchList = new HashSet<>();
         consumer.accept(this);
+        init();
+    }
+
+    public Role(String name, String profile, String goal, String constraints, List<String> specializations) {
+        this.name = name;
+        this.profile = profile;
+        this.goal = goal;
+        this.constraints = constraints;
+        this.specializations = specializations;
+        this.actions = new ArrayList<>();
+        this.watchList = new HashSet<>();
         init();
     }
 
@@ -170,6 +183,9 @@ public class Role {
                 message.getReceivers().contains(name);
     }
 
+    public boolean isCompatibleWithTask(String task) {
+        return specializations.stream().anyMatch(task.toLowerCase()::contains);
+    }
 
     // 创建规划器
     protected Planner createPlanner() {
