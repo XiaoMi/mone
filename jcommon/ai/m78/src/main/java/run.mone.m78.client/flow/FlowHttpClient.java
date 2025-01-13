@@ -27,7 +27,7 @@ public class FlowHttpClient implements M78Client {
 
     private String name = ClientType.FLOW_HTTP.getTypeName();
 
-    private String url = "https://mone.test.mi.com/open-apis/ai-plugin-new/feature/router/flow/querySync";
+    private String url = "";
 
     private String token;
 
@@ -111,7 +111,7 @@ public class FlowHttpClient implements M78Client {
 
         private String name = ClientType.FLOW_HTTP.getTypeName();
 
-        private String url = "https://mone.test.mi.com/open-apis/ai-plugin-new/feature/router/flow/querySync";
+        private String url = "";
         private String token;
 
         public long timeout = 60;

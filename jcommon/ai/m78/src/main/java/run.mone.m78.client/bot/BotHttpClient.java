@@ -45,7 +45,7 @@ public class BotHttpClient implements M78Client {
 
     private String name = ClientType.BOT_HTTP.getTypeName();
 
-    private String url = "https://mone.test.mi.com/open-apis/ai-plugin-new/feature/router/probot/query";
+    private String url = "";
 
     private String token;
 

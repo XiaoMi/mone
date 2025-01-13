@@ -41,7 +41,7 @@ public class FlowWsClient implements M78Client {
 
     private String projectName;
 
-    private String url = "ws://10.38.204.190:8076/ws/flow/stream/access";
+    private String url = "";
 
 
     private CountDownLatch latch;
@@ -255,7 +255,7 @@ public class FlowWsClient implements M78Client {
 
     public static final class Builder {
         private String projectName;
-        private String url = "ws://10.38.204.190:8076/ws/flow/stream/access";
+        private String url = "";
         private CountDownLatch latch;
 
         private Builder() {

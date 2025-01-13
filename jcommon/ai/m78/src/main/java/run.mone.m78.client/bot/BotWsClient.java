@@ -213,7 +213,7 @@ public class BotWsClient implements M78Client {
     public static final class Builder {
         private String name;
         private String projectName;
-        private String url = "ws://10.38.204.190:8076/ws/bot/abc";
+        private String url = "";
         private String token;
         private CountDownLatch latch;
 
