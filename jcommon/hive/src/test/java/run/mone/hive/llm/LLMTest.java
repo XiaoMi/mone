@@ -116,5 +116,32 @@ class LLMTest {
         assertFalse(fullResponse.isEmpty(), "Response should not be empty");
         assertFalse(jsonResponses.isEmpty(), "Should have received JSON responses");
     }
+
+    @Test
+    public void testChatWithBot() {
+        // 初始化LLM并配置Bot桥接
+        llm.setBotBridge(new BotHttpBridge(
+                "xxxxxxxxxx",
+                "xxxxxxxxx",
+                "xxxxxx"
+        ));
+
+        // 简单调用
+        String simple = llm.chatWithBot("你好");
+        System.out.println("simple call : " + simple);
+
+        // 带参数调用
+        JsonObject params = new JsonObject();
+        params.addProperty("key", "value");
+        String withParam = llm.chatWithBot("你好", params);
+        System.out.println("with param : " + withParam);
+
+        // 自定义响应处理
+        String response = llm.chatWithBot("你好", params, res -> {
+            // 自定义处理逻辑
+            System.out.println("function call : " + res);
+            return res;
+        });
+    }
 }
 

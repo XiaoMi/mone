@@ -25,6 +25,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 @Data
 @Slf4j
@@ -33,6 +34,8 @@ public class LLM {
     protected LLMConfig config;
 
     private LLMProvider llmProvider;
+
+    private BotBridge botBridge;
 
     private Gson gson = new Gson();
 
@@ -306,5 +309,23 @@ public class LLM {
         }
     }
 
+
+    public String chatWithBot(String content) {
+        return chatWithBot(content, new JsonObject());
+    }
+
+    public String chatWithBot(String content, JsonObject params) {
+        if (botBridge == null) {
+            throw new IllegalStateException("Bot bridge not initialized");
+        }
+        return botBridge.call(content, params);
+    }
+
+    public String chatWithBot(String content, JsonObject params, Function<String, String> responseHandler) {
+        if (botBridge == null) {
+            throw new IllegalStateException("Bot bridge not initialized");
+        }
+        return botBridge.call(content, params, responseHandler);
+    }
 
 }
