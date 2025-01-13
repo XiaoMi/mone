@@ -10,6 +10,7 @@
     </parent>
 
     <artifactId>hive</artifactId>
+    <version>1.6.1-jdk21-SNAPSHOT</version>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

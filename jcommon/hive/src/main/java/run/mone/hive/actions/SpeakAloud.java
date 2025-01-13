@@ -4,10 +4,10 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.memory.Memory;
 import run.mone.hive.roles.Debator;
+import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -34,18 +34,17 @@ public class SpeakAloud extends Action {
 
     @SneakyThrows
     @Override
-    public CompletableFuture<Message> run(ActionReq map) {
+    public CompletableFuture<Message> run(ActionReq req, ActionContext context) {
         String opponentName = "";
         if (this.getRole() instanceof Debator debator) {
             opponentName = debator.getOpponentName();
         }
 
         String previous = "";
-        if (map.get("memory") instanceof Memory memory) {
-            previous = memory.getStorage().stream().map(it -> it.getSentFrom() + ":" + it.getContent()).collect(Collectors.joining("\n\n"));
-        }
+        Memory memory = req.getMemory();
+        previous = memory.getStorage().stream().map(it -> it.getSentFrom() + ":" + it.getContent()).collect(Collectors.joining("\n\n"));
 
-        String name = map.get("name").toString();
+        String name = req.getRole().getName();
 
         String prompt = PROMPT_TEMPLATE.formatted(name, opponentName, previous, name);
         String content = this.llm.ask(prompt).join();

@@ -25,6 +25,8 @@ public class Message implements Serializable {
 
     private Object data;
 
+    private String type;
+
     private Map<MetaKey, MetaValue> meta = new HashMap<>();
 
     public Message(String content) {

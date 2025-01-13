@@ -11,12 +11,17 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import okio.BufferedSource;
 import org.apache.commons.lang3.StringUtils;
+import org.beetl.ext.fn.Json;
 import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.roles.Role;
 import run.mone.hive.schema.AiMessage;
+import run.mone.hive.schema.Message;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -47,11 +52,11 @@ public class LLM {
 
 
     public String chat(List<AiMessage> msgList) {
-        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), "", null);
+        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), "", config);
     }
 
     public String chat(List<AiMessage> msgList, String systemPrompt) {
-        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), systemPrompt, null);
+        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), systemPrompt, config);
     }
 
     public String chat(List<AiMessage> msgList, LLMConfig config) {
@@ -73,7 +78,7 @@ public class LLM {
     }
 
     public String chatCompletion(String apiKey, String content, String model) {
-        return chatCompletion(apiKey, Lists.newArrayList(AiMessage.builder().role("user").content(content).build()), model, "", null);
+        return chatCompletion(apiKey, Lists.newArrayList(AiMessage.builder().role("user").content(content).build()), model, "", config);
     }
 
     @SneakyThrows
@@ -87,17 +92,25 @@ public class LLM {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("model", model);
 
+        if (clientConfig.isWebSearch()) {
+            JsonArray tools = new JsonArray();
+            JsonObject tool = new JsonObject();
+            tool.addProperty("type", "web_search");
+            JsonObject function = new JsonObject();
+            function.addProperty("description", "这个web_search用来搜索互联网的信息");
+            tool.add("function", function);
+            tools.add(tool);
+            requestBody.add("tools", tools);
+            systemPrompt = systemPrompt + "\n每个提问先通过web search，然后通过web search的结果，回答用户问题\n";
+        }
+
+
         if (this.config.isStream()) {
             requestBody.addProperty("stream", true);
         }
         JsonArray msgArray = new JsonArray();
 
-        for (AiMessage message : messages) {
-            msgArray.add(createMessageObject(message.getRole(), message.getContent()));
-        }
-
-
-        if (this.config.isJson() || (null != clientConfig && clientConfig.isJson())) {
+        if (this.config.isJson() || clientConfig.isJson()) {
             String jsonSystemPrompt = """
                      返回结果请用JSON返回(如果用户没有指定json格式,则直接返回{"content":$res}),thx
                     """;
@@ -110,6 +123,11 @@ public class LLM {
                 msgArray.add(createMessageObject("system", systemPrompt));
             }
         }
+
+        for (AiMessage message : messages) {
+            msgArray.add(createMessageObject(message.getRole(), message.getContent()));
+        }
+
 
 
         requestBody.add("messages", msgArray);
@@ -148,6 +166,12 @@ public class LLM {
         message.addProperty("role", role);
         message.addProperty("content", content);
         return message;
+    }
+
+
+    public void chat(List<AiMessage> messages, BiConsumer<String, JsonObject> messageHandlerr) {
+        chatCompletionStream(System.getenv(llmProvider.getEnvName()), messages, llmProvider.getDefaultModel(), messageHandlerr, line -> {
+        });
     }
 
 
@@ -191,6 +215,13 @@ public class LLM {
                     }
                     SSEReader reader = new SSEReader(responseBody.source());
                     String line;
+
+                    // 添加begin标识
+                    JsonObject beginResponse = new JsonObject();
+                    beginResponse.addProperty("type", "begin");
+                    beginResponse.addProperty("content", "[BEGIN]");
+                    messageHandler.accept("[BEGIN]", beginResponse);
+
                     while ((line = reader.readLine()) != null) {
                         System.out.println("===>" + line);
                         lineConsumer.accept(line);
@@ -199,6 +230,7 @@ public class LLM {
                             if ("[DONE]".equals(data)) {
                                 JsonObject jsonResponse = new JsonObject();
                                 jsonResponse.addProperty("type", "finish");
+                                jsonResponse.addProperty("content", "[DONE]");
                                 messageHandler.accept("[DONE]", jsonResponse);
                                 break;
                             }
@@ -208,13 +240,44 @@ public class LLM {
                                     .getAsJsonObject("delta")
                                     .get("content").getAsString();
                             jsonResponse.addProperty("type", "event");
+                            jsonResponse.addProperty("content", content);
                             messageHandler.accept(content, jsonResponse);
                         }
                     }
                     System.out.println("FINISH");
+                } catch (Throwable ex) {
+                    JsonObject jsonResponse = new JsonObject();
+                    jsonResponse.addProperty("type", "failure");
+                    jsonResponse.addProperty("content", "");
+                    messageHandler.accept(ex.getMessage(), jsonResponse);
                 }
             }
         });
+    }
+
+
+    public String syncChat(Role role, String str) {
+        StringBuilder sb = new StringBuilder();
+        CountDownLatch latch = new CountDownLatch(1);
+        String msgId = UUID.randomUUID().toString();
+        chat(Lists.newArrayList(AiMessage.builder().role("user").content(str).build()), (c, o) -> {
+            String type = o.get("type").getAsString();
+            if (type.equals("begin")){
+                role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_BEGIN).id(msgId).role(role.getName()).build());
+            } else if (type.equals("finish") || type.equals("failure")) {
+                latch.countDown();
+                role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_END).id(msgId).role(role.getName()).build());
+            } else {
+                sb.append(o.get("content").getAsString());
+                role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_EVENT).id(msgId).role(role.getName()).content(o.get("content").getAsString()).build());
+            }
+        });
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return sb.toString();
     }
 
     private static class SSEReader {

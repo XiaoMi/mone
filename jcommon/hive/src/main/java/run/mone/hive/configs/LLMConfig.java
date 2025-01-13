@@ -12,7 +12,6 @@ public class LLMConfig {
     private String model;
     private Double temperature;
     private Integer maxTokens;
-    private String provider;
     private boolean debug;
     private boolean json;
 
@@ -20,15 +19,15 @@ public class LLMConfig {
 
     private String url;
 
+    private boolean webSearch;
+
     @Builder.Default
     private LLMProvider llmProvider = LLMProvider.DEEPSEEK;
 
     
     public LLMConfig() {
-        this.model = "gpt-3.5-turbo";
         this.temperature = 0.1;
         this.maxTokens = 4000;
-        this.provider = "openai";
         this.debug = true;
     }
 } 

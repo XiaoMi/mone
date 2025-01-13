@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.roles.Role;
+import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,7 +46,7 @@ class TeamSelectionActionTest {
         req.setMessage(new Message(rolesJson, "user", "test"));
 
         // 执行 run 方法
-        CompletableFuture<Message> future = teamSelectionAction.run(req);
+        CompletableFuture<Message> future = teamSelectionAction.run(req, new ActionContext());
         Message result = future.get();
 
         // 验证结果

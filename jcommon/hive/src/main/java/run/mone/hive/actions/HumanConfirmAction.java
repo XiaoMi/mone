@@ -4,6 +4,7 @@ import run.mone.hive.common.Constants;
 import run.mone.hive.llm.HumanProvider;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.memory.Memory;
+import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 
@@ -23,7 +24,7 @@ public class HumanConfirmAction extends Action {
 
 
     @Override
-    public CompletableFuture<Message> run(ActionReq map) {
+    public CompletableFuture<Message> run(ActionReq map, ActionContext context) {
         String prompt = getLastMessageContent(map);
 
         return CompletableFuture.supplyAsync(() -> {
@@ -35,12 +36,11 @@ public class HumanConfirmAction extends Action {
         });
     }
 
-    private static String getLastMessageContent(Map<String, Object> map) {
+    private static String getLastMessageContent(ActionReq map) {
         String prompt = "";
-        if (map.get(Constants.MEMORY) instanceof Memory memory) {
-            Message msg = memory.getStorage().get(memory.getStorage().size() - 1);
-            prompt = msg.getContent();
-        }
+        Memory memory = map.getMemory();
+        Message msg = memory.getStorage().get(memory.getStorage().size() - 1);
+        prompt = msg.getContent();
         return prompt + "\n";
     }
 }

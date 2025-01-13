@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import run.mone.hive.actions.Action;
 import run.mone.hive.common.AiTemplate;
 import run.mone.hive.schema.Message;
+import run.mone.hive.utils.XmlParser;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -19,28 +20,36 @@ public class ExecutePythonCode extends Action {
             
             Generate a line of code that calls the main function with suitable parameters and prints the result.
             The line should be in the format: print(function_name(param1, param2, ...))
+            Wrap the code in <boltAction></boltAction> tags.
             
             Provide only the generated line of code without any additional explanations.
             
             example:
+            <boltAction>
             print(sun(11,22))
+            </boltAction>
             """;
 
 
     public ExecutePythonCode() {
-        setFunction((req, action) -> {
-            String code = req.getMessage().getContent();
+        setFunction((req, action, context) -> {
+            String code = context.getCtx().get("code").getAsString();
             String renderedPrompt = AiTemplate.renderTemplate(prompt, ImmutableMap.of(
                     "code", code
             ));
             String exeCmd = llm.chat(renderedPrompt);
 
+            exeCmd = XmlParser.parser(exeCmd).get(0);
+
             String result = null;
+            String newCode = code + "\n" + exeCmd;
             try {
-                result = executePythonCode(code + "\n" + exeCmd).getContent();
+                result = executePythonCode(newCode).getContent();
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
+            context.getCtx().addProperty("code", newCode);
+            context.getCtx().addProperty("error", result);
             return Message.builder().content(result).build();
         });
     }

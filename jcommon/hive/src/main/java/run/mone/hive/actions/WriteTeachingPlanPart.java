@@ -1,11 +1,11 @@
 package run.mone.hive.actions;
 
 import run.mone.hive.llm.LLM;
+import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Slf4j
@@ -37,10 +37,10 @@ public class WriteTeachingPlanPart extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run(ActionReq map) {
+    public CompletableFuture<Message> run(ActionReq map, ActionContext context) {
         String prompt = PROMPT_TEMPLATE
                 .replace("{topic}", topic)
-                .replace("{context}", context)
+                .replace("{context}", this.context)
                 .replace("{language}", language);
 
         return llm.ask(prompt)

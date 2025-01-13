@@ -1,5 +1,6 @@
 package run.mone.hive.actions;
 
+import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +19,7 @@ public class PrepareDocuments extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run(ActionReq map) {
+    public CompletableFuture<Message> run(ActionReq map, ActionContext context) {
         return CompletableFuture.supplyAsync(() -> {
             // TODO: Implement document preparation logic
             log.info("Preparing documents...");

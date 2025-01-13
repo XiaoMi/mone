@@ -1,12 +1,12 @@
 package run.mone.hive.actions;
 
+import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 @Data
@@ -19,9 +19,9 @@ public class WriteTest extends Action {
 
 
     @Override
-    public CompletableFuture<Message> run(ActionReq map) {
+    public CompletableFuture<Message> run(ActionReq map, ActionContext context) {
         return CompletableFuture.supplyAsync(() -> {
-            List<Message> history = (List<Message>) map.get("history");
+            List<Message> history = (List<Message>) map.getHistory();
             try {
                 String testCode = generateTestCode(history);
                 return Message.builder()

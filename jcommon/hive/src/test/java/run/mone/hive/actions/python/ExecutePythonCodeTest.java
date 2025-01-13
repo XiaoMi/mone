@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 
@@ -43,7 +44,7 @@ class ExecutePythonCodeTest {
     void testRun_Success() throws Exception {
         ActionReq req = new ActionReq();
         req.setMessage(new Message("def add(a, b):\n    return a + b"));
-        Message result = executePythonCode.getFunction().apply(req, executePythonCode);
+        Message result = executePythonCode.getFunction().apply(req, executePythonCode, new ActionContext());
         System.out.println(result);
     }
 
@@ -52,7 +53,7 @@ class ExecutePythonCodeTest {
         ActionReq req = new ActionReq();
         req.setMessage(new Message("def divide(a, b):\n    return a / b"));
 
-        Message result = executePythonCode.getFunction().apply(req, executePythonCode);
+        Message result = executePythonCode.getFunction().apply(req, executePythonCode, new ActionContext());
 
         assertTrue(result.getContent().startsWith("<error>"));
         assertTrue(result.getContent().contains("ZeroDivisionError"));

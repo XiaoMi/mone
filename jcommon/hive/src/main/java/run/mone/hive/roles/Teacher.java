@@ -6,6 +6,7 @@ import run.mone.hive.actions.TeachingPlanBlock;
 import run.mone.hive.actions.UserRequirement;
 import run.mone.hive.actions.WriteTeachingPlanPart;
 import run.mone.hive.context.Context;
+import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 
@@ -65,8 +66,9 @@ public class Teacher extends Role {
 
                 // Execute all parts
                 StringBuilder fullPlan = new StringBuilder();
+                ActionContext ac = new ActionContext();
                 for (Action action : actions) {
-                    Message result = action.run(new ActionReq()).join();
+                    Message result = action.run(new ActionReq(), ac).join();
                     if (result != null) {
                         if (!fullPlan.isEmpty()) {
                             fullPlan.append("\n\n\n");

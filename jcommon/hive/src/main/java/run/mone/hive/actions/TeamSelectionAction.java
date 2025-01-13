@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.roles.Role;
+import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.AiMessage;
 import run.mone.hive.schema.Message;
@@ -47,7 +48,7 @@ public class TeamSelectionAction extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run(ActionReq req) {
+    public CompletableFuture<Message> run(ActionReq req, ActionContext context) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String rolesJson = req.getMessage().getContent();

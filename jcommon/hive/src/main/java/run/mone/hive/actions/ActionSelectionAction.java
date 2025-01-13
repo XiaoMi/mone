@@ -6,16 +6,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.AiMessage;
 import run.mone.hive.schema.Message;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class ActionSelectionAction extends Action {
@@ -44,7 +42,7 @@ public class ActionSelectionAction extends Action {
     }
 
     @Override
-    public CompletableFuture<Message> run(ActionReq req) {
+    public CompletableFuture<Message> run(ActionReq req, ActionContext context) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String roleJson = req.getMessage().getContent();

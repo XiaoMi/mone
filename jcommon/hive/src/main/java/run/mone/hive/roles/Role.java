@@ -6,6 +6,8 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.Environment;
 import run.mone.hive.actions.Action;
+import run.mone.hive.common.AiTemplate;
+import run.mone.hive.common.Prompts;
 import run.mone.hive.context.Context;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.*;
@@ -15,6 +17,8 @@ import run.mone.hive.utils.Config;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Slf4j
 @Data
@@ -120,9 +124,18 @@ public class Role {
     // 思考下一步行动
     protected int think() {
         log.info("think");
+        //观测消息
         if (this.observe() == 0) {
+            //没有消息
             return -1;
         }
+
+        //思考模式(让ai选出来用那个action来执行)
+        if (this.rc.getReactMode().equals(RoleContext.ReactMode.REACT)) {
+            return selectActionBasedOnPrompt();
+        }
+
+        //Order模式
         if (this.actions.size() == 1) {
             this.rc.setTodo(this.actions.get(0));
         } else {
@@ -132,11 +145,42 @@ public class Role {
         return 1;
     }
 
+    private int selectActionBasedOnPrompt() {
+        //获取状态
+        String states = IntStream.range(0, this.actions.size()).mapToObj(i -> {
+            Action action = this.actions.get(i);
+            return "state:%s desc:%s action:%s".formatted(i, action.getDescription(), action.getClass().getName());
+        }).collect(Collectors.joining("\n"));
+
+        //获取历史记录
+        String history = this.rc.getMessageList().stream().map(it -> it.getRole() + ":" + it.getContent()).collect(Collectors.joining("\n"));
+
+        Map<String, String> map = new HashMap<>();
+        map.put("profile", this.profile);
+        map.put("name", this.name);
+        map.put("history", history);
+        map.put("previous_state", this.rc.getState() + "");
+        map.put("states", states);
+        map.put("n_states", (this.actions.size() - 1) + "");
+
+        String prompt = AiTemplate.renderTemplate(Prompts.ACTION_SELECTION_PROMPT, map);
+
+        String index = this.llm.chat(prompt);
+        if (!index.equals("-1")) {
+            int i = Integer.parseInt(index);
+            this.rc.setState(i);
+            this.rc.setTodo(this.actions.get(this.rc.getState()));
+            return 1;
+        } else {
+            return -1;
+        }
+    }
+
 
     // 判断消息是否相关
     protected boolean isRelevantMessage(Message message) {
         return watchList.contains(message.getCauseBy()) ||
-                message.getReceivers().contains(profile);
+                message.getReceivers().contains(name);
     }
 
     public boolean isCompatibleWithTask(String task) {
@@ -201,14 +245,26 @@ public class Role {
             this.observe();
             return planAndAct();
         }
+
+        //依次执行每个Action(按顺序)
         int actionsToken = 0;
         Message res = null;
-        while (actionsToken < rc.getMaxRetries()) {
-            if (this.think() > 0) {
-                res = this.act().join();
-                actionsToken++;
-            } else {
-                break;
+        ActionContext ac = new ActionContext();
+        //挨个action去执行
+        if (this.rc.getReactMode().equals(RoleContext.ReactMode.BY_ORDER)) {
+            while (actionsToken < this.actions.size()) {
+                if (this.think() > 0) {
+                    res = this.act(ac).join();
+                    actionsToken++;
+                } else {
+                    break;
+                }
+            }
+        } else {
+            //需要使用llm来选择action
+            int i = 0;
+            while (this.think() > 0 && i++ < 15) {
+                res = this.act(ac).join();
             }
         }
         return CompletableFuture.completedFuture(res);
@@ -272,7 +328,7 @@ public class Role {
         return message;
     }
 
-    protected CompletableFuture<Message> act() {
+    protected CompletableFuture<Message> act(ActionContext context) {
         if (rc.getTodo() == null) {
             return CompletableFuture.completedFuture(null);
         }
@@ -281,14 +337,13 @@ public class Role {
             try {
                 Action currentAction = rc.getTodo();
                 ActionReq req = new ActionReq();
-                req.put("memory", rc.getMemory());
-                req.put("name", this.name);
-                req.put("profile", this.profile);
+                req.setAc(context);
+                req.setMemory(rc.getMemory());
                 req.setRole(this);
                 req.setMessage(rc.getMemory().getLastMessage());
                 req.setEnv(this.environment);
-                req.put("history", rc.getMessageList());
-                Message result = currentAction.run(req).join();
+                req.setHistory(rc.getMessageList());
+                Message result = currentAction.run(req, context).join();
 
                 result = processMessage(result);
                 if (result != null) {
@@ -298,7 +353,7 @@ public class Role {
             } catch (Exception e) {
                 if (rc.canRetry()) {
                     rc.incrementRetries();
-                    return act().join();
+                    return act(context).join();
                 }
                 throw new RuntimeException("Action execution failed after retries", e);
             }
@@ -335,5 +390,9 @@ public class Role {
                 "name='" + name + '\'' +
                 ", profile='" + profile + '\'' +
                 '}';
+    }
+
+    public void sendMessage(Message msg) {
+        log.info("msg:{}, ", msg);
     }
 }
