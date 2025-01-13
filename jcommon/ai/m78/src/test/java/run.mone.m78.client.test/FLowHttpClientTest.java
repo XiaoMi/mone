@@ -14,10 +14,10 @@ import run.mone.m78.client.model.M78FlowReq;
 public class FLowHttpClientTest {
     @Test
     public void testBotHttpClient() {
-        FlowHttpClient client = FlowHttpClient.builder().token("e1c51eaa-2f39-4cbc-8ec0-b6ab9d117a02").build();
+        FlowHttpClient client = FlowHttpClient.builder().token("xxxxxxx").build();
         String res = client.callFlow(M78FlowReq.builder()
                 .flowId("127")
-                .userName("wangyingjie3")
+                .userName("xxxxxxxx")
                 .inputs(ImmutableMap.of("scale", "256"))
                 .build(), null);
         System.out.println(res);

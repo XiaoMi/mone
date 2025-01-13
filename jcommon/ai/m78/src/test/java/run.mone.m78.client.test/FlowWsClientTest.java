@@ -25,7 +25,7 @@ public class FlowWsClientTest {
         FlowWsClient flowWsClient = FlowWsClient.builder().build();
         Map<String, Object> inputs = new HashMap<>();
         inputs.put("scale", "256");
-        String userName = "wangyingjie3";
+        String userName = "xxxx";
         assertDoesNotThrow(() -> {
             flowWsClient.start(System.out::println, userName);
             flowWsClient.executeFlow(userName, "127", inputs);

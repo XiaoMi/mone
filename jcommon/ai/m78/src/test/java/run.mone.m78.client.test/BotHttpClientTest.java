@@ -26,10 +26,10 @@ public class BotHttpClientTest {
     public void testBotHttpClient() {
         BotHttpClient client = BotHttpClient.builder()
 //                .url("http://127.0.0.1:8077/open-apis/v1/ai-plugin-new/feature/router/probot/query")
-                .token("e1c51eaa-2f39-4cbc-8ec0-b6ab9d117a02").build();
+                .token("xxxxx").build();
         String res = client.callBot(M78BotReq.builder()
-                .botId("100093")
-                .userName("wangyingjie3")
+                .botId("xxxxxx")
+                .userName("xxxxxxx")
                 .input("北京今天的天气?")
                 .build(), null);
         System.out.println(res);
@@ -39,7 +39,7 @@ public class BotHttpClientTest {
     public void testBotHttpClientWithHistory() {
         BotHttpClient client = BotHttpClient.builder()
 //                .url("http://127.0.0.1:8077/open-apis/v1/ai-plugin-new/feature/router/probot/query")
-                .token("e1c51eaa-2f39-4cbc-8ec0-b6ab9d117a02").build();
+                .token("xxxxxxxx").build();
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("desc", " ");
         jsonObject.addProperty("input", "a+b=?");
@@ -48,8 +48,8 @@ public class BotHttpClientTest {
                 ImmutableMap.of("role", "user", "content", "b=2")
         )));
         String res = client.callBot(M78BotReq.builder()
-                .botId("130228")
-                .userName("wangyingjie3")
+                .botId("xxxxxx")
+                .userName("xxxxx")
                 .input("hi")
                 .build(), jsonObject, BotHttpClient.DEFAULT_FUNCTION);
         System.out.println(res);
@@ -59,13 +59,13 @@ public class BotHttpClientTest {
     public void testBotHttpClientWithHistory2() {
         BotHttpClient client = BotHttpClient.builder()
                 .url("http://127.0.0.1:8077/open-apis/v1/ai-plugin-new/feature/router/probot/query")
-                .token("e1c51eaa-2f39-4cbc-8ec0-b6ab9d117a02").build();
+                .token("xxxxx").build();
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("desc", "");
         jsonObject.addProperty("input", "a+b=?");
         String res = client.callBot(M78BotReq.builder()
-                .botId("130228")
-                .userName("wangyingjie3")
+                .botId("xxxxxxx")
+                .userName("xxxxxx")
                 .input("hi")
                 .build(), jsonObject, History.builder()
                 .messages(Lists.newArrayList(Message.builder().role("user").content("a=1").build(),
@@ -101,7 +101,7 @@ public class BotHttpClientTest {
     private static String callBotWithInput(String name, String input, String history, String topic, int round, int curRound, String character_setting, String main_points) {
         BotHttpClient client = BotHttpClient.builder()
                 .url("http://127.0.0.1:8077/open-apis/v1/ai-plugin-new/feature/router/probot/query")
-                .token("e1c51eaa-2f39-4cbc-8ec0-b6ab9d117a02").build();
+                .token("xxxxxxxxxxxx").build();
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("team", "小明 小红");
         jsonObject.addProperty("_history", history);
@@ -115,9 +115,9 @@ public class BotHttpClientTest {
         jsonObject.addProperty("cur_round", curRound);
 
         String res = client.callBot(M78BotReq.builder()
-                .token("61d8661d-0663-48b4-8da3-40c08b0e8453")
-                .botId("130228")
-                .userName("wangyingjie3")
+                .token("xxxxxxx")
+                .botId("xxxxxx")
+                .userName("xxxxx")
                 .input("")
                 .build(), jsonObject, BotHttpClient.DEFAULT_FUNCTION);
         return res;
@@ -126,13 +126,13 @@ public class BotHttpClientTest {
 
     @Test
     public void testBotHttpClient2() {
-        BotHttpClient client = BotHttpClient.builder().url("http://127.0.0.1:8077/open-apis/v1/ai-plugin-new/feature/router/probot/query").token("6804ec8c-e348-4f36-a881-dd4e8741a3ab").build();
+        BotHttpClient client = BotHttpClient.builder().url("http://127.0.0.1:8077/open-apis/v1/ai-plugin-new/feature/router/probot/query").token("xxxxxxxxx").build();
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("agent", "1.教师  2.日语翻译  3.程序员  4.客服 5.测试 ");
         jsonObject.addProperty("input", "有个文档要翻译成日语");
         String res = client.callBot(M78BotReq.builder()
-                .botId("160222")
-                .userName("zhangzhiyong1")
+                .botId("xxxxxx")
+                .userName("xxxxxx")
                 .input("")
                 .build(), jsonObject);
         System.out.println(res);
@@ -140,12 +140,12 @@ public class BotHttpClientTest {
 
     @Test
     public void testBotJsonFix() {
-        BotHttpClient client = BotHttpClient.builder().url("http://10.38.204.190:8076/open-apis/v1/ai-plugin-new/feature/router/probot/query").token("").build();
+        BotHttpClient client = BotHttpClient.builder().url("http://127.0.0.1:8076/open-apis/v1/ai-plugin-new/feature/router/probot/query").token("").build();
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("json", "[\"name\":\"123\"]\n");
         String res = client.callBot(M78BotReq.builder()
-                .botId("130244")
-                .userName("zhangzhiyong1")
+                .botId("xxxxxx")
+                .userName("xxxxxxx")
                 .input("")
                 .build(), jsonObject);
         System.out.println(res);
@@ -154,14 +154,14 @@ public class BotHttpClientTest {
     @Test
     public void testBotJsonReq() {
         BotHttpClient client = BotHttpClient.builder()
-                .url("http://10.38.204.190:8076/open-apis/v1/ai-plugin-new/feature/router/probot/query")
-                .token("6804ec8c-e348-4f36-a881-dd4e8741a3ab").build();
+                .url("http://127.0.0.1:8076/open-apis/v1/ai-plugin-new/feature/router/probot/query")
+                .token("xxxxxxx").build();
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("request", "下雨了\n" +
                 "{\"weather\":\"\"}");
         String res = client.callBot(M78BotReq.builder()
-                .botId("160224")
-                .userName("zhangzhiyong1")
+                .botId("xxxx")
+                .userName("xxxxxx")
                 .input("")
                 .build(), jsonObject);
         System.out.println(res);
@@ -169,15 +169,15 @@ public class BotHttpClientTest {
 
     @Test
     public void testFlowChoose() {
-        BotHttpClient client = BotHttpClient.builder().url("http://10.38.204.190:8076/open-apis/v1/ai-plugin-new/feature/router/probot/query").token("").build();
+        BotHttpClient client = BotHttpClient.builder().url("http://127.0.0.1:8076/open-apis/v1/ai-plugin-new/feature/router/probot/query").token("").build();
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("flow", "2.读取代办事项\n" +
                 "3.编写业务代码\n" +
                 "6.制定健身计划\n");
         jsonObject.addProperty("input", "帮我开发一个网站");
         String res = client.callBot(M78BotReq.builder()
-                .botId("160223")
-                .userName("zhangzhiyong1")
+                .botId("xxxx")
+                .userName("xxxxxxxx")
                 .input("")
                 .build(), jsonObject);
         System.out.println(res);
