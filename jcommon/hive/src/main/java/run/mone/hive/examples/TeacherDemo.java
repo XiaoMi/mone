@@ -25,7 +25,7 @@ public class TeacherDemo {
             context.setTeachingLanguage("中文");
 
             // 初始化教师角色
-            Teacher teacher = new Teacher(context);
+            Teacher teacher = new Teacher("Teacher");
             
             // 准备课程内容
             String lesson = """

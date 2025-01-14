@@ -1,8 +1,9 @@
-package run.mone.hive.actions;
+package run.mone.hive.actions.programmer;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import run.mone.hive.actions.Action;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;

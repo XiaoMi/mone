@@ -47,7 +47,12 @@ public class Team {
     }
 
     public void hire(List<Role> roles) {
-        roles.forEach(it -> this.roles.put(it.getName(), it));
+        roles.forEach(it -> {
+            this.roles.put(it.getName(), it);
+            if (null == it.getLlm()) {
+                it.setLlm(this.env.getEnvContext().llm());
+            }
+        });
         env.addRoles(roles);
     }
 

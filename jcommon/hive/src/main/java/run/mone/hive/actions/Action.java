@@ -38,4 +38,11 @@ public class Action {
         return CompletableFuture.supplyAsync(() -> Message.builder().role(req.getRole().getName()).content(this.function.apply(req, this, context).getContent()).build());
     }
 
+    protected LLM llm(ActionReq req) {
+        if (this.llm != null) {
+            return this.llm;
+        }
+        return req.getRole().getLlm();
+    }
+
 }

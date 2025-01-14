@@ -12,6 +12,14 @@ import java.util.List;
  */
 public class XmlParser {
 
+    //帮我写一个函数去除一个字符串开头和结尾的空格和\n\s之类色,thx(class)
+    public static String trimString(String str) {
+        if (str == null) {
+            return null;
+        }
+        return str.trim().replaceAll("^[\\s\\n]+|[\\s\\n]+$", "");
+    }
+
     public static List<String> parser(String str) {
         List<String> list = new ArrayList<>();
         StringBuilder sb = new StringBuilder();
