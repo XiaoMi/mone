@@ -11,9 +11,10 @@ public class BotHttpBridge implements BotBridge {
     private final String botId;
     private final String userName;
 
-    public BotHttpBridge(String token, String botId, String userName) {
+    public BotHttpBridge(String url, String token, String botId, String userName) {
         this.client = BotHttpClient.builder()
                 .token(token)
+                .url(url)
                 .build();
         this.botId = botId;
         this.userName = userName;

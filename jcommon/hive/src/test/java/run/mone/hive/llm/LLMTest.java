@@ -123,7 +123,8 @@ class LLMTest {
         llm.setBotBridge(new BotHttpBridge(
                 "xxxxxxxxxx",
                 "xxxxxxxxx",
-                "xxxxxx"
+                "xxxxxx",
+                "xxxxxxx"
         ));
 
         // 简单调用
