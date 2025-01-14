@@ -2,7 +2,6 @@ package run.mone.hive.roles;
 
 import run.mone.hive.actions.Action;
 import run.mone.hive.actions.db.DesignSchemaAction;
-import run.mone.hive.actions.db.GenerateSQLAction;
 import run.mone.hive.actions.db.QueryDataAction;
 import run.mone.hive.actions.db.ModifyDataAction;
 import run.mone.hive.schema.RoleContext;
@@ -37,7 +36,6 @@ public class DatabaseAssistant extends Role {
         // 初始化Actions
         List<Action> actions = Arrays.asList(
                 new DesignSchemaAction(),
-                new GenerateSQLAction(),
                 new QueryDataAction(),
                 new ModifyDataAction()
         );
