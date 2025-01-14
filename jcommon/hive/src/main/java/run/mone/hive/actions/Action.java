@@ -36,7 +36,9 @@ public class Action {
 
     public CompletableFuture<Message> run(ActionReq req, ActionContext context) {
         Message msg = this.function.apply(req, this, context);
-        msg.setRole(req.getRole().getName());
+        if (null == msg.getRole()) {
+            msg.setRole(req.getRole().getName());
+        }
         return CompletableFuture.supplyAsync(() -> msg);
     }
 
