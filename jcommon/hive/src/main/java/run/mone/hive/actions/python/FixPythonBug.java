@@ -2,8 +2,6 @@
 package run.mone.hive.actions.python;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import run.mone.hive.actions.Action;
 import run.mone.hive.common.AiTemplate;
 import run.mone.hive.schema.Message;
