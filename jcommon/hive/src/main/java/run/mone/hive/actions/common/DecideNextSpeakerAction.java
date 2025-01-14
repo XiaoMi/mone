@@ -2,6 +2,7 @@
 package run.mone.hive.actions.common;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import run.mone.hive.actions.Action;
 import run.mone.hive.common.AiTemplate;
 import run.mone.hive.common.Prompts;
@@ -31,9 +32,7 @@ public class DecideNextSpeakerAction extends Action {
                 "Current context: ${currentContext}\n" +
                 "Available roles: \n${availableRoles}\n" +
                 "Provide the name of the role that should speak next and a brief explanation for your decision.\n" +
-                Prompts.PROMPT_FORMAT
-
-                ;
+                Prompts.PROMPT_FORMAT;
 
         String prompt = AiTemplate.renderTemplate(decisionPrompt, ImmutableMap.of(
                 "currentContext", currentContext,
@@ -46,7 +45,8 @@ public class DecideNextSpeakerAction extends Action {
 
         return Message.builder()
                 .role(req.getRole().getName())
-                .content(res)
+                .sendTo(Lists.newArrayList(res))
+                .content(req.getMessage().getContent())
                 .build();
     }
 }

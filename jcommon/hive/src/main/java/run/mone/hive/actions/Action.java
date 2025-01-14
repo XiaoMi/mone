@@ -35,7 +35,9 @@ public class Action {
     }
 
     public CompletableFuture<Message> run(ActionReq req, ActionContext context) {
-        return CompletableFuture.supplyAsync(() -> Message.builder().role(req.getRole().getName()).content(this.function.apply(req, this, context).getContent()).build());
+        Message msg = this.function.apply(req, this, context);
+        msg.setRole(req.getRole().getName());
+        return CompletableFuture.supplyAsync(() -> msg);
     }
 
     protected LLM llm(ActionReq req) {

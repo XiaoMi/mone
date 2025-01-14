@@ -10,6 +10,7 @@ import run.mone.hive.actions.WriteDesign;
 import run.mone.hive.actions.python.ExecutePythonCode;
 import run.mone.hive.actions.python.FixPythonBug;
 import run.mone.hive.actions.python.WritePythonCode;
+import run.mone.hive.actions.writer.WriteAction;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.context.Context;
 import run.mone.hive.llm.LLM;
@@ -34,9 +35,11 @@ public class RoleTest {
         Context context = new Context();
         context.setDefaultLLM(llm);
         Team team = new Team(context);
-        team.hire(new Teacher("Teacher"), new Writer("Writer"), new Coordinator());
-        team.publishMessage(Message.builder().role("user").content("帮我写一篇文章").sendTo(Lists.newArrayList("Coordinator")).build());
-        team.run(1);
+        Writer writer = new Writer("Writer");
+        writer.setActions(new WriteAction());
+        team.hire(new Teacher("Teacher"), writer, new Coordinator());
+        team.publishMessage(Message.builder().role("user").content("帮我写一篇文章,有关秋天的.").sendTo(Lists.newArrayList("Coordinator")).build());
+        team.run(2);
         System.in.read();
     }
 
