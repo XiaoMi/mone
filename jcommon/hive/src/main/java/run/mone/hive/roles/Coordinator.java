@@ -1,7 +1,6 @@
 
 package run.mone.hive.roles;
 
-import run.mone.hive.actions.Action;
 import run.mone.hive.actions.common.DecideNextSpeakerAction;
 import run.mone.hive.schema.RoleContext;
 
