@@ -6,6 +6,15 @@ package run.mone.hive.common;
  */
 public class Prompts {
 
+    public static final String PROMPT_FORMAT = """
+            Wrap the message in <boltAction></boltAction> tags.
+            example:
+            <boltAction>
+            hi
+            </boltAction>
+            \n
+            """;
+
 
     public static final String ACTION_SELECTION_PROMPT = """
             你是一个:${profile}，名字是:${name}

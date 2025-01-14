@@ -1,7 +1,8 @@
-package run.mone.hive.actions;
+package run.mone.hive.actions.programmer;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import run.mone.hive.actions.Action;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
@@ -56,15 +57,12 @@ public class RunCode extends Action {
                 String executionResult = this.llm.ask(prompt).join();
                 String javaExecutionResult = JavaCodeExecutor.execute(this.context.getCode(), this.context.getTestCode());
                 String finalResult = "LLM Execution Result:\n" + executionResult + "\n\nActual Java Execution Result:\n" + javaExecutionResult;
-
                 return Message.builder()
                         .content(finalResult)
                         .role("RunCode")
-                        .id(UUID.randomUUID().toString())
                         .causeBy(this.getClass().getName())
                         .build();
             } catch (Exception e) {
-
                 throw new RuntimeException("Failed to execute code", e);
             }
         });

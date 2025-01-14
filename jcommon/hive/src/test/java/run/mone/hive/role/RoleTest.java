@@ -5,11 +5,12 @@ import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.Team;
 import run.mone.hive.actions.AnalyzeArchitecture;
-import run.mone.hive.actions.WriteCode;
+import run.mone.hive.actions.programmer.WriteCode;
 import run.mone.hive.actions.WriteDesign;
 import run.mone.hive.actions.python.ExecutePythonCode;
 import run.mone.hive.actions.python.FixPythonBug;
 import run.mone.hive.actions.python.WritePythonCode;
+import run.mone.hive.actions.writer.WriteAction;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.context.Context;
 import run.mone.hive.llm.LLM;
@@ -25,6 +26,22 @@ import java.util.List;
  * @date 2024/12/29 16:17
  */
 public class RoleTest {
+
+
+    @SneakyThrows
+    @Test
+    public void testCoordinator() {
+        LLM llm = new LLM(LLMConfig.builder().debug(false).build());
+        Context context = new Context();
+        context.setDefaultLLM(llm);
+        Team team = new Team(context);
+        Writer writer = new Writer("Writer");
+        writer.setActions(new WriteAction());
+        team.hire(new Teacher("Teacher"), writer, new Coordinator());
+        team.publishMessage(Message.builder().role("user").content("帮我写一篇文章,有关秋天的.").sendTo(Lists.newArrayList("Coordinator")).build());
+        team.run(2);
+        System.in.read();
+    }
 
     @Test
     public void testWriter() {
@@ -49,7 +66,7 @@ public class RoleTest {
         Engineer engineer = new Engineer();
         engineer.setLlm(new LLM(LLMConfig.builder().build()));
         engineer.getRc().setReactMode(RoleContext.ReactMode.BY_ORDER);
-        engineer.setActions(new WritePythonCode(),new ExecutePythonCode(),new FixPythonBug());
+        engineer.setActions(new WritePythonCode(), new ExecutePythonCode(), new FixPythonBug());
         engineer.putMessage(Message.builder().content("编写一个计算两数和的函数,thx").sendTo(Lists.newArrayList("Engineer")).build());
         engineer.run().get();
     }

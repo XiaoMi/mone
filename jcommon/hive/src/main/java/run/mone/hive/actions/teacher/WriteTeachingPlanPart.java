@@ -1,5 +1,6 @@
-package run.mone.hive.actions;
+package run.mone.hive.actions.teacher;
 
+import run.mone.hive.actions.Action;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;

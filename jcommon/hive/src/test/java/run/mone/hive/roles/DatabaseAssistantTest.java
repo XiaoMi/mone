@@ -6,16 +6,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.Environment;
 import run.mone.hive.actions.db.DesignSchemaAction;
-import run.mone.hive.actions.db.GenerateSQLAction;
-import run.mone.hive.actions.db.QueryDataAction;
 import run.mone.hive.actions.db.ModifyDataAction;
+import run.mone.hive.actions.db.QueryDataAction;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class DatabaseAssistantTest {
 
@@ -54,18 +53,6 @@ class DatabaseAssistantTest {
         assertNotNull(result);
     }
 
-    @Test
-    void testGenerateSQLAction() {
-        GenerateSQLAction action = (GenerateSQLAction) databaseAssistant.getActions().stream()
-                .filter(a -> a instanceof GenerateSQLAction)
-                .findFirst()
-                .orElse(null);
-        assertNotNull(action, "GenerateSQLAction should be present");
-        ActionReq req = ActionReq.builder().role(Role.builder().name("user").build()).message(Message.builder().role("user").content("生成一个查询所有用户的SQL语句").build())
-                .build();
-        String result = action.run(req, ActionContext.builder().build()).join().getContent();
-        assertNotNull(result);
-    }
 
 
     @Test

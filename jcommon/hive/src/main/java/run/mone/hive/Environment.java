@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Data
 @ToString(of = "running")
 public class Environment {
-    private final Map<String, ActorRef> roles;
+    private final Map<String, Role> roles;
     private final Map<String, CompletableFuture<Message>> pendingResponses;
     private final LinkedList<Message> messageList;
     private boolean running;
@@ -46,6 +46,7 @@ public class Environment {
         Set<String> set = new HashSet<>();
         set.add(role.getName());
         memberAddrs.put(role, set);
+        roles.put(role.getName(), role);
         log.info("Added role: {}", roleName);
     }
 
@@ -69,7 +70,7 @@ public class Environment {
         return roles.containsKey(roleName);
     }
 
-    public ActorRef getRole(String roleName) {
+    public Role getRole(String roleName) {
         return roles.get(roleName);
     }
 

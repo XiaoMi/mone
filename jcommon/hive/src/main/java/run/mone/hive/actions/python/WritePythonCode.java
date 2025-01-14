@@ -1,7 +1,7 @@
 package run.mone.hive.actions.python;
 
 import com.google.common.collect.ImmutableMap;
-import run.mone.hive.actions.WriteCode;
+import run.mone.hive.actions.programmer.WriteCode;
 import run.mone.hive.common.AiTemplate;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.MetaKey;
