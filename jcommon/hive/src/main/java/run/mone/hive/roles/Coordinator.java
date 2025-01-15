@@ -12,9 +12,11 @@ import java.util.List;
  */
 public class Coordinator extends Role {
 
+    public static final String NAME = "Coordinator";
+
     public Coordinator() {
         super(
-                "Coordinator",
+                NAME,
                 "I am a coordinator responsible for managing the conversation flow and deciding which role should speak next.",
                 "Coordinate the conversation and determine the next speaker",
                 "Must ensure fair and efficient communication among all roles"
