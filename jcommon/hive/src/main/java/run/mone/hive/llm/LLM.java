@@ -310,22 +310,26 @@ public class LLM {
     }
 
 
-    public String chatWithBot(String content) {
-        return chatWithBot(content, new JsonObject());
+    public String chatWithBot(Role role, String content) {
+        return chatWithBot(role, content, new JsonObject());
     }
 
-    public String chatWithBot(String content, JsonObject params) {
+    public String chatWithBot(Role role, String content, JsonObject params) {
         if (botBridge == null) {
             throw new IllegalStateException("Bot bridge not initialized");
         }
-        return botBridge.call(content, params);
+        String result = botBridge.call(content, params);
+        role.sendMessage(Message.builder().id(UUID.randomUUID().toString()).role(role.getName()).content(result).build());
+        return result;
     }
 
-    public String chatWithBot(String content, JsonObject params, Function<String, String> responseHandler) {
+    public String chatWithBot(Role role, String content, JsonObject params, Function<String, String> responseHandler) {
         if (botBridge == null) {
             throw new IllegalStateException("Bot bridge not initialized");
         }
-        return botBridge.call(content, params, responseHandler);
+        String result = botBridge.call(content, params, responseHandler);
+        role.sendMessage(Message.builder().id(UUID.randomUUID().toString()).role(role.getName()).content(result).build());
+        return result;
     }
 
 }

@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.roles.Teacher;
 import run.mone.hive.schema.AiMessage;
 
 import java.util.ArrayList;
@@ -127,18 +128,20 @@ class LLMTest {
                 "xxxxxxx"
         ));
 
+        Teacher aaa = new Teacher("aaa");
+
         // 简单调用
-        String simple = llm.chatWithBot("你好");
+        String simple = llm.chatWithBot(aaa, "你好");
         System.out.println("simple call : " + simple);
 
         // 带参数调用
         JsonObject params = new JsonObject();
         params.addProperty("key", "value");
-        String withParam = llm.chatWithBot("你好", params);
+        String withParam = llm.chatWithBot(aaa, "你好", params);
         System.out.println("with param : " + withParam);
 
         // 自定义响应处理
-        String response = llm.chatWithBot("你好", params, res -> {
+        String response = llm.chatWithBot(aaa, "你好", params, res -> {
             // 自定义处理逻辑
             System.out.println("function call : " + res);
             return res;
