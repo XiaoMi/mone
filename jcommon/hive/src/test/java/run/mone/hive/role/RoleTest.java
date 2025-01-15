@@ -106,7 +106,7 @@ public class RoleTest {
         context.setDefaultLLM(llm);
         Team team = new Team(context);
 
-        HumanRole human = new HumanRole("Human", "A human participant in the debate");
+        Human human = new Human("Human", "A human participant in the debate");
         Debator debatorA = new Debator("DebatorA", "First debator", "DebatorB", llm);
         Debator debatorB = new Debator("DebatorB", "Second debator", "DebatorA", llm);
 

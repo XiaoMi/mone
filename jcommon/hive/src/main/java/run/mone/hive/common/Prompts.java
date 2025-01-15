@@ -7,6 +7,7 @@ package run.mone.hive.common;
 public class Prompts {
 
     public static final String PROMPT_FORMAT = """
+            \n
             Wrap the message in <boltAction></boltAction> tags.
             example:
             <boltAction>
