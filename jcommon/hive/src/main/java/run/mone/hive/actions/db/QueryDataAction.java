@@ -20,7 +20,7 @@ public class QueryDataAction extends Action {
                 "${requirements}";
 
         String prompt = AiTemplate.renderTemplate(queryResult, ImmutableMap.of("requirements", req.getMessage().getContent()));
-        String res = llm.chat(prompt);
+        String res = llm(req).syncChat(getRole(), prompt);
 
         return Message.builder()
                 .role(req.getRole().getName())

@@ -19,7 +19,7 @@ public class DesignSchemaAction extends Action {
         String schemaDesign = "Here's a proposed schema design based on your requirements:\n" +
                 "${requirements}";
         String prompt = AiTemplate.renderTemplate(schemaDesign, ImmutableMap.of("requirements", req.getMessage().getContent()));
-        String res = llm.chat(prompt);
+        String res = llm(req).syncChat(getRole(), prompt);
 
         return Message.builder()
                 .role(req.getRole().getName())
