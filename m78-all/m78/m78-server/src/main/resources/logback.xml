@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="5 seconds">
+
+    <property resource="application.properties"></property>
+
+    <property name="MAX_HISTORY" value="120"/>
+
+    <appender name="fileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.path}/m78/server.log</file>
+        <encoder>
+            <pattern>%d|%-5level|%X{trace_id}|%thread|%logger{40}|%msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.path}/m78/server.log.%d{yyyy-MM-dd-HH}</fileNamePattern>
+            <MaxHistory>${MAX_HISTORY}</MaxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <appender name="asyncAppender" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>60000</queueSize>
+        <appender-ref ref="fileAppender"/>
+    </appender>
+
+
+    <appender name="errorAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${log.path}/m78/error.log</file>
+        <encoder>
+            <pattern>%d|%-5level|%X{trace_id}|%thread|%logger{40}|%msg%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${log.path}/m78/error.log.%d{yyyy-MM-dd-HH}</fileNamePattern>
+            <MaxHistory>${MAX_HISTORY}</MaxHistory>
+        </rollingPolicy>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <appender name="stdout" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d|%-5level|%X{trace_id}|%thread|%logger{40}|%msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="org.springframework" level="ERROR"/>
+    <logger name="ch.qos.logback" level="ERROR"/>
+    <logger name="com.xiaomi.data.push.service.state" level="ERROR"/>
+    <logger name="org.reflections.Reflections" level="ERROR"/>
+
+    <root level="INFO">
+        <appender-ref ref="stdout"/>
+        <appender-ref ref="errorAppender"/>
+        <appender-ref ref="fileAppender"/>
+    </root>
+
+</configuration>
