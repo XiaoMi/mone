@@ -1,0 +1,1 @@
+ALTER TABLE m78_code_generation_info ADD COLUMN code_char_length INT(11) NOT NULL DEFAULT 0 COMMENT '代码字符数';
