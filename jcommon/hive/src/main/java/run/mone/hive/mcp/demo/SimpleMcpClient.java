@@ -19,14 +19,14 @@ public class SimpleMcpClient {
     
     public static void main(String[] args) {
         // Create a sync client with custom configuration, using sse transport
-        //ClientMcpTransport transport = new HttpClientSseClientTransport("http://localhost:8080");
+        ClientMcpTransport transport = new HttpClientSseClientTransport("http://localhost:8080");
 
         // Create a sync client with custom configuration, using stdio transport
-        ServerParameters params = ServerParameters.builder("docker")
-            .args("run", "-i", "--rm", "mcp/fetch", "--ignore-robots-txt")
-            .build();
+//        ServerParameters params = ServerParameters.builder("docker")
+//            .args("run", "-i", "--rm", "mcp/fetch", "--ignore-robots-txt")
+//            .build();
             
-        ClientMcpTransport transport = new StdioClientTransport(params);
+//        ClientMcpTransport transport = new StdioClientTransport(params);
 
         McpSyncClient client = McpClient.using(transport)
             .requestTimeout(Duration.ofSeconds(10))
@@ -40,9 +40,9 @@ public class SimpleMcpClient {
         ListToolsResult listTools = client.listTools();
         System.out.println("listTools: " + listTools);
         // Call a tool
-        // CallToolResult result = client.callTool(
-        //     new CallToolRequest("calculator",
-        //         Map.of("operation", "add", "a", 2, "b", 3))
-        // );
+         CallToolResult result = client.callTool(
+             new CallToolRequest("calculator",
+                 Map.of("operation", "add", "a", 2, "b", 3))
+         );
     }
 }
