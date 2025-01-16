@@ -5,6 +5,8 @@ import lombok.Data;
 import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Map;
+
 @Data
 @ToString
 public class ApplyAddNodeParam implements ArgCheck {
@@ -13,6 +15,7 @@ public class ApplyAddNodeParam implements ArgCheck {
     private String desc;
     private OrgInfoParam orgParam;
     private String code;
+    private Map<String, String> env;
 
     @Override
     public boolean argCheck() {

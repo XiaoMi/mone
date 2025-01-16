@@ -59,6 +59,7 @@ public class TokenUtil {
         cookie.setPath("/");
         cookie.setMaxAge(userVo.getExprTime());
         String origin = Optional.ofNullable(request.getHeader("Origin")).orElse(request.getHeader("Host"));
+        logger.info("TokenUtil.setCookie request header_Origin={}, header_Host={}", request.getHeader("Origin"), request.getHeader("Host"));
         String domain = HostUtil.getDomain(origin);
         if (StringUtils.isNotBlank(domain)) {
             cookie.setDomain(domain);

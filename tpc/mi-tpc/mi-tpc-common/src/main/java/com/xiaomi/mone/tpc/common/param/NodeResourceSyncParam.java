@@ -10,6 +10,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 环境节点同步
@@ -33,6 +34,7 @@ public class NodeResourceSyncParam extends BaseParam implements Serializable {
     private Integer envFlag;
     private List<Long> resourceIds;
     private Integer operAction;
+    private Map<String,String> env;
 
 
 

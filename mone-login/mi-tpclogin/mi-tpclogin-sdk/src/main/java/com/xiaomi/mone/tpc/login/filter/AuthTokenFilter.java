@@ -12,9 +12,6 @@ import javax.servlet.*;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
-import java.util.Optional;
 
 class AuthTokenFilter implements Filter {
 

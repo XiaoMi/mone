@@ -7,6 +7,17 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>mi-tpclogin-sdk</artifactId>
     <version>1.0.0-SNAPSHOT</version>
+    <name>${project.artifactId}</name>
+    <description>The project of mi-tpclogin-sdk</description>
+    <url>https://github.com/XiaoMi/mone</url>
+    <inceptionYear>2020</inceptionYear>
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
     <dependencies>
         <dependency>
             <groupId>org.springframework</groupId>
@@ -108,7 +119,7 @@
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
-                    <fork>true</fork>
+                    <fork>false</fork>
                     <verbose>true</verbose>
                     <encoding>UTF-8</encoding>
                     <compilerArguments>
@@ -118,6 +129,34 @@
                     </compilerArguments>
                 </configuration>
             </plugin>
+<!--            <plugin>-->
+<!--                <groupId>org.codehaus.mojo</groupId>-->
+<!--                <artifactId>license-maven-plugin</artifactId>-->
+<!--                <version>2.0.0</version>-->
+<!--                <executions>-->
+<!--                    <execution>-->
+<!--                        <id>license-check</id>-->
+<!--                        <phase>generate-sources</phase>-->
+<!--                        <goals>-->
+<!--                            <goal>add-third-party</goal>-->
+<!--                        </goals>-->
+<!--                        <configuration>-->
+<!--                            <includeOptional>false</includeOptional>-->
+<!--                            <useMissingFile>false</useMissingFile>-->
+<!--                            <failOnMissing>false</failOnMissing>-->
+<!--                            <licenseMerges>-->
+<!--                                <licenseMerge>Apache License, Version 2.0|The Apache Software License, Version-->
+<!--                                    2.0|ASF 2.0|Apache 2|Apache-2.0|Apache 2.0 License|Apache 2.0|Apache License v2.0|Apache License 2.0|The Apache License, Version 2.0|The Apache Software License, Version 2.0-->
+<!--                                </licenseMerge>-->
+<!--                                <licenseMerge>The MIT License|MIT License</licenseMerge>-->
+<!--                                <licenseMerge>The 3-Clause BSD License|New BSD License|3-Clause BSD-->
+<!--                                    License|BSD|3-Clause BSD License|The New BSD License-->
+<!--                                </licenseMerge>-->
+<!--                            </licenseMerges>-->
+<!--                        </configuration>-->
+<!--                    </execution>-->
+<!--                </executions>-->
+<!--            </plugin>-->
         </plugins>
     </build>
 
@@ -125,12 +164,14 @@
 
     <distributionManagement>
         <repository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <id>central</id>
+            <name>maven-release-virtual</name>
+            <url>https://pkgs.d.xiaomi.net/artifactory/maven-release-virtual</url>
         </repository>
         <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+            <id>snapshots</id>
+            <name>maven-snapshot-virtual</name>
+            <url>https://pkgs.d.xiaomi.net/artifactory/maven-snapshot-virtual</url>
         </snapshotRepository>
     </distributionManagement>
 
