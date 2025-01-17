@@ -22,7 +22,7 @@ public class BotHttpBridge implements BotBridge {
 
     @Override
     public String call(String content, JsonObject params) {
-        return call(content, params, BotHttpClient.DEFAULT_FUNCTION);
+        return call(content, params, null);
     }
 
     @Override
