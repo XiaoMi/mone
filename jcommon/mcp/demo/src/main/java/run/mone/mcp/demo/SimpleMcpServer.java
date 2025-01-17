@@ -1,3 +1,5 @@
+package run.mone.mcp.demo;
+
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
