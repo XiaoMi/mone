@@ -13,36 +13,49 @@ import run.mone.hive.mcp.spec.McpSchema.CallToolRequest;
 import run.mone.hive.mcp.spec.McpSchema.CallToolResult;
 import run.mone.hive.mcp.spec.McpSchema.ClientCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.ListToolsResult;
-import run.mone.hive.mcp.spec.McpTransport;
 
 public class SimpleMcpClient {
     
     public static void main(String[] args) {
+
+    }
+
+    public void simpleClientViaSSE() {
         // Create a sync client with custom configuration, using sse transport
         ClientMcpTransport transport = new HttpClientSseClientTransport("http://localhost:8080");
+        try (McpSyncClient client = McpClient.using(transport)
+                .requestTimeout(Duration.ofSeconds(10))
+                .capabilities(ClientCapabilities.builder()
+                        .roots(true)      // Enable roots capability
+                        .build())
+                .sync()) {
+            client.initialize();
+            ListToolsResult listTools = client.listTools();
+            System.out.println("listTools: " + listTools);
+            // Call a tool
+            CallToolResult result = client.callTool(
+                    new CallToolRequest("calculator",
+                            Map.of("operation", "add", "a", 2, "b", 3))
+            );
+        }
+    }
 
+    public void simpleClientViaStdio() {
         // Create a sync client with custom configuration, using stdio transport
-//        ServerParameters params = ServerParameters.builder("docker")
-//            .args("run", "-i", "--rm", "mcp/fetch", "--ignore-robots-txt")
-//            .build();
-            
-//        ClientMcpTransport transport = new StdioClientTransport(params);
-
-        McpSyncClient client = McpClient.using(transport)
-            .requestTimeout(Duration.ofSeconds(10))
-            .capabilities(ClientCapabilities.builder()
-                .roots(true)      // Enable roots capability
-                .build())
-            .sync();
-
-        client.initialize();
-
-        ListToolsResult listTools = client.listTools();
+        ServerParameters params = ServerParameters.builder("docker")
+            .args("run", "-i", "--rm", "mcp/fetch", "--ignore-robots-txt")
+            .build();
+        ClientMcpTransport transport = new StdioClientTransport(params);
+        ListToolsResult listTools;
+        try (McpSyncClient client = McpClient.using(transport)
+                .requestTimeout(Duration.ofSeconds(10))
+                .capabilities(ClientCapabilities.builder()
+                        .roots(true)      // Enable roots capability
+                        .build())
+                .sync()) {
+            client.initialize();
+            listTools = client.listTools();
+        }
         System.out.println("listTools: " + listTools);
-        // Call a tool
-         CallToolResult result = client.callTool(
-             new CallToolRequest("calculator",
-                 Map.of("operation", "add", "a", 2, "b", 3))
-         );
     }
 }
