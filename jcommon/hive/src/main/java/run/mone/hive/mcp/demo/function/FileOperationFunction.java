@@ -27,13 +27,16 @@ public class FileOperationFunction implements Function<Map<String, Object>, McpS
                 "properties": {
                     "operation": {
                         "type": "string",
-                        "enum": ["create", "delete", "read", "modify", "list"]
+                        "enum": ["create", "delete", "read", "modify", "list"],
+                       "description":"The operation to perform on the file (create, delete, read, modify, or list)"
                     },
                     "path": {
-                        "type": "string"
+                        "type": "string",
+                        "description":"The file path or directory path for the operation"
                     },
                     "content": {
-                        "type": "string"
+                        "type": "string",
+                        "description":"The content to write to the file (required for create and modify operations)"
                     }
                 },
                 "required": ["operation", "path"]

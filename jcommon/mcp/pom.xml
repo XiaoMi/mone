@@ -15,6 +15,7 @@
     <modules>
         <module>demo</module>
         <module>mysql</module>
+        <module>mongo</module>
     </modules>
 
     <properties>
