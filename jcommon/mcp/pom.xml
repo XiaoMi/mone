@@ -16,7 +16,8 @@
         <module>demo</module>
         <module>mysql</module>
         <module>mongo</module>
-        <module>mpc-redis</module>
+        <module>mcp-redis</module>
+        <module>mcp-shell</module>
     </modules>
 
     <properties>

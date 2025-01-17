@@ -1,4 +1,4 @@
-package run.mone.mpc.redis.server;
+package run.mone.mcp.shell.server;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -9,28 +9,28 @@ import run.mone.hive.mcp.server.McpSyncServer;
 import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
-import run.mone.mpc.redis.function.RedisFunction;
+import run.mone.mcp.shell.function.MacShellFunction;
 
 @Component
-public class MongoMcpServer {
+public class ShellMcpServer {
 
     private ServerMcpTransport transport;
     private McpSyncServer syncServer;
 
-    public MongoMcpServer(ServerMcpTransport transport) {
+    public ShellMcpServer(ServerMcpTransport transport) {
         this.transport = transport;
     }
 
     public McpSyncServer start() {
         McpSyncServer syncServer = McpServer.using(transport)
-                .serverInfo("redis_mcp", "0.0.1")
+                .serverInfo("shell_mcp", "0.0.1")
                 .capabilities(ServerCapabilities.builder()
                         .tools(true)
                         .logging()
                         .build())
                 .sync();
 
-        RedisFunction function = new RedisFunction();
+        MacShellFunction function = new MacShellFunction();
         var toolRegistration = new ToolRegistration(
                 new Tool(function.getName(), function.getDesc(), function.getToolScheme()), function
         );
