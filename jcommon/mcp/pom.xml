@@ -18,6 +18,7 @@
         <module>mcp-redis</module>
         <module>mcp-shell</module>
         <module>mcp-docker</module>
+        <module>mcp-neo4j</module>
     </modules>
 
     <properties>
