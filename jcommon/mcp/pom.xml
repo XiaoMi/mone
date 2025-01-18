@@ -19,6 +19,7 @@
         <module>mcp-shell</module>
         <module>mcp-docker</module>
         <module>mcp-neo4j</module>
+        <module>mcp-playwright</module>
     </modules>
 
     <properties>
@@ -33,6 +34,21 @@
             <artifactId>hive</artifactId>
             <version>1.6.1-jdk21-SNAPSHOT</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <version>3.4.1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>6.2.1</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
 </project>
