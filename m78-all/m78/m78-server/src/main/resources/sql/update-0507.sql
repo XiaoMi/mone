@@ -1,0 +1,1 @@
+ALTER TABLE `m78_bot` ADD `meta` json;
