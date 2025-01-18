@@ -26,7 +26,7 @@ public class Neo4jMcpServer {
     @Value("${neo4j.user}")
     private String neo4jUser;
 
-    @Value("${neo4j.password}")
+    @Value("${PRIVATE_KEY}")
     private String neo4jPassword;
 
     public Neo4jMcpServer(ServerMcpTransport transport) {
