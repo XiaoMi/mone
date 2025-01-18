@@ -20,4 +20,5 @@ nohup*
 *.pyc
 *.class
 .sbtserver*
+.vscode/settings.json
 
