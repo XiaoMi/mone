@@ -10,7 +10,7 @@
     </parent>
 
     <groupId>run.mone.mcp</groupId>
-    <artifactId>mysql</artifactId>
+    <artifactId>mcp-mysql</artifactId>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>

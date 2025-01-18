@@ -13,11 +13,11 @@
     <version>1.6.1-jdk21-SNAPSHOT</version>
     <packaging>pom</packaging>
     <modules>
-        <module>demo</module>
-        <module>mysql</module>
-        <module>mongo</module>
+        <module>mcp-mysql</module>
+        <module>mcp-mongo</module>
         <module>mcp-redis</module>
         <module>mcp-shell</module>
+        <module>mcp-docker</module>
     </modules>
 
     <properties>
