@@ -36,6 +36,19 @@ public class MysqlFunction implements Function<Map<String, Object>, McpSchema.Ca
 
     public MysqlFunction() {
         log.info("Initializing MysqlFunction...");
+    }
+
+    private synchronized void ensureConnection() {
+        if (connection != null) {
+            try {
+                if (connection.isValid(1)) {
+                    return;
+                }
+            } catch (SQLException e) {
+                log.warn("Connection validation failed", e);
+            }
+        }
+
         String host = System.getenv().getOrDefault("MYSQL_HOST", "localhost");
         String user = System.getenv("MYSQL_USER");
         String password = System.getenv("MYSQL_PASSWORD");
@@ -70,6 +83,7 @@ public class MysqlFunction implements Function<Map<String, Object>, McpSchema.Ca
         }
 
         log.info("Executing query: {}", query);
+        ensureConnection();
         try (Statement stmt = connection.createStatement()) {
             // 处理不同类型的查询
             if (query.toUpperCase().startsWith("SHOW TABLES")) {
