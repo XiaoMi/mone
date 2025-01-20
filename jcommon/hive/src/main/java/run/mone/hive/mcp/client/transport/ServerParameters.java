@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import lombok.Data;
 import run.mone.hive.mcp.util.Assert;
 /**
  * 
@@ -19,6 +20,7 @@ import run.mone.hive.mcp.util.Assert;
  *
  */
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
+@Data
 public class ServerParameters {
 
 	// Environment variables to inherit by default
