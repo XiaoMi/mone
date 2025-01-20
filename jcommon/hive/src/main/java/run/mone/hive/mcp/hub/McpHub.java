@@ -1,22 +1,19 @@
 
 package run.mone.hive.mcp.hub;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import lombok.Data;
 import run.mone.hive.mcp.client.McpClient;
 import run.mone.hive.mcp.client.McpSyncClient;
+import run.mone.hive.mcp.client.transport.ServerParameters;
+import run.mone.hive.mcp.client.transport.StdioClientTransport;
 import run.mone.hive.mcp.spec.ClientMcpTransport;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.hive.mcp.client.transport.StdioClientTransport;
-import run.mone.hive.mcp.client.transport.ServerParameters;
-import run.mone.m78.client.util.GsonUtils;
 
+import java.io.IOException;
+import java.nio.file.*;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.nio.file.*;
-import java.io.IOException;
-import java.time.Duration;
 
 @Data
 public class McpHub {
@@ -69,18 +66,7 @@ public class McpHub {
     }
 
     private Map<String, ServerParameters> parseServerConfig(String content) {
-        JsonObject obj = JsonParser.parseString(content).getAsJsonObject();
-        Set<String> keys = obj.keySet();
-        Map<String,ServerParameters> map = new HashMap<>();
-        keys.stream().forEach(key->{
-            JsonObject sp = obj.get(key).getAsJsonObject();
-            ServerParameters p = GsonUtils.GSON.fromJson(sp, ServerParameters.class);
-            if (null == p.getEnv()) {
-                p.setEnv(new HashMap<>());
-            }
-            map.put(key,p);
-        });
-        return map;
+        return McpSettings.fromContent(content).getMcpServers();
     }
 
     private void processSettingsChange() {

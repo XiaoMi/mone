@@ -1,7 +1,10 @@
 
 package run.mone.hive.mcp.hub;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Getter;
+import lombok.SneakyThrows;
 import run.mone.hive.mcp.client.transport.ServerParameters;
 
 import java.io.IOException;
@@ -9,7 +12,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
+@Getter
 public class McpSettings {
+
     private Map<String, ServerParameters> mcpServers;
 
     public static McpSettings fromFile(Path path) throws IOException {
@@ -18,8 +23,14 @@ public class McpSettings {
         return mapper.readValue(content, McpSettings.class);
     }
 
-    public Map<String, ServerParameters> getMcpServers() {
-        return mcpServers;
+    @SneakyThrows
+    public static McpSettings fromContent(String content) {
+        ObjectMapper mapper = new ObjectMapper();
+        TypeReference<Map<String, ServerParameters>> typeRef = new TypeReference<>() {};
+        Map<String, ServerParameters> mcpServers = mapper.readValue(content, typeRef);
+        McpSettings ms = new McpSettings();
+        ms.setMcpServers(mcpServers);
+        return ms;
     }
 
     public void setMcpServers(Map<String, ServerParameters> mcpServers) {
