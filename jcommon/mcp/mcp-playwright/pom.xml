@@ -5,51 +5,27 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>run.mone</groupId>
-        <artifactId>jcommon</artifactId>
-        <version>1.6.0-jdk21-SNAPSHOT</version>
+        <artifactId>mcp</artifactId>
+        <version>1.6.1-jdk21-SNAPSHOT</version>
     </parent>
 
-    <artifactId>mcp</artifactId>
-    <version>1.6.1-jdk21-SNAPSHOT</version>
-    <packaging>pom</packaging>
-    <modules>
-        <module>mcp-mysql</module>
-        <module>mcp-mongo</module>
-        <module>mcp-redis</module>
-        <module>mcp-shell</module>
-        <module>mcp-docker</module>
-        <module>mcp-neo4j</module>
-        <module>mcp-playwright</module>
-        <module>mcp-applescript</module>
-    </modules>
+    <artifactId>mcp-playwright</artifactId>
 
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <logback.version>1.5.12</logback.version>
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>hive</artifactId>
-            <version>1.6.1-jdk21-SNAPSHOT</version>
-        </dependency>
 
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <version>3.4.1</version>
-            <scope>test</scope>
+            <groupId>com.microsoft.playwright</groupId>
+            <artifactId>playwright</artifactId>
+            <version>1.49.0</version>
         </dependency>
 
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-test</artifactId>
-            <version>6.2.1</version>
-            <scope>test</scope>
-        </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -144,6 +120,20 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
             <version>3.4.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <version>3.4.1</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-test</artifactId>
+            <version>6.2.1</version>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>
