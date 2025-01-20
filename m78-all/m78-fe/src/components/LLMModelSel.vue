@@ -1,11 +1,34 @@
 <template>
   <el-select v-model="val" :placeholder="props.placeholder" :disabled="props.disabled">
-    <el-option v-for="item in options" :key="item.value" :label="item.label" :value="item.value" />
+    <el-option-group v-for="(group, key) in options" :key="key" :label="key">
+      <el-option v-for="item in group" :key="item.cname" :label="item.cname" :value="item.cname">
+        <div class="group-container">
+          <div class="group-left">
+            <img :src="item.imageUrl" style="width: 20px; height: 20px; margin-right: 10px" />
+            <span>{{ item.cname }}</span>
+          </div>
+          <el-popover
+            placement="top"
+            title=""
+            :width="200"
+            trigger="hover"
+            :content="item.description"
+          >
+            <template #reference>
+              <el-icon><Warning /></el-icon>
+            </template>
+          </el-popover>
+        </div>
+      </el-option>
+    </el-option-group>
   </el-select>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
+import { useProbotStore } from '@/stores/probot'
+
+const probotStore = useProbotStore()
 
 const emits = defineEmits(['update:modelValue'])
 const props = defineProps({
@@ -30,28 +53,18 @@ const val = computed({
     emits('update:modelValue', val)
   }
 })
-const options = ref([
-  {
-    value: 'gpt4_1106_2',
-    label: 'gpt4_1106_2'
-  },
-  {
-    value: 'moonshot_128k',
-    label: 'moonshot_128k'
-  },
-  {
-    value: 'moonshot_32k',
-    label: 'moonshot_32k'
-  },
-  {
-    value: 'moonshot',
-    label: 'moonshot'
-  },
-  {
-    value: 'glm4',
-    label: 'glm4'
-  }
-])
+const options = computed(() => probotStore.LLMModelSelObj)
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.group-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  .group-left {
+    display: flex;
+    align-items: center;
+  }
+}
+</style>

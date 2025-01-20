@@ -4,7 +4,7 @@
  * @LastEditTime: 2024-03-27 20:09:23
 -->
 <template>
-  <el-dialog v-model="dialogVisible" :title="'创建分类'" width="500">
+  <el-dialog v-model="dialogVisible" :title="'创建分类'" width="500" >
     <div class="create-category-dialog-container">
       <el-form
         ref="formRef"
@@ -42,7 +42,7 @@
 import { reactive, ref, computed, watch } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { createCategory } from '@/api/probot-classification'
-import { submitForm, resetForm } from '@/common/formMethod'
+import { submitForm ,resetForm} from '@/common/formMethod'
 
 const props = defineProps({
   modelValue: {
@@ -95,7 +95,7 @@ const sure = () => {
       .then((data) => {
         if (data.data) {
           ElMessage.success('创建成功！')
-          emits('onOk', form.type)
+          emits('onOk',form.type)
           emits('update:modelValue', false)
         } else {
           ElMessage.error(data.message || '创建失败')
@@ -113,8 +113,7 @@ const sure = () => {
 
 <style lang="scss">
 .create-category-dialog-container {
-  .oz-input,
-  .oz-select {
+  .oz-input,.oz-select {
     width: 100%;
   }
 }

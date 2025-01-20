@@ -81,7 +81,7 @@ const props = defineProps({
         white-space: nowrap;
       }
       &.is-active {
-        background-color: #79bbff;
+        background-color:  var(--oz-color-primary);
         border-radius: 5px;
         color: #fff;
       }

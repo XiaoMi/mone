@@ -1,7 +1,7 @@
 <!--
  * @Description:
  * @Date: 2024-03-13 11:23:40
- * @LastEditTime: 2024-03-28 17:05:09
+ * @LastEditTime: 2024-08-15 10:36:29
 -->
 <template>
   <div class="visit-container" v-loading="loading">
@@ -52,7 +52,7 @@
 <script setup lang="ts">
 import { ref, computed, onBeforeMount, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
-import BaseStar from '@/components/BaseStar.vue'
+import BaseStar from '@/components/probot/BaseStar.vue'
 import BaseInfo from '@/components/BaseInfo.vue'
 import RateDialog from '@/components/RateDialog.vue'
 import { isCollect, applyCollect, deleteCollect } from '@/api/probot-visit'
@@ -84,19 +84,16 @@ const loading = ref(false)
 const type = ref(1)
 
 const collectClick = () => {
+  const params = {
+    type: '1',
+    collectId: botId.value
+  }
   if (collect.value) {
-    deleteCollect({
-      type: '0',
-      collectId: botId.value
-    }).then((res) => {
+    deleteCollect(params).then((res) => {
       collect.value = false
     })
   } else {
-    applyCollect({
-      type: '0',
-      collectId: botId.value
-    }).then((res) => {
-      console.log()
+    applyCollect(params).then((res) => {
       if (res.code === 0) {
         collect.value = true
       }
@@ -137,7 +134,7 @@ onBeforeMount(() => {
   if (botId.value) {
     getCommentRatesFn()
     isCollect({
-      type: '0',
+      type: '1',
       collectId: botId.value
     }).then((res) => {
       collect.value = res?.data

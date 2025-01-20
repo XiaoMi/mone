@@ -1,8 +1,8 @@
 <template>
-  <el-collapse v-model="activeNames">
+  <el-collapse v-model="activeNames" v-if="resOutputs.errorInfo">
     <el-collapse-item name="1">
       <template #title>
-        输出
+        错误
         <CopyBtn
           :arr="[
             {
@@ -28,4 +28,8 @@ const props = defineProps({
 const activeNames = ref(['1'])
 </script>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.err {
+  word-break: break-word;
+}
+</style>

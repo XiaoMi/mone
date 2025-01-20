@@ -4,7 +4,10 @@
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="t('about.name')" prop="contactName">
-            <el-input :placeholder="t('about.namePlaceholder')" v-model="state.form.contactName" />
+            <el-input
+              :placeholder="t('about.namePlaceholder')"
+              v-model="state.form.contactName"
+            />
           </el-form-item>
         </el-col>
         <el-col :span="12">
@@ -42,9 +45,12 @@
       <el-row :gutter="20">
         <el-col :span="24">
           <div class="btns">
-            <el-button v-loading="state.loading" type="primary" @click="handleSubmit">{{
-              t('about.submit')
-            }}</el-button>
+            <el-button
+              v-loading="state.loading"
+              type="primary"
+              @click="handleSubmit"
+              >{{ t('about.submit') }}</el-button
+            >
           </div>
         </el-col>
       </el-row>

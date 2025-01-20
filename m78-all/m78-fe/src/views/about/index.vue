@@ -3,21 +3,15 @@
     <div class="about-container">
       <ul class="ul-wrap">
         <li>
-          <h1>
-            <span>{{ t('about.aboutUs') }}</span>
-          </h1>
+          <h1><span>{{ t('about.aboutUs') }}</span></h1>
           <About />
         </li>
         <li>
-          <h1>
-            <span>{{ t('about.contactUs') }}</span>
-          </h1>
+          <h1><span>{{ t('about.contactUs') }}</span></h1>
           <Connect />
         </li>
         <li>
-          <h1>
-            <span>{{ t('about.problemFeedback') }}</span>
-          </h1>
+          <h1><span>{{ t('about.problemFeedback') }}</span></h1>
           <Feedback />
         </li>
       </ul>
@@ -44,8 +38,8 @@ import { t } from '@/locales'
 }
 .about-container {
   padding: 200px 0 40px;
-  width: 1000px;
-  margin: 0 auto;
+  width:1000px;
+  margin :0 auto;
   ul.ul-wrap {
     li {
       padding-bottom: 40px;

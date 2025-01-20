@@ -76,7 +76,7 @@ const props = defineProps({
   },
   itemId: {}
 })
-const emits = defineEmits(['update:modelValue', 'update'])
+const emits = defineEmits(['update:modelValue','update'])
 const dialogVisible = computed({
   get() {
     return props.modelValue
@@ -113,7 +113,7 @@ const exporHttpSubmit = () => {
       return
     }
     emits('update')
-    dialogVisible.value = false
+    dialogVisible.value=false
     ElMessage.success(t('common.editSuccess'))
   })
 }

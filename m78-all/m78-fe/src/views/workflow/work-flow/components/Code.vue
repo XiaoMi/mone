@@ -14,14 +14,11 @@
           <template #title>
             <div class="t-box">
               <div class="t-left">
-                <el-icon>
-                  <ArrowDown v-if="activeNames.includes('1')" />
-                  <ArrowRight v-else />
-                </el-icon>
-                <TitleTooltip
+                <CollapseTitle
+                  :activeNames="activeNames"
                   title="输入"
                   content="输入需要添加到提示词的信息，这些信息可以被下方的提示词引用"
-                  class="title-tooltip"
+                  tipClass="title-tooltip"
                   :showAdd="false"
                 />
               </div>
@@ -35,8 +32,9 @@
               :label="i < 1 ? '变量名' : ''"
               :prop="'inputs.' + i + '.name'"
               :rules="{
-                required: true,
-                message: '参数值不可为空',
+                validator: (rule, value, cb) => {
+                  validPName(rule, value, cb, flowNode.inputs)
+                },
                 trigger: 'blur'
               }"
             >
@@ -71,12 +69,7 @@
                 }"
                 v-if="item.type == 'value'"
               >
-                <el-input
-                  v-model="item.value"
-                  placeholder="请输入参数值"
-                  :style="refreStyle"
-                  maxlength="20"
-                />
+                <el-input v-model="item.value" placeholder="请输入参数值" :style="refreStyle" />
               </el-form-item>
               <el-form-item
                 v-else
@@ -90,7 +83,7 @@
                   trigger: 'blur'
                 }"
               >
-                <QuotaCas :nodeId="flowNode.id" v-model="item.referenceInfo" :style="refreStyle" />
+                <QuotaCas v-model="item.referenceInfo" :style="refreStyle" :options="referOps" />
               </el-form-item>
               <el-form-item :class="i == 0 ? 'empty-item' : ''">
                 <el-button
@@ -115,35 +108,40 @@
           <template #title>
             <div class="t-box">
               <div class="t-left">
-                <el-icon>
-                  <ArrowDown v-if="activeNames.includes('1')" />
-                  <ArrowRight v-else />
-                </el-icon>
-                <TitleTooltip
-                  title="代码"
-                  content="参考代码示例编写一个函数的结构，你可以直接使用输入参</br>数中的变量，并通过return一个对象来输出处理结果此功能</br>不支持编写多个函数即使仅有一个输出值，也务必保持以对</br>象的形式return"
-                  class="title-tooltip"
-                  :showAdd="false"
-                />
+                <CollapseIcon :activeNames="activeNames1" />
+                <ProbotCodeHeadTitle />
+                <el-select
+                  v-model="codeVal"
+                  placeholder="请选择代码库"
+                  clearable
+                  filterable
+                  remote
+                  reserve-keyword
+                  :remote-method="remoteMethod"
+                  :loading="codeLoading"
+                  style="margin-left: 4px; width: 150px"
+                  @change="codeChange"
+                >
+                  <el-option
+                    v-for="item in codeOptions"
+                    :key="item.id"
+                    :label="item.name"
+                    :value="item.id"
+                  />
+                </el-select>
               </div>
               <div>
-                <el-button link @click.stop="showGenFn">
-                  <i class="iconfont icon-code" style="margin-right: 2px"></i>
-                  生成代码
-                </el-button>
-                <el-button link :icon="Edit" @click.stop="showIde">在IDE中编辑</el-button>
+                <ProbotCodeHead
+                  v-model:code="flowNode.coreSetting.code"
+                  @codeGenRes="codeGenRes"
+                  :isFlow="true"
+                >
+                </ProbotCodeHead>
               </div>
             </div>
           </template>
-          <el-form-item class="tips nowheel">
-            <Codemirror
-              v-model:value="flowNode.coreSetting.code"
-              placeholder=""
-              :options="cmOptions"
-              border
-              :height="140"
-              class="code-mirror-item"
-            />
+          <el-form-item class="tips nowheel" @wheel="handleNoWheelFn">
+            <ProbotCodemirror v-model="flowNode.coreSetting.code" height="140px"></ProbotCodemirror>
           </el-form-item>
         </el-collapse-item>
       </el-collapse>
@@ -154,15 +152,15 @@
           <template #title>
             <div class="t-box">
               <div class="t-left">
-                <el-icon>
-                  <ArrowDown v-if="activeNames2.includes('1')" />
-                  <ArrowRight v-else />
-                </el-icon>
-                <TitleTooltip
+                <CollapseTitle
+                  :activeNames="activeNames2"
                   title="输出"
-                  raw-content
-                  content="代码运行完成后输出的变最，必须保证此处定义的变量名、</br>变量类型与代码的return对象中完全一致"
-                  class="title-tooltip"
+                  content="代码运行完成后输出的变最，必须保证此处定义的变量名、</br>变量类型与代码的return对象中完全一致:</br>
+                  1. 如果返回类型为对象数组(Object[])或者是对象的集合</br>(List<Object> objects)则type取值Array<Object></br>
+2. 如果返回类型为对象则type取值为Object</br>
+3. 如果返回类型为基础类型数组，则type取值Array<String></br>
+4. 如果返回类型为基础类型,则type取值为String"
+                  tipClass="title-tooltip"
                   :showAdd="false"
                 />
               </div>
@@ -171,88 +169,50 @@
               </el-button>
             </div>
           </template>
-          <el-form-item
-            class="tree-form-item"
-            :rules="{
-              validator: validateTree,
-              trigger: 'blur'
-            }"
-            prop="outputs"
-          >
-            <div class="tree-t">
-              <p class="var-name var-label">变量名</p>
-              <p class="var-type var-label">变量类型</p>
-            </div>
-            <el-tree
-              :data="flowNode.outputs"
-              node-key="id"
-              default-expand-all
-              :expand-on-click-node="false"
-              class="var-tree"
-              :props="{ children: 'schema' }"
-            >
-              <template #default="{ node, data }">
-                <span class="custom-tree-node">
-                  <div class="input-box">
-                    <el-input v-model="data.name" placeholder="变量名" maxlength="20" />
-                    <VariateTypeSel v-model="data.valueType" />
-                  </div>
-                  <div class="btns">
-                    <el-button
-                      link
-                      @click="remove(node, data)"
-                      :disabled="flowNode.outputs.length == 1"
-                    >
-                      <i class="iconfont icon-jian icon-btn"></i>
-                    </el-button>
-                    <el-button
-                      link
-                      @click="append(data)"
-                      v-if="['Object', 'Array<Object>'].indexOf(data.valueType) > -1"
-                    >
-                      <i class="iconfont icon-plus1 icon-btn"></i>
-                    </el-button>
-                  </div>
-                </span>
-              </template>
-            </el-tree>
-          </el-form-item>
+          <OutPutsTree
+            v-model="flowNode.outputs"
+            :showDesc="false"
+            :nodeType="flowNode.nodeType"
+            :flowNode="flowNode"
+          />
         </el-collapse-item>
       </el-collapse>
     </div>
-    <CodeEditor v-model="showEditor" v-model:code="flowNode.coreSetting.code" />
-    <CodeGenerator v-model="showGenerator" @codeGenRes="codeGenRes" />
   </el-form>
 </template>
 
 <script setup>
-import { ref, computed, defineExpose } from 'vue'
+import { ref, computed, defineExpose, onMounted } from 'vue'
 import TitleTooltip from './TitleTooltip.vue'
 import OutputTypeSel from './components/OutputTypeSel.vue'
 import VariateTypeSel from './components/VariateTypeSel'
-import { validateRef, validPName } from '../baseInfo'
-import Codemirror from 'codemirror-editor-vue3'
-import 'codemirror/theme/erlang-dark.css'
-import 'codemirror/mode/javascript/javascript.js'
-import 'codemirror/mode/groovy/groovy.js'
+import { validateRef, validPName, getReferOps } from '../baseInfo'
 import QuotaCas from './components/QuotaCas'
-import { Edit } from '@element-plus/icons-vue'
-import CodeEditor from './components/CodeEditor'
-import CodeGenerator from './components/CodeGenerator'
+import { useVueFlow } from '@vue-flow/core'
+import { useWfStore } from '@/stores/workflow1'
+import ProbotCodemirror from '@/components/ProbotCodemirror'
+import ProbotCodeHeadTitle from '@/components/ProbotCodeHeadTitle'
+import ProbotCodeHead from '@/components/ProbotCodeHead'
+import OutPutsTree from './components/OutPutsTree'
+import { codeList } from '@/api/probot-code'
+import CollapseIcon from './components/CollapseIcon.vue'
+import CollapseTitle from './components/CollapseTitle.vue'
+import { handleNoWheel } from '@/views/workflow/work-flow/baseInfo.js'
 
-const showEditor = ref(false)
-const cmOptions = {
-  mode: 'text/groovy', // 语言模式
-  lineNumbers: false, // 显示行号
-  theme: 'erlang-dark',
-  readOnly: true
-}
+const handleNoWheelFn = ref(handleNoWheel)
 
+const codeVal = ref()
+const codeOptions = ref()
+const codeLoading = ref(false)
+const wfStore = useWfStore()
+const draging = computed(() => wfStore.nodeDragging)
 const props = defineProps({
   modelValue: {},
   nodes: {},
   lines: {},
-  disabled: {}
+  disabled: {},
+  getDetailed: {},
+  referOps: {}
 })
 const emits = defineEmits(['update:modelValue'])
 const flowNode = computed({
@@ -266,19 +226,12 @@ const flowNode = computed({
 const refreStyle = ref({
   width: '170px'
 })
-const activeNames = ref('1')
-const activeNames1 = ref('1')
-const activeNames2 = ref('1')
-const showGenerator = ref(false)
+const activeNames = ref(['1'])
+const activeNames1 = ref(['1'])
+const activeNames2 = ref(['1'])
 
-const switchShowGen = () => {
-  showGenerator.value = !showGenerator.value
-}
-const showGenFn = () => {
-  switchShowGen()
-}
 const addParam = () => {
-  flowNode.value.inputs.push({ name: '', val: '' })
+  flowNode.value.inputs.push({ name: '', type: 'reference' })
 }
 const delInFn = (i) => {
   flowNode.value.inputs.splice(i, 1)
@@ -286,35 +239,29 @@ const delInFn = (i) => {
 let id = 1000
 const append = (data) => {
   // eslint-disable-next-line no-const-assign
-  const newChild = { id: id++, label: 'testtest', schema: [] }
-  if (!data.schema) {
-    data.schema = []
+  const newChild = { name: '', valueType: '', children: [] }
+  if (!data.children) {
+    data.children = []
   }
-  data.schema.push(newChild)
+  data.children.push(newChild)
 }
+
 const addFn = () => {
   const newObj = {
     id: id++,
     name: '',
-    type: 'String'
+    valueType: 'String'
   }
   flowNode.value.outputs.push(newObj)
 }
 
 const remove = (treeNode, data) => {
   const parent = treeNode.parent
-  const schema = parent.data.schema || parent.data
-  const index = schema.findIndex((d) => d.id === data.id)
-  schema.splice(index, 1)
+  const children = parent.data.children || parent.data
+  const index = children.findIndex((d) => d.id === data.id)
+  children.splice(index, 1)
 }
 
-const switchShowIde = () => {
-  showEditor.value = !showEditor.value
-}
-
-const showIde = () => {
-  switchShowIde()
-}
 const delFn = (i) => {
   flowNode.value.outputs.splice(i, 1)
 }
@@ -322,7 +269,8 @@ const codeGenRes = (res) => {
   flowNode.value.coreSetting.code = res.code
   const resInputs = res.params.map((item) => {
     return {
-      ...item
+      ...item,
+      type: ''
     }
   })
   const resOutputs = res.outs.map((item) => {
@@ -344,8 +292,9 @@ const validate = async () => {
   }
 }
 const isValidName = (name) => {
+  console.log('name', name)
   // 检查是否为空
-  if (!name.trim()) {
+  if (!name || !name.trim()) {
     return false
   }
   // 以字母或下划线开头且仅包含字母,数字,下划线
@@ -367,14 +316,43 @@ const validTree = (data, parentNames = new Set()) => {
     }
     namesSet.add(item.name)
     // 检查子元素（如果存在）
-    if (item.schema && item.schema.length > 0) {
-      const isValidChildren = validTree(item.schema, [...parentNames, item.name])
+    if (item.children && item.children.length > 0) {
+      const isValidChildren = validTree(item.children, [...parentNames, item.name])
       if (isValidChildren.isFailed) {
         return isValidChildren
       }
     }
   }
   return { idFailed: false }
+}
+
+const codeChange = (id) => {
+  codeGenRes(codeOptions.value.find((item) => item.id === id)?.code)
+}
+const getCodeList = (query) => {
+  codeLoading.value = true
+  codeList({
+    type: 1,
+    pageSize: 100,
+    pageNum: 1,
+    name: query
+  })
+    .then((data) => {
+      if (data?.data.records?.length) {
+        codeOptions.value = data.data.records || []
+      } else {
+        codeOptions.value = []
+      }
+    })
+    .finally(() => {
+      codeLoading.value = false
+    })
+}
+onMounted(() => {
+  // getCodeList()
+})
+const remoteMethod = (query) => {
+  getCodeList(query)
 }
 
 const validateTree = (rule, value, callback) => {
@@ -396,96 +374,125 @@ defineExpose({ validate })
   border-radius: 5px;
   padding: 10px 10px 0 10px;
   margin-bottom: 10px;
+
   .flex-1 {
     flex: 1;
   }
+
   :deep(.oz-select) {
     width: 100%;
   }
 }
+
 .inputs-box {
   width: 100%;
   margin-bottom: 10px;
 }
+
 .t-left {
   display: flex;
   align-items: center;
 }
+
 .title-tooltip {
   margin-left: 4px;
 }
+
 .output-item {
   display: flex;
   justify-content: space-between;
+
   .name-box {
     flex: 1;
   }
 }
+
 .val-box {
   display: flex;
 }
+
 .empty-item {
   padding-top: 24px;
 }
+
 .btns {
   width: 58px;
   flex-basis: 48px;
   padding-left: 4px;
   display: flex;
   justify-content: space-between;
+
   .oz-button + .oz-button {
     margin-left: 5px;
   }
+
   .icon-btn {
     font-size: 14px;
   }
 }
+
 .custom-tree-node {
   flex: 1;
   display: flex;
-  align-items: center;
   justify-content: space-between;
+  align-items: flex-start;
   font-size: 14px;
   padding-right: 8px;
+
   .input-box {
     flex: 1;
     display: flex;
   }
+
+  :deep(.oz-form-item--small) {
+    margin-bottom: 14px;
+  }
 }
+
 .var-tree {
   background-color: transparent;
+
+  :deep(.oz-tree-node__content) {
+    height: auto;
+    align-items: flex-start;
+  }
 }
+
 .tree-t {
   flex: 1;
   display: flex;
   padding: 0 0 5px 25px;
+
   .var-label {
     font-size: 12px;
     font-weight: 600;
   }
+
   .var-type {
     flex-basis: 180px;
   }
+
   .var-name {
     flex: 1;
   }
 }
-.code-mirror-item {
-  :deep(.CodeMirror) {
-    font-size: 14px;
-    line-height: 150%;
-  }
-}
+
 .arr-item {
   display: flex;
   align-items: center;
 }
+
 .tree-form-item {
   :deep(.oz-form-item__content) {
     display: block;
   }
+
   :deep(.oz-form-item__error) {
     padding-left: 22px;
   }
+}
+
+.input-item {
+  flex: 1;
 }
 </style>

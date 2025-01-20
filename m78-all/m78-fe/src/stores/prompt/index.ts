@@ -12,6 +12,6 @@ export const usePromptStore = defineStore('prompt-store', {
     },
     getPromptList() {
       return this.$state
-    }
-  }
+    },
+  },
 })

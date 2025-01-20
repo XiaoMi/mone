@@ -1,24 +1,6 @@
 <template>
   <div class="connect-wrap">
     <dl>
-      <dt>{{ t('about.contactWebChat') }}</dt>
-      <dd>
-        <el-image :src="Img" />
-      </dd>
-    </dl>
-    <dl>
-      <dt>{{ t('about.contactDing') }}</dt>
-      <dd>
-        <el-image :src="Img" />
-      </dd>
-    </dl>
-    <dl>
-      <dt>{{ t('about.contactEmail') }}</dt>
-      <dd>
-        <el-image :src="Email" />
-      </dd>
-    </dl>
-    <dl>
       <dt>{{ t('about.contactGitHub') }}</dt>
       <dd>
         <el-image :src="GitHub" />
@@ -27,20 +9,19 @@
   </div>
 </template>
 <script setup lang="ts">
-import Img from '../assets/photo.png'
-import Email from '../assets/email.png'
+// import Img from '../assets/photo.png'
 import GitHub from '../assets/github2.png'
 import { t } from '@/locales'
 </script>
 <style lang="scss" scoped>
 .connect-wrap {
   display: flex;
-  justify-content: space-between;
   dl {
-    width: 23%;
+    width: 25%;
     height: 100%;
     border-radius: 5px;
     background-color: #fff;
+    margin-right: 40px;
     dt {
       font-size: 14px;
       line-height: 30px;
@@ -54,9 +35,9 @@ import { t } from '@/locales'
       align-items: center;
       justify-content: center;
       width: 100%;
-      padding: 60px 0;
+      height: 283px;
       :deep(.oz-image) {
-        width: 60%;
+        width: 250px;
       }
     }
   }

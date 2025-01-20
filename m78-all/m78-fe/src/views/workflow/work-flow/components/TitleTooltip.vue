@@ -6,7 +6,7 @@
         <el-icon class="warning-icon"><Warning /></el-icon>
       </el-tooltip>
     </div>
-    <el-button @click="addFn" link v-if="showAdd">
+    <el-button @click.stop="addFn" link v-if="showAdd">
       <i class="iconfont icon-plus1"></i>
     </el-button>
   </div>
@@ -45,6 +45,7 @@ const addFn = () => {
   vertical-align: middle;
 }
 .t-wrap {
+  flex: 1;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -52,5 +53,8 @@ const addFn = () => {
 }
 .icon-plus1 {
   font-size: 12px;
+}
+.title-box {
+  margin-left: 5px;
 }
 </style>

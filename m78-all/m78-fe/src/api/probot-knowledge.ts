@@ -1,28 +1,42 @@
+/*
+ * @Description:
+ * @Date: 2024-03-19 11:06:29
+ * @LastEditTime: 2024-07-30 15:13:45
+ */
 import { post, get } from '@/utils/request'
 
 //知识库列表
-export function getKnowledgeList<T = any>(data: {}) {
+export function getKnowledgeList<T = any>(data: { workSpaceId: string; pageSize: number }) {
   return get({
     url: '/v1/knowledge/listKnowledgeBase',
-    headers: { 'content-type': 'application/x-www-form-urlencoded' },
+    headers: {
+      'content-type': 'application/x-www-form-urlencoded',
+      workSpaceId: data.workSpaceId
+    },
     data,
     baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
   })
 }
 
 // 创建
-export function create<T = any>(data: { name: string }) {
+export function create<T = any>(data: { name: string; workSpaceId: string }) {
   return post<T>({
     url: '/v1/knowledge/createKnowledgeBase',
+    headers: {
+      workSpaceId: data.workSpaceId
+    },
     data,
     baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
   })
 }
 
 // 编辑
-export function update<T = any>(data: { name: string }) {
+export function update<T = any>(data: { name: string; workSpaceId: string }) {
   return post<T>({
     url: '/v1/knowledge/editKnowledgeBase',
+    headers: {
+      workSpaceId: data.workSpaceId
+    },
     data,
     baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
   })
@@ -56,6 +70,15 @@ export function getKnowledgeFileMyList<T = any>(data: { knowledgeBaseId?: string
   })
 }
 
+// 获取单个知识库下面的知识列表接口
+export function getKnowledgeFileMyList2<T = any>(data: { knowledgeBaseId?: string }) {
+  return get({
+    url: '/v1/knowledge/file/myList2',
+    data,
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
+  })
+}
+
 /**
  * @description 查询
  */
@@ -68,17 +91,6 @@ export function queryKnowledge<T = any>(data: {
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded'
     },
-    data,
-    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
-  })
-}
-
-/**
- * @description 文件上传
- */
-export function uploadKnowledgeFile<T = any>(data: { knowledgeId?: string }) {
-  return get<T>({
-    url: '/v1/knowledge/uploadKnowledgeFile',
     data,
     baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
   })
@@ -155,6 +167,15 @@ export function deleteBlock<T = any>(data: {
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded'
     },
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
+  })
+}
+
+// 创建
+export function createKnowledgeBaseBindDefaultBot<T = any>(data: { name: string }) {
+  return post<T>({
+    url: '/v1/knowledge/createKnowledgeBaseBindDefaultBot',
+    data,
     baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
   })
 }

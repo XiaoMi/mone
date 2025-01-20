@@ -1,4 +1,10 @@
-import { post } from '@/utils/request'
+/*
+ * @Description:
+ * @Date: 2024-03-20 21:29:15
+ * @LastEditTime: 2024-08-23 14:50:40
+ */
+
+import { post, get } from '@/utils/request'
 
 export function createTeam<T = any>(data: {}) {
   return post<T>({
@@ -48,5 +54,13 @@ export function deleteTeam<T = any>(data: { workspaceId: number }) {
       'Content-Type': 'application/x-www-form-urlencoded',
       workspaceId: data?.workspaceId
     }
+  })
+}
+
+export function superAdminWorkspace<T = any>(data: {}) {
+  return post<T>({
+    url: '/v1/workspace/superAdminWorkspace',
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL,
+    data
   })
 }

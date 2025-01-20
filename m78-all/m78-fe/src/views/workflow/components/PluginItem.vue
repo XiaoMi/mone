@@ -23,6 +23,8 @@
         :desc="props.desc"
         @onDragStart="dragStart"
         @addClick="addClick"
+        :draggable="draggable"
+        :showDetail="showDetail"
       />
     </div>
   </div>
@@ -38,6 +40,14 @@ const props = defineProps<{
   id: string
   name: string
   desc: string
+  showDetail: {
+    default: true
+    type: Boolean
+  }
+  draggable: {
+    default: true
+    type: Boolean
+  }
 }>()
 
 const addClick = () => {
@@ -66,6 +76,8 @@ const dragStart = (e) => {
 }
 
 .panel {
+  padding-top: 5px;
+  margin-top: 10px;
   &-header {
     display: flex;
     justify-content: space-between;
@@ -74,7 +86,7 @@ const dragStart = (e) => {
     &-header {
       display: flex;
       justify-items: center;
-      padding: 16px 0;
+      padding: 0 16px 10px 0;
 
       .header-icon {
         display: flex;

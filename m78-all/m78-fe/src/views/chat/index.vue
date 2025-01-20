@@ -56,7 +56,7 @@ async function onConversation() {
 
   // 没有数据先创建
   if (!history.value || history.value.length == 0) {
-    const code = await chatStore.addHistory({
+    const {code} = await chatStore.addHistory({
       title: message
     })
     if (code != 0) {

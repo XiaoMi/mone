@@ -15,17 +15,18 @@
               @clear="handleSearch"
             />
           </el-form-item>
-          <el-button type="primary" plain @click.stop="handleSearch" color="#40a3ff">{{
-            t('probot.search')
+          <el-button type="primary" plain @click.stop="handleSearch">{{
+            t('common.search')
           }}</el-button>
         </el-row>
       </el-form>
+      <el-button type="primary" plain @click="importFn" v-if="route.name != 'AI Probot My Collect'">{{ t('common.import') }}</el-button>
       <el-button type="primary" @click="create" v-if="route.name != 'AI Probot My Collect'"
         >创建工作流</el-button
       >
     </div>
     <el-table :data="tableData" style="width: 100%">
-      <el-table-column label="工作流" width="220" v-slot="{ row }">
+      <el-table-column label="工作流" min-width="220" v-slot="{ row }">
         <BaseInfo @click="toDetail(row)" :data="row?.flowBaseInfo" size="small" />
       </el-table-column>
       <el-table-column label="参数" v-slot="{ row }">
@@ -43,9 +44,26 @@
       <el-table-column prop="name" label="编辑时间" v-slot="{ row }">
         {{ dateFormat(row.flowBaseInfo.utime, 'yyyy-mm-dd HH:MM:ss') }}
       </el-table-column>
-      <el-table-column prop="address" label="操作" width="100">
+      <el-table-column prop="address" label="操作" width="180" v-if="route.name != 'AI Probot My Collect'">
         <template #default="scope">
           <!-- <el-button link :icon="CopyDocument"> </el-button> -->
+          <el-button
+            class="btn-item"
+            text
+            size="small"
+            type="primary"
+            @click.stop="copyItem(scope.row)"
+            :loading="exportLoading"
+          >
+            {{ t('common.export') }}</el-button
+          >
+          <CopyFlowBtn
+            :originalId="scope.row?.flowBaseInfo?.id"
+            type="text"
+            @copySuc="copySuc"
+            size="small"
+            btnType="primary"
+          />
           <el-button
             class="btn-item"
             text
@@ -54,6 +72,9 @@
             @click.stop="deleteItem(scope.row)"
             >{{ t('common.delete') }}</el-button
           >
+          <el-button link size="small" type="primary" @click.stop="handleApi(scope.row)">
+            API
+          </el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -80,9 +101,12 @@ import CreateFlow from './CreateFlow.vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import CodeImg from '@/views/workflow/imgs/icon-Code.png'
 import { useRouter, useRoute } from 'vue-router'
-import { getFlowList, deleteFlow } from '@/api/workflow'
+import { getFlowList, deleteFlow, getFlowDetail, importFlow } from '@/api/workflow'
 import { t } from '@/locales'
 import BaseInfo from '@/components/BaseInfo.vue'
+import CopyFlowBtn from '@/components/CopyFlowBtn.vue'
+import useClipboard from 'vue-clipboard3'
+import mitt from '@/utils/bus'
 
 const showCreate = ref(false)
 const formInline = ref({
@@ -94,6 +118,20 @@ const formInline = ref({
 const totalPage = ref(0)
 const tableData = ref([])
 const loading = ref(false)
+
+mitt.on('updateFlowDataList', async () => {
+  getList()
+})
+const handleApi = (row) => {
+  const { href } = router.resolve({
+    path: '/probot-api',
+    query: {
+      workspaceId: row?.flowBaseInfo?.workSpaceId,
+      flowId: row?.flowBaseInfo?.id
+    }
+  })
+  window.open(href, '_blank')
+}
 
 const switchShowCreat = () => {
   showCreate.value = !showCreate.value
@@ -108,7 +146,6 @@ const create = () => {
 }
 const getList = () => {
   loading.value = true
-  console.log('route', route, router)
   const p = {
     ...formInline.value,
     workSpaceId: route?.params?.id,
@@ -116,7 +153,18 @@ const getList = () => {
   }
   getFlowList(p)
     .then(({ data }) => {
-      tableData.value = data?.records || []
+      const tList = data?.records || []
+      const newList = tList.map((item) => {
+        const avatarUrl = item.flowBaseInfo.avatarUrl || '1'
+        return {
+          ...item,
+          flowBaseInfo: {
+            ...item.flowBaseInfo,
+            avatarUrl
+          }
+        }
+      })
+      tableData.value = newList
       totalPage.value = data?.totalPage
     })
     .finally(() => {
@@ -142,7 +190,6 @@ const deleteItem = (item) => {
     type: 'warning'
   })
     .then(() => {
-      console.log('确认', item)
       delApi(item.flowBaseInfo.id)
     })
     .catch(() => {})
@@ -150,12 +197,17 @@ const deleteItem = (item) => {
 const route = useRoute()
 const router = useRouter()
 const toDetail = (item) => {
-  router.push({
+  toDetailById(item.flowBaseInfo.id)
+}
+
+const toDetailById = (id) => {
+  const { href } = router.resolve({
     name: 'AI Probot workflowItem',
     params: {
-      id: item.flowBaseInfo.id
+      id
     }
   })
+  window.open(href, '_blank') //打开新的窗口
 }
 
 const refresh = () => {
@@ -169,21 +221,98 @@ const refresh = () => {
   getList()
 }
 
-watch(
-  () => route.name,
-  (val, oldV) => {
-    if (val != oldV) {
-      refresh()
-    }
+const copySuc = () => {
+  refresh()
+}
+
+// 导出
+const exportLoading = ref(false)
+const { toClipboard } = useClipboard()
+const copyItem = async (item) => {
+  exportLoading.value = true
+  const { data } = await getFlowDetail(item.flowBaseInfo?.id)
+  if (!data) {
+    exportLoading.value = false
+    warningTip()
+    return
   }
-)
+  const { flowBaseInfo, flowSettingInfo } = data
+  if (!flowBaseInfo || !flowSettingInfo) {
+    exportLoading.value = false
+    warningTip()
+    return
+  }
+  const copyP = JSON.stringify({ flowBaseInfo, flowSettingInfo })
+  try {
+    await toClipboard(copyP)
+    exportLoading.value = false
+    ElMessage.success('导出成功')
+  } catch (error) {
+    ElMessage.error(t('common.copyError'))
+    exportLoading.value = false
+  }
+}
+const warningTip = () => {
+  ElMessage.warning('该条流水线数据有问题,无法进行导入、导出操作！')
+}
+// 导入
+const importFn = async () => {
+  const clipVal = await navigator.clipboard.readText()
+  if (!clipVal) {
+    ElMessage.warning('请先导入工作流！')
+    return
+  }
+  try {
+    const { flowBaseInfo, flowSettingInfo } = JSON.parse(clipVal)
+    if (!flowBaseInfo || !flowSettingInfo) {
+      warningTip()
+      return
+    }
+    try {
+      const { data } = await importFlow({
+        flowBaseInfo: {
+          ...flowBaseInfo,
+          workSpaceId: route.params.id
+        },
+        flowSettingInfo
+      })
+      const hasPlugin = flowSettingInfo?.nodes?.find((item) => item.nodeType == 'plugin')
+      ElMessage({
+        type: hasPlugin ? 'warning' : 'success',
+        message: `导入成功！${
+          hasPlugin
+            ? '但是该工作流中存在插件节点（环境变化对插件影响极大），请及时校验该节点能否正常运行'
+            : ''
+        }`,
+        duration: hasPlugin ? 10000 : 5000
+      })
+      toDetailById(data)
+    } catch (error) {
+      console.log(error, '报错了！')
+    }
+  } catch (error) {
+    console.log('error', error)
+    ElMessage.warning('请检查剪切板数据！')
+  }
+}
+
+// watch(
+//   () => route.name,
+//   (val, oldV) => {
+//     if (val != oldV) {
+//       refresh()
+//     }
+//   }
+// )
 onMounted(() => {
   getList()
 })
 watch(
   () => route.params.id,
-  () => {
-    getList()
+  (val) => {
+    if (route.name === 'AI Probot Space' || route.name == 'AI Probot My Collect') {
+      getList()
+    }
   }
 )
 </script>
