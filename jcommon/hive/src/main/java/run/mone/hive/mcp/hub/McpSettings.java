@@ -3,9 +3,12 @@ package run.mone.hive.mcp.hub;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.gson.Gson;
+import com.google.gson.JsonParser;
 import lombok.Getter;
 import lombok.SneakyThrows;
 import run.mone.hive.mcp.client.transport.ServerParameters;
+import run.mone.m78.client.util.GsonUtils;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,6 +28,7 @@ public class McpSettings {
 
     @SneakyThrows
     public static McpSettings fromContent(String content) {
+        content = JsonParser.parseString(content).getAsJsonObject().get("mcpServers").toString();
         ObjectMapper mapper = new ObjectMapper();
         TypeReference<Map<String, ServerParameters>> typeRef = new TypeReference<>() {};
         Map<String, ServerParameters> mcpServers = mapper.readValue(content, typeRef);
