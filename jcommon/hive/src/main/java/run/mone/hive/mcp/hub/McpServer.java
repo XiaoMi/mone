@@ -2,6 +2,7 @@
 package run.mone.hive.mcp.hub;
 
 import lombok.Data;
+import run.mone.hive.mcp.client.transport.ServerParameters;
 import run.mone.hive.mcp.spec.McpSchema;
 
 import java.util.List;
@@ -13,6 +14,8 @@ public class McpServer {
     private String status;
     private String error;
     private List<McpSchema.Tool> tools;
+
+    private ServerParameters serverParameters;
 
     public McpServer(String name, String config) {
         this.name = name;

@@ -130,6 +130,7 @@ public class McpHub {
                 .sync();
 
         McpServer server = new McpServer(name, config.toString());
+        server.setServerParameters(config);
         McpConnection connection = new McpConnection(server, client, transport);
         connections.put(name, connection);
 
