@@ -1,4 +1,3 @@
-
 package run.mone.mcp.playwright.function;
 
 import com.microsoft.playwright.*;
@@ -91,7 +90,17 @@ public class PlaywrightFunction implements Function<Map<String, Object>, McpSche
         page.waitForLoadState(LoadState.NETWORKIDLE);
         log.info("Page loaded: {}", url);
         return new McpSchema.CallToolResult(
-                List.of(new McpSchema.TextContent("Page loaded: " + url)),
+                List.of(new McpSchema.TextContent("Page loaded: " + url), new McpSchema.TextContent("Source: " + page.content())),
+                false
+        );
+    }
+
+    //获取page的源代码(class)
+    public McpSchema.CallToolResult getPageSource() {
+        String pageSource = page.content();
+        log.info("Page source retrieved");
+        return new McpSchema.CallToolResult(
+                List.of(new McpSchema.TextContent("Page source: " + pageSource)),
                 false
         );
     }

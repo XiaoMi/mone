@@ -1,3 +1,4 @@
+
 package run.mone.mcp.mysql.function;
 
 import lombok.Data;
@@ -5,6 +6,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.mcp.spec.McpSchema;
 
+import java.io.File;
 import java.sql.*;
 import java.util.List;
 import java.util.Map;
@@ -12,15 +14,11 @@ import java.util.function.Function;
 
 @Data
 @Slf4j
-public class MysqlFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+public class SqliteFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
 
-    private String name = "mysql_executor";
+    private String name = "sqlite_executor";
 
-    private String desc = "Execute MySQL operations (query, update, DDL)";
-
-    private String database;
-
-    private String password;
+    private String desc = "Execute SQLite operations (query, update, DDL)";
 
     private String sqlToolSchema = """
             {
@@ -41,17 +39,14 @@ public class MysqlFunction implements Function<Map<String, Object>, McpSchema.Ca
             """;
     private Connection connection;
 
-
-    public MysqlFunction(String db,String password) {
-        log.info("Initializing MysqlFunction...");
-        this.database = db;
-        this.password = password;
+    public SqliteFunction() {
+        log.info("Initializing SqliteFunction...");
     }
 
     private synchronized void ensureConnection() {
         if (connection != null) {
             try {
-                if (connection.isValid(1)) {
+                if (!connection.isClosed()) {
                     return;
                 }
             } catch (SQLException e) {
@@ -59,24 +54,15 @@ public class MysqlFunction implements Function<Map<String, Object>, McpSchema.Ca
             }
         }
 
-        String host = System.getenv().getOrDefault("MYSQL_HOST", "127.0.0.1");
-        String user = System.getenv().getOrDefault("MYSQL_USER", "root");
-
-        if (user == null || password == null || database == null) {
-            log.error("Missing required database configuration");
-            throw new IllegalStateException("Missing required database configuration");
-        }
+        String defaultPath = System.getProperty("user.home") + File.separator + "sqlite.db";
+        String dbPath = System.getenv().getOrDefault("SQLITE_DB_PATH", defaultPath);
 
         try {
-            log.info("Attempting to connect to database at {}...", host);
-            connection = DriverManager.getConnection(
-                    "jdbc:mysql://" + host + "/" + database,
-                    user,
-                    password
-            );
-            log.info("Successfully connected to database");
+            log.info("Attempting to connect to SQLite database at {}...", dbPath);
+            connection = DriverManager.getConnection("jdbc:sqlite:" + dbPath);
+            log.info("Successfully connected to SQLite database");
         } catch (SQLException e) {
-            log.error("Failed to connect to database", e);
+            log.error("Failed to connect to SQLite database", e);
             throw new RuntimeException(e);
         }
     }
@@ -108,7 +94,6 @@ public class MysqlFunction implements Function<Map<String, Object>, McpSchema.Ca
             throw new RuntimeException(ex.getMessage());
         }
     }
-
 
     private McpSchema.CallToolResult executeQuery(String sql) throws SQLException {
         try (Statement stmt = connection.createStatement()) {
@@ -153,35 +138,12 @@ public class MysqlFunction implements Function<Map<String, Object>, McpSchema.Ca
 
     private McpSchema.CallToolResult executeDDL(String sql) throws SQLException {
         try (Statement stmt = connection.createStatement()) {
-            boolean result = stmt.execute(sql);
-            if (result) {
-                // DDL操作返回了结果集（不太常见）
-                ResultSet rs = stmt.getResultSet();
-                StringBuilder stringBuilder = new StringBuilder();
-                ResultSetMetaData metaData = rs.getMetaData();
-                int columnCount = metaData.getColumnCount();
-
-                while (rs.next()) {
-                    for (int i = 1; i <= columnCount; i++) {
-                        stringBuilder.append(rs.getString(i)).append("\t");
-                    }
-                    stringBuilder.append("\n");
-                }
-                log.info("Successfully executed DDL with result set");
-                return new McpSchema.CallToolResult(
-                        List.of(new McpSchema.TextContent(stringBuilder.toString())),
-                        false
-                );
-            } else {
-                int affected = stmt.getUpdateCount();
-                log.info("Successfully executed UPDATE query. Affected rows: {}", affected);
-                return new McpSchema.CallToolResult(
-                        List.of(new McpSchema.TextContent("Affected rows: " + affected)),
-
-                        false
-                );
-            }
+            stmt.execute(sql);
+            log.info("Successfully executed DDL");
+            return new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("DDL executed successfully")),
+                    false
+            );
         }
     }
-
 }

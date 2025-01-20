@@ -3,6 +3,7 @@ package run.mone.mcp.mysql.server;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.server.McpSyncServer;
@@ -11,12 +12,21 @@ import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.mcp.mysql.function.MysqlFunction;
 import run.mone.hive.mcp.server.McpServer.ToolRegistration;
 import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
+import run.mone.mcp.mysql.function.SqliteFunction;
 
 @Slf4j
 @Component
 public class MysqlMcpServer {
+
     private ServerMcpTransport transport;
+
     private McpSyncServer syncServer;
+
+    @Value("${mysql.db}")
+    private String mysqlDb;
+
+    @Value("${mysql.password}")
+    private String mysqlPassword;
 
     public MysqlMcpServer(ServerMcpTransport transport) {
         this.transport = transport;
@@ -36,12 +46,16 @@ public class MysqlMcpServer {
         // 注册execute_sql工具
         log.info("Registering execute_sql tool...");
         try {
-            MysqlFunction mysqlFunction = new MysqlFunction();
+            MysqlFunction mysqlFunction = new MysqlFunction(this.mysqlDb, this.mysqlPassword);
             var sqlToolRegistration = new ToolRegistration(
                     new Tool(mysqlFunction.getName(), mysqlFunction.getDesc(), mysqlFunction.getSqlToolSchema()), mysqlFunction
             );
-
             syncServer.addTool(sqlToolRegistration);
+
+            SqliteFunction sqliteFunction = new SqliteFunction();
+            var sqliteToolRegistration = new ToolRegistration(new Tool(sqliteFunction.getName(), sqliteFunction.getDesc(), sqliteFunction.getSqlToolSchema()), sqliteFunction);
+            syncServer.addTool(sqliteToolRegistration);
+
             log.info("Successfully registered execute_sql tool");
         } catch (Exception e) {
             log.error("Failed to register execute_sql tool", e);
