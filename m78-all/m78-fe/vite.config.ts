@@ -63,10 +63,7 @@ export default defineConfig({
         target: 'https://m78.ozx.yling.top/',
         changeOrigin: true,
         ws: true,
-        headers: {
-          Cookie:
-            'TPC_TOKEN=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3MzQ1NzI1NzYsInVzZXJuYW1lIjoiMl90cGNAdHBjLmNvbSJ9.EYkxFu9T8ysJVh_YkHk_ZSSBxLphP4K3s1OkePxdL-k'
-        }
+        headers: {}
       }
     }
   },
