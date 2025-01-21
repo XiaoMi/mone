@@ -1,3 +1,8 @@
+<!--
+ * @Description:
+ * @Date: 2024-01-18 10:37:29
+ * @LastEditTime: 2024-08-30 12:56:06
+-->
 <template>
   <div class="plug-footer">
     <Logo></Logo>
@@ -5,19 +10,6 @@
       <dl>
         <dt>{{ t('home.platform') }}</dt>
         <dd>{{ t('home.platformContent') }}</dd>
-      </dl>
-      <dl>
-        <dt>{{ t('home.product') }}</dt>
-        <dd>AI Code</dd>
-        <dd>AI Document</dd>
-        <dd>AI Chat</dd>
-        <dd>AI Translate</dd>
-      </dl>
-      <dl>
-        <dt>{{ t('home.contact') }}</dt>
-        <dd>{{ t('home.corporateName') }}：xxx</dd>
-        <dd>{{ t('home.telephone') }}：xxx</dd>
-        <dd>{{ t('home.contactEmail') }}：service@xxx</dd>
       </dl>
     </div>
     <div class="center">
@@ -44,7 +36,7 @@
         </li>
       </ul>
     </div>
-    <div class="bottom">Copyright 2023 | M78</div>
+    <div class="bottom">Copyright 2024</div>
   </div>
 </template>
 
@@ -55,6 +47,9 @@ import Logo from '@/components/common/Logo.vue'
 
 <style lang="scss" scoped>
 .plug-footer {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
   position: relative;
   z-index: 3;
   padding: 40px 10% 10px;

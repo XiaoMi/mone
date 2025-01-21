@@ -18,3 +18,4 @@ nohup*
 *.swp
 *.pyc
 *.class
+.history

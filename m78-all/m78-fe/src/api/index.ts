@@ -28,7 +28,7 @@ export function fetchUser() {
 
 export function logout(tpcToken: string) {
   const { userInfo } = useUserStore()
-  const logoutUrl = userInfo.logoutUrl || 'https://xxxxx'
+  const logoutUrl = userInfo.logoutUrl || 'https://login.ozx.yling.top/api-pomission/login/logout'
   return request({
     url: `${logoutUrl}?TPC_TOKEN=${tpcToken}`,
     baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
@@ -42,6 +42,13 @@ export function logout(tpcToken: string) {
     }
   )
 }
+
+// export function fetchZAddr<T = any>(token: string) {
+//   return get<T>({
+//     url: '/zAddr',
+//     data: { token },
+//   })
+// }
 
 export function getChatGptModels<T = any>() {
   return get<T>({
@@ -79,6 +86,7 @@ export function fetchChatAPIProcess<T = any>(params: {
   prompt: string
   topicId: string
   signal?: GenericAbortSignal
+  model: string
   onDownloadProgress?: (progressEvent: AxiosProgressEvent) => void
 }) {
   const setting = useSettingStore()
@@ -86,7 +94,6 @@ export function fetchChatAPIProcess<T = any>(params: {
   try {
     obj = JSON.parse(params.prompt)
   } catch (e) {
-    console.error(e)
     obj = null
   }
   const date = new Date()
@@ -99,7 +106,7 @@ export function fetchChatAPIProcess<T = any>(params: {
       paramMap: obj.paramMap,
       type: 0,
       id: date.getTime(),
-      model: setting.chatModel || null,
+      model: params.model || setting.chatModel || null,
       temperature: setting.temperature,
       from: 'chat'
     }
@@ -117,7 +124,7 @@ export function fetchChatAPIProcess<T = any>(params: {
       zzToken: params.zToken || '',
       type: 1,
       id: date.getTime(),
-      model: setting.chatModel || null,
+      model: params.model || setting.chatModel || null,
       temperature: setting.temperature,
       from: 'chat'
     }
@@ -163,10 +170,22 @@ export function updateUserConfig<T = any>(data: {}) {
     baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
   })
 }
-export function getModelList<T = any>(data: {}) {
+
+export function getModelData<T = any>(data: {}) {
   return get<T>({
-    url: '/v1/model/list',
+    url: '/v1/model/list/v1',
     data,
     baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
+  })
+}
+
+export function filePdfUpload<T = any>(data: {}) {
+  return post<T>({
+    url: '/v1/file/pdf/upload',
+    data,
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL,
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    }
   })
 }

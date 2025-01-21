@@ -2,7 +2,7 @@ type CallbackFunc<T extends unknown[]> = (...args: T) => void
 
 export function debounce<T extends unknown[]>(
   func: CallbackFunc<T>,
-  wait: number
+  wait: number,
 ): (...args: T) => void {
   let timeoutId: ReturnType<typeof setTimeout> | undefined
 

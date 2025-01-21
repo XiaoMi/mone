@@ -36,7 +36,10 @@ export default {
     confirmDel: 'Are you sure you want to delete it?',
     copy: 'copy',
     copySuccess: 'Successfully copied',
-    copyError: 'copy failed'
+    copyError: 'copy failed',
+    search: 'Search',
+    name: 'Name',
+    description: 'Description'
   },
   chat: {
     title: 'AI Chat',
@@ -67,12 +70,12 @@ export default {
   setting: {
     setting: 'Custom Settings',
     classification: 'Classification',
+    carousel: 'Carousel management',
+    platformStatistics: 'Platform statistics',
     general: 'General',
     advanced: 'Advanced',
     config: 'Config',
     avatarLink: 'Avatar Link',
-    name: 'Name',
-    description: 'Description',
     role: 'Role',
     temperature: 'Temperature',
     top_p: 'Top_p',
@@ -301,11 +304,11 @@ export default {
   },
   probot: {
     menu1: 'Product Library',
-    menu2: 'resource management',
+    menu2: 'space management',
     menu3: 'Create Probot',
     mySpace: 'Space',
     teamSpace: 'Team Space',
-    search: 'Search',
+    enterProbotName: 'please enter Probot name',
     userManager: {
       addUser: 'Add user',
       editUser: 'Edit user',
@@ -340,7 +343,6 @@ export default {
       editSucc: 'successful!',
       deleteBot: 'Are you sure you want to delete {name}?',
       status: 'status',
-      enterProbotName: 'please enter Probot name',
       selectType: 'please choose the type',
       selectStatus: 'please choose the status',
       createBotBtn: 'Create Probot',
@@ -416,7 +418,6 @@ export default {
     enterUserName: 'please enter user name',
     createPluginBtn: 'Create plugin',
     noPlugin: 'No plugins yet',
-    name: 'name',
     mateInfo: 'meta information',
     desc: 'description',
     operate: 'operate',
@@ -425,12 +426,24 @@ export default {
     editPluginTitle: 'Edit plugin',
     addPluginTitle: 'New plugin',
     enterPluginUrl: 'please enter the plugin url',
-    enterMateInfo: 'please enter meta information',
-    search: 'Search'
+    enterMateInfo: 'please enter meta information'
   },
   commonTextarea: {
     sendMsg: 'Send Message',
     enterWithShift:
-      'Enable enter + shift key to send messages. If enabled, enter is for new lines, enter + shift is for sending; otherwise, enter is for sending, and enter + shift is for new lines.'
+      'Enable enter + shift key to send messages. If enabled, enter is for new lines, enter + shift is for sending; otherwise, enter is for sending, and enter + shift is for new lines.',
+    img: 'picture',
+    audio: 'recorder'
+  },
+  codeBase: {
+    createBtn: 'Create Code Library',
+    editTitle: 'Edit Code Library',
+    name: 'Code repository name',
+    namePlaceholder: 'Please enter the code repository name',
+    descPlaceholder: 'Please enter a description',
+    language: 'language',
+    code: 'code',
+    deleteTip: 'Confirm deleting the current code repository {name}?',
+    warning: 'prompt'
   }
 }

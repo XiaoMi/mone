@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue'
 import { defineStore } from 'pinia'
+import { getModelData } from '@/api/index'
 
 export const useProbotStore = defineStore('probot', () => {
   const _bindKnowlege = ref<
@@ -49,6 +50,27 @@ export const useProbotStore = defineStore('probot', () => {
   ]
   const workspaceId = ref()
   const workspaceList = ref([])
+  const LLMModelSelObj = ref({})
+  const LLMModelSelList = ref([])
+
+  // const _formHead = ref<Record<string, string>>({})
+  // const formHead = computed(() => _formHead.value)
+  // const _formBase = ref<Record<string, string>>({})
+  // const formBase = computed(() => _formBase.value)
+  // const _formConfig = ref<Record<string, string>>({})
+  // const formConfig = computed(() => _formConfig.value)
+
+  // const setFormHead = (formHead: Record<string, string>) => {
+  //   _formBase.value = formHead
+  // }
+
+  // const setFormBase = (formBase: Record<string, string>) => {
+  //   _formHead.value = formBase
+  // }
+
+  // const setFormConfig = (formConfig: Record<string, string>) => {
+  //   _formConfig.value = formConfig
+  // }
 
   const setBindKnowlege = (bindKnowlege: any) => {
     _bindKnowlege.value = bindKnowlege
@@ -73,6 +95,16 @@ export const useProbotStore = defineStore('probot', () => {
   const setWorkspaceList = (data: any) => {
     workspaceList.value = data
   }
+  const setLLMModelSel = (data: any) => {
+    LLMModelSelObj.value = data
+    LLMModelSelList.value = Object.values(data)?.flat() || []
+  }
+
+  const getModelDataReq = () => {
+    getModelData({}).then((res) => {
+      setLLMModelSel(res?.data || {})
+    })
+  }
 
   return {
     bindKnowlege,
@@ -87,6 +119,10 @@ export const useProbotStore = defineStore('probot', () => {
     setWorkspaceList,
     workspaceId,
     setWorkspaceId,
-    statusList
+    statusList,
+    LLMModelSelList,
+    LLMModelSelObj,
+    setLLMModelSel,
+    getModelDataReq
   }
 })

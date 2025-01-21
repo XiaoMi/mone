@@ -1,5 +1,4 @@
 import { post, get } from '@/utils/request'
-
 // edit
 export function pluginsList<T = any>(data) {
   return post<T>({
@@ -152,6 +151,9 @@ export function pluginList(data: {
     data: {
       ...data
     },
+    headers: {
+      workspaceId: data.workspaceId
+    },
     baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
   })
 }
@@ -278,10 +280,18 @@ export function deleteComp(id: number) {
 /**
  * @description 测试组件运行
  */
-export function testDebug(data) {
+export function testHttpDebug(data) {
   return post<any>({
-    url: `/v1/botplugin/test?pluginId=${data.pluginId}`,
+    url: `/v1/botplugin/http/test?pluginId=${data.pluginId}`,
     data: data.input,
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
+  })
+}
+
+export function testDubboDebug(data) {
+  return post<any>({
+    url: `/v1/botplugin/dubbo/test?pluginId=${data.pluginId}`,
+    data,
     baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
   })
 }
@@ -316,7 +326,7 @@ export function generateImage(data) {
     url: string
     base64: string
   }>({
-    url: '/v1/image/plugin/generate',
+    url: '/v1/multiModal/avatar',
     data,
     baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
   })
@@ -332,11 +342,40 @@ export function uploadPluginImg(data: {
   pluginId?: number
 }) {
   return post<string>({
-    url: '/v1/image/plugin/upload',
+    url: '/v1/file/image/avatar/upload',
     data,
     baseURL: import.meta.env.VITE_GLOB_API_NEW_URL,
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded'
     }
+  })
+}
+
+export function getResTypes() {
+  return get<boolean>({
+    url: '/v1/botplugin/resTypes',
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
+  })
+}
+
+export function botpluginOrgImport(data: any) {
+  return post<string>({
+    url: '/v1/botplugin/org/import',
+    data,
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
+  })
+}
+
+export function markOfficialByAdmin(data: any) {
+  return post<string>({
+    url: '/v1/botplugin/org/markOfficialByAdmin',
+    data,
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    baseURL: import.meta.env.VITE_GLOB_API_NEW_URL
   })
 }

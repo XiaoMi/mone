@@ -1,6 +1,8 @@
 export const toolbarKeys = [
   'undo',
   'redo',
+  // 'brush',
+  // 'eraser',
   'heading',
   'font-family',
   'font-size',
@@ -8,7 +10,11 @@ export const toolbarKeys = [
   'italic',
   'underline',
   'strike',
+  // 'link',
   'code',
+  // 'subscript',
+  // 'superscript',
+  // 'hr',
   'todo',
   'emoji',
   'highlight',
@@ -17,12 +23,18 @@ export const toolbarKeys = [
   'ordered-list',
   'indent-decrease',
   'indent-increase',
+  // 'break',
   'align',
   'line-height',
   'image',
+  // 'video',
+  // 'attachment',
   'quote',
   'code-block',
   'table'
+  // 'printer',
+  // 'fullscreen',
+  // 'ai',
 ]
 
 export const fontFamily = {

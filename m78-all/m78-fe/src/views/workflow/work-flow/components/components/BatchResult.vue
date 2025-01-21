@@ -1,33 +1,30 @@
 <template>
   <div class="llm-batch-box">
-    <div class="btach-nums" v-if="resOutputs.status != 3">
+    <div class="btach-nums">
       <h6 class="item-t">选择要查看的批次结果</h6>
       <ul class="nums-ul">
         <li
-          v-for="item in numbers"
+          v-for="(item, index) in numbers"
           :key="item"
           class="batch-num"
           :class="[
-            resOutputs?.outputDetails &&
-            resOutputs?.outputDetails[0]?.value &&
-            JSON.parse(resOutputs?.outputDetails[0]?.value)?.length - item >= 0
-              ? ''
-              : 'disabled-li',
+            nodeData.minNum >= index ? '' : 'disabled-li',
             item == activeNum ? 'active-li' : ''
           ]"
-          @click="clickNum(item)"
+          @click="clickNum(item, index)"
         >
           {{ item }}
         </li>
       </ul>
     </div>
+    <BatchItemTime :batchItem="ouputs" :indexNum="activeNum - 1" />
     <el-collapse v-model="activeNames">
       <el-collapse-item name="1" v-if="inputs?.length > 0">
         <template #title>
           输入
-          <CopyBtn :arr="inputs" :batchNum="activeNum" :isBatch="true" />
+          <BatchResultCopy :arr="inputs" :batchNum="activeNum" :nodeData="nodeData" />
         </template>
-        <BatchResItem :showArr="inputs" :activeNum="activeNum" />
+        <BatchResItem :showArr="inputs" :activeNum="activeNum" :nodeData="nodeData" type="input" />
       </el-collapse-item>
     </el-collapse>
     <StatusError :resOutputs="resOutputs" v-if="resOutputs.status == 3" />
@@ -35,9 +32,9 @@
       <el-collapse-item title="" name="1">
         <template #title>
           输出
-          <CopyBtn :arr="ouputs" :batchNum="activeNum" :isBatch="true" />
+          <BatchResultCopy :arr="ouputs" :batchNum="activeNum" :nodeData="nodeData" />
         </template>
-        <BatchResItem :showArr="ouputs" :activeNum="activeNum" />
+        <BatchResItem :showArr="ouputs" :activeNum="activeNum" :nodeData="nodeData" type="output" />
       </el-collapse-item>
     </el-collapse>
   </div>
@@ -46,8 +43,9 @@
 <script setup>
 import { computed, ref } from 'vue'
 import StatusError from './StatusError'
-import CopyBtn from './CopyBtn'
 import BatchResItem from './BatchResItem'
+import BatchResultCopy from './BatchResultCopy.vue'
+import BatchItemTime from './BatchItemTime.vue'
 
 const props = defineProps({
   batchRes: {},
@@ -59,11 +57,11 @@ const props = defineProps({
 const activeNames = ref(['1'])
 const activeNames2 = ref(['1'])
 const activeNum = ref(1)
-const clickNum = (item) => {
-  const res = ouputs.value && ouputs.value[0]?.value[item - 1]
-  if (typeof res != 'undefined') {
-    activeNum.value = item
+const clickNum = (item, index) => {
+  if (props.nodeData.minNum < index) {
+    return
   }
+  activeNum.value = item
 }
 
 const numbers = computed(() => {
@@ -107,6 +105,8 @@ const ouputs = computed(() => {
 <style lang="scss" scoped>
 .nums-ul {
   display: flex;
+  max-width: 100%;
+  overflow: auto;
 }
 .batch-num {
   padding: 8px 12px;
@@ -126,9 +126,7 @@ const ouputs = computed(() => {
 .active-li {
   border-color: #4e53e8;
 }
-.p-l-15 {
-  padding-left: 15px;
-}
+
 .out-text {
   display: flex;
 }

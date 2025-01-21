@@ -7,7 +7,7 @@ const observer = new MutationObserver(function (mutations) {
         const commentsElement = (addedNode as HTMLElement).querySelector(
           '.aie-codeblock-tools-comments'
         )
-        console.log('commentsElement', commentsElement)
+        console.log("commentsElement", commentsElement)
         if (commentsElement) {
           const newChild = document.createElement('div')
           newChild.className = 'new-child'
