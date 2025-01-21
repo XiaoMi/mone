@@ -1,4 +1,4 @@
-package run.mone.mcp.mysql;
+package run.mone.mcp.mysql.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

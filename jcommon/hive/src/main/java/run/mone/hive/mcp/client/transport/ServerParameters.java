@@ -10,6 +10,9 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import run.mone.hive.mcp.util.Assert;
 /**
  * 
@@ -19,6 +22,8 @@ import run.mone.hive.mcp.util.Assert;
  *
  */
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
+@Data
+@NoArgsConstructor
 public class ServerParameters {
 
 	// Environment variables to inherit by default
@@ -36,7 +41,7 @@ public class ServerParameters {
 	private List<String> args = new ArrayList<>();
 
 	@JsonProperty("env")
-	private Map<String, String> env;
+	private Map<String, String> env = new HashMap<>();
 
 	private ServerParameters(String command, List<String> args, Map<String, String> env) {
 		Assert.notNull(command, "The command can not be null");
