@@ -60,7 +60,7 @@ export default defineConfig({
     host: '0.0.0.0',
     proxy: {
       '/api/': {
-        target: 'https://m78.ozx.yling.top/',
+        target: 'http://',
         changeOrigin: true,
         ws: true,
         headers: {}

@@ -1,7 +1,7 @@
 <!--
  * @Description:
  * @Date: 2024-01-31 16:53:45
- * @LastEditTime: 2024-01-31 20:52:15
+ * @LastEditTime: 2025-01-21 10:34:22
 -->
 <template>
   <!-- 上传区域 -->
@@ -131,7 +131,6 @@ function send_request() {
     //   window.location.origin + '/api/ai-plugin/z/oss/policy?knowledgeBaseId=' +props.knowledgeId
     var serverUrl =
       window.location.origin + '/api/z/oss/policy?knowledgeBaseId=' + props.knowledgeId
-    // var serverUrl = "http://10.225.183.41:8085/api/z/oss/policy";
 
     xmlhttp.open('GET', serverUrl, false)
     xmlhttp.send(null)
