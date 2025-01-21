@@ -107,7 +107,7 @@
         <maven.jcommonDirectory>~/</maven.jcommonDirectory>
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
-        <submodule-release.version>1.6.0-jdk21-SNAPSHOT</submodule-release.version>
+        <submodule-release.version>1.6.1-jdk21-SNAPSHOT</submodule-release.version>
     </properties>
     <dependencies>
         <dependency>
