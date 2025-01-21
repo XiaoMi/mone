@@ -24,7 +24,7 @@ public class BotController {
     @RequestMapping(path = "/bot/execute")
     public EndFlowRes executeBot(BotReq botReq) {
         try {
-            log.info("Executing bot with request: {}", botReq);
+            log.info("Executing bot with request: {} m78:{}", botReq, botReq.getM78RpcAddr());
             EndFlowRes result = botService.execute(botReq);
             return result;
         } catch (Exception e) {

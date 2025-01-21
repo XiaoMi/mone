@@ -21,6 +21,11 @@ public class BotSettingBo implements Serializable {
     private Long botId;
 
     /**
+     * 系统设定
+     */
+    private String systemSetting;
+
+    /**
      * 人物设定
      */
     @HttpApiDocClassDefine(value = "setting", description = "机器人设定")
@@ -71,4 +76,9 @@ public class BotSettingBo implements Serializable {
     @HttpApiDocClassDefine(value = "timbre", description = "音色")
     private String timbre;
 
+    /**
+     * 温度
+     */
+    @HttpApiDocClassDefine(value = "temperature", description = "温度")
+    private String temperature;
 }

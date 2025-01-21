@@ -1,13 +1,10 @@
 package run.mone.local.docean.controller.test;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import run.mone.junit.DoceanConfiguration;
 import run.mone.junit.DoceanExtension;
 import run.mone.local.docean.service.M78Service;
-import run.mone.local.docean.util.HttpUtils;
 
 import javax.annotation.Resource;
 

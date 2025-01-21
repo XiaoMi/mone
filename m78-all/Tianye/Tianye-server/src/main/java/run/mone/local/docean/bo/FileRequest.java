@@ -10,3 +10,6 @@ public class FileRequest {
     Long knowledgeId;
     ZKnowledgeBaseFileBlockDTO dto;
 }
+
+
+

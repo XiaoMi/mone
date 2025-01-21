@@ -28,7 +28,15 @@ public class BeginFlow extends BotFlow {
         log.info("exit beginFlow..... id:{},flowRecordId:{}", id, this.getFlowRecordId());
         ctx.setStartTime(System.currentTimeMillis());
         if (req.isSyncFlowStatusToM78()) {
-            this.getSyncFlowStatusServices().addSyncFlowStatusMap(this.getFlowRecordId(), null, SyncFlowStatus.SyncNodeOutput.builder().nodeId(id).status(2).build());
+            if (res.getCode() != 0) {
+                ctx.setFinalEnd(true);
+                long durationTime = System.currentTimeMillis() - ctx.getStartTime();
+                this.getSyncFlowStatusServices().syncFinalRst(this.getFlowRecordId(), 3, durationTime, null,
+                        null,
+                        SyncFlowStatus.SyncNodeOutput.builder().nodeId(id).m78RpcAddr(req.getM78RpcAddr()).nodeName(name).status(3).errorInfo(res.getMessage()).durationTime(durationTime).build(), null, req.getMeta());
+            } else {
+                this.getSyncFlowStatusServices().addSyncFlowStatusMap(this.getFlowRecordId(), null, SyncFlowStatus.SyncNodeOutput.builder().nodeId(id).m78RpcAddr(req.getM78RpcAddr()).nodeName(name).status(2).build(), false);
+            }
         }
     }
 }

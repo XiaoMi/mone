@@ -25,7 +25,7 @@ public class InputData implements ItemData {
 
     private String name;
 
-    //value reference
+    //value reference imageReference batch imageReferenceBatch
     @Builder.Default
     private String type = "value";
 
@@ -48,6 +48,10 @@ public class InputData implements ItemData {
 
     //or and
     private String relationship;
+
+    private String version;
+
+    private String schema;
 
 
     @Override
@@ -75,18 +79,23 @@ public class InputData implements ItemData {
         return null==value2?new JsonPrimitive(""):value2;
     }
 
-    public JsonElement getValueByType(){
-        if (null == this.valueType || "string".equalsIgnoreCase(this.valueType)){
-            if (value.isJsonPrimitive()){
-                return new JsonPrimitive(value.getAsString());
-            } else {
-                return new JsonPrimitive(value.toString());
-            }
-        }
-        return value;
-    }
-
     public boolean isEmptyValue(){
         return (null==value || value.toString().equals("\"\""))?true:false;
+    }
+
+    public boolean isTypeReference(){
+        return "reference".equals(this.type);
+    }
+
+    public boolean isTypeImage(){
+        return "image".equals(this.type) || "imageReference".equals(this.type) || "imageReferenceBatch".equals(type);
+    }
+
+    public boolean isType2Reference(){
+        return "reference".equals(this.type2);
+    }
+
+    public boolean isBatchType(){
+        return "batch".equals(type) || "imageReferenceBatch".equals(type);
     }
 }

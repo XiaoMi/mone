@@ -132,14 +132,14 @@ public class WxMessageHandler extends AbstractHandler {
         body.put("promptName", "wx_msg");
         body.put("model", "gpt-4-1106-Preview-2");
         body.put("stream", false);
-        body.put("zzToken", "XX");
+        body.put("zzToken", "X");
         body.put("type", 0);
         Map<String, String> paramMap = new HashMap<>();
         paramMap.put("content", param);
         body.put("paramMap", paramMap);
         Map<String, String> header = new HashMap<>();
         header.put("Content-Type", "application/json");
-        return HttpClientV5.post("http://XX/api/z-proxy/ask", gson.toJson(body), header, 100000);
+        return HttpClientV5.post("http://127.0.0.1/api/z-proxy/ask", gson.toJson(body), header, 100000);
     }
 
 }

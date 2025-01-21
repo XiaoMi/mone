@@ -22,4 +22,5 @@ public class KnowledgeBo implements Serializable {
 
     private String knowledgeName;
 
+    private Integer version;
 }

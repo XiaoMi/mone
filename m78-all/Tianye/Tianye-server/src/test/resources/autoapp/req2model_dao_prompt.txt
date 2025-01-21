@@ -1,0 +1,57 @@
+你是一位领域建模和软件设计高级专家，我会给你一份json根式的需求文档，请按要求完成数据建模及封装对应模型的dao层代码。
+要求如下：
+1.生成代码的基础package是run.mone.m78；
+2.使用的orm框架是dev.morphia.morphia,版本号是1.6.1；
+3.你需要充分理解需求文档，完成数据建模，建模要求如下：
+  3.1把各个表的model实体类生成出来，并且都加上注解@lombok.Data
+  3.2model实体类的package是run.mone.m78.model
+4.生成实体类对应的Repository层代码，要求如下：
+  4.1每一个model实体都要生成基于morphia操作的接口类和接口的实现类
+  4.2Repository层package是run.mone.m78.repository，生成的接口类方法要齐全，对应的实现类需要完整的实现所有接口方法，不能有任何缺失；
+  4.3实现类使用Spring的Bean管理机制，请加好相关的注解; 实现类里请使用spring注解注入Datastore这个bean来完成mongo的相关操作
+  4.4findAll实现请使用这个写法：datastore.find(XModel.class).asList()
+5.确保生成的类代码里正确导入了所使用的类，务必不能遗漏
+  若类里使用了ObjectId，则需导入org.bson.types.ObjectId；
+  若类里使用了List，则需导入java.util.List；
+  若类里使用了Collectors，则需导入java.util.stream.Collectors；
+  导入示例：package run.mone.m78.repository;
+
+import org.bson.types.ObjectId;
+import run.mone.m78.model.Book;
+import java.util.List;
+
+public interface BookRepository {
+    void save(Book book);
+    void update(Book book);
+    void delete(ObjectId id);
+    List<Book> findAll();
+    Book findById(ObjectId id);
+    List<Book> findByTitle(String title);
+}
+6.生成的结果，请用json格式返回。生成结果的要求和格式如下：
+  6.1生成的类和接口要完整，不能把字段和注解和方法分开展示，每一个类的内容在一个属性里面完整展示；
+  6.2需求不要在结果里面输出了，生成的类和接口需要输出名称和代码内容，同时需要区分生成的文件类型：Model、Repository、RepositoryImpl；
+  6.3返回的格式要求，"{\n" +
+            "    \"output\": {\n" +
+            "        \"Model\": [\n" +
+            "            {\n" +
+            "                \"className\": \"生成的Model实体类名称\",\n" +
+            "                \"classContent\": \"这里内容是生成的Model实体类的类文本\"\n" +
+            "            }\n" +
+            "        ],\n" +
+            "        \"Repository\": [\n" +
+            "            {\n" +
+            "                \"className\": \"生成的Repository接口名称\",\n" +
+            "                \"classContent\": \"这里内容是生成的Repository的接口文本\"\n" +
+            "            }\n" +
+            "        ],\n" +
+            "        \"RepositoryImpl\": [\n" +
+            "            {\n" +
+            "                \"className\": \"生成的RepositoryImpl类名称\",\n" +
+            "                \"classContent\": \"这里内容是生成的RepositoryImpl的类文本\"\n" +
+            "            }\n" +
+            "        ]\n" +
+            "    }\n" +
+            "}";
+
+7.请严格按照上面的要求进行代码生成，生成的代码一定要准确、完整、专业。我们的项目很紧急很关键不能有任何的遗漏和差错，你要是完成的好，我会奖励你100美金，我们非常信任你；

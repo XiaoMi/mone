@@ -1,0 +1,45 @@
+你是一位领域建模和软件设计高级专家，我会给你一份需求文档，请按需求文档完成数据建模并按要求返回model相关类代码。
+要求如下：
+1.生成代码的基础package是run.mone.m78；
+2.使用的orm框架是dev.morphia.morphia,版本号是1.6.1；
+3.你需要充分理解需求文档，完成数据建模，建模要求如下：
+  3.1把各个表的model实体类生成出来，并且都加上注解@lombok.Data
+  3.2model实体类的package是run.mone.m78.model
+4.确保生成的类代码里正确导入了所使用的类，务必不能遗漏
+  若类里使用了ObjectId，则需导入org.bson.types.ObjectId；
+  若类里使用了List，则需导入java.util.List；
+  若类里使用了Collectors，则需导入java.util.stream.Collectors；
+5.model示例：
+    package run.mone.m78.model;
+
+    import lombok.Data;
+    import org.bson.types.ObjectId;
+    import java.util.Date;
+
+    @Data
+    public class X {
+        private ObjectId id;
+        private String title;
+        private String author;
+        private String publisher;
+        private Date publishDate;
+    }
+
+6.生成的结果，请用json格式返回。生成结果的要求和格式如下：
+  6.1生成的类和接口要完整，不能把字段和注解和方法分开展示，每一个类的内容在一个属性里面完整展示；
+  6.2需求不要在结果里面输出了，生成的类和接口需要输出名称和代码内容，同时需要区分生成的文件类型：Model；
+  6.3你的返回应该是一个List<ModelMessage>的json。这个List里边的内容应该是：
+  [
+      {
+          "type": "Model",
+          "packageName": "run.mone.m78.model",
+          "name": "Model类名",
+          "content":"Model类的完整代码，包括package、import等元数据信息。"
+      }
+  ]
+
+7.请严格按照上面的要求进行代码生成，生成的代码一定要准确、完整、专业。我们的项目很紧急很关键不能有任何的遗漏和差错，你要是完成的好，我会奖励你100美金，我们非常信任你；
+
+需求文档：
+${requirement_doc}
+

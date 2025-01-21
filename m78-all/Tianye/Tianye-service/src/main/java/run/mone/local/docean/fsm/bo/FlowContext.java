@@ -2,15 +2,18 @@ package run.mone.local.docean.fsm.bo;
 
 
 import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.utils.Lists;
+import run.mone.local.docean.fsm.BotContext;
 import run.mone.local.docean.fsm.BotState;
-import run.mone.local.docean.fsm.JsonElementUtils;
+import run.mone.local.docean.util.JsonElementUtils;
 import run.mone.local.docean.fsm.MemoryData;
 
 import java.util.*;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 @Data
@@ -21,6 +24,11 @@ public class FlowContext {
 
     //直接退出循环
     volatile boolean quit;
+
+    /**
+     * 停止flow流
+     */
+    private AtomicBoolean cancel = new AtomicBoolean(false);
 
     private int index;
 
@@ -34,6 +42,7 @@ public class FlowContext {
 
     private LinkedBlockingQueue<String> questionQueue = new LinkedBlockingQueue<>();
 
+
     private LinkedBlockingQueue<String> answerQueue = new LinkedBlockingQueue<>();
 
     private Map<Integer, Map<String, ? extends ItemData>> referenceData = new HashMap<>();
@@ -42,9 +51,19 @@ public class FlowContext {
 
     private Map<Integer, List<Object>> batchReslutMap = new HashMap<>();
 
-    private FlowRes flowRes;
+    private FlowRes flowRes = new FlowRes();
 
     private long startTime;
+
+    private Map<Integer, Integer> nodeGoToTimes = new HashMap<>();
+
+    private Map<String, String> meta = new HashMap<>();
+
+    private String m78RpcAddr;
+
+    private boolean isFinalEnd;
+
+    private BotContext botContext;
 
 
     /**
@@ -66,36 +85,35 @@ public class FlowContext {
 
     public JsonElement queryFieldValueFromReferenceData(int flowId, String field) {
         log.info("queryFieldValueFromReferenceData flowId:{} field:{}", flowId, field);
-        Map<String, ? extends ItemData> itemDataMap = this.referenceData.get(flowId);
-        if (!field.contains(".")) {
-            return itemDataMap.get(field).getValue();
+        JsonElement jsonElement = new JsonPrimitive("");
+        if (this.referenceData.containsKey(flowId)){
+            Map<String, ? extends ItemData> itemDataMap = this.referenceData.get(flowId);
+            if (!field.contains(".")) {
+                if (itemDataMap.containsKey(field)){
+                    return itemDataMap.get(field).getValue();
+                } else {
+                    return jsonElement;
+                }
+            }
+            try {
+                return JsonElementUtils.queryFieldValue(itemDataMap.get(field.split("\\.")[0]).getValue(), field.substring(field.indexOf(".")+1));
+            } catch (Exception e){
+                log.error("queryFieldValueFromReferenceData error. flowId:" + flowId, e);
+            }
         }
-        return JsonElementUtils.queryFieldValue(itemDataMap.get(field.split("\\.")[0]).getValue(), field.substring(field.indexOf(".")+1));
+        log.warn("referenceData does not contain {}", flowId);
+        return jsonElement;
+
     }
 
-    public void updateBatchParamWithId(Integer id, JsonElement element) {
-        this.getBatchParamMap().compute(id, (k, v) -> {
+    public int addAndGetNodeGoToTimes(int nodeId){
+        nodeGoToTimes.compute(nodeId, (k, v) -> {
             if (v == null) {
-                List<JsonElement> list = new ArrayList<>();
-                list.add(element);
-                return list;
+                return 1;
             } else {
-                v.add(element);
+                return ++v;
             }
-            return v;
         });
-    }
-
-    public void updateBatchResultMapWithId(Integer id, Object obj) {
-        this.getBatchReslutMap().compute(id, (k, v) -> {
-            if (v == null) {
-                List<Object> list = new ArrayList<>();
-                list.add(obj);
-                return list;
-            } else {
-                v.add(obj);
-            }
-            return v;
-        });
+        return nodeGoToTimes.get(nodeId);
     }
 }

@@ -17,6 +17,8 @@ public class BotState {
 
     private String name;
 
+    private int version;
+
     public void enter(BotContext context) {
 
     }

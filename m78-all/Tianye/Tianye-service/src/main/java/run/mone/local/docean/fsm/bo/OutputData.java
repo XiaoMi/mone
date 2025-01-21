@@ -27,7 +27,11 @@ public class OutputData implements ItemData {
     //string、object、array<string>、array<object>
     private String valueType;
 
-    private String schema;
+    @Builder.Default
+    private String schema = "";
+
+    @Builder.Default
+    private String desc = "";
 
     public JsonElement getValue() {
         return null==value?new JsonPrimitive(""):value;
