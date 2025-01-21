@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 public class KnowledgeGraphManager {
-    private static final String MEMORY_FILE_PATH = System.getProperty("java.io.tmpdir") + File.separator + "memory.jsonl";
+    private static final String MEMORY_FILE_PATH = System.getProperty("user.dir") + File.separator + ".memory.jsonl";
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private void ensureFileExists() throws IOException {
