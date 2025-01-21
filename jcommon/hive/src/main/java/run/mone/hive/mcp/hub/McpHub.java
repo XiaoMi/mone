@@ -29,6 +29,10 @@ public class McpHub {
         initializeMcpServers();
     }
 
+    public void close() {
+        connections.keySet().forEach(this::deleteConnection);
+    }
+
     private void initializeWatcher() throws IOException {
         Path parent = settingsPath.getParent();
         parent.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
