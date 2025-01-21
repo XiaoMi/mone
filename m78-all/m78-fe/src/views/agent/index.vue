@@ -49,6 +49,8 @@ import { Message } from '@/components/common-message'
 import { createCharacter, characterWidth, bindAppEvent, keys } from './mixin/index'
 
 let app: PIXI.Application<PIXI.ICanvas> | null = null
+// let dragTarget: PIXI.Container | null = null
+// let me: PIXI.Sprite | null = null
 const others: PIXI.Container[] = []
 
 const placeholder = computed(() => {

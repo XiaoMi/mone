@@ -5,6 +5,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useVueFlow } from '@vue-flow/core'
+import { filterNoOutput } from '../../../common/base.js'
 
 const { toObject } = useVueFlow()
 const value = computed({
@@ -48,7 +49,7 @@ const getPreNode = (nodeId) => {
   }
 }
 const mapTree = (treeItm, nodeType) => {
-  const chilName = nodeType == 'code' ? 'schema' : 'children'
+  const chilName = 'children'
   const haveChildren = Array.isArray(treeItm[chilName]) && treeItm[chilName].length > 0
   let children = []
   if (haveChildren) {
@@ -68,17 +69,15 @@ const ops = computed(() => {
   const nodes = allObj.nodes || []
   // 获取当前node的所有上一级
   const sourceNodesIds = getPreNode(props.nodeId)
-  const sourceNodes = nodes.filter((item) => sourceNodesIds.indexOf(item.id) > -1)
+  const sourceNodes = nodes.filter((item) => sourceNodesIds.includes(item.id))
   // 将 if else 节点去掉
-  const sourceNodeButIf = sourceNodes.filter(
-    (item) => ['nodeif', 'nodeelse', 'precondition'].indexOf(item.nodeType) < 0
-  )
+  const sourceNodeButIf = filterNoOutput(sourceNodes)
   const ops = sourceNodeButIf.map((item) => {
     let arr = item.outputs || []
     if (item.nodeType == 'begin') {
       const inputs = item.inputs || []
       arr = inputs.filter((item) => item.name)
-    } else if (['code', 'llm'].indexOf(item.nodeType) >= 0) {
+    } else if (['code', 'llm'].includes(item.nodeType)) {
       const filterEmptyName = item.outputs.filter((item) => item.name)
       const opsArr = filterEmptyName.map((outputItem) => {
         const res = mapTree(outputItem, item.nodeType)
@@ -90,15 +89,14 @@ const ops = computed(() => {
       value: `${item.id}`,
       label: item.nodeMetaInfo.nodeName,
       disabled: true,
-      children:
-        ['knowledge', 'code', 'llm'].indexOf(item.nodeType) > -1
-          ? arr
-          : arr.map((input) => {
-              return {
-                label: input.name,
-                value: input.name
-              }
-            })
+      children: ['knowledge', 'code', 'llm'].includes(item.nodeType)
+        ? arr
+        : arr.map((input) => {
+            return {
+              label: input.name,
+              value: input.name
+            }
+          })
     }
   })
   return ops

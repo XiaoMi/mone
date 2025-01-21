@@ -1,19 +1,32 @@
+<!--
+ * @Description: 
+ * @Date: 2024-03-05 18:12:21
+ * @LastEditTime: 2024-09-05 15:01:12
+-->
 <template>
   <TooltipMenu :name="t('probot.menu2')" ref="tooltipRef">
     <div class="probot-resources">
       <div class="left">
         <el-menu router class="resources-menu" @select="handleSelect" :default-active="activeIndex">
-          <el-menu-item index="/probot-my-collect">
+          <!-- <el-menu-item index="/probot-my-collect">
             <i class="iconfont icon-aixin1"></i>
             <span>我的收藏</span></el-menu-item
-          >
+          > -->
           <el-menu-item index="">
+            <i class="iconfont icon-tuanduikongjian"></i>
+            <span>我的空间</span></el-menu-item
+          >
+          <el-menu-item index="1">
             <i class="iconfont icon-chuangjiantuandui1"></i>
             <span>{{ t('probot.createTeam') }}</span></el-menu-item
           >
           <el-menu-item index="/probot-team">
-            <i class="iconfont icon-tuanduikongjian"></i>
-            <span>{{ t('probot.teamSpace') }}</span></el-menu-item
+            <i class="iconfont icon-tuanduikongjian2"></i>
+            <span>团队空间</span></el-menu-item
+          >
+          <el-menu-item index="/probot-super-team" v-if="userInfo.admin">
+            <i class="iconfont icon-tubiao"></i>
+            <span>超管空间</span></el-menu-item
           >
         </el-menu>
       </div>
@@ -52,18 +65,22 @@ import { ref, onBeforeMount, computed } from 'vue'
 import { Search } from '@element-plus/icons-vue'
 import { useRouter, useRoute } from 'vue-router'
 import { t } from '@/locales'
-import TooltipMenu from '@/views/probot/components/TooltipMenu.vue'
-import ProbotTeamDialog from '@/components/ProbotTeamDialog.vue'
+import TooltipMenu from '@/components/probot/TooltipMenu.vue'
+import ProbotTeamDialog from '@/components/probot/ProbotTeamDialog.vue'
 import BaseInfo from '@/components/BaseInfo.vue'
 import { getWorkspaceList } from '@/api/probot'
 import { useProbotStore } from '@/stores/probot'
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
+const userInfo = computed(() => userStore.userInfo)
 
 const route = useRoute()
 const router = useRouter()
 const probotStore = useProbotStore()
 
 const tooltipRef = ref()
-const activeIndex = ref('1')
+const activeIndex = ref('')
 const input = ref('')
 const createTeamDialogVisible = ref(false)
 const workspaceList = computed(() => probotStore.workspaceList)
@@ -88,13 +105,20 @@ onBeforeMount(() => {
 
 const handleSelect = (key: string, keyPath: string[]) => {
   if (!key) {
+    // createTeamDialogVisible.value = true
+    // router.replace({
+    //   path: route.path,
+    //   query:route.query
+    // })
+  }else if(key=='1'){
     createTeamDialogVisible.value = true
     router.replace({
       path: route.path,
-      query: route.query
+      query:route.query
     })
+  } else {
+    tooltipRef.value.hide()
   }
-  tooltipRef.value.hide()
 }
 
 const spaceClick = (item: { id: number }) => {
@@ -120,7 +144,7 @@ const spaceClick = (item: { id: number }) => {
           padding-right: 10px;
         }
         &:hover {
-          color: #40a3ff;
+          color: var(--oz-menu-active-color)!important;
         }
       }
     }

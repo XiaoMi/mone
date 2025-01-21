@@ -9,7 +9,7 @@ export function defaultState(): Chat.ChatState {
     homeInput: '',
     usingContext: true,
     history: [{ uuid, title: 'New Chat', isEdit: false }],
-    chat: [{ uuid, data: [] }]
+    chat: [{ uuid, data: [] }],
   }
 }
 

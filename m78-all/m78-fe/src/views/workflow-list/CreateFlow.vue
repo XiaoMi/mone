@@ -35,7 +35,7 @@
         />
       </el-form-item>
       <BaseAvatar
-        :formData="props.preInfo"
+        :name="ruleForm.name"
         :remark="ruleForm.desc"
         v-model="ruleForm.avatarUrl"
         tips="输入工作流名称和描述后，点击自动生成图标。"
@@ -52,11 +52,16 @@
 
 <script lang="ts" setup>
 import { createFlow, editBase } from '@/api/workflow'
-import { useRoute } from 'vue-router'
 import { ref, computed, watch } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import BaseAvatar from '@/views/probot/components/BaseAvatar.vue'
+import BaseAvatar from '@/components/probot/BaseAvatar.vue'
 import { submitForm, resetForm } from '@/common/formMethod'
+import { useRoute, useRouter } from 'vue-router'
+import { useProbotStore } from '@/stores/probot'
+
+const probotStore = useProbotStore()
+
+const workspaceList = computed(() => probotStore.workspaceList)
 
 const props = defineProps({
   modelValue: {},
@@ -78,7 +83,6 @@ const dialogVisible = computed({
     emits('update:modelValue', val)
   }
 })
-
 const formEl = ref()
 const ruleForm = ref({
   id: '',
@@ -96,6 +100,8 @@ const rules = ref({
 const loading = ref(false)
 const iconIndex = String(Math.floor(Math.random() * 10))
 const route = useRoute()
+const router = useRouter()
+
 watch(
   () => props.modelValue,
   (val) => {
@@ -120,12 +126,21 @@ const sure = () => {
       ...props.preInfo,
       ...ruleForm.value
     }
-    request({ flowBaseInfo: { ...p, workSpaceId: route.params.id } })
+    request({ flowBaseInfo: { ...p, workSpaceId: route.params.id || workspaceList.value[0]?.id } })
       .then((data) => {
         if (data.data) {
           ElMessage.success(props.preInfo?.id ? '编辑成功！' : '创建成功！')
-          emits('createSuc')
           dialogVisible.value = false
+          emits('createSuc')
+          if (!props.preInfo?.id) {
+            const { href } = router.resolve({
+              name: 'AI Probot workflowItem',
+              params: {
+                id: data.data
+              }
+            })
+            window.open(href, '_blank')
+          }
         } else {
           ElMessage.error(data.message || (props.preInfo?.id ? '编辑失败！' : '创建失败！'))
         }

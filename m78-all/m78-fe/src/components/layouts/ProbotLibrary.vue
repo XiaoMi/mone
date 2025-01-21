@@ -1,24 +1,29 @@
+<!--
+ * @Description: 
+ * @Date: 2024-03-05 18:11:47
+ * @LastEditTime: 2024-09-05 15:01:02
+-->
 <template>
-  <TooltipMenu :name="t('probot.menu1')" ref="tooltipRef">
+  <TooltipMenu name="广场" ref="tooltipRef">
     <div class="probot-menu">
       <div class="probot-module" @click="handleProbot">
-        <p class="probot-title">PROBOT库</p>
+        <p class="probot-title">PROBOT广场</p>
         <div class="probot-content">
           <div class="probot-icon"><i class="iconfont icon-APP-robot1"></i></div>
           <div class="probot-main">
-            <h3>Probot商店是提供各种不同类型 AI 机器人的在线平台，根据您的需求和兴趣探索试用吧</h3>
+            <h3>Probot广场是提供各种不同类型 AI 机器人的在线平台，根据您的需求和兴趣探索试用吧</h3>
             <div class="link-container" v-if="categoryList['1']?.length">
               <div class="link-icon"><i class="iconfont icon-tag"></i></div>
               <div class="link-main">
                 <div class="link-content">
                   <template v-for="(item, index) in categoryList['1']" :key="index">
                     <span class="link-item" @click.stop="handleProbot(item)">
-                      <el-link type="primary" :underline="false">{{ item.name + ',' }}</el-link>
+                      <el-link type="primary">{{ item.name + ',' }}</el-link>
                     </span>
                   </template>
                 </div>
                 <span class="link-item">
-                  <el-link type="primary" :underline="false">更多</el-link>
+                  <el-link type="primary">更多</el-link>
                 </span>
               </div>
             </div>
@@ -26,12 +31,12 @@
         </div>
       </div>
       <div class="probot-module" @click="handlePlugin">
-        <p class="probot-title">插件库</p>
+        <p class="probot-title">插件广场</p>
         <div class="probot-content">
           <div class="probot-icon"><i class="iconfont icon-chajianku-chajianku"></i></div>
           <div class="probot-main">
             <h3>
-              插件库提供各种不同类型的组件，根据您的需求搜索查看，使用它们编排出个性化的Probot吧
+              插件广场提供各种不同类型的组件，根据您的需求搜索查看，使用它们编排出个性化的Probot吧
             </h3>
             <div class="link-container" v-if="categoryList['2']?.length">
               <div class="link-icon"><i class="iconfont icon-tag"></i></div>
@@ -39,12 +44,12 @@
                 <div class="link-content">
                   <template v-for="(item, index) in categoryList['2']" :key="index">
                     <span class="link-item" @click.stop="handlePlugin(item)">
-                      <el-link type="primary" :underline="false">{{ item.name + ',' }}</el-link>
+                      <el-link type="primary">{{ item.name + ',' }}</el-link>
                     </span>
                   </template>
                 </div>
                 <span class="link-item">
-                  <el-link type="primary" :underline="false">更多</el-link>
+                  <el-link type="primary">更多</el-link>
                 </span>
               </div>
             </div>
@@ -58,7 +63,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { t } from '@/locales'
-import TooltipMenu from '@/views/probot/components/TooltipMenu.vue'
+import TooltipMenu from '@/components/probot/TooltipMenu.vue'
 import { useRouter } from 'vue-router'
 import { getCategoryTypeList, getCategoryList } from '@/api/probot-classification'
 import { useProbotStore } from '@/stores/probot'
@@ -158,7 +163,7 @@ const handlePlugin = (item?: { id?: number }) => {
 
     i {
       font-size: 70px;
-      background: -webkit-linear-gradient(#eee, #8ec5fc);
+      background: -webkit-linear-gradient(#eee, var(--oz-menu-active-color) );
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
@@ -205,13 +210,10 @@ const handlePlugin = (item?: { id?: number }) => {
         line-height: 20px;
         padding: 6px 0px;
         margin-right: 8px;
-        color: rgb(73, 173, 255);
       }
 
       .oz-link {
         font-size: 12px;
-        color: rgb(73, 173, 255);
-        border-bottom: 1px solid rgb(73, 173, 255, 0.9);
         opacity: 0.8;
 
         &:hover {

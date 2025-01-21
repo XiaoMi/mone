@@ -67,7 +67,7 @@ import drawWaterMark from './waterMark'
 import { fetchEventSource } from '@microsoft/fetch-event-source'
 import CryptoJS from 'crypto-js'
 import { t } from '@/locales'
-import { addListener } from './mutationObserver'
+import { addListener } from "./mutationObserver";
 const appStore = useAppStore()
 
 const editorRef = ref()
@@ -217,10 +217,17 @@ const initBind = () => {
     if ((event?.target as HTMLElement).className === 'aie-codeblock-tools-comments') {
       event.preventDefault()
       ElMessage.info('没写完呢，哈哈😄')
+      // aiEditor?.focusPos(1).insert('自动注释')
+      // if (aiEditor?.isFocused()) {
+      //   aiEditor?.insert('自动注释')
+      // }
     }
     if ((event?.target as HTMLElement).className === 'aie-codeblock-tools-explain') {
       event.preventDefault()
       ElMessage.info('没写完呢，哈哈😄')
+      // if (aiEditor?.isFocused()) {
+      //   aiEditor?.insert('代码解释')
+      // }
     }
   })
 }
@@ -257,6 +264,7 @@ onMounted(() => {
   drawImg()
   setTimeout(() => {
     initStyle()
+    // addListener(document.querySelector('.aie-container-main'))
   }, 0)
   window.addEventListener('resize', initStyle, false)
   initBind()
