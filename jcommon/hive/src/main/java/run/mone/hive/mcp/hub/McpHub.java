@@ -33,11 +33,15 @@ public class McpHub {
     public void refreshMcpServer(String mcpServerName) {
         try {
             String content = new String(Files.readAllBytes(settingsPath));
-            Map<String, ServerParameters> newConfig = parseServerConfigAtOnce(content,mcpServerName);
+            Map<String, ServerParameters> newConfig = parseServerConfigAtOnce(content, mcpServerName);
             updateServerConnectionsAtOnce(newConfig);
         } catch (IOException e) {
             System.err.println("Failed to process MCP settings change: " + e.getMessage());
         }
+    }
+
+    public void close() {
+        connections.keySet().forEach(this::deleteConnection);
     }
 
     private void initializeWatcher() throws IOException {
@@ -81,8 +85,9 @@ public class McpHub {
     }
 
     private Map<String, ServerParameters> parseServerConfigAtOnce(String content, String mcpServerName) {
-        return McpSettings.fromContentAtOnce(content,mcpServerName).getMcpServers();
+        return McpSettings.fromContentAtOnce(content, mcpServerName).getMcpServers();
     }
+
     private void processSettingsChange() {
         try {
             String content = new String(Files.readAllBytes(settingsPath));
@@ -209,11 +214,11 @@ public class McpHub {
         if (connection != null) {
             McpServer server = connection.getServer();
             ServerParameters config = ServerParameters.builder(server.getConfig()).build();
-            
+
             System.out.println("Restarting " + serverName + " MCP server...");
             server.setStatus("connecting");
             server.setError("");
-            
+
             try {
                 deleteConnection(serverName);
                 connectToServer(serverName, config);
@@ -225,7 +230,8 @@ public class McpHub {
         isConnecting = false;
     }
 
-    public McpSchema.CallToolResult callTool(String serverName, String toolName, Map<String, Object> toolArguments) {
+    public McpSchema.CallToolResult callTool(String serverName, String
+            toolName, Map<String, Object> toolArguments) {
         McpConnection connection = connections.get(serverName);
         if (connection == null) {
             throw new IllegalArgumentException("No connection found for server: " + serverName);
@@ -254,4 +260,5 @@ public class McpHub {
     public List<McpServer> getServers() {
         return new ArrayList<>(connections.values().stream().map(McpConnection::getServer).toList());
     }
+
 }
