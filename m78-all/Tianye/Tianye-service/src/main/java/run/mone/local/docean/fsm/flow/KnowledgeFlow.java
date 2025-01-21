@@ -6,18 +6,20 @@ import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.infra.rpc.Result;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.util.StringUtils;
 import run.mone.ai.z.dto.ZKnowledgeReq;
 import run.mone.ai.z.dto.ZKnowledgeRes;
 import run.mone.ai.z.service.KnowledgeBaseService;
 import run.mone.local.docean.fsm.BotFlow;
 import run.mone.local.docean.fsm.bo.*;
+import run.mone.local.docean.service.KnowledgeService;
 import run.mone.local.docean.tianye.common.CommonConstants;
 import run.mone.local.docean.util.GsonUtils;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
+
+
 
 /**
  * @author goodjava@qq.com
@@ -30,25 +32,39 @@ public class KnowledgeFlow extends BotFlow {
     @Override
     public FlowRes execute(FlowReq req, FlowContext context) {
         KnowledgeBaseService knowledgeBaseService = Ioc.ins().getBean(KnowledgeBaseService.class);
+        KnowledgeService knowledgeService = Ioc.ins().getBean(KnowledgeService.class);
 
         String userName = req.getUserName();
+        List<String> contentList = new ArrayList<>();
         ZKnowledgeReq knowledgeReq = buildParams(userName, this.inputMap);
-
-        Result<List<ZKnowledgeRes>> result = knowledgeBaseService.querySimilarKnowledge(knowledgeReq);
-        log.warn("querySimilarKnowledge result:{}", GsonUtils.gson.toJson(result));
-        if (result.getCode() != 0){
-            log.error("querySimilarKnowledge error, ", result);
-            return FlowRes.failure(result.getMessage());
+        if (isNewVersion()) {
+            contentList.add(knowledgeService.querySimilarKnowledge(knowledgeReq.getKnowledgeBaseId(), userName, knowledgeReq.getQueryText(), knowledgeReq.getLimit(), knowledgeReq.getSimilarity().floatValue()));
+        } else {
+            Result<List<ZKnowledgeRes>> result = knowledgeBaseService.querySimilarKnowledge(knowledgeReq);
+            log.warn("querySimilarKnowledge result:{}", GsonUtils.gson.toJson(result));
+            if (result.getCode() != 0) {
+                log.error("querySimilarKnowledge error, ", result);
+                return FlowRes.failure(result.getMessage());
+            }
+            contentList = result.getData().stream().map(ZKnowledgeRes::getContent).collect(Collectors.toList());
         }
 
-        List<String> contentList = result.getData().stream().map(i -> i.getContent()).collect(Collectors.toList());
         //outputList output
         JsonObject resData = GsonUtils.objectToJsonObject(contentList);
-
         storeResultsInReferenceData(context, resData);
 
         //返回的数据一定要放到一个JsonObject中,方便后边的Flow解析
         return FlowRes.success(resData);
+    }
+
+    /**
+     * 知识库版本的切换开关
+     *
+     * @return
+     */
+    private boolean isNewVersion() {
+        InputData inputData = this.inputMap.get(CommonConstants.TY_KNOWLEDGE_ID_MARK);
+        return !StringUtils.isEmpty(inputData.getVersion());
     }
 
     @Override
@@ -72,9 +88,8 @@ public class KnowledgeFlow extends BotFlow {
         Preconditions.checkArgument(null != query, "query can not be null");
         String queryText = query.getValue().getAsString();
 
-        InputData knowledgeBase = inputDataMap.get(CommonConstants.TY_KNOWLEDGE_ID_MARK);
-        Preconditions.checkArgument(null != knowledgeBase, "knowledgeBaseId can not be null");
-        Long knowledgeBaseId = knowledgeBase.getValue().getAsLong();
+        Long knowledgeBaseId = getKnowledgeBaseId();
+        Preconditions.checkArgument(null != knowledgeBaseId, "knowledgeBaseId can not be null");
 
         //todo 搜索类型：语义、混合、全文检索。默认语义
 
@@ -93,5 +108,14 @@ public class KnowledgeFlow extends BotFlow {
         knowledgeReq.setSimilarity(similarity);
 
         return knowledgeReq;
+    }
+
+
+    private Long getKnowledgeBaseId() {
+        //TY_KNOWLEDGE_REF_BASE_ID_MARK优先级更高
+        Long knowledgeBaseId = Optional.ofNullable(inputMap.get(CommonConstants.TY_KNOWLEDGE_REF_BASE_ID_MARK))
+                .map(inputData -> inputData.getValue().getAsLong())
+                .orElseGet(() -> inputMap.get(CommonConstants.TY_KNOWLEDGE_ID_MARK).getValue().getAsLong());
+        return knowledgeBaseId;
     }
 }
