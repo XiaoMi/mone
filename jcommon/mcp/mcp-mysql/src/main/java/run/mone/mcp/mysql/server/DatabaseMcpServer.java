@@ -16,7 +16,7 @@ import run.mone.mcp.mysql.function.SqliteFunction;
 
 @Slf4j
 @Component
-public class MysqlMcpServer {
+public class DatabaseMcpServer {
 
     private ServerMcpTransport transport;
 
@@ -28,7 +28,7 @@ public class MysqlMcpServer {
     @Value("${mysql.password}")
     private String mysqlPassword;
 
-    public MysqlMcpServer(ServerMcpTransport transport) {
+    public DatabaseMcpServer(ServerMcpTransport transport) {
         this.transport = transport;
         log.info("MysqlMcpServer initialized with transport: {}", transport);
     }

@@ -21,6 +21,7 @@
         <module>mcp-neo4j</module>
         <module>mcp-playwright</module>
         <module>mcp-applescript</module>
+        <module>mcp-multimodal</module>
     </modules>
 
     <properties>
