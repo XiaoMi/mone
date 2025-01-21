@@ -29,6 +29,17 @@ public class McpHub {
         initializeMcpServers();
     }
 
+    // 局部刷新
+    public void refreshMcpServer(String mcpServerName) {
+        try {
+            String content = new String(Files.readAllBytes(settingsPath));
+            Map<String, ServerParameters> newConfig = parseServerConfigAtOnce(content,mcpServerName);
+            updateServerConnectionsAtOnce(newConfig);
+        } catch (IOException e) {
+            System.err.println("Failed to process MCP settings change: " + e.getMessage());
+        }
+    }
+
     private void initializeWatcher() throws IOException {
         Path parent = settingsPath.getParent();
         parent.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
@@ -69,6 +80,9 @@ public class McpHub {
         return McpSettings.fromContent(content).getMcpServers();
     }
 
+    private Map<String, ServerParameters> parseServerConfigAtOnce(String content, String mcpServerName) {
+        return McpSettings.fromContentAtOnce(content,mcpServerName).getMcpServers();
+    }
     private void processSettingsChange() {
         try {
             String content = new String(Files.readAllBytes(settingsPath));
@@ -91,6 +105,38 @@ public class McpHub {
                 System.out.println("Deleted MCP server: " + name);
             }
         }
+
+        // Update or add servers
+        for (Map.Entry<String, ServerParameters> entry : newServers.entrySet()) {
+            String name = entry.getKey();
+            ServerParameters config = entry.getValue();
+            McpConnection currentConnection = connections.get(name);
+
+            if (currentConnection == null) {
+                // New server
+                try {
+                    connectToServer(name, config);
+                } catch (Exception e) {
+                    System.err.println("Failed to connect to new MCP server " + name + ": " + e.getMessage());
+                }
+            } else if (!currentConnection.getServer().getConfig().equals(config.toString())) {
+                // Existing server with changed config
+                try {
+                    deleteConnection(name);
+                    connectToServer(name, config);
+                    System.out.println("Reconnected MCP server with updated config: " + name);
+                } catch (Exception e) {
+                    System.err.println("Failed to reconnect MCP server " + name + ": " + e.getMessage());
+                }
+            }
+        }
+
+        isConnecting = false;
+    }
+
+    // 只刷新指定的
+    private synchronized void updateServerConnectionsAtOnce(Map<String, ServerParameters> newServers) {
+        isConnecting = true;
 
         // Update or add servers
         for (Map.Entry<String, ServerParameters> entry : newServers.entrySet()) {
