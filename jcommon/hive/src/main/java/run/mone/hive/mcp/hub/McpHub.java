@@ -29,6 +29,17 @@ public class McpHub {
         initializeMcpServers();
     }
 
+    // 局部刷新
+    public void refreshMcpServer(String mcpServerName) {
+        try {
+            String content = new String(Files.readAllBytes(settingsPath));
+            Map<String, ServerParameters> newConfig = parseServerConfigAtOnce(content, mcpServerName);
+            updateServerConnectionsAtOnce(newConfig);
+        } catch (IOException e) {
+            System.err.println("Failed to process MCP settings change: " + e.getMessage());
+        }
+    }
+
     public void close() {
         connections.keySet().forEach(this::deleteConnection);
     }
@@ -73,6 +84,10 @@ public class McpHub {
         return McpSettings.fromContent(content).getMcpServers();
     }
 
+    private Map<String, ServerParameters> parseServerConfigAtOnce(String content, String mcpServerName) {
+        return McpSettings.fromContentAtOnce(content, mcpServerName).getMcpServers();
+    }
+
     private void processSettingsChange() {
         try {
             String content = new String(Files.readAllBytes(settingsPath));
@@ -95,6 +110,38 @@ public class McpHub {
                 System.out.println("Deleted MCP server: " + name);
             }
         }
+
+        // Update or add servers
+        for (Map.Entry<String, ServerParameters> entry : newServers.entrySet()) {
+            String name = entry.getKey();
+            ServerParameters config = entry.getValue();
+            McpConnection currentConnection = connections.get(name);
+
+            if (currentConnection == null) {
+                // New server
+                try {
+                    connectToServer(name, config);
+                } catch (Exception e) {
+                    System.err.println("Failed to connect to new MCP server " + name + ": " + e.getMessage());
+                }
+            } else if (!currentConnection.getServer().getConfig().equals(config.toString())) {
+                // Existing server with changed config
+                try {
+                    deleteConnection(name);
+                    connectToServer(name, config);
+                    System.out.println("Reconnected MCP server with updated config: " + name);
+                } catch (Exception e) {
+                    System.err.println("Failed to reconnect MCP server " + name + ": " + e.getMessage());
+                }
+            }
+        }
+
+        isConnecting = false;
+    }
+
+    // 只刷新指定的
+    private synchronized void updateServerConnectionsAtOnce(Map<String, ServerParameters> newServers) {
+        isConnecting = true;
 
         // Update or add servers
         for (Map.Entry<String, ServerParameters> entry : newServers.entrySet()) {
@@ -167,11 +214,11 @@ public class McpHub {
         if (connection != null) {
             McpServer server = connection.getServer();
             ServerParameters config = ServerParameters.builder(server.getConfig()).build();
-            
+
             System.out.println("Restarting " + serverName + " MCP server...");
             server.setStatus("connecting");
             server.setError("");
-            
+
             try {
                 deleteConnection(serverName);
                 connectToServer(serverName, config);
@@ -183,7 +230,8 @@ public class McpHub {
         isConnecting = false;
     }
 
-    public McpSchema.CallToolResult callTool(String serverName, String toolName, Map<String, Object> toolArguments) {
+    public McpSchema.CallToolResult callTool(String serverName, String
+            toolName, Map<String, Object> toolArguments) {
         McpConnection connection = connections.get(serverName);
         if (connection == null) {
             throw new IllegalArgumentException("No connection found for server: " + serverName);
@@ -212,4 +260,5 @@ public class McpHub {
     public List<McpServer> getServers() {
         return new ArrayList<>(connections.values().stream().map(McpConnection::getServer).toList());
     }
+
 }
