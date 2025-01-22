@@ -149,7 +149,7 @@ public class McpHub {
             ServerParameters config = entry.getValue();
             McpConnection currentConnection = connections.get(name);
 
-            if (currentConnection == null) {
+            if (currentConnection == null || currentConnection.getServer().getStatus().equals("disconnected")) {
                 // New server
                 try {
                     connectToServer(name, config);
