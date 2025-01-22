@@ -50,8 +50,12 @@ public class PlaywrightFunctions {
                 playwright = Playwright.create();
             }
             if (browser == null) {
+                String headlessProp = System.getProperty("playwright.headless");
+                boolean isHeadless = headlessProp != null 
+                    ? Boolean.parseBoolean(headlessProp) 
+                    : (headless != null ? headless : false);
                 browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
-                    .setHeadless(headless != null ? headless : false));
+                    .setHeadless(isHeadless));
             }
             if (page == null || page.isClosed()) {
                 page = browser.newPage(new Browser.NewPageOptions()
