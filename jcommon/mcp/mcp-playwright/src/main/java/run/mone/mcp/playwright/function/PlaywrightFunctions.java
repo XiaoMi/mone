@@ -893,10 +893,11 @@ public class PlaywrightFunctions {
                     try {
                         apiContext.dispose();
                         messages.add("API context disposed successfully");
-                        apiContext = null;
                     } catch (Exception e) {
                         messages.add("Failed to dispose API context: " + e.getMessage());
                         hasError = true;
+                    } finally {
+                        apiContext = null;
                     }
                 }
 
@@ -905,10 +906,11 @@ public class PlaywrightFunctions {
                     try {
                         browser.close();
                         messages.add("Browser closed successfully");
-                        browser = null;
                     } catch (Exception e) {
                         messages.add("Failed to close browser: " + e.getMessage());
                         hasError = true;
+                    } finally {
+                        browser = null;
                     }
                 }
 
@@ -917,10 +919,11 @@ public class PlaywrightFunctions {
                     try {
                         playwright.close();
                         messages.add("Playwright closed successfully");
-                        playwright = null;
                     } catch (Exception e) {
                         messages.add("Failed to close playwright: " + e.getMessage());
                         hasError = true;
+                    } finally {
+                        playwright = null;
                     }
                 }
 
