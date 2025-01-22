@@ -1,17 +1,14 @@
+package run.mone.mcp.solution.assessor;
 
-package run.mone.mcp.filesystem;
-
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-@ComponentScan("run.mone.mcp.filesystem")
-@Slf4j
-public class Bootstrap {
+@ComponentScan("run.mone.mcp.solution.assessor")
+public class SolutionAssessorBootstrap {
+
     public static void main(String[] args) {
-        log.info("mcp filesystem start");
-        SpringApplication.run(Bootstrap.class, args);
+        SpringApplication.run(SolutionAssessorBootstrap.class, args);
     }
 }
