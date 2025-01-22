@@ -200,8 +200,8 @@ public class McpHub {
         McpConnection connection = connections.remove(name);
         if (connection != null) {
             try {
-                connection.getTransport().close();
-                connection.getClient().close();
+                connection.getTransport().closeGracefully();
+                connection.getClient().closeGracefully();
             } catch (Exception e) {
                 System.err.println("Failed to close transport for " + name + ": " + e.getMessage());
             }

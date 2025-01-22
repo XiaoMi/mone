@@ -24,6 +24,7 @@
         <module>mcp-multimodal</module>
         <module>mcp-memory</module>
         <module>mcp-solution-assessor</module>
+        <module>mcp-filesystem</module>
     </modules>
 
     <properties>
