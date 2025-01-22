@@ -6,15 +6,14 @@ import com.google.common.collect.Lists;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import run.mone.hive.mcp.server.McpServer;
+import run.mone.hive.mcp.server.McpServer.ToolRegistration;
 import run.mone.hive.mcp.server.McpSyncServer;
+import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.mcp.filesystem.function.FilesystemFunction;
-import run.mone.hive.mcp.server.McpServer.ToolRegistration;
-import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 
 @Slf4j
 @Component
@@ -24,8 +23,6 @@ public class FilesystemMcpServer {
 
     private McpSyncServer syncServer;
 
-    @Value("${filesystem.root}")
-    private String filesystemRoot;
 
     public FilesystemMcpServer(ServerMcpTransport transport) {
         this.transport = transport;
