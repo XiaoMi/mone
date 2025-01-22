@@ -1,4 +1,3 @@
-
 package run.mone.mcp.playwright.server;
 
 import jakarta.annotation.PostConstruct;
@@ -11,10 +10,12 @@ import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.mcp.playwright.function.PlaywrightFunction;
 import run.mone.mcp.playwright.function.PlaywrightFunctions;
+import run.mone.mcp.playwright.function.PlaywrightFunctions.CleanupFunction;
 import run.mone.mcp.playwright.function.PlaywrightFunctions.ClickFunction;
 import run.mone.mcp.playwright.function.PlaywrightFunctions.DeleteFunction;
 import run.mone.mcp.playwright.function.PlaywrightFunctions.EvaluateFunction;
 import run.mone.mcp.playwright.function.PlaywrightFunctions.FillFunction;
+import run.mone.mcp.playwright.function.PlaywrightFunctions.GetContentFunction;
 import run.mone.mcp.playwright.function.PlaywrightFunctions.GetFunction;
 import run.mone.mcp.playwright.function.PlaywrightFunctions.HoverFunction;
 import run.mone.mcp.playwright.function.PlaywrightFunctions.NavigateFunction;
@@ -107,6 +108,13 @@ public class PlaywrightMcpServer {
             syncServer.addTool(evalToolRegistration);
             log.info("Successfully registered eval tool");
 
+            GetContentFunction getContentFunction = new PlaywrightFunctions.GetContentFunction();
+            var getContentToolRegistration = new ToolRegistration(
+                    new Tool(getContentFunction.getName(), getContentFunction.getDesc(), getContentFunction.getToolScheme()), getContentFunction
+            );
+            syncServer.addTool(getContentToolRegistration);
+            log.info("Successfully registered get_content tool");
+
             GetFunction getFunction = new PlaywrightFunctions.GetFunction();
             var getToolRegistration = new ToolRegistration(
                     new Tool(getFunction.getName(), getFunction.getDesc(), getFunction.getToolScheme()), getFunction
@@ -141,6 +149,14 @@ public class PlaywrightMcpServer {
             );
             syncServer.addTool(patchToolRegistration);
             log.info("Successfully registered patch tool");
+
+            CleanupFunction cleanupFunction = new PlaywrightFunctions.CleanupFunction();
+            var cleanupToolRegistration = new ToolRegistration(
+                    new Tool(cleanupFunction.getName(), cleanupFunction.getDesc(), cleanupFunction.getToolScheme()), 
+                    cleanupFunction
+            );
+            syncServer.addTool(cleanupToolRegistration);
+            log.info("Successfully registered cleanup tool");
         } catch (Exception e) {
             log.error("Failed to register execute_playwright tool", e);
             throw e;

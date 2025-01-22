@@ -18,6 +18,8 @@ import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Data
@@ -844,6 +846,95 @@ public class PlaywrightFunctions {
                     List.of(new McpSchema.TextContent(
                         "Failed to get content: " + e.getMessage()
                     )),
+                    true
+                );
+            }
+        }
+    }
+
+    @Data
+    public static class CleanupFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+        private String name = "playwright_cleanup";
+        
+        private String desc = "Cleanup all Playwright resources (browser, page, contexts)";
+
+        private String toolScheme = """
+            {
+                "type": "object",
+                "properties": {
+                    "force": {
+                        "type": "boolean",
+                        "description": "Force cleanup even if operations are in progress (default: false)"
+                    }
+                }
+            }
+            """;
+
+        @Override
+        public McpSchema.CallToolResult apply(Map<String, Object> args) {
+            List<String> messages = new ArrayList<>();
+            boolean hasError = false;
+            
+            try {
+                // 清理Page
+                if (page != null) {
+                    try {
+                        page.close();
+                        messages.add("Page closed successfully");
+                        page = null;
+                    } catch (Exception e) {
+                        messages.add("Failed to close page: " + e.getMessage());
+                        hasError = true;
+                    }
+                }
+
+                // 清理APIContext
+                if (apiContext != null) {
+                    try {
+                        apiContext.dispose();
+                        messages.add("API context disposed successfully");
+                        apiContext = null;
+                    } catch (Exception e) {
+                        messages.add("Failed to dispose API context: " + e.getMessage());
+                        hasError = true;
+                    }
+                }
+
+                // 清理Browser
+                if (browser != null) {
+                    try {
+                        browser.close();
+                        messages.add("Browser closed successfully");
+                        browser = null;
+                    } catch (Exception e) {
+                        messages.add("Failed to close browser: " + e.getMessage());
+                        hasError = true;
+                    }
+                }
+
+                // 清理Playwright
+                if (playwright != null) {
+                    try {
+                        playwright.close();
+                        messages.add("Playwright closed successfully");
+                        playwright = null;
+                    } catch (Exception e) {
+                        messages.add("Failed to close playwright: " + e.getMessage());
+                        hasError = true;
+                    }
+                }
+
+                return new McpSchema.CallToolResult(
+                    messages.stream()
+                        .map(McpSchema.TextContent::new)
+                        .collect(Collectors.toList()),
+                    hasError
+                );
+                
+            } catch (Exception e) {
+                log.error("Cleanup failed", e);
+                return new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("Cleanup failed: " + e.getMessage())),
                     true
                 );
             }
