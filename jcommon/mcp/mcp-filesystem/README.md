@@ -1,4 +1,4 @@
-"docker-filesystem": {
+"filesystem-mcp": {
 "command": "java",
 "args": [
 "-jar",
