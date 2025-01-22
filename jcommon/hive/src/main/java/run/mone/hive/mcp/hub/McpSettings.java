@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Getter
 public class McpSettings {
@@ -32,6 +33,21 @@ public class McpSettings {
         ObjectMapper mapper = new ObjectMapper();
         TypeReference<Map<String, ServerParameters>> typeRef = new TypeReference<>() {};
         Map<String, ServerParameters> mcpServers = mapper.readValue(content, typeRef);
+        McpSettings ms = new McpSettings();
+        ms.setMcpServers(mcpServers);
+        return ms;
+    }
+
+    @SneakyThrows
+    public static McpSettings fromContentAtOnce(String content,String mcpServerName) {
+        content = JsonParser.parseString(content).getAsJsonObject().get("mcpServers").toString();
+        ObjectMapper mapper = new ObjectMapper();
+        TypeReference<Map<String, ServerParameters>> typeRef = new TypeReference<>() {};
+        Map<String, ServerParameters> mcpServers = mapper.readValue(content, typeRef);
+        // 过滤mcpServers，只保留key为mcpServerName
+        mcpServers = mcpServers.entrySet().stream()
+                .filter(entry -> entry.getKey().equals(mcpServerName))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         McpSettings ms = new McpSettings();
         ms.setMcpServers(mcpServers);
         return ms;

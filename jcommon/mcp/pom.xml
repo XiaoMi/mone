@@ -22,6 +22,8 @@
         <module>mcp-playwright</module>
         <module>mcp-applescript</module>
         <module>mcp-multimodal</module>
+        <module>mcp-memory</module>
+        <module>mcp-filesystem</module>
     </modules>
 
     <properties>
