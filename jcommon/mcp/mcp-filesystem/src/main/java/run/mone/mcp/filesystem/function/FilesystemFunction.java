@@ -172,6 +172,7 @@ public class FilesystemFunction implements Function<Map<String, Object>, McpSche
 
     private McpSchema.CallToolResult writeFile(String path, String content) throws IOException {
         Path validPath = validatePath(path);
+        log.info("write file path:{} content:{}", path, content);
         Files.writeString(validPath, content);
         return new McpSchema.CallToolResult(
                 List.of(new McpSchema.TextContent("Successfully wrote to " + path)),
