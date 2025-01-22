@@ -3,6 +3,7 @@ package run.mone.mcp.playwright.function;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.microsoft.playwright.*;
 import com.microsoft.playwright.Page.NavigateOptions;
+import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.RequestOptions;
 import com.microsoft.playwright.options.WaitUntilState;
 
@@ -50,7 +51,7 @@ public class PlaywrightFunctions {
                 browser = playwright.chromium().launch(new BrowserType.LaunchOptions()
                     .setHeadless(headless != null ? headless : false));
             }
-            if (page == null) {
+            if (page == null || page.isClosed()) {
                 page = browser.newPage(new Browser.NewPageOptions()
                     .setViewportSize(width != null ? width : 1920, 
                                    height != null ? height : 1080));
@@ -740,6 +741,108 @@ public class PlaywrightFunctions {
                 return new McpSchema.CallToolResult(
                     List.of(new McpSchema.TextContent(
                         "Failed to perform DELETE operation on " + args.get("url") + ": " + e.getMessage()
+                    )),
+                    true
+                );
+            }
+        }
+    }
+
+    @Data
+    public static class GetContentFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+        private String name = "playwright_get_content";
+        
+        private String desc = "Get content from the current page or a specific element";
+
+        private String toolScheme = """
+            {
+                "type": "object",
+                "properties": {
+                    "selector": { 
+                        "type": "string",
+                        "description": "CSS selector for target element (optional)"
+                    },
+                    "contentType": {
+                        "type": "string", 
+                        "enum": ["text", "html"],
+                        "description": "Type of content to retrieve (default: text)"
+                    },
+                    "wait": {
+                        "type": "boolean",
+                        "description": "Whether to wait for element to be present (default: true)"
+                    },
+                    "timeout": {
+                        "type": "number",
+                        "description": "Maximum time to wait in milliseconds (default: 30000)"
+                    },
+                    "waitForLoadState": {
+                        "type": "string",
+                        "enum": ["load", "domcontentloaded", "networkidle"],
+                        "description": "Wait for specific load state (default: load)"
+                    },
+                    "waitForSelector": {
+                        "type": "string",
+                        "description": "Additional selector to wait for before getting content (optional)"
+                    }
+                }
+            }
+            """;
+
+        @Override
+        public McpSchema.CallToolResult apply(Map<String, Object> args) {
+            try {
+                Page page = ensureBrowser(null, null, null);
+                
+                String selector = args.get("selector") != null ? args.get("selector").toString() : null;
+                String contentType = args.get("contentType") != null ? args.get("contentType").toString() : "text";
+                boolean wait = args.get("wait") != null ? (Boolean)args.get("wait") : true;
+                int timeout = args.get("timeout") != null ? ((Number)args.get("timeout")).intValue() : 30000;
+                String waitForLoadState = args.get("waitForLoadState") != null ? 
+                    args.get("waitForLoadState").toString() : "load";
+                String waitForSelector = args.get("waitForSelector") != null ? 
+                    args.get("waitForSelector").toString() : null;
+
+                // 等待页面加载状态
+                page.waitForLoadState(LoadState.valueOf(waitForLoadState.toUpperCase()), 
+                    new Page.WaitForLoadStateOptions().setTimeout(timeout));
+
+                // 如果指定了额外的等待选择器
+                if (waitForSelector != null) {
+                    page.waitForSelector(waitForSelector, 
+                        new Page.WaitForSelectorOptions().setTimeout(timeout));
+                }
+
+                String content;
+                if (selector != null) {
+                    if (wait) {
+                        page.waitForSelector(selector, 
+                            new Page.WaitForSelectorOptions().setTimeout(timeout));
+                    }
+                    ElementHandle element = page.querySelector(selector);
+                    if (element == null) {
+                        return new McpSchema.CallToolResult(
+                            List.of(new McpSchema.TextContent("Element not found: " + selector)),
+                            true
+                        );
+                    }
+                    content = contentType.equals("html") ? 
+                        (String)element.evaluate("el => el.innerHTML") :
+                        element.textContent();
+                } else {
+                    content = contentType.equals("html") ? 
+                        page.content() :
+                        (String)page.evaluate("() => document.body.innerText");
+                }
+
+                return new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent(content)),
+                    false
+                );
+            } catch (Exception e) {
+                log.error("Failed to get content", e);
+                return new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent(
+                        "Failed to get content: " + e.getMessage()
                     )),
                     true
                 );
