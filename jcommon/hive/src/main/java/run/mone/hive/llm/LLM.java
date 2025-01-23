@@ -4,6 +4,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import lombok.Data;
 import lombok.SneakyThrows;
@@ -292,10 +293,25 @@ public class LLM {
                                 break;
                             }
                             JsonObject jsonResponse = gson.fromJson(data, JsonObject.class);
-                            String content = jsonResponse.getAsJsonArray("choices")
-                                    .get(0).getAsJsonObject()
-                                    .getAsJsonObject("delta")
-                                    .get("content").getAsString();
+                            String content = "";
+                            try {
+                                JsonObject delta = jsonResponse.getAsJsonArray("choices")
+                                        .get(0).getAsJsonObject()
+                                        .getAsJsonObject("delta");
+
+                                JsonElement c = delta.get("content");
+                                if (c.isJsonNull()) {
+                                    JsonElement rc = delta.get("reasoning_content");
+                                    if (!rc.isJsonNull()) {
+                                        content = rc.getAsString();
+                                    }
+                                } else {
+                                    content = c.getAsString();
+                                }
+                            } catch (Throwable ex) {
+                                log.error(ex.getMessage());
+                            }
+
                             jsonResponse.addProperty("type", "event");
                             jsonResponse.addProperty("content", content);
                             messageHandler.accept(content, jsonResponse);
