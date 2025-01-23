@@ -402,28 +402,34 @@ public class LLM {
         return result;
     }
 
-    @SneakyThrows
-    public String transcribeAudio(String filePath) {
+    public String transcribeAudio(String filePath, String base64) throws IOException {
+        // 将base64解码并写入临时文件
+        byte[] audioData = java.util.Base64.getDecoder().decode(base64);
+        File file = new File(filePath);
+        java.nio.file.Files.write(file.toPath(), audioData);
+        
+        // 复用现有的文件处理方法
+        return transcribeAudio(filePath, file);
+    }
+
+    public String transcribeAudio(String filePath, File file) throws IOException {
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
                 .build();
 
-        File file = new File(filePath);
-        RequestBody fileBody = RequestBody.create(file, MediaType.parse("audio/*"));
-        
         // 构建multipart请求
         MultipartBody requestBody = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
-                .addFormDataPart("file", file.getName(), fileBody)
-                .addFormDataPart("model", "step-asr")
+                .addFormDataPart("file", file.getName(), 
+                    RequestBody.create(file, MediaType.parse("audio/mpeg"))) // 更明确的媒体类型
+                .addFormDataPart("model", LLMProvider.STEPFUN_ASR.getDefaultModel())
                 .addFormDataPart("response_format", "json")
                 .build();
 
-        // 创建请求
         Request request = new Request.Builder()
-                .url(LLMProvider.STEPFUN_ASR.getUrl())
+                .url(LLMProvider.STEPFUN_ASR.getUrl()) // 使用完整的API URL
                 .addHeader("Authorization", "Bearer " + System.getenv(LLMProvider.STEPFUN_ASR.getEnvName()))
                 .post(requestBody)
                 .build();
