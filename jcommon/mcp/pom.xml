@@ -25,6 +25,7 @@
         <module>mcp-memory</module>
         <module>mcp-solution-assessor</module>
         <module>mcp-filesystem</module>
+        <module>mcp-prettier</module>
     </modules>
 
     <properties>
