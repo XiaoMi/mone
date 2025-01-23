@@ -17,9 +17,11 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
+import java.util.HashMap;
 
 @Slf4j
 @Data
@@ -30,6 +32,7 @@ public class PlaywrightFunctions {
     private static Browser browser;
     private static Page page;
     private static APIRequestContext apiContext;
+    private static Map<String, Page> tabs = new HashMap<>();
 
     public static Playwright getPlaywright() {
         return playwright;
@@ -942,6 +945,162 @@ public class PlaywrightFunctions {
                 log.error("Cleanup failed", e);
                 return new McpSchema.CallToolResult(
                     List.of(new McpSchema.TextContent("Cleanup failed: " + e.getMessage())),
+                    true
+                );
+            }
+        }
+    }
+
+    @Data
+    public static class NewTabFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+        private String name = "playwright_new_tab";
+        
+        private String desc = "Open a new browser tab";
+
+        private String toolScheme = """
+            {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "description": "URL to open in new tab"
+                    },
+                    "name": {
+                        "type": "string", 
+                        "description": "Name for the new tab"
+                    },
+                    "active": {
+                        "type": "boolean",
+                        "description": "Whether to switch to the new tab (default: true)"
+                    },
+                    "width": {
+                        "type": "number",
+                        "description": "Viewport width in pixels (default: 1920)"
+                    },
+                    "height": {
+                        "type": "number", 
+                        "description": "Viewport height in pixels (default: 1080)"
+                    }
+                },
+                "required": ["url", "name"]
+            }
+            """;
+
+        @Override
+        public McpSchema.CallToolResult apply(Map<String, Object> args) {
+            try {
+                String url = args.get("url").toString();
+                String name = args.get("name") != null ? args.get("name").toString() : "new_tab_" + UUID.randomUUID().toString();
+                boolean active = args.get("active") != null ? (Boolean)args.get("active") : true;
+                Integer width = args.get("width") != null ? ((Number)args.get("width")).intValue() : 1920;
+                Integer height = args.get("height") != null ? ((Number)args.get("height")).intValue() : 1080;
+
+                Page newTab = browser.newPage(new Browser.NewPageOptions()
+                    .setViewportSize(width, height));
+                newTab.navigate(url);
+
+                tabs.put(name, newTab);
+
+                if (active) {
+                    page = newTab;
+                }
+
+                return new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("New tab opened: " + name)),
+                    false
+                );
+            } catch (Exception e) {
+                log.error("Failed to open new tab", e);
+                return new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("Failed to open new tab: " + e.getMessage())),
+                    true
+                );
+            }
+        }
+    }
+
+    @Data
+    public static class SwitchTabFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+        private String name = "playwright_switch_tab";
+        
+        private String desc = "Switch to a specific browser tab by name";
+
+        private String toolScheme = """
+            {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Name of the tab to switch to"
+                    },
+                    "waitForLoadState": {
+                        "type": "string",
+                        "enum": ["load", "domcontentloaded", "networkidle"],
+                        "description": "Wait for specific load state after switching (default: load)"
+                    },
+                    "timeout": {
+                        "type": "number",
+                        "description": "Maximum time to wait in milliseconds (default: 30000)"
+                    }
+                },
+                "required": ["name"]
+            }
+            """;
+
+        @Override
+        public McpSchema.CallToolResult apply(Map<String, Object> args) {
+            try {
+                String tabName = args.get("name").toString();
+                
+                // 检查tab是否存在
+                if (!tabs.containsKey(tabName)) {
+                    return new McpSchema.CallToolResult(
+                        List.of(new McpSchema.TextContent("Tab not found: " + tabName)),
+                        true
+                    );
+                }
+
+                Page targetPage = tabs.get(tabName);
+                
+                // 检查tab是否已关闭
+                if (targetPage.isClosed()) {
+                    tabs.remove(tabName);
+                    return new McpSchema.CallToolResult(
+                        List.of(new McpSchema.TextContent("Tab '" + tabName + "' is closed")),
+                        true
+                    );
+                }
+
+                // 切换到目标tab
+                page = targetPage;
+
+                // 如果指定了等待加载状态
+                if (args.get("waitForLoadState") != null) {
+                    String waitState = args.get("waitForLoadState").toString();
+                    int timeout = args.get("timeout") != null ? 
+                        ((Number)args.get("timeout")).intValue() : 30000;
+
+                    page.waitForLoadState(
+                        LoadState.valueOf(waitState.toUpperCase()),
+                        new Page.WaitForLoadStateOptions().setTimeout(timeout)
+                    );
+                }
+
+                return new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent(
+                        String.format("Switched to tab '%s' (URL: %s)", 
+                            tabName,
+                            page.url()
+                        )
+                    )),
+                    false
+                );
+            } catch (Exception e) {
+                log.error("Failed to switch tab", e);
+                return new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent(
+                        "Failed to switch tab: " + e.getMessage()
+                    )),
                     true
                 );
             }
