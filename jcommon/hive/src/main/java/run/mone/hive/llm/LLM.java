@@ -68,6 +68,9 @@ public class LLM {
 
 
     public String getApiUrl() {
+        if (null != this.config && StringUtils.isNotEmpty(this.config.getUrl())) {
+            return this.config.getUrl();
+        }
         return llmProvider.getUrl();
     }
 
@@ -130,7 +133,6 @@ public class LLM {
         for (AiMessage message : messages) {
             msgArray.add(createMessageObject(message.getRole(), message.getContent()));
         }
-
 
 
         requestBody.add("messages", msgArray);
@@ -270,7 +272,7 @@ public class LLM {
         String msgId = UUID.randomUUID().toString();
         chat(Lists.newArrayList(AiMessage.builder().role("user").content(str).build()), (c, o) -> {
             String type = o.get("type").getAsString();
-            if (type.equals("begin")){
+            if (type.equals("begin")) {
                 role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_BEGIN).id(msgId).role(role.getName()).build());
             } else if (type.equals("finish") || type.equals("failure")) {
                 latch.countDown();
