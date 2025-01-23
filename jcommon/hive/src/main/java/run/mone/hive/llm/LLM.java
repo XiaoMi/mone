@@ -17,6 +17,7 @@ import run.mone.hive.roles.Role;
 import run.mone.hive.schema.AiMessage;
 import run.mone.hive.schema.Message;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
@@ -337,6 +338,54 @@ public class LLM {
         String result = botBridge.call(content, params, responseHandler);
         role.sendMessage(Message.builder().id(UUID.randomUUID().toString()).role(role.getName()).content(result).build());
         return result;
+    }
+
+    @SneakyThrows
+    public String transcribeAudio(String filePath) {
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .build();
+
+        File file = new File(filePath);
+        RequestBody fileBody = RequestBody.create(file, MediaType.parse("audio/*"));
+        
+        // 构建multipart请求
+        MultipartBody requestBody = new MultipartBody.Builder()
+                .setType(MultipartBody.FORM)
+                .addFormDataPart("file", file.getName(), fileBody)
+                .addFormDataPart("model", "step-asr")
+                .addFormDataPart("response_format", "json")
+                .build();
+
+        // 创建请求
+        Request request = new Request.Builder()
+                .url(LLMProvider.STEPFUN_ASR.getUrl())
+                .addHeader("Authorization", "Bearer " + System.getenv(LLMProvider.STEPFUN_ASR.getEnvName()))
+                .post(requestBody)
+                .build();
+
+        Stopwatch sw = Stopwatch.createStarted();
+        String res = "";
+        
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                throw new IOException("音频转写失败: " + response);
+            }
+            String responseBody = response.body().string();
+            JsonObject jsonResponse = gson.fromJson(responseBody, JsonObject.class);
+            res = jsonResponse.get("text").getAsString();
+            return res;
+        } finally {
+            log.info("音频转写完成:\n{}\n 耗时:{}ms", res, sw.elapsed(TimeUnit.MILLISECONDS));
+            if (file.exists()) {
+                boolean deleted = file.delete();
+                if (!deleted) {
+                    log.warn("无法删除临时音频文件: {}", filePath);
+                }
+            }
+        }
     }
 
 }
