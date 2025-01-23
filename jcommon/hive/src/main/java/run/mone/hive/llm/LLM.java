@@ -205,9 +205,14 @@ public class LLM {
                 .build();
 
         client.newCall(request).enqueue(new Callback() {
+
             @Override
             public void onFailure(Call call, IOException e) {
                 log.error("Stream request failed", e);
+                JsonObject jsonResponse = new JsonObject();
+                jsonResponse.addProperty("type", "failure");
+                jsonResponse.addProperty("content", e.getMessage());
+                messageHandler.accept(e.getMessage(), jsonResponse);
             }
 
             @Override
@@ -251,7 +256,7 @@ public class LLM {
                 } catch (Throwable ex) {
                     JsonObject jsonResponse = new JsonObject();
                     jsonResponse.addProperty("type", "failure");
-                    jsonResponse.addProperty("content", "");
+                    jsonResponse.addProperty("content", ex.getMessage());
                     messageHandler.accept(ex.getMessage(), jsonResponse);
                 }
             }
