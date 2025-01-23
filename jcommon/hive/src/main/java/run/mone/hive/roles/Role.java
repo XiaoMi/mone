@@ -16,6 +16,7 @@ import run.mone.hive.utils.Config;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -117,7 +118,7 @@ public class Role {
     protected int observe() {
         log.info("observe");
         this.rc.news.forEach(msg -> this.rc.getMemory().add(msg));
-        this.rc.news = new LinkedList<>(this.rc.news.stream().filter(this::isRelevantMessage).toList());
+        this.rc.news = new LinkedBlockingQueue<>(this.rc.news.stream().filter(this::isRelevantMessage).toList());
         return this.rc.news.size();
     }
 
