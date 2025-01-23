@@ -5,8 +5,9 @@ import run.mone.hive.actions.Action;
 import run.mone.hive.memory.Memory;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 @Data
 public class RoleContext {
@@ -18,7 +19,7 @@ public class RoleContext {
     private int maxRetries = 1;
     private int currentRetries = 0;
 
-    public LinkedList<Message> news = new LinkedList<>();
+    public BlockingQueue<Message> news = new LinkedBlockingQueue<>();
 
     private ReactMode reactMode = ReactMode.BY_ORDER;
 
