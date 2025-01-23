@@ -67,7 +67,6 @@ public class LLM {
         return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), "", config);
     }
 
-
     public String getApiUrl() {
         if (null != this.config && StringUtils.isNotEmpty(this.config.getUrl())) {
             return this.config.getUrl();
@@ -164,6 +163,53 @@ public class LLM {
             return res;
         } finally {
             log.info("call llm res:\n{}\n use time:{}ms", res, sw.elapsed(TimeUnit.MILLISECONDS));
+        }
+    }
+
+    // 文本转语音
+    public byte[] generateSpeech(String text) throws IOException {
+        return generateSpeech(System.getenv(llmProvider.getEnvName()), text, "wenrounvsheng", null);
+    }
+
+    public byte[] generateSpeech(String text, String voice) throws IOException {
+        return generateSpeech(System.getenv(llmProvider.getEnvName()), text, voice, null);
+    }
+
+    public byte[] generateSpeech(String text, String voice, String outputPath) throws IOException {
+        return generateSpeech(System.getenv(llmProvider.getEnvName()), text, voice, outputPath);
+    }
+
+    public byte[] generateSpeech(String apiKey, String text, String voice, String outputPath) throws IOException {
+        OkHttpClient client = new OkHttpClient.Builder()
+                .connectTimeout(30, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(30, TimeUnit.SECONDS)
+                .build();
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("model", llmProvider.getDefaultModel());
+        requestBody.addProperty("input", text);
+        requestBody.addProperty("voice", voice);
+
+        Request request = new Request.Builder()
+                .url(llmProvider.getUrl())
+                .addHeader("Authorization", "Bearer " + apiKey)
+                .post(RequestBody.create(requestBody.toString(), JSON))
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                throw new IOException("Unexpected response code: " + response);
+            }
+
+            byte[] audioData = response.body().bytes();
+
+            if (outputPath != null) {
+                java.nio.file.Files.write(java.nio.file.Paths.get(outputPath), audioData);
+                return null;
+            }
+
+            return audioData;
         }
     }
 
