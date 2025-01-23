@@ -16,7 +16,7 @@
 
 package com.xiaomi.youpin.docean.mvc.session;
 
-import com.xiaomi.youpin.docean.common.Safe;
+import com.xiaomi.youpin.docean.Ioc;
 import com.xiaomi.youpin.docean.mvc.MvcContext;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.HttpHeaderNames;
@@ -26,49 +26,42 @@ import io.netty.handler.codec.http.cookie.ServerCookieDecoder;
 import io.netty.handler.codec.http.cookie.ServerCookieEncoder;
 
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * @author goodjava@qq.com
  */
 public class HttpSessionManager {
 
+    private static ISessionStore getSessionStoreService(MvcContext mvcContext) {
+        boolean clusterSession = false;
+        if (null != mvcContext) {
+            clusterSession = mvcContext.isClusterSession();
+        }
 
-    private static final Map<String, HttpSession> SESSION_MAP = new ConcurrentHashMap<>();
-
-
-    static {
-        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
-            Safe.run(() -> {
-                long now = System.currentTimeMillis();
-                List<String> ids = SESSION_MAP.values().stream().filter(it -> {
-                    DefaultHttpSession hs = (DefaultHttpSession) it;
-                    if (now - hs.getUpdateTime() > TimeUnit.MINUTES.toMillis(60)) {
-                        return true;
-                    }
-                    return false;
-                }).map(it -> it.getId()).collect(Collectors.toList());
-                ids.forEach(id -> SESSION_MAP.remove(id));
-            }, e -> {
-            });
-        }, 10, 5, TimeUnit.SECONDS);
+        String beanName = clusterSession ? "ClusterSessionStore" : "SessionStore";
+        return (ISessionStore) Ioc.ins().getBean(beanName);
     }
 
+    @Deprecated
     public static String createSession() {
+        return createSession(null);
+    }
+
+    public static String createSession(MvcContext mvcContext) {
         HttpSession session = new DefaultHttpSession();
         String sessionId = session.getId();
-        SESSION_MAP.put(sessionId, session);
+        ISessionStore sessionStoreService = getSessionStoreService(mvcContext);
+        sessionStoreService.put(sessionId, session);
+
         return sessionId;
     }
 
     public static boolean isExists(String sessionId) {
-        if (SESSION_MAP.containsKey(sessionId)) {
-            HttpSession session = SESSION_MAP.get(sessionId);
+        ISessionStore sessionStoreService = getSessionStoreService(null);
+        if (sessionStoreService.containsKey(sessionId)) {
+            HttpSession session = sessionStoreService.get(sessionId);
             if (session.getId() == null) {
-                SESSION_MAP.remove(sessionId);
+                sessionStoreService.remove(sessionId);
                 return false;
             }
             return true;
@@ -78,32 +71,28 @@ public class HttpSessionManager {
     }
 
     public static void invalidate(String sessionId) {
-        SESSION_MAP.remove(sessionId);
+        ISessionStore sessionStoreService = getSessionStoreService(null);
+        sessionStoreService.remove(sessionId);
     }
 
+    @Deprecated
     public static HttpSession getSession(String sessionId) {
-        return SESSION_MAP.compute(sessionId, (k, v) -> {
-            if (null != v) {
-                if (v instanceof DefaultHttpSession dhs) {
-                    dhs.setUpdateTime(System.currentTimeMillis());
-                }
-            }
-            return v;
-        });
+        return getSessionStoreService(null).get(sessionId);
     }
 
 
     public static HttpSession getSession(MvcContext context) {
         String sid = getSessionId(context.getHeaders());
+        ISessionStore sessionStoreService = getSessionStoreService(context);
         if (sid.equals("")) {
-            String session = createSession();
-            context.setSessionId(session);
-            return getSession(session);
+            String sessionId = createSession(context);
+            context.setSessionId(sessionId);
+            return sessionStoreService.getAndRefresh(sessionId);
         } else {
             return Optional.ofNullable(getSession(sid)).orElseGet(() -> {
-                String session = createSession();
-                context.setSessionId(session);
-                return getSession(session);
+                String sessionId = createSession(context);
+                context.setSessionId(sessionId);
+                return sessionStoreService.getAndRefresh(sessionId);
             });
         }
 
@@ -120,7 +109,7 @@ public class HttpSessionManager {
         }
 
         if (exists == false) {
-            Cookie cookie = new DefaultCookie(HttpSession.SESSIONID, HttpSessionManager.createSession());
+            Cookie cookie = new DefaultCookie(HttpSession.SESSIONID, HttpSessionManager.createSession(context));
             cookie.setPath("/");
             String encodeCookie = ServerCookieEncoder.STRICT.encode(cookie);
             response.headers().set(HttpHeaderNames.SET_COOKIE, encodeCookie);
