@@ -19,11 +19,13 @@ import run.mone.mcp.playwright.function.PlaywrightFunctions.GetContentFunction;
 import run.mone.mcp.playwright.function.PlaywrightFunctions.GetFunction;
 import run.mone.mcp.playwright.function.PlaywrightFunctions.HoverFunction;
 import run.mone.mcp.playwright.function.PlaywrightFunctions.NavigateFunction;
+import run.mone.mcp.playwright.function.PlaywrightFunctions.NewTabFunction;
 import run.mone.mcp.playwright.function.PlaywrightFunctions.PatchFunction;
 import run.mone.mcp.playwright.function.PlaywrightFunctions.PostFunction;
 import run.mone.mcp.playwright.function.PlaywrightFunctions.PutFunction;
 import run.mone.mcp.playwright.function.PlaywrightFunctions.ScreenshotFunction;
 import run.mone.mcp.playwright.function.PlaywrightFunctions.SelectFunction;
+import run.mone.mcp.playwright.function.PlaywrightFunctions.SwitchTabFunction;
 import run.mone.hive.mcp.server.McpServer.ToolRegistration;
 import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 
@@ -157,6 +159,20 @@ public class PlaywrightMcpServer {
             );
             syncServer.addTool(cleanupToolRegistration);
             log.info("Successfully registered cleanup tool");
+
+            NewTabFunction newTabFunction = new PlaywrightFunctions.NewTabFunction();
+            var newTabToolRegistration = new ToolRegistration(
+                    new Tool(newTabFunction.getName(), newTabFunction.getDesc(), newTabFunction.getToolScheme()), newTabFunction
+            );
+            syncServer.addTool(newTabToolRegistration);
+            log.info("Successfully registered new_tab tool");
+
+            SwitchTabFunction switchTabFunction = new PlaywrightFunctions.SwitchTabFunction();
+            var switchTabToolRegistration = new ToolRegistration(
+                    new Tool(switchTabFunction.getName(), switchTabFunction.getDesc(), switchTabFunction.getToolScheme()), switchTabFunction
+            );
+            syncServer.addTool(switchTabToolRegistration);
+            log.info("Successfully registered switch_tab tool");
         } catch (Exception e) {
             log.error("Failed to register execute_playwright tool", e);
             throw e;
