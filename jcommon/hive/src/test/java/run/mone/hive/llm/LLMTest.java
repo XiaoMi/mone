@@ -35,6 +35,19 @@ class LLMTest {
         config.setLlmProvider(LLMProvider.OPENROUTER);
 //        config.setLlmProvider(LLMProvider.DEEPSEEK);
         llm = new LLM(config);
+
+        // FIXME： 注意注意注意!!! 当使用Openrouter时，需要配置代理
+        // 设置HTTP代理
+        // System.setProperty("http.proxyHost", "127.0.0.1");
+        // System.setProperty("http.proxyPort", "7890");
+        // // 设置HTTPS代理
+        // System.setProperty("https.proxyHost", "127.0.0.1");
+        // System.setProperty("https.proxyPort", "7890");
+        // // 设置SOCKS代理
+        // System.setProperty("socksProxyHost", "127.0.0.1");
+        // System.setProperty("socksProxyPort", "7890");
+        // // 设置不需要代理的主机
+        // System.setProperty("http.nonProxyHosts", "localhost|127.0.0.1");
     }
 
     @Test
