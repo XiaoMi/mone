@@ -30,7 +30,9 @@ class LLMTest {
         config = new LLMConfig();
         config.setDebug(false);
         config.setJson(false);
-        config.setLlmProvider(LLMProvider.DOUBAO);
+//        config.setLlmProvider(LLMProvider.DOUBAO);
+//        config.setLlmProvider(LLMProvider.GOOGLE);
+        config.setLlmProvider(LLMProvider.OPENROUTER);
         llm = new LLM(config);
     }
 
