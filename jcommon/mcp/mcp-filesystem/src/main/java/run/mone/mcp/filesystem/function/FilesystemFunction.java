@@ -1,4 +1,3 @@
-
 package run.mone.mcp.filesystem.function;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,9 +11,12 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 
 @Data
 @Slf4j
+
 public class FilesystemFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
 
     private String name = "filesystem_executor";
@@ -28,7 +30,7 @@ public class FilesystemFunction implements Function<Map<String, Object>, McpSche
                 "properties": {
                     "operation": {
                         "type": "string",
-                        "enum": ["read_file", "read_multiple_files", "write_file", "edit_file", "create_directory", "list_directory", "directory_tree", "move_file", "search_files", "get_file_info", "list_allowed_directories"],
+                        "enum": ["read_file", "read_multiple_files", "write_file", "edit_file", "create_directory", "list_directory", "directory_tree", "move_file","execute_file", "search_files", "get_file_info", "list_allowed_directories"],
                         "description": "Type of filesystem operation to execute"
                     },
                     "path": {
@@ -118,9 +120,12 @@ public class FilesystemFunction implements Function<Map<String, Object>, McpSche
                     return searchFiles((String) args.get("path"), (String) args.get("pattern"), (List<String>) args.get("excludePatterns"));
                 case "get_file_info":
                     return getFileInfo((String) args.get("path"));
+                case "execute_file":
+                    return executeFile((String) args.get("path"), (List<String>) args.get("args"));
                 case "list_allowed_directories":
                     return listAllowedDirectories();
                 default:
+
                     throw new IllegalArgumentException("Unsupported operation: " + operation);
             }
         } catch (Exception ex) {
@@ -306,9 +311,34 @@ public class FilesystemFunction implements Function<Map<String, Object>, McpSche
         );
     }
 
+    private McpSchema.CallToolResult executeFile(String path, List<String> args) throws IOException {
+        Path validPath = validatePath(path);
+        if (!Files.isExecutable(validPath)) {
+            throw new SecurityException("File is not executable: " + path);
+        }
+
+        List<String> command = new ArrayList<>();
+        command.add(validPath.toString());
+        if (args != null) {
+            command.addAll(args);
+        }
+
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        Process process = processBuilder.start();
+
+        BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        String output = reader.lines().collect(Collectors.joining("\n"));
+
+        return new McpSchema.CallToolResult(
+                List.of(new McpSchema.TextContent("Execution result:\n" + output)),
+                false
+        );
+    }
+
     private McpSchema.CallToolResult listAllowedDirectories() {
         return new McpSchema.CallToolResult(
                 List.of(new McpSchema.TextContent("Allowed directories:\n" + String.join("\n", allowedDirectories))),
+
                 false
         );
     }
