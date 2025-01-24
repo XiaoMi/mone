@@ -30,19 +30,13 @@ class LLMTest {
         config = new LLMConfig();
         config.setDebug(false);
         config.setJson(false);
-//        config.setLlmProvider(LLMProvider.DOUBAO);
+        config.setLlmProvider(LLMProvider.DOUBAO);
 //        config.setLlmProvider(LLMProvider.GOOGLE);
 //        config.setLlmProvider(LLMProvider.GOOGLE_2);
-        config.setLlmProvider(LLMProvider.OPENROUTER);
+//        config.setLlmProvider(LLMProvider.OPENROUTER);
 
 //        config.setLlmProvider(LLMProvider.DEEPSEEK);
         llm = new LLM(config);
-
-//        String url = "https://gateway.ai.cloudflare.com/v1/ad9db33ec6d3d5d4848cdfb44e400090/claude/google-ai-studio/v1beta/models/%s:streamGenerateContent?alt=sse";
-
-        String url = "https://gateway.ai.cloudflare.com/v1/ad9db33ec6d3d5d4848cdfb44e400090/claude/openrouter/v1/chat/completions";
-
-        config.setUrl(url);
 
 
         // FIXME： 注意注意注意!!! 当使用Openrouter时，需要配置代理

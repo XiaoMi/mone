@@ -72,7 +72,7 @@ public class MacShellFunction implements Function<Map<String, Object>, McpSchema
         if ("custom".equals(type)) {
             processBuilder.command("/bin/bash", "-c", command);
         } else {
-            processBuilder.command().add(command);
+            processBuilder.command("/bin/bash", "-c", command);
             if (args != null) {
                 processBuilder.command().addAll(args);
             }

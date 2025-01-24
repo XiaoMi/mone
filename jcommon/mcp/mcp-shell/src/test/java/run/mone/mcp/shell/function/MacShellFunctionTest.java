@@ -1,6 +1,7 @@
 
 package run.mone.mcp.shell.function;
 
+import org.assertj.core.util.Lists;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.mcp.spec.McpSchema;
@@ -24,6 +25,17 @@ class MacShellFunctionTest {
         Map<String, Object> arguments = new HashMap<>();
         arguments.put("command", "custom");
         arguments.put("customCommand", "echo 'Hello, World!'");
+
+        McpSchema.CallToolResult result = macShellFunction.apply(arguments);
+        System.out.println(result);
+
+    }
+
+    @Test
+    void testCustomCommand2() {
+        Map<String, Object> arguments = new HashMap<>();
+        arguments.put("command", "ls");
+        arguments.put("arguments", Lists.newArrayList("/tmp"));
 
         McpSchema.CallToolResult result = macShellFunction.apply(arguments);
         System.out.println(result);
