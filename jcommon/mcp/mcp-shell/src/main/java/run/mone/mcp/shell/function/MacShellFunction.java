@@ -49,13 +49,15 @@ public class MacShellFunction implements Function<Map<String, Object>, McpSchema
         List<String> args = (List<String>) arguments.get("arguments");
         String customCommand = (String) arguments.get("customCommand");
         log.info("command: {} arguments: {}", command, args);
+        String type = "";
         if ("custom".equals(command)) {
+            type = "custom";
             command = customCommand;
             args = null;
         }
 
         try {
-            String result = executeCommand(command, args);
+            String result = executeCommand(command, args, type);
             return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false);
 
         } catch (Exception e) {
@@ -63,12 +65,12 @@ public class MacShellFunction implements Function<Map<String, Object>, McpSchema
         }
     }
 
-    private String executeCommand(String command, List<String> args) throws Exception {
+    private String executeCommand(String command, List<String> args, String type) throws Exception {
         ProcessBuilder processBuilder = new ProcessBuilder();
         processBuilder.command().add(command);
 
-        if ("custom".equals(command)) {
-            processBuilder.command("sh", "-c", command);
+        if ("custom".equals(type)) {
+            processBuilder.command("/bin/bash", "-c", command);
         } else {
             processBuilder.command().add(command);
             if (args != null) {
