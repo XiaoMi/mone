@@ -27,6 +27,7 @@
         <module>mcp-filesystem</module>
         <module>mcp-prettier</module>
         <module>mcp-writer</module>
+        <module>mcp-fetch</module>
     </modules>
 
     <properties>
