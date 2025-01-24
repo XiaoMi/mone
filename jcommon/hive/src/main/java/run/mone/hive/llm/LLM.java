@@ -57,15 +57,15 @@ public class LLM {
 
 
     public String chat(List<AiMessage> msgList) {
-        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), "", config);
+        return chatCompletion(getToken(), msgList, llmProvider.getDefaultModel(), "", config);
     }
 
     public String chat(List<AiMessage> msgList, String systemPrompt) {
-        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), systemPrompt, config);
+        return chatCompletion(getToken(), msgList, llmProvider.getDefaultModel(), systemPrompt, config);
     }
 
     public String chat(List<AiMessage> msgList, LLMConfig config) {
-        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), "", config);
+        return chatCompletion(getToken(), msgList, llmProvider.getDefaultModel(), "", config);
     }
 
     public String getApiUrl(String apiKey) {
