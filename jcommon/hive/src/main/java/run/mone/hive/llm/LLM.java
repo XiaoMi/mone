@@ -173,16 +173,26 @@ public class LLM {
 
     // 文本转语音
     public byte[] generateSpeech(String text) throws IOException {
-        return generateSpeech(System.getenv(llmProvider.getEnvName()), text, "wenrounvsheng", null);
+        return generateSpeech(getToken(), text, "wenrounvsheng", null);
     }
 
     public byte[] generateSpeech(String text, String voice) throws IOException {
-        return generateSpeech(System.getenv(llmProvider.getEnvName()), text, voice, null);
+        return generateSpeech(getToken(), text, voice, null);
     }
 
     public byte[] generateSpeech(String text, String voice, String outputPath) throws IOException {
-        return generateSpeech(System.getenv(llmProvider.getEnvName()), text, voice, outputPath);
+        return generateSpeech(getToken(), text, voice, outputPath);
     }
+
+
+    public String getToken() {
+        String token = System.getenv(llmProvider.getEnvName());
+        if (StringUtils.isEmpty(token)) {
+            return System.getProperty(llmProvider.getEnvName());
+        }
+        return token;
+    }
+
 
     public byte[] generateSpeech(String apiKey, String text, String voice, String outputPath) throws IOException {
         OkHttpClient client = new OkHttpClient.Builder()
@@ -489,7 +499,7 @@ public class LLM {
 
         Request request = new Request.Builder()
                 .url(LLMProvider.STEPFUN_ASR.getUrl()) // 使用完整的API URL
-                .addHeader("Authorization", "Bearer " + System.getenv(LLMProvider.STEPFUN_ASR.getEnvName()))
+                .addHeader("Authorization", "Bearer " + getToken())
                 .post(requestBody)
                 .build();
 
