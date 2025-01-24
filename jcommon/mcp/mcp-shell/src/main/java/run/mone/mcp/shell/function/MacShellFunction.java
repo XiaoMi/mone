@@ -37,7 +37,7 @@ public class MacShellFunction implements Function<Map<String, Object>, McpSchema
                     "customCommand": {
                         "type": "string",
                         "description": "Custom shell command to execute when command is set to 'custom'"
-                    },
+                    }
                 },
                 "required": ["command"]
             }
