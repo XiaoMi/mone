@@ -323,12 +323,24 @@ public class LLM {
                         System.out.println("===>" + line);
                         lineConsumer.accept(line);
                         if (llmProvider == LLMProvider.GOOGLE_2) {
-                            JsonObject jsonResponse = new JsonObject();
-                            jsonResponse.addProperty("type", "event");
-                            jsonResponse.addProperty("content", line);
-                            messageHandler.accept(line, jsonResponse);
-                        } else {
+                            if (line.startsWith("data: ")) {
+                                String data = line.substring(6);
+                                JsonObject jsonResponse = gson.fromJson(data, JsonObject.class);
+                                JsonObject candidate = jsonResponse.getAsJsonArray("candidates").get(0).getAsJsonObject();
+                                JsonObject content = candidate.get("content").getAsJsonObject();
+                                String text = content.get("parts").getAsJsonArray().get(0).getAsJsonObject().get("text").getAsString();
+                                jsonResponse.addProperty("type", "event");
+                                jsonResponse.addProperty("content", text);
+                                messageHandler.accept(text, jsonResponse);
 
+                                if (candidate.has("finishReason")) {
+                                    JsonObject finishRes = new JsonObject();
+                                    finishRes.addProperty("type", "finish");
+                                    finishRes.addProperty("content", candidate.get("finishReason").getAsString());
+                                    messageHandler.accept("[DONE]", finishRes);
+                                }
+                            }
+                        } else {
                             if (line.startsWith("data: ")) {
                                 String data = line.substring(6);
                                 if ("[DONE]".equals(data)) {
