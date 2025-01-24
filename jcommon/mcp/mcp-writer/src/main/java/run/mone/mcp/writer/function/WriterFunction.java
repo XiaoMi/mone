@@ -1,4 +1,3 @@
-
 package run.mone.mcp.writer.function;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,7 +23,7 @@ public class WriterFunction implements Function<Map<String, Object>, McpSchema.C
                 "properties": {
                     "operation": {
                         "type": "string",
-                        "enum": ["expandArticle", "summarizeArticle", "writeNewArticle", "polishArticle", "suggestImprovements", "createOutline", "editArticle"],
+                        "enum": ["expandArticle", "summarizeArticle", "writeNewArticle", "polishArticle", "suggestImprovements", "createOutline", "editArticle", "translateText"],
                         "description": "The writing operation to perform"
                     },
                     "article": {
@@ -58,8 +57,10 @@ public class WriterFunction implements Function<Map<String, Object>, McpSchema.C
                 case "suggestImprovements" -> writerService.suggestImprovements((String) arguments.get("article"));
                 case "createOutline" -> writerService.createOutline((String) arguments.get("topic"));
                 case "editArticle" -> writerService.editArticle((String) arguments.get("article"), (String) arguments.get("instructions"));
+                case "translateText" -> writerService.translateText((String) arguments.get("text"), (String) arguments.get("targetLanguage"));
                 default -> throw new IllegalArgumentException("Unknown operation: " + operation);
             };
+
 
             return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false);
         } catch (Exception e) {
@@ -72,8 +73,9 @@ public class WriterFunction implements Function<Map<String, Object>, McpSchema.C
     }
 
     public String getDesc() {
-        return "Perform various writing operations including expanding, summarizing, writing new articles, polishing, suggesting improvements, creating outlines, and editing articles.";
+        return "Perform various writing operations including expanding, summarizing, writing new articles, polishing, suggesting improvements, creating outlines, editing articles, and translating text.";
     }
+
 
     public String getToolScheme() {
         return TOOL_SCHEMA;

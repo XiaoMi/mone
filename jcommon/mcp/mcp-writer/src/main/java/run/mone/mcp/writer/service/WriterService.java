@@ -48,4 +48,11 @@ public class WriterService {
         String prompt = "请根据以下修改指示，编辑和改进文章：\n\n原文：\n" + article + "\n\n修改指示：\n" + instructions;
         return llm.chat(List.of(new AiMessage("user", prompt)));
     }
+
+    public String translateText(String text, String targetLanguage) {
+        // Implementation for translating text to the target language
+        // This is a placeholder implementation. In a real-world scenario,
+        // you would integrate with a translation service or API.
+        return "Translated text: " + text + " (to " + targetLanguage + ")";
+    }
 }
