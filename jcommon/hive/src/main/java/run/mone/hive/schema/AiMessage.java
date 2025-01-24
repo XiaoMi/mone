@@ -19,4 +19,5 @@ public class AiMessage {
 
     private String content;
 
+
 }

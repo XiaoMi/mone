@@ -31,11 +31,15 @@ class LLMTest {
         config.setDebug(false);
         config.setJson(false);
 //        config.setLlmProvider(LLMProvider.DOUBAO);
-        config.setLlmProvider(LLMProvider.GOOGLE);
+//        config.setLlmProvider(LLMProvider.GOOGLE);
+        config.setLlmProvider(LLMProvider.GOOGLE_2);
 //        config.setLlmProvider(LLMProvider.OPENROUTER);
 
 //        config.setLlmProvider(LLMProvider.DEEPSEEK);
         llm = new LLM(config);
+
+//        config.setUrl(url);
+
 
         // FIXME： 注意注意注意!!! 当使用Openrouter时，需要配置代理
         // 设置HTTP代理
@@ -81,14 +85,14 @@ class LLMTest {
 
     @Test
     void testGetApiUrl() {
-        String apiUrl = llm.getApiUrl();
+        String apiUrl = llm.getApiUrl("");
         assertEquals("https://api.stepfun.com/v1/chat/completions", apiUrl);
     }
 
     @Test
     void testGetApiUrlGoogle() {
         llm.setGoogle(true);
-        String apiUrl = llm.getApiUrl();
+        String apiUrl = llm.getApiUrl("");
         assertEquals("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", apiUrl);
     }
 
