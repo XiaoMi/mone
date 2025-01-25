@@ -227,6 +227,95 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         },
         args: [message.selector]
     });
+  } else if (message.action === 'moveToSelector') {
+    try {
+        chrome.tabs.query({active: true, currentWindow: true}, async function(tabs) {
+            if (!tabs[0]) {
+                sendResponse({success: false, error: '未找到活动标签页'});
+                return;
+            }
+            
+            const result = await chrome.scripting.executeScript({
+                target: {tabId: tabs[0].id},
+                func: (selector) => {
+                    const element = document.querySelector(selector);
+                    if (!element) {
+                        return {success: false, error: '未找到指定元素'};
+                    }
+                    
+                    // 滚动到元素位置
+                    element.scrollIntoView({behavior: 'smooth', block: 'center'});
+                    
+                    // 获取元素的位置信息
+                    const rect = element.getBoundingClientRect();
+                    const centerX = Math.round(rect.left + rect.width / 2);
+                    const centerY = Math.round(rect.top + rect.height / 2);
+                    
+                    // 创建模拟鼠标指针
+                    let fakePointer = document.getElementById('fake-mouse-pointer');
+                    if (!fakePointer) {
+                        fakePointer = document.createElement('div');
+                        fakePointer.id = 'fake-mouse-pointer';
+                        fakePointer.style.cssText = `
+                            position: fixed;
+                            width: 20px;
+                            height: 20px;
+                            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path d="M 0 0 L 12 12 L 8 16 L 0 0" fill="black"/></svg>');
+                            pointer-events: none;
+                            z-index: 999999;
+                            transition: all 0.5s ease;
+                            opacity: 0;
+                        `;
+                        document.body.appendChild(fakePointer);
+                    }
+
+                    // 设置初始位置（左上角）并显示
+                    fakePointer.style.left = '0px';
+                    fakePointer.style.top = '0px';
+                    fakePointer.style.opacity = '1';
+
+                    // 延迟一帧后移动到目标位置（这样可以看到动画效果）
+                    requestAnimationFrame(() => {
+                        fakePointer.style.left = `${centerX}px`;
+                        fakePointer.style.top = `${centerY}px`;
+                    });
+
+                    // 添加元素高亮效果
+                    const originalBackground = element.style.backgroundColor;
+                    const originalTransition = element.style.transition;
+                    element.style.transition = 'background-color 0.3s';
+                    element.style.backgroundColor = 'yellow';
+                    
+                    // 2秒后移除高亮和指针
+                    setTimeout(() => {
+                        element.style.backgroundColor = originalBackground;
+                        element.style.transition = originalTransition;
+                        fakePointer.style.opacity = '0';
+                        setTimeout(() => fakePointer.remove(), 500);
+                    }, 2000);
+                    
+                    return {
+                        success: true,
+                        position: {
+                            x: centerX,
+                            y: centerY
+                        }
+                    };
+                },
+                args: [message.selector]
+            });
+            
+            if (result[0].result.success) {
+                lastPosition = result[0].result.position;
+            }
+            
+            sendResponse(result[0].result);
+        });
+        
+        return true;
+    } catch (error) {
+        sendResponse({success: false, error: error.message});
+    }
   }
 });
 

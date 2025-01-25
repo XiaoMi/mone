@@ -219,3 +219,29 @@ function autoScrollPage() {
         lastScrollTop = window.scrollY;
     }, 100); // 每100毫秒滚动一次
 }
+
+// 添加选择器按钮的事件监听
+document.getElementById('move-to-selector').addEventListener('click', async () => {
+    const selector = document.getElementById('selector-input').value;
+    if (!selector) {
+        alert('请输入选择器');
+        return;
+    }
+
+    const statusText = document.getElementById('status-text');
+    try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        const response = await chrome.runtime.sendMessage({
+            action: 'moveToSelector',
+            selector: selector
+        });
+
+        if (response.success) {
+            statusText.textContent = '已移动到元素位置';
+        } else {
+            statusText.textContent = response.error || '操作失败';
+        }
+    } catch (error) {
+        statusText.textContent = '发生错误: ' + error.message;
+    }
+});

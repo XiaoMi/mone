@@ -9,6 +9,16 @@
     <h1>Mouse Position Tracker</h1>
     <p>Current Position: <span id="current-pos">X:0, Y:0</span></p>
     <p>Last Click Position: <span id="last-click-pos">X:0, Y:0</span></p>
+    
+    <!-- 添加 selector 输入框和按钮 -->
+    <div class="selector-container">
+        <div>
+            <label for="selector-input">Selector:</label>
+            <input type="text" id="selector-input" placeholder="输入CSS选择器">
+        </div>
+        <button id="move-to-selector" class="action-button">移动到元素</button>
+    </div>
+
     <div>
         <label for="x-coord">X:</label>
         <input type="number" id="x-coord">

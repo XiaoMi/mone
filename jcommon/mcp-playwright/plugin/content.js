@@ -119,4 +119,23 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             // 清理邮件菜单相关内容
         }
     }
+    if (message.action === 'getElementPosition') {
+        const element = document.querySelector(message.selector);
+        if (element) {
+            const rect = element.getBoundingClientRect();
+            const scrollX = window.scrollX || window.pageXOffset;
+            const scrollY = window.scrollY || window.pageYOffset;
+            
+            sendResponse({
+                success: true,
+                position: {
+                    x: Math.round(rect.left + scrollX + rect.width / 2),
+                    y: Math.round(rect.top + scrollY + rect.height / 2)
+                }
+            });
+        } else {
+            sendResponse({ success: false });
+        }
+        return true;
+    }
 });
