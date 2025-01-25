@@ -2,6 +2,7 @@
 package run.mone.hive.llm;
 
 import com.google.common.collect.Lists;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,12 +31,16 @@ class LLMTest {
         config = new LLMConfig();
         config.setDebug(false);
         config.setJson(false);
-        config.setLlmProvider(LLMProvider.DOUBAO);
+//        config.setLlmProvider(LLMProvider.DOUBAO);
 //        config.setLlmProvider(LLMProvider.GOOGLE);
-//        config.setLlmProvider(LLMProvider.GOOGLE_2);
+        config.setLlmProvider(LLMProvider.GOOGLE_2);
 //        config.setLlmProvider(LLMProvider.OPENROUTER);
-
 //        config.setLlmProvider(LLMProvider.DEEPSEEK);
+
+        if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
+            config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "generateContent");
+        }
+
         llm = new LLM(config);
 
 
@@ -65,6 +70,31 @@ class LLMTest {
     void testChat() {
         String prompt = "hi";
         String result = llm.chat(prompt);
+        log.info("{}", result);
+        assertNotNull(result);
+    }
+
+    @Test
+    void testChatWithImage() {
+        List<AiMessage> messages = new ArrayList<>();
+        JsonObject obj = new JsonObject();
+        obj.addProperty("text", "联系销售的按钮位置");
+
+        JsonObject obj2 = new JsonObject();
+        JsonObject objImg = new JsonObject();
+        objImg.addProperty("mime_type", "image/png");
+        objImg.addProperty("data", llm.imageToBase64("/tmp/abc.png"));
+        obj2.add("inline_data", objImg);
+
+        JsonArray parts = new JsonArray();
+        parts.add(obj);
+        parts.add(obj2);
+
+        JsonObject req = new JsonObject();
+        req.add("parts", parts);
+
+        messages.add(AiMessage.builder().jsonContent(req).build());
+        String result = llm.chatCompletion(messages, "你是一个聪明的人类,我给你一张浏览器的页面 和我提供的需求,你能准确的返回 我鼠标应当点击的 x 和 y坐标");
         log.info("{}", result);
         assertNotNull(result);
     }

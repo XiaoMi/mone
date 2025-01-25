@@ -28,6 +28,7 @@
         <module>mcp-prettier</module>
         <module>mcp-writer</module>
         <module>mcp-fetch</module>
+        <module>mcp-coder</module>
     </modules>
 
     <properties>
@@ -156,6 +157,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+            <version>3.4.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
             <version>3.4.1</version>
         </dependency>
 
