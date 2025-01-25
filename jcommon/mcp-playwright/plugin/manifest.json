@@ -3,7 +3,7 @@
 "name":"MousePositionTracker",
 "version":"1.0",
 "description":"Tracksmousepositionandsimulatesclicks",
-"permissions":["activeTab","scripting","storage","tabs","downloads","webSocket","windows"],
+"permissions":["activeTab","scripting","storage","tabs","downloads","webSocket","windows","contextMenus"],
 "host_permissions":["<all_urls>","ws://127.0.0.1:8181/*"],
 "action":{
 "default_popup":"popup.html"

@@ -93,6 +93,28 @@ connectWebSocket();
 let lastPosition = { x: 0, y: 0 };
 let lastClickPosition = { x: 0, y: 0 };
 
+// 创建右键菜单
+chrome.runtime.onInstalled.addListener(() => {
+    chrome.contextMenus.create({
+        id: "getSelectorMenu",
+        title: "获取元素选择器",
+        contexts: ["all"]  // 在所有内容上显示
+    });
+});
+
+// 监听右键菜单点击事件
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+    if (info.menuItemId === "getSelectorMenu") {
+        // 发送消息给content script
+        chrome.tabs.sendMessage(tab.id, {
+            type: 'toggleSelector',
+            active: true,
+            x: info.x,  // 添加点击位置信息
+            y: info.y
+        });
+    }
+});
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'mousePosition') {
     // 存储移动位置
@@ -121,6 +143,89 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }, function(downloadId) {
         console.log('Screenshot saved with download ID:', downloadId);
       });
+    });
+  } else if (message.type === 'elementSelector') {
+    // 向当前标签页注入并执行显示对话框的脚本
+    chrome.scripting.executeScript({
+        target: { tabId: sender.tab.id },
+        function: (selector) => {
+            // 创建对话框元素
+            const dialog = document.createElement('div');
+            dialog.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px;
+                background: white;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                z-index: 10000;
+                max-width: 300px;
+                word-break: break-all;
+                font-family: Arial, sans-serif;
+            `;
+            
+            // 添加标题
+            const title = document.createElement('div');
+            title.style.cssText = `
+                font-weight: bold;
+                margin-bottom: 10px;
+                padding-bottom: 5px;
+                border-bottom: 1px solid #eee;
+            `;
+            title.textContent = 'Element Selector';
+            dialog.appendChild(title);
+            
+            // 添加选择器内容
+            const content = document.createElement('div');
+            content.style.cssText = `
+                margin-bottom: 10px;
+                color: #333;
+            `;
+            content.textContent = selector;
+            dialog.appendChild(content);
+            
+            // 添加复制按钮
+            const copyButton = document.createElement('button');
+            copyButton.style.cssText = `
+                padding: 5px 10px;
+                background: #4CAF50;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                cursor: pointer;
+                margin-right: 5px;
+            `;
+            copyButton.textContent = 'Copy';
+            copyButton.onclick = () => {
+                navigator.clipboard.writeText(selector);
+                copyButton.textContent = 'Copied!';
+                setTimeout(() => copyButton.textContent = 'Copy', 1500);
+            };
+            dialog.appendChild(copyButton);
+            
+            // 添加关闭按钮
+            const closeButton = document.createElement('button');
+            closeButton.style.cssText = `
+                padding: 5px 10px;
+                background: #f44336;
+                color: white;
+                border: none;
+                border-radius: 3px;
+                cursor: pointer;
+            `;
+            closeButton.textContent = 'Close';
+            closeButton.onclick = () => dialog.remove();
+            dialog.appendChild(closeButton);
+            
+            // 添加到页面
+            document.body.appendChild(dialog);
+            
+            // 5秒后自动关闭
+            setTimeout(() => dialog.remove(), 5000);
+        },
+        args: [message.selector]
     });
   }
 });

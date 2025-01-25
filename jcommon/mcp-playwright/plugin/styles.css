@@ -47,3 +47,12 @@ margin-top:10px;
 #tabs-list {
     margin-top: 10px;
 }
+
+.action-button.active {
+    background-color: #ff4444;
+}
+
+#selector-tooltip {
+    max-width: 300px;
+    word-wrap: break-word;
+}

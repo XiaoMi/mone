@@ -1,5 +1,6 @@
 import { captureFullPage } from './screenshotManager.js';
 import { getAllTabs } from './tabManager.js';
+import { toggleEffect } from './effectsManager.js';
 
 // 等待DOM加载完成后执行
 document.addEventListener('DOMContentLoaded', () => {
@@ -43,6 +44,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 `<p style="color: red;">获取标签页失败: ${error.message}</p>`;
         }
     });
+
+    // 添加下雨特效按钮事件监听
+    document.getElementById('rainEffect').addEventListener('click', async () => {
+        const button = document.getElementById('rainEffect');
+        const isEffectOn = await toggleEffect('rain');
+        button.textContent = isEffectOn ? '🌧️ 关闭下雨' : '🌧️ 下雨特效';
+    });
+
+    // 添加下雪特效按钮事件监听
+    document.getElementById('snowEffect').addEventListener('click', async () => {
+        const button = document.getElementById('snowEffect');
+        const isEffectOn = await toggleEffect('snow');
+        button.textContent = isEffectOn ? '❄️ 关闭下雪' : '❄️ 下雪特效';
+    });
 });
 
 // 监听来自contentscript的消息
@@ -53,6 +68,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         document.getElementById('y-coord').value = message.y;
     } else if (message.type === 'mouseClick') {
         document.getElementById('last-click-pos').textContent = `X:${message.x}, Y:${message.y}`;
+    } else if (message.type === 'selectorCopied') {
+        const statusText = document.getElementById('status-text') || createStatusElement();
+        statusText.textContent = '✅ 选择器已复制到剪贴板';
+        statusText.style.color = '#4CAF50';
+        
+        setTimeout(() => {
+            statusText.textContent = '';
+        }, 2000);
+    } else if (message.type === 'elementSelector') {
+        // 复制选择器到剪贴板
+        navigator.clipboard.writeText(message.selector).then(() => {
+            const statusText = document.getElementById('status-text') || createStatusElement();
+            statusText.textContent = '✅ 选择器已复制: ' + message.selector;
+            statusText.style.color = '#4CAF50';
+            
+            setTimeout(() => {
+                statusText.textContent = '';
+            }, 2000);
+        }).catch(err => {
+            console.error('Failed to copy selector:', err);
+            const statusText = document.getElementById('status-text') || createStatusElement();
+            statusText.textContent = '❌ 复制失败';
+            statusText.style.color = 'red';
+        });
     }
 });
 
