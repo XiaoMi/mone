@@ -1,8 +1,48 @@
 import { captureFullPage } from './screenshotManager.js';
+import { getAllTabs } from './tabManager.js';
 
 // 等待DOM加载完成后执行
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Popup script loaded and DOM is ready');
+    
+    // 添加显示标签页按钮的事件监听
+    document.getElementById('showTabs').addEventListener('click', async () => {
+        try {
+            const tabs = await getAllTabs({ currentWindow: true });
+            const tabsList = document.getElementById('tabs-list');
+            
+            // 清空之前的列表
+            tabsList.innerHTML = '';
+            
+            // 创建标签页列表
+            const ul = document.createElement('ul');
+            ul.style.listStyle = 'none';
+            ul.style.padding = '10px';
+            ul.style.margin = '10px 0';
+            ul.style.maxHeight = '200px';
+            ul.style.overflowY = 'auto';
+            ul.style.border = '1px solid #ccc';
+            ul.style.borderRadius = '4px';
+            
+            tabs.forEach((tab, index) => {
+                const li = document.createElement('li');
+                li.textContent = `${index + 1}. ${tab.title}`;
+                li.style.padding = '5px 0';
+                li.style.borderBottom = '1px solid #eee';
+                li.style.fontSize = '12px';
+                li.style.whiteSpace = 'nowrap';
+                li.style.overflow = 'hidden';
+                li.style.textOverflow = 'ellipsis';
+                ul.appendChild(li);
+            });
+            
+            tabsList.appendChild(ul);
+        } catch (error) {
+            console.error('Error showing tabs:', error);
+            document.getElementById('tabs-list').innerHTML = 
+                `<p style="color: red;">获取标签页失败: ${error.message}</p>`;
+        }
+    });
 });
 
 // 监听来自contentscript的消息
@@ -110,4 +150,33 @@ function createStatusElement() {
     statusText.style.textAlign = 'center';
     document.getElementById('captureFullPage').parentNode.appendChild(statusText);
     return statusText;
+}
+
+// 添加自动滚动按钮事件监听
+document.getElementById('autoScroll').addEventListener('click', async () => {
+    const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
+    
+    // 执行自动滚动脚本
+    await chrome.scripting.executeScript({
+        target: {tabId: tab.id},
+        function: autoScrollPage
+    });
+});
+
+// 自动滚动函数
+function autoScrollPage() {
+    let lastScrollTop = -1;
+    const scrollInterval = setInterval(() => {
+        // 每次滚动100像素
+        window.scrollBy(0, 100);
+        
+        // 如果滚动位置没有变化，说明已经到底了
+        if (lastScrollTop === window.scrollY) {
+            clearInterval(scrollInterval);
+            console.log('Reached bottom of page');
+            return;
+        }
+        
+        lastScrollTop = window.scrollY;
+    }, 100); // 每100毫秒滚动一次
 }
