@@ -1,6 +1,7 @@
 import { captureFullPage } from './screenshotManager.js';
 import { getAllTabs } from './tabManager.js';
 import { toggleEffect } from './effectsManager.js';
+import { BorderManager } from './borderManager.js';
 
 // 等待DOM加载完成后执行
 document.addEventListener('DOMContentLoaded', () => {
@@ -57,6 +58,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const button = document.getElementById('snowEffect');
         const isEffectOn = await toggleEffect('snow');
         button.textContent = isEffectOn ? '❄️ 关闭下雪' : '❄️ 下雪特效';
+    });
+
+    // 添加边框按钮事件监听
+    document.getElementById('addBorders').addEventListener('click', async () => {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        
+        chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            function: toggleBorders
+        });
     });
 });
 
@@ -245,3 +256,116 @@ document.getElementById('move-to-selector').addEventListener('click', async () =
         statusText.textContent = '发生错误: ' + error.message;
     }
 });
+
+// 添加边框处理函数
+function toggleBorders() {
+    if (!window._borderManager) {
+        class BorderManager {
+            constructor() {
+                this.borderedElements = new Set();
+                this.isActive = false;
+                // 扩展有效元素列表
+                this.VALID_ELEMENTS = ['div', 'section', 'article', 'main', 'aside', 'header', 'footer', 'nav', 'form', 'ul', 'ol'];
+                this.MIN_ELEMENT_SIZE = 30; // 降低最小尺寸限制
+            }
+
+            isValidElement(element) {
+                const rect = element.getBoundingClientRect();
+                
+                // 检查元素大小
+                if (rect.width < this.MIN_ELEMENT_SIZE || rect.height < this.MIN_ELEMENT_SIZE) {
+                    return false;
+                }
+
+                // 检查标签名
+                if (!this.VALID_ELEMENTS.includes(element.tagName.toLowerCase())) {
+                    return false;
+                }
+
+                // 如果元素已经有边框了，就跳过
+                if (this.borderedElements.has(element)) {
+                    return false;
+                }
+
+                // 检查元素是否有内容或子元素
+                const hasContent = element.textContent.trim().length > 0 || element.children.length > 0;
+                if (!hasContent) {
+                    return false;
+                }
+
+                // 检查元素是否可见
+                const style = window.getComputedStyle(element);
+                if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
+                    return false;
+                }
+
+                return true;
+            }
+
+            addBorder(element) {
+                const originalStyle = element.getAttribute('style') || '';
+                element.style.border = '2px solid red';
+                element.style.boxSizing = 'border-box';
+                element.dataset.originalStyle = originalStyle;
+                this.borderedElements.add(element);
+            }
+
+            removeBorder(element) {
+                if (element.dataset.originalStyle) {
+                    element.setAttribute('style', element.dataset.originalStyle);
+                } else {
+                    element.removeAttribute('style');
+                }
+                delete element.dataset.originalStyle;
+                this.borderedElements.delete(element);
+            }
+
+            toggle() {
+                this.isActive = !this.isActive;
+                return this.isActive;
+            }
+
+            clearAllBorders() {
+                this.borderedElements.forEach(element => {
+                    this.removeBorder(element);
+                });
+                this.borderedElements.clear();
+            }
+        }
+        window._borderManager = new BorderManager();
+    }
+
+    const isActive = window._borderManager.toggle();
+
+    if (isActive) {
+        const elements = document.querySelectorAll('*');
+        elements.forEach(element => {
+            if (window._borderManager.isValidElement(element)) {
+                window._borderManager.addBorder(element);
+            }
+        });
+
+        const observer = new MutationObserver(mutations => {
+            mutations.forEach(mutation => {
+                mutation.addedNodes.forEach(node => {
+                    if (node.nodeType === 1 && window._borderManager.isValidElement(node)) {
+                        window._borderManager.addBorder(node);
+                    }
+                });
+            });
+        });
+
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+
+        window._borderObserver = observer;
+    } else {
+        window._borderManager.clearAllBorders();
+        if (window._borderObserver) {
+            window._borderObserver.disconnect();
+            delete window._borderObserver;
+        }
+    }
+}
