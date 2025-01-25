@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mouse Position Tracker</title>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+    <script type="module" src="popup.js"></script>
+    <h1>Mouse Position Tracker</h1>
+    <p>Current Position: <span id="current-pos">X:0, Y:0</span></p>
+    <p>Last Click Position: <span id="last-click-pos">X:0, Y:0</span></p>
+    <div>
+        <label for="x-coord">X:</label>
+        <input type="number" id="x-coord">
+    </div>
+    <div>
+        <label for="y-coord">Y:</label>
+        <input type="number" id="y-coord">
+    </div>
+    <button id="click-btn">Simulate Click</button>
+
+    <div class="button-container">
+        <button id="captureFullPage" class="action-button">
+            📸 截取整页
+        </button>
+    </div>
+
+    <div id="status-text"></div>
+</body>
+</html>
