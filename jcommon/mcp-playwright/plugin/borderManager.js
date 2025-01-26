@@ -8,19 +8,27 @@ export class BorderManager {
     constructor() {
         this.borderedElements = new Set();
         this.isActive = false;
+        // 将 VALID_ELEMENTS 作为实例属性
+        this.VALID_ELEMENTS = VALID_ELEMENTS;
+        this.MIN_ELEMENT_SIZE = MIN_ELEMENT_SIZE;
     }
 
     // 检查元素是否满足添加边框的条件
     isValidElement(element) {
+        // 确保元素是有效的 DOM 元素
+        if (!element || !element.getBoundingClientRect) {
+            return false;
+        }
+
         const rect = element.getBoundingClientRect();
         
         // 检查元素大小
-        if (rect.width < MIN_ELEMENT_SIZE || rect.height < MIN_ELEMENT_SIZE) {
+        if (rect.width < this.MIN_ELEMENT_SIZE || rect.height < this.MIN_ELEMENT_SIZE) {
             return false;
         }
 
         // 检查元素类型
-        if (!VALID_ELEMENTS.includes(element.tagName.toLowerCase())) {
+        if (!this.VALID_ELEMENTS.includes(element.tagName.toLowerCase())) {
             return false;
         }
 

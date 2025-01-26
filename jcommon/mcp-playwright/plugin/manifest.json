@@ -12,9 +12,17 @@
 {
 "matches":["<all_urls>"],
 "js":["content.js"]
+},
+{
+"matches":["<all_urls>"],
+"js":["buildDomTree.js"]
 }
 ],
 "background":{
 "service_worker":"background.js"
-}
+},
+"web_accessible_resources": [{
+"resources": ["buildDomTree.js"],
+"matches": ["<all_urls>"]
+}]
 }

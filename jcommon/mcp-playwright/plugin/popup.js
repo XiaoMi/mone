@@ -2,6 +2,7 @@ import { captureFullPage } from './screenshotManager.js';
 import { getAllTabs } from './tabManager.js';
 import { toggleEffect } from './effectsManager.js';
 import { BorderManager } from './borderManager.js';
+import { MouseTracker } from './mouseTracker.js';
 
 // 等待DOM加载完成后执行
 document.addEventListener('DOMContentLoaded', () => {
@@ -68,6 +69,68 @@ document.addEventListener('DOMContentLoaded', () => {
             target: { tabId: tab.id },
             function: toggleBorders
         });
+    });
+
+    let isTracking = false;
+    const trackerButton = document.getElementById('toggleMouseTracker');
+    
+    trackerButton.addEventListener('click', async () => {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        isTracking = !isTracking;
+        
+        if (isTracking) {
+            await MouseTracker.injectTracker(tab.id);
+            trackerButton.textContent = '🔴 关闭虚拟鼠标';
+            trackerButton.classList.add('active');
+        } else {
+            await MouseTracker.removeTracker(tab.id);
+            trackerButton.textContent = '🔴 虚拟鼠标跟踪';
+            trackerButton.classList.remove('active');
+        }
+    });
+
+    // 修改现有的坐标移动功能
+    document.getElementById('move-to-selector').addEventListener('click', async () => {
+        const selector = document.getElementById('selector-input').value;
+        if (!selector) {
+            alert('请输入选择器');
+            return;
+        }
+
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        const statusText = document.getElementById('status-text');
+
+        try {
+            // 执行选择器查找和位置计算
+            const [{result}] = await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                function: (sel) => {
+                    const element = document.querySelector(sel);
+                    if (!element) return null;
+                    
+                    const rect = element.getBoundingClientRect();
+                    return {
+                        x: Math.round(rect.left + rect.width / 2),
+                        y: Math.round(rect.top + rect.height / 2)
+                    };
+                },
+                args: [selector]
+            });
+
+            if (result) {
+                await MouseTracker.moveToPosition(tab.id, result.x, result.y);
+                statusText.textContent = '已移动到元素位置';
+                
+                // 3秒后恢复跟踪
+                setTimeout(async () => {
+                    await MouseTracker.resumeTracking(tab.id);
+                }, 3000);
+            } else {
+                statusText.textContent = '未找到匹配的元素';
+            }
+        } catch (error) {
+            statusText.textContent = '发生错误: ' + error.message;
+        }
     });
 });
 
@@ -231,83 +294,204 @@ function autoScrollPage() {
     }, 100); // 每100毫秒滚动一次
 }
 
-// 添加选择器按钮的事件监听
-document.getElementById('move-to-selector').addEventListener('click', async () => {
-    const selector = document.getElementById('selector-input').value;
-    if (!selector) {
-        alert('请输入选择器');
-        return;
-    }
-
-    const statusText = document.getElementById('status-text');
-    try {
-        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        const response = await chrome.runtime.sendMessage({
-            action: 'moveToSelector',
-            selector: selector
-        });
-
-        if (response.success) {
-            statusText.textContent = '已移动到元素位置';
-        } else {
-            statusText.textContent = response.error || '操作失败';
-        }
-    } catch (error) {
-        statusText.textContent = '发生错误: ' + error.message;
-    }
-});
-
-// 添加边框处理函数
+// 修改边框处理函数
 function toggleBorders() {
     if (!window._borderManager) {
         class BorderManager {
             constructor() {
                 this.borderedElements = new Set();
                 this.isActive = false;
-                // 扩展有效元素列表
-                this.VALID_ELEMENTS = ['div', 'section', 'article', 'main', 'aside', 'header', 'footer', 'nav', 'form', 'ul', 'ol'];
-                this.MIN_ELEMENT_SIZE = 30; // 降低最小尺寸限制
+                // this.VALID_ELEMENTS = ['div', 'section', 'article', 'main', 'aside', 'header', 'footer', 'nav' , 'input'];
+                this.VALID_ELEMENTS = ['input','button','textarea','div'];
+                this.MIN_ELEMENT_SIZE = 30;
+                this.MAX_ELEMENT_SIZE = 600; // 添加最大尺寸限制
+                this.tooltipStyles = `
+                    position: absolute;
+                    background: rgba(0, 0, 0, 0.8);
+                    color: white;
+                    padding: 4px 8px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                    z-index: 10000;
+                    pointer-events: none;
+                    max-width: 300px;
+                    word-break: break-all;
+                `;
             }
 
             isValidElement(element) {
-                const rect = element.getBoundingClientRect();
-                
-                // 检查元素大小
-                if (rect.width < this.MIN_ELEMENT_SIZE || rect.height < this.MIN_ELEMENT_SIZE) {
+                if (!element || !element.getBoundingClientRect) {
                     return false;
                 }
 
-                // 检查标签名
+                const rect = element.getBoundingClientRect();
+                
+                // 检查元素是否可见
+                if (rect.width === 0 || rect.height === 0) {
+                    return false;
+                }
+
+                // 检查元素尺寸是否在合适范围内
+                // 至少有一个维度在最小和最大尺寸之间
+                const hasValidWidth = rect.width >= this.MIN_ELEMENT_SIZE && rect.width <= this.MAX_ELEMENT_SIZE;
+                const hasValidHeight = rect.height >= this.MIN_ELEMENT_SIZE && rect.height <= this.MAX_ELEMENT_SIZE;
+                
+                if (!hasValidWidth && !hasValidHeight) {
+                    return false;
+                }
+
                 if (!this.VALID_ELEMENTS.includes(element.tagName.toLowerCase())) {
                     return false;
                 }
 
-                // 如果元素已经有边框了，就跳过
-                if (this.borderedElements.has(element)) {
-                    return false;
-                }
-
-                // 检查元素是否有内容或子元素
-                const hasContent = element.textContent.trim().length > 0 || element.children.length > 0;
-                if (!hasContent) {
-                    return false;
-                }
-
-                // 检查元素是否可见
-                const style = window.getComputedStyle(element);
-                if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') {
-                    return false;
+                // 检查父元素是否已有边框
+                let parent = element.parentElement;
+                while (parent) {
+                    if (this.borderedElements.has(parent)) {
+                        return false;
+                    }
+                    parent = parent.parentElement;
                 }
 
                 return true;
             }
 
+            // 获取元素的唯一选择器
+            getSelector(element) {
+                // 1. 如果有 id，直接返回
+                if (element.id) {
+                    return '#' + element.id;
+                }
+                
+                // 2. 尝试使用 class 组合
+                if (element.className) {
+                    const classes = Array.from(element.classList)
+                        .filter(cls => cls && !cls.includes(' '))  // 过滤掉空类名和包含空格的类名
+                        .join('.');
+                        
+                    if (classes) {
+                        // 检查使用这些 class 是否能唯一定位到元素
+                        const selector = '.' + classes;
+                        const elements = document.querySelectorAll(selector);
+                        if (elements.length === 1) {
+                            return selector;
+                        }
+                    }
+                }
+                
+                // 3. 尝试标签名 + class 组合
+                if (element.className) {
+                    const selector = `${element.tagName.toLowerCase()}.${Array.from(element.classList)
+                        .filter(cls => cls && !cls.includes(' '))
+                        .join('.')}`;
+                    const elements = document.querySelectorAll(selector);
+                    if (elements.length === 1) {
+                        return selector;
+                    }
+                }
+                
+                // 4. 如果上述方法都不能唯一定位，则生成最短的层级选择器
+                let current = element;
+                let path = [];
+                
+                while (current && current.tagName) {
+                    let selector = current.tagName.toLowerCase();
+                    
+                    // 添加 class（如果有）
+                    if (current.className) {
+                        const classes = Array.from(current.classList)
+                            .filter(cls => cls && !cls.includes(' '))
+                            .join('.');
+                        if (classes) {
+                            selector += '.' + classes;
+                        }
+                    }
+                    
+                    // 如果当前选择器可以唯一定位，就不需要继续往上层查找
+                    const tempPath = [...path, selector].reverse().join(' > ');
+                    if (document.querySelectorAll(tempPath).length === 1) {
+                        return tempPath;
+                    }
+                    
+                    // 如果不能唯一定位，添加 nth-child
+                    let nth = 1;
+                    let sibling = current;
+                    while (sibling.previousElementSibling) {
+                        sibling = sibling.previousElementSibling;
+                        nth++;
+                    }
+                    selector += `:nth-child(${nth})`;
+                    
+                    path.push(selector);
+                    
+                    // 如果遇到有 id 的父元素，可以停止往上查找
+                    if (current.parentElement && current.parentElement.id) {
+                        path.push('#' + current.parentElement.id);
+                        break;
+                    }
+                    
+                    current = current.parentElement;
+                }
+                
+                return path.reverse().join(' > ');
+            }
+
+            createTooltip(element) {
+                const tooltip = document.createElement('div');
+                tooltip.className = 'selector-tooltip';
+                tooltip.textContent = this.getSelector(element);
+                tooltip.style.cssText = this.tooltipStyles;
+                document.body.appendChild(tooltip);
+                
+                // 定位提示框
+                const updateTooltipPosition = () => {
+                    const rect = element.getBoundingClientRect();
+                    tooltip.style.left = rect.left + window.scrollX + 'px';
+                    tooltip.style.top = (rect.top + window.scrollY - tooltip.offsetHeight - 5) + 'px';
+                };
+                
+                updateTooltipPosition();
+                element._tooltipUpdatePosition = updateTooltipPosition;
+                element._tooltip = tooltip;
+                
+                // 添加滚动监听
+                window.addEventListener('scroll', updateTooltipPosition);
+                window.addEventListener('resize', updateTooltipPosition);
+            }
+
+            removeTooltip(element) {
+                if (element._tooltip) {
+                    element._tooltip.remove();
+                    window.removeEventListener('scroll', element._tooltipUpdatePosition);
+                    window.removeEventListener('resize', element._tooltipUpdatePosition);
+                    delete element._tooltip;
+                    delete element._tooltipUpdatePosition;
+                }
+            }
+
             addBorder(element) {
-                const originalStyle = element.getAttribute('style') || '';
-                element.style.border = '2px solid red';
-                element.style.boxSizing = 'border-box';
-                element.dataset.originalStyle = originalStyle;
-                this.borderedElements.add(element);
+                // 检查子元素是否有可以添加边框的元素
+                const children = element.querySelectorAll(window._borderManager.VALID_ELEMENTS.join(', '));
+                let hasValidChild = false;
+                
+                for (const child of children) {
+                    if (this.VALID_ELEMENTS.includes(child.tagName.toLowerCase()) &&
+                        child.getBoundingClientRect().width >= this.MIN_ELEMENT_SIZE || 
+                        child.getBoundingClientRect().height >= this.MIN_ELEMENT_SIZE) {
+                        hasValidChild = true;
+                        break;
+                    }
+                }
+
+                // 如果没有合适的子元素，才添加边框
+                if (!hasValidChild) {
+                    const originalStyle = element.getAttribute('style') || '';
+                    element.style.border = '2px solid red';
+                    element.style.boxSizing = 'border-box';
+                    element.dataset.originalStyle = originalStyle;
+                    this.borderedElements.add(element);
+                    this.createTooltip(element);
+                }
             }
 
             removeBorder(element) {
@@ -317,6 +501,7 @@ function toggleBorders() {
                     element.removeAttribute('style');
                 }
                 delete element.dataset.originalStyle;
+                this.removeTooltip(element);
                 this.borderedElements.delete(element);
             }
 
@@ -338,7 +523,8 @@ function toggleBorders() {
     const isActive = window._borderManager.toggle();
 
     if (isActive) {
-        const elements = document.querySelectorAll('*');
+        // 使用 VALID_ELEMENTS 构建选择器
+        const elements = document.querySelectorAll(window._borderManager.VALID_ELEMENTS.join(', '));
         elements.forEach(element => {
             if (window._borderManager.isValidElement(element)) {
                 window._borderManager.addBorder(element);
@@ -348,7 +534,10 @@ function toggleBorders() {
         const observer = new MutationObserver(mutations => {
             mutations.forEach(mutation => {
                 mutation.addedNodes.forEach(node => {
-                    if (node.nodeType === 1 && window._borderManager.isValidElement(node)) {
+                    // 使用 VALID_ELEMENTS 检查节点类型
+                    if (node.nodeType === 1 && 
+                        window._borderManager.VALID_ELEMENTS.includes(node.tagName.toLowerCase()) && 
+                        window._borderManager.isValidElement(node)) {
                         window._borderManager.addBorder(node);
                     }
                 });
@@ -369,3 +558,65 @@ function toggleBorders() {
         }
     }
 }
+
+// 添加重绘DOM树的按钮事件监听
+document.getElementById('redrawDomTree').addEventListener('click', async () => {
+    const button = document.getElementById('redrawDomTree');
+    const statusText = document.getElementById('status-text') || createStatusElement();
+    
+    try {
+        button.disabled = true;
+        button.textContent = '重绘中...';
+        statusText.textContent = '';
+
+        // 获取当前活动标签页
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        
+        // 清除之前的高亮
+        await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: () => {
+                const container = document.getElementById('playwright-highlight-container');
+                if (container) {
+                    container.remove();
+                }
+            }
+        });
+
+        // 重新执行buildDomTree
+        await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ['buildDomTree.js']
+        });
+
+        // 执行buildDomTree函数来重新渲染高亮
+        await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            func: (args) => {
+                const buildDomTreeFunc = window['buildDomTree'];
+                if (buildDomTreeFunc) {
+                    return buildDomTreeFunc(args);
+                } else {
+                    throw new Error('buildDomTree函数未找到');
+                }
+            },
+            args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 }]
+        });
+
+        statusText.textContent = '✅ 重绘成功';
+        statusText.style.color = '#4CAF50';
+        
+    } catch (error) {
+        console.error('重绘失败:', error);
+        statusText.textContent = `❌ 重绘失败: ${error.message}`;
+        statusText.style.color = 'red';
+    } finally {
+        button.disabled = false;
+        button.textContent = '🔄 重绘DOM树';
+        
+        // 3秒后清除状态信息
+        setTimeout(() => {
+            statusText.textContent = '';
+        }, 3000);
+    }
+});
