@@ -4,6 +4,9 @@ import { toggleEffect } from './effectsManager.js';
 import { BorderManager } from './borderManager.js';
 import { MouseTracker } from './mouseTracker.js';
 import errorManager from './errorManager.js';
+import { getRecentHistory } from './historyManager.js';
+import bookmarkManager from './bookmarkManager.js';
+import { injectActionManager } from './inject.js';
 
 // 等待DOM加载完成后执行
 document.addEventListener('DOMContentLoaded', () => {
@@ -161,6 +164,130 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Test fatal error (this will open error page)
         errorManager.fatal('This is a fatal error message');
+    });
+
+    // 添加获取最近历史记录按钮事件监听
+    document.getElementById('getRecentHistory').addEventListener('click', async () => {
+        try {
+            // 获取最近3条历史记录
+            const recentHistory = await getRecentHistory(3);
+            
+            // 使用 errorManager 记录信息
+            recentHistory.forEach((item, index) => {
+                const timestamp = new Date(item.lastVisitTime).toLocaleString();
+                errorManager.info(`最近访问 ${index + 1}: ${item.title}\n链接: ${item.url}\n时间: ${timestamp}`);
+            });
+
+            // 更新状态文本
+            const statusText = document.getElementById('status-text');
+            statusText.textContent = '✅ 已获取最近历史记录';
+            statusText.style.color = '#4CAF50';
+            
+            // 3秒后清除状态信息
+            setTimeout(() => {
+                statusText.textContent = '';
+            }, 3000);
+
+        } catch (error) {
+            console.error('获取历史记录失败:', error);
+            errorManager.error('获取历史记录失败', error);
+        }
+    });
+
+    // 添加获取书签统计信息按钮事件监听
+    document.getElementById('getBookmarkStats').addEventListener('click', async () => {
+        try {
+            const stats = await bookmarkManager.getBookmarkStats();
+            
+            // 使用errorManager记录信息
+            errorManager.info('=== 书签统计信息 ===');
+            errorManager.info(`总书签数: ${stats.totalBookmarks}`);
+            errorManager.info(`总文件夹数: ${stats.totalFolders}`);
+            
+            if (stats.mostRecentBookmark) {
+                const recentDate = new Date(stats.mostRecentBookmark.dateAdded).toLocaleString();
+                errorManager.info(`最近添加的书签: ${stats.mostRecentBookmark.title}\n添加时间: ${recentDate}`);
+            }
+            
+            if (stats.oldestBookmark) {
+                const oldestDate = new Date(stats.oldestBookmark.dateAdded).toLocaleString();
+                errorManager.info(`最早添加的书签: ${stats.oldestBookmark.title}\n添加时间: ${oldestDate}`);
+            }
+            
+            errorManager.info(`平均文件夹深度: ${stats.averageDepth}`);
+
+            // 更新状态文本
+            const statusText = document.getElementById('status-text');
+            statusText.textContent = '✅ 书签统计信息已生成';
+            statusText.style.color = '#4CAF50';
+            
+            // 3秒后清除状态信息
+            setTimeout(() => {
+                statusText.textContent = '';
+            }, 3000);
+
+        } catch (error) {
+            console.error('获取书签统计信息失败:', error);
+            errorManager.error('获取书签统计信息失败', error);
+            
+            // 更新状态文本显示错误
+            const statusText = document.getElementById('status-text');
+            statusText.textContent = '❌ 获取书签统计失败';
+            statusText.style.color = 'red';
+        }
+    });
+
+    // 添加测试按钮事件监听
+    document.getElementById('actionTest').addEventListener('click', async () => {
+        try {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+            errorManager.info('开始测试操作序列');
+            
+            // 先注入 actionManager
+            await injectActionManager(tab.id);
+            
+            // 修改执行脚本部分
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: async () => {
+                    try {
+                        // 使用全局变量方式访问 actionManager
+                        if (!window.actionManager) {
+                            throw new Error('ActionManager not found');
+                        }
+
+                        // 填写内容
+                        await window.actionManager.fill('#kw', '大熊猫');
+                        console.log('Filled text successfully');
+
+                        // 点击元素
+                        await window.actionManager.click('#su');
+                        console.log('Clicked element successfully');
+
+                        return { success: true, message: '操作序列执行完成' };
+                    } catch (error) {
+                        console.error('Error executing action sequence:', error);
+                        return { success: false, error: error.message };
+                    }
+                }
+            });
+
+            // 更新状态文本
+            const statusText = document.getElementById('status-text');
+            statusText.textContent = '✅ 操作序列执行成功';
+            statusText.style.color = '#4CAF50';
+            
+            setTimeout(() => {
+                statusText.textContent = '';
+            }, 3000);
+
+        } catch (error) {
+            console.error('Error:', error);
+            const statusText = document.getElementById('status-text');
+            statusText.textContent = '❌ 操作执行失败: ' + error.message;
+            statusText.style.color = 'red';
+        }
     });
 });
 

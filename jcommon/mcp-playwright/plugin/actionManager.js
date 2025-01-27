@@ -1,5 +1,5 @@
 // 页面操作管理类
-export class ActionManager {
+class ActionManager {
     constructor() {
         // 默认操作配置
         this.defaultOptions = {
@@ -89,6 +89,7 @@ export class ActionManager {
     // 填写内容
     async fill(selector, text, options = {}) {
         try {
+            console.log('开始填写内容');
             const element = await this.waitForElement(selector);
             const fillOpts = { ...this.defaultOptions.fillOptions, ...options };
 
@@ -203,6 +204,5 @@ export class ActionManager {
     }
 }
 
-// 创建单例实例
-const actionManager = new ActionManager();
-export default actionManager; 
+// 直接创建全局实例
+window.actionManager = new ActionManager(); 

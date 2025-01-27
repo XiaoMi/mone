@@ -16,6 +16,10 @@
 {
 "matches":["<all_urls>"],
 "js":["buildDomTree.js"]
+},
+{
+"matches": ["<all_urls>"],
+"js": ["actionManager.js"]
 }
 ],
 "background":{
@@ -31,5 +35,10 @@
 {
 "resources": ["error-page.html"],
 "matches": ["<all_urls>"]
-}]
+},
+{
+"resources": ["actionManager.js"],
+"matches": ["<all_urls>"]
+}
+]
 }
