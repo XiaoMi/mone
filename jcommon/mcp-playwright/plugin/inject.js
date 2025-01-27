@@ -1,7 +1,13 @@
 // 注入 ActionManager 类和实例
 export async function injectActionManager(tabId) {
     try {
-        // 注入脚本
+        // 先注入 errorManager
+        await chrome.scripting.executeScript({
+            target: { tabId },
+            files: ['errorManager.js']
+        });
+
+        // 再注入 actionManager
         await chrome.scripting.executeScript({
             target: { tabId },
             files: ['actionManager.js']

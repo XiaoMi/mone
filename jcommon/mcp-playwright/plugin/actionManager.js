@@ -51,6 +51,7 @@ class ActionManager {
 
     // 点击元素
     async click(selector, options = {}) {
+        // 使用可选链操作符来安全地调用方法
         try {
             const element = await this.waitForElement(selector);
             const clickOpts = { ...this.defaultOptions.clickOptions, ...options };
@@ -89,7 +90,7 @@ class ActionManager {
     // 填写内容
     async fill(selector, text, options = {}) {
         try {
-            console.log('开始填写内容');
+            console.log('开始填写内容 selector:'+selector);
             const element = await this.waitForElement(selector);
             const fillOpts = { ...this.defaultOptions.fillOptions, ...options };
 
@@ -204,5 +205,5 @@ class ActionManager {
     }
 }
 
-// 直接创建全局实例
+// 创建全局实例
 window.actionManager = new ActionManager(); 
