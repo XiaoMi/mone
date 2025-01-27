@@ -17,6 +17,11 @@ class ActionManager {
             // 选择配置
             selectOptions: {
                 timeout: 5000      // 等待元素出现的超时时间
+            },
+            // 添加回车操作配置
+            enterOptions: {
+                delay: 100,        // 回车前延迟时间（毫秒）
+                focusFirst: true   // 是否先聚焦元素
             }
         };
 
@@ -202,6 +207,56 @@ class ActionManager {
             !element.disabled &&
             window.getComputedStyle(element).pointerEvents !== 'none'
         );
+    }
+
+    // 模拟回车操作
+    async enter(selector, options = {}) {
+        try {
+            const element = await this.waitForElement(selector);
+            const enterOpts = { ...this.defaultOptions.enterOptions, ...options };
+
+            // 保存最后操作的元素
+            this.lastElement = element;
+
+            // 如果需要先聚焦元素
+            if (enterOpts.focusFirst) {
+                element.focus();
+            }
+
+            // 回车前延迟
+            await new Promise(resolve => setTimeout(resolve, enterOpts.delay));
+
+            // 触发键盘事件
+            element.dispatchEvent(new KeyboardEvent('keydown', {
+                key: 'Enter',
+                code: 'Enter',
+                keyCode: 13,
+                bubbles: true,
+                cancelable: true
+            }));
+
+            element.dispatchEvent(new KeyboardEvent('keypress', {
+                key: 'Enter',
+                code: 'Enter',
+                keyCode: 13,
+                bubbles: true,
+                cancelable: true
+            }));
+
+            element.dispatchEvent(new KeyboardEvent('keyup', {
+                key: 'Enter',
+                code: 'Enter',
+                keyCode: 13,
+                bubbles: true,
+                cancelable: true
+            }));
+
+            console.log('Pressed Enter on element:', selector);
+            return true;
+        } catch (error) {
+            console.error('Error pressing Enter:', error);
+            throw error;
+        }
     }
 }
 

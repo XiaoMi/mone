@@ -14,10 +14,10 @@ export async function injectActionManager(tabId) {
         });
 
         // 注入 screenshotManager
-        await chrome.scripting.executeScript({
-            target: { tabId },
-            files: ['screenshotManager.js']
-        });
+        // await chrome.scripting.executeScript({
+        //     target: { tabId },
+        //     files: ['screenshotManager.js']
+        // });
 
         // 再注入 actionManager
         await chrome.scripting.executeScript({
@@ -29,7 +29,7 @@ export async function injectActionManager(tabId) {
         const [{ result }] = await chrome.scripting.executeScript({
             target: { tabId },
             func: () => {
-                return !!window.actionManager && !!window.scrollManager;
+                return !!window.actionManager;
             }
         });
 

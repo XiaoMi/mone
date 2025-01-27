@@ -257,14 +257,24 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (!window.actionManager) {
                             throw new Error('ActionManager not found');
                         }
+                        
+                        if (false) {
+                            //baidu
+                            // 填写内容
+                            await window.actionManager.fill('#kw', '大熊猫');
+                            console.log('Filled text successfully');
+                            // 点击元素
+                            await window.actionManager.click('#su');
+                            console.log('Clicked element successfully');
+                        }
 
-                        // 填写内容
-                        await window.actionManager.fill('#kw', '大熊猫');
-                        console.log('Filled text successfully');
+                        if (true) {
+                            //bing.com
+                            await window.actionManager.fill('#sb_form_q', '大熊猫');
+                            await window.actionManager.enter('#sb_form_q');
+                        }
 
-                        // 点击元素
-                        await window.actionManager.click('#su');
-                        console.log('Clicked element successfully');
+                        
 
                         return { success: true, message: '操作序列执行完成' };
                     } catch (error) {
