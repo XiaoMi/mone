@@ -1,3 +1,6 @@
+import { MoneyEffect } from './moneyEffect.js';
+import { injectActionManager } from './inject.js';
+
 console.log("Background script started at:", new Date().toISOString());
 
 // WebSocket 连接
@@ -29,19 +32,71 @@ function connectWebSocket() {
         ws.send('ping');
     };
 
-    ws.onmessage = (event) => {
+    ws.onmessage = async (event) => {
         let messageWithTimestamp;
-        
+
         try {
             console.log(event.data);
             const data = JSON.parse(event.data);
             console.log('Received message:', data);
-            
+
             messageWithTimestamp = {
                 timestamp: new Date().toLocaleTimeString(),
                 data: data,
                 type: 'json'
             };
+
+            // 处理特定命令
+            if (data.cmd === 'captureVisibleArea') {
+                console.log("captureVisibleArea!!!");
+                // 获取当前活动标签页
+                const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                if (!tab) {
+                    console.error('No active tab found');
+                    return;
+                }
+
+                // 执行截屏
+                const dataUrl = await chrome.tabs.captureVisibleTab(null, {
+                    format: 'jpeg',
+                    quality: 90
+                });
+
+                // 下载截图
+                await chrome.downloads.download({
+                    url: dataUrl,
+                    filename: `screenshot_${new Date().toISOString().replace(/[:.]/g, '-')}.jpg`,
+                    saveAs: false
+                });
+
+                console.log('Screenshot captured and saved');
+            }
+
+            if (data.cmd === 'a') {
+                const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+                console.log("a!!!" + tab.id);
+                // 重新执行buildDomTree
+                await chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    files: ['buildDomTree.js']
+                });
+
+                // 执行buildDomTree函数来重新渲染高亮并获取返回数据
+                const [{ result: domTreeData }] = await chrome.scripting.executeScript({
+                    target: { tabId: tab.id },
+                    func: (args) => {
+                        const buildDomTreeFunc = window['buildDomTree'];
+                        if (buildDomTreeFunc) {
+                            return buildDomTreeFunc(args);
+                        } else {
+                            throw new Error('buildDomTree函数未找到');
+                        }
+                    },
+                    args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 }]
+                });
+            }
+
+
         } catch (e) {
             console.log('Received non-JSON message:', event.data);
             messageWithTimestamp = {
@@ -50,13 +105,13 @@ function connectWebSocket() {
                 type: 'text'
             };
         }
-        
+
         // 统一的消息处理逻辑
         messageHistory.push(messageWithTimestamp);
         if (messageHistory.length > MAX_MESSAGES) {
             messageHistory.shift();
         }
-        
+
         // 广播消息给所有打开的popup
         chrome.runtime.sendMessage({
             type: 'newWebSocketMessage',
@@ -65,18 +120,41 @@ function connectWebSocket() {
             // 处理接收者不存在的情况
             console.log('No receivers for message:', error);
         });
-        
-        // 如果是JSON消息，进行额外的处理
+
+        // 如果是JSON消息且需要DOM操作
         if (messageWithTimestamp.type === 'json') {
-            if (messageWithTimestamp.data.type === 'some_type') {
-                // 处理特定类型的消息
-            }
+            // 获取当前活动标签页
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            if (!tab) return;
+
+            // 先注入 actionManager.js
+            // await chrome.scripting.executeScript({
+            //     target: { tabId: tab.id },
+            //     files: ['actionManager.js']
+            // });
+
+            //await injectActionManager(tab.id);
+
+
+
+
+            // 然后执行操作
+            // await chrome.scripting.executeScript({
+            //     target: { tabId: tab.id },
+            //     func: async (selector, text) => {
+            //         console.log('Executing actions');
+            //         // 在页面上下文中执行操作
+            //         await window.actionManager.fill(selector, text);
+            //         await window.actionManager.click('#su');
+            //     },
+            //     args: ['#kw', '大熊猫']
+            // });
         }
     };
 
     ws.onclose = () => {
         console.log('WebSocket disconnected');
-        
+
         // 如果不是正在重连中，则开始重连
         if (!isReconnecting) {
             reconnectWebSocket();
@@ -104,9 +182,9 @@ function reconnectWebSocket() {
 
     // 使用指数退避算法计算延迟时间（1秒、2秒、4秒、8秒...）
     const delay = Math.min(1000 * Math.pow(2, reconnectAttempts - 1), 30000);
-    
+
     console.log(`Attempting to reconnect in ${delay}ms (Attempt ${reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
-    
+
     clearTimeout(reconnectTimeout);
     reconnectTimeout = setTimeout(() => {
         console.log('Reconnecting...');
@@ -178,13 +256,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.tabs.captureVisibleTab(null, {
             format: 'jpeg',
             quality: 1  // 1表示最低质量
-        }, function(dataUrl) {
+        }, function (dataUrl) {
             // 使用 chrome.downloads API 来下载图片
             chrome.downloads.download({
                 url: dataUrl,
                 filename: 'abc.jpg',  // 改为.jpg后缀
                 saveAs: false
-            }, function(downloadId) {
+            }, function (downloadId) {
                 console.log('Screenshot saved with download ID:', downloadId);
             });
         });
@@ -209,7 +287,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     word-break: break-all;
                     font-family: Arial, sans-serif;
                 `;
-                
+
                 // 添加标题
                 const title = document.createElement('div');
                 title.style.cssText = `
@@ -220,7 +298,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 `;
                 title.textContent = 'Element Selector';
                 dialog.appendChild(title);
-                
+
                 // 添加选择器内容
                 const content = document.createElement('div');
                 content.style.cssText = `
@@ -229,7 +307,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 `;
                 content.textContent = selector;
                 dialog.appendChild(content);
-                
+
                 // 添加复制按钮
                 const copyButton = document.createElement('button');
                 copyButton.style.cssText = `
@@ -248,7 +326,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     setTimeout(() => copyButton.textContent = 'Copy', 1500);
                 };
                 dialog.appendChild(copyButton);
-                
+
                 // 添加关闭按钮
                 const closeButton = document.createElement('button');
                 closeButton.style.cssText = `
@@ -262,10 +340,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 closeButton.textContent = 'Close';
                 closeButton.onclick = () => dialog.remove();
                 dialog.appendChild(closeButton);
-                
+
                 // 添加到页面
                 document.body.appendChild(dialog);
-                
+
                 // 5秒后自动关闭
                 setTimeout(() => dialog.remove(), 5000);
             },
@@ -273,28 +351,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
     } else if (message.action === 'moveToSelector') {
         try {
-            chrome.tabs.query({active: true, currentWindow: true}, async function(tabs) {
+            chrome.tabs.query({ active: true, currentWindow: true }, async function (tabs) {
                 if (!tabs[0]) {
-                    sendResponse({success: false, error: '未找到活动标签页'});
+                    sendResponse({ success: false, error: '未找到活动标签页' });
                     return;
                 }
-                
+
                 const result = await chrome.scripting.executeScript({
-                    target: {tabId: tabs[0].id},
+                    target: { tabId: tabs[0].id },
                     func: (selector) => {
                         const element = document.querySelector(selector);
                         if (!element) {
-                            return {success: false, error: '未找到指定元素'};
+                            return { success: false, error: '未找到指定元素' };
                         }
-                        
+
                         // 滚动到元素位置
-                        element.scrollIntoView({behavior: 'smooth', block: 'center'});
-                        
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
                         // 获取元素的位置信息
                         const rect = element.getBoundingClientRect();
                         const centerX = Math.round(rect.left + rect.width / 2);
                         const centerY = Math.round(rect.top + rect.height / 2);
-                        
+
                         // 创建模拟鼠标指针
                         let fakePointer = document.getElementById('fake-mouse-pointer');
                         if (!fakePointer) {
@@ -329,7 +407,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                         const originalTransition = element.style.transition;
                         element.style.transition = 'background-color 0.3s';
                         element.style.backgroundColor = 'yellow';
-                        
+
                         // 2秒后移除高亮和指针
                         setTimeout(() => {
                             element.style.backgroundColor = originalBackground;
@@ -337,7 +415,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                             fakePointer.style.opacity = '0';
                             setTimeout(() => fakePointer.remove(), 500);
                         }, 2000);
-                        
+
                         return {
                             success: true,
                             position: {
@@ -348,17 +426,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                     },
                     args: [message.selector]
                 });
-                
+
                 if (result[0].result.success) {
                     lastPosition = result[0].result.position;
                 }
-                
+
                 sendResponse(result[0].result);
             });
-            
+
             return true;
         } catch (error) {
-            sendResponse({success: false, error: error.message});
+            sendResponse({ success: false, error: error.message });
         }
     }
 });
@@ -376,3 +454,15 @@ chrome.action.onClicked.addListener((tab) => {
 
 // 确保侧边栏在所有页面都可用
 chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });
+
+// 示例：在background script中执行页面操作
+chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    chrome.scripting.executeScript({
+        target: { tabId: tabs[0].id },
+        function: async () => {
+            // 这里的代码将在页面上下文中执行
+            const actionManager = new ActionManager();
+            await actionManager.click('#some-selector');
+        }
+    });
+});

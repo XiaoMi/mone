@@ -8,6 +8,7 @@ import { getRecentHistory } from './historyManager.js';
 import bookmarkManager from './bookmarkManager.js';
 import { injectActionManager } from './inject.js';
 import scrollManager from './scrollManager.js';
+import { MoneyEffect } from './moneyEffect.js';
 
 // 等待DOM加载完成后执行
 document.addEventListener('DOMContentLoaded', () => {
@@ -103,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 添加下雪特效按钮事件监听
     document.getElementById('snowEffect').addEventListener('click', async () => {
         const button = document.getElementById('snowEffect');
-        const isEffectOn = await toggleEffect('snow');
+        const isEffectOn = await MoneyEffect.toggleEffect();
         button.textContent = isEffectOn ? '❄️ 关闭下雪' : '❄️ 下雪特效';
     });
 
@@ -294,28 +295,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 target: { tabId: tab.id },
                 func: async () => {
                     try {
-                        // 使用全局变量方式访问 actionManager
-                        if (!window.actionManager) {
-                            throw new Error('ActionManager not found');
-                        }
-                        
-                        if (false) {
-                            //baidu
-                            // 填写内容
+                        // 使用一个变量来控制使用哪个搜索引擎
+                        const searchEngine = 'baidu'; // 或 'baidu'
+                        if (searchEngine === 'baidu') {
                             await window.actionManager.fill('#kw', '大熊猫');
-                            console.log('Filled text successfully');
-                            // 点击元素
                             await window.actionManager.click('#su');
-                            console.log('Clicked element successfully');
-                        }
-
-                        if (true) {
-                            //bing.com
+                        } else if (searchEngine === 'bing') {
                             await window.actionManager.fill('#sb_form_q', '大熊猫');
                             await window.actionManager.enter('#sb_form_q');
                         }
-
-                        
 
                         return { success: true, message: '操作序列执行完成' };
                     } catch (error) {

@@ -22,7 +22,8 @@
 },
 {
 "matches": ["<all_urls>"],
-"js": ["actionManager.js"]
+"js": ["actionManager.js"],
+"run_at": "document_end"
 }
 ],
 "background":{
