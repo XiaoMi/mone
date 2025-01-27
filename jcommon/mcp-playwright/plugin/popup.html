@@ -12,6 +12,15 @@
         </div>
         
         <div class="sidebar-content">
+            <div class="message-history">
+                <div class="message-header">
+                    <h3>WebSocket Messages</h3>
+                    <button id="clear-messages" class="action-button">Clear</button>
+                </div>
+                <div id="realtime-messages"></div>
+                <div id="message-container"></div>
+            </div>
+            
             <div class="position-tracker">
                 <p>Current Position: <span id="current-pos">X:0, Y:0</span></p>
                 <p>Last Click: <span id="last-click-pos">X:0, Y:0</span></p>

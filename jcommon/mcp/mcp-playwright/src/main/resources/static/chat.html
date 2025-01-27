@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Page</title>
+    <style>
+        #chat-container {
+            width: 400px;
+            margin: 0 auto;
+        }
+        #message-container {
+            height: 300px;
+            border: 1px solid #ccc;
+            overflow-y: scroll;
+            margin-bottom: 10px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+<div id="chat-container">
+    <div id="message-container"></div>
+    <input type="text" id="message-input" placeholder="Type a message...">
+    <button onclick="sendMessage()">Send</button>
+</div>
+
+<script>
+    const socket = new WebSocket('ws://localhost:8181/ws');
+    const messageContainer = document.getElementById('message-container');
+    const messageInput = document.getElementById('message-input');
+
+    socket.onmessage = function(event) {
+        const message = document.createElement('div');
+        message.textContent = event.data;
+        messageContainer.appendChild(message);
+        messageContainer.scrollTop = messageContainer.scrollHeight;
+    };
+
+    function sendMessage() {
+        const message = messageInput.value;
+        if (message) {
+            // 同时使用WebSocket和HTTP发送消息
+            socket.send(message);
+
+            fetch('/send', {
+                method: 'POST',
+                body: message
+            }).then(() => {
+                messageInput.value = '';
+            }).catch(error => console.error('Error:', error));
+        }
+    }
+
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+</script>
+</body>
+</html>

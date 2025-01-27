@@ -13,6 +13,42 @@ import scrollManager from './scrollManager.js';
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Popup script loaded and DOM is ready');
     
+    // 获取实时消息容器
+    const realtimeMessages = document.getElementById('realtime-messages');
+
+    // 监听来自 background script 的消息
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        if (message.type === 'newWebSocketMessage') {
+            // 创建新的消息元素
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message-item';
+            
+            // 格式化消息内容
+            const content = message.message.type === 'json' 
+                ? JSON.stringify(message.message.data, null, 2)
+                : message.message.data;
+            
+            messageElement.innerHTML = `
+                <div class="message-time">${message.message.timestamp}</div>
+                <pre class="message-content ${message.message.type}">${content}</pre>
+            `;
+            
+            // 添加到消息容器的顶部
+            realtimeMessages.insertBefore(messageElement, realtimeMessages.firstChild);
+            
+            // 限制显示的消息数量
+            if (realtimeMessages.children.length > 100) {
+                realtimeMessages.removeChild(realtimeMessages.lastChild);
+            }
+        }
+    });
+
+    // 添加清除按钮功能
+    document.getElementById('clear-messages')?.addEventListener('click', () => {
+        realtimeMessages.innerHTML = '';
+        chrome.runtime.sendMessage({ type: 'clearMessageHistory' });
+    });
+    
     // 添加关闭按钮事件监听
     document.getElementById('close-sidebar').addEventListener('click', () => {
         chrome.sidePanel.close();

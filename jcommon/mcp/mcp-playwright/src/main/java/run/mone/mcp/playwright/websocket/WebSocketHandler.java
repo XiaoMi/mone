@@ -1,4 +1,3 @@
-
 package run.mone.mcp.playwright.websocket;
 
 import lombok.extern.slf4j.Slf4j;
@@ -27,9 +26,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String payload = message.getPayload();
         log.info("payload:{}", payload);
+        sendMessageToAll(payload);
     }
 
     @Override
+
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         sessions.remove(session);
     }

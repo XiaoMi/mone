@@ -121,3 +121,37 @@ input {
     font-size: 14px;
     text-align: center;
 }
+
+.message-item {
+    padding: 8px;
+    border-bottom: 1px solid #eee;
+    font-size: 12px;
+}
+
+.message-time {
+    color: #666;
+    font-size: 10px;
+    margin-bottom: 4px;
+}
+
+.message-content {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
+
+.message-content.json {
+    color: #0066cc;
+}
+
+.message-content.text {
+    color: #333;
+}
+
+#realtime-messages {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
