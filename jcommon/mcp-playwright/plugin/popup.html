@@ -1,83 +1,64 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Mouse Position Tracker</title>
+    <title>Browser Assistant</title>
     <link rel="stylesheet" type="text/css" href="styles.css">
 </head>
 <body>
-    <script type="module" src="popup.js"></script>
-    <h1>Mouse Position Tracker</h1>
-    <p>Current Position: <span id="current-pos">X:0, Y:0</span></p>
-    <p>Last Click Position: <span id="last-click-pos">X:0, Y:0</span></p>
-    
-    <!-- 添加 selector 输入框和按钮 -->
-    <div class="selector-container">
-        <div>
-            <label for="selector-input">Selector:</label>
-            <input type="text" id="selector-input" placeholder="输入CSS选择器">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>Browser Assistant</h1>
+            <button id="close-sidebar" class="close-btn">×</button>
         </div>
-        <button id="move-to-selector" class="action-button">移动到元素</button>
-    </div>
+        
+        <div class="sidebar-content">
+            <div class="position-tracker">
+                <p>Current Position: <span id="current-pos">X:0, Y:0</span></p>
+                <p>Last Click: <span id="last-click-pos">X:0, Y:0</span></p>
+            </div>
+            
+            <div class="selector-container">
+                <div class="input-group">
+                    <label for="selector-input">Selector:</label>
+                    <input type="text" id="selector-input" placeholder="输入CSS选择器">
+                </div>
+                <button id="move-to-selector" class="action-button">移动到元素</button>
+            </div>
 
-    <div>
-        <label for="x-coord">X:</label>
-        <input type="number" id="x-coord">
-    </div>
-    <div>
-        <label for="y-coord">Y:</label>
-        <input type="number" id="y-coord">
-    </div>
-    <button id="click-btn">Simulate Click</button>
+            <div class="coordinates">
+                <div class="input-group">
+                    <label for="x-coord">X:</label>
+                    <input type="number" id="x-coord">
+                </div>
+                <div class="input-group">
+                    <label for="y-coord">Y:</label>
+                    <input type="number" id="y-coord">
+                </div>
+                <button id="click-btn" class="action-button">模拟点击</button>
+            </div>
 
-    <div class="button-container">
-        <button id="showTabs" class="action-button">
-            📑 显示所有标签页
-        </button>
-        <button id="captureFullPage" class="action-button">
-            📸 截取整页
-        </button>
-        <button id="captureVisible" class="action-button">
-            📷 截取当前屏幕
-        </button>
-        <button id="autoScroll" class="action-button">
-            ⬇️ 自动滚动
-        </button>
-        <button id="rainEffect" class="action-button">
-            🌧️ 下雨特效
-        </button>
-        <button id="snowEffect" class="action-button">
-            ❄️ 下雪特效
-        </button>
-        <button id="addBorders" class="action-button">
-            🔲 添加元素边框
-        </button>
-        <button id="toggleMouseTracker" class="action-button">
-            🔴 虚拟鼠标跟踪
-        </button>
-        <button id="redrawDomTree" class="action-button">
-            🔄 重绘DOM树
-        </button>
-        <button id="viewDomTree" class="action-button">
-            🌳 查看DOM树
-        </button>
-        <button id="getRecentHistory" class="action-button">
-            📜 最近历史记录
-        </button>
-        <button id="getBookmarkStats" class="action-button">
-            📚 书签统计信息
-        </button>
-        <button id="testError" class="action-button">
-            ⚠️ 测试错误
-        </button>
-        <button id="actionTest" class="action-button">
-            🎯 测试操作序列
-        </button>
-        <button id="scrollOneScreen" class="action-button">
-            📜 滚动一屏
-        </button>
-    </div>
+            <div class="button-container">
+                <button id="showTabs" class="action-button">📑 显示所有标签页</button>
+                <button id="captureFullPage" class="action-button">📸 截取整页</button>
+                <button id="captureVisible" class="action-button">📷 截取当前屏幕</button>
+                <button id="autoScroll" class="action-button">⬇️ 自动滚动</button>
+                <button id="rainEffect" class="action-button">🌧️ 下雨特效</button>
+                <button id="snowEffect" class="action-button">❄️ 下雪特效</button>
+                <button id="addBorders" class="action-button">🔲 添加元素边框</button>
+                <button id="toggleMouseTracker" class="action-button">🔴 虚拟鼠标跟踪</button>
+                <button id="redrawDomTree" class="action-button">🔄 重绘DOM树</button>
+                <button id="viewDomTree" class="action-button">🌳 查看DOM树</button>
+                <button id="getRecentHistory" class="action-button">📜 最近历史记录</button>
+                <button id="getBookmarkStats" class="action-button">📚 书签统计信息</button>
+                <button id="testError" class="action-button">⚠️ 测试错误</button>
+                <button id="actionTest" class="action-button">🎯 测试操作序列</button>
+                <button id="scrollOneScreen" class="action-button">📜 滚动一屏</button>
+            </div>
 
-    <div id="tabs-list"></div>
-    <div id="status-text"></div>
+            <div id="tabs-list"></div>
+            <div id="status-text"></div>
+        </div>
+    </div>
+    <script type="module" src="popup.js"></script>
 </body>
 </html>

@@ -3,10 +3,13 @@
 "name":"MousePositionTracker",
 "version":"1.0",
 "description":"Tracksmousepositionandsimulatesclicks",
-"permissions":["activeTab","scripting","storage","tabs","downloads","webSocket","windows","contextMenus","history","bookmarks"],
+"permissions":["activeTab","scripting","storage","tabs","downloads","webSocket","windows","contextMenus","history","bookmarks","sidePanel"],
 "host_permissions":["<all_urls>","ws://127.0.0.1:8181/*"],
 "action":{
-"default_popup":"popup.html"
+"default_title":"Open Browser Assistant"
+},
+"side_panel":{
+"default_path":"popup.html"
 },
 "content_scripts":[
 {
@@ -23,7 +26,8 @@
 }
 ],
 "background":{
-"service_worker":"background.js"
+"service_worker":"background.js",
+"type":"module"
 },
 "web_accessible_resources": [{
 "resources": [

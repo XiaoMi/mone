@@ -323,3 +323,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 setInterval(() => {
   console.log("Background script is still running:", new Date().toISOString());
 }, 10000);  // 每10秒输出一次
+
+// 监听扩展图标点击事件
+chrome.action.onClicked.addListener((tab) => {
+  // 打开侧边栏
+  chrome.sidePanel.open({ windowId: tab.windowId });
+});
+
+// 确保侧边栏在所有页面都可用
+chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true });

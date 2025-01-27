@@ -13,6 +13,11 @@ import scrollManager from './scrollManager.js';
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Popup script loaded and DOM is ready');
     
+    // 添加关闭按钮事件监听
+    document.getElementById('close-sidebar').addEventListener('click', () => {
+        chrome.sidePanel.close();
+    });
+    
     // 添加显示标签页按钮的事件监听
     document.getElementById('showTabs').addEventListener('click', async () => {
         try {
