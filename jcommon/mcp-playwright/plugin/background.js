@@ -72,7 +72,7 @@ function connectWebSocket() {
                 console.log('Screenshot captured and saved');
             }
 
-            if (data.cmd === 'a') {
+            if (data.cmd === 'buildDomTree') {
                 const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
                 console.log("a!!!" + tab.id);
                 // 重新执行buildDomTree

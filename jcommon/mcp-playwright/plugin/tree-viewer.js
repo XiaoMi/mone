@@ -12,7 +12,36 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 渲染树数据
         const treeContainer = document.getElementById('treeContainer');
-        renderTree(treeData, treeContainer);
+        
+        // 创建复制按钮
+        const copyButton = document.createElement('button');
+        copyButton.textContent = 'Copy HTML';
+        copyButton.style.marginBottom = '10px';
+        treeContainer.appendChild(copyButton);
+        
+        // 创建pre元素来保持格式
+        const preElement = document.createElement('pre');
+        treeContainer.appendChild(preElement);
+        
+        // 生成HTML字符串
+        const htmlString = generateHtmlString(treeData, 0);
+        preElement.textContent = htmlString;
+
+        // 添加复制功能
+        copyButton.addEventListener('click', () => {
+            navigator.clipboard.writeText(htmlString)
+                .then(() => {
+                    const originalText = copyButton.textContent;
+                    copyButton.textContent = 'Copied!';
+                    setTimeout(() => {
+                        copyButton.textContent = originalText;
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('Failed to copy:', err);
+                    copyButton.textContent = 'Copy failed';
+                });
+        });
     } catch (error) {
         console.error('Error loading tree data:', error);
         document.getElementById('treeContainer').innerHTML = 
@@ -20,46 +49,43 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-function renderTree(node, container) {
-    // 添加空值检查
-    if (!node) {
-        console.warn('Encountered null node in tree data');
-        return;
-    }
+function generateHtmlString(node, indent = 0) {
+    if (!node) return '';
 
-    const nodeDiv = document.createElement('div');
-    nodeDiv.className = 'tree-node';
+    const indentStr = '    '.repeat(indent);
+    let html = '';
 
-    // 创建节点内容 - 添加tagName的空值检查
-    let content = `<span class="tag-name">${node.tagName || 'UNKNOWN'}</span>`;
-    
-    // 添加属性信息 - 增加防护检查
-    if (node.attributes && typeof node.attributes === 'object' && Object.keys(node.attributes).length > 0) {
-        content += ' <span class="attributes">';
-        for (const [key, value] of Object.entries(node.attributes)) {
-            if (value !== null && value !== undefined) {
-                content += `${key}="${value}" `;
+    // 开始标签
+    if (node.tagName) {
+        html += `${indentStr}<${node.tagName.toLowerCase()}`;
+        
+        // 添加属性
+        if (node.attributes && typeof node.attributes === 'object') {
+            for (const [key, value] of Object.entries(node.attributes)) {
+                if (value !== null && value !== undefined) {
+                    html += ` ${key}="${value}"`;
+                }
             }
         }
-        content += '</span>';
+        html += '>\n';
     }
 
-    // 添加文本内容 - 增加防护检查
-    if (node.textContent && typeof node.textContent === 'string' && node.textContent.trim()) {
-        content += ` <span class="text-content">"${node.textContent.trim()}"</span>`;
-    }
-
-    nodeDiv.innerHTML = content;
-    container.appendChild(nodeDiv);
-
-    // 递归渲染子节点 - 增加防护检查
-    if (node.children && Array.isArray(node.children) && node.children.length > 0) {
-        const childContainer = document.createElement('div');
-        childContainer.style.marginLeft = '20px';
-        nodeDiv.appendChild(childContainer);
-        
+    // 处理子节点
+    if (node.children && Array.isArray(node.children)) {
         node.children.forEach(child => {
-            renderTree(child, childContainer);
+            html += generateHtmlString(child, indent + 1);
         });
     }
+
+    // 处理文本内容
+    if (node.textContent && typeof node.textContent === 'string' && node.textContent.trim()) {
+        html += `${indentStr}    ${node.textContent.trim()}\n`;
+    }
+
+    // 结束标签
+    if (node.tagName) {
+        html += `${indentStr}</${node.tagName.toLowerCase()}>\n`;
+    }
+
+    return html;
 } 
