@@ -100,7 +100,36 @@ function loadImage(url) {
     });
 }
 
+// 捕获当前可视区域的截图
+async function captureVisibleArea() {
+    try {
+        // 获取当前活动标签页
+        const [activeTab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        
+        // 捕获当前视口的截图
+        const screenshot = await chrome.tabs.captureVisibleTab(null, {
+            format: 'jpeg',
+            quality: 90
+        });
+
+        // 下载截图
+        await chrome.downloads.download({
+            url: screenshot,
+            filename: 'screenshot.jpeg',
+            saveAs: false
+        });
+
+        console.log('Visible area screenshot saved successfully');
+        return true;
+
+    } catch (error) {
+        console.error('Error capturing visible area screenshot:', error);
+        throw error;
+    }
+}
+
 // 导出函数供其他文件使用
 export {
-    captureFullPage
+    captureFullPage,
+    captureVisibleArea
 }; 

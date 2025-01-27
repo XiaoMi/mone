@@ -1,4 +1,4 @@
-import { captureFullPage } from './screenshotManager.js';
+import { captureFullPage, captureVisibleArea } from './screenshotManager.js';
 import { getAllTabs } from './tabManager.js';
 import { toggleEffect } from './effectsManager.js';
 import { BorderManager } from './borderManager.js';
@@ -835,5 +835,41 @@ document.getElementById('redrawDomTree').addEventListener('click', async () => {
         setTimeout(() => {
             statusText.textContent = '';
         }, 3000);
+    }
+});
+
+// 添加截取当前屏幕按钮事件监听
+document.getElementById('captureVisible').addEventListener('click', async () => {
+    try {
+        const button = document.getElementById('captureVisible');
+        const statusText = document.getElementById('status-text') || createStatusElement();
+        
+        button.disabled = true;
+        button.textContent = '截图中...';
+        statusText.textContent = ''; // 清除之前的状态
+        
+        await captureVisibleArea();
+        
+        button.textContent = '截图成功！';
+        statusText.textContent = '✅ 截图已保存';
+        
+        setTimeout(() => {
+            button.disabled = false;
+            button.textContent = '📷 截取当前屏幕';
+            statusText.textContent = '';
+        }, 2000);
+    } catch (error) {
+        console.error('Screenshot failed:', error);
+        const button = document.getElementById('captureVisible');
+        const statusText = document.getElementById('status-text') || createStatusElement();
+        
+        button.textContent = '截图失败';
+        statusText.textContent = `❌ 错误: ${error.message}`;
+        statusText.style.color = 'red';
+        
+        setTimeout(() => {
+            button.disabled = false;
+            button.textContent = '📷 截取当前屏幕';
+        }, 2000);
     }
 });
