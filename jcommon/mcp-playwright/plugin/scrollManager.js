@@ -1,3 +1,4 @@
+import errorManager from './errorManager.js';
 // 滚动条管理类
 export class ScrollManager {
     constructor() {
@@ -181,6 +182,26 @@ export class ScrollManager {
 
         window.addEventListener('scroll', throttledCallback, { passive });
         return () => window.removeEventListener('scroll', throttledCallback);
+    }
+
+    // 滚动一个屏幕的距离
+    async scrollOneScreen(direction = 'down', options = {}) {
+        try {
+            const scrollOptions = {
+                behavior: options.behavior || 'smooth',
+                top: direction === 'down' ? window.innerHeight : -window.innerHeight
+            };
+
+            window.scrollBy(scrollOptions);
+            
+            // 等待滚动完成
+            await this.waitForScrollEnd();
+            
+            return true;
+        } catch (error) {
+            console.error('Error scrolling one screen:', error);
+            throw error;
+        }
     }
 }
 

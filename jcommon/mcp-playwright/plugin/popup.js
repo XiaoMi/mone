@@ -7,6 +7,7 @@ import errorManager from './errorManager.js';
 import { getRecentHistory } from './historyManager.js';
 import bookmarkManager from './bookmarkManager.js';
 import { injectActionManager } from './inject.js';
+import scrollManager from './scrollManager.js';
 
 // 等待DOM加载完成后执行
 document.addEventListener('DOMContentLoaded', () => {
@@ -287,6 +288,36 @@ document.addEventListener('DOMContentLoaded', () => {
             const statusText = document.getElementById('status-text');
             statusText.textContent = '❌ 操作执行失败: ' + error.message;
             statusText.style.color = 'red';
+        }
+    });
+
+    // 修改滚动一屏按钮的事件监听
+    document.getElementById('scrollOneScreen').addEventListener('click', async () => {
+        errorManager.info('开始滚动一屏');
+        try {
+            // 获取当前标签页
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            
+            // 在页面内容中执行滚动
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                files: ['scrollManager.js']  // 先注入scrollManager
+            });
+
+            // 执行滚动操作
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => {
+                    // 在页面上下文中执行滚动
+                    window.scrollBy({
+                        top: window.innerHeight,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+
+        } catch (error) {
+            errorManager.error('滚动一屏失败：' + error.message, error);
         }
     });
 });
@@ -721,59 +752,84 @@ document.getElementById('redrawDomTree').addEventListener('click', async () => {
     const button = document.getElementById('redrawDomTree');
     const statusText = document.getElementById('status-text') || createStatusElement();
     
+    // 检查当前是否正在重绘
+    const isDrawing = button.classList.contains('drawing');
+    
     try {
-        button.disabled = true;
-        button.textContent = '重绘中...';
-        statusText.textContent = '';
-
         // 获取当前活动标签页
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        
-        // 清除之前的高亮
-        await chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            func: () => {
-                const container = document.getElementById('playwright-highlight-container');
-                if (container) {
-                    container.remove();
+
+        if (!isDrawing) {
+            // 开始重绘
+            button.disabled = true;
+            button.textContent = '重绘中...';
+            button.classList.add('drawing');
+            statusText.textContent = '';
+
+            // 清除之前的高亮
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => {
+                    const container = document.getElementById('playwright-highlight-container');
+                    if (container) {
+                        container.remove();
+                    }
                 }
-            }
-        });
+            });
 
-        // 重新执行buildDomTree
-        await chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            files: ['buildDomTree.js']
-        });
+            // 重新执行buildDomTree
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                files: ['buildDomTree.js']
+            });
 
-        // 执行buildDomTree函数来重新渲染高亮并获取返回数据
-        const [{result: domTreeData}] = await chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            func: (args) => {
-                const buildDomTreeFunc = window['buildDomTree'];
-                if (buildDomTreeFunc) {
-                    return buildDomTreeFunc(args);
-                } else {
-                    throw new Error('buildDomTree函数未找到');
+            // 执行buildDomTree函数来重新渲染高亮并获取返回数据
+            const [{result: domTreeData}] = await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: (args) => {
+                    const buildDomTreeFunc = window['buildDomTree'];
+                    if (buildDomTreeFunc) {
+                        return buildDomTreeFunc(args);
+                    } else {
+                        throw new Error('buildDomTree函数未找到');
+                    }
+                },
+                args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 }]
+            });
+
+            // 将数据存储到 chrome.storage
+            await chrome.storage.local.set({ lastDomTreeData: domTreeData });
+            console.log('DOM树数据已保存:', domTreeData);
+
+            button.textContent = '取消重绘DOM树';
+            statusText.textContent = '✅ 重绘成功';
+            statusText.style.color = '#4CAF50';
+        } else {
+            // 取消重绘
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: () => {
+                    const container = document.getElementById('playwright-highlight-container');
+                    if (container) {
+                        container.remove();
+                    }
                 }
-            },
-            args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 }]
-        });
+            });
 
-        // 将数据存储到 chrome.storage
-        await chrome.storage.local.set({ lastDomTreeData: domTreeData });
-        console.log('DOM树数据已保存:', domTreeData);
-
-        statusText.textContent = '✅ 重绘成功';
-        statusText.style.color = '#4CAF50';
+            button.classList.remove('drawing');
+            button.textContent = '🔄 重绘DOM树';
+            statusText.textContent = '已取消重绘';
+            statusText.style.color = '#666';
+        }
         
     } catch (error) {
-        console.error('重绘失败:', error);
-        statusText.textContent = `❌ 重绘失败: ${error.message}`;
+        console.error('重绘操作失败:', error);
+        statusText.textContent = `❌ 操作失败: ${error.message}`;
         statusText.style.color = 'red';
+        button.classList.remove('drawing');
+        button.textContent = '🔄 重绘DOM树';
     } finally {
         button.disabled = false;
-        button.textContent = '🔄 重绘DOM树';
         
         // 3秒后清除状态信息
         setTimeout(() => {

@@ -30,4 +30,4 @@ export async function injectActionManager(tabId) {
         console.error('Failed to inject ActionManager:', error);
         throw error;
     }
-} 
+}
