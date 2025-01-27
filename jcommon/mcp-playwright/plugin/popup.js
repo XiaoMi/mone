@@ -3,6 +3,7 @@ import { getAllTabs } from './tabManager.js';
 import { toggleEffect } from './effectsManager.js';
 import { BorderManager } from './borderManager.js';
 import { MouseTracker } from './mouseTracker.js';
+import errorManager from './errorManager.js';
 
 // 等待DOM加载完成后执行
 document.addEventListener('DOMContentLoaded', () => {
@@ -131,6 +132,35 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             statusText.textContent = '发生错误: ' + error.message;
         }
+    });
+
+    // 添加查看DOM树按钮事件监听
+    document.getElementById('viewDomTree').addEventListener('click', () => {
+        chrome.windows.create({
+            url: 'tree-viewer.html',
+            type: 'popup',
+            width: 800,
+            height: 600
+        });
+    });
+
+    // Add this in your event listeners setup
+    document.getElementById('testError').addEventListener('click', () => {
+        console.log('testError');
+        // Test different types of errors
+        errorManager.info('This is an info message');
+        errorManager.warning('This is a warning message');
+        errorManager.error('This is an error message');
+        
+        // Simulate a runtime error
+        try {
+            throw new Error('This is a simulated error');
+        } catch (e) {
+            errorManager.error('Caught a simulated error', e);
+        }
+        
+        // Test fatal error (this will open error page)
+        errorManager.fatal('This is a fatal error message');
     });
 });
 
@@ -589,8 +619,8 @@ document.getElementById('redrawDomTree').addEventListener('click', async () => {
             files: ['buildDomTree.js']
         });
 
-        // 执行buildDomTree函数来重新渲染高亮
-        await chrome.scripting.executeScript({
+        // 执行buildDomTree函数来重新渲染高亮并获取返回数据
+        const [{result: domTreeData}] = await chrome.scripting.executeScript({
             target: { tabId: tab.id },
             func: (args) => {
                 const buildDomTreeFunc = window['buildDomTree'];
@@ -602,6 +632,10 @@ document.getElementById('redrawDomTree').addEventListener('click', async () => {
             },
             args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 }]
         });
+
+        // 将数据存储到 chrome.storage
+        await chrome.storage.local.set({ lastDomTreeData: domTreeData });
+        console.log('DOM树数据已保存:', domTreeData);
 
         statusText.textContent = '✅ 重绘成功';
         statusText.style.color = '#4CAF50';

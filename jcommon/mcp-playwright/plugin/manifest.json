@@ -3,7 +3,7 @@
 "name":"MousePositionTracker",
 "version":"1.0",
 "description":"Tracksmousepositionandsimulatesclicks",
-"permissions":["activeTab","scripting","storage","tabs","downloads","webSocket","windows","contextMenus"],
+"permissions":["activeTab","scripting","storage","tabs","downloads","webSocket","windows","contextMenus","history","bookmarks"],
 "host_permissions":["<all_urls>","ws://127.0.0.1:8181/*"],
 "action":{
 "default_popup":"popup.html"
@@ -22,7 +22,14 @@
 "service_worker":"background.js"
 },
 "web_accessible_resources": [{
-"resources": ["buildDomTree.js"],
+"resources": [
+"tree-viewer.html",
+"tree-viewer.js"
+],
+"matches": ["<all_urls>"]
+},
+{
+"resources": ["error-page.html"],
 "matches": ["<all_urls>"]
 }]
 }
