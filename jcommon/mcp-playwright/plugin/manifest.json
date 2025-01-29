@@ -1,30 +1,23 @@
 {
 "manifest_version":3,
-"name":"MousePositionTracker",
+"name":"Mone",
 "version":"1.0",
-"description":"Tracksmousepositionandsimulatesclicks",
-"permissions":["activeTab","scripting","storage","tabs","downloads","webSocket","windows","contextMenus","history","bookmarks","sidePanel","clipboardWrite","notifications"],
+"description":"Mone",
+"permissions":["activeTab","scripting","storage","tabs","downloads","windows","contextMenus","history","bookmarks","sidePanel","clipboardWrite","notifications"],
 "host_permissions":["<all_urls>","ws://127.0.0.1:8181/*"],
 "action":{
-"default_title":"Open Browser Assistant"
+"default_title":"Mone Assistant"
 },
 "side_panel":{
 "default_path":"popup.html"
 },
+
 "content_scripts":[
 {
 "matches":["<all_urls>"],
-"js":["content.js"]
-},
-{
-"matches":["<all_urls>"],
-"js":["buildDomTree.js"]
-},
-{
-"matches": ["<all_urls>"],
-"js": ["actionManager.js"],
-"run_at": "document_end"
+"js":["managers/screenshotManager.js","content.js"]
 }
+
 ],
 "background":{
 "service_worker":"background.js",
@@ -33,7 +26,8 @@
 "web_accessible_resources": [{
 "resources": [
 "tree-viewer.html",
-"tree-viewer.js"
+"tree-viewer.js",
+"managers/*"
 ],
 "matches": ["<all_urls>"]
 },

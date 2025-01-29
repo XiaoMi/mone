@@ -1,4 +1,4 @@
-import errorManager from './errorManager.js';
+import errorManager from './managers/errorManager.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const errorList = document.getElementById('errorList');

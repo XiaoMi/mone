@@ -1,5 +1,6 @@
-import { MoneyEffect } from './moneyEffect.js';
-import { injectActionManager } from './inject.js';
+import notificationManager from './managers/notificationManager.js';
+import tabManager from './managers/tabManager.js';
+import xmlManager from './managers/xmlManager.js';
 
 console.log("Background script started at:", new Date().toISOString());
 
@@ -40,60 +41,132 @@ function connectWebSocket() {
             const data = JSON.parse(event.data);
             console.log('Received message:', data);
 
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+            if (data && 'data' in data) {
+                // 检查 data.data 是否为字符串类型  
+                if (typeof data.data === 'string') {
+                    const xmlString = data.data;
+                    console.log('Valid XML string:', xmlString);
+                    // 这里可以继续处理 xmlString  
+                    let actions = xmlManager.parseActions(xmlString);
+                    console.log('actions:', actions);
+
+                    for (const action of actions || []) {
+                        console.log('action:', action);
+                        //创建tab页面
+                        if (action.type === 'createNewTab') {
+                            console.log('click action:', action);
+                            tabManager.createNewTab(action.attributes.url);
+                        }
+                        //截屏
+                        if (action.type === 'screenshot') {
+                            // 捕获当前视口的截图
+                            console.log('takeScreenshot');
+                            const screenshot = await chrome.tabs.captureVisibleTab(null, {
+                                format: 'jpeg',
+                                quality: 10
+                            });
+                            
+                            // await chrome.scripting.executeScript({
+                            //     target: { tabId: tab.id },
+                            //     files: ['managers/screenshotManager.js']
+                            // });
+
+                            await chrome.tabs.sendMessage(tab.id, {  
+                                type: 'takeScreenshot',  
+                                data: screenshot  
+                            });  
+
+                            // await chrome.scripting.executeScript({
+                            //     target: { tabId: tab.id },
+                            //     files: ['managers/screenshotManager.js'],
+                            //     func: (args) => {
+                            //         window.screenshotManager.captureVisibleArea(args);
+                            //     },
+                            //     args: [true,screenshot]
+                            // });
+                        }
+                        // buildDomTree(从新生成domTree)
+                        if (action.type === 'buildDomTree') {
+                            console.log('buildDomTree');
+                            // 重新执行buildDomTree
+                            await chrome.scripting.executeScript({
+                                target: { tabId: tab.id },
+                                files: ['buildDomTree.js']
+                            });
+
+                            // 执行buildDomTree函数来重新渲染高亮并获取返回数据
+                            const [{ result: domTreeData }] = await chrome.scripting.executeScript({
+                                target: { tabId: tab.id },
+                                func: (args) => {
+                                    const buildDomTreeFunc = window['buildDomTree'];
+                                    if (buildDomTreeFunc) {
+                                        return buildDomTreeFunc(args);
+                                    } else {
+                                        throw new Error('buildDomTree函数未找到');
+                                    }
+                                },
+                                args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 }]
+                            });
+                        }
+                        //取消重绘
+                        if (action.type === 'cancelBuildDomTree') {
+                            console.log('cancelBuildDomTree');
+                            // 取消重绘
+                            await chrome.scripting.executeScript({
+                                target: { tabId: tab.id },
+                                func: () => {
+                                    const container = document.getElementById('playwright-highlight-container');
+                                    if (container) {
+                                        container.remove();
+                                    }
+                                }
+                            });
+                        }
+                    };
+
+                }
+            }
+
+
+
             messageWithTimestamp = {
                 timestamp: new Date().toLocaleTimeString(),
                 data: data,
                 type: 'json'
             };
 
-            // 处理特定命令
-            if (data.cmd === 'captureVisibleArea') {
-                console.log("captureVisibleArea!!!");
-                // 获取当前活动标签页
-                const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-                if (!tab) {
-                    console.error('No active tab found');
-                    return;
-                }
-
-                // 执行截屏
-                const dataUrl = await chrome.tabs.captureVisibleTab(null, {
-                    format: 'jpeg',
-                    quality: 90
-                });
-
-                // 下载截图
-                await chrome.downloads.download({
-                    url: dataUrl,
-                    filename: `screenshot_${new Date().toISOString().replace(/[:.]/g, '-')}.jpg`,
-                    saveAs: false
-                });
-
-                console.log('Screenshot captured and saved');
+            // 支持创建新标签页
+            if (data.cmd === 'createNewTab') {
+                const tab = await tabManager.createNewTab(data.url);
+                console.log('New tab created:', tab);
             }
 
-            if (data.cmd === 'buildDomTree') {
-                const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-                console.log("a!!!" + tab.id);
-                // 重新执行buildDomTree
-                await chrome.scripting.executeScript({
-                    target: { tabId: tab.id },
-                    files: ['buildDomTree.js']
-                });
+            // 处理通知命令
+            if (data.cmd === 'notification') {
+                const notificationOptions = {
+                    type: data.notificationType || 'info',
+                    title: data.title || 'Notification',
+                    message: data.message || '',
+                    contextMessage: data.contextMessage,
+                    buttons: data.buttons,
+                    items: data.items,
+                    progress: data.progress,
+                    duration: data.duration,
+                    onClick: data.onClick,
+                    onClose: data.onClose
+                };
 
-                // 执行buildDomTree函数来重新渲染高亮并获取返回数据
-                const [{ result: domTreeData }] = await chrome.scripting.executeScript({
-                    target: { tabId: tab.id },
-                    func: (args) => {
-                        const buildDomTreeFunc = window['buildDomTree'];
-                        if (buildDomTreeFunc) {
-                            return buildDomTreeFunc(args);
-                        } else {
-                            throw new Error('buildDomTree函数未找到');
-                        }
-                    },
-                    args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 }]
-                });
+                // 使用 NotificationManager 创建通知
+                const notificationId = await notificationManager.create(notificationOptions);
+                console.log('Notification created with ID:', notificationId);
+            }
+
+
+
+            if (data.cmd === 'buildDomTree') {
+
             }
 
 
@@ -230,14 +303,17 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 });
 
 // 添加发送消息的函数
-function sendWebSocketMessage(message) {
+async function sendWebSocketMessage(message) {
     if (ws && ws.readyState === WebSocket.OPEN) {
-        const jsonMessage = {  
-            from: "chrome",  
-            data: message  
-        };  
-        ws.send(JSON.stringify(jsonMessage));  
-        console.log('Message sent:', jsonMessage); 
+        //let tabs = await tabManager.getCurrentWindowTabs();
+        //console.log('tabs:', tabs);
+        const jsonMessage = {
+            from: "chrome",
+            //  tabs: tabs,
+            data: message
+        };
+        ws.send(JSON.stringify(jsonMessage));
+        console.log('Message sent:', jsonMessage);
     } else {
         console.log('WebSocket is not connected');
     }

@@ -1,15 +1,4 @@
-import { captureFullPage, captureVisibleArea } from './screenshotManager.js';
-import { getAllTabs } from './tabManager.js';
-import { toggleEffect } from './effectsManager.js';
-import { BorderManager } from './borderManager.js';
-import { MouseTracker } from './mouseTracker.js';
-import errorManager from './errorManager.js';
-import { getRecentHistory } from './historyManager.js';
-import bookmarkManager from './bookmarkManager.js';
-import { injectActionManager } from './inject.js';
-import scrollManager from './scrollManager.js';
-import { MoneyEffect } from './moneyEffect.js';
-
+import bookmarkManager from './managers/bookmarkManager.js';
 // 等待DOM加载完成后执行
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Popup script loaded and DOM is ready');
@@ -61,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 添加清除按钮功能
     document.getElementById('clear-messages')?.addEventListener('click', () => {
+        console.log('clear-messages');
         realtimeMessages.innerHTML = '';
         chrome.runtime.sendMessage({ type: 'clearMessageHistory' });
     });

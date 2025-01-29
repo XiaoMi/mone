@@ -12,6 +12,7 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 import run.mone.hive.common.AiTemplate;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.llm.LLMProvider;
 import run.mone.m78.client.util.GsonUtils;
 
 import java.io.IOException;
@@ -24,32 +25,82 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private final List<WebSocketSession> sessions = new CopyOnWriteArrayList<>();
 
-    private LLM llm = new LLM(LLMConfig.builder().build());
+    private LLM llm;
+
+    public WebSocketHandler() {
+        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.DOUBAO).build();
+        if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
+            config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "generateContent");
+        }
+        llm = new LLM(config);
+
+    }
 
     private String prompt = """
             你是一个浏览器操作专家.你总是能把用户的需求,翻译成专业的操作指令.
             你支持的指令:
             1.打开tab,并且带上url,用来打开某个页面
+            <action type="openTab">
+            </action>
+            
+            1.创建新标签页
+            问题:
+            新建标签页,打开baidu
+            
+            返回结果:
+            <action type="createNewTab" url="https://www.baidu.com">
+            打开百度
+            </action>
+            
             2.关闭某个tab,带上tabName
-            3.截图,截取屏幕
-            4.标记页面元素,方便ai分析
+            <action type="closeTab">
+            $message
+            </action>
+            
+            3.截屏,截取屏幕(当前可视区域)
+            <action type="screenshot">
+            $message
+            </action>
+            
+            3.渲染页面
+            <action type="buildDomTree">
+            $message
+            </action>
+            
+            4.取消渲染
+            <action type="cancelBuildDomTree">
+            $message
+            </action>
+            
+            
             5.取消标记页面元素
+            
             5.滚动一屏屏幕
+            <action type="scrollOneScreen">
+            $message
+            </action>
+            
             6.输入内容 回车 或者点击控件
+            7.产生通知
+            <action type="notification">
+            $message
+            </action>
+            
+            8.获取当前窗口的所有标签
+            <action type="getCurrentWindowTabs" service="tabManager">
+            </action>
             
             返回的内容格式:
             
             <action type="$type">
-            <param></param>
             </action>
             
             Example:
             打开tab:
-            <action type="tab">
-            <url>http://www.baidu.com</url>
+            <action type="tab" url="http://www.baidu.com">
             </action>
             
-            截图:
+            截屏:
             <action type="screenshot">
             </action>
             
@@ -69,7 +120,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        sendMessageToAll(res.toString());
         String payload = message.getPayload();
         log.info("payload:{}", payload);
         if (payload.equals("ping")) {

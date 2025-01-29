@@ -1,5 +1,3 @@
-//alert("content.js");
-
 // 监听鼠标移动事件
 document.addEventListener('mousemove', (event) => {
     // chrome.runtime.sendMessage({
@@ -108,21 +106,10 @@ document.addEventListener('contextmenu', (event) => {
 // 添加一个变量来跟踪菜单状态
 let emailMenuActive = false;
 
+// 使用传统的方式加载脚本
+const screenshotManager = window.screenshotManager;
 // 监听来自background的消息
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === 'toggleEmailMenu') {
-        emailMenuActive = message.active;
-        // 在这里添加你的邮件菜单相关逻辑
-        if (emailMenuActive) {
-            // 激活邮件菜单功能
-            console.log('Email menu activated');
-            // 添加你的邮件菜单处理代码
-        } else {
-            // 停用邮件菜单功能
-            console.log('Email menu deactivated');
-            // 清理邮件菜单相关内容
-        }
-    }
     if (message.action === 'getElementPosition') {
         const element = document.querySelector(message.selector);
         if (element) {
@@ -142,4 +129,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }
         return true;
     }
+    //截图
+    if (message.type === 'takeScreenshot') {
+        console.log('Taking screenshot from content script');
+        screenshotManager.captureVisibleArea(false,message.data);
+    }
+   
 });

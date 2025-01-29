@@ -1,4 +1,3 @@
-import errorManager from './errorManager.js';
 // 滚动条管理类
 export class ScrollManager {
     constructor() {
