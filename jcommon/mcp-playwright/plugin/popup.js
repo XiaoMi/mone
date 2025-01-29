@@ -24,15 +24,30 @@ document.addEventListener('DOMContentLoaded', () => {
             const messageElement = document.createElement('div');
             messageElement.className = 'message-item';
             
-            // 格式化消息内容
-            const content = message.message.type === 'json' 
-                ? JSON.stringify(message.message.data, null, 2)
-                : message.message.data;
+            // 直接使用原始内容  
+        let content = message?.message?.data || {};   
+
+        if (content instanceof Object) {
+            content = content['data']?.toString();
+        }
+
+        console.log(content);
+        
+    
+
+        content = content  
+                    .replace(/</g, '&lt;')  // 转义 < 符号  
+                    .replace(/>/g, '&gt;')  // 转义 > 符号  
+                    .replace(/\n/g, '<br>') // 保持换行  
+                    .replace(/\s/g, '&nbsp;'); // 保持空格  
             
-            messageElement.innerHTML = `
-                <div class="message-time">${message.message.timestamp}</div>
-                <pre class="message-content ${message.message.type}">${content}</pre>
-            `;
+        
+
+            messageElement.innerHTML = `  
+            <div class="message-time">${message.message.timestamp}</div>  
+            <pre class="message-content">${content}</pre>  
+        `;  
+
             
             // 添加到消息容器的顶部
             realtimeMessages.insertBefore(messageElement, realtimeMessages.firstChild);
@@ -359,6 +374,43 @@ document.addEventListener('DOMContentLoaded', () => {
             errorManager.error('滚动一屏失败：' + error.message, error);
         }
     });
+
+    // 添加折叠功能
+    const buttonContainerHeader = document.querySelector('.button-container-header');
+    const buttonContainer = document.querySelector('.button-container');
+    const collapseArrow = document.querySelector('.collapse-arrow');
+    
+    buttonContainerHeader.addEventListener('click', function() {
+        buttonContainer.classList.toggle('collapsed');
+        collapseArrow.classList.toggle('expanded');
+    });
+
+    const messageInput = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
+
+    // 处理发送按钮点击
+    sendButton.addEventListener('click', sendMessage);
+
+    // 处理回车键发送
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+
+    function sendMessage() {
+        const message = messageInput.value.trim();
+        if (message) {
+            chrome.runtime.sendMessage({
+                type: 'sendWebSocketMessage',
+                text: message
+            }, response => {
+                if (response.success) {
+                    messageInput.value = ''; // 清空输入框
+                }
+            });
+        }
+    }
 });
 
 // 监听来自contentscript的消息
@@ -667,6 +719,8 @@ function toggleBorders() {
                 const tooltip = document.createElement('div');
                 tooltip.className = 'selector-tooltip';
                 tooltip.textContent = this.getSelector(element);
+                //TODO$
+                tooltip.textContent = '';
                 tooltip.style.cssText = this.tooltipStyles;
                 document.body.appendChild(tooltip);
                 

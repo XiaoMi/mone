@@ -155,3 +155,45 @@ input {
     border-radius: 4px;
     margin-bottom: 10px;
 }
+
+.button-container-wrapper {
+    margin: 10px 0;
+    background-color: var(--secondary-color);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.button-container-header {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.collapse-arrow {
+    margin-right: 8px;
+    transition: transform 0.3s ease;
+    color: var(--text-color);
+}
+
+.collapse-arrow.expanded {
+    transform: rotate(90deg);
+}
+
+.button-container {
+    max-height: 1000px;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    padding: 0 12px;
+}
+
+.button-container.collapsed {
+    max-height: 0;
+    padding: 0 12px;
+}
+
+.header-text {
+    font-weight: 500;
+    color: var(--text-color);
+}

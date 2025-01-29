@@ -91,6 +91,10 @@ function getSelector(element) {
 
 // 监听右键菜单事件
 document.addEventListener('contextmenu', (event) => {
+    //TODO$
+    if (true) {
+        return;
+    }
     const selector = getSelector(event.target);
     console.log('Element selector:', selector);
     

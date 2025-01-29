@@ -109,8 +109,29 @@ async function captureVisibleArea() {
         // 捕获当前视口的截图
         const screenshot = await chrome.tabs.captureVisibleTab(null, {
             format: 'jpeg',
-            quality: 90
+            quality: 10
         });
+
+        // 创建一个 canvas 来处理图片
+        const img = await loadImage(screenshot);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+
+        // 将图片复制到剪贴板
+        try {
+            canvas.toBlob(async (blob) => {
+                const clipboardItem = new ClipboardItem({
+                    'image/png': blob
+                });
+                await navigator.clipboard.write([clipboardItem]);
+                console.log('Screenshot copied to clipboard successfully');
+            }, 'image/png');
+        } catch (clipboardError) {
+            console.error('Error copying to clipboard:', clipboardError);
+        }
 
         // 下载截图
         await chrome.downloads.download({

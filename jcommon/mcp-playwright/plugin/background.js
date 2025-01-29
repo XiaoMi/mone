@@ -229,10 +229,28 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     }
 });
 
-// 在消息监听器中添加获取历史消息的处理
+// 添加发送消息的函数
+function sendWebSocketMessage(message) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+        const jsonMessage = {  
+            from: "chrome",  
+            data: message  
+        };  
+        ws.send(JSON.stringify(jsonMessage));  
+        console.log('Message sent:', jsonMessage); 
+    } else {
+        console.log('WebSocket is not connected');
+    }
+}
+
+// 修改消息监听器，添加发送消息的处理
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'getMessageHistory') {
         sendResponse(messageHistory);
+        return true;
+    } else if (message.type === 'sendWebSocketMessage') {
+        sendWebSocketMessage(message.text);
+        sendResponse({ success: true });
         return true;
     } else if (message.type === 'clearMessageHistory') {
         messageHistory = [];
