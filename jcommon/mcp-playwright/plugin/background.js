@@ -67,25 +67,12 @@ function connectWebSocket() {
                                 format: 'jpeg',
                                 quality: 10
                             });
-                            
-                            // await chrome.scripting.executeScript({
-                            //     target: { tabId: tab.id },
-                            //     files: ['managers/screenshotManager.js']
-                            // });
 
                             await chrome.tabs.sendMessage(tab.id, {  
                                 type: 'takeScreenshot',  
                                 data: screenshot  
                             });  
-
-                            // await chrome.scripting.executeScript({
-                            //     target: { tabId: tab.id },
-                            //     files: ['managers/screenshotManager.js'],
-                            //     func: (args) => {
-                            //         window.screenshotManager.captureVisibleArea(args);
-                            //     },
-                            //     args: [true,screenshot]
-                            // });
+                            sendWebSocketMessage("ping");
                         }
                         // buildDomTree(从新生成domTree)
                         if (action.type === 'buildDomTree') {
@@ -123,6 +110,7 @@ function connectWebSocket() {
                                     }
                                 }
                             });
+                            sendWebSocketMessage("ping");
                         }
                     };
 

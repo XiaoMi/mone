@@ -33,9 +33,11 @@ class LLMTest {
         config.setJson(false);
 //        config.setLlmProvider(LLMProvider.DOUBAO);
 //        config.setLlmProvider(LLMProvider.GOOGLE);
-        config.setLlmProvider(LLMProvider.GOOGLE_2);
+//        config.setLlmProvider(LLMProvider.GOOGLE_2);
 //        config.setLlmProvider(LLMProvider.OPENROUTER);
 //        config.setLlmProvider(LLMProvider.DEEPSEEK);
+//        config.setLlmProvider(LLMProvider.QWEN);
+        config.setLlmProvider(LLMProvider.MOONSHOT);
 
         if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
             config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "generateContent");
@@ -421,7 +423,7 @@ class LLMTest {
                 hi
                 """;
 
-        c = "Hello, can you tell me a short joke?";
+//        c = "Hello, can you tell me a short joke?";
 
 
         messages.add(AiMessage.builder().role("user").content(c).build());
