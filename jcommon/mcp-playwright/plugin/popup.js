@@ -453,21 +453,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             statusText.textContent = '';
         }, 2000);
     } else if (message.type === 'elementSelector') {
-        // 复制选择器到剪贴板
-        navigator.clipboard.writeText(message.selector).then(() => {
+        // 更新选择器输入框的值
+        const selectorInput = document.getElementById('selector-input');
+        if (selectorInput) {
+            selectorInput.value = message.selector;
+            
+            // 添加视觉反馈
             const statusText = document.getElementById('status-text') || createStatusElement();
-            statusText.textContent = '✅ 选择器已复制: ' + message.selector;
+            statusText.textContent = '✅ 已更新选择器: ' + message.selector;
             statusText.style.color = '#4CAF50';
             
             setTimeout(() => {
                 statusText.textContent = '';
             }, 2000);
-        }).catch(err => {
-            console.error('Failed to copy selector:', err);
-            const statusText = document.getElementById('status-text') || createStatusElement();
-            statusText.textContent = '❌ 复制失败';
-            statusText.style.color = 'red';
-        });
+        }
     }
 });
 
@@ -972,5 +971,24 @@ document.getElementById('captureVisible').addEventListener('click', async () => 
             button.disabled = false;
             button.textContent = '📷 截取当前屏幕';
         }, 2000);
+    }
+});
+
+// 添加消息监听器来更新选择器输入框
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+    if (message.type === 'updateSelectorInput') {
+        const selectorInput = document.getElementById('selector-input');
+        if (selectorInput) {
+            selectorInput.value = message.selector;
+            
+            // 添加一个简单的动画效果
+            selectorInput.style.backgroundColor = '#4CAF50';
+            selectorInput.style.transition = 'background-color 0.3s';
+            
+            // 恢复原来的背景色
+            setTimeout(() => {
+                selectorInput.style.backgroundColor = '';
+            }, 300);
+        }
     }
 });

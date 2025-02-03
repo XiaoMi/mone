@@ -280,12 +280,10 @@ chrome.runtime.onInstalled.addListener(() => {
 // 监听右键菜单点击事件
 chrome.contextMenus.onClicked.addListener((info, tab) => {
     if (info.menuItemId === "getSelectorMenu") {
-        // 发送消息给content script
+        // 发送消息给content script，不再传递info.x和info.y
         chrome.tabs.sendMessage(tab.id, {
             type: 'toggleSelector',
-            active: true,
-            x: info.x,  // 添加点击位置信息
-            y: info.y
+            active: true
         });
     }
 });

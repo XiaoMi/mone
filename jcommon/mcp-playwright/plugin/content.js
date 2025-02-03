@@ -65,16 +65,36 @@ document.addEventListener('click', async (event) => {
 function getSelector(element) {
     if (!(element instanceof Element)) return;
     
+    // 1. 如果有id，直接返回
+    if (element.id) {
+        return '#' + element.id;
+    }
+    
+    // 2. 尝试使用class组合
+    if (element.className) {
+        const classes = Array.from(element.classList)
+            .filter(cls => cls && !cls.includes(' '))
+            .join('.');
+        if (classes) {
+            const selector = '.' + classes;
+            if (document.querySelectorAll(selector).length === 1) {
+                return selector;
+            }
+        }
+    }
+    
+    // 3. 生成完整路径
     let path = [];
-    while (element.nodeType === Node.ELEMENT_NODE) {
-        let selector = element.nodeName.toLowerCase();
-        if (element.id) {
-            selector += '#' + element.id;
+    let current = element;
+    while (current && current.nodeType === Node.ELEMENT_NODE) {
+        let selector = current.nodeName.toLowerCase();
+        if (current.id) {
+            selector = '#' + current.id;
             path.unshift(selector);
             break;
         } else {
-            let sibling = element;
             let nth = 1;
+            let sibling = current;
             while (sibling.previousElementSibling) {
                 sibling = sibling.previousElementSibling;
                 if (sibling.nodeName.toLowerCase() === selector) nth++;
@@ -82,32 +102,23 @@ function getSelector(element) {
             if (nth !== 1) selector += `:nth-of-type(${nth})`;
         }
         path.unshift(selector);
-        element = element.parentNode;
+        current = current.parentNode;
     }
     return path.join(' > ');
 }
 
-// 监听右键菜单事件
-document.addEventListener('contextmenu', (event) => {
-    //TODO$
-    if (true) {
-        return;
-    }
-    const selector = getSelector(event.target);
-    console.log('Element selector:', selector);
-    
-    // 发送消息给background script
-    chrome.runtime.sendMessage({
-        type: 'elementSelector',
-        selector: selector
-    });
+// 存储最后的右键点击坐标
+let lastContextMenuClick = { x: 0, y: 0 };
+
+// 监听右键点击事件
+document.addEventListener('contextmenu', function(e) {
+    // 存储点击的页面坐标
+    lastContextMenuClick = {
+        x: e.pageX,
+        y: e.pageY
+    };
 });
 
-// 添加一个变量来跟踪菜单状态
-let emailMenuActive = false;
-
-// 使用传统的方式加载脚本
-const screenshotManager = window.screenshotManager;
 // 监听来自background的消息
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.action === 'getElementPosition') {
@@ -134,5 +145,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         console.log('Taking screenshot from content script');
         screenshotManager.captureVisibleArea(false,message.data);
     }
-   
+
+    if (message.type === 'toggleSelector' && message.active) {
+        // 使用存储的右键点击坐标
+        const x = lastContextMenuClick.x;
+        const y = lastContextMenuClick.y;
+        
+        // 这里可以使用准确的坐标进行元素定位和选择器生成
+        console.log('Right click coordinates:', x, y);
+        
+        // 获取点击位置的元素
+        const element = document.elementFromPoint(
+            x - window.pageXOffset,
+            y - window.pageYOffset
+        );
+        
+        if (element) {
+            // 生成选择器等后续操作...
+            const selector = getSelector(element);
+            // 发送选择器回background
+            chrome.runtime.sendMessage({
+                type: 'elementSelector',
+                selector: selector
+            });
+        }
+    }
 });
+
+
