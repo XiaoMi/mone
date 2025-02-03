@@ -434,6 +434,86 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     }
+
+    // 修改获取元素引用部分
+    const actionTypeSelect = document.getElementById('action-type');
+    const actionSelector = document.getElementById('action-selector'); // 新的选择器输入框
+    const fillContentInput = document.getElementById('fill-content');
+    const executeActionButton = document.getElementById('execute-action');
+
+    // 监听动作类型变化
+    actionTypeSelect.addEventListener('change', () => {
+        // 当选择 "fill" 时显示内容输入框
+        fillContentInput.style.display = actionTypeSelect.value === 'fill' ? 'block' : 'none';
+    });
+
+    // 执行操作按钮点击事件
+    executeActionButton.addEventListener('click', async () => {
+        const actionType = actionTypeSelect.value;
+        const selector = actionSelector.value.trim(); // 使用新的选择器输入框
+        const content = fillContentInput.value.trim();
+        
+        if (!selector) {
+            const statusText = document.getElementById('status-text') || createStatusElement();
+            statusText.textContent = '❌ 请输入选择器';
+            statusText.style.color = 'red';
+            setTimeout(() => {
+                statusText.textContent = '';
+            }, 3000);
+            return;
+        }
+
+        try {
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            
+            // 先注入 actionManager
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                files: ['managers/actionManager.js']
+            });
+
+            // 执行选定的操作
+            await chrome.scripting.executeScript({
+                target: { tabId: tab.id },
+                func: async (type, sel, cont) => {
+                    try {
+                        switch (type) {
+                            case 'click':
+                                await window.actionManager.click(sel);
+                                break;
+                            case 'enter':
+                                await window.actionManager.enter(sel);
+                                break;
+                            case 'fill':
+                                await window.actionManager.fill(sel, cont);
+                                break;
+                        }
+                        return { success: true };
+                    } catch (error) {
+                        return { success: false, error: error.message };
+                    }
+                },
+                args: [actionType, selector, content]
+            });
+
+            // 显示成功消息
+            const statusText = document.getElementById('status-text') || createStatusElement();
+            statusText.textContent = '✅ 操作执行成功';
+            statusText.style.color = '#4CAF50';
+            setTimeout(() => {
+                statusText.textContent = '';
+            }, 3000);
+
+        } catch (error) {
+            console.error('操作执行失败:', error);
+            const statusText = document.getElementById('status-text') || createStatusElement();
+            statusText.textContent = `❌ 操作失败: ${error.message}`;
+            statusText.style.color = 'red';
+            setTimeout(() => {
+                statusText.textContent = '';
+            }, 3000);
+        }
+    });
 });
 
 // 监听来自contentscript的消息
@@ -453,10 +533,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             statusText.textContent = '';
         }, 2000);
     } else if (message.type === 'elementSelector') {
-        // 更新选择器输入框的值
+        // 更新两个选择器输入框的值
         const selectorInput = document.getElementById('selector-input');
-        if (selectorInput) {
+        const actionSelector = document.getElementById('action-selector');
+        if (selectorInput && actionSelector) {
             selectorInput.value = message.selector;
+            actionSelector.value = message.selector;
             
             // 添加视觉反馈
             const statusText = document.getElementById('status-text') || createStatusElement();

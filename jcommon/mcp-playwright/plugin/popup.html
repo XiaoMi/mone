@@ -61,6 +61,17 @@
                     <div class="selector-input-group">
                         <input type="text" id="selector-input" class="selector-input" placeholder="请输入要移动到的元素的CSS选择器">
                         <button id="move-to-selector" class="action-button">🎯 移动到指定元素</button>
+                        
+                        <div class="action-execute-group" style="margin-top: 10px;">
+                            <select id="action-type" class="action-select">
+                                <option value="click">点击</option>
+                                <option value="enter">回车</option>
+                                <option value="fill">输入内容</option>
+                            </select>
+                            <input type="text" id="action-selector" class="selector-input" placeholder="请输入要操作的元素的CSS选择器">
+                            <input type="text" id="fill-content" class="selector-input" placeholder="输入要填写的内容" style="display: none;">
+                            <button id="execute-action" class="action-button">▶️ 执行操作</button>
+                        </div>
                     </div>
                 </div>
             </div>
