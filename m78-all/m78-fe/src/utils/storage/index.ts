@@ -11,7 +11,7 @@ export function createLocalStorage(options?: { expire?: number | null }) {
   function set<T = any>(key: string, data: T) {
     const storageData: StorageData<T> = {
       data,
-      expire: expire !== null ? new Date().getTime() + expire * 1000 : null
+      expire: expire !== null ? new Date().getTime() + expire * 1000 : null,
     }
 
     const json = JSON.stringify(storageData)
@@ -25,13 +25,15 @@ export function createLocalStorage(options?: { expire?: number | null }) {
 
       try {
         storageData = JSON.parse(json)
-      } catch {
+      }
+      catch {
         // Prevent failure
       }
 
       if (storageData) {
         const { data, expire } = storageData
-        if (expire === null || expire >= Date.now()) return data
+        if (expire === null || expire >= Date.now())
+          return data
       }
 
       remove(key)

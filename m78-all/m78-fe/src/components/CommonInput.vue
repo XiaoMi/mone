@@ -67,6 +67,12 @@ const stopFn = () => {
 </script>
 
 <style lang="scss" scoped>
+.common-input {
+  // :deep(.oz-input-group__append),
+  // :deep(.oz-input__wrapper:hover) {
+  //   background-color: #fff;
+  // }
+}
 .send-icon {
   display: inline-block;
   width: 20px;

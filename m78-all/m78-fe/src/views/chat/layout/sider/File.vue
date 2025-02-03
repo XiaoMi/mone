@@ -1,11 +1,74 @@
+<!--
+ * @Description:
+ * @Date: 2024-01-31 16:53:45
+ * @LastEditTime: 2025-01-21 10:34:22
+-->
 <template>
   <!-- 上传区域 -->
-  <div id="container" ref="container"></div>
+  <div id="container" ref="container">
+    <!-- <el-button ref="selectfiles" id="selectfiles">文件上传</el-button> -->
+    <!-- v-if="fileData.fileList.length" -->
+    <!-- <el-button
+      id="postfiles"
+      ref="postfiles"
+      type="primary"
+      size="mini"
+      @click="methods.FileUplodeOn"
+      >开始上传</el-button
+    > -->
+  </div>
   <el-card style="margin-top: 20px">
     <el-table :data="props.fileList" style="width: 100%">
+      <!-- <el-table-column type="selection" width="55" /> -->
       <el-table-column prop="id" label="文件Id"></el-table-column>
       <el-table-column prop="fileName" label="文件名"></el-table-column>
+      <!-- <el-table-column label="进度" v-slot="{ row }">
+        <el-progress
+          :text-inside="true"
+          :stroke-width="16"
+          :percentage="row.percentage"
+        ></el-progress>
+      </el-table-column> -->
+      <!-- <el-table-column label="上传状态" v-slot="{ row }">
+        <el-link
+          :type="
+            row.loadType == 0
+              ? 'info'
+              : row.loadType == 1
+                ? 'warning'
+                : row.loadType == 2
+                  ? 'success'
+                  : 'danger'
+          "
+          :underline="false"
+          >{{
+            row.loadType == 0
+              ? '等待上传'
+              : row.loadType == 1
+                ? '正在上传'
+                : row.loadType == 2
+                  ? '上传成功'
+                  : '上传失败'
+          }}</el-link
+        >
+      </el-table-column> -->
       <el-table-column prop="fileType" label="文件类型"></el-table-column>
+      <!-- <el-table-column prop="size" label="文件大小" v-slot="{ row }">
+        {{ row.size }}MB
+      </el-table-column> -->
+
+      <!-- <el-table-column fixed="right" label="操作" v-slot="{ row }" width="112px">
+        <el-button
+          type="primary"
+          size="small"
+          @click="methods.FileRead(row)"
+          v-if="row.loadType == 2"
+          >知识解析</el-button
+        >
+        <el-button v-else type="danger" size="small" @click="methods.removeFile(row.id)"
+          >取消上传</el-button
+        >
+      </el-table-column> -->
       <el-table-column fixed="right" label="操作" v-slot="{ row }" width="112px">
         <el-button type="danger" size="small" @click="deleteFile(row)">删除</el-button>
       </el-table-column>
@@ -62,6 +125,10 @@ function send_request() {
   }
 
   if (xmlhttp != null) {
+    // const { query } = route
+    // serverUrl是 用户获取 '签名和Policy' 等信息的应用服务器的URL，请将下面的IP和Port配置为您自己的真实信息。
+    // var serverUrl =
+    //   window.location.origin + '/api/ai-plugin/z/oss/policy?knowledgeBaseId=' +props.knowledgeId
     var serverUrl =
       window.location.origin + '/api/z/oss/policy?knowledgeBaseId=' + props.knowledgeId
 
@@ -125,6 +192,14 @@ function set_upload_param(up: any, filename: any, ret: any) {
 }
 
 const fileData = reactive({
+  // fileList: [] as Array<{
+  //   id: number
+  //   loadType: number
+  //   name: string
+  //   type: string
+  //   size: number
+  //   percentage: number
+  // }>,
   fileOptions: {
     runtimes: 'html5,flash,silverlight,html4',
     browse_button: 'selectfiles',
@@ -227,7 +302,6 @@ const methods = {
   FileRead(row: any) {
     embedding([{ fileName: row.name, knowledgeBaseId: Number(query.knowledgeId) }]).then(
       (res: any) => {
-        console.log('res', res)
         if (res?.code === 0) {
           ElMessage({
             message: '解析中',
@@ -275,6 +349,18 @@ onMounted(() => {
   //上传成功监听
   uploader.value.bind('FileUploaded', methods.FileUploaded)
 })
+
+// //监听
+// watch(
+//   () => props.drawer,
+//   () => {
+//     fileData.fileList = []
+//   },
+//   {
+//     immediate: true,
+//     deep: true
+//   }
+// )
 </script>
 
 <style scoped lang="scss">

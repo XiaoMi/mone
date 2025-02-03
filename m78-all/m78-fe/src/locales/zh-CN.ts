@@ -36,7 +36,10 @@ export default {
     confirmDel: '确定要删除吗？',
     copy: '复制',
     copyError: '复制失败',
-    copySuccess: '复制成功'
+    copySuccess: '复制成功',
+    search: '查询',
+    name: '名称',
+    description: '描述'
   },
   chat: {
     title: 'AI聊天',
@@ -69,12 +72,12 @@ export default {
   setting: {
     setting: '自定义设置',
     classification: '分类管理',
+    carousel: '轮播图管理',
+    platformStatistics: '平台统计',
     general: '总览',
     advanced: '高级',
     config: '配置',
     avatarLink: '头像链接',
-    name: '名称',
-    description: '描述',
     role: '角色设定',
     temperature: 'Temperature',
     top_p: 'Top_p',
@@ -306,13 +309,13 @@ export default {
   },
   probot: {
     menu1: '商品库',
-    menu2: '资源管理',
+    menu2: '团队空间',
     menu3: '创建Probot',
     mySpace: '我的空间',
-    createTeam: '创建团队',
-    editTeam: '编辑团队',
+    createTeam: '创建空间',
+    editTeam: '编辑空间',
     teamSpace: '团队空间',
-    search: '查询',
+    enterProbotName: '请输入Probot名称',
     userManager: {
       addUser: '添加用户',
       editUser: '编辑用户',
@@ -347,7 +350,6 @@ export default {
       editSucc: '编辑成功！',
       deleteBot: '确定要删除{name}?',
       status: '状态',
-      enterProbotName: '请输入Probot名称',
       selectType: '请选择类型',
       selectStatus: '请选择状态',
       createBotBtn: '创建Probot',
@@ -422,7 +424,6 @@ export default {
     enterUserName: '请输入用户名',
     createPluginBtn: '创建插件',
     noPlugin: '暂无工具',
-    name: '名称',
     mateInfo: '元信息',
     desc: '描述',
     operate: '操作',
@@ -431,12 +432,24 @@ export default {
     editPluginTitle: '编辑插件',
     addPluginTitle: '新建插件',
     enterPluginUrl: '请输入插件URL',
-    enterMateInfo: '请输入元信息',
-    search: '查询'
+    enterMateInfo: '请输入元信息'
   },
   commonTextare: {
     sendMsg: '发送信息',
     enterWithShift:
-      '是否开启enter + shift键发送，开启则enter是换行，enter + shift是发送，否则enter是发送，enter + shift是换行'
+      '是否开启enter + shift键发送，开启则enter是换行，enter + shift是发送，否则enter是发送，enter + shift是换行',
+    img: '图片',
+    audio: '录音'
+  },
+  codeBase: {
+    createBtn: '创建代码库',
+    editTitle: '编辑代码库',
+    name: '代码库名称',
+    namePlaceholder: '请输入代码库名称',
+    descPlaceholder: '请输入描述',
+    language: '语言',
+    code: '代码',
+    deleteTip: '确定删除当前代码库 {name}?',
+    warning: '提示'
   }
 }

@@ -112,11 +112,10 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { delChat, getChatInfoApi, updateChatInfoApi, createHttpApi } from '@/api/excle.ts'
+import { ref } from 'vue'
+import { delChat, getChatInfoApi, updateChatInfoApi, createHttpApi } from '@/api/excle'
 import { ElMessage } from 'element-plus'
 import { t } from '@/locales'
-import { arrayBuffer } from 'stream/consumers'
 
 const props = defineProps({
   uuid: {},
