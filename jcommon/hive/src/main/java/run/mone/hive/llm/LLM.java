@@ -54,6 +54,7 @@ public class LLM {
         this.llmProvider = config.getLlmProvider();
     }
 
+    //支持多模态
     public String chat(String prompt) {
         return ask(prompt).join();
     }
@@ -91,12 +92,13 @@ public class LLM {
         }
     }
 
+    //支持多模态
     public String chatCompletion(String apiKey, String content, String model) {
         return chatCompletion(apiKey, Lists.newArrayList(AiMessage.builder().role("user").content(content).build()), model, "", config);
     }
 
 
-    public String chatCompletion(List<AiMessage> messages) {
+    public String ask(List<AiMessage> messages) {
         return chatCompletion(getToken(), messages, getModel(), "", this.config);
     }
 
@@ -216,12 +218,12 @@ public class LLM {
     }
 
 
-    //把一张图片变成base64 要考虑 浏览器能接受的格式(--input) (class)
+    //把一张图片变成base64 要考虑 浏览器能接受的格式 png jpeg (--input) (class)
     @SneakyThrows
-    public String imageToBase64(String imagePath) {
+    public String imageToBase64(String imagePath, String formatName) {
         BufferedImage image = ImageIO.read(new File(imagePath));
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        ImageIO.write(image, "png", outputStream);
+        ImageIO.write(image, formatName, outputStream);
         byte[] imageBytes = outputStream.toByteArray();
         return Base64.getEncoder().encodeToString(imageBytes);
     }

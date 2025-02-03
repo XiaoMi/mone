@@ -1,6 +1,7 @@
 package run.mone.mcp.playwright.websocket;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +14,7 @@ import run.mone.hive.common.AiTemplate;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
-import run.mone.m78.client.util.GsonUtils;
+import run.mone.hive.schema.AiMessage;
 
 import java.io.IOException;
 import java.util.List;
@@ -62,31 +63,41 @@ public class WebSocketHandler extends TextWebSocketHandler {
             $message
             </action>
             
-            3.渲染页面
+            4.渲染页面
             <action type="buildDomTree">
             $message
             </action>
             
-            4.取消渲染
+            5.取消渲染
             <action type="cancelBuildDomTree">
             $message
             </action>
             
             
-            5.取消标记页面元素
+            6.取消标记页面元素
             
-            5.滚动一屏屏幕
+            7.滚动一屏屏幕
             <action type="scrollOneScreen">
             $message
             </action>
             
-            6.输入内容 回车 或者点击控件
-            7.产生通知
+            8.当chrome 返回页面内容和图片后,你就需要返回这个action了 (当浏览器返回页面源码还有页面截图的时候,你就需要返回这个action了,这个action往往是多个 name=click(点击)  fill 填入内容  enter 回车  elementId=要操作的元素id,截图和源码里都有)
+            //尽量一次返回一个页面的所有action操作
+            <action type="action" name="fill" elementId="12" value="冰箱">
+            在搜索框里输入冰箱
+            </action>
+            
+            <action type="action" name="click" elementId="13">
+            点击搜索按钮
+            </action>
+            
+            
+            9.产生通知
             <action type="notification">
             $message
             </action>
             
-            8.获取当前窗口的所有标签
+            10.获取当前窗口的所有标签
             <action type="getCurrentWindowTabs" service="tabManager">
             </action>
             
@@ -133,6 +144,17 @@ public class WebSocketHandler extends TextWebSocketHandler {
             //来自浏览器
             if (from.equals("chrome")) {
                 String data = obj.get("data").getAsString();
+
+                //需要ai来返回操作内容
+                if (data.equals("cz")) {
+                    String d = "帮我搜索下苹果笔记本";
+                    String ask = AiTemplate.renderTemplate(prompt, ImmutableMap.of("data", d));
+                    AiMessage msg = AiMessage.builder().build();
+                    String answer = llm.ask(Lists.newArrayList(msg));
+                    log.info("answer:{}", answer);
+                    return;
+                }
+
 
                 String ask = AiTemplate.renderTemplate(prompt, ImmutableMap.of("data", data));
                 String answer = llm.chat(ask);
