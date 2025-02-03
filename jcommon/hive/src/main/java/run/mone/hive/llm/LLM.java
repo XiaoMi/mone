@@ -163,7 +163,10 @@ public class LLM {
 
 
         for (AiMessage message : messages) {
-            if (this.llmProvider == LLMProvider.GOOGLE_2) {
+            //使用openrouter,并且使用多模态
+            if ((this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.MOONSHOT) && null != message.getJsonContent()) {
+                msgArray.add(message.getJsonContent());
+            } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
                 msgArray.add(createMessageObjectForGoogle(message));
             } else {
                 msgArray.add(createMessageObject(message.getRole(), message.getContent()));
@@ -197,6 +200,7 @@ public class LLM {
                 throw new IOException("Unexpected response code: " + response);
             }
             String responseBody = response.body().string();
+            log.info("res:{}", responseBody);
             JsonObject jsonResponse = gson.fromJson(responseBody, JsonObject.class);
 
             if (llmProvider == LLMProvider.GOOGLE_2) {
@@ -504,6 +508,9 @@ public class LLM {
     }
 
     public String getModel() {
+        if (StringUtils.isNotEmpty(this.config.getModel())) {
+            return config.getModel();
+        }
         return this.llmProvider.getDefaultModel();
     }
 

@@ -122,13 +122,24 @@ class LLMTest {
 //        config.setLlmProvider(LLMProvider.DOUBAO);
 //        config.setLlmProvider(LLMProvider.GOOGLE);
         config.setLlmProvider(LLMProvider.GOOGLE_2);
-//        config.setLlmProvider(LLMProvider.OPENROUTER);
+//        config.setLlmProvider(LLMProvider.OPENROUTER);//这个默认使用的是:anthropic/claude-3.5-sonnet:beta
+//        config.setModel("google/gemini-2.0-flash-exp:free");
+//        config.setModel("anthropic/claude-3.5-haiku-20241022");
+//        config.setModel("qwen/qwen-max");
+
 //        config.setLlmProvider(LLMProvider.DEEPSEEK);
 //        config.setLlmProvider(LLMProvider.QWEN);
 //        config.setLlmProvider(LLMProvider.MOONSHOT);
+//        config.setModel("moonshot-v1-128k-vision-preview");
 
+        //google通过cloudflare代理
         if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
             config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "generateContent");
+        }
+
+        //openrouter 也需要使用代理
+        if (config.getLlmProvider() == LLMProvider.OPENROUTER) {
+            config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
         }
 
         llm = new LLM(config);
@@ -169,34 +180,55 @@ class LLMTest {
         List<AiMessage> messages = new ArrayList<>();
         JsonObject obj = new JsonObject();
 
-        String text  = "输入搜索信息,然后点击搜索按钮";
+        String text = "输入搜索信息,然后点击搜索按钮";
 
         text = """
-                我们的主要目标:
+                根据不同的页面返回不同的action列表:
+                页面:需要执行的动作
                 jd首页:搜索冰箱
-                然后去搜素详情页:点击排名第一的连接
-                达到商品详情页:点击加入购物车按钮
-                到达购物车加购页面:点击去购物车结算按钮
+                搜素详情页:点击排名第一的连接
+                商品详情页:点击加入购物车按钮
+                购物车加购页面:点击去购物车结算按钮
                 分析出action列表(你每次只需要返回这个页面的action列表)
                 你先要分析出来现在是那个页面(首页,搜索详情页,商品详情页,购物车加购页面)
                 然后根据页面返回对应的action列表
                 thx
                 """;
 
-        obj.addProperty("text", text);
-
-        JsonObject obj2 = new JsonObject();
-        JsonObject objImg = new JsonObject();
-        objImg.addProperty("mime_type", "image/jpeg");
-        objImg.addProperty("data", llm.imageToBase64("/tmp/abc.jpeg", "jpeg"));
-        obj2.add("inline_data", objImg);
-
-        JsonArray parts = new JsonArray();
-        parts.add(obj);
-        parts.add(obj2);
-
         JsonObject req = new JsonObject();
-        req.add("parts", parts);
+
+        if (llm.getConfig().getLlmProvider() == LLMProvider.GOOGLE_2) {
+            JsonArray parts = new JsonArray();
+            obj.addProperty("text", text);
+            JsonObject obj2 = new JsonObject();
+            JsonObject objImg = new JsonObject();
+            objImg.addProperty("mime_type", "image/jpeg");
+            objImg.addProperty("data", llm.imageToBase64("/tmp/abc.jpeg", "jpeg"));
+            obj2.add("inline_data", objImg);
+            parts.add(obj);
+            parts.add(obj2);
+            req.add("parts", parts);
+        }
+
+        if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT) {
+            req.addProperty("role", "user");
+            JsonArray array = new JsonArray();
+
+            JsonObject obj1 = new JsonObject();
+            obj1.addProperty("type","text");
+            obj1.addProperty("text",text);
+            array.add(obj1);
+
+            JsonObject obj2 = new JsonObject();
+            obj2.addProperty("type","image_url");
+            JsonObject img = new JsonObject();
+            img.addProperty("url","data:image/jpeg;base64,"+llm.imageToBase64("/tmp/abc.jpeg", "jpeg"));
+            obj2.add("image_url",img);
+            array.add(obj2);
+
+            req.add("content", array);
+        }
+
 
         messages.add(AiMessage.builder().jsonContent(req).build());
         String sysPrompt = "你是一个聪明的人类,我给你一张浏览器的页面 和我提供的需求,你帮我分析下这个页面干什么的? thx";
