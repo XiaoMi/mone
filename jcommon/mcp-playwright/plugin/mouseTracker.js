@@ -1,3 +1,5 @@
+import storageManager from './managers/storageManager.js';
+
 export class MouseTracker {
     static async injectTracker(tabId) {
         // 注入 CSS
@@ -57,6 +59,9 @@ export class MouseTracker {
     }
 
     static async moveToPosition(tabId, x, y) {
+        // 保存位置到 storage
+        await storageManager.set(`mousePosition_${tabId}`, { x, y });
+
         await chrome.scripting.executeScript({
             target: { tabId },
             function: (targetX, targetY) => {

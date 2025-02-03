@@ -1,4 +1,11 @@
 import bookmarkManager from './managers/bookmarkManager.js';
+import MoneyEffect from './moneyEffect.js';
+import { MouseTracker } from './mouseTracker.js';
+import historyManager from './managers/historyManager.js';
+import errorManager from './errorManager.js';
+import storageManager from './managers/storageManager.js';
+
+
 // 等待DOM加载完成后执行
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Popup script loaded and DOM is ready');
@@ -99,14 +106,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 添加下雨特效按钮事件监听
-    document.getElementById('rainEffect').addEventListener('click', async () => {
-        const button = document.getElementById('rainEffect');
-        const isEffectOn = await toggleEffect('rain');
-        button.textContent = isEffectOn ? '🌧️ 关闭下雨' : '🌧️ 下雨特效';
-    });
-
-    // 添加下雪特效按钮事件监听
+    // 修改下雪特效按钮事件监听
     document.getElementById('snowEffect').addEventListener('click', async () => {
         const button = document.getElementById('snowEffect');
         const isEffectOn = await MoneyEffect.toggleEffect();
@@ -141,18 +141,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 修改现有的坐标移动功能
+    // 在功能按钮区域添加移动到元素功能
     document.getElementById('move-to-selector').addEventListener('click', async () => {
         const selector = document.getElementById('selector-input').value;
         if (!selector) {
-            alert('请输入选择器');
+            const statusText = document.getElementById('status-text') || createStatusElement();
+            statusText.textContent = '❌ 请输入选择器';
+            statusText.style.color = 'red';
+            setTimeout(() => {
+                statusText.textContent = '';
+            }, 3000);
             return;
         }
 
         const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-        const statusText = document.getElementById('status-text');
-
+        const statusText = document.getElementById('status-text') || createStatusElement();
+        const button = document.getElementById('move-to-selector');
+        
         try {
+            button.disabled = true;
+            button.textContent = '移动中...';
+            
             // 执行选择器查找和位置计算
             const [{result}] = await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
@@ -171,17 +180,41 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (result) {
                 await MouseTracker.moveToPosition(tab.id, result.x, result.y);
-                statusText.textContent = '已移动到元素位置';
+                
+                // 获取存储的位置信息
+                const storedPosition = await storageManager.get(`mousePosition_${tab.id}`);
+                if (storedPosition) {
+                    button.textContent = `🎯 移动到元素 (${storedPosition.x}, ${storedPosition.y})`;
+                } else {
+                    button.textContent = '🎯 移动到元素';
+                }
+
+                statusText.textContent = '✅ 已移动到元素位置';
+                statusText.style.color = '#4CAF50';
                 
                 // 3秒后恢复跟踪
                 setTimeout(async () => {
                     await MouseTracker.resumeTracking(tab.id);
+                    statusText.textContent = '';
+                    // 保持坐标显示，不重置按钮文本
                 }, 3000);
             } else {
-                statusText.textContent = '未找到匹配的元素';
+                statusText.textContent = '❌ 未找到匹配的元素';
+                statusText.style.color = 'red';
+                button.textContent = '🎯 移动到元素';
+                setTimeout(() => {
+                    statusText.textContent = '';
+                }, 3000);
             }
         } catch (error) {
-            statusText.textContent = '发生错误: ' + error.message;
+            statusText.textContent = '❌ 发生错误: ' + error.message;
+            statusText.style.color = 'red';
+            button.textContent = '🎯 移动到元素';
+            setTimeout(() => {
+                statusText.textContent = '';
+            }, 3000);
+        } finally {
+            button.disabled = false;
         }
     });
 
@@ -218,7 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('getRecentHistory').addEventListener('click', async () => {
         try {
             // 获取最近3条历史记录
-            const recentHistory = await getRecentHistory(3);
+            const recentHistory = await historyManager.getRecentHistory(3);
             
             // 使用 errorManager 记录信息
             recentHistory.forEach((item, index) => {
@@ -448,25 +481,8 @@ document.getElementById('click-btn').addEventListener('click', async () => {
     }
 
     const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
-
-    await chrome.scripting.executeScript({
-        target: {tabId: tab.id},
-        func: simulateClick,
-        args: [x, y]
-    });
+    await MouseTracker.moveToPosition(tab.id, x, y);
 });
-
-function simulateClick(x, y) {
-    const clickEvent = new MouseEvent('click', {
-        view: window,
-        bubbles: true,
-        cancelable: true,
-        clientX: x,
-        clientY: y
-    });
-
-    document.elementFromPoint(x, y)?.dispatchEvent(clickEvent);
-}
 
 // popup 打开时，获取最后存储的位置
 chrome.runtime.sendMessage({ type: 'getLastPosition' }, (response) => {
@@ -931,7 +947,9 @@ document.getElementById('captureVisible').addEventListener('click', async () => 
         button.textContent = '截图中...';
         statusText.textContent = ''; // 清除之前的状态
         
-        await captureVisibleArea();
+
+        const screenshot = await window.screenshotManager.getVisibleAreaScreenshot();
+        await window.screenshotManager.captureVisibleArea(true,screenshot);
         
         button.textContent = '截图成功！';
         statusText.textContent = '✅ 截图已保存';

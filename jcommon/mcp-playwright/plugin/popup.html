@@ -26,14 +26,6 @@
                 <p>Last Click: <span id="last-click-pos">X:0, Y:0</span></p>
             </div>
             
-            <div class="selector-container">
-                <div class="input-group">
-                    <label for="selector-input">Selector:</label>
-                    <input type="text" id="selector-input" placeholder="输入CSS选择器">
-                </div>
-                <button id="move-to-selector" class="action-button">移动到元素</button>
-            </div>
-
             <div class="coordinates">
                 <div class="input-group">
                     <label for="x-coord">X:</label>
@@ -56,7 +48,6 @@
                     <button id="captureFullPage" class="action-button">📸 截取整页</button>
                     <button id="captureVisible" class="action-button">📷 截取当前屏幕</button>
                     <button id="autoScroll" class="action-button">⬇️ 自动滚动</button>
-                    <button id="rainEffect" class="action-button">🌧️ 下雨特效</button>
                     <button id="snowEffect" class="action-button">❄️ 下雪特效</button>
                     <button id="addBorders" class="action-button">🔲 添加元素边框</button>
                     <button id="toggleMouseTracker" class="action-button">🔴 虚拟鼠标跟踪</button>
@@ -67,6 +58,10 @@
                     <button id="testError" class="action-button">⚠️ 测试错误</button>
                     <button id="actionTest" class="action-button">🎯 测试操作序列</button>
                     <button id="scrollOneScreen" class="action-button">📜 滚动一屏</button>
+                    <div class="selector-input-group">
+                        <input type="text" id="selector-input" class="selector-input" placeholder="请输入要移动到的元素的CSS选择器">
+                        <button id="move-to-selector" class="action-button">🎯 移动到指定元素</button>
+                    </div>
                 </div>
             </div>
 
@@ -83,6 +78,7 @@
             </div>
         </div>
     </div>
+    <script  src="./managers/screenshotManager.js"></script>
     <script type="module" src="popup.js"></script>
 
     <style>

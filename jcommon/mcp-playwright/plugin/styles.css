@@ -197,3 +197,25 @@ input {
     font-weight: 500;
     color: var(--text-color);
 }
+
+.selector-input-group {
+    display: flex;
+    flex-direction: column;
+    margin: 8px 0;
+    padding: 0 10px;
+}
+
+.selector-input {
+    width: 100%;
+    margin-bottom: 8px;
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.selector-input:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+}

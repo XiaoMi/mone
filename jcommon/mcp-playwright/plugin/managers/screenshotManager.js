@@ -4,7 +4,7 @@ class ScreenshotManager {
         // 可以在这里添加配置项
         this.config = {
             format: 'jpeg',
-            quality: 90,
+            quality: 10,
             defaultFilename: 'screenshot.jpeg'
         };
     }
@@ -102,16 +102,78 @@ class ScreenshotManager {
     }
 
     // 捕获当前可视区域的截图
-    async captureVisibleArea(allowDownload = false,screenshot) {
+    async captureVisibleArea(allowDownload = false, screenshot) {
         try {
-
             // 创建一个 canvas 来处理图片
             const img = await this.loadImage(screenshot);
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
-            canvas.width = img.width;
-            canvas.height = img.height;
-            ctx.drawImage(img, 0, 0);
+            let scale = 1.0/window.devicePixelRatio;
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale; 
+            
+            // 绘制原始图片
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            
+            // 设置网格线样式
+            ctx.strokeStyle = 'rgba(200, 200, 200, 0.2)'; // 更透明的网格线
+            ctx.lineWidth = 0.5;
+            ctx.font = '10px Arial';
+            ctx.fillStyle = 'rgba(100, 100, 100, 0.7)';
+            
+            const GRID_COUNT = 20; // 网格数量
+            const rowHeight = canvas.height / GRID_COUNT;
+            const columnWidth = canvas.width / GRID_COUNT;
+            
+            // 绘制水平线
+            for (let i = 1; i < GRID_COUNT; i++) {
+                const y = Math.round(rowHeight * i);
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+            
+            // 绘制垂直线
+            for (let i = 1; i < GRID_COUNT; i++) {
+                const x = Math.round(columnWidth * i);
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            
+            // 在交叉点绘制坐标
+            ctx.font = '9px Arial';
+            for (let i = 1; i < GRID_COUNT; i++) {
+                for (let j = 1; j < GRID_COUNT; j++) {
+                    const x = Math.round(columnWidth * i);
+                    const y = Math.round(rowHeight * j);
+                    
+                    // 计算实际坐标值
+                    const coordX = Math.round(canvas.width * (i / GRID_COUNT));
+                    const coordY = Math.round(canvas.height * (j / GRID_COUNT));
+                    
+                    // 绘制小点
+                    ctx.fillStyle = 'rgba(100, 100, 100, 0.5)';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 1.5, 0, 2 * Math.PI);
+                    ctx.fill();
+                    
+                    // 绘制坐标文本
+                    ctx.fillStyle = 'rgba(100, 100, 100, 0.7)';
+                    const coordText = `(${coordX},${coordY})`;
+                    
+                    // 根据位置调整文本显示方向，避免超出边界
+                    const textX = x + 3;
+                    const textY = y - 3;
+                    
+                    // 每隔一个交叉点显示坐标，避免文字重叠
+                    if ((i % 2 === 1) && (j % 2 === 1)) {
+                        ctx.fillText(coordText, textX, textY);
+                    }
+                }
+            }
 
             // 将图片复制到剪贴板
             try {
@@ -140,6 +202,22 @@ class ScreenshotManager {
 
         } catch (error) {
             console.error('Error capturing visible area screenshot:', error);
+            throw error;
+        }
+    }
+
+    // 获取当前可视区域的截图
+    async getVisibleAreaScreenshot() {
+        try {
+            // 获取当前活动标签页的截图
+            const screenshot = await chrome.tabs.captureVisibleTab(null, {
+                format: this.config.format,
+                quality: this.config.quality
+            });
+            
+            return screenshot;
+        } catch (error) {
+            console.error('Error getting visible area screenshot:', error);
             throw error;
         }
     }
