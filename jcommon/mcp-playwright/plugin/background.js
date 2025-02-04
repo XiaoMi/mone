@@ -2,6 +2,7 @@ import notificationManager from './managers/notificationManager.js';
 import tabManager from './managers/tabManager.js';
 import xmlManager from './managers/xmlManager.js';
 import stateManager from './managers/stateManager.js';
+import actionManager2 from './managers/actionManager2.js';
 
 console.log("Background script started at:", new Date().toISOString());
 
@@ -54,6 +55,53 @@ function connectWebSocket() {
 
                     for (const action of actions || []) {
                         console.log('action:', action);
+                        
+                        // 处理普通action类型
+                        if (action.type === 'action') {
+                            console.log('Processing action:', action);
+                            const selector = `[browser-user-highlight-id="playwright-highlight-${action.attributes.elementId}"]`;
+                            
+                            if (action.attributes.name === 'fill') {
+
+                                await chrome.scripting.executeScript({
+                                    target: { tabId: tab.id },
+                                    func: (selector, value) => {
+                                        console.log('fill action:', selector, value);
+                                        const element = document.querySelector(selector);
+                                        if (element) {
+                                            element.value = value;
+                                            // Trigger input event to simulate user input
+                                            element.dispatchEvent(new Event('input', { bubbles: true }));
+                                            element.dispatchEvent(new Event('change', { bubbles: true }));
+
+                                            // 焦点处理  
+                                            if (true) element.focus();  
+                                            if (true) element.blur();  
+
+                                        }
+                                    },
+                                    args: [selector, action.attributes.value]
+                                });
+                            } else if (action.attributes.name === 'click') {
+                                console.log('Executing click action with selector:', selector);
+                                await chrome.scripting.executeScript({
+                                    target: { tabId: tab.id },
+                                    func: (selector) => {
+                                        const element = document.querySelector(selector);
+                                        if (element) {
+                                            element.click();
+                                        }
+                                    },
+                                    args: [selector]
+                                });
+                            }
+
+                            //停顿500ms
+                            await new Promise(resolve => setTimeout(resolve, 2000));
+                            // 操作完成后发送ping
+                            sendWebSocketMessage("ping","action_ping");
+                        }
+
                         //创建tab页面
                         if (action.type === 'createNewTab') {
                             console.log('click action:', action);

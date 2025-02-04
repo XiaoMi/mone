@@ -38,6 +38,10 @@
 {
 "resources": ["actionManager.js"],
 "matches": ["<all_urls>"]
+},
+{
+"resources": ["managers/actionManager2.js"],
+"matches": ["<all_urls>"]
 }
 ]
 }

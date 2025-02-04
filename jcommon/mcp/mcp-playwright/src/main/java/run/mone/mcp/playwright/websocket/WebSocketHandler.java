@@ -41,7 +41,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         llm = new LLM(config);
     }
 
-    private List<String> messageList = Lists.newArrayList("打开京东", "jd首页:搜索冰箱", "搜素详情页:点击排名第一的连接", "商品详情页:点击加入购物车按钮", "购物车加购页面:点击去购物车结算按钮");
+    private List<String> messageList = Lists.newArrayList("打开京东", "jd首页:搜索mac苹果电脑", "搜素详情页:点击排名第一的连接", "商品详情页:点击加入购物车按钮", "购物车加购页面:点击去购物车结算按钮");
 
     private int index = 0;
 
@@ -133,7 +133,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private String text = """
                 根据不同的页面返回不同的action列表:
                 页面:需要执行的动作
-                jd首页:搜索冰箱
+                jd首页:搜索mac苹果电脑
                 搜素详情页:点击排名第一的连接
                 商品详情页:点击加入购物车按钮
                 购物车加购页面:点击去购物车结算按钮
@@ -142,7 +142,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 然后根据页面返回对应的action列表
                 
                 
-                这个页面的code:
                 %s
                 
                 当前需求:
@@ -174,6 +173,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 String cmd = "";
                 if (obj.has("cmd")) {
                     cmd = obj.get("cmd").getAsString();
+                }
+
+                if (cmd.equals("action_ping")) {
+                    log.info("action ping");
+                    return;
                 }
 
                 //需要ai来返回操作内容
@@ -219,13 +223,14 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     if (cmd.equals("shopping")) {
                         JsonObject jsonObj = JsonParser.parseString(data).getAsJsonObject();
                         String img = jsonObj.get("img").getAsString();
+                        String code = jsonObj.get("code").getAsString();
 
                         if (img.startsWith("data:image")) {
                             img = img.split("base64,")[1];
+                            code = "";
                         }
 
 
-                        String code = jsonObj.get("code").getAsString();
                         String t = text.formatted(code,msg);
                         String llmRes = llmService.call(llm, t, img);
                         res.addProperty("data", llmRes);
