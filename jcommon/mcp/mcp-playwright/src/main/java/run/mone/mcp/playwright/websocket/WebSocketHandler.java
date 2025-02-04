@@ -4,6 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
@@ -15,6 +16,7 @@ import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.schema.AiMessage;
+import run.mone.mcp.playwright.service.LLMService;
 
 import java.io.IOException;
 import java.util.List;
@@ -28,16 +30,23 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private LLM llm;
 
+    @Resource
+    private LLMService llmService;
+
     public WebSocketHandler() {
         LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.DOUBAO).build();
         if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
             config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "generateContent");
         }
         llm = new LLM(config);
-
     }
 
-    private String prompt = """
+    private List<String> messageList = Lists.newArrayList("打开京东", "jd首页:搜索冰箱", "搜素详情页:点击排名第一的连接", "商品详情页:点击加入购物车按钮", "购物车加购页面:点击去购物车结算按钮");
+
+    private int index = 0;
+
+
+    public static String prompt = """
             你是一个浏览器操作专家.你总是能把用户的需求,翻译成专业的操作指令.
             你支持的指令:
             1.打开tab,并且带上url,用来打开某个页面
@@ -145,6 +154,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
             if (from.equals("chrome")) {
                 String data = obj.get("data").getAsString();
 
+                String cmd = "";
+                if (obj.has("cmd")) {
+                    cmd = obj.get("cmd").getAsString();
+                }
+
                 //需要ai来返回操作内容
                 if (data.equals("cz")) {
                     String d = "帮我搜索下苹果笔记本";
@@ -153,6 +167,45 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     String answer = llm.ask(Lists.newArrayList(msg));
                     log.info("answer:{}", answer);
                     return;
+                }
+
+                //购物
+                if (cmd.equals("shopping")) {
+                    String msg = messageList.get(this.index);
+                    JsonObject res = new JsonObject();
+                    //打开购物的页面
+                    if (this.index == 0) {
+                        res.addProperty("data", msg + "\n" +
+                                """
+                                        <action type="createNewTab" url="https://www.jd.com/" auto="true">
+                                        打开京东
+                                        </action>
+                                        """);
+                        sendMessageToAll(res.toString());
+                        this.index++;
+                        return;
+                    }
+
+                    //结束了
+                    if (this.index == messageList.size()) {
+                        res.addProperty("data", """
+                                <action type="finish" url="https://www.jd.com/">
+                                </action>
+                                """);
+                        this.index = 0;
+                        sendMessageToAll(res.toString());
+                        return;
+                    }
+
+                    //要开始处理页面了,都是内容+截图
+                    String code = obj.get("src").getAsString();
+                    String img = obj.get("img").getAsString();
+                    String llmRes = llmService.call(llm, code, img);
+                    res.addProperty("data", llmRes);
+                    sendMessageToAll(res.toString());
+                    this.index++;
+                    return;
+
                 }
 
 
