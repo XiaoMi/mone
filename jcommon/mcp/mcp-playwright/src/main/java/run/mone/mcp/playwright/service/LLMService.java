@@ -60,8 +60,7 @@ public class LLMService {
 
         List<AiMessage> messages = new ArrayList<>();
         messages.add(AiMessage.builder().jsonContent(req).build());
-        String sysPrompt = "你是一个聪明的人类,我给你一张浏览器的页面 和我提供的需求,你帮我分析下这个页面干什么的? thx";
-        sysPrompt = WebSocketHandler.prompt.formatted("返回合理的action列表");
+        String sysPrompt = WebSocketHandler.prompt.formatted("返回合理的action列表");
         String result = llm.chatCompletion(messages, sysPrompt);
         log.info("{}", result);
         return result;

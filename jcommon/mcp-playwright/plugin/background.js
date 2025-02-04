@@ -1,6 +1,7 @@
 import notificationManager from './managers/notificationManager.js';
 import tabManager from './managers/tabManager.js';
 import xmlManager from './managers/xmlManager.js';
+import stateManager from './managers/stateManager.js';
 
 console.log("Background script started at:", new Date().toISOString());
 
@@ -44,7 +45,6 @@ function connectWebSocket() {
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
             if (data && 'data' in data) {
-                // 检查 data.data 是否为字符串类型  
                 if (typeof data.data === 'string') {
                     const xmlString = data.data;
                     console.log('Valid XML string:', xmlString);
@@ -57,7 +57,29 @@ function connectWebSocket() {
                         //创建tab页面
                         if (action.type === 'createNewTab') {
                             console.log('click action:', action);
-                            tabManager.createNewTab(action.attributes.url);
+                            // 创建新的状态机
+                            const machineId = stateManager.createMachine();
+                            
+                            // 创建新标签页
+                            const tab = await tabManager.createNewTab(action.attributes.url);
+                            
+                            // 设置状态机的tabId
+                            const machine = stateManager.getMachine(machineId);
+                            machine.setTabId(tab.id);
+                            
+                            // 监听标签页加载完成事件
+                            chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
+                                if (tabId === tab.id && changeInfo.status === 'complete') {
+                                    // 发送页面加载完成消息给状态机
+                                    stateManager.sendMessage(machineId, {
+                                        type: 'PAGE_LOADED',
+                                        tabId: tab.id
+                                    });
+                                    
+                                    // 移除监听器
+                                    chrome.tabs.onUpdated.removeListener(listener);
+                                }
+                            });
                         }
                         //截屏
                         if (action.type === 'screenshot') {
@@ -288,237 +310,252 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     }
 });
 
-// 添加发送消息的函数
-async function sendWebSocketMessage(message) {
-    if (ws && ws.readyState === WebSocket.OPEN) {
-        //let tabs = await tabManager.getCurrentWindowTabs();
-        //console.log('tabs:', tabs);
-        const jsonMessage = {
-            from: "chrome",
-            //  tabs: tabs,
-            data: message
-        };
-        ws.send(JSON.stringify(jsonMessage));
-        console.log('Message sent:', jsonMessage);
-    } else {
-        console.log('WebSocket is not connected');
-    }
+// 修改 sendWebSocketMessage 函数为 Promise 形式
+function sendWebSocketMessage(message,cmd = '') {
+    return new Promise((resolve, reject) => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+            const jsonMessage = {
+                from: "chrome",
+                data: message,
+                cmd: cmd
+            };
+            try {
+                console.log('sendWebSocketMessage:', JSON.stringify(jsonMessage));
+                ws.send(JSON.stringify(jsonMessage));
+                console.log('Message sent:', jsonMessage);
+                resolve();
+            } catch (error) {
+                console.error('Error sending WebSocket message:', error);
+                reject(error);
+            }
+        } else {
+            const error = new Error('WebSocket is not connected');
+            console.error(error);
+            reject(error);
+        }
+    });
 }
 
 // 修改消息监听器，添加发送消息的处理
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    if (message.type === 'getMessageHistory') {
-        sendResponse(messageHistory);
-        return true;
-    } else if (message.type === 'sendWebSocketMessage') {
-        sendWebSocketMessage(message.text);
-        sendResponse({ success: true });
-        return true;
-    } else if (message.type === 'clearMessageHistory') {
-        messageHistory = [];
-        sendResponse({ success: true });
-        return true;
-    } else if (message.type === 'mousePosition') {
-        // 存储移动位置
-        lastPosition = { x: message.x, y: message.y };
-    } else if (message.type === 'mouseClick') {
-        // 存储点击位置
-        lastClickPosition = { x: message.x, y: message.y };
-        console.log("Click recorded at:", lastClickPosition);
-    } else if (message.type === 'getLastPosition') {
-        // popup 打开时可以获取最后存储的位置
-        sendResponse({
-            mousePosition: lastPosition,
-            clickPosition: lastClickPosition
-        });
-    } else if (message.type === 'captureScreen') {
-        console.log("captureScreen");
-        chrome.tabs.captureVisibleTab(null, {
-            format: 'jpeg',
-            quality: 1  // 1表示最低质量
-        }, function (dataUrl) {
-            // 使用 chrome.downloads API 来下载图片
-            chrome.downloads.download({
-                url: dataUrl,
-                filename: 'abc.jpg',  // 改为.jpg后缀
-                saveAs: false
-            }, function (downloadId) {
-                console.log('Screenshot saved with download ID:', downloadId);
-            });
-        });
-    } else if (message.type === 'elementSelector') {
-        // 向当前标签页注入并执行显示对话框的脚本
-        chrome.scripting.executeScript({
-            target: { tabId: sender.tab.id },
-            function: (selector) => {
-                // 创建对话框元素
-                const dialog = document.createElement('div');
-                dialog.style.cssText = `
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    padding: 15px;
-                    background: white;
-                    border: 1px solid #ccc;
-                    border-radius: 5px;
-                    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                    z-index: 10000;
-                    max-width: 300px;
-                    word-break: break-all;
-                    font-family: Arial, sans-serif;
-                `;
-
-                // 添加标题
-                const title = document.createElement('div');
-                title.style.cssText = `
-                    font-weight: bold;
-                    margin-bottom: 10px;
-                    padding-bottom: 5px;
-                    border-bottom: 1px solid #eee;
-                `;
-                title.textContent = 'Element Selector';
-                dialog.appendChild(title);
-
-                // 添加选择器内容
-                const content = document.createElement('div');
-                content.style.cssText = `
-                    margin-bottom: 10px;
-                    color: #333;
-                `;
-                content.textContent = selector;
-                dialog.appendChild(content);
-
-                // 添加复制按钮
-                const copyButton = document.createElement('button');
-                copyButton.style.cssText = `
-                    padding: 5px 10px;
-                    background: #4CAF50;
-                    color: white;
-                    border: none;
-                    border-radius: 3px;
-                    cursor: pointer;
-                    margin-right: 5px;
-                `;
-                copyButton.textContent = 'Copy';
-                copyButton.onclick = () => {
-                    navigator.clipboard.writeText(selector);
-                    copyButton.textContent = 'Copied!';
-                    setTimeout(() => copyButton.textContent = 'Copy', 1500);
-                };
-                dialog.appendChild(copyButton);
-
-                // 添加关闭按钮
-                const closeButton = document.createElement('button');
-                closeButton.style.cssText = `
-                    padding: 5px 10px;
-                    background: #f44336;
-                    color: white;
-                    border: none;
-                    border-radius: 3px;
-                    cursor: pointer;
-                `;
-                closeButton.textContent = 'Close';
-                closeButton.onclick = () => dialog.remove();
-                dialog.appendChild(closeButton);
-
-                // 添加到页面
-                document.body.appendChild(dialog);
-
-                // 5秒后自动关闭
-                setTimeout(() => dialog.remove(), 5000);
-            },
-            args: [message.selector]
-        });
-    } else if (message.action === 'moveToSelector') {
+    // 使用 Promise.resolve().then() 来确保异步操作正确处理
+    Promise.resolve().then(async () => {
         try {
-            chrome.tabs.query({ active: true, currentWindow: true }, async function (tabs) {
-                if (!tabs[0]) {
-                    sendResponse({ success: false, error: '未找到活动标签页' });
-                    return;
-                }
+            if (message.type === 'getMessageHistory') {
+                sendResponse(messageHistory);
+            } else if (message.type === 'sendWebSocketMessage') {
+                await sendWebSocketMessage(message.text);
+                sendResponse({ success: true });
+            } else if (message.type === 'clearMessageHistory') {
+                messageHistory = [];
+                sendResponse({ success: true });
+            } else if (message.type === 'mousePosition') {
+                // 存储移动位置
+                lastPosition = { x: message.x, y: message.y };
+                sendResponse({ success: true });
+            } else if (message.type === 'mouseClick') {
+                // 存储点击位置
+                lastClickPosition = { x: message.x, y: message.y };
+                console.log("Click recorded at:", lastClickPosition);
+                sendResponse({ success: true });
+            } else if (message.type === 'getLastPosition') {
+                // popup 打开时可以获取最后存储的位置
+                sendResponse({
+                    mousePosition: lastPosition,
+                    clickPosition: lastClickPosition
+                });
+            } else if (message.type === 'captureScreen') {
+                console.log("captureScreen");
+                chrome.tabs.captureVisibleTab(null, {
+                    format: 'jpeg',
+                    quality: 1
+                }, function (dataUrl) {
+                    chrome.downloads.download({
+                        url: dataUrl,
+                        filename: 'abc.jpg',
+                        saveAs: false
+                    }, function (downloadId) {
+                        console.log('Screenshot saved with download ID:', downloadId);
+                        sendResponse({ success: true, downloadId });
+                    });
+                });
+            } else if (message.type === 'elementSelector') {
+                chrome.scripting.executeScript({
+                    target: { tabId: sender.tab.id },
+                    function: (selector) => {
+                        // 创建对话框元素
+                        const dialog = document.createElement('div');
+                        dialog.style.cssText = `
+                            position: fixed;
+                            top: 20px;
+                            right: 20px;
+                            padding: 15px;
+                            background: white;
+                            border: 1px solid #ccc;
+                            border-radius: 5px;
+                            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                            z-index: 10000;
+                            max-width: 300px;
+                            word-break: break-all;
+                            font-family: Arial, sans-serif;
+                        `;
 
-                const result = await chrome.scripting.executeScript({
-                    target: { tabId: tabs[0].id },
-                    func: (selector) => {
-                        const element = document.querySelector(selector);
-                        if (!element) {
-                            return { success: false, error: '未找到指定元素' };
-                        }
+                        // 添加标题
+                        const title = document.createElement('div');
+                        title.style.cssText = `
+                            font-weight: bold;
+                            margin-bottom: 10px;
+                            padding-bottom: 5px;
+                            border-bottom: 1px solid #eee;
+                        `;
+                        title.textContent = 'Element Selector';
+                        dialog.appendChild(title);
 
-                        // 滚动到元素位置
-                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        // 添加选择器内容
+                        const content = document.createElement('div');
+                        content.style.cssText = `
+                            margin-bottom: 10px;
+                            color: #333;
+                        `;
+                        content.textContent = selector;
+                        dialog.appendChild(content);
 
-                        // 获取元素的位置信息
-                        const rect = element.getBoundingClientRect();
-                        const centerX = Math.round(rect.left + rect.width / 2);
-                        const centerY = Math.round(rect.top + rect.height / 2);
-
-                        // 创建模拟鼠标指针
-                        let fakePointer = document.getElementById('fake-mouse-pointer');
-                        if (!fakePointer) {
-                            fakePointer = document.createElement('div');
-                            fakePointer.id = 'fake-mouse-pointer';
-                            fakePointer.style.cssText = `
-                                position: fixed;
-                                width: 20px;
-                                height: 20px;
-                                background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path d="M 0 0 L 12 12 L 8 16 L 0 0" fill="black"/></svg>');
-                                pointer-events: none;
-                                z-index: 999999;
-                                transition: all 0.5s ease;
-                                opacity: 0;
-                            `;
-                            document.body.appendChild(fakePointer);
-                        }
-
-                        // 设置初始位置（左上角）并显示
-                        fakePointer.style.left = '0px';
-                        fakePointer.style.top = '0px';
-                        fakePointer.style.opacity = '1';
-
-                        // 延迟一帧后移动到目标位置（这样可以看到动画效果）
-                        requestAnimationFrame(() => {
-                            fakePointer.style.left = `${centerX}px`;
-                            fakePointer.style.top = `${centerY}px`;
-                        });
-
-                        // 添加元素高亮效果
-                        const originalBackground = element.style.backgroundColor;
-                        const originalTransition = element.style.transition;
-                        element.style.transition = 'background-color 0.3s';
-                        element.style.backgroundColor = 'yellow';
-
-                        // 2秒后移除高亮和指针
-                        setTimeout(() => {
-                            element.style.backgroundColor = originalBackground;
-                            element.style.transition = originalTransition;
-                            fakePointer.style.opacity = '0';
-                            setTimeout(() => fakePointer.remove(), 500);
-                        }, 2000);
-
-                        return {
-                            success: true,
-                            position: {
-                                x: centerX,
-                                y: centerY
-                            }
+                        // 添加复制按钮
+                        const copyButton = document.createElement('button');
+                        copyButton.style.cssText = `
+                            padding: 5px 10px;
+                            background: #4CAF50;
+                            color: white;
+                            border: none;
+                            border-radius: 3px;
+                            cursor: pointer;
+                            margin-right: 5px;
+                        `;
+                        copyButton.textContent = 'Copy';
+                        copyButton.onclick = () => {
+                            navigator.clipboard.writeText(selector);
+                            copyButton.textContent = 'Copied!';
+                            setTimeout(() => copyButton.textContent = 'Copy', 1500);
                         };
+                        dialog.appendChild(copyButton);
+
+                        // 添加关闭按钮
+                        const closeButton = document.createElement('button');
+                        closeButton.style.cssText = `
+                            padding: 5px 10px;
+                            background: #f44336;
+                            color: white;
+                            border: none;
+                            border-radius: 3px;
+                            cursor: pointer;
+                        `;
+                        closeButton.textContent = 'Close';
+                        closeButton.onclick = () => dialog.remove();
+                        dialog.appendChild(closeButton);
+
+                        // 添加到页面
+                        document.body.appendChild(dialog);
+
+                        // 5秒后自动关闭
+                        setTimeout(() => dialog.remove(), 5000);
                     },
                     args: [message.selector]
                 });
+                sendResponse({ success: true });
+            } else if (message.action === 'moveToSelector') {
+                chrome.tabs.query({ active: true, currentWindow: true }, async function (tabs) {
+                    if (!tabs[0]) {
+                        sendResponse({ success: false, error: '未找到活动标签页' });
+                        return;
+                    }
 
-                if (result[0].result.success) {
-                    lastPosition = result[0].result.position;
-                }
+                    const result = await chrome.scripting.executeScript({
+                        target: { tabId: tabs[0].id },
+                        func: (selector) => {
+                            const element = document.querySelector(selector);
+                            if (!element) {
+                                return { success: false, error: '未找到指定元素' };
+                            }
 
-                sendResponse(result[0].result);
-            });
+                            // 滚动到元素位置
+                            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-            return true;
+                            // 获取元素的位置信息
+                            const rect = element.getBoundingClientRect();
+                            const centerX = Math.round(rect.left + rect.width / 2);
+                            const centerY = Math.round(rect.top + rect.height / 2);
+
+                            // 创建模拟鼠标指针
+                            let fakePointer = document.getElementById('fake-mouse-pointer');
+                            if (!fakePointer) {
+                                fakePointer = document.createElement('div');
+                                fakePointer.id = 'fake-mouse-pointer';
+                                fakePointer.style.cssText = `
+                                    position: fixed;
+                                    width: 20px;
+                                    height: 20px;
+                                    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path d="M 0 0 L 12 12 L 8 16 L 0 0" fill="black"/></svg>');
+                                    pointer-events: none;
+                                    z-index: 999999;
+                                    transition: all 0.5s ease;
+                                    opacity: 0;
+                                `;
+                                document.body.appendChild(fakePointer);
+                            }
+
+                            // 设置初始位置（左上角）并显示
+                            fakePointer.style.left = '0px';
+                            fakePointer.style.top = '0px';
+                            fakePointer.style.opacity = '1';
+
+                            // 延迟一帧后移动到目标位置（这样可以看到动画效果）
+                            requestAnimationFrame(() => {
+                                fakePointer.style.left = `${centerX}px`;
+                                fakePointer.style.top = `${centerY}px`;
+                            });
+
+                            // 添加元素高亮效果
+                            const originalBackground = element.style.backgroundColor;
+                            const originalTransition = element.style.transition;
+                            element.style.transition = 'background-color 0.3s';
+                            element.style.backgroundColor = 'yellow';
+
+                            // 2秒后移除高亮和指针
+                            setTimeout(() => {
+                                element.style.backgroundColor = originalBackground;
+                                element.style.transition = originalTransition;
+                                fakePointer.style.opacity = '0';
+                                setTimeout(() => fakePointer.remove(), 500);
+                            }, 2000);
+
+                            return {
+                                success: true,
+                                position: {
+                                    x: centerX,
+                                    y: centerY
+                                }
+                            };
+                        },
+                        args: [message.selector]
+                    });
+
+                    if (result[0].result.success) {
+                        lastPosition = result[0].result.position;
+                    }
+
+                    sendResponse(result[0].result);
+                });
+            } else {
+                sendResponse({ success: false, error: 'Unknown message type' });
+            }
         } catch (error) {
+            console.error('Error in message listener:', error);
             sendResponse({ success: false, error: error.message });
         }
-    }
+    });
+    
+    // 关键修改：返回 true 表示我们将异步发送响应
+    return true;
 });
 
 // 添加一个定时器来持续输出，确认 service worker 活跃
@@ -545,4 +582,95 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
             await actionManager.click('#some-selector');
         }
     });
+});
+
+// 添加 generateHtmlString 函数
+function generateHtmlString(node, indent = 0) {
+    if (!node) return '';
+
+    const indentStr = '    '.repeat(indent);
+    let html = '';
+
+    // 开始标签
+    if (node.tagName) {
+        html += `${indentStr}<${node.tagName.toLowerCase()}`;
+        
+        // 添加属性
+        if (node.attributes && typeof node.attributes === 'object') {
+            for (const [key, value] of Object.entries(node.attributes)) {
+                if (value !== null && value !== undefined) {
+                    html += ` ${key}="${value}"`;
+                }
+            }
+        }
+        html += '>\n';
+    }
+
+    // 处理子节点
+    if (node.children && Array.isArray(node.children)) {
+        node.children.forEach(child => {
+            html += generateHtmlString(child, indent + 1);
+        });
+    }
+
+    // 处理文本内容
+    if (node.textContent && typeof node.textContent === 'string' && node.textContent.trim()) {
+        html += `${indentStr}    ${node.textContent.trim()}\n`;
+    }
+
+    // 结束标签
+    if (node.tagName) {
+        html += `${indentStr}</${node.tagName.toLowerCase()}>\n`;
+    }
+
+    return html;
+}
+
+// 修改状态变更监听器，直接使用stateUpdate中的tabId
+stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
+    try {
+        // 使用stateUpdate中的tabId，不再需要查询当前tab
+        if (!stateUpdate.tabId) {
+            console.warn('No tabId in state update:', stateUpdate);
+            return;
+        }
+
+        // 执行所需的操作（buildDomTree、截图等）
+        await chrome.scripting.executeScript({
+            target: { tabId: stateUpdate.tabId },
+            files: ['buildDomTree.js']
+        });
+
+        const [{ result: domTreeData }] = await chrome.scripting.executeScript({
+            target: { tabId: stateUpdate.tabId },
+            func: (args) => {
+                const buildDomTreeFunc = window['buildDomTree'];
+                if (buildDomTreeFunc) {
+                    return buildDomTreeFunc(args);
+                }
+                throw new Error('buildDomTree function not found');
+            },
+            args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 }]
+        });
+
+        // 添加延迟确保页面重绘完成
+        await new Promise(resolve => setTimeout(resolve, 500)); // 500ms 延迟
+
+        const screenshot = await chrome.tabs.captureVisibleTab(null, {
+            format: 'jpeg',
+            quality: 10
+        });
+
+        // 将 domTreeData 转换为字符串
+        const domTreeString = generateHtmlString(domTreeData);
+
+        const messageData = {
+            code: domTreeString,
+            img: screenshot
+        };
+        console.log('messageData:', messageData);
+        await sendWebSocketMessage(JSON.stringify(messageData),"shopping");
+    } catch (error) {
+        console.error('Error handling state change:', error);
+    }
 });

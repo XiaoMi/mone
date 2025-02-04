@@ -34,7 +34,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private LLMService llmService;
 
     public WebSocketHandler() {
-        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.DOUBAO).build();
+        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
         if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
             config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "generateContent");
         }
@@ -90,8 +90,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
             $message
             </action>
             
-            8.当chrome 返回页面内容和图片后,你就需要返回这个action了 (当浏览器返回页面源码还有页面截图的时候,你就需要返回这个action了,这个action往往是多个 name=click(点击)  fill 填入内容  enter 回车  elementId=要操作的元素id,截图和源码里都有)
+            8.当给你一张截图,并且让你返回合适的action列表的时候,你就需要返回这个action类型了(这个action往往是多个 name=click(点击)  fill=填入内容  enter=回车  elementId=要操作的元素id,截图和源码里都有)
             //尽量一次返回一个页面的所有action操作
+            //选哪个和element最近的数字
+            //数字的颜色和这个元素的框是一个颜色
             <action type="action" name="fill" elementId="12" value="冰箱">
             在搜索框里输入冰箱
             </action>
@@ -125,12 +127,27 @@ public class WebSocketHandler extends TextWebSocketHandler {
             </action>
             
             用户需求:
-            ${data}
-            
-            你的返回:
-            
-            
+            %s
             """;
+
+    private String text = """
+                根据不同的页面返回不同的action列表:
+                页面:需要执行的动作
+                jd首页:搜索冰箱
+                搜素详情页:点击排名第一的连接
+                商品详情页:点击加入购物车按钮
+                购物车加购页面:点击去购物车结算按钮
+                分析出action列表(你每次只需要返回这个页面的action列表)
+                你先要分析出来现在是那个页面(首页,搜索详情页,商品详情页,购物车加购页面)
+                然后根据页面返回对应的action列表
+                
+                
+                这个页面的code:
+                %s
+                
+                当前需求:
+                %s
+                """;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -170,10 +187,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 }
 
                 //购物
-                if (cmd.equals("shopping")) {
+                if (data.equals("shopping") || cmd.equals("shopping")) {
                     String msg = messageList.get(this.index);
                     JsonObject res = new JsonObject();
-                    //打开购物的页面
+
+                    //打开购物的页面(打开新的tab页)
                     if (this.index == 0) {
                         res.addProperty("data", msg + "\n" +
                                 """
@@ -198,12 +216,23 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     }
 
                     //要开始处理页面了,都是内容+截图
-                    String code = obj.get("src").getAsString();
-                    String img = obj.get("img").getAsString();
-                    String llmRes = llmService.call(llm, code, img);
-                    res.addProperty("data", llmRes);
-                    sendMessageToAll(res.toString());
-                    this.index++;
+                    if (cmd.equals("shopping")) {
+                        JsonObject jsonObj = JsonParser.parseString(data).getAsJsonObject();
+                        String img = jsonObj.get("img").getAsString();
+
+                        if (img.startsWith("data:image")) {
+                            img = img.split("base64,")[1];
+                        }
+
+
+                        String code = jsonObj.get("code").getAsString();
+                        String t = text.formatted(code,msg);
+                        String llmRes = llmService.call(llm, t, img);
+                        res.addProperty("data", llmRes);
+                        sendMessageToAll(res.toString());
+                        this.index++;
+                    }
+
                     return;
 
                 }
