@@ -121,14 +121,20 @@ class LLMTest {
         config.setJson(false);
 //        config.setLlmProvider(LLMProvider.DOUBAO);
 //        config.setLlmProvider(LLMProvider.GOOGLE);
-        config.setLlmProvider(LLMProvider.GOOGLE_2);
+//        config.setLlmProvider(LLMProvider.GOOGLE_2);
 //        config.setLlmProvider(LLMProvider.OPENROUTER);//这个默认使用的是:anthropic/claude-3.5-sonnet:beta
 //        config.setModel("google/gemini-2.0-flash-exp:free");
 //        config.setModel("anthropic/claude-3.5-haiku-20241022");
 //        config.setModel("qwen/qwen-max");
+//        config.setModel("deepseek/deepseek-r1:nitro");
 
-//        config.setLlmProvider(LLMProvider.DEEPSEEK);
+        config.setLlmProvider(LLMProvider.DEEPSEEK);
+        config.setModel("deepseek-reasoner");
 //        config.setLlmProvider(LLMProvider.QWEN);
+//        config.setModel("deepseek-v3");
+//        config.setModel("deepseek-r1");
+
+
 //        config.setLlmProvider(LLMProvider.MOONSHOT);
 //        config.setModel("moonshot-v1-128k-vision-preview");
 

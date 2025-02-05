@@ -115,17 +115,40 @@ function connectWebSocket() {
                             const machine = stateManager.getMachine(machineId);
                             machine.setTabId(tab.id);
                             
-                            // 监听标签页加载完成事件
-                            chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo) {
-                                if (tabId === tab.id && changeInfo.status === 'complete') {
-                                    // 发送页面加载完成消息给状态机
-                                    stateManager.sendMessage(machineId, {
-                                        type: 'PAGE_LOADED',
-                                        tabId: tab.id
-                                    });
+                            let lastUrl = tab.url;
+                            
+                            // 监听标签页URL变化和加载完成事件
+                            chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo, updatedTab) {
+                                if (tabId === tab.id) {
+                                    // 检测URL变化
+                                    if (updatedTab.url && updatedTab.url !== lastUrl) {
+                                        console.log('URL changed from', lastUrl, 'to', updatedTab.url);
+                                        lastUrl = updatedTab.url;
+                                        
+                                        // 等待页面加载完成后再发送消息
+                                        if (changeInfo.status === 'complete') {
+                                            stateManager.sendMessage(machineId, {
+                                                type: 'URL_CHANGED',
+                                                tabId: tab.id,
+                                                oldUrl: lastUrl,
+                                                newUrl: updatedTab.url
+                                            });
+                                        }
+                                    }
                                     
-                                    // 移除监听器
-                                    chrome.tabs.onUpdated.removeListener(listener);
+                                    // 检测页面加载完成
+                                    if (changeInfo.status === 'complete') {
+                                        stateManager.sendMessage(machineId, {
+                                            type: 'PAGE_LOADED',
+                                            tabId: tab.id,
+                                            url: updatedTab.url
+                                        });
+                                    }
+                                    
+                                    // 如果URL变化且页面加载完成，则移除监听器
+                                    // 注意：这里我们保留监听器以继续监听后续的URL变化
+                                    // 如果需要在特定条件下停止监听，可以在这里添加移除逻辑
+                                    // chrome.tabs.onUpdated.removeListener(listener);
                                 }
                             });
                         }

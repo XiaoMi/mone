@@ -88,7 +88,11 @@ public class LLM {
         if (config.isDebug()) {
             return CompletableFuture.completedFuture("res:" + prompt);
         } else {
-            return CompletableFuture.completedFuture(chatCompletion(System.getenv(llmProvider.getEnvName()), prompt, llmProvider.getDefaultModel()));
+            String model = llmProvider.getDefaultModel();
+            if (StringUtils.isNotEmpty(this.config.getModel())) {
+                model = this.config.getModel();
+            }
+            return CompletableFuture.completedFuture(chatCompletion(System.getenv(llmProvider.getEnvName()), prompt, model));
         }
     }
 
@@ -194,12 +198,12 @@ public class LLM {
                 .url(url)
                 .post(RequestBody.create(rb, JSON))
                 .build();
-
+        String responseBody = "";
         try (Response response = client.newCall(request).execute()) {
             if (!response.isSuccessful()) {
                 throw new IOException("Unexpected response code: " + response);
             }
-            String responseBody = response.body().string();
+            responseBody = response.body().string();
             log.info("res:{}", responseBody);
             JsonObject jsonResponse = gson.fromJson(responseBody, JsonObject.class);
 
@@ -217,7 +221,7 @@ public class LLM {
                     .get("content").getAsString();
             return res;
         } finally {
-            log.info("call llm res:\n{}\n use time:{}ms", res, sw.elapsed(TimeUnit.MILLISECONDS));
+            log.info("call llm res:\n{}\n use time:{}ms", responseBody, sw.elapsed(TimeUnit.MILLISECONDS));
         }
     }
 
