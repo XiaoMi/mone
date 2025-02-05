@@ -32,7 +32,7 @@ function connectWebSocket() {
         reconnectAttempts = 0;
         isReconnecting = false;
         // 连接成功后发送 ping
-        ws.send('ping');
+        ws.send('client_connected');
     };
 
     ws.onmessage = async (event) => {
@@ -53,14 +53,17 @@ function connectWebSocket() {
                     let actions = xmlManager.parseActions(xmlString);
                     console.log('actions:', actions);
 
+                    //添加一个context(map),用来记录action的执行状态
+                    let context = new Map();
+
                     for (const action of actions || []) {
                         console.log('action:', action);
-                        
+
                         // 处理普通action类型
                         if (action.type === 'action') {
                             console.log('Processing action:', action);
                             const selector = `[browser-user-highlight-id="playwright-highlight-${action.attributes.elementId}"]`;
-                            
+
                             if (action.attributes.name === 'fill') {
 
                                 await chrome.scripting.executeScript({
@@ -75,8 +78,8 @@ function connectWebSocket() {
                                             element.dispatchEvent(new Event('change', { bubbles: true }));
 
                                             // 焦点处理  
-                                            if (true) element.focus();  
-                                            if (true) element.blur();  
+                                            if (true) element.focus();
+                                            if (true) element.blur();
 
                                         }
                                     },
@@ -96,10 +99,21 @@ function connectWebSocket() {
                                 });
                             }
 
-                            //停顿500ms
-                            await new Promise(resolve => setTimeout(resolve, 2000));
+
                             // 操作完成后发送ping
-                            sendWebSocketMessage("ping","action_ping");
+                            sendWebSocketMessage("ping", "action_ping");
+                        }
+
+                        //停顿1000ms
+                        if (action.type === 'pause') {
+                            //停顿1000ms
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        }
+
+                        //通知服务器
+                        if (action.type === 'notification') {
+                            console.log('notification:', action);
+                            sendWebSocketMessage("notification", action.attributes.message);
                         }
 
                         //创建tab页面
@@ -107,50 +121,47 @@ function connectWebSocket() {
                             console.log('click action:', action);
                             // 创建新的状态机
                             const machineId = stateManager.createMachine();
-                            
+
                             // 创建新标签页
                             const tab = await tabManager.createNewTab(action.attributes.url);
-                            
+
                             // 设置状态机的tabId
                             const machine = stateManager.getMachine(machineId);
                             machine.setTabId(tab.id);
-                            
+
                             let lastUrl = tab.url;
-                            
-                            // 监听标签页URL变化和加载完成事件
-                            chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo, updatedTab) {
-                                if (tabId === tab.id) {
-                                    // 检测URL变化
-                                    if (updatedTab.url && updatedTab.url !== lastUrl) {
-                                        console.log('URL changed from', lastUrl, 'to', updatedTab.url);
-                                        lastUrl = updatedTab.url;
-                                        
-                                        // 等待页面加载完成后再发送消息
-                                        if (changeInfo.status === 'complete') {
+
+                            if (action.attributes.auto === 'true') {
+                                // 监听标签页URL变化和加载完成事件
+                                chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo, updatedTab) {
+                                    if (tabId === tab.id) {
+                                        // 检测URL变化
+                                        if (updatedTab.url && updatedTab.url !== lastUrl) {
+                                            console.log('URL changed from', lastUrl, 'to', updatedTab.url);
+                                            lastUrl = updatedTab.url;
                                             stateManager.sendMessage(machineId, {
-                                                type: 'URL_CHANGED',
+                                                type: 'INFO_RECEIVED',
                                                 tabId: tab.id,
                                                 oldUrl: lastUrl,
                                                 newUrl: updatedTab.url
                                             });
                                         }
+
+                                        // 检测页面加载完成
+                                        if (changeInfo.status === 'complete') {
+                                            console.log('PAGE_LOADED', updatedTab.url);
+                                            stateManager.sendMessage(machineId, {
+                                                type: 'PAGE_LOADED',
+                                                tabId: tab.id,
+                                                url: updatedTab.url
+                                            });
+                                        }
+
+                                        // chrome.tabs.onUpdated.removeListener(listener);
                                     }
-                                    
-                                    // 检测页面加载完成
-                                    if (changeInfo.status === 'complete') {
-                                        stateManager.sendMessage(machineId, {
-                                            type: 'PAGE_LOADED',
-                                            tabId: tab.id,
-                                            url: updatedTab.url
-                                        });
-                                    }
-                                    
-                                    // 如果URL变化且页面加载完成，则移除监听器
-                                    // 注意：这里我们保留监听器以继续监听后续的URL变化
-                                    // 如果需要在特定条件下停止监听，可以在这里添加移除逻辑
-                                    // chrome.tabs.onUpdated.removeListener(listener);
-                                }
-                            });
+                                });
+                            }
+
                         }
                         //截屏
                         if (action.type === 'screenshot') {
@@ -161,11 +172,10 @@ function connectWebSocket() {
                                 quality: 10
                             });
 
-                            await chrome.tabs.sendMessage(tab.id, {  
-                                type: 'takeScreenshot',  
-                                data: screenshot  
-                            });  
-                            sendWebSocketMessage("ping");
+                            await chrome.tabs.sendMessage(tab.id, {
+                                type: 'takeScreenshot',
+                                data: screenshot
+                            });
                         }
                         // buildDomTree(从新生成domTree)
                         if (action.type === 'buildDomTree') {
@@ -205,7 +215,10 @@ function connectWebSocket() {
                             });
                             sendWebSocketMessage("ping");
                         }
+                        //停顿1000ms
+                        await new Promise(resolve => setTimeout(resolve, 1000));
                     };
+
 
                 }
             }
@@ -218,11 +231,6 @@ function connectWebSocket() {
                 type: 'json'
             };
 
-            // 支持创建新标签页
-            if (data.cmd === 'createNewTab') {
-                const tab = await tabManager.createNewTab(data.url);
-                console.log('New tab created:', tab);
-            }
 
             // 处理通知命令
             if (data.cmd === 'notification') {
@@ -243,13 +251,6 @@ function connectWebSocket() {
                 const notificationId = await notificationManager.create(notificationOptions);
                 console.log('Notification created with ID:', notificationId);
             }
-
-
-
-            if (data.cmd === 'buildDomTree') {
-
-            }
-
 
         } catch (e) {
             console.log('Received non-JSON message:', event.data);
@@ -308,7 +309,6 @@ function connectWebSocket() {
 
     ws.onclose = () => {
         console.log('WebSocket disconnected');
-
         // 如果不是正在重连中，则开始重连
         if (!isReconnecting) {
             reconnectWebSocket();
@@ -318,7 +318,34 @@ function connectWebSocket() {
     ws.onerror = (error) => {
         console.error('WebSocket error:', error);
     };
+
 }
+
+
+
+// 定期检查WebSocket连接并发送ping
+function startPingCheck() {
+    setInterval(() => {
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+            console.log('WebSocket connection is not open, attempting to reconnect...');
+            forceReconnect();
+            return;
+        }
+
+        try {
+            ws.send('ping');
+            console.log('Sent ping to server');
+        } catch (error) {
+            console.error('Error sending ping:', error);
+            forceReconnect();
+        }
+    }, 5000);
+}
+
+// 启动ping检查
+startPingCheck();
+
+
 
 // 重连函数
 function reconnectWebSocket() {
@@ -381,8 +408,42 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     }
 });
 
+
+// 监听新标签页的创建
+chrome.tabs.onCreated.addListener((tab) => {
+    console.log('New tab created:', tab.id);
+    
+    // 监听标签页URL变化和加载完成事件
+    chrome.tabs.onUpdated.addListener(function tabUpdateListener(tabId, changeInfo, updatedTab) {
+        if (tabId === tab.id) {
+            // 检测页面加载完成
+            if (changeInfo.status === 'complete') {
+                console.log('Tab loaded:', tabId, updatedTab.url);
+                
+                // 创建新的状态机实例
+                const machineId = stateManager.createMachine();
+                const machine = stateManager.getMachine(machineId);
+                machine.setTabId(tabId);
+                
+                // 发送页面加载完成消息给状态机
+                stateManager.sendMessage(machineId, {
+                    type: 'PAGE_LOADED',
+                    tabId: tabId,
+                    url: updatedTab.url
+                });
+            }
+
+            // 检测URL变化
+            if (changeInfo.url) {
+                console.log('Tab URL changed:', tabId, changeInfo.url);
+            }
+        }
+    });
+});
+
+
 // 修改 sendWebSocketMessage 函数为 Promise 形式
-function sendWebSocketMessage(message,cmd = '') {
+function sendWebSocketMessage(message, cmd = '') {
     return new Promise((resolve, reject) => {
         if (ws && ws.readyState === WebSocket.OPEN) {
             const jsonMessage = {
@@ -624,7 +685,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             sendResponse({ success: false, error: error.message });
         }
     });
-    
+
     // 关键修改：返回 true 表示我们将异步发送响应
     return true;
 });
@@ -665,7 +726,7 @@ function generateHtmlString(node, indent = 0) {
     // 开始标签
     if (node.tagName) {
         html += `${indentStr}<${node.tagName.toLowerCase()}`;
-        
+
         // 添加属性
         if (node.attributes && typeof node.attributes === 'object') {
             for (const [key, value] of Object.entries(node.attributes)) {
@@ -712,6 +773,7 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
             files: ['buildDomTree.js']
         });
 
+        // 从新渲染页面
         const [{ result: domTreeData }] = await chrome.scripting.executeScript({
             target: { tabId: stateUpdate.tabId },
             func: (args) => {
@@ -740,7 +802,8 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
             img: screenshot
         };
         console.log('messageData:', messageData);
-        await sendWebSocketMessage(JSON.stringify(messageData),"shopping");
+        //通知服务器,这个tab发生了变化
+        await sendWebSocketMessage(JSON.stringify(messageData), "shopping");
     } catch (error) {
         console.error('Error handling state change:', error);
     }

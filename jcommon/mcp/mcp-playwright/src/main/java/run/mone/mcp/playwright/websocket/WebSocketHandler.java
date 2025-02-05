@@ -131,22 +131,22 @@ public class WebSocketHandler extends TextWebSocketHandler {
             """;
 
     private String text = """
-                根据不同的页面返回不同的action列表:
-                页面:需要执行的动作
-                jd首页:搜索mac苹果电脑
-                搜素详情页:点击排名第一的连接
-                商品详情页:点击加入购物车按钮
-                购物车加购页面:点击去购物车结算按钮
-                分析出action列表(你每次只需要返回这个页面的action列表)
-                你先要分析出来现在是那个页面(首页,搜索详情页,商品详情页,购物车加购页面)
-                然后根据页面返回对应的action列表
-                
-                
-                %s
-                
-                当前需求:
-                %s
-                """;
+            根据不同的页面返回不同的action列表:
+            页面:需要执行的动作
+            jd首页:搜索mac苹果电脑
+            搜素详情页:点击排名第一的连接
+            商品详情页:点击加入购物车按钮
+            购物车加购页面:点击去购物车结算按钮
+            分析出action列表(你每次只需要返回这个页面的action列表)
+            你先要分析出来现在是那个页面(首页,搜索详情页,商品详情页,购物车加购页面)
+            然后根据页面返回对应的action列表
+            
+            
+            %s
+            
+            当前需求:
+            %s
+            """;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -158,17 +158,39 @@ public class WebSocketHandler extends TextWebSocketHandler {
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String payload = message.getPayload();
         log.info("payload:{}", payload);
-        if (payload.equals("ping")) {
-            log.info("ping");
+
+        if (payload.equals("ping") || payload.equals("client_connected")) {
+            log.info(payload);
             return;
         }
+
 
         JsonObject obj = JsonParser.parseString(payload).getAsJsonObject();
         if (obj.has("from")) {
             String from = obj.get("from").getAsString();
             //来自浏览器
             if (from.equals("chrome")) {
+                JsonObject res = new JsonObject();
                 String data = obj.get("data").getAsString();
+
+                if (data.equals("clear")) {
+                    log.info("clear");
+                    this.index = 0;
+                    return;
+                }
+
+                //用来测试
+                if (data.equals("test")) {
+                    String dataStr = """
+                             <action type="createNewTab" url="https://www.jd.com/" auto="true">
+                                        打开京东
+                             </action>
+                            """;
+                    res.addProperty("data", dataStr);
+                    sendMessageToAll(res.toString());
+                    return;
+                }
+
 
                 String cmd = "";
                 if (obj.has("cmd")) {
@@ -177,6 +199,28 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
                 if (cmd.equals("action_ping")) {
                     log.info("action ping");
+                    return;
+                }
+
+                //打开了指定的tab
+                if (cmd.equals("open_tab_finish")) {
+                    res.addProperty("data",
+                            """
+                                    
+                                    <action type="buildDomTree">
+                                    渲染页面
+                                    </action>
+                                    
+                                    <action type="screenshot">
+                                    截取屏幕
+                                    </action>
+                                    
+                                    <action type="notification">
+                                    通知服务器
+                                    </action>
+                                    
+                                    """);
+                    sendMessageToAll(res.toString());
                     return;
                 }
 
@@ -193,7 +237,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 //购物
                 if (data.equals("shopping") || cmd.equals("shopping")) {
                     String msg = messageList.get(this.index);
-                    JsonObject res = new JsonObject();
+
 
                     //打开购物的页面(打开新的tab页)
                     if (this.index == 0) {
@@ -225,16 +269,19 @@ public class WebSocketHandler extends TextWebSocketHandler {
                         String img = jsonObj.get("img").getAsString();
                         String code = jsonObj.get("code").getAsString();
 
-                        if (img.startsWith("data:image")) {
-                            img = img.split("base64,")[1];
-                            code = "";
+                        //返回页面操作指令
+                        if (false) {
+                            if (img.startsWith("data:image")) {
+                                img = img.split("base64,")[1];
+                                code = "";
+                            }
+                            String t = text.formatted(code, msg);
+                            String llmRes = llmService.call(llm, t, img);
+                            res.addProperty("data", llmRes);
+                            sendMessageToAll(res.toString());
                         }
+                        log.info("shopping index:{}", index);
 
-
-                        String t = text.formatted(code,msg);
-                        String llmRes = llmService.call(llm, t, img);
-                        res.addProperty("data", llmRes);
-                        sendMessageToAll(res.toString());
                         this.index++;
                     }
 
@@ -245,8 +292,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
                 String ask = AiTemplate.renderTemplate(prompt, ImmutableMap.of("data", data));
                 String answer = llm.chat(ask);
-
-                JsonObject res = new JsonObject();
                 res.addProperty("data", answer);
                 sendMessageToAll(res.toString());
                 return;
