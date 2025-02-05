@@ -17,6 +17,9 @@ let isReconnecting = false;
 let messageHistory = [];
 const MAX_MESSAGES = 100; // 最多存储100条消息
 
+// 添加全局变量跟踪auto状态
+let isAutoMode = false;
+
 // 创建 WebSocket 连接函数
 function connectWebSocket() {
     // 如果已经有连接，先关闭
@@ -85,6 +88,7 @@ function connectWebSocket() {
                                     },
                                     args: [selector, action.attributes.value]
                                 });
+                                 await new Promise(resolve => setTimeout(resolve, 2000));
                             } else if (action.attributes.name === 'click') {
                                 console.log('Executing click action with selector:', selector);
                                 await chrome.scripting.executeScript({
@@ -119,49 +123,10 @@ function connectWebSocket() {
                         //创建tab页面
                         if (action.type === 'createNewTab') {
                             console.log('click action:', action);
-                            // 创建新的状态机
-                            const machineId = stateManager.createMachine();
-
+                            // 设置全局auto状态
+                            isAutoMode = action.attributes.auto === 'true';
                             // 创建新标签页
                             const tab = await tabManager.createNewTab(action.attributes.url);
-
-                            // 设置状态机的tabId
-                            const machine = stateManager.getMachine(machineId);
-                            machine.setTabId(tab.id);
-
-                            let lastUrl = tab.url;
-
-                            if (action.attributes.auto === 'true') {
-                                // 监听标签页URL变化和加载完成事件
-                                chrome.tabs.onUpdated.addListener(function listener(tabId, changeInfo, updatedTab) {
-                                    if (tabId === tab.id) {
-                                        // 检测URL变化
-                                        if (updatedTab.url && updatedTab.url !== lastUrl) {
-                                            console.log('URL changed from', lastUrl, 'to', updatedTab.url);
-                                            lastUrl = updatedTab.url;
-                                            stateManager.sendMessage(machineId, {
-                                                type: 'INFO_RECEIVED',
-                                                tabId: tab.id,
-                                                oldUrl: lastUrl,
-                                                newUrl: updatedTab.url
-                                            });
-                                        }
-
-                                        // 检测页面加载完成
-                                        if (changeInfo.status === 'complete') {
-                                            console.log('PAGE_LOADED', updatedTab.url);
-                                            stateManager.sendMessage(machineId, {
-                                                type: 'PAGE_LOADED',
-                                                tabId: tab.id,
-                                                url: updatedTab.url
-                                            });
-                                        }
-
-                                        // chrome.tabs.onUpdated.removeListener(listener);
-                                    }
-                                });
-                            }
-
                         }
                         //截屏
                         if (action.type === 'screenshot') {
@@ -215,8 +180,6 @@ function connectWebSocket() {
                             });
                             sendWebSocketMessage("ping");
                         }
-                        //停顿1000ms
-                        await new Promise(resolve => setTimeout(resolve, 1000));
                     };
 
 
@@ -408,37 +371,55 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     }
 });
 
-
-// 监听新标签页的创建
-chrome.tabs.onCreated.addListener((tab) => {
-    console.log('New tab created:', tab.id);
+// 统一的tab监听处理函数
+function setupTabListener(tabId, machineId) {
+    let lastUrl = '';
     
-    // 监听标签页URL变化和加载完成事件
-    chrome.tabs.onUpdated.addListener(function tabUpdateListener(tabId, changeInfo, updatedTab) {
-        if (tabId === tab.id) {
+    function tabUpdateListener(updatedTabId, changeInfo, updatedTab) {
+        if (updatedTabId === tabId && isAutoMode) {
+            // 检测URL变化
+            if (updatedTab.url && updatedTab.url !== lastUrl) {
+                console.log('URL changed from', lastUrl, 'to', updatedTab.url);
+                lastUrl = updatedTab.url;
+                stateManager.sendMessage(machineId, {
+                    type: 'INFO_RECEIVED',
+                    tabId: tabId,
+                    oldUrl: lastUrl,
+                    newUrl: updatedTab.url
+                });
+            }
+
             // 检测页面加载完成
             if (changeInfo.status === 'complete') {
-                console.log('Tab loaded:', tabId, updatedTab.url);
-                
-                // 创建新的状态机实例
-                const machineId = stateManager.createMachine();
-                const machine = stateManager.getMachine(machineId);
-                machine.setTabId(tabId);
-                
-                // 发送页面加载完成消息给状态机
+                console.log('PAGE_LOADED', updatedTab.url);
                 stateManager.sendMessage(machineId, {
                     type: 'PAGE_LOADED',
                     tabId: tabId,
                     url: updatedTab.url
                 });
             }
-
-            // 检测URL变化
-            if (changeInfo.url) {
-                console.log('Tab URL changed:', tabId, changeInfo.url);
-            }
         }
-    });
+    }
+
+    chrome.tabs.onUpdated.addListener(tabUpdateListener);
+    
+    // 可选：返回清理函数
+    return () => chrome.tabs.onUpdated.removeListener(tabUpdateListener);
+}
+
+// 监听新标签页的创建
+chrome.tabs.onCreated.addListener((tab) => {
+    console.log('New tab created:', tab.id);
+    
+    // 创建新的状态机实例
+    const machineId = stateManager.createMachine();
+    const machine = stateManager.getMachine(machineId);
+    machine.setTabId(tab.id);
+    
+    // 如果是auto模式，设置监听器
+    if (isAutoMode) {
+        setupTabListener(tab.id, machineId);
+    }
 });
 
 
@@ -798,7 +779,7 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
         const domTreeString = generateHtmlString(domTreeData);
 
         const messageData = {
-            code: domTreeString,
+            code: '',
             img: screenshot
         };
         console.log('messageData:', messageData);

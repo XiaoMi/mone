@@ -21,6 +21,7 @@ import run.mone.mcp.playwright.service.LLMService;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -41,7 +42,13 @@ public class WebSocketHandler extends TextWebSocketHandler {
         llm = new LLM(config);
     }
 
-    private List<String> messageList = Lists.newArrayList("打开京东", "jd首页:搜索mac苹果电脑", "搜素详情页:点击排名第一的连接", "商品详情页:点击加入购物车按钮", "购物车加购页面:点击去购物车结算按钮");
+    private List<String> messageList = Lists.newArrayList(
+            "打开京东",
+            "jd首页:搜索mac苹果电脑",
+            "搜素详情页:点击排名第一的商品的图片(在商品列表里,有图)",
+            "商品详情页:点击 加入购物车 按钮(红色大按钮)",
+            "购物车加购页面:点击去购物车结算按钮"
+    );
 
     private int index = 0;
 
@@ -133,10 +140,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private String text = """
             根据不同的页面返回不同的action列表:
             页面:需要执行的动作
-            jd首页:搜索mac苹果电脑
-            搜素详情页:点击排名第一的连接
-            商品详情页:点击加入购物车按钮
-            购物车加购页面:点击去购物车结算按钮
+            
+            %s
+            
             分析出action列表(你每次只需要返回这个页面的action列表)
             你先要分析出来现在是那个页面(首页,搜索详情页,商品详情页,购物车加购页面)
             然后根据页面返回对应的action列表
@@ -157,7 +163,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         String payload = message.getPayload();
-        log.info("payload:{}", payload);
+        log.info("index:{} payload:{}", this.index, payload);
 
         if (payload.equals("ping") || payload.equals("client_connected")) {
             log.info(payload);
@@ -265,24 +271,26 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
                     //要开始处理页面了,都是内容+截图
                     if (cmd.equals("shopping")) {
-                        JsonObject jsonObj = JsonParser.parseString(data).getAsJsonObject();
-                        String img = jsonObj.get("img").getAsString();
-                        String code = jsonObj.get("code").getAsString();
+                        try {
+                            JsonObject jsonObj = JsonParser.parseString(data).getAsJsonObject();
+                            String img = jsonObj.get("img").getAsString();
+                            String code = jsonObj.get("code").getAsString();
 
-                        //返回页面操作指令
-                        if (false) {
-                            if (img.startsWith("data:image")) {
-                                img = img.split("base64,")[1];
-                                code = "";
+                            //返回页面操作指令
+                            if (true) {
+                                if (img.startsWith("data:image")) {
+                                    img = img.split("base64,")[1];
+                                    code = "";
+                                }
+                                String t = text.formatted(String.join("\n", messageList), code, msg);
+                                String llmRes = llmService.call(llm, t, img);
+                                res.addProperty("data", llmRes);
+                                sendMessageToAll(res.toString());
                             }
-                            String t = text.formatted(code, msg);
-                            String llmRes = llmService.call(llm, t, img);
-                            res.addProperty("data", llmRes);
-                            sendMessageToAll(res.toString());
+                            this.index++;
+                        } catch (Throwable ex) {
+                            log.error(ex.getMessage(), ex);
                         }
-                        log.info("shopping index:{}", index);
-
-                        this.index++;
                     }
 
                     return;
