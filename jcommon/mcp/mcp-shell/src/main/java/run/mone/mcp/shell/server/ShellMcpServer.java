@@ -23,7 +23,7 @@ public class ShellMcpServer {
 
     public McpSyncServer start() {
         McpSyncServer syncServer = McpServer.using(transport)
-                .serverInfo("shell_mcp", "0.0.1")
+                .serverInfo("shell_mcp", "0.0.3")
                 .capabilities(ServerCapabilities.builder()
                         .tools(true)
                         .logging()

@@ -2,6 +2,7 @@
 package run.mone.hive.llm;
 
 import com.google.common.collect.Lists;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +26,94 @@ class LLMTest {
 
     private LLMConfig config;
 
+    private String prompt = """
+            你是一个浏览器操作专家.你总是能把用户的需求,翻译成专业的操作指令.
+            你支持的指令:
+            1.打开tab,并且带上url,用来打开某个页面
+            <action type="openTab">
+            </action>
+            
+            1.创建新标签页
+            问题:
+            新建标签页,打开baidu
+            
+            返回结果:
+            <action type="createNewTab" url="https://www.baidu.com">
+            打开百度
+            </action>
+            
+            2.关闭某个tab,带上tabName
+            <action type="closeTab">
+            $message
+            </action>
+            
+            3.截屏,截取屏幕(当前可视区域)
+            <action type="screenshot">
+            $message
+            </action>
+            
+            4.渲染页面
+            <action type="buildDomTree">
+            $message
+            </action>
+            
+            5.取消渲染
+            <action type="cancelBuildDomTree">
+            $message
+            </action>
+            
+            
+            6.取消标记页面元素
+            
+            7.滚动一屏屏幕
+            <action type="scrollOneScreen">
+            $message
+            </action>
+            
+            8.当给你一张截图,并且让你返回合适的action列表的时候,你就需要返回这个action类型了(这个action往往是多个 name=click(点击)  fill=填入内容  enter=回车  elementId=要操作的元素id,截图和源码里都有)
+            //尽量一次返回一个页面的所有action操作
+            //选哪个和element最近的数字
+            //数字的颜色和这个元素的框是一个颜色
+            <action type="action" name="fill" elementId="12" value="冰箱">
+            在搜索框里输入冰箱
+            </action>
+            
+            <action type="action" name="click" elementId="13">
+            点击搜索按钮
+            </action>
+            
+            
+            9.产生通知
+            <action type="notification">
+            $message
+            </action>
+            
+            10.获取当前窗口的所有标签
+            <action type="getCurrentWindowTabs" service="tabManager">
+            </action>
+            
+            返回的内容格式:
+            
+            <action type="$type">
+            </action>
+            
+            Example:
+            打开tab:
+            <action type="tab" url="http://www.baidu.com">
+            </action>
+            
+            截屏:
+            <action type="screenshot">
+            </action>
+            
+            用户需求:
+            %s
+            
+            你的返回:
+            
+            """;
+
+
     @BeforeEach
     void setUp() {
         config = new LLMConfig();
@@ -32,9 +121,36 @@ class LLMTest {
         config.setJson(false);
 //        config.setLlmProvider(LLMProvider.DOUBAO);
 //        config.setLlmProvider(LLMProvider.GOOGLE);
-        config.setLlmProvider(LLMProvider.OPENROUTER);
+        //使用代理的
+        config.setLlmProvider(LLMProvider.GOOGLE_2);
+//        config.setLlmProvider(LLMProvider.OPENROUTER);//这个默认使用的是:anthropic/claude-3.5-sonnet:beta
+//        config.setModel("google/gemini-2.0-flash-exp:free");
+//        config.setModel("anthropic/claude-3.5-haiku-20241022");
+//        config.setModel("qwen/qwen-max");
+//        config.setModel("deepseek/deepseek-r1:nitro");
+
 //        config.setLlmProvider(LLMProvider.DEEPSEEK);
+//        config.setModel("deepseek-reasoner");
+//        config.setLlmProvider(LLMProvider.QWEN);
+//        config.setModel("deepseek-v3");
+//        config.setModel("deepseek-r1");
+
+
+//        config.setLlmProvider(LLMProvider.MOONSHOT);
+//        config.setModel("moonshot-v1-128k-vision-preview");
+
+        //google通过cloudflare代理
+        if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
+            config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "generateContent");
+        }
+
+        //openrouter 也需要使用代理
+        if (config.getLlmProvider() == LLMProvider.OPENROUTER) {
+            config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
+        }
+
         llm = new LLM(config);
+
 
         // FIXME： 注意注意注意!!! 当使用Openrouter时，需要配置代理
         // 设置HTTP代理
@@ -67,6 +183,69 @@ class LLMTest {
     }
 
     @Test
+    void testChatWithImage() {
+        List<AiMessage> messages = new ArrayList<>();
+        JsonObject obj = new JsonObject();
+
+        String text = "输入搜索信息,然后点击搜索按钮";
+
+        text = """
+                根据不同的页面返回不同的action列表:
+                页面:需要执行的动作
+                jd首页:搜索冰箱
+                搜素详情页:点击排名第一的连接
+                商品详情页:点击加入购物车按钮
+                购物车加购页面:点击去购物车结算按钮
+                分析出action列表(你每次只需要返回这个页面的action列表)
+                你先要分析出来现在是那个页面(首页,搜索详情页,商品详情页,购物车加购页面)
+                然后根据页面返回对应的action列表
+                thx
+                """;
+
+        JsonObject req = new JsonObject();
+
+        if (llm.getConfig().getLlmProvider() == LLMProvider.GOOGLE_2) {
+            JsonArray parts = new JsonArray();
+            obj.addProperty("text", text);
+            JsonObject obj2 = new JsonObject();
+            JsonObject objImg = new JsonObject();
+            objImg.addProperty("mime_type", "image/jpeg");
+            objImg.addProperty("data", llm.imageToBase64("/tmp/abc.jpeg", "jpeg"));
+            obj2.add("inline_data", objImg);
+            parts.add(obj);
+            parts.add(obj2);
+            req.add("parts", parts);
+        }
+
+        if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT) {
+            req.addProperty("role", "user");
+            JsonArray array = new JsonArray();
+
+            JsonObject obj1 = new JsonObject();
+            obj1.addProperty("type","text");
+            obj1.addProperty("text",text);
+            array.add(obj1);
+
+            JsonObject obj2 = new JsonObject();
+            obj2.addProperty("type","image_url");
+            JsonObject img = new JsonObject();
+            img.addProperty("url","data:image/jpeg;base64,"+llm.imageToBase64("/tmp/abc.jpeg", "jpeg"));
+            obj2.add("image_url",img);
+            array.add(obj2);
+
+            req.add("content", array);
+        }
+
+
+        messages.add(AiMessage.builder().jsonContent(req).build());
+        String sysPrompt = "你是一个聪明的人类,我给你一张浏览器的页面 和我提供的需求,你帮我分析下这个页面干什么的? thx";
+        sysPrompt = prompt.formatted("返回合理的action列表");
+        String result = llm.chatCompletion(messages, sysPrompt);
+        log.info("{}", result);
+        assertNotNull(result);
+    }
+
+    @Test
     public void testJson() {
         String res = llm.chat(Lists.newArrayList(AiMessage.builder().role("user").content("1+1=?").build()), LLMConfig.builder().json(true).build());
         System.out.println(res);
@@ -80,14 +259,14 @@ class LLMTest {
 
     @Test
     void testGetApiUrl() {
-        String apiUrl = llm.getApiUrl();
+        String apiUrl = llm.getApiUrl("");
         assertEquals("https://api.stepfun.com/v1/chat/completions", apiUrl);
     }
 
     @Test
     void testGetApiUrlGoogle() {
         llm.setGoogle(true);
-        String apiUrl = llm.getApiUrl();
+        String apiUrl = llm.getApiUrl("");
         assertEquals("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", apiUrl);
     }
 
@@ -388,7 +567,7 @@ class LLMTest {
                 hi
                 """;
 
-        c = "Hello, can you tell me a short joke?";
+//        c = "Hello, can you tell me a short joke?";
 
 
         messages.add(AiMessage.builder().role("user").content(c).build());

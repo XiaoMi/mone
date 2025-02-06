@@ -12,14 +12,17 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import okio.BufferedSource;
 import org.apache.commons.lang3.StringUtils;
-import org.beetl.ext.fn.Json;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.roles.Role;
 import run.mone.hive.schema.AiMessage;
 import run.mone.hive.schema.Message;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -51,28 +54,33 @@ public class LLM {
         this.llmProvider = config.getLlmProvider();
     }
 
+    //支持多模态
     public String chat(String prompt) {
         return ask(prompt).join();
     }
 
 
     public String chat(List<AiMessage> msgList) {
-        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), "", config);
+        return chatCompletion(getToken(), msgList, llmProvider.getDefaultModel(), "", config);
     }
 
     public String chat(List<AiMessage> msgList, String systemPrompt) {
-        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), systemPrompt, config);
+        return chatCompletion(getToken(), msgList, llmProvider.getDefaultModel(), systemPrompt, config);
     }
 
     public String chat(List<AiMessage> msgList, LLMConfig config) {
-        return chatCompletion(System.getenv(llmProvider.getEnvName()), msgList, llmProvider.getDefaultModel(), "", config);
+        return chatCompletion(getToken(), msgList, llmProvider.getDefaultModel(), "", config);
     }
 
-    public String getApiUrl() {
-        if (null != this.config && StringUtils.isNotEmpty(this.config.getUrl())) {
-            return this.config.getUrl();
+    public String getApiUrl(String apiKey) {
+        String key = "";
+        if (this.llmProvider == LLMProvider.GOOGLE_2 && StringUtils.isEmpty(config.getUrl())) {
+            key = apiKey;
         }
-        return llmProvider.getUrl();
+        if (null != this.config && StringUtils.isNotEmpty(this.config.getUrl())) {
+            return this.config.getUrl() + key;
+        }
+        return llmProvider.getUrl() + key;
     }
 
 
@@ -80,13 +88,28 @@ public class LLM {
         if (config.isDebug()) {
             return CompletableFuture.completedFuture("res:" + prompt);
         } else {
-            return CompletableFuture.completedFuture(chatCompletion(System.getenv(llmProvider.getEnvName()), prompt, llmProvider.getDefaultModel()));
+            String model = llmProvider.getDefaultModel();
+            if (StringUtils.isNotEmpty(this.config.getModel())) {
+                model = this.config.getModel();
+            }
+            return CompletableFuture.completedFuture(chatCompletion(System.getenv(llmProvider.getEnvName()), prompt, model));
         }
     }
 
+    //支持多模态
     public String chatCompletion(String apiKey, String content, String model) {
         return chatCompletion(apiKey, Lists.newArrayList(AiMessage.builder().role("user").content(content).build()), model, "", config);
     }
+
+
+    public String ask(List<AiMessage> messages) {
+        return chatCompletion(getToken(), messages, getModel(), "", this.config);
+    }
+
+    public String chatCompletion(List<AiMessage> messages, String systemInstruction) {
+        return chatCompletion(getToken(), messages, getModel(), systemInstruction, this.config);
+    }
+
 
     @SneakyThrows
     public String chatCompletion(String apiKey, List<AiMessage> messages, String model, String systemPrompt, LLMConfig clientConfig) {
@@ -117,27 +140,53 @@ public class LLM {
         }
         JsonArray msgArray = new JsonArray();
 
-        if (this.config.isJson() || clientConfig.isJson()) {
-            String jsonSystemPrompt = """
-                     返回结果请用JSON返回(如果用户没有指定json格式,则直接返回{"content":$res}),thx
-                    """;
-            JsonObject rf = new JsonObject();
-            rf.addProperty("type", "json_object");
-            requestBody.add("response_format", rf);
-            msgArray.add(createMessageObject("system", jsonSystemPrompt));
-        } else {
-            if (StringUtils.isNotEmpty(systemPrompt)) {
-                msgArray.add(createMessageObject("system", systemPrompt));
+        if (this.llmProvider != LLMProvider.GOOGLE_2) {
+            if (this.config.isJson() || clientConfig.isJson()) {
+                String jsonSystemPrompt = """
+                         返回结果请用JSON返回(如果用户没有指定json格式,则直接返回{"content":$res}),thx
+                        """;
+                JsonObject rf = new JsonObject();
+                rf.addProperty("type", "json_object");
+                requestBody.add("response_format", rf);
+                msgArray.add(createMessageObject("system", jsonSystemPrompt));
+            } else {
+                if (StringUtils.isNotEmpty(systemPrompt)) {
+                    msgArray.add(createMessageObject("system", systemPrompt));
+                }
             }
         }
 
-        for (AiMessage message : messages) {
-            msgArray.add(createMessageObject(message.getRole(), message.getContent()));
+        //gemini的系统提示词
+        if (llmProvider == LLMProvider.GOOGLE_2 && StringUtils.isNotEmpty(systemPrompt)) {
+            JsonObject system_instruction = new JsonObject();
+            JsonObject text = new JsonObject();
+            text.addProperty("text", systemPrompt);
+            system_instruction.add("parts", text);
+            requestBody.add("system_instruction", system_instruction);
         }
 
 
-        requestBody.add("messages", msgArray);
-        String apiUrl = getApiUrl();
+        for (AiMessage message : messages) {
+            //使用openrouter,并且使用多模态
+            if ((this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.MOONSHOT) && null != message.getJsonContent()) {
+                msgArray.add(message.getJsonContent());
+            } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
+                msgArray.add(createMessageObjectForGoogle(message));
+            } else {
+                msgArray.add(createMessageObject(message.getRole(), message.getContent()));
+            }
+        }
+
+        requestBody.add(getContentsName(), msgArray);
+
+        Request.Builder requestBuilder = new Request.Builder();
+
+        if (this.llmProvider != LLMProvider.GOOGLE_2) {
+            requestBuilder.addHeader("Authorization", "Bearer " + apiKey);
+        }
+
+        //使用的cloudflare
+        String url = getColudFlareUrl(apiKey, model, requestBuilder);
 
         String rb = requestBody.toString();
 
@@ -145,40 +194,75 @@ public class LLM {
         Stopwatch sw = Stopwatch.createStarted();
         String res = "";
 
-        Request request = new Request.Builder()
-                .url(apiUrl)
-                .addHeader("Authorization", "Bearer " + apiKey)
+        Request request = requestBuilder
+                .url(url)
                 .post(RequestBody.create(rb, JSON))
                 .build();
-
+        String responseBody = "";
         try (Response response = client.newCall(request).execute()) {
             if (!response.isSuccessful()) {
                 throw new IOException("Unexpected response code: " + response);
             }
-            String responseBody = response.body().string();
+            responseBody = response.body().string();
+            log.info("res:{}", responseBody);
             JsonObject jsonResponse = gson.fromJson(responseBody, JsonObject.class);
+
+            if (llmProvider == LLMProvider.GOOGLE_2) {
+                JsonObject candidate = jsonResponse.getAsJsonArray("candidates").get(0).getAsJsonObject();
+                JsonObject content = candidate.get("content").getAsJsonObject();
+                String text = content.get("parts").getAsJsonArray().get(0).getAsJsonObject().get("text").getAsString();
+                return text;
+            }
+
+            //openai那个流派的
             res = jsonResponse.getAsJsonArray("choices")
                     .get(0).getAsJsonObject()
                     .getAsJsonObject("message")
                     .get("content").getAsString();
             return res;
         } finally {
-            log.info("call llm res:\n{}\n use time:{}ms", res, sw.elapsed(TimeUnit.MILLISECONDS));
+            log.info("call llm res:\n{}\n use time:{}ms", responseBody, sw.elapsed(TimeUnit.MILLISECONDS));
         }
+    }
+
+
+    //把一张图片变成base64 要考虑 浏览器能接受的格式 png jpeg (--input) (class)
+    @SneakyThrows
+    public String imageToBase64(String imagePath, String formatName) {
+        BufferedImage image = ImageIO.read(new File(imagePath));
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        ImageIO.write(image, formatName, outputStream);
+        byte[] imageBytes = outputStream.toByteArray();
+        return Base64.getEncoder().encodeToString(imageBytes);
+    }
+
+
+    public String getContentsName() {
+        return this.llmProvider == LLMProvider.GOOGLE_2 ? "contents" : "messages";
     }
 
     // 文本转语音
     public byte[] generateSpeech(String text) throws IOException {
-        return generateSpeech(System.getenv(llmProvider.getEnvName()), text, "wenrounvsheng", null);
+        return generateSpeech(getToken(), text, "wenrounvsheng", null);
     }
 
     public byte[] generateSpeech(String text, String voice) throws IOException {
-        return generateSpeech(System.getenv(llmProvider.getEnvName()), text, voice, null);
+        return generateSpeech(getToken(), text, voice, null);
     }
 
     public byte[] generateSpeech(String text, String voice, String outputPath) throws IOException {
-        return generateSpeech(System.getenv(llmProvider.getEnvName()), text, voice, outputPath);
+        return generateSpeech(getToken(), text, voice, outputPath);
     }
+
+
+    public String getToken() {
+        String token = System.getenv(llmProvider.getEnvName());
+        if (StringUtils.isEmpty(token)) {
+            return System.getProperty(llmProvider.getEnvName());
+        }
+        return token;
+    }
+
 
     public byte[] generateSpeech(String apiKey, String text, String voice, String outputPath) throws IOException {
         OkHttpClient client = new OkHttpClient.Builder()
@@ -221,6 +305,33 @@ public class LLM {
         return message;
     }
 
+    private JsonObject createMessageObjectForGoogle(String role, String content) {
+        JsonObject message = new JsonObject();
+        message.addProperty("role", role);
+        JsonArray array = new JsonArray();
+        JsonObject obj = new JsonObject();
+        obj.addProperty("text", content);
+        array.add(obj);
+        message.add("parts", array);
+        return message;
+    }
+
+    private JsonObject createMessageObjectForGoogle(AiMessage am) {
+        if (null != am.getJsonContent()) {
+            return am.getJsonContent();
+        }
+
+        JsonObject message = new JsonObject();
+        message.addProperty("role", am.getRole());
+        JsonArray array = new JsonArray();
+        JsonObject obj = new JsonObject();
+        obj.addProperty("text", am.getContent());
+        array.add(obj);
+        message.add("parts", array);
+
+        return message;
+    }
+
 
     public void chat(List<AiMessage> messages, BiConsumer<String, JsonObject> messageHandlerr) {
         chatCompletionStream(System.getenv(llmProvider.getEnvName()), messages, llmProvider.getDefaultModel(), messageHandlerr, line -> {
@@ -230,20 +341,36 @@ public class LLM {
 
     public void chatCompletionStream(String apiKey, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer) {
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("model", model);
-        requestBody.addProperty("stream", true);
+
+        if (this.llmProvider != LLMProvider.GOOGLE_2) {
+            requestBody.addProperty("model", model);
+            requestBody.addProperty("stream", true);
+        }
 
         JsonArray msgArray = new JsonArray();
 
+
         for (AiMessage message : messages) {
-            msgArray.add(createMessageObject(message.getRole(), message.getContent()));
+            //原生google
+            if (this.llmProvider == LLMProvider.GOOGLE_2) {
+                msgArray.add(createMessageObjectForGoogle(message.getRole(), message.getContent()));
+            } else {
+                msgArray.add(createMessageObject(message.getRole(), message.getContent()));
+            }
+        }
+        requestBody.add(getContentsName(), gson.toJsonTree(msgArray));
+
+        Request.Builder rb = new Request.Builder();
+
+        if (this.llmProvider != LLMProvider.GOOGLE_2) {
+            rb.addHeader("Authorization", "Bearer " + apiKey);
         }
 
-        requestBody.add("messages", gson.toJsonTree(msgArray));
+        //使用的cloudflare
+        String url = getColudFlareUrl(apiKey, model, rb);
 
-        Request request = new Request.Builder()
-                .url(getApiUrl())
-                .addHeader("Authorization", "Bearer " + apiKey)
+        Request request = rb
+                .url(url)
                 .addHeader("Accept", "text/event-stream")
                 .post(RequestBody.create(requestBody.toString(), JSON))
                 .build();
@@ -283,38 +410,58 @@ public class LLM {
                     while ((line = reader.readLine()) != null) {
                         System.out.println("===>" + line);
                         lineConsumer.accept(line);
-                        if (line.startsWith("data: ")) {
-                            String data = line.substring(6);
-                            if ("[DONE]".equals(data)) {
-                                JsonObject jsonResponse = new JsonObject();
-                                jsonResponse.addProperty("type", "finish");
-                                jsonResponse.addProperty("content", "[DONE]");
-                                messageHandler.accept("[DONE]", jsonResponse);
-                                break;
-                            }
-                            JsonObject jsonResponse = gson.fromJson(data, JsonObject.class);
-                            String content = "";
-                            try {
-                                JsonObject delta = jsonResponse.getAsJsonArray("choices")
-                                        .get(0).getAsJsonObject()
-                                        .getAsJsonObject("delta");
+                        if (llmProvider == LLMProvider.GOOGLE_2) {
+                            if (line.startsWith("data: ")) {
+                                String data = line.substring(6);
+                                JsonObject jsonResponse = gson.fromJson(data, JsonObject.class);
+                                JsonObject candidate = jsonResponse.getAsJsonArray("candidates").get(0).getAsJsonObject();
+                                JsonObject content = candidate.get("content").getAsJsonObject();
+                                String text = content.get("parts").getAsJsonArray().get(0).getAsJsonObject().get("text").getAsString();
+                                jsonResponse.addProperty("type", "event");
+                                jsonResponse.addProperty("content", text);
+                                messageHandler.accept(text, jsonResponse);
 
-                                JsonElement c = delta.get("content");
-                                if (c.isJsonNull()) {
-                                    JsonElement rc = delta.get("reasoning_content");
-                                    if (!rc.isJsonNull()) {
-                                        content = rc.getAsString();
-                                    }
-                                } else {
-                                    content = c.getAsString();
+                                if (candidate.has("finishReason")) {
+                                    JsonObject finishRes = new JsonObject();
+                                    finishRes.addProperty("type", "finish");
+                                    finishRes.addProperty("content", candidate.get("finishReason").getAsString());
+                                    messageHandler.accept("[DONE]", finishRes);
                                 }
-                            } catch (Throwable ex) {
-                                log.error(ex.getMessage());
                             }
+                        } else {
+                            if (line.startsWith("data: ")) {
+                                String data = line.substring(6);
+                                if ("[DONE]".equals(data)) {
+                                    JsonObject jsonResponse = new JsonObject();
+                                    jsonResponse.addProperty("type", "finish");
+                                    jsonResponse.addProperty("content", "[DONE]");
+                                    messageHandler.accept("[DONE]", jsonResponse);
+                                    break;
+                                }
+                                JsonObject jsonResponse = gson.fromJson(data, JsonObject.class);
+                                String content = "";
+                                try {
+                                    JsonObject delta = jsonResponse.getAsJsonArray("choices")
+                                            .get(0).getAsJsonObject()
+                                            .getAsJsonObject("delta");
 
-                            jsonResponse.addProperty("type", "event");
-                            jsonResponse.addProperty("content", content);
-                            messageHandler.accept(content, jsonResponse);
+                                    JsonElement c = delta.get("content");
+                                    if (c.isJsonNull()) {
+                                        JsonElement rc = delta.get("reasoning_content");
+                                        if (!rc.isJsonNull()) {
+                                            content = rc.getAsString();
+                                        }
+                                    } else {
+                                        content = c.getAsString();
+                                    }
+                                } catch (Throwable ex) {
+                                    log.error(ex.getMessage());
+                                }
+
+                                jsonResponse.addProperty("type", "event");
+                                jsonResponse.addProperty("content", content);
+                                messageHandler.accept(content, jsonResponse);
+                            }
                         }
                     }
                     System.out.println("FINISH");
@@ -326,6 +473,17 @@ public class LLM {
                 }
             }
         });
+    }
+
+    private String getColudFlareUrl(String apiKey, String model, Request.Builder rb) {
+        if (this.llmProvider == LLMProvider.GOOGLE_2 && StringUtils.isNotEmpty(config.getUrl())) {
+            rb.addHeader("x-goog-api-key", apiKey);
+        }
+        String url = getApiUrl(apiKey);
+        if (this.llmProvider == LLMProvider.GOOGLE_2) {
+            url = url.formatted(model);
+        }
+        return url;
     }
 
 
@@ -351,6 +509,13 @@ public class LLM {
             throw new RuntimeException(e);
         }
         return sb.toString();
+    }
+
+    public String getModel() {
+        if (StringUtils.isNotEmpty(this.config.getModel())) {
+            return config.getModel();
+        }
+        return this.llmProvider.getDefaultModel();
     }
 
     private static class SSEReader {
@@ -407,7 +572,7 @@ public class LLM {
         byte[] audioData = java.util.Base64.getDecoder().decode(base64);
         File file = new File(filePath);
         java.nio.file.Files.write(file.toPath(), audioData);
-        
+
         // 复用现有的文件处理方法
         return transcribeAudio(filePath, file);
     }
@@ -422,21 +587,21 @@ public class LLM {
         // 构建multipart请求
         MultipartBody requestBody = new MultipartBody.Builder()
                 .setType(MultipartBody.FORM)
-                .addFormDataPart("file", file.getName(), 
-                    RequestBody.create(file, MediaType.parse("audio/mpeg"))) // 更明确的媒体类型
+                .addFormDataPart("file", file.getName(),
+                        RequestBody.create(file, MediaType.parse("audio/mpeg"))) // 更明确的媒体类型
                 .addFormDataPart("model", LLMProvider.STEPFUN_ASR.getDefaultModel())
                 .addFormDataPart("response_format", "json")
                 .build();
 
         Request request = new Request.Builder()
                 .url(LLMProvider.STEPFUN_ASR.getUrl()) // 使用完整的API URL
-                .addHeader("Authorization", "Bearer " + System.getenv(LLMProvider.STEPFUN_ASR.getEnvName()))
+                .addHeader("Authorization", "Bearer " + getToken())
                 .post(requestBody)
                 .build();
 
         Stopwatch sw = Stopwatch.createStarted();
         String res = "";
-        
+
         try (Response response = client.newCall(request).execute()) {
             if (!response.isSuccessful()) {
                 throw new IOException("音频转写失败: " + response);
