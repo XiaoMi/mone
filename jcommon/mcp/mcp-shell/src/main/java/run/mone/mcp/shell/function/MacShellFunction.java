@@ -37,7 +37,7 @@ public class MacShellFunction implements Function<Map<String, Object>, McpSchema
                     "customCommand": {
                         "type": "string",
                         "description": "Custom shell command to execute when command is set to 'custom'"
-                    },
+                    }
                 },
                 "required": ["command"]
             }
@@ -49,13 +49,15 @@ public class MacShellFunction implements Function<Map<String, Object>, McpSchema
         List<String> args = (List<String>) arguments.get("arguments");
         String customCommand = (String) arguments.get("customCommand");
         log.info("command: {} arguments: {}", command, args);
+        String type = "";
         if ("custom".equals(command)) {
+            type = "custom";
             command = customCommand;
             args = null;
         }
 
         try {
-            String result = executeCommand(command, args);
+            String result = executeCommand(command, args, type);
             return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false);
 
         } catch (Exception e) {
@@ -63,14 +65,23 @@ public class MacShellFunction implements Function<Map<String, Object>, McpSchema
         }
     }
 
-    private String executeCommand(String command, List<String> args) throws Exception {
+    private String executeCommand(String command, List<String> args, String type) throws Exception {
         ProcessBuilder processBuilder = new ProcessBuilder();
         processBuilder.command().add(command);
 
-        if ("custom".equals(command)) {
-            processBuilder.command("sh", "-c", command);
+        if ("custom".equals(type)) {
+            processBuilder.command("/bin/bash", "-c", command);
         } else {
-            processBuilder.command().add(command);
+            Map<String, String> env = processBuilder.environment();
+
+            String path = env.get("PATH");
+            if (path == null) {
+                path = "/usr/bin:/bin:/usr/sbin:/sbin";
+            } else if (!path.contains("/bin")) {
+                path = "/bin:" + path;
+            }
+            env.put("PATH", path);
+            processBuilder.command("/bin/" + command);
             if (args != null) {
                 processBuilder.command().addAll(args);
             }

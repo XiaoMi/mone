@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -45,6 +46,24 @@ class FilesystemFunctionTest {
         Map<String, Object> args = new HashMap<>();
         args.put("operation", "read_file");
         args.put("path", filePath.toString());
+
+        McpSchema.CallToolResult result = filesystemFunction.apply(args);
+
+                assertFalse(result.isError());
+    }
+    @Test
+    void testExecuteFile() throws IOException {
+        String fileName = "test_script.sh";
+        String scriptContent = "#!/bin/bash\necho 'Hello from test script!'";
+        Path scriptPath = createTestFile(fileName, scriptContent);
+
+        // Set execute permissions
+        Files.setPosixFilePermissions(scriptPath, PosixFilePermissions.fromString("rwxr-xr-x"));
+
+        Map<String, Object> args = new HashMap<>();
+        args.put("operation", "execute_file");
+        args.put("path", scriptPath.toString());
+        args.put("args", Collections.emptyList());
 
         McpSchema.CallToolResult result = filesystemFunction.apply(args);
 

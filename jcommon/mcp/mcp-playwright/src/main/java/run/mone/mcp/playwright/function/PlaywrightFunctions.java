@@ -1,8 +1,27 @@
 package run.mone.mcp.playwright.function;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.microsoft.playwright.*;
+import com.microsoft.playwright.APIRequest;
+import com.microsoft.playwright.APIRequestContext;
+import com.microsoft.playwright.APIResponse;
+import com.microsoft.playwright.Browser;
+import com.microsoft.playwright.BrowserType;
+import com.microsoft.playwright.ElementHandle;
+import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Page.NavigateOptions;
+import com.microsoft.playwright.Playwright;
 import com.microsoft.playwright.options.LoadState;
 import com.microsoft.playwright.options.RequestOptions;
 import com.microsoft.playwright.options.WaitUntilState;
@@ -10,18 +29,6 @@ import com.microsoft.playwright.options.WaitUntilState;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.mcp.spec.McpSchema;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.time.Instant;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.function.Function;
-import java.util.ArrayList;
-import java.util.stream.Collectors;
-import java.util.HashMap;
 
 @Slf4j
 @Data

@@ -3,9 +3,11 @@ package run.mone.mcp.playwright.server;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.server.McpSyncServer;
+
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.mcp.playwright.function.PlaywrightFunction;
@@ -28,6 +30,7 @@ import run.mone.mcp.playwright.function.PlaywrightFunctions.SelectFunction;
 import run.mone.mcp.playwright.function.PlaywrightFunctions.SwitchTabFunction;
 import run.mone.hive.mcp.server.McpServer.ToolRegistration;
 import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
+import run.mone.mcp.playwright.websocket.WebSocketService;
 
 @Slf4j
 @Component
@@ -36,8 +39,12 @@ public class PlaywrightMcpServer {
     private McpSyncServer syncServer;
     private PlaywrightFunction playwrightFunction;
 
+    @Autowired
+    private WebSocketService webSocketService;
+
     public PlaywrightMcpServer(ServerMcpTransport transport) {
         this.transport = transport;
+
         log.info("PlaywrightMcpServer initialized with transport: {}", transport);
     }
 
@@ -101,7 +108,7 @@ public class PlaywrightMcpServer {
                     new Tool(hoverFunction.getName(), hoverFunction.getDesc(), hoverFunction.getToolScheme()), hoverFunction
             );
             syncServer.addTool(hoverToolRegistration);
-            log.info("Successfully registered hover tool"); 
+            log.info("Successfully registered hover tool");
 
             EvaluateFunction evalFunction = new PlaywrightFunctions.EvaluateFunction();
             var evalToolRegistration = new ToolRegistration(
@@ -143,7 +150,7 @@ public class PlaywrightMcpServer {
                     new Tool(deleteFunction.getName(), deleteFunction.getDesc(), deleteFunction.getToolScheme()), deleteFunction
             );
             syncServer.addTool(deleteToolRegistration);
-            log.info("Successfully registered delete tool");    
+            log.info("Successfully registered delete tool");
 
             PatchFunction patchFunction = new PlaywrightFunctions.PatchFunction();
             var patchToolRegistration = new ToolRegistration(
@@ -154,7 +161,7 @@ public class PlaywrightMcpServer {
 
             CleanupFunction cleanupFunction = new PlaywrightFunctions.CleanupFunction();
             var cleanupToolRegistration = new ToolRegistration(
-                    new Tool(cleanupFunction.getName(), cleanupFunction.getDesc(), cleanupFunction.getToolScheme()), 
+                    new Tool(cleanupFunction.getName(), cleanupFunction.getDesc(), cleanupFunction.getToolScheme()),
                     cleanupFunction
             );
             syncServer.addTool(cleanupToolRegistration);
@@ -173,6 +180,11 @@ public class PlaywrightMcpServer {
             );
             syncServer.addTool(switchTabToolRegistration);
             log.info("Successfully registered switch_tab tool");
+
+            // Example: Send a message to all WebSocket clients when the server starts
+            webSocketService.sendMessageToAllClients("PlaywrightMcpServer has started and all tools are registered.");
+
+
         } catch (Exception e) {
             log.error("Failed to register execute_playwright tool", e);
             throw e;

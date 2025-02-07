@@ -26,6 +26,10 @@
         <module>mcp-solution-assessor</module>
         <module>mcp-filesystem</module>
         <module>mcp-prettier</module>
+        <module>mcp-writer</module>
+        <module>mcp-fetch</module>
+        <module>mcp-coder</module>
+        <module>mcp-excel</module>
         <module>mcp-song</module>
     </modules>
 
@@ -155,6 +159,12 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
+            <version>3.4.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
             <version>3.4.1</version>
         </dependency>
 
