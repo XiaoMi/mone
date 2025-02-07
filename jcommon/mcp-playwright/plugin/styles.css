@@ -148,6 +148,13 @@ input {
     color: #333;
 }
 
+.message-input-container {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+
 #realtime-messages {
     max-height: 300px;
     overflow-y: auto;
@@ -160,7 +167,7 @@ input {
     margin: 10px 0;
     background-color: var(--secondary-color);
     border-radius: 8px;
-    overflow: hidden;
+    overflow: auto;
 }
 
 .button-container-header {
@@ -186,6 +193,7 @@ input {
     overflow: hidden;
     transition: max-height 0.3s ease-out;
     padding: 0 12px;
+    overflow-y: auto;
 }
 
 .button-container.collapsed {
