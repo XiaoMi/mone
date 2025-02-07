@@ -26,6 +26,7 @@
         <module>mcp-solution-assessor</module>
         <module>mcp-filesystem</module>
         <module>mcp-prettier</module>
+        <module>mcp-song</module>
     </modules>
 
     <properties>
