@@ -12,12 +12,9 @@ public class ScrollAction extends Action {
 
     public ScrollAction(String description) {
         super("ScrollAction", description);
-        setFunction((req,action,ctx)->{
-            return Message.builder().content("""
-                    <action type="scrollOneScreen">
-                     $message
-                    </action>
-                    """).build();
-        });
+        setFunction((req,action,ctx)-> Message.builder().content("""
+                <action type="scrollOneScreen">
+                </action>
+                """).build());
     }
 }

@@ -39,10 +39,10 @@ public class ClassifierAction extends Action {
             log.info("{}", v);
 
             String res = "";
-            if (v.getType().equals("shopping")) {
-                res = "shopping";
+            if (v.getType().equals("Shopper")) {
+                res = "Shopper";
             } else {
-                res = "chat";
+                res = "Chatter";
             }
             return Message.builder().content(res).build();
         });

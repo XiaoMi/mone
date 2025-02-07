@@ -1,5 +1,6 @@
 package run.mone.mcp.playwright.role;
 
+import run.mone.hive.Environment;
 import run.mone.hive.roles.Role;
 
 /**
@@ -8,4 +9,8 @@ import run.mone.hive.roles.Role;
  */
 public class RoleClassifier extends Role {
 
+    public RoleClassifier() {
+        this.name = "RoleClassifier";
+        setEnvironment(new Environment());
+    }
 }
