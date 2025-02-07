@@ -46,6 +46,7 @@ function connectWebSocket() {
             const data = JSON.parse(event.data);
             console.log('Received message:', data);
 
+            //当前的tab
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
             if (data && 'data' in data) {
@@ -145,8 +146,6 @@ function connectWebSocket() {
                                     });
                                 }
                             });
-                            // 等待滚动完成
-                            await new Promise(resolve => setTimeout(resolve, 1000));
                         }
 
                         //如果是结束状态,则把auto的状态设置为false
@@ -215,10 +214,14 @@ function connectWebSocket() {
                                     const container = document.getElementById('playwright-highlight-container');
                                     if (container) {
                                         container.remove();
+                                        // Remove highlight IDs from all elements
+                                        const highlightedElements = document.querySelectorAll('[browser-user-highlight-id]');
+                                        highlightedElements.forEach(element => {
+                                            element.removeAttribute('browser-user-highlight-id');
+                                        });
                                     }
                                 }
                             });
-                            sendWebSocketMessage("ping");
                         }
                     };
 
@@ -256,7 +259,7 @@ function connectWebSocket() {
             }
 
         } catch (e) {
-            console.log('Received non-JSON message:', event.data);
+            console.log('error Received non-JSON message:', event.data, e);
             messageWithTimestamp = {
                 timestamp: new Date().toLocaleTimeString(),
                 data: event.data,
@@ -342,7 +345,7 @@ function startPingCheck() {
             console.error('Error sending ping:', error);
             forceReconnect();
         }
-    }, 5000);
+    }, 10000);
 }
 
 // 启动ping检查
@@ -714,7 +717,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // 添加一个定时器来持续输出，确认 service worker 活跃
 setInterval(() => {
     console.log("Background script is still running:", new Date().toISOString());
-}, 10000);  // 每10秒输出一次
+}, 20000);  // 每20秒输出一次
 
 // 监听扩展图标点击事件
 chrome.action.onClicked.addListener((tab) => {

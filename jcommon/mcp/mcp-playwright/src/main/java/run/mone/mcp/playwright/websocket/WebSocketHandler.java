@@ -177,13 +177,14 @@ public class WebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        JsonObject obj = JsonParser.parseString(payload).getAsJsonObject();
-        if (obj.has("from")) {
-            String from = obj.get("from").getAsString();
+        JsonObject req = JsonParser.parseString(payload).getAsJsonObject();
+
+        if (req.has("from")) {
+            String from = req.get("from").getAsString();
             //来自浏览器
             if (from.equals("chrome")) {
                 JsonObject res = new JsonObject();
-                String data = obj.get("data").getAsString();
+                String data = req.get("data").getAsString();
 
                 if (data.equals("clear")) {
                     log.info("clear");
@@ -192,15 +193,14 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 }
 
                 //用来测试
-                if (data.equals("test")) {
-                    sendMessageToAll(chromeTestService.openTag(res));
+                if (data.startsWith("?test:")) {
+                    sendMessageToAll(chromeTestService.invoke(data.split(":")[1], req, res));
                     return;
                 }
 
-
                 String cmd = "";
-                if (obj.has("cmd")) {
-                    cmd = obj.get("cmd").getAsString();
+                if (req.has("cmd")) {
+                    cmd = req.get("cmd").getAsString();
                 }
 
                 if (cmd.equals("action_ping")) {
@@ -256,7 +256,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     }
 
                     String msg = messageList.get(this.index);
-
 
                     //打开购物的页面(打开新的tab页)
                     if (this.index == 0) {

@@ -14,4 +14,5 @@ public class ProcessResult {
     private Integer thoughtHistoryLength;
     private String error;
     private String status;
+    private String formattedThought;
 }

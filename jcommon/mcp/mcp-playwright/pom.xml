@@ -135,6 +135,12 @@
             <version>6.2.1</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.nutz</groupId>
+            <artifactId>nutz</artifactId>
+            <version>1.r.68-youpin-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
 
     </dependencies>
 

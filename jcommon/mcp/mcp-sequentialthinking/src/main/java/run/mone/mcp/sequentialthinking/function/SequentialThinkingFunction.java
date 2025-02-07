@@ -199,7 +199,7 @@ public class SequentialThinkingFunction implements Function<Map<String, Object>,
 
             // 格式化并输出思维
             String formattedThought = formatThought(input);
-            System.err.println(formattedThought);
+            log.info(formattedThought);
 
             // 返回处理结果
             return ProcessResult.builder()
@@ -208,6 +208,7 @@ public class SequentialThinkingFunction implements Function<Map<String, Object>,
                     .nextThoughtNeeded(input.isNextThoughtNeeded())
                     .branches(new ArrayList<>(branches.keySet()))
                     .thoughtHistoryLength(thoughtHistory.size())
+                    .formattedThought(formattedThought)
                     .build();
 
         } catch (Exception e) {
