@@ -114,6 +114,11 @@ function connectWebSocket() {
                             await new Promise(resolve => setTimeout(resolve, 1000));
                         }
 
+                        //如果是结束状态,则把auto的状态设置为false
+                        if (action.type === 'end') {
+                            isAutoMode = false;
+                        }
+
                         //通知服务器
                         if (action.type === 'notification') {
                             console.log('notification:', action);
@@ -773,6 +778,17 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
         const screenshot = await chrome.tabs.captureVisibleTab(null, {
             format: 'jpeg',
             quality: 10
+        });
+
+        // 取消重绘效果
+        await chrome.scripting.executeScript({
+            target: { tabId: stateUpdate.tabId },
+            func: () => {
+                const container = document.getElementById('playwright-highlight-container');
+                if (container) {
+                    container.remove();
+                }
+            }
         });
 
         // 将 domTreeData 转换为字符串
