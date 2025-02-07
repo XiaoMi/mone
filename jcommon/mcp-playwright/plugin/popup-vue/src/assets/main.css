@@ -7,8 +7,34 @@ body {
 }
 
 #app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  font-weight: normal;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100vh;
+}
+
+.app-header {
+  background-color: var(--el-bg-color);
+  padding: 1rem;
+  border-bottom: 1px solid var(--el-border-color-light);
+}
+
+.app-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+}
+
+.app-lang-switch {
+  margin-left: 20px;
+}
+
+.app-content {
+  height: 100%;
+}
+
+.app-content {
+  flex: 1;
+  overflow: hidden;
 }

@@ -13,12 +13,22 @@
     "watch": "vite build --watch"
   },
   "dependencies": {
+    "@element-plus/icons-vue": "^2.3.1",
+    "@fortawesome/fontawesome-free": "^6.7.2",
+    "@traptitech/markdown-it-katex": "^3.6.0",
     "element-plus": "^2.9.3",
+    "highlight.js": "^11.11.1",
+    "markdown-it": "^14.1.0",
+    "markdown-it-link-attributes": "^4.0.1",
+    "mitt": "^3.0.1",
+    "mp3-mediarecorder": "^4.0.5",
     "pinia": "^2.3.1",
     "vue": "^3.5.13",
+    "vue-i18n": "^9.14.2",
     "vue-router": "^4.5.0"
   },
   "devDependencies": {
+    "@intlify/unplugin-vue-i18n": "^6.0.3",
     "@tsconfig/node22": "^22.0.0",
     "@types/node": "^22.10.7",
     "@vitejs/plugin-vue": "^5.2.1",
@@ -29,7 +39,9 @@
     "eslint-plugin-vue": "^9.32.0",
     "jiti": "^2.4.2",
     "npm-run-all2": "^7.0.2",
+    "sass-embedded": "^1.83.4",
     "typescript": "~5.7.3",
+    "unocss": "^65.4.3",
     "vite": "^6.0.11",
     "vite-plugin-vue-devtools": "^7.7.0",
     "vue-tsc": "^2.2.0"
