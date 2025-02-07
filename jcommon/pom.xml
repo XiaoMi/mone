@@ -89,17 +89,32 @@
         <module>docean-spring-starter</module>
         <module>ai</module>
         <module>ai/neo4j</module>
-        <module>ai/mcp</module>
+        <module>hive</module>
+        <module>ai/m78</module>
+        <module>mcp</module>
     </modules>
+
+<!--    <distributionManagement>-->
+<!--        <repository>-->
+<!--            <id>ossrh</id>-->
+<!--            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>-->
+<!--        </repository>-->
+<!--        <snapshotRepository>-->
+<!--            <id>ossrh</id>-->
+<!--            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>-->
+<!--        </snapshotRepository>-->
+<!--    </distributionManagement>-->
 
     <distributionManagement>
         <repository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <id>central</id>
+            <name>maven-release-virtual</name>
+            <url>https://pkgs.d.xiaomi.net/artifactory/maven-release-virtual</url>
         </repository>
         <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://s01.oss.sonatype.org/content/repositories/snapshots</url>
+            <id>snapshots</id>
+            <name>maven-snapshot-virtual</name>
+            <url>https://pkgs.d.xiaomi.net/artifactory/maven-snapshot-virtual</url>
         </snapshotRepository>
     </distributionManagement>
 
