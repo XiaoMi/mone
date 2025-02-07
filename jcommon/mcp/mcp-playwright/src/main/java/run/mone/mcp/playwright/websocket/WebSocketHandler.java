@@ -15,14 +15,13 @@ import run.mone.hive.common.AiTemplate;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
-import run.mone.hive.schema.AiMessage;
 import run.mone.hive.utils.XmlParser;
+import run.mone.mcp.playwright.service.ChromeTestService;
 import run.mone.mcp.playwright.service.LLMService;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.Collectors;
 
 @Component
 @Slf4j
@@ -34,6 +33,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     @Resource
     private LLMService llmService;
+
+    @Resource
+    private ChromeTestService chromeTestService;
 
     public WebSocketHandler() {
         LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
@@ -57,7 +59,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
     );
 
     private int index = 0;
-
 
     public static String prompt = """
             你是一个浏览器操作专家.你总是能把用户的需求,翻译成专业的操作指令.
@@ -192,13 +193,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
                 //用来测试
                 if (data.equals("test")) {
-                    String dataStr = """
-                             <action type="createNewTab" url="https://www.jd.com/" auto="true">
-                                        打开京东
-                             </action>
-                            """;
-                    res.addProperty("data", dataStr);
-                    sendMessageToAll(res.toString());
+                    sendMessageToAll(chromeTestService.openTag(res));
                     return;
                 }
 
@@ -212,18 +207,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     log.info("action ping");
                     return;
                 }
-
-
-                //需要ai来返回操作内容
-                if (data.equals("cz")) {
-                    String d = "帮我搜索下苹果笔记本";
-                    String ask = AiTemplate.renderTemplate(prompt, ImmutableMap.of("data", d));
-                    AiMessage msg = AiMessage.builder().build();
-                    String answer = llm.ask(Lists.newArrayList(msg));
-                    log.info("answer:{}", answer);
-                    return;
-                }
-
 
                 if (this.index == 0) {
                     String actionRes = llm.chat("""

@@ -375,26 +375,45 @@ document.addEventListener('DOMContentLoaded', () => {
             // 获取当前标签页
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
             
-            // 在页面内容中执行滚动
+            // 先注入 scrollManager.js
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
-                files: ['scrollManager.js']  // 先注入scrollManager
+                files: ['managers/scrollManager.js']
             });
 
             // 执行滚动操作
             await chrome.scripting.executeScript({
                 target: { tabId: tab.id },
-                func: () => {
-                    // 在页面上下文中执行滚动
-                    window.scrollBy({
-                        top: window.innerHeight,
-                        behavior: 'smooth'
-                    });
+                func: async () => {
+                    // 等待 scrollManager 模块加载完成
+                    const scrollManager = await import(chrome.runtime.getURL('managers/scrollManager.js'))
+                        .then(module => module.default);
+                    
+                    // 执行滚动一屏
+                    await scrollManager.scrollOneScreen('down', { behavior: 'smooth' });
                 }
             });
 
+            // 更新状态文本
+            const statusText = document.getElementById('status-text') || createStatusElement();
+            statusText.textContent = '✅ 滚动完成';
+            statusText.style.color = '#4CAF50';
+            
+            setTimeout(() => {
+                statusText.textContent = '';
+            }, 2000);
+
         } catch (error) {
             errorManager.error('滚动一屏失败：' + error.message, error);
+            
+            // 显示错误状态
+            const statusText = document.getElementById('status-text') || createStatusElement();
+            statusText.textContent = '❌ 滚动失败';
+            statusText.style.color = 'red';
+            
+            setTimeout(() => {
+                statusText.textContent = '';
+            }, 2000);
         }
     });
 

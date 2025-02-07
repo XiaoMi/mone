@@ -42,6 +42,10 @@
 {
 "resources": ["managers/actionManager2.js"],
 "matches": ["<all_urls>"]
+},
+{
+"resources": ["managers/scrollManager.js"],
+"matches": ["<all_urls>"]
 }
 ]
 }

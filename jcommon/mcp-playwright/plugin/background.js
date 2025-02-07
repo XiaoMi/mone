@@ -130,6 +130,25 @@ function connectWebSocket() {
                             await new Promise(resolve => setTimeout(resolve, 1000));
                         }
 
+                        //滚动一屏
+                        if (action.type === 'scrollOneScreen') {
+                            console.log('scrollOneScreen action');
+                            await chrome.scripting.executeScript({
+                                target: { tabId: tab.id },
+                                func: () => {
+                                    // 获取视口高度
+                                    const viewportHeight = window.innerHeight;
+                                    // 平滑滚动一屏
+                                    window.scrollBy({
+                                        top: viewportHeight,
+                                        behavior: 'smooth'
+                                    });
+                                }
+                            });
+                            // 等待滚动完成
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        }
+
                         //如果是结束状态,则把auto的状态设置为false
                         if (action.type === 'end') {
                             isAutoMode = false;
