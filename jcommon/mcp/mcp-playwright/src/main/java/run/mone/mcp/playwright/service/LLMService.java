@@ -22,7 +22,7 @@ import java.util.List;
 public class LLMService {
 
 
-    public String call(LLM llm, String text, String imgText) {
+    public String call(LLM llm, String text, String imgText, String sysPrompt) {
         JsonObject req = new JsonObject();
 
         if (llm.getConfig().getLlmProvider() == LLMProvider.GOOGLE_2) {
@@ -60,7 +60,6 @@ public class LLMService {
 
         List<AiMessage> messages = new ArrayList<>();
         messages.add(AiMessage.builder().jsonContent(req).build());
-        String sysPrompt = WebSocketHandler.prompt.formatted("返回合理的action列表");
         String result = llm.chatCompletion(messages, sysPrompt);
         log.info("{}", result);
         return result;

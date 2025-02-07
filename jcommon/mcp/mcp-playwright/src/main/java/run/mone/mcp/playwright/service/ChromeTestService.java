@@ -49,7 +49,7 @@ public class ChromeTestService {
                 //滚动屏幕
                 <action type="scrollOneScreen">
                 </action>
-                
+                //暂停
                 <action type="pause">
                 </action>
                 
@@ -61,6 +61,14 @@ public class ChromeTestService {
                 
                 <action type="buildDomTree">
                 </action>
+               
+                <action type="pause">
+                </action>
+                
+                //截图 并且 把截图回传回来
+                <action type="screenshot" send="true" test="true">
+                </action>
+                
                 
                 """);
         return res.toString();

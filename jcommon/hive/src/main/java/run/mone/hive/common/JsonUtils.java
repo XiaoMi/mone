@@ -2,6 +2,7 @@ package run.mone.hive.common;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 
 /**
  * @author goodjava@qq.com
@@ -45,6 +46,11 @@ public class JsonUtils {
         }
 
         return jsonElement;
+    }
+
+    //给定一个key 从 JsonObject(Gson) 中获取value 返回 String,如果没有则返回提供的默认值(class)
+    public static String getValueOrDefault(JsonObject jsonObject, String key, String defaultValue) {
+        return jsonObject.has(key) ? jsonObject.get(key).getAsString() : defaultValue;
     }
 
 
