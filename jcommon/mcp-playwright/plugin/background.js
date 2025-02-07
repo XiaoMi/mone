@@ -62,6 +62,22 @@ function connectWebSocket() {
                     for (const action of actions || []) {
                         console.log('action:', action);
 
+                        // 处理chat类型的消息
+                        if (action.type === 'chat') {
+                            console.log('Processing chat message:', action);
+                            // 将聊天消息添加到历史记录中
+                            messageHistory.push({
+                                message: action.attributes.message,
+                                timestamp: new Date().toISOString()
+                            });
+                            
+                            // 如果消息数量超过最大限制，删除最早的消息
+                            if (messageHistory.length > MAX_MESSAGES) {
+                                messageHistory.shift();
+                            }
+                            continue;
+                        }
+
                         // 处理普通action类型
                         if (action.type === 'action') {
                             console.log('Processing action:', action);
