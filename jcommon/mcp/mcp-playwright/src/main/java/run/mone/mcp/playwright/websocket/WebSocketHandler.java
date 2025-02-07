@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class WebSocketHandler extends TextWebSocketHandler {
 
-    private final List<WebSocketSession> sessions = new CopyOnWriteArrayList<>();
+    private final List<WebSocketSession> sessions = new CopyOnWriteArrayList<WebSocketSession>();
 
     private LLM llm;
 
@@ -176,7 +176,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-
         JsonObject obj = JsonParser.parseString(payload).getAsJsonObject();
         if (obj.has("from")) {
             String from = obj.get("from").getAsString();
@@ -214,27 +213,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     return;
                 }
 
-                //打开了指定的tab
-                if (cmd.equals("open_tab_finish")) {
-                    res.addProperty("data",
-                            """
-                                    
-                                    <action type="buildDomTree">
-                                    渲染页面
-                                    </action>
-                                    
-                                    <action type="screenshot">
-                                    截取屏幕
-                                    </action>
-                                    
-                                    <action type="notification">
-                                    通知服务器
-                                    </action>
-                                    
-                                    """);
-                    sendMessageToAll(res.toString());
-                    return;
-                }
 
                 //需要ai来返回操作内容
                 if (data.equals("cz")) {
@@ -269,8 +247,19 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     if (v.getType().equals("shopping")) {
                         data = "shopping";
                         this.itemName = v.getSubType();
+                    } else {
+                        cmd = "chat";
                     }
                 }
+
+                //单纯的聊天
+                if (cmd.equals("chat")) {
+                    String chatRes = llm.chat(data);
+                    chatRes = "<action type=\"chat\">" + chatRes + "</action>";
+                    sendMessageToAll(chatRes);
+                    return;
+                }
+
 
                 //购物
                 if (data.equals("shopping") || cmd.equals("shopping")) {
