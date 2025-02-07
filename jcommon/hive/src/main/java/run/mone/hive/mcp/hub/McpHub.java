@@ -1,7 +1,7 @@
-
 package run.mone.hive.mcp.hub;
 
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.mcp.client.McpClient;
 import run.mone.hive.mcp.client.McpSyncClient;
 import run.mone.hive.mcp.client.transport.ServerParameters;
@@ -16,6 +16,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Data
+@Slf4j
 public class McpHub {
     private final Map<String, McpConnection> connections = new ConcurrentHashMap<>();
     private final Path settingsPath;
@@ -76,6 +77,7 @@ public class McpHub {
             Map<String, ServerParameters> config = parseServerConfig(content);
             updateServerConnections(config);
         } catch (IOException e) {
+            log.error("Failed to initialize MCP servers: ", e);
             System.err.println("Failed to initialize MCP servers: " + e.getMessage());
         }
     }
@@ -122,6 +124,7 @@ public class McpHub {
                 try {
                     connectToServer(name, config);
                 } catch (Exception e) {
+                    log.error("Failed to connect to new MCP server: {}", name, e);
                     System.err.println("Failed to connect to new MCP server " + name + ": " + e.getMessage());
                 }
             } else if (!currentConnection.getServer().getConfig().equals(config.toString())) {
@@ -174,7 +177,7 @@ public class McpHub {
     private void connectToServer(String name, ServerParameters config) {
         ClientMcpTransport transport = new StdioClientTransport(config);
         McpSyncClient client = McpClient.using(transport)
-                .requestTimeout(Duration.ofSeconds(10))
+                .requestTimeout(Duration.ofSeconds(15))
                 .capabilities(McpSchema.ClientCapabilities.builder()
                         .roots(true)
                         .build())
@@ -191,8 +194,17 @@ public class McpHub {
             server.setTools(client.listTools().tools());
             // Fetch resources and resource templates if needed
         } catch (Exception e) {
+            log.error("Failed to connect to MCP server {}: ", name, e);
             server.setStatus("disconnected");
             server.setError(e.getMessage());
+            // Clean up failed connection
+            connections.remove(name);
+            try {
+                transport.closeGracefully();
+                client.closeGracefully();
+            } catch (Exception closeEx) {
+                log.warn("Failed to clean up connection resources for {}: {}", name, closeEx.getMessage());
+            }
         }
     }
 

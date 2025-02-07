@@ -30,6 +30,7 @@
         <module>mcp-fetch</module>
         <module>mcp-coder</module>
         <module>mcp-excel</module>
+        <module>mcp-song</module>
     </modules>
 
     <properties>

@@ -22,17 +22,18 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
-import lombok.extern.slf4j.Slf4j;
+import com.google.gson.Gson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -45,7 +46,6 @@ import run.mone.hive.mcp.spec.ClientMcpTransport;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.JSONRPCMessage;
 import run.mone.hive.mcp.util.Assert;
-import run.mone.m78.client.util.GsonUtils;
 
 
 /**
@@ -155,10 +155,12 @@ public class StdioClientTransport implements ClientMcpTransport {
             processBuilder.command(fullCommand);
             processBuilder.environment().putAll(params.getEnv());
 
+            logger.info("goto start jar:{}", new Gson().toJson(processBuilder));
             // Start the process
             try {
                 this.process = processBuilder.start();
             } catch (IOException e) {
+                logger.error("processBuilder.start() IOException", e);
                 throw new RuntimeException("Failed to start process with command: " + fullCommand, e);
             }
 
@@ -182,7 +184,80 @@ public class StdioClientTransport implements ClientMcpTransport {
      * @return A new ProcessBuilder instance
      */
     protected ProcessBuilder getProcessBuilder() {
-        return new ProcessBuilder();
+        // 创建命令列表
+        List<String> command = new ArrayList<>();
+        command.add(params.getCommand());
+        command.addAll(params.getArgs());
+        
+        ProcessBuilder processBuilder = new ProcessBuilder(command);
+        Map<String, String> env = processBuilder.environment();
+        
+        // 合并环境变量
+        env.putAll(params.getEnv());
+        
+        // 获取操作系统类型
+        boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
+        String pathSeparator = isWindows ? ";" : ":";
+        
+        // 处理 HOME 环境变量
+        if (!env.containsKey("HOME") && !isWindows) {
+            env.put("HOME", System.getProperty("user.home"));
+        } else if (isWindows && !env.containsKey("USERPROFILE")) {
+            env.put("USERPROFILE", System.getProperty("user.home"));
+        }
+        
+        // 获取 PATH 环境变量（Windows 可能是 "Path"）
+        String pathKey = findPathKey(env);
+        String currentPath = env.get(pathKey);
+        
+        // 根据操作系统添加常用路径
+        List<String> systemPaths = getSystemSpecificPaths(isWindows);
+        
+        if (currentPath != null) {
+            String additionalPaths = systemPaths.stream()
+                .filter(p -> !currentPath.contains(p))
+                .collect(Collectors.joining(pathSeparator));
+                
+            if (!additionalPaths.isEmpty()) {
+                env.put(pathKey, additionalPaths + pathSeparator + currentPath);
+            }
+        }
+        
+        // 日志输出
+        logger.info("OS: {}", System.getProperty("os.name"));
+        logger.info("Starting process with command: {}", String.join(" ", command));
+        logger.info("Working directory: {}", 
+            processBuilder.directory() != null ? processBuilder.directory().getAbsolutePath() : "current directory");
+        logger.info("Environment PATH: {}", env.get(pathKey));
+        
+        return processBuilder;
+    }
+
+    private String findPathKey(Map<String, String> env) {
+        // Windows 可能使用 "Path" 或 "PATH"
+        if (env.containsKey("Path")) return "Path";
+        if (env.containsKey("PATH")) return "PATH";
+        return "PATH"; // 默认值
+    }
+
+    private List<String> getSystemSpecificPaths(boolean isWindows) {
+        if (isWindows) {
+            return Arrays.asList(
+                "C:\\Windows",
+                "C:\\Windows\\System32",
+                "C:\\Program Files",
+                "C:\\Program Files (x86)"
+            );
+        } else {
+            return Arrays.asList(
+                "/opt/homebrew/bin",  // macOS Homebrew
+                "/usr/local/bin",
+                "/usr/bin",
+                "/bin",
+                "/usr/sbin",
+                "/sbin"
+            );
+        }
     }
 
     /**
