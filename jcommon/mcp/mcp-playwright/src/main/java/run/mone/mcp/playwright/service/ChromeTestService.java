@@ -9,8 +9,6 @@ import run.mone.hive.common.AiTemplate;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.schema.AiMessage;
 
-import java.util.function.Consumer;
-
 /**
  * @author goodjava@qq.com
  * @date 2025/2/7 11:20
@@ -36,8 +34,7 @@ public class ChromeTestService {
                              </action>
                             """;
         res.addProperty("data", dataStr);
-        sendMessageToAll(res.toString());
-        return;
+        return res.toString();
     }
 
 
