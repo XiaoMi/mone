@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' 'inline-speculation-rules' http://localhost:* http://127.0.0.1:*;">
+    <title>错误日志</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .header {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            margin: 0;
+            color: #333;
+        }
+
+        .controls {
+            margin-top: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+
+        .button-primary {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        .button-danger {
+            background-color: #F44336;
+            color: white;
+        }
+
+        .error-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .error-item {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .error-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .error-level {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .level-info { background-color: #E3F2FD; color: #1976D2; }
+        .level-warning { background-color: #FFF3E0; color: #F57C00; }
+        .level-error { background-color: #FFEBEE; color: #D32F2F; }
+        .level-fatal { background-color: #B71C1C; color: white; }
+
+        .error-timestamp {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .error-message {
+            font-size: 14px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .error-details {
+            font-family: monospace;
+            font-size: 12px;
+            color: #666;
+            white-space: pre-wrap;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        .no-errors {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>错误日志</h1>
+        <div class="controls">
+            <button id="refreshBtn" class="button button-primary">刷新</button>
+            <button id="clearBtn" class="button button-danger">清除所有</button>
+        </div>
+    </div>
+    <div id="errorList" class="error-list">
+        <!-- 错误项将通过 JavaScript 动态添加 -->
+    </div>
+
+    <script src="background.js" type="module"></script>
+    <script src="error-page.js" type="module"></script>
+</body>
+</html> 

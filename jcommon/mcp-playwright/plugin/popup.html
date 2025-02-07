@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Browser Assistant</title>
+    <link rel="stylesheet" type="text/css" href="styles.css">
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>Browser Assistant</h1>
+            <button id="close-sidebar" class="close-btn">×</button>
+        </div>
+        
+        <div class="sidebar-content">
+            <div class="message-history">
+                <div class="message-header">
+                    <h3>Messages</h3>
+                    <button id="clear-messages" class="action-button" style="width: auto; padding: 4px 8px;">Clear</button>
+                </div>
+                <div id="realtime-messages"></div>
+                <div id="message-container"></div>
+            </div>
+            
+            
+            <div class="button-container-wrapper">
+                <div class="button-container-header">
+                    <span class="collapse-arrow">▶</span>
+                    <span class="header-text">功能按钮</span>
+                </div>
+                <div class="button-container collapsed">
+                    <button id="showTabs" class="action-button">📑 显示所有标签页</button>
+                    <button id="captureFullPage" class="action-button">📸 截取整页</button>
+                    <button id="captureVisible" class="action-button">📷 截取当前屏幕</button>
+                    <button id="autoScroll" class="action-button">⬇️ 自动滚动</button>
+                    <button id="snowEffect" class="action-button">❄️ 下雪特效</button>
+                    <button id="addBorders" class="action-button">🔲 添加元素边框</button>
+                    <button id="toggleMouseTracker" class="action-button">🔴 虚拟鼠标跟踪</button>
+                    <button id="redrawDomTree" class="action-button">🔄 重绘DOM树</button>
+                    <button id="viewDomTree" class="action-button">🌳 查看DOM树</button>
+                    <button id="getRecentHistory" class="action-button">📜 最近历史记录</button>
+                    <button id="getBookmarkStats" class="action-button">📚 书签统计信息</button>
+                    <button id="testError" class="action-button">⚠️ 测试错误</button>
+                    <button id="actionTest" class="action-button">🎯 测试操作序列</button>
+                    <button id="scrollOneScreen" class="action-button">📜 滚动一屏</button>
+                    
+                    <div class="coordinates-input-group">
+                        <div class="input-group" style="display: flex; gap: 8px; margin-bottom: 8px;">
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <label for="x-coord">X:</label>
+                                <input type="number" id="x-coord" class="coord-input" style="width: 80px;">
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 4px;">
+                                <label for="y-coord">Y:</label>
+                                <input type="number" id="y-coord" class="coord-input" style="width: 80px;">
+                            </div>
+                        </div>
+                        <button id="click-btn" class="action-button">🎯 移动到坐标</button>
+                    </div>
+
+                    <div class="selector-input-group">
+                        <input type="text" id="selector-input" class="selector-input" placeholder="请输入要移动到的元素的CSS选择器">
+                        <button id="move-to-selector" class="action-button">🎯 移动到指定元素</button>
+                        
+                        <div class="action-execute-group" style="margin-top: 10px;">
+                            <select id="action-type" class="action-select">
+                                <option value="click">点击</option>
+                                <option value="enter">回车</option>
+                                <option value="fill">输入内容</option>
+                            </select>
+                            <input type="text" id="action-selector" class="selector-input" placeholder="请输入要操作的元素的CSS选择器">
+                            <input type="text" id="fill-content" class="selector-input" placeholder="输入要填写的内容" style="display: none;">
+                            <button id="execute-action" class="action-button">▶️ 执行操作</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tabs-list"></div>
+            <div id="status-text"></div>
+
+            <div id="messageHistory">
+                <!-- 消息历史记录会在这里显示 -->
+            </div>
+
+            <div class="message-input-container">
+                <input type="text" id="messageInput" placeholder="输入消息...">
+                <button id="sendButton">发送</button>
+            </div>
+        </div>
+    </div>
+    <script  src="./managers/screenshotManager.js"></script>
+    <script type="module" src="popup.js"></script>
+</body>
+</html>

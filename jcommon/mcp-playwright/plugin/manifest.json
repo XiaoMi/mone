@@ -1,0 +1,47 @@
+{
+"manifest_version":3,
+"name":"Mone",
+"version":"1.0",
+"description":"Mone",
+"permissions":["activeTab","scripting","storage","tabs","downloads","windows","contextMenus","history","bookmarks","sidePanel","clipboardWrite","notifications"],
+"host_permissions":["<all_urls>","ws://127.0.0.1:8181/*"],
+"action":{
+"default_title":"Mone Assistant"
+},
+"side_panel":{
+"default_path":"popup.html"
+},
+
+"content_scripts":[
+{
+"matches":["<all_urls>"],
+"js":["managers/screenshotManager.js","content.js"]
+}
+
+],
+"background":{
+"service_worker":"background.js",
+"type":"module"
+},
+"web_accessible_resources": [{
+"resources": [
+"tree-viewer.html",
+"tree-viewer.js",
+"managers/*"
+],
+"matches": ["<all_urls>"]
+},
+{
+"resources": ["error-page.html"],
+"matches": ["<all_urls>"]
+},
+{
+"resources": ["actionManager.js"],
+"matches": ["<all_urls>"]
+},
+{
+"resources": ["managers/actionManager2.js"],
+"matches": ["<all_urls>"]
+}
+]
+}

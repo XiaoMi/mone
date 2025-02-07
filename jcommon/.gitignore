@@ -5,6 +5,7 @@ dependency-reduced-pom.xml
 *.diff
 .DS_Store
 .idea/
+.vscode/
 *.iml
 logs/
 .project
@@ -19,4 +20,5 @@ nohup*
 *.pyc
 *.class
 .sbtserver*
+.vscode/settings.json
 
