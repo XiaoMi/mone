@@ -148,8 +148,6 @@ input {
     color: #333;
 }
 
-<<<<<<< HEAD
-=======
 .message-input-container {
     display: flex;
     gap: 8px;
@@ -157,7 +155,6 @@ input {
 }
 
 
->>>>>>> multi_agent
 #realtime-messages {
     max-height: 300px;
     overflow-y: auto;
