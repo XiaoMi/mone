@@ -70,6 +70,11 @@ public class MvcContext {
      */
     private boolean allowCross;
 
+    /**
+     * cluster session
+     */
+    private boolean clusterSession;
+
     public HttpSession session() {
         if (null == session) {
             this.session = HttpSessionManager.getSession(this);

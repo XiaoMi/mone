@@ -1,0 +1,1 @@
+ALTER TABLE m78_bot_character_setting ADD temperature varchar(10) NULL COMMENT '模型温度值';

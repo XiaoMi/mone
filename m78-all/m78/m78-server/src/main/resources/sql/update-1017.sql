@@ -1,0 +1,1 @@
+ALTER TABLE m78_custom_task CHANGE task_description input VARCHAR(1024) NOT NULL DEFAULT '' COMMENT 'input'

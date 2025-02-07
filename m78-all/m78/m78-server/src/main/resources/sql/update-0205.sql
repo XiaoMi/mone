@@ -1,0 +1,1 @@
+ALTER TABLE m78_chat_info ADD COLUMN `chat_info_meta` JSON default null comment 'meta信息';
