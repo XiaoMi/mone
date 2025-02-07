@@ -71,7 +71,18 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 //点击加入购物车
                 new ScrollAction("滚动页面")
         );
-//        shopper.setConsumer(this::sendMessageToAll);
+        shopper.setConsumer(msg->{
+            try {
+                JsonObject obj = new JsonObject();
+                obj.addProperty("data",msg);
+                sendMessageToAll(obj.toString());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+
+
 
         roleClassifier.setLlm(llm);
         roleClassifier.setActions(new ClassifierAction());
@@ -98,7 +109,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
 
         JsonObject req = JsonParser.parseString(payload).getAsJsonObject();
-        boolean test = JsonUtils.getValueOrDefault(req, "test", "false").equals("true");
+//        boolean test = JsonUtils.getValueOrDefault(req, "test", "false").equals("true");
         String from = JsonUtils.getValueOrDefault(req, "from", "chrome");
         String cmd = JsonUtils.getValueOrDefault(req, "cmd", "");
 
@@ -145,7 +156,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             //用户有购物意图
             if (agentName.equals("Shopper")) {
-                shopper.getRc().news.put(Message.builder().type("string").content(data).build());
+                shopper.getRc().news.put(Message.builder().type("string").role("user").content(data).build());
+                new Thread(()-> shopper.run()).start();
                 return;
             }
 

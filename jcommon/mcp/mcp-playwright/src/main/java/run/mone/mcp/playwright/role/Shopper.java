@@ -38,6 +38,8 @@ public class Shopper extends Role {
 
     private String userPrompt = """
             ===========
+            ${goal}
+            ===========
             历史聊天记录:
             ${history}
             
@@ -52,12 +54,15 @@ public class Shopper extends Role {
 
         this.goal = """
                 购物,基本遵循如下步骤:
-                1.打开京东首页
-                2.在首页的搜索栏里输入要买的东西,点击搜索按钮
+                1.打开京东首页(OpenTabAction)
+                2.在首页的搜索栏里输入要买的东西(根据用户的需求分析出来),点击搜索按钮
                 3.搜素详情页:点击排名第一的商品的图片(在商品列表里,有图)
                 4.商品详情页:点击 加入购物车 按钮(红色大按钮)
                 5.购物车加购页面:点击去购物车结算按钮
-                6.如果页面信息不全,这里需要滚动下页面
+                6.到达购物车页面就可以结束了
+                
+                需要注意的点:
+                如果页面信息不全,可以滚动下页面
                 """;
 
         super.prompt = """
@@ -142,6 +147,7 @@ public class Shopper extends Role {
         int i = 0;
         while (i++ < 20) {
             ActionReq req = new ActionReq();
+            req.setRole(Role.builder().name("user").build());
             Message msg = this.rc.getNews().poll(2, TimeUnit.MINUTES);
 
             String img = "";
@@ -162,30 +168,30 @@ public class Shopper extends Role {
 
             LLMService llmService = ApplicationContextProvider.getBean(LLMService.class);
 
-            String userPrompt = AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.of("history", history));
+            String userPrompt = AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.of("history", history, "goal", this.goal));
 
             String res = llmService.call(this.llm, userPrompt, img, this.prompt);
             log.info("res:{}", res);
             List<Result> list = new MultiXmlParser().parse(res);
             Result result = list.get(0);
 
-            this.getRc().getMemory().add(Message.builder().role("user").content(res).build());
+            this.getRc().getMemory().add(Message.builder().role("assistant").content(res).build());
 
             if (result.getTag().equals("attempt_completion") || result.getTag().equals("ask_followup_question")) {
                 break;
             }
 
-            if (result.getTag().equals("OpenTabAction")) {
+            if (result.getKeyValuePairs().getOrDefault("tool_name", "").equals("OpenTabAction")) {
                 String content = this.getActions().get(0).run(req, context).join().getContent();
                 consumer.accept(content);
             }
 
-            if (result.getTag().equals("ScrollAction")) {
+            if (result.getKeyValuePairs().getOrDefault("tool_name", "").equals("ScrollAction")) {
                 String content = this.getActions().get(2).run(req, context).join().getContent();
                 consumer.accept(content);
             }
 
-            if (result.getTag().equals("OperationAction")) {
+            if (result.getKeyValuePairs().getOrDefault("tool_name", "").equals("OperationAction")) {
                 req.setMessage(Message.builder().data(result).build());
                 String content = this.getActions().get(1).run(req, context).join().getContent();
                 consumer.accept(content);
