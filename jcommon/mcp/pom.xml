@@ -31,6 +31,7 @@
         <module>mcp-coder</module>
         <module>mcp-excel</module>
         <module>mcp-song</module>
+        <module>mcp-sequentialthinking</module>
     </modules>
 
     <properties>
