@@ -1,0 +1,17 @@
+##!/bin/sh
+#
+## 获取提交信息
+#commit_msg_file="$1"
+#commit_message=$(cat "$commit_msg_file")
+## 检查提交信息是否完全等于 "update" 或 "up"
+#if [ "$commit_message" = "update" ] || [ "$commit_message" = "up" ]; then
+#	echo "Error: commit message is not allowed to be 'update' or 'up'."
+#	exit 1
+#fi
+#
+#body=$(echo '{"userName":"wangyingjie3","botId":"1","input":"'"${commit_message}"'"}')
+#
+## echo $body
+#
+## 通过ai bot检查提交信息
+#python ./hook/botcheck.py https://127.0.0.1/open-apis/ai-plugin-new/feature/router/probot/query "$body"

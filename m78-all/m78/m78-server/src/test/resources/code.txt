@@ -1,0 +1,37 @@
+import run.mone.m78.service.service.api.Context
+import run.mone.m78.service.bo.ApiResult
+import com.google.gson.JsonObject
+import java.lang.NumberFormatException
+
+def execute(Map<String, String> params, Context context) {
+    // 获取两个数值参数
+    String firstParam = params.get('first')
+    String secondParam = params.get('second')
+
+    // 转换参数为整数
+    int firstNumber, secondNumber
+    try {
+        firstNumber = firstParam?.toInteger()
+        secondNumber = secondParam?.toInteger()
+    } catch (NumberFormatException e) {
+        return ApiResult.builder()
+            .code(400)
+            .message('Invalid input: Please provide valid integers.')
+            .data(null)
+            .build()
+    }
+
+    // 计算两数之和
+    int sum = firstNumber + secondNumber
+
+    // 创建返回的JSON对象
+    JsonObject resultData = new JsonObject()
+    resultData.addProperty('sum', sum)
+
+    // 封装ApiResult
+    return ApiResult.builder()
+        .code(200)
+        .message('The sum of the two numbers is calculated successfully.')
+        .data(resultData)
+        .build()
+}

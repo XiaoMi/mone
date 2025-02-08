@@ -31,7 +31,8 @@
         <module>mcp-coder</module>
         <module>mcp-excel</module>
         <module>mcp-song</module>
-        <module>mcp-calendar</module>
+        <module>mcp-sequentialthinking</module>
+        <module>mcp-git</module>
         <module>mcp-hammerspoon</module>
     </modules>
 

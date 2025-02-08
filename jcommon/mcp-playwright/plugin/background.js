@@ -46,6 +46,7 @@ function connectWebSocket() {
             const data = JSON.parse(event.data);
             console.log('Received message:', data);
 
+            //当前的tab
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
             if (data && 'data' in data) {
@@ -65,17 +66,13 @@ function connectWebSocket() {
                         // 处理chat类型的消息
                         if (action.type === 'chat') {
                             console.log('Processing chat message:', action);
-                            // 将聊天消息添加到历史记录中
-                            messageHistory.push({
-                                message: action.attributes.message,
-                                timestamp: new Date().toISOString()
-                            });
-                            
-                            // 如果消息数量超过最大限制，删除最早的消息
-                            if (messageHistory.length > MAX_MESSAGES) {
-                                messageHistory.shift();
-                            }
+                            addMessageToHistory(action.attributes.message);
                             continue;
+                        }
+
+                        if (action.type === 'end') {
+                            isAutoMode = false;
+                            addMessageToHistory('end');
                         }
 
                         // 处理普通action类型
@@ -84,7 +81,6 @@ function connectWebSocket() {
                             const selector = `[browser-user-highlight-id="playwright-highlight-${action.attributes.elementId}"]`;
 
                             if (action.attributes.name === 'fill') {
-
                                 await chrome.scripting.executeScript({
                                     target: { tabId: tab.id },
                                     func: (selector, value) => {
@@ -92,6 +88,7 @@ function connectWebSocket() {
                                         const element = document.querySelector(selector);
                                         if (element) {
                                             element.value = value;
+                                            console.log('fill element:', element);
                                             // Trigger input event to simulate user input
                                             element.dispatchEvent(new Event('input', { bubbles: true }));
                                             element.dispatchEvent(new Event('change', { bubbles: true }));
@@ -104,7 +101,6 @@ function connectWebSocket() {
                                     },
                                     args: [selector, action.attributes.value]
                                 });
-                                 await new Promise(resolve => setTimeout(resolve, 2000));
                             } else if (action.attributes.name === 'click') {
                                 console.log('Executing click action with selector:', selector);
                                 await chrome.scripting.executeScript({
@@ -112,16 +108,14 @@ function connectWebSocket() {
                                     func: (selector) => {
                                         const element = document.querySelector(selector);
                                         if (element) {
+                                            element.focus();
                                             element.click();
                                         }
                                     },
                                     args: [selector]
                                 });
                             }
-
-
-                            // 操作完成后发送ping
-                            sendWebSocketMessage("ping", "action_ping");
+                            await new Promise(resolve => setTimeout(resolve, 1999));
                         }
 
                         //停顿1000ms
@@ -130,9 +124,21 @@ function connectWebSocket() {
                             await new Promise(resolve => setTimeout(resolve, 1000));
                         }
 
-                        //如果是结束状态,则把auto的状态设置为false
-                        if (action.type === 'end') {
-                            isAutoMode = false;
+                        //滚动一屏
+                        if (action.type === 'scrollOneScreen') {
+                            console.log('scrollOneScreen action');
+                            await chrome.scripting.executeScript({
+                                target: { tabId: tab.id },
+                                func: () => {
+                                    // 获取视口高度
+                                    const viewportHeight = window.innerHeight;
+                                    // 平滑滚动一屏
+                                    window.scrollBy({
+                                        top: viewportHeight,
+                                        behavior: 'smooth'
+                                    });
+                                }
+                            });
                         }
 
                         //通知服务器
@@ -147,7 +153,7 @@ function connectWebSocket() {
                             // 设置全局auto状态
                             isAutoMode = action.attributes.auto === 'true';
                             // 创建新标签页
-                            const tab = await tabManager.createNewTab(action.attributes.url);
+                            await tabManager.createNewTab(action.attributes.url);
                         }
                         //截屏
                         if (action.type === 'screenshot') {
@@ -158,10 +164,32 @@ function connectWebSocket() {
                                 quality: 10
                             });
 
-                            await chrome.tabs.sendMessage(tab.id, {
-                                type: 'takeScreenshot',
-                                data: screenshot
-                            });
+                            //提供下载选项
+                            if (action.attributes.download === 'true') {
+                                await chrome.tabs.sendMessage(tab.id, {
+                                    type: 'takeScreenshot',
+                                    data: screenshot
+                                });
+                            }
+
+                            let code = '';
+                            //提供发送选项  
+                            if (action.attributes.send === 'true') {
+                                if (context.has('domTreeData')) {
+                                    // 获取domTreeData
+                                    const domTreeData = context.get('domTreeData');
+                                    code = generateHtmlString(domTreeData);
+                                }
+                                // 获取domTreeData
+                                const domTreeData = context.get('domTreeData');
+                                // 将截图数据放入context
+                                const messageData = {
+                                    code: code,
+                                    img: screenshot
+                                };
+                                console.log('send messageData:', messageData);
+                                await sendWebSocketMessage(JSON.stringify(messageData), "shopping");
+                            }
                         }
                         // buildDomTree(从新生成domTree)
                         if (action.type === 'buildDomTree') {
@@ -185,6 +213,7 @@ function connectWebSocket() {
                                 },
                                 args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 }]
                             });
+                            context.set('domTreeData', domTreeData);
                         }
                         //取消重绘
                         if (action.type === 'cancelBuildDomTree') {
@@ -196,10 +225,14 @@ function connectWebSocket() {
                                     const container = document.getElementById('playwright-highlight-container');
                                     if (container) {
                                         container.remove();
+                                        // Remove highlight IDs from all elements
+                                        const highlightedElements = document.querySelectorAll('[browser-user-highlight-id]');
+                                        highlightedElements.forEach(element => {
+                                            element.removeAttribute('browser-user-highlight-id');
+                                        });
                                     }
                                 }
                             });
-                            sendWebSocketMessage("ping");
                         }
                     };
 
@@ -237,7 +270,7 @@ function connectWebSocket() {
             }
 
         } catch (e) {
-            console.log('Received non-JSON message:', event.data);
+            console.log('error Received non-JSON message:', event.data, e);
             messageWithTimestamp = {
                 timestamp: new Date().toLocaleTimeString(),
                 data: event.data,
@@ -265,29 +298,6 @@ function connectWebSocket() {
             // 获取当前活动标签页
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
             if (!tab) return;
-
-            // 先注入 actionManager.js
-            // await chrome.scripting.executeScript({
-            //     target: { tabId: tab.id },
-            //     files: ['actionManager.js']
-            // });
-
-            //await injectActionManager(tab.id);
-
-
-
-
-            // 然后执行操作
-            // await chrome.scripting.executeScript({
-            //     target: { tabId: tab.id },
-            //     func: async (selector, text) => {
-            //         console.log('Executing actions');
-            //         // 在页面上下文中执行操作
-            //         await window.actionManager.fill(selector, text);
-            //         await window.actionManager.click('#su');
-            //     },
-            //     args: ['#kw', '大熊猫']
-            // });
         }
     };
 
@@ -323,7 +333,7 @@ function startPingCheck() {
             console.error('Error sending ping:', error);
             forceReconnect();
         }
-    }, 5000);
+    }, 10000);
 }
 
 // 启动ping检查
@@ -695,7 +705,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 // 添加一个定时器来持续输出，确认 service worker 活跃
 setInterval(() => {
     console.log("Background script is still running:", new Date().toISOString());
-}, 10000);  // 每10秒输出一次
+}, 20000);  // 每20秒输出一次
 
 // 监听扩展图标点击事件
 chrome.action.onClicked.addListener((tab) => {
@@ -718,43 +728,72 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     });
 });
 
-// 添加 generateHtmlString 函数
+// 修改 generateHtmlString 函数
 function generateHtmlString(node, indent = 0) {
     if (!node) return '';
 
     const indentStr = '    '.repeat(indent);
     let html = '';
 
-    // 开始标签
-    if (node.tagName) {
-        html += `${indentStr}<${node.tagName.toLowerCase()}`;
+    // 处理文本节点
+    if (node.type === 'TEXT_NODE') {
+        if (node.isVisible && node.text) {
+            html += `${indentStr}${node.text.trim()}\n`;
+        }
+        return html;
+    }
 
-        // 添加属性
-        if (node.attributes && typeof node.attributes === 'object') {
-            for (const [key, value] of Object.entries(node.attributes)) {
-                if (value !== null && value !== undefined) {
-                    html += ` ${key}="${value}"`;
+    // 处理元素节点
+    if (node.tagName) {
+        // 只收集可交互且可见的顶层元素
+        if (node.isInteractive && node.isVisible && node.isTopElement) {
+            html += `${indentStr}<${node.tagName}`;
+            
+            // 添加 highlight-id 属性（如果存在）
+            if (typeof node.highlightIndex === 'number') {
+                html += ` browser-user-highlight-id="playwright-highlight-${node.highlightIndex}"`;
+            }
+            
+            // 添加其他重要属性
+            if (node.attributes) {
+                // 添加 class 属性
+                if (node.attributes.class) {
+                    html += ` class="${node.attributes.class}"`;
                 }
+                // 添加 id 属性
+                if (node.attributes.id) {
+                    html += ` id="${node.attributes.id}"`;
+                }
+                // 添加 role 属性
+                if (node.attributes.role) {
+                    html += ` role="${node.attributes.role}"`;
+                }
+                // 添加 aria-* 属性
+                Object.entries(node.attributes).forEach(([key, value]) => {
+                    if (key.startsWith('aria-')) {
+                        html += ` ${key}="${value}"`;
+                    }
+                });
+            }
+            
+            html += '>\n';
+
+            // 处理子节点
+            if (node.children && Array.isArray(node.children)) {
+                node.children.forEach(child => {
+                    html += generateHtmlString(child, indent + 1);
+                });
+            }
+
+            html += `${indentStr}</${node.tagName}>\n`;
+        } else {
+            // 即使当前节点不需要收集，也要处理其子节点
+            if (node.children && Array.isArray(node.children)) {
+                node.children.forEach(child => {
+                    html += generateHtmlString(child, indent);
+                });
             }
         }
-        html += '>\n';
-    }
-
-    // 处理子节点
-    if (node.children && Array.isArray(node.children)) {
-        node.children.forEach(child => {
-            html += generateHtmlString(child, indent + 1);
-        });
-    }
-
-    // 处理文本内容
-    if (node.textContent && typeof node.textContent === 'string' && node.textContent.trim()) {
-        html += `${indentStr}    ${node.textContent.trim()}\n`;
-    }
-
-    // 结束标签
-    if (node.tagName) {
-        html += `${indentStr}</${node.tagName.toLowerCase()}>\n`;
     }
 
     return html;
@@ -791,6 +830,7 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
         // 添加延迟确保页面重绘完成
         await new Promise(resolve => setTimeout(resolve, 500)); // 500ms 延迟
 
+        //截屏的数据
         const screenshot = await chrome.tabs.captureVisibleTab(null, {
             format: 'jpeg',
             quality: 10
@@ -802,7 +842,7 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
             func: () => {
                 const container = document.getElementById('playwright-highlight-container');
                 if (container) {
-                    container.remove();
+                    //container.remove();
                 }
             }
         });
@@ -811,8 +851,9 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
         const domTreeString = generateHtmlString(domTreeData);
 
         const messageData = {
-            code: '',
-            img: screenshot
+            code: domTreeString,
+            img: screenshot,
+            tabs: await getAllTabsInfo()
         };
         console.log('messageData:', messageData);
         //通知服务器,这个tab发生了变化
@@ -821,3 +862,36 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
         console.error('Error handling state change:', error);
     }
 });
+
+
+// 获取所有标签页信息的函数
+async function getAllTabsInfo() {
+    try {
+        // 获取当前窗口的所有标签页
+        const tabs = await chrome.tabs.query({});
+        
+        // 映射需要的标签页信息
+        return tabs.map(tab => ({
+            id: tab.id,
+            title: tab.title,
+            active: tab.active
+        }));
+    } catch (error) {
+        console.error('Error getting tabs info:', error);
+        return [];
+    }
+}
+
+
+// 添加新的辅助方法来处理消息历史
+function addMessageToHistory(message) {
+    messageHistory.push({
+        message: message,
+        timestamp: new Date().toISOString()
+    });
+    
+    // 如果消息数量超过最大限制，删除最早的消息
+    if (messageHistory.length > MAX_MESSAGES) {
+        messageHistory.shift();
+    }
+}
