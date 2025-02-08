@@ -145,7 +145,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 return;
             }
 
-
             roleClassifier.getRc().news.put(Message.builder().sendTo(Lists.newArrayList("RoleClassifier")).content(data).build());
             Message classifiterRes = roleClassifier.run().join();
 

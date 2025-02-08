@@ -23,6 +23,7 @@ const handleTabClick = (tab: string) => {
 				<el-tab-pane :label="t('nav.home')" name="home" />
 				<el-tab-pane :label="t('nav.features')" name="features" />
 				<el-tab-pane :label="t('nav.preview')" name="preview" />
+        <el-tab-pane :label="t('nav.config')" name="config" />
 			</el-tabs>
 			<div class="app-switches">
 				<ThemeSwitch class="app-theme-switch" />
