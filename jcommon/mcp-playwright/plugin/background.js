@@ -20,6 +20,12 @@ const MAX_MESSAGES = 100; // 最多存储100条消息
 // 添加全局变量跟踪auto状态
 let isAutoMode = false;
 
+// ws地址
+let wsUrl = 'ws://localhost:8181/ws';
+
+// config地址
+let configUrl = 'http://localhost:8181/config/list';
+
 // 创建 WebSocket 连接函数
 function connectWebSocket() {
     // 如果已经有连接，先关闭
@@ -27,7 +33,7 @@ function connectWebSocket() {
         ws.close();
     }
 
-    ws = new WebSocket('ws://127.0.0.1:8181/ws');
+    ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
         console.log('WebSocket connected');
@@ -800,6 +806,45 @@ function generateHtmlString(node, indent = 0) {
 }
 
 // 修改状态变更监听器，直接使用stateUpdate中的tabId
+async function getConfigs() {
+  try {
+    // 从API获取配置列表
+    const response = await fetch(configUrl);
+    const configs = await response.json();
+    return configs;
+  } catch (error) {
+    console.error('获取配置失败:', error);
+    return [];
+  }
+}
+
+// 为元素添加标记
+async function markElements(tabId, configs) {
+  try {
+    // 在页面上下文中执行脚本
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      func: (configs) => {
+        // 遍历每个配置
+        configs.forEach(config => {
+          // 查找匹配的元素
+          const elements = document.querySelectorAll(config.selector);
+          console.log('elements:', elements);
+          // 为每个元素添加标记
+          elements.forEach(element => {
+            element.setAttribute(config.key, config.value);
+            console.log('标记element:', element);
+          });
+        });
+      },
+      args: [configs]
+    });
+  } catch (error) {
+    console.error('标记元素失败:', error);
+  }
+}
+
+// 在状态变更监听器中添加配置处理
 stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
     try {
         // 使用stateUpdate中的tabId，不再需要查询当前tab
@@ -807,6 +852,15 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
             console.warn('No tabId in state update:', stateUpdate);
             return;
         }
+
+        // 获取config配置内容，对于config中定义的select的元素，打上对应的kv标记
+        const configs = await getConfigs();
+        await markElements(stateUpdate.tabId, configs);
+
+        await chrome.scripting.executeScript({
+            target: { tabId: stateUpdate.tabId },
+            files: ['markElement.js']
+        });
 
         // 执行所需的操作（buildDomTree、截图等）
         await chrome.scripting.executeScript({
