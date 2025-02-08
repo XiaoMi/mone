@@ -275,12 +275,7 @@ public class GitLabFunction implements Function<Map<String, Object>, McpSchema.C
             String token = System.getenv().getOrDefault("GIT_TOKEN", "");
             BaseResponse mergeRes = gitlab.createMerge(gitLabUrl, projectId, sourceBranch, targetBranch, mergeTitle, token);
             if (mergeRes.getCode() / 100 == 2) {
-                // 获取mergeId,
-                /*
-                {"id":2616238,"iid":10,"project_id":61851,"title":"Merge zxw_mcp into staging-jdk21","description":null,"state":"opened","created_at":"2025-02-08T16:56:09.798+08:00","updated_at":"2025-02-08T16:56:09.798+08:00","merged_by":null,"merged_at":null,"closed_by":null,"closed_at":null,"target_branch":"staging-jdk21","source_branch":"zxw_mcp","user_notes_count":0,"upvotes":0,"downvotes":0,"author":{"id":19628,"username":"mione-xm","name":"mione-xm","state":"active","avatar_url":"https://git.n.xiaomi.com/api/user/getAvatarurlnocheck?user_name=mione-xm\u0026checkSign=50480f6a66800d493b9c288bf8c43dd5","web_url":"https://git.n.xiaomi.com/mione-xm"},"assignees":[],"assignee":null,"reviewers":[],"source_project_id":61851,"target_project_id":61851,"labels":[],"draft":false,"work_in_progress":false,"milestone":null,"merge_when_pipeline_succeeds":false,"merge_status":"checking","sha":"8fcd0a31ba368916507482921d8831f29258ad3d","merge_commit_sha":null,"squash_commit_sha":null,"discussion_locked":null,"should_remove_source_branch":null,"force_remove_source_branch":null,"reference":"!10","references":{"short":"!10","relative":"!10","full":"youpin-gateway/zxw_test2!10"},"web_url":"https://git.n.xiaomi.com/youpin-gateway/zxw_test2/-/merge_requests/10","time_stats":{"time_estimate":0,"total_time_spent":0,"human_time_estimate":null,"human_total_time_spent":null},"squash":false,"task_completion_status":{"count":0,"completed_count":0},"has_conflicts":false,"blocking_discussions_resolved":true,"subscribed":true,"changes_count":"1","latest_build_started_at":null,"latest_build_finished_at":null,"first_deployed_to_production_at":null,"pipeline":null,"head_pipeline":null,"diff_refs":{"base_sha":"3593691ff2178ad1db8195954f367e4d88f5c01c","head_sha":"8fcd0a31ba368916507482921d8831f29258ad3d","start_sha":"6a6d2032181c3c3ab277fd27bcb670a0b2378775"},"merge_error":null,"user":{"can_merge":true}}
-                */
-                // mergeRes.getMessage()转为gson 获取iid为mergeId
-                
+                // 获取mergeId
                 Map<String, Object> mergeMap = gson.fromJson(mergeRes.getMessage(), Map.class);
                 String mergeId = mergeMap.get("iid").toString();
                 return new McpSchema.CallToolResult(
