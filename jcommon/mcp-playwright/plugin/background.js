@@ -85,7 +85,6 @@ function connectWebSocket() {
                             const selector = `[browser-user-highlight-id="playwright-highlight-${action.attributes.elementId}"]`;
 
                             if (action.attributes.name === 'fill') {
-
                                 await chrome.scripting.executeScript({
                                     target: { tabId: tab.id },
                                     func: (selector, value) => {
@@ -113,16 +112,13 @@ function connectWebSocket() {
                                     func: (selector) => {
                                         const element = document.querySelector(selector);
                                         if (element) {
+                                            element.focus();
                                             element.click();
                                         }
                                     },
                                     args: [selector]
                                 });
                             }
-
-
-                            // 操作完成后发送ping
-                            sendWebSocketMessage("ping", "action_ping");
                         }
 
                         //停顿1000ms

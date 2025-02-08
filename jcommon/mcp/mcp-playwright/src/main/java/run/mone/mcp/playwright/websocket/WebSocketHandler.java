@@ -1,8 +1,10 @@
 package run.mone.mcp.playwright.websocket;
 
+import com.google.common.collect.Lists;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import jakarta.annotation.Resource;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
@@ -53,6 +55,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private Chatter chatter = new Chatter();
 
+    @SneakyThrows
     public WebSocketHandler() {
         LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
         if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
@@ -68,15 +71,25 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 //点击加入购物车
                 new ScrollAction("滚动页面")
         );
-        shopper.setBlockingMessageRetrieval(true);
-        shopper.setRc(new RoleContext(shopper.getProfile()));
-        shopper.getRc().setReactMode(RoleContext.ReactMode.REACT);
+        shopper.setConsumer(msg->{
+            try {
+                JsonObject obj = new JsonObject();
+                obj.addProperty("data",msg);
+                sendMessageToAll(obj.toString());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+
+
 
         roleClassifier.setLlm(llm);
         roleClassifier.setActions(new ClassifierAction());
         roleClassifier.setRc(new RoleContext(roleClassifier.getProfile()));
 
         chatter.setLlm(llm);
+        chatter.setRc(new RoleContext(chatter.getProfile()));
     }
 
 
@@ -96,7 +109,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
 
         JsonObject req = JsonParser.parseString(payload).getAsJsonObject();
-        boolean test = JsonUtils.getValueOrDefault(req, "test", "false").equals("true");
+//        boolean test = JsonUtils.getValueOrDefault(req, "test", "false").equals("true");
         String from = JsonUtils.getValueOrDefault(req, "from", "chrome");
         String cmd = JsonUtils.getValueOrDefault(req, "cmd", "");
 
@@ -123,26 +136,28 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             //chrome直接返回的(目前只有购物)
             if (cmd.equals("shopping")) {
-                shopper.getRc().news.put(Message.builder().content(data).build());
+                shopper.getRc().news.put(Message.builder().type("json").content(data).build());
                 return;
             }
 
 
-            roleClassifier.getRc().news.put(Message.builder().content(data).build());
+            roleClassifier.getRc().news.put(Message.builder().sendTo(Lists.newArrayList("RoleClassifier")).content(data).build());
             Message classifiterRes = roleClassifier.run().join();
 
             String agentName = classifiterRes.getContent();
 
             //单纯的聊天
             if (agentName.equals("Chatter")) {
+                chatter.getRc().news.put(Message.builder().role("user").sendTo(Lists.newArrayList("Chatter")).content(data).build());
                 sendMessageToAll(chatter.run().join().getContent());
                 return;
             }
 
 
-            //购物 或者 chrome返回的截图数据
+            //用户有购物意图
             if (agentName.equals("Shopper")) {
-                shopper.getRc().news.put(Message.builder().content(data).build());
+                shopper.getRc().news.put(Message.builder().type("string").role("user").content(data).build());
+                new Thread(()-> shopper.run()).start();
                 return;
             }
 

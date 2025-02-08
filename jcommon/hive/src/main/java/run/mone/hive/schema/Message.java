@@ -25,7 +25,8 @@ public class Message implements Serializable {
 
     private Object data;
 
-    private String type;
+    @Builder.Default
+    private String type = "string";
 
     private Map<MetaKey, MetaValue> meta = new HashMap<>();
 

@@ -11,7 +11,7 @@ public class OpenTabAction extends Action {
 
     public OpenTabAction(String url) {
         setFunction((req, action, ctx) -> {
-            return Message.builder().data(url).data(
+            return Message.builder().data(url).content(
                     """
                             <action type="createNewTab" url="https://www.jd.com/" auto="true">
                             打开京东

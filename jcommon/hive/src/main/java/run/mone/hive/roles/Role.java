@@ -170,6 +170,7 @@ public class Role {
 
         Map<String, String> map = new HashMap<>();
         map.put("profile", this.profile);
+        map.put("goal", this.goal);
         map.put("name", this.name);
         map.put("history", history);
         map.put("previous_state", this.rc.getState() + "");

@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
@@ -29,13 +30,17 @@ public class LLMService {
             JsonArray parts = new JsonArray();
             JsonObject obj = new JsonObject();
             obj.addProperty("text", text);
-            JsonObject obj2 = new JsonObject();
-            JsonObject objImg = new JsonObject();
-            objImg.addProperty("mime_type", "image/jpeg");
-            objImg.addProperty("data", imgText);
-            obj2.add("inline_data", objImg);
             parts.add(obj);
-            parts.add(obj2);
+
+            if (StringUtils.isNotEmpty(imgText)) {
+                JsonObject obj2 = new JsonObject();
+                JsonObject objImg = new JsonObject();
+                objImg.addProperty("mime_type", "image/jpeg");
+                objImg.addProperty("data", imgText);
+                obj2.add("inline_data", objImg);
+                parts.add(obj2);
+            }
+
             req.add("parts", parts);
         }
 
@@ -48,12 +53,14 @@ public class LLMService {
             obj1.addProperty("text", text);
             array.add(obj1);
 
-            JsonObject obj2 = new JsonObject();
-            obj2.addProperty("type", "image_url");
-            JsonObject img = new JsonObject();
-            img.addProperty("url", "data:image/jpeg;base64," + imgText);
-            obj2.add("image_url", img);
-            array.add(obj2);
+            if (StringUtils.isNotEmpty(imgText)) {
+                JsonObject obj2 = new JsonObject();
+                obj2.addProperty("type", "image_url");
+                JsonObject img = new JsonObject();
+                img.addProperty("url", "data:image/jpeg;base64," + imgText);
+                obj2.add("image_url", img);
+                array.add(obj2);
+            }
 
             req.add("content", array);
         }
