@@ -108,9 +108,16 @@ public class AppleScriptFunction implements Function<Map<String, Object>, McpSch
             output.append(line).append("\n");
         }
 
+        StringBuilder errorOutput = new StringBuilder();
+        BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+        String errorLine;
+        while ((errorLine = errorReader.readLine()) != null) {
+            errorOutput.append(errorLine).append("\n");
+        }
+
         int exitCode = process.waitFor();
         if (exitCode != 0) {
-            throw new Exception("AppleScript exited with code " + exitCode);
+            throw new Exception("AppleScript exited with code " + exitCode + ": " + errorOutput);
         }
 
         return output.toString().trim();
