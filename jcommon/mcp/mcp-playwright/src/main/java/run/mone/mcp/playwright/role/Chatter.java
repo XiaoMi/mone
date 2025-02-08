@@ -1,5 +1,6 @@
 package run.mone.mcp.playwright.role;
 
+import com.google.gson.JsonObject;
 import run.mone.hive.Environment;
 import run.mone.hive.roles.Role;
 import run.mone.hive.schema.Message;
@@ -23,6 +24,8 @@ public class Chatter extends Role {
         String data = this.rc.news.poll().getContent();
         String chatRes = llm.chat(data);
         chatRes = "<action type=\"chat\">" + chatRes + "</action>";
-        return CompletableFuture.completedFuture(Message.builder().content(chatRes).build());
+        JsonObject jsonObject = new JsonObject();
+        jsonObject.addProperty("data",chatRes);
+        return CompletableFuture.completedFuture(Message.builder().content(jsonObject.toString()).build());
     }
 }

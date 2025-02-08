@@ -104,7 +104,6 @@ function connectWebSocket() {
                                     },
                                     args: [selector, action.attributes.value]
                                 });
-                                 await new Promise(resolve => setTimeout(resolve, 2000));
                             } else if (action.attributes.name === 'click') {
                                 console.log('Executing click action with selector:', selector);
                                 await chrome.scripting.executeScript({
@@ -119,6 +118,7 @@ function connectWebSocket() {
                                     args: [selector]
                                 });
                             }
+                            await new Promise(resolve => setTimeout(resolve, 1999));
                         }
 
                         //停顿1000ms
@@ -749,43 +749,72 @@ chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     });
 });
 
-// 添加 generateHtmlString 函数
+// 修改 generateHtmlString 函数
 function generateHtmlString(node, indent = 0) {
     if (!node) return '';
 
     const indentStr = '    '.repeat(indent);
     let html = '';
 
-    // 开始标签
-    if (node.tagName) {
-        html += `${indentStr}<${node.tagName.toLowerCase()}`;
+    // 处理文本节点
+    if (node.type === 'TEXT_NODE') {
+        if (node.isVisible && node.text) {
+            html += `${indentStr}${node.text.trim()}\n`;
+        }
+        return html;
+    }
 
-        // 添加属性
-        if (node.attributes && typeof node.attributes === 'object') {
-            for (const [key, value] of Object.entries(node.attributes)) {
-                if (value !== null && value !== undefined) {
-                    html += ` ${key}="${value}"`;
+    // 处理元素节点
+    if (node.tagName) {
+        // 只收集可交互且可见的顶层元素
+        if (node.isInteractive && node.isVisible && node.isTopElement) {
+            html += `${indentStr}<${node.tagName}`;
+            
+            // 添加 highlight-id 属性（如果存在）
+            if (typeof node.highlightIndex === 'number') {
+                html += ` browser-user-highlight-id="playwright-highlight-${node.highlightIndex}"`;
+            }
+            
+            // 添加其他重要属性
+            if (node.attributes) {
+                // 添加 class 属性
+                if (node.attributes.class) {
+                    html += ` class="${node.attributes.class}"`;
                 }
+                // 添加 id 属性
+                if (node.attributes.id) {
+                    html += ` id="${node.attributes.id}"`;
+                }
+                // 添加 role 属性
+                if (node.attributes.role) {
+                    html += ` role="${node.attributes.role}"`;
+                }
+                // 添加 aria-* 属性
+                Object.entries(node.attributes).forEach(([key, value]) => {
+                    if (key.startsWith('aria-')) {
+                        html += ` ${key}="${value}"`;
+                    }
+                });
+            }
+            
+            html += '>\n';
+
+            // 处理子节点
+            if (node.children && Array.isArray(node.children)) {
+                node.children.forEach(child => {
+                    html += generateHtmlString(child, indent + 1);
+                });
+            }
+
+            html += `${indentStr}</${node.tagName}>\n`;
+        } else {
+            // 即使当前节点不需要收集，也要处理其子节点
+            if (node.children && Array.isArray(node.children)) {
+                node.children.forEach(child => {
+                    html += generateHtmlString(child, indent);
+                });
             }
         }
-        html += '>\n';
-    }
-
-    // 处理子节点
-    if (node.children && Array.isArray(node.children)) {
-        node.children.forEach(child => {
-            html += generateHtmlString(child, indent + 1);
-        });
-    }
-
-    // 处理文本内容
-    if (node.textContent && typeof node.textContent === 'string' && node.textContent.trim()) {
-        html += `${indentStr}    ${node.textContent.trim()}\n`;
-    }
-
-    // 结束标签
-    if (node.tagName) {
-        html += `${indentStr}</${node.tagName.toLowerCase()}>\n`;
     }
 
     return html;
@@ -834,7 +863,7 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
             func: () => {
                 const container = document.getElementById('playwright-highlight-container');
                 if (container) {
-                    container.remove();
+                    //container.remove();
                 }
             }
         });
@@ -843,7 +872,7 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
         const domTreeString = generateHtmlString(domTreeData);
 
         const messageData = {
-            code: '',
+            code: domTreeString,
             img: screenshot
         };
         console.log('messageData:', messageData);

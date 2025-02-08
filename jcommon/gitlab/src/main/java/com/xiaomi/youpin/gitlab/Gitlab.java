@@ -1038,6 +1038,22 @@ public class Gitlab {
         }
     }
 
+    public BaseResponse deleteBranch(String gitHost, String projectId, String branchName, String token) {
+        if (StringUtils.isEmpty(projectId) || StringUtils.isEmpty(branchName) || StringUtils.isEmpty(token)) {
+            return new BaseResponse(-1, "response.content");
+        }
+        String url = gitHost + GIT_API_URI + "projects/" + projectId + "/repository/branches/" + branchName;
+        try {
+            Map<String, String> headers = new HashMap<>();
+            headers.put("PRIVATE-TOKEN", token);
+            HttpResult response = HttpClientV6.httpDelete(url, headers, Maps.newHashMap(), "UTF-8", 10000);
+            return new BaseResponse(response.code, response.content);
+        } catch (Exception e) {
+            log.error("deleteBranch {}", e.getMessage());
+            return new BaseResponse(-1, "response.content");
+        }
+    }
+
     public BaseResponse createMerge(String projectId, String sourceBranch, String targetBranch, String title, String token) {
         if (StringUtils.isEmpty(projectId) || StringUtils.isEmpty(sourceBranch) || StringUtils.isEmpty(targetBranch)) {
             return null;

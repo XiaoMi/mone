@@ -129,6 +129,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 return;
             }
 
+            if (data.startsWith("!!")) {
+                shopper.getRc().news.put(Message.builder().content(data).build());
+                return;
+            }
+
             if (cmd.equals("action_ping")) {
                 log.info("action ping");
                 return;
@@ -139,7 +144,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 shopper.getRc().news.put(Message.builder().type("json").content(data).build());
                 return;
             }
-
 
             roleClassifier.getRc().news.put(Message.builder().sendTo(Lists.newArrayList("RoleClassifier")).content(data).build());
             Message classifiterRes = roleClassifier.run().join();
