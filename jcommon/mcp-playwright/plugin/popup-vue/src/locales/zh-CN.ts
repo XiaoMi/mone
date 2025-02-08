@@ -1,6 +1,6 @@
 export default {
   nav: {
-    home: '首页',
+    home: 'Agent',
     features: '功能',
     preview: '预览'
   },
@@ -10,6 +10,16 @@ export default {
   },
   chat: {
     copyCode: '复制'
+  },
+  preview: {
+    title: '预览',
+    capture: '截图',
+    refresh: '刷新',
+    clickToStart: '点击开始截图',
+    copyCode: '复制代码',
+    copySuccess: '复制成功',
+    copyFailed: '复制失败',
+    copyFailedTip: '请手动复制代码'
   },
   translate: {
     read: '朗读',

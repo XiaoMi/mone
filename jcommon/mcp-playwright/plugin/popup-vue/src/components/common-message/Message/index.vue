@@ -42,14 +42,14 @@
           @onTryAgain="emit('onTryAgain')"
         />
         <!-- 有内容并且在左侧有语音标识 -->
-        <BaseSounds
+        <!-- <BaseSounds
           v-if="text && !inversion"
           :content="text"
           :language="props.language"
           ref="soundsRef"
           style="margin-left: 10px"
           size="small"
-        ></BaseSounds>
+        ></BaseSounds> -->
         <div class="flex flex-col" v-if="hideMore">
           <el-icon v-if="!inversion" @click="handleRegenerate"
             ><Refresh
@@ -106,7 +106,7 @@ import AvatarComponent from './Avatar.vue'
 import TextComponent from './Text.vue'
 import { t } from '@/locales'
 import { copyToClip } from '@/utils/copy'
-import BaseSounds from '@/components/BaseSounds.vue'
+// import BaseSounds from '@/components/BaseSounds.vue'
 
 interface Props {
   inversion?: boolean //会话在左侧还是右侧,false左侧，true右侧
