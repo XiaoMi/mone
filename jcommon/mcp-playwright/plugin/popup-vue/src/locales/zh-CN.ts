@@ -2,11 +2,17 @@ export default {
   nav: {
     home: 'Agent',
     features: '功能',
-    preview: '预览'
+    preview: '预览',
+    config: '配置管理'
   },
   common: {
     copy: '复制',
-    copySuccess: '复制成功'
+    copySuccess: '复制成功',
+    edit: '编辑',
+    delete: '删除',
+    cancel: '取消',
+    confirm: '确定',
+    actions: '操作'
   },
   chat: {
     copyCode: '复制'
@@ -25,5 +31,13 @@ export default {
     read: '朗读',
     stopRead: '停止朗读',
     readNoData: '没有内容可朗读'
+  },
+  config: {
+    create: '新建配置',
+    edit: '编辑配置',
+    selector: '选择器',
+    key: '键名',
+    value: '值',
+    description: '描述'
   }
 }

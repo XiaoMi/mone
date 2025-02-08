@@ -1,6 +1,7 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 import PreviewView from '../views/PreviewView.vue'
 import PopupView from '../views/PopupView.vue'
+import ConfigView from '../views/ConfigView.vue'
 
 const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
@@ -19,6 +20,11 @@ const router = createRouter({
       path: '/features',
       name: 'features',
       component: () => import('../views/FeaturesView.vue')
+    },
+    {
+      path: '/config',
+      name: 'config',
+      component: ConfigView
     }
   ],
 })

@@ -57,7 +57,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     @SneakyThrows
     public WebSocketHandler() {
-        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
+        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).model("google/gemini-2.0-flash-001").build();
         if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
             config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "generateContent");
         }
@@ -144,7 +144,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 shopper.getRc().news.put(Message.builder().type("json").content(data).build());
                 return;
             }
-
 
             roleClassifier.getRc().news.put(Message.builder().sendTo(Lists.newArrayList("RoleClassifier")).content(data).build());
             Message classifiterRes = roleClassifier.run().join();
