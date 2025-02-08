@@ -57,7 +57,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     @SneakyThrows
     public WebSocketHandler() {
-        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).model("google/gemini-2.0-flash-001").build();
+        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
         if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
             config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "generateContent");
         }
