@@ -69,7 +69,7 @@ public class Shopper extends Role {
                 购物步骤:
                 1.创建京东首页tab(发现没有code的时候,必须调用这个接口)(OpenTabAction)
                 2.在首页的搜索框里输入要买的东西(根据用户的需求分析出来),然后点击搜索按钮 (OperationAction)
-                3.搜素详情页:点击商品列表中你觉得最符合要求的商品的购买链接(如果找不到对应的商品 滚动下屏幕 ScrollAction)
+                3.搜素详情页:点击商品列表中你觉得最符合要求的商品的展示图片(如果找不到对应的商品 滚动下屏幕 ScrollAction)
                 4.商品详情页:点击 加入购物车 按钮(红色大按钮) (如果找不到对应的按钮 滚动下屏幕 ScrollAction)
                 5.购物车加购页面:点击去购物车结算按钮 (如果找不到对应的按钮 滚动下屏幕 ScrollAction)
                 6.到达购物车列表页面就可以结束了(attempt_completion)

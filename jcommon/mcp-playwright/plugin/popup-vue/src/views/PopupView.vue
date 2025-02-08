@@ -1,7 +1,7 @@
 <template>
   <div class="chat-panel">
     <div class="chat-panel-body">
-      <div id="scrollRef" ref="scrollRef" style="overflow: auto; height: 100%">
+      <div id="scrollRef" ref="messageContainer" style="overflow: auto; height: 100%">
         <Message
           v-for="(item, index) of conversions"
           :avatarUrl="''"
@@ -113,11 +113,6 @@ const tryAgain = () => {
   console.log('tryAgain')
 }
 
-// 方法定义
-const closeSidebar = () => {
-  chrome.sidePanel.close()
-}
-
 const clearMessages = () => {
   conversions.value = []
   chrome.runtime.sendMessage({ type: 'clearMessageHistory' })
@@ -133,7 +128,9 @@ const sendMessage = async () => {
     text: message,
     dateTime: formatTime(Date.now()),
     msgType: 'chat',
-    inversion: false
+    inversion: true,
+    avatar: '',
+    name: '用户'
   })
 
   messageInput.value = ''
@@ -147,15 +144,6 @@ const sendMessage = async () => {
       text: message
     }, response => {
       if (response.success) {
-        // 可以在这里处理成功响应
-        conversions.value.push({
-          type: 'assistant',
-          text: response,
-          dateTime: formatTime(Date.now()),
-          msgType: 'md',
-          inversion: true
-        })
-        scrollToBottom()
       } else {
         ElMessage.error('发送消息失败')
       }
@@ -180,10 +168,15 @@ const updateStreamLastConversion = async (text: string, user: any) => {
   await scrollToBottom();
 };
 
-const onMessage = function (event: { data: string }) {
-    const message = event.data;
-    const msgObj = JSON.parse(message);
-    const messageType = msgObj.messageType;
+const onMessage = function (message: {
+  roleId: string,
+  roleName: string,
+  roleType: string,
+  content: string,
+  messageType: string,
+  message?: any
+}) {
+    const messageType = message.messageType;
     if (_botStreamBegin == messageType) {
       if (!lastConversionRes) {
         lastConversionRes = {
@@ -198,7 +191,7 @@ const onMessage = function (event: { data: string }) {
           showCursor: false,
           isShowOperate: true,
           fontColor: "",
-          name: "",
+          // name: message.roleName,
         };
         conversions.value.push(lastConversionRes);
       }
@@ -209,21 +202,21 @@ const onMessage = function (event: { data: string }) {
       res.isBotMessage = true;
       conversions.value = [...conversions.value];
     } else if (_botStreamEvent == messageType) {
-      updateStreamLastConversion(msgObj.content, null);
+      updateStreamLastConversion(message.content, null);
     } else if (_botStreamResult == messageType) {
       // 结束, 如果有message，在末尾在展示
-      if (msgObj.message) {
+      if (message.message) {
         const conversionRes = { ...lastConversionRes };
-        if (typeof msgObj.message == "string") {
-          conversionRes.text = msgObj.message;
+        if (typeof message.message == "string") {
+          conversionRes.text = message.message;
         } else {
-          let text = JSON.stringify(msgObj.message);
-          if (msgObj.message?.display) {
-            const key = msgObj.message?.display;
+          let text = JSON.stringify(message.message);
+          if (message.message?.display) {
+            const key = message.message?.display;
             text =
-              typeof msgObj.message[key] == "string"
-                ? msgObj.message[key]
-                : JSON.stringify(msgObj.message[key]);
+              typeof message.message[key] == "string"
+                ? message.message[key]
+                : JSON.stringify(message.message[key]);
           }
           conversionRes.text = text;
         }
@@ -238,18 +231,65 @@ const onMessage = function (event: { data: string }) {
     }
   };
 
+const onAction = function (action: {
+  type: string,
+  data: string
+}) {
+  conversions.value.push({
+    type: 'assistant',
+    text: action.data,
+    dateTime: formatTime(Date.now()),
+    msgType: 'md',
+    inversion: false
+  })
+}
+
 // 生命周期钩子
 onMounted(() => {
   // 监听来自 background script 的消息
-  chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  chrome.runtime.onMessage.addListener((message: {
+    type: string,
+    message: {
+      type: 'json',
+      data: {
+        roleId: string,
+        roleName: string,
+        roleType: string,
+        content: string,
+        messageType: string,
+        data?: string
+        type: 'chat'
+      } | {
+        type: 'action',
+        data: string
+      },
+      timestamp: string
+    } | {
+      type: 'text',
+      message: string
+    }
+  }, sender, sendResponse) => {
     if (message.type === 'newWebSocketMessage') {
-      conversions.value.push({
-        type: 'assistant',
-        text: message,
-        dateTime: formatTime(Date.now()),
-        msgType: 'md',
-        inversion: true
-      })
+      console.log('message', message)
+      if (message.message.type === 'json') {
+        if (message.message.data.type === 'chat') {
+          onMessage(message.message.data)
+        } else if (message.message.data.type === 'action') {
+          onAction(message.message.data)
+        } else {
+          console.error('未知消息类型数据:' + message.message.data)
+        }
+      } else if (message.message.type === 'text') {
+        conversions.value.push({
+          type: 'assistant',
+          text: message.message.message,
+          dateTime: formatTime(Date.now()),
+          msgType: 'md',
+          inversion: true
+        })
+      } else {
+        console.error('未知消息类型:' + message.message)
+      }
       scrollToBottom()
     }
   })
