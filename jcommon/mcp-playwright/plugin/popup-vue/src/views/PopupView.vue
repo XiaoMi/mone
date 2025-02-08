@@ -81,6 +81,12 @@ interface ChatMessage {
   isBotMessage?: Boolean
 }
 
+let lastConversionRes: any | null = null;
+
+const _botStreamBegin = "BOT_STREAM_BEGIN";
+const _botStreamResult = "BOT_STREAM_RESULT";
+const _botStreamEvent = "BOT_STREAM_EVENT";
+
 const placeholder = ref('请输入消息')
 const showImg = ref(false)
 const loading = ref(false)
@@ -144,7 +150,7 @@ const sendMessage = async () => {
         // 可以在这里处理成功响应
         conversions.value.push({
           type: 'assistant',
-          text: response.text,
+          text: response,
           dateTime: formatTime(Date.now()),
           msgType: 'md',
           inversion: true
@@ -161,6 +167,77 @@ const sendMessage = async () => {
   }
 }
 
+const updateStreamLastConversion = async (text: string, user: any) => {
+  const res = lastConversionRes;
+  res.text = res.text + text;
+  res.loading = false;
+  res.isBotMessage = true;
+  if (user) {
+    res.name = user.name;
+    res.fontColor = user.fontColor;
+  }
+  conversions.value = [...conversions.value];
+  await scrollToBottom();
+};
+
+const onMessage = function (event: { data: string }) {
+    const message = event.data;
+    const msgObj = JSON.parse(message);
+    const messageType = msgObj.messageType;
+    if (_botStreamBegin == messageType) {
+      if (!lastConversionRes) {
+        lastConversionRes = {
+          text: "",
+          textType: "",
+          msgType: "ASSISTANT",
+          inversion: false,
+          avatar: "",
+          aiModel: "",
+          loading: true,
+          dateTime: new Date().toLocaleString(),
+          showCursor: false,
+          isShowOperate: true,
+          fontColor: "",
+          name: "",
+        };
+        conversions.value.push(lastConversionRes);
+      }
+      // 开始目前不做处理
+      const res = lastConversionRes;
+      res.text = "";
+      res.loading = false;
+      res.isBotMessage = true;
+      conversions.value = [...conversions.value];
+    } else if (_botStreamEvent == messageType) {
+      updateStreamLastConversion(msgObj.content, null);
+    } else if (_botStreamResult == messageType) {
+      // 结束, 如果有message，在末尾在展示
+      if (msgObj.message) {
+        const conversionRes = { ...lastConversionRes };
+        if (typeof msgObj.message == "string") {
+          conversionRes.text = msgObj.message;
+        } else {
+          let text = JSON.stringify(msgObj.message);
+          if (msgObj.message?.display) {
+            const key = msgObj.message?.display;
+            text =
+              typeof msgObj.message[key] == "string"
+                ? msgObj.message[key]
+                : JSON.stringify(msgObj.message[key]);
+          }
+          conversionRes.text = text;
+        }
+        conversions.value = [...conversions.value, conversionRes];
+      } else {
+        const res = lastConversionRes;
+        res.loading = false;
+        res.isBotMessage = true;
+        conversions.value = [...conversions.value];
+        lastConversionRes = null;
+      }
+    }
+  };
+
 // 生命周期钩子
 onMounted(() => {
   // 监听来自 background script 的消息
@@ -168,7 +245,7 @@ onMounted(() => {
     if (message.type === 'newWebSocketMessage') {
       conversions.value.push({
         type: 'assistant',
-        text: message.text,
+        text: message,
         dateTime: formatTime(Date.now()),
         msgType: 'md',
         inversion: true

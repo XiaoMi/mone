@@ -1,11 +1,11 @@
 <template>
-  <div :class="'input-box ' + props.size">
+  <div :class="['input-box', props.size]">
     <slot name="top"></slot>
     <div class="input-box-content">
       <el-input
         ref="textarea"
         v-model="inputV"
-        :class="'common-input textarea-class ' + props.size"
+        :class="['common-input', 'textarea-class', props.size]"
         type="textarea"
         :autosize="{ minRows: 1, maxRows: 8 }"
         @keyup.enter="handleEnter"
@@ -44,7 +44,7 @@
           <el-tooltip effect="dark" :content="t('commonTextare.enterWithShift')" placement="top">
             <el-button
               link
-              :class="`dark-icon${enterWithShiftKey ? '' : ' dark-icon-disabled'}`"
+              :class="['shift-btn', enterWithShiftKey ? 'active' : '']"
               @click="toggleEnterWithShiftKey"
             >
               shift
@@ -55,8 +55,10 @@
         <el-tooltip effect="dark" :content="t('commonTextare.sendMsg')" placement="top">
           <el-button
             link
-            class="send-btn"
-            :class="[inputV.length > 0 || fileList.length ? 'dark-send-icon' : '']"
+            :class="[
+              'send-btn',
+              inputV.length > 0 || fileList.length ? 'active' : ''
+            ]"
             @click="sendMsg"
           >
             <el-icon><Position /></el-icon>
@@ -228,16 +230,22 @@ const beforeAvatarUpload = (file: any) => {
   padding-right: 3px;
   display: flex;
   flex-direction: column;
-  border: 1px solid transparent;
+  border: 1px solid var(--el-border-color);
   border-radius: 4px;
-  background-clip: padding-box, border-box;
-  background-origin: padding-box, border-box;
-  background-image: linear-gradient(to right, #fff, #fff),
-    linear-gradient(90deg, #2cd497, #56ccda 10%, #5eb5ff 35%, #2468f2 60% 87%);
-  :deep(.oz-input__wrapper),
-  :deep(.oz-textarea__inner) {
-    box-shadow: none;
+  background-color: var(--el-bg-color);
+  transition: all 0.3s ease;
+
+  &:hover {
+    border-color: var(--el-border-color-hover);
   }
+
+  :deep(.el-input__wrapper),
+  :deep(.el-textarea__inner) {
+    box-shadow: none;
+    background-color: var(--el-bg-color);
+    color: var(--el-text-color-primary);
+  }
+
   flex: 1;
 
   &-content {
@@ -246,14 +254,22 @@ const beforeAvatarUpload = (file: any) => {
     justify-content: space-between;
     align-items: center;
   }
+
   .textarea-class {
     :deep(textarea) {
       resize: none;
+      background-color: var(--el-bg-color);
+      color: var(--el-text-color-primary);
+
+      &::placeholder {
+        color: var(--el-text-color-placeholder);
+      }
     }
   }
+
   &.large {
     .textarea-class {
-      :deep(.oz-textarea__inner) {
+      :deep(.el-textarea__inner) {
         min-height: 40px !important;
         height: 40px !important;
         line-height: 30px;
@@ -264,77 +280,128 @@ const beforeAvatarUpload = (file: any) => {
     }
   }
 }
+
 .btn-box {
   display: flex;
   height: 100%;
-  // 图片
+  gap: 8px;
+  padding: 0 8px;
+
+  // 图片上传
   .upload-container {
     display: flex;
     align-items: center;
-    margin-right: 12px;
     border-radius: 4px;
-    color: #fff;
-    padding: 2px 5px;
-    background-color: rgb(223, 245, 249);
-    background-image: radial-gradient(180px at -5% -20%, #85d8ce, #c2e9fb);
-    position: relative;
-    :deep(.oz-upload-list) {
+    padding: 4px 8px;
+    color: var(--el-color-primary);
+    background-color: var(--el-color-primary-light-9);
+    transition: all 0.3s ease;
+
+    :deep(.el-upload-list) {
       position: absolute;
       bottom: 30px;
       right: 0px;
     }
-    .oz-icon {
+
+    .el-icon {
       font-size: 14px;
     }
-    &:hover {
-      background-color: rgb(223, 245, 249);
-      background-image: radial-gradient(180px at -5% -20%, #85d8ce, #c2e9fb);
-    }
-  }
-  // shift
-  .dark-icon {
-    color: #fff;
-    padding: 2px 5px;
-    background-color: rgb(223, 245, 249);
-    background-image: radial-gradient(180px at -5% -20%, #a1c4fd, #c2e9fb);
-    opacity: 0.8;
 
     &:hover {
-      background-color: rgb(223, 245, 249);
-      background-image: radial-gradient(180px at -5% -20%, #a1c4fd, #c2e9fb);
-      opacity: 1;
+      background-color: var(--el-color-primary-light-8);
     }
   }
 
-  .dark-icon-disabled {
-    background: #e8e8e8;
+  // shift 按钮
+  .shift-btn {
+    padding: 4px 8px;
+    color: var(--el-text-color-regular);
+    background-color: var(--el-fill-color-light);
+    border-radius: 4px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background-color: var(--el-fill-color);
+    }
+
+    &.active {
+      color: var(--el-color-primary);
+      background-color: var(--el-color-primary-light-9);
+
+      &:hover {
+        background-color: var(--el-color-primary-light-8);
+      }
+    }
   }
 
-  .oz-button.dark-icon.is-link:not(.is-disabled):focus {
-    color: #fff;
-    background-color: rgb(223, 245, 249);
-    background-image: radial-gradient(180px at -5% -20%, #a1c4fd, #c2e9fb);
+  // 发送按钮
+  .send-btn {
+    padding: 4px 8px;
+    color: var(--el-text-color-regular);
+    background-color: var(--el-fill-color-light);
+    border-radius: 4px;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background-color: var(--el-fill-color);
+    }
+
+    &.active {
+      color: var(--el-color-primary);
+      background-color: var(--el-color-primary-light-9);
+
+      &:hover {
+        background-color: var(--el-color-primary-light-8);
+      }
+    }
+  }
+}
+
+:deep(.el-button.is-link:focus) {
+  color: inherit;
+}
+
+// 暗色主题适配
+html.dark {
+  .input-box {
+    border-color: var(--el-border-color-darker);
+    background-color: var(--el-bg-color-overlay);
+
+    &:hover {
+      border-color: var(--el-border-color);
+    }
+
+    :deep(.el-input__wrapper),
+    :deep(.el-textarea__inner) {
+      background-color: var(--el-bg-color-overlay);
+    }
   }
 
-  .oz-button.dark-icon-disabled.is-link:not(.is-disabled):focus {
-    background: #e8e8e8;
-  }
-  // 发送
-  .send-btn,
-  .send-btn:hover {
-    padding: 2px 5px;
-    background: #e8e8e8;
-  }
-  .icon-send {
-    line-height: 20px;
-    font-size: 14px;
-    color: #fff;
-  }
-  .dark-send-icon,
-  .dark-send-icon:hover {
-    background-color: rgb(223, 245, 249);
-    background-image: radial-gradient(180px at -5% -20%, #a1c4fd, #c2e9fb);
-    color: #fff;
+  .btn-box {
+    .upload-container {
+      background-color: var(--el-color-primary-dark-2);
+      &:hover {
+        background-color: var(--el-color-primary-dark-1);
+      }
+    }
+
+    .shift-btn,
+    .send-btn {
+      background-color: var(--el-fill-color-darker);
+
+      &:hover {
+        background-color: var(--el-fill-color-dark);
+      }
+
+      &.active {
+        color: var(--el-color-primary-light-3);
+        background-color: var(--el-color-primary-dark-2);
+
+        &:hover {
+          background-color: var(--el-color-primary-dark-1);
+        }
+      }
+    }
   }
 }
 </style>
