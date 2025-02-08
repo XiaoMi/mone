@@ -33,6 +33,7 @@
         <module>mcp-song</module>
         <module>mcp-sequentialthinking</module>
         <module>mcp-git</module>
+        <module>mcp-hammerspoon</module>
     </modules>
 
     <properties>
