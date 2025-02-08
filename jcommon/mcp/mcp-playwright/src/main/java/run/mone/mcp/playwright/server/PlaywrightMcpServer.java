@@ -39,8 +39,8 @@ public class PlaywrightMcpServer {
     private McpSyncServer syncServer;
     private PlaywrightFunction playwrightFunction;
 
-    @Autowired
-    private WebSocketService webSocketService;
+//    @Autowired
+//    private WebSocketService webSocketService;
 
     public PlaywrightMcpServer(ServerMcpTransport transport) {
         this.transport = transport;
@@ -182,7 +182,7 @@ public class PlaywrightMcpServer {
             log.info("Successfully registered switch_tab tool");
 
             // Example: Send a message to all WebSocket clients when the server starts
-            webSocketService.sendMessageToAllClients("PlaywrightMcpServer has started and all tools are registered.");
+//            webSocketService.sendMessageToAllClients("PlaywrightMcpServer has started and all tools are registered.");
 
 
         } catch (Exception e) {

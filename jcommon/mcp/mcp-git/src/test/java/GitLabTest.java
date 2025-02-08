@@ -42,4 +42,38 @@ public class GitLabTest {
         GitLabFunction gitLabFunction = new GitLabFunction();
         System.out.println(gitLabFunction.executeDeleteBranch("test_branch", "123"));
     }
+
+    // 测试push
+    @Test
+    public void testPush() {
+        GitLabFunction gitLabFunction = new GitLabFunction();
+        System.out.println(gitLabFunction.executePush("your-git-path","test_commit"));
+    }
+    // 测试创建merge
+    @Test
+    public void testCreateMerge() {
+        GitLabFunction gitLabFunction = new GitLabFunction();
+        System.out.println(gitLabFunction.executeCreateMerge("your-source-branch", "your-target-branch", "test_merge", "123"));
+    }
+
+    // 测试获取merge
+    @Test
+    public void testGetMerge() {
+        GitLabFunction gitLabFunction = new GitLabFunction();
+        System.out.println(gitLabFunction.executeGetMerge("123", "6"));
+    }
+
+    // 测试接受merge
+    @Test
+    public void testAcceptMerge() {
+        GitLabFunction gitLabFunction = new GitLabFunction();
+        System.out.println(gitLabFunction.executeAcceptMerge("123", "6"));
+    }
+
+    // 测试关闭merge
+    @Test
+    public void testCloseMerge() {
+        GitLabFunction gitLabFunction = new GitLabFunction();
+        System.out.println(gitLabFunction.executeCloseMerge("123", "7"));
+    }
 }
