@@ -13,6 +13,7 @@ import run.mone.hive.roles.Role;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
+import run.mone.mcp.playwright.common.Const;
 import run.mone.mcp.playwright.common.MultiXmlParser;
 import run.mone.mcp.playwright.common.Result;
 import run.mone.mcp.playwright.context.ApplicationContextProvider;
@@ -44,6 +45,9 @@ public class Shopper extends Role {
             历史聊天记录:
             ${history}
             ===========
+            当前打开的tab:
+            ${tabs}
+            ===========
             <% 
             if (code != "") {
             %>
@@ -63,9 +67,9 @@ public class Shopper extends Role {
 
         this.goal = """
                 购物步骤:
-                1.打开京东首页tab(OpenTabAction)
+                1.创建京东首页tab(发现没有code的时候,必须调用这个接口)(OpenTabAction)
                 2.在首页的搜索框里输入要买的东西(根据用户的需求分析出来),然后点击搜索按钮 (OperationAction)
-                3.搜素详情页:点击大图列表中的第一个商品的图片(在商品列表里,有图)(如果找不到对应的商品 滚动下屏幕 ScrollAction)
+                3.搜素详情页:点击商品列表中你觉得最符合要求的商品的购买链接(如果找不到对应的商品 滚动下屏幕 ScrollAction)
                 4.商品详情页:点击 加入购物车 按钮(红色大按钮) (如果找不到对应的按钮 滚动下屏幕 ScrollAction)
                 5.购物车加购页面:点击去购物车结算按钮 (如果找不到对应的按钮 滚动下屏幕 ScrollAction)
                 6.到达购物车列表页面就可以结束了(attempt_completion)
@@ -106,6 +110,7 @@ public class Shopper extends Role {
                 + 选那个和element最近的数字
                 + 数字的颜色和这个元素的边框一定是一个颜色
                 + 数字在元素的右侧
+                + 必须返回tabId(如果没有,需要你打开相应的tab)
                 
                 <use_mcp_tool>
                 <server_name>chrome-server</server_name>
@@ -116,13 +121,15 @@ public class Shopper extends Role {
                     "type": "action",
                     "name": "fill",
                     "elementId": "12",
-                    "value": "冰箱"
+                    "value": "冰箱",
+                    "tabId": "2"
                   },
                   "action2": {
                     "type": "action",
                     "name": "click",
                     "elementId": "13",
-                    "desc": "点击搜索按钮"
+                    "desc": "点击搜索按钮",
+                    "tabId": "2"
                   }
                 }
                 </arguments>
@@ -162,6 +169,7 @@ public class Shopper extends Role {
 
             String img = "";
             String code = "";
+            String tabs = "";
 
             if (msg.getContent().equals("!!quit")) {
                 log.info("!!quit");
@@ -173,6 +181,7 @@ public class Shopper extends Role {
                 JsonObject obj = JsonParser.parseString(msg.getContent()).getAsJsonObject();
                 img = obj.get("img").getAsString();
                 code = obj.get("code").getAsString();
+                tabs = obj.get("tabs").toString();
                 //google gemini 不需要前边的内容
                 if (img.startsWith("data:image")) {
                     img = img.split("base64,")[1];
@@ -188,7 +197,7 @@ public class Shopper extends Role {
 
             LLMService llmService = ApplicationContextProvider.getBean(LLMService.class);
 
-            String userPrompt = AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.of("history", history, "goal", this.goal, "code", code));
+            String userPrompt = AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.of("history", history, "goal", this.goal, "code", code, "tabs", tabs));
 
             String res = llmService.call(this.llm, userPrompt, img, this.prompt);
             log.info("res:{}", res);
@@ -198,6 +207,7 @@ public class Shopper extends Role {
             this.getRc().getMemory().add(Message.builder().role("assistant").content(res).build());
 
             if (result.getTag().equals("attempt_completion") || result.getTag().equals("ask_followup_question")) {
+                consumer.accept(Const.actionTemplate.formatted("end", result.getTag()));
                 break;
             }
 
