@@ -14,4 +14,10 @@ public class Const {
             
             """;
 
+    public static final String actionTemplate = """
+            <action type="%s">
+            %s
+            </action>
+            """;
+
 }
