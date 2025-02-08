@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "build:popup": "cd popup-vue && npm run build",
+    "build": "npm run build:popup"
+  }
+} 

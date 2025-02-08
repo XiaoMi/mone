@@ -19,7 +19,7 @@ public class RoleContext {
     private int maxRetries = 1;
     private int currentRetries = 0;
 
-    public BlockingQueue<Message> news = new LinkedBlockingQueue<>();
+    public LinkedBlockingQueue<Message> news = new LinkedBlockingQueue<>();
 
     private ReactMode reactMode = ReactMode.BY_ORDER;
 

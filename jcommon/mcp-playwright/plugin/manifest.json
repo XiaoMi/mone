@@ -9,7 +9,7 @@
 "default_title":"Mone Assistant"
 },
 "side_panel":{
-"default_path":"popup.html"
+"default_path":"popup-vue/dist/index.html"
 },
 
 "content_scripts":[

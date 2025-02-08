@@ -85,7 +85,6 @@ function connectWebSocket() {
                             const selector = `[browser-user-highlight-id="playwright-highlight-${action.attributes.elementId}"]`;
 
                             if (action.attributes.name === 'fill') {
-
                                 await chrome.scripting.executeScript({
                                     target: { tabId: tab.id },
                                     func: (selector, value) => {
@@ -113,16 +112,13 @@ function connectWebSocket() {
                                     func: (selector) => {
                                         const element = document.querySelector(selector);
                                         if (element) {
+                                            element.focus();
                                             element.click();
                                         }
                                     },
                                     args: [selector]
                                 });
                             }
-
-
-                            // 操作完成后发送ping
-                            sendWebSocketMessage("ping", "action_ping");
                         }
 
                         //停顿1000ms
@@ -176,10 +172,23 @@ function connectWebSocket() {
                                 quality: 10
                             });
 
-                            await chrome.tabs.sendMessage(tab.id, {
-                                type: 'takeScreenshot',
-                                data: screenshot
-                            });
+                            //提供下载选项
+                            if (action.attributes.download === 'true') {
+                                await chrome.tabs.sendMessage(tab.id, {
+                                    type: 'takeScreenshot',
+                                    data: screenshot
+                                });
+                            }
+                            //提供发送选项  
+                            if (action.attributes.send === 'true') {
+                                // 将截图数据放入context
+                                const messageData = {
+                                    code: '',
+                                    img: screenshot
+                                };
+                                console.log('send messageData:', messageData);
+                                await sendWebSocketMessage(JSON.stringify(messageData), "shopping");
+                            }
                         }
                         // buildDomTree(从新生成domTree)
                         if (action.type === 'buildDomTree') {
@@ -813,6 +822,7 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
         // 添加延迟确保页面重绘完成
         await new Promise(resolve => setTimeout(resolve, 500)); // 500ms 延迟
 
+        //截屏的数据
         const screenshot = await chrome.tabs.captureVisibleTab(null, {
             format: 'jpeg',
             quality: 10

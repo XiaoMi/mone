@@ -17,6 +17,7 @@ import run.mone.hive.utils.Config;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -65,6 +66,10 @@ public class Role {
     private Config confg = new Config();
 
     private Context context;
+
+    private boolean blockingMessageRetrieval;
+
+    protected String prompt;
 
     // 构造函数
     public Role(String name, String profile, String goal, String constraints) {
@@ -115,11 +120,18 @@ public class Role {
 
 
     // 观察环境
+    @SneakyThrows
     protected int observe() {
         log.info("observe");
-        this.rc.news.forEach(msg -> this.rc.getMemory().add(msg));
-        this.rc.news = new LinkedBlockingQueue<>(this.rc.news.stream().filter(this::isRelevantMessage).toList());
-        return this.rc.news.size();
+        if (this.blockingMessageRetrieval) {
+            Message msg = this.rc.news.poll(2, TimeUnit.MINUTES);
+            this.rc.news.put(msg);
+            return this.rc.news.size();
+        } else {
+            this.rc.news.forEach(msg -> this.rc.getMemory().add(msg));
+            this.rc.news = new LinkedBlockingQueue<>(this.rc.news.stream().filter(this::isRelevantMessage).toList());
+            return this.rc.news.size();
+        }
     }
 
     // 思考下一步行动
@@ -158,6 +170,7 @@ public class Role {
 
         Map<String, String> map = new HashMap<>();
         map.put("profile", this.profile);
+        map.put("goal", this.goal);
         map.put("name", this.name);
         map.put("history", history);
         map.put("previous_state", this.rc.getState() + "");
@@ -251,7 +264,8 @@ public class Role {
         int actionsToken = 0;
         Message res = null;
         ActionContext ac = new ActionContext();
-        //挨个action去执行
+
+        //按顺序挨个action去执行
         if (this.rc.getReactMode().equals(RoleContext.ReactMode.BY_ORDER)) {
             while (actionsToken < this.actions.size()) {
                 if (this.think() > 0) {
@@ -261,7 +275,9 @@ public class Role {
                     break;
                 }
             }
-        } else {
+        }
+        //自己决策用那个action
+        if (this.rc.getReactMode().equals(RoleContext.ReactMode.REACT)) {
             //需要使用llm来选择action
             int i = 0;
             while (this.think() > 0 && i++ < 15) {
