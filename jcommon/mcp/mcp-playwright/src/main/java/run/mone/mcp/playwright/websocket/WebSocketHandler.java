@@ -129,6 +129,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 return;
             }
 
+            if (data.startsWith("!!")) {
+                shopper.getRc().news.put(Message.builder().content(data).build());
+                return;
+            }
+
             if (cmd.equals("action_ping")) {
                 log.info("action ping");
                 return;

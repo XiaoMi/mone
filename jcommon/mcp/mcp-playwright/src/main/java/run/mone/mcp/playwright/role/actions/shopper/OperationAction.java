@@ -4,6 +4,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import run.mone.hive.actions.Action;
 import run.mone.hive.schema.Message;
+import run.mone.mcp.playwright.common.Const;
 import run.mone.mcp.playwright.common.MultiXmlParser;
 import run.mone.mcp.playwright.common.Result;
 
@@ -39,21 +40,6 @@ public class OperationAction extends Action {
                     "desc": "点击搜索按钮"
                   }
             
-            
-            根据不同的页面返回不同的action列表:
-            页面:需要执行的动作
-            
-            %s
-            
-            分析出action列表(你每次只需要返回这个页面的action列表)
-            你先要分析出来现在是那个页面(首页,搜索详情页,商品详情页,购物车加购页面)
-            然后根据页面返回对应的action列表
-            
-            
-            %s
-            
-            当前需求:
-            %s
             """;
 
 
@@ -64,6 +50,9 @@ public class OperationAction extends Action {
             Result data = (Result) reqMsg.getData();
             String actions = data.getKeyValuePairs().get("arguments");
             String xml = new MultiXmlParser().jsonToXml(actions);
+
+            xml = Const.pause + xml;
+
             return Message.builder().content(xml).build();
         });
     }
