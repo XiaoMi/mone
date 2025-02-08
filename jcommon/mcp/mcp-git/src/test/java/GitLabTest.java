@@ -12,34 +12,34 @@ public class GitLabTest {
     @Test
     public void testCreateRepository() {
         GitLabFunction gitLabFunction = new GitLabFunction();
-        gitLabFunction.executeCreateRepository("test_mcp", "china-efficiency");
+        gitLabFunction.executeCreateRepository("test", "testGroupName");
     }
 
     // 测试搜索仓库
     @Test
     public void testSearchRepository() {
         GitLabFunction gitLabFunction = new GitLabFunction();
-        gitLabFunction.executeSearchRepositories("china-efficiency", "moon");
+        gitLabFunction.executeSearchRepositories("testGroupName", "test");
     }
 
     // 测试获取分支
     @Test
     public void testGetBranch() {
         GitLabFunction gitLabFunction = new GitLabFunction();
-        System.out.println(gitLabFunction.executeGetBranch("master", "61851"));
+        System.out.println(gitLabFunction.executeGetBranch("master", "123"));
     }
 
     // 测试创建分支
     @Test
     public void testCreateBranch() {
         GitLabFunction gitLabFunction = new GitLabFunction();
-        System.out.println(gitLabFunction.executeCreateBranch("test_branch", "61851", "master"));
+        System.out.println(gitLabFunction.executeCreateBranch("test_branch", "123", "master"));
     }
 
     // 测试删除分支
     @Test
     public void testDeleteBranch() {
         GitLabFunction gitLabFunction = new GitLabFunction();
-        System.out.println(gitLabFunction.executeDeleteBranch("test_branch", "61851"));
+        System.out.println(gitLabFunction.executeDeleteBranch("test_branch", "123"));
     }
 }
