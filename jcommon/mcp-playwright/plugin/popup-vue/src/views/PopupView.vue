@@ -144,7 +144,7 @@ const sendMessage = async () => {
         // 可以在这里处理成功响应
         conversions.value.push({
           type: 'assistant',
-          text: response.text,
+          text: response,
           dateTime: formatTime(Date.now()),
           msgType: 'md',
           inversion: true
@@ -168,7 +168,7 @@ onMounted(() => {
     if (message.type === 'newWebSocketMessage') {
       conversions.value.push({
         type: 'assistant',
-        text: message.text,
+        text: message,
         dateTime: formatTime(Date.now()),
         msgType: 'md',
         inversion: true
