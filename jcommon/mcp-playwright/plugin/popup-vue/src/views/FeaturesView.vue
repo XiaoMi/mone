@@ -32,7 +32,7 @@
 							<el-icon><Pointer /></el-icon>鼠标跟踪
 						</el-button>
 						<el-button type="primary" @click="redrawDomTree">
-							<el-icon><Refresh /></el-icon>重绘DOM树
+							<el-icon><Refresh /></el-icon>{{ isRedrawingDomTree ? '重绘中...' : '重绘DOM树' }}
 						</el-button>
 						<el-button type="success" @click="viewDomTree">
 							<el-icon><Share /></el-icon>查看DOM树
@@ -284,8 +284,76 @@ const toggleBorders = () => {
 	chrome.runtime.sendMessage({ type: 'toggleBorders' })
 }
 
-const redrawDomTree = () => {
-	chrome.runtime.sendMessage({ type: 'redrawDomTree' })
+const isRedrawingDomTree = ref(false)
+const redrawDomTree = async () => {
+
+	try {
+		// 获取当前活动标签页
+		const [tab] = await chrome.tabs.query({ active: true, currentWindow: true })
+		if (!tab.id) return
+
+		if (!isRedrawingDomTree.value) {
+			// 开始重绘
+			isRedrawingDomTree.value = true
+
+			// 清除之前的高亮
+			await chrome.scripting.executeScript({
+				target: { tabId: tab.id },
+				func: () => {
+					const container = document.getElementById('playwright-highlight-container')
+					if (container) {
+						container.remove()
+					}
+				}
+			})
+
+			// 重新执行buildDomTree
+			await chrome.scripting.executeScript({
+				target: { tabId: tab.id },
+				files: ['buildDomTree.js']
+			})
+
+			// 执行buildDomTree函数来重新渲染高亮并获取返回数据
+			const [{result: domTreeData}] = await chrome.scripting.executeScript({
+				target: { tabId: tab.id },
+				func: (args) => {
+					const buildDomTreeFunc = window['buildDomTree']
+					if (buildDomTreeFunc) {
+						return buildDomTreeFunc(args)
+					} else {
+						throw new Error('buildDomTree函数未找到')
+					}
+				},
+				args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 }]
+			})
+
+			// 将数据存储到 chrome.storage
+			await chrome.storage.local.set({ lastDomTreeData: domTreeData })
+			console.log('DOM树数据已保存:', domTreeData)
+
+			// isRedrawingDomTree.value = false
+			ElMessage.success('重绘成功')
+		} else {
+			// 取消重绘
+			await chrome.scripting.executeScript({
+				target: { tabId: tab.id },
+				func: () => {
+					const container = document.getElementById('playwright-highlight-container')
+					if (container) {
+						container.remove()
+					}
+				}
+			})
+
+			isRedrawingDomTree.value = false
+			ElMessage.info('已取消重绘')
+		}
+
+	} catch (error) {
+		console.error('重绘操作失败:', error)
+		ElMessage.error(`操作失败: ${error}`)
+		isRedrawingDomTree.value = false
+	}
 }
 
 const viewDomTree = () => {
