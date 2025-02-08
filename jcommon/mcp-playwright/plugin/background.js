@@ -66,17 +66,13 @@ function connectWebSocket() {
                         // 处理chat类型的消息
                         if (action.type === 'chat') {
                             console.log('Processing chat message:', action);
-                            // 将聊天消息添加到历史记录中
-                            messageHistory.push({
-                                message: action.attributes.message,
-                                timestamp: new Date().toISOString()
-                            });
-                            
-                            // 如果消息数量超过最大限制，删除最早的消息
-                            if (messageHistory.length > MAX_MESSAGES) {
-                                messageHistory.shift();
-                            }
+                            addMessageToHistory(action.attributes.message);
                             continue;
+                        }
+
+                        if (action.type === 'end') {
+                            isAutoMode = false;
+                            addMessageToHistory('end');
                         }
 
                         // 处理普通action类型
@@ -92,6 +88,7 @@ function connectWebSocket() {
                                         const element = document.querySelector(selector);
                                         if (element) {
                                             element.value = value;
+                                            console.log('fill element:', element);
                                             // Trigger input event to simulate user input
                                             element.dispatchEvent(new Event('input', { bubbles: true }));
                                             element.dispatchEvent(new Event('change', { bubbles: true }));
@@ -144,11 +141,6 @@ function connectWebSocket() {
                             });
                         }
 
-                        //如果是结束状态,则把auto的状态设置为false
-                        if (action.type === 'end') {
-                            isAutoMode = false;
-                        }
-
                         //通知服务器
                         if (action.type === 'notification') {
                             console.log('notification:', action);
@@ -161,7 +153,7 @@ function connectWebSocket() {
                             // 设置全局auto状态
                             isAutoMode = action.attributes.auto === 'true';
                             // 创建新标签页
-                            const tab = await tabManager.createNewTab(action.attributes.url);
+                            await tabManager.createNewTab(action.attributes.url);
                         }
                         //截屏
                         if (action.type === 'screenshot') {
@@ -179,11 +171,20 @@ function connectWebSocket() {
                                     data: screenshot
                                 });
                             }
+
+                            let code = '';
                             //提供发送选项  
                             if (action.attributes.send === 'true') {
+                                if (context.has('domTreeData')) {
+                                    // 获取domTreeData
+                                    const domTreeData = context.get('domTreeData');
+                                    code = generateHtmlString(domTreeData);
+                                }
+                                // 获取domTreeData
+                                const domTreeData = context.get('domTreeData');
                                 // 将截图数据放入context
                                 const messageData = {
-                                    code: '',
+                                    code: code,
                                     img: screenshot
                                 };
                                 console.log('send messageData:', messageData);
@@ -212,6 +213,7 @@ function connectWebSocket() {
                                 },
                                 args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 }]
                             });
+                            context.set('domTreeData', domTreeData);
                         }
                         //取消重绘
                         if (action.type === 'cancelBuildDomTree') {
@@ -296,29 +298,6 @@ function connectWebSocket() {
             // 获取当前活动标签页
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
             if (!tab) return;
-
-            // 先注入 actionManager.js
-            // await chrome.scripting.executeScript({
-            //     target: { tabId: tab.id },
-            //     files: ['actionManager.js']
-            // });
-
-            //await injectActionManager(tab.id);
-
-
-
-
-            // 然后执行操作
-            // await chrome.scripting.executeScript({
-            //     target: { tabId: tab.id },
-            //     func: async (selector, text) => {
-            //         console.log('Executing actions');
-            //         // 在页面上下文中执行操作
-            //         await window.actionManager.fill(selector, text);
-            //         await window.actionManager.click('#su');
-            //     },
-            //     args: ['#kw', '大熊猫']
-            // });
         }
     };
 
@@ -873,7 +852,8 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
 
         const messageData = {
             code: domTreeString,
-            img: screenshot
+            img: screenshot,
+            tabs: await getAllTabsInfo()
         };
         console.log('messageData:', messageData);
         //通知服务器,这个tab发生了变化
@@ -882,3 +862,36 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
         console.error('Error handling state change:', error);
     }
 });
+
+
+// 获取所有标签页信息的函数
+async function getAllTabsInfo() {
+    try {
+        // 获取当前窗口的所有标签页
+        const tabs = await chrome.tabs.query({});
+        
+        // 映射需要的标签页信息
+        return tabs.map(tab => ({
+            id: tab.id,
+            title: tab.title,
+            active: tab.active
+        }));
+    } catch (error) {
+        console.error('Error getting tabs info:', error);
+        return [];
+    }
+}
+
+
+// 添加新的辅助方法来处理消息历史
+function addMessageToHistory(message) {
+    messageHistory.push({
+        message: message,
+        timestamp: new Date().toISOString()
+    });
+    
+    // 如果消息数量超过最大限制，删除最早的消息
+    if (messageHistory.length > MAX_MESSAGES) {
+        messageHistory.shift();
+    }
+}
