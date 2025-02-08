@@ -142,6 +142,11 @@
             <scope>compile</scope>
         </dependency>
 
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>infra-result</artifactId>
+            <version>1.4-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <build>
