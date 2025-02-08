@@ -18,6 +18,7 @@ import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
 import run.mone.mcp.playwright.bo.HistoryMsg;
+import run.mone.mcp.playwright.constant.ResultType;
 import run.mone.mcp.playwright.role.Chatter;
 import run.mone.mcp.playwright.role.RoleClassifier;
 import run.mone.mcp.playwright.role.Shopper;
@@ -30,6 +31,8 @@ import run.mone.mcp.playwright.service.LLMService;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 @Component
@@ -48,54 +51,16 @@ public class WebSocketHandler extends TextWebSocketHandler {
     @Resource
     private ChromeTestService chromeTestService;
 
-    //购物者
-    private Shopper shopper = new Shopper();
-
-    private RoleClassifier roleClassifier = new RoleClassifier();
-
-    private Chatter chatter = new Chatter();
-
-    @SneakyThrows
-    public WebSocketHandler() {
-        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
-        if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
-            config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "generateContent");
-        }
-        llm = new LLM(config);
-        shopper.setLlm(llm);
-        shopper.setActions(
-                //打开页面
-                new OpenTabAction("在tab中打开某个网址"),
-                //点击排名第一的商品
-                new OperationAction("在网页中执行某些操作(点击 填入内容)"),
-                //点击加入购物车
-                new ScrollAction("滚动页面")
-        );
-        shopper.setConsumer(msg->{
-            try {
-                JsonObject obj = new JsonObject();
-                obj.addProperty("data",msg);
-                sendMessageToAll(obj.toString());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
-
-
-
-
-        roleClassifier.setLlm(llm);
-        roleClassifier.setActions(new ClassifierAction());
-        roleClassifier.setRc(new RoleContext(roleClassifier.getProfile()));
-
-        chatter.setLlm(llm);
-        chatter.setRc(new RoleContext(chatter.getProfile()));
-    }
+    private static final Map<String, Chatter> sessionIdChatter = new ConcurrentHashMap<>();
+    private static final Map<String, Shopper> sessionIdShopper = new ConcurrentHashMap<>();
+    private static final Map<String, RoleClassifier> sessionIdRoleClassifier = new ConcurrentHashMap<>();
 
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         sessions.add(session);
+        initChatter(session);
+        initShopperAndRoleClassifier(session);
     }
 
 
@@ -107,6 +72,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
         if (payload.equals("ping") || payload.equals("client_connected")) {
             return;
         }
+
+        Shopper shopper = sessionIdShopper.get(session.getId());
+        RoleClassifier roleClassifier = sessionIdRoleClassifier.get(session.getId());
+        Chatter chatter = sessionIdChatter.get(session.getId());
 
         JsonObject req = JsonParser.parseString(payload).getAsJsonObject();
 //        boolean test = JsonUtils.getValueOrDefault(req, "test", "false").equals("true");
@@ -125,7 +94,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             //用来测试
             if (data.startsWith("?test:")) {
-                sendMessageToAll(chromeTestService.invoke(data.split(":")[1], req, res));
+                session.sendMessage(new TextMessage(chromeTestService.invoke(data.split(":")[1], req, res)));
                 return;
             }
 
@@ -153,7 +122,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             //单纯的聊天
             if (agentName.equals("Chatter")) {
                 chatter.getRc().news.put(Message.builder().role("user").sendTo(Lists.newArrayList("Chatter")).content(data).build());
-                sendMessageToAll(chatter.run().join().getContent());
+                chatter.run().join();
                 return;
             }
 
@@ -165,17 +134,19 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 return;
             }
 
-            sendMessageToAll(res.toString());
+            session.sendMessage(new TextMessage(res.toString()));
             return;
         }
 
-        sendMessageToAll(payload);
+        session.sendMessage(new TextMessage(payload));
     }
 
     @Override
-
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         sessions.remove(session);
+        sessionIdChatter.remove(session.getId());
+        sessionIdShopper.remove(session.getId());
+        sessionIdRoleClassifier.remove(session.getId());
     }
 
     public void sendMessageToAll(String message) throws IOException {
@@ -185,5 +156,51 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 session.sendMessage(textMessage);
             }
         }
+    }
+
+    private void initChatter(WebSocketSession session){
+        Chatter chatter = new Chatter(session);
+        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.DOUBAO).build();
+        LLM chatLLM = new LLM(config);
+        chatter.setLlm(chatLLM);
+        chatter.setRc(new RoleContext(chatter.getProfile()));
+        sessionIdChatter.put(session.getId(), chatter);
+    }
+
+    private void initShopperAndRoleClassifier(WebSocketSession session){
+        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
+        if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
+            config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "generateContent");
+        }
+        llm = new LLM(config);
+        Shopper shopper = new Shopper();
+        shopper.setLlm(llm);
+        shopper.setActions(
+                //打开页面
+                new OpenTabAction("在tab中打开某个网址"),
+                //点击排名第一的商品
+                new OperationAction("在网页中执行某些操作(点击 填入内容)"),
+                //点击加入购物车
+                new ScrollAction("滚动页面")
+        );
+        shopper.setConsumer(msg->{
+            try {
+                JsonObject obj = new JsonObject();
+                obj.addProperty("data",msg);
+                obj.addProperty("type", ResultType.ACTION);
+                session.sendMessage(new TextMessage(obj.toString()));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+
+
+        RoleClassifier roleClassifier = new RoleClassifier();
+        roleClassifier.setLlm(llm);
+        roleClassifier.setActions(new ClassifierAction());
+        roleClassifier.setRc(new RoleContext(roleClassifier.getProfile()));
+
+        sessionIdShopper.put(session.getId(), shopper);
+        sessionIdRoleClassifier.put(session.getId(), roleClassifier);
     }
 }
