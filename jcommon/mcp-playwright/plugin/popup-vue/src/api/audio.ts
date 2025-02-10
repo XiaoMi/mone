@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const BASE_URL = 'http://10.220.21.227:8181/audio'
+const BASE_URL = 'http://localhost:8181/audio'
 
 export const audioApi = {
   voiceToText: (audioBase64: string) =>
