@@ -152,6 +152,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     }
 
     private void chat(Chatter chatter, String data) throws InterruptedException {
+//        chatter.getRc().news.put(Message.builder().role("user").sendTo(Lists.newArrayList("Chatter")).content(data).type("json").build());
         chatter.getRc().news.put(Message.builder().role("user").sendTo(Lists.newArrayList("Chatter")).content(data).build());
         chatter.run().join();
     }
@@ -183,7 +184,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     }
 
     private void initShopperAndRoleClassifier(WebSocketSession session){
-        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
+        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build();
         if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
             config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "generateContent");
         }

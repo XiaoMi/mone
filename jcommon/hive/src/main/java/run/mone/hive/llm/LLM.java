@@ -186,7 +186,7 @@ public class LLM {
         }
 
         //使用的cloudflare
-        String url = getColudFlareUrl(apiKey, model, requestBuilder);
+        String url = getCloudFlareUrl(apiKey, model, requestBuilder);
 
         String rb = requestBody.toString();
 
@@ -367,7 +367,7 @@ public class LLM {
         }
 
         //使用的cloudflare
-        String url = getColudFlareUrl(apiKey, model, rb);
+        String url = getCloudFlareUrl(apiKey, model, rb);
 
         Request request = rb
                 .url(url)
@@ -475,7 +475,7 @@ public class LLM {
         });
     }
 
-    private String getColudFlareUrl(String apiKey, String model, Request.Builder rb) {
+    private String getCloudFlareUrl(String apiKey, String model, Request.Builder rb) {
         if (this.llmProvider == LLMProvider.GOOGLE_2 && StringUtils.isNotEmpty(config.getUrl())) {
             rb.addHeader("x-goog-api-key", apiKey);
         }
@@ -491,7 +491,30 @@ public class LLM {
         StringBuilder sb = new StringBuilder();
         CountDownLatch latch = new CountDownLatch(1);
         String msgId = UUID.randomUUID().toString();
-        chat(Lists.newArrayList(AiMessage.builder().role("user").content(str).build()), (c, o) -> {
+        chat(Lists.newArrayList(AiMessage.builder().role("user").content(str).build()), roleSendMessageConsumer(role, msgId, latch, sb));
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return sb.toString();
+    }
+
+    public String syncChat(Role role, List<AiMessage> messages) {
+        StringBuilder sb = new StringBuilder();
+        CountDownLatch latch = new CountDownLatch(1);
+        String msgId = UUID.randomUUID().toString();
+        chat(messages, roleSendMessageConsumer(role, msgId, latch, sb));
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return sb.toString();
+    }
+
+    private BiConsumer<String, JsonObject> roleSendMessageConsumer(Role role, String msgId, CountDownLatch latch, StringBuilder sb){
+        return ((c, o) -> {
             String type = o.get("type").getAsString();
             if (type.equals("begin")) {
                 role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_BEGIN).id(msgId).role(role.getName()).build());
@@ -503,12 +526,6 @@ public class LLM {
                 role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_EVENT).id(msgId).role(role.getName()).content(o.get("content").getAsString()).build());
             }
         });
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        return sb.toString();
     }
 
     public String getModel() {
