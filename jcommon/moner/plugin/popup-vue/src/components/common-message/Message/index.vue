@@ -90,6 +90,9 @@
               <div @click="handleSelect('copyText')">
                 <el-link :underline="false">{{ '复制' }}</el-link>
               </div>
+              <div @click="handleSelect('play')">
+                <el-link :underline="false">{{ '播放' }}</el-link>
+              </div>
             </div>
           </el-popover>
         </div>
@@ -106,6 +109,7 @@ import AvatarComponent from './Avatar.vue'
 import TextComponent from './Text.vue'
 import { t } from '@/locales'
 import { copyToClip } from '@/utils/copy'
+import { audioApi } from '@/api/audio'
 // import BaseSounds from '@/components/BaseSounds.vue'
 
 interface Props {
@@ -166,7 +170,31 @@ const options = computed(() => {
   return common
 })
 
-function handleSelect(key: 'copyText' | 'delete' | 'toggleRenderType') {
+const handlePlay = async () => {
+  if (props.text?.trim()) {
+    try {
+      const response = await audioApi.textToVoice(props.text)
+      if (response.data) {
+        // 创建 Blob 对象
+        const blob = new Blob([response.data], { type: 'audio/mpeg' })
+        // 创建临时 URL
+        const audioUrl = URL.createObjectURL(blob)
+        // 创建音频实例
+        const audio = new Audio(audioUrl)
+        // 播放完成后释放 URL
+        audio.onended = () => {
+          URL.revokeObjectURL(audioUrl)
+        }
+        // 播放音频
+        await audio.play()
+      }
+    } catch (error) {
+      ElMessage.error('音频播放失败')
+    }
+  }
+}
+
+function handleSelect(key: 'copyText' | 'delete' | 'toggleRenderType' | 'play') {
   switch (key) {
     case 'copyText':
       handleCopy()
@@ -176,6 +204,12 @@ function handleSelect(key: 'copyText' | 'delete' | 'toggleRenderType') {
       return
     case 'delete':
       emit('delete')
+      return
+    case 'play':
+      handlePlay();
+      return
+    default:
+      break;
   }
 }
 

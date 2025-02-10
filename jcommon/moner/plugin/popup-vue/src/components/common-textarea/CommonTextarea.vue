@@ -78,6 +78,7 @@ import { Picture, Operation, Position } from '@element-plus/icons-vue'
 import { t } from '@/locales/index'
 import Recoder from '@/components/recorder/index.vue'
 import { useCommonTextareaStore } from '@/stores/common-textarea/index'
+import { audioApi } from '@/api/audio'
 
 const commonTextareaStore = useCommonTextareaStore()
 
@@ -173,7 +174,17 @@ function sendMsg() {
 
 async function submitAudio(url: string, base64Data: string) {
   // 待定
-  console.log(url, base64Data)
+  // console.log(url, base64Data)
+  if (base64Data) {
+    const response = await audioApi.voiceToText(base64Data.split("audio/webm;")[1])
+    if (response.data?.code == 0) {
+      if (response.data.data) {
+        emits('enterFn', response.data.data)
+      }
+    } else {
+      ElMessage.error(response.data?.message)
+    }
+  }
 }
 
 const handleRemove: UploadProps['onRemove'] = (uploadFile: any, uploadFiles: any) => {
