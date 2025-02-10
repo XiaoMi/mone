@@ -54,6 +54,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private static final Map<String, Chatter> sessionIdChatter = new ConcurrentHashMap<>();
     private static final Map<String, Shopper> sessionIdShopper = new ConcurrentHashMap<>();
     private static final Map<String, RoleClassifier> sessionIdRoleClassifier = new ConcurrentHashMap<>();
+    private static final Map<String, Boolean> sessionIdIsChat = new ConcurrentHashMap<>();
 
 
     @Override
@@ -89,6 +90,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             if (data.equals("clear")) {
                 log.info("clear");
+                // 点击清除消息按钮时，清除聊天会话标识
+                sessionIdIsChat.remove(session.getId());
                 return;
             }
 
@@ -114,6 +117,13 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 return;
             }
 
+            // 如果在聊天的会话中，直接调用Chatter返回结果
+            boolean isChat = sessionIdIsChat.get(session.getId()) != null && sessionIdIsChat.get(session.getId());
+            if(isChat){
+                chat(chatter, data);
+                return;
+            }
+
             roleClassifier.getRc().news.put(Message.builder().sendTo(Lists.newArrayList("RoleClassifier")).content(data).build());
             Message classifiterRes = roleClassifier.run().join();
 
@@ -121,8 +131,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             //单纯的聊天
             if (agentName.equals("Chatter")) {
-                chatter.getRc().news.put(Message.builder().role("user").sendTo(Lists.newArrayList("Chatter")).content(data).build());
-                chatter.run().join();
+                sessionIdIsChat.put(session.getId(), true);
+                chat(chatter, data);
                 return;
             }
 
@@ -139,6 +149,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
 
         session.sendMessage(new TextMessage(payload));
+    }
+
+    private void chat(Chatter chatter, String data) throws InterruptedException {
+        chatter.getRc().news.put(Message.builder().role("user").sendTo(Lists.newArrayList("Chatter")).content(data).build());
+        chatter.run().join();
     }
 
     @Override

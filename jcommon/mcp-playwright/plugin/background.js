@@ -498,6 +498,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 sendResponse({ success: true });
             } else if (message.type === 'clearMessageHistory') {
                 messageHistory = [];
+                await sendWebSocketMessage('clear');
                 sendResponse({ success: true });
             } else if (message.type === 'mousePosition') {
                 // 存储移动位置
