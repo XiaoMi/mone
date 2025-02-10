@@ -33,6 +33,8 @@ export default {
     readNoData: '没有内容可朗读'
   },
   config: {
+    domain: '域名',
+    url: 'URL',
     create: '新建配置',
     edit: '编辑配置',
     selector: '选择器',

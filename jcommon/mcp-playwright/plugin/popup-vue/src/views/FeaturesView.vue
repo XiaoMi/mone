@@ -196,6 +196,7 @@ import { MouseTracker } from '../../../mouseTracker'
 import errorManager from '../../../errorManager'
 import bookmarkManager from '../../../managers/bookmarkManager'
 import historyManager from '../../../managers/historyManager'
+import { configApi } from '@/api/config'
 
 // 状态变量
 const coordinates = ref({ x: 0, y: 0 })
@@ -313,6 +314,38 @@ const redrawDomTree = async () => {
 				files: ['buildDomTree.js']
 			})
 
+			// 获取config配置内容，对于config中定义的select的元素，打上对应的kv标记
+			try {
+				const configResp = await configApi.list()
+				if (configResp.data) {	
+					const configs = configResp.data
+					// 确保 configs 是数组格式
+					const configArray = Array.isArray(configs) ? configs : [configs]
+					console.log('markElements configs:', configArray)
+
+					await chrome.scripting.executeScript({
+						target: { tabId: tab.id },
+						files: ['markElement.js']
+					})
+
+					await chrome.scripting.executeScript({
+						target: { tabId: tab.id },
+						func: (configs) => {
+							const markElementsFunc = window['markElements']
+							if (markElementsFunc) {
+								markElementsFunc(configs)
+							} else {
+								throw new Error('markElements函数未找到')
+							}
+						},
+						args: [configArray] // 传入转换后的数组
+					})
+				}
+				console.log('markElements configs is empty!')
+			} catch (error) {
+				console.error('标记元素失败:', error)
+			}
+
 			// 执行buildDomTree函数来重新渲染高亮并获取返回数据
 			const [{result: domTreeData}] = await chrome.scripting.executeScript({
 				target: { tabId: tab.id },
@@ -326,6 +359,8 @@ const redrawDomTree = async () => {
 				},
 				args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 }]
 			})
+
+			//TODO$ add
 
 			// 将数据存储到 chrome.storage
 			await chrome.storage.local.set({ lastDomTreeData: domTreeData })

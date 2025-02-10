@@ -446,7 +446,7 @@ public class LLM {
                                             .getAsJsonObject("delta");
 
                                     JsonElement c = delta.get("content");
-                                    if (c.isJsonNull()) {
+                                    if (c.isJsonNull() || (c.isJsonPrimitive() && StringUtils.isEmpty(c.getAsString()))) {
                                         JsonElement rc = delta.get("reasoning_content");
                                         if (!rc.isJsonNull()) {
                                             content = rc.getAsString();
