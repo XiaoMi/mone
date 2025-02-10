@@ -8,95 +8,169 @@
 import { ref } from 'vue'
 import { Mp3MediaRecorder } from 'mp3-mediarecorder'
 import Mp3RecorderWorker from './worker?worker&inline'
+import { ElMessage } from 'element-plus'
 
 const emits = defineEmits(['submit'])
 
 // 是否正在录音
 const recording = ref(false)
 // 录音内容
-let recorder: { start(): void; stop(): void } | null = null
+let recorder: { start(): void; stop(): void; isRecording(): boolean } | null = null
+
+const hadleSettingAudio = (extensionId: string) => {
+  // 构建设置页面 URL
+  const settingsUrl = `chrome://settings/content/siteDetails?site=chrome-extension://${extensionId}`;
+  // 打开设置页面
+  chrome.tabs.create({ url: settingsUrl });
+
+  ElMessage.warning("请在隐私与安全设置中，设置允许使用麦克风权限")
+}
 
 async function getRecorder() {
-  const mediaStream = navigator.mediaDevices.getUserMedia({ audio: true })
+  try {
+    // 检查权限状态
+    const permissionStatus = await navigator.permissions.query({ 
+      name: 'microphone' as PermissionName 
+    });
+    
+    if (permissionStatus.state === 'denied') {
+      hadleSettingAudio(chrome.runtime.id);
+      return null;
+    }
 
-  let chunks: BlobPart[] = []
+    const mediaStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        sampleRate: 44100
+      },
+      video: false
+    });
 
-  return mediaStream.then(
-    (stream) => {
-      const audioContext = new AudioContext()
-      // 创建一个新的音视频对象
-      const destination = audioContext.createMediaStreamDestination()
-      // 创建音视频源
-      const mediaStreamSource = audioContext.createMediaStreamSource(stream)
-      // 将音视频源 链接 到新音视频对象 中
-      mediaStreamSource.connect(destination)
+    let chunks: BlobPart[] = []
+    let isRecording = false
 
-      // 媒体录制接口,mp3格式
-      const mediaRecorder = new Mp3MediaRecorder(
-        destination.stream, // MediaStream instance
-        {
-          worker: new Mp3RecorderWorker(),
-          audioContext: new AudioContext()
-        }
-      )
-      // 浏览器原生
-      // const mediaRecorder = new MediaRecorder(destination.stream, {
-      //   audioBitsPerSecond: 44100,
-      //   bitsPerSecond: 128000
-      // })
+    const mediaRecorder = new MediaRecorder(mediaStream, {
+      mimeType: 'audio/webm'  // 使用 webm 格式
+    })
+    
+    // 添加错误处理
+    mediaRecorder.onerror = (error) => {
+      console.error('MediaRecorder 错误:', error)
+      ElMessage.error('录音出错，请重试')
+    }
 
-      // 有可用数据流时触发，e.data即需要的音视频数据
-      mediaRecorder.ondataavailable = (e: { data: BlobPart }) => {
-        chunks.push(e.data)
+    // 添加状态变化监听
+    mediaRecorder.onstart = () => {
+      console.log('录音开始')
+    }
+
+    console.log("start1")
+
+    // 有可用数据流时触发，e.data即需要的音视频数据
+    mediaRecorder.ondataavailable = (e: { data: BlobPart }) => {
+      console.log('收到音频数据:', e.data)
+      chunks.push(e.data)
+    }
+
+    // 间视频录制结束时触发
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(chunks, { type: 'audio/webm' })
+      const fileReader = new FileReader()
+      fileReader.onload = (e) => {
+        const base64Data: string = e.target?.result as string
+        if (!base64Data) return
+        const url = URL.createObjectURL(blob)
+        emits('submit', url, base64Data)
       }
+      fileReader.readAsDataURL(blob)
+      // 清理资源
+      chunks = []
+    }
 
-      // 间视频录制结束时触发
-      mediaRecorder.onstop = () => {
-        console.log(mediaRecorder.mimeType)
-        const blob = new Blob(chunks, { type: mediaRecorder.mimeType })
-        // 通过Blob合建对象URL本地地址
-        const fileReader = new FileReader()
-        fileReader.onload = (e) => {
-          const base64Data: string = e.target?.result as string
-          if (!base64Data) return
-          console.log(base64Data)
-          const url = URL.createObjectURL(blob)
-          emits('submit', url, base64Data)
-        }
-        fileReader.readAsDataURL(blob)
-      }
-
-      return {
-        start() {
+    return {
+      start() {
+        if (!isRecording) {
           chunks = []
           mediaRecorder.start()
-        },
-        stop() {
-          mediaRecorder.stop()
+          isRecording = true
         }
+      },
+      stop() {
+        if (isRecording) {
+          mediaRecorder.stop()
+          isRecording = false
+          // 停止所有音轨
+          mediaStream.getTracks().forEach(track => track.stop())
+        }
+      },
+      isRecording() {
+        return isRecording
       }
-    },
-    (e) => {
-      console.log(e)
-      return null
     }
-  )
+  } catch (error) {
+    console.error('获取麦克风失败:', error);
+    
+    if (error instanceof Error) {
+      if (error.name === 'NotAllowedError') {
+        hadleSettingAudio(chrome.runtime.id);
+      } else {
+        ElMessage.error({
+          message: `录音初始化失败: ${error.message}`,
+          duration: 3000
+        });
+      }
+    }
+    return null;
+  }
+}
+
+async function checkMicrophonePermission() {
+  try {
+    const permissionStatus = await navigator.permissions.query({ 
+      name: 'microphone' as PermissionName 
+    });
+    
+    return permissionStatus.state === 'granted';
+  } catch (error) {
+    console.error('检查麦克风权限失败:', error);
+    return false;
+  }
 }
 
 async function start() {
-  if (recorder == null) {
-    recorder = await getRecorder()
+  try {
+    if (!recorder) {
+      // 主动请求权限
+      await navigator.mediaDevices.getUserMedia({ audio: true });
+      const hasPermission = await checkMicrophonePermission();
+      if (!hasPermission) {
+        hadleSettingAudio(chrome.runtime.id);
+        return;
+      }
+      recorder = await getRecorder();
+    }
+    
+    if (recorder) {
+      console.log('开始录音...');
+      recording.value = true;
+      recorder.start();
+    }
+  } catch (error) {
+    console.error('启动录音失败:', error);
+    recording.value = false;
+    recorder = null;
+    ElMessage.error('启动录音失败，请重试');
   }
-  if (recorder == null) {
-    return
-  }
-  recording.value = true
-  recorder.start()
 }
 
 async function stop() {
-  recording.value = false
-  recorder?.stop()
+  if (recording.value) {
+    recording.value = false
+    recorder?.stop()
+    // 清理recorder
+    recorder = null
+  }
 }
 
 function handleStartOrStop() {

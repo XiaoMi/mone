@@ -1,7 +1,7 @@
 import axios from 'axios'
 import type { SelectorConfig } from '../model/config'
 
-const BASE_URL = 'http://localhost:8181/config'
+const BASE_URL = 'http://10.220.21.227:8181/config'
 
 export const configApi = {
   create: (config: SelectorConfig) => 
