@@ -5,11 +5,13 @@
     </el-button>
 
     <el-table :data="configs" v-loading="loading">
+      <el-table-column prop="domain" :label="$t('config.domain')" />
+      <el-table-column prop="url" :label="$t('config.url')" />
       <el-table-column prop="selector" :label="$t('config.selector')" />
       <el-table-column prop="key" :label="$t('config.key')" />
       <el-table-column prop="value" :label="$t('config.value')" />
       <el-table-column prop="description" :label="$t('config.description')" />
-      <el-table-column :label="$t('common.actions')">
+      <el-table-column :label="$t('common.actions')" min-width="160" fixed="right">
         <template #default="{ row }">
           <el-button type="primary" @click="handleEdit(row)">
             {{ $t('common.edit') }}
@@ -26,6 +28,12 @@
       v-model="dialogVisible"
     >
       <el-form :model="form" ref="formRef">
+        <el-form-item :label="$t('config.domain')" prop="domain">
+          <el-input v-model="form.domain" />
+        </el-form-item>
+        <el-form-item :label="$t('config.url')" prop="url">
+          <el-input v-model="form.url" />
+        </el-form-item>
         <el-form-item :label="$t('config.selector')" prop="selector">
           <el-input v-model="form.selector" />
         </el-form-item>
@@ -65,7 +73,9 @@ const form = ref<SelectorConfig>({
   selector: '',
   key: '',
   value: '',
-  description: ''
+  description: '',
+  domain: '',
+  url: ''
 })
 
 const loadConfigs = async () => {
@@ -86,7 +96,9 @@ const showCreateDialog = () => {
     selector: '',
     key: '',
     value: '',
-    description: ''
+    description: '',
+    domain: '',
+    url: ''
   }
   dialogVisible.value = true
 }

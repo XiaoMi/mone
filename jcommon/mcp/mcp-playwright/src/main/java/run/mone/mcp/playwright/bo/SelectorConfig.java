@@ -11,8 +11,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class SelectorConfig {
     private String id;
-    private String selector;
-    private String key; 
-    private String value;
-    private String description;
+    private String domain;    // 域名
+    private String url;       // 具体URL
+    private String selector;  // CSS选择器
+    private String key;       // 自定义key
+    private String value;     // 对应的value
+    private String description; // 配置描述
 }

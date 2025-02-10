@@ -360,6 +360,8 @@ const redrawDomTree = async () => {
 				args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 }]
 			})
 
+			//TODO$ add
+
 			// 将数据存储到 chrome.storage
 			await chrome.storage.local.set({ lastDomTreeData: domTreeData })
 			console.log('DOM树数据已保存:', domTreeData)

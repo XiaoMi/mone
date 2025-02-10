@@ -58,7 +58,7 @@ function connectWebSocket() {
             if (data && 'data' in data) {
                 if (typeof data.data === 'string') {
                     const xmlString = data.data;
-                    console.log('Valid XML string:', xmlString);
+                    console.log('XML string:', xmlString);
                     // 这里可以继续处理 xmlString  
                     let actions = xmlManager.parseActions(xmlString);
                     console.log('actions:', actions);
@@ -223,6 +223,9 @@ function connectWebSocket() {
                                 },
                                 args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 }]
                             });
+
+                             //TODO$ add
+
                             context.set('domTreeData', domTreeData);
                         }
                         //取消重绘
@@ -905,6 +908,8 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
 
         // 将 domTreeData 转换为字符串
         const domTreeString = generateHtmlString(domTreeData);
+
+        //TODO$ add
 
         const messageData = {
             code: domTreeString,
