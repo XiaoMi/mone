@@ -225,6 +225,14 @@ function connectWebSocket() {
                             });
 
                              //TODO$ add
+                             new Promise((resolve, reject) => {
+                                try {
+                                    chrome.storage.local.set({ lastDomTreeData: domTreeData });
+                                    resolve();
+                                } catch (error) {
+                                    reject(error);
+                                }
+                             });
 
                             context.set('domTreeData', domTreeData);
                         }
@@ -910,6 +918,14 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
         const domTreeString = generateHtmlString(domTreeData);
 
         //TODO$ add
+        new Promise((resolve, reject) => {
+            try {
+                chrome.storage.local.set({ lastDomTreeData: domTreeData });
+                resolve();
+            } catch (error) {
+                reject(error);
+            }
+        });
 
         const messageData = {
             code: domTreeString,
