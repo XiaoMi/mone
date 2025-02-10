@@ -76,4 +76,18 @@ public class GitLabTest {
         GitLabFunction gitLabFunction = new GitLabFunction();
         System.out.println(gitLabFunction.executeCloseMerge("123", "7"));
     }
+
+    // 测试获取merge变更
+    @Test
+    public void testGetMergeChange() {
+        GitLabFunction gitLabFunction = new GitLabFunction();
+        System.out.println(gitLabFunction.executeMergeChange("123", "12"));
+    }
+
+    // 测试clone
+    @Test
+    public void testClone() {
+        GitLabFunction gitLabFunction = new GitLabFunction();
+        System.out.println(gitLabFunction.executeClone("your-http-git-path","master", "your-path"));
+    }
 }

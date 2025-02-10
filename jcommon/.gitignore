@@ -21,4 +21,4 @@ nohup*
 *.class
 .sbtserver*
 .vscode/settings.json
-
+selector_config.json

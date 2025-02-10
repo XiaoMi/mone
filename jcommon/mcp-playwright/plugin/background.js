@@ -58,7 +58,7 @@ function connectWebSocket() {
             if (data && 'data' in data) {
                 if (typeof data.data === 'string') {
                     const xmlString = data.data;
-                    console.log('Valid XML string:', xmlString);
+                    console.log('XML string:', xmlString);
                     // 这里可以继续处理 xmlString  
                     let actions = xmlManager.parseActions(xmlString);
                     console.log('actions:', actions);
@@ -200,6 +200,10 @@ function connectWebSocket() {
                         // buildDomTree(从新生成domTree)
                         if (action.type === 'buildDomTree') {
                             console.log('buildDomTree');
+                            // 获取config配置内容，对于config中定义的select的元素，打上对应的kv标记
+                            const configs = await getConfigs();
+                            await markElements(configs);
+
                             // 重新执行buildDomTree
                             await chrome.scripting.executeScript({
                                 target: { tabId: tab.id },
@@ -219,6 +223,17 @@ function connectWebSocket() {
                                 },
                                 args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 }]
                             });
+
+                             //TODO$ add
+                             new Promise((resolve, reject) => {
+                                try {
+                                    chrome.storage.local.set({ lastDomTreeData: domTreeData });
+                                    resolve();
+                                } catch (error) {
+                                    reject(error);
+                                }
+                             });
+
                             context.set('domTreeData', domTreeData);
                         }
                         //取消重绘
@@ -822,21 +837,18 @@ async function getConfigs() {
 // 为元素添加标记
 async function markElements(tabId, configs) {
   try {
-    // 在页面上下文中执行脚本
+    // 注入markElement.js脚本
+    console.log('markElements:', configs);
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      files: ['markElement.js']
+    });
+
+    // 执行标记函数
     await chrome.scripting.executeScript({
       target: { tabId },
       func: (configs) => {
-        // 遍历每个配置
-        configs.forEach(config => {
-          // 查找匹配的元素
-          const elements = document.querySelectorAll(config.selector);
-          console.log('elements:', elements);
-          // 为每个元素添加标记
-          elements.forEach(element => {
-            element.setAttribute(config.key, config.value);
-            console.log('标记element:', element);
-          });
-        });
+        window.markElements(configs);
       },
       args: [configs]
     });
@@ -904,6 +916,16 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
 
         // 将 domTreeData 转换为字符串
         const domTreeString = generateHtmlString(domTreeData);
+
+        //TODO$ add
+        new Promise((resolve, reject) => {
+            try {
+                chrome.storage.local.set({ lastDomTreeData: domTreeData });
+                resolve();
+            } catch (error) {
+                reject(error);
+            }
+        });
 
         const messageData = {
             code: domTreeString,
