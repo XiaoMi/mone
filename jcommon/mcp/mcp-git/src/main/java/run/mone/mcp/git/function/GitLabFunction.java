@@ -40,7 +40,7 @@ public class GitLabFunction implements Function<Map<String, Object>, McpSchema.C
                 "properties": {
                     "type": {
                         "type": "string",
-                        "enum": ["create_repository", "search_repositories","get_branch","create_branch","delete_branch","push","create_merge","get_merge","accept_merge","close_merge"],
+                        "enum": ["create_repository", "search_repositories","get_branch","create_branch","delete_branch","push","create_merge","get_merge","accept_merge","close_merge","get_merge_change","clone"],
                         "description": "Type of gitlab operation to execute"
                      },
                      "create_repository_name": {
@@ -94,6 +94,10 @@ public class GitLabFunction implements Function<Map<String, Object>, McpSchema.C
                     "merge_id": {
                          "type": "string",
                          "description": "merge id after create merged"
+                    },
+                    "clone_url": {
+                         "type": "string",
+                         "description": "clone url when clone used"
                     }
                 },
                 "required": ["type"]
@@ -132,6 +136,10 @@ public class GitLabFunction implements Function<Map<String, Object>, McpSchema.C
                     return executeAcceptMerge((String) args.get("project_id"), (String) args.get("merge_id"));
                 case "close_merge":
                     return executeCloseMerge((String) args.get("project_id"), (String) args.get("merge_id"));
+                case "get_merge_change":
+                    return executeMergeChange((String) args.get("project_id"), (String) args.get("merge_id"));
+                case "clone":
+                    return executeClone((String) args.get ("clone_url"), (String) args.get("branch"), (String) args.get("git_path"));
                 default:
                     throw new IllegalArgumentException("Unsupported operation type: " + type);
             }
@@ -346,6 +354,37 @@ public class GitLabFunction implements Function<Map<String, Object>, McpSchema.C
             } else {
                 throw new RuntimeException(mergeRes.getMessage());
             }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public McpSchema.CallToolResult executeMergeChange(String projectId, String mergeId) {
+        try {
+            if (projectId == null) {
+                throw new IllegalArgumentException("projectId is required");
+            }
+            if (mergeId == null) {
+                throw new IllegalArgumentException("mergeId is required");
+            }
+            String token = System.getenv().getOrDefault("GIT_TOKEN", "");
+            BaseResponse mergeRes = gitlab.getMergeChange(gitLabUrl, projectId, mergeId, token);
+            return new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent(mergeRes.getMessage())),
+                    false);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public McpSchema.CallToolResult executeClone(String cloneUrl, String branch, String gitPath) {
+        try {
+            String userName = System.getenv().getOrDefault("GIT_USERNAME", "");
+            String token = System.getenv().getOrDefault("GIT_TOKEN", "");
+            boolean cloneRes = gitlab.clone(cloneUrl,branch, userName, token,gitPath);
+            return new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("clone res : " + cloneRes)),
+                    false);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
