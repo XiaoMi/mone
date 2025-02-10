@@ -118,8 +118,8 @@ const clearMessages = () => {
   chrome.runtime.sendMessage({ type: 'clearMessageHistory' })
 }
 
-const sendMessage = async () => {
-  const message = messageInput.value.trim()
+const sendMessage = async (msg: string = "") => {
+  const message = messageInput.value.trim() || msg.trim()
   if (!message || isSending.value) return
 
   // 添加用户消息
