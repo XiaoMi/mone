@@ -23,6 +23,7 @@
           :flowData="{}"
           language=""
           :multimodal="item.multimodal"
+          :imgList="item.imgList"
         />
       </div>
     </div>
@@ -56,7 +57,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, type UploadUserFile } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
 import { Message } from '@/components/common-message'
 import CommonTextarea from '@/components/common-textarea/CommonTextarea.vue'
@@ -79,6 +80,7 @@ interface ChatMessage {
   flowData?: Object
   //  如果上一条是bot Message 则新发送时需要加一个Type
   isBotMessage?: Boolean
+  imgList?: UploadUserFile[]
 }
 
 let lastConversionRes: any | null = null;
@@ -94,6 +96,7 @@ const messageInput = ref('')
 const isSending = ref(false)
 const messageContainer = ref<HTMLElement | null>(null)
 const conversions = ref<ChatMessage[]>([])
+const inputRef = ref<{ $el: HTMLElement } | null>(null)
 
 // 格式化时间
 const formatTime = (timestamp: number) => {
@@ -119,8 +122,29 @@ const clearMessages = () => {
 }
 
 const sendMessage = async (msg: string = "") => {
+  // 获取粘贴的图片数据
+  const imgList = []
+  if (inputRef.value?.pasteFileList?.length) {
+    for (const file of inputRef.value.pasteFileList) {
+      // 将图片URL转换为base64
+      try {
+        const response = await fetch(file.url)
+        const blob = await response.blob()
+        const reader = new FileReader()
+        const base64 = await new Promise((resolve) => {
+          reader.onloadend = () => resolve(reader.result)
+          reader.readAsDataURL(blob)
+        })
+        imgList.push(base64)
+      } catch (error) {
+        console.error('转换图片失败:', error)
+      }
+    }
+  }
+
   const message = messageInput.value.trim() || msg.trim()
-  if (!message || isSending.value) return
+
+  if ((!message && !imgList.length) || isSending.value) return
 
   // 添加用户消息
   conversions.value.push({
@@ -130,7 +154,8 @@ const sendMessage = async (msg: string = "") => {
     msgType: 'chat',
     inversion: true,
     avatar: '',
-    name: '用户'
+    name: '用户',
+    imgList: imgList?.length ? [...inputRef.value?.pasteFileList] : []
   })
 
   messageInput.value = ''
@@ -141,9 +166,15 @@ const sendMessage = async (msg: string = "") => {
     // 发送消息到后台
     chrome.runtime.sendMessage({
       type: 'sendWebSocketMessage',
-      text: message
+      text: JSON.stringify({
+        text: message,
+        img: imgList
+      })
     }, response => {
       if (response.success) {
+        if (inputRef.value) {
+          inputRef.value.pasteFileList = []
+        }
       } else {
         ElMessage.error('发送消息失败')
       }

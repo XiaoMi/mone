@@ -9,12 +9,12 @@ import hljs from 'highlight.js'
 import { copyToClip } from '@/utils/copy'
 import { t } from '@/locales'
 import Loading from './Loading.vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, type UploadUserFile } from 'element-plus'
 // import BaseSounds from '../../BaseSounds'
 // import ChartComponent from './Chart.vue'
 import TableComponent from './TableData.vue'
 import ButtonComponent from './ButtonData.vue'
-
+import { markdownItMcp } from '../markdown-it-plugin/mcp.ts'
 interface Props {
   inversion?: boolean
   error?: boolean
@@ -26,6 +26,7 @@ interface Props {
   translateData?: {}
   showOperate?: boolean // 是否是插件调试页面
   voiceSetting?: object // 语音播报配置
+  imgList?: UploadUserFile[]
 }
 
 const props = defineProps<Props>()
@@ -56,7 +57,7 @@ const mdi = new MarkdownIt({
 
 mdi.use(mila, { attrs: { target: '_blank', rel: 'noopener' } })
 mdi.use(mdKatex, { blockClass: 'katexmath-block rounded-md p-[10px]', errorColor: ' #cc0000' })
-
+mdi.use(markdownItMcp)
 const wrapClass = computed(() => {
   return [
     'text-wrap',
@@ -64,7 +65,7 @@ const wrapClass = computed(() => {
     'rounded-md',
     'px-3 py-2',
     props.inversion ? 'color-[#fff]' : 'dark:color-[#fff]',
-    props.inversion ? 'bg-[var(--oz-color-primary)]' : 'bg-[#f4f6f8]',
+    props.inversion ? 'bg-[#409eff]' : 'bg-[#f4f6f8]',
     props.inversion ? 'dark:bg-[#80d4ff]' : 'dark:bg-[#1e1e20]',
     props.inversion ? 'message-request' : 'message-reply',
     { 'text-red-500': props.error }
@@ -521,6 +522,11 @@ onUnmounted(() => {
           :asRawText="props.asRawText"
         ></ButtonComponent>
         <template v-else>
+          <ul class="image-list" v-if="props.imgList?.length">
+            <li v-for="(file, index) in props.imgList" :key="index">
+              <img :src="file.url" alt="uploaded image" />
+            </li>
+          </ul>
           <div v-if="!inversion" ref="resContent">
             <div v-if="showCursor" class="show-cursor"></div>
             <div v-if="!asRawText" class="markdown-body markdown-body-table" v-html="text" />
@@ -877,6 +883,29 @@ onUnmounted(() => {
   .copy-btn {
     cursor: pointer;
     color: #00a9ff;
+  }
+}
+.image-list {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  li {
+    position: relative;
+    width: 40px;
+    height: 20px;
+    overflow: hidden;
+    border-radius: 4px;
+    border: 1px solid var(--el-border-color);
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
   }
 }
 </style>

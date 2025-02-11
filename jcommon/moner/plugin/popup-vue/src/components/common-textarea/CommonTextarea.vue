@@ -2,68 +2,76 @@
   <div :class="['input-box', props.size]">
     <slot name="top"></slot>
     <div class="input-box-content">
-      <el-input
-        ref="textarea"
-        v-model="inputV"
-        :class="['common-input', 'textarea-class', props.size]"
-        type="textarea"
-        :autosize="{ minRows: 1, maxRows: 8 }"
-        @keyup.enter="handleEnter"
-        :placeholder="placeholder"
-        :disabled="disabled"
-      >
-      </el-input>
-      <div class="btn-box">
-        <template v-if="props.type !== 'simple'">
-          <el-tooltip effect="dark" :content="t('commonTextare.audio')" placement="top">
-            <Recoder @submit="submitAudio"></Recoder>
-          </el-tooltip>
-          <!-- 图片 -->
-          <el-tooltip
-            effect="dark"
-            :content="t('commonTextare.img')"
-            placement="top"
-            v-if="showImg"
-          >
-            <el-upload
-              :limit="1"
-              class="upload-container"
-              ref="upload"
-              action="/"
-              :auto-upload="false"
-              :on-change="beforeAvatarUpload"
-              v-model:file-list="fileList"
-              :on-preview="handlePreview"
-              :on-remove="handleRemove"
-              list-type="picture"
+      <ul class="image-list" v-if="pasteFileList.length">
+        <li v-for="(file, index) in pasteFileList" :key="index">
+          <img :src="file.url" alt="uploaded image" />
+          <span class="delete-icon" @click="removeImage(index)">×</span>
+        </li>
+      </ul>
+      <div class="input-box-content-wrap">
+        <el-input
+          ref="textarea"
+          v-model="inputV"
+          :class="['common-input', 'textarea-class', props.size]"
+          type="textarea"
+          :autosize="{ minRows: 1, maxRows: 8 }"
+          @keyup.enter="handleEnter"
+          :placeholder="placeholder"
+          :disabled="disabled"
+        >
+        </el-input>
+        <div class="btn-box">
+          <template v-if="props.type !== 'simple'">
+            <el-tooltip effect="dark" :content="t('commonTextare.audio')" placement="top">
+              <Recoder @submit="submitAudio"></Recoder>
+            </el-tooltip>
+            <!-- 图片 -->
+            <el-tooltip
+              effect="dark"
+              :content="t('commonTextare.img')"
+              placement="top"
+              v-if="showImg"
             >
-              <el-icon><Picture /></el-icon>
-            </el-upload>
-          </el-tooltip>
-          <!-- shift -->
-          <el-tooltip effect="dark" :content="t('commonTextare.enterWithShift')" placement="top">
+              <el-upload
+                :limit="1"
+                class="upload-container"
+                ref="upload"
+                action="/"
+                :auto-upload="false"
+                :on-change="beforeAvatarUpload"
+                v-model:file-list="fileList"
+                :on-preview="handlePreview"
+                :on-remove="handleRemove"
+                list-type="picture"
+              >
+                <el-icon><Picture /></el-icon>
+              </el-upload>
+            </el-tooltip>
+            <!-- shift -->
+            <el-tooltip effect="dark" :content="t('commonTextare.enterWithShift')" placement="top">
+              <el-button
+                link
+                :class="['shift-btn', enterWithShiftKey ? 'active' : '']"
+                @click="toggleEnterWithShiftKey"
+              >
+                shift
+              </el-button>
+            </el-tooltip>
+          </template>
+          <!-- enter -->
+          <el-tooltip effect="dark" :content="t('commonTextare.sendMsg')" placement="top">
             <el-button
               link
-              :class="['shift-btn', enterWithShiftKey ? 'active' : '']"
-              @click="toggleEnterWithShiftKey"
+              :class="[
+                'send-btn',
+                inputV.length > 0 || fileList.length || pasteFileList.length ? 'active' : ''
+              ]"
+              @click="sendMsg"
             >
-              shift
+              <el-icon><Position /></el-icon>
             </el-button>
           </el-tooltip>
-        </template>
-        <!-- enter -->
-        <el-tooltip effect="dark" :content="t('commonTextare.sendMsg')" placement="top">
-          <el-button
-            link
-            :class="[
-              'send-btn',
-              inputV.length > 0 || fileList.length ? 'active' : ''
-            ]"
-            @click="sendMsg"
-          >
-            <el-icon><Position /></el-icon>
-          </el-button>
-        </el-tooltip>
+        </div>
       </div>
     </div>
     <slot></slot>
@@ -71,10 +79,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted, defineExpose } from 'vue'
 import type { UploadProps, UploadUserFile } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { Picture, Operation, Position } from '@element-plus/icons-vue'
+import { Picture, Operation, Position, Close } from '@element-plus/icons-vue'
 import { t } from '@/locales/index'
 import Recoder from '@/components/recorder/index.vue'
 import { useCommonTextareaStore } from '@/stores/common-textarea/index'
@@ -125,8 +133,10 @@ const inputV = computed({
   }
 })
 const fileList = ref<UploadUserFile[]>([])
+const pasteFileList = ref<UploadUserFile[]>([])
 const fileParams = ref({})
-const upload = ref(null)
+const upload = ref<{ clearFiles: () => void } | null>(null)
+const textarea = ref<{ $el: HTMLElement } | null>(null)
 
 // 是否开启enter+shift是发送
 const enterWithShiftKey = computed(() => {
@@ -139,7 +149,7 @@ const toggleEnterWithShiftKey = () => {
 
 // enter
 const enterUpdate = () => {
-  if (inputV.value?.trim()) {
+  if (inputV.value?.trim() || pasteFileList.value?.length) {
     // 图片
     if (fileList.value.length) {
       emits('enterFn', fileParams.value)
@@ -234,6 +244,53 @@ const beforeAvatarUpload = (file: any) => {
     }
   }
 }
+
+// 修改 handlePaste 函数以支持多图片
+const handlePaste = (event: ClipboardEvent) => {
+  const items = event.clipboardData?.items
+  if (!items) return
+
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type.indexOf('image') !== -1) {
+      const file = items[i].getAsFile()
+      if (file) {
+        const reader = new FileReader()
+        reader.onload = function(e) {
+          const base64String = e.target?.result
+          if (typeof base64String === 'string') {
+            const url = URL.createObjectURL(file)
+            
+            // 添加新图片到列表
+            pasteFileList.value.push({
+              name: file.name || 'pasted-image.png',
+              url
+            })
+          }
+        }
+        reader.readAsDataURL(file)
+      }
+    }
+  }
+}
+
+// 添加删除图片方法
+const removeImage = (index: number) => {
+  pasteFileList.value = pasteFileList.value.filter((_, i) => i !== index)
+}
+
+// 暴露 pasteFileList 给外部使用
+defineExpose({
+  pasteFileList
+})
+
+// 在 setup 中添加事件监听
+onMounted(() => {
+  textarea.value?.$el.addEventListener('paste', handlePaste)
+})
+
+onUnmounted(() => {
+  textarea.value?.$el.removeEventListener('paste', handlePaste)
+})
 </script>
 
 <style lang="scss" scoped>
@@ -261,9 +318,12 @@ const beforeAvatarUpload = (file: any) => {
 
   &-content {
     width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    &-wrap {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
   }
 
   .textarea-class {
@@ -412,6 +472,48 @@ html.dark {
           background-color: var(--el-color-primary-dark-1);
         }
       }
+    }
+  }
+}
+
+.image-list {
+  list-style: none;
+  padding: 0;
+  margin: 4px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  li {
+    position: relative;
+    width: 40px;
+    height: 20px;
+    overflow: hidden;
+    border-radius: 4px;
+    border: 1px solid var(--el-border-color);
+
+    .delete-icon {
+      position: absolute;
+      top: 0;
+      right: 0;
+      color: #fff;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.3s;
+      display: inline-block;
+      width: 12px;
+      line-height: 8px;
+      text-align: right;
+      
+      &:hover {
+        color: var(--el-color-primary);
+      }
+    }
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
   }
 }

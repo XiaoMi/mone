@@ -29,14 +29,13 @@ const hadleSettingAudio = (extensionId: string) => {
 async function getRecorder() {
   try {
     // 检查权限状态
-    const permissionStatus = await navigator.permissions.query({ 
-      name: 'microphone' as PermissionName 
-    });
+    const hasPermission = await checkMicrophonePermission();
     
-    if (permissionStatus.state === 'denied') {
+    if (!hasPermission) {
       hadleSettingAudio(chrome.runtime.id);
       return null;
     }
+    await navigator.mediaDevices.getUserMedia({ audio: true });
 
     const mediaStream = await navigator.mediaDevices.getUserMedia({
       audio: {
@@ -142,8 +141,8 @@ async function start() {
   try {
     if (!recorder) {
       // 主动请求权限
-      await navigator.mediaDevices.getUserMedia({ audio: true });
       const hasPermission = await checkMicrophonePermission();
+      console.log(hasPermission);
       if (!hasPermission) {
         hadleSettingAudio(chrome.runtime.id);
         return;
