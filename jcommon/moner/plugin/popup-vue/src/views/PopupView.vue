@@ -94,6 +94,7 @@ const messageInput = ref('')
 const isSending = ref(false)
 const messageContainer = ref<HTMLElement | null>(null)
 const conversions = ref<ChatMessage[]>([])
+const inputRef = ref<{ $el: HTMLElement } | null>(null)
 
 // 格式化时间
 const formatTime = (timestamp: number) => {
@@ -119,8 +120,28 @@ const clearMessages = () => {
 }
 
 const sendMessage = async (msg: string = "") => {
+  // 获取粘贴的图片数据
+  const imgList = []
+  if (inputRef.value?.pasteFileList?.length) {
+    for (const file of inputRef.value.pasteFileList) {
+      // 将图片URL转换为base64
+      try {
+        const response = await fetch(file.url)
+        const blob = await response.blob()
+        const reader = new FileReader()
+        const base64 = await new Promise((resolve) => {
+          reader.onloadend = () => resolve(reader.result)
+          reader.readAsDataURL(blob)
+        })
+        imgList.push(base64)
+      } catch (error) {
+        console.error('转换图片失败:', error)
+      }
+    }
+  }
+
   const message = messageInput.value.trim() || msg.trim()
-  if (!message || isSending.value) return
+  if (!message || isSending.value || !imgList.length) return
 
   // 添加用户消息
   conversions.value.push({
@@ -141,9 +162,15 @@ const sendMessage = async (msg: string = "") => {
     // 发送消息到后台
     chrome.runtime.sendMessage({
       type: 'sendWebSocketMessage',
-      text: message
+      text: JSON.stringify({
+        text: message,
+        img: imgList
+      })
     }, response => {
       if (response.success) {
+        if (inputRef.value) {
+          inputRef.value.pasteFileList = []
+        }
       } else {
         ElMessage.error('发送消息失败')
       }
