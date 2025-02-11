@@ -141,7 +141,7 @@ const sendMessage = async (msg: string = "") => {
   }
 
   const message = messageInput.value.trim() || msg.trim()
-  if (!message || isSending.value || !imgList.length) return
+  // if (!message || isSending.value || !imgList.length) return
 
   // 添加用户消息
   conversions.value.push({
