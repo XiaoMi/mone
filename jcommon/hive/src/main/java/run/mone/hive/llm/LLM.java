@@ -186,7 +186,7 @@ public class LLM {
         }
 
         //使用的cloudflare
-        String url = getColudFlareUrl(apiKey, model, requestBuilder);
+        String url = getCloudFlareUrl(apiKey, model, requestBuilder);
 
         String rb = requestBody.toString();
 
@@ -335,11 +335,16 @@ public class LLM {
 
     public void chat(List<AiMessage> messages, BiConsumer<String, JsonObject> messageHandlerr) {
         chatCompletionStream(System.getenv(llmProvider.getEnvName()), messages, llmProvider.getDefaultModel(), messageHandlerr, line -> {
-        });
+        }, "");
+    }
+
+    public void chat(List<AiMessage> messages, BiConsumer<String, JsonObject> messageHandlerr, String systemPrompt) {
+        chatCompletionStream(System.getenv(llmProvider.getEnvName()), messages, llmProvider.getDefaultModel(), messageHandlerr, line -> {
+        }, systemPrompt);
     }
 
 
-    public void chatCompletionStream(String apiKey, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer) {
+    public void chatCompletionStream(String apiKey, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt) {
         JsonObject requestBody = new JsonObject();
 
         if (this.llmProvider != LLMProvider.GOOGLE_2) {
@@ -349,10 +354,36 @@ public class LLM {
 
         JsonArray msgArray = new JsonArray();
 
+        if (this.llmProvider != LLMProvider.GOOGLE_2) {
+            if (this.config.isJson()) {
+                String jsonSystemPrompt = """
+                         返回结果请用JSON返回(如果用户没有指定json格式,则直接返回{"content":$res}),thx
+                        """;
+                JsonObject rf = new JsonObject();
+                rf.addProperty("type", "json_object");
+                requestBody.add("response_format", rf);
+                msgArray.add(createMessageObject("system", jsonSystemPrompt));
+            } else {
+                if (StringUtils.isNotEmpty(systemPrompt)) {
+                    msgArray.add(createMessageObject("system", systemPrompt));
+                }
+            }
+        }
+
+        //gemini的系统提示词
+        if (llmProvider == LLMProvider.GOOGLE_2 && StringUtils.isNotEmpty(systemPrompt)) {
+            JsonObject system_instruction = new JsonObject();
+            JsonObject text = new JsonObject();
+            text.addProperty("text", systemPrompt);
+            system_instruction.add("parts", text);
+            requestBody.add("system_instruction", system_instruction);
+        }
 
         for (AiMessage message : messages) {
-            //原生google
-            if (this.llmProvider == LLMProvider.GOOGLE_2) {
+            //使用openrouter,并且使用多模态
+            if ((this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.MOONSHOT) && null != message.getJsonContent()) {
+                msgArray.add(message.getJsonContent());
+            }else if (this.llmProvider == LLMProvider.GOOGLE_2) {
                 msgArray.add(createMessageObjectForGoogle(message.getRole(), message.getContent()));
             } else {
                 msgArray.add(createMessageObject(message.getRole(), message.getContent()));
@@ -367,7 +398,7 @@ public class LLM {
         }
 
         //使用的cloudflare
-        String url = getColudFlareUrl(apiKey, model, rb);
+        String url = getCloudFlareUrl(apiKey, model, rb);
 
         Request request = rb
                 .url(url)
@@ -475,7 +506,7 @@ public class LLM {
         });
     }
 
-    private String getColudFlareUrl(String apiKey, String model, Request.Builder rb) {
+    private String getCloudFlareUrl(String apiKey, String model, Request.Builder rb) {
         if (this.llmProvider == LLMProvider.GOOGLE_2 && StringUtils.isNotEmpty(config.getUrl())) {
             rb.addHeader("x-goog-api-key", apiKey);
         }
@@ -491,7 +522,43 @@ public class LLM {
         StringBuilder sb = new StringBuilder();
         CountDownLatch latch = new CountDownLatch(1);
         String msgId = UUID.randomUUID().toString();
-        chat(Lists.newArrayList(AiMessage.builder().role("user").content(str).build()), (c, o) -> {
+        chat(Lists.newArrayList(AiMessage.builder().role("user").content(str).build()), roleSendMessageConsumer(role, msgId, latch, sb));
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return sb.toString();
+    }
+
+    public String syncChat(Role role, List<AiMessage> messages) {
+        StringBuilder sb = new StringBuilder();
+        CountDownLatch latch = new CountDownLatch(1);
+        String msgId = UUID.randomUUID().toString();
+        chat(messages, roleSendMessageConsumer(role, msgId, latch, sb));
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return sb.toString();
+    }
+
+    public String syncChat(Role role, List<AiMessage> messages, String systemPrompt) {
+        StringBuilder sb = new StringBuilder();
+        CountDownLatch latch = new CountDownLatch(1);
+        String msgId = UUID.randomUUID().toString();
+        chat(messages, roleSendMessageConsumer(role, msgId, latch, sb), systemPrompt);
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+        return sb.toString();
+    }
+
+    private BiConsumer<String, JsonObject> roleSendMessageConsumer(Role role, String msgId, CountDownLatch latch, StringBuilder sb){
+        return ((c, o) -> {
             String type = o.get("type").getAsString();
             if (type.equals("begin")) {
                 role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_BEGIN).id(msgId).role(role.getName()).build());
@@ -503,12 +570,6 @@ public class LLM {
                 role.sendMessage(Message.builder().type(StreamMessageType.BOT_STREAM_EVENT).id(msgId).role(role.getName()).content(o.get("content").getAsString()).build());
             }
         });
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
-        return sb.toString();
     }
 
     public String getModel() {
