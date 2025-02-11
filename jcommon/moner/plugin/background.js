@@ -191,7 +191,7 @@ function connectWebSocket() {
                                 // 将截图数据放入context
                                 const messageData = {
                                     code: code,
-                                    img: screenshot
+                                    img: [screenshot]
                                 };
                                 console.log('send messageData:', messageData);
                                 await sendWebSocketMessage(JSON.stringify(messageData), "shopping");
@@ -929,7 +929,7 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
 
         const messageData = {
             code: domTreeString,
-            img: screenshot,
+            img: [screenshot],
             tabs: await getAllTabsInfo()
         };
         console.log('messageData:', messageData);
