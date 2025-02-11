@@ -143,6 +143,7 @@ const sendMessage = async (msg: string = "") => {
   }
 
   const message = messageInput.value.trim() || msg.trim()
+
   if ((!message && !imgList.length) || isSending.value) return
 
   // 添加用户消息

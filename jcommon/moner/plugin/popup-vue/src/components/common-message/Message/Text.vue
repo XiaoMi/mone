@@ -14,7 +14,7 @@ import { ElMessage, type UploadUserFile } from 'element-plus'
 // import ChartComponent from './Chart.vue'
 import TableComponent from './TableData.vue'
 import ButtonComponent from './ButtonData.vue'
-
+import { markdownItMcp } from '../markdown-it-plugin/mcp.ts'
 interface Props {
   inversion?: boolean
   error?: boolean
@@ -57,7 +57,7 @@ const mdi = new MarkdownIt({
 
 mdi.use(mila, { attrs: { target: '_blank', rel: 'noopener' } })
 mdi.use(mdKatex, { blockClass: 'katexmath-block rounded-md p-[10px]', errorColor: ' #cc0000' })
-
+mdi.use(markdownItMcp)
 const wrapClass = computed(() => {
   return [
     'text-wrap',
@@ -65,7 +65,7 @@ const wrapClass = computed(() => {
     'rounded-md',
     'px-3 py-2',
     props.inversion ? 'color-[#fff]' : 'dark:color-[#fff]',
-    props.inversion ? 'bg-[var(--oz-color-primary)]' : 'bg-[#f4f6f8]',
+    props.inversion ? 'bg-[#409eff]' : 'bg-[#f4f6f8]',
     props.inversion ? 'dark:bg-[#80d4ff]' : 'dark:bg-[#1e1e20]',
     props.inversion ? 'message-request' : 'message-reply',
     { 'text-red-500': props.error }
