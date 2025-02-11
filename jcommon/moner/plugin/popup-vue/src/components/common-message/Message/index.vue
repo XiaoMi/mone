@@ -38,6 +38,7 @@
           :translateData="props.translateData"
           :showOperate="props.showOperate"
           :voiceSetting="props.voiceSetting"
+          :imgList="props.imgList"
           @replaceFn="replaceFn"
           @onTryAgain="emit('onTryAgain')"
         />
@@ -103,7 +104,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, type UploadUserFile } from 'element-plus'
 import { Refresh, MoreFilled } from '@element-plus/icons-vue'
 import AvatarComponent from './Avatar.vue'
 import TextComponent from './Text.vue'
@@ -129,6 +130,7 @@ interface Props {
   textType?: string // 文本类型 translate类型则展示翻译
   translateData?: any
   voiceSetting?: object // 语音播报配置
+  imgList?: UploadUserFile[]
 }
 
 interface Emit {

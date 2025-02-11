@@ -23,6 +23,7 @@
           :flowData="{}"
           language=""
           :multimodal="item.multimodal"
+          :imgList="item.imgList"
         />
       </div>
     </div>
@@ -56,7 +57,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, nextTick } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, type UploadUserFile } from 'element-plus'
 import { Delete } from '@element-plus/icons-vue'
 import { Message } from '@/components/common-message'
 import CommonTextarea from '@/components/common-textarea/CommonTextarea.vue'
@@ -79,6 +80,7 @@ interface ChatMessage {
   flowData?: Object
   //  如果上一条是bot Message 则新发送时需要加一个Type
   isBotMessage?: Boolean
+  imgList?: UploadUserFile[]
 }
 
 let lastConversionRes: any | null = null;
@@ -141,7 +143,7 @@ const sendMessage = async (msg: string = "") => {
   }
 
   const message = messageInput.value.trim() || msg.trim()
-  if (!message || isSending.value || !imgList.length) return
+  if ((!message && !imgList.length) || isSending.value) return
 
   // 添加用户消息
   conversions.value.push({
@@ -151,7 +153,8 @@ const sendMessage = async (msg: string = "") => {
     msgType: 'chat',
     inversion: true,
     avatar: '',
-    name: '用户'
+    name: '用户',
+    imgList: imgList?.length ? [...inputRef.value?.pasteFileList] : []
   })
 
   messageInput.value = ''
