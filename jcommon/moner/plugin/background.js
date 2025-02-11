@@ -1,8 +1,8 @@
-import notificationManager from './managers/notificationManager.js';
 import tabManager from './managers/tabManager.js';
 import xmlManager from './managers/xmlManager.js';
 import stateManager from './managers/stateManager.js';
 import actionManager2 from './managers/actionManager2.js';
+import screenshotManager from './managers/screenshotManager.js';
 
 console.log("Background script started at:", new Date().toISOString());
 
@@ -711,6 +711,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
                     sendResponse(result[0].result);
                 });
+            } else if (message.type === 'captureFullPage') {
+                const result = await screenshotManager.captureFullPage();
+                sendResponse({ success: result });
             } else {
                 sendResponse({ success: false, error: 'Unknown message type' });
             }
