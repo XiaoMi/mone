@@ -76,8 +76,11 @@ public class ElasticsearchFunction implements Function<Map<String, Object>, McpS
     private RestHighLevelClient client;
 
     public ElasticsearchFunction(){
+        String hostname = System.getenv().getOrDefault("HOSTNAME", "localhost");
+        int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "9200"));
+        String scheme = System.getenv().getOrDefault("SCHEME", "http");
         this.client = new RestHighLevelClient(
-                RestClient.builder(new HttpHost("localhost", 9200, "http"))
+                RestClient.builder(new HttpHost(hostname, port, scheme))
         );
     }
 
