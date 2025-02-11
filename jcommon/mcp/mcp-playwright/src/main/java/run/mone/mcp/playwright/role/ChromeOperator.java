@@ -7,7 +7,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import run.mone.hive.Environment;
 import run.mone.hive.common.AiTemplate;
 import run.mone.hive.roles.Role;
 import run.mone.hive.schema.ActionContext;
@@ -28,18 +27,14 @@ import java.util.stream.Collectors;
 
 /**
  * @author goodjava@qq.com
- * @date 2025/2/7 14:58
- * 购物者
+ * @date 2025/2/11 14:48
  */
 @EqualsAndHashCode(callSuper = true)
-@Data
 @Slf4j
-public class Shopper extends Role {
+@Data
+public class ChromeOperator extends Role {
 
-
-    private Consumer<String> consumer;
-
-    private String userPrompt = """
+    protected String userPrompt = """
             ===========
             ${goal}
             ===========
@@ -60,26 +55,14 @@ public class Shopper extends Role {
             %>
             请帮我判断使用那个tool\n
             """;
+    ;
 
+    private Consumer<String> consumer;
 
-    public Shopper() {
-        super("Shopper", "购物者");
-        setEnvironment(new Environment());
+    public ChromeOperator(String name, String profile) {
+        super(name, profile);
 
-        this.goal = """
-                购物步骤:(操作推荐)
-                1.创建京东首页tab(发现没有code的时候,必须调用这个接口)(OpenTabAction)
-                2.在首页的搜索框里输入要买的东西(根据用户的需求分析出来),然后点击搜索按钮 (OperationAction)
-                3.搜素详情页:你选择一个你觉得最合适的商品,点击这个商品的大图,你要忽略所有广告的图片
-                4.商品详情页:点击 加入购物车 按钮(红色大按钮)(OperationAction) (如果找不到对应的按钮 滚动屏幕 ScrollAction)
-                5.购物车加购页面:点击去购物车结算按钮(OperationAction) (如果找不到对应的按钮 滚动下屏幕 ScrollAction)
-                6.到达购物车列表页面就可以结束了(attempt_completion)
-                
-                需要注意的点:
-                如果页面信息不全,可以滚动下页面
-                """;
-
-        super.prompt = """
+        this.prompt = """
                 你是一个浏览器操作专家.你总是能把用户的需求,翻译成专业的操作工具(tool).
                 参数里可能会一个一张页面的图片,这个图片中有每个可以操作的元素的序号.
                 
@@ -150,10 +133,9 @@ public class Shopper extends Role {
                 </attempt_completion>
                 
                 你每次只能返回一个工具
-                
                 """;
-    }
 
+    }
 
     @SneakyThrows
     @Override
@@ -236,4 +218,5 @@ public class Shopper extends Role {
             this.getRc().getMemory().clear();
         }
     }
+
 }

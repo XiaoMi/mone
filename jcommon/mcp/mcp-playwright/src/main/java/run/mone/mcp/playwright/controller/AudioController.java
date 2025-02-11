@@ -43,7 +43,6 @@ public class AudioController {
     private AudioService audioService;
 
     @PostMapping("/textToAudio")
-    @ResponseBody
     public ResponseEntity<byte[]> textToAudio(@RequestBody Text2AudioParam audioParam, HttpServletResponse response) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("audio/mpeg"));

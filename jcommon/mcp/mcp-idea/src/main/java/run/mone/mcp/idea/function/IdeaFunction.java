@@ -56,7 +56,7 @@ public class IdeaFunction implements Function<Map<String, Object>, McpSchema.Cal
     }
 
     @SneakyThrows
-    private String closeAllEditors() {
+    public String closeAllEditors() {
         JsonObject req = new JsonObject();
         req.addProperty("cmd", "close_all_tab");
         new HttpClient().post("http://127.0.0.1:" + ideaPort + "/tianye", req);
@@ -64,7 +64,7 @@ public class IdeaFunction implements Function<Map<String, Object>, McpSchema.Cal
     }
 
     @SneakyThrows
-    private String getCurrentEditorContent() {
+    public String getCurrentEditorContent() {
         JsonObject req = new JsonObject();
         req.addProperty("cmd", "get_current_editor_content");
         JsonObject res = new HttpClient().post("http://127.0.0.1:" + ideaPort + "/tianye", req);
