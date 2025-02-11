@@ -1,6 +1,7 @@
 package run.mone.mcp.playwright.role;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -45,10 +46,13 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ChromeAthena extends Role {
 
-
     private Consumer<String> consumer;
 
     private WebSocketSession session;
+
+
+    private List<Role> roleList = Lists.newArrayList(new Shopper(), new Searcher());
+
 
     private static final Type LIST_STRING = new TypeToken<List<String>>() {
     }.getType();
@@ -162,16 +166,9 @@ public class ChromeAthena extends Role {
                 
                 每次操作只能返回一个工具，只需要返回工具内容即可，不用描述你用到了哪个工具。
                 
-                首先，你需要判断用户需求属于购物还是聊天。
+                首先，你需要判断用户需求属于Chrome工具还是聊天工具。
                 
-                如果用户需求描述中包含购物相关的关键词，例如"购物"、"买"、"购买"等，请使用购物相关的工具。
-                以下是具体的购物步骤：
-                1.创建京东首页tab(发现没有code的时候,必须调用这个接口)(OpenTabAction)
-                2.在首页的搜索框里输入要买的东西(根据用户的需求分析出来),然后点击搜索按钮 (OperationAction)
-                3.搜素详情页:你选择一个你觉得最合适的商品,点击这个商品的大图,你要忽略所有广告的图片
-                4.商品详情页:点击 加入购物车 按钮(红色大按钮)(OperationAction) (如果找不到对应的按钮 滚动屏幕 ScrollAction)
-                5.购物车加购页面:点击去购物车结算按钮(OperationAction) (如果找不到对应的按钮 滚动下屏幕 ScrollAction)
-                6.到达购物车列表页面就可以结束了(attempt_completion)
+                %s 
                 
                 需要注意的点:
                 如果页面信息不全,可以滚动下页面
@@ -191,6 +188,9 @@ public class ChromeAthena extends Role {
                 </chat>
                 不需要进行说明。
                 """;
+
+        this.prompt = this.prompt.formatted(this.roleList.stream().map(it -> "Tool:" + it.getName() + "\n工具介绍:\n" + it.getGoal()).collect(Collectors.joining("\n")));
+
         this.session = session;
     }
 

@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -122,9 +123,15 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private void initShopperAndRoleClassifier(WebSocketSession session) {
         LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build();
+
         if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
             config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "generateContent");
         }
+
+        if (config.getLlmProvider() == LLMProvider.OPENROUTER && StringUtils.isNotEmpty(System.getenv("OPENROUTER_AI_GATEWAY"))) {
+            config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
+        }
+
         llm = new LLM(config);
         ChromeAthena chromeAthena = new ChromeAthena(session);
         chromeAthena.setLlm(llm);

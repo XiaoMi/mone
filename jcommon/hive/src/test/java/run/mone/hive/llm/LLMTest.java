@@ -122,8 +122,8 @@ class LLMTest {
 //        config.setLlmProvider(LLMProvider.DOUBAO);
 //        config.setLlmProvider(LLMProvider.GOOGLE);
         //使用代理的
-        config.setLlmProvider(LLMProvider.GOOGLE_2);
-//        config.setLlmProvider(LLMProvider.OPENROUTER);//这个默认使用的是:anthropic/claude-3.5-sonnet:beta
+//        config.setLlmProvider(LLMProvider.GOOGLE_2);
+        config.setLlmProvider(LLMProvider.OPENROUTER);//这个默认使用的是:anthropic/claude-3.5-sonnet:beta
 //        config.setModel("google/gemini-2.0-flash-exp:free");
 //        config.setModel("anthropic/claude-3.5-haiku-20241022");
 //        config.setModel("qwen/qwen-max");
@@ -567,7 +567,7 @@ class LLMTest {
                 hi
                 """;
 
-//        c = "Hello, can you tell me a short joke?";
+        c = "Hello, can you tell me a short joke?";
 
 
         messages.add(AiMessage.builder().role("user").content(c).build());
