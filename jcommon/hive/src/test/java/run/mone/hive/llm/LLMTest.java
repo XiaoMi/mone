@@ -593,7 +593,7 @@ class LLMTest {
                     }
                 },
                 line -> log.info("Received line: {}", line)
-        );
+        , "");
 
         latch.await();
 

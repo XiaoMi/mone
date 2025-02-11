@@ -44,12 +44,13 @@ public class LLMService {
 
     }
 
-    public String callStream(Role role, LLM llm, String text, List<String> imgTexts) {
+    public String callStream(Role role, LLM llm, String text, List<String> imgTexts, String systemPrompt) {
         JsonObject req = getReq(llm, text, imgTexts);
 
         List<AiMessage> messages = new ArrayList<>();
+
         messages.add(AiMessage.builder().jsonContent(req).build());
-        String result = llm.syncChat(role, messages);
+        String result = llm.syncChat(role, messages, systemPrompt);
         log.info("{}", result);
         return result;
 
@@ -92,7 +93,11 @@ public class LLMService {
                     JsonObject obj2 = new JsonObject();
                     obj2.addProperty("type", "image_url");
                     JsonObject imgObj = new JsonObject();
-                    imgObj.addProperty("url", "data:image/jpeg;base64," + img);
+                    if(!img.startsWith("data:image")) {
+                        imgObj.addProperty("url", "data:image/jpeg;base64," + img);
+                    }else{
+                        imgObj.addProperty("url", img);
+                    }
                     obj2.add("image_url", imgObj);
                     array.add(obj2);
                 });

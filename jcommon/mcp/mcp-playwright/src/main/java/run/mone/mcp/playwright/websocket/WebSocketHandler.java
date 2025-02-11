@@ -1,10 +1,8 @@
 package run.mone.mcp.playwright.websocket;
 
-import com.google.common.collect.Lists;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import jakarta.annotation.Resource;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
@@ -16,18 +14,12 @@ import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.schema.Message;
-import run.mone.hive.schema.RoleContext;
-import run.mone.mcp.playwright.bo.HistoryMsg;
 import run.mone.mcp.playwright.constant.ResultType;
-import run.mone.mcp.playwright.role.Chatter;
-import run.mone.mcp.playwright.role.RoleClassifier;
-import run.mone.mcp.playwright.role.Shopper;
-import run.mone.mcp.playwright.role.actions.roleclassifiter.ClassifierAction;
+import run.mone.mcp.playwright.role.ChromeAthena;
 import run.mone.mcp.playwright.role.actions.shopper.OpenTabAction;
 import run.mone.mcp.playwright.role.actions.shopper.OperationAction;
 import run.mone.mcp.playwright.role.actions.shopper.ScrollAction;
 import run.mone.mcp.playwright.service.ChromeTestService;
-import run.mone.mcp.playwright.service.LLMService;
 
 import java.io.IOException;
 import java.util.List;
@@ -41,26 +33,17 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private final List<WebSocketSession> sessions = new CopyOnWriteArrayList<WebSocketSession>();
 
-    private CopyOnWriteArrayList<HistoryMsg> msgList = new CopyOnWriteArrayList<>();
-
     private LLM llm;
-
-    @Resource
-    private LLMService llmService;
 
     @Resource
     private ChromeTestService chromeTestService;
 
-    private static final Map<String, Chatter> sessionIdChatter = new ConcurrentHashMap<>();
-    private static final Map<String, Shopper> sessionIdShopper = new ConcurrentHashMap<>();
-    private static final Map<String, RoleClassifier> sessionIdRoleClassifier = new ConcurrentHashMap<>();
-    private static final Map<String, Boolean> sessionIdIsChat = new ConcurrentHashMap<>();
-
+    private static final Map<String, ChromeAthena> sessionIdShopper = new ConcurrentHashMap<>();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         sessions.add(session);
-        initChatter(session);
+//        initChatter(session);
         initShopperAndRoleClassifier(session);
     }
 
@@ -74,12 +57,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
-        Shopper shopper = sessionIdShopper.get(session.getId());
-        RoleClassifier roleClassifier = sessionIdRoleClassifier.get(session.getId());
-        Chatter chatter = sessionIdChatter.get(session.getId());
+        ChromeAthena chromeAthena = sessionIdShopper.get(session.getId());
 
         JsonObject req = JsonParser.parseString(payload).getAsJsonObject();
-//        boolean test = JsonUtils.getValueOrDefault(req, "test", "false").equals("true");
         String from = JsonUtils.getValueOrDefault(req, "from", "chrome");
         String cmd = JsonUtils.getValueOrDefault(req, "cmd", "");
 
@@ -90,8 +70,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             if (data.equals("clear")) {
                 log.info("clear");
-                // 点击清除消息按钮时，清除聊天会话标识
-                sessionIdIsChat.remove(session.getId());
+                chromeAthena.getRc().getNews().clear();
                 return;
             }
 
@@ -102,7 +81,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             }
 
             if (data.startsWith("!!")) {
-                shopper.getRc().news.put(Message.builder().content(data).build());
+                chromeAthena.getRc().news.put(Message.builder().content(data).build());
                 return;
             }
 
@@ -113,56 +92,23 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             //chrome直接返回的(目前只有购物)
             if (cmd.equals("shopping")) {
-                shopper.getRc().news.put(Message.builder().type("json").content(data).build());
-                return;
-            }
-
-            // 如果在聊天的会话中，直接调用Chatter返回结果
-            boolean isChat = sessionIdIsChat.get(session.getId()) != null && sessionIdIsChat.get(session.getId());
-            if(isChat){
-                chat(chatter, data);
-                return;
-            }
-
-            roleClassifier.getRc().news.put(Message.builder().sendTo(Lists.newArrayList("RoleClassifier")).content(data).build());
-            Message classifiterRes = roleClassifier.run().join();
-
-            String agentName = classifiterRes.getContent();
-
-            //单纯的聊天
-            if (agentName.equals("Chatter")) {
-                sessionIdIsChat.put(session.getId(), true);
-                chat(chatter, data);
+                chromeAthena.getRc().news.put(Message.builder().type("json").content(data).build());
                 return;
             }
 
 
-            //用户有购物意图
-            if (agentName.equals("Shopper")) {
-                shopper.getRc().news.put(Message.builder().type("string").role("user").content(data).build());
-                new Thread(()-> shopper.run()).start();
-                return;
-            }
-
-            session.sendMessage(new TextMessage(res.toString()));
+            chromeAthena.getRc().news.put(Message.builder().type("json").role("user").content(data).build());
+            new Thread(() -> chromeAthena.run()).start();
             return;
         }
 
         session.sendMessage(new TextMessage(payload));
     }
 
-    private void chat(Chatter chatter, String data) throws InterruptedException {
-//        chatter.getRc().news.put(Message.builder().role("user").sendTo(Lists.newArrayList("Chatter")).content(data).type("json").build());
-        chatter.getRc().news.put(Message.builder().role("user").sendTo(Lists.newArrayList("Chatter")).content(data).build());
-        chatter.run().join();
-    }
-
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         sessions.remove(session);
-        sessionIdChatter.remove(session.getId());
         sessionIdShopper.remove(session.getId());
-        sessionIdRoleClassifier.remove(session.getId());
     }
 
     public void sendMessageToAll(String message) throws IOException {
@@ -174,24 +120,15 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    private void initChatter(WebSocketSession session){
-        Chatter chatter = new Chatter(session);
-        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.DOUBAO).build();
-        LLM chatLLM = new LLM(config);
-        chatter.setLlm(chatLLM);
-        chatter.setRc(new RoleContext(chatter.getProfile()));
-        sessionIdChatter.put(session.getId(), chatter);
-    }
-
-    private void initShopperAndRoleClassifier(WebSocketSession session){
+    private void initShopperAndRoleClassifier(WebSocketSession session) {
         LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build();
         if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
             config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "generateContent");
         }
         llm = new LLM(config);
-        Shopper shopper = new Shopper();
-        shopper.setLlm(llm);
-        shopper.setActions(
+        ChromeAthena chromeAthena = new ChromeAthena(session);
+        chromeAthena.setLlm(llm);
+        chromeAthena.setActions(
                 //打开页面
                 new OpenTabAction("在tab中打开某个网址"),
                 //点击排名第一的商品
@@ -199,10 +136,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 //点击加入购物车
                 new ScrollAction("滚动页面")
         );
-        shopper.setConsumer(msg->{
+        chromeAthena.setConsumer(msg -> {
             try {
                 JsonObject obj = new JsonObject();
-                obj.addProperty("data",msg);
+                obj.addProperty("data", msg);
                 obj.addProperty("type", ResultType.ACTION);
                 session.sendMessage(new TextMessage(obj.toString()));
             } catch (IOException e) {
@@ -211,12 +148,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
         });
 
 
-        RoleClassifier roleClassifier = new RoleClassifier();
-        roleClassifier.setLlm(llm);
-        roleClassifier.setActions(new ClassifierAction());
-        roleClassifier.setRc(new RoleContext(roleClassifier.getProfile()));
-
-        sessionIdShopper.put(session.getId(), shopper);
-        sessionIdRoleClassifier.put(session.getId(), roleClassifier);
+        sessionIdShopper.put(session.getId(), chromeAthena);
     }
 }
