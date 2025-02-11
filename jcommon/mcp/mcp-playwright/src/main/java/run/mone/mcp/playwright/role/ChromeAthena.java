@@ -276,6 +276,12 @@ public class ChromeAthena extends Role {
                 
                 - 用户描述："你好，今天过得怎么样？"
                 <chat><message>我今天过得非常充实</message></chat>。
+                
+                注意：如果使用聊天工具，你只需要返回
+                <chat>
+                <message>Your chat message here</message>
+                </chat>
+                不需要进行说明。
                 """;
         this.session = session;
     }
