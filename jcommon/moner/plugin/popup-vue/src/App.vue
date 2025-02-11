@@ -5,29 +5,42 @@ import ThemeSwitch from '@/components/ThemeSwitch.vue'
 // import { useI18n } from 'vue-i18n'
 import { t } from '@/locales/index'
 import { ref } from 'vue'
+import { ElIcon } from 'element-plus'
+import { MoreFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
 //const { t } = useI18n()
 const activeTab = ref('home')
 
-const handleTabClick = (tab: string) => {
-	activeTab.value = tab
-	router.push(`/${tab === 'home' ? '' : tab}`)
+const handleSelect = (key: string) => {
+	activeTab.value = key
+	router.push(`/${key === 'home' ? '' : key}`)
 }
 </script>
 
 <template>
 	<header class="app-header">
 		<nav class="app-nav">
-			<el-tabs v-model="activeTab" @tab-click="(tab) => handleTabClick(tab.props.name)">
-				<el-tab-pane :label="t('nav.home')" name="home" />
-				<el-tab-pane :label="t('nav.features')" name="features" />
-				<el-tab-pane :label="t('nav.preview')" name="preview" />
-        <el-tab-pane :label="t('nav.config')" name="config" />
-			</el-tabs>
+			<div class="nav-container">
+				<el-tabs v-model="activeTab" @tab-click="(tab) => handleSelect(tab.props.name)">
+					<el-tab-pane :label="t('nav.home')" name="home" />
+				</el-tabs>
+			</div>
+
 			<div class="app-switches">
+				<el-dropdown @command="handleSelect" trigger="click">
+					<el-button type="primary" text>
+						<el-icon><MoreFilled /></el-icon>
+					</el-button>
+					<template #dropdown>
+						<el-dropdown-menu>
+							<el-dropdown-item command="features">{{ t('nav.features') }}</el-dropdown-item>
+							<el-dropdown-item command="preview">{{ t('nav.preview') }}</el-dropdown-item>
+							<el-dropdown-item command="config">{{ t('nav.config') }}</el-dropdown-item>
+						</el-dropdown-menu>
+					</template>
+				</el-dropdown>
 				<ThemeSwitch class="app-theme-switch" />
-				<!-- <LangSwitch class="app-lang-switch" /> -->
 			</div>
 		</nav>
 	</header>
@@ -53,15 +66,11 @@ const handleTabClick = (tab: string) => {
 .app-switches {
 	display: flex;
 	align-items: center;
-	gap: 1rem;
+	gap: 12px;
 }
 
 .app-theme-switch {
-	margin-right: 10px;
-}
-
-.app-lang-switch {
-	margin-left: 20px;
+	margin: 0;
 }
 
 .app-content {
@@ -75,5 +84,15 @@ const handleTabClick = (tab: string) => {
 
 :deep(.el-tabs__nav-wrap::after) {
 	height: 0;
+}
+
+.nav-container {
+	display: flex;
+	align-items: center;
+}
+
+:deep(.el-dropdown .el-button) {
+	padding: 8px;
+	height: 40px;
 }
 </style>
