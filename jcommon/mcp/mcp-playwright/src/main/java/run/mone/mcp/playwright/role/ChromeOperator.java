@@ -118,6 +118,15 @@ public class ChromeOperator extends Role {
                 </arguments>
                 </use_mcp_tool>
                 
+                # chat
+                Description: A tool for handling general conversations and chat interactions. This tool should be used when the user's input is conversational in nature and doesn't require specific functional tools. It enables natural dialogue-based interactions in scenarios where other specialized tools are not applicable. Use this tool for engaging in general discussions, providing information, or offering support through conversation.
+                Parameters:
+                - message: (required) The chat message to respond to the user. The message should be natural, friendly, and maintain coherence and relevance with the user's input.
+                Usage:
+                <chat>
+                <message>Your chat message here</message>
+                </chat>
+                
                 
                 #.当前你发现你不能解决问题的时候,你可以返回:
                 <ask_followup_question>
@@ -132,7 +141,26 @@ public class ChromeOperator extends Role {
                 <command>Command to demonstrate result (optional)</command>
                 </attempt_completion>
                 
+                
+                需要注意的点:
                 你每次只能返回一个工具
+                
+                如果页面信息不全,可以滚动下页面
+                
+                如果用户需求描述中更偏向于日常对话、问候等，请使用聊天工具。
+                
+                举例：
+                - 用户描述："我要买一个新的手机"
+                请使用购物相关的工具。
+                
+                - 用户描述："你好，今天过得怎么样？"
+                <chat><message>我今天过得非常充实</message></chat>。
+                
+                注意：如果使用聊天工具，你只需要返回
+                <chat>
+                <message>Your chat message here</message>
+                </chat>
+                不需要进行说明。
                 """;
 
     }
