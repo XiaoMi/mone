@@ -2,7 +2,6 @@
 import { computed } from 'vue'
 import { isString } from '@/utils/is'
 import { UserFilled } from '@element-plus/icons-vue'
-import Logo2 from './robot.png'
 
 interface Props {
   image?: boolean
@@ -42,6 +41,6 @@ const name = computed(() => props.username || 'robot')
       align-items: center;
     "
   >
-    <img :src="Logo2" style="width: 20px" />
+    <img src="/images/robot.jpg" style="width: 34px" />
   </div>
 </template>
