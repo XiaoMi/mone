@@ -2,7 +2,7 @@ import '@fortawesome/fontawesome-free/css/all.css'
 import 'uno.css'
 import 'element-plus/dist/index.css'
 import './assets/main.css'
-
+import './assets/markdown-mcp.scss'
 // 导入 Element Plus 暗色主题
 import 'element-plus/theme-chalk/dark/css-vars.css'
 
