@@ -149,7 +149,7 @@ const toggleEnterWithShiftKey = () => {
 
 // enter
 const enterUpdate = () => {
-  if (inputV.value?.trim()) {
+  if (inputV.value?.trim() || pasteFileList.value?.length) {
     // 图片
     if (fileList.value.length) {
       emits('enterFn', fileParams.value)
