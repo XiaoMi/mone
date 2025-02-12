@@ -51,7 +51,7 @@ public class ChromeAthena extends Role {
     private WebSocketSession session;
 
 
-    private List<Role> roleList = Lists.newArrayList(new Shopper(), new Searcher());
+    private List<Role> roleList = Lists.newArrayList(new Shopper(), new Searcher(), new Mailer());
 
 
     private static final Type LIST_STRING = new TypeToken<List<String>>() {
