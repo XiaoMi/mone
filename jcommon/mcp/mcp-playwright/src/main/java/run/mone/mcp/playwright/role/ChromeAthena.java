@@ -51,7 +51,7 @@ public class ChromeAthena extends Role {
     private WebSocketSession session;
 
 
-    private List<Role> roleList = Lists.newArrayList(new Shopper(), new Searcher());
+    private List<Role> roleList = Lists.newArrayList(new Shopper(), new Searcher(), new Mailer());
 
 
     private static final Type LIST_STRING = new TypeToken<List<String>>() {
@@ -106,6 +106,16 @@ public class ChromeAthena extends Role {
                 <use_mcp_tool>
                 <server_name>chrome-server</server_name>
                 <tool_name>ScrollAction</tool_name>
+                <arguments>
+                {
+                }
+                </arguments>
+                </use_mcp_tool>
+
+                #.全屏截图(如果你发现有些信息在当前页面没有,可能需要全部的页面信息,你可以发送全屏截图指令)
+                <use_mcp_tool>
+                <server_name>chrome-server</server_name>
+                <tool_name>FullPageAction</tool_name>
                 <arguments>
                 {
                 }
