@@ -20,6 +20,12 @@ public class OpenTabAction extends Action {
                 <tool_name>OpenTabAction</tool_name>
                 <arguments>
                 {
+                "action": {
+                    "type": "createNewTab",
+                    "url": "https://www.jd.com/",
+                    "auto": "true",
+                    "desc": "打开京东"
+                }
                 }
                 </arguments>
                 </use_mcp_tool>

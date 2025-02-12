@@ -122,7 +122,6 @@ public class ChromeAthena extends Role {
 
         this.prompt = this.prompt.formatted(
                 this.actionList.stream().map(Action::getDescription).collect(Collectors.joining("\n\n")),
-                this.roleList.stream().map(Role::getConstraints).collect(Collectors.joining("\n 或者 \n")),
                 this.roleList.stream().map(it -> "角色名称:" + it.getName() + "\n工具使用流程:\n" + it.getGoal()).collect(Collectors.joining("\n")));
         this.session = session;
     }
@@ -140,6 +139,11 @@ public class ChromeAthena extends Role {
             req.setRole(Role.builder().name("user").build());
             Message msg = this.rc.getNews().poll(2, TimeUnit.MINUTES);
             if (msg != null) {
+                if (msg.getContent().equals("!!quit")) {
+                    log.info("!!quit");
+                    break;
+                }
+
                 List<String> images = null;
                 String code = "";
                 String tabs = "";
@@ -194,6 +198,7 @@ public class ChromeAthena extends Role {
                     Optional<Action> optional = this.getActions().stream().filter(it -> it.getName().equals(tooleName)).findFirst();
                     if (optional.isPresent()) {
                         log.info("toolName:{}", tooleName);
+                        req.setMessage(Message.builder().data(result).build());
                         String content = optional.get().run(req, context).join().getContent();
                         consumer.accept(content);
                     }

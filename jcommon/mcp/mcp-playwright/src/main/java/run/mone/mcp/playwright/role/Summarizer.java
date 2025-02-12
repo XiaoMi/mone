@@ -10,7 +10,7 @@ public class Summarizer extends Role {
 
     public Summarizer() {
 
-        super("Summarizer_Chrome工具","总结当前页面内容");
+        super("Summarizer_Chrome","总结当前页面内容");
         this.goal = """
                 用户提出想总结当前页面内容时调用此工具
                 以下是具体的购物步骤：
