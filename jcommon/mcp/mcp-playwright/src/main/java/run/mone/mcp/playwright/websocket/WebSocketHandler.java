@@ -10,7 +10,6 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
-import run.mone.hive.actions.programmer.SummarizeCode;
 import run.mone.hive.common.JsonUtils;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
@@ -18,11 +17,10 @@ import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.schema.Message;
 import run.mone.mcp.playwright.constant.ResultType;
 import run.mone.mcp.playwright.role.ChromeAthena;
-import run.mone.mcp.playwright.role.Summarizer;
-import run.mone.mcp.playwright.role.actions.shopper.GetContentAction;
-import run.mone.mcp.playwright.role.actions.shopper.OpenTabAction;
-import run.mone.mcp.playwright.role.actions.shopper.OperationAction;
-import run.mone.mcp.playwright.role.actions.shopper.ScrollAction;
+import run.mone.mcp.playwright.role.actions.GetContentAction;
+import run.mone.mcp.playwright.role.actions.OpenTabAction;
+import run.mone.mcp.playwright.role.actions.OperationAction;
+import run.mone.mcp.playwright.role.actions.ScrollAction;
 import run.mone.mcp.playwright.service.ChromeTestService;
 
 import java.io.IOException;
@@ -142,11 +140,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 //打开页面
                 new OpenTabAction("在tab中打开某个网址"),
                 //点击排名第一的商品
-                new OperationAction("在网页中执行某些操作(点击 填入内容)"),
+                new OperationAction(),
                 //点击加入购物车
-                new ScrollAction("滚动页面"),
+                new ScrollAction(),
                 //获取页面内容
-                new GetContentAction("获取页面内容")
+                new GetContentAction()
         );
         chromeAthena.setConsumer(msg -> {
             try {

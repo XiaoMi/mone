@@ -29,6 +29,7 @@ import run.mone.mcp.playwright.common.MultiXmlParser;
 import run.mone.mcp.playwright.common.Result;
 import run.mone.mcp.playwright.constant.ResultType;
 import run.mone.mcp.playwright.context.ApplicationContextProvider;
+import run.mone.mcp.playwright.role.actions.*;
 import run.mone.mcp.playwright.service.LLMService;
 
 import java.lang.reflect.Type;
@@ -53,7 +54,9 @@ public class ChromeAthena extends Role {
     private WebSocketSession session;
 
 
-    private List<Role> roleList = Lists.newArrayList(new Shopper(), new Searcher(), new Mailer());
+    private List<Role> roleList = Lists.newArrayList(new Shopper(), new Searcher(), new Mailer(), new Summarizer());
+
+    private List<Action> actionList = Lists.newArrayList(new OpenTabAction(""), new OperationAction(), new ScrollAction(), new FullPageAction(), new GetContentAction());
 
 
     private static final Type LIST_STRING = new TypeToken<List<String>>() {
@@ -92,77 +95,8 @@ public class ChromeAthena extends Role {
                 2. 聊天需求
                 
                 支持的工具:
-                
-                #.创建新标签页(打开标签页后,chrome会渲染+截图发送回来当前页面)
-                <use_mcp_tool>
-                <server_name>chrome-server</server_name>
-                <tool_name>OpenTabAction</tool_name>
-                <arguments>
-                {
                 %s
-                }
-                </arguments>
-                </use_mcp_tool>
                 
-                #.滚动一屏屏幕(如果你发现有些信息在当前页面没有展示全,但可能在下边的页面,你可以发送滚动屏幕指令)
-                <use_mcp_tool>
-                <server_name>chrome-server</server_name>
-                <tool_name>ScrollAction</tool_name>
-                <arguments>
-                {
-                }
-                </arguments>
-                </use_mcp_tool>
-                
-                #.全屏截图(如果你发现有些信息在当前页面没有,可能需要全部的页面信息,你可以发送全屏截图指令)
-                <use_mcp_tool>
-                <server_name>chrome-server</server_name>
-                <tool_name>FullPageAction</tool_name>
-                <arguments>
-                {
-                }
-                </arguments>
-                </use_mcp_tool>
-                
-                #.获取页面内容
-                <use_mcp_tool>
-                <server_name>chrome-server</server_name>
-                <tool_name>GetContentAction</tool_name>
-                <arguments>
-                {
-                }
-                </arguments>
-                </use_mcp_tool>
-                
-                
-                #.需要在当前页面执行一系列操作(比如填入搜索内容后点击搜索按钮)
-                + 尽量一次返回一个页面的所有action操作
-                + elementId的数字会在元素的右上角
-                + 数字的颜色和这个元素的边框一定是一个颜色
-                + 必须返回tabId(如果没有,需要你打开相应的tab)
-                
-                <use_mcp_tool>
-                <server_name>chrome-server</server_name>
-                <tool_name>OperationAction</tool_name>
-                <arguments>
-                {
-                "action1": {
-                    "type": "action",
-                    "name": "fill",
-                    "elementId": "12",
-                    "value": "冰箱",
-                    "tabId": "2"
-                  },
-                  "action2": {
-                    "type": "action",
-                    "name": "click",
-                    "elementId": "13",
-                    "desc": "点击搜索按钮",
-                    "tabId": "2"
-                  }
-                }
-                </arguments>
-                </use_mcp_tool>
                 
                 # chat
                 Description: A tool for handling general conversations and chat interactions. This tool should be used when the user's input is conversational in nature and doesn't require specific functional tools. It enables natural dialogue-based interactions in scenarios where other specialized tools are not applicable. Use this tool for engaging in general discussions, providing information, or offering support through conversation.
@@ -213,9 +147,9 @@ public class ChromeAthena extends Role {
                 """;
 
         this.prompt = this.prompt.formatted(
+                this.actionList.stream().map(Action::getDescription).collect(Collectors.joining("\n\n")),
                 this.roleList.stream().map(Role::getConstraints).collect(Collectors.joining("\n 或者 \n")),
                 this.roleList.stream().map(it -> "Tool:" + it.getName() + "\n工具介绍:\n" + it.getGoal()).collect(Collectors.joining("\n")));
-
         this.session = session;
     }
 

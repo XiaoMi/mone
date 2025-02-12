@@ -1,4 +1,4 @@
-package run.mone.mcp.playwright.role.actions.shopper;
+package run.mone.mcp.playwright.role.actions;
 
 import run.mone.hive.actions.Action;
 import run.mone.hive.schema.Message;
@@ -8,14 +8,22 @@ import run.mone.hive.schema.Message;
  * @date 2025/2/7 15:36
  * 滚动屏幕
  */
-public class ScrollAction extends Action {
+public class GetContentAction extends Action {
 
-    public ScrollAction(String description) {
-        super("ScrollAction", description);
+    public GetContentAction() {
+        setName("GetContentAction");
+        setDescription("""
+                #.获取页面内容
+                <use_mcp_tool>
+                <server_name>chrome-server</server_name>
+                <tool_name>GetContentAction</tool_name>
+                <arguments>
+                {
+                }
+                </arguments>
+                </use_mcp_tool>
+                """);
         setFunction((req,action,ctx)-> Message.builder().content("""
-                 //滚动屏幕
-                <action type="scrollOneScreen">
-                </action>
                 //暂停
                 <action type="pause">
                 </action>
