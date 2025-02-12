@@ -242,9 +242,9 @@ function connectWebSocket() {
                         // buildDomTree(从新生成domTree)
                         if (action.type === 'buildDomTree') {
                             console.log('buildDomTree');
-                            // 判断action是否有url属性
+                            // 判断action是否有fullPage属性, 且为true
                             let fullPage = false;
-                            if (action.attributes.url) {
+                            if (action.attributes.fullPage && action.attributes.fullPage === 'true') {
                                 fullPage = true;
                             }
 

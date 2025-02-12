@@ -26,7 +26,7 @@ public class FullPageAction extends Action {
                 <action type="pause">
                 </action>
 
-                <action type="buildDomTree">
+                <action type="buildDomTree" fullPage="true">
                 </action>
 
                 <action type="pause">
