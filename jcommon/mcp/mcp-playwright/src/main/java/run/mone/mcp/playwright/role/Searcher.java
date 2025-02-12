@@ -18,6 +18,15 @@ public class Searcher extends Role {
                 3.搜索页:找到一个维基百科的页面,点击链接进入
                 4.维基百科页面:收集页面信息,到这个页面就结束了
                 """;
+        // 目前用户新开tab页面的Action
+        this.constraints = """
+                "action": {
+                    "type": "createNewTab",
+                    "url": "https://www.google.com/",
+                    "auto": "true",
+                    "desc": "打开google"
+                }
+                """;
     }
 
 
