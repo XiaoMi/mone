@@ -125,6 +125,7 @@ public class ChromeAthena extends Role {
                 
                 首先，你需要判断用户需求属于Chrome工具还是聊天工具。
                 
+                角色是一些工具的使用集合,如果你发现某个角色很适合完成某个工作,你则直接执行他的工具集.
                 %s 
                 
                 需要注意的点:
@@ -149,7 +150,7 @@ public class ChromeAthena extends Role {
         this.prompt = this.prompt.formatted(
                 this.actionList.stream().map(Action::getDescription).collect(Collectors.joining("\n\n")),
                 this.roleList.stream().map(Role::getConstraints).collect(Collectors.joining("\n 或者 \n")),
-                this.roleList.stream().map(it -> "Tool:" + it.getName() + "\n工具介绍:\n" + it.getGoal()).collect(Collectors.joining("\n")));
+                this.roleList.stream().map(it -> "角色名称:" + it.getName() + "\n工具使用流程:\n" + it.getGoal()).collect(Collectors.joining("\n")));
         this.session = session;
     }
 
