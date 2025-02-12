@@ -13,7 +13,7 @@ public class FullPageAction extends Action {
     public FullPageAction() {
         setName("FullPageAction");
         setDescription("""
-                #.全屏截图(如果你发现有些信息在当前页面没有,可能需要全部的页面信息,你可以发送全屏截图指令)
+                #.全屏截图TOOL(如果你发现有些信息在当前页面没有,可能需要全部的页面信息,你可以发送全屏截图指令)
                 <use_mcp_tool>
                 <server_name>chrome-server</server_name>
                 <tool_name>FullPageAction</tool_name>
