@@ -305,7 +305,11 @@ public class LLM {
         return message;
     }
 
-    private JsonObject createMessageObjectForGoogle(String role, String content) {
+    private JsonObject createMessageObjectForGoogle(AiMessage am, String role, String content) {
+        if (null != am.getJsonContent()) {
+            return am.getJsonContent();
+        }
+
         JsonObject message = new JsonObject();
         message.addProperty("role", role);
         JsonArray array = new JsonArray();
@@ -383,8 +387,8 @@ public class LLM {
             //使用openrouter,并且使用多模态
             if ((this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.MOONSHOT) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
-            }else if (this.llmProvider == LLMProvider.GOOGLE_2) {
-                msgArray.add(createMessageObjectForGoogle(message.getRole(), message.getContent()));
+            } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
+                msgArray.add(createMessageObjectForGoogle(message, message.getRole(), message.getContent()));
             } else {
                 msgArray.add(createMessageObject(message.getRole(), message.getContent()));
             }
@@ -557,7 +561,7 @@ public class LLM {
         return sb.toString();
     }
 
-    private BiConsumer<String, JsonObject> roleSendMessageConsumer(Role role, String msgId, CountDownLatch latch, StringBuilder sb){
+    private BiConsumer<String, JsonObject> roleSendMessageConsumer(Role role, String msgId, CountDownLatch latch, StringBuilder sb) {
         return ((c, o) -> {
             String type = o.get("type").getAsString();
             if (type.equals("begin")) {

@@ -1,4 +1,4 @@
-package run.mone.mcp.playwright.role.actions.shopper;
+package run.mone.mcp.playwright.role.actions;
 
 import run.mone.hive.actions.Action;
 import run.mone.hive.schema.Message;
@@ -10,8 +10,19 @@ import run.mone.hive.schema.Message;
  */
 public class ScrollAction extends Action {
 
-    public ScrollAction(String description) {
-        super("ScrollAction", description);
+    public ScrollAction() {
+        setName("ScrollAction");
+        setDescription("""
+                #.滚动一屏屏幕(如果你发现有些信息在当前页面没有展示全,但可能在下边的页面,你可以发送滚动屏幕指令)
+                <use_mcp_tool>
+                <server_name>chrome-server</server_name>
+                <tool_name>ScrollAction</tool_name>
+                <arguments>
+                {
+                }
+                </arguments>
+                </use_mcp_tool>
+                """);
         setFunction((req,action,ctx)-> Message.builder().content("""
                  //滚动屏幕
                 <action type="scrollOneScreen">

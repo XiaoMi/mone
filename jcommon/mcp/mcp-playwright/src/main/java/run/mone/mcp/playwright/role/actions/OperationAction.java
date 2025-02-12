@@ -1,4 +1,4 @@
-package run.mone.mcp.playwright.role.actions.shopper;
+package run.mone.mcp.playwright.role.actions;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -43,8 +43,38 @@ public class OperationAction extends Action {
             """;
 
 
-    public OperationAction(String description) {
-        super("OperationAction", description);
+    public OperationAction() {
+        setName("OperationAction");
+        setDescription("""
+                #.需要在当前页面执行一系列操作(比如填入搜索内容后点击搜索按钮)
+                
+                + 尽量一次返回一个页面的所有action操作
+                + elementId的数字会在元素的右上角
+                + 数字的颜色和这个元素的边框一定是一个颜色
+                + 必须返回tabId(如果没有,需要你打开相应的tab)
+                <use_mcp_tool>
+                <server_name>chrome-server</server_name>
+                <tool_name>OperationAction</tool_name>
+                <arguments>
+                {
+                "action1": {
+                    "type": "action",
+                    "name": "fill",
+                    "elementId": "12",
+                    "value": "冰箱",
+                    "tabId": "2"
+                  },
+                  "action2": {
+                    "type": "action",
+                    "name": "click",
+                    "elementId": "13",
+                    "desc": "点击搜索按钮",
+                    "tabId": "2"
+                  }
+                }
+                </arguments>
+                </use_mcp_tool>
+                """);
         setFunction((req, action, ctx) -> {
             Message reqMsg = req.getMessage();
             Result data = (Result) reqMsg.getData();
