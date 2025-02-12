@@ -11,7 +11,7 @@ public class ChatAction extends Action {
     public ChatAction() {
         setName("ChatAction");
         setDescription("""
-                #.chat(聊天工具)
+                #.chat(聊天TOOL)
                 Description: A tool for handling general conversations and chat interactions. This tool should be used when the user's input is conversational in nature and doesn't require specific functional tools. It enables natural dialogue-based interactions in scenarios where other specialized tools are not applicable. Use this tool for engaging in general discussions, providing information, or offering support through conversation.
                 如果用户需求描述中更偏向于日常对话、问候等，请使用聊天工具(chat)。
                 举例：

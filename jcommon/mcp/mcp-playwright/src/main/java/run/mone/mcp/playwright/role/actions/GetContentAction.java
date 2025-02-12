@@ -13,7 +13,7 @@ public class GetContentAction extends Action {
     public GetContentAction() {
         setName("GetContentAction");
         setDescription("""
-                #.获取页面内容
+                #.获取页面内容TOOL
                 <use_mcp_tool>
                 <server_name>chrome-server</server_name>
                 <tool_name>GetContentAction</tool_name>
