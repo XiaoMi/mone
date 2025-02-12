@@ -12,6 +12,7 @@ import run.mone.mcp.playwright.common.Result;
 public class OpenTabAction extends Action {
 
     public OpenTabAction(String url) {
+        setName("OpenTabAction");
         setFunction((req, action, ctx) -> {
             Message reqMsg = req.getMessage();
             Result data = (Result) reqMsg.getData();

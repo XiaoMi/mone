@@ -10,9 +10,11 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import run.mone.hive.Environment;
+import run.mone.hive.actions.Action;
 import run.mone.hive.common.AiTemplate;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.roles.Role;
@@ -31,6 +33,7 @@ import run.mone.mcp.playwright.service.LLMService;
 
 import java.lang.reflect.Type;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -39,7 +42,6 @@ import java.util.stream.Collectors;
 /**
  * @author goodjava@qq.com
  * @date 2025/2/7 14:58
- * 购物者
  */
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -111,11 +113,21 @@ public class ChromeAthena extends Role {
                 }
                 </arguments>
                 </use_mcp_tool>
-
+                
                 #.全屏截图(如果你发现有些信息在当前页面没有,可能需要全部的页面信息,你可以发送全屏截图指令)
                 <use_mcp_tool>
                 <server_name>chrome-server</server_name>
                 <tool_name>FullPageAction</tool_name>
+                <arguments>
+                {
+                }
+                </arguments>
+                </use_mcp_tool>
+                
+                #.获取页面内容
+                <use_mcp_tool>
+                <server_name>chrome-server</server_name>
+                <tool_name>GetContentAction</tool_name>
                 <arguments>
                 {
                 }
@@ -269,23 +281,15 @@ public class ChromeAthena extends Role {
                     break;
                 }
 
-                if (result.getKeyValuePairs().getOrDefault("tool_name", "").equals("OpenTabAction")) {
-                    req.setMessage(Message.builder().data(result).build());
-                    String content = this.getActions().get(0).run(req, context).join().getContent();
-                    consumer.accept(content);
+                String tooleName = result.getKeyValuePairs().getOrDefault("tool_name", "");
+                if (StringUtils.isNotEmpty(tooleName)) {
+                    Optional<Action> optional = this.getActions().stream().filter(it -> it.getName().equals(tooleName)).findFirst();
+                    if (optional.isPresent()) {
+                        log.info("toolName:{}", tooleName);
+                        String content = optional.get().run(req, context).join().getContent();
+                        consumer.accept(content);
+                    }
                 }
-
-                if (result.getKeyValuePairs().getOrDefault("tool_name", "").equals("ScrollAction")) {
-                    String content = this.getActions().get(2).run(req, context).join().getContent();
-                    consumer.accept(content);
-                }
-
-                if (result.getKeyValuePairs().getOrDefault("tool_name", "").equals("OperationAction")) {
-                    req.setMessage(Message.builder().data(result).build());
-                    String content = this.getActions().get(1).run(req, context).join().getContent();
-                    consumer.accept(content);
-                }
-
             }
         }
         try {
