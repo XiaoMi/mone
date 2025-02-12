@@ -122,10 +122,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
     }
 
     private void initShopperAndRoleClassifier(WebSocketSession session) {
-        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build();
+        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
 
         if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
-            config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "generateContent");
+            config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "streamGenerateContent?alt=sse");
         }
 
         if (config.getLlmProvider() == LLMProvider.OPENROUTER && StringUtils.isNotEmpty(System.getenv("OPENROUTER_AI_GATEWAY"))) {
