@@ -97,6 +97,7 @@ public class ChromeAthena extends Role {
                 <tool_name>OpenTabAction</tool_name>
                 <arguments>
                 {
+                %s
                 }
                 </arguments>
                 </use_mcp_tool>
@@ -189,7 +190,9 @@ public class ChromeAthena extends Role {
                 不需要进行说明。
                 """;
 
-        this.prompt = this.prompt.formatted(this.roleList.stream().map(it -> "Tool:" + it.getName() + "\n工具介绍:\n" + it.getGoal()).collect(Collectors.joining("\n")));
+        this.prompt = this.prompt.formatted(
+                this.roleList.stream().map(Role::getConstraints).collect(Collectors.joining("\n 或者 \n")),
+                this.roleList.stream().map(it -> "Tool:" + it.getName() + "\n工具介绍:\n" + it.getGoal()).collect(Collectors.joining("\n")));
 
         this.session = session;
     }
@@ -257,6 +260,7 @@ public class ChromeAthena extends Role {
                 }
 
                 if (result.getKeyValuePairs().getOrDefault("tool_name", "").equals("OpenTabAction")) {
+                    req.setMessage(Message.builder().data(result).build());
                     String content = this.getActions().get(0).run(req, context).join().getContent();
                     consumer.accept(content);
                 }
