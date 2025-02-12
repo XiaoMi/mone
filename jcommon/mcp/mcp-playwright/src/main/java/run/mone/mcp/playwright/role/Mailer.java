@@ -20,15 +20,6 @@ public class Mailer extends Role {
                 3.邮件详情页:查看下信的邮件标题(如果找不到对应的按钮 滚动屏幕 ScrollAction)
                 4.汇总内容(attempt_completion)
                 """;
-        // 目前用户新开tab页面的Action
-        this.constraints = """
-                "action": {
-                    "type": "createNewTab",
-                    "url": "https://mail.qq.com/",
-                    "auto": "true",
-                    "desc": "打开QQ邮箱"
-                }
-                """;
 
     }
 }
