@@ -50,11 +50,8 @@ public class NacosConfigFunction implements Function<Map<String, Object>, McpSch
             """;
 
 
-    public NacosConfigFunction(String serverAddr) {
+    public NacosConfigFunction(Properties properties) {
         log.info("Initializing NacosConfigFunction...");
-        Properties properties = new Properties();
-        properties.put("namespace","");
-        properties.put("serverAddr",serverAddr);
         try {
             this.nacosConfigService = new NacosConfigService(properties);
         } catch (NacosException e) {
