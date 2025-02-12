@@ -12,7 +12,7 @@ public class Shopper extends Role {
         super("Shopper_Chrome(购物者)","购物者");
         this.goal = """
                 如果用户需求描述中包含购物相关的关键词，例如"购物"、"买"、"购买"等，请使用购物相关的工具。
-                以下是具体的购物步骤：
+                以下是具体的购物工具步骤：
                 1.创建京东首页tab(发现没有code的时候,必须调用这个接口)(OpenTabAction)(url:https://www.jd.com/)
                 2.在首页的搜索框里输入要买的东西(根据用户的需求分析出来),然后点击搜索按钮 (OperationAction)
                 3.搜素详情页:你选择一个你觉得最合适的商品,点击这个商品的大图,你要忽略所有广告的图片
