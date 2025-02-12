@@ -17,9 +17,12 @@ import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.schema.Message;
 import run.mone.mcp.playwright.constant.ResultType;
 import run.mone.mcp.playwright.role.ChromeAthena;
-import run.mone.mcp.playwright.role.actions.shopper.OpenTabAction;
-import run.mone.mcp.playwright.role.actions.shopper.OperationAction;
-import run.mone.mcp.playwright.role.actions.shopper.ScrollAction;
+import run.mone.mcp.playwright.role.actions.GetContentAction;
+import run.mone.mcp.playwright.role.actions.OpenTabAction;
+import run.mone.mcp.playwright.role.actions.OperationAction;
+import run.mone.mcp.playwright.role.actions.ScrollAction;
+import run.mone.mcp.playwright.role.actions.FullPageAction;
+import run.mone.mcp.playwright.role.actions.RefreshAfterClick;
 import run.mone.mcp.playwright.service.ChromeTestService;
 
 import java.io.IOException;
@@ -122,10 +125,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
     }
 
     private void initShopperAndRoleClassifier(WebSocketSession session) {
-        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build();
+        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
 
         if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
-            config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "generateContent");
+            config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "streamGenerateContent?alt=sse");
         }
 
         if (config.getLlmProvider() == LLMProvider.OPENROUTER && StringUtils.isNotEmpty(System.getenv("OPENROUTER_AI_GATEWAY"))) {
@@ -139,9 +142,15 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 //打开页面
                 new OpenTabAction("在tab中打开某个网址"),
                 //点击排名第一的商品
-                new OperationAction("在网页中执行某些操作(点击 填入内容)"),
+                new OperationAction(),
                 //点击加入购物车
-                new ScrollAction("滚动页面")
+                new ScrollAction(),
+                //获取页面内容
+                new GetContentAction(),
+                //全屏截图
+                new FullPageAction(),
+                //刷新页面
+                new RefreshAfterClick("刷新页面")
         );
         chromeAthena.setConsumer(msg -> {
             try {

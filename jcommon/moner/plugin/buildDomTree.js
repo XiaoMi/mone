@@ -1,5 +1,5 @@
-function buildDomTree(args = { doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 }) {
-    const { doHighlightElements, focusHighlightIndex, viewportExpansion } = args;
+function buildDomTree(args = { doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0, onlyVisibleArea: true }) {
+    const { doHighlightElements, focusHighlightIndex, viewportExpansion, onlyVisibleArea } = args;
     let highlightIndex = 0; // Reset highlight index
 
     // Quick check to confirm the script receives focusHighlightIndex
@@ -312,10 +312,10 @@ function buildDomTree(args = { doHighlightElements: true, focusHighlightIndex: -
         const absRight = rect.right + scrollX;
 
         // Skip if element is completely outside expanded viewport
-        if (absBottom < viewportTop || 
+        if (onlyVisibleArea && (absBottom < viewportTop || 
             absTop > viewportBottom || 
             absRight < viewportLeft || 
-            absLeft > viewportRight) {
+            absLeft > viewportRight)) {
             return false;
         }
 
