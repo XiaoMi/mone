@@ -926,14 +926,6 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
             files: ['markElement.js']
         });
 
-        // 滚动到页面底部
-        await chrome.scripting.executeScript({
-            target: { tabId: stateUpdate.tabId },
-            function: () => {
-                window.scrollTo(0, document.body.scrollHeight);
-            }
-        });
-
         // 执行所需的操作（buildDomTree、截图等）
         await chrome.scripting.executeScript({
             target: { tabId: stateUpdate.tabId },
