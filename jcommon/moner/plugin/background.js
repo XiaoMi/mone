@@ -197,9 +197,40 @@ function connectWebSocket() {
                                 await sendWebSocketMessage(JSON.stringify(messageData), "shopping");
                             }
                         }
+                        // 滚动到页面顶部
+                        if (action.type === 'scrollToTop') {
+                            console.log('scrollToTop');
+                            await chrome.scripting.executeScript({
+                                target: { tabId: tab.id },
+                                function: () => {
+                                    window.scrollTo(0, 0);
+                                }
+                            });
+                        }
+                        // 滚动到底部
+                        if (action.type === 'scrollToBottom') {
+                            console.log('scrollToBottom');
+                            await chrome.scripting.executeScript({
+                                target: { tabId: tab.id },
+                                function: () => {
+                                    window.scrollTo(0, document.body.scrollHeight);
+                                }
+                            });
+                        }
+                        // 截全屏
+                        if (action.type === 'screenshotFullPage') {
+                            console.log('screenshotFullPage');
+                            const screenshot = await screenshotManager.captureFullPage();
+                        }
                         // buildDomTree(从新生成domTree)
                         if (action.type === 'buildDomTree') {
                             console.log('buildDomTree');
+                            // 判断action是否有url属性
+                            let fullPage = false;
+                            if (action.attributes.url) {
+                                fullPage = true;
+                            }
+
                             // 获取config配置内容，对于config中定义的select的元素，打上对应的kv标记
                             const configs = await getConfigs();
                             await markElements(configs);
@@ -221,7 +252,7 @@ function connectWebSocket() {
                                         throw new Error('buildDomTree函数未找到');
                                     }
                                 },
-                                args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 }]
+                                args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 , onlyVisibleArea: !fullPage}]
                             });
 
                              //TODO$ add
@@ -878,11 +909,19 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
             files: ['markElement.js']
         });
 
+        // 滚动到页面底部
+        await chrome.scripting.executeScript({
+            target: { tabId: stateUpdate.tabId },
+            function: () => {
+                window.scrollTo(0, document.body.scrollHeight);
+            }
+        });
+
         // 执行所需的操作（buildDomTree、截图等）
         await chrome.scripting.executeScript({
             target: { tabId: stateUpdate.tabId },
             files: ['buildDomTree.js']
-        });
+        });        
 
         // 从新渲染页面
         const [{ result: domTreeData }] = await chrome.scripting.executeScript({
@@ -894,11 +933,19 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
                 }
                 throw new Error('buildDomTree function not found');
             },
-            args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 }]
+            args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 , onlyVisibleArea: true }]
         });
 
         // 添加延迟确保页面重绘完成
         await new Promise(resolve => setTimeout(resolve, 500)); // 500ms 延迟
+
+        // 滚动到页面顶部
+        await chrome.scripting.executeScript({
+            target: { tabId: stateUpdate.tabId },
+            function: () => {
+                window.scrollTo(0, 0);
+            }
+        });
 
         //截屏的数据
         const screenshot = await chrome.tabs.captureVisibleTab(null, {
