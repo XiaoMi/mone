@@ -921,11 +921,6 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
         const configs = await getConfigs();
         await markElements(stateUpdate.tabId, configs);
 
-        await chrome.scripting.executeScript({
-            target: { tabId: stateUpdate.tabId },
-            files: ['markElement.js']
-        });
-
         // 执行所需的操作（buildDomTree、截图等）
         await chrome.scripting.executeScript({
             target: { tabId: stateUpdate.tabId },
@@ -947,14 +942,6 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
 
         // 添加延迟确保页面重绘完成
         await new Promise(resolve => setTimeout(resolve, 500)); // 500ms 延迟
-
-        // 滚动到页面顶部
-        await chrome.scripting.executeScript({
-            target: { tabId: stateUpdate.tabId },
-            function: () => {
-                window.scrollTo(0, 0);
-            }
-        });
 
         //截屏的数据
         const screenshot = await chrome.tabs.captureVisibleTab(null, {
