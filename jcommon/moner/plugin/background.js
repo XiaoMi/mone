@@ -221,6 +221,23 @@ function connectWebSocket() {
                         if (action.type === 'screenshotFullPage') {
                             console.log('screenshotFullPage');
                             const screenshot = await screenshotManager.captureFullPage();
+                            //提供发送选项  
+                            if (action.attributes.send === 'true') {
+                                if (context.has('domTreeData')) {
+                                    // 获取domTreeData
+                                    const domTreeData = context.get('domTreeData');
+                                    code = generateHtmlString(domTreeData);
+                                }
+                                // 获取domTreeData
+                                const domTreeData = context.get('domTreeData');
+                                // 将截图数据放入context
+                                const messageData = {
+                                    code: code,
+                                    img: [screenshot]
+                                };
+                                console.log('send messageData:', messageData);
+                                await sendWebSocketMessage(JSON.stringify(messageData), "shopping");
+                            }
                         }
                         // buildDomTree(从新生成domTree)
                         if (action.type === 'buildDomTree') {
