@@ -20,7 +20,6 @@ public class OpenTabAction extends Action {
                 <tool_name>OpenTabAction</tool_name>
                 <arguments>
                 {
-                %s
                 }
                 </arguments>
                 </use_mcp_tool>
