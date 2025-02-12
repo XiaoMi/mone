@@ -140,6 +140,7 @@ public class ChromeAthena extends Role {
             Message msg = this.rc.getNews().poll(2, TimeUnit.MINUTES);
             if (msg != null) {
                 if (msg.getContent().equals("!!quit")) {
+                    this.rc.getNews().clear();
                     log.info("!!quit");
                     break;
                 }
