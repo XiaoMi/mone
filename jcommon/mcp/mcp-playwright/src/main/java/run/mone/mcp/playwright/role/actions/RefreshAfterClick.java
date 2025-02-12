@@ -8,7 +8,7 @@ public class RefreshAfterClick extends Action {
     public RefreshAfterClick(String description) {
         super("RefreshAfterClick", description);
         setDescription("""
-                #.刷新页面并构建dom树
+                #.刷新页面并构建dom树TOOL
                 <use_mcp_tool>
                 <server_name>chrome-server</server_name>
                 <tool_name>FullPageAction</tool_name>

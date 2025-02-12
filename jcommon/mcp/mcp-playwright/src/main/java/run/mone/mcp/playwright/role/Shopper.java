@@ -19,6 +19,9 @@ public class Shopper extends Role {
                 4.商品详情页:点击 加入购物车 按钮(红色大按钮)(OperationAction) (如果找不到对应的按钮 滚动屏幕 ScrollAction)
                 5.购物车加购页面:点击去购物车结算按钮(OperationAction) (如果找不到对应的按钮 滚动下屏幕 ScrollAction)
                 6.到达购物车列表页面就可以结束了(attempt_completion)
+                
+                需要注意的点:
+                如果页面信息不全,可以滚动下页面(ScrollAction)
                 """;
     }
 }
