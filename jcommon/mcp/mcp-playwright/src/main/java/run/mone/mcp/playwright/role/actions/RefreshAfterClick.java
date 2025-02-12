@@ -8,7 +8,7 @@ public class RefreshAfterClick extends Action {
     public RefreshAfterClick(String description) {
         super("RefreshAfterClick", description);
         setDescription("""
-                #.全屏截图(如果你发现有些信息在当前页面没有,可能需要全部的页面信息,你可以发送全屏截图指令)
+                #.刷新页面并构建dom树
                 <use_mcp_tool>
                 <server_name>chrome-server</server_name>
                 <tool_name>FullPageAction</tool_name>
