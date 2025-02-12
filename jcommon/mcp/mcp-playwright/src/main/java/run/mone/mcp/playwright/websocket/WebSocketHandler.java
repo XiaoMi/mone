@@ -21,6 +21,8 @@ import run.mone.mcp.playwright.role.actions.GetContentAction;
 import run.mone.mcp.playwright.role.actions.OpenTabAction;
 import run.mone.mcp.playwright.role.actions.OperationAction;
 import run.mone.mcp.playwright.role.actions.ScrollAction;
+import run.mone.mcp.playwright.role.actions.FullPageAction;
+import run.mone.mcp.playwright.role.actions.RefreshAfterClick;
 import run.mone.mcp.playwright.service.ChromeTestService;
 
 import java.io.IOException;
@@ -144,7 +146,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 //点击加入购物车
                 new ScrollAction(),
                 //获取页面内容
-                new GetContentAction()
+                new GetContentAction(),
+                //全屏截图
+                new FullPageAction(),
+                //刷新页面
+                new RefreshAfterClick("刷新页面")
         );
         chromeAthena.setConsumer(msg -> {
             try {
