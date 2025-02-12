@@ -96,7 +96,7 @@ public class ChromeAthena extends Role {
                 
                 支持的工具:
                 %s
-                
+
                 
                 # chat
                 Description: A tool for handling general conversations and chat interactions. This tool should be used when the user's input is conversational in nature and doesn't require specific functional tools. It enables natural dialogue-based interactions in scenarios where other specialized tools are not applicable. Use this tool for engaging in general discussions, providing information, or offering support through conversation.
