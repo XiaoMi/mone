@@ -16,6 +16,7 @@ public enum LLMProvider {
     GOOGLE_2("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=", "GOOGLE_API_KEY", "gemini-2.0-flash", null),
     DEEPSEEK("https://api.deepseek.com/v1/chat/completions", "DEEPSEEK_API_KEY", "deepseek-chat", null),
     OPENROUTER("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "anthropic/claude-3.5-sonnet:beta", null),
+    OPENAICOMPATIBLE("", "", "", null),
     DOUBAO("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_MODEL_KEY");
 
     private final String url;
