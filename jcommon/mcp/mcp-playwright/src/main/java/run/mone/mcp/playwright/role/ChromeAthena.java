@@ -12,6 +12,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.Nullable;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import run.mone.hive.Environment;
@@ -34,6 +35,7 @@ import run.mone.mcp.playwright.role.actions.*;
 import run.mone.mcp.playwright.service.LLMService;
 
 import java.lang.reflect.Type;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -112,7 +114,7 @@ public class ChromeAthena extends Role {
                 #注意事项
                 每次操作只能返回一个工具，只需要返回工具内容即可，不用描述你用到了哪个工具.
                 返回的的TOOL不要用markdown格式包裹.
-             
+                
                 
                 #角色的定义
                 角色是一些工具的集合和使用顺序,如果你发现某个角色很适合完成某个工作,你则直接按他编排的Tool来执行.
@@ -151,11 +153,21 @@ public class ChromeAthena extends Role {
                     JsonArray imgs = obj.getAsJsonArray("img");
                     if (imgs != null) {
                         images = getImageStrings(imgs);
+                        msg.setImages(images);
                     }
                     code = JsonUtils.getValueOrDefault(obj, "code", "");
                     tabs = JsonUtils.getValueOrDefault(obj, "tabs", "");
+
+                    if (StringUtils.isNotEmpty(code)) {
+                        text = text + "\ncode:\n" + code;
+                    }
+
+                    if (!CollectionUtils.isEmpty(images)) {
+                        text = text + "\nimages:\n [图片占位符]";
+                    }
+
                     msg.setContent(text);
-                    msg.setRole("user");
+                    msg.setRole("assistant");
                 }
 
                 this.getRc().getMemory().add(msg);
