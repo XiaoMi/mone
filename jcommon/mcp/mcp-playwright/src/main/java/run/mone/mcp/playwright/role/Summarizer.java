@@ -13,9 +13,9 @@ public class Summarizer extends Role {
         super("Summarizer_Chrome","总结当前页面内容");
         this.goal = """
                 用户提出想总结当前页面内容时使用此角色定义的工具链
-                使用Tool的步骤：
-                1.向chrome发送请求当前页面内容的申请(GetContentAction)
-                2.总结页面内容(attempt_completion)
+                使用的Tool和步骤：
+                1.向chrome发送请求当前页面内容的申请(FullPageAction)
+                2.总结页面内容并结束(attempt_completion)
                 """;
 
     }
