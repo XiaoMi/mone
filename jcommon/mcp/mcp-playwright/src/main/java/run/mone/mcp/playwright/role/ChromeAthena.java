@@ -111,9 +111,11 @@ public class ChromeAthena extends Role {
                 
                 #注意事项
                 每次操作只能返回一个工具，只需要返回工具内容即可，不用描述你用到了哪个工具.
+                返回的的TOOL不要用markdown格式包裹.
+             
                 
                 #角色的定义
-                角色是一些工具的使用集合,如果你发现某个角色很适合完成某个工作,你则直接按他编排的Tool来执行.
+                角色是一些工具的集合和使用顺序,如果你发现某个角色很适合完成某个工作,你则直接按他编排的Tool来执行.
                 %s
                 
                 =========
@@ -138,12 +140,6 @@ public class ChromeAthena extends Role {
             req.setRole(Role.builder().name("user").build());
             Message msg = this.rc.getNews().poll(2, TimeUnit.MINUTES);
             if (msg != null) {
-                if (msg.getContent().equals("!!quit")) {
-                    this.rc.getNews().clear();
-                    log.info("!!quit");
-                    break;
-                }
-
                 List<String> images = null;
                 String code = "";
                 String tabs = "";
