@@ -26,6 +26,9 @@ let wsUrl = 'ws://localhost:8181/ws';
 // config地址
 let configUrl = 'http://localhost:8181/config/list';
 
+// 在文件开头添加配置变量
+let autoRemoveHighlight = false; // 默认关闭自动取消重绘
+
 // 创建 WebSocket 连接函数
 function connectWebSocket() {
     // 如果已经有连接，先关闭
@@ -770,6 +773,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             } else if (message.type === 'captureFullPage') {
                 const result = await screenshotManager.captureFullPage();
                 sendResponse({ success: result });
+            } else if (message.type === 'setAutoRemoveHighlight') {
+                autoRemoveHighlight = message.value;
+                // 保存配置到storage
+                await chrome.storage.local.set({ autoRemoveHighlight });
+                sendResponse({ success: true });
             } else {
                 sendResponse({ success: false, error: 'Unknown message type' });
             }
@@ -957,16 +965,18 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
             quality: 10
         });
 
-        // 取消重绘效果
-        await chrome.scripting.executeScript({
-            target: { tabId: stateUpdate.tabId },
-            func: () => {
-                const container = document.getElementById('playwright-highlight-container');
-                if (container) {
-                    //container.remove();
+        // 根据配置决定是否取消重绘效果
+        if (autoRemoveHighlight) {
+            await chrome.scripting.executeScript({
+                target: { tabId: stateUpdate.tabId },
+                func: () => {
+                    const container = document.getElementById('playwright-highlight-container');
+                    if (container) {
+                        container.remove();
+                    }
                 }
-            }
-        });
+            });
+        }
 
         // 将 domTreeData 转换为字符串
         const domTreeString = generateHtmlString(domTreeData);
@@ -1026,3 +1036,8 @@ function addMessageToHistory(message) {
         messageHistory.shift();
     }
 }
+
+// 在初始化时读取配置
+chrome.storage.local.get(['autoRemoveHighlight'], (result) => {
+    autoRemoveHighlight = result.autoRemoveHighlight ?? false;
+});
