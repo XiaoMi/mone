@@ -75,6 +75,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             if (data.equals("clear")) {
                 log.info("clear");
                 chromeAthena.getRc().getNews().clear();
+                chromeAthena.getRc().getMemory().clear();
                 return;
             }
 

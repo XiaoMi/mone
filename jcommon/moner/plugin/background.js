@@ -220,7 +220,16 @@ function connectWebSocket() {
                         // 截全屏
                         if (action.type === 'screenshotFullPage') {
                             console.log('screenshotFullPage');
-                            const screenshot = await screenshotManager.captureFullPage();
+
+                            let download = true;
+                            //提供下载选项
+                            if (action.attributes.download === 'false') {
+                                download = false;
+                            }
+
+                            const screenshot = await screenshotManager.captureFullPage(download);
+
+                            let code = '';
                             //提供发送选项  
                             if (action.attributes.send === 'true') {
                                 if (context.has('domTreeData')) {
