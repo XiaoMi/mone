@@ -47,7 +47,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         sessions.add(session);
-//        initChatter(session);
         initShopperAndRoleClassifier(session);
     }
 

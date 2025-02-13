@@ -964,7 +964,7 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
             func: () => {
                 const container = document.getElementById('playwright-highlight-container');
                 if (container) {
-                    //container.remove();
+                    container.remove();
                 }
             }
         });
