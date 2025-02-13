@@ -5,11 +5,12 @@
     <modelVersion>4.0.0</modelVersion>
     <parent>
         <groupId>run.mone</groupId>
-        <artifactId>mcp</artifactId>
-        <version>1.6.1-jdk21-SNAPSHOT</version>
+        <artifactId>jcommon</artifactId>
+        <version>1.6.0-jdk21-SNAPSHOT</version>
     </parent>
 
-    <artifactId>mcp-playwright</artifactId>
+    <artifactId>moner-server</artifactId>
+
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -19,13 +20,6 @@
     </properties>
 
     <dependencies>
-
-        <dependency>
-            <groupId>com.microsoft.playwright</groupId>
-            <artifactId>playwright</artifactId>
-            <version>1.49.0</version>
-        </dependency>
-
 
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -117,6 +111,12 @@
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-websocket</artifactId>
+            <version>3.4.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <version>3.4.1</version>
             <scope>test</scope>
@@ -151,7 +151,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>2.7.14</version>
                 <configuration>
-                    <mainClass>run.mone.mcp.playwright.Bootstrap</mainClass>
+                    <mainClass>run.mone.moner.server.Bootstrap</mainClass>
                     <finalName>app</finalName>
                 </configuration>
                 <executions>
@@ -168,4 +168,4 @@
 
     </build>
 
-</project>
+</project> 
