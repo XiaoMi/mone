@@ -22,7 +22,7 @@ import run.mone.mcp.playwright.role.actions.OpenTabAction;
 import run.mone.mcp.playwright.role.actions.OperationAction;
 import run.mone.mcp.playwright.role.actions.ScrollAction;
 import run.mone.mcp.playwright.role.actions.FullPageAction;
-import run.mone.mcp.playwright.role.actions.RefreshAfterClick;
+import run.mone.mcp.playwright.role.actions.ClickAfterRefresh;
 import run.mone.mcp.playwright.service.ChromeTestService;
 
 import java.io.IOException;
@@ -151,7 +151,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 //全屏截图
                 new FullPageAction(),
                 //刷新页面
-                new RefreshAfterClick("刷新页面")
+                new ClickAfterRefresh()
         );
         chromeAthena.setConsumer(msg -> {
             try {
