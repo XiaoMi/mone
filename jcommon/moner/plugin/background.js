@@ -935,6 +935,10 @@ async function markElements(tabId, configs) {
 // 在状态变更监听器中添加配置处理
 stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
     try {
+
+        // 添加延迟确保页面重绘完成
+        await new Promise(resolve => setTimeout(resolve, 500)); // 500ms 延迟
+
         // 使用stateUpdate中的tabId，不再需要查询当前tab
         if (!stateUpdate.tabId) {
             console.warn('No tabId in state update:', stateUpdate);
