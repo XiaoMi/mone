@@ -3,6 +3,9 @@
   "name": "Mone",
   "version": "1.0",
   "description": "Mone",
+  "icons": {
+    "64": "images/icon64.png"
+  },
   "permissions": [
     "activeTab",
     "scripting",
