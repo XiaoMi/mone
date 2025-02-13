@@ -34,6 +34,7 @@
         <module>mcp-sequentialthinking</module>
         <module>mcp-git</module>
         <module>mcp-hammerspoon</module>
+        <module>mcp-hologres</module>
         <module>mcp-idea</module>
     </modules>
 
