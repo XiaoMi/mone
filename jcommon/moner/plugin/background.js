@@ -230,6 +230,12 @@ function connectWebSocket() {
                                 download = false;
                             }
 
+                            // 获取当前窗口的所有标签页的选项
+                            let tabInfo = false;
+                            if (action.attributes.tabInfo === 'true') {
+                                tabInfo = true;
+                            }
+
                             const screenshot = await screenshotManager.captureFullPage(download);
 
                             let code = '';
@@ -245,8 +251,10 @@ function connectWebSocket() {
                                 // 将截图数据放入context
                                 const messageData = {
                                     code: code,
-                                    img: [screenshot]
+                                    img: [screenshot],
+                                    tabs: tabInfo ? await getAllTabsInfo() : undefined
                                 };
+
                                 console.log('send messageData:', messageData);
                                 await sendWebSocketMessage(JSON.stringify(messageData), "shopping");
                             }
