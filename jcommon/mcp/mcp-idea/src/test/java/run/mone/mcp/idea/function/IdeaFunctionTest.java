@@ -8,12 +8,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class IdeaFunctionTest {
 
-    private IdeaFunction ideaFunction;
+    private IdeaFunctions.IdeaOperationFunction ideaFunction;
 
     @BeforeEach
     void setUp() {
-        ideaFunction = new IdeaFunction();
-        ideaFunction.setIdeaPort(30000);
+        ideaFunction = new IdeaFunctions.IdeaOperationFunction("30000");
+//        ideaFunction.setIdeaPort(30000);
     }
 
     @Test
