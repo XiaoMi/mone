@@ -1,3 +1,4 @@
+使用Druid链接池连接Hologres数据库， 查询数据后给大模型可进行数据分析
 ```json
 {
   "mcpServers": {
