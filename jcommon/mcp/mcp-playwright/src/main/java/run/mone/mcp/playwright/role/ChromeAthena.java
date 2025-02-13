@@ -11,6 +11,7 @@ import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import run.mone.hive.Environment;
@@ -91,13 +92,13 @@ public class ChromeAthena extends Role {
                 你是我的私人助手。你的任务是根据用户的需求选择合适的TOOL，并执行相应的操作。
                 
                 TOOL USE
-            
+                
                 You have access to a set of tools that are executed upon the user's approval. You can use one tool per message, and will receive the result of that tool use in the user's response. You use tools step-by-step to accomplish a given task, with each tool use informed by the result of the previous tool use.
-            
+                
                 # Tool Use Formatting
-            
+                
                 Tool use is formatted using XML-style tags. The tool name is enclosed in opening and closing tags, and each parameter is similarly enclosed within its own set of tags. Here's the structure:
-            
+                
                 <tool_name>
                 <parameter1_name>value1</parameter1_name>
                 <parameter2_name>value2</parameter2_name>
@@ -110,9 +111,11 @@ public class ChromeAthena extends Role {
                 
                 #注意事项
                 每次操作只能返回一个工具，只需要返回工具内容即可，不用描述你用到了哪个工具.
+                返回的的TOOL不要用markdown格式包裹.
+             
                 
                 #角色的定义
-                角色是一些工具的使用集合,如果你发现某个角色很适合完成某个工作,你则直接按他编排的Tool来执行.
+                角色是一些工具的集合和使用顺序,如果你发现某个角色很适合完成某个工作,你则直接按他编排的Tool来执行.
                 %s
                 
                 =========
@@ -129,21 +132,14 @@ public class ChromeAthena extends Role {
     @SneakyThrows
     @Override
     public CompletableFuture<Message> run() {
-
         ActionContext context = new ActionContext();
-
+        boolean ask_followup_question = false;
         int i = 0;
         while (i++ < 20) {
             ActionReq req = new ActionReq();
             req.setRole(Role.builder().name("user").build());
             Message msg = this.rc.getNews().poll(2, TimeUnit.MINUTES);
             if (msg != null) {
-                if (msg.getContent().equals("!!quit")) {
-                    this.rc.getNews().clear();
-                    log.info("!!quit");
-                    break;
-                }
-
                 List<String> images = null;
                 String code = "";
                 String tabs = "";
@@ -154,17 +150,7 @@ public class ChromeAthena extends Role {
                     text = JsonUtils.getValueOrDefault(obj, "text", "");
                     JsonArray imgs = obj.getAsJsonArray("img");
                     if (imgs != null) {
-                        images = GsonUtils.gson.fromJson(imgs, LIST_STRING);
-                        if (llm.getLlmProvider() == LLMProvider.GOOGLE_2) {
-                            //google gemini 不需要前边的内容
-                            images = images.stream().map(img -> {
-                                if (img.startsWith("data:image")) {
-                                    return img.split("base64,")[1];
-                                }
-                                return img;
-                            }).collect(Collectors.toList());
-                        }
-
+                        images = getImageStrings(imgs);
                     }
                     code = JsonUtils.getValueOrDefault(obj, "code", "");
                     tabs = JsonUtils.getValueOrDefault(obj, "tabs", "");
@@ -188,7 +174,11 @@ public class ChromeAthena extends Role {
 
                 this.getRc().getMemory().add(Message.builder().role("assistant").content(res).build());
 
+                //流程结束了
                 if (result.getTag().equals("attempt_completion") || result.getTag().equals("ask_followup_question")) {
+                    if (result.getTag().equals("ask_followup_question")) {
+                        ask_followup_question = true;
+                    }
                     consumer.accept(Const.actionTemplate.formatted("end", result.getTag()));
                     break;
                 }
@@ -208,9 +198,28 @@ public class ChromeAthena extends Role {
         try {
             return CompletableFuture.completedFuture(Message.builder().build());
         } finally {
-            this.getRc().clearNews();
-            this.getRc().getMemory().clear();
+            //如果只是向你询问问题,历史记录不要清除
+            if (!ask_followup_question) {
+                this.getRc().getNews().clear();
+                this.getRc().getMemory().clear();
+            }
         }
+    }
+
+    @Nullable
+    private List<String> getImageStrings(JsonArray imgs) {
+        List<String> images;
+        images = GsonUtils.gson.fromJson(imgs, LIST_STRING);
+        if (llm.getLlmProvider() == LLMProvider.GOOGLE_2) {
+            //google gemini 不需要前边的内容
+            images = images.stream().map(img -> {
+                if (img.startsWith("data:image")) {
+                    return img.split("base64,")[1];
+                }
+                return img;
+            }).collect(Collectors.toList());
+        }
+        return images;
     }
 
 
