@@ -122,7 +122,7 @@ public class IdeaFunctions {
                 req.addProperty("cmdName", "createUnitTestClassAndMethod");
                 req.addProperty("testPackageName", targetPackage);
                 req.addProperty("projectName", projectName);
-                req.addProperty("athenaPluginHost", "10.220.139.3:"+ideaPort);
+                req.addProperty("athenaPluginHost", "127.0.0.1:"+ideaPort);
                 JsonObject res = callAthena(ideaPort, req);
 
                 return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(new Gson().toJson(res))), false);
@@ -136,6 +136,6 @@ public class IdeaFunctions {
 
     @SneakyThrows
     public static JsonObject callAthena(String ideaPort, JsonObject req) {
-        return new HttpClient().post("http://10.220.139.3:" + ideaPort + "/tianye", req);
+        return new HttpClient().post("http://127.0.0.1:" + ideaPort + "/tianye", req);
     }
 }
