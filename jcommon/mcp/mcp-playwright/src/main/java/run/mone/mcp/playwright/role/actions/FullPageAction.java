@@ -19,6 +19,7 @@ public class FullPageAction extends Action {
                 <tool_name>FullPageAction</tool_name>
                 <arguments>
                 {
+                    "name": "全屏信息获取"
                 }
                 </arguments>
                 </use_mcp_tool>
@@ -50,7 +51,7 @@ public class FullPageAction extends Action {
                 </action>
 
                 //全屏截图 并且 把截图回传回来
-                <action type="screenshotFullPage" send="true">
+                <action type="screenshotFullPage" send="true" download="false">
                 </action>
                 """).build());
     }
