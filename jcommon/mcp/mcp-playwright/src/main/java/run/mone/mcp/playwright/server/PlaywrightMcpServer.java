@@ -30,7 +30,6 @@ import run.mone.mcp.playwright.function.PlaywrightFunctions.SelectFunction;
 import run.mone.mcp.playwright.function.PlaywrightFunctions.SwitchTabFunction;
 import run.mone.hive.mcp.server.McpServer.ToolRegistration;
 import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
-import run.mone.mcp.playwright.websocket.WebSocketService;
 
 @Slf4j
 @Component
