@@ -284,7 +284,6 @@ function connectWebSocket() {
                                 args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 , onlyVisibleArea: !fullPage}]
                             });
 
-                             //TODO$ add
                              new Promise((resolve, reject) => {
                                 try {
                                     chrome.storage.local.set({ lastDomTreeData: domTreeData });

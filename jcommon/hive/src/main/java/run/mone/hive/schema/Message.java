@@ -23,6 +23,8 @@ public class Message implements Serializable {
     private Object sentFrom;
     private List<String> sendTo;
 
+    private List<String> images;
+
     private Object data;
 
     @Builder.Default
