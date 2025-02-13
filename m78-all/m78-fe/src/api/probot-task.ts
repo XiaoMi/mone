@@ -1,5 +1,9 @@
-import { post } from '@/utils/request'
-
+/*
+ * @Description:
+ * @Date: 2024-03-05 15:59:49
+ * @LastEditTime: 2024-03-15 18:44:33
+ */
+import { post, get } from '@/utils/request'
 // 创建任务
 export function createTask(data) {
   return post<T>({

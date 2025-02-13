@@ -1,10 +1,15 @@
+<!--
+ * @Description: 
+ * @Date: 2024-01-18 16:57:29
+ * @LastEditTime: 2024-08-30 13:17:29
+-->
 <template>
   <div class="wrap-background">
     <span class="bg-item bg-outer-item"></span>
     <span class="bg-item bg-outer-item"></span>
     <span class="bg-item bg-outer-item more-item">
       <span class="bg-item bg-inner-item"> <Icon></Icon></span>
-      <span class="bg-item bg-inner-item"><M78></M78></span>
+      <span class="bg-item bg-inner-item "> <Logo class="logo-txt"></Logo></span>
     </span>
   </div>
 </template>
@@ -12,11 +17,10 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
 import Icon from './assets/icon.svg'
-import M78 from './assets/m78.svg'
+import Logo from '@/components/common/Logo.vue'
 
 const bindScroll = () => {
   const top = document.querySelector('.page-wrap')?.scrollTop
-  console.log('top', top)
   const $ele = document.getElementsByClassName('bg-outer-item')
   $ele[0].style.transform = 'rotate(45deg) translate3d(-' + top + 'px, -' + top + 'px, 0px)'
 
@@ -35,6 +39,12 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
+.logo-txt{
+  font-size: 40px!important;
+  z-index: 9999;
+  position: relative;
+  width: 150px;
+}
 .wrap-background {
   position: absolute;
   width: 100%;
@@ -117,10 +127,8 @@ onMounted(() => {
       background-color: rgb(223, 245, 249);
       background-image: radial-gradient(380px at -5% -20%, #b7e4c7, #95d5b2, #74c69d);
       padding-top: 160px;
-      padding-left: 120px;
-      svg {
-        width: 100px;
-      }
+      padding-left: 80px;
+     
     }
   }
 }

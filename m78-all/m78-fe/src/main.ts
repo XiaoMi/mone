@@ -2,6 +2,7 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 // import ElementPlus from 'element-plus'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import '@/utils/polyfill'
 
 import App from './App.vue'
@@ -17,7 +18,6 @@ import { setupI18n } from './locales'
 import JsonViewer from 'vue3-json-viewer'
 import 'vue3-json-viewer/dist/index.css'
 import contextmenu from 'v-contextmenu'
-import 'v-contextmenu/dist/themes/default.css'
 
 declare global {
   interface Window {
@@ -39,9 +39,12 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
 
+const pinia = createPinia()
+pinia.use(piniaPluginPersistedstate)
+
 app.use(JsonViewer)
 app.use(contextmenu)
-app.use(createPinia())
+app.use(pinia)
 app.use(router)
 
 app.mount('#app')

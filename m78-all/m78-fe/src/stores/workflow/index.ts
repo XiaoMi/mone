@@ -5,7 +5,9 @@ export const useCounterStore = defineStore('workflow', () => {
   const _pluginList = ref([])
   const pluginList = computed(() => _pluginList.value)
 
-  const setPluginList = () => {}
+  const setPluginList = () => {
+
+  }
 
   return { pluginList, setPluginList }
 })

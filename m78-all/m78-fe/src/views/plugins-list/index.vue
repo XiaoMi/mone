@@ -2,17 +2,17 @@
   <div class="plugin-wrap">
     <el-form ref="formRef" status-icon :model="state.search" :size="formSize">
       <el-row :gutter="20">
-        <el-col :span="6">
+        <el-col :span="5">
           <el-form-item :label="`${t('plugin.pluginName')}:`">
             <el-input v-model="state.search.name" :placeholder="t('plugin.enterPluginName')" />
           </el-form-item>
         </el-col>
-        <el-col :span="6">
+        <el-col :span="5">
           <el-form-item :label="`${t('plugin.username')}:`">
             <el-input v-model="state.search.userName" :placeholder="t('plugin.enterUserName')" />
           </el-form-item>
         </el-col>
-        <el-col :span="6">
+        <el-col :span="5">
           <el-form-item props="category" label="类型:">
             <el-select
               v-model="state.search.categoryId"
@@ -30,8 +30,26 @@
             </el-select>
           </el-form-item>
         </el-col>
-        <el-col :span="6">
-          <el-button type="primary" @click="getList(1)">{{ t('plugin.search') }}</el-button>
+        <el-col :span="5">
+          <el-form-item props="official" label="官方:">
+            <el-select
+              v-model="state.search.official"
+              style="width: 100%"
+              placeholder=""
+              @change="handleSearch"
+              clearable
+            >
+              <el-option
+                v-for="item in officialOption"
+                :key="item?.id"
+                :label="item?.name"
+                :value="item?.id"
+              />
+            </el-select>
+          </el-form-item>
+        </el-col>
+        <el-col :span="4">
+          <el-button type="primary" @click="getList(1)">{{ t('common.search') }}</el-button>
         </el-col>
       </el-row>
     </el-form>
@@ -56,9 +74,9 @@
 </template>
 
 <script lang="ts" setup>
-import { onMounted, reactive, watch, ref } from 'vue'
+import { reactive, watch, ref } from 'vue'
 import { pluginsList4home } from '@/api/plugins'
-import BaseList from '@/components/BaseList.vue'
+import BaseList from '@/components/probot/BaseList.vue'
 import { t } from '@/locales'
 import { useRoute, useRouter } from 'vue-router'
 import { useProbotStore } from '@/stores/probot'
@@ -78,11 +96,22 @@ const state = reactive({
     type: undefined,
     pageSize: 12,
     pageNum: 1,
-    orgOnly: false
+    orgOnly: false,
+    official: ''
   },
   total: 0,
   loading: false
 })
+const officialOption = [
+  {
+    id: 0,
+    name: '非官方'
+  },
+  {
+    id: 1,
+    name: '官方'
+  }
+]
 
 const handleJump = (item) => {
   router.push({
@@ -128,15 +157,13 @@ const handleSearch = () => {
   getList(1)
 }
 
-onMounted(() => {
-  getList()
-})
-
 watch(
-  () => route.query,
-  ({ category }) => {
-    state.search.categoryId = category ? Number(category) : undefined
-    getList()
+  () => route.query.category,
+  (category) => {
+    if (route.name === 'AI Probot Plugin List') {
+      state.search.categoryId = category ? Number(category) : undefined
+      getList()
+    }
   },
   {
     immediate: true,
@@ -147,9 +174,7 @@ watch(
 
 <style lang="scss" scoped>
 .plugin-wrap {
-  width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
+  padding: 20px 45px;
   .pager {
     display: flex;
     align-items: center;
