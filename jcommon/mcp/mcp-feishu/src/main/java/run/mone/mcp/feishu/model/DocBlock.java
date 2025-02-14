@@ -9,7 +9,6 @@ import lombok.experimental.Accessors;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 @Data
 @Accessors(chain = true)
@@ -17,7 +16,14 @@ public class DocBlock {
     private String blockId;
     private String docId;
     private String parentId;
-    private Map<Integer, String> elements;
+    private List<Element> elements = new ArrayList<>();
+
+    @Data
+    @Accessors(chain = true)
+    public static class Element {
+        private int type;
+        private String content;
+    }
 
     public Block[] toFeishuBlocks() {
         if (parentId == null || parentId.isEmpty()) {
@@ -26,21 +32,21 @@ public class DocBlock {
 
         List<Block> blocks = new ArrayList<>();
         
-        elements.forEach((type, content) -> {
+        for (Element element : elements) {
             Block.Builder blockBuilder = Block.newBuilder()
                     .parentId(this.parentId)
-                    .blockType(type);
+                    .blockType(element.getType());
 
             // 创建文本内容
             Text text = new Text();
             TextElement textElement = new TextElement();
             TextRun textRun = new TextRun();
-            textRun.setContent(content);
+            textRun.setContent(element.getContent());
             textElement.setTextRun(textRun);
             text.setElements(new TextElement[]{textElement});
 
             // 根据type设置对应的字段
-            switch (type) {
+            switch (element.getType()) {
                 case 1: // 页面 Block
                     blockBuilder.page(text);
                     break;
@@ -86,11 +92,13 @@ public class DocBlock {
                 case 15: // 引用 Block
                     blockBuilder.quote(text);
                     break;
+                default:
+                    throw new IllegalStateException("Unsupported block type: " + element.getType());
             }
-
+            
             blocks.add(blockBuilder.build());
-        });
-
+        }
+        
         return blocks.toArray(new Block[0]);
     }
 } 

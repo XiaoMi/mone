@@ -35,7 +35,6 @@ import run.mone.moner.server.role.actions.*;
 import run.mone.moner.server.service.LLMService;
 
 import java.lang.reflect.Type;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -59,7 +58,7 @@ public class ChromeAthena extends Role {
     private List<Role> roleList = Lists.newArrayList(new Shopper(), new Searcher(), new Mailer(), new Summarizer(), new BilibiliPublisher());
 
     private List<Action> actionList = Lists.newArrayList(new OpenTabAction(""), new OperationAction(), new ScrollAction(),
-            new FullPageAction(), new GetContentAction(), new ChatAction(), new ProcessAction(), new ClickAfterRefresh(), new SnowAction());
+            new FullPageAction(), new GetContentAction(), new ChatAction(), new ProcessAction(), new ClickAfterRefresh(), new CodeAction());
 
     private static final Type LIST_STRING = new TypeToken<List<String>>() {
     }.getType();
