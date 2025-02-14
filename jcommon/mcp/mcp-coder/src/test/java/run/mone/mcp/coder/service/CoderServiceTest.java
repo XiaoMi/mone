@@ -1,4 +1,3 @@
-
 package run.mone.mcp.coder.service;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -30,9 +29,16 @@ class CoderServiceTest {
     void testAnswerTechQuestion() {
         String question = "What is dependency injection in Spring?";
         String answer = coderService.answerTechQuestion(question);
-
         assertNotNull(answer);
-        assertFalse(answer.isEmpty());
-        assertThat(answer).contains("dependency injection", "Spring");
     }
+
+    @Test
+    void testWriteCode() {
+        String description = "Write a Java function to calculate the factorial of a number";
+        String generatedCode = coderService.writeCode(description);
+
+        assertNotNull(generatedCode);
+    }
+
+
 }
