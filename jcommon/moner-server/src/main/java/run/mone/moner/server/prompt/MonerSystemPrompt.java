@@ -49,7 +49,7 @@ public class MonerSystemPrompt {
         return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data, Lists.newArrayList());
     }
 
-    // public static List<Map<String, Object>> getMcpInfo() {
+     public static List<Map<String, Object>> getMcpInfo() {
     //     final List<Map<String, Object>> serverList = new ArrayList<>();
     //     List<Map<String, Object>> sl = (List<Map<String, Object>>) CacheService.ins().getObject(CacheService.tools_key);
     //     if (null != sl) {
@@ -68,7 +68,8 @@ public class MonerSystemPrompt {
     //         CacheService.ins().cacheObject(CacheService.tools_key, serverList);
     //     }
     //     return serverList;
-    // }
+         return null;
+     }
 
     //mcp 调用的会使用这个prompt
     public static final String MCP_PROMPT = """
