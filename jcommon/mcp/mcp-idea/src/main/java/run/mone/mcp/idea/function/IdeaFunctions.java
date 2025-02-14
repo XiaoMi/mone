@@ -96,6 +96,11 @@ public class IdeaFunctions {
                 {
                     "type": "object",
                     "properties": {
+                        "operation": {
+                            "type": "string",
+                            "enum": ["create_unittest_class", "create_unittest_class_method_code"],
+                            "description":"create_unittest_class先把测试类创建出来，调用完create_unittest_class之后，隔3s再调用create_unittest_class_method_code,create_unittest_class_method_code是把测试类中的代码生成出来"
+                        },
                         "projectName": {
                             "type": "string",
                             "description":"需要生成测试的项目"
@@ -111,27 +116,53 @@ public class IdeaFunctions {
 
         @Override
         public McpSchema.CallToolResult apply(Map<String, Object> arguments) {
-            String projectName = (String) arguments.get("projectName");
-            String targetPackage = (String) arguments.get("targetPackage");
-            log.info("projectName: {}", projectName);
-            log.info("targetPackage: {}", targetPackage);
+            String operation = (String) arguments.get("operation");
 
             try {
-                JsonObject req = new JsonObject();
-                req.addProperty("cmd", "write_code");
-                req.addProperty("cmdName", "createUnitTestClassAndMethod");
-                req.addProperty("testPackageName", targetPackage);
-                req.addProperty("projectName", projectName);
-                req.addProperty("athenaPluginHost", "127.0.0.1:"+ideaPort);
-                JsonObject res = callAthena(ideaPort, req);
-
+                JsonObject res = switch (operation.toLowerCase()) {
+                    case "create_unittest_class" ->
+                            createUnitTestClass((String) arguments.get("targetPackage"), (String) arguments.get("projectName"), ideaPort);
+                    case "create_unittest_class_method_code" ->
+                            createUnitTestClassMethodCode((String) arguments.get("targetPackage"), (String) arguments.get("projectName"), ideaPort);
+                    default -> throw new IllegalArgumentException("Unsupported operation type: " + operation);
+                };
                 return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(new Gson().toJson(res))), false);
             } catch (Exception e) {
                 return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true);
             }
         }
 
+        public JsonObject createUnitTestClass(String targetPackage, String projectName, String ideaPort) {
+            JsonObject req = new JsonObject();
+            req.addProperty("cmd", "write_code");
+            req.addProperty("cmdName", "createUnitTestClassSimple");
+            req.addProperty("testPackageName", targetPackage);
+            req.addProperty("projectName", projectName);
+            req.addProperty("athenaPluginHost", "127.0.0.1:" + ideaPort);
+            JsonObject res = callAthena(ideaPort, req);
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            return res;
+        }
 
+        public JsonObject createUnitTestClassMethodCode(String targetPackage, String projectName, String ideaPort) {
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            JsonObject req = new JsonObject();
+            req.addProperty("cmd", "write_code");
+            req.addProperty("cmdName", "createUnitTestMethodCodeSimple");
+            req.addProperty("testPackageName", targetPackage);
+            req.addProperty("projectName", projectName);
+            req.addProperty("athenaPluginHost", "127.0.0.1:" + ideaPort);
+            JsonObject res = callAthena(ideaPort, req);
+            return res;
+        }
     }
 
     @SneakyThrows
