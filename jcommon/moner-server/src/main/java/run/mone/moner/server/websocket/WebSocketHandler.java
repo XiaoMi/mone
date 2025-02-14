@@ -17,12 +17,7 @@ import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.schema.Message;
 import run.mone.moner.server.constant.ResultType;
 import run.mone.moner.server.role.ChromeAthena;
-import run.mone.moner.server.role.actions.GetContentAction;
-import run.mone.moner.server.role.actions.OpenTabAction;
-import run.mone.moner.server.role.actions.OperationAction;
-import run.mone.moner.server.role.actions.ScrollAction;
-import run.mone.moner.server.role.actions.FullPageAction;
-import run.mone.moner.server.role.actions.ClickAfterRefresh;
+import run.mone.moner.server.role.actions.*;
 import run.mone.moner.server.service.ChromeTestService;
 
 import java.io.IOException;
@@ -149,6 +144,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 new GetContentAction(),
                 //全屏截图
                 new FullPageAction(),
+                new SnowAction(),
                 //刷新页面
                 new ClickAfterRefresh()
         );

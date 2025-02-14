@@ -59,7 +59,7 @@ public class ChromeAthena extends Role {
     private List<Role> roleList = Lists.newArrayList(new Shopper(), new Searcher(), new Mailer(), new Summarizer(), new BilibiliPublisher());
 
     private List<Action> actionList = Lists.newArrayList(new OpenTabAction(""), new OperationAction(), new ScrollAction(),
-            new FullPageAction(), new GetContentAction(), new ChatAction(), new ProcessAction(), new ClickAfterRefresh());
+            new FullPageAction(), new GetContentAction(), new ChatAction(), new ProcessAction(), new ClickAfterRefresh(), new SnowAction());
 
     private static final Type LIST_STRING = new TypeToken<List<String>>() {
     }.getType();
