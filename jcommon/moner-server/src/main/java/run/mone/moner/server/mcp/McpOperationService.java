@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.NotNull;
+import org.springframework.stereotype.Service;
 import run.mone.hive.mcp.hub.McpConnection;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.moner.server.common.GsonUtils;
@@ -15,7 +15,6 @@ import run.mone.moner.server.prompt.MonerSystemPrompt;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,63 +30,60 @@ import java.util.concurrent.TimeUnit;
  */
 
 @Slf4j
+@Service
 public class McpOperationService {
 
-    public static String MCP_PATH = System.getProperty("user.home") + "/.mcp/athena_mcp_settings.json";
-    public static String MCP_DIR = System.getProperty("user.home") + "/.mcp";
+    private final McpConfig mcpConfig;
 
-    public static String MCP_FILE = "athena_mcp_settings.json";
+    public McpOperationService(McpConfig mcpConfig) {
+        this.mcpConfig = mcpConfig;
+    }
 
     // 获取 MCP 连接，优先从缓存获取
-    private static List<Map<String, Object>> getMcpConnections() {
+    private List<Map<String, Object>> getMcpConnections() {
         return MonerSystemPrompt.getMcpInfo();
     }
 
     // 更新连接缓存
-    private static void updateConnectionsCache() {
+    private void updateConnectionsCache() {
         CacheService.ins().evictObject(CacheService.tools_key);
         List<Map<String, Object>> mcpInfo = MonerSystemPrompt.getMcpInfo();
         CacheService.ins().cacheObject(CacheService.tools_key, mcpInfo);
     }
 
     // 获取mcp server json
-    public static String fetchMcpJson() {
-        String res = "";
-        log.info("Checking MCP file existence: {}", MCP_PATH);
+    public String fetchMcpJson(String from) {
+        FromType fromType = FromType.fromString(from);
+        String mcpPath = mcpConfig.getMcpPath(fromType);
+        log.info("Checking MCP file existence for {}: {}", fromType, mcpPath);
 
-        if (createFile())
-            return null;
-        // 获取文件内容
-        String content = null;
-        try {
-            content = Files.readString(Paths.get(MCP_PATH));
-            log.info("Successfully read MCP file content");
-            // refresh mcp server
-            // TeslaAppComponent.refreshMcpHub(content);
-        } catch (IOException e) {
-            log.error("read mcp file error", e);
+        if (createFile(fromType)) {
             return null;
         }
-        // 前端渲染
-        res = content;
-        return res;
+
+        try {
+            String content = Files.readString(Paths.get(mcpPath));
+            log.info("Successfully read MCP file content for {}", fromType);
+            return content;
+        } catch (IOException e) {
+            log.error("read mcp file error for " + fromType, e);
+            return null;
+        }
     }
 
-    private static boolean createFile() {
-        if (!Files.exists(Paths.get(MCP_DIR)) || !Files.exists(Paths.get(MCP_PATH))) {
+    private boolean createFile(FromType fromType) {
+        String mcpPath = mcpConfig.getMcpPath(fromType);
+        String mcpDir = mcpConfig.getMcpDir();
+
+        if (!Files.exists(Paths.get(mcpDir)) || !Files.exists(Paths.get(mcpPath))) {
             try {
-                log.info("Creating MCP directory and file");
-                Files.createDirectories(Paths.get(MCP_DIR));
-                // 创建默认配置文件
+                log.info("Creating MCP directory and file for {}", fromType);
+                Files.createDirectories(Paths.get(mcpDir));
                 String defaultConfig = "{\n  \"mcpServers\": {}\n}";
-                Files.write(Paths.get(MCP_PATH), defaultConfig.getBytes(StandardCharsets.UTF_8));
-
-                // TODO 刷新文件系统以识别新创建的文件
-//                LocalFileSystem.getInstance().refreshAndFindFileByPath(MCP_PATH);
-
-                log.info("Created and refreshed MCP file");
+                Files.write(Paths.get(mcpPath), defaultConfig.getBytes(StandardCharsets.UTF_8));
+                log.info("Created MCP file for {}", fromType);
             } catch (IOException e) {
-                log.error("create mcp dir and file error", e);
+                log.error("create mcp dir and file error for " + fromType, e);
                 return true;
             }
         }
@@ -95,7 +91,7 @@ public class McpOperationService {
     }
 
     // 获取所有及单个mcp server的tools,如果没有mcpServerName，则获取所有mcp server的tools
-    public static String fetchMcpServerTools(String from, String mcpServerName) {
+    public String fetchMcpServerTools(String from, String mcpServerName) {
         log.info("Begin fetchMcpServerTools with serverName: {}", mcpServerName);
         Map<String, Map<String, Object>> serverTools = new HashMap<>();
 
@@ -150,7 +146,7 @@ public class McpOperationService {
         }
     }
 
-    public static String fetchMcpServerVersion(String from, String mcpServerName) {
+    public String fetchMcpServerVersion(String from, String mcpServerName) {
         log.info("Begin fetchMcpServerVersion with serverName: {}", mcpServerName);
         try {
             Optional<Map<String, Object>> serverOpt = getMcpConnections().stream()
@@ -166,7 +162,7 @@ public class McpOperationService {
         }
     }
 
-    private static void addServerTools(String from, Map<String, Map<String, Object>> serverTools,
+    private void addServerTools(String from, Map<String, Map<String, Object>> serverTools,
                                        String serverName,
                                        McpConnection connection) {
         McpSchema.ListToolsResult tools = connection.getClient().listTools();
@@ -183,12 +179,12 @@ public class McpOperationService {
     }
 
     // 获取单/多个mcp server状态
-    public static String fetchMcpServerStatus(String from, String mcpServerName) {
+    public String fetchMcpServerStatus(String from, String mcpServerName) {
         log.info("Begin fetchMcpServerStatus with serverName: {}", mcpServerName);
 
         try {
             // 获取配置内容
-            String content = fetchMcpJson();
+            String content = fetchMcpJson(from);
             if (content == null) {
                 log.error("Failed to fetch MCP configuration");
                 return null;
@@ -198,14 +194,14 @@ public class McpOperationService {
             if (StringUtils.isNotBlank(mcpServerName)) {
                 return createSingleServerStatus(from, mcpServerName);
             }
-            return createAllServersStatus(from, fetchMcpJson());
+            return createAllServersStatus(from, fetchMcpJson(from));
         } catch (Exception e) {
             log.error("Error processing MCP server status", e);
             return null;
         }
     }
 
-    private static String createSingleServerStatus(String from, String serverName) throws JsonProcessingException {
+    private  String createSingleServerStatus(String from, String serverName) throws JsonProcessingException {
         Map<String, String> status = new HashMap<>();
         List<Map<String, Object>> mcpConnectionMap = getMcpConnections();
 
@@ -224,7 +220,7 @@ public class McpOperationService {
         return new ObjectMapper().writeValueAsString(status);
     }
 
-    private static String createAllServersStatus(String from, String content) throws JsonProcessingException {
+    private String createAllServersStatus(String from, String content) throws JsonProcessingException {
         Map<String, String> allStatus = new HashMap<>();
         List<Map<String, Object>> mcpConnectionMap = getMcpConnections();
 
@@ -253,7 +249,7 @@ public class McpOperationService {
 
     // 点击Retry Connection 或者 Restart Server,如果有mcpServerName，则只重试该mcp
     // server，否则重试所有mcp server
-    public static void RetryMcpServerConnection(String from, String mcpServerName) {
+    public void RetryMcpServerConnection(String from, String mcpServerName) {
         // 刷新连接
         // TODO
 //        TeslaAppComponent.refreshMcpHubOneServer(mcpServerName);
@@ -263,7 +259,7 @@ public class McpOperationService {
     }
 
     // 在idea里打开mcp配置文件
-    public static void openMcpFileSettings(String from) {
+    public void openMcpFileSettings(String from) {
         log.info("begin openMcpFileSettings");
         // 确保目录和文件存在
         // TODO
@@ -297,9 +293,9 @@ public class McpOperationService {
 //        }
     }
 
-    public static void listenToTabSave(String from) {
+    public void listenToTabSave(String from) {
         // 监听的时候可能没有文件，先创建
-        createFile();
+        createFile(FromType.fromString(from));
 
         // TODO
 //        VirtualFile file = LocalFileSystem.getInstance().refreshAndFindFileByPath(MCP_PATH);
@@ -351,7 +347,7 @@ public class McpOperationService {
     }
 
 
-    public static void refreshMcpHubOneServer(String mcpServerName, String from) {
+    public void refreshMcpHubOneServer(String mcpServerName, String from) {
         log.info("Begin refreshMcpHubOneServer with server: {}", mcpServerName);
 
         // TODO
