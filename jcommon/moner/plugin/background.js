@@ -276,6 +276,9 @@ function connectWebSocket() {
                                 console.log('send messageData:', messageData);
                                 await sendWebSocketMessage(JSON.stringify(messageData), "shopping");
                             }
+
+                            // 提供删除DomTree的选项
+                            await removeHighlightIfNeeded(tab.id, autoRemoveHighlight);
                         }
                         // 滚动到页面顶部
                         if (action.type === 'scrollToTop') {
@@ -335,6 +338,8 @@ function connectWebSocket() {
                                 console.log('send messageData:', messageData);
                                 await sendWebSocketMessage(JSON.stringify(messageData), "shopping");
                             }
+
+                            await removeHighlightIfNeeded(tab.id, autoRemoveHighlight);
                         }
                         // buildDomTree(从新生成domTree)
                         if (action.type === 'buildDomTree') {
@@ -1009,10 +1014,24 @@ async function markElements(tabId, configs) {
   }
 }
 
-// 在状态变更监听器中添加配置处理
+// 添加新的方法来处理取消重绘效果
+async function removeHighlightIfNeeded(tabId, shouldRemove = false) {
+    if (!shouldRemove) return;
+
+    await chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            const container = document.getElementById('playwright-highlight-container');
+            if (container) {
+                container.remove();
+            }
+        }
+    });
+}
+
+// 在状态变更监听器中使用新方法
 stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
     try {
-
         // 添加延迟确保页面重绘完成
         await new Promise(resolve => setTimeout(resolve, 500)); // 500ms 延迟
 
@@ -1054,18 +1073,7 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
             quality: 10
         });
 
-        // 根据配置决定是否取消重绘效果
-        if (autoRemoveHighlight) {
-            await chrome.scripting.executeScript({
-                target: { tabId: stateUpdate.tabId },
-                func: () => {
-                    const container = document.getElementById('playwright-highlight-container');
-                    if (container) {
-                        container.remove();
-                    }
-                }
-            });
-        }
+        await removeHighlightIfNeeded(stateUpdate.tabId, autoRemoveHighlight);
 
         // 将 domTreeData 转换为字符串
         const domTreeString = generateHtmlString(domTreeData);
