@@ -41,7 +41,7 @@ public class GetContentAction extends Action {
                 </action>
                 
                 //截图 并且 把截图回传回来
-                <action type="screenshot" send="true" test="true">
+                <action type="screenshot" send="true" test="true" removeDomTree="true">
                 </action>
                 """).build());
     }

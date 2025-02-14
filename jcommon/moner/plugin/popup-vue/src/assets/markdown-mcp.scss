@@ -47,7 +47,7 @@
     border-top: 1px solid #3d3d3d;
     display: none;
     color: #e1e1e1;
-    line-height: 0;
+    line-height: 1.6;
 
     &.is-active {
       display: block;
@@ -246,7 +246,7 @@
   .followup-content {
     padding: 16px 24px;
     color: #e1e1e1;
-    line-height: 0;
+    line-height: 1.6;
     background: #1e1e1e;
 
     p {
