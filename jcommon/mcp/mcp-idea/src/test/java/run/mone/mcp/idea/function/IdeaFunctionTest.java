@@ -19,13 +19,13 @@ class IdeaFunctionTest {
     @Test
     void testCloseEditors() {
         // Assuming closeEditors returns a boolean indicating success
-        String result = ideaFunction.closeAllEditors();
+        String result = ideaFunction.closeAllEditors(null);
         System.out.println(result);
     }
 
     @Test
     void testGetContent() {
-        String content = ideaFunction.getCurrentEditorContent();
+        String content = ideaFunction.getCurrentEditorContent(null);
         assertNotNull(content, "Content should not be null");
         // Add more specific assertions based on expected content
     }

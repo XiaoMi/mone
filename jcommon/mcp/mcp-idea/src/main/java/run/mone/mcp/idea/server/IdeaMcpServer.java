@@ -14,6 +14,7 @@ import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.mcp.idea.function.CreateCommentFunction;
+import run.mone.mcp.idea.function.GenerateBizCodeFunction;
 import run.mone.mcp.idea.function.GitPushFunction;
 import run.mone.mcp.idea.function.IdeaFunctions;
 
@@ -47,6 +48,8 @@ public class IdeaMcpServer {
         IdeaFunctions.TestGenerationFunction createUnitTestFunc = new IdeaFunctions.TestGenerationFunction(ideaPort);
         CreateCommentFunction createCommentFunc = new CreateCommentFunction(ideaPort);
         GitPushFunction gitPushFunc = new GitPushFunction(ideaPort);
+        GenerateBizCodeFunction generateBizCodeFunc = new GenerateBizCodeFunction(ideaPort);
+
         var toolRegistration = new ToolRegistration(
                 new Tool(function.getName(), function.getDesc(), function.getToolScheme()), function
         );
@@ -59,11 +62,13 @@ public class IdeaMcpServer {
         var toolRegistrationGitPush = new ToolRegistration(
                 new Tool(gitPushFunc.getName(), gitPushFunc.getDesc(), gitPushFunc.getToolScheme()), gitPushFunc
         );
+        var toolRegistrationGenerateBizCode = new ToolRegistration(new Tool(generateBizCodeFunc.getName(), generateBizCodeFunc.getDesc(), generateBizCodeFunc.getToolScheme()), generateBizCodeFunc);
 
         syncServer.addTool(toolRegistration);
         syncServer.addTool(toolRegistrationCreateUnitTest);
         syncServer.addTool(toolRegistrationCreateComment);
         syncServer.addTool(toolRegistrationGitPush);
+        syncServer.addTool(toolRegistrationGenerateBizCode);
 
         return syncServer;
     }
