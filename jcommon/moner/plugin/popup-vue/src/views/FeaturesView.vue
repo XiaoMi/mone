@@ -166,11 +166,28 @@
 				</el-card>
 			</el-col>
 		</el-row>
+
+		<!-- 在其他功能卡片旁边添加新的配置卡片 -->
+		<el-card class="feature-card">
+			<template #header>
+				<div class="card-header">
+					<span>配置选项</span>
+				</div>
+			</template>
+			<el-form>
+				<el-form-item label="自动取消重绘效果">
+					<el-switch
+						v-model="autoRemoveHighlight"
+						@change="handleAutoRemoveHighlightChange"
+					/>
+				</el-form-item>
+			</el-form>
+		</el-card>
 	</div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
 	Document,
@@ -206,6 +223,7 @@ const actionSelector = ref('')
 const fillContent = ref('')
 const tabsList = ref([])
 const messages = ref([])
+const autoRemoveHighlight = ref(false)
 
 // 方法定义
 const showTabs = async () => {
@@ -573,6 +591,32 @@ chrome.runtime.onMessage.addListener((message) => {
 		selectorInput.value = message.selector
 		actionSelector.value = message.selector
 		ElMessage.success('已更新选择器')
+	}
+})
+
+// 处理开关变化
+const handleAutoRemoveHighlightChange = async (value) => {
+	try {
+		await chrome.runtime.sendMessage({
+			type: 'setAutoRemoveHighlight',
+			value
+		})
+		ElMessage.success(`${value ? '开启' : '关闭'}自动取消重绘效果`)
+	} catch (error) {
+		console.error('更新配置失败:', error)
+		ElMessage.error('更新配置失败')
+		// 还原开关状态
+		autoRemoveHighlight.value = !value
+	}
+}
+
+// 在组件挂载时读取配置
+onMounted(async () => {
+	try {
+		const result = await chrome.storage.local.get(['autoRemoveHighlight'])
+		autoRemoveHighlight.value = result.autoRemoveHighlight ?? false
+	} catch (error) {
+		console.error('读取配置失败:', error)
 	}
 })
 </script>
