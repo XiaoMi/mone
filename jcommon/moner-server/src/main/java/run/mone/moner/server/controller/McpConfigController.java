@@ -35,8 +35,20 @@ public class McpConfigController {
     @Autowired
     private McpOperationService mcpOperationService;
 
-    public McpConfigController(McpOperationService mcpOperationService) {
-        this.mcpOperationService = mcpOperationService;
+    /**
+     * 初始化MCP配置信息
+     */
+    @GetMapping("/init")
+    @ResponseBody
+    public Result<String> initMcpConfig(@RequestParam String from) {
+        log.info("mcp init from {}", from);
+        try {
+            mcpOperationService.initMcpHub(from);
+            return Result.success(null);
+        } catch (Exception e) {
+            log.error("init mcp config error", e);
+            return Result.fail(GeneralCodes.InternalError, "init mcp config error");
+        }
     }
 
     /**
@@ -44,7 +56,7 @@ public class McpConfigController {
      */
     @GetMapping("/fetch")
     @ResponseBody
-    public Result<String> fetchMcpConfig(@RequestParam(defaultValue = "athena") String from) {
+    public Result<String> fetchMcpConfig(@RequestParam String from) {
         log.info("mcp fetch from {}", from);
         try {
             return Result.success(mcpOperationService.fetchMcpJson(from));
@@ -61,8 +73,8 @@ public class McpConfigController {
     @GetMapping("/server/status")
     @ResponseBody
     public Result<String> getMcpServerStatus(
-            @RequestParam(defaultValue = "athena") String from,
-            @RequestParam(required = false) String mcpServerName) {
+            @RequestParam String from,
+            @RequestParam String mcpServerName) {
         log.info("mcp server status from {}", from);
         try {
             return Result.success(mcpOperationService.fetchMcpServerStatus(from, mcpServerName));
@@ -77,10 +89,10 @@ public class McpConfigController {
      */
     @PostMapping("/server/open/file")
     @ResponseBody
-    public Result<Void> openMcpFile() {
+    public Result<Void> openMcpFile(@RequestParam String from) {
         log.info("begin mcp_server_open_file");
         try {
-            mcpOperationService.openMcpFileSettings("athena");
+            mcpOperationService.openMcpFileSettings(from);
             return Result.success(null);
         } catch (Exception e) {
             log.error("open mcp file error", e);
@@ -94,10 +106,11 @@ public class McpConfigController {
      */
     @PostMapping("/server/retry/connection")
     @ResponseBody
-    public Result<Void> retryMcpServerConnection(@RequestParam(required = false) String mcpServerName) {
+    public Result<Void> retryMcpServerConnection(@RequestParam String mcpServerName,
+                                                 @RequestParam String from) {
         log.info("begin mcp_server_retry_connection");
         try {
-            mcpOperationService.RetryMcpServerConnection("athena", mcpServerName);
+            mcpOperationService.RetryMcpServerConnection(from, mcpServerName);
             return Result.success(null);
         } catch (Exception e) {
             log.error("retry mcp server connection error", e);
@@ -111,10 +124,11 @@ public class McpConfigController {
      */
     @GetMapping("/fetch/tools")
     @ResponseBody
-    public Result<String> fetchMcpTools(@RequestParam(required = false) String mcpServerName) {
+    public Result<String> fetchMcpTools(@RequestParam String mcpServerName,
+                                        @RequestParam String from) {
         log.info("begin mcp_fetch_tools");
         try {
-            return Result.success(mcpOperationService.fetchMcpServerTools("athena", mcpServerName));
+            return Result.success(mcpOperationService.fetchMcpServerTools(from, mcpServerName));
         } catch (Exception e) {
             log.error("fetch mcp tools error", e);
             return Result.fail(GeneralCodes.InternalError, "fetch mcp tools error");
@@ -127,10 +141,11 @@ public class McpConfigController {
      */
     @GetMapping("/server/version")
     @ResponseBody
-    public Result<String> getMcpServerVersion(@RequestParam String mcpServerName) {
+    public Result<String> getMcpServerVersion(@RequestParam String mcpServerName,
+                                              @RequestParam String from) {
         log.info("begin mcp_server_version");
         try {
-            return Result.success(mcpOperationService.fetchMcpServerVersion("athena", mcpServerName));
+            return Result.success(mcpOperationService.fetchMcpServerVersion(from, mcpServerName));
         } catch (Exception e) {
             log.error("get mcp server version error", e);
             return Result.fail(GeneralCodes.InternalError, "get mcp server version error");

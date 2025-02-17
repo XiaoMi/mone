@@ -5,6 +5,9 @@ import com.google.common.collect.Lists;
 import run.mone.hive.common.AiTemplate;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.moner.server.common.GsonUtils;
+import run.mone.moner.server.common.Safe;
+import run.mone.moner.server.mcp.CacheService;
+import run.mone.moner.server.mcp.McpHubHolder;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,7 +36,7 @@ public class MonerSystemPrompt {
         return System.getProperty("user.home");
     }
 
-    public static final String mcpPrompt() {
+    public static final String mcpPrompt(String from) {
         Map<String, Object> data = new HashMap<>();
         data.put("config", "");
         data.put("osName", MonerSystemPrompt.getSystemName());
@@ -42,33 +45,32 @@ public class MonerSystemPrompt {
         data.put("cwd", "cwd");
         data.put("customInstructions", "");
 
-        // List<Map<String, Object>> serverList = getMcpInfo();
-        // data.put("serverList", serverList);
+         List<Map<String, Object>> serverList = getMcpInfo(from);
+         data.put("serverList", serverList);
 
 
         return AiTemplate.renderTemplate(MonerSystemPrompt.MCP_PROMPT, data, Lists.newArrayList());
     }
 
-     public static List<Map<String, Object>> getMcpInfo() {
-    //     final List<Map<String, Object>> serverList = new ArrayList<>();
-    //     List<Map<String, Object>> sl = (List<Map<String, Object>>) CacheService.ins().getObject(CacheService.tools_key);
-    //     if (null != sl) {
-    //         serverList.addAll(sl);
-    //     } else {
-    //         AthenaContext.ins().getMcpHub().getConnections().forEach((key, value) -> Safe.run(() -> {
-    //             Map<String, Object> server = new HashMap<>();
-    //             server.put("name", key);
-    //             server.put("args", "");
-    //             server.put("connection", value);
-    //             McpSchema.ListToolsResult tools = value.getClient().listTools();
-    //             String toolsStr = tools.tools().stream().map(t -> "name:" + t.name() + "\n" + "description:" + t.description() + "\n" + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema())).collect(Collectors.joining("\n\n"));
-    //             server.put("tools", toolsStr);
-    //             serverList.add(server);
-    //         }));
-    //         CacheService.ins().cacheObject(CacheService.tools_key, serverList);
-    //     }
-    //     return serverList;
-         return null;
+     public static List<Map<String, Object>> getMcpInfo(String from) {
+         final List<Map<String, Object>> serverList = new ArrayList<>();
+         List<Map<String, Object>> sl = (List<Map<String, Object>>) CacheService.ins().getObject(CacheService.tools_key);
+         if (null != sl) {
+             serverList.addAll(sl);
+         } else {
+             McpHubHolder.get(from).getConnections().forEach((key, value) -> Safe.run(() -> {
+                 Map<String, Object> server = new HashMap<>();
+                 server.put("name", key);
+                 server.put("args", "");
+                 server.put("connection", value);
+                 McpSchema.ListToolsResult tools = value.getClient().listTools();
+                 String toolsStr = tools.tools().stream().map(t -> "name:" + t.name() + "\n" + "description:" + t.description() + "\n" + "inputSchema:" + GsonUtils.gson.toJson(t.inputSchema())).collect(Collectors.joining("\n\n"));
+                 server.put("tools", toolsStr);
+                 serverList.add(server);
+             }));
+             CacheService.ins().cacheObject(CacheService.tools_key, serverList);
+         }
+         return serverList;
      }
 
     //mcp 调用的会使用这个prompt
