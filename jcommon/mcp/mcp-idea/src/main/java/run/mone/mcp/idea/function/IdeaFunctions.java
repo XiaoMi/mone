@@ -38,9 +38,13 @@ public class IdeaFunctions {
                             "type": "string",
                             "enum": ["closeAllEditors", "getCurrentEditorContent"],
                             "description":"The operation to perform on IDEA"
+                        },
+                        "projectName": {
+                            "type": "string",
+                            "description":"需要操作的项目"
                         }
                     },
-                    "required": ["operation"]
+                    "required": ["operation","projectName"]
                 }
                 """;
 
@@ -52,8 +56,8 @@ public class IdeaFunctions {
 
             try {
                 String result = switch (operation) {
-                    case "closeAllEditors" -> closeAllEditors();
-                    case "getCurrentEditorContent" -> getCurrentEditorContent();
+                    case "closeAllEditors" -> closeAllEditors((String) arguments.get("projectName"));
+                    case "getCurrentEditorContent" -> getCurrentEditorContent((String) arguments.get("projectName"));
                     default -> throw new IllegalArgumentException("Unknown operation: " + operation);
                 };
 
@@ -64,17 +68,21 @@ public class IdeaFunctions {
         }
 
         @SneakyThrows
-        public String closeAllEditors() {
+        public String closeAllEditors(String projectName) {
             JsonObject req = new JsonObject();
+            req.addProperty("from", "idea_mcp");
             req.addProperty("cmd", "close_all_tab");
+            req.addProperty("projectName", projectName);
             new HttpClient().post("http://127.0.0.1:" + ideaPort + "/tianye", req);
             return "All editors closed";
         }
 
         @SneakyThrows
-        public String getCurrentEditorContent() {
+        public String getCurrentEditorContent(String projectName) {
             JsonObject req = new JsonObject();
+            req.addProperty("from", "idea_mcp");
             req.addProperty("cmd", "get_current_editor_content");
+            req.addProperty("projectName", projectName);
             JsonObject res = new HttpClient().post("http://127.0.0.1:" + ideaPort + "/tianye", req);
             return res.toString();
         }

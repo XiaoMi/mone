@@ -35,6 +35,7 @@
         <module>mcp-git</module>
         <module>mcp-hammerspoon</module>
         <module>mcp-idea</module>
+        <module>mcp-feishu</module>
     </modules>
 
     <properties>

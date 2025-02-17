@@ -144,7 +144,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 new GetContentAction(),
                 //全屏截图
                 new FullPageAction(),
-                new SnowAction(),
+                new CodeAction(),
                 //刷新页面
                 new ClickAfterRefresh()
         );
