@@ -26,4 +26,14 @@ public class McpConfig {
                     () -> new EnumMap<>(FromType.class)
                 ));
     }
+
+    public Map<FromType, String> getAllMcpModelPaths() {
+        return Arrays.stream(FromType.values())
+                .collect(Collectors.toMap(
+                    type -> type,
+                    FromType::getModelFilePath,
+                    (a, b) -> a,  // 如果有重复的key，保留第一个
+                    () -> new EnumMap<>(FromType.class)
+                ));
+    }
 } 
