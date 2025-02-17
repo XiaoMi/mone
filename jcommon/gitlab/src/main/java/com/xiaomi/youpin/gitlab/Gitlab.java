@@ -36,6 +36,7 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.StoredConfig;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.PushResult;
+import org.eclipse.jgit.transport.RemoteConfig;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.gitlab4j.api.GitLabApi;
 import org.gitlab4j.api.GitLabApiException;
@@ -44,6 +45,7 @@ import org.gitlab4j.api.models.TreeItem;
 import org.springframework.beans.BeanUtils;
 
 import java.io.*;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
@@ -484,6 +486,50 @@ public class Gitlab {
             return false;
         }
         clearIfPresent(gitPath);
+        return true;
+    }
+
+    public static boolean addCommitPush(String username, String token, String commitMessage, String gitPath) {
+        try {
+            Git git = Git.init().setDirectory(new File(gitPath)).call();
+
+            // 获取远程仓库URL
+            StoredConfig config = git.getRepository().getConfig();
+            String remoteUrl = null;
+            for (RemoteConfig remoteConfig : RemoteConfig.getAllRemoteConfigs(config)) {
+                if ("origin".equals(remoteConfig.getName())) {
+                    remoteUrl = remoteConfig.getURIs().get(0).toString();
+                    break;
+                }
+            }
+
+            // add
+            AddCommand addCommand = git.add();
+            addCommand.addFilepattern(".");
+            addCommand.call();
+            // commit
+            CommitCommand commit = git.commit();
+            commit.setMessage(commitMessage);
+            commit.call();
+            // push
+            PushCommand pushCommand = git.push();
+
+            // 检查远程URL前缀
+            if (remoteUrl != null && (remoteUrl.startsWith("http://") || remoteUrl.startsWith("https://"))) {
+                // 使用HTTP身份验证
+                pushCommand.setCredentialsProvider(new UsernamePasswordCredentialsProvider(username, token));
+            }
+
+            pushCommand.setForce(false).setPushAll();
+            Iterator<PushResult> it = pushCommand.call().iterator();
+            if (it.hasNext()) {
+                System.out.println(it.next().toString());
+            }
+            git.close();
+        } catch (GitAPIException | URISyntaxException e) {
+            log.error(e.getMessage());
+            return false;
+        }
         return true;
     }
 
@@ -1027,6 +1073,22 @@ public class Gitlab {
             return new BaseResponse(-1, "response.content");
         }
         String url = GIT_API_URL + "projects/" + projectId + "/repository/branches/" + branchName;
+        try {
+            Map<String, String> headers = new HashMap<>();
+            headers.put("PRIVATE-TOKEN", token);
+            HttpResult response = HttpClientV6.httpDelete(url, headers, Maps.newHashMap(), "UTF-8", 10000);
+            return new BaseResponse(response.code, response.content);
+        } catch (Exception e) {
+            log.error("deleteBranch {}", e.getMessage());
+            return new BaseResponse(-1, "response.content");
+        }
+    }
+
+    public BaseResponse deleteBranch(String gitHost, String projectId, String branchName, String token) {
+        if (StringUtils.isEmpty(projectId) || StringUtils.isEmpty(branchName) || StringUtils.isEmpty(token)) {
+            return new BaseResponse(-1, "response.content");
+        }
+        String url = gitHost + GIT_API_URI + "projects/" + projectId + "/repository/branches/" + branchName;
         try {
             Map<String, String> headers = new HashMap<>();
             headers.put("PRIVATE-TOKEN", token);
