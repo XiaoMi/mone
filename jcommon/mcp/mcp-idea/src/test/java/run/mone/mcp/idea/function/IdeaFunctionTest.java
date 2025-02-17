@@ -12,7 +12,7 @@ class IdeaFunctionTest {
 
     @BeforeEach
     void setUp() {
-        ideaFunction = new IdeaFunctions.IdeaOperationFunction("30000");
+        ideaFunction = new IdeaFunctions.IdeaOperationFunction("6667");
 //        ideaFunction.setIdeaPort(30000);
     }
 
@@ -28,5 +28,11 @@ class IdeaFunctionTest {
         String content = ideaFunction.getCurrentEditorContent(null);
         assertNotNull(content, "Content should not be null");
         // Add more specific assertions based on expected content
+    }
+
+    @Test
+    void  testGetClassName() {
+        String content = ideaFunction.getCurrentEditorClassName("zxw_test2");
+        System.out.println(content);
     }
 }
