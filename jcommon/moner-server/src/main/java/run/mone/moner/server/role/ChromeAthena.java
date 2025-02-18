@@ -31,6 +31,8 @@ import run.mone.moner.server.common.MultiXmlParser;
 import run.mone.moner.server.common.Result;
 import run.mone.moner.server.constant.ResultType;
 import run.mone.moner.server.context.ApplicationContextProvider;
+import run.mone.moner.server.mcp.FromType;
+import run.mone.moner.server.prompt.MonerSystemPrompt;
 import run.mone.moner.server.role.actions.*;
 import run.mone.moner.server.service.LLMService;
 
@@ -84,36 +86,7 @@ public class ChromeAthena extends Role {
             请帮我判断使用那个TOOL\n
             """;
 
-
-    public ChromeAthena(WebSocketSession session) {
-        super("Shopper", "购物者");
-        setEnvironment(new Environment());
-
-        super.prompt = """
-                你是我的私人助手。你的任务是根据用户的需求选择合适的TOOL，并执行相应的操作。
-                
-                TOOL USE
-                
-                You have access to a set of tools that are executed upon the user's approval. You can use one tool per message, and will receive the result of that tool use in the user's response. You use tools step-by-step to accomplish a given task, with each tool use informed by the result of the previous tool use.
-                
-                # Tool Use Formatting
-                
-                Tool use is formatted using XML-style tags. The tool name is enclosed in opening and closing tags, and each parameter is similarly enclosed within its own set of tags. Here's the structure:
-                
-                <tool_name>
-                <parameter1_name>value1</parameter1_name>
-                <parameter2_name>value2</parameter2_name>
-                ...
-                </tool_name>
-                
-                #支持的TOOL:
-                
-                %s
-                
-                #注意事项
-                每次操作只能返回一个工具，只需要返回工具内容即可，不用描述你用到了哪个工具.
-                返回的的TOOL不要用markdown格式包裹.
-                
+    private String rolePrompt = """
                 
                 #角色的定义
                 角色是一些工具的集合和使用顺序,如果你发现某个角色很适合完成某个工作,你则直接按他编排的Tool来执行.
@@ -123,8 +96,12 @@ public class ChromeAthena extends Role {
                 
                 """;
 
-        this.prompt = this.prompt.formatted(
-                this.actionList.stream().map(Action::getDescription).collect(Collectors.joining("\n\n")),
+
+    public ChromeAthena(WebSocketSession session) {
+        super("ChromeAthena", "Chrome浏览器插件");
+        setEnvironment(new Environment());
+
+        this.rolePrompt = this.rolePrompt.formatted(
                 this.roleList.stream().map(it -> "角色名称:" + it.getName() + "\n工具使用流程:\n" + it.getGoal()).collect(Collectors.joining("\n")));
         this.session = session;
     }
@@ -178,7 +155,7 @@ public class ChromeAthena extends Role {
 
                 String userPrompt = AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.of("history", history, "code", code, "tabs", tabs));
 
-                String res = llmService.callStream(this, this.llm, userPrompt, images, this.prompt);
+                String res = llmService.callStream(this, this.llm, userPrompt, images, getSystemPrompt());
                 log.info("res:{}", res);
                 List<Result> list = new MultiXmlParser().parse(res);
                 Result result = list.get(0);
@@ -246,5 +223,14 @@ public class ChromeAthena extends Role {
         } catch (Exception e) {
             log.error("send message error, ", e);
         }
+    }
+
+    /**
+     * 添加了预制角色的流程的Prompt，未来需要使用AI自动编排流程
+     * @return
+     */
+    private String getSystemPrompt(){
+        String prompt = MonerSystemPrompt.mcpPrompt(FromType.ATHENA.getValue());
+        return prompt + rolePrompt;
     }
 }
