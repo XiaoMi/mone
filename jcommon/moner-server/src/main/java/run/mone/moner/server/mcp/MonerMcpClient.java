@@ -14,6 +14,12 @@ import run.mone.moner.server.bo.SseReq;
 
 public class MonerMcpClient {
 
+    // TODO: 
+    // 1. mcp相关prompt管理与拼接 done
+    // 2. 模型配置管理
+    // 3. 增加websocketHandler处理来自athena的本地调用
+    // 4. 历史消息管理 done
+
     private SseClient sseClient = new SseClient();
     
     private void send(String m) {

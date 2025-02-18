@@ -56,6 +56,12 @@ public class LLMService {
 
     }
 
+    // TODO: 2025/2/17 实现mcp的流式调用
+    public String callStreamWithMcp(LLM llm, String text, List<String> imgTexts, String systemPrompt) {
+        
+        return null;
+    }
+
     private JsonObject getReq(LLM llm, String text, List<String> imgTexts){
         JsonObject req = new JsonObject();
 
