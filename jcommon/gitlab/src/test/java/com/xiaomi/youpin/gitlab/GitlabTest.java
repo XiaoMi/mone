@@ -148,11 +148,11 @@ public class GitlabTest {
     }
 
     @Test
-    public void accessLevelMoreThanTest() throws UnsupportedEncodingException {
-        String gitHost = "https://git.n.xiaomi.com";
+    public void accessLevelMoreThanTest() {
+        String gitHost = "https://127.0.0.1";
         AccessLevel accessLevel = AccessLevel.Maintainer;
-        String userToken = "RvNADaPv6PeHpqBocMky";
-        String groupName = "mit/new-retail/xmstore/gis";
+        String userToken = "";
+        String groupName = "test";
         boolean b = Gitlab.accessLevelMoreThan(gitHost, accessLevel, userToken, groupName);
         System.out.println(b);
     }
