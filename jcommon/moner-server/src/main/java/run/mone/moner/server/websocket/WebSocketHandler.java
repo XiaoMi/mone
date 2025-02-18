@@ -16,6 +16,7 @@ import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.schema.Message;
 import run.mone.moner.server.constant.ResultType;
+import run.mone.moner.server.mcp.FromType;
 import run.mone.moner.server.role.ChromeAthena;
 import run.mone.moner.server.role.actions.*;
 import run.mone.moner.server.service.ChromeTestService;
@@ -62,7 +63,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         String cmd = JsonUtils.getValueOrDefault(req, "cmd", "");
 
         //来自浏览器
-        if (from.equals("chrome")) {
+        if (from.equals(FromType.CHROME.getValue())) {
             JsonObject res = new JsonObject();
             String data = req.get("data").getAsString();
 
@@ -101,6 +102,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
             return;
         }
 
+        // 来自athena
+        if (from.equals(FromType.ATHENA.getValue())) {
+            // TODO: 2025/2/17 
+        }
         session.sendMessage(new TextMessage(payload));
     }
 
