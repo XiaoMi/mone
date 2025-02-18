@@ -19,7 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -40,11 +39,11 @@ public class McpConfigController {
      */
     @GetMapping("/init")
     @ResponseBody
-    public Result<String> initMcpConfig(@RequestParam String from) {
+    public Result<String> initMcpConfig(@RequestParam(name = "from") String from) {
         log.info("mcp init from {}", from);
         try {
             mcpOperationService.initMcpHub(from);
-            return Result.success(null);
+            return Result.success("");
         } catch (Exception e) {
             log.error("init mcp config error", e);
             return Result.fail(GeneralCodes.InternalError, "init mcp config error");
@@ -56,7 +55,7 @@ public class McpConfigController {
      */
     @GetMapping("/fetch")
     @ResponseBody
-    public Result<String> fetchMcpConfig(@RequestParam String from) {
+    public Result<String> fetchMcpConfig(@RequestParam(name = "from") String from) {
         log.info("mcp fetch from {}", from);
         try {
             return Result.success(mcpOperationService.fetchMcpJson(from));
@@ -73,8 +72,8 @@ public class McpConfigController {
     @GetMapping("/server/status")
     @ResponseBody
     public Result<String> getMcpServerStatus(
-            @RequestParam String from,
-            @RequestParam String mcpServerName) {
+            @RequestParam(name = "from") String from,
+            @RequestParam(name = "mcpServerName") String mcpServerName) {
         log.info("mcp server status from {}", from);
         try {
             return Result.success(mcpOperationService.fetchMcpServerStatus(from, mcpServerName));
@@ -87,9 +86,9 @@ public class McpConfigController {
     /**
      * 打开MCP配置文件
      */
-    @PostMapping("/server/open/file")
+    @GetMapping("/server/open/file")
     @ResponseBody
-    public Result<Void> openMcpFile(@RequestParam String from) {
+    public Result<Void> openMcpFile(@RequestParam(name = "from") String from) {
         log.info("begin mcp_server_open_file");
         try {
             mcpOperationService.openMcpFileSettings(from);
@@ -104,10 +103,10 @@ public class McpConfigController {
      * 重试MCP服务器连接
      * @param mcpServerName 服务器名称（可选）
      */
-    @PostMapping("/server/retry/connection")
+    @GetMapping("/server/retry/connection")
     @ResponseBody
-    public Result<Void> retryMcpServerConnection(@RequestParam String mcpServerName,
-                                                 @RequestParam String from) {
+    public Result<Void> retryMcpServerConnection(@RequestParam(name = "mcpServerName") String mcpServerName,
+                                                 @RequestParam(name = "from") String from) {
         log.info("begin mcp_server_retry_connection");
         try {
             mcpOperationService.RetryMcpServerConnection(from, mcpServerName);
@@ -124,8 +123,8 @@ public class McpConfigController {
      */
     @GetMapping("/fetch/tools")
     @ResponseBody
-    public Result<String> fetchMcpTools(@RequestParam String mcpServerName,
-                                        @RequestParam String from) {
+    public Result<String> fetchMcpTools(@RequestParam(name = "mcpServerName") String mcpServerName,
+                                        @RequestParam(name = "from") String from) {
         log.info("begin mcp_fetch_tools");
         try {
             return Result.success(mcpOperationService.fetchMcpServerTools(from, mcpServerName));
@@ -141,14 +140,30 @@ public class McpConfigController {
      */
     @GetMapping("/server/version")
     @ResponseBody
-    public Result<String> getMcpServerVersion(@RequestParam String mcpServerName,
-                                              @RequestParam String from) {
+    public Result<String> getMcpServerVersion(@RequestParam(name = "mcpServerName") String mcpServerName,
+                                              @RequestParam(name = "from") String from) {
         log.info("begin mcp_server_version");
         try {
             return Result.success(mcpOperationService.fetchMcpServerVersion(from, mcpServerName));
         } catch (Exception e) {
             log.error("get mcp server version error", e);
             return Result.fail(GeneralCodes.InternalError, "get mcp server version error");
+        }
+    }
+
+    /**
+     * 监听MCP配置文件变更
+     */
+    @GetMapping("/listen")
+    @ResponseBody
+    public Result listenToMcpConfig(@RequestParam(name = "from") String from) {
+        log.info("begin listen mcp config from {}", from);
+        try {
+            mcpOperationService.listenToTabSave(from);
+            return Result.success(null);
+        } catch (Exception e) {
+            log.error("listen mcp config error", e);
+            return Result.fail(GeneralCodes.InternalError, "listen mcp config error");
         }
     }
 }
