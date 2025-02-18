@@ -2,8 +2,11 @@ package com.xiaomi.youpin.gitlab;
 
 import com.google.gson.Gson;
 import com.xiaomi.youpin.gitlab.bo.*;
+import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.Arrays;
 import java.util.List;
 
@@ -71,19 +74,19 @@ public class GitlabTest {
 
     @Test
     public void acceptMergeWithHost() {
-        BaseResponse merge = gitlab.acceptMerge("https://xxx.com","1", "1", "xx");
+        BaseResponse merge = gitlab.acceptMerge("https://xxx.com", "1", "1", "xx");
         System.out.println(merge);
     }
 
     @Test
     public void closeMergeWithHost() {
-        BaseResponse merge = gitlab.closeMerge("https://xx.com","1", "2", "3");
+        BaseResponse merge = gitlab.closeMerge("https://xx.com", "1", "2", "3");
         System.out.println(merge);
     }
 
     @Test
     public void getMergeWithHost() {
-        BaseResponse merge = gitlab.getMerge("https://xx.com","1", "1",
+        BaseResponse merge = gitlab.getMerge("https://xx.com", "1", "1",
                 "3");
         System.out.println(merge);
     }
@@ -97,7 +100,7 @@ public class GitlabTest {
 
     @Test
     public void getMergeChangeWithHost() {
-        BaseResponse merge = gitlab.getMergeChange("https://xxx.com","1", "3",
+        BaseResponse merge = gitlab.getMergeChange("https://xxx.com", "1", "3",
                 "xxx");
         System.out.println(merge);
     }
@@ -110,7 +113,7 @@ public class GitlabTest {
 
     @Test
     public void getBranchInfo() {
-        String branchInfo = gitlab.getBranchInfo("https://xxx.com","1","master","xxx");
+        String branchInfo = gitlab.getBranchInfo("https://xxx.com", "1", "master", "xxx");
         System.out.println(branchInfo);
     }
 
@@ -122,14 +125,14 @@ public class GitlabTest {
 
     @Test
     public void getDomainByIP() {
-        gitlab.getDomainByIP("https://xxx.com","xx","", Arrays.asList("127.0.0.1"),"token");
+        gitlab.getDomainByIP("https://xxx.com", "xx", "", Arrays.asList("127.0.0.1"), "token");
     }
 
 
     @Test
     public void getProjectCode() {
 
-        gitlab.getDomainByIP("https://xxx.com","xx","", Arrays.asList("127.0.0.1"),"token");
+        gitlab.getDomainByIP("https://xxx.com", "xx", "", Arrays.asList("127.0.0.1"), "token");
     }
 
     @Test
@@ -144,4 +147,35 @@ public class GitlabTest {
         System.out.println(new Gson().toJson(treeItemList));
     }
 
+    @Test
+    public void accessLevelMoreThanTest() {
+        String gitHost = "https://127.0.0.1";
+        AccessLevel accessLevel = AccessLevel.Maintainer;
+        String userToken = "";
+        String groupName = "test";
+        boolean b = Gitlab.accessLevelMoreThan(gitHost, accessLevel, userToken, groupName);
+        System.out.println(b);
+    }
+
+    @Test
+    public void getNamespacesByIdTest() throws UnsupportedEncodingException {
+        String gitHost = "https://127.0.0.1";
+        String groupName = "test";
+        String userToken = "";
+        GroupInfo groupInfo = gitlab.getNamespacesById(gitHost, URLEncoder.encode(groupName, "UTF-8"), userToken);
+        System.out.println(groupInfo);
+        Assert.assertNotNull(groupInfo);
+    }
+
+    @Test
+    public void fetchProjectTest() throws UnsupportedEncodingException {
+        String gitHost = "https://127.0.0.1";
+        String groupName = "test";
+        String userToken = "";
+        String name = "location";
+        String gitProjectId = URLEncoder.encode(groupName + "/" + name, "UTF-8");
+        GitlabProject gitlabProject = gitlab.fetchProject(gitHost, gitProjectId, userToken, null);
+        System.out.println(gitlabProject);
+        Assert.assertNotNull(gitlabProject);
+    }
 }

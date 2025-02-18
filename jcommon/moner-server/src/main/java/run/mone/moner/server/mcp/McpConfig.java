@@ -1,27 +1,29 @@
 package run.mone.moner.server.mcp;
 
-import lombok.Getter;
 import org.springframework.stereotype.Component;
-
-import java.util.EnumMap;
 import java.util.Map;
+import java.util.EnumMap;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 @Component
 public class McpConfig {
-    @Getter
-    private final Map<FromType, String> mcpPaths;
     
-    public McpConfig() {
-        mcpPaths = new EnumMap<>(FromType.class);
-        mcpPaths.put(FromType.ATHENA, System.getProperty("user.home") + "/.mcp/athena_mcp_settings.json");
-        mcpPaths.put(FromType.CHROME, System.getProperty("user.home") + "/.mcp/chrome_mcp_settings.json");
-    }
-
     public String getMcpPath(FromType fromType) {
-        return mcpPaths.getOrDefault(fromType, mcpPaths.get(FromType.ATHENA));
+        return fromType.getFilePath();
     }
 
     public String getMcpDir() {
         return System.getProperty("user.home") + "/.mcp";
+    }
+    
+    public Map<FromType, String> getAllMcpPaths() {
+        return Arrays.stream(FromType.values())
+                .collect(Collectors.toMap(
+                    type -> type,
+                    FromType::getFilePath,
+                    (a, b) -> a,  // 如果有重复的key，保留第一个
+                    () -> new EnumMap<>(FromType.class)
+                ));
     }
 } 
