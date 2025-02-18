@@ -27,7 +27,14 @@ public class GenerateBizCodeFunction implements Function<Map<String, Object>, Mc
                     "properties": {
                         "requirement": {
                             "type": "string",
-                            "description":"需求描述，一定要简短精炼，生成完毕后，不要调用任何MCP工具或者有任何动作"
+                            "description":"需求描述，用户输入什么就传什么，不要有任何更改，否则会有不好的事情发生"
+                        },
+                        "fileLists": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            },
+                            "description":"文件列表，根据需求分析出来要操作的文件数组"
                         },
                         "projectName": {
                             "type": "string",
