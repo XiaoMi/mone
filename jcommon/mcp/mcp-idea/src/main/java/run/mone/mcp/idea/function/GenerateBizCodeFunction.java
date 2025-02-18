@@ -28,9 +28,13 @@ public class GenerateBizCodeFunction implements Function<Map<String, Object>, Mc
                         "requirement": {
                             "type": "string",
                             "description":"需求描述，一定要简短精炼，生成完毕后，不要调用任何MCP工具或者有任何动作"
+                        },
+                        "projectName": {
+                            "type": "string",
+                            "description":"需要操作的项目，你不应该假设项目名称，如果不知道填什么，请询问用户，否则会有不好的事情发生!"
                         }
                     },
-                    "required": ["requirement"]
+                    "required": ["requirement","projectName"]
                 }
                 """;
 
@@ -40,6 +44,7 @@ public class GenerateBizCodeFunction implements Function<Map<String, Object>, Mc
         req.addProperty("cmd", "writeCodeMethod");
         req.addProperty("from", "idea_mcp");
         req.addProperty("requirement", (String) arguments.get("requirement"));
+        req.addProperty("projectName", (String) arguments.get("projectName"));
         req.addProperty("athenaPluginHost", "127.0.0.1:" + ideaPort);
         JsonObject res = IdeaFunctions.callAthena(ideaPort, req);
         if (res.get("code") != null && res.get("code").getAsInt() == 0) {
