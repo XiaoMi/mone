@@ -230,7 +230,7 @@ public class ChromeAthena extends Role {
      * @return
      */
     private String getSystemPrompt(){
-        String prompt = MonerSystemPrompt.mcpPrompt(FromType.ATHENA.getValue());
+        String prompt = MonerSystemPrompt.mcpPrompt(FromType.CHROME.getValue());
         return prompt + rolePrompt;
     }
 }
