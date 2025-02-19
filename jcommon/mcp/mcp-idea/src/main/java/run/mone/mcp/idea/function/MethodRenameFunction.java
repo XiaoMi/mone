@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import lombok.Data;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.mcp.idea.config.Const;
 
 import java.util.List;
 import java.util.Map;
@@ -35,7 +36,7 @@ public class MethodRenameFunction implements Function<Map<String, Object>, McpSc
     public McpSchema.CallToolResult apply(Map<String, Object> arguments) {
         JsonObject req = new JsonObject();
         req.addProperty("cmd", "rename_method");
-        req.addProperty("athenaPluginHost", "127.0.0.1:" + ideaPort);
+        req.addProperty("athenaPluginHost", Const.IP + ideaPort);
         JsonObject res = IdeaFunctions.callAthena(ideaPort, req);
         if (res.get("code") != null && res.get("code").getAsInt() == 0) {
             return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("已完成命名")), false);

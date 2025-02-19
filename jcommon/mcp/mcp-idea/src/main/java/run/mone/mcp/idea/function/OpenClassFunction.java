@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import lombok.Data;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.mcp.idea.config.Const;
 
 import java.util.List;
 import java.util.Map;
@@ -54,7 +55,7 @@ public class OpenClassFunction implements Function<Map<String, Object>, McpSchem
             return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: className与fqcnName必须有一个,如果用户未给出，要询问用户")), true);
         }
         req.addProperty("from", "idea_mcp");
-        req.addProperty("athenaPluginHost", "127.0.0.1:" + ideaPort);
+        req.addProperty("athenaPluginHost", Const.IP + ideaPort);
         req.addProperty("projectName", (String) arguments.get("projectName"));
         JsonObject res = IdeaFunctions.callAthena(ideaPort, req);
         if (res.get("code") != null && res.get("code").getAsInt() == 0) {

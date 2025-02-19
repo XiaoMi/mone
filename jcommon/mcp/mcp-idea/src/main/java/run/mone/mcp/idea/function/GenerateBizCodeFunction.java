@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import lombok.Data;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.mcp.idea.config.Const;
 
 import java.util.List;
 import java.util.Map;
@@ -53,7 +54,7 @@ public class GenerateBizCodeFunction implements Function<Map<String, Object>, Mc
         req.addProperty("requirement", (String) arguments.get("requirement"));
         req.addProperty("projectName", (String) arguments.get("projectName"));
         req.add("fileLists", new Gson().toJsonTree(arguments.get("fileLists")));
-        req.addProperty("athenaPluginHost", "127.0.0.1:" + ideaPort);
+        req.addProperty("athenaPluginHost", Const.IP + ideaPort);
         JsonObject res = IdeaFunctions.callAthena(ideaPort, req);
         if (res.get("code") != null && res.get("code").getAsInt() == 0) {
             return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("已完成")), false);

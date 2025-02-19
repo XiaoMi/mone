@@ -13,6 +13,7 @@ import run.mone.hive.mcp.server.McpSyncServer;
 import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
+import run.mone.mcp.idea.config.Const;
 import run.mone.mcp.idea.function.CreateCommentFunction;
 import run.mone.mcp.idea.function.GenerateBizCodeFunction;
 import run.mone.mcp.idea.function.GitPushFunction;
@@ -38,7 +39,7 @@ public class IdeaMcpServer {
         String ideaPort = System.getenv().getOrDefault("IDEA_PORT", "30000");
         log.info(ideaPort);
         McpSyncServer syncServer = McpServer.using(transport)
-                .serverInfo("idea_mcp", "0.0.1")
+                .serverInfo("idea_mcp", Const.VERSION)
                 .capabilities(ServerCapabilities.builder()
                         .tools(true)
                         .logging()

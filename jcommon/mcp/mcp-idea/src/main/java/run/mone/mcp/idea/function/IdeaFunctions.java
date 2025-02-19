@@ -16,9 +16,6 @@ import java.util.function.Function;
 @Slf4j
 public class IdeaFunctions {
 
-//    public static String ideaPort = "6666";
-
-
     @Data
     public static class IdeaOperationFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
         public IdeaOperationFunction(String port) {
