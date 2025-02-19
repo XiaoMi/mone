@@ -26,10 +26,14 @@ public class IdeaMcpServer {
 
     private ServerMcpTransport transport;
 
+    private CodeReviewFunction codeReviewFunction;
+
     private McpSyncServer syncServer;
 
-    public IdeaMcpServer(ServerMcpTransport transport) {
+    public IdeaMcpServer(ServerMcpTransport transport,
+                         CodeReviewFunction codeReviewFunction) {
         this.transport = transport;
+        this.codeReviewFunction = codeReviewFunction;
     }
 
     public McpSyncServer start() {
@@ -72,8 +76,8 @@ public class IdeaMcpServer {
         syncServer.addTool(toolRegistrationGenerateBizCode);
         syncServer.addTool(toolRegistrationOpenClass);
         syncServer.addTool(new ToolRegistration(
-                new Tool(new CodeReviewFunction(ideaPort).getName(), new CodeReviewFunction(ideaPort).getDesc(), new CodeReviewFunction(ideaPort).getToolScheme())
-                , new CodeReviewFunction(ideaPort)
+                new Tool(codeReviewFunction.getName(), codeReviewFunction.getDesc(), codeReviewFunction.getToolScheme())
+                , codeReviewFunction
         ));
         syncServer.addTool(new ToolRegistration(
                 new Tool(new MethodRenameFunction(ideaPort).getName(), new MethodRenameFunction(ideaPort).getDesc(), new MethodRenameFunction(ideaPort).getToolScheme())
