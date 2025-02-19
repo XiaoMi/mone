@@ -29,7 +29,7 @@ public class CreateCommentFunction implements Function<Map<String, Object>, McpS
                     "properties": {
                         "projectName": {
                             "type": "string",
-                            "description":"需要生成测试的项目"
+                            "description":"需要生成注释的项目"
                         },
                         "className": {
                             "type": "string",
