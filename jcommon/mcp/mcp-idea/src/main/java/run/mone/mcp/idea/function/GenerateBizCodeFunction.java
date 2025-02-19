@@ -52,6 +52,7 @@ public class GenerateBizCodeFunction implements Function<Map<String, Object>, Mc
         req.addProperty("from", "idea_mcp");
         req.addProperty("requirement", (String) arguments.get("requirement"));
         req.addProperty("projectName", (String) arguments.get("projectName"));
+        req.add("fileLists", new Gson().toJsonTree(arguments.get("fileLists")));
         req.addProperty("athenaPluginHost", "127.0.0.1:" + ideaPort);
         JsonObject res = IdeaFunctions.callAthena(ideaPort, req);
         if (res.get("code") != null && res.get("code").getAsInt() == 0) {
