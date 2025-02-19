@@ -16,9 +16,6 @@ import java.util.function.Function;
 @Slf4j
 public class IdeaFunctions {
 
-//    public static String ideaPort = "6666";
-
-
     @Data
     public static class IdeaOperationFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
         public IdeaOperationFunction(String port) {
@@ -36,12 +33,12 @@ public class IdeaFunctions {
                     "properties": {
                         "operation": {
                             "type": "string",
-                            "enum": ["closeAllEditors", "getCurrentEditorContent"],
+                            "enum": ["closeAllEditors","getCurrentEditorContent","getCurrentEditorClassName"],
                             "description":"The operation to perform on IDEA"
                         },
                         "projectName": {
                             "type": "string",
-                            "description":"需要操作的项目"
+                            "description":"需要操作的项目，你不应该假设项目名称，如果不知道填什么，请询问用户，否则会有不好的事情发生!"
                         }
                     },
                     "required": ["operation","projectName"]
@@ -58,6 +55,7 @@ public class IdeaFunctions {
                 String result = switch (operation) {
                     case "closeAllEditors" -> closeAllEditors((String) arguments.get("projectName"));
                     case "getCurrentEditorContent" -> getCurrentEditorContent((String) arguments.get("projectName"));
+                    case "getCurrentEditorClassName" -> getCurrentEditorClassName((String) arguments.get("projectName"));
                     default -> throw new IllegalArgumentException("Unknown operation: " + operation);
                 };
 
@@ -82,6 +80,16 @@ public class IdeaFunctions {
             JsonObject req = new JsonObject();
             req.addProperty("from", "idea_mcp");
             req.addProperty("cmd", "get_current_editor_content");
+            req.addProperty("projectName", projectName);
+            JsonObject res = new HttpClient().post("http://127.0.0.1:" + ideaPort + "/tianye", req);
+            return res.toString();
+        }
+
+        @SneakyThrows
+        public String getCurrentEditorClassName(String projectName) {
+            JsonObject req = new JsonObject();
+            req.addProperty("from", "idea_mcp");
+            req.addProperty("cmd", "get_current_editor_class_name");
             req.addProperty("projectName", projectName);
             JsonObject res = new HttpClient().post("http://127.0.0.1:" + ideaPort + "/tianye", req);
             return res.toString();
