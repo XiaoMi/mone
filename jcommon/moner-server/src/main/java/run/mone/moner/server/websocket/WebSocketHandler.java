@@ -3,6 +3,7 @@ package run.mone.moner.server.websocket;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import jakarta.annotation.Resource;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
@@ -14,12 +15,16 @@ import run.mone.hive.common.JsonUtils;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
+import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.schema.Message;
 import run.mone.moner.server.constant.ResultType;
+import run.mone.moner.server.context.ApplicationContextProvider;
 import run.mone.moner.server.mcp.FromType;
+import run.mone.moner.server.mcp.McpOperationService;
 import run.mone.moner.server.role.ChromeAthena;
 import run.mone.moner.server.role.actions.*;
 import run.mone.moner.server.service.ChromeTestService;
+import run.mone.moner.server.service.LLMService;
 
 import java.io.IOException;
 import java.util.List;
@@ -124,6 +129,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    @SneakyThrows
     private void initShopperAndRoleClassifier(WebSocketSession session) {
         LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
 
@@ -163,7 +169,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 throw new RuntimeException(e);
             }
         });
-
+        McpOperationService mcpOperationService = ApplicationContextProvider.getBean(McpOperationService.class);
+        mcpOperationService.initMcpHub(FromType.CHROME.getValue());
+        mcpOperationService.listenToTabSave(FromType.CHROME.getValue());
 
         sessionIdShopper.put(session.getId(), chromeAthena);
     }

@@ -4,14 +4,21 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Service;
+
+import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.roles.Role;
 import run.mone.hive.schema.AiMessage;
+import run.mone.moner.server.bo.McpModel;
+import run.mone.moner.server.bo.McpModelSetting;
+import run.mone.moner.server.bo.McpModelSettingDTO;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * @author goodjava@qq.com
@@ -156,5 +163,75 @@ public class LLMService {
             req.add("content", array);
         }
         return req;
+    }
+
+    public Pair<LLM, McpModel> getLLM() {
+        LLMProvider provider = null;
+        String url = "";
+        McpModelSettingDTO setting = McpModelSetting.getMcpModelSetting();
+        String selectedProvider = setting.getSelectedProvider().toLowerCase(Locale.ROOT);
+        String apiKey = "";
+        String model = "";
+
+        switch (selectedProvider) {
+            case "doubao" :{
+                McpModelSettingDTO.DouBao doubao = setting.getDoubao();
+                provider = LLMProvider.valueOf("DOUBAO");
+                apiKey = doubao.getApiKey();
+                model = doubao.getModelKey();
+                break;
+            }
+            case "openaicompatible":{
+                McpModelSettingDTO.OpenAICompatible openAiCompatible = setting.getOpenAICompatible();
+                model = openAiCompatible.getModelID();
+                url = openAiCompatible.getBaseUrl();
+                apiKey = openAiCompatible.getApiKey();
+                provider = LLMProvider.OPENAICOMPATIBLE;
+                break;
+            }
+            case "deepseek": {
+                McpModelSettingDTO.DeepSeek deepseek = setting.getDeepSeek();
+                provider = LLMProvider.valueOf("DEEPSEEK");
+                apiKey = deepseek.getApiKey();
+                model = deepseek.getModel();
+                break;
+            }
+            case "openrouter": {
+                McpModelSettingDTO.OpenRouter openRouter = setting.getOpenRouter();
+                if (StringUtils.isNotEmpty(openRouter.getCloudflareProxy())) {
+                    url = openRouter.getCloudflareProxy();
+                }
+                provider = LLMProvider.valueOf("OPENROUTER");
+                apiKey = openRouter.getApiKey();
+                model = openRouter.getModel();
+                break;
+            }
+            case "gemini": {
+                McpModelSettingDTO.Gemini gemini = setting.getGemini();
+                if (StringUtils.isNotEmpty(gemini.getCloudflareProxy())) {
+                    url = gemini.getCloudflareProxy();
+                }
+                provider = LLMProvider.valueOf("GOOGLE_2");
+                apiKey = gemini.getApiKey();
+                model = gemini.getModel();
+                break;
+            }
+            default: {
+                provider = LLMProvider.valueOf("DOUBAO");
+                apiKey = System.getenv(provider.getEnvName());
+                model = provider.getDefaultModel();
+            }
+        }
+
+        LLMConfig.LLMConfigBuilder configBuilder = LLMConfig.builder();
+        if (provider.equals(LLMProvider.OPENROUTER) 
+            || provider.equals(LLMProvider.GOOGLE_2) 
+            || provider.equals(LLMProvider.OPENAICOMPATIBLE)) {
+            if (StringUtils.isNotEmpty(url)) {
+                configBuilder.url(url);
+            }
+        }
+
+        return Pair.of(new LLM(configBuilder.llmProvider(provider).build()), new McpModel(apiKey, model));
     }
 }

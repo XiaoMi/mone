@@ -1,86 +1,48 @@
 package run.mone.moner.server.mcp;
 
-import java.util.concurrent.TimeUnit;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableObject;
 
-import com.google.common.base.Stopwatch;
-import com.google.common.collect.Lists;
+import lombok.extern.slf4j.Slf4j;
+import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.moner.server.common.GsonUtils;
+import run.mone.moner.server.common.Result;
+import run.mone.moner.server.common.Safe;
 
-import run.mone.hive.schema.AiMessage;
-import run.mone.moner.server.bo.SseReq;
-
+@Slf4j
 public class MonerMcpClient {
 
-    // TODO: 
+    // TODO:
     // 1. mcp相关prompt管理与拼接 done
-    // 2. 模型配置管理
+    // 2. 模型配置管理 done
     // 3. 增加websocketHandler处理来自athena的本地调用
     // 4. 历史消息管理 done
 
-    private SseClient sseClient = new SseClient();
-    
-    private void send(String m) {
-        Stopwatch sw = Stopwatch.createStarted();
-        AtomicBoolean cancel = new AtomicBoolean(false);
-        StringBuilder sb = new StringBuilder();
-        this.sseClient.stream(SseReq.builder().messageList(Lists.newArrayList(run.mone.hive.schema.AiMessage.builder().role("user").content(m).build())).messageHandler((line, msg) -> {
-            String type = msg.get("type").getAsString();
-            if (type.equals("begin")) {
-                // begin();
-                // consumer.accept(AiMessage.builder().projectName(projectName).text("").type(AiMessageType.begin).id(id).build());
-            }
+    public static void mcpCall(List<Result> list, FromType from, MutableObject<String> toolResMsg, AtomicBoolean completion) {
+        Safe.run(() -> {
+            list.forEach(it -> {
+                if (it.getTag().equals("use_mcp_tool")) {
+                    String serviceName = it.getKeyValuePairs().get("server_name");
+                    String toolName = it.getKeyValuePairs().get("tool_name");
+                    Map<String, Object> toolArguments = GsonUtils.gson.fromJson(it.getKeyValuePairs().get("arguments"),
+                            Map.class);
+                    McpSchema.CallToolResult toolRes = McpHubHolder.get(from.getValue()).callTool(serviceName, toolName,
+                            toolArguments);
+                    log.info("toolRes:{}", toolRes);
+                    // 返回信息到前台
+                    McpSchema.TextContent textContent = (McpSchema.TextContent) toolRes.content().get(0);
+                    toolResMsg.setValue("执行 %s %s\n结果:%s".formatted(serviceName, toolName, textContent));
+                }
 
-            if (type.equals("event")) {
-                // if (isStopped.get()) {
-                //     //先简单的不处理
-                //     return;
-                // }
-                // String message = msg.get("content").getAsString();
-                // log.info("message:{}", message);
-                // sb.append(message);
-                // //如果被取消了,则不再追加内容了
-                // if (!cancel.get() || !isStopped.get()) {
-                //     consumer.accept(AiMessage.builder().projectName(projectName).code(false).text(message).type(AiMessageType.process).id(id).build());
-                // }
-            }
-
-            if (type.equals("finish")) {
-                // executeTopic(TaskEvent.builder().message("end").time(sw.elapsed(TimeUnit.SECONDS)));
-                // String res = sb.toString();
-
-                // log.info("BOT_STREAM_RESULT:{}", res);
-
-                // Mutable<String> toolResMsg = new MutableObject<>();
-                // Mutable<Boolean> completion = new MutableObject<>(false);
-
-                // //调用mcp
-                // mcpCall(res, toolResMsg, completion);
-
-                // //放到一个全局变量里,方便别的代码使用
-                // extractCodeBlock(res);
-                // String _res = appendToolResMsgIfCompleted(res, completion, toolResMsg);
-                // //放入最后的结果
-                // this.req.getRes().set(_res);
-
-                // Safe.run(() -> consumer.accept(AiMessage.builder().projectName(projectName).text(_res).type(AiMessageType.success).messageType("BOT_STREAM_RESULT").id(id).build()));
-                // //执行工具的结果(并且没有完成)
-                // addChatMessage(toolResMsg, completion);
-                // if (null != latch) {
-                //     latch.countDown();
-                // }
-                // return;
-            }
-            if (type.equals("failure")) {
-                // String content = msg.get("content").getAsString();
-                // failure(new RuntimeException(content), sw);
-                // consumer.accept(AiMessage.builder().projectName(projectName).text(content).type(AiMessageType.failure).id(id).build());
-                // if (null != latch) {
-                //     latch.countDown();
-                // }
-            }
-        }).build());
+                if (it.getTag().equals("attempt_completion") || it.getTag().equals("ask_followup_question")) {
+                    completion.set(true);
+                }
+            });
+        });
     }
+
 }
