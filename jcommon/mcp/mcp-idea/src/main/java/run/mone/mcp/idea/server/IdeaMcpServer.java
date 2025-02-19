@@ -28,12 +28,20 @@ public class IdeaMcpServer {
 
     private CodeReviewFunction codeReviewFunction;
 
+    private CreateCommentFunction createCommentFunction;
+
+    private GitPushFunction gitPushFunction;
+
     private McpSyncServer syncServer;
 
     public IdeaMcpServer(ServerMcpTransport transport,
-                         CodeReviewFunction codeReviewFunction) {
+                         CodeReviewFunction codeReviewFunction,
+                         CreateCommentFunction createCommentFunction,
+                         GitPushFunction gitPushFunction) {
         this.transport = transport;
         this.codeReviewFunction = codeReviewFunction;
+        this.createCommentFunction = createCommentFunction;
+        this.gitPushFunction = gitPushFunction;
     }
 
     public McpSyncServer start() {
@@ -49,8 +57,6 @@ public class IdeaMcpServer {
 
         IdeaFunctions.IdeaOperationFunction function = new IdeaFunctions.IdeaOperationFunction(ideaPort);
         IdeaFunctions.TestGenerationFunction createUnitTestFunc = new IdeaFunctions.TestGenerationFunction(ideaPort);
-        CreateCommentFunction createCommentFunc = new CreateCommentFunction(ideaPort);
-        GitPushFunction gitPushFunc = new GitPushFunction(ideaPort);
         GenerateBizCodeFunction generateBizCodeFunc = new GenerateBizCodeFunction(ideaPort);
         OpenClassFunction openClassFunc = new OpenClassFunction(ideaPort);
 
@@ -61,10 +67,10 @@ public class IdeaMcpServer {
                 new Tool(createUnitTestFunc.getName(), createUnitTestFunc.getDesc(), createUnitTestFunc.getToolScheme()), createUnitTestFunc
         );
         var toolRegistrationCreateComment = new ToolRegistration(
-                new Tool(createCommentFunc.getName(), createCommentFunc.getDesc(), createCommentFunc.getToolScheme()), createCommentFunc
+                new Tool(createCommentFunction.getName(), createCommentFunction.getDesc(), createCommentFunction.getToolScheme()), createCommentFunction
         );
         var toolRegistrationGitPush = new ToolRegistration(
-                new Tool(gitPushFunc.getName(), gitPushFunc.getDesc(), gitPushFunc.getToolScheme()), gitPushFunc
+                new Tool(gitPushFunction.getName(), gitPushFunction.getDesc(), gitPushFunction.getToolScheme()), gitPushFunction
         );
         var toolRegistrationGenerateBizCode = new ToolRegistration(new Tool(generateBizCodeFunc.getName(), generateBizCodeFunc.getDesc(), generateBizCodeFunc.getToolScheme()), generateBizCodeFunc);
         var toolRegistrationOpenClass = new ToolRegistration(new Tool(openClassFunc.getName(), openClassFunc.getDesc(), openClassFunc.getToolScheme()), openClassFunc);
