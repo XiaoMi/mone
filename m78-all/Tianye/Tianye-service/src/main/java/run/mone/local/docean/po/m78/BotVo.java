@@ -7,7 +7,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author caobaoyu
@@ -46,5 +48,8 @@ public class BotVo implements Serializable {
 
     @Builder.Default
     private String userName = "";
+
+    @Builder.Default
+    private Map<String,String> meta = new HashMap<>();
 
 }
