@@ -17,7 +17,9 @@ import javax.annotation.Resource;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringReader;
 
 /**
@@ -63,15 +65,18 @@ public class MessageController {
     }
 
     private boolean isXml(String body) {
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         try {
-            DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+            // 禁用DTD、禁止外部实体解析
+            factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+            factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+            InputStream is = new ByteArrayInputStream(body.getBytes());
             DocumentBuilder builder = factory.newDocumentBuilder();
-            InputSource is = new InputSource(new StringReader(body));
-            Document doc = builder.parse(is);
+            builder.parse(is);
             return true;
         } catch (Exception e) {
             return false;
-
         }
 
     }

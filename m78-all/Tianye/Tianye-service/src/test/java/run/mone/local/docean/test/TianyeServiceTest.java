@@ -88,7 +88,7 @@ public class TianyeServiceTest {
         context.setBotList(Arrays.asList(bot1, parallelBot, bot3));
         BotFsm fsm = new BotFsm();
         fsm.init(context, BotReq.builder().build());
-        fsm.execute();
+        fsm.execute(null);
 
     }
 
@@ -104,7 +104,7 @@ public class TianyeServiceTest {
         context.setCycle(true);
         BotFsm fsm = new BotFsm();
         fsm.init(context, BotReq.builder().build());
-        fsm.execute();
+        fsm.execute(null);
 
     }
 

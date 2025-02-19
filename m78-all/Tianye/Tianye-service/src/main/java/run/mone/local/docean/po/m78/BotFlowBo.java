@@ -35,4 +35,5 @@ public class BotFlowBo implements Serializable {
     //tianye可直接使用的req
     private String tianyeBotReq;
 
+    private String operatorName;
 }
