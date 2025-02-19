@@ -31,9 +31,12 @@ public class CodeReviewFunction implements Function<Map<String, Object>, McpSche
             {
                 "type": "object",
                 "properties": {
-            
+                    "code": {
+                        "type": "string",
+                        "description": "The source code that needs to be reviewed"
+                    }
                 },
-                "required": []
+                "required": ["code"]
             }
             """;
 
