@@ -41,7 +41,7 @@ public class GenerateBizCodeFunction implements Function<Map<String, Object>, Mc
                             "description":"需要操作的项目，你不应该假设项目名称，如果不知道填什么，请询问用户，否则会有不好的事情发生!"
                         }
                     },
-                    "required": ["requirement"]
+                    "required": ["requirement","projectName"]
                 }
                 """;
 

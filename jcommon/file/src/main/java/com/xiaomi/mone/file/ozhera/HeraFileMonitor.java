@@ -1,6 +1,7 @@
 package com.xiaomi.mone.file.ozhera;
 
 import com.google.common.collect.Lists;
+import com.google.gson.Gson;
 import com.xiaomi.mone.file.common.FileInfo;
 import com.xiaomi.mone.file.common.FileInfoCache;
 import com.xiaomi.mone.file.common.FileUtils;
@@ -15,14 +16,13 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * @author goodjava@qq.com
@@ -42,6 +42,8 @@ public class HeraFileMonitor {
 
     @Setter
     private volatile boolean stop;
+
+    private Gson gson = new Gson();
 
     public HeraFileMonitor() {
         this(TimeUnit.SECONDS.toMillis(30));
@@ -77,6 +79,10 @@ public class HeraFileMonitor {
     }
 
     public void reg(String path, Predicate<String> predicate) throws IOException, InterruptedException {
+        this.reg(path, predicate, 10);
+    }
+
+    public void reg(String path, Predicate<String> predicate, Integer maxFiles) throws IOException {
         Path directory = Paths.get(path);
         File f = directory.toFile();
 
@@ -84,14 +90,14 @@ public class HeraFileMonitor {
             log.info("create directory:{}", directory);
             Files.createDirectories(directory);
         }
-
-        Arrays.stream(Objects.requireNonNull(f.listFiles())).filter(it -> predicate.test(it.getPath())).forEach(this::initFile);
+        List<File> fileList = Arrays.stream(Objects.requireNonNull(f.listFiles())).filter(it -> predicate.test(it.getPath())).toList();
+        fileList = getRecentValidFilePaths(fileList, maxFiles);
+        fileList.forEach(this::initFile);
 
         WatchService watchService = FileSystems.getDefault().newWatchService();
         directory.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_DELETE, StandardWatchEventKinds.ENTRY_CREATE);
         while (!stop) {
             try {
-
                 WatchKey key = watchService.take();
                 try {
                     for (WatchEvent<?> event : key.pollEvents()) {
@@ -200,6 +206,27 @@ public class HeraFileMonitor {
     public void stop() {
         this.stop = true;
         listener.stop();
+    }
+
+    protected List<File> getRecentValidFilePaths(List<File> filePaths, Integer maxFiles) {
+        // filter out valid file objects
+        List<File> validFiles = filePaths.stream()
+                .filter(file -> file.exists() && file.isFile())
+                .collect(Collectors.toList());
+
+        if (validFiles.isEmpty()) {
+            log.info("No valid files found in the provided list.");
+            return Collections.emptyList();
+        }
+        // if there are more than 100 valid files, the top 100 are sorted in reverse order of last modified
+        if (validFiles.size() > maxFiles) {
+            validFiles = validFiles.stream()
+                    .sorted(Comparator.comparingLong(File::lastModified).reversed())
+                    .limit(maxFiles)
+                    .toList();
+        }
+
+        return validFiles;
     }
 
 }

@@ -14,8 +14,14 @@ import run.mone.moner.server.prompt.MonerSystemPrompt;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardWatchEventKinds;
+import java.nio.file.WatchEvent;
+import java.nio.file.WatchKey;
+import java.nio.file.WatchService;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,6 +40,8 @@ import java.util.concurrent.TimeUnit;
 public class McpOperationService {
 
     private final McpConfig mcpConfig;
+    private WatchService watchService;
+    private volatile boolean isWatching = false;
 
     public McpOperationService(McpConfig mcpConfig) {
         this.mcpConfig = mcpConfig;
@@ -294,58 +302,99 @@ public class McpOperationService {
     }
 
     public void listenToTabSave(String from) {
-        // 监听的时候可能没有文件，先创建
-        createFile(FromType.fromString(from));
+        FromType fromType = FromType.fromString(from);
+        // 确保文件存在
+        createFile(fromType);
+        
+        if (isWatching) {
+            return; // 如果已经在监听，则直接返回
+        }
 
-        // TODO
-//        VirtualFile file = LocalFileSystem.getInstance().refreshAndFindFileByPath(MCP_PATH);
-//        log.info("Looking for MCP file after refresh: {}, found: {}", MCP_PATH, file != null);
-//
-//        if (file != null) {
-//            Document document = FileDocumentManager.getInstance().getDocument(file);
-//            if (document != null) {
-//                document.addDocumentListener(new DocumentAdapter() {
-//                    @Override
-//                    public void documentChanged(@NotNull DocumentEvent e) {
-//                        log.info("MCP settings file content has been changed: {}", file.getPath());
-//                        //TeslaAppComponent.refreshMcpHub(fetchMcpJson());
-//                        refreshMcpBrowser(project);
-//                    }
-//                }, project);
-//
-//                project.getMessageBus().connect().subscribe(
-//                        VirtualFileManager.VFS_CHANGES,
-//                        new BulkFileListener() {
-//                            @Override
-//                            public void after(@NotNull List<? extends VFileEvent> events) {
-//                                for (VFileEvent event : events) {
-//                                    VirtualFile changedFile = event.getFile();
-//                                    if (changedFile != null && changedFile.getPath().equals(MCP_PATH)) {
-//                                        log.info("MCP settings file has been saved: {}", MCP_PATH);
-//                                        //TeslaAppComponent.refreshMcpHub(fetchMcpJson());
-//                                        refreshMcpBrowser(project);
-//                                    }
-//                                }
-//                            }
-//                        });
-//            } else {
-//                log.error("Could not get document for file: {}", MCP_PATH);
-//            }
-//        } else {
-//            log.error("Could not find MCP file even after refresh: {}", MCP_PATH);
-//        }
-//
-//        project.getMessageBus().connect().subscribe(ProjectManager.TOPIC, new ProjectManagerListener() {
-//            @Override
-//            public void projectClosing(@NotNull Project project) {
-//                JBCefBrowser browser = UltrmanTreeKeyAdapter.browserMap.remove(project.getName());
-//                if (browser != null) {
-//                    browser.dispose();
-//                }
-//            }
-//        });
+        try {
+            watchService = FileSystems.getDefault().newWatchService();
+            Path mcpDir = Paths.get(mcpConfig.getMcpDir());
+            
+            // 注册监听目录的文件变化事件
+            mcpDir.register(watchService, 
+                StandardWatchEventKinds.ENTRY_MODIFY,
+                StandardWatchEventKinds.ENTRY_CREATE);
+            
+            isWatching = true;
+            
+            // 在新线程中启动监听
+            CompletableFuture.runAsync(() -> {
+                try {
+                    while (isWatching) {
+                        WatchKey key = watchService.take(); // 阻塞等待事件
+                        
+                        for (WatchEvent<?> event : key.pollEvents()) {
+                            @SuppressWarnings("unchecked")
+                            WatchEvent<Path> pathEvent = (WatchEvent<Path>) event;
+                            Path changedFile = pathEvent.context();
+                            
+                            // 检查是否是我们关注的配置文件
+                            if (changedFile.toString().endsWith("_mcp_settings.json")) {
+                                log.info("MCP settings file changed: {}", changedFile);
+                                handleFileChange(changedFile.toString());
+                            }
+                        }
+                        
+                        if (!key.reset()) {
+                            log.error("Watch key has been unregistered");
+                            break;
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    log.error("File watching interrupted", e);
+                    Thread.currentThread().interrupt();
+                } catch (Exception e) {
+                    log.error("Error watching file changes", e);
+                }
+            });
+            
+            // 添加关闭钩子
+            Runtime.getRuntime().addShutdownHook(new Thread(this::stopWatching));
+            
+            log.info("Started watching MCP configuration directory: {}", mcpDir);
+        } catch (IOException e) {
+            log.error("Failed to setup file watching", e);
+        }
     }
 
+    private void handleFileChange(String changedFileName) {
+        try {
+            // 根据文件名判断是哪个from类型的配置发生变化
+            FromType fromType = null;
+            for (Map.Entry<FromType, String> entry : mcpConfig.getAllMcpPaths().entrySet()) {
+                if (entry.getValue().endsWith(changedFileName)) {
+                    fromType = entry.getKey();
+                    break;
+                }
+            }
+            
+            if (fromType != null) {
+                String content = fetchMcpJson(fromType.getValue());
+                if (content != null) {
+                    log.info("Configuration updated for {}", fromType);
+                    // TODO: 这里可以添加配置更新后的处理逻辑
+                    // 比如发送事件通知其他组件配置已更新
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error handling file change", e);
+        }
+    }
+
+    public void stopWatching() {
+        isWatching = false;
+        if (watchService != null) {
+            try {
+                watchService.close();
+            } catch (IOException e) {
+                log.error("Error closing watch service", e);
+            }
+        }
+    }
 
     public void refreshMcpHubOneServer(String mcpServerName, String from) {
         log.info("Begin refreshMcpHubOneServer with server: {}", mcpServerName);

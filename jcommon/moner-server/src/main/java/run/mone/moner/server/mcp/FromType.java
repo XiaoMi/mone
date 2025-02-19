@@ -1,18 +1,23 @@
 package run.mone.moner.server.mcp;
 
+import lombok.Getter;
+
+@Getter
 public enum FromType {
-    ATHENA("athena"),
-    CHROME("chrome"),
-    ANDROID("android");
+    ATHENA("athena", "athena_mcp_settings.json"),
+    CHROME("chrome", "chrome_mcp_settings.json"),
+    ANDROID("android", "android_mcp_settings.json");
 
     private final String value;
+    private final String configFileName;
 
-    FromType(String value) {
+    FromType(String value, String configFileName) {
         this.value = value;
+        this.configFileName = configFileName;
     }
 
-    public String getValue() {
-        return value;
+    public String getFilePath() {
+        return System.getProperty("user.home") + "/.mcp/" + configFileName;
     }
 
     public static FromType fromString(String text) {

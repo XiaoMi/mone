@@ -129,7 +129,7 @@ public class EsClient {
 
 
     public EsClient(String esAddr, String user, String pwd) {
-        validateParams(esAddr, user, pwd);
+//        validateParams(esAddr, user, pwd);
 
         List<HttpHost> hosts = createHttpHosts(esAddr);
 

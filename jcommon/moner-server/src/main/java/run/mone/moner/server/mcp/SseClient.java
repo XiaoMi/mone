@@ -70,16 +70,12 @@ public class SseClient {
             }
         }
 
-//        LLMProvider provider = LLMProvider.valueOf("DEEPSEEK");
-//        LLMProvider provider = LLMProvider.valueOf("DOUBAO");
-//        LLMProvider provider = LLMProvider.valueOf("STEPFUN");
-//        LLMProvider provider = LLMProvider.valueOf("GOOGLE");
-//        LLMProvider provider = LLMProvider.valueOf("OPENROUTER");
-//        provider = LLMProvider.valueOf("GOOGLE_2");
         req.setLineConsumer((line) -> {
         });
         LLMConfig.LLMConfigBuilder configBuilder = LLMConfig.builder();
-        if (provider.equals(LLMProvider.OPENROUTER) || provider.equals(LLMProvider.GOOGLE_2) || provider.equals(LLMProvider.OPENAICOMPATIBLE)) {
+        if (provider.equals(LLMProvider.OPENROUTER) 
+            || provider.equals(LLMProvider.GOOGLE_2) 
+            || provider.equals(LLMProvider.OPENAICOMPATIBLE)) {
             if (StringUtils.isNotEmpty(url)) {
                 configBuilder.url(url);
             }
