@@ -28,4 +28,9 @@ public class IdeaService {
         return llm.chat(List.of(new AiMessage("user", prompt)));
     }
 
+    public String methodRename(String code) {
+        String prompt = "请对以下方法重命名：\n\n" + code;
+        return llm.chat(List.of(new AiMessage("user", prompt)));
+    }
+
 }

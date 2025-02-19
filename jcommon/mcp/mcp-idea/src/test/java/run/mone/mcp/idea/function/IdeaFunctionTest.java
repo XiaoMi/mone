@@ -24,6 +24,9 @@ class IdeaFunctionTest {
     @Autowired
     private GitPushFunction gitPushFunction;
 
+    @Autowired
+    private MethodRenameFunction methodRenameFunction;
+
     private IdeaFunctions.IdeaOperationFunction ideaFunction;
 
     private String code = """
@@ -156,6 +159,19 @@ class IdeaFunctionTest {
 
         // Call the function
         McpSchema.CallToolResult result = gitPushFunction.apply(arguments);
+
+        // Assertions
+        assertNotNull(result);
+    }
+
+    @Test
+    void testMethodRename() {
+        // Prepare test data
+        Map<String, Object> arguments = new HashMap<>();
+        arguments.put("code", code);
+
+        // Call the function
+        McpSchema.CallToolResult result = methodRenameFunction.apply(arguments);
 
         // Assertions
         assertNotNull(result);

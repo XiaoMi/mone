@@ -32,16 +32,20 @@ public class IdeaMcpServer {
 
     private GitPushFunction gitPushFunction;
 
+    private MethodRenameFunction methodRenameFunction;
+
     private McpSyncServer syncServer;
 
     public IdeaMcpServer(ServerMcpTransport transport,
                          CodeReviewFunction codeReviewFunction,
                          CreateCommentFunction createCommentFunction,
-                         GitPushFunction gitPushFunction) {
+                         GitPushFunction gitPushFunction,
+                         MethodRenameFunction methodRenameFunction) {
         this.transport = transport;
         this.codeReviewFunction = codeReviewFunction;
         this.createCommentFunction = createCommentFunction;
         this.gitPushFunction = gitPushFunction;
+        this.methodRenameFunction = methodRenameFunction;
     }
 
     public McpSyncServer start() {
@@ -86,8 +90,8 @@ public class IdeaMcpServer {
                 , codeReviewFunction
         ));
         syncServer.addTool(new ToolRegistration(
-                new Tool(new MethodRenameFunction(ideaPort).getName(), new MethodRenameFunction(ideaPort).getDesc(), new MethodRenameFunction(ideaPort).getToolScheme())
-                , new MethodRenameFunction(ideaPort)
+                new Tool(methodRenameFunction.getName(), methodRenameFunction.getDesc(), methodRenameFunction.getToolScheme())
+                , methodRenameFunction
         ));
 
         return syncServer;
