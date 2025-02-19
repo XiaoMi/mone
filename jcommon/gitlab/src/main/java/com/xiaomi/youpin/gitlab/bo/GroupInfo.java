@@ -16,6 +16,7 @@
 
 package com.xiaomi.youpin.gitlab.bo;
 
+import com.google.gson.annotations.SerializedName;
 import lombok.Data;
 
 @Data
@@ -24,4 +25,6 @@ public class GroupInfo {
     private String kind;
     private String name;
     private String path;
+    @SerializedName("full_path")
+    private String fullPath;
 }

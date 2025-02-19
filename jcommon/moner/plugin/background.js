@@ -88,74 +88,11 @@ function connectWebSocket() {
                         // 处理script类型的消息 - 直接执行脚本
                         if (action.type === 'script') {
                             console.log('Executing script:', action.attributes.code);
-                            await chrome.scripting.executeScript({
-                                target: { tabId: tab.id },
-                                func: (scriptCode) => {
-                                    try {
-                                    // Create snow container if it doesn't exist
-                                    const snowContainer = document.createElement('div');
-                                    snowContainer.id = 'snow-container';
-                                    snowContainer.style.cssText = `
-                                        position: fixed;
-                                        top: 0;
-                                        left: 0;
-                                        width: 100vw;
-                                        height: 100vh;
-                                        pointer-events: none;
-                                        z-index: 9999;
-                                    `;
-                                    document.body.appendChild(snowContainer);
-
-                                    // Create snowflakes
-                                    function createSnowflake() {
-                                        const snowflake = document.createElement('div');
-                                        snowflake.className = 'snowflake';
-                                        snowflake.innerHTML = '❅';  // Unicode snowflake character
-                                        snowflake.style.cssText = `
-                                            position: absolute;
-                                            font-size: 24px;
-                                            color: pink;
-                                            pointer-events: none;
-                                            animation: fall ${Math.random() * 3 + 2}s linear infinite;
-                                            text-shadow: 0 0 5px rgba(255, 192, 203, 0.7);
-                                        `;
-                                        snowflake.style.left = Math.random() * 100 + 'vw';
-                                        snowflake.style.opacity = Math.random();
-                                        snowflake.style.transform = `scale(${Math.random()})`;
-                                        return snowflake;
-                                    }
-
-                                    // Add animation style
-                                    const styleSheet = document.createElement('style');
-                                    styleSheet.textContent = `
-                                        @keyframes fall {
-                                            0% {
-                                                transform: translateY(-1vh) rotate(0deg);
-                                            }
-                                            100% {
-                                                transform: translateY(100vh) rotate(360deg);
-                                            }
-                                        }
-                                    `;
-                                    document.head.appendChild(styleSheet);
-
-                                    // Create snowflakes periodically
-                                    const snowInterval = setInterval(() => {
-                                        const snowflake = createSnowflake();
-                                        snowContainer.appendChild(snowflake);
-                                        // Remove snowflake after animation
-                                        setTimeout(() => {
-                                            snowflake.remove();
-                                        }, 5000);
-                                    }, 50);
-
-                                    // Store interval ID for cleanup
-                                    window._snowEffectInterval = snowInterval;
-                                    } catch (error) {
-                                        console.error('Script execution error:', error);
-                                    }
-                                },
-                                args: [action.attributes.code]
+                            let scriptCode = action.attributes.code;
+                            // 发送消息给content.js执行脚本
+                            await chrome.tabs.sendMessage(tab.id, {
+                                type: 'executeScript',
+                                code: scriptCode
                             });
                             // 执行后短暂等待
                             await new Promise(resolve => setTimeout(resolve, 500));
