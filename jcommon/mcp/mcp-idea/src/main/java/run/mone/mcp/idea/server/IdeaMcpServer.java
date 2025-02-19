@@ -13,6 +13,7 @@ import run.mone.hive.mcp.server.McpSyncServer;
 import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
+import run.mone.mcp.idea.config.Const;
 import run.mone.mcp.idea.function.CreateCommentFunction;
 import run.mone.mcp.idea.function.GenerateBizCodeFunction;
 import run.mone.mcp.idea.function.GitPushFunction;
@@ -25,20 +26,21 @@ public class IdeaMcpServer {
 
     private ServerMcpTransport transport;
 
+    private CodeReviewFunction codeReviewFunction;
+
     private McpSyncServer syncServer;
 
-    //    @Value("${idea.port}")
-//    private String ideaPort;
-
-    public IdeaMcpServer(ServerMcpTransport transport) {
+    public IdeaMcpServer(ServerMcpTransport transport,
+                         CodeReviewFunction codeReviewFunction) {
         this.transport = transport;
+        this.codeReviewFunction = codeReviewFunction;
     }
 
     public McpSyncServer start() {
         String ideaPort = System.getenv().getOrDefault("IDEA_PORT", "30000");
         log.info(ideaPort);
         McpSyncServer syncServer = McpServer.using(transport)
-                .serverInfo("idea_mcp", "0.0.1")
+                .serverInfo("idea_mcp", Const.VERSION)
                 .capabilities(ServerCapabilities.builder()
                         .tools(true)
                         .logging()
@@ -74,8 +76,8 @@ public class IdeaMcpServer {
         syncServer.addTool(toolRegistrationGenerateBizCode);
         syncServer.addTool(toolRegistrationOpenClass);
         syncServer.addTool(new ToolRegistration(
-                new Tool(new CodeReviewFunction(ideaPort).getName(), new CodeReviewFunction(ideaPort).getDesc(), new CodeReviewFunction(ideaPort).getToolScheme())
-                , new CodeReviewFunction(ideaPort)
+                new Tool(codeReviewFunction.getName(), codeReviewFunction.getDesc(), codeReviewFunction.getToolScheme())
+                , codeReviewFunction
         ));
         syncServer.addTool(new ToolRegistration(
                 new Tool(new MethodRenameFunction(ideaPort).getName(), new MethodRenameFunction(ideaPort).getDesc(), new MethodRenameFunction(ideaPort).getToolScheme())

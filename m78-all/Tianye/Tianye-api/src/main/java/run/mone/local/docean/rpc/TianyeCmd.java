@@ -22,5 +22,4 @@ public class TianyeCmd {
     public static int clientMessageReq = 62000;
     public static int clientMessageRes = 62001;
 
-
 }
