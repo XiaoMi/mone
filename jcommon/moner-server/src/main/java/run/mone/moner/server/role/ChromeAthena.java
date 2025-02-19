@@ -11,6 +11,7 @@ import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.jetbrains.annotations.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.socket.TextMessage;
@@ -23,15 +24,18 @@ import run.mone.hive.roles.Role;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
+import run.mone.hive.schema.RoleContext;
 import run.mone.moner.server.bo.ChatWebSocketResp;
 import run.mone.moner.server.common.Const;
 import run.mone.moner.server.common.GsonUtils;
 import run.mone.moner.server.common.JsonUtils;
 import run.mone.moner.server.common.MultiXmlParser;
 import run.mone.moner.server.common.Result;
+import run.mone.moner.server.common.Safe;
 import run.mone.moner.server.constant.ResultType;
 import run.mone.moner.server.context.ApplicationContextProvider;
 import run.mone.moner.server.mcp.FromType;
+import run.mone.moner.server.mcp.MonerMcpClient;
 import run.mone.moner.server.prompt.MonerSystemPrompt;
 import run.mone.moner.server.role.actions.*;
 import run.mone.moner.server.service.LLMService;
@@ -41,6 +45,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -100,87 +105,124 @@ public class ChromeAthena extends Role {
     public ChromeAthena(WebSocketSession session) {
         super("ChromeAthena", "Chrome浏览器插件");
         setEnvironment(new Environment());
+        this.rc.setReactMode(RoleContext.ReactMode.REACT);
 
         this.rolePrompt = this.rolePrompt.formatted(
                 this.roleList.stream().map(it -> "角色名称:" + it.getName() + "\n工具使用流程:\n" + it.getGoal()).collect(Collectors.joining("\n")));
         this.session = session;
     }
 
+    @Override
+    protected int think() {
+        log.info("chrome athena think");
+        return observe();
+    }
 
     @SneakyThrows
     @Override
-    public CompletableFuture<Message> run() {
-        ActionContext context = new ActionContext();
+    protected int observe() {
+        // TODO: checkout if the last action is completed
+        Message msg = this.rc.getNews().poll(2, TimeUnit.MINUTES);
+        if (msg != null) {
+            List<String> images = null;
+            String code = "";
+            String tabs = "";
+            String text = "";
+
+            if (msg.getType().equals("json")) {
+                JsonObject obj = JsonParser.parseString(msg.getContent()).getAsJsonObject();
+                text = JsonUtils.getValueOrDefault(obj, "text", "");
+                JsonArray imgs = obj.getAsJsonArray("img");
+                if (imgs != null) {
+                    images = getImageStrings(imgs);
+                    msg.setImages(images);
+                }
+                code = JsonUtils.getValueOrDefault(obj, "code", "");
+                tabs = JsonUtils.getValueOrDefault(obj, "tabs", "");
+
+                if (StringUtils.isNotEmpty(code)) {
+                    text = text + "\ncode:\n" + code;
+                }
+
+                if (!CollectionUtils.isEmpty(images)) {
+                    text = text + "\nimages:\n [图片占位符]";
+                }
+
+                msg.setContent(text);
+                msg.setRole("assistant");
+            }
+
+            this.getRc().getMemory().add(msg);
+            this.rc.getContext().put("tabs", tabs);
+            this.rc.getContext().put("code", code);
+
+            // 获取memory中最后一条消息
+            Message lastMsg = this.getRc().getMemory().getStorage().get(this.getRc().getMemory().getStorage().size() - 1);
+            String lastMsgContent = lastMsg.getContent();
+
+            List<Result> tools = new MultiXmlParser().parse(lastMsgContent);
+            //结束 或者 ai有问题 都需要退出整个的执行
+            int attemptCompletion = tools.stream().anyMatch(it ->
+                    it.getTag().trim().equals("attempt_completion")
+                            || it.getTag().trim().equals("ask_followup_question")
+                            //聊天的也认为只有一回合
+                            || it.getTag().trim().equals("chat")
+            ) ? -1 : 1;
+            if (attemptCompletion != 1) {
+                consumer.accept(Const.actionTemplate.formatted("end", tools.get(tools.size() - 1).getTag()));
+            }
+            return attemptCompletion;
+        }
+        return 1; // keep observing
+    }
+
+    @SneakyThrows
+    @Override
+    protected CompletableFuture<Message> act(ActionContext context) {
+
+        String tabs = (String) this.rc.getContext().getOrDefault("tabs", "");
+        String code = (String) this.rc.getContext().getOrDefault("code", "");
+        List<String> images = (List<String>) this.rc.getContext().getOrDefault("images", null);
+        this.rc.getContext().clear();
         boolean ask_followup_question = false;
-        int i = 0;
-        while (i++ < 20) {
-            ActionReq req = new ActionReq();
-            req.setRole(Role.builder().name("user").build());
-            Message msg = this.rc.getNews().poll(2, TimeUnit.MINUTES);
-            if (msg != null) {
-                List<String> images = null;
-                String code = "";
-                String tabs = "";
-                String text = "";
 
-                if (msg.getType().equals("json")) {
-                    JsonObject obj = JsonParser.parseString(msg.getContent()).getAsJsonObject();
-                    text = JsonUtils.getValueOrDefault(obj, "text", "");
-                    JsonArray imgs = obj.getAsJsonArray("img");
-                    if (imgs != null) {
-                        images = getImageStrings(imgs);
-                        msg.setImages(images);
-                    }
-                    code = JsonUtils.getValueOrDefault(obj, "code", "");
-                    tabs = JsonUtils.getValueOrDefault(obj, "tabs", "");
+        if (StringUtils.isEmpty(tabs) && StringUtils.isEmpty(code) && CollectionUtils.isEmpty(images)) {
+            // 没有上下文,直接结束
+            log.info("possiblly chat scenario");
+        }
 
-                    if (StringUtils.isNotEmpty(code)) {
-                        text = text + "\ncode:\n" + code;
-                    }
+        //历史聊天记录
+        String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":" + it.getContent()).collect(Collectors.joining("\n"));
 
-                    if (!CollectionUtils.isEmpty(images)) {
-                        text = text + "\nimages:\n [图片占位符]";
-                    }
+        LLMService llmService = ApplicationContextProvider.getBean(LLMService.class);
 
-                    msg.setContent(text);
-                    msg.setRole("assistant");
-                }
+        String userPrompt = AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.of("history", history, "code", code, "tabs", tabs));
 
-                this.getRc().getMemory().add(msg);
+        String res = llmService.callStream(this, this.llm, userPrompt, images, getSystemPrompt());
+        log.info("res:{}", res);
+        List<Result> list = new MultiXmlParser().parse(res);
+        Result result = list.get(0);
 
-                //历史聊天记录
-                String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":" + it.getContent()).collect(Collectors.joining("\n"));
+        // FIXME: 目前chrome对于mcp的调用和Athena的调用是分开的,需要合并
+        // MutableObject<String> toolResMsg = new MutableObject<>("");
+        // AtomicBoolean completion = new AtomicBoolean(false);
+        // Safe.run(() -> MonerMcpClient.mcpCall(list, FromType.CHROME, toolResMsg, completion));
 
-                LLMService llmService = ApplicationContextProvider.getBean(LLMService.class);
+        this.getRc().getMemory().add(Message.builder().role("assistant").content(res).build());
 
-                String userPrompt = AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.of("history", history, "code", code, "tabs", tabs));
-
-                String res = llmService.callStream(this, this.llm, userPrompt, images, getSystemPrompt());
-                log.info("res:{}", res);
-                List<Result> list = new MultiXmlParser().parse(res);
-                Result result = list.get(0);
-
-                this.getRc().getMemory().add(Message.builder().role("assistant").content(res).build());
-
-                //流程结束了
-                if (result.getTag().equals("attempt_completion") || result.getTag().equals("ask_followup_question")) {
-                    if (result.getTag().equals("ask_followup_question")) {
-                        ask_followup_question = true;
-                    }
-                    consumer.accept(Const.actionTemplate.formatted("end", result.getTag()));
-                    break;
-                }
-
-                String tooleName = result.getKeyValuePairs().getOrDefault("tool_name", "");
-                if (StringUtils.isNotEmpty(tooleName)) {
-                    Optional<Action> optional = this.getActions().stream().filter(it -> it.getName().equals(tooleName)).findFirst();
-                    if (optional.isPresent()) {
-                        log.info("toolName:{}", tooleName);
-                        req.setMessage(Message.builder().data(result).build());
-                        String content = optional.get().run(req, context).join().getContent();
-                        consumer.accept(content);
-                    }
-                }
+        if (result.getTag().equals("ask_followup_question")) {
+            ask_followup_question = true;
+        }
+        String tooleName = result.getKeyValuePairs().getOrDefault("tool_name", "");
+        if (StringUtils.isNotEmpty(tooleName)) {
+            Optional<Action> optional = this.getActions().stream().filter(it -> it.getName().equals(tooleName)).findFirst();
+            if (optional.isPresent()) {
+                log.info("toolName:{}", tooleName);
+                ActionReq req = new ActionReq();
+                req.setRole(Role.builder().name("user").build());
+                req.setMessage(Message.builder().data(result).build());
+                String content = optional.get().run(req, context).join().getContent();
+                consumer.accept(content);
             }
         }
         try {
@@ -193,6 +235,98 @@ public class ChromeAthena extends Role {
             }
         }
     }
+
+    // @SneakyThrows
+    // @Override
+    // public CompletableFuture<Message> run() {
+    //     ActionContext context = new ActionContext();
+    //     boolean ask_followup_question = false;
+    //     int i = 0;
+    //     while (i++ < 20) {
+    //         ActionReq req = new ActionReq();
+    //         req.setRole(Role.builder().name("user").build());
+    //         Message msg = this.rc.getNews().poll(2, TimeUnit.MINUTES);
+    //         if (msg != null) {
+    //             List<String> images = null;
+    //             String code = "";
+    //             String tabs = "";
+    //             String text = "";
+
+    //             if (msg.getType().equals("json")) {
+    //                 JsonObject obj = JsonParser.parseString(msg.getContent()).getAsJsonObject();
+    //                 text = JsonUtils.getValueOrDefault(obj, "text", "");
+    //                 JsonArray imgs = obj.getAsJsonArray("img");
+    //                 if (imgs != null) {
+    //                     images = getImageStrings(imgs);
+    //                     msg.setImages(images);
+    //                 }
+    //                 code = JsonUtils.getValueOrDefault(obj, "code", "");
+    //                 tabs = JsonUtils.getValueOrDefault(obj, "tabs", "");
+
+    //                 if (StringUtils.isNotEmpty(code)) {
+    //                     text = text + "\ncode:\n" + code;
+    //                 }
+
+    //                 if (!CollectionUtils.isEmpty(images)) {
+    //                     text = text + "\nimages:\n [图片占位符]";
+    //                 }
+
+    //                 msg.setContent(text);
+    //                 msg.setRole("assistant");
+    //             }
+
+    //             this.getRc().getMemory().add(msg);
+
+    //             //历史聊天记录
+    //             String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":" + it.getContent()).collect(Collectors.joining("\n"));
+
+    //             LLMService llmService = ApplicationContextProvider.getBean(LLMService.class);
+
+    //             String userPrompt = AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.of("history", history, "code", code, "tabs", tabs));
+
+    //             String res = llmService.callStream(this, this.llm, userPrompt, images, getSystemPrompt());
+    //             log.info("res:{}", res);
+    //             List<Result> list = new MultiXmlParser().parse(res);
+    //             Result result = list.get(0);
+
+    //             // FIXME: 目前chrome对于mcp的调用和Athena的调用是分开的,需要合并
+    //             // MutableObject<String> toolResMsg = new MutableObject<>("");
+    //             // AtomicBoolean completion = new AtomicBoolean(false);
+    //             // Safe.run(() -> MonerMcpClient.mcpCall(list, FromType.CHROME, toolResMsg, completion));
+
+    //             this.getRc().getMemory().add(Message.builder().role("assistant").content(res).build());
+
+    //             //流程结束了
+    //             if (result.getTag().equals("attempt_completion") || result.getTag().equals("ask_followup_question")) {
+    //                 if (result.getTag().equals("ask_followup_question")) {
+    //                     ask_followup_question = true;
+    //                 }
+    //                 consumer.accept(Const.actionTemplate.formatted("end", result.getTag()));
+    //                 break;
+    //             }
+
+    //             String tooleName = result.getKeyValuePairs().getOrDefault("tool_name", "");
+    //             if (StringUtils.isNotEmpty(tooleName)) {
+    //                 Optional<Action> optional = this.getActions().stream().filter(it -> it.getName().equals(tooleName)).findFirst();
+    //                 if (optional.isPresent()) {
+    //                     log.info("toolName:{}", tooleName);
+    //                     req.setMessage(Message.builder().data(result).build());
+    //                     String content = optional.get().run(req, context).join().getContent();
+    //                     consumer.accept(content);
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     try {
+    //         return CompletableFuture.completedFuture(Message.builder().build());
+    //     } finally {
+    //         //如果只是向你询问问题,历史记录不要清除
+    //         if (!ask_followup_question) {
+    //             this.getRc().getNews().clear();
+    //             this.getRc().getMemory().clear();
+    //         }
+    //     }
+    // }
 
     @Nullable
     private List<String> getImageStrings(JsonArray imgs) {

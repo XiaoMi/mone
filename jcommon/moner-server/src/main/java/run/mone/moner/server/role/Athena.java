@@ -2,7 +2,10 @@ package run.mone.moner.server.role;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.mutable.MutableObject;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -24,6 +27,7 @@ import run.mone.moner.server.common.Result;
 import run.mone.moner.server.common.Safe;
 import run.mone.moner.server.context.ApplicationContextProvider;
 import run.mone.moner.server.mcp.FromType;
+import run.mone.moner.server.mcp.MonerMcpClient;
 import run.mone.moner.server.prompt.MonerSystemPrompt;
 import run.mone.moner.server.service.LLMService;
 
@@ -121,10 +125,18 @@ public class Athena extends Role {
         String userPrompt = AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.of("rules", MonerSystemPrompt.mcpPrompt(FromType.ATHENA.getValue()), "history", history, "question", msg.getContent()));
 
         String res = llmService.callStream(this, this.llm, userPrompt, null, this.prompt);
+        List<Result> tools = new MultiXmlParser().parse(res);
+        MutableObject<String> toolResMsg = new MutableObject<>("");
+        AtomicBoolean completion = new AtomicBoolean(false);
+        Safe.run(() -> MonerMcpClient.mcpCall(tools, FromType.ATHENA, toolResMsg, completion));
         log.info("res:{}", res);
         this.getRc().getMemory().add(Message.builder().role("assistant").content(res).build());
-         //发送给Role,需要结果给Ai继续判断
-        Safe.run(() -> this.getRc().getNews().add(Message.builder().data(res).build()));
+        //发送给Role,需要结果给Ai继续判断
+        Message resMsg = Message.builder().data(res).build();
+        if (completion.get()) {
+            resMsg.setData(toolResMsg.getValue());
+        }
+        Safe.run(() -> this.getRc().getNews().add(resMsg));
         return CompletableFuture.completedFuture(Message.builder().build());
     }
 
