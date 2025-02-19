@@ -28,9 +28,6 @@ public class IdeaMcpServer {
 
     private McpSyncServer syncServer;
 
-    //    @Value("${idea.port}")
-//    private String ideaPort;
-
     public IdeaMcpServer(ServerMcpTransport transport) {
         this.transport = transport;
     }
