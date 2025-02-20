@@ -42,6 +42,7 @@ import run.mone.moner.server.service.LLMService;
 
 import java.lang.reflect.Type;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -123,6 +124,7 @@ public class ChromeAthena extends Role {
     protected int observe() {
         // TODO: checkout if the last action is completed
         Message msg = this.rc.getNews().poll(2, TimeUnit.MINUTES);
+        log.info("====================== observe msg: ====================== \n {}", msg);
         if (msg != null) {
             List<String> images = null;
             String code = "";
@@ -201,7 +203,7 @@ public class ChromeAthena extends Role {
         String res = llmService.callStream(this, this.llm, userPrompt, images, getSystemPrompt());
         log.info("res:{}", res);
         List<Result> list = new MultiXmlParser().parse(res);
-        Result result = list.get(0);
+        Result result = list.stream().filter(it -> !it.getTag().equals("thinking")).findFirst().orElse(new Result("ask_followup_question", Map.of("tool_name", "chat")));
 
         // FIXME: 目前chrome对于mcp的调用和Athena的调用是分开的,需要合并
         // MutableObject<String> toolResMsg = new MutableObject<>("");
@@ -212,6 +214,7 @@ public class ChromeAthena extends Role {
 
         if (result.getTag().equals("ask_followup_question")) {
             ask_followup_question = true;
+            context.getCtx().addProperty("ask_followup_question", ask_followup_question);
         }
         String tooleName = result.getKeyValuePairs().getOrDefault("tool_name", "");
         if (StringUtils.isNotEmpty(tooleName)) {
@@ -225,16 +228,21 @@ public class ChromeAthena extends Role {
                 consumer.accept(content);
             }
         }
-        try {
-            return CompletableFuture.completedFuture(Message.builder().build());
-        } finally {
-            //如果只是向你询问问题,历史记录不要清除
-            if (!ask_followup_question) {
-                this.getRc().getNews().clear();
-                this.getRc().getMemory().clear();
-            }
+        return CompletableFuture.completedFuture(Message.builder().build());
+    }
+
+    @SneakyThrows
+    @Override
+    protected void postReact(ActionContext context) {
+        //如果只是向你询问问题,历史记录不要清除
+        if (!context.getCtx().has("ask_followup_question") 
+        | !context.getCtx().get("ask_followup_question").getAsBoolean()) {
+            this.getRc().getNews().clear();
+            this.getRc().getMemory().clear();
         }
     }
+
+    
 
     // @SneakyThrows
     // @Override
