@@ -138,11 +138,11 @@ public class MonerSystemPrompt {
             </use_mcp_tool>
 
 
-            ## chat
+            ## Chat
             Description: A tool for handling general conversations and chat interactions. This tool should be used when the user's input is conversational in nature and doesn't require specific functional tools. It enables natural dialogue-based interactions in scenarios where other specialized tools are not applicable. Use this tool for engaging in general discussions, providing information, or offering support through conversation.
             Parameters:
             - message: (required) The chat message to respond to the user. The message should be natural, friendly, and maintain coherence and relevance with the user's input.
-            Usage:
+            Usage(Attention， if you are using this tool, you must return the message in Chinese中文):
             <chat>
             <message>Your chat message here</message>
             </chat>

@@ -6,6 +6,7 @@ import jakarta.annotation.Resource;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -17,6 +18,7 @@ import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.schema.Message;
+import run.mone.moner.server.bo.McpModel;
 import run.mone.moner.server.constant.ResultType;
 import run.mone.moner.server.context.ApplicationContextProvider;
 import run.mone.moner.server.mcp.FromType;
@@ -42,6 +44,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     @Resource
     private ChromeTestService chromeTestService;
+
+    @Resource
+    private LLMService llmService;
 
     private static final Map<String, ChromeAthena> sessionIdShopper = new ConcurrentHashMap<>();
 
@@ -101,6 +106,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 return;
             }
 
+            if (cmd.equals("reply")) {
+                chromeAthena.getRc().news.put(Message.builder().type("reply").role("user").content(data).build());
+                return;
+            }
+
 
             chromeAthena.getRc().news.put(Message.builder().type("json").role("user").content(data).build());
             new Thread(() -> chromeAthena.run()).start();
@@ -131,17 +141,19 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     @SneakyThrows
     private void initShopperAndRoleClassifier(WebSocketSession session) {
-        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
+        // LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.GOOGLE_2).build();
 
-        if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
-            config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "streamGenerateContent?alt=sse");
-        }
+        // if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
+        //     config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "streamGenerateContent?alt=sse");
+        // }
 
-        if (config.getLlmProvider() == LLMProvider.OPENROUTER && StringUtils.isNotEmpty(System.getenv("OPENROUTER_AI_GATEWAY"))) {
-            config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
-        }
+        // if (config.getLlmProvider() == LLMProvider.OPENROUTER && StringUtils.isNotEmpty(System.getenv("OPENROUTER_AI_GATEWAY"))) {
+        //     config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
+        // }
 
-        llm = new LLM(config);
+        Pair<LLM, McpModel> llmConf = llmService.getLLM(FromType.CHROME.getValue());
+
+        llm = llmConf.getLeft();
         ChromeAthena chromeAthena = new ChromeAthena(session);
         chromeAthena.setLlm(llm);
         chromeAthena.setActions(

@@ -18,9 +18,10 @@ public class MonerMcpClient {
 
     // TODO:
     // 1. mcp相关prompt管理与拼接 done
-    // 2. 模型配置管理 done
-    // 3. 增加websocketHandler处理来自athena的本地调用
+    // 2. 模型配置管理 done to be tested
+    // 3. 增加websocketHandler处理来自athena的本地调用 todo
     // 4. 历史消息管理 done
+    // 5. chrome athena observer 实现 done
 
     public static void mcpCall(List<Result> list, FromType from, MutableObject<String> toolResMsg, AtomicBoolean completion) {
         Safe.run(() -> {

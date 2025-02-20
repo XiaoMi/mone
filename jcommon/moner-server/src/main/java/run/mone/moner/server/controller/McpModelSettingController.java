@@ -1,25 +1,30 @@
 package run.mone.moner.server.controller;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
-import run.mone.moner.server.bo.McpModelSetting;
+
 import run.mone.moner.server.bo.McpModelSettingDTO;
+import run.mone.moner.server.mcp.McpModelSettingService;
 
 @Slf4j
 @Controller
 @RequestMapping("/mcp/model/setting")
 public class McpModelSettingController {
 
+    @Autowired
+    private McpModelSettingService mcpModelSetting;
+
     /**
      * 获取所有MCP模型设置
      */
     @GetMapping("/all")
     @ResponseBody
-    public String getAllSettings() {
-        log.info("开始获取所有MCP模型设置");
+    public String getAllSettings(@RequestParam String from) {
+        log.info("开始获取所有MCP模型设置, from: {}", from);
         try {
-            String settings = McpModelSetting.getAllMcpModelSetting();
+            String settings = mcpModelSetting.getAllMcpModelSetting(from);
             log.info("获取MCP模型设置成功");
             return settings;
         } catch (Exception e) {
@@ -33,10 +38,10 @@ public class McpModelSettingController {
      */
     @GetMapping
     @ResponseBody
-    public McpModelSettingDTO getSettings() {
-        log.info("开始获取MCP模型设置对象");
+    public McpModelSettingDTO getSettings(@RequestParam String from) {
+        log.info("开始获取MCP模型设置对象, from: {}", from);
         try {
-            McpModelSettingDTO settings = McpModelSetting.getMcpModelSetting();
+            McpModelSettingDTO settings = mcpModelSetting.getMcpModelSetting(from);
             log.info("获取MCP模型设置对象成功");
             return settings;
         } catch (Exception e) {
@@ -50,10 +55,10 @@ public class McpModelSettingController {
      */
     @PostMapping
     @ResponseBody
-    public String saveSettings(@RequestBody String content) {
-        log.info("开始保存MCP模型设置");
+    public String saveSettings(@RequestParam String from, @RequestBody String content) {
+        log.info("开始保存MCP模型设置, from: {}", from);
         try {
-            McpModelSetting.saveMcpModelSetting(content);
+            mcpModelSetting.saveMcpModelSetting(from, content);
             log.info("保存MCP模型设置成功");
             return "success";
         } catch (Exception e) {

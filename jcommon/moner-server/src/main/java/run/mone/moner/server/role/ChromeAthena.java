@@ -122,14 +122,26 @@ public class ChromeAthena extends Role {
     @SneakyThrows
     @Override
     protected int observe() {
-        // TODO: checkout if the last action is completed
-        Message msg = this.rc.getNews().poll(2, TimeUnit.MINUTES);
+        // checkout if the last action is completed
+        Message msg = this.rc.getNews().poll(3, TimeUnit.MINUTES);
         log.info("====================== observe msg: ====================== \n {}", msg);
         if (msg != null) {
             List<String> images = null;
             String code = "";
             String tabs = "";
             String text = "";
+
+            if (msg.getType().equals("reply")) {
+                // 如果页面没有变化，则等待1秒后继续观察
+                JsonObject obj = JsonParser.parseString(msg.getContent()).getAsJsonObject();
+                if ((!obj.has("urlChanged") 
+                    || !obj.get("urlChanged").getAsBoolean()) 
+                    && (!obj.has("contentChanged") || !obj.get("contentChanged").getAsBoolean())) {
+                    TimeUnit.SECONDS.sleep(1);
+                    this.rc.getNews().put(Message.builder().content("Nothing changed since last action, try to take other action if possible").build());
+                    return 1; // keep observing
+                }
+            } 
 
             if (msg.getType().equals("json")) {
                 JsonObject obj = JsonParser.parseString(msg.getContent()).getAsJsonObject();
@@ -205,10 +217,7 @@ public class ChromeAthena extends Role {
         List<Result> list = new MultiXmlParser().parse(res);
         Result result = list.stream().filter(it -> !it.getTag().equals("thinking")).findFirst().orElse(new Result("ask_followup_question", Map.of("tool_name", "chat")));
 
-        // FIXME: 目前chrome对于mcp的调用和Athena的调用是分开的,需要合并
-        // MutableObject<String> toolResMsg = new MutableObject<>("");
-        // AtomicBoolean completion = new AtomicBoolean(false);
-        // Safe.run(() -> MonerMcpClient.mcpCall(list, FromType.CHROME, toolResMsg, completion));
+        // FIXME: 目前chrome对于mcp的调用和Athena的调用是分开的,将来需要合并
 
         this.getRc().getMemory().add(Message.builder().role("assistant").content(res).build());
 
@@ -241,100 +250,6 @@ public class ChromeAthena extends Role {
             this.getRc().getMemory().clear();
         }
     }
-
-    
-
-    // @SneakyThrows
-    // @Override
-    // public CompletableFuture<Message> run() {
-    //     ActionContext context = new ActionContext();
-    //     boolean ask_followup_question = false;
-    //     int i = 0;
-    //     while (i++ < 20) {
-    //         ActionReq req = new ActionReq();
-    //         req.setRole(Role.builder().name("user").build());
-    //         Message msg = this.rc.getNews().poll(2, TimeUnit.MINUTES);
-    //         if (msg != null) {
-    //             List<String> images = null;
-    //             String code = "";
-    //             String tabs = "";
-    //             String text = "";
-
-    //             if (msg.getType().equals("json")) {
-    //                 JsonObject obj = JsonParser.parseString(msg.getContent()).getAsJsonObject();
-    //                 text = JsonUtils.getValueOrDefault(obj, "text", "");
-    //                 JsonArray imgs = obj.getAsJsonArray("img");
-    //                 if (imgs != null) {
-    //                     images = getImageStrings(imgs);
-    //                     msg.setImages(images);
-    //                 }
-    //                 code = JsonUtils.getValueOrDefault(obj, "code", "");
-    //                 tabs = JsonUtils.getValueOrDefault(obj, "tabs", "");
-
-    //                 if (StringUtils.isNotEmpty(code)) {
-    //                     text = text + "\ncode:\n" + code;
-    //                 }
-
-    //                 if (!CollectionUtils.isEmpty(images)) {
-    //                     text = text + "\nimages:\n [图片占位符]";
-    //                 }
-
-    //                 msg.setContent(text);
-    //                 msg.setRole("assistant");
-    //             }
-
-    //             this.getRc().getMemory().add(msg);
-
-    //             //历史聊天记录
-    //             String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":" + it.getContent()).collect(Collectors.joining("\n"));
-
-    //             LLMService llmService = ApplicationContextProvider.getBean(LLMService.class);
-
-    //             String userPrompt = AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.of("history", history, "code", code, "tabs", tabs));
-
-    //             String res = llmService.callStream(this, this.llm, userPrompt, images, getSystemPrompt());
-    //             log.info("res:{}", res);
-    //             List<Result> list = new MultiXmlParser().parse(res);
-    //             Result result = list.get(0);
-
-    //             // FIXME: 目前chrome对于mcp的调用和Athena的调用是分开的,需要合并
-    //             // MutableObject<String> toolResMsg = new MutableObject<>("");
-    //             // AtomicBoolean completion = new AtomicBoolean(false);
-    //             // Safe.run(() -> MonerMcpClient.mcpCall(list, FromType.CHROME, toolResMsg, completion));
-
-    //             this.getRc().getMemory().add(Message.builder().role("assistant").content(res).build());
-
-    //             //流程结束了
-    //             if (result.getTag().equals("attempt_completion") || result.getTag().equals("ask_followup_question")) {
-    //                 if (result.getTag().equals("ask_followup_question")) {
-    //                     ask_followup_question = true;
-    //                 }
-    //                 consumer.accept(Const.actionTemplate.formatted("end", result.getTag()));
-    //                 break;
-    //             }
-
-    //             String tooleName = result.getKeyValuePairs().getOrDefault("tool_name", "");
-    //             if (StringUtils.isNotEmpty(tooleName)) {
-    //                 Optional<Action> optional = this.getActions().stream().filter(it -> it.getName().equals(tooleName)).findFirst();
-    //                 if (optional.isPresent()) {
-    //                     log.info("toolName:{}", tooleName);
-    //                     req.setMessage(Message.builder().data(result).build());
-    //                     String content = optional.get().run(req, context).join().getContent();
-    //                     consumer.accept(content);
-    //                 }
-    //             }
-    //         }
-    //     }
-    //     try {
-    //         return CompletableFuture.completedFuture(Message.builder().build());
-    //     } finally {
-    //         //如果只是向你询问问题,历史记录不要清除
-    //         if (!ask_followup_question) {
-    //             this.getRc().getNews().clear();
-    //             this.getRc().getMemory().clear();
-    //         }
-    //     }
-    // }
 
     @Nullable
     private List<String> getImageStrings(JsonArray imgs) {
