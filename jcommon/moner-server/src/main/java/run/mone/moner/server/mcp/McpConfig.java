@@ -13,6 +13,10 @@ public class McpConfig {
         return fromType.getFilePath();
     }
 
+    public String getMcpModelPath(FromType fromType) {
+        return fromType.getModelFilePath();
+    }
+
     public String getMcpDir() {
         return System.getProperty("user.home") + "/.mcp";
     }

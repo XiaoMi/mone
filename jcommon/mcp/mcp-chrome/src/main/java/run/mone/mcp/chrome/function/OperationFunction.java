@@ -16,7 +16,7 @@ public class OperationFunction implements Function<Map<String, Object>, McpSchem
     private String desc = """
             需要在当前页面执行一系列操作TOOL(比如填入搜索内容后点击搜索按钮)
             + 尽量一次返回一个页面的所有action操作
-            + elementId的数字会在元素的右上角
+            + elementId的数字会在元素的右上角,请你从图中信息中找到elementId
             + 数字的颜色和这个元素的边框一定是一个颜色
             + 必须返回tabId(如果没有,需要你打开相应的tab)
             """;
