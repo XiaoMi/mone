@@ -284,6 +284,7 @@ public class Role {
                 res = this.act(ac).join();
             }
         }
+        postReact(ac);
         return CompletableFuture.completedFuture(res);
     }
 
@@ -395,6 +396,13 @@ public class Role {
 
     protected boolean hasTodo() {
         return !actionQueue.isEmpty();
+    }
+
+    /**
+     * 在react之后执行
+     */
+    protected void postReact(ActionContext ac) {
+        //子类可以重写此方法
     }
 
     public void putMessage(Message message) {
