@@ -289,7 +289,7 @@ public class NodeDao extends BaseDao{
         if (StringUtils.isNotBlank(nodeName)) {
             sqlExpr.append("and node.node_name like @nodeName ");
         }
-        sqlExpr.append("order by create_time desc");
+        sqlExpr.append("order by create_time desc, id desc");
         return getListByPage(sqlExpr, param, pageData, NodeEntity.class);
     }
 
@@ -329,10 +329,14 @@ public class NodeDao extends BaseDao{
         }
         sqlExpr.append("where node.deleted=0 ");
         if (fullOrgIds.length() > 0 && userId != null) {
-            sqlExpr.append("and flag.type=2 and flag.deleted=0 ");
-            sqlExpr.append("and rel.deleted=0 ");
-            sqlExpr.append("and (flag.flag_key in (").append(fullOrgIds).append(") ");
-            sqlExpr.append("or rel.user_id=@userId) ");
+            sqlExpr.append("and (( ");
+            sqlExpr.append("flag.type=2 and flag.deleted=0 ");
+            sqlExpr.append("and flag.flag_key in (").append(fullOrgIds).append(") ");
+            sqlExpr.append(") ");
+            sqlExpr.append("or ( ");
+            sqlExpr.append("rel.deleted=0 ");
+            sqlExpr.append("and rel.user_id=@userId ");
+            sqlExpr.append(")) ");
         } else if (fullOrgIds.length() > 0) {
             sqlExpr.append("and flag.type=2 and flag.deleted=0 ");
             sqlExpr.append("and flag.flag_key in (").append(fullOrgIds).append(") ");
@@ -352,7 +356,8 @@ public class NodeDao extends BaseDao{
         if (StringUtils.isNotBlank(nodeName)) {
             sqlExpr.append("and node.node_name like @nodeName ");
         }
-        sqlExpr.append("group by node.id order by create_time desc");
+        sqlExpr.append("group by node.id order by create_time desc, id desc");
+        String str =sqlExpr.toString();
         return getListByPage(sqlExpr, param, pageData, NodeEntity.class);
     }
 
@@ -404,7 +409,7 @@ public class NodeDao extends BaseDao{
         if (StringUtils.isNotBlank(nodeName)) {
             sqlExpr.append("and node.node_name like @nodeName ");
         }
-        sqlExpr.append("group by node.id order by create_time desc");
+        sqlExpr.append("group by node.id order by create_time desc, id desc");
         return getListByPage(sqlExpr, param, pageData, NodeEntity.class);
     }
 

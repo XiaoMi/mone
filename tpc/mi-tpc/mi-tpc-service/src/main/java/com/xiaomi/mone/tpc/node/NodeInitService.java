@@ -100,6 +100,7 @@ public class NodeInitService implements CommandLineRunner {
             log.info("tpc init topNode.result={}", node);
         }
         heraNodeInit(user, node);
+        gatewayNodeInit(user, node);
         NodeUserRelEntity nodeUserRel = nodeUserRelDao.getOneByNodeIdAndUserId(node.getId(), user.getId(), NodeUserRelTypeEnum.MANAGER.getCode());
         log.info("tpc init nodeUserRel={}", nodeUserRel);
         if (nodeUserRel == null) {
@@ -202,6 +203,82 @@ public class NodeInitService implements CommandLineRunner {
             param.setOutIdType(OutIdTypeEnum.PROJECT.getCode());
             Object result = nodeHelper.realAdd(param, heraGroupNode);
             log.info("tpc init logAgentNode.result={}", result);
+        }
+    }
+
+    private void gatewayNodeInit(UserEntity user, NodeEntity top) {
+        List<Long> allParentIds = Lists.newArrayList();
+        allParentIds.add(top.getId());
+        //hera项目组创建
+        NodeEntity gatewayGroupNode = nodeDao.getOneByCode("gateway", NodeTypeEnum.PRO_GROUP_TYPE.getCode());
+        if (gatewayGroupNode == null) {
+            gatewayGroupNode = new NodeEntity();
+            gatewayGroupNode.setType(NodeTypeEnum.PRO_GROUP_TYPE.getCode());
+            gatewayGroupNode.setStatus(NodeStatusEnum.ENABLE.getCode());
+            gatewayGroupNode.setParentType(top.getType());
+            gatewayGroupNode.setParentId(top.getId());
+            gatewayGroupNode.setTopType(NodeTypeEnum.TOP_TYPE.getCode());
+            gatewayGroupNode.setTopId(top.getId());
+            gatewayGroupNode.setNodeName("gateway");
+            gatewayGroupNode.setCode("gateway");
+            gatewayGroupNode.setDesc("gateway项目组初始化");
+            gatewayGroupNode.setCreaterAcc(user.getAccount());
+            gatewayGroupNode.setCreaterId(user.getId());
+            gatewayGroupNode.setCreaterType(user.getType());
+            gatewayGroupNode.setUpdaterAcc(user.getAccount());
+            gatewayGroupNode.setUpdaterId(user.getId());
+            gatewayGroupNode.setUpdaterType(user.getType());
+            gatewayGroupNode.setContent(nodeHelper.rebuildContentForPids(null, allParentIds));
+            nodeDao.insert(gatewayGroupNode);
+            log.info("tpc init gatewayNode.result={}", gatewayGroupNode);
+        }
+        NodeEntity gatewayMgrProjectNode = nodeDao.getOneByCode("gateway-mgr", NodeTypeEnum.PRO_TYPE.getCode());
+        if (gatewayMgrProjectNode == null) {
+            gatewayMgrProjectNode = new NodeEntity();
+            gatewayMgrProjectNode.setType(NodeTypeEnum.PRO_TYPE.getCode());
+            gatewayMgrProjectNode.setOutId(151003L);
+            gatewayMgrProjectNode.setStatus(NodeStatusEnum.ENABLE.getCode());
+            gatewayMgrProjectNode.setParentType(gatewayGroupNode.getType());
+            gatewayMgrProjectNode.setParentId(gatewayGroupNode.getId());
+            gatewayMgrProjectNode.setTopType(NodeTypeEnum.TOP_TYPE.getCode());
+            gatewayMgrProjectNode.setTopId(top.getId());
+            gatewayMgrProjectNode.setNodeName("gateway-mgr");
+            gatewayMgrProjectNode.setCode("gateway-mgr");
+            gatewayMgrProjectNode.setDesc("gateway-mgr项目初始化");
+            gatewayMgrProjectNode.setCreaterAcc(user.getAccount());
+            gatewayMgrProjectNode.setCreaterId(user.getId());
+            gatewayMgrProjectNode.setCreaterType(user.getType());
+            gatewayMgrProjectNode.setUpdaterAcc(user.getAccount());
+            gatewayMgrProjectNode.setUpdaterId(user.getId());
+            gatewayMgrProjectNode.setUpdaterType(user.getType());
+            allParentIds.add(gatewayGroupNode.getId());
+            gatewayMgrProjectNode.setContent(nodeHelper.rebuildContentForPids(null, allParentIds));
+            nodeDao.insert(gatewayMgrProjectNode);
+            log.info("tpc init gatewayMgrNode.result={}", gatewayMgrProjectNode);
+        }
+        NodeEntity cnzoneBizNode = nodeDao.getOneByCode("test", NodeTypeEnum.PART_TYPE.getCode());
+        if (cnzoneBizNode == null) {
+            cnzoneBizNode = new NodeEntity();
+            cnzoneBizNode.setType(NodeTypeEnum.PART_TYPE.getCode());
+            cnzoneBizNode.setStatus(NodeStatusEnum.ENABLE.getCode());
+            cnzoneBizNode.setParentType(gatewayMgrProjectNode.getType());
+            cnzoneBizNode.setParentId(gatewayMgrProjectNode.getId());
+            cnzoneBizNode.setTopType(NodeTypeEnum.TOP_TYPE.getCode());
+            cnzoneBizNode.setTopId(top.getId());
+            cnzoneBizNode.setNodeName("测试");
+            cnzoneBizNode.setCode("test");
+            cnzoneBizNode.setOutId(1L);
+            cnzoneBizNode.setDesc("test初始化");
+            cnzoneBizNode.setCreaterAcc(user.getAccount());
+            cnzoneBizNode.setCreaterId(user.getId());
+            cnzoneBizNode.setCreaterType(user.getType());
+            cnzoneBizNode.setUpdaterAcc(user.getAccount());
+            cnzoneBizNode.setUpdaterId(user.getId());
+            cnzoneBizNode.setUpdaterType(user.getType());
+            allParentIds.add(gatewayMgrProjectNode.getId());
+            cnzoneBizNode.setContent(nodeHelper.rebuildContentForPids(null, allParentIds));
+            nodeDao.insert(cnzoneBizNode);
+            log.info("tpc init gatewayMgrNode.result={}", cnzoneBizNode);
         }
     }
 

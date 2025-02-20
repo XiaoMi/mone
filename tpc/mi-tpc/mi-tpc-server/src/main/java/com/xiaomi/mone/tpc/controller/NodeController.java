@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
 
@@ -32,6 +31,12 @@ public class NodeController {
     private NodeService nodeService;
 
     @ArgCheck
+    @RequestMapping(value = "/env")
+    public ResultVo<List<String>> env(@RequestBody NullParam param) {
+        return nodeService.env(param);
+    }
+
+    @ArgCheck
     @RequestMapping(value = "/fast")
     public ResultVo<NodeVo> fast(@RequestBody NullParam param) {
         return nodeService.fast(param);
@@ -46,6 +51,12 @@ public class NodeController {
     @ArgCheck
     @RequestMapping(value = "/list")
     public ResultVo<PageDataVo<NodeVo>> list(@RequestBody NodeQryParam param) {
+        return nodeService.list(param);
+    }
+
+    @ArgCheck(needUser = false, needToken = true)
+    @RequestMapping(value = "/inner_list")
+    public ResultVo<PageDataVo<NodeVo>> innerList(@RequestBody NodeQryParam param) {
         return nodeService.list(param);
     }
 
