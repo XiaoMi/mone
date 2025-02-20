@@ -11,7 +11,7 @@ import org.junit.Test;
 import org.nutz.dao.Dao;
 import org.nutz.dao.impl.NutDao;
 import org.nutz.dao.impl.SimpleDataSource;
-import run.mone.ai.z.dto.ZKnowledgeReq;
+//import run.mone.ai.z.dto.ZKnowledgeReq;
 import run.mone.local.docean.dto.ExecCommandResult;
 import run.mone.local.docean.enums.ImEnum;
 import run.mone.local.docean.fsm.BotReq;
@@ -29,7 +29,7 @@ import run.mone.m78.api.bo.gitlab.GitLabReq;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
@@ -40,22 +40,28 @@ import static org.junit.Assert.*;
  */
 public class SerivceTest {
 
-    @Test
-    public void test1() {
-        ZService zService = Ioc.ins().init("com.xiaomi.youpin", "run.mone.local.docean").getBean(ZService.class);
-        ZKnowledgeReq req = new ZKnowledgeReq();
-        req.setKnowledgeBaseId(2061L);
-        req.setQueryText("kafka");
-        req.setLimit(1);
-        String res = zService.getKnowledgeBaseSummaryAnswer(req);
-        System.out.println(res);
-    }
+//    @Test
+//    public void test1() {
+//        ZService zService = Ioc.ins().init("com.xiaomi.youpin", "run.mone.local.docean").getBean(ZService.class);
+//        ZKnowledgeReq req = new ZKnowledgeReq();
+//        req.setKnowledgeBaseId(2061L);
+//        req.setQueryText("kafka");
+//        req.setLimit(1);
+//        String res = zService.getKnowledgeBaseSummaryAnswer(req);
+//        System.out.println(res);
+//    }
+
+//    @Test
+//    public void testGetFileContent2(){
+//        ZService zService = Ioc.ins().init("com.xiaomi.youpin", "run.mone.local.docean").getBean(ZService.class);
+//        System.out.println(zService.getFileContent(1029L, "caobaoyu"));
+//    }
 
     @Test
     public void testGetFileContent() {
         GitService gitService = Ioc.ins().init("com.xiaomi.youpin", "run.mone.local.docean").getBean(GitService.class);
         GitLabReq req = new GitLabReq();
-        req.setGitDomain("");
+        req.setGitDomain("X.com");
         req.setGitToken("");
         req.setProjectId("81650");
         req.setFilePath("gateway-service/src/main/java/com/xiaomi/youpin/gwdash/bo/AccountDetailResult.java");
@@ -80,7 +86,7 @@ public class SerivceTest {
         Ioc.ins().init("run.mone.local.docean", "com.xiaomi.youpin");
         ImContext imContext = Ioc.ins().getBean(ImContext.class);
         boolean expected = true; // 假设这是我们期望的返回值
-        boolean actual = imContext.sendMessage("hello world", "o3V7c6dBbmaxL68N8UjJhw6NR-6I", ImEnum.WEIXIN);
+        boolean actual = imContext.sendMessage("hello world", "X", ImEnum.WEIXIN);
         assertEquals(expected, actual);
     }
 
@@ -108,7 +114,7 @@ public class SerivceTest {
     public void testTakeFullScreenShotWithCookies() {
         Ioc.ins().init("run.mone.local.docean.service.tool", "com.xiaomi.youpin");
         ChromeService chromeService = Ioc.ins().getBean(ChromeService.class);
-        chromeService.openWithCookie("", "");
+        chromeService.openWithCookie("https://127.0.0.1/main-customer-service/call-center/service-list/list","XX");
         TimeUnit.SECONDS.sleep(5);
         chromeService.takeFullScreenShot("/tmp/a.png");
         System.out.println(chromeService.quit());
@@ -211,9 +217,9 @@ public class SerivceTest {
 
         // 创建一个模拟的BotReq对象
         BotReq mockReq = BotReq.builder().flowDataList(Lists.newArrayList(
-                        FlowData.builder().id(0).type("begin").name("开始").inputMap(new LinkedHashMap<>(ImmutableMap.of("a", InputData.builder().value(new JsonPrimitive("1")).build(), "b", InputData.builder().value(new JsonPrimitive("2")).build()))).build(),
+                        FlowData.builder().id(0).type("begin").name("开始").inputMap(new java.util.concurrent.ConcurrentHashMap<>(ImmutableMap.of("a", InputData.builder().value(new JsonPrimitive("1")).build(), "b", InputData.builder().value(new JsonPrimitive("2")).build()))).build(),
                         FlowData.builder().id(1).type("code").name("代码")
-                                .inputMap(new LinkedHashMap<>(ImmutableMap.of("a1", InputData.builder().type("reference").name("a").flowId(0).build(),
+                                .inputMap(new ConcurrentHashMap<>(ImmutableMap.of("a1", InputData.builder().type("reference").name("a").flowId(0).build(),
                                         "a2", InputData.builder().type("reference").name("b").flowId(0).build())))
                                 .build(),
                         FlowData.builder().id(2).type("end").name("结束").build()
@@ -232,7 +238,7 @@ public class SerivceTest {
         // 创建一个模拟的BotReq对象
         BotReq mockReq = BotReq.builder().flowDataList(Lists.newArrayList(
                         FlowData.builder().id(0).type("begin").name("开始").build(),
-                        FlowData.builder().id(1).type("mail").name("发邮件").inputMap(new LinkedHashMap<>(ImmutableMap.of("recipient", InputData.builder().value(new JsonPrimitive("429867478@qq.com")).build(), "title", InputData.builder().value(new JsonPrimitive("title2")).build(), "content", InputData.builder().value(new JsonPrimitive("content2")).build()))).build(),
+                        FlowData.builder().id(1).type("mail").name("发邮件").inputMap(new ConcurrentHashMap<>(ImmutableMap.of("recipient", InputData.builder().value(new JsonPrimitive("429867478@qq.com")).build(), "title", InputData.builder().value(new JsonPrimitive("title2")).build(), "content", InputData.builder().value(new JsonPrimitive("content2")).build()))).build(),
                         FlowData.builder().id(2).type("end").name("结束").build()
                 )).nodeEdges(new ArrayList<>(Arrays.asList(NodeEdge.builder().sourceNodeId(0).targetNodeId(1).build(), NodeEdge.builder().sourceNodeId(1).targetNodeId(2).build())))
                 .build();

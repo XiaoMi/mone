@@ -1,5 +1,6 @@
 package run.mone.local.docean.service.tool;
 
+import com.google.common.base.Stopwatch;
 import com.google.gson.*;
 import com.google.gson.internal.LinkedTreeMap;
 import com.xiaomi.data.push.client.HttpClientV5;
@@ -12,24 +13,25 @@ import me.chanjar.weixin.common.error.WxErrorException;
 import me.chanjar.weixin.mp.api.WxMpService;
 import me.chanjar.weixin.mp.bean.template.WxMpTemplateData;
 import me.chanjar.weixin.mp.bean.template.WxMpTemplateMessage;
+import org.apache.commons.lang3.ObjectUtils;
 import run.mone.local.docean.context.TianyeContext;
 import run.mone.local.docean.fsm.bo.PluginInfo;
 import run.mone.local.docean.po.Message;
 import run.mone.local.docean.po.m78.BotVo;
+import run.mone.local.docean.po.m78.KnowledgeBo;
 import run.mone.local.docean.po.m78.presetQuestion.BotPresetQuestionBo;
 import run.mone.local.docean.po.m78.presetQuestion.Content;
 import run.mone.local.docean.po.m78.presetQuestion.Part;
 import run.mone.local.docean.service.*;
+import run.mone.local.docean.tianye.common.CommonConstants;
 import run.mone.local.docean.util.HttpUtils;
 import run.mone.local.docean.util.MessageUtil;
 
 import javax.annotation.Resource;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -53,6 +55,9 @@ public class MessageService implements ToolService {
 
     @Resource
     private ZService zService;
+
+    @Resource
+    private KnowledgeService knowledgeService;
 
     @Value("${wx.templateId}")
     private String wxTemplateId;
@@ -82,27 +87,53 @@ public class MessageService implements ToolService {
         }
     }
 
+
     public String askWithHistoryAndKnowledgeBase(String topicId, String message, Long knowLedgeId, BotVo botVo) {
         log.info("askWithHistoryAndKnowledgeBase topicId:{}", topicId);
         String history = localMessageService.getMessagesMap(topicId).stream().map(it -> it.getRole() + ":" + it.getData()).collect(Collectors.joining("\n"));
         saveMessage(topicId, Message.builder().role("user").data(message).build());
-        if (null == knowLedgeId) {
-            knowLedgeId = TianyeContext.ins().getKnowledgeBaseId();
+//        if (null == knowLedgeId) {
+//            knowLedgeId = TianyeContext.ins().getKnowledgeBaseId();
+//        }
+        String knowledgeLimit = botVo.getMeta().getOrDefault("knowledge_limit", "10");
+        Integer limit = Integer.valueOf(knowledgeLimit);
+
+        Stopwatch sw = Stopwatch.createStarted();
+        // 如果knowledgeId为空，就不去请求z了
+        //String knowledge = Objects.isNull(knowLedgeId) ? "" : zService.querySimilarKnowledge(knowLedgeId, TianyeContext.ins().getUserName(), message, limit);
+        String knowledge = "";
+        if (!Objects.isNull(knowLedgeId)) {
+            //从botVo.getKnowledgeBoList()里面找到id和knowLedgeId相等的对象
+            Long finalKnowLedgeId = knowLedgeId;
+            Optional<KnowledgeBo> knowledgeBoOpt = botVo.getKnowledgeBoList().stream()
+                    .filter(knowledgeBo -> knowledgeBo.getKnowledgeBaseId().equals(finalKnowLedgeId))
+                    .findFirst();
+            if (knowledgeBoOpt.isPresent()) {
+                if (knowledgeBoOpt.get().getVersion().equals(2)) {
+                    //走新知识库
+                    knowledge = knowledgeService.querySimilarKnowledge(finalKnowLedgeId, TianyeContext.ins().getUserName(), message, limit);
+                } else {
+                    knowledge = zService.querySimilarKnowledge(knowLedgeId, TianyeContext.ins().getUserName(), message, limit);
+                }
+            }
         }
-        String knowldge = zService.getKnowledgeBaseFilesContentConcatenated(knowLedgeId, TianyeContext.ins().getUserName());
+        log.info("querySimilarKnowledge use time :{}", sw.elapsed(TimeUnit.MILLISECONDS));
         String plugin = extractAndSerializeBotPlugins(TianyeContext.ins().getUserName(), botVo);
         //向ai问问题
-        JsonObject obj = m78Service.ask2(message, history, knowldge, plugin, botVo).getAsJsonObject();
+        sw.reset().start();
+        JsonObject obj = m78Service.ask2(message, history, knowledge, plugin, botVo).getAsJsonObject();
+        log.info("ask2 use time:{}", sw.elapsed(TimeUnit.MILLISECONDS));
 
         String reply = "";
-        String type = obj.get("type").getAsString();
+        String type = obj.has("type") ? obj.get("type").getAsString() : "llm";
         if (type.equals("plugin")) {
             //call function
             String funcId = obj.get("pluginId").getAsString();
             JsonObject param = obj.get("params").getAsJsonObject();
+            param.add(CommonConstants.TY_USERNAME_MARK, new JsonPrimitive(botVo.getUserName()));
             log.info("call function id:{} param:{}", funcId, param);
             JsonObject res = pluginCall(funcId, param);
-            reply = new GsonBuilder().setPrettyPrinting().create().toJson(res);
+            reply = new GsonBuilder().disableHtmlEscaping().setPrettyPrinting().create().toJson(res);
         } else {
             obj.addProperty("type", "llm");
             reply = obj.toString();
@@ -166,6 +197,7 @@ public class MessageService implements ToolService {
                         paraMap.put(name, value);
                     }
             );
+            paraMap.put(CommonConstants.TY_USERNAME_MARK, param.getAsJsonPrimitive(CommonConstants.TY_USERNAME_MARK));
             String callRes = HttpClientV5.get(HttpUtils.buildUrlWithParameters(url, paraMap), headers, 180000);
             try {
                 res = new JsonParser().parse(callRes);
@@ -180,6 +212,7 @@ public class MessageService implements ToolService {
                 JsonElement value = param.get(name);
                 pluginReq.add(name, value);
             });
+            pluginReq.add(CommonConstants.TY_USERNAME_MARK, param.getAsJsonPrimitive(CommonConstants.TY_USERNAME_MARK));
             res = HttpUtils.postJson(url, pluginReq);
         }
 
@@ -199,7 +232,7 @@ public class MessageService implements ToolService {
 
     public boolean sendMsg(String content, String email) {
         // 处理消息
-        String GET_HISTORY_MESSAGE_URL = feishuDomain+"/open-apis/im/v1/messages?receive_id_type=email";
+        String GET_HISTORY_MESSAGE_URL = feishuDomain + "/open-apis/im/v1/messages?receive_id_type=email";
         String access_token = MessageUtil.getTenantToken();
         String url = GET_HISTORY_MESSAGE_URL;
         String res1 = String.format(MessageUtil.getMessageTemplateSend(), content, email);
@@ -233,7 +266,23 @@ public class MessageService implements ToolService {
             knowLedgeId = TianyeContext.ins().getKnowledgeBaseId();
         }
 
-        String knowledge = zService.getKnowledgeBaseFilesContentConcatenated(knowLedgeId, TianyeContext.ins().getUserName());
+        //String knowledge = zService.getKnowledgeBaseFilesContentConcatenated(knowLedgeId, TianyeContext.ins().getUserName());
+        String knowledge = "";
+        if (!Objects.isNull(knowLedgeId)) {
+            //从botVo.getKnowledgeBoList()里面找到id和knowLedgeId相等的对象
+            Long finalKnowLedgeId = knowLedgeId;
+            Optional<KnowledgeBo> knowledgeBoOpt = botVo.getKnowledgeBoList().stream()
+                    .filter(knowledgeBo -> knowledgeBo.getKnowledgeBaseId().equals(finalKnowLedgeId))
+                    .findFirst();
+            if (knowledgeBoOpt.isPresent()) {
+                if (knowledgeBoOpt.get().getVersion().equals(2)) {
+                    //走新知识库
+                    knowledge = knowledgeService.getKnowledgeBaseFilesContentConcatenated(finalKnowLedgeId, TianyeContext.ins().getUserName());
+                } else {
+                    knowledge = zService.getKnowledgeBaseFilesContentConcatenated(knowLedgeId, TianyeContext.ins().getUserName());
+                }
+            }
+        }
 
         //转换
         BotPresetQuestionBo botPresetQuestion = new BotPresetQuestionBo();
@@ -252,7 +301,7 @@ public class MessageService implements ToolService {
         //请求ai
         try {
             String historyJson = GsonUtils.gson.toJson(botPresetQuestion);
-            JsonElement jsonElement = m78Service.askPresetQuestion(msg, historyJson, botVo,knowledge);
+            JsonElement jsonElement = m78Service.askPresetQuestion(msg, historyJson, botVo, knowledge);
             return GsonUtils.gson.toJson(jsonElement);
         } catch (Exception e) {
             log.error("getPresetQuestion error:", e);

@@ -1,15 +1,12 @@
 package run.mone.local.docean.test;
 
 import com.google.common.collect.Lists;
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import org.apache.commons.lang3.tuple.Pair;
-import org.beetl.core.Context;
 import org.beetl.core.Function;
 import org.junit.jupiter.api.Test;
-import run.mone.local.docean.fsm.JsonElementUtils;
 import run.mone.local.docean.util.GsonUtils;
 import run.mone.local.docean.util.TemplateUtils;
 import run.mone.local.docean.util.template.function.JsonValueFunction;
@@ -30,12 +27,38 @@ public class TemplateUtilsTest {
 
     @Test
     public void testRenderTemplate() {
-        String template = "Hello, ${name}!";
+        String template = "Hello \\${who}. hi, ${name}!";
         Map<String, String> map = new HashMap<>();
         map.put("name", "World");
 
         String result = TemplateUtils.renderTemplate(template, map);
         assertEquals("Hello, World!", result);
+    }
+
+    @Test
+    public void test1(){
+        // Example usage
+        Map<String, Object> data = new HashMap<>();
+        JsonObject obj = new JsonObject();
+        obj.addProperty("a1", "2");
+        data.put("a", obj);
+        data.put("c", new JsonPrimitive("nestedMap"));
+        JsonArray array = new JsonArray();
+        array.add(obj);
+        array.add(obj);
+
+        List<Map<String, Object>> list = new ArrayList<>();
+        Map<String, Object> item1 = new HashMap<>();
+        item1.put("a1", "2");
+        list.add(item1);
+        data.put("b", list);
+
+        data.put("j", new JsonPrimitive(""));
+
+        System.out.println(data);
+        String template = "The value is: ${a.a1}, ${c}, ${j}";
+        String result = TemplateUtils.renderTemplate(template, data);
+        System.out.println(result);
     }
 
 

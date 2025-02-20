@@ -46,7 +46,7 @@ public class TestController {
     @RequestMapping(path = "/testUserByToken", method = "get")
     public String testUserByToken() {
         try {
-            return zService.getUserByToken("XX");
+            return zService.getUserByToken("X");
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             return "error";
@@ -110,7 +110,7 @@ public class TestController {
 
     @RequestMapping(path = "/wx/msg", method = "get")
     public String wxMsgSend() {
-        messageService.sendWxMsg("XX", "hello world");
+        messageService.sendWxMsg("X", "hello world");
         return "success";
     }
 

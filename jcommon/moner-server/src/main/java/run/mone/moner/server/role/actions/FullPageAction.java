@@ -51,7 +51,7 @@ public class FullPageAction extends Action {
                 </action>
 
                 //全屏截图 并且 把截图回传回来
-                <action type="screenshotFullPage" send="true" download="false">
+                <action type="screenshotFullPage" send="true" download="false" removeDomTree="true">
                 </action>
                 """).build());
     }

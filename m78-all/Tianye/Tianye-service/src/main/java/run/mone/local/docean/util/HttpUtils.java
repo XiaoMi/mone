@@ -3,6 +3,7 @@ package run.mone.local.docean.util;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import lombok.extern.slf4j.Slf4j;
 import me.chanjar.weixin.common.util.http.okhttp.OkHttpClientBuilder;
 import okhttp3.*;
@@ -59,10 +60,16 @@ public class HttpUtils {
             }
             try {
                 String encodedKey = URLEncoder.encode(entry.getKey(), StandardCharsets.UTF_8);
-                String encodedValue = URLEncoder.encode((String) entry.getValue(), StandardCharsets.UTF_8);
+                String encodedValue = null;
+                if (entry.getValue() instanceof JsonPrimitive) {
+                    encodedValue = URLEncoder.encode(entry.getValue() != null ? ((JsonPrimitive) entry.getValue()).getAsString() : "", StandardCharsets.UTF_8);
+                } else {
+                    encodedValue = URLEncoder.encode(entry.getValue() != null ? (String) entry.getValue() : "", StandardCharsets.UTF_8);
+                }
                 queryStringBuilder.append(encodedKey).append("=").append(encodedValue);
             } catch (Exception e) {
                 // 异常返回空值
+                log.error("buildUrlWithParameters error,", e);
                 return null;
             }
             isFirst = false;
