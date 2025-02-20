@@ -18,4 +18,19 @@ public class IdeaService {
         return llm.chat(List.of(new AiMessage("user", prompt)));
     }
 
+    public String createComment(String code) {
+        String prompt = "请对以下代码生成注释：\n\n" + code;
+        return llm.chat(List.of(new AiMessage("user", prompt)));
+    }
+
+    public String gitPush(String code) {
+        String prompt = "请对以下代码生成git提交的commit信息：\n\n" + code;
+        return llm.chat(List.of(new AiMessage("user", prompt)));
+    }
+
+    public String methodRename(String code) {
+        String prompt = "请对以下方法重命名：\n\n" + code;
+        return llm.chat(List.of(new AiMessage("user", prompt)));
+    }
+
 }
