@@ -40,6 +40,7 @@
         <module>mcp-email</module>
         <module>mcp-time</module>
         <module>mcp-xmind</module>
+        <module>mcp-ali-email</module>
     </modules>
 
     <properties>
