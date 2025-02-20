@@ -25,6 +25,14 @@ public class FlowRes<T> {
 
     public static final int BREAK = 886;
 
+    public static final int CANCEL = 999;
+
+    public static final int GOTO = 222;
+
+    public static final int SKIP = 221;
+
+    public static final int GOTO_EXCEED_ERROR = 223;
+
     private String message;
 
     private Map<String,String> attachement;
@@ -63,6 +71,12 @@ public class FlowRes<T> {
     public static FlowRes retry() {
         FlowRes res = new FlowRes();
         res.setCode(RETRY);
+        return res;
+    }
+
+    public static FlowRes cancel() {
+        FlowRes res = new FlowRes();
+        res.setCode(CANCEL);
         return res;
     }
 

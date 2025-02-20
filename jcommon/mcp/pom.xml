@@ -37,6 +37,11 @@
         <module>mcp-idea</module>
         <module>mcp-feishu</module>
         <module>mcp-chrome</module>
+        <module>mcp-docparsing</module>
+        <module>mcp-email</module>
+        <module>mcp-time</module>
+        <module>mcp-xmind</module>
+
     </modules>
 
     <properties>
