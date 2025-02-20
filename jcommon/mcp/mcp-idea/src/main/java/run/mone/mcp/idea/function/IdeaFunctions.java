@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.mcp.idea.config.Const;
 import run.mone.mcp.idea.http.HttpClient;
 
 import java.util.List;
@@ -55,7 +56,8 @@ public class IdeaFunctions {
                 String result = switch (operation) {
                     case "closeAllEditors" -> closeAllEditors((String) arguments.get("projectName"));
                     case "getCurrentEditorContent" -> getCurrentEditorContent((String) arguments.get("projectName"));
-                    case "getCurrentEditorClassName" -> getCurrentEditorClassName((String) arguments.get("projectName"));
+                    case "getCurrentEditorClassName" ->
+                            getCurrentEditorClassName((String) arguments.get("projectName"));
                     default -> throw new IllegalArgumentException("Unknown operation: " + operation);
                 };
 
@@ -183,6 +185,6 @@ public class IdeaFunctions {
 
     @SneakyThrows
     public static JsonObject callAthena(String ideaPort, JsonObject req) {
-        return new HttpClient().post("http://127.0.0.1:" + ideaPort + "/tianye", req);
+        return new HttpClient().post("http://" + Const.IP + ideaPort + "/tianye", req);
     }
 }

@@ -12,6 +12,10 @@
 "args": [
 "-jar",
 "-Didea.port=30000",
+"-DGOOGLE_AI_GATEWAY=",
 "/Users/zhangzhiyong/IdeaProjects/open/mone/jcommon/mcp/mcp-idea/target/app.jar"
-]
+],
+"env": {
+"IDEA_PORT": "30000"
+}
 }
