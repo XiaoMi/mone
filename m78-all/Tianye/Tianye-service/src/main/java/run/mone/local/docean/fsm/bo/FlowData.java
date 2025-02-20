@@ -6,6 +6,7 @@ import lombok.Data;
 import java.io.Serializable;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author goodjava@qq.com
@@ -15,7 +16,11 @@ import java.util.Map;
 @Builder
 public class FlowData implements Serializable {
 
+    private String flowId;
+
     private String flowRecordId;
+
+    private int executeType;
 
     private int id;
 
@@ -24,17 +29,19 @@ public class FlowData implements Serializable {
     private String type;
 
     @Builder.Default
-    private LinkedHashMap<String, InputData> inputMap = new LinkedHashMap<>();
+    private ConcurrentHashMap<String, InputData> inputMap = new ConcurrentHashMap<>();
 
     @Builder.Default
-    private LinkedHashMap<String, OutputData> outputMap = new LinkedHashMap<>();
+    private ConcurrentHashMap<String, OutputData> outputMap = new ConcurrentHashMap<>();
 
     @Builder.Default
-    private LinkedHashMap<String, InputData> batchMap = new LinkedHashMap<>();
+    private ConcurrentHashMap<String, InputData> batchMap = new ConcurrentHashMap<>();
 
     private Map<String, String> flowMeta;
 
     @Builder.Default
     private boolean debug = false;
+
+    private boolean singleNodeTest;
 
 }

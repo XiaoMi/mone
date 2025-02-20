@@ -1,5 +1,5 @@
 
-package run.mone.mcp.idea.config;
+package run.mone.mcp.calendar.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

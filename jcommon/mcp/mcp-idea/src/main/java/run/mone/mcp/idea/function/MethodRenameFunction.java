@@ -1,46 +1,52 @@
 package run.mone.mcp.idea.function;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.mcp.idea.config.Const;
+import run.mone.mcp.idea.service.IdeaService;
 
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-@Data
+@Component
+@RequiredArgsConstructor
 public class MethodRenameFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
 
-    public MethodRenameFunction(String port) {
-        this.ideaPort = port;
+    private final IdeaService ideaService;
+
+    public String getName() {
+        return "renameMethod";
     }
 
-    private String name = "rename_method";
+    public String getDesc() {
+        return "IDEA operations including rename selected method";
+    }
 
-    private String desc = "IDEA operations including rename selected method";
-    private String ideaPort;
+    public String getToolScheme() {
+        return TOOL_SCHEMA;
+    }
 
-    private String toolScheme = """
+    private String TOOL_SCHEMA = """
             {
                 "type": "object",
                 "properties": {
-            
+                    "code": {
+                        "type": "string",
+                        "description": "The source code that needs to be reviewed"
+                    }
                 },
-                "required": []
+                "required": ["code"]
             }
             """;
 
     @Override
     public McpSchema.CallToolResult apply(Map<String, Object> arguments) {
-        JsonObject req = new JsonObject();
-        req.addProperty("cmd", "rename_method");
-        req.addProperty("athenaPluginHost", Const.IP + ideaPort);
-        JsonObject res = IdeaFunctions.callAthena(ideaPort, req);
-        if (res.get("code") != null && res.get("code").getAsInt() == 0) {
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("已完成命名")), false);
+        try {
+            String result = ideaService.methodRename((String) arguments.get("code"));
+            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false);
+        } catch (Exception e) {
+            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true);
         }
-        return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(new Gson().toJson(res))), true);
     }
 }
