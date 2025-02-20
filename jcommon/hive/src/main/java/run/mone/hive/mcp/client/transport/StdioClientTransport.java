@@ -351,7 +351,7 @@ public class StdioClientTransport implements ClientMcpTransport {
         }
     }
 
-    public boolean isJsonString(String str) {
+    public boolean isJson(String str) {
         try {
             McpSchema.deserializeJsonRpcMessage(this.objectMapper, str);
             return true;
@@ -371,7 +371,7 @@ public class StdioClientTransport implements ClientMcpTransport {
                 while (!isClosing && (line = processReader.readLine()) != null) {
                     try {
                         logger.info("line:{}", line);
-                        if (!isJsonString(line) || "".equals(line)) {
+                        if (!isJson(line) || "".equals(line)) {
                             continue;
                         }
                         JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(this.objectMapper, line);
