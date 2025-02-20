@@ -1,6 +1,7 @@
 package run.mone.local.docean.test;
 
 import com.google.common.collect.Lists;
+import com.google.gson.JsonPrimitive;
 import org.junit.jupiter.api.Test;
 import run.mone.local.docean.fsm.bo.Condition;
 import run.mone.local.docean.fsm.bo.Operator;
@@ -18,9 +19,9 @@ public class ConditionTest {
 
     @Test
     public void test1() {
-        Condition condition = new Condition("a", Operator.EQUALS, "a");
-        Condition condition2 = new Condition("a", Operator.EQUALS, "b");
-        Condition condition3 = new Condition("a", Operator.EQUALS, "b");
+        Condition condition = new Condition(new JsonPrimitive("a"), Operator.EQUALS, new JsonPrimitive("a"));
+        Condition condition2 = new Condition(new JsonPrimitive("a"), Operator.EQUALS, new JsonPrimitive("b"));
+        Condition condition3 = new Condition(new JsonPrimitive("a"), Operator.EQUALS, new JsonPrimitive("b"));
 
         List<Condition> conditions = Lists.newArrayList(condition, condition2, condition3);
 

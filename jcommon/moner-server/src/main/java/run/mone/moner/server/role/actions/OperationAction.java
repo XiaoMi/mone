@@ -1,5 +1,7 @@
 package run.mone.moner.server.role.actions;
 
+import com.google.gson.JsonParser;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import run.mone.hive.actions.Action;
@@ -77,11 +79,9 @@ public class OperationAction extends Action {
         setFunction((req, action, ctx) -> {
             Message reqMsg = req.getMessage();
             Result data = (Result) reqMsg.getData();
-            String actions = data.getKeyValuePairs().get("arguments");
+            String actions = JsonParser.parseString(data.getKeyValuePairs().get("arguments")).getAsJsonObject().get("actions").toString();
             String xml = new MultiXmlParser().jsonToXml(actions);
-
             xml = Const.pause + xml;
-
             return Message.builder().content(xml).build();
         });
     }
