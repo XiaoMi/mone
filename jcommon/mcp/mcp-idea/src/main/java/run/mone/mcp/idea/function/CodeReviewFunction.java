@@ -1,6 +1,7 @@
 package run.mone.mcp.idea.function;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.idea.service.IdeaService;
@@ -11,6 +12,7 @@ import java.util.function.Function;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class CodeReviewFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
 
     private final IdeaService ideaService;
@@ -42,9 +44,10 @@ public class CodeReviewFunction implements Function<Map<String, Object>, McpSche
 
     @Override
     public McpSchema.CallToolResult apply(Map<String, Object> arguments) {
-
+        log.info("CodeReviewFunction:{}", arguments);
         try {
             String result = ideaService.reviewCode((String) arguments.get("code"));
+            log.info("result:{}", result);
             return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false);
         } catch (Exception e) {
             return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true);
