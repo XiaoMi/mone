@@ -3,6 +3,7 @@ import xmlManager from './managers/xmlManager.js';
 import stateManager from './managers/stateManager.js';
 import actionManager2 from './managers/actionManager2.js';
 import screenshotManager from './managers/screenshotManager.js';
+import moneyEffect from './moneyEffect.js';
 
 console.log("Background script started at:", new Date().toISOString());
 
@@ -25,6 +26,9 @@ let wsUrl = 'ws://localhost:8181/ws';
 
 // config地址
 let configUrl = 'http://localhost:8181/config/list';
+
+// 在文件开头添加配置变量
+let autoRemoveHighlight = false; // 默认关闭自动取消重绘
 
 // 创建 WebSocket 连接函数
 function connectWebSocket() {
@@ -79,6 +83,19 @@ function connectWebSocket() {
                         if (action.type === 'end') {
                             isAutoMode = false;
                             addMessageToHistory('end');
+                        }
+
+                        // 处理script类型的消息 - 直接执行脚本
+                        if (action.type === 'script') {
+                            console.log('Executing script:', action.attributes.code);
+                            let scriptCode = action.attributes.code;
+                            // 发送消息给content.js执行脚本
+                            await chrome.tabs.sendMessage(tab.id, {
+                                type: 'executeScript',
+                                code: scriptCode
+                            });
+                            // 执行后短暂等待
+                            await new Promise(resolve => setTimeout(resolve, 500));
                         }
 
                         // 处理普通action类型
@@ -196,6 +213,9 @@ function connectWebSocket() {
                                 console.log('send messageData:', messageData);
                                 await sendWebSocketMessage(JSON.stringify(messageData), "shopping");
                             }
+
+                            // 提供删除DomTree的选项
+                            await removeHighlightIfNeeded(tab.id, autoRemoveHighlight);
                         }
                         // 滚动到页面顶部
                         if (action.type === 'scrollToTop') {
@@ -220,7 +240,22 @@ function connectWebSocket() {
                         // 截全屏
                         if (action.type === 'screenshotFullPage') {
                             console.log('screenshotFullPage');
-                            const screenshot = await screenshotManager.captureFullPage();
+
+                            let download = true;
+                            //提供下载选项
+                            if (action.attributes.download === 'false') {
+                                download = false;
+                            }
+
+                            // 获取当前窗口的所有标签页的选项
+                            let tabInfo = false;
+                            if (action.attributes.tabInfo === 'true') {
+                                tabInfo = true;
+                            }
+
+                            const screenshot = await screenshotManager.captureFullPage(download);
+
+                            let code = '';
                             //提供发送选项  
                             if (action.attributes.send === 'true') {
                                 if (context.has('domTreeData')) {
@@ -233,11 +268,15 @@ function connectWebSocket() {
                                 // 将截图数据放入context
                                 const messageData = {
                                     code: code,
-                                    img: [screenshot]
+                                    img: [screenshot],
+                                    tabs: tabInfo ? await getAllTabsInfo() : undefined
                                 };
+
                                 console.log('send messageData:', messageData);
                                 await sendWebSocketMessage(JSON.stringify(messageData), "shopping");
                             }
+
+                            await removeHighlightIfNeeded(tab.id, autoRemoveHighlight);
                         }
                         // buildDomTree(从新生成domTree)
                         if (action.type === 'buildDomTree') {
@@ -272,7 +311,6 @@ function connectWebSocket() {
                                 args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 , onlyVisibleArea: !fullPage}]
                             });
 
-                             //TODO$ add
                              new Promise((resolve, reject) => {
                                 try {
                                     chrome.storage.local.set({ lastDomTreeData: domTreeData });
@@ -762,6 +800,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             } else if (message.type === 'captureFullPage') {
                 const result = await screenshotManager.captureFullPage();
                 sendResponse({ success: result });
+            } else if (message.type === 'setAutoRemoveHighlight') {
+                autoRemoveHighlight = message.value;
+                // 保存配置到storage
+                await chrome.storage.local.set({ autoRemoveHighlight });
+                sendResponse({ success: true });
             } else {
                 sendResponse({ success: false, error: 'Unknown message type' });
             }
@@ -908,9 +951,27 @@ async function markElements(tabId, configs) {
   }
 }
 
-// 在状态变更监听器中添加配置处理
+// 添加新的方法来处理取消重绘效果
+async function removeHighlightIfNeeded(tabId, shouldRemove = false) {
+    if (!shouldRemove) return;
+
+    await chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+            const container = document.getElementById('playwright-highlight-container');
+            if (container) {
+                container.remove();
+            }
+        }
+    });
+}
+
+// 在状态变更监听器中使用新方法
 stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
     try {
+        // 添加延迟确保页面重绘完成
+        await new Promise(resolve => setTimeout(resolve, 500)); // 500ms 延迟
+
         // 使用stateUpdate中的tabId，不再需要查询当前tab
         if (!stateUpdate.tabId) {
             console.warn('No tabId in state update:', stateUpdate);
@@ -949,16 +1010,7 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
             quality: 10
         });
 
-        // 取消重绘效果
-        await chrome.scripting.executeScript({
-            target: { tabId: stateUpdate.tabId },
-            func: () => {
-                const container = document.getElementById('playwright-highlight-container');
-                if (container) {
-                    //container.remove();
-                }
-            }
-        });
+        await removeHighlightIfNeeded(stateUpdate.tabId, autoRemoveHighlight);
 
         // 将 domTreeData 转换为字符串
         const domTreeString = generateHtmlString(domTreeData);
@@ -1018,3 +1070,8 @@ function addMessageToHistory(message) {
         messageHistory.shift();
     }
 }
+
+// 在初始化时读取配置
+chrome.storage.local.get(['autoRemoveHighlight'], (result) => {
+    autoRemoveHighlight = result.autoRemoveHighlight ?? false;
+});

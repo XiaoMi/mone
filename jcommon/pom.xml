@@ -61,6 +61,7 @@
         <module>grpc</module>
         <module>easy</module>
         <module>df</module>
+        <module>moner-server</module> 
         <module>monespring</module>
         <module>graalvm</module>
         <module>mquic</module>

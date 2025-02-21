@@ -2,7 +2,6 @@ package run.mone.local.docean.service;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.reflect.TypeToken;
 import com.xiaomi.youpin.docean.anno.Service;
@@ -52,5 +51,32 @@ public class BotPluginService {
                 .method(metaJson.get("http_method").getAsString())
                 .headers(headersMap)
                 .build();
+    }
+
+    public PluginInfo convertBotPluginDTOToPluginInfo(BotPluginDTO dto){
+        String apiUrl = dto.getApiUrl();
+        String meta = dto.getMeta();
+        JsonObject metaJson = gson.fromJson(meta, JsonObject.class);
+
+        String display = Optional.ofNullable(metaJson.get("display")).map(it -> it.getAsString()).orElse("");
+
+        JsonArray input = metaJson.get("input").getAsJsonArray();
+        JsonArray output = metaJson.get("output").getAsJsonArray();
+
+        Map<String, String> headersMap = gson.fromJson(metaJson.get("http_headers").getAsJsonObject(), new TypeToken<Map<String, Object>>() {
+        }.getType());
+        return PluginInfo.builder()
+                .display(display)
+                .url(apiUrl)
+                .input(input)
+                .name(dto.getName())
+                .output(output)
+                .method(metaJson.get("http_method").getAsString())
+                .headers(headersMap)
+                .build();
+    }
+
+    public BotPluginDTO getPluginDtoById(Long id) {
+        return botPluginProvider.getBotPluginById(id);
     }
 }

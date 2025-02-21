@@ -4,13 +4,13 @@ class ScreenshotManager {
         // 可以在这里添加配置项
         this.config = {
             format: 'jpeg',
-            quality: 10,
+            quality: 5,
             defaultFilename: 'screenshot.jpeg'
         };
     }
 
     // 捕获完整页面的截图
-    async captureFullPage() {
+    async captureFullPage(download = true) {
         try {
             // 首先尝试获取当前窗口的活动标签页
             let tabs = await chrome.tabs.query({
@@ -141,7 +141,7 @@ class ScreenshotManager {
             });
 
             // 下载合并后的图片
-            if (response.success) {
+            if (download && response.success) {
                 await chrome.downloads.download({
                     url: response.dataUrl,
                     filename: 't.jpeg',
@@ -153,7 +153,8 @@ class ScreenshotManager {
             // 关闭offscreen文档
             await chrome.offscreen.closeDocument();
 
-            return true;
+            // 根据download参数返回不同的值
+            return download ? true : response.dataUrl;
 
         } catch (error) {
             console.error('Error capturing full page screenshot:', error);

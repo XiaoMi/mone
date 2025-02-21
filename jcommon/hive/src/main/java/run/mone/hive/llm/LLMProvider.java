@@ -13,9 +13,11 @@ public enum LLMProvider {
     STEPFUN_ASR("https://api.stepfun.com/v1/audio/transcriptions", "STEPFUN_API_KEY", "step-asr", null),
     STEPFUN_TTS("https://api.stepfun.com/v1/audio/speech", "STEPFUN_API_KEY", "step-tts-mini", null),
     GOOGLE("https://generativelanguage.googleapis.com/v1beta/openai/chat/completions", "GOOGLE_API_KEY", "gemini-2.0-flash-exp", null),
+    //gemini-2.0-pro-exp-02-05 gemini-2.0-flash
     GOOGLE_2("https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent?key=", "GOOGLE_API_KEY", "gemini-2.0-flash", null),
     DEEPSEEK("https://api.deepseek.com/v1/chat/completions", "DEEPSEEK_API_KEY", "deepseek-chat", null),
-    OPENROUTER("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "anthropic/claude-3.5-sonnet:beta", null),
+    //openai/gpt-4o-2024-11-20 anthropic/claude-3.5-sonnet:beta
+    OPENROUTER("https://openrouter.ai/api/v1/chat/completions", "OPENROUTER_API_KEY", "openai/gpt-4o-2024-11-20", null),
     OPENAICOMPATIBLE("", "", "", null),
     DOUBAO("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_MODEL_KEY");
 
