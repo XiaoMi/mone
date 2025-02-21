@@ -43,11 +43,8 @@ class Text2SqlFunctionTest {
     void testQueryExecution() {
         Map<String, Object> args = new HashMap<>();
         args.put("type", "search_table_schema_info");
-        args.put("database_url",
-            "jdbc:mysql://staging.bms.info.tidb.srv:4100/m78?characterEncoding=utf8&autoReconnect=true&failOverReadOnly=false&serverTimezone=UTC&useSSL=false&allowPublicKeyRetrieval=true&allowMultiQueries=true&useServerPrepStmts=false&rewriteBatchedStatements=true");
-        args.put("tables", List.of("m78_code_generation_info"));
-
-//        setEnv("m78_wr", "BKJ8WwMrj2VHHVdIL8l8DCpK");
+        args.put("database_url", "jdbc:sqlite:D:/product-info.db");
+        args.put("tables", List.of("test_table"));
 
         McpSchema.CallToolResult result = text2SqlFunction.apply(args);
 
