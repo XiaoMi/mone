@@ -20,4 +20,7 @@ public class Const {
             </action>
             """;
 
+    public static final String ROLE = "_role_";
+
+    public static final String ROLE_EXIT = "___exit___";
 }
