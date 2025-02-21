@@ -55,8 +55,11 @@ public class CreateCommentFunction implements Function<Map<String, Object>, McpS
             JsonObject type = new JsonObject();
             type.addProperty("type", "comment");
             type.addProperty("methodName", methodName);
-
             String result = ideaService.createComment(code);
+
+            String comment = ideaService.extractContent(result, "comment");
+            type.addProperty("comment", comment);
+
             return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(type.toString(), result)), false);
         } catch (Exception e) {
             return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true);

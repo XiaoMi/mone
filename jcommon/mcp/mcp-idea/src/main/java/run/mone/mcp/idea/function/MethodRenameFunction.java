@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import com.google.gson.JsonObject;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.idea.service.IdeaService;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class MethodRenameFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
@@ -52,10 +54,14 @@ public class MethodRenameFunction implements Function<Map<String, Object>, McpSc
         try {
             String methodName = arguments.get("methodName").toString();
             String result = ideaService.methodRename((String) arguments.get("code"));
+            String newName = ideaService.extractContent(result, "methodName");
 
             JsonObject type = new JsonObject();
             type.addProperty("type", "rename");
             type.addProperty("methodName", methodName);
+            type.addProperty("newName", newName);
+
+            log.info("type:{}", type);
 
             return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false);
         } catch (Exception e) {
