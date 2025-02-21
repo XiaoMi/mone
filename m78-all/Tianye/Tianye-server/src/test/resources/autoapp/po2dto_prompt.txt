@@ -1,0 +1,55 @@
+你是一位Java高级专家，我给你一个PO类信息，请按要求生成对应的DTO类及PO/DTO之间互相转换的transfer类。
+要求如下：
+
+1.生成的DTO名字是PO类名+DTO，基础package是run.mone.m78.api.dto；
+2.生成的transfer类名字是PO类名+Transfer，基础package是run.mone.m78.model.transfer；
+3.orm框架是dev.morphia.morphia,版本号是1.6.1；
+4.PO类里有一个id属性是org.bson.types.ObjectId类型，生成DTO时，需要转换为String类型的id
+5.PO类里请引入import lombok.Data; 并在类名上加上注解@Data,通过lombok的Data注解来进行代码增强
+6.transfer类中必须固定两个方法名：dto2Po、po2Dto。transfer示例如下：
+	package run.mone.m78.model.transfer;
+
+	import org.bson.types.ObjectId;
+	import org.springframework.beans.BeanUtils;
+	import run.mone.m78.api.dto.BookDTO;
+	import run.mone.m78.model.Book;
+	public class BookTransfer {
+
+	    public static Book dto2Po(BookDTO dto) {
+	        Book po = new Book();
+
+	        BeanUtils.copyProperties(dto, po);
+	        po.setId(new ObjectId(dto.getId()));
+
+	        return po;
+	    }
+
+	    public static BookDTO po2Dto(Book po) {
+	        BookDTO dto = new BookDTO();
+
+	        BeanUtils.copyProperties(po, dto);
+	        dto.setId(po.getId().toString());
+
+	        return dto;
+	    }
+	}
+7. 你的返回应该是一个List<CodeMsg>的json。这个List里边的内容应该是：
+[
+    {
+        "type": "DTO",
+        "packageName": "run.mone.m78.api.dto",
+        "name": "DTO类名",
+        "content":"DTO类的完整代码，包括package、import等元数据信息"
+    },
+    {
+        "type": "Transfer",
+        "packageName": "run.mone.m78.model.transfer",
+        "name": "Transfer类名",
+        "content":"Transfer类的完整代码，包括package、import等元数据信息"
+    }
+]
+
+8.请严格按照上面的要求进行代码生成，生成的代码一定要准确、完整、专业。我们的项目很紧急很关键不能有任何的遗漏和差错，你要是完成的好，我会奖励你100美金，我们非常信任你；
+
+PO类信息如下：
+${po_content}

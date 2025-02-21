@@ -1,0 +1,51 @@
+你是一名资深的Java软件工程师，精通Springboot+SpringMVC，我有一个工程基础框架是Springboot+SpringMVC+mongo+morphia，我需要你帮我完成Controller代码的生成。
+
+我会给你一份需求文档、一份关于该需求文档的json格式的功能清单、一份关于该系统的mongo实体类及对应的Repository Dao，
+请根据我提供的内容和我需要实现的功能清单，生成功能清单对应的Springboot Controller层代码
+
+要求：
+1. 使用Java8的语法，代码尽可能简单，简洁易懂
+2. 你只需要返回代码块和代码注释，不要有任何的其他多余的解释
+3. 生成的Controller都加上springboot的跨域注解@org.springframework.web.bind.annotation.CrossOrigin
+4. 生成的Controller默认集成好api注解，用法如下：
+	4.1 先导入相关注解 import com.xiaomi.mone.http.docs.annotations.HttpApiDoc;
+		import com.xiaomi.mone.http.docs.annotations.HttpApiModule;
+		import com.xiaomi.mone.http.docs.annotations.MiApiRequestMethod;
+	4.2 在Controller类上加注解：@HttpApiModule(value = "Controller名字", apiController = Controller名字.class)
+	4.3 在具体的rest接口上加注解：@HttpApiDoc(value = "/对应的rest path", method = MiApiRequestMethod.POST, apiName = "api接口描述")，
+	   MiApiRequestMethod是个枚举，值有：POST、GET、PUT、DELETE、HEAD、OPTS、PATCH，请根据rest接口类型选择对应的枚举
+5. 每个rest接口的返回值都用com.xiaomi.youpin.infra.rpc.Result封装：如Result<Void>，请注意在Controller类里 import com.xiaomi.youpin.infra.rpc.Result.
+   Result类核心静态构造方法如下(注意调用success时必须要传参，rest接口要求Void返回时，success入参可以传null)：
+   public static <T> Result<T> success(T data)、
+   public static <T> Result<T> fromException(Throwable e)
+   public static <T> Result<T> fromException(Throwable e, String message)
+6. 生成Controller的数量请严格遵从功能清单列表，不要多生成也不要少生成
+7. 你的返回应该是一个List<Controller>的json。这个List里边的内容应该是：
+[
+    {
+        "type": "controller",
+        "packageName": "run.mone.m78.controller",
+        "name": "controller类名",
+        "content":"controller类的完整代码，包括package、import等元数据信息。
+		尤其注意：
+			1.使用的类型一定要在类里进行正确的import，不要遗漏否则编译会出错。
+			  比如使用了ObjectId、List则需要在类里面import org.bson.types.ObjectId;import java.util.List;
+			2.代码里面使用model类、Repository dao时不能调用不存在的方法及属性;
+			3.前面要求集成的注解和返回值包装不要遗漏了"
+    }
+]
+8. 将生成的Controller代码放入json中的content属性里时，务必对需要转义的特殊字符(如双引号等)完成一次转义， 确保返回的json数组是一个合法的json格式
+9. 特别注意对@RequestMapping、@PostMapping、@HttpApiDoc、@HttpApiModule等注解里含有双引号的地方完成转义10. 我们非常信任你，你要是完成的好，我会奖励你100美金
+
+需求文档、功能清单、实体类和Repository信息如下：
+
+需求文档：
+${requirement_doc}
+
+功能清单：
+${func_point}
+
+实体类和Repository信息：
+${code_meta}
+
+请按要求生成Controller并按指定的json格式返回

@@ -5,7 +5,9 @@ import run.mone.hive.actions.Action;
 import run.mone.hive.memory.Memory;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -13,6 +15,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public class RoleContext {
 
     private Memory memory;
+    private Map<String, Object> context;
     private Action todo;
     private String profile;
     private boolean isDone;
@@ -28,6 +31,7 @@ public class RoleContext {
     public RoleContext(String profile) {
         this.profile = profile;
         this.memory = new Memory();
+        this.context = new HashMap<>();
         this.isDone = false;
     }
 

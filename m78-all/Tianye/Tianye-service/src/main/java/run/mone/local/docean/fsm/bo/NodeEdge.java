@@ -12,6 +12,11 @@ import java.io.Serializable;
 @Data
 @Builder
 public class NodeEdge implements Serializable {
+
     private int sourceNodeId;
+
+    private String sourceSubNodeId;
+
     private int targetNodeId;
+
 }
