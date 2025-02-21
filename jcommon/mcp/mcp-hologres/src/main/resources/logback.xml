@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="5 seconds">
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d|%-5level|%thread|%logger{40}|%M|%L|%X{trace_id}|%X{span_id}|%msg%n</pattern>
+        </encoder>
+    </appender>
+    <appender class="ch.qos.logback.core.rolling.RollingFileAppender" name="fileAppender">
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="ch.qos.logback.classic.PatternLayout">
+                <pattern>%d|%-5level|%thread|%logger|%M|%L|%msg%n</pattern>
+            </layout>
+        </encoder>
+        <file>${log.path}/mcp-hologres/server.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <MaxHistory>120</MaxHistory>
+            <fileNamePattern>${log.path}/service-pds/server.log.%d{yyyy-MM-dd-HH}</fileNamePattern>
+        </rollingPolicy>
+    </appender>
+
+    <logger level="ERROR" name="org.springframework"/>
+    <logger level="ERROR" name="ch.qos.logback"/>
+    <logger level="DEBUG" name="druid.sql.Statement"/>
+
+    <logger level="ERROR" name="com.xiaomi.data.push.service.state"/>
+    <logger level="ERROR" name="org.reflections.Reflections"/>
+    <property resource="application.properties"/>
+    <property name="MAX_HISTORY" value="120"/>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="fileAppender"/>
+    </root>
+</configuration>
