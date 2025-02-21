@@ -43,6 +43,7 @@
         <module>mcp-email</module>
         <module>mcp-time</module>
         <module>mcp-xmind</module>
+        <module>mcp-nacosservice</module>
     </modules>
 
     <properties>
