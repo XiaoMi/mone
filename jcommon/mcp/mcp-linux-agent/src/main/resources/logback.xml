@@ -1,16 +1,27 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration scan="true" scanPeriod="5 seconds">
 
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+<!--    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">-->
+<!--        <target>System.err</target>-->
+<!--        <encoder>-->
+<!--            <pattern>%d|%-5level|%thread|%logger{40}|%M|%L|%X{trace_id}|%X{span_id}|%msg%n</pattern>-->
+<!--        </encoder>-->
+<!--    </appender>-->
+
+    <appender name="fileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>/tmp/linux-agent.log</file>
         <encoder>
-            <pattern>%d|%-5level|%thread|%logger{40}|%M|%L|%X{trace_id}|%X{span_id}|%msg%n</pattern>
+            <pattern>%d|%-5level|%thread|%logger{40}|%L|%msg%n</pattern>
         </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>/tmp/linux-agent.log.%d{yyyy-MM-dd-HH}</fileNamePattern>
+        </rollingPolicy>
     </appender>
 
 
-
     <root level="INFO">
-        <appender-ref ref="STDOUT"/>
+<!--        <appender-ref ref="STDOUT"/>-->
+        <appender-ref ref="fileAppender"/>
     </root>
 
 </configuration>

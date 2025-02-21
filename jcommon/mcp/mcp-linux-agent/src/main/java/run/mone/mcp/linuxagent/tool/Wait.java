@@ -37,9 +37,9 @@ public class Wait implements McpTool {
 
     @Override
     public McpSchema.CallToolResult apply(Map<String, Object> arguments) {
-        double duration = (Double) arguments.get("duration");
+        int duration = (Integer) arguments.get("duration");
         try {
-            Thread.sleep((long) (duration * 1000));
+            Thread.sleep(duration * 1000L);
             // After waiting, capture the screen
             String linuxServerUrl = System.getenv("LINUX_SERVER_URL");
             CloseableHttpClient httpClient = HttpClients.createDefault();

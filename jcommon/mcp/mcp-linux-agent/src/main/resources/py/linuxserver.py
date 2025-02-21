@@ -15,7 +15,8 @@ def capture_screen():
     grid = request.args.get('grid') == 'true'
     base64_str, mime_type, width, height, mouse_x, mouse_y = linux_automation.capture_fullscreen_jpg_base64(grid=grid)
     description = f"截图分辨率: {width}x{height}, 鼠标指针坐标: ({mouse_x}, {mouse_y}), 鼠标指针为红色x的交叉点。"
-    return jsonify({"data": base64_str, "mime_type": mime_type, "description": description})
+    return jsonify(
+        {"data": base64_str, "mime_type": mime_type, "description": description, "width": width, "height": height})
 
 
 @app.route('/capture_grid', methods=['GET'])
