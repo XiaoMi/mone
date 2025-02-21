@@ -100,9 +100,8 @@ public class Text2SqlFunction implements Function<Map<String, Object>, McpSchema
             }
             log.info("Successfully executed query");
         }
-        String tooleResponse = formatAsJson(schema);
-        System.out.println(tooleResponse);
-        return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(tooleResponse)), false);
+        String toolResponse = formatAsJson(schema);
+        return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(toolResponse)), false);
     }
 
     private List<TableSchema> getTable(DatabaseMetaData meta, String tabelNamePattern) throws SQLException {
