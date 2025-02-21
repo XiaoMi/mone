@@ -30,6 +30,136 @@ let configUrl = 'http://localhost:8181/config/list';
 // 在文件开头添加配置变量
 let autoRemoveHighlight = false; // 默认关闭自动取消重绘
 
+
+const urlChangePromise = new Promise(async (resolve) => {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const currentUrl = tab.url;
+    let changes = {
+        urlChanged: false,
+        contentChanged: false,
+        loadingComplete: false,
+        oldUrl: currentUrl,
+        newUrl: currentUrl,
+        mutations: []
+    };
+
+    // 监听 URL 和页面加载状态变化
+    function urlChangeListener(tabId, changeInfo, updatedTab) {
+        if (tabId === tab.id) {
+            if (changeInfo.url) {
+                changes.urlChanged = true;
+                changes.newUrl = changeInfo.url;
+            }
+            if (changeInfo.status === 'complete') {
+                changes.loadingComplete = true;
+            }
+            
+            // 如果发生了重要变化，移除监听器并返回结果
+            if (changes.urlChanged || (changes.contentChanged && changes.loadingComplete)) {
+                chrome.tabs.onUpdated.removeListener(urlChangeListener);
+                resolve(changes);
+            }
+        }
+    }
+    
+    // 注入内容脚本监听 DOM 变化
+    await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: () => {
+            // 创建 MutationObserver 监听 DOM 变化
+            const observer = new MutationObserver((mutations) => {
+                const significantChanges = mutations.filter(mutation => {
+                    // 过滤出重要的 DOM 变化
+                    return (
+                        // 元素添加或删除
+                        mutation.addedNodes.length > 0 || 
+                        mutation.removedNodes.length > 0 ||
+                        // 属性变化（排除一些不重要的属性）
+                        (mutation.type === 'attributes' && 
+                         !['data-timestamp', 'style'].includes(mutation.attributeName)) ||
+                        // 文本内容变化
+                        mutation.type === 'characterData'
+                    );
+                });
+
+                if (significantChanges.length > 0) {
+                    // 发送消息给 background script
+                    chrome.runtime.sendMessage({
+                        type: 'contentChanged',
+                        changes: significantChanges.map(m => ({
+                            type: m.type,
+                            target: m.target.nodeName,
+                            attributeName: m.attributeName,
+                            addedNodes: Array.from(m.addedNodes).map(n => n.nodeName),
+                            removedNodes: Array.from(m.removedNodes).map(n => n.nodeName)
+                        }))
+                    });
+                }
+            });
+
+            // 配置观察选项
+            observer.observe(document.body, {
+                childList: true,
+                attributes: true,
+                characterData: true,
+                subtree: true,
+                attributeOldValue: true,
+                characterDataOldValue: true
+            });
+
+            // 监听 AJAX 请求
+            // const originalXHR = window.XMLHttpRequest;
+            // window.XMLHttpRequest = function() {
+            //     const xhr = new originalXHR();
+            //     xhr.addEventListener('loadend', () => {
+            //         chrome.runtime.sendMessage({
+            //             type: 'ajaxComplete',
+            //             url: xhr.responseURL
+            //         });
+            //     });
+            //     return xhr;
+            // };
+
+            // 监听 fetch 请求
+            // const originalFetch = window.fetch;
+            // window.fetch = function() {
+            //     return originalFetch.apply(this, arguments)
+            //         .then(response => {
+            //             chrome.runtime.sendMessage({
+            //                 type: 'fetchComplete',
+            //                 url: response.url
+            //             });
+            //             return response;
+            //         });
+            // };
+        }
+    });
+
+    // 监听来自内容脚本的消息
+    function messageListener(message) {
+        if (message.type === 'contentChanged') {
+            changes.contentChanged = true;
+            changes.mutations.push(...message.changes);
+        } else if (['ajaxComplete', 'fetchComplete'].includes(message.type)) {
+            changes.contentChanged = true;
+            changes.mutations.push({
+                type: 'network',
+                url: message.url
+            });
+        }
+    }
+    
+    chrome.runtime.onMessage.addListener(messageListener);
+    chrome.tabs.onUpdated.addListener(urlChangeListener);
+    
+    // 设置超时
+    setTimeout(() => {
+        chrome.tabs.onUpdated.removeListener(urlChangeListener);
+        chrome.runtime.onMessage.removeListener(messageListener);
+        resolve(changes);
+    }, 5000); // 5秒超时
+});
+
 // 创建 WebSocket 连接函数
 function connectWebSocket() {
     // 如果已经有连接，先关闭
@@ -102,6 +232,22 @@ function connectWebSocket() {
                         if (action.type === 'action') {
                             console.log('Processing action:', action);
                             const selector = `[browser-user-highlight-id="playwright-highlight-${action.attributes.elementId}"]`;
+
+                            if(action.attributes.waiting) {
+                                urlChangePromise.then((urlChange) => {
+                                    if (urlChange) {
+                                        console.log("urlChange", urlChange)
+                                        sendWebSocketMessage(JSON.stringify({
+                                            type: 'reply',
+                                            oldUrl: urlChange.oldUrl,// 之前url
+                                            newUrl: urlChange.newUrl, // 新url
+                                            urlChanged: urlChange.urlChanged, // url是否变化
+                                            contentChanged: urlChange.contentChanged, // dom内容是否变化
+                                            loadingComplete: urlChange.loadingComplete, // 页面是否加载完成
+                                        }));
+                                    }
+                                });
+                            }
 
                             if (action.attributes.name === 'fill') {
                                 await chrome.scripting.executeScript({
