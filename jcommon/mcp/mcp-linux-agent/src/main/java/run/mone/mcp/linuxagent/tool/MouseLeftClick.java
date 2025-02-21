@@ -60,7 +60,8 @@ public class MouseLeftClick implements McpTool{
                 // 可以选择检查 moveMouseResponse 的状态码
             }
 
-            HttpGet clickRequest = new HttpGet(linuxServerUrl + "/mouse_leftClick?object_description=" + objectDescription);
+            String encodedObjectDescription = java.net.URLEncoder.encode(objectDescription, "UTF-8");
+            HttpGet clickRequest = new HttpGet(linuxServerUrl + "/mouse_leftClick?object_description=" + encodedObjectDescription);
             try (CloseableHttpResponse clickResponse = httpClient.execute(clickRequest)) {
                 HttpEntity entity = clickResponse.getEntity();
                 if (clickResponse.getStatusLine().getStatusCode() != 200) {
@@ -75,7 +76,7 @@ public class MouseLeftClick implements McpTool{
             }
         } catch (IOException e) {
             log.error("Error in mouseLeftClick", e);
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error in mouseLeftClick: " + e.getMessage())), true);
+            return new McpSchema.CallToolResult(java.util.Arrays.asList(new McpSchema.TextContent("Error in mouseLeftClick: " + e.getMessage())), true);
         }
     }
 }
