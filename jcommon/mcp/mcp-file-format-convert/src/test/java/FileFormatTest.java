@@ -10,24 +10,24 @@ public class FileFormatTest {
 
     private static final Gson gson = new Gson();
 
-    // 测试word转PDF
+
     @Test
-    public void testPDF2Word() {
+    public void testExcel2CSV() {
         FileFormatFunction fileFormatFunction = new FileFormatFunction();
         fileFormatFunction.apply(Map.of(
-                "type", "pdf_to_word",
-                "input_file", "C:/Users/wangling8/Desktop/test3.pdf",
-                "output_file", "C:/Users/wangling8/Desktop/test4.docx"
+                "type", "excel_to_csv",
+                "input_file", "C:/Users/wangling8/Desktop/test_result_CTQ3.xlsx",
+                "output_file", "C:/Users/wangling8/Desktop/testcnnn.csv"
         ));
     }
 
     @Test
-    public void testWord2PDF() {
+    public void testCSV2Excel() {
         FileFormatFunction fileFormatFunction = new FileFormatFunction();
         fileFormatFunction.apply(Map.of(
-                "type", "word_to_pdf",
-                "input_file", "C:/Users/wangling8/Desktop/test3.docx",
-                "output_file", "C:/Users/wangling8/Desktop/test4.pdf"
+                "type", "csv_to_excel",
+                "input_file", "C:/Users/wangling8/Desktop/qt3.csv",
+                "output_file", "C:/Users/wangling8/Desktop/testwlll.xlsx"
         ));
     }
 

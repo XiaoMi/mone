@@ -21,7 +21,7 @@ public class FileFormatFunction implements Function<Map<String, Object>, McpSche
                 "properties": {
                     "type": {
                         "type": "string",
-                        "enum": ["word_to_pdf", "pdf_to_word"],
+                        "enum": ["excel_to_csv", "csv_to_excel"],
                         "description": "The type of file conversion to execute"
                     },
                     "input_file": {
@@ -38,7 +38,7 @@ public class FileFormatFunction implements Function<Map<String, Object>, McpSche
 
     private String name = "file_format_executor";
 
-    private String desc = "Execute file format convert (word2PDF,PDF2word...)";
+    private String desc = "Execute file format convert (excel to csv,csv to excel...)";
 
     public  FileFormatFunction() {
 
@@ -49,10 +49,10 @@ public class FileFormatFunction implements Function<Map<String, Object>, McpSche
         String type = (String) args.get("type");
         try {
             switch (type.toLowerCase()) {
-                case "word_to_pdf":
-                    return executeWordToPDF((String) args.get("input_file"), (String) args.get("output_file"));
-                case "pdf_to_word":
-                    return executePDFToWord((String) args.get("input_file"), (String) args.get("output_file"));
+                case "excel_to_csv":
+                    return executeExcelToCSV((String) args.get("input_file"), (String) args.get("output_file"));
+                case "csv_to_excel":
+                    return executeCSVToExcel((String) args.get("input_file"), (String) args.get("output_file"));
                 default:
                     throw new IllegalArgumentException("Unsupported operation type: " + type);
             }
@@ -63,9 +63,9 @@ public class FileFormatFunction implements Function<Map<String, Object>, McpSche
     }
 
 
-    public McpSchema.CallToolResult executeWordToPDF(String inputPath, String outputPath) {
+    public McpSchema.CallToolResult executeExcelToCSV(String inputPath, String outputPath) {
         try {
-            boolean res = FileFormatUtils.convertWordToPdf(inputPath, outputPath);
+            boolean res = FileFormatUtils.excelToCsv(inputPath, outputPath);
             return new McpSchema.CallToolResult(
                     List.of(new McpSchema.TextContent(String.valueOf(res))),
                     false
@@ -75,9 +75,9 @@ public class FileFormatFunction implements Function<Map<String, Object>, McpSche
         }
     }
 
-    public McpSchema.CallToolResult executePDFToWord(String inputPath, String outputPath) {
+    public McpSchema.CallToolResult executeCSVToExcel(String inputPath, String outputPath) {
         try {
-            boolean res = FileFormatUtils.convertPdfToWord(inputPath, outputPath);
+            boolean res = FileFormatUtils.csvToExcel(inputPath, outputPath);
             return new McpSchema.CallToolResult(
                     List.of(new McpSchema.TextContent(String.valueOf(res))),
                     false
