@@ -3,84 +3,24 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <groupId>run.mone</groupId>
-        <artifactId>jcommon</artifactId>
-        <version>1.6.0-jdk21-SNAPSHOT</version>
+        <artifactId>mcp</artifactId>
+        <version>1.6.1-jdk21-SNAPSHOT</version>
     </parent>
 
-    <artifactId>mcp</artifactId>
-    <version>1.6.1-jdk21-SNAPSHOT</version>
-    <packaging>pom</packaging>
-    <modules>
-        <module>mcp-mysql</module>
-        <module>mcp-mongo</module>
-        <module>mcp-redis</module>
-        <module>mcp-shell</module>
-        <module>mcp-docker</module>
-        <module>mcp-neo4j</module>
-        <module>mcp-playwright</module>
-        <module>mcp-applescript</module>
-        <module>mcp-multimodal</module>
-        <module>mcp-memory</module>
-        <module>mcp-solution-assessor</module>
-        <module>mcp-filesystem</module>
-        <module>mcp-prettier</module>
-        <module>mcp-writer</module>
-        <module>mcp-fetch</module>
-        <module>mcp-coder</module>
-        <module>mcp-excel</module>
-        <module>mcp-song</module>
-        <module>mcp-sequentialthinking</module>
-        <module>mcp-git</module>
-        <module>mcp-hammerspoon</module>
-        <module>mcp-idea</module>
-        <module>mcp-nacosconfig</module>
-        <module>mcp-terminal</module>
-        <module>mcp-feishu</module>
-        <module>mcp-chrome</module>
-        <module>mcp-docparsing</module>
-        <module>mcp-email</module>
-        <module>mcp-time</module>
-        <module>mcp-xmind</module>
-        <module>mcp-ali-email</module>
-        <module>mcp-pty4j</module>
-        <module>mcp-linux-agent</module>
-    </modules>
+    <artifactId>mcp-pty4j</artifactId>
 
     <properties>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <logback.version>1.5.12</logback.version>
     </properties>
 
+
     <dependencies>
-        <dependency>
-            <groupId>org.apache.httpcomponents.client5</groupId>
-            <artifactId>httpclient5</artifactId>
-            <version>5.4.1</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>run.mone</groupId>
-            <artifactId>hive</artifactId>
-            <version>1.6.1-jdk21-SNAPSHOT</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <version>3.4.1</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-test</artifactId>
-            <version>6.2.1</version>
-            <scope>test</scope>
-        </dependency>
 
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -99,13 +39,6 @@
             <artifactId>logback-core</artifactId>
             <version>${logback.version}</version>
         </dependency>
-
-        <dependency>
-            <groupId>redis.clients</groupId>
-            <artifactId>jedis</artifactId>
-            <version>4.3.1</version>
-        </dependency>
-
 
         <dependency>
             <groupId>org.springframework</groupId>
@@ -159,6 +92,7 @@
             <version>2.18.2</version>
         </dependency>
 
+
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
@@ -178,11 +112,34 @@
         </dependency>
 
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-websocket</artifactId>
-            <version>3.4.1</version>
+            <groupId>org.jetbrains.pty4j</groupId>
+            <artifactId>pty4j</artifactId>
+            <version>0.13.0</version>
         </dependency>
 
+
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>2.7.14</version>
+                <configuration>
+                    <mainClass>run.mone.mcp.pty4j.Pty4jMcpBootstrap</mainClass>
+                    <finalName>app</finalName>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
 
 </project>
