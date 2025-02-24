@@ -231,60 +231,70 @@ function connectWebSocket() {
                         // 处理普通action类型
                         if (action.type === 'action') {
                             console.log('Processing action:', action);
-                            const selector = `[browser-user-highlight-id="playwright-highlight-${action.attributes.elementId}"]`;
+                            try {
+                                const selector = `[browser-user-highlight-id="playwright-highlight-${action.attributes.elementId}"]`;
 
-                            if(action.attributes.waiting) {
-                                urlChangePromise.then((urlChange) => {
-                                    if (urlChange) {
-                                        console.log("urlChange", urlChange)
-                                        sendWebSocketMessage(JSON.stringify({
-                                            type: 'reply',
-                                            oldUrl: urlChange.oldUrl,// 之前url
-                                            newUrl: urlChange.newUrl, // 新url
-                                            urlChanged: urlChange.urlChanged, // url是否变化
-                                            contentChanged: urlChange.contentChanged, // dom内容是否变化
-                                            loadingComplete: urlChange.loadingComplete, // 页面是否加载完成
-                                        }));
+                                if(action.attributes.waiting) {
+                                    urlChangePromise.then((urlChange) => {
+                                        if (urlChange) {
+                                            console.log("urlChange", urlChange)
+                                            sendWebSocketMessage(JSON.stringify({
+                                                type: 'reply',
+                                                oldUrl: urlChange.oldUrl,
+                                                newUrl: urlChange.newUrl,
+                                                urlChanged: urlChange.urlChanged,
+                                                contentChanged: urlChange.contentChanged,
+                                                loadingComplete: urlChange.loadingComplete,
+                                            }), 'reply');
+                                        }
+                                    });
+                                }
+
+                                if (action.attributes.name === 'fill') {
+                                    await chrome.scripting.executeScript({
+                                        target: { tabId: tab.id },
+                                        func: (selector, value) => {
+                                            const element = document.querySelector(selector);
+                                            if (element) {
+                                                element.value = value;
+                                                element.dispatchEvent(new Event('input', { bubbles: true }));
+                                                element.dispatchEvent(new Event('change', { bubbles: true }));
+                                                if (true) element.focus();
+                                                if (true) element.blur();
+                                            }
+                                        },
+                                        args: [selector, action.attributes.value]
+                                    });
+                                } else if (action.attributes.name === 'click') {
+                                    await chrome.scripting.executeScript({
+                                        target: { tabId: tab.id },
+                                        func: (selector) => {
+                                            const element = document.querySelector(selector);
+                                            if (element) {
+                                                element.focus();
+                                                element.click();
+                                            }
+                                        },
+                                        args: [selector]
+                                    });
+                                }
+                                
+                                await sendWebSocketMessage(JSON.stringify({
+                                    actionType: 'action',
+                                    success: true,
+                                    details: {
+                                        selector: selector,
+                                        name: action.attributes.name
                                     }
-                                });
+                                }), 'reply');
+                            } catch (error) {
+                                console.error('Action execution failed:', error);
+                                await sendWebSocketMessage(JSON.stringify({
+                                    actionType: 'action',
+                                    success: false,
+                                    error: error.message
+                                }), 'reply');
                             }
-
-                            if (action.attributes.name === 'fill') {
-                                await chrome.scripting.executeScript({
-                                    target: { tabId: tab.id },
-                                    func: (selector, value) => {
-                                        console.log('fill action:', selector, value);
-                                        const element = document.querySelector(selector);
-                                        if (element) {
-                                            element.value = value;
-                                            console.log('fill element:', element);
-                                            // Trigger input event to simulate user input
-                                            element.dispatchEvent(new Event('input', { bubbles: true }));
-                                            element.dispatchEvent(new Event('change', { bubbles: true }));
-
-                                            // 焦点处理  
-                                            if (true) element.focus();
-                                            if (true) element.blur();
-
-                                        }
-                                    },
-                                    args: [selector, action.attributes.value]
-                                });
-                            } else if (action.attributes.name === 'click') {
-                                console.log('Executing click action with selector:', selector);
-                                await chrome.scripting.executeScript({
-                                    target: { tabId: tab.id },
-                                    func: (selector) => {
-                                        const element = document.querySelector(selector);
-                                        if (element) {
-                                            element.focus();
-                                            element.click();
-                                        }
-                                    },
-                                    args: [selector]
-                                });
-                            }
-                            await new Promise(resolve => setTimeout(resolve, 1999));
                         }
 
                         //停顿1000ms
@@ -295,19 +305,30 @@ function connectWebSocket() {
 
                         //滚动一屏
                         if (action.type === 'scrollOneScreen') {
-                            console.log('scrollOneScreen action');
-                            await chrome.scripting.executeScript({
-                                target: { tabId: tab.id },
-                                func: () => {
-                                    // 获取视口高度
-                                    const viewportHeight = window.innerHeight;
-                                    // 平滑滚动一屏
-                                    window.scrollBy({
-                                        top: viewportHeight,
-                                        behavior: 'smooth'
-                                    });
-                                }
-                            });
+                            try {
+                                await chrome.scripting.executeScript({
+                                    target: { tabId: tab.id },
+                                    func: () => {
+                                        const viewportHeight = window.innerHeight;
+                                        window.scrollBy({
+                                            top: viewportHeight,
+                                            behavior: 'smooth'
+                                        });
+                                    }
+                                });
+
+                                await sendWebSocketMessage(JSON.stringify({
+                                    actionType: 'scrollOneScreen',
+                                    success: true
+                                }), 'reply');
+                            } catch (error) {
+                                console.error('ScrollOneScreen failed:', error);
+                                await sendWebSocketMessage(JSON.stringify({
+                                    actionType: 'scrollOneScreen',
+                                    success: false,
+                                    error: error.message
+                                }), 'reply');
+                            }
                         }
 
                         //通知服务器
@@ -318,155 +339,199 @@ function connectWebSocket() {
 
                         //创建tab页面
                         if (action.type === 'createNewTab') {
-                            console.log('click action:', action);
-                            // 设置全局auto状态
-                            isAutoMode = action.attributes.auto === 'true';
-                            // 创建新标签页
-                            await tabManager.createNewTab(action.attributes.url);
+                            try {
+                                isAutoMode = action.attributes.auto === 'true';
+                                await tabManager.createNewTab(action.attributes.url);
+
+                                await sendWebSocketMessage(JSON.stringify({
+                                    actionType: 'createNewTab',
+                                    success: true,
+                                    url: action.attributes.url
+                                }), 'reply');
+                            } catch (error) {
+                                console.error('CreateNewTab failed:', error);
+                                await sendWebSocketMessage(JSON.stringify({
+                                    actionType: 'createNewTab',
+                                    success: false,
+                                    error: error.message,
+                                    url: action.attributes.url
+                                }), 'reply');
+                            }
                         }
                         //截屏
                         if (action.type === 'screenshot') {
-                            // 捕获当前视口的截图
-                            console.log('takeScreenshot');
-                            const screenshot = await chrome.tabs.captureVisibleTab(null, {
-                                format: 'jpeg',
-                                quality: 10
-                            });
-
-                            //提供下载选项
-                            if (action.attributes.download === 'true') {
-                                await chrome.tabs.sendMessage(tab.id, {
-                                    type: 'takeScreenshot',
-                                    data: screenshot
+                            try {
+                                const screenshot = await chrome.tabs.captureVisibleTab(null, {
+                                    format: 'jpeg',
+                                    quality: 10
                                 });
-                            }
 
-                            let code = '';
-                            //提供发送选项  
-                            if (action.attributes.send === 'true') {
-                                if (context.has('domTreeData')) {
-                                    // 获取domTreeData
-                                    const domTreeData = context.get('domTreeData');
-                                    code = generateHtmlString(domTreeData);
+                                if (action.attributes.download === 'true') {
+                                    await chrome.tabs.sendMessage(tab.id, {
+                                        type: 'takeScreenshot',
+                                        data: screenshot
+                                    });
                                 }
-                                // 获取domTreeData
-                                const domTreeData = context.get('domTreeData');
-                                // 将截图数据放入context
-                                const messageData = {
-                                    code: code,
-                                    img: [screenshot]
-                                };
-                                console.log('send messageData:', messageData);
-                                await sendWebSocketMessage(JSON.stringify(messageData), "shopping");
-                            }
 
-                            // 提供删除DomTree的选项
-                            await removeHighlightIfNeeded(tab.id, autoRemoveHighlight);
+                                let code = '';
+                                if (action.attributes.send === 'true') {
+                                    if (context.has('domTreeData')) {
+                                        const domTreeData = context.get('domTreeData');
+                                        code = generateHtmlString(domTreeData);
+                                    }
+                                    const messageData = {
+                                        code: code,
+                                        img: [screenshot]
+                                    };
+                                    await sendWebSocketMessage(JSON.stringify(messageData), "shopping");
+                                }
+
+                                await removeHighlightIfNeeded(tab.id, autoRemoveHighlight);
+
+                                await sendWebSocketMessage(JSON.stringify({
+                                    actionType: 'screenshot',
+                                    success: true
+                                }), 'reply');
+                            } catch (error) {
+                                console.error('Screenshot failed:', error);
+                                await sendWebSocketMessage(JSON.stringify({
+                                    actionType: 'screenshot',
+                                    success: false,
+                                    error: error.message
+                                }), 'reply');
+                            }
                         }
                         // 滚动到页面顶部
                         if (action.type === 'scrollToTop') {
-                            console.log('scrollToTop');
-                            await chrome.scripting.executeScript({
-                                target: { tabId: tab.id },
-                                function: () => {
-                                    window.scrollTo(0, 0);
-                                }
-                            });
+                            try {
+                                await chrome.scripting.executeScript({
+                                    target: { tabId: tab.id },
+                                    function: () => {
+                                        window.scrollTo(0, 0);
+                                    }
+                                });
+
+                                await sendWebSocketMessage(JSON.stringify({
+                                    actionType: 'scrollToTop',
+                                    success: true
+                                }), 'reply');
+                            } catch (error) {
+                                console.error('ScrollToTop failed:', error);
+                                await sendWebSocketMessage(JSON.stringify({
+                                    actionType: 'scrollToTop',
+                                    success: false,
+                                    error: error.message
+                                }), 'reply');
+                            }
                         }
                         // 滚动到底部
                         if (action.type === 'scrollToBottom') {
-                            console.log('scrollToBottom');
-                            await chrome.scripting.executeScript({
-                                target: { tabId: tab.id },
-                                function: () => {
-                                    window.scrollTo(0, document.body.scrollHeight);
-                                }
-                            });
+                            try {
+                                await chrome.scripting.executeScript({
+                                    target: { tabId: tab.id },
+                                    function: () => {
+                                        window.scrollTo(0, document.body.scrollHeight);
+                                    }
+                                });
+
+                                await sendWebSocketMessage(JSON.stringify({
+                                    actionType: 'scrollToBottom',
+                                    success: true
+                                }), 'reply');
+                            } catch (error) {
+                                console.error('ScrollToBottom failed:', error);
+                                await sendWebSocketMessage(JSON.stringify({
+                                    actionType: 'scrollToBottom',
+                                    success: false,
+                                    error: error.message
+                                }), 'reply');
+                            }
                         }
                         // 截全屏
                         if (action.type === 'screenshotFullPage') {
-                            console.log('screenshotFullPage');
+                            try {
+                                let download = action.attributes.download !== 'false';
+                                let tabInfo = action.attributes.tabInfo === 'true';
+                                
+                                const screenshot = await screenshotManager.captureFullPage(download);
 
-                            let download = true;
-                            //提供下载选项
-                            if (action.attributes.download === 'false') {
-                                download = false;
-                            }
-
-                            // 获取当前窗口的所有标签页的选项
-                            let tabInfo = false;
-                            if (action.attributes.tabInfo === 'true') {
-                                tabInfo = true;
-                            }
-
-                            const screenshot = await screenshotManager.captureFullPage(download);
-
-                            let code = '';
-                            //提供发送选项  
-                            if (action.attributes.send === 'true') {
-                                if (context.has('domTreeData')) {
-                                    // 获取domTreeData
-                                    const domTreeData = context.get('domTreeData');
-                                    code = generateHtmlString(domTreeData);
+                                let code = '';
+                                if (action.attributes.send === 'true') {
+                                    if (context.has('domTreeData')) {
+                                        const domTreeData = context.get('domTreeData');
+                                        code = generateHtmlString(domTreeData);
+                                    }
+                                    const messageData = {
+                                        code: code,
+                                        img: [screenshot],
+                                        tabs: tabInfo ? await getAllTabsInfo() : undefined
+                                    };
+                                    await sendWebSocketMessage(JSON.stringify(messageData), "shopping");
                                 }
-                                // 获取domTreeData
-                                const domTreeData = context.get('domTreeData');
-                                // 将截图数据放入context
-                                const messageData = {
-                                    code: code,
-                                    img: [screenshot],
-                                    tabs: tabInfo ? await getAllTabsInfo() : undefined
-                                };
 
-                                console.log('send messageData:', messageData);
-                                await sendWebSocketMessage(JSON.stringify(messageData), "shopping");
+                                await removeHighlightIfNeeded(tab.id, autoRemoveHighlight);
+
+                                await sendWebSocketMessage(JSON.stringify({
+                                    actionType: 'screenshotFullPage',
+                                    success: true
+                                }), 'reply');
+                            } catch (error) {
+                                console.error('ScreenshotFullPage failed:', error);
+                                await sendWebSocketMessage(JSON.stringify({
+                                    actionType: 'screenshotFullPage',
+                                    success: false,
+                                    error: error.message
+                                }), 'reply');
                             }
-
-                            await removeHighlightIfNeeded(tab.id, autoRemoveHighlight);
                         }
                         // buildDomTree(从新生成domTree)
                         if (action.type === 'buildDomTree') {
-                            console.log('buildDomTree');
-                            // 判断action是否有fullPage属性, 且为true
-                            let fullPage = false;
-                            if (action.attributes.fullPage && action.attributes.fullPage === 'true') {
-                                fullPage = true;
-                            }
+                            try {
+                                let fullPage = action.attributes.fullPage === 'true';
+                                
+                                const configs = await getConfigs();
+                                await markElements(tab.id, configs);
 
-                            // 获取config配置内容，对于config中定义的select的元素，打上对应的kv标记
-                            const configs = await getConfigs();
-                            await markElements(configs);
+                                await chrome.scripting.executeScript({
+                                    target: { tabId: tab.id },
+                                    files: ['buildDomTree.js']
+                                });
 
-                            // 重新执行buildDomTree
-                            await chrome.scripting.executeScript({
-                                target: { tabId: tab.id },
-                                files: ['buildDomTree.js']
-                            });
+                                const [{ result: domTreeData }] = await chrome.scripting.executeScript({
+                                    target: { tabId: tab.id },
+                                    func: (args) => {
+                                        const buildDomTreeFunc = window['buildDomTree'];
+                                        if (buildDomTreeFunc) {
+                                            return buildDomTreeFunc(args);
+                                        }
+                                        throw new Error('buildDomTree function not found');
+                                    },
+                                    args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0, onlyVisibleArea: !fullPage }]
+                                });
 
-                            // 执行buildDomTree函数来重新渲染高亮并获取返回数据
-                            const [{ result: domTreeData }] = await chrome.scripting.executeScript({
-                                target: { tabId: tab.id },
-                                func: (args) => {
-                                    const buildDomTreeFunc = window['buildDomTree'];
-                                    if (buildDomTreeFunc) {
-                                        return buildDomTreeFunc(args);
-                                    } else {
-                                        throw new Error('buildDomTree函数未找到');
+                                await new Promise((resolve, reject) => {
+                                    try {
+                                        chrome.storage.local.set({ lastDomTreeData: domTreeData });
+                                        resolve();
+                                    } catch (error) {
+                                        reject(error);
                                     }
-                                },
-                                args: [{ doHighlightElements: true, focusHighlightIndex: -1, viewportExpansion: 0 , onlyVisibleArea: !fullPage}]
-                            });
+                                });
 
-                             new Promise((resolve, reject) => {
-                                try {
-                                    chrome.storage.local.set({ lastDomTreeData: domTreeData });
-                                    resolve();
-                                } catch (error) {
-                                    reject(error);
-                                }
-                             });
+                                context.set('domTreeData', domTreeData);
 
-                            context.set('domTreeData', domTreeData);
+                                await sendWebSocketMessage(JSON.stringify({
+                                    actionType: 'buildDomTree',
+                                    success: true
+                                }), 'reply');
+                            } catch (error) {
+                                console.error('BuildDomTree failed:', error);
+                                await sendWebSocketMessage(JSON.stringify({
+                                    actionType: 'buildDomTree',
+                                    success: false,
+                                    error: error.message
+                                }), 'reply');
+                            }
                         }
                         //取消重绘
                         if (action.type === 'cancelBuildDomTree') {
@@ -1179,6 +1244,11 @@ stateManager.addGlobalStateChangeListener(async (stateUpdate) => {
         console.log('messageData:', messageData);
         //通知服务器,这个tab发生了变化
         await sendWebSocketMessage(JSON.stringify(messageData), "shopping");
+
+        await sendWebSocketMessage(JSON.stringify({
+            actionType: 'buildDomTree',
+            success: true
+        }), 'reply');
     } catch (error) {
         console.error('Error handling state change:', error);
     }

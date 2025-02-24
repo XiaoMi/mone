@@ -24,7 +24,8 @@ export function markdownItMcp(md: MarkdownIt) {
         text.includes("<use_mcp_tool>") ||
         text.includes("<attempt_completion>") ||
         text.includes("<ask_followup_question>") ||
-        text.includes("<mcp>")
+        text.includes("<mcp>") ||
+        text.includes("<action ")
       )
     ) {
       return false;
@@ -35,6 +36,9 @@ export function markdownItMcp(md: MarkdownIt) {
     console.log("mcp: \n", text);
     text = text.replace(/```[A-Za-z1-9]*/g, "");
     let html = "";
+    let actionContent = ""; // 用于跟踪action标签的内容
+    let isInAction = false; // 用于跟踪是否在action标签内
+
     const parser = new htmlparser2.Parser({
       onopentag(name, attributes) {
         /*
@@ -106,6 +110,10 @@ export function markdownItMcp(md: MarkdownIt) {
               </div>`;
         } else if (name === "question") {
           html += `<div class="followup-content">`;
+        } else if (name === "action") {
+          isInAction = true;
+          actionContent = ""; // 重置内容
+          // 暂时不生成HTML,等待确认是否有内容
         } else {
           html += md.utils.escapeHtml(`<${name} ${Object.entries(attributes)
             .map(([key, value]) => `${key}="${value}"`)
@@ -113,14 +121,18 @@ export function markdownItMcp(md: MarkdownIt) {
         }
       },
       ontext(text) {
-        /*
+         /*
          * Fires whenever a section of text was processed.
          *
          * Note that this can fire at any point within text and you might
          * have to stitch together multiple pieces.
          */
         // console.log("-->", text);
-        html += md.utils.escapeHtml(text);
+        if (isInAction) {
+          actionContent += text.trim();
+        } else {
+          html += md.utils.escapeHtml(text);
+        }
       },
 
       onclosetag(tagname, isImplied) {
@@ -155,6 +167,21 @@ export function markdownItMcp(md: MarkdownIt) {
           html += `</div>`;
         } else if (tagname === "question") {
           html += `</div>`;
+        } else if (tagname === "action") {
+          isInAction = false;
+          // 只有在有内容时才生成action块的HTML
+          if (actionContent.trim()) {
+            html += `
+              <div class="action-block">
+                <div class="action-header">
+                  <i class="fa-solid fa-terminal"></i>
+                  <span>动作</span>
+                </div>
+                <div class="action-content">
+                  ${actionContent}
+                </div>
+              </div>`;
+          }
         } else {
           if (!isImplied) {
             html += md.utils.escapeHtml(`</${tagname}>`);
