@@ -102,18 +102,25 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             //chrome直接返回的(目前只有购物)
             if (cmd.equals("shopping")) {
-                chromeAthena.getRc().news.put(Message.builder().type("json").content(data).build());
+                chromeAthena.getRc().news.put(Message.builder().type("json").role("user").content(data).build());
                 return;
             }
 
             if (cmd.equals("reply")) {
-                chromeAthena.getRc().news.put(Message.builder().type("reply").role("user").content(data).build());
+                JsonObject obj = JsonParser.parseString(data).getAsJsonObject();
+                // action不成功，需要交给Role处理
+                if (!obj.has("success") || !obj.get("success").getAsBoolean()) {
+                    log.info("action:{} failed", obj.get("actionType"));
+                    chromeAthena.getRc().news.put(Message.builder().type("reply").role("user").content(data).build());
+                } else {
+                    log.info("action:{} success", obj.get("actionType"));
+                }
                 return;
             }
 
 
             chromeAthena.getRc().news.put(Message.builder().type("json").role("user").content(data).build());
-            new Thread(() -> chromeAthena.run()).start();
+            Thread.ofVirtual().factory().newThread(() -> chromeAthena.run()).start();
             return;
         }
 

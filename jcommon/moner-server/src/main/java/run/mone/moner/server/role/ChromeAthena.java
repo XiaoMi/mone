@@ -89,7 +89,7 @@ public class ChromeAthena extends Role {
             }
             %>
             ===========
-            请帮我判断使用那个TOOL\n
+            请帮我判断使用哪个TOOL\n
             """;
 
     private String rolePrompt = """
@@ -138,18 +138,21 @@ public class ChromeAthena extends Role {
                     || !obj.get("urlChanged").getAsBoolean()) 
                     && (!obj.has("contentChanged") || !obj.get("contentChanged").getAsBoolean())) {
                     TimeUnit.SECONDS.sleep(1);
-                    this.rc.getNews().put(Message.builder().content("Nothing changed since last action, try to take other action if possible").build());
-                    return 1; // keep observing
+                    this.rc.getNews().put(Message.builder().role("user").content("Nothing changed since last action, try to take other action if possible").build());
+                } else if (obj.has("error")) {
+                    this.rc.getNews().put(Message.builder().role("user").content("Action failed, with error: " + obj.get("error").getAsString() + "; Please try again.").build());
                 }
+                return 1; // keep observing
             } 
 
             if (msg.getType().equals("json")) {
                 JsonObject obj = JsonParser.parseString(msg.getContent()).getAsJsonObject();
                 text = JsonUtils.getValueOrDefault(obj, "text", "");
                 JsonArray imgs = obj.getAsJsonArray("img");
-                if (imgs != null) {
+                if (imgs != null && imgs.size() > 0) {
                     images = getImageStrings(imgs);
                     msg.setImages(images);
+                    // msg.setRole("assistant");
                 }
                 code = JsonUtils.getValueOrDefault(obj, "code", "");
                 tabs = JsonUtils.getValueOrDefault(obj, "tabs", "");
@@ -161,9 +164,7 @@ public class ChromeAthena extends Role {
                 if (!CollectionUtils.isEmpty(images)) {
                     text = text + "\nimages:\n [图片占位符]";
                 }
-
                 msg.setContent(text);
-                msg.setRole("assistant");
             }
 
             this.getRc().getMemory().add(msg);
