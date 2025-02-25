@@ -1,15 +1,14 @@
-
-package run.mone.mcp.fetch;
+package run.mone.mcp.file;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-@ComponentScan("run.mone.mcp.fetch")
-public class FetchMcpBootstrap {
-
+@ComponentScan("run.mone.mcp.file")
+public class FileFormatMcpBootstrap {
     public static void main(String[] args) {
-        SpringApplication.run(FetchMcpBootstrap.class, args);
+        SpringApplication.run(FileFormatMcpBootstrap.class, args);
     }
+
 }
