@@ -46,6 +46,7 @@
         <module>mcp-ali-email</module>
         <module>mcp-pty4j</module>
         <module>mcp-linux-agent</module>
+        <module>mcp-ipinfo</module>
     </modules>
 
     <properties>
