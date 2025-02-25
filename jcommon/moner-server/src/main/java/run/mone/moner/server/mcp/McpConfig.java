@@ -13,6 +13,10 @@ public class McpConfig {
         return fromType.getFilePath();
     }
 
+    public String getMcpModelPath(FromType fromType) {
+        return fromType.getModelFilePath();
+    }
+
     public String getMcpDir() {
         return System.getProperty("user.home") + "/.mcp";
     }
@@ -22,6 +26,16 @@ public class McpConfig {
                 .collect(Collectors.toMap(
                     type -> type,
                     FromType::getFilePath,
+                    (a, b) -> a,  // 如果有重复的key，保留第一个
+                    () -> new EnumMap<>(FromType.class)
+                ));
+    }
+
+    public Map<FromType, String> getAllMcpModelPaths() {
+        return Arrays.stream(FromType.values())
+                .collect(Collectors.toMap(
+                    type -> type,
+                    FromType::getModelFilePath,
                     (a, b) -> a,  // 如果有重复的key，保留第一个
                     () -> new EnumMap<>(FromType.class)
                 ));

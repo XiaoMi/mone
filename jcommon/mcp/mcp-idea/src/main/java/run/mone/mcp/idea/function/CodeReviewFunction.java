@@ -1,5 +1,6 @@
 package run.mone.mcp.idea.function;
 
+import com.google.gson.JsonObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -48,7 +49,11 @@ public class CodeReviewFunction implements Function<Map<String, Object>, McpSche
         try {
             String result = ideaService.reviewCode((String) arguments.get("code"));
             log.info("result:{}", result);
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false);
+
+            JsonObject type = new JsonObject();
+            type.addProperty("type","codeReview");
+
+            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(type.toString(), result)), false);
         } catch (Exception e) {
             return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true);
         }
