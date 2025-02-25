@@ -30,6 +30,13 @@
             <groupId>run.mone</groupId>
             <version>1.6.1-jdk21-SNAPSHOT</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.kohsuke</groupId>
+            <artifactId>github-api</artifactId>
+            <version>1.315</version>
+        </dependency>
+
     </dependencies>
 
     <build>
