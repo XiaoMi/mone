@@ -34,7 +34,7 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
 
     private String name = "pty4j";
 
-    private String desc = "Terminal operations including executing commands, managing interactive sessions, and handling terminal I/O. When you get the result, you must wrap it with <terminal></terminal> tags and format it to look like a simulated terminal. If there are no subsequent operations expected, you should remind the user whether to close the terminal connection. The terminal session will be automatically closed after 3 minutes of inactivity.";
+    private String desc = "Terminal operations including executing commands, managing interactive sessions, and handling terminal I/O. When you get the result, you must wrap it with <terminal></terminal> tags and format it to look like a simulated terminal. If there are no subsequent operations expected, you should remind the user whether to close the terminal connection. The terminal session will be automatically closed after 3 minutes of inactivity.If subsequent tools need to use this result, be sure not to discard the <terminal></terminal> tags.";
 
     private String toolScheme = """
             {
@@ -50,7 +50,7 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
                     },
                     "sessionId": {
                         "type": "string",
-                        "description": "Unique identifier for terminal session"
+                        "description": "Unique identifier for terminal session，Please reuse as much as possible"
                     },
                     "input": {
                         "type": "string",
@@ -191,7 +191,7 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
 
     private String formatOutput(String content, boolean isInteractive) {
         if (!isInteractive) {
-            return content;
+            return "<terminal>" +  content + "</terminal>";
         }
 
         // 移除 ANSI 转义序列和其他特殊序列
@@ -225,7 +225,7 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
                 // 移除行尾空格
                 .replaceAll("(?m)\\s+$", "");
 
-        return content.trim();
+        return "<terminal>" + content.trim() + "</terminal>";
     }
 
     private McpSchema.CallToolResult executeTerminal(Map<String, Object> params) {
