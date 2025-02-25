@@ -6,6 +6,7 @@ import com.pty4j.WinSize;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.mcp.spec.McpSchema;
+import jakarta.annotation.PostConstruct;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,6 +16,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -32,7 +34,7 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
 
     private String name = "pty4j";
 
-    private String desc = "Terminal operations including executing commands, managing interactive sessions, and handling terminal I/O";
+    private String desc = "Terminal operations including executing commands, managing interactive sessions, and handling terminal I/O. When you get the result, you must wrap it with <terminal></terminal> tags and format it to look like a simulated terminal. If there are no subsequent operations expected, you should remind the user whether to close the terminal connection. The terminal session will be automatically closed after 3 minutes of inactivity.";
 
     private String toolScheme = """
             {
@@ -69,7 +71,9 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
 
     private final Map<String, PtyProcess> processMap = new ConcurrentHashMap<>();
     private final Map<String, StringBuilder> outputBuffers = new ConcurrentHashMap<>();
+    private final Map<String, Long> lastAccessTimeMap = new ConcurrentHashMap<>();
     private final ExecutorService outputReaderPool = Executors.newCachedThreadPool();
+    private final ScheduledExecutorService cleanupScheduler = Executors.newSingleThreadScheduledExecutor();
 
     private static final Set<String> INTERACTIVE_COMMANDS = new HashSet<>(Arrays.asList(
             "vim", "vi", "nano", "emacs", "top", "htop", "tail -f", "watch"
@@ -86,6 +90,8 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
     // vim 特殊序列的正则表达式
     private static final Pattern VIM_SEQUENCE_PATTERN = Pattern.compile("\\[>[0-9;=]+|\\][0-9;]+|\\[\\?[0-9;]*|=[\"\\w\\.]+|\\d+[hHlmM]|\\[\\?\\d+[hl]|=\\d+");
 
+    private static final long INACTIVE_TIMEOUT = 3 * 60 * 1000; // 3 minutes in milliseconds
+
     @Override
     public McpSchema.CallToolResult apply(Map<String, Object> params) {
         String action = (String) params.get("action");
@@ -93,6 +99,11 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
         
         if (action == null) {
             return errorResult(sessionId, "Action must be specified");
+        }
+
+        // 更新最后访问时间
+        if (sessionId != null) {
+            lastAccessTimeMap.put(sessionId, System.currentTimeMillis());
         }
 
         try {
@@ -346,12 +357,17 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
 
     public void shutdown() {
         outputReaderPool.shutdown();
+        cleanupScheduler.shutdown();
         try {
             if (!outputReaderPool.awaitTermination(5, TimeUnit.SECONDS)) {
                 outputReaderPool.shutdownNow();
             }
+            if (!cleanupScheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                cleanupScheduler.shutdownNow();
+            }
         } catch (InterruptedException e) {
             outputReaderPool.shutdownNow();
+            cleanupScheduler.shutdownNow();
             Thread.currentThread().interrupt();
         }
 
@@ -359,5 +375,28 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
         processMap.values().forEach(PtyProcess::destroy);
         processMap.clear();
         outputBuffers.clear();
+        lastAccessTimeMap.clear();
+    }
+
+    @PostConstruct
+    private void startCleanupTask() {
+        cleanupScheduler.scheduleAtFixedRate(() -> {
+            long currentTime = System.currentTimeMillis();
+            List<String> inactiveSessions = lastAccessTimeMap.entrySet().stream()
+                    .filter(entry -> (currentTime - entry.getValue()) > INACTIVE_TIMEOUT)
+                    .map(Map.Entry::getKey)
+                    .toList();
+
+            for (String sessionId : inactiveSessions) {
+                log.info("Cleaning up inactive session: {}", sessionId);
+                PtyProcess process = processMap.get(sessionId);
+                if (process != null) {
+                    process.destroy();
+                    processMap.remove(sessionId);
+                    outputBuffers.remove(sessionId);
+                    lastAccessTimeMap.remove(sessionId);
+                }
+            }
+        }, 1, 1, TimeUnit.MINUTES);
     }
 }
