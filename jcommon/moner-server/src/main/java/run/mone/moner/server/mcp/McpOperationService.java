@@ -7,11 +7,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import run.mone.hive.mcp.hub.McpConnection;
+import run.mone.hive.mcp.hub.McpHub;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.moner.server.common.GsonUtils;
 import run.mone.moner.server.common.Safe;
 import run.mone.moner.server.prompt.MonerSystemPrompt;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
@@ -47,15 +49,26 @@ public class McpOperationService {
         this.mcpConfig = mcpConfig;
     }
 
+    // 初始化McpHub
+    public void initMcpHub(String from) throws IOException {
+        McpHub hub = McpHubHolder.get(from);
+        if(hub == null) {
+            FromType fromType = FromType.fromString(from);
+            String mcpPath = mcpConfig.getMcpPath(fromType);
+            McpHub mcpHub = new McpHub(Paths.get(mcpPath));
+            McpHubHolder.put(from, mcpHub);
+        }
+    }
+
     // 获取 MCP 连接，优先从缓存获取
-    private List<Map<String, Object>> getMcpConnections() {
-        return MonerSystemPrompt.getMcpInfo();
+    private List<Map<String, Object>> getMcpConnections(String from) {
+        return MonerSystemPrompt.getMcpInfo(from);
     }
 
     // 更新连接缓存
-    private void updateConnectionsCache() {
+    private void updateConnectionsCache(String from) {
         CacheService.ins().evictObject(CacheService.tools_key);
-        List<Map<String, Object>> mcpInfo = MonerSystemPrompt.getMcpInfo();
+        List<Map<String, Object>> mcpInfo = MonerSystemPrompt.getMcpInfo(from);
         CacheService.ins().cacheObject(CacheService.tools_key, mcpInfo);
     }
 
@@ -104,7 +117,7 @@ public class McpOperationService {
         Map<String, Map<String, Object>> serverTools = new HashMap<>();
 
         try {
-            List<Map<String, Object>> connections = getMcpConnections();
+            List<Map<String, Object>> connections = getMcpConnections(from);
             // 如果有error
             Optional<Map<String, Object>> serverOpt = connections.stream()
                     .filter(server -> server.get("name").equals(mcpServerName))
@@ -157,7 +170,7 @@ public class McpOperationService {
     public String fetchMcpServerVersion(String from, String mcpServerName) {
         log.info("Begin fetchMcpServerVersion with serverName: {}", mcpServerName);
         try {
-            Optional<Map<String, Object>> serverOpt = getMcpConnections().stream()
+            Optional<Map<String, Object>> serverOpt = getMcpConnections(from).stream()
                     .filter(server -> server.get("name").equals(mcpServerName))
                     .findFirst();
             if (serverOpt.isPresent()) {
@@ -211,7 +224,7 @@ public class McpOperationService {
 
     private  String createSingleServerStatus(String from, String serverName) throws JsonProcessingException {
         Map<String, String> status = new HashMap<>();
-        List<Map<String, Object>> mcpConnectionMap = getMcpConnections();
+        List<Map<String, Object>> mcpConnectionMap = getMcpConnections(from);
 
         Optional<Map<String, Object>> serverOpt = mcpConnectionMap.stream()
                 .filter(server -> server.get("name").equals(serverName))
@@ -230,7 +243,7 @@ public class McpOperationService {
 
     private String createAllServersStatus(String from, String content) throws JsonProcessingException {
         Map<String, String> allStatus = new HashMap<>();
-        List<Map<String, Object>> mcpConnectionMap = getMcpConnections();
+        List<Map<String, Object>> mcpConnectionMap = getMcpConnections(from);
 
         ObjectMapper mapper = new ObjectMapper();
         JsonNode rootNode = mapper.readTree(content);
@@ -259,46 +272,43 @@ public class McpOperationService {
     // server，否则重试所有mcp server
     public void RetryMcpServerConnection(String from, String mcpServerName) {
         // 刷新连接
-        // TODO
-//        TeslaAppComponent.refreshMcpHubOneServer(mcpServerName);
+        refreshMcpHubOneServer(mcpServerName, from);
 //        // 更新缓存
-//        updateConnectionsCache();
-//        refreshMcpBrowser(project);
+        updateConnectionsCache(from);
     }
 
     // 在idea里打开mcp配置文件
     public void openMcpFileSettings(String from) {
         log.info("begin openMcpFileSettings");
+        FromType fromType = FromType.fromString(from);
         // 确保目录和文件存在
-        // TODO
-//        try {
-//            Path dirPath = Paths.get(MCP_DIR);
-//            Path filePath = Paths.get(MCP_PATH);
-//
-//            if (!Files.exists(dirPath)) {
-//                Files.createDirectories(dirPath);
-//            }
-//
-//            if (!Files.exists(filePath)) {
-//                String defaultConfig = "{\n  \"mcpServers\": {}\n}";
-//                Files.write(filePath, defaultConfig.getBytes(StandardCharsets.UTF_8));
-//            }
-//
-//            VirtualFile virtualFile = LocalFileSystem.getInstance().refreshAndFindFileByPath(MCP_PATH);
-//            if (virtualFile == null) {
-//                log.error("Cannot find virtual file for path: {}", MCP_PATH);
-//                return;
-//            }
-//
-//            ApplicationManager.getApplication().invokeLater(() -> {
-//                virtualFile.refresh(false, false);
-//                FileEditorManager.getInstance(project).openFile(virtualFile, true);
-//                IdeFocusManager.getInstance(project).requestFocus(
-//                        FileEditorManager.getInstance(project).getSelectedEditor().getComponent(), true);
-//            });
-//        } catch (IOException e) {
-//            log.error("Error opening MCP settings file", e);
-//        }
+        if (createFile(fromType)) {
+            log.error("Failed to create MCP settings file");
+            return;
+        }
+
+        try {
+            String mcpPath = mcpConfig.getMcpPath(fromType);
+            File file = new File(mcpPath);
+            
+            // 获取操作系统名称
+            String osName = System.getProperty("os.name").toLowerCase();
+            
+            if (osName.contains("windows")) {
+                // Windows系统使用cmd /c start命令
+                Runtime.getRuntime().exec(new String[]{"cmd", "/c", "start", file.getAbsolutePath()});
+            } else if (osName.contains("mac")) {
+                // macOS系统使用open命令
+                Runtime.getRuntime().exec(new String[]{"open", file.getAbsolutePath()});
+            } else {
+                // Linux系统使用xdg-open命令
+                Runtime.getRuntime().exec(new String[]{"xdg-open", file.getAbsolutePath()});
+            }
+            
+            log.info("Opened MCP settings file: {}", file.getAbsolutePath());
+        } catch (IOException e) {
+            log.error("Error opening MCP settings file", e);
+        }
     }
 
     public void listenToTabSave(String from) {
@@ -376,8 +386,7 @@ public class McpOperationService {
                 String content = fetchMcpJson(fromType.getValue());
                 if (content != null) {
                     log.info("Configuration updated for {}", fromType);
-                    // TODO: 这里可以添加配置更新后的处理逻辑
-                    // 比如发送事件通知其他组件配置已更新
+                    // TODO: 这里可以添加配置更新后的处理逻辑, 使用websocket通信将更新消息回传给客户端，以便客户端更新UI等操作
                 }
             }
         } catch (Exception e) {
@@ -399,21 +408,20 @@ public class McpOperationService {
     public void refreshMcpHubOneServer(String mcpServerName, String from) {
         log.info("Begin refreshMcpHubOneServer with server: {}", mcpServerName);
 
-        // TODO
-//        Safe.run(() -> {
-//            McpHub mcpHub = Optional.ofNullable(AthenaContext.ins().getMcpHub())
-//                    .orElseThrow(() -> new IllegalStateException("McpHub is not initialized"));
-//
-//            McpConnection connection = mcpHub.getConnections().get(mcpServerName);
-//            if (connection != null) {
-//                connection.getClient().closeGracefully();
-//                connection.getTransport().closeGracefully();
-//                mcpHub.getConnections().remove(mcpServerName);
-//            }
-//
-//            mcpHub.refreshMcpServer(mcpServerName);
-//            log.info("Completed refreshing MCP server: {}", mcpServerName);
-//
-//        }, e -> log.error("Failed to refresh MCP server: {}", mcpServerName, e));
+        Safe.run(() -> {
+            McpHub mcpHub = Optional.ofNullable(McpHubHolder.get(from))
+                    .orElseThrow(() -> new IllegalStateException("McpHub is not initialized"));
+
+            McpConnection connection = mcpHub.getConnections().get(mcpServerName);
+            if (connection != null) {
+                connection.getClient().closeGracefully();
+                connection.getTransport().closeGracefully();
+                mcpHub.getConnections().remove(mcpServerName);
+            }
+
+            mcpHub.refreshMcpServer(mcpServerName);
+            log.info("Completed refreshing MCP server: {}", mcpServerName);
+
+        }, e -> log.error("Failed to refresh MCP server: {}", mcpServerName, e));
     }
 }
