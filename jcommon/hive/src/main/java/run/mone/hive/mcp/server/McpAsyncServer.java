@@ -417,6 +417,7 @@ public class McpAsyncServer {
 
 	private DefaultMcpSession.StreamRequestHandler toolsStreamRequestHandler() {
 		return params -> {
+			logger.info("Received tools stream request: {}", params);
 			// this is where we handle tools stream request
 			McpSchema.CallToolRequest callToolRequest = transport.unmarshalFrom(params,
 					new TypeReference<McpSchema.CallToolRequest>() {
@@ -431,6 +432,8 @@ public class McpAsyncServer {
 			}	
 
 			ToolStreamRegistration tool = toolRegistration.get();
+
+			logger.info("Handling tools stream request with tool: {}", tool);
 
 			return Flux.from(tool.call()
 				.apply(callToolRequest.arguments())

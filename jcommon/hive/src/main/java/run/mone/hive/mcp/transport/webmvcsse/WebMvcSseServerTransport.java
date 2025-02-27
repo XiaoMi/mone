@@ -17,6 +17,7 @@
 package run.mone.hive.mcp.transport.webmvcsse;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -179,10 +180,12 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
 
 			try {
 				String jsonText = objectMapper.writeValueAsString(message);
-				logger.debug("Attempting to broadcast message to {} active sessions", sessions.size());
+				// TODO: log level should be DEBUG
+				logger.info("Attempting to broadcast message to {} active sessions", sessions.size());
 
 				sessions.values().forEach(session -> {
 					try {
+						logger.info("Sending message to session: {}, message: {}", session.id, jsonText);
 						session.sseBuilder.id(session.id).event(MESSAGE_EVENT_TYPE).data(jsonText);
 					}
 					catch (Exception e) {
@@ -233,7 +236,7 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
 					logger.error("Failed to poll event from session queue: {}", e.getMessage());
 					sseBuilder.error(e);
 				}
-			});
+			}, Duration.ZERO);
 		}
 		catch (Exception e) {
 			logger.error("Failed to send initial endpoint event to session {}: {}", sessionId, e.getMessage());
@@ -264,9 +267,18 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
 			// Handle tools stream requests
 			if (message instanceof McpSchema.JSONRPCRequest req 
 					&& req.method().equals(McpSchema.METHOD_TOOLS_STREAM)) {
+				logger.info("WebMvcSseServerTransport, Handling tools stream request: {}", req);
 				// handle tools stream request
 				if (streamHandler != null) {
-					streamHandler.apply(req);
+					streamHandler.apply(req)
+						.log()
+						.subscribe(
+							response -> sendMessage(response).subscribe(),
+							error -> {
+								logger.error("Error handling tools stream request: {}", error.getMessage());
+								sendMessage(new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, req.id(), null, new McpSchema.JSONRPCResponse.JSONRPCError(500, error.getMessage(), null))).subscribe();
+							}
+						);
 				} else {
 					logger.warn("No stream handler registered for tools stream request");
 					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new McpError("No stream handler registered for tools stream request"));

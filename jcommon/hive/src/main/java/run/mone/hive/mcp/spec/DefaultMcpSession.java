@@ -151,13 +151,14 @@ public class DefaultMcpSession implements McpSession {
 				var sink = pendingResponses.remove(response.id());
 				var streamSink = pendingStreamResponses.get(response.id());
 				if (sink == null && streamSink == null) {
-					logger.warn("Unexpected response for unkown id {}", response.id());
+					logger.warn("Unexpected response for unknown id {}", response.id());
 				} else {
 					if (sink != null) {
 						sink.success(response);
 					}
 					if (streamSink != null) {
 						// TODO: complete the sink at last msg
+						logger.info("Received stream response: {}", response);
 						streamSink.next(response);
 					}
 				}
@@ -187,7 +188,9 @@ public class DefaultMcpSession implements McpSession {
 	}
 
 	private Flux<McpSchema.JSONRPCResponse> handleToolsStreamRequest(McpSchema.JSONRPCRequest request) {
+		logger.info("Received tools stream request: {}", request);
 		return Flux.defer(() -> {
+			logger.info("Handling tools stream request: {}", request);
 			var handler = this.streamRequestHandlers.get(request.method());
 			if (handler == null) {
 				logger.error("No handler registered for stream request method: {}", request.method());

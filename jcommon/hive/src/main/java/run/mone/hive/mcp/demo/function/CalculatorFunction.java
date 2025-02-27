@@ -55,6 +55,6 @@ public class CalculatorFunction implements Function<Map<String, Object>, Flux<Mc
             default -> throw new IllegalArgumentException("Unknown operation: " + op);
         };
 
-        return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(String.valueOf(result))), false));
+        return  Flux.range(0, 10).map(i -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(String.valueOf(result + i))), false));
     }
 }
