@@ -40,6 +40,17 @@ public class GatewayService {
 
     private static HttpClient httpClient = new HttpClient();
 
+    public String detailByUrl(String env, String url) {
+        String path = "/open/v1/private/api/apiinfo/detailByUrl?url=" + url;
+        String host = urlConfig.get(env);
+        try {
+            JsonObject jsonObject = httpClient.get(host + path);
+            return gson.toJson(jsonObject);
+        } catch (Exception e) {
+            return "error: " + e.getMessage();
+        }
+    }
+
     public String listApiInfo(String env, ListApiInfoParam param) {
         String path = "/open/v1/private/api/apiinfo/list";
         String host = urlConfig.get(env);

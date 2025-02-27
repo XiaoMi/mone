@@ -20,6 +20,11 @@ public class ApiFunction implements Function<Map<String, Object>, McpSchema.Call
             {
                 "type": "object",
                 "properties": {
+                    "operation": {
+                        "type": "string",
+                        "enum": ["listApiInfo", "detailByUrl"],
+                        "description": "The api operation to perform"
+                    },
                     "env": {
                         "type": "string",
                         "enum": ["staging", "online"],
@@ -28,20 +33,35 @@ public class ApiFunction implements Function<Map<String, Object>, McpSchema.Call
                     "keyword": {
                         "type": "string",
                         "description": "fuzzy search keyword"
+                    },
+                    "url": {
+                        "type": "string",
+                        "description": "api url"
                     }
                 },
-                "required": ["env", "keyword"]
+                "required": ["operation", "env"]
             }
             """;
 
     @Override
     public McpSchema.CallToolResult apply(Map<String, Object> arguments) {
+
+        String operation = (String) arguments.get("operation");
         String result;
 
         try {
-            ListApiInfoParam param = new ListApiInfoParam();
-            param.setUrl((String) arguments.get("keyword"));
-            result = gatewayService.listApiInfo((String) arguments.get("env"), param);
+            switch (operation) {
+                case "listApiInfo" -> {
+                    ListApiInfoParam param = new ListApiInfoParam();
+                    param.setUrl((String) arguments.get("keyword"));
+                    result = gatewayService.listApiInfo((String) arguments.get("env"), param);
+                }
+                case "detailByUrl" -> {
+                    result = gatewayService.detailByUrl((String) arguments.get("env"), (String) arguments.get("url"));
+                }
+                default -> throw new IllegalArgumentException("Unknown operation: " + operation);
+            };
+
             return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false);
         } catch (Exception e) {
             return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true);

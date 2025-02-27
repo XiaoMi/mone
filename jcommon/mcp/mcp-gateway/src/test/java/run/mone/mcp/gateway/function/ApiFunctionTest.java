@@ -25,9 +25,25 @@ class ApiFunctionTest {
     }
 
     @Test
+    void testDetailByUrl() {
+        // Prepare test data
+        Map<String, Object> arguments = new HashMap<>();
+        arguments.put("operation", "detailByUrl");
+        arguments.put("env", "staging");
+        arguments.put("url", "/mtop/test/ceshiyaya1");
+
+        // Call the function
+        McpSchema.CallToolResult result = apiFunction.apply(arguments);
+
+        // Assertions
+        assertNotNull(result);
+    }
+
+    @Test
     void testListApiInfo() {
         // Prepare test data
         Map<String, Object> arguments = new HashMap<>();
+        arguments.put("operation", "listApiInfo");
         arguments.put("env", "staging");
         arguments.put("keyword", "auditReject");
 
