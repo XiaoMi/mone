@@ -443,6 +443,10 @@ public class McpAsyncClient {
 		return this.mcpSession.sendRequest(McpSchema.METHOD_TOOLS_CALL, callToolRequest, CALL_TOOL_RESULT_TYPE_REF);
 	}
 
+	public Flux<McpSchema.CallToolResult> callToolStream(McpSchema.CallToolRequest callToolRequest) {
+		return this.mcpSession.sendRequestStream(McpSchema.METHOD_TOOLS_STREAM, callToolRequest, CALL_TOOL_RESULT_TYPE_REF);
+	}
+
 	/**
 	 * Retrieves the list of all tools provided by the server.
 	 * @return A Mono that emits the list of tools result containing: - tools: List of

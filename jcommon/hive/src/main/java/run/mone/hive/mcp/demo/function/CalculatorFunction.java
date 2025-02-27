@@ -8,12 +8,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import com.google.common.collect.Lists;
+
 /**
  * @author goodjava@qq.com
  * @date 2025/1/17 14:52
  */
 @Data
-public class CalculatorFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolPartialResult>> {
+public class CalculatorFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
 
     private String name = "calculator";
 
@@ -39,7 +41,7 @@ public class CalculatorFunction implements Function<Map<String, Object>, Flux<Mc
 
 
     @Override
-    public Flux<McpSchema.CallToolPartialResult> apply(Map<String, Object> arguments) {
+    public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         Map<String, Object> args = arguments;
         String op = (String) args.get("operation");
         double a = ((Number) args.get("a")).doubleValue();
@@ -53,6 +55,6 @@ public class CalculatorFunction implements Function<Map<String, Object>, Flux<Mc
             default -> throw new IllegalArgumentException("Unknown operation: " + op);
         };
 
-        return Flux.just(new McpSchema.CallToolPartialResult(String.valueOf(result), false));
+        return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(String.valueOf(result))), false));
     }
 }
