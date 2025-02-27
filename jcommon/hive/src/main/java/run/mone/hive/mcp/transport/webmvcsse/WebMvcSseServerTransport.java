@@ -25,6 +25,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import run.mone.hive.mcp.spec.McpError;
@@ -113,6 +115,8 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
 	 */
 	private Function<Mono<McpSchema.JSONRPCMessage>, Mono<McpSchema.JSONRPCMessage>> connectHandler;
 
+	private Function<McpSchema.JSONRPCRequest, Flux<McpSchema.JSONRPCResponse>> streamHandler;
+
 	/**
 	 * Constructs a new WebMvcSseServerTransport instance.
 	 * @param objectMapper The ObjectMapper to use for JSON serialization/deserialization
@@ -146,6 +150,13 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
 	public Mono<Void> connect(
 			Function<Mono<McpSchema.JSONRPCMessage>, Mono<McpSchema.JSONRPCMessage>> connectionHandler) {
 		this.connectHandler = connectionHandler;
+		// Server-side transport doesn't initiate connections
+		return Mono.empty();
+	}
+
+	public Mono<Void> connectStream(
+			Function<McpSchema.JSONRPCRequest, Flux<McpSchema.JSONRPCResponse>> streamHandler) {
+		this.streamHandler = streamHandler;
 		// Server-side transport doesn't initiate connections
 		return Mono.empty();
 	}
@@ -250,6 +261,18 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
 		try {
 			String body = request.body(String.class);
 			McpSchema.JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(objectMapper, body);
+			// Handle tools stream requests
+			if (message instanceof McpSchema.JSONRPCRequest req 
+					&& req.method().equals(McpSchema.METHOD_TOOLS_STREAM)) {
+				// handle tools stream request
+				if (streamHandler != null) {
+					streamHandler.apply(req);
+				} else {
+					logger.warn("No stream handler registered for tools stream request");
+					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new McpError("No stream handler registered for tools stream request"));
+				}
+				return ServerResponse.ok().build();
+			}
 
 			// Convert the message to a Mono, apply the handler, and block for the
 			// response

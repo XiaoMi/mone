@@ -11,9 +11,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
-
+import run.mone.hive.mcp.transport.webmvcsse.WebMvcSseServerTransport;
 import run.mone.hive.mcp.util.Assert;
 
 /**
@@ -49,6 +50,9 @@ public class DefaultMcpSession implements McpSession {
 	/** Map of pending responses keyed by request ID */
 	private final ConcurrentHashMap<Object, MonoSink<McpSchema.JSONRPCResponse>> pendingResponses = new ConcurrentHashMap<>();
 
+	/** Map of pending stream responses keyed by request ID */
+	private final ConcurrentHashMap<Object, FluxSink<McpSchema.JSONRPCResponse>> pendingStreamResponses = new ConcurrentHashMap<>();
+
 	/** Map of request handlers keyed by method name */
 	private final ConcurrentHashMap<String, RequestHandler> requestHandlers = new ConcurrentHashMap<>();
 
@@ -64,7 +68,6 @@ public class DefaultMcpSession implements McpSession {
 	private final AtomicLong requestCounter = new AtomicLong(0);
 
 	private final Disposable connection;
-
 	/**
 	 * Functional interface for handling incoming JSON-RPC requests. Implementations
 	 * should process the request parameters and return a response.
@@ -146,39 +149,55 @@ public class DefaultMcpSession implements McpSession {
 			if (message instanceof McpSchema.JSONRPCResponse response) {
 				logger.info("Received Response: {}", response);
 				var sink = pendingResponses.remove(response.id());
-				if (sink == null) {
+				var streamSink = pendingStreamResponses.get(response.id());
+				if (sink == null && streamSink == null) {
 					logger.warn("Unexpected response for unkown id {}", response.id());
 				} else {
-					sink.success(response);
+					if (sink != null) {
+						sink.success(response);
+					}
+					if (streamSink != null) {
+						// TODO: complete the sink at last msg
+						streamSink.next(response);
+					}
 				}
 			} else if (message instanceof McpSchema.JSONRPCRequest request) {
 				logger.info("Received request: {}", request);
-				if (request.method().equals(McpSchema.METHOD_TOOLS_STREAM)) {
-					// handle tools stream request
-					handleToolsStreamRequest(request).subscribe(response -> transport.sendMessage(response).subscribe(),
-							error -> {
-								var errorResponse = new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION,
-										request.id(),
-										null, new McpSchema.JSONRPCResponse.JSONRPCError(
-												McpSchema.ErrorCodes.INTERNAL_ERROR, error.getMessage(), null));
-								transport.sendMessage(errorResponse).subscribe();
-							});
-				} else {
-					handleIncomingRequest(request).subscribe(response -> transport.sendMessage(response).subscribe(),
-							error -> {
-								var errorResponse = new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION,
-										request.id(),
-										null, new McpSchema.JSONRPCResponse.JSONRPCError(
-												McpSchema.ErrorCodes.INTERNAL_ERROR, error.getMessage(), null));
-								transport.sendMessage(errorResponse).subscribe();
-							});
-				}
+				handleIncomingRequest(request).subscribe(response -> transport.sendMessage(response).subscribe(),
+						error -> {
+							var errorResponse = new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION,
+									request.id(),
+									null, new McpSchema.JSONRPCResponse.JSONRPCError(
+											McpSchema.ErrorCodes.INTERNAL_ERROR, error.getMessage(), null));
+							transport.sendMessage(errorResponse).subscribe();
+						});
 			} else if (message instanceof McpSchema.JSONRPCNotification notification) {
 				logger.info("Received notification: {}", notification);
 				handleIncomingNotification(notification).subscribe(null,
 						error -> logger.error("Error handling notification: {}", error.getMessage()));
 			}
 		})).subscribe();
+
+		if (this.transport instanceof WebMvcSseServerTransport) {
+			((WebMvcSseServerTransport) this.transport).connectStream(req -> {
+				return handleToolsStreamRequest(req);
+			});
+		}
+
+	}
+
+	private Flux<McpSchema.JSONRPCResponse> handleToolsStreamRequest(McpSchema.JSONRPCRequest request) {
+		return Flux.defer(() -> {
+			var handler = this.streamRequestHandlers.get(request.method());
+			if (handler == null) {
+				logger.error("No handler registered for stream request method: {}", request.method());
+				return Flux.error(new McpError("No handler registered for stream request method: " + request.method()));
+			} else {
+				return handler.handle(request.params())
+					.map(response -> new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, request.id(), response, null))
+					.onErrorResume(error -> Flux.error(new McpError("Error handling tools stream request: " + error.getMessage())));
+			}
+		});
 	}
 
 	/**
@@ -204,20 +223,6 @@ public class DefaultMcpSession implements McpSession {
 							request.id(),
 							null, new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INTERNAL_ERROR,
 									error.getMessage(), null)))); // TODO: add error message through the data field
-		});
-	}
-
-	private Flux<McpSchema.JSONRPCResponse> handleToolsStreamRequest(McpSchema.JSONRPCRequest request) {
-		return Flux.defer(() -> {
-			var handler = this.streamRequestHandlers.get(request.method());
-			if (handler == null) {
-				logger.error("No handler registered for stream request method: {}", request.method());
-				return Flux.error(new McpError("No handler registered for stream request method: " + request.method()));
-			} else {
-				return handler.handle(request.params())
-					.map(response -> new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, request.id(), response, null))
-					.onErrorResume(error -> Flux.error(new McpError("Error handling tools stream request: " + error.getMessage())));
-			}
 		});
 	}
 
@@ -297,6 +302,38 @@ public class DefaultMcpSession implements McpSession {
 					sink.next(this.transport.unmarshalFrom(jsonRpcResponse.result(), typeRef));
 				}
 			}
+		});
+	}
+
+	/**
+	 * Sends a JSON-RPC request and returns a stream of responses.
+	 * 
+	 * @param <T>           The expected response type
+	 * @param method        The method name to call
+	 * @param requestParams The request parameters
+	 * @param typeRef       Type reference for response deserialization
+	 * @return A Flux containing the response
+	 */
+	@Override
+	public <T> Flux<T> sendRequestStream(String method, Object requestParams, TypeReference<T> typeRef) {
+		String requestId = this.generateRequestId();
+		
+		return Flux.<McpSchema.JSONRPCResponse>create(sink -> {
+			this.pendingStreamResponses.put(requestId, sink);
+			McpSchema.JSONRPCRequest jsonrpcRequest = new McpSchema.JSONRPCRequest(McpSchema.JSONRPC_VERSION, method,
+					requestId, requestParams);
+			
+			this.transport.sendMessage(jsonrpcRequest)
+				.subscribe(v -> {
+					// 预期很快到这里, 因为stream是异步的
+				}, error -> {
+					// 处理错误
+					sink.error(error);
+				});
+		}).map(response -> this.transport.unmarshalFrom(response.result(), typeRef))
+		.doOnCancel(() -> {
+			// 处理取消逻辑
+			this.pendingStreamResponses.remove(requestId);
 		});
 	}
 

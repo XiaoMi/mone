@@ -165,9 +165,9 @@ public class McpSyncClient implements AutoCloseable {
 		return this.delegate.callTool(callToolRequest).block();
 	}
 
-	// public Flux<McpSchema.CallToolPartialResult> callToolStream(McpSchema.CallToolRequest callToolRequest) {
-	// 	return this.delegate.callToolStream(callToolRequest);
-	// }
+	public Flux<McpSchema.CallToolResult> callToolStream(McpSchema.CallToolRequest callToolRequest) {
+		return this.delegate.callToolStream(callToolRequest);
+	}
 
 	/**
 	 * Retrieves the list of all tools provided by the server.

@@ -723,11 +723,6 @@ public final class McpSchema {
 		@JsonProperty("isError") Boolean isError) {
 	} // @formatter:on
 
-    public record CallToolPartialResult(
-        @JsonProperty("content") String content,
-        @JsonProperty("isError") Boolean isError) {
-    }
-
     // ---------------------------
     // Sampling Interfaces
     // ---------------------------
