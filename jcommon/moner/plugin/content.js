@@ -8,6 +8,24 @@ document.addEventListener('mousemove', (event) => {
     //console.log("mousemove:" + event.clientX + "," + event.clientY);
 });
 
+// 添加脚本执行处理函数
+function executeScriptInPage(code) {
+    try {
+        // 创建script标签
+        const script = document.createElement('script');
+        // 将代码包装在立即执行函数中
+        script.textContent = `(function(){${code}})();`;
+        // 将script标签添加到文档中
+        document.body.appendChild(script);
+        // 执行完后移除script标签
+        //script.remove();
+        return true;
+    } catch (error) {
+        console.error('Error executing script:', error);
+        return { error: error.message };
+    }
+}
+
 // 创建一个标记来追踪是否是确认后的点击
 let isConfirmedClick = false;
 
@@ -144,6 +162,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === 'takeScreenshot') {
         console.log('Taking screenshot from content script');
         screenshotManager.captureVisibleArea(false,message.data);
+    }
+
+    if (message.type === 'executeScript') {
+        console.log('Executing script from content script');
+        const result = executeScriptInPage(message.code);
+        sendResponse(result);
+        return true;
     }
 
     if (message.type === 'toggleSelector' && message.active) {

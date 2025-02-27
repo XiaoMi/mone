@@ -1,16 +1,20 @@
 package run.mone.local.docean.fsm.bo;
 
+import org.apache.commons.lang3.StringUtils;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
+
 /**
  * @author goodjava@qq.com
  * @date 2024/3/1 22:41
  */
 public class Condition {
 
-    private String value;
+    private JsonElement value;
     private Operator operator;
-    private String otherValue;
+    private JsonElement otherValue;
 
-    public Condition(String value, Operator operator, String otherValue) {
+    public Condition(JsonElement value, Operator operator, JsonElement otherValue) {
         this.value = value;
         this.operator = operator;
         this.otherValue = otherValue;
@@ -21,18 +25,32 @@ public class Condition {
         // 根据操作符来比较值，这里只是一个简单的示例
         switch (operator) {
             case EQUALS:
-                return value.equals(otherValue);
+                return equals(value, otherValue);
             case NOT_EQUALS:
-                return !value.equals(otherValue);
+                return !equals(value, otherValue);
             case GREATER_THAN:
-                // 假设value和otherValue都可以转换为数字
-                return Double.parseDouble(value) > Double.parseDouble(otherValue);
+                // 假设value和otherValue都是JsonPrimitive并且可以转换为数字
+                if (value.isJsonPrimitive() && otherValue.isJsonPrimitive()) {
+                    return Double.parseDouble(value.getAsString()) > Double.parseDouble(otherValue.getAsString());
+                }
+                return false;
             case LESS_THAN:
-                // 假设value和otherValue都可以转换为数字
-                return Double.parseDouble(value) < Double.parseDouble(otherValue);
+                // 假设value和otherValue都是JsonPrimitive并且可以转换为数字
+                if (value.isJsonPrimitive() && otherValue.isJsonPrimitive()) {
+                    return Double.parseDouble(value.getAsString()) < Double.parseDouble(otherValue.getAsString());
+                }
+                return false;
             case CONTAINS:
                 // 假设value是一个字符串，检查它是否包含otherValue
-                return value.contains(otherValue);
+                if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString() &&
+                        otherValue.isJsonPrimitive() && otherValue.getAsJsonPrimitive().isString()) {
+                    return value.getAsString().contains(otherValue.getAsString());
+                }
+                return false;
+            case IS_EMPTY:
+                return value.isJsonNull() || (value.isJsonPrimitive() && StringUtils.isBlank(value.getAsString()));
+            case IS_NOT_EMPTY:
+                return !value.isJsonNull() && (value.isJsonPrimitive() && StringUtils.isNotBlank(value.getAsString()));
             // ... 其他比较逻辑
             default:
                 return false;
@@ -58,5 +76,10 @@ public class Condition {
         };
     }
 
-
+    private boolean equals(JsonElement value, JsonElement otherValue) {
+        if (value.isJsonPrimitive() && otherValue.isJsonPrimitive()) {
+            return value.getAsString().equals(otherValue.getAsString());
+        }
+        return value.equals(otherValue);
+    }
 }

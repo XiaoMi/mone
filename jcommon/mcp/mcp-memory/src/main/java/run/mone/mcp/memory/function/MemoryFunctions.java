@@ -28,7 +28,9 @@ public class MemoryFunctions {
     public static class CreateEntitiesFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
         private String name = "create_entities";
 
-        private String desc = "Create multiple new entities in the knowledge graph";
+        private String desc = """
+        Create multiple new entities in the knowledge graph, when the user wants to remember something, they can use this function to create an entity
+        """;
 
         private String toolScheme = """
             {
@@ -81,7 +83,10 @@ public class MemoryFunctions {
     public static class CreateRelationsFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
         private String name = "create_relations";
         
-        private String desc = "Create multiple new relations between entities in the knowledge graph. Relations should be in active voice";
+        private String desc = """
+        Create multiple new relations between entities in the knowledge graph. Relations should be in active voice, and should be in the past tense.
+        when the user wants to remember something, they can use this function to create a relation between the entity and the event that happened.
+        """;
 
         private String toolScheme = """
             {
@@ -131,7 +136,9 @@ public class MemoryFunctions {
     public static class AddObservationsFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
         private String name = "add_observations";
 
-        private String desc = "Add new observations to existing entities in the knowledge graph";
+        private String desc = """
+        Add new observations to existing entities in the knowledge graph, when the user wants to remember something, they can use this function to add an observation to the entity.
+        """;
 
         private String toolScheme = """
             {
@@ -180,7 +187,9 @@ public class MemoryFunctions {
     public static class DeleteEntitiesFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
         private String name = "delete_entities";
 
-        private String desc = "Delete multiple entities and their associated relations from the knowledge graph";
+        private String desc = """
+        Delete multiple entities and their associated relations from the knowledge graph, when the user wants to forget something, they can use this function to delete the entity.
+        """;
 
         private String toolScheme = """
             {
@@ -216,7 +225,9 @@ public class MemoryFunctions {
     public static class DeleteObservationsFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
         private String name = "delete_observations";
 
-        private String desc = "Delete specific observations from entities in the knowledge graph";
+        private String desc = """
+        Delete specific observations from entities in the knowledge graph, when the user wants to forget something, they can use this function to delete the observation.
+        """;
 
         private String toolScheme = """
             {
@@ -265,7 +276,9 @@ public class MemoryFunctions {
     public static class DeleteRelationsFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
         private String name = "delete_relations";
 
-        private String desc = "Delete multiple relations from the knowledge graph";
+        private String desc = """
+        Delete multiple relations from the knowledge graph, when the user wants to forget something, they can use this function to delete the relation.
+        """;
 
         private String toolScheme = """
             {
@@ -315,7 +328,9 @@ public class MemoryFunctions {
     public static class ReadGraphFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
         private String name = "read_graph";
 
-        private String desc = "Read the entire knowledge graph";
+        private String desc = """
+        Read the entire knowledge graph, when the user wants to know what they have remembered, they can use this function to read the graph.
+        """;
 
         private String toolScheme = """
             {
@@ -341,7 +356,9 @@ public class MemoryFunctions {
     public static class SearchNodesFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
         private String name = "search_nodes";
 
-        private String desc = "Search for nodes in the knowledge graph based on a query";
+        private String desc = """
+        Search for nodes in the knowledge graph based on a query, when the user wants to know what they have remembered, they can use this function to search the graph.
+        """;
 
         private String toolScheme = """
             {
@@ -374,7 +391,9 @@ public class MemoryFunctions {
     public static class OpenNodesFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
         private String name = "open_nodes";
 
-        private String desc = "Open specific nodes in the knowledge graph by their names";
+        private String desc = """
+        Open specific nodes in the knowledge graph by their names, when the user wants to know more about a specific entity, they can use this function to open the node.
+        """;
 
         private String toolScheme = """
             {

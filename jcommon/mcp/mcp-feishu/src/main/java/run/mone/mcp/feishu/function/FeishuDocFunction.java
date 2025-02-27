@@ -7,7 +7,6 @@ import org.springframework.stereotype.Component;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.feishu.model.DocBlock;
 import run.mone.mcp.feishu.model.DocContent;
-import run.mone.mcp.feishu.model.DocPermission;
 import run.mone.mcp.feishu.model.Files;
 import run.mone.mcp.feishu.service.FeishuDocService;
 
@@ -30,27 +29,25 @@ public class FeishuDocFunction implements Function<Map<String, Object>, McpSchem
                 "properties": {
                     "operation": {
                         "type": "string",
-                        "enum": ["createDocument", "addBlock", "getFileInfo", "getDocument", "getRootFolder"],
-                        "description": "Operation type for Feishu document. Supported operations:\\n1. createDocument: Create new document, requires title parameter. Example: {'operation': 'createDocument', 'title': 'New Document'}\\n2. addBlock: Add content blocks, requires block parameter with docId and elements. Example: {'operation': 'addBlock', 'block': {'docId': 'docx8H1i9Ko0TPLt', 'elements': {'2': 'content', '3': 'heading'}}}\\n3. getFileInfo: Get document info, requires documentId. Example: {'operation': 'getFileInfo', 'documentId': 'docx8H1i9Ko0TPLt'}\\n4. getDocument: Get document content, requires documentId. Example: {'operation': 'getDocument', 'documentId': 'docx8H1i9Ko0TPLt'}\\n5. getRootFolder: Get root folder token. Example: {'operation': 'getRootFolder'}"
+                        "description": "Operation type for Feishu document:\\n1. createDocument: Create new document\\n2. addBlock: Add content blocks\\n3. getFileInfo: Get document info\\n4. getDocument: Get document content\\n5. getRootFolder: Get root folder token\\n\\nExample: 'createDocument';Please pay attention to serialization issues"
                     },
                     "title": {
                         "type": "string",
-                        "description": "Document title for createDocument operation. Example: 'Project Document', 'Meeting Notes'"
+                        "description": "Document title. Example: 'Project Meeting Notes'"
                     },
                     "folderToken": {
                         "type": "string",
-                        "description": "Parent folder token for document creation. If not provided, document will be created in root folder. Example: 'fldcnxxxxxxxx'"
+                        "description": "Parent folder token. Example: 'fldcnxxxxxxxx'"
                     },
                     "documentId": {
                         "type": "string",
-                        "description": "Document ID for getFileInfo and getDocument operations. Example: 'docx8H1i9Ko0TPLt'"
+                        "description": "Document ID. Example: 'docx8H1i9Ko0TPLt'"
                     },
                     "block": {
                         "type": "object",
-                        "description": "Document block structure for addBlock operation. Block types: 1=Page, 2=Text, 3=Heading1, 4=Heading2, 5=Heading3, 6=Heading4, 7=Heading5, 8=Heading6, 9=Heading7, 10=Heading8, 11=Heading9, 12=Bullet List, 13=Ordered List, 14=Code Block, 15=Quote. Example: {'docId': 'docx8H1i9Ko0TPLt', 'elements': {'3': 'Document Title', '2': 'Content', '12': 'List Item', '14': 'Code Example'}}"
+                        "description": "Document block structure with docId and elements array. Each element contains:\\ntype: Block type (1=Page, 2=Text, 3=Heading1, 4=Heading2, 5=Heading3, 6=Heading4, 7=Heading5, 8=Heading6, 9=Heading7, 10=Heading8, 11=Heading9, 12=Bullet List, 13=Ordered List, 14=Code Block, 15=Quote)\\ncontent: Block content\\n\\nExample: {'docId': 'docx8H1i9Ko0TPLt', 'elements': [{'type': 2, 'content': 'text content'}, {'type': 4, 'content': 'heading2 content'}]}"
                     }
-                },
-                "required": ["operation"]
+                }
             }
             """;
 

@@ -19,6 +19,7 @@
     "axios": "^1.7.9",
     "element-plus": "^2.9.3",
     "highlight.js": "^11.11.1",
+    "htmlparser2": "^10.0.0",
     "markdown-it": "^14.1.0",
     "markdown-it-link-attributes": "^4.0.1",
     "mitt": "^3.0.1",

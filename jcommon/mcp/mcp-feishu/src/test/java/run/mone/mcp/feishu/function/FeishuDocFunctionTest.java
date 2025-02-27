@@ -13,6 +13,7 @@ import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.feishu.model.*;
 import run.mone.mcp.feishu.service.FeishuDocService;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,18 +58,36 @@ class FeishuDocFunctionTest {
         String documentId = docContent.getDocumentId();
 
         // 准备请求参数
-        Map<Integer, String> elements = Map.of(2, "测试内容");
+        List<DocBlock.Element> elements = new ArrayList<>();
+        
+        // 添加标题
+        DocBlock.Element titleElement = new DocBlock.Element()
+                .setType(3)  // 一级标题
+                .setContent("倒拔石榴树的小故事");
+        elements.add(titleElement);
+        
+        // 添加正文内容
+        DocBlock.Element contentElement = new DocBlock.Element()
+                .setType(2)  // 文本块
+                .setContent("在一个阳光明媚的午后，小明来到了爷爷的果园。一棵硕果累累的石榴树吸引了他的目光。他跃跃欲试，想要摘取那鲜红的果实。可是，树太高了，他够不着。\n\n" +
+                        "突发奇想的小明决定使出倒拔石榴树的绝招。他双手紧握树干，用尽全身力气向上拔。汗水湿透了衣衫，可树纹丝不动。正在这时，爷爷笑眯眯地走来，轻轻摇了摇树枝，几颗饱满的石榴便落入小明怀中。\n\n" +
+                        "爷爷慈祥地说：孩子，有时候，聪明比蛮力更重要。小明恍然大悟，脸上泛起了幸福的笑容。这个下午，祖孙俩一边品尝甜美的石榴，一边畅聊人生的智慧。");
+        elements.add(contentElement);
 
         Map<String, Object> addBlock = new HashMap<>();
         addBlock.put("operation", "addBlock");
         addBlock.put("block", Map.of(
-                "docId", documentId, "elements", elements
+                "docId", documentId, 
+                "elements", elements
         ));
+        
         // 执行测试
         McpSchema.CallToolResult addBlockRes = feishuDocFunction.apply(addBlock);
 
+        // 获取文件信息
         Map<String, Object> getFilesArg = new HashMap<>();
-        getFilesArg.put("operation", "getFiles");
+        getFilesArg.put("operation", "getFileInfo");
+        getFilesArg.put("documentId", documentId);
         McpSchema.CallToolResult files = feishuDocFunction.apply(getFilesArg);
         McpSchema.TextContent content = (McpSchema.TextContent) files.content().get(0);
         List<Files> filesList = gson.fromJson(content.text(), new TypeToken<List<Files>>() {
