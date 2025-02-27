@@ -7,7 +7,9 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.hive.mcp.spec.McpSchema.CallToolPartialResult;
 import run.mone.hive.mcp.spec.McpSchema.CallToolResult;
 import run.mone.hive.mcp.spec.McpSchema.ResourceTemplate;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
@@ -117,6 +119,9 @@ public interface McpServer {
 	 * returning results
 	 */
 	public static record ToolRegistration(Tool tool, Function<Map<String, Object>, CallToolResult> call) {
+	}
+
+	public static record ToolStreamRegistration(Tool tool, Function<Map<String, Object>, Flux<CallToolPartialResult>> call) {
 	}
 
 	/**

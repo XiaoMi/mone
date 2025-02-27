@@ -47,6 +47,8 @@ public final class McpSchema {
 
     public static final String METHOD_TOOLS_CALL = "tools/call";
 
+    public static final String METHOD_TOOLS_STREAM = "tools/streamCall";
+
     public static final String METHOD_NOTIFICATION_TOOLS_LIST_CHANGED = "notifications/tools/list_changed";
 
     // Resources Methods
@@ -720,6 +722,11 @@ public final class McpSchema {
 		@JsonProperty("content") List<Content> content,
 		@JsonProperty("isError") Boolean isError) {
 	} // @formatter:on
+
+    public record CallToolPartialResult(
+        @JsonProperty("content") String content,
+        @JsonProperty("isError") Boolean isError) {
+    }
 
     // ---------------------------
     // Sampling Interfaces

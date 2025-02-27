@@ -12,6 +12,8 @@ import java.util.function.Function;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
@@ -19,6 +21,7 @@ import run.mone.hive.mcp.spec.ClientMcpTransport;
 import run.mone.hive.mcp.spec.DefaultMcpSession;
 import run.mone.hive.mcp.spec.DefaultMcpSession.NotificationHandler;
 import run.mone.hive.mcp.spec.DefaultMcpSession.RequestHandler;
+import run.mone.hive.mcp.spec.DefaultMcpSession.StreamRequestHandler;
 import run.mone.hive.mcp.spec.McpError;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.ClientCapabilities;
@@ -139,11 +142,12 @@ public class McpAsyncClient {
 		this.roots = roots != null ? new ConcurrentHashMap<>(roots) : new ConcurrentHashMap<>();
 
 		// Request Handlers
-		Map<String, RequestHandler> requestHanlers = new HashMap<>();
+		Map<String, RequestHandler> requestHandlers = new HashMap<>();
+		Map<String, StreamRequestHandler> streamRequestHandlers = new HashMap<>();
 
 		// Roots List Request Handler
 		if (this.roots != null && this.clientCapabilities.roots() != null) {
-			requestHanlers.put(McpSchema.METHOD_ROOTS_LIST, rootsListRequestHandler());
+			requestHandlers.put(McpSchema.METHOD_ROOTS_LIST, rootsListRequestHandler());
 		}
 
 		// Sampling Handler
@@ -152,7 +156,7 @@ public class McpAsyncClient {
 				throw new McpError("Sampling handler must not be null when client capabilities include sampling");
 			}
 			this.samplingHandler = samplingHandler;
-			requestHanlers.put(McpSchema.METHOD_SAMPLING_CREATE_MESSAGE, samplingCreateMessageHandler());
+			requestHandlers.put(McpSchema.METHOD_SAMPLING_CREATE_MESSAGE, samplingCreateMessageHandler());
 		}
 
 		// Notification Handlers
@@ -194,7 +198,7 @@ public class McpAsyncClient {
 		notificationHandlers.put(McpSchema.METHOD_NOTIFICATION_MESSAGE,
 				loggingNotificationHandler(loggingConsumersFinal));
 
-		this.mcpSession = new DefaultMcpSession(requestTimeout, transport, requestHanlers, notificationHandlers);
+		this.mcpSession = new DefaultMcpSession(requestTimeout, transport, requestHandlers, streamRequestHandlers, notificationHandlers);
 
 	}
 
