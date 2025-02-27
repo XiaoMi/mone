@@ -1,9 +1,13 @@
 package run.mone.mcp.idea.function;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.mcp.idea.service.IdeaService;
+
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-
 import com.google.gson.JsonObject;
 import org.springframework.stereotype.Component;
 

@@ -17,6 +17,13 @@ import java.util.concurrent.TimeUnit;
  */
 public class MonoTest {
 
+
+    @Test
+    public void test0() {
+
+    }
+
+
     @SneakyThrows
     @Test
     public void test1() {
