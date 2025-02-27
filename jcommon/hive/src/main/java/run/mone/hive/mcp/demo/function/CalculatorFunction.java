@@ -1,6 +1,7 @@
 package run.mone.hive.mcp.demo.function;
 
 import lombok.Data;
+import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.spec.McpSchema;
 
 import java.util.List;
@@ -12,7 +13,7 @@ import java.util.function.Function;
  * @date 2025/1/17 14:52
  */
 @Data
-public class CalculatorFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+public class CalculatorFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolPartialResult>> {
 
     private String name = "calculator";
 
@@ -38,7 +39,7 @@ public class CalculatorFunction implements Function<Map<String, Object>, McpSche
 
 
     @Override
-    public McpSchema.CallToolResult apply(Map<String, Object> arguments) {
+    public Flux<McpSchema.CallToolPartialResult> apply(Map<String, Object> arguments) {
         Map<String, Object> args = arguments;
         String op = (String) args.get("operation");
         double a = ((Number) args.get("a")).doubleValue();
@@ -52,6 +53,6 @@ public class CalculatorFunction implements Function<Map<String, Object>, McpSche
             default -> throw new IllegalArgumentException("Unknown operation: " + op);
         };
 
-        return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(String.valueOf(result))), false);
+        return Flux.just(new McpSchema.CallToolPartialResult(String.valueOf(result), false));
     }
 }

@@ -17,8 +17,8 @@ import run.mone.hive.mcp.spec.McpSchema.ListToolsResult;
 public class SimpleMcpClient {
     
     public static void main(String[] args) {
-        new SimpleMcpClient().simpleClientViaStdio();
-
+        // new SimpleMcpClient().simpleClientViaStdio();
+        new SimpleMcpClient().simpleClientViaSSE();
     }
 
     public void simpleClientViaSSE() {
