@@ -1,19 +1,14 @@
-
-package run.mone.mcp.idea;
+package run.mone.mcp.gateway;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
-@ComponentScan("run.mone.mcp.idea")
-public class IdeaMcpBootstrap {
-
+@ComponentScan("run.mone.mcp.gateway")
+public class GatewayMcpBootstrap {
     public static void main(String[] args) {
-        try {
-            SpringApplication.run(IdeaMcpBootstrap.class, args);
-        }catch (Throwable t){
-            t.printStackTrace();
-        }
+        SpringApplication.run(GatewayMcpBootstrap.class, args);
     }
+
 }

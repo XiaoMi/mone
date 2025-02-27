@@ -28,6 +28,7 @@
         <module>mcp-prettier</module>
         <module>mcp-writer</module>
         <module>mcp-fetch</module>
+        <module>mcp-gateway</module>
         <module>mcp-coder</module>
         <module>mcp-excel</module>
         <module>mcp-song</module>
@@ -47,6 +48,7 @@
         <module>mcp-ali-email</module>
         <module>mcp-pty4j</module>
         <module>mcp-linux-agent</module>
+        <module>mcp-idea-composer</module>
         <module>mcp-ipinfo</module>
     </modules>
 

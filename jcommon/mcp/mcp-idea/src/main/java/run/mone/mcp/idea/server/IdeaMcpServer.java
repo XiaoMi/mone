@@ -4,8 +4,6 @@ package run.mone.mcp.idea.server;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.server.McpServer.ToolRegistration;
@@ -15,7 +13,6 @@ import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.mcp.idea.config.Const;
 import run.mone.mcp.idea.function.CreateCommentFunction;
-import run.mone.mcp.idea.function.GenerateBizCodeFunction;
 import run.mone.mcp.idea.function.GitPushFunction;
 import run.mone.mcp.idea.function.IdeaFunctions;
 import run.mone.mcp.idea.function.*;
@@ -61,7 +58,6 @@ public class IdeaMcpServer {
 
         IdeaFunctions.IdeaOperationFunction function = new IdeaFunctions.IdeaOperationFunction(ideaPort);
         IdeaFunctions.TestGenerationFunction createUnitTestFunc = new IdeaFunctions.TestGenerationFunction(ideaPort);
-        GenerateBizCodeFunction generateBizCodeFunc = new GenerateBizCodeFunction(ideaPort);
         OpenClassFunction openClassFunc = new OpenClassFunction(ideaPort);
 
         var toolRegistration = new ToolRegistration(
@@ -76,14 +72,12 @@ public class IdeaMcpServer {
         var toolRegistrationGitPush = new ToolRegistration(
                 new Tool(gitPushFunction.getName(), gitPushFunction.getDesc(), gitPushFunction.getToolScheme()), gitPushFunction
         );
-        var toolRegistrationGenerateBizCode = new ToolRegistration(new Tool(generateBizCodeFunc.getName(), generateBizCodeFunc.getDesc(), generateBizCodeFunc.getToolScheme()), generateBizCodeFunc);
         var toolRegistrationOpenClass = new ToolRegistration(new Tool(openClassFunc.getName(), openClassFunc.getDesc(), openClassFunc.getToolScheme()), openClassFunc);
 
         syncServer.addTool(toolRegistration);
         syncServer.addTool(toolRegistrationCreateUnitTest);
         syncServer.addTool(toolRegistrationCreateComment);
         syncServer.addTool(toolRegistrationGitPush);
-        syncServer.addTool(toolRegistrationGenerateBizCode);
         syncServer.addTool(toolRegistrationOpenClass);
 
         syncServer.addTool(new ToolRegistration(
