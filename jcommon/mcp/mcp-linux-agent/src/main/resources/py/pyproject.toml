@@ -1,0 +1,17 @@
+[project]
+name = "linux-agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "flask>=3.1.0",
+    "httpx>=0.28.1",
+    "mcp[cli]>=1.2.0",
+    "mss>=10.0.0",
+    "openai>=1.61.1",
+    "pillow>=11.1.0",
+    "pyautogui>=0.9.54",
+    "pyperclip>=1.9.0",
+    "requests>=2.32.3",
+]

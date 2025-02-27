@@ -127,7 +127,7 @@ public interface McpClient {
 
 		private final ClientMcpTransport transport;
 
-		private Duration requestTimeout = Duration.ofSeconds(20); // Default timeout
+		private Duration requestTimeout = Duration.ofSeconds(120); // Default timeout
 
 		private ClientCapabilities capabilities;
 

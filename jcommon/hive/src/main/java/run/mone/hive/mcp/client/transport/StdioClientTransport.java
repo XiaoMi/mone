@@ -351,10 +351,9 @@ public class StdioClientTransport implements ClientMcpTransport {
         }
     }
 
-    //帮我写一个函数,半段String 是否是json格式 thx(class)
-    public boolean isJsonString(String str) {
+    public boolean isJson(String str) {
         try {
-            new ObjectMapper().readTree(str);
+            McpSchema.deserializeJsonRpcMessage(this.objectMapper, str);
             return true;
         } catch (IOException e) {
             return false;
@@ -372,10 +371,9 @@ public class StdioClientTransport implements ClientMcpTransport {
                 while (!isClosing && (line = processReader.readLine()) != null) {
                     try {
                         logger.info("line:{}", line);
-                        if (!isJsonString(line) || "".equals(line)) {
+                        if (!isJson(line) || "".equals(line)) {
                             continue;
                         }
-
                         JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(this.objectMapper, line);
                         if (!this.inboundSink.tryEmitNext(message).isSuccess()) {
                             if (!isClosing) {

@@ -85,6 +85,7 @@ public class IdeaMcpServer {
         syncServer.addTool(toolRegistrationGitPush);
         syncServer.addTool(toolRegistrationGenerateBizCode);
         syncServer.addTool(toolRegistrationOpenClass);
+
         syncServer.addTool(new ToolRegistration(
                 new Tool(codeReviewFunction.getName(), codeReviewFunction.getDesc(), codeReviewFunction.getToolScheme())
                 , codeReviewFunction
