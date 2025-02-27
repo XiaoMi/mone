@@ -1,5 +1,6 @@
 package run.mone.mcp.idea.function;
 
+import com.google.gson.JsonObject;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import run.mone.hive.mcp.spec.McpSchema;
@@ -48,7 +49,13 @@ public class GitPushFunction implements Function<Map<String, Object>, McpSchema.
     public McpSchema.CallToolResult apply(Map<String, Object> arguments) {
         try {
             String result = ideaService.gitPush((String) arguments.get("code"));
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false);
+
+            String commit = ideaService.extractContent(result, "commit");
+            JsonObject type = new JsonObject();
+            type.addProperty("type", "gitpush");
+            type.addProperty("commit", commit);
+
+            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(type.toString(), result)), false);
         } catch (Exception e) {
             return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true);
         }
