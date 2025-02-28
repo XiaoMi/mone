@@ -4,7 +4,7 @@ local M = {}
 hs.application.enableSpotlightForNameSearches(true)
 
 -- 中文应用名到英文应用名/Bundle ID的映射表
-local chineseAppNameMap = {
+M.chineseAppNameMap = {
     ["钉钉"] = "DingTalk",
     ["微信"] = "WeChat",
     ["企业微信"] = "WXWork",

@@ -109,8 +109,8 @@ end
 
 function M.searchAndSendDingTalkMessage(contactName, message)
     print("searchAndSendMessage 函数被调用，联系人：" .. contactName .. "，消息：" .. message)
-    M.searchContact(contactName)
-    sendMessage(message)
+    M.searchDingTalkContact(contactName)
+    sendDingTalkMessage(message)
 end
 
 function M.captureDingTalkWindow()
