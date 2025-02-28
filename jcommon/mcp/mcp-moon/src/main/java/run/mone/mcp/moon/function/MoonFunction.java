@@ -5,7 +5,14 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.moon.api.bo.common.Result;
+import run.mone.moon.api.bo.task.DubboParam;
+import run.mone.moon.api.bo.task.FaasParam;
+import run.mone.moon.api.bo.task.HttpParam;
+import run.mone.moon.api.bo.task.TaskReq;
+import run.mone.moon.api.bo.user.MoonMoneTpcContext;
 import run.mone.moon.api.service.MoonTaskDubboService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -207,25 +214,153 @@ public class MoonFunction implements Function<Map<String, Object>, McpSchema.Cal
     @SneakyThrows
     @Override
     public McpSchema.CallToolResult apply(Map<String, Object> args) {
-        String tableName = (String) args.get("tableName");
-        String startTime = (String) args.get("startTime");
-        Integer count = (Integer) args.get("count");
-        String endTime = (String) args.get("endTime");
-        if (tableName == null || tableName.trim().isEmpty()) {
-            log.error("没有指明表明");
-            throw new IllegalArgumentException("tableName is required");
-        }
-        log.info("tableName: {}, startTime: {}, endTime: {}", tableName, startTime, endTime);
-
-        // 获取连接
-
         try {
+            // 1. 参数验证和转换
+            if (args == null || args.isEmpty()) {
+                throw new IllegalArgumentException("Task parameters are required");
+            }
 
-            return new McpSchema.CallToolResult(
-                    List.of(new McpSchema.TextContent("moon created: ")), false);
-        } catch (Throwable ex) {
-            throw new RuntimeException(ex.getMessage());
+            // 必填参数校验
+            if (args.get("tenant") == null) {
+                throw new IllegalArgumentException("tenant is required");
+            }
+            if (args.get("name") == null || ((String) args.get("name")).trim().isEmpty()) {
+                throw new IllegalArgumentException("task name is required and cannot be empty");
+            }
+            if (args.get("projectID") == null) {
+                throw new IllegalArgumentException("task projectID is required");
+            }
+            if (args.get("type") == null || ((String) args.get("type")).trim().isEmpty()) {
+                throw new IllegalArgumentException("type is required and cannot be empty");
+            }
+            String type = (String) args.get("type");
+            if (!type.equals("httpTask") && !type.equals("dubboTask") && !type.equals("faasTask")) {
+                throw new IllegalArgumentException("type must be one of: httpTask, dubboTask, faasTask");
+            }
+
+            // 2. 构建任务参数
+            TaskReq taskParam = new TaskReq();
+            MoonMoneTpcContext context = new MoonMoneTpcContext();
+            context.setTenant((String) args.get("tenant"));
+
+            // 设置必填参数
+            taskParam.setName((String) args.get("name"));
+            taskParam.setProjectID(((Number) args.get("projectID")).longValue());
+            taskParam.setType(type);
+
+            // 设置默认值和可选参数
+            taskParam.setDescription(args.containsKey("description") ? 
+                (String) args.get("description") : "Task created by MCP");
+            taskParam.setExecMode(args.containsKey("execMode") ? 
+                (String) args.get("execMode") : "broadcast");
+            taskParam.setPriority(args.containsKey("priority") ? 
+                (String) args.get("priority") : "P2");
+            taskParam.setExecParam(args.containsKey("execParam") ? 
+                (String) args.get("execParam") : "{}");
+            taskParam.setRetryWait(args.containsKey("retryWait") ? 
+                ((Number) args.get("retryWait")).intValue() : 1);
+            taskParam.setConcurrency(args.containsKey("concurrency") ? 
+                ((Number) args.get("concurrency")).intValue() : 1);
+            taskParam.setMachine(args.containsKey("machine") ? 
+                (String) args.get("machine") : "");
+            taskParam.setScheduleMode(args.containsKey("scheduleMode") ? 
+                (String) args.get("scheduleMode") : "cron");
+            taskParam.setScheduleParam(args.containsKey("scheduleParam") ? 
+                (String) args.get("scheduleParam") : "0 0 * * * ?"); // 默认每小时执行
+            taskParam.setStartTime(args.containsKey("startTime") ? 
+                ((Number) args.get("startTime")).longValue() : System.currentTimeMillis());
+            taskParam.setConcurrencyStrategy(args.containsKey("concurrencyStrategy") ? 
+                (String) args.get("concurrencyStrategy") : "parallel");
+
+            // 报警相关默认参数
+            taskParam.setAlertTimeout(args.containsKey("alertTimeout") ? 
+                (Boolean) args.get("alertTimeout") : false);
+            taskParam.setAlertTimeoutLevel(args.containsKey("alertTimeoutLevel") ? 
+                (String) args.get("alertTimeoutLevel") : "P1");
+            taskParam.setTimeout(args.containsKey("timeout") ? 
+                ((Number) args.get("timeout")).longValue() : 7200L);
+            taskParam.setTimeoutHalt(args.containsKey("timeoutHalt") ? 
+                (Boolean) args.get("timeoutHalt") : false);
+            taskParam.setAlertSuccess(args.containsKey("alertSuccess") ? 
+                (Boolean) args.get("alertSuccess") : false);
+            taskParam.setAlertSuccessLevel(args.containsKey("alertSuccessLevel") ? 
+                (String) args.get("alertSuccessLevel") : "P2");
+            taskParam.setAlertFail(args.containsKey("alertFail") ? 
+                (Boolean) args.get("alertFail") : false);
+            taskParam.setAlertFailLevel(args.containsKey("alertFailLevel") ? 
+                (String) args.get("alertFailLevel") : "P1");
+            taskParam.setAlertStop(args.containsKey("alertStop") ? 
+                (Boolean) args.get("alertStop") : false);
+            taskParam.setAlertStopLevel(args.containsKey("alertStopLevel") ? 
+                (String) args.get("alertStopLevel") : "P0");
+            taskParam.setAlertSkip(args.containsKey("alertSkip") ? 
+                (Boolean) args.get("alertSkip") : true);
+            taskParam.setAlertSkipLevel(args.containsKey("alertSkipLevel") ? 
+                (String) args.get("alertSkipLevel") : "P0");
+            taskParam.setMaxRetry(args.containsKey("maxRetry") ? 
+                ((Number) args.get("maxRetry")).intValue() : 0);
+            taskParam.setAlertNoMachine(args.containsKey("alertNoMachine") ? 
+                (Boolean) args.get("alertNoMachine") : false);
+            taskParam.setAlertNoMachineLevel(args.containsKey("alertNoMachineLevel") ? 
+                (String) args.get("alertNoMachineLevel") : "P0");
+            taskParam.setAlertConfig(args.containsKey("alertConfig") ? 
+                (String) args.get("alertConfig") : "{}");
+            taskParam.setHistoryKeep(args.containsKey("historyKeep") ? 
+                ((Number) args.get("historyKeep")).intValue() : 7);
+
+            // 特殊参数处理
+            if (args.containsKey("faasParam")) {
+                taskParam.setFaasParam(convertToFaasParam(args.get("faasParam")));
+            }
+            if (args.containsKey("httpParam")) {
+                taskParam.setHttpParam(convertToHttpParam(args.get("httpParam")));
+            }
+            if (args.containsKey("dubboParam")) {
+                taskParam.setDubboParam(convertToDubboParam(args.get("dubboParam")));
+            }
+
+            // 3. 调用服务创建任务
+            Result<Long> result = moonTaskDubboService.create(context, taskParam);
+
+            // 4. 处理返回结果
+            if (result.getCode() == 0) {
+                return new McpSchema.CallToolResult(
+                        List.of(new McpSchema.TextContent("Task created successfully. Task ID: " + result.getData())),
+                        false
+                );
+            } else {
+                throw new RuntimeException("Failed to create task: " + result.getMessage());
+            }
+
+        } catch (Exception ex) {
+            log.error("Failed to create task", ex);
+            throw new RuntimeException("Failed to create task: " + ex.getMessage());
         }
+    }
+
+    // 辅助方法：转换特殊参数
+    private FaasParam convertToFaasParam(Object param) {
+        if (param instanceof Map) {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.convertValue(param, FaasParam.class);
+        }
+        return null;
+    }
+
+    private HttpParam convertToHttpParam(Object param) {
+        if (param instanceof Map) {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.convertValue(param, HttpParam.class);
+        }
+        return null;
+    }
+
+    private DubboParam convertToDubboParam(Object param) {
+        if (param instanceof Map) {
+            ObjectMapper mapper = new ObjectMapper();
+            return mapper.convertValue(param, DubboParam.class);
+        }
+        return null;
     }
 
 }
