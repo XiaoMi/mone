@@ -1,5 +1,5 @@
 
-package run.mone.mcp.writer.server;
+package run.mone.mcp.novel.server;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
@@ -9,41 +9,35 @@ import run.mone.hive.mcp.server.McpSyncServer;
 import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
-import run.mone.mcp.writer.function.WriterFunction;
-import run.mone.hive.mcp.server.McpServer.ToolStreamRegistration;
+import run.mone.mcp.novel.function.NovelFunction;
+
 @Component
-public class WriterMcpServer {
+public class NovelMcpServer {
 
     private final ServerMcpTransport transport;
-    private final WriterFunction writerFunction;
+    private final NovelFunction novelFunction;
     private McpSyncServer syncServer;
 
-    public WriterMcpServer(ServerMcpTransport transport, WriterFunction writerFunction) {
+    public NovelMcpServer(ServerMcpTransport transport, NovelFunction novelFunction) {
         this.transport = transport;
-        this.writerFunction = writerFunction;
+        this.novelFunction = novelFunction;
     }
 
     public McpSyncServer start() {
         McpSyncServer syncServer = McpServer.using(transport)
-                .serverInfo("writer_mcp", "0.0.2")
+                .serverInfo("novel_mcp", "0.0.1")
                 .capabilities(ServerCapabilities.builder()
                         .tools(true)
                         .logging()
                         .build())
                 .sync();
 
-        // var toolRegistration = new McpServer.ToolRegistration(
-        //         new Tool(writerFunction.getName(), writerFunction.getDesc(), writerFunction.getToolScheme()),
-        //         writerFunction
-        // );
-
-        // syncServer.addTool(toolRegistration);
-
-        var toolStreamRegistration = new ToolStreamRegistration(
-                new Tool(writerFunction.getName(), writerFunction.getDesc(), writerFunction.getToolScheme()), writerFunction
+        var toolRegistration = new McpServer.ToolRegistration(
+                new Tool(novelFunction.getName(), novelFunction.getDesc(), novelFunction.getToolScheme()),
+                novelFunction
         );
 
-        syncServer.addStreamTool(toolStreamRegistration);
+        syncServer.addTool(toolRegistration);
 
         return syncServer;
     }
