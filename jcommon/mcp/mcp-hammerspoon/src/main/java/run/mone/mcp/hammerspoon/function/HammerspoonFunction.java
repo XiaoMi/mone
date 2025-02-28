@@ -31,7 +31,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 @Slf4j
 public class HammerspoonFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
     private String name = "hammerspoonOperation";
-    private String desc = "Hammerspoon operations including DingDing messaging and window operations";
+    private String desc = "Hammerspoon operations including DingTalk(钉钉)、 messaging and window operations";
     private static final String HAMMERSPOON_URL = "http://localhost:27123/execute";
     
     private final OkHttpClient client;
@@ -43,16 +43,28 @@ public class HammerspoonFunction implements Function<Map<String, Object>, McpSch
                 "properties": {
                     "command": {
                         "type": "string",
-                        "enum": ["dingTalkSendMessage", "dingTalkCaptureWindow", "dingTalkGetRecentMessages"],
+                        "enum": ["searchDingTalkContact", "searchAndSendDingTalkMessage", "getRecentDingTalkMessages", "captureDingTalkWindow", "openApp", "moveToAppAndClick"],
                         "description": "The operation type to perform"
                     },
-                    "contactName": {
+                    "dingTalkContactName": {
                         "type": "string",
-                        "description": "Contact name for DingDing operations"
+                        "description": "Contact name for DingTalk(钉钉) operations"
                     },
-                    "message": {
+                    "toSendMessage": {
                         "type": "string",
                         "description": "Message content to send"
+                    },
+                    "appName": {
+                        "type": "string",
+                        "description": "target operate app name"
+                    },
+                    "mousePositionX": {
+                        "type": "string",
+                        "description": "mouse position X"
+                    },
+                    "mousePositionY": {
+                        "type": "string",
+                        "description": "mouse position Y"
                     }
                 },
                 "required": ["command"]
@@ -75,22 +87,33 @@ public class HammerspoonFunction implements Function<Map<String, Object>, McpSch
             String luaCode;
             
             switch (command) {
-                case "dingTalkSendMessage":
-                    String contactName = (String) args.get("contactName");
-                    String message = (String) args.get("message");
-                    luaCode = String.format("return searchAndSendMessage('%s', '%s')", 
-                        escapeString(contactName), escapeString(message));
+                case "searchAndSendDingTalkMessage":
+                    String dingTalkContactName = (String) args.get("dingTalkContactName");
+                    String toSendMessage = (String) args.get("toSendMessage");
+                    luaCode = String.format("return searchAndSendDingTalkMessage('%s', '%s')",
+                        escapeString(dingTalkContactName), escapeString(toSendMessage));
                     break;
                     
-                case "dingTalkCaptureWindow":
+                case "captureDingTalkWindow":
                     luaCode = "return captureDingTalkWindow()";
                     break;
                     
-                case "dingTalkGetRecentMessages":
-                    contactName = (String) args.get("contactName");
-                    luaCode = String.format("return getRecentMessages('%s')", escapeString(contactName));
+                case "getRecentDingTalkMessages":
+                    dingTalkContactName = (String) args.get("dingTalkContactName");
+                    luaCode = String.format("return getRecentDingTalkMessages('%s')", escapeString(dingTalkContactName));
                     break;
-                    
+                case "openApp":
+                    String appName = (String) args.get("appName");
+                    luaCode = String.format("return openApp('%s')", escapeString(appName));
+
+                    break;
+                case "moveToAppAndClick":
+                    appName = (String) args.get("appName");
+                    String mousePositionX = (String) args.get("mousePositionX");
+                    String mousePositionY = (String) args.get("mousePositionY");
+                    luaCode = String.format("return moveToAppAndClick('%s','%s','%s')", escapeString(appName), mousePositionX, mousePositionY);
+
+                    break;
                 default:
                     return new McpSchema.CallToolResult(
                         List.of(new McpSchema.TextContent("Unknown command: " + command)),
