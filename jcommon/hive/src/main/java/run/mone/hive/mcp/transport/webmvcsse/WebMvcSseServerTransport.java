@@ -17,6 +17,7 @@
 package run.mone.hive.mcp.transport.webmvcsse;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -25,6 +26,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import run.mone.hive.mcp.spec.McpError;
@@ -113,6 +116,8 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
 	 */
 	private Function<Mono<McpSchema.JSONRPCMessage>, Mono<McpSchema.JSONRPCMessage>> connectHandler;
 
+	private Function<McpSchema.JSONRPCRequest, Flux<McpSchema.JSONRPCResponse>> streamHandler;
+
 	/**
 	 * Constructs a new WebMvcSseServerTransport instance.
 	 * @param objectMapper The ObjectMapper to use for JSON serialization/deserialization
@@ -150,6 +155,13 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
 		return Mono.empty();
 	}
 
+	public Mono<Void> connectStream(
+			Function<McpSchema.JSONRPCRequest, Flux<McpSchema.JSONRPCResponse>> streamHandler) {
+		this.streamHandler = streamHandler;
+		// Server-side transport doesn't initiate connections
+		return Mono.empty();
+	}
+
 	/**
 	 * Broadcasts a message to all connected clients through their SSE connections. The
 	 * message is serialized to JSON and sent as an SSE event with type "message". If any
@@ -168,10 +180,12 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
 
 			try {
 				String jsonText = objectMapper.writeValueAsString(message);
-				logger.debug("Attempting to broadcast message to {} active sessions", sessions.size());
+				// TODO: log level should be DEBUG
+				logger.info("Attempting to broadcast message to {} active sessions", sessions.size());
 
 				sessions.values().forEach(session -> {
 					try {
+						logger.info("Sending message to session: {}, message: {}", session.id, jsonText);
 						session.sseBuilder.id(session.id).event(MESSAGE_EVENT_TYPE).data(jsonText);
 					}
 					catch (Exception e) {
@@ -222,7 +236,7 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
 					logger.error("Failed to poll event from session queue: {}", e.getMessage());
 					sseBuilder.error(e);
 				}
-			});
+			}, Duration.ZERO);
 		}
 		catch (Exception e) {
 			logger.error("Failed to send initial endpoint event to session {}: {}", sessionId, e.getMessage());
@@ -250,6 +264,27 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
 		try {
 			String body = request.body(String.class);
 			McpSchema.JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(objectMapper, body);
+			// Handle tools stream requests
+			if (message instanceof McpSchema.JSONRPCRequest req 
+					&& req.method().equals(McpSchema.METHOD_TOOLS_STREAM)) {
+				logger.info("WebMvcSseServerTransport, Handling tools stream request: {}", req);
+				// handle tools stream request
+				if (streamHandler != null) {
+					streamHandler.apply(req)
+						.log()
+						.subscribe(
+							response -> sendMessage(response).subscribe(),
+							error -> {
+								logger.error("Error handling tools stream request: {}", error.getMessage());
+								sendMessage(new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, req.id(), null, new McpSchema.JSONRPCResponse.JSONRPCError(500, error.getMessage(), null))).subscribe();
+							}
+						);
+				} else {
+					logger.warn("No stream handler registered for tools stream request");
+					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new McpError("No stream handler registered for tools stream request"));
+				}
+				return ServerResponse.ok().build();
+			}
 
 			// Convert the message to a Mono, apply the handler, and block for the
 			// response

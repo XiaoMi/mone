@@ -3,6 +3,7 @@ package run.mone.hive.mcp.server;
 import run.mone.hive.mcp.server.McpServer.PromptRegistration;
 import run.mone.hive.mcp.server.McpServer.ResourceRegistration;
 import run.mone.hive.mcp.server.McpServer.ToolRegistration;
+import run.mone.hive.mcp.server.McpServer.ToolStreamRegistration;
 import run.mone.hive.mcp.spec.McpError;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.ClientCapabilities;
@@ -55,6 +56,10 @@ public class McpSyncServer {
 	 */
 	public void addTool(ToolRegistration toolHandler) {
 		this.asyncServer.addTool(toolHandler).block();
+	}
+
+	public void addStreamTool(ToolStreamRegistration toolHandler) {
+		this.asyncServer.addStreamTool(toolHandler).block();
 	}
 
 	/**
