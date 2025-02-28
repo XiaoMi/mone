@@ -102,11 +102,12 @@ public class MoonFunction implements Function<Map<String, Object>, McpSchema.Cal
                     "concurrencyStrategy": {
                         "type": "string",
                         "enum": ["parallel", "cancel_new", "stop_old", "queue"],
+                        "default": "cancel_new",
                         "description": "并行策略：并行，新任务取消，停止老任务，队列"
                     },
                     "alertTimeout": {
                         "type": "boolean",
-                        "default": false,
+                        "default": true,
                         "description": "是否开启超时报警"
                     },
                     "alertTimeoutLevel": {
@@ -121,7 +122,7 @@ public class MoonFunction implements Function<Map<String, Object>, McpSchema.Cal
                     },
                     "timeoutHalt": {
                         "type": "boolean",
-                        "default": false,
+                        "default": true,
                         "description": "超时终止"
                     },
                     "alertSuccess": {
@@ -136,7 +137,7 @@ public class MoonFunction implements Function<Map<String, Object>, McpSchema.Cal
                     },
                     "alertFail": {
                         "type": "boolean",
-                        "default": false,
+                        "default": true,
                         "description": "失败报警"
                     },
                     "alertFailLevel": {
@@ -146,7 +147,7 @@ public class MoonFunction implements Function<Map<String, Object>, McpSchema.Cal
                     },
                     "alertStop": {
                         "type": "boolean",
-                        "default": false,
+                        "default": true,
                         "description": "停止报警"
                     },
                     "alertStopLevel": {
@@ -156,7 +157,7 @@ public class MoonFunction implements Function<Map<String, Object>, McpSchema.Cal
                     },
                     "alertSkip": {
                         "type": "boolean",
-                        "default": true,
+                        "default": false,
                         "description": "任务跳过报警"
                     },
                     "alertSkipLevel": {
@@ -171,7 +172,7 @@ public class MoonFunction implements Function<Map<String, Object>, McpSchema.Cal
                     },
                     "alertNoMachine": {
                         "type": "boolean",
-                        "default": false,
+                        "default": true,
                         "description": "没机器时报警"
                     },
                     "alertNoMachineLevel": {
