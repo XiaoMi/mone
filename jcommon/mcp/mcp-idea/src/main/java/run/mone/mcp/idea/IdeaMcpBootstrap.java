@@ -10,6 +10,10 @@ import org.springframework.context.annotation.ComponentScan;
 public class IdeaMcpBootstrap {
 
     public static void main(String[] args) {
-        SpringApplication.run(IdeaMcpBootstrap.class, args);
+        try {
+            SpringApplication.run(IdeaMcpBootstrap.class, args);
+        }catch (Throwable t){
+            t.printStackTrace();
+        }
     }
 }
