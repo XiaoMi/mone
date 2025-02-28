@@ -271,37 +271,37 @@ public class MoonFunction implements Function<Map<String, Object>, McpSchema.Cal
             taskParam.setStartTime(args.containsKey("startTime") ? 
                 ((Number) args.get("startTime")).longValue() : System.currentTimeMillis());
             taskParam.setConcurrencyStrategy(args.containsKey("concurrencyStrategy") ? 
-                (String) args.get("concurrencyStrategy") : "parallel");
+                (String) args.get("concurrencyStrategy") : "cancel_new");
 
-            // 报警相关默认参数
+            // 报警相关默认参数，根据schema更新默认值
             taskParam.setAlertTimeout(args.containsKey("alertTimeout") ? 
-                (Boolean) args.get("alertTimeout") : false);
+                (Boolean) args.get("alertTimeout") : true);
             taskParam.setAlertTimeoutLevel(args.containsKey("alertTimeoutLevel") ? 
                 (String) args.get("alertTimeoutLevel") : "P1");
             taskParam.setTimeout(args.containsKey("timeout") ? 
                 ((Number) args.get("timeout")).longValue() : 7200L);
             taskParam.setTimeoutHalt(args.containsKey("timeoutHalt") ? 
-                (Boolean) args.get("timeoutHalt") : false);
+                (Boolean) args.get("timeoutHalt") : true);
             taskParam.setAlertSuccess(args.containsKey("alertSuccess") ? 
                 (Boolean) args.get("alertSuccess") : false);
             taskParam.setAlertSuccessLevel(args.containsKey("alertSuccessLevel") ? 
                 (String) args.get("alertSuccessLevel") : "P2");
             taskParam.setAlertFail(args.containsKey("alertFail") ? 
-                (Boolean) args.get("alertFail") : false);
+                (Boolean) args.get("alertFail") : true);
             taskParam.setAlertFailLevel(args.containsKey("alertFailLevel") ? 
                 (String) args.get("alertFailLevel") : "P1");
             taskParam.setAlertStop(args.containsKey("alertStop") ? 
-                (Boolean) args.get("alertStop") : false);
+                (Boolean) args.get("alertStop") : true);
             taskParam.setAlertStopLevel(args.containsKey("alertStopLevel") ? 
                 (String) args.get("alertStopLevel") : "P0");
             taskParam.setAlertSkip(args.containsKey("alertSkip") ? 
-                (Boolean) args.get("alertSkip") : true);
+                (Boolean) args.get("alertSkip") : false);
             taskParam.setAlertSkipLevel(args.containsKey("alertSkipLevel") ? 
                 (String) args.get("alertSkipLevel") : "P0");
             taskParam.setMaxRetry(args.containsKey("maxRetry") ? 
                 ((Number) args.get("maxRetry")).intValue() : 0);
             taskParam.setAlertNoMachine(args.containsKey("alertNoMachine") ? 
-                (Boolean) args.get("alertNoMachine") : false);
+                (Boolean) args.get("alertNoMachine") : true);
             taskParam.setAlertNoMachineLevel(args.containsKey("alertNoMachineLevel") ? 
                 (String) args.get("alertNoMachineLevel") : "P0");
             taskParam.setAlertConfig(args.containsKey("alertConfig") ? 
