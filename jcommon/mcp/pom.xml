@@ -50,6 +50,7 @@
         <module>mcp-linux-agent</module>
         <module>mcp-idea-composer</module>
         <module>mcp-ipinfo</module>
+        <module>mcp-novel</module>
     </modules>
 
     <properties>
