@@ -8,6 +8,12 @@ import run.mone.mcp.idea.service.IdeaService;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import com.google.gson.JsonObject;
+import org.springframework.stereotype.Component;
+
+import lombok.RequiredArgsConstructor;
+import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.mcp.idea.service.IdeaService;
 
 @Component
 @RequiredArgsConstructor
@@ -34,18 +40,31 @@ public class CreateCommentFunction implements Function<Map<String, Object>, McpS
                     "code": {
                         "type": "string",
                         "description": "The source code that needs to be reviewed"
+                    },
+                    "methodName": {
+                        "type": "string",
+                        "description": "The name of the method to be reviewed"
                     }
                 },
-                "required": ["code"]
+                "required": ["code", "methodName"]
             }
             """;
 
     @Override
     public McpSchema.CallToolResult apply(Map<String, Object> arguments) {
-
         try {
-            String result = ideaService.createComment((String) arguments.get("code"));
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false);
+            String code = (String) arguments.get("code");
+            String methodName = (String) arguments.get("methodName");
+
+            JsonObject type = new JsonObject();
+            type.addProperty("type", "comment");
+            type.addProperty("methodName", methodName);
+            String result = ideaService.createComment(code);
+
+            String comment = ideaService.extractContent(result, "comment");
+            type.addProperty("comment", comment);
+
+            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(type.toString(), result)), false);
         } catch (Exception e) {
             return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true);
         }

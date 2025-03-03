@@ -138,7 +138,7 @@ public class MonerSystemPrompt {
             </use_mcp_tool>
 
 
-            ## Chat
+            ## chat
             Description: A tool for handling general conversations and chat interactions. This tool should be used when the user's input is conversational in nature and doesn't require specific functional tools. It enables natural dialogue-based interactions in scenarios where other specialized tools are not applicable. Use this tool for engaging in general discussions, providing information, or offering support through conversation.
             Parameters:
             - message: (required) The chat message to respond to the user. The message should be natural, friendly, and maintain coherence and relevance with the user's input.
@@ -185,6 +185,7 @@ public class MonerSystemPrompt {
               - New terminal output in reaction to the changes, which you may need to consider or act upon.
               - Any other relevant feedback or information related to the tool use.
             6. ALWAYS wait for user confirmation after each tool use before proceeding. Never assume the success of a tool use without explicit confirmation of the result from the user.
+            7. When you can not decide which tool to use, you can use the chat tool to ask the user for help. If you are using the chat tool, you must return the message in Chinese中文.
 
             It is crucial to proceed step-by-step, waiting for the user's message after each tool use before moving forward with the task. This approach allows you to:
             1. Confirm the success of each step before proceeding.
