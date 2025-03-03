@@ -21,7 +21,9 @@ public class ComposerFunction implements Function<Map<String, Object>, McpSchema
 
     private String name = "Composer";
 
+
     private String desc = "根据需求或者需求图片，生成业务代码，如果有图片，无需知道图片内容，只按要求返回即可";
+
     private String ideaPort;
 
     private String toolScheme = """
