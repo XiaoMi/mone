@@ -9,17 +9,20 @@
         <version>1.6.1-jdk21-SNAPSHOT</version>
     </parent>
 
+    <groupId>run.mone.mcp</groupId>
     <artifactId>mcp-moon</artifactId>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.compiler.encoding>UTF-8</maven.compiler.encoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
         <logback.version>1.5.12</logback.version>
     </properties>
 
     <dependencies>
-
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-core</artifactId>
@@ -92,6 +95,23 @@
             <artifactId>logback-core</artifactId>
             <version>${logback.version}</version>
         </dependency>
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>moon-schedule-dashboard-api</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>compile</scope>
+        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>run.mone</groupId>-->
+<!--            <artifactId>docean-plugin-dubbo-serverless</artifactId>-->
+<!--            <version>1.6.0-jdk21-SNAPSHOT</version>-->
+<!--            <scope>compile</scope>-->
+<!--        </dependency>-->
+        <dependency>
+            <groupId>org.apache.dubbo</groupId>
+            <artifactId>dubbo</artifactId>
+            <version>2.7.12-mone-v20-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -102,7 +122,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>2.7.14</version>
                 <configuration>
-                    <mainClass>run.mone.McpBootstrap</mainClass>
+                    <mainClass>run.mone.mcp.moon.MoonBootstrap</mainClass>
                     <finalName>app</finalName>
                 </configuration>
                 <executions>

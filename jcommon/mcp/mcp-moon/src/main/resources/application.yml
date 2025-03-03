@@ -1,3 +1,9 @@
 stdio.enabled=true
 spring.main.web-application-type=none
+
+app.name=mcp-moon
+server.port=8080
 moon.dubbo.group=staging
+
+dubbo.protocol.port=-1
+dubbo.registry.address=nacos://nacos.systech.b2c.srv:80
