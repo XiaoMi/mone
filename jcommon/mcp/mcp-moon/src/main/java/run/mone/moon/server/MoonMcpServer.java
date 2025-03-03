@@ -2,8 +2,10 @@ package run.mone.moon.server;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.server.McpServer.ToolRegistration;
@@ -11,19 +13,21 @@ import run.mone.hive.mcp.server.McpSyncServer;
 import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
+import run.mone.moon.config.DubboConfiguration;
 import run.mone.moon.function.MoonFunction;
 import run.mone.moon.api.service.MoonTaskDubboService;
 
 @Slf4j
 @Component
+@DependsOn("dubboConfiguration")
 public class MoonMcpServer {
 
     private ServerMcpTransport transport;
 
     private McpSyncServer syncServer;
 
-    @DubboReference(interfaceClass = MoonTaskDubboService.class, group = "${moon.dubbo.group}", version = "1.0", timeout = 1000)
-    private MoonTaskDubboService moonTaskDubboService;
+    @Resource
+    private DubboConfiguration dubboConfiguration;
 
     public MoonMcpServer(ServerMcpTransport transport) {
         this.transport = transport;
@@ -43,7 +47,7 @@ public class MoonMcpServer {
         // 注册moon_mcp_server工具
         log.info("Registering MoonMcpServer tool...");
         try {
-            MoonFunction moonFunction = new MoonFunction(moonTaskDubboService);
+            MoonFunction moonFunction = new MoonFunction(dubboConfiguration.getMoonTaskDubboService());
             var moonToolRegistration = new ToolRegistration(
                     new Tool(moonFunction.getName(), moonFunction.getDesc(), moonFunction.getTaskToolSchema()), moonFunction
             );

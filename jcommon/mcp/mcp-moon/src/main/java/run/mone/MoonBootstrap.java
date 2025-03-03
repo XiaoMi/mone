@@ -1,13 +1,13 @@
 package run.mone;
 
+import org.apache.dubbo.config.spring.context.annotation.DubboComponentScan;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.ComponentScan;
 
-@EnableAutoConfiguration
 @SpringBootApplication
-@ComponentScan("run.mone.moon")
+@ComponentScan(basePackages = {"run.mone.moon.config", "run.mone.moon.server"})
+@DubboComponentScan("run.mone.moon")
 public class MoonBootstrap {
 
     public static void main(String[] args) {

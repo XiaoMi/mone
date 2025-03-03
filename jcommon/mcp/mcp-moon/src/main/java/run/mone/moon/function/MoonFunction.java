@@ -1,9 +1,9 @@
 package run.mone.moon.function;
 
+import com.xiaomi.mone.tpc.login.util.GsonUtil;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.moon.api.bo.common.Result;
 import run.mone.moon.api.bo.task.DubboParam;
@@ -23,7 +23,6 @@ import java.util.function.Function;
  */
 @Data
 @Slf4j
-@Component
 public class MoonFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
 
 
@@ -202,7 +201,7 @@ public class MoonFunction implements Function<Map<String, Object>, McpSchema.Cal
                         "description": "dubbo相关配置"
                     }
                 },
-                "required": ["tenant", "name", "description", "projectID", "type", "historyKeep"]
+                "required": ["tenant", "name", "projectID", "type", "execParam"]
             }
             """;
 
@@ -215,6 +214,8 @@ public class MoonFunction implements Function<Map<String, Object>, McpSchema.Cal
     @SneakyThrows
     @Override
     public McpSchema.CallToolResult apply(Map<String, Object> args) {
+        log.info("apply moon function args: {}", GsonUtil.gsonString(args));
+        log.info("apply moon function args: {}", args);
         try {
             // 1. 参数验证和转换
             if (args == null || args.isEmpty()) {
@@ -242,7 +243,7 @@ public class MoonFunction implements Function<Map<String, Object>, McpSchema.Cal
             // 2. 构建任务参数
             TaskReq taskParam = new TaskReq();
             MoonMoneTpcContext context = new MoonMoneTpcContext();
-            context.setTenant((String) args.get("tenant"));
+            context.setTenant(String.valueOf(args.get("tenant")));
 
             // 设置必填参数
             taskParam.setName((String) args.get("name"));
@@ -321,7 +322,9 @@ public class MoonFunction implements Function<Map<String, Object>, McpSchema.Cal
             }
 
             // 3. 调用服务创建任务
+            log.info("创建任务参数 context: {}, taskParam: {}", context, taskParam);
             Result<Long> result = moonTaskDubboService.create(context, taskParam);
+            log.info("创建任务返回结果 result: {}", result);
 
             // 4. 处理返回结果
             if (result.getCode() == 0) {
