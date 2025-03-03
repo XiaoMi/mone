@@ -1,4 +1,4 @@
-package run.mone.mcp.moon.config;
+package run.mone.moon.config;
 
 import com.google.common.collect.Maps;
 import org.apache.dubbo.config.ApplicationConfig;
@@ -29,7 +29,7 @@ public class DubboConfiguration {
     
     @Value("${app.name}")
     private String appName;
-    
+
     @Bean
     public ApplicationConfig applicationConfig() {
         ApplicationConfig applicationConfig = new ApplicationConfig();

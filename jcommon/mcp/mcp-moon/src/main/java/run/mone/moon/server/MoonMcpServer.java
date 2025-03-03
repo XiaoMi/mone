@@ -1,9 +1,9 @@
-package run.mone.mcp.moon.server;
+package run.mone.moon.server;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.dubbo.annotation.DubboReference;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.stereotype.Component;
 import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.server.McpServer.ToolRegistration;
@@ -11,7 +11,7 @@ import run.mone.hive.mcp.server.McpSyncServer;
 import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
-import run.mone.mcp.moon.function.MoonFunction;
+import run.mone.moon.function.MoonFunction;
 import run.mone.moon.api.service.MoonTaskDubboService;
 
 @Slf4j

@@ -1,4 +1,4 @@
-package run.mone.mcp.moon.config;
+package run.mone.moon.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

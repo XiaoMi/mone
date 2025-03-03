@@ -1,4 +1,4 @@
-package run.mone.mcp.moon.function;
+package run.mone.moon.function;
 
 import lombok.Data;
 import lombok.SneakyThrows;
@@ -339,7 +339,11 @@ public class MoonFunction implements Function<Map<String, Object>, McpSchema.Cal
         }
     }
 
-    // 辅助方法：转换特殊参数
+    /**
+     * 辅助方法：转换特殊参数
+     * @param param
+     * @return
+     */
     private FaasParam convertToFaasParam(Object param) {
         if (param instanceof Map) {
             ObjectMapper mapper = new ObjectMapper();
