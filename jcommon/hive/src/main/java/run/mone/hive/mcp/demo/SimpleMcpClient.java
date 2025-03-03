@@ -47,8 +47,8 @@ public class SimpleMcpClient {
             System.out.println("listTools: " + listTools);
 
             // Call a tool, 
-            callToolCalculator(client); // call calculator tool
-            // callToolWriter(client); // call writer tool
+//            callToolCalculator(client); // call calculator tool
+             callToolWriter(client); // call writer tool
 
             TimeUnit.SECONDS.sleep(30);
         }
