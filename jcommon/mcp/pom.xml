@@ -51,6 +51,7 @@
         <module>mcp-idea-composer</module>
         <module>mcp-ipinfo</module>
         <module>mcp-novel</module>
+        <module>mcp-miapi</module>
     </modules>
 
     <properties>
