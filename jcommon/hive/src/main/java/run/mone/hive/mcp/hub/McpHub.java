@@ -2,6 +2,7 @@ package run.mone.hive.mcp.hub;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.client.McpClient;
 import run.mone.hive.mcp.client.McpSyncClient;
 import run.mone.hive.mcp.client.transport.ServerParameters;
@@ -250,6 +251,16 @@ public class McpHub {
         }
         McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(toolName, toolArguments);
         return connection.getClient().callTool(request);
+    }
+
+    public Flux<McpSchema.CallToolResult> callToolStream(String serverName, String
+            toolName, Map<String, Object> toolArguments) {
+        McpConnection connection = connections.get(serverName);
+        if (connection == null) {
+            throw new IllegalArgumentException("No connection found for server: " + serverName);
+        }
+        McpSchema.CallToolRequest request = new McpSchema.CallToolRequest(toolName, toolArguments);
+        return connection.getClient().callToolStream(request);
     }
 
     public void dispose() {
