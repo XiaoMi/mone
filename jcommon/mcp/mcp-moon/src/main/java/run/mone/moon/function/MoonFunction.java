@@ -1,19 +1,26 @@
 package run.mone.moon.function;
 
-import com.xiaomi.mone.tpc.login.util.GsonUtil;
+import com.alibaba.nacos.client.utils.JSONUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.reflect.TypeToken;
+import com.xiaomi.youpin.infra.rpc.Result;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.ApplicationConfig;
+import org.apache.dubbo.config.ReferenceConfig;
+import org.apache.dubbo.config.RegistryConfig;
+import org.apache.dubbo.rpc.RpcContext;
+import org.apache.dubbo.rpc.service.GenericService;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.moon.api.bo.common.Result;
 import run.mone.moon.api.bo.task.DubboParam;
 import run.mone.moon.api.bo.task.FaasParam;
 import run.mone.moon.api.bo.task.HttpParam;
 import run.mone.moon.api.bo.task.TaskReq;
 import run.mone.moon.api.bo.user.MoonMoneTpcContext;
-import run.mone.moon.api.service.MoonTaskDubboService;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import run.mone.moon.utils.GsonUtil;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -205,16 +212,28 @@ public class MoonFunction implements Function<Map<String, Object>, McpSchema.Cal
             }
             """;
 
-    private MoonTaskDubboService moonTaskDubboService;
+    ReferenceConfig<GenericService> referenceCreat = null;
 
-    public MoonFunction(MoonTaskDubboService moonTaskDubboService) {
-        this.moonTaskDubboService = moonTaskDubboService;
+    public MoonFunction(ApplicationConfig applicationConfig, RegistryConfig registryConfig) {
+        referenceCreat = new ReferenceConfig<>();
+        // 消费者端不需要接口定义
+        referenceCreat.setApplication(applicationConfig);
+        referenceCreat.setRegistry(registryConfig);
+        referenceCreat.setInterface("run.mone.moon.api.service.MoonTaskDubboService");
+        referenceCreat.setGeneric(true);
+        // 设置通信协议为 Dubbo
+        referenceCreat.setProtocol("dubbo");
+        referenceCreat.setVersion("1.0");
+        referenceCreat.setGroup("staging");
+        referenceCreat.setParameters(new HashMap<>());
+        referenceCreat.getParameters().put("dubbo", "2.0.2");
+        referenceCreat.getParameters().put("migration.step", "FORCE_INTERFACE");
     }
 
     @SneakyThrows
     @Override
     public McpSchema.CallToolResult apply(Map<String, Object> args) {
-        log.info("apply moon function args: {}", GsonUtil.gsonString(args));
+        log.info("apply moon function args: {}", GsonUtil.toJson(args));
         log.info("apply moon function args: {}", args);
         try {
             // 1. 参数验证和转换
@@ -322,10 +341,15 @@ public class MoonFunction implements Function<Map<String, Object>, McpSchema.Cal
             }
 
             // 3. 调用服务创建任务
-            log.info("创建任务参数 context: {}, taskParam: {}", context, taskParam);
-            Result<Long> result = moonTaskDubboService.create(context, taskParam);
-            log.info("创建任务返回结果 result: {}", result);
+            log.info("创建任务参数 context: {}, taskParam: {}", GsonUtil.toJsonTree(context), GsonUtil.toJson(taskParam));
+//            Result<Long> result = moonTaskDubboService.create(context, taskParam);
+            RpcContext.getContext().setAttachment("generic", "gson");
+            GenericService genericService = referenceCreat.get();
+            Object describeUserJsonRes = genericService.$invoke("create", new String[]{"run.mone.moon.api.bo.user.MoonMoneTpcContext", "run.mone.moon.api.bo.task.TaskReq"},
+                    new Object[]{context, taskParam});
+            log.info("创建任务返回结果 result: {}", describeUserJsonRes);
 
+            Result<Long> result = GsonUtil.fromJson((String) describeUserJsonRes, new TypeToken<Result<Long>>() {}.getType());
             // 4. 处理返回结果
             if (result.getCode() == 0) {
                 return new McpSchema.CallToolResult(

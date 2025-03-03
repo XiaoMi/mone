@@ -4,7 +4,6 @@ import com.google.common.collect.Maps;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.ApplicationConfig;
-import org.apache.dubbo.config.DubboVersion;
 import org.apache.dubbo.config.ProtocolConfig;
 import org.apache.dubbo.config.RegistryConfig;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -46,7 +45,6 @@ public class DubboConfiguration {
         applicationConfig.setName(appName);
         applicationConfig.setParameters(Maps.newHashMap());
         applicationConfig.getParameters().put("http_gateway_port", httpGateWayPort);
-        applicationConfig.getParameters().put("dubbo_version", new DubboVersion().toString());
         applicationConfig.setQosEnable(false);
         return applicationConfig;
     }
@@ -55,6 +53,7 @@ public class DubboConfiguration {
     public RegistryConfig registryConfig() {
         RegistryConfig registryConfig = new RegistryConfig();
         registryConfig.setAddress(regAddress);
+
         return registryConfig;
     }
     
