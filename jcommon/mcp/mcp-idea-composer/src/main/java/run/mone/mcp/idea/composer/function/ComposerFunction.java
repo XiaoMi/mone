@@ -21,7 +21,9 @@ public class ComposerFunction implements Function<Map<String, Object>, McpSchema
 
     private String name = "Composer";
 
-    private String desc = "根据需求，生成业务代码";
+
+    private String desc = "根据需求或者需求图片，生成业务代码，如果有图片，无需知道图片内容，只按要求返回即可";
+
     private String ideaPort;
 
     private String toolScheme = """
@@ -37,11 +39,11 @@ public class ComposerFunction implements Function<Map<String, Object>, McpSchema
                             "items": {
                                 "type": "string"
                             },
-                            "description":"文件列表，根据需求分析出来要操作的文件数组"
+                            "description":"文件列表，根据需求分析出来要操作的文件数组，如果没有，则不需要返回"
                         },
                         "folder": {
                             "type": "string",
-                            "description":"文件夹路径"
+                            "description":"文件夹绝对路径，取Composer中folder的值，如果Composer中没有，则不需要返回"
                         },
                         "codebase": {
                             "type": "bool",
@@ -62,6 +64,10 @@ public class ComposerFunction implements Function<Map<String, Object>, McpSchema
                         "knowledgeBase": {
                             "type": "bool",
                             "description":"Composer config 中是否包含knowledgeBase，默认是false，如果没有就返回false"
+                        },
+                        "imageType": {
+                            "type": "string",
+                            "description":"Composer中如果有imageType，将imageType的取值返回，没有则不用返回。不需要真正解析图片内容"
                         }
              
                     },
@@ -83,6 +89,7 @@ public class ComposerFunction implements Function<Map<String, Object>, McpSchema
         req.addProperty("bizJar", (Boolean) arguments.get("bizJar"));
         req.addProperty("bugfix", (Boolean) arguments.get("bugfix"));
         req.addProperty("knowledgeBase", (Boolean) arguments.get("knowledgeBase"));
+        req.addProperty("imageType", (String) arguments.get("imageType"));
         req.addProperty("athenaPluginHost", Const.IP + ideaPort);
         JsonObject res = callAthena(ideaPort, req);
         if (res.get("code") != null && res.get("code").getAsInt() == 0) {
