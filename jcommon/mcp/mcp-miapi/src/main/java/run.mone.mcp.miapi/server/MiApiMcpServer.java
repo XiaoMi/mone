@@ -26,7 +26,7 @@ public class MiApiMcpServer {
 
     public McpSyncServer start() {
         McpSyncServer syncServer = McpServer.using(transport)
-                .serverInfo("miapi_mcp", "0.0.1")
+                .serverInfo("miapi_mcp", "0.0.2")
                 .capabilities(ServerCapabilities.builder()
                         .tools(true)
                         .logging()
