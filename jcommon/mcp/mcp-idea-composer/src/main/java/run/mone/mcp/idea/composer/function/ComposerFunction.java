@@ -21,7 +21,9 @@ public class ComposerFunction implements Function<Map<String, Object>, McpSchema
 
     private String name = "Composer";
 
-    private String desc = "根据需求或者需求图片，生成业务代码";
+
+    private String desc = "根据需求或者需求图片，生成业务代码，如果有图片，无需知道图片内容，只按要求返回即可";
+
     private String ideaPort;
 
     private String toolScheme = """
@@ -37,7 +39,7 @@ public class ComposerFunction implements Function<Map<String, Object>, McpSchema
                             "items": {
                                 "type": "string"
                             },
-                            "description":"文件列表，根据需求分析出来要操作的文件数组"
+                            "description":"文件列表，根据需求分析出来要操作的文件数组，如果没有，则不需要返回"
                         },
                         "folder": {
                             "type": "string",
