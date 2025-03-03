@@ -349,7 +349,7 @@ public class MoonFunction implements Function<Map<String, Object>, McpSchema.Cal
                     new Object[]{context, taskParam});
             log.info("创建任务返回结果 result: {}", describeUserJsonRes);
 
-            Result<Long> result = GsonUtil.fromJson((String) describeUserJsonRes, new TypeToken<Result<Long>>() {}.getType());
+            Result<Long> result = GsonUtil.fromJson(GsonUtil.toJson(describeUserJsonRes), new TypeToken<Result<Long>>() {}.getType());
             // 4. 处理返回结果
             if (result.getCode() == 0) {
                 return new McpSchema.CallToolResult(
