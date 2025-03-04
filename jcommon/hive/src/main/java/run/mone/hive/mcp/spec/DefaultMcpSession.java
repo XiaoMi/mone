@@ -162,7 +162,8 @@ public class DefaultMcpSession implements McpSession {
 					if (streamSink != null) {
 						// TODO: complete the sink at last msg
 						logger.info("Received stream response: {}", response);
-						if (response.complete()) {
+						if (response.complete() != null && response.complete()) {
+							logger.debug("========================= Stream response complete: {}", response);
 							streamSink.complete();
 						} else {
 							streamSink.next(response);
