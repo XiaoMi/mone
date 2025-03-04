@@ -38,7 +38,8 @@ public class MoonQueryFunction implements Function<Map<String, Object>, McpSchem
                     "tenant": {
                         "type": "integer",
                         "enum": [1, 2, 3, 4, 5],
-                        "description": "租户: 中国区: 1, 国际： 2, 新加坡： 3， 欧洲： 4"
+                        "description": "租户: 中国区: 1, 国际： 2, 新加坡： 3， 欧洲： 4",
+                        "default": "1"
                     },
                     "taskName": {
                         "type": "string",
@@ -131,17 +132,10 @@ public class MoonQueryFunction implements Function<Map<String, Object>, McpSchem
             if (args.get("tenant") == null) {
                 throw new IllegalArgumentException("tenant is required");
             }
-            // 必填参数校验
-            if (args.get("page") == null) {
-                throw new IllegalArgumentException("page is required");
-            }
-            if (args.get("pageSize") == null) {
-                throw new IllegalArgumentException("pageSize is required");
-            }
 
             MoonMoneTpcContext context = new MoonMoneTpcContext();
-            context.setTenant(MoonUitl.getString(args.get("tenant")));
-            context.setRole(1);
+            Number tenant = MoonUitl.getNumber(args.get("tenant"));
+            context.setTenant(tenant == null ? null : String.valueOf(tenant.intValue()));
             // 构建查询参数对象
             ReadTaskReq queryParams = new ReadTaskReq();
 
@@ -157,8 +151,10 @@ public class MoonQueryFunction implements Function<Map<String, Object>, McpSchem
             queryParams.setProjectID(MoonUitl.getLong(args.get("projectID")));
 
             // 处理必填的Number类型参数
-            queryParams.setPage(MoonUitl.getNumber(args.get("page")).intValue());
-            queryParams.setPageSize(MoonUitl.getNumber(args.get("pageSize")).intValue());
+            Number page = MoonUitl.getNumber(args.get("page"));
+            queryParams.setPage(page == null ? 1 : page.intValue());
+            Number pageSize = MoonUitl.getNumber(args.get("pageSize"));
+            queryParams.setPageSize(pageSize == null ? 10 : pageSize.intValue());
 
             // 3. 调用服务创建任务
             log.info("查询moon任务列表参数 context: {}, queryParams: {}", GsonUtil.toJsonTree(context), GsonUtil.toJson(queryParams));

@@ -20,11 +20,13 @@ public class MoonUitl {
 
     // 辅助方法定义
     public static String getString(Object value) {
-        return (value != null) ? value.toString() : null; // 根据需求决定是否保留toString()
+        return (value != null) ? String.valueOf(value) : null;
     }
 
     public static Long getLong(Object value) {
-        if (value == null) return null;
+        if (value == null) {
+            return null;
+        }
         if (value instanceof Number) {
             return ((Number) value).longValue();
         }
@@ -41,7 +43,8 @@ public class MoonUitl {
             return (Number) value;
         }
         try {
-            return Double.parseDouble(value.toString()); // 更通用的数字解析
+            // 更通用的数字解析
+            return Double.parseDouble(value.toString());
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Invalid number format: " + value);
         }
