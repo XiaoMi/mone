@@ -14,6 +14,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
+import run.mone.hive.mcp.spec.McpSchema.CallToolResult;
 import run.mone.hive.mcp.transport.webmvcsse.WebMvcSseServerTransport;
 import run.mone.hive.mcp.util.Assert;
 
@@ -159,7 +160,11 @@ public class DefaultMcpSession implements McpSession {
 					if (streamSink != null) {
 						// TODO: complete the sink at last msg
 						logger.info("Received stream response: {}", response);
-						streamSink.next(response);
+						if (response.complete()) {
+							streamSink.complete();
+						} else {
+							streamSink.next(response);
+						}
 					}
 				}
 			} else if (message instanceof McpSchema.JSONRPCRequest request) {
