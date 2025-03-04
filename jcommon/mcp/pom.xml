@@ -44,12 +44,15 @@
         <module>mcp-email</module>
         <module>mcp-time</module>
         <module>mcp-xmind</module>
+        <module>mcp-chaos</module>
         <module>mcp-nacosservice</module>
         <module>mcp-ali-email</module>
         <module>mcp-pty4j</module>
         <module>mcp-linux-agent</module>
         <module>mcp-idea-composer</module>
         <module>mcp-ipinfo</module>
+        <module>mcp-novel</module>
+        <module>mcp-miapi</module>
     </modules>
 
     <properties>
