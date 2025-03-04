@@ -7,6 +7,7 @@
 "args": [
 "-jar",
 "-Didea.port=30000",
+"-DGOOGLE_AI_GATEWAY=",
 "/Users/ericgreen/mycode/mone/jcommon/mcp/macp-idea-composer/target/app.jar"
 ],
 "env": {
