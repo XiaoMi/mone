@@ -74,7 +74,7 @@ public class MoonQueryFunction implements Function<Map<String, Object>, McpSchem
                     "servicePath": {
                         "type": "string",
                         "required": false,
-                        "description": "服务路径",
+                        "description": "服务路径。 该路径为http url或者dubbo provider 路径",
                         "default": ""
                     },
                     "page": {
