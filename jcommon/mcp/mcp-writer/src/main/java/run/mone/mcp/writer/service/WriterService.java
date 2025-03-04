@@ -20,6 +20,9 @@ public class WriterService {
         return Flux.create(sink -> {
             llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
                 sink.next(content);
+                if ("[DONE]".equals(content.trim())) {
+                    sink.complete();
+                }
             });
         });
     }
