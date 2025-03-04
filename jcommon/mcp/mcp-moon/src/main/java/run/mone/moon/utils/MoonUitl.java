@@ -17,8 +17,6 @@ public class MoonUitl {
         referenceConfig.getParameters().put("migration.step", "FORCE_INTERFACE");
     }
 
-
-    // 辅助方法定义
     public static String getString(Object value) {
         return (value != null) ? String.valueOf(value) : null;
     }

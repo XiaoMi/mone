@@ -135,7 +135,8 @@ public class MoonQueryFunction implements Function<Map<String, Object>, McpSchem
 
             MoonMoneTpcContext context = new MoonMoneTpcContext();
             Number tenant = MoonUitl.getNumber(args.get("tenant"));
-            context.setTenant(tenant == null ? null : String.valueOf(tenant.intValue()));
+            Integer tenantInt = tenant == null ? null : tenant.intValue();
+            context.setTenant(MoonUitl.getString(tenantInt));
             // 构建查询参数对象
             ReadTaskReq queryParams = new ReadTaskReq();
 

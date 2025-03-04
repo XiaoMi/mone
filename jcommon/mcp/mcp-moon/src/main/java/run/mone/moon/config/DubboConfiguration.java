@@ -53,7 +53,6 @@ public class DubboConfiguration {
     public RegistryConfig registryConfig() {
         RegistryConfig registryConfig = new RegistryConfig();
         registryConfig.setAddress(regAddress);
-
         return registryConfig;
     }
     
