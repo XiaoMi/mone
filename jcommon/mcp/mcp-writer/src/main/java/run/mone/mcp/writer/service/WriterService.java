@@ -20,6 +20,9 @@ public class WriterService {
         return Flux.create(sink -> {
             llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
                 sink.next(content);
+                if ("[DONE]".equals(content.trim())) {
+                    sink.complete();
+                }
             });
         });
     }
@@ -29,6 +32,9 @@ public class WriterService {
         return Flux.create(sink -> {
             llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
                 sink.next(content);
+                if ("[DONE]".equals(content.trim())) {
+                    sink.complete();
+                }
             });
         });
     }
@@ -38,6 +44,9 @@ public class WriterService {
         return Flux.create(sink -> {
             llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
                 sink.next(content);
+                if ("[DONE]".equals(content.trim())) {
+                    sink.complete();
+                }
             });
         });
     }
@@ -47,6 +56,9 @@ public class WriterService {
         return Flux.create(sink -> {
             llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
                 sink.next(content);
+                if ("[DONE]".equals(content.trim())) {
+                    sink.complete();
+                }
             });
         });
     }
@@ -56,6 +68,9 @@ public class WriterService {
         return Flux.create(sink -> {
             llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
                 sink.next(content);
+                if ("[DONE]".equals(content.trim())) {
+                    sink.complete();
+                }
             });
         });
     }
@@ -65,6 +80,9 @@ public class WriterService {
         return Flux.create(sink -> {
             llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
                 sink.next(content);
+                if ("[DONE]".equals(content.trim())) {
+                    sink.complete();
+                }
             });
         });
     }
@@ -74,12 +92,22 @@ public class WriterService {
         return Flux.create(sink -> {
             llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
                 sink.next(content);
+                if ("[DONE]".equals(content.trim())) {
+                    sink.complete();
+                }
             });
         });
     }
 
     public Flux<String> translateText(String text, String targetLanguage) {
-        // Implementation for translating text to the target language
-        return Flux.just("Translated text: " + text + " (to " + targetLanguage + ")");
+        String prompt = String.format("请将以下文本翻译成%s：\n\n%s", targetLanguage, text);
+        return Flux.create(sink -> {
+            llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
+                sink.next(content);
+                if ("[DONE]".equals(content.trim())) {
+                    sink.complete();
+                }
+            });
+        });
     }
 }

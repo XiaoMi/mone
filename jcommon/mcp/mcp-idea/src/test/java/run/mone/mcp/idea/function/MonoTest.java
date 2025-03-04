@@ -159,6 +159,29 @@ public class MonoTest {
         });
         Mono<String> mono = Mono.fromFuture(future);
         System.out.println(mono.block());
+    }
+
+    @SneakyThrows
+    @Test
+    public void test9() {
+        Flux<Long> flux = Flux.just(System.currentTimeMillis());
+        flux.subscribe(it->{
+            System.out.println(it);
+        });
+        TimeUnit.SECONDS.sleep(1);
+        flux.subscribe(it->{
+            System.out.println(it);
+        });
+
+        Flux<Long> flux2 = Flux.defer(()->Flux.just(System.currentTimeMillis()));
+        flux2.subscribe(it->{
+            System.out.println(it);
+        });
+        TimeUnit.SECONDS.sleep(1);
+        flux2.subscribe(it->{
+            System.out.println(it);
+        });
+
 
     }
 
