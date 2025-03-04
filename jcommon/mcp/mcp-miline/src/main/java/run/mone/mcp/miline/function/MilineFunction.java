@@ -41,7 +41,7 @@ public class MilineFunction implements Function<Map<String, Object>, McpSchema.C
             }
             """;
 
-    private static final String BASE_URL = "http://mione-gw.test.mi.com/mtop/miline";
+    private static final String BASE_URL = "http://XX/mtop/miline";
     private static final String GET_MEMBERS_URL = BASE_URL + "/getProjectMembers";
     private static final String MODIFY_MEMBERS_URL = BASE_URL + "/modifyMember";
     
