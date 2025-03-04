@@ -128,8 +128,8 @@ public class MoonQueryFunction implements Function<Map<String, Object>, McpSchem
             }
 
             // 必填参数校验
-            if (args.get("type") == null) {
-                throw new IllegalArgumentException("type is required");
+            if (args.get("tenant") == null) {
+                throw new IllegalArgumentException("tenant is required");
             }
             // 必填参数校验
             if (args.get("page") == null) {
