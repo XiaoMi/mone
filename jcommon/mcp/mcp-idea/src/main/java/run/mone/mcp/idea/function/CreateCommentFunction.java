@@ -24,7 +24,7 @@ public class CreateCommentFunction implements Function<Map<String, Object>, Flux
     private final IdeaService ideaService;
 
     public String getName() {
-        return "createComment";
+        return "stream_CreateComment";
     }
 
     public String getDesc() {
