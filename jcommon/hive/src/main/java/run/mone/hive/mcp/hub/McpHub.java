@@ -186,7 +186,7 @@ public class McpHub {
 
         McpServer server = new McpServer(name, config.toString());
         server.setServerParameters(config);
-        McpConnection connection = new McpConnection(server, client, transport);
+        McpConnection connection = new McpConnection(server, client, transport, McpType.fromString(config.getType()));
         connections.put(name, connection);
 
         try {

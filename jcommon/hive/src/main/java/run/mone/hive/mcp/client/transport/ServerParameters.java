@@ -7,21 +7,24 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import run.mone.hive.mcp.hub.McpType;
 import run.mone.hive.mcp.util.Assert;
 /**
  * 
  * ORIGINAL CODE IS FROM SPRING AI!!!
  * 
- * Server parameters for stdio client.
+ * Server parameters.
  *
  */
 @JsonInclude(JsonInclude.Include.NON_ABSENT)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @Data
 @NoArgsConstructor
 public class ServerParameters {
@@ -42,17 +45,30 @@ public class ServerParameters {
 
 	@JsonProperty("env")
 	private Map<String, String> env = new HashMap<>();
+	
+	@JsonProperty("type")
+	private String type = McpType.STDIO.name();
+
+	@JsonProperty("url")
+	private String url;
 
 	private ServerParameters(String command, List<String> args, Map<String, String> env) {
 		Assert.notNull(command, "The command can not be null");
 		Assert.notNull(args, "The args can not be null");
 
+		this.type = McpType.STDIO.name();
 		this.command = command;
 		this.args = args;
 		this.env = new HashMap<>(getDefaultEnvironment());
 		if (env != null && !env.isEmpty()) {
 			this.env.putAll(env);
 		}
+	}
+
+	private ServerParameters(String url) {
+		Assert.notNull(url, "The url can not be null");
+		this.type = McpType.SSE.name();
+		this.url = url;
 	}
 
 	public String getCommand() {
@@ -74,14 +90,20 @@ public class ServerParameters {
 	public static class Builder {
 
 		private String command;
-
 		private List<String> args = new ArrayList<>();
-
 		private Map<String, String> env = new HashMap<>();
+		private String url;
 
 		public Builder(String command) {
 			Assert.notNull(command, "The command can not be null");
 			this.command = command;
+		}
+
+		public static Builder url(String url) {
+			Assert.notNull(url, "The url can not be null");
+			Builder builder = new Builder("dummy");
+			builder.url = url;
+			return builder;
 		}
 
 		public Builder args(String... args) {
@@ -117,7 +139,11 @@ public class ServerParameters {
 		}
 
 		public ServerParameters build() {
-			return new ServerParameters(command, args, env);
+			if (url != null) {
+				return new ServerParameters(url);
+			} else {
+				return new ServerParameters(command, args, env);
+			}
 		}
 
 	}
