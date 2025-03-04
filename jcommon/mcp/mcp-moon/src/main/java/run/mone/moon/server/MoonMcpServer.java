@@ -6,6 +6,7 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.ApplicationConfig;
 import org.apache.dubbo.config.RegistryConfig;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 import run.mone.hive.mcp.server.McpServer;
@@ -14,7 +15,8 @@ import run.mone.hive.mcp.server.McpSyncServer;
 import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
-import run.mone.moon.function.MoonFunction;
+import run.mone.moon.function.MoonCreateFunction;
+import run.mone.moon.function.MoonQueryFunction;
 
 @Slf4j
 @Component
@@ -29,7 +31,8 @@ public class MoonMcpServer {
     ApplicationConfig applicationConfig;
     @Resource
     RegistryConfig registryConfig;
-
+    @Value("${moon.dubbo.group}")
+    private String group;
 
     public MoonMcpServer(ServerMcpTransport transport) {
         this.transport = transport;
@@ -49,15 +52,25 @@ public class MoonMcpServer {
         // 注册moon_mcp_server工具
         log.info("Registering MoonMcpServer tool...");
         try {
-            MoonFunction moonFunction = new MoonFunction(applicationConfig, registryConfig);
-            var moonToolRegistration = new ToolRegistration(
-                    new Tool(moonFunction.getName(), moonFunction.getDesc(), moonFunction.getTaskToolSchema()), moonFunction
+            // 创建
+            MoonCreateFunction createMoonFunction = new MoonCreateFunction(applicationConfig, registryConfig, group);
+            var createMoonTool = new ToolRegistration(
+                    new Tool(createMoonFunction.getName(), createMoonFunction.getDesc(), createMoonFunction.getTaskToolSchema()), createMoonFunction
             );
-            syncServer.addTool(moonToolRegistration);
 
-            log.info("Successfully registered execute_sql tool");
+            // 查询
+            MoonQueryFunction queryMoonFunction = new MoonQueryFunction(applicationConfig, registryConfig, group);
+            var queryMoonTool = new ToolRegistration(
+                    new Tool(queryMoonFunction.getName(), queryMoonFunction.getDesc(), queryMoonFunction.getTaskQuerySchema()), queryMoonFunction
+            );
+
+            // 添加工具类
+            syncServer.addTool(createMoonTool);
+            syncServer.addTool(queryMoonTool);
+
+            log.info("Successfully registered moon tool");
         } catch (Exception e) {
-            log.error("Failed to register execute_sql tool", e);
+            log.error("Failed to register moon tool", e);
             throw e;
         }
 
@@ -72,7 +85,7 @@ public class MoonMcpServer {
     @PreDestroy
     public void stop() {
         if (this.syncServer != null) {
-            log.info("Stopping MysqlMcpServer...");
+            log.info("Stopping MoonMcpServer...");
             this.syncServer.closeGracefully();
         }
     }
