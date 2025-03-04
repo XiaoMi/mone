@@ -15,6 +15,8 @@ import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import run.mone.hive.mcp.spec.McpSchema.CallToolResult;
+import run.mone.hive.mcp.spec.McpSchema.Content;
+import run.mone.hive.mcp.spec.McpSchema.TextContent;
 import run.mone.hive.mcp.transport.webmvcsse.WebMvcSseServerTransport;
 import run.mone.hive.mcp.util.Assert;
 
@@ -202,10 +204,23 @@ public class DefaultMcpSession implements McpSession {
 				return Flux.error(new McpError("No handler registered for stream request method: " + request.method()));
 			} else {
 				return handler.handle(request.params())
-					.map(response -> new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, request.id(), response, null))
+					.map(response -> new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, request.id(), response, null, isResponseComplete(response)))
 					.onErrorResume(error -> Flux.error(new McpError("Error handling tools stream request: " + error.getMessage())));
 			}
 		});
+	}
+
+	private boolean isResponseComplete(Object result) {
+		if (result instanceof McpSchema.CallToolResult callToolResult) {
+			if (callToolResult.content() == null || callToolResult.content().isEmpty()) {
+				return false;
+			}
+			Content content = callToolResult.content().get(0);
+			if (content instanceof TextContent textContent) {
+				return "[DONE]".equals(textContent.text());
+			}
+		}
+		return false;
 	}
 
 	/**
