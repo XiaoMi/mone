@@ -10,10 +10,9 @@ local server = require('modules.server')
 _G.searchDingTalkContact = dingtalk.searchDingTalkContact
 _G.searchAndSendDingTalkMessage = dingtalk.searchAndSendDingTalkMessage
 _G.getRecentDingTalkMessages = dingtalk.getRecentDingTalkMessages
-_G.captureDingTalkWindow = dingtalk.captureDingTalkWindow
+-- _G.captureDingTalkWindow = dingtalk.captureDingTalkWindow
 
-_G.captureActiveWindow = window.captureActiveWindow
-
+_G.captureAppWindow = window.captureAppWindow
 
 _G.moveAndClick = mouse.moveAndClick
 _G.moveToApp = mouse.moveToApp
