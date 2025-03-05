@@ -22,7 +22,7 @@ import run.mone.mcp.idea.composer.http.HttpClient;
 
 public class ComposerService {
 
-    private static final String IDEA_PORT = System.getenv("idea.port");
+    private static final String IDEA_PORT = System.getenv("IDEA_PORT");
 
     @SneakyThrows
     public static String getProjectReport(JsonObject jsonObject) {

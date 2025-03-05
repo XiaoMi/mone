@@ -35,7 +35,7 @@ public class CodeGeneratorTeam {
 
         //架构师
         Architect architect = new Architect();
-        setActions(promptResult, architect, json);
+        setActions(conversationContext, promptResult, architect, json);
 
         //设计者
         Design design = new Design();
@@ -80,10 +80,11 @@ public class CodeGeneratorTeam {
         design.setActions(Lists.newArrayList(writeDesign));
     }
 
-    private static void setActions(PromptResult promptResult, Architect architect, JsonObject json) {
+    private static void setActions(ConversationContext conversationContext, PromptResult promptResult, Architect architect, JsonObject json) {
         AnalyzeArchitecture analyzeArchitecture = new AnalyzeArchitecture();
         analyzeArchitecture.setFunction((req, action, context) -> {
-            String res = ComposerService.getProjectReport(json);
+            ProjectReportHandler handler = new ProjectReportHandler();
+            String res = handler.generateProjectReport(conversationContext, json);
             promptResult.setContent(res);
             return Message.builder().content(res).role(architect.getName()).build();
         });
