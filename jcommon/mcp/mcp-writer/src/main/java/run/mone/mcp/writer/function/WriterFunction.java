@@ -70,7 +70,7 @@ public class WriterFunction implements Function<Map<String, Object>, Flux<McpSch
     }
 
     public String getName() {
-        return "stream_writerOperation";
+        return "stream_writer";
     }
 
     public String getDesc() {
