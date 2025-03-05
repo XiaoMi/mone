@@ -16,9 +16,13 @@ public class BotChainCall {
 
 
     public void executeProjectBotChain(BotChainCallContext botChainCallContext, JsonObject json) {
-        log.info("use agent mode");
-        ConversationContext conversationContext = new ConversationContext();
-        CodeGeneratorTeam.generateCode(botChainCallContext.getPrompt(), botChainCallContext, conversationContext, json);
-
+        try {
+            log.info("use agent mode");
+            ConversationContext conversationContext = new ConversationContext();
+            CodeGeneratorTeam.generateCode(botChainCallContext.getPrompt(), botChainCallContext, conversationContext, json);
+        }catch (Exception e){
+            e.printStackTrace();
+            log.error("exeute project bot chain error", e);
+        }
     }
 }
