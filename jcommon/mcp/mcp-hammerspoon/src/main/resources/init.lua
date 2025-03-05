@@ -18,6 +18,13 @@ _G.captureActiveWindow = window.captureActiveWindow
 _G.moveAndClick = mouse.moveAndClick
 _G.moveToApp = mouse.moveToApp
 _G.moveToAppAndClick = mouse.moveToAppAndClick
+_G.imageToWindowCoords = mouse.imageToWindowCoords
+_G.clickOnImageTarget = mouse.clickOnImageTarget
+
+_G.clickOnScreenshot = mouse.clickOnScreenshot
+
+_G.showMouseCoordinates = mouse.showMouseCoordinates
+
 
 
 _G.findElementRecursive = utils.findElementRecursive
