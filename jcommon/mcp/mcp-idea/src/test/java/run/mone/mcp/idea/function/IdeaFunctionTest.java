@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.spec.McpSchema;
 
 import java.util.HashMap;
@@ -145,7 +146,7 @@ class IdeaFunctionTest {
         arguments.put("code", code);
 
         // Call the function
-        McpSchema.CallToolResult result = createCommentFunction.apply(arguments);
+        Flux<McpSchema.CallToolResult> result = createCommentFunction.apply(arguments);
 
         // Assertions
         assertNotNull(result);

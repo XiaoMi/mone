@@ -21,13 +21,25 @@ public class NovelFunction implements Function<Map<String, Object>, McpSchema.Ca
                 "properties": {
                     "operation": {
                         "type": "string",
-                        "enum": ["summarizeNovel"],
+                        "enum": ["summarizeNovel", "outlineImitation", "styleImitation"],
                         "description": "The novel operation to perform"
                     },
                     "novel": {
                         "type": "string",
                         "description": "一篇情节完整，人物生动的小说"
-                    }     
+                    },
+                    "outline": {
+                        "type": "string",
+                        "description": "小说大纲"
+                    },
+                    "textToChange": {
+                        "type": "string",
+                        "description": "需要修改的原文"
+                    },
+                    "copyTextStyle": {
+                        "type": "string",
+                        "description": "原始风格示例"
+                    }               
                 },
                 "required": ["operation"]
             }
@@ -43,6 +55,12 @@ public class NovelFunction implements Function<Map<String, Object>, McpSchema.Ca
             switch (operation) {
                 case "summarizeNovel" -> {
                     result = novelService.extractPlotPoints((String) arguments.get("novel"));
+                }
+                case "outlineImitation" -> {
+                    result = novelService.outlineImitation((String) arguments.get("outline"));
+                }
+                case "styleImitation" -> {
+                    result = novelService.styleImitation((String) arguments.get("textToChange"), (String) arguments.get("copyTextStyle"));
                 }
                 default -> throw new IllegalArgumentException("Unknown operation: " + operation);
             };
