@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -49,6 +51,9 @@ public class ServerParameters {
 	@JsonProperty("type")
 	private String type = McpType.STDIO.name();
 
+	@JsonProperty("sseRemote")
+	private boolean sseRemote = false;
+
 	@JsonProperty("url")
 	private String url;
 
@@ -59,16 +64,24 @@ public class ServerParameters {
 		this.type = McpType.STDIO.name();
 		this.command = command;
 		this.args = args;
+		this.url = "";
 		this.env = new HashMap<>(getDefaultEnvironment());
 		if (env != null && !env.isEmpty()) {
 			this.env.putAll(env);
 		}
 	}
 
-	private ServerParameters(String url) {
-		Assert.notNull(url, "The url can not be null");
-		this.type = McpType.SSE.name();
-		this.url = url;
+	private ServerParameters(String command, List<String> args, Map<String, String> env, String type, String url) {
+		Assert.notNull(command, "The command can not be null");
+		Assert.notNull(args, "The args can not be null");
+
+		this.type = McpType.STDIO.name();
+		this.command = command;
+		this.args = args;
+		this.env = new HashMap<>(getDefaultEnvironment());
+		if (env != null && !env.isEmpty()) {
+			this.env.putAll(env);
+		}
 	}
 
 	public String getCommand() {
@@ -83,6 +96,10 @@ public class ServerParameters {
 		return this.env;
 	}
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	public static Builder builder(String command) {
 		return new Builder(command);
 	}
@@ -93,6 +110,11 @@ public class ServerParameters {
 		private List<String> args = new ArrayList<>();
 		private Map<String, String> env = new HashMap<>();
 		private String url;
+		private String type = McpType.STDIO.name();
+		private boolean sseRemote = false;
+		public Builder() {
+			this.command = "";
+		}
 
 		public Builder(String command) {
 			Assert.notNull(command, "The command can not be null");
@@ -138,12 +160,19 @@ public class ServerParameters {
 			return this;
 		}
 
+		public Builder type(String type) {
+			Assert.notNull(type, "The type can not be null");
+			this.type = type;
+			return this;
+		}
+
+		public Builder sseRemote(boolean sseRemote) {
+			this.sseRemote = sseRemote;
+			return this;
+		}
+
 		public ServerParameters build() {
-			if (url != null) {
-				return new ServerParameters(url);
-			} else {
-				return new ServerParameters(command, args, env);
-			}
+			return new ServerParameters(command, args, env, type, url);
 		}
 
 	}
