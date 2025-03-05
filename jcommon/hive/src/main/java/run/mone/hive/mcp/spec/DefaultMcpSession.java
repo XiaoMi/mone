@@ -165,6 +165,7 @@ public class DefaultMcpSession implements McpSession {
 						if (response.complete() != null && response.complete()) {
 							logger.debug("========================= Stream response complete: {}", response);
 							streamSink.complete();
+							pendingStreamResponses.remove(response.id());
 						} else {
 							streamSink.next(response);
 						}
