@@ -228,10 +228,10 @@ public class McpHub {
 
     private void startSseServer(ServerParameters config) {
         ProcessBuilder processBuilder = new ProcessBuilder();
-        List<String> fullCommand = Stream.concat(
-            Stream.of(config.getCommand()),
-            config.getArgs().stream()
-        ).toList();
+        List<String> fullCommand = new ArrayList<>();
+        fullCommand.add(config.getCommand());
+        fullCommand.addAll(config.getArgs());
+
         processBuilder.command(fullCommand);
         processBuilder.environment().putAll(config.getEnv());
         try {
