@@ -1,16 +1,17 @@
 package run.mone.mcp.writer.function;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.RequiredArgsConstructor;
-import reactor.core.publisher.Flux;
-
-import org.springframework.stereotype.Component;
-import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.mcp.writer.service.WriterService;
-
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+
+import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
+import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.mcp.writer.service.WriterService;
 
 @Component
 @RequiredArgsConstructor
@@ -25,7 +26,7 @@ public class WriterFunction implements Function<Map<String, Object>, Flux<McpSch
                 "properties": {
                     "operation": {
                         "type": "string",
-                        "enum": ["expandArticle", "summarizeArticle", "writeNewArticle", "polishArticle", "suggestImprovements", "createOutline", "editArticle", "translateText"],
+                        "enum": ["expandArticle", "summarizeArticle", "writeNewArticle", "polishArticle", "suggestImprovements", "createOutline", "editArticle", "translateText", "generateCreativeIdeas", "createCharacterProfile", "analyzeWritingStyle", "generateSeoContent", "createResearchSummary", "rewriteForAudience", "generateDialogue", "createMetaphorsAndAnalogies"],
                         "description": "The writing operation to perform"
                     },
                     "article": {
@@ -39,6 +40,58 @@ public class WriterFunction implements Function<Map<String, Object>, Flux<McpSch
                     "instructions": {
                         "type": "string",
                         "description": "Editing instructions for the editArticle operation"
+                    },
+                    "text": {
+                        "type": "string",
+                        "description": "The text content for operations like translateText or analyzeWritingStyle"
+                    },
+                    "targetLanguage": {
+                        "type": "string",
+                        "description": "The target language for translation"
+                    },
+                    "numberOfIdeas": {
+                        "type": "integer",
+                        "description": "Number of ideas to generate for generateCreativeIdeas operation"
+                    },
+                    "characterDescription": {
+                        "type": "string",
+                        "description": "Description for creating a character profile"
+                    },
+                    "keyword": {
+                        "type": "string",
+                        "description": "Keyword for SEO content generation"
+                    },
+                    "contentType": {
+                        "type": "string",
+                        "description": "Type of content to generate for SEO (e.g., blog post, product description)"
+                    },
+                    "researchText": {
+                        "type": "string",
+                        "description": "Research content to summarize"
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "Content to rewrite for a specific audience"
+                    },
+                    "targetAudience": {
+                        "type": "string",
+                        "description": "Target audience for content rewriting"
+                    },
+                    "scenario": {
+                        "type": "string",
+                        "description": "Scenario for dialogue generation"
+                    },
+                    "numberOfExchanges": {
+                        "type": "integer",
+                        "description": "Number of dialogue exchanges to generate"
+                    },
+                    "concept": {
+                        "type": "string",
+                        "description": "Concept for creating metaphors and analogies"
+                    },
+                    "count": {
+                        "type": "integer",
+                        "description": "Number of metaphors/analogies to generate"
                     }
                 },
                 "required": ["operation"]
@@ -60,6 +113,24 @@ public class WriterFunction implements Function<Map<String, Object>, Flux<McpSch
                     case "createOutline" -> writerService.createOutline((String) arguments.get("topic"));
                     case "editArticle" -> writerService.editArticle((String) arguments.get("article"), (String) arguments.get("instructions"));
                     case "translateText" -> writerService.translateText((String) arguments.get("text"), (String) arguments.get("targetLanguage"));
+                    case "generateCreativeIdeas" -> writerService.generateCreativeIdeas(
+                            (String) arguments.get("topic"), 
+                            ((Number) arguments.get("numberOfIdeas")).intValue());
+                    case "createCharacterProfile" -> writerService.createCharacterProfile((String) arguments.get("characterDescription"));
+                    case "analyzeWritingStyle" -> writerService.analyzeWritingStyle((String) arguments.get("text"));
+                    case "generateSeoContent" -> writerService.generateSeoContent(
+                            (String) arguments.get("keyword"), 
+                            (String) arguments.get("contentType"));
+                    case "createResearchSummary" -> writerService.createResearchSummary((String) arguments.get("researchText"));
+                    case "rewriteForAudience" -> writerService.rewriteForAudience(
+                            (String) arguments.get("content"), 
+                            (String) arguments.get("targetAudience"));
+                    case "generateDialogue" -> writerService.generateDialogue(
+                            (String) arguments.get("scenario"), 
+                            ((Number) arguments.get("numberOfExchanges")).intValue());
+                    case "createMetaphorsAndAnalogies" -> writerService.createMetaphorsAndAnalogies(
+                            (String) arguments.get("concept"), 
+                            ((Number) arguments.get("count")).intValue());
                     default -> throw new IllegalArgumentException("Unknown operation: " + operation);
                 };
                 return result.map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
@@ -74,7 +145,7 @@ public class WriterFunction implements Function<Map<String, Object>, Flux<McpSch
     }
 
     public String getDesc() {
-        return "Perform various writing operations including expanding, summarizing, writing new articles, polishing, suggesting improvements, creating outlines, editing articles, and translating text.";
+        return "Perform various writing operations including expanding, summarizing, writing new articles, polishing, suggesting improvements, creating outlines, editing articles, translating text, generating creative ideas, creating character profiles, analyzing writing styles, generating SEO content, creating research summaries, rewriting for specific audiences, generating dialogues, and creating metaphors and analogies.";
     }
 
 
