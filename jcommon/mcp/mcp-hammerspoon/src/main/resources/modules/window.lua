@@ -44,7 +44,7 @@ function M.captureAppWindow(appName, options)
     options = options or {}
     local filePrefix = options.filePrefix or appName:lower():gsub("%s+", "_")
     local imageFormat = options.imageFormat or "jpg" 
-    local imageQuality = options.imageQuality or 30  -- JPEG quality (only applies to jpg format)
+    local imageQuality = options.imageQuality or 100  -- JPEG quality (only applies to jpg format)
     
     -- Save current space to restore later
     local currentSpace = hs.spaces.focusedSpace()
@@ -86,7 +86,7 @@ function M.captureAppWindow(appName, options)
                         if screenshot then
                             -- Create save path
                             local timestamp = os.date("%Y%m%d_%H%M%S")
-                            local savePath = os.getenv("HOME") .. "/Pictures/screenshots/"
+                            local savePath = "/tmp/agent/screenshots/"
                             os.execute("mkdir -p " .. savePath)
                             
                             -- Define file paths based on format
@@ -106,8 +106,8 @@ function M.captureAppWindow(appName, options)
                                     print("窗口尺寸: " .. frame.w .. "x" .. frame.h)
                                     
                                     -- Convert to JPG with compression
-                                    local cmd = string.format("sips -s format jpeg -s formatOptions %d -z %d %d '%s' --out '%s' && rm '%s'", 
-                                                          imageQuality, frame.h, frame.w, 
+                                    local cmd = string.format("sips -s format jpeg -s formatOptions quality=0.8 -z %d %d '%s' --out '%s' && rm '%s'", 
+                                                           frame.h, frame.w, 
                                                           tempPath, finalPath, tempPath)
                                     os.execute(cmd)
                                 end

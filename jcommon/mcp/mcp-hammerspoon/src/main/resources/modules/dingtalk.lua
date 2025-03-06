@@ -3,14 +3,14 @@ local M = {}
 
 function M.searchDingTalkContact(contactName)
     print("searchContact 函数被调用，参数是：" .. contactName)
-    local dingtalk = hs.application.get("钉钉")
+    local dingtalk = hs.application.get("企业微信")
     if not dingtalk then
         hs.alert.show("钉钉未运行")
         print("钉钉未运行")
         return
     end
 
-    hs.application.launchOrFocus("钉钉")
+    hs.application.launchOrFocus("企业微信")
     hs.timer.usleep(2000000)
     -- 强制激活钉钉窗口
     dingtalk:activate(true)  -- true 参数表示强制激活
@@ -20,7 +20,7 @@ function M.searchDingTalkContact(contactName)
 	
     -- 验证当前激活的应用确实是钉钉
     local frontApp = hs.application.frontmostApplication()
-    if frontApp:name() ~= "钉钉" then
+    if frontApp:name() ~= "企业微信" then
         print("未能成功切换到钉钉窗口")
         print("当前窗口是：" .. frontApp:name())
         return
@@ -42,7 +42,7 @@ function M.searchDingTalkContact(contactName)
                 print("    找到主窗口 (使用 subrole)")
                 break
             end
-            if win:isVisible() and win:title() == "钉钉" then
+            if win:isVisible() and win:title() == "企业微信" then
                 mainWindow = win
                 print("    找到主窗口 (使用 title)")
                 break
@@ -73,13 +73,13 @@ function M.searchDingTalkContact(contactName)
     -- 等待一下以确保搜索文本已输入
     hs.timer.usleep(500000)
 	
-    -- 按Tab键切换到联系人标签
-    hs.eventtap.keyStroke({}, "tab")
-    hs.timer.usleep(500000)
+    -- -- 按Tab键切换到联系人标签
+    -- hs.eventtap.keyStroke({}, "tab")
+    -- hs.timer.usleep(500000)
 
-    -- 按下方向键选中第一个联系人搜索结果
-    hs.eventtap.keyStroke({}, "down")
-    hs.timer.usleep(500000)
+    -- -- 按下方向键选中第一个联系人搜索结果
+    -- hs.eventtap.keyStroke({}, "down")
+    -- hs.timer.usleep(500000)
 
     -- 按回车键选中联系人，打开聊天窗口
     hs.eventtap.keyStroke({}, "return")
@@ -140,7 +140,7 @@ function M.captureDingTalkWindow()
             hs.timer.usleep(500000)
 
             -- 在当前空间查找钉钉窗口
-            local dingtalk = hs.application.get("钉钉")
+            local dingtalk = hs.application.get("企业微信")
             if dingtalk then
                 local windows = dingtalk:allWindows()
                 for _, window in ipairs(windows) do
@@ -205,7 +205,7 @@ function M.getRecentDingTalkMessages(contactName)
     -- hs.timer.usleep(2000000)
 
     -- -- 获取钉钉应用
-    -- local dingtalk = hs.application.get("钉钉")
+    -- local dingtalk = hs.application.get("企业微信")
     -- if not dingtalk then
     --     print("钉钉未运行")
     --     return nil
