@@ -207,4 +207,16 @@ public class WriterService {
             });
         });
     }
+
+    public Flux<String> tellJoke(String jokeType) {
+        String prompt = String.format("请讲一个%s类型的笑话，要求幽默、有趣且适合大众场合：", jokeType);
+        return Flux.create(sink -> {
+            llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
+                sink.next(content);
+                if ("[DONE]".equals(content.trim())) {
+                    sink.complete();
+                }
+            });
+        });
+    }
 }
