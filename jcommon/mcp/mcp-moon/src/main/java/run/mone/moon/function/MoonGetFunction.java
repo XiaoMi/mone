@@ -1,7 +1,6 @@
 package run.mone.moon.function;
 
-import com.google.common.reflect.TypeToken;
-import com.xiaomi.youpin.infra.rpc.Result;
+import com.google.gson.reflect.TypeToken;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +10,8 @@ import org.apache.dubbo.config.RegistryConfig;
 import org.apache.dubbo.rpc.service.GenericService;
 import org.jetbrains.annotations.NotNull;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.moon.api.bo.task.TaskReq;
+import run.mone.moon.function.bo.Result;
+import run.mone.moon.function.bo.TaskReq;
 import run.mone.moon.utils.GsonUtil;
 import run.mone.moon.utils.MoonUitl;
 

@@ -1,8 +1,9 @@
 package run.mone.moon.function;
 
+import cn.hutool.core.bean.BeanUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.reflect.TypeToken;
-import com.xiaomi.youpin.infra.rpc.Result;
+
+import com.google.gson.reflect.TypeToken;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -11,11 +12,7 @@ import org.apache.dubbo.config.ReferenceConfig;
 import org.apache.dubbo.config.RegistryConfig;
 import org.apache.dubbo.rpc.service.GenericService;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.moon.api.bo.task.DubboParam;
-import run.mone.moon.api.bo.task.FaasParam;
-import run.mone.moon.api.bo.task.HttpParam;
-import run.mone.moon.api.bo.task.TaskReq;
-import run.mone.moon.api.bo.user.MoonMoneTpcContext;
+import run.mone.moon.function.bo.*;
 import run.mone.moon.utils.GsonUtil;
 import run.mone.moon.utils.MoonUitl;
 
@@ -46,7 +43,7 @@ public class MoonCreateFunction implements Function<Map<String, Object>, McpSche
                     },
                     "account": {
                         "type": "String",
-                        "description": "the log in user account",
+                        "description": "the log in user account or the task creator",
                         "default": "mcp_user"
                     },
                     "name": {
@@ -343,7 +340,7 @@ public class MoonCreateFunction implements Function<Map<String, Object>, McpSche
             log.info("创建moon任务参数 context: {}, taskParam: {}", GsonUtil.toJsonTree(context), GsonUtil.toJson(taskParam));
             GenericService genericService = createReferenceConfig.get();
             Object describeUserJsonRes = genericService.$invoke("create", new String[]{"run.mone.moon.api.bo.user.MoonMoneTpcContext", "run.mone.moon.api.bo.task.TaskReq"},
-                    new Object[]{context, taskParam});
+                    new Object[]{BeanUtil.beanToMap(context), BeanUtil.beanToMap(taskParam)});
             log.info("创建任务返回结果 result: {}", describeUserJsonRes);
 
             Result<Long> result = GsonUtil.fromJson(GsonUtil.toJson(describeUserJsonRes), new TypeToken<Result<Long>>() {

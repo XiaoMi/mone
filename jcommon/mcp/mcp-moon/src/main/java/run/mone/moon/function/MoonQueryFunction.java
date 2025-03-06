@@ -1,7 +1,7 @@
 package run.mone.moon.function;
 
-import com.google.common.reflect.TypeToken;
-import com.xiaomi.youpin.infra.rpc.Result;
+import cn.hutool.core.bean.BeanUtil;
+import com.google.gson.reflect.TypeToken;
 import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -10,9 +10,10 @@ import org.apache.dubbo.config.ReferenceConfig;
 import org.apache.dubbo.config.RegistryConfig;
 import org.apache.dubbo.rpc.service.GenericService;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.moon.api.bo.task.ReadTaskReq;
-import run.mone.moon.api.bo.task.TaskList;
-import run.mone.moon.api.bo.user.MoonMoneTpcContext;
+import run.mone.moon.function.bo.MoonMoneTpcContext;
+import run.mone.moon.function.bo.ReadTaskReq;
+import run.mone.moon.function.bo.Result;
+import run.mone.moon.function.bo.TaskList;
 import run.mone.moon.utils.GsonUtil;
 import run.mone.moon.utils.MoonUitl;
 
@@ -140,7 +141,6 @@ public class MoonQueryFunction implements Function<Map<String, Object>, McpSchem
             context.setTenant(MoonUitl.getString(tenantInt));
             // 构建查询参数对象
             ReadTaskReq queryParams = new ReadTaskReq();
-
             // 处理String类型参数
             queryParams.setTaskName(MoonUitl.getString(args.get("taskName")));
             queryParams.setTaskType(MoonUitl.getString(args.get("taskType")));
@@ -162,7 +162,7 @@ public class MoonQueryFunction implements Function<Map<String, Object>, McpSchem
             log.info("查询moon任务列表参数 context: {}, queryParams: {}", GsonUtil.toJsonTree(context), GsonUtil.toJson(queryParams));
             GenericService genericService = queryReference.get();
             Object describeUserJsonRes = genericService.$invoke("list", new String[]{"run.mone.moon.api.bo.user.MoonMoneTpcContext", "run.mone.moon.api.bo.task.ReadTaskReq"},
-                    new Object[]{context, queryParams});
+                    new Object[]{BeanUtil.beanToMap(context), BeanUtil.beanToMap(queryParams)});
             log.info("查询moon任务列表返回结果 result: {}", describeUserJsonRes);
 
             Result<TaskList> result = GsonUtil.fromJson(GsonUtil.toJson(describeUserJsonRes), new TypeToken<Result<TaskList>>() {
@@ -174,7 +174,7 @@ public class MoonQueryFunction implements Function<Map<String, Object>, McpSchem
                         false
                 );
             } else {
-                throw new RuntimeException("Failed to create task: " + result.getMessage());
+                throw new RuntimeException("Failed to query task: " + result.getMessage());
             }
 
         } catch (Exception ex) {
