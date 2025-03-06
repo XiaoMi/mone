@@ -6,7 +6,7 @@
       "command": "D:\\software\\jdk21\\bin\\java.exe",
       "args": [
         "-jar",
-        "-Ddubbo.application.service-discovery.migration=APPLICATION_FIRST",
+        "-Ddubbo.registry.address=此处为nacos地址",
         "D:\\workspace\\xiaomiMone\\jcommon\\mcp\\mcp-moon\\target\\app.jar"
       ]
     }
