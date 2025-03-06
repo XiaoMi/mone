@@ -9,6 +9,7 @@ import org.apache.dubbo.config.ApplicationConfig;
 import org.apache.dubbo.config.ReferenceConfig;
 import org.apache.dubbo.config.RegistryConfig;
 import org.apache.dubbo.rpc.service.GenericService;
+import org.jetbrains.annotations.NotNull;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.moon.api.bo.task.TaskReq;
 import run.mone.moon.utils.GsonUtil;
@@ -37,6 +38,12 @@ public class MoonGetFunction implements Function<Map<String, Object>, McpSchema.
                         "type": "long",
                         "description": "根据任务id查询任务， query moon task by id",
                         "default": "1"
+                    },
+                    "isCopy": {
+                        "type": "boolean",
+                        "enum": [true, false],
+                        "default": false,
+                        "description": "is user copy moon task or is user mimic moon task, 判断用户是否需要复制或者模仿创建任务"
                     }
                 },
                 "required": ["id"]
@@ -73,6 +80,9 @@ public class MoonGetFunction implements Function<Map<String, Object>, McpSchema.
 
             Number idNum = MoonUitl.getNumber(args.get("id"));
             Long id = idNum == null ? null : idNum.longValue();
+
+            boolean isCopy = args.get("isCopy") == null ? false : (Boolean) args.get("isCopy");
+            // 设置必填参数
             // 构建查询参数对象
             // 3. 调用服务创建任务
             log.info("根据id查询moon任务id: {}", id);
@@ -85,8 +95,13 @@ public class MoonGetFunction implements Function<Map<String, Object>, McpSchema.
             }.getType());
             // 4. 处理返回结果
             if (result.getCode() == 0) {
+                TaskReq data = result.getData();
+                if (isCopy) {
+                    data.setName(getCopyString(data.getName()));
+                    data.setDescription(getCopyString(data.getDescription()));
+                }
                 return new McpSchema.CallToolResult(
-                        List.of(new McpSchema.TextContent("Task query result: " + GsonUtil.toJson(result.getData()))),
+                        List.of(new McpSchema.TextContent("Task query result: " + GsonUtil.toJson(data))),
                         false
                 );
             } else {
@@ -97,6 +112,10 @@ public class MoonGetFunction implements Function<Map<String, Object>, McpSchema.
             log.error("Failed to query task", ex);
             throw new RuntimeException("Failed to query task: " + ex.getMessage());
         }
+    }
+
+    private static @NotNull String getCopyString(String source) {
+        return source + " copy";
     }
 
 }
