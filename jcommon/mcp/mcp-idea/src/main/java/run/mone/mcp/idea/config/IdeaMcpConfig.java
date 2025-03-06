@@ -28,10 +28,10 @@ public class IdeaMcpConfig {
         return new LLM(LLMConfig.builder().url(url).llmProvider(LLMProvider.GOOGLE_2).build());
     }
 
-    @Bean
-    StdioServerTransport stdioServerTransport(ObjectMapper mapper) {
-        return new StdioServerTransport(mapper);
-    }
+//    @Bean
+//    StdioServerTransport stdioServerTransport(ObjectMapper mapper) {
+//        return new StdioServerTransport(mapper);
+//    }
 
 
     @Bean
