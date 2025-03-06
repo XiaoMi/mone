@@ -12,6 +12,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+/**
+ * review code
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -20,7 +23,7 @@ public class CodeReviewFunction implements Function<Map<String, Object>, Flux<Mc
     private final IdeaService ideaService;
 
     public String getName() {
-        return "codeReview";
+        return "stream_codeReview";
     }
 
     public String getDesc() {
