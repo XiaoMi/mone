@@ -81,10 +81,13 @@ public class IdeaMcpServer {
         syncServer.addTool(toolRegistrationGitPush);
         syncServer.addTool(toolRegistrationOpenClass);
 
-        syncServer.addTool(new ToolRegistration(
-                new Tool(codeReviewFunction.getName(), codeReviewFunction.getDesc(), codeReviewFunction.getToolScheme())
-                , codeReviewFunction
-        ));
+
+        //代码review
+        var toolStreamRegistration = new ToolStreamRegistration(
+                new Tool(codeReviewFunction.getName(), codeReviewFunction.getDesc(), codeReviewFunction.getToolScheme()), codeReviewFunction
+        );
+        syncServer.addStreamTool(toolStreamRegistration);
+
         syncServer.addTool(new ToolRegistration(
                 new Tool(methodRenameFunction.getName(), methodRenameFunction.getDesc(), methodRenameFunction.getToolScheme())
                 , methodRenameFunction

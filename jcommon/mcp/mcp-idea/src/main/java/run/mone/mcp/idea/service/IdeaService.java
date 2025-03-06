@@ -15,9 +15,16 @@ public class IdeaService {
     @Autowired
     private LLM llm;
 
-    public String reviewCode(String code) {
-        String prompt = "请对以下代码进行review，提供改进建议(尽量一句话描述清楚)：\n\n" + code;
-        return llm.chat(List.of(new AiMessage("user", prompt)));
+    public Flux<String> reviewCode(String code) {
+        String prompt = "请对以下代码进行review，提供改进建议：\n\n" + code;
+        return Flux.create(sink->{
+            llm.chat(List.of(new AiMessage("user", prompt)),(content, jsonResponse) -> {
+                sink.next(content);
+                if ("[DONE]".equals(content.trim())) {
+                    sink.complete();
+                }
+            });
+        });
     }
 
     public Flux<String> createComment(String code) {
