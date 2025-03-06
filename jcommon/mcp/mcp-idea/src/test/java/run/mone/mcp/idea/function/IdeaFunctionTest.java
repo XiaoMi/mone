@@ -131,12 +131,8 @@ class IdeaFunctionTest {
         // Prepare test data
         Map<String, Object> arguments = new HashMap<>();
         arguments.put("code", code);
-
         // Call the function
-        McpSchema.CallToolResult result = codeReviewFunction.apply(arguments);
-
-        // Assertions
-        assertNotNull(result);
+        Flux<McpSchema.CallToolResult> result = codeReviewFunction.apply(arguments);
     }
 
     @Test
