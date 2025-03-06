@@ -34,7 +34,7 @@ public class GitPushFunction implements Function<Map<String, Object>, McpSchema.
                 "properties": {
                     "projectName": {
                         "type": "string",
-                        "description":"需要生成测试的项目"
+                        "description":"生成提交的commit message 然后push代码"
                     },
                     "code": {
                         "type": "string",

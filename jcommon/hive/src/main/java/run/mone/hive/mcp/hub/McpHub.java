@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.client.McpClient;
 import run.mone.hive.mcp.client.McpSyncClient;
+import run.mone.hive.mcp.hub.McpType;
+import run.mone.hive.mcp.client.transport.HttpClientSseClientTransport;
 import run.mone.hive.mcp.client.transport.ServerParameters;
 import run.mone.hive.mcp.client.transport.StdioClientTransport;
 import run.mone.hive.mcp.spec.ClientMcpTransport;
@@ -15,6 +17,8 @@ import java.nio.file.*;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 @Data
 @Slf4j
@@ -176,7 +180,20 @@ public class McpHub {
     }
 
     private void connectToServer(String name, ServerParameters config) {
-        ClientMcpTransport transport = new StdioClientTransport(config);
+        ClientMcpTransport transport = null;
+        switch (config.getType().toLowerCase()) {
+            case "stdio":
+                transport = new StdioClientTransport(config);
+                break;
+            case "sse":
+                if (!config.isSseRemote()) {
+                    startSseServer(config);
+                } 
+                transport = new HttpClientSseClientTransport(config.getUrl());
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported transport type: " + config.getType());
+        }
         McpSyncClient client = McpClient.using(transport)
                 .requestTimeout(Duration.ofSeconds(15))
                 .capabilities(McpSchema.ClientCapabilities.builder()
@@ -186,7 +203,7 @@ public class McpHub {
 
         McpServer server = new McpServer(name, config.toString());
         server.setServerParameters(config);
-        McpConnection connection = new McpConnection(server, client, transport);
+        McpConnection connection = new McpConnection(server, client, transport, McpType.fromString(config.getType()));
         connections.put(name, connection);
 
         try {
@@ -206,6 +223,23 @@ public class McpHub {
             } catch (Exception closeEx) {
                 log.warn("Failed to clean up connection resources for {}: {}", name, closeEx.getMessage());
             }
+        }
+    }
+
+    private void startSseServer(ServerParameters config) {
+        ProcessBuilder processBuilder = new ProcessBuilder();
+        List<String> fullCommand = new ArrayList<>();
+        fullCommand.add(config.getCommand());
+        fullCommand.addAll(config.getArgs());
+
+        processBuilder.command(fullCommand);
+        processBuilder.environment().putAll(config.getEnv());
+        try {
+            Process process = processBuilder.start();
+            // process.waitFor();
+            TimeUnit.SECONDS.sleep(10); // FIXME: 需要优化
+        } catch (Throwable e) {
+            log.error("Failed to start SSE server: ", e);
         }
     }
 

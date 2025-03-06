@@ -19,4 +19,5 @@ public class IdeaComposerMcpConfig {
     StdioServerTransport stdioServerTransport(ObjectMapper mapper) {
         return new StdioServerTransport(mapper);
     }
+
 }

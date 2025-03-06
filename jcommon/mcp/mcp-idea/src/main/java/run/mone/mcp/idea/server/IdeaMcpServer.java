@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.server.McpServer.ToolRegistration;
+import run.mone.hive.mcp.server.McpServer.ToolStreamRegistration;
 import run.mone.hive.mcp.server.McpSyncServer;
 import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
@@ -66,9 +67,9 @@ public class IdeaMcpServer {
         var toolRegistrationCreateUnitTest = new ToolRegistration(
                 new Tool(createUnitTestFunc.getName(), createUnitTestFunc.getDesc(), createUnitTestFunc.getToolScheme()), createUnitTestFunc
         );
-        var toolRegistrationCreateComment = new ToolRegistration(
-                new Tool(createCommentFunction.getName(), createCommentFunction.getDesc(), createCommentFunction.getToolScheme()), createCommentFunction
-        );
+        // var toolRegistrationCreateComment = new ToolRegistration(
+        //         new Tool(createCommentFunction.getName(), createCommentFunction.getDesc(), createCommentFunction.getToolScheme()), createCommentFunction
+        // );
         var toolRegistrationGitPush = new ToolRegistration(
                 new Tool(gitPushFunction.getName(), gitPushFunction.getDesc(), gitPushFunction.getToolScheme()), gitPushFunction
         );
@@ -76,7 +77,7 @@ public class IdeaMcpServer {
 
         syncServer.addTool(toolRegistration);
         syncServer.addTool(toolRegistrationCreateUnitTest);
-        syncServer.addTool(toolRegistrationCreateComment);
+        // syncServer.addTool(toolRegistrationCreateComment);
         syncServer.addTool(toolRegistrationGitPush);
         syncServer.addTool(toolRegistrationOpenClass);
 
@@ -88,6 +89,12 @@ public class IdeaMcpServer {
                 new Tool(methodRenameFunction.getName(), methodRenameFunction.getDesc(), methodRenameFunction.getToolScheme())
                 , methodRenameFunction
         ));
+
+        var toolRegistrationCreateComment = new ToolStreamRegistration(
+                new Tool(createCommentFunction.getName(), createCommentFunction.getDesc(), createCommentFunction.getToolScheme()), createCommentFunction
+        );
+
+        syncServer.addStreamTool(toolRegistrationCreateComment);
 
         return syncServer;
     }
