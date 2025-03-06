@@ -41,28 +41,30 @@ public class BotClient {
     public String sendPrompt(String userPrompt, String systemPrompt, ComposerImagePo image) {
         CountDownLatch countDownLatch = new CountDownLatch(1);
         if (image == null) {
-            llm.chat(List.of(new run.mone.hive.schema.AiMessage("user", userPrompt)), (content, jsonResponse) -> {
-                if ("event".equals(jsonResponse.get("type").getAsString())) {
-                    fluxSink.next(content);
-                } else if ("failure".equals(jsonResponse.get("type").getAsString()) || "finish".equals(jsonResponse.get("type").getAsString())) {
-                    countDownLatch.countDown();
-                }
-            }, systemPrompt);
+            callLLM(List.of(new run.mone.hive.schema.AiMessage("user", userPrompt)), systemPrompt, countDownLatch);
         } else {
             JsonObject req = getReq(userPrompt, image.getImageBase64());
             List<AiMessage> messages = new ArrayList<>();
             messages.add(AiMessage.builder().jsonContent(req).build());
-            llm.chat(messages, (content, jsonResponse) -> {
-                if ("event".equals(jsonResponse.get("type").getAsString())) {
-                    fluxSink.next(content);
-                } else if ("failure".equals(jsonResponse.get("type").getAsString()) || "finish".equals(jsonResponse.get("type").getAsString())) {
-                    countDownLatch.countDown();
-                }
-            }, systemPrompt);
+            callLLM(messages, systemPrompt, countDownLatch);
         }
         countDownLatch.await(3, TimeUnit.MINUTES);
         //返回整个调用的结果
         return sb.toString();
+    }
+
+    private void callLLM(List<AiMessage> messages, String systemPrompt, CountDownLatch countDownLatch){
+        llm.chat(messages, (content, jsonResponse) -> {
+            if("[BEGIN]".equals(content)){
+                return;
+            }
+            fluxSink.next(content);
+            if ("[DONE]".equals(content.trim())) {
+                fluxSink.complete();
+            }else if ("failure".equals(jsonResponse.get("type").getAsString()) || "finish".equals(jsonResponse.get("type").getAsString())) {
+                countDownLatch.countDown();
+            }
+        }, systemPrompt);
     }
 
     private JsonObject getReq(String text, String imgText) {

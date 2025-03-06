@@ -98,12 +98,11 @@ public class ComposerFunction implements Function<Map<String, Object>, Flux<McpS
                 req.addProperty("athenaPluginHost", Const.IP + ideaPort);
 
                 BotChainCall call = new BotChainCall();
-                AtomicReference<FluxSink<String>> sink = new AtomicReference<>();
-                Flux<String> flux = Flux.create(sink::set);
-                BotChainCallContext context = BotChainCallContext.of("", sink.get());
-                completeBotContext(context, req);
-                call.executeProjectBotChain(context, req);
-                return flux.map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
+                return Flux.<String>create(emitter -> {
+                    BotChainCallContext context = BotChainCallContext.of("", emitter);
+                    completeBotContext(context, req);
+                    call.executeProjectBotChain(context, req);
+                }).map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
             }catch (Exception e){
                 return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true));
             }
