@@ -224,6 +224,7 @@ public class MoonCreateFunction implements Function<Map<String, Object>, McpSche
         createReferenceConfig.setApplication(applicationConfig);
         createReferenceConfig.setRegistry(registryConfig);
         createReferenceConfig.setGroup(group);
+        log.info("MoonQueryFunction group: {}", group);
         MoonUitl.commonParam(createReferenceConfig);
     }
 

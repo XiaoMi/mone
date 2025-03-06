@@ -114,6 +114,7 @@ public class MoonQueryFunction implements Function<Map<String, Object>, McpSchem
         queryReference.setApplication(applicationConfig);
         queryReference.setRegistry(registryConfig);
         queryReference.setGroup(group);
+        log.info("MoonQueryFunction group: {}", group);
         queryReference.setInterface("run.mone.moon.api.service.MoonTaskDubboService");
         MoonUitl.commonParam(queryReference);
     }

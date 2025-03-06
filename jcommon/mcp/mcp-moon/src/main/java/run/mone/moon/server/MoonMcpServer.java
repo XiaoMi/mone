@@ -16,6 +16,7 @@ import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.moon.function.MoonCreateFunction;
+import run.mone.moon.function.MoonGetFunction;
 import run.mone.moon.function.MoonQueryFunction;
 
 @Slf4j
@@ -64,9 +65,16 @@ public class MoonMcpServer {
                     new Tool(queryMoonFunction.getName(), queryMoonFunction.getDesc(), queryMoonFunction.getTaskQuerySchema()), queryMoonFunction
             );
 
+            // id查询
+            MoonGetFunction queryIdFunction = new MoonGetFunction(applicationConfig, registryConfig, group);
+            var queryIdMoonTool = new ToolRegistration(
+                    new Tool(queryIdFunction.getName(), queryIdFunction.getDesc(), queryIdFunction.getTaskQuerySchema()), queryIdFunction
+            );
+
             // 添加工具类
             syncServer.addTool(createMoonTool);
             syncServer.addTool(queryMoonTool);
+            syncServer.addTool(queryIdMoonTool);
 
             log.info("Successfully registered moon tool");
         } catch (Exception e) {
