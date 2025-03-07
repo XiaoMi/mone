@@ -1,6 +1,7 @@
 
 package run.mone.mcp.idea.function;
 
+import com.google.gson.JsonParser;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -81,9 +82,7 @@ class IdeaFunctionTest {
                         }
                     }
                                 
-                    /**
-                     * 记录调用信息
-                     */
+                  
                     private void recordInvocation(InvocationInfoReq req) {
                         Dubbo dubbo = this.getBean(Dubbo.class);
                         MethodInfo methodInfo = new MethodInfo();
@@ -135,12 +134,19 @@ class IdeaFunctionTest {
         arguments.put("code", code);
         // Call the function
         Flux<McpSchema.CallToolResult> result = codeReviewFunction.apply(arguments);
+        StringBuilder sb = new StringBuilder();
         result.subscribe(it->{
-            System.out.println(it.content());
+            McpSchema.TextContent tc = (McpSchema.TextContent) it.content().get(0);
+            System.out.println(tc.text());
+            sb.append(tc.text());
+        },error->{},()->{
+            System.out.println("\n\n");
+            System.out.println(sb);
         });
         System.in.read();
     }
 
+    @SneakyThrows
     @Test
     void testCreateComment() {
         // Prepare test data
@@ -149,22 +155,30 @@ class IdeaFunctionTest {
 
         // Call the function
         Flux<McpSchema.CallToolResult> result = createCommentFunction.apply(arguments);
-
-        // Assertions
-        assertNotNull(result);
+        result.subscribe(it->{
+            McpSchema.TextContent tc = (McpSchema.TextContent) it.content().get(0);
+            System.out.println(tc.text());
+        });
+        System.in.read();
     }
 
     @Test
     void testGitPush() {
+
+        McpSchema.TextContent tt = new McpSchema.TextContent("a","b");
+        System.out.println(tt.type());
+
         // Prepare test data
         Map<String, Object> arguments = new HashMap<>();
         arguments.put("code", code);
 
         // Call the function
         McpSchema.CallToolResult result = gitPushFunction.apply(arguments);
+        McpSchema.TextContent tc = (McpSchema.TextContent) result.content().get(0);
+        System.out.println(tc.text());
 
-        // Assertions
-        assertNotNull(result);
+        String commit = JsonParser.parseString(tc.type()).getAsJsonObject().get("commit").getAsString();
+        System.out.println(commit);
     }
 
     @Test
