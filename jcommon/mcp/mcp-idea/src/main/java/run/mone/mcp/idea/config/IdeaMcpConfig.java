@@ -20,12 +20,17 @@ import run.mone.hive.mcp.transport.webmvcsse.WebMvcSseServerTransport;
 @ConditionalOnProperty(name = "sse.enabled", havingValue = "true")
 public class IdeaMcpConfig {
 
+    //一问一答的url
     @Value("${GOOGLE_AI_GATEWAY}generateContent")
     private String url;
 
+    //google的url并不相同,stream的需要从新设定
+    @Value("${GOOGLE_AI_GATEWAY}streamGenerateContent?alt=sse")
+    private String streamUrl;
+
     @Bean
     public LLM llm() {
-        return new LLM(LLMConfig.builder().url(url).llmProvider(LLMProvider.GOOGLE_2).build());
+        return new LLM(LLMConfig.builder().url(url).streamUrl(streamUrl).llmProvider(LLMProvider.GOOGLE_2).build());
     }
 
 //    @Bean
