@@ -63,9 +63,6 @@ public class CreateCommentFunction implements Function<Map<String, Object>, Flux
             type.addProperty("methodName", methodName);
             Flux<String> result = ideaService.createComment(code);
 
-            // String comment = ideaService.extractContent(result, "comment");
-            // type.addProperty("comment", comment);
-
             return result.map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
         } catch (Exception e) {
             return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true));
