@@ -409,7 +409,7 @@ public class LLM {
         }
 
         //使用的cloudflare
-        String url = getCloudFlareUrl(apiKey, model, rb);
+        String url = getCloudFlareUrl(apiKey, model, rb, true);
 
         Request request = rb
                 .url(url)
