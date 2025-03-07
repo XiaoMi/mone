@@ -7,8 +7,10 @@
   + 方法重命名
   + Push代码
 
-"database-idea": {
+"idea-mcp": {
 "command": "java",
+"type": "sse",
+"url": "http://localhost:8080",
 "args": [
 "-jar",
 "-Didea.port=30000",

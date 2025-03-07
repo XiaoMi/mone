@@ -1,6 +1,7 @@
 
 package run.mone.mcp.idea.function;
 
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -126,17 +127,18 @@ class IdeaFunctionTest {
         System.out.println(content);
     }
 
+    @SneakyThrows
     @Test
     void testCodeReview() {
         // Prepare test data
         Map<String, Object> arguments = new HashMap<>();
         arguments.put("code", code);
-
         // Call the function
-        McpSchema.CallToolResult result = codeReviewFunction.apply(arguments);
-
-        // Assertions
-        assertNotNull(result);
+        Flux<McpSchema.CallToolResult> result = codeReviewFunction.apply(arguments);
+        result.subscribe(it->{
+            System.out.println(it.content());
+        });
+        System.in.read();
     }
 
     @Test

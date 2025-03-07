@@ -156,14 +156,30 @@ function M.captureDingTalkWindow()
                             local timestamp = os.date("%Y%m%d_%H%M%S")
                             local savePath = os.getenv("HOME") .. "/Pictures/screenshots/"
                             os.execute("mkdir -p " .. savePath)
-                            local filePath = savePath .. "dingtalk_" .. timestamp .. ".png"
-
-                            -- 保存截图
-                            if screenshot:saveToFile(filePath) then
-                                print("钉钉截图已保存到: " .. filePath)
+                            
+                            -- 先保存原始截图到临时文件
+                            local tempPath = savePath .. "temp_" .. timestamp .. ".png"
+                            local finalPath = savePath .. "dingtalk_" .. timestamp .. ".jpg"
+                            
+                            if screenshot:saveToFile(tempPath) then
+                                -- 获取窗口尺寸信息并记录到日志中
+                                local frame = window:frame()
+                                print("窗口尺寸: " .. frame.w .. "x" .. frame.h)
+                                
+                                -- 使用sips命令将PNG转换为质量较低的JPG，同时保持原始像素尺寸
+                                local cmd = string.format("sips -s format jpeg -s formatOptions 30 -z %d %d '%s' --out '%s' && rm '%s'", 
+                                                        frame.h, frame.w, 
+                                                        tempPath, finalPath, tempPath)
+                                os.execute(cmd)
+                                
+                                -- 检查文件大小
+                                local fileInfo = hs.fs.attributes(finalPath)
+                                local fileSizeMB = fileInfo.size / (1024 * 1024)
+                                print(string.format("钉钉截图已保存到: %s (大小: %.2f MB)", finalPath, fileSizeMB))
+                                
                                 -- 恢复到原来的空间
                                 hs.spaces.gotoSpace(currentSpace)
-                                return filePath
+                                return finalPath
                             end
                         end
                     end
