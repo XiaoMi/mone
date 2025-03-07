@@ -37,7 +37,7 @@ public class IdeaService {
     }
 
     public String gitPush(String code) {
-        String prompt = "请对以下代码生成git提交的commit信息(你的commit信息放到<commit></commit>中)：\n\n" + code;
+        String prompt = "请对以下代码生成git提交的commit信息,尽量简短,尽量一句话(你的commit信息放到<commit></commit>中)：\n\n" + code;
         return llm.chat(List.of(new AiMessage("user", prompt)));
     }
 

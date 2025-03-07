@@ -964,7 +964,6 @@ public final class McpSchema {
 		@JsonProperty("text") String text) implements Content { // @formatter:on
 
         public TextContent {
-            type = "text";
         }
 
         public String type() {
