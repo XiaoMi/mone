@@ -28,10 +28,13 @@ public class IdeaService {
     }
 
     public Flux<String> createComment(String code) {
-        String prompt = "请对以下代码生成注释(尽量一句话,你的comment放到<comment></comment>中)：\n\n" + code;
+        String prompt = "请对以下代码生成注释,如果代码包含类,则生成类注释,如果只有方法则生成方法注释(只需要生成类注释或者方法注释),你只需要返回注释即可(尽量一句话,你的comment放到<comment></comment>中)：\n\n" + code;
         return Flux.create(sink -> {
             llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
                 sink.next(content);
+                if ("[DONE]".equals(content.trim())) {
+                    sink.complete();
+                }
             });
         });
     }
