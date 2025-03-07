@@ -191,12 +191,14 @@ class IdeaFunctionTest {
     void testMethodRename() {
         // Prepare test data
         Map<String, Object> arguments = new HashMap<>();
-        arguments.put("code", code);
+        arguments.put("code", "int aa(int a,int b) {return a+b;}");
+        arguments.put("methodName","aa");
 
         // Call the function
         McpSchema.CallToolResult result = methodRenameFunction.apply(arguments);
 
-        // Assertions
-        assertNotNull(result);
+        McpSchema.TextContent tc = (McpSchema.TextContent) result.content().get(0);
+
+        System.out.println(tc.text());
     }
 }
