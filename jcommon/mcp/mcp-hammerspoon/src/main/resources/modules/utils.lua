@@ -68,8 +68,8 @@ function M.openApp(appNameOrBundleID, isBundleID)
     local originalName = appNameOrBundleID
     
     -- 检查是否是中文名称，如果是，转换为英文名称
-    if not isBundleID and chineseAppNameMap[appNameOrBundleID] then
-        appNameOrBundleID = chineseAppNameMap[appNameOrBundleID]
+    if not isBundleID and M.chineseAppNameMap[appNameOrBundleID] then
+        appNameOrBundleID = M.chineseAppNameMap[appNameOrBundleID]
         print("转换应用名: " .. originalName .. " -> " .. appNameOrBundleID)
     end
     
@@ -236,6 +236,78 @@ end
 -- @return Boolean true if successful, false otherwise
 function M.openAppByBundleID(bundleID)
     return M.openApp(bundleID, true)
+end
+
+-- Maximize the window of an application without changing focus
+-- If app is not running, it will be launched and then maximized
+-- @param appNameOrBundleID String name or bundle ID of the application
+-- @param isBundleID Boolean (optional) if true, the first parameter is treated as bundle ID
+-- @param launchIfNotRunning Boolean (optional) if true, will launch the app if not running (default: true)
+-- @return Boolean true if successful, false otherwise
+function M.maximizeAppWindow(appNameOrBundleID, isBundleID, launchIfNotRunning)
+    local originalName = appNameOrBundleID
+    
+    -- Default to launching if not specified
+    if launchIfNotRunning == nil then
+        launchIfNotRunning = true
+    end
+    
+    -- 检查是否是中文名称，如果是，转换为英文名称
+    if not isBundleID and M.chineseAppNameMap[appNameOrBundleID] then
+        appNameOrBundleID = M.chineseAppNameMap[appNameOrBundleID]
+        print("转换应用名: " .. originalName .. " -> " .. appNameOrBundleID)
+    end
+    
+    -- Remember the currently focused app
+    local currentApp = hs.application.frontmostApplication()
+    
+    -- Get the application object
+    local app
+    if isBundleID then
+        app = hs.application.get(appNameOrBundleID)
+    else
+        app = hs.application.get(appNameOrBundleID)
+    end
+    
+    -- If app is not running and we're allowed to launch it
+    if not app and launchIfNotRunning then
+        print("Application '" .. originalName .. "' is not running. Attempting to launch...")
+        local success = M.openApp(appNameOrBundleID, isBundleID)
+        if not success then
+            print("Failed to open application '" .. originalName .. "' for maximizing")
+            return false
+        end
+        
+        -- Get the application object again after launching
+        if isBundleID then
+            app = hs.application.get(appNameOrBundleID)
+        else
+            app = hs.application.get(appNameOrBundleID)
+        end
+    end
+    
+    if not app then
+        print("Could not find application '" .. originalName .. "'")
+        return false
+    end
+    
+    -- Get the main window and maximize it
+    local win = app:mainWindow()
+    if not win then
+        print("No main window found for application '" .. app:name() .. "'")
+        return false
+    end
+    
+    -- Maximize the window
+    win:maximize()
+    print("Maximized window for application '" .. app:name() .. "'")
+    
+    -- Restore the original focus
+    if currentApp then
+        currentApp:activate()
+    end
+    
+    return true
 end
 
 return M

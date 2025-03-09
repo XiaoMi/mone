@@ -1,39 +1,28 @@
 package run.mone.mcp.hammerspoon.function;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.*;
 import run.mone.hive.mcp.spec.McpSchema;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
-import okhttp3.MediaType;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.JsonNode;
-
 /**
  * @author shanwb
- * @date 2025-02-08
+ * @date 2025-03-09
  */
 @Data
 @Slf4j
-public class HammerspoonFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
-    private String name = "hammerspoonOperation";
-    private String desc = "Hammerspoon operations including DingTalk(钉钉)、 messaging and window operations";
+public class TrigerTradeProFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+    private String name = "trigerTradeOperation";
+    private String desc = "triger trade operations including TrigerTrade(老虎国际pro)";
     private static final String HAMMERSPOON_URL = "http://localhost:27123/execute";
-    
+
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
 
@@ -43,16 +32,12 @@ public class HammerspoonFunction implements Function<Map<String, Object>, McpSch
                 "properties": {
                     "command": {
                         "type": "string",
-                        "enum": ["searchDingTalkContact", "searchAndSendDingTalkMessage", "getRecentDingTalkMessages", "captureDingTalkWindow", "openApp", "moveToAppAndClick"],
+                        "enum": ["searchAndOpenStock", "captureAppWindow", "maximizeAppWindow", "moveToAppAndClick"],
                         "description": "The operation type to perform"
                     },
-                    "dingTalkContactName": {
+                    "stockNameOrCode": {
                         "type": "string",
-                        "description": "Contact name for DingTalk(钉钉) operations"
-                    },
-                    "toSendMessage": {
-                        "type": "string",
-                        "description": "Message content to send"
+                        "description": "stock name or stock code"
                     },
                     "appName": {
                         "type": "string",
@@ -71,7 +56,7 @@ public class HammerspoonFunction implements Function<Map<String, Object>, McpSch
             }
             """;
 
-    public HammerspoonFunction() {
+    public TrigerTradeProFunction() {
         this.client = new OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
@@ -87,21 +72,17 @@ public class HammerspoonFunction implements Function<Map<String, Object>, McpSch
             String luaCode;
             
             switch (command) {
-                case "searchAndSendDingTalkMessage":
-                    String dingTalkContactName = (String) args.get("dingTalkContactName");
-                    String toSendMessage = (String) args.get("toSendMessage");
-                    luaCode = String.format("return searchAndSendDingTalkMessage('%s', '%s')",
-                        escapeString(dingTalkContactName), escapeString(toSendMessage));
+                case "searchAndOpenStock":
+                    String stockNameOrCode = (String) args.get("stockNameOrCode");
+                    luaCode = String.format("return searchStock('%s')",
+                        escapeString(stockNameOrCode));
                     break;
                     
-                case "captureDingTalkWindow":
-                    luaCode = "return captureDingTalkWindow()";
+                case "captureAppWindow":
+                    luaCode = String.format("return captureAppWindow('%s')",
+                            escapeString("老虎国际"));
                     break;
-                    
-                case "getRecentDingTalkMessages":
-                    dingTalkContactName = (String) args.get("dingTalkContactName");
-                    luaCode = String.format("return getRecentDingTalkMessages('%s')", escapeString(dingTalkContactName));
-                    break;
+
                 case "openApp":
                     String appName = (String) args.get("appName");
                     luaCode = String.format("return openApp('%s')", escapeString(appName));

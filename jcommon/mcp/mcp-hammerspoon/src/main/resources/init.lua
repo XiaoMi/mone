@@ -5,6 +5,7 @@ local dingtalk = require('modules.dingtalk')
 local window = require('modules.window')
 local mouse = require('modules.mouse')
 local server = require('modules.server')
+local tigertrade = require('modules.trigertrade')  -- 添加老虎证券模块
 
 -- 将模块功能暴露到全局作用域
 _G.searchDingTalkContact = dingtalk.searchDingTalkContact
@@ -24,10 +25,12 @@ _G.clickOnScreenshot = mouse.clickOnScreenshot
 
 _G.showMouseCoordinates = mouse.showMouseCoordinates
 
-
-
 _G.findElementRecursive = utils.findElementRecursive
 _G.openApp = utils.openApp
+_G.maximizeAppWindow = utils.maximizeAppWindow
+
+-- 老虎证券相关功能
+_G.searchStock = tigertrade.searchStock
 
 -- HTTP服务相关
 _G.httpServer = nil
