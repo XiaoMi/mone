@@ -8,6 +8,6 @@ public class Const {
 
     public static final String IP = "127.0.0.1:";
 
-    public static final String VERSION = "0.0.7";
+    public static final String VERSION = "2025-03-09:0.0.1";
 
 }
