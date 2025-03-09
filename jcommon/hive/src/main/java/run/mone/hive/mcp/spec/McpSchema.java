@@ -962,10 +962,12 @@ public final class McpSchema {
 		@JsonProperty("audience") List<Role> audience,
 		@JsonProperty("priority") Double priority,
 		@JsonProperty("type") String type,
-		@JsonProperty("data") String data,
-		@JsonProperty("text") String text) implements Content { // @formatter:on
+		@JsonProperty("text") String text,
+		@JsonProperty("data") String data
+	) implements Content { // @formatter:on
 
         public TextContent {
+            type = "text";
         }
 
         public String type() {
