@@ -26,7 +26,7 @@ public class WriterFunction implements Function<Map<String, Object>, Flux<McpSch
                 "properties": {
                     "operation": {
                         "type": "string",
-                        "enum": ["expandArticle", "summarizeArticle", "writeNewArticle", "polishArticle", "suggestImprovements", "createOutline", "editArticle", "translateText", "generateCreativeIdeas", "createCharacterProfile", "analyzeWritingStyle", "generateSeoContent", "createResearchSummary", "rewriteForAudience", "generateDialogue", "createMetaphorsAndAnalogies"],
+                        "enum": ["expandArticle", "summarizeArticle", "writeNewArticle", "polishArticle", "suggestImprovements", "createOutline", "editArticle", "translateText", "generateCreativeIdeas", "createCharacterProfile", "analyzeWritingStyle", "generateSeoContent", "createResearchSummary", "rewriteForAudience", "generateDialogue", "createMetaphorsAndAnalogies", "tellJoke"],
                         "description": "The writing operation to perform"
                     },
                     "article": {
@@ -92,6 +92,10 @@ public class WriterFunction implements Function<Map<String, Object>, Flux<McpSch
                     "count": {
                         "type": "integer",
                         "description": "Number of metaphors/analogies to generate"
+                    },
+                    "jokeType": {
+                        "type": "string",
+                        "description": "Type of joke to tell (e.g., political, workplace, family-friendly)"
                     }
                 },
                 "required": ["operation"]
@@ -131,6 +135,7 @@ public class WriterFunction implements Function<Map<String, Object>, Flux<McpSch
                     case "createMetaphorsAndAnalogies" -> writerService.createMetaphorsAndAnalogies(
                             (String) arguments.get("concept"), 
                             ((Number) arguments.get("count")).intValue());
+                    case "tellJoke" -> writerService.tellJoke((String) arguments.get("jokeType"));
                     default -> throw new IllegalArgumentException("Unknown operation: " + operation);
                 };
                 return result.map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
@@ -145,7 +150,7 @@ public class WriterFunction implements Function<Map<String, Object>, Flux<McpSch
     }
 
     public String getDesc() {
-        return "Perform various writing operations including expanding, summarizing, writing new articles, polishing, suggesting improvements, creating outlines, editing articles, translating text, generating creative ideas, creating character profiles, analyzing writing styles, generating SEO content, creating research summaries, rewriting for specific audiences, generating dialogues, and creating metaphors and analogies.";
+        return "Perform various writing operations including expanding, summarizing, writing new articles, polishing, suggesting improvements, creating outlines, editing articles, translating text, generating creative ideas, creating character profiles, analyzing writing styles, generating SEO content, creating research summaries, rewriting for specific audiences, generating dialogues, creating metaphors and analogies, and telling jokes.";
     }
 
 
