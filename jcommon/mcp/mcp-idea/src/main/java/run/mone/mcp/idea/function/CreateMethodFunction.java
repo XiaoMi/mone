@@ -29,7 +29,7 @@ public class CreateMethodFunction implements Function<Map<String, Object>, Flux<
     }
 
     public String getDesc() {
-        return "Generate method code based on the provided requirements description.";
+        return "Generate method code based on the provided requirements description.(你不用关心在那个class里添加)";
     }
 
     public String getToolScheme() {
@@ -53,7 +53,8 @@ public class CreateMethodFunction implements Function<Map<String, Object>, Flux<
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         log.info("CreateMethodFunction:{}", arguments);
         try {
-            Flux<String> result = ideaService.createMethod((String) arguments.get("requirements"));
+            String classCode = arguments.get("classCode").toString();
+            Flux<String> result = ideaService.createMethod((String) arguments.get("requirements"),classCode);
             JsonObject type = new JsonObject();
             type.addProperty("type", "createMethod");
             return result.map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));

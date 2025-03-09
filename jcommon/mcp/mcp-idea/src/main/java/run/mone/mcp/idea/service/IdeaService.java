@@ -17,8 +17,8 @@ public class IdeaService {
 
     public Flux<String> reviewCode(String code) {
         String prompt = "请对以下代码进行review，提供改进建议：\n\n" + code;
-        return Flux.create(sink->{
-            llm.chat(List.of(new AiMessage("user", prompt)),(content, jsonResponse) -> {
+        return Flux.create(sink -> {
+            llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
                 sink.next(content);
                 if ("[DONE]".equals(content.trim())) {
                     sink.complete();
@@ -54,15 +54,15 @@ public class IdeaService {
         String endTag = "</" + tag + ">";
         int startIndex = text.indexOf(startTag);
         int endIndex = text.indexOf(endTag);
-        
+
         if (startIndex != -1 && endIndex != -1) {
             return text.substring(startIndex + startTag.length(), endIndex);
         }
         return "";
     }
 
-    public Flux<String> createMethod(String requirements) {
-        String prompt = "请根据以下需求生成一个Java方法的代码实现(只需要返回方法的代码即可)：\n\n" + requirements;
+    public Flux<String> createMethod(String requirements, String classCode) {
+        String prompt = "请根据以下需求生成一个Java方法的代码实现(只需要返回方法的代码即可,不要用markdown包裹,用<code></code>包裹)：\n\n" + "\n\n 当前class:\n" + classCode + "\n\n需求:\n" + requirements;
         return Flux.create(sink -> {
             llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
                 sink.next(content);
