@@ -45,7 +45,7 @@ public class IdeaService {
     }
 
     public String methodRename(String code) {
-        String prompt = "请对以下方法重命名(你只需返回方法名即可,你的方法名放到<methodName></methodName>中)：\n\n" + code;
+        String prompt = "请对以下方法重命名(你只需返回方法名即可,你的方法名放到<methodName></methodName>中 老名字放到<old></old>中)：\n\n" + code;
         return llm.chat(List.of(new AiMessage("user", prompt)));
     }
 

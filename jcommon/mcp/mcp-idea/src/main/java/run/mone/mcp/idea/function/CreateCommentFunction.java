@@ -17,6 +17,10 @@ import lombok.RequiredArgsConstructor;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.idea.service.IdeaService;
 
+
+/**
+ * 生成注释
+ */
 @Component
 @RequiredArgsConstructor
 public class CreateCommentFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
@@ -42,13 +46,9 @@ public class CreateCommentFunction implements Function<Map<String, Object>, Flux
                     "code": {
                         "type": "string",
                         "description": "The source code that needs to be reviewed"
-                    },
-                    "methodName": {
-                        "type": "string",
-                        "description": "The name of the method to be reviewed"
                     }
                 },
-                "required": ["code", "methodName"]
+                "required": ["code"]
             }
             """;
 
@@ -56,13 +56,9 @@ public class CreateCommentFunction implements Function<Map<String, Object>, Flux
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         try {
             String code = (String) arguments.get("code");
-            String methodName = (String) arguments.get("methodName");
-
             JsonObject type = new JsonObject();
             type.addProperty("type", "comment");
-            type.addProperty("methodName", methodName);
             Flux<String> result = ideaService.createComment(code);
-
             return result.map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
         } catch (Exception e) {
             return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true));
