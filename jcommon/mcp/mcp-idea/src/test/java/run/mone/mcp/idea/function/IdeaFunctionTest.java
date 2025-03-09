@@ -1,6 +1,8 @@
 
 package run.mone.mcp.idea.function;
 
+import com.google.gson.JsonParser;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,74 +33,72 @@ class IdeaFunctionTest {
     private IdeaFunctions.IdeaOperationFunction ideaFunction;
 
     private String code = """
-                package francesca.filter;
-                                
-                import com.alibaba.fastjson.JSON;
-                import com.xiaomi.support.francescaapi.api.RecordInvocationApi;
-                import com.xiaomi.support.francescaapi.domain.InvocationInfoReq;
-                import com.xiaomi.youpin.gateway.common.FilterOrder;
-                import com.xiaomi.youpin.gateway.dubbo.Dubbo;
-                import com.xiaomi.youpin.gateway.dubbo.MethodInfo;
-                import com.xiaomi.youpin.gateway.filter.CustomRequestFilter;
-                import com.xiaomi.youpin.gateway.filter.FilterContext;
-                import com.xiaomi.youpin.gateway.filter.Invoker;
-                import com.youpin.xiaomi.tesla.bo.ApiInfo;
-                import io.netty.handler.codec.http.FullHttpRequest;
-                import io.netty.handler.codec.http.FullHttpResponse;
-                import lombok.extern.slf4j.Slf4j;
-                                
-                import java.util.concurrent.Executors;
-                                
-                /**
-                 * @author wangjunjie
-                 */
-                @FilterOrder(1205)
-                @Slf4j
-                public class FrancescaFilter extends CustomRequestFilter {
-                                
-                    @Override
-                    public FullHttpResponse execute(FilterContext context, Invoker invoker, ApiInfo apiInfo, FullHttpRequest request) {
-                        log.info("francescaFilter--context:{}", JSON.toJSONString(context));
-                        log.info("francescaFilter--apiInfo:{}", JSON.toJSONString(apiInfo));
-                        log.info("francescaFilter--request:{}", JSON.toJSONString(request));
-                        InvocationInfoReq req = new InvocationInfoReq();
-                        req.setFilterContext(context);
-                        req.setApiInfo(apiInfo);
-                        try {
-                            FullHttpResponse response = next(context, invoker, apiInfo, request);
-                            log.info("francescaFilter--response:{}", JSON.toJSONString(response));
-                            req.setFullHttpRequest(request);
-                            req.setFullHttpResponse(response);
-                            Executors.newCachedThreadPool().execute(() -> recordInvocation(req));
-                            return response;
-                        } catch (Throwable e) {
-                            log.error("francescaFilter--error:{}", JSON.toJSONString(e));
-                            req.setFullHttpRequest(request);
-                            req.setThrowable(e);
-                            Executors.newCachedThreadPool().execute(() -> recordInvocation(req));
-                            throw e;
-                        }
+            package francesca.filter;
+            
+            import com.alibaba.fastjson.JSON;
+            import com.xiaomi.support.francescaapi.api.RecordInvocationApi;
+            import com.xiaomi.support.francescaapi.domain.InvocationInfoReq;
+            import com.xiaomi.youpin.gateway.common.FilterOrder;
+            import com.xiaomi.youpin.gateway.dubbo.Dubbo;
+            import com.xiaomi.youpin.gateway.dubbo.MethodInfo;
+            import com.xiaomi.youpin.gateway.filter.CustomRequestFilter;
+            import com.xiaomi.youpin.gateway.filter.FilterContext;
+            import com.xiaomi.youpin.gateway.filter.Invoker;
+            import com.youpin.xiaomi.tesla.bo.ApiInfo;
+            import io.netty.handler.codec.http.FullHttpRequest;
+            import io.netty.handler.codec.http.FullHttpResponse;
+            import lombok.extern.slf4j.Slf4j;
+            
+            import java.util.concurrent.Executors;
+            
+            /**
+             * @author wangjunjie
+             */
+            @FilterOrder(1205)
+            @Slf4j
+            public class FrancescaFilter extends CustomRequestFilter {
+            
+                @Override
+                public FullHttpResponse execute(FilterContext context, Invoker invoker, ApiInfo apiInfo, FullHttpRequest request) {
+                    log.info("francescaFilter--context:{}", JSON.toJSONString(context));
+                    log.info("francescaFilter--apiInfo:{}", JSON.toJSONString(apiInfo));
+                    log.info("francescaFilter--request:{}", JSON.toJSONString(request));
+                    InvocationInfoReq req = new InvocationInfoReq();
+                    req.setFilterContext(context);
+                    req.setApiInfo(apiInfo);
+                    try {
+                        FullHttpResponse response = next(context, invoker, apiInfo, request);
+                        log.info("francescaFilter--response:{}", JSON.toJSONString(response));
+                        req.setFullHttpRequest(request);
+                        req.setFullHttpResponse(response);
+                        Executors.newCachedThreadPool().execute(() -> recordInvocation(req));
+                        return response;
+                    } catch (Throwable e) {
+                        log.error("francescaFilter--error:{}", JSON.toJSONString(e));
+                        req.setFullHttpRequest(request);
+                        req.setThrowable(e);
+                        Executors.newCachedThreadPool().execute(() -> recordInvocation(req));
+                        throw e;
                     }
-                                
-                    /**
-                     * 记录调用信息
-                     */
-                    private void recordInvocation(InvocationInfoReq req) {
-                        Dubbo dubbo = this.getBean(Dubbo.class);
-                        MethodInfo methodInfo = new MethodInfo();
-                        methodInfo.setServiceName(RecordInvocationApi.class.getName());
-                        methodInfo.setMethodName("recordInvocation");
-                        methodInfo.setGroup("staging");
-                        methodInfo.setParameterTypes(new String[]{InvocationInfoReq.class.getName()});
-                        methodInfo.setArgs(new Object[]{req});
-                        try {
-                            dubbo.call(methodInfo);
-                        } catch (Exception e) {
-                            log.error("francescaFilter--send error:{}", JSON.toJSONString(e));
-                        }
+                }
+            
+            
+                private void recordInvocation(InvocationInfoReq req) {
+                    Dubbo dubbo = this.getBean(Dubbo.class);
+                    MethodInfo methodInfo = new MethodInfo();
+                    methodInfo.setServiceName(RecordInvocationApi.class.getName());
+                    methodInfo.setMethodName("recordInvocation");
+                    methodInfo.setGroup("staging");
+                    methodInfo.setParameterTypes(new String[]{InvocationInfoReq.class.getName()});
+                    methodInfo.setArgs(new Object[]{req});
+                    try {
+                        dubbo.call(methodInfo);
+                    } catch (Exception e) {
+                        log.error("francescaFilter--send error:{}", JSON.toJSONString(e));
                     }
-                }                                               
-                """;
+                }
+            }                                               
+            """;
 
     @BeforeEach
     void setUp() {
@@ -121,11 +121,12 @@ class IdeaFunctionTest {
     }
 
     @Test
-    void  testGetClassName() {
+    void testGetClassName() {
         String content = ideaFunction.getCurrentEditorClassName("zxw_test2");
         System.out.println(content);
     }
 
+    @SneakyThrows
     @Test
     void testCodeReview() {
         // Prepare test data
@@ -133,8 +134,20 @@ class IdeaFunctionTest {
         arguments.put("code", code);
         // Call the function
         Flux<McpSchema.CallToolResult> result = codeReviewFunction.apply(arguments);
+        StringBuilder sb = new StringBuilder();
+        result.subscribe(it -> {
+            McpSchema.TextContent tc = (McpSchema.TextContent) it.content().get(0);
+            System.out.println(tc.text());
+            sb.append(tc.text());
+        }, error -> {
+        }, () -> {
+            System.out.println("\n\n");
+            System.out.println(sb);
+        });
+        System.in.read();
     }
 
+    @SneakyThrows
     @Test
     void testCreateComment() {
         // Prepare test data
@@ -143,34 +156,49 @@ class IdeaFunctionTest {
 
         // Call the function
         Flux<McpSchema.CallToolResult> result = createCommentFunction.apply(arguments);
-
-        // Assertions
-        assertNotNull(result);
+        StringBuilder sb = new StringBuilder();
+        result.subscribe(it -> {
+            McpSchema.TextContent tc = (McpSchema.TextContent) it.content().get(0);
+            System.out.println(tc.text());
+            sb.append(tc.text());
+        }, error -> {
+        }, () -> {
+            System.out.println("\n=======\n\n" + sb);
+        });
+        System.in.read();
     }
 
     @Test
     void testGitPush() {
+
+        McpSchema.TextContent tt = new McpSchema.TextContent("a", "b");
+        System.out.println(tt.type());
+
         // Prepare test data
         Map<String, Object> arguments = new HashMap<>();
         arguments.put("code", code);
 
         // Call the function
         McpSchema.CallToolResult result = gitPushFunction.apply(arguments);
+        McpSchema.TextContent tc = (McpSchema.TextContent) result.content().get(0);
+        System.out.println(tc.text());
 
-        // Assertions
-        assertNotNull(result);
+        String commit = JsonParser.parseString(tc.type()).getAsJsonObject().get("commit").getAsString();
+        System.out.println(commit);
     }
 
     @Test
     void testMethodRename() {
         // Prepare test data
         Map<String, Object> arguments = new HashMap<>();
-        arguments.put("code", code);
+        arguments.put("code", "int aa(int a,int b) {return a+b;}");
+        arguments.put("methodName","aa");
 
         // Call the function
         McpSchema.CallToolResult result = methodRenameFunction.apply(arguments);
 
-        // Assertions
-        assertNotNull(result);
+        McpSchema.TextContent tc = (McpSchema.TextContent) result.content().get(0);
+
+        System.out.println(tc.text());
     }
 }

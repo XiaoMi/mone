@@ -16,6 +16,7 @@ public class ConversationContext {
     private final List<ChatMessage> messages;
     private final LocalDateTime createTime;
     private Object additionalData; // 可以存储任何额外的上下文数据
+    private String userQuery;
 
 
     public ConversationContext() {
@@ -46,4 +47,11 @@ public class ConversationContext {
         return additionalData;
     }
 
+    public String getUserQuery() {
+        return userQuery;
+    }
+
+    public void setUserQuery(String userQuery) {
+        this.userQuery = userQuery;
+    }
 }

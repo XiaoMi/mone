@@ -44,7 +44,7 @@ function M.captureAppWindow(appName, options)
     options = options or {}
     local filePrefix = options.filePrefix or appName:lower():gsub("%s+", "_")
     local imageFormat = options.imageFormat or "jpg" 
-    local imageQuality = options.imageQuality or 30  -- JPEG quality (only applies to jpg format)
+    local imageQuality = options.imageQuality or 100  -- JPEG quality (only applies to jpg format)
     
     -- Save current space to restore later
     local currentSpace = hs.spaces.focusedSpace()

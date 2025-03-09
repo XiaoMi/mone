@@ -19,6 +19,8 @@ public class LLMConfig {
 
     private String url;
 
+    private String streamUrl;
+
     private boolean webSearch;
 
     @Builder.Default
