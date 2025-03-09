@@ -65,9 +65,16 @@ public class IdeaService {
         String prompt = """
                 请根据以下需求生成一个Java方法的代码实现
                 你必须遵守的:
-                1.你只需要返回你生成的方法即可
+                1.你只需要生成方法
                 2.不要用markdown包裹
                 3.代码用<code></code>包裹
+                
+                example:
+                <code>
+                public int sum(int a,int b) {
+                    return a+b;
+                }
+                </code>
                 
                 当前class:
                 %s 
