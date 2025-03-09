@@ -3,7 +3,7 @@ package run.mone.mcp.hammerspoon;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.mcp.hammerspoon.function.HammerspoonFunction;
+import run.mone.mcp.hammerspoon.function.DingTalkFunction;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -15,13 +15,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  * @author shanwb
  * @date 2025-02-08
  */
-public class HammerspoonFunctionTest {
+public class DingTalkFunctionTest {
 
-   private HammerspoonFunction hammerspoonFunction;
+   private DingTalkFunction dingTalkFunction;
 
     @BeforeEach
     void setUp() {
-        hammerspoonFunction = new HammerspoonFunction();
+        dingTalkFunction = new DingTalkFunction();
     }
 
     @Test
@@ -32,7 +32,7 @@ public class HammerspoonFunctionTest {
         args.put("contactName", "用户AAA");
         args.put("message", "哈哈哈");
 
-        McpSchema.CallToolResult result = hammerspoonFunction.apply(args);
+        McpSchema.CallToolResult result = dingTalkFunction.apply(args);
         System.out.println(result);
         //assertFalse(result.isError());
     }
@@ -44,7 +44,7 @@ public class HammerspoonFunctionTest {
         args.put("command", "dingTalkCaptureWindow");
         //args.put("command", "captureActiveWindow");
 
-        McpSchema.CallToolResult result = hammerspoonFunction.apply(args);
+        McpSchema.CallToolResult result = dingTalkFunction.apply(args);
         System.out.println(result);
         assertFalse(result.isError());
     }
