@@ -61,4 +61,16 @@ public class IdeaService {
         return "";
     }
 
+    public Flux<String> createMethod(String requirements) {
+        String prompt = "请根据以下需求生成一个Java方法的代码实现(只需要返回方法的代码即可)：\n\n" + requirements;
+        return Flux.create(sink -> {
+            llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
+                sink.next(content);
+                if ("[DONE]".equals(content.trim())) {
+                    sink.complete();
+                }
+            });
+        });
+    }
+
 }
