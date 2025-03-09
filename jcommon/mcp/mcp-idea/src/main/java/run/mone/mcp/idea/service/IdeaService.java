@@ -62,9 +62,20 @@ public class IdeaService {
     }
 
     public Flux<String> createMethod(String requirements, String classCode) {
-        String prompt = "请根据以下需求生成一个Java方法的代码实现(只需要返回方法的代码即可,不要用markdown包裹,用<code></code>包裹)：\n\n" + "\n\n 当前class:\n" + classCode + "\n\n需求:\n" + requirements;
+        String prompt = """
+                请根据以下需求生成一个Java方法的代码实现
+                你必须遵守的:
+                1.你只需要返回你生成的方法即可
+                2.不要用markdown包裹
+                3.代码用<code></code>包裹
+                
+                当前class:
+                %s 
+                
+                需求:
+                """ + requirements;
         return Flux.create(sink -> {
-            llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
+            llm.chat(List.of(new AiMessage("user", prompt.formatted(classCode))), (content, jsonResponse) -> {
                 sink.next(content);
                 if ("[DONE]".equals(content.trim())) {
                     sink.complete();
