@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import lombok.Data;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.m78.client.util.GsonUtils;
 import run.mone.mcp.idea.composer.config.Const;
@@ -13,7 +12,6 @@ import run.mone.mcp.idea.composer.handler.biz.BotChainCallContext;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 @Data
@@ -81,35 +79,33 @@ public class ComposerFunction implements Function<Map<String, Object>, Flux<McpS
 
     @Override
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
-        return Flux.defer(() -> {
-            try {
-                JsonObject req = new JsonObject();
-                req.addProperty("from", "idea_mcp");
-                req.addProperty("requirement", (String) arguments.get("requirement"));
-                req.addProperty("projectName", (String) arguments.get("projectName"));
-                req.add("fileLists", new Gson().toJsonTree(arguments.get("fileLists")));
-                req.addProperty("folder", (String) arguments.get("folder"));
-                req.addProperty("codebase", (Boolean) arguments.get("codebase"));
-                req.addProperty("analyze", (Boolean) arguments.get("analyze"));
-                req.addProperty("bizJar", (Boolean) arguments.get("bizJar"));
-                req.addProperty("bugfix", (Boolean) arguments.get("bugfix"));
-                req.addProperty("knowledgeBase", (Boolean) arguments.get("knowledgeBase"));
-                req.addProperty("imageType", (String) arguments.get("imageType"));
-                req.addProperty("athenaPluginHost", Const.IP + ideaPort);
+        try {
+            JsonObject req = new JsonObject();
+            req.addProperty("from", "idea_mcp");
+            req.addProperty("requirement", (String) arguments.get("requirement"));
+            req.addProperty("projectName", (String) arguments.get("projectName"));
+            req.add("fileLists", new Gson().toJsonTree(arguments.get("fileLists")));
+            req.addProperty("folder", (String) arguments.get("folder"));
+            req.addProperty("codebase", (Boolean) arguments.get("codebase"));
+            req.addProperty("analyze", (Boolean) arguments.get("analyze"));
+            req.addProperty("bizJar", (Boolean) arguments.get("bizJar"));
+            req.addProperty("bugfix", (Boolean) arguments.get("bugfix"));
+            req.addProperty("knowledgeBase", (Boolean) arguments.get("knowledgeBase"));
+            req.addProperty("imageType", (String) arguments.get("imageType"));
+            req.addProperty("athenaPluginHost", Const.IP + ideaPort);
 
+            return Flux.<String>create(fluxSink -> {
                 BotChainCall call = new BotChainCall();
-                return Flux.<String>create(emitter -> {
-                    BotChainCallContext context = BotChainCallContext.of("", emitter);
-                    completeBotContext(context, req);
-                    call.executeProjectBotChain(context, req);
-                }).map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
-            }catch (Exception e){
-                return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true));
-            }
-        });
+                BotChainCallContext context = BotChainCallContext.of("", fluxSink);
+                completeBotContext(context, req);
+                call.executeProjectBotChain(context, req);
+            }).map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
+        } catch (Exception e) {
+            return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true));
+        }
     }
 
-    private void completeBotContext(BotChainCallContext context, JsonObject req){
+    private void completeBotContext(BotChainCallContext context, JsonObject req) {
         boolean bizJar = GsonUtils.get(req, "bizJar", false);
         boolean bugfix = GsonUtils.get(req, "bugfix", false);
         boolean knowledgeBase = GsonUtils.get(req, "knowledgeBase", false);

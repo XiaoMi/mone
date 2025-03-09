@@ -5,7 +5,6 @@ import com.google.gson.JsonObject;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
@@ -32,8 +31,7 @@ public class BotClient {
     private StringBuffer sb = new StringBuffer();
 
     public BotClient(FluxSink<String> fluxSink) {
-        String url = System.getenv("GOOGLE_AI_GATEWAY");
-        llm = new LLM(LLMConfig.builder().url(url).llmProvider(LLMProvider.GOOGLE_2).build());
+        llm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build());
         this.fluxSink = fluxSink;
     }
 
@@ -50,7 +48,9 @@ public class BotClient {
         }
         countDownLatch.await(3, TimeUnit.MINUTES);
         //返回整个调用的结果
-        return sb.toString();
+        String result = sb.toString();
+        sb = new StringBuffer();
+        return result;
     }
 
     private void callLLM(List<AiMessage> messages, String systemPrompt, CountDownLatch countDownLatch){
@@ -61,8 +61,12 @@ public class BotClient {
             fluxSink.next(content);
             if ("[DONE]".equals(content.trim())) {
                 fluxSink.complete();
-            }else if ("failure".equals(jsonResponse.get("type").getAsString()) || "finish".equals(jsonResponse.get("type").getAsString())) {
+            }
+            if ("failure".equals(jsonResponse.get("type").getAsString()) || "finish".equals(jsonResponse.get("type").getAsString())) {
                 countDownLatch.countDown();
+            }
+            if("event".equals(jsonResponse.get("type").getAsString())){
+                sb.append(content);
             }
         }, systemPrompt);
     }
