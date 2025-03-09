@@ -132,13 +132,14 @@ public final class McpSchema {
 
     /**
      * Deserializes a JSON string into a JSONRPCMessage object.
+     *
      * @param objectMapper The ObjectMapper instance to use for deserialization
-     * @param jsonText The JSON string to deserialize
+     * @param jsonText     The JSON string to deserialize
      * @return A JSONRPCMessage instance using either the {@link JSONRPCRequest},
      * {@link JSONRPCNotification}, or {@link JSONRPCResponse} classes.
-     * @throws IOException If there's an error during deserialization
+     * @throws IOException              If there's an error during deserialization
      * @throws IllegalArgumentException If the JSON structure doesn't match any known
-     * message type
+     *                                  message type
      */
     public static JSONRPCMessage deserializeJsonRpcMessage(ObjectMapper objectMapper, String jsonText)
             throws IOException {
@@ -961,6 +962,7 @@ public final class McpSchema {
 		@JsonProperty("audience") List<Role> audience,
 		@JsonProperty("priority") Double priority,
 		@JsonProperty("type") String type,
+		@JsonProperty("data") String data,
 		@JsonProperty("text") String text) implements Content { // @formatter:on
 
         public TextContent {
@@ -971,11 +973,15 @@ public final class McpSchema {
         }
 
         public TextContent(String content) {
-            this(null, null, "text", content);
+            this(null, null, "text", content, "");
         }
 
         public TextContent(String type, String content) {
-            this(null, null, type, content);
+            this(null, null, type, content, "");
+        }
+
+        public TextContent(String type, String content, String data) {
+            this(null, null, type, content, data);
         }
     }
 

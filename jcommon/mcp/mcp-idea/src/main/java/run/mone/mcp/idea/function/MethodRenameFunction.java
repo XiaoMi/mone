@@ -59,7 +59,7 @@ public class MethodRenameFunction implements Function<Map<String, Object>, McpSc
 
             log.info("type:{}", type);
 
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(type.toString(), result)), false);
+            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("text", result, type.toString())), false);
         } catch (Exception e) {
             return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true);
         }
