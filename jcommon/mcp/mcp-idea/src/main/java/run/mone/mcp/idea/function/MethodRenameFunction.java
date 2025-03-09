@@ -52,14 +52,14 @@ public class MethodRenameFunction implements Function<Map<String, Object>, McpSc
             String newName = ideaService.extractContent(result, "methodName");
             String name = ideaService.extractContent(result, "old");
 
-            JsonObject type = new JsonObject();
-            type.addProperty("type", "rename");
-            type.addProperty("methodName", name);
-            type.addProperty("newName", newName);
+            JsonObject data = new JsonObject();
+            data.addProperty("type", "rename");
+            data.addProperty("methodName", name);
+            data.addProperty("newName", newName);
 
-            log.info("type:{}", type);
+            log.info("data:{}", data);
 
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("text", result, type.toString())), false);
+            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result, data.toString())), false);
         } catch (Exception e) {
             return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true);
         }

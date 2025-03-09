@@ -975,15 +975,12 @@ public final class McpSchema {
         }
 
         public TextContent(String content) {
-            this(null, null, "text", content, "");
+            this(null, null, null, content, "");
         }
 
-        public TextContent(String type, String content) {
-            this(null, null, type, content, "");
-        }
 
-        public TextContent(String type, String content, String data) {
-            this(null, null, type, content, data);
+        public TextContent(String content, String data) {
+            this(null, null, null, content, data);
         }
     }
 
