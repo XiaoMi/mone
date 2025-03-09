@@ -31,6 +31,9 @@ _G.maximizeAppWindow = utils.maximizeAppWindow
 
 -- 老虎证券相关功能
 _G.searchStock = tigertrade.searchStock
+_G.clickOptionsChain = tigertrade.clickOptionsChain
+_G.sellPutOption = tigertrade.sellPutOption
+
 
 -- HTTP服务相关
 _G.httpServer = nil
