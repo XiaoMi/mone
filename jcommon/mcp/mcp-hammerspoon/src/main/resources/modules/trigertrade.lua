@@ -71,7 +71,7 @@ end
 -- @return Boolean 是否成功
 function M.clickOptionsChain()
     local mouse = require('modules.mouse')
-    
+
     -- 1. 打开老虎证券应用
     print("正在打开老虎证券应用...")
     local tigerApp = hs.application.get(TIGER_APP_NAME)
@@ -83,7 +83,7 @@ function M.clickOptionsChain()
             print("无法启动老虎证券")
             return false
         end
-        
+
         -- 等待应用启动
         hs.timer.usleep(2000000) -- 2秒
         tigerApp = hs.application.get(TIGER_APP_NAME)
@@ -92,7 +92,7 @@ function M.clickOptionsChain()
             return false
         end
     end
-    
+
     -- 2. 最大化窗口
     print("正在最大化老虎证券窗口...")
     local win = tigerApp:mainWindow()
@@ -101,18 +101,18 @@ function M.clickOptionsChain()
         return false
     end
     win:maximize()
-    
+
     -- 3. 激活应用窗口
     print("正在激活老虎证券应用...")
     tigerApp:activate()
     print("老虎证券应用激活完成")
     -- 等待窗口激活
     hs.timer.usleep(500000) -- 500ms
-    
+
     -- 4. 点击期权链按钮 (坐标: 280, 95)
     print("正在点击期权链按钮...")
     local success = mouse.moveToAppAndClick(TIGER_APP_NAME, 280, 95)
-    
+
     if success then
         print("成功点击期权链按钮")
         return true
@@ -128,7 +128,7 @@ end
 function M.sellPutOption(quantity)
     quantity = quantity or "1"  -- 默认卖出一手
     local mouse = require('modules.mouse')
-    
+
     -- 1. 打开老虎证券应用
     print("正在打开老虎证券应用...")
     local tigerApp = hs.application.get(TIGER_APP_NAME)
@@ -140,7 +140,7 @@ function M.sellPutOption(quantity)
             print("无法启动老虎证券")
             return false
         end
-        
+
         -- 等待应用启动
         hs.timer.usleep(2000000) -- 2秒
         tigerApp = hs.application.get(TIGER_APP_NAME)
@@ -149,7 +149,7 @@ function M.sellPutOption(quantity)
             return false
         end
     end
-    
+
     -- 2. 最大化窗口
     print("正在最大化老虎证券窗口...")
     local win = tigerApp:mainWindow()
@@ -158,14 +158,14 @@ function M.sellPutOption(quantity)
         return false
     end
     win:maximize()
-    
+
     -- 3. 激活应用窗口
     print("正在激活老虎证券应用...")
     tigerApp:activate()
-    
+
     -- 等待窗口激活
     hs.timer.usleep(500000) -- 500ms
-    
+
     -- 4. 点击目标PUT期权 (坐标: 160, 320)
     print("正在选择目标PUT期权...")
     local success = mouse.moveToAppAndClick(TIGER_APP_NAME, 160, 320)
@@ -173,10 +173,10 @@ function M.sellPutOption(quantity)
         print("选择PUT期权失败")
         return false
     end
-    
+
     -- 等待选择生效
     hs.timer.usleep(1000000) -- 1秒
-    
+
     -- 5. 点击数量输入框 (坐标: 1500, 765)
     print("正在点击数量输入框...")
     success = mouse.moveToAppAndClick(TIGER_APP_NAME, 1500, 765)
@@ -184,27 +184,27 @@ function M.sellPutOption(quantity)
         print("点击数量输入框失败")
         return false
     end
-    
+
     -- 等待输入框激活
     hs.timer.usleep(500000) -- 500ms
-    
+
     -- 6. 清空输入框并输入数量
     print("正在清空输入框...")
     -- 全选当前内容 (Cmd+A)
     hs.eventtap.keyStroke({"cmd"}, "a")
     hs.timer.usleep(200000) -- 200ms
-    
+
     -- 删除选中内容
     hs.eventtap.keyStroke({}, "delete")
     hs.timer.usleep(200000) -- 200ms
-    
+
     -- 输入新数量
     print("正在输入卖出数量: " .. quantity)
     hs.eventtap.keyStrokes(quantity)
-    
+
     -- 等待输入完成
     hs.timer.usleep(500000) -- 500ms
-    
+
     -- 7. 点击卖出按钮 (坐标: 1550, 958)
     print("正在点击卖出按钮...")
     success = mouse.moveToAppAndClick(TIGER_APP_NAME, 1550, 958)
@@ -212,7 +212,7 @@ function M.sellPutOption(quantity)
         print("点击卖出按钮失败")
         return false
     end
-    
+
     print("成功执行卖出PUT期权操作")
     return true
 end
