@@ -120,7 +120,7 @@ class LLMTest {
         config.setDebug(false);
         config.setJson(false);
 //        config.setLlmProvider(LLMProvider.DOUBAO);
-        config.setLlmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3);
+//        config.setLlmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3);
 //        config.setLlmProvider(LLMProvider.GOOGLE);
         //使用代理的
 //        config.setLlmProvider(LLMProvider.GOOGLE_2);
@@ -130,7 +130,7 @@ class LLMTest {
 //        config.setModel("qwen/qwen-max");
 //        config.setModel("deepseek/deepseek-r1:nitro");
 
-//        config.setLlmProvider(LLMProvider.DEEPSEEK);
+        config.setLlmProvider(LLMProvider.DEEPSEEK);
 //        config.setModel("deepseek-reasoner");
 //        config.setLlmProvider(LLMProvider.QWEN);
 //        config.setModel("deepseek-v3");
@@ -170,7 +170,7 @@ class LLMTest {
     @Test
     public void test99() {
         String prompt = """
-                1+2=?
+                hi 
                 """;
 
         String res = llm.chat(prompt);
