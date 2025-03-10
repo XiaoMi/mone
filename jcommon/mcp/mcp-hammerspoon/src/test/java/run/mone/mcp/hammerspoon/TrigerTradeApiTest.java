@@ -31,7 +31,6 @@ public class TrigerTradeApiTest {
 
     static {
         //从开发者信息页面导出的配置文件tiger_openapi_config.properties、tiger_openapi_token.properties存放路径
-        clientConfig.configFilePath = "/Users/shanwenbang/Downloads/tiger/";
         // clientConfig.secretKey = "xxxxxx"; // 机构账号交易员必填字段 secret key
         client = TigerHttpClient.getInstance().clientConfig(clientConfig);
     }

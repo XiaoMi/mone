@@ -21,6 +21,7 @@ public enum LLMProvider {
     OPENAICOMPATIBLE("", "", "", null),
     DOUBAO("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_MODEL_KEY"),
     DOUBAO_DEEPSEEK_R1("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_DEEPSEEK_R1_MODEL_KEY"),
+    DOUBAO_DEEPSEEK_V3("https://ark.cn-beijing.volces.com/api/v3/chat/completions", "DOUBAO_API_KEY", null, "DOUBAO_DEEPSEEK_V3_MODEL_KEY"),
     ;
 
     private final String url;
