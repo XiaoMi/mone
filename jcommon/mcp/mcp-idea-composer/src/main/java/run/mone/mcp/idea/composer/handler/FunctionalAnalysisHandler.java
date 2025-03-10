@@ -43,10 +43,9 @@ public class FunctionalAnalysisHandler extends AbstractBotHandler {
     }
 
     public String getAnalysisResponse(String prompt, PromptResult previousResult, ConversationContext context) {
-        //默认的botId:130462
         String enhancedPrompt = buildAnalysisPrompt(prompt, previousResult, context);
         addAiChatMessage(getDisplayPrompt(prompt, previousResult), enhancedPrompt, Role.user, context);
-        String response = botChainCallContext.getBotClient().sendPrompt(enhancedPrompt, Prompt.FUNCTION_ANALYSIS_SYSTEM_PROMPT, buildComposerImagePo());
+        String response = botChainCallContext.getBotClient().sendPrompt(enhancedPrompt, Prompt.FUNCTION_ANALYSIS_SYSTEM_PROMPT, buildComposerImagePo(), false);
         return response;
     }
 

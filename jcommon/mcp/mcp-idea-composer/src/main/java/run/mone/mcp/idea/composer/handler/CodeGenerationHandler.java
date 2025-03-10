@@ -39,7 +39,7 @@ public class CodeGenerationHandler extends AbstractBotHandler {
         String enhancedPrompt = buildCodePrompt(prompt, previousResult, context);
         String displayPrompt = getDisplayPrompt(prompt);
         addAiChatMessage(displayPrompt, enhancedPrompt, Role.user, context);
-        String response = botChainCallContext.getBotClient().sendPrompt(enhancedPrompt, Prompt.CODE_GENERATE_SYSTEM_PROMPT, buildComposerImagePo());
+        String response = botChainCallContext.getBotClient().sendPrompt(enhancedPrompt, Prompt.CODE_GENERATE_SYSTEM_PROMPT, buildComposerImagePo(), true);
         return response;
     }
 
