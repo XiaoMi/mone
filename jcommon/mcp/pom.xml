@@ -16,6 +16,7 @@
         <module>mcp-mysql</module>
         <module>mcp-mongo</module>
         <module>mcp-redis</module>
+        <module>mcp-moon</module>
         <module>mcp-shell</module>
         <module>mcp-docker</module>
         <module>mcp-neo4j</module>
@@ -189,7 +190,6 @@
             <artifactId>spring-boot-starter-websocket</artifactId>
             <version>3.4.1</version>
         </dependency>
-
     </dependencies>
 
 </project>
