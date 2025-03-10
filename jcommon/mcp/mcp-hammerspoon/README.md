@@ -15,7 +15,6 @@
   ]
   }
 
-
 ## TrigerTradeProFunction使用说明
 ### 前置操作
 - 左侧窗口最小化

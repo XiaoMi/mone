@@ -29,9 +29,12 @@ public class ProjectReportHandler extends AbstractBotHandler {
     public String generateProjectReport(ConversationContext context, JsonObject json) {
         String displayPrompt = getDisplayPrompt();
         addAiChatMessage(displayPrompt, displayPrompt, Role.user, context);
-        String res = ComposerService.getProjectReport(json);
-        addAiChatMessage(getResDisplayPrompt(), res, Role.assistant, context);
-        return res;
+        JsonObject res = ComposerService.getProjectReportAndUserQuery(json);
+        String report = res.get("report").getAsString();
+        String userQuery = res.get("inputText").getAsString();
+        context.setUserQuery(userQuery);
+        addAiChatMessage(getResDisplayPrompt(), report, Role.assistant, context);
+        return report;
     }
 
     public String getDisplayPrompt() {

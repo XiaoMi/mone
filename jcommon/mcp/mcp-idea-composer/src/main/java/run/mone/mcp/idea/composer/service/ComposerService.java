@@ -25,10 +25,10 @@ public class ComposerService {
     private static final String IDEA_PORT = System.getenv("IDEA_PORT");
 
     @SneakyThrows
-    public static String getProjectReport(JsonObject jsonObject) {
+    public static JsonObject getProjectReportAndUserQuery(JsonObject jsonObject) {
         jsonObject.addProperty("cmd", "getProjectReport");
         JsonObject post = new HttpClient().post("http://" + Const.IP + IDEA_PORT + "/tianye", jsonObject);
-        return post.get("content").getAsString();
+        return post.get("content").getAsJsonObject();
     }
 
     @SneakyThrows
