@@ -36,15 +36,15 @@ public class BotClient {
     }
 
     @SneakyThrows
-    public String sendPrompt(String userPrompt, String systemPrompt, ComposerImagePo image) {
+    public String sendPrompt(String userPrompt, String systemPrompt, ComposerImagePo image, boolean isComplete) {
         CountDownLatch countDownLatch = new CountDownLatch(1);
         if (image == null) {
-            callLLM(List.of(new run.mone.hive.schema.AiMessage("user", userPrompt)), systemPrompt, countDownLatch);
+            callLLM(List.of(new run.mone.hive.schema.AiMessage("user", userPrompt)), systemPrompt, countDownLatch, isComplete);
         } else {
             JsonObject req = getReq(userPrompt, image.getImageBase64());
             List<AiMessage> messages = new ArrayList<>();
             messages.add(AiMessage.builder().jsonContent(req).build());
-            callLLM(messages, systemPrompt, countDownLatch);
+            callLLM(messages, systemPrompt, countDownLatch, isComplete);
         }
         countDownLatch.await(3, TimeUnit.MINUTES);
         //返回整个调用的结果
@@ -53,13 +53,16 @@ public class BotClient {
         return result;
     }
 
-    private void callLLM(List<AiMessage> messages, String systemPrompt, CountDownLatch countDownLatch){
+    private void callLLM(List<AiMessage> messages, String systemPrompt, CountDownLatch countDownLatch, boolean isComplete){
         llm.chat(messages, (content, jsonResponse) -> {
             if("[BEGIN]".equals(content)){
                 return;
             }
-            fluxSink.next(content);
-            if ("[DONE]".equals(content.trim())) {
+            if(!"[DONE]".equals(content.trim())) {
+                fluxSink.next(content);
+            }
+            if ("[DONE]".equals(content.trim()) && isComplete) {
+                fluxSink.next(content);
                 fluxSink.complete();
             }
             if ("failure".equals(jsonResponse.get("type").getAsString()) || "finish".equals(jsonResponse.get("type").getAsString())) {
