@@ -38,8 +38,8 @@ public class TrigerTradeProFunction implements Function<Map<String, Object>, Mcp
                 "properties": {
                     "command": {
                         "type": "string",
-                        "enum": ["searchAndOpenStock", "captureAppWindow", "maximizeAppWindow", "clickOptionsChain", "sellPutOption", "buyPutOption"],
-                        "description": "The operation type to perform"
+                        "enum": ["searchAndOpenStock", "captureAppWindow", "maximizeAppWindow", "clickOptionsChain", "sellPutOption", "sellPutOptionFlow"],
+                        "description": "The operation type to perform  example:帮我买一手小米put 会调用:sellPutOptionFlow"
                     },
                     "stockNameOrCode": {
                         "type": "string",
@@ -87,40 +87,8 @@ public class TrigerTradeProFunction implements Function<Map<String, Object>, Mcp
                     luaCode = String.format("return searchStock('%s')",
                         escapeString(stockNameOrCode));
                     break;
-                    
-                case "buyPutOption":
-                    stockNameOrCode = (String) args.get("stockNameOrCode");
-                    String quantity = (String) args.get("quantity");
-                    if (StringUtils.isBlank(quantity)) {
-                        quantity = "1";
-                    }
-                    
-                    // First, search and open the stock
-                    String searchLuaCode = String.format("return searchStock('%s')", escapeString(stockNameOrCode));
-                    McpSchema.CallToolResult searchResult = executeHammerspoonCommand(searchLuaCode);
-                    if (searchResult.isError()) {
-                        return searchResult;
-                    }
-                    
-                    // Then click on the options chain
-                    String optionsChainLuaCode = "return clickOptionsChain()";
-                    McpSchema.CallToolResult optionsChainResult = executeHammerspoonCommand(optionsChainLuaCode);
-                    if (optionsChainResult.isError()) {
-                        return optionsChainResult;
-                    }
-                    
-                    // Finally, sell put option (which is actually buying a put from the user's perspective)
-                    String sellPutLuaCode = String.format("return sellPutOption('%s')", escapeString(quantity));
-                    McpSchema.CallToolResult sellPutResult = executeHammerspoonCommand(sellPutLuaCode);
-                    
-                    // Return a combined result
-                    return new McpSchema.CallToolResult(
-                        List.of(new McpSchema.TextContent(
-                            String.format("Buy put option process completed for %s with quantity %s", 
-                                stockNameOrCode, quantity)
-                        )),
-                        sellPutResult.isError()
-                    );
+                case "sellPutOptionFlow":
+                    return executeSellPutOptionFlow(args);
                     
                 case "captureAppWindow":
                     luaCode = String.format("return captureAppWindow('%s')",
@@ -144,7 +112,7 @@ public class TrigerTradeProFunction implements Function<Map<String, Object>, Mcp
 
                     break;
                 case "sellPutOption":
-                    quantity = (String) args.get("quantity");
+                    String quantity = (String) args.get("quantity");
                     if (StringUtils.isBlank(quantity)) {
                         quantity = "1";
                     }
@@ -225,5 +193,40 @@ public class TrigerTradeProFunction implements Function<Map<String, Object>, Mcp
         return input.replace("'", "\\'")
                    .replace("\n", "\\n")
                    .replace("\r", "\\r");
+    }
+
+    private McpSchema.CallToolResult executeSellPutOptionFlow(Map<String, Object> args) {
+        String stockNameOrCode = (String) args.get("stockNameOrCode");
+        String quantity = (String) args.get("quantity");
+        if (StringUtils.isBlank(quantity)) {
+            quantity = "1";
+        }
+        
+        // 第一步：搜索并打开股票
+        String searchLuaCode = String.format("return searchStock('%s')", escapeString(stockNameOrCode));
+        McpSchema.CallToolResult searchResult = executeHammerspoonCommand(searchLuaCode);
+        if (searchResult.isError()) {
+            return searchResult;
+        }
+        
+        // 第二步：点击期权链
+        String optionsChainLuaCode = "return clickOptionsChain()";
+        McpSchema.CallToolResult optionsChainResult = executeHammerspoonCommand(optionsChainLuaCode);
+        if (optionsChainResult.isError()) {
+            return optionsChainResult;
+        }
+        
+        // 第三步：卖出期权
+        String sellPutLuaCode = String.format("return sellPutOption('%s')", escapeString(quantity));
+        McpSchema.CallToolResult sellPutResult = executeHammerspoonCommand(sellPutLuaCode);
+        
+        // 返回组合结果
+        return new McpSchema.CallToolResult(
+            List.of(new McpSchema.TextContent(
+                String.format("卖出期权流程已完成，股票：%s，数量：%s", 
+                    stockNameOrCode, quantity)
+            )),
+            sellPutResult.isError()
+        );
     }
 }
