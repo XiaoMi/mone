@@ -2,15 +2,18 @@ package run.mone.mcp.hammerspoon.server;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.server.McpSyncServer;
 import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.mcp.hammerspoon.function.DingTalkFunction;
+import run.mone.mcp.hammerspoon.function.LocateCoordinatesFunction;
 import run.mone.mcp.hammerspoon.function.TrigerTradeProFunction;
 
 
@@ -22,10 +25,15 @@ public class HammerspoonMcpServer {
     private String functionType;
 
     private final ServerMcpTransport transport;
+    private final LocateCoordinatesFunction locateCoordinatesFunction;
     private McpSyncServer syncServer;
 
-    public HammerspoonMcpServer(ServerMcpTransport transport) {
+    @Resource
+    private LLM llm;
+
+    public HammerspoonMcpServer(ServerMcpTransport transport, LocateCoordinatesFunction locateCoordinatesFunction) {
         this.transport = transport;
+        this.locateCoordinatesFunction = locateCoordinatesFunction;
     }
 
     public McpSyncServer start() {
@@ -43,11 +51,18 @@ public class HammerspoonMcpServer {
         try {
             if ("trigertrade".equalsIgnoreCase(functionType)) {
                 TrigerTradeProFunction function = new TrigerTradeProFunction();
+                function.setLlm(llm);
 
                 var toolRegistration = new McpServer.ToolRegistration(
                         new Tool(function.getName(), function.getDesc(), function.getToolScheme()),function
                         );
                 syncServer.addTool(toolRegistration);
+
+                // 注册locateCoordinatesFunction
+                syncServer.addTool(new McpServer.ToolRegistration(
+                    new Tool(locateCoordinatesFunction.getName(), locateCoordinatesFunction.getDesc(), locateCoordinatesFunction.getToolScheme()),
+                    locateCoordinatesFunction
+                ));
                 log.info("Successfully registered trigertrade tool");
             } else {
                 DingTalkFunction function = new DingTalkFunction();

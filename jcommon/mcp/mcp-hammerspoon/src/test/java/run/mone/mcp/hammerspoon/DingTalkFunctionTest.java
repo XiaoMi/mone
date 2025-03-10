@@ -49,4 +49,17 @@ public class DingTalkFunctionTest {
         assertFalse(result.isError());
     }
 
+    @Test
+    void testSearchStock() throws IOException {
+
+        Map<String, Object> args = new HashMap<>();
+        args.put("command", "searchAndOpenStock");
+        args.put("stockNameOrCode", "小米集团");
+        //args.put("command", "captureActiveWindow");
+
+        McpSchema.CallToolResult result = dingTalkFunction.apply(args);
+        System.out.println(result);
+        assertFalse(result.isError());
+    }
+
 }

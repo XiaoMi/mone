@@ -120,16 +120,17 @@ class LLMTest {
         config.setDebug(false);
         config.setJson(false);
 //        config.setLlmProvider(LLMProvider.DOUBAO);
+//        config.setLlmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3);
 //        config.setLlmProvider(LLMProvider.GOOGLE);
         //使用代理的
 //        config.setLlmProvider(LLMProvider.GOOGLE_2);
-        config.setLlmProvider(LLMProvider.OPENROUTER);//这个默认使用的是:anthropic/claude-3.5-sonnet:beta
+//        config.setLlmProvider(LLMProvider.OPENROUTER);//这个默认使用的是:anthropic/claude-3.5-sonnet:beta
 //        config.setModel("google/gemini-2.0-flash-exp:free");
 //        config.setModel("anthropic/claude-3.5-haiku-20241022");
 //        config.setModel("qwen/qwen-max");
 //        config.setModel("deepseek/deepseek-r1:nitro");
 
-//        config.setLlmProvider(LLMProvider.DEEPSEEK);
+        config.setLlmProvider(LLMProvider.DEEPSEEK);
 //        config.setModel("deepseek-reasoner");
 //        config.setLlmProvider(LLMProvider.QWEN);
 //        config.setModel("deepseek-v3");
@@ -164,6 +165,45 @@ class LLMTest {
         // System.setProperty("socksProxyPort", "7890");
         // // 设置不需要代理的主机
         // System.setProperty("http.nonProxyHosts", "localhost|127.0.0.1");
+    }
+
+    @Test
+    public void test99() {
+        String prompt = """
+                hi 
+                """;
+
+        String res = llm.chat(prompt);
+        System.out.println(res);
+    }
+
+    //调用doubao 多模态
+    @Test
+    public void test1() {
+        String prompt = """
+                帮我提取期权链数据 thx
+                """;
+
+        JsonObject req = new JsonObject();
+        req.addProperty("role", "user");
+        JsonArray array = new JsonArray();
+
+        JsonObject obj1 = new JsonObject();
+        obj1.addProperty("type","text");
+        obj1.addProperty("text", prompt);
+        array.add(obj1);
+
+        JsonObject obj2 = new JsonObject();
+        obj2.addProperty("type","image_url");
+        JsonObject img = new JsonObject();
+        img.addProperty("url","data:image/png;base64,"+llm.imageToBase64("/tmp/abcd.png", "png"));
+        obj2.add("image_url",img);
+        array.add(obj2);
+
+        req.add("content", array);
+
+        String res = llm.chat(Lists.newArrayList(AiMessage.builder().role("user").jsonContent(req).build()));
+        System.out.println(res);
     }
 
     @Test
