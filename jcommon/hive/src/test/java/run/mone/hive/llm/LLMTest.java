@@ -119,7 +119,8 @@ class LLMTest {
         config = new LLMConfig();
         config.setDebug(false);
         config.setJson(false);
-        config.setLlmProvider(LLMProvider.DOUBAO);
+//        config.setLlmProvider(LLMProvider.DOUBAO);
+        config.setLlmProvider(LLMProvider.DOUBAO_DEEPSEEK_R1);
 //        config.setLlmProvider(LLMProvider.GOOGLE);
         //使用代理的
 //        config.setLlmProvider(LLMProvider.GOOGLE_2);
@@ -166,6 +167,15 @@ class LLMTest {
         // System.setProperty("http.nonProxyHosts", "localhost|127.0.0.1");
     }
 
+    @Test
+    public void test99() {
+        String prompt = """
+                1+2=?
+                """;
+
+        String res = llm.chat(prompt);
+        System.out.println(res);
+    }
 
     //调用doubao 多模态
     @Test
@@ -175,7 +185,6 @@ class LLMTest {
                 """;
 
         JsonObject req = new JsonObject();
-
         req.addProperty("role", "user");
         JsonArray array = new JsonArray();
 

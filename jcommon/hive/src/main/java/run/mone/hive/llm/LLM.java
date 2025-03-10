@@ -123,7 +123,7 @@ public class LLM {
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(60, TimeUnit.SECONDS)
+                .readTimeout(200, TimeUnit.SECONDS)
                 .build();
 
         JsonObject requestBody = new JsonObject();
