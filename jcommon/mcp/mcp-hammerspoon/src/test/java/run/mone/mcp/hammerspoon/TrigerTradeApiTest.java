@@ -12,6 +12,8 @@ import com.tigerbrokers.stock.openapi.client.https.response.option.OptionExpirat
 import com.tigerbrokers.stock.openapi.client.struct.enums.Market;
 import com.tigerbrokers.stock.openapi.client.struct.enums.TimeZoneId;
 import org.junit.Test;
+import run.mone.mcp.hammerspoon.function.trigertrade.dto.OptionDetailBO;
+import run.mone.mcp.hammerspoon.function.trigertrade.TigerTradeSdkUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +31,6 @@ public class TrigerTradeApiTest {
 
     static {
         //从开发者信息页面导出的配置文件tiger_openapi_config.properties、tiger_openapi_token.properties存放路径
-        clientConfig.configFilePath = "/Users/zhangzhiyong/Downloads/tiger/";
         // clientConfig.secretKey = "xxxxxx"; // 机构账号交易员必填字段 secret key
         client = TigerHttpClient.getInstance().clientConfig(clientConfig);
     }
@@ -51,29 +52,11 @@ public class TrigerTradeApiTest {
 
     @Test
     public void testGetOptionsChain() {
+        OptionChainModel basicModel = new OptionChainModel("TSLA", "2025-03-14", TimeZoneId.NewYork);
 
-        OptionChainModel basicModel = new OptionChainModel("TSLA", "2025-03-14",  TimeZoneId.NewYork);
-        OptionChainFilterModel filterModel = new OptionChainFilterModel()
-                .inTheMoney(true)
-                .impliedVolatility(0.1537, 0.8282)
-                .openInterest(10, 50000)
-//                .greeks(new OptionChainFilterModel.Greeks()
-//                        .delta(-0.8, 0.6)
-//                        .gamma(0.024, 0.30)
-//                        .vega(0.019, 0.343)
-//                        .theta(-0.1, 0.1)
-//                        .rho(-0.096, 0.101)
-//                )
-                ;
-        OptionChainQueryV3Request request = OptionChainQueryV3Request.of(basicModel, filterModel, Market.US);
+        List<OptionDetailBO> optionDetailBOList = TigerTradeSdkUtil.getOptionChainDetail(basicModel, "put");
 
-        OptionChainResponse response = client.execute(request);
-        if (response.isSuccess()) {
-            System.out.println(gson.toJson(response));
-        } else {
-            System.out.println("response error:" + response.getMessage());
-        }
+        System.out.println(gson.toJson(optionDetailBOList));
     }
-
 
 }

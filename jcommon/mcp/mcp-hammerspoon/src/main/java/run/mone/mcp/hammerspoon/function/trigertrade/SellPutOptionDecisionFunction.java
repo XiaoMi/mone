@@ -12,6 +12,8 @@ import java.util.function.Function;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.tigerbrokers.stock.openapi.client.https.domain.option.model.OptionChainModel;
+import com.tigerbrokers.stock.openapi.client.struct.enums.TimeZoneId;
 import io.micrometer.common.util.StringUtils;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +23,8 @@ import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.mcp.hammerspoon.function.TrigerTradeProFunction;
+import run.mone.mcp.hammerspoon.function.trigertrade.dto.OptionDetailBO;
 
 /**
  * @author shanwb
@@ -67,13 +71,17 @@ public class SellPutOptionDecisionFunction implements Function<Map<String, Objec
     public McpSchema.CallToolResult apply(Map<String, Object> args) {
         try {
             String command = (String) args.get("command");
-
+            String stockNameOrCode = (String) args.get("stockNameOrCode");
 
             if (name.equalsIgnoreCase(command)) {
-                String luaCode = String.format("return captureAppWindow('%s')", TtConstant.APP_NAME);
-                McpSchema.CallToolResult callToolResult = executeHammerspoonCommand(luaCode);
+                //todo 日期自动算
+                OptionChainModel basicModel = new OptionChainModel(stockNameOrCode, "2025-03-14", TimeZoneId.NewYork);
+                List<OptionDetailBO> optionDetailBOList = TigerTradeSdkUtil.getOptionChainDetail(basicModel, "put");
 
-                callToolResult.content().get(0);
+
+
+
+
             }
 
             return null;
