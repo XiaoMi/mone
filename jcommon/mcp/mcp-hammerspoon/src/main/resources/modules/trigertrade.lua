@@ -1,15 +1,46 @@
 local M = {}
 
+-- 缓存变量
+local screenInfoCache = nil
+
 -- 老虎证券应用名称和搜索框信息
 -- local TIGER_APP_NAME = "老虎国际Pro"
 local TIGER_APP_NAME = "Tiger Trade"
 
 -- 参考屏幕分辨率 (16英寸MacBook Pro的标准分辨率)
 local TIGER_BOX_DETAIL_W = 1728
-local TIGER_BOX_DETAIL_H = 983
+local TIGER_BOX_DETAIL_H = 1117
+
+-- 14英寸MacBook Pro的标准分辨率
+local TIGER_BOX_DETAIL_W_14 = 1512
+local TIGER_BOX_DETAIL_H_14 = 982
+
+-- 16英寸MacBook Pro的坐标常量
+local COORDINATES_16 = {
+    OPTIONS_CHAIN_BUTTON = {x = 280, y = 95},    -- 期权链按钮
+    TARGET_PUT_OPTION = {x = 160, y = 320},      -- 目标PUT期权
+    QUANTITY_INPUT = {x = 1500, y = 765},        -- 数量输入框
+    SELL_BUTTON = {x = 1550, y = 958}           -- 卖出按钮
+}
+
+-- 14英寸MacBook Pro的坐标常量（待补充实际值）
+local COORDINATES_14 = {
+    OPTIONS_CHAIN_BUTTON = {x = 371, y = 69},   -- 期权链按钮
+    TARGET_PUT_OPTION = {x = 169, y = 283},      -- 目标PUT期权
+    QUANTITY_INPUT = {x = 1348, y = 663},         -- 数量输入框
+    SELL_BUTTON = {x =1320, y = 850}            -- 卖出按钮
+}
 
 -- 获取当前Mac的屏幕信息（尺寸与型号）
 function M.getMacScreenInfo()
+    -- 如果缓存存在，直接返回缓存的数据
+    if screenInfoCache then
+        return screenInfoCache.width, 
+               screenInfoCache.height, 
+               screenInfoCache.scale, 
+               screenInfoCache.extraInfo
+    end
+    
     -- 获取屏幕分辨率
     local mainScreen = hs.screen.mainScreen()
     local frame = mainScreen:frame()
@@ -25,6 +56,9 @@ function M.getMacScreenInfo()
     local dpi = mode.dpi or 0
     local depth = mode.depth or 0
     local refreshRate = mode.freq or 0
+
+    local isMacBookPro14 = M.isMacBookPro14(fullWidth, scale)
+    local isMacBookPro16 = M.isMacBookPro16(fullWidth, scale)
     
     -- 输出当前屏幕信息
     print("当前屏幕可见分辨率: " .. width .. "x" .. height)
@@ -33,6 +67,8 @@ function M.getMacScreenInfo()
     print("当前屏幕DPI: " .. dpi)
     print("当前屏幕色彩深度: " .. depth)
     print("当前屏幕刷新率: " .. refreshRate .. "Hz")
+    print("当前屏幕是否为MacBook Pro 14英寸: " .. tostring(isMacBookPro14))
+    print("当前屏幕是否为MacBook Pro 16英寸: " .. tostring(isMacBookPro16))
     
     -- 尝试获取Mac型号信息
     local model = ""
@@ -66,93 +102,99 @@ function M.getMacScreenInfo()
     print("操作系统版本: " .. osVersion.major .. "." .. osVersion.minor .. "." .. osVersion.patch)
     print("系统名称: " .. hs.host.operatingSystemVersionString())
     
-    return width, height, scale, {
+    -- 存储结果到缓存
+    local extraInfo = {
         fullWidth = fullWidth,
         fullHeight = fullHeight,
         dpi = dpi,
         refreshRate = refreshRate,
         macModel = macModel,
         macModelName = macModelName,
-        osVersion = osVersion
+        osVersion = osVersion,
+        isMacBookPro14 = isMacBookPro14,
+        isMacBookPro16 = isMacBookPro16
     }
+    
+    screenInfoCache = {
+        width = width,
+        height = height,
+        scale = scale,
+        extraInfo = extraInfo
+    }
+    
+    return width, height, scale, extraInfo
 end
 
--- 获取屏幕尺寸（宽高）
--- @return width, height 屏幕的宽度和高度
-function M.getScreenSize()
-    local mainScreen = hs.screen.mainScreen()
-    local frame = mainScreen:frame()
-    local width, height = frame.w, frame.h
-    
-    print("当前屏幕尺寸: " .. width .. "x" .. height)
-    return width, height
+-- 清除屏幕信息缓存
+function M.clearScreenInfoCache()
+    screenInfoCache = nil
 end
 
 -- 获取屏幕的完整高度（包括菜单栏和程序坞）
 -- @return fullHeight 屏幕的完整高度
 function M.getFullScreenHeight()
-    local mainScreen = hs.screen.mainScreen()
-    
-    -- 获取屏幕完整尺寸（不考虑菜单栏和程序坞）
-    local fullFrame = mainScreen:fullFrame()
-    local fullHeight = fullFrame.h
-    
-    -- 获取普通Frame（考虑菜单栏和程序坞）
-    local frame = mainScreen:frame()
-    local visibleHeight = frame.h
-    
-    print("屏幕完整高度: " .. fullHeight)
-    print("屏幕可见高度: " .. visibleHeight)
-    print("菜单栏+程序坞高度: " .. (fullHeight - visibleHeight))
-    
+    local _, _, _, extraInfo = M.getMacScreenInfo()
+    local fullHeight = extraInfo.fullHeight
     return fullHeight
+end
+
+function M.getFullScreenWidth()
+    local _, _, _, extraInfo = M.getMacScreenInfo()
+    local fullWidth = extraInfo.fullWidth
+    return fullWidth
+end
+
+-- 获取当前MacBook的参考分辨率
+-- @return width, height 参考分辨率的宽度和高度
+function M.getReferenceResolution()   
+    local _, _, _, extraInfo = M.getMacScreenInfo()
+    -- 根据MacBook尺寸返回对应的参考分辨率
+    if extraInfo.isMacBookPro14 then
+        return TIGER_BOX_DETAIL_W_14, TIGER_BOX_DETAIL_H_14
+    elseif extraInfo.isMacBookPro16 then
+        -- 默认使用16寸的分辨率
+        return TIGER_BOX_DETAIL_W, TIGER_BOX_DETAIL_H
+    else
+        -- 默认使用16寸的分辨率
+        return TIGER_BOX_DETAIL_W, TIGER_BOX_DETAIL_H
+    end
 end
 
 -- 计算相对坐标 (坐标占参考屏幕的百分比)
 function M.getRelativeCoordinates(x, y)
-    local relX = x / TIGER_BOX_DETAIL_W
-    local relY = y / TIGER_BOX_DETAIL_H
+    local refWidth, refHeight = M.getReferenceResolution()
+    local relX = x / refWidth
+    local relY = y / refHeight
     return relX, relY
 end
 
--- 转换X坐标 (16英寸Mac基准坐标到当前屏幕坐标)
+-- 转换X坐标 (基准坐标到当前屏幕坐标)
 function M.scaleX(x)
-    local currentWidth, currentHeight, scale, extraInfo = M.getMacScreenInfo()
-
-    print("getScreenSize: currentWidth=" .. currentWidth)
+    local currentWidth = M.getFullScreenWidth()
+    local refWidth, _ = M.getReferenceResolution()
     
     -- 计算相对位置（百分比）
-    local relativeX = x / TIGER_BOX_DETAIL_W
+    local relativeX = x / refWidth
     
     -- 将相对位置转换为当前屏幕的像素坐标
     local scaledX = math.floor(relativeX * currentWidth)
-    
     
     print("X坐标转换: 原始=" .. x .. ", 相对位置=" .. string.format("%.2f", relativeX) .. ", 目标屏幕=" .. scaledX)
     return scaledX
 end
 
--- 转换Y坐标 (16英寸Mac基准坐标到当前屏幕坐标)
+-- 转换Y坐标 (基准坐标到当前屏幕坐标)
 -- @param y 原始Y坐标
 -- @param useFullHeight 是否使用完整屏幕高度（包括菜单栏和程序坞）
 -- @return 转换后的Y坐标
-function M.scaleY(y, useFullHeight)
-    useFullHeight = useFullHeight or true
-    
-    local currentHeight
-    if useFullHeight then
-        -- 使用完整屏幕高度
-        currentHeight = M.getFullScreenHeight()
-    else
-        -- 使用可见屏幕高度
-        local _, height = M.getScreenSize()
-        currentHeight = height
-    end
-
-    print("currentHeight: " .. currentHeight)
+function M.scaleY(y)    
+    -- 获取当前屏幕高度
+    local currentHeight = M.getFullScreenHeight()
+    -- 获取参考分辨率
+    local _, refHeight = M.getReferenceResolution()
     
     -- 计算相对位置（百分比）
-    local relativeY = y / TIGER_BOX_DETAIL_H
+    local relativeY = y / refHeight
     
     -- 将相对位置转换为当前屏幕的像素坐标
     local scaledY = math.floor(relativeY * currentHeight)
@@ -164,14 +206,27 @@ end
 -- 转换坐标点
 -- @param x 原始X坐标
 -- @param y 原始Y坐标
--- @param useFullHeight 是否使用完整屏幕高度（包括菜单栏和程序坞）
 -- @return 转换后的X坐标，Y坐标
-function M.scaleCoordinate(x, y, useFullHeight)
-    useFullHeight = useFullHeight or true
+function M.scaleCoordinate(x, y)
     local scaledX = M.scaleX(x)
-    local scaledY = M.scaleY(y, useFullHeight)
+    local scaledY = M.scaleY(y)
     print("坐标转换: (" .. x .. "," .. y .. ") → (" .. scaledX .. "," .. scaledY .. ")" .. (useFullHeight and " (使用完整高度)" or " (使用可见高度)"))
     return scaledX, scaledY
+end
+
+-- 获取当前设备对应的坐标
+-- @param coordName String 坐标名称（如 "OPTIONS_CHAIN_BUTTON"）
+-- @return table 包含x和y的坐标表
+local function getCoordinates(coordName)
+    local _, _, _, extraInfo = M.getMacScreenInfo()
+    local coords = extraInfo.isMacBookPro14 and COORDINATES_14 or COORDINATES_16
+    
+    if extraInfo.isMacBookPro14 and coords[coordName].x == nil then
+        print("警告：14寸MacBook Pro的坐标未设置，使用16寸的坐标")
+        coords = COORDINATES_16
+    end
+    
+    return coords[coordName]
 end
 
 -- 搜索股票并进入详情页
@@ -280,9 +335,10 @@ function M.clickOptionsChain()
     -- 等待窗口激活
     hs.timer.usleep(500000) -- 500ms
 
-    -- 4. 点击期权链按钮 (基于16英寸Mac的坐标: 280, 95)
+    -- 4. 点击期权链按钮
     print("正在点击期权链按钮...")
-    local scaledX, scaledY = M.scaleCoordinate(280, 95)
+    local coords = getCoordinates("OPTIONS_CHAIN_BUTTON")
+    local scaledX, scaledY = M.scaleCoordinate(coords.x, coords.y)
     print("点击期权链按钮坐标: " .. scaledX .. ", " .. scaledY)
     local success = mouse.moveToAppAndClick(TIGER_APP_NAME, scaledX, scaledY)
 
@@ -339,9 +395,10 @@ function M.sellPutOption(quantity)
     -- 等待窗口激活
     hs.timer.usleep(500000) -- 500ms
 
-    -- 4. 点击目标PUT期权 (基于16英寸Mac的坐标: 160, 320)
+    -- 4. 点击目标PUT期权
     print("正在选择目标PUT期权...")
-    local scaledX1, scaledY1 = M.scaleCoordinate(160, 320)
+    local coords = getCoordinates("TARGET_PUT_OPTION")
+    local scaledX1, scaledY1 = M.scaleCoordinate(coords.x, coords.y)
     print("选择目标PUT期权坐标: " .. scaledX1 .. ", " .. scaledY1)
     local success = mouse.moveToAppAndClick(TIGER_APP_NAME, scaledX1, scaledY1)
     if not success then
@@ -352,9 +409,10 @@ function M.sellPutOption(quantity)
     -- 等待选择生效
     hs.timer.usleep(1000000) -- 1秒
 
-    -- 5. 点击数量输入框 (基于16英寸Mac的坐标: 1500, 765)
+    -- 5. 点击数量输入框
     print("正在点击数量输入框...")
-    local scaledX2, scaledY2 = M.scaleCoordinate(1500, 765)
+    coords = getCoordinates("QUANTITY_INPUT")
+    local scaledX2, scaledY2 = M.scaleCoordinate(coords.x, coords.y)
     success = mouse.moveToAppAndClick(TIGER_APP_NAME, scaledX2, scaledY2)
     if not success then
         print("点击数量输入框失败")
@@ -381,9 +439,10 @@ function M.sellPutOption(quantity)
     -- 等待输入完成
     hs.timer.usleep(500000) -- 500ms
 
-    -- 7. 点击卖出按钮 (基于16英寸Mac的坐标: 1550, 958)
+    -- 7. 点击卖出按钮
     print("正在点击卖出按钮...")
-    local scaledX3, scaledY3 = M.scaleCoordinate(1550, 958)
+    coords = getCoordinates("SELL_BUTTON")
+    local scaledX3, scaledY3 = M.scaleCoordinate(coords.x, coords.y)
     success = mouse.moveToAppAndClick(TIGER_APP_NAME, scaledX3, scaledY3)
     if not success then
         print("点击卖出按钮失败")
@@ -411,11 +470,21 @@ function M.getMacModelInfo()
         scale = scale,                   -- 屏幕缩放比例
         dpi = extraInfo.dpi,             -- 屏幕DPI
         refreshRate = extraInfo.refreshRate, -- 屏幕刷新率
-        osVersion = extraInfo.osVersion  -- 操作系统版本
+        osVersion = extraInfo.osVersion,  -- 操作系统版本
+        size = nil                       -- MacBook尺寸（14或16）
     }
+    
+    -- 从型号名称中提取尺寸信息
+    local size = macModelInfo.macModelName:match("%((%d+)%-inch")
+    if size then
+        macModelInfo.size = tonumber(size)
+    end
     
     -- 打印主要信息
     print("Mac型号: " .. macModelInfo.macModelName)
+    if macModelInfo.size then
+        print("MacBook尺寸: " .. macModelInfo.size .. " 英寸")
+    end
     
     return macModelInfo
 end
@@ -431,16 +500,145 @@ function M.isMacModel(modelPattern)
            modelInfo.macModel:find(modelPattern) ~= nil
 end
 
+-- 获取MacBook Pro尺寸
+-- @return number|nil 返回MacBook Pro的尺寸（14或16），如果不是MacBook Pro则返回nil
+function M.getMacBookProSize()
+    local modelInfo = M.getMacModelInfo()
+    
+    -- 检查是否是MacBook Pro
+    if not modelInfo.macModelName:find("MacBook Pro") then
+        return nil
+    end
+    
+    return modelInfo.size
+end
+
 -- 判断当前Mac是否为MacBook Pro 14英寸
 -- @return boolean
-function M.isMacBookPro14()
-    return M.isMacModel("14.+MacBook Pro")
+function M.isMacBookPro14(fullWidth, scale)
+    if (fullWidth * scale == TIGER_BOX_DETAIL_W_14 * 2) then
+        return true
+    else
+        return false
+    end
 end
 
 -- 判断当前Mac是否为MacBook Pro 16英寸
 -- @return boolean
-function M.isMacBookPro16()
-    return M.isMacModel("16.+MacBook Pro")
+function M.isMacBookPro16(fullWidth, scale)
+    if (fullWidth * scale == TIGER_BOX_DETAIL_W * 2) then
+        return true
+    else
+        return false
+    end
+end
+
+-- 获取显示器物理尺寸信息
+-- @return physicalInfo 包含显示器物理尺寸信息的表
+function M.getDisplayPhysicalInfo()
+    local mainScreen = hs.screen.mainScreen()
+    local mode = mainScreen:currentMode()
+    
+    -- 获取显示器的物理分辨率
+    local w = mode.w or 0
+    local h = mode.h or 0
+    
+    -- 获取DPI信息
+    local dpi = mode.dpi or 0
+    
+    -- 计算物理尺寸（英寸）
+    -- 使用勾股定理计算对角线像素数
+    local diagonalPixels = math.sqrt(w * w + h * h)
+    
+    -- 如果有DPI信息，计算物理尺寸
+    local physicalDiagonal = dpi > 0 and (diagonalPixels / dpi) or nil
+    local physicalWidth = dpi > 0 and (w / dpi) or nil
+    local physicalHeight = dpi > 0 and (h / dpi) or nil
+    
+    -- 获取显示器名称
+    local name = mainScreen:name() or "未知显示器"
+    
+    -- 构建返回结果
+    local physicalInfo = {
+        name = name,                    -- 显示器名称
+        width = physicalWidth,          -- 物理宽度（英寸）
+        height = physicalHeight,        -- 物理高度（英寸）
+        diagonal = physicalDiagonal,    -- 对角线长度（英寸）
+        dpi = dpi,                      -- DPI值
+        pixelWidth = w,                 -- 像素宽度
+        pixelHeight = h,                -- 像素高度
+        aspectRatio = w/h               -- 宽高比
+    }
+    
+    -- 打印物理尺寸信息
+    print("显示器名称: " .. name)
+    if physicalDiagonal then
+        print(string.format("物理尺寸: %.1f x %.1f 英寸 (对角线: %.1f 英寸)", 
+            physicalWidth, physicalHeight, physicalDiagonal))
+    end
+    print(string.format("分辨率: %d x %d", w, h))
+    print(string.format("DPI: %.1f", dpi))
+    print(string.format("宽高比: %.2f", w/h))
+    
+    return physicalInfo
+end
+
+-- 获取完整的显示器信息
+-- @return displayInfo 包含显示器所有信息的表
+function M.getDisplayInfo()
+    -- 获取基本屏幕信息
+    local width, height, scale, extraInfo = M.getMacScreenInfo()
+    
+    -- 获取物理尺寸信息
+    local physicalInfo = M.getDisplayPhysicalInfo()
+    
+    -- 获取Mac型号信息
+    local modelInfo = M.getMacModelInfo()
+    
+    -- 合并所有信息
+    local displayInfo = {
+        -- 基本信息
+        width = width,                     -- 当前可见宽度
+        height = height,                   -- 当前可见高度
+        scale = scale,                     -- 缩放比例
+        
+        -- 物理信息
+        physicalWidth = physicalInfo.width,    -- 物理宽度（英寸）
+        physicalHeight = physicalInfo.height,  -- 物理高度（英寸）
+        physicalDiagonal = physicalInfo.diagonal, -- 对角线长度（英寸）
+        dpi = physicalInfo.dpi,               -- DPI值
+        aspectRatio = physicalInfo.aspectRatio, -- 宽高比
+        
+        -- Mac型号信息
+        macModel = modelInfo.macModel,        -- Mac型号标识
+        macModelName = modelInfo.macModelName, -- Mac型号名称
+        macBookSize = modelInfo.size,         -- MacBook尺寸（如果适用）
+        
+        -- 其他信息
+        displayName = physicalInfo.name,      -- 显示器名称
+        refreshRate = extraInfo.refreshRate,  -- 刷新率
+        osVersion = extraInfo.osVersion       -- 操作系统版本
+    }
+    
+    -- 打印完整信息
+    print("\n显示器完整信息:")
+    print("----------------------------------------")
+    print("显示器名称: " .. displayInfo.displayName)
+    print(string.format("当前分辨率: %d x %d (缩放比例: %.1f)", width, height, scale))
+    if displayInfo.physicalDiagonal then
+        print(string.format("物理尺寸: %.1f x %.1f 英寸 (对角线: %.1f 英寸)", 
+            displayInfo.physicalWidth, displayInfo.physicalHeight, displayInfo.physicalDiagonal))
+    end
+    print(string.format("DPI: %.1f", displayInfo.dpi))
+    print(string.format("刷新率: %d Hz", displayInfo.refreshRate))
+    print("Mac型号: " .. displayInfo.macModelName)
+    if displayInfo.macBookSize then
+        print("MacBook尺寸: " .. displayInfo.macBookSize .. " 英寸")
+    end
+    print("操作系统: " .. hs.host.operatingSystemVersionString())
+    print("----------------------------------------\n")
+    
+    return displayInfo
 end
 
 return M
