@@ -120,7 +120,7 @@ class LLMTest {
         config.setDebug(false);
         config.setJson(false);
 //        config.setLlmProvider(LLMProvider.DOUBAO);
-        config.setLlmProvider(LLMProvider.DOUBAO_DEEPSEEK_R1);
+        config.setLlmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3);
 //        config.setLlmProvider(LLMProvider.GOOGLE);
         //使用代理的
 //        config.setLlmProvider(LLMProvider.GOOGLE_2);
