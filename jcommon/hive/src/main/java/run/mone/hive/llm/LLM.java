@@ -123,7 +123,7 @@ public class LLM {
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(60, TimeUnit.SECONDS)
                 .build();
 
         JsonObject requestBody = new JsonObject();
@@ -175,7 +175,10 @@ public class LLM {
 
         for (AiMessage message : messages) {
             //使用openrouter,并且使用多模态
-            if ((this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.MOONSHOT) && null != message.getJsonContent()) {
+            if ((this.llmProvider == LLMProvider.OPENROUTER
+                    || this.llmProvider == LLMProvider.MOONSHOT
+                    || this.llmProvider == LLMProvider.DOUBAO
+            ) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
                 msgArray.add(createMessageObjectForGoogle(message));
