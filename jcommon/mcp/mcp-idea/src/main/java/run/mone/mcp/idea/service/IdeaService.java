@@ -77,7 +77,7 @@ public class IdeaService {
                 </code>
                 
                 当前class:
-                %s 
+                %s
                 
                 需求:
                 """ + requirements;
