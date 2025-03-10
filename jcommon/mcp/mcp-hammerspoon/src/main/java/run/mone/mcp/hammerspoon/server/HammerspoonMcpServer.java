@@ -2,9 +2,11 @@ package run.mone.mcp.hammerspoon.server;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import run.mone.hive.llm.LLM;
 import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.server.McpSyncServer;
 import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
@@ -26,6 +28,9 @@ public class HammerspoonMcpServer {
     private final LocateCoordinatesFunction locateCoordinatesFunction;
     private McpSyncServer syncServer;
 
+    @Resource
+    private LLM llm;
+
     public HammerspoonMcpServer(ServerMcpTransport transport, LocateCoordinatesFunction locateCoordinatesFunction) {
         this.transport = transport;
         this.locateCoordinatesFunction = locateCoordinatesFunction;
@@ -46,6 +51,7 @@ public class HammerspoonMcpServer {
         try {
             if ("trigertrade".equalsIgnoreCase(functionType)) {
                 TrigerTradeProFunction function = new TrigerTradeProFunction();
+                function.setLlm(llm);
 
                 var toolRegistration = new McpServer.ToolRegistration(
                         new Tool(function.getName(), function.getDesc(), function.getToolScheme()),function
