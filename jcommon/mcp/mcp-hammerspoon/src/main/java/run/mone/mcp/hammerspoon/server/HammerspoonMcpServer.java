@@ -11,6 +11,7 @@ import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.mcp.hammerspoon.function.DingTalkFunction;
+import run.mone.mcp.hammerspoon.function.LocateCoordinatesFunction;
 import run.mone.mcp.hammerspoon.function.TrigerTradeProFunction;
 
 
@@ -22,10 +23,12 @@ public class HammerspoonMcpServer {
     private String functionType;
 
     private final ServerMcpTransport transport;
+    private final LocateCoordinatesFunction locateCoordinatesFunction;
     private McpSyncServer syncServer;
 
-    public HammerspoonMcpServer(ServerMcpTransport transport) {
+    public HammerspoonMcpServer(ServerMcpTransport transport, LocateCoordinatesFunction locateCoordinatesFunction) {
         this.transport = transport;
+        this.locateCoordinatesFunction = locateCoordinatesFunction;
     }
 
     public McpSyncServer start() {
@@ -48,6 +51,12 @@ public class HammerspoonMcpServer {
                         new Tool(function.getName(), function.getDesc(), function.getToolScheme()),function
                         );
                 syncServer.addTool(toolRegistration);
+
+                // 注册locateCoordinatesFunction
+                syncServer.addTool(new McpServer.ToolRegistration(
+                    new Tool(locateCoordinatesFunction.getName(), locateCoordinatesFunction.getDesc(), locateCoordinatesFunction.getToolScheme()),
+                    locateCoordinatesFunction
+                ));
                 log.info("Successfully registered trigertrade tool");
             } else {
                 DingTalkFunction function = new DingTalkFunction();
