@@ -43,7 +43,7 @@ function M.searchStock(stockCode)
     tigerApp:activate()
     
     -- 等待窗口激活
-    hs.timer.usleep(500000) -- 500ms
+    hs.timer.usleep(1200000) -- 1200ms
     
     -- 4. 输入股票代码 (自动进入搜索框)
     print("正在输入股票代码: " .. stockCode)

@@ -2,6 +2,7 @@ package run.mone.mcp.hammerspoon.function;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.common.util.StringUtils;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
@@ -32,7 +33,7 @@ public class TrigerTradeProFunction implements Function<Map<String, Object>, Mcp
                 "properties": {
                     "command": {
                         "type": "string",
-                        "enum": ["searchAndOpenStock", "captureAppWindow", "maximizeAppWindow", "moveToAppAndClick"],
+                        "enum": ["searchAndOpenStock", "captureAppWindow", "maximizeAppWindow", "clickOptionsChain", "sellPutOption"],
                         "description": "The operation type to perform"
                     },
                     "stockNameOrCode": {
@@ -50,6 +51,10 @@ public class TrigerTradeProFunction implements Function<Map<String, Object>, Mcp
                     "mousePositionY": {
                         "type": "string",
                         "description": "mouse position Y"
+                    },
+                    "quantity": {
+                        "type": "string",
+                        "description": "quantity of options count"
                     }
                 },
                 "required": ["command"]
@@ -93,6 +98,18 @@ public class TrigerTradeProFunction implements Function<Map<String, Object>, Mcp
                     String mousePositionX = (String) args.get("mousePositionX");
                     String mousePositionY = (String) args.get("mousePositionY");
                     luaCode = String.format("return moveToAppAndClick('%s','%s','%s')", escapeString(appName), mousePositionX, mousePositionY);
+
+                    break;
+                case "clickOptionsChain":
+                    luaCode = "return clickOptionsChain()";
+
+                    break;
+                case "sellPutOption":
+                    String quantity = (String) args.get("quantity");
+                    if (StringUtils.isBlank(quantity)) {
+                        quantity = "1";
+                    }
+                    luaCode = String.format("return sellPutOption('%s')", escapeString(quantity));
 
                     break;
                 default:
