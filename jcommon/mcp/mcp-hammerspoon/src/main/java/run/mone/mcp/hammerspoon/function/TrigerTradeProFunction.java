@@ -1,17 +1,22 @@
 package run.mone.mcp.hammerspoon.function;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.micrometer.common.util.StringUtils;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-import okhttp3.*;
-import run.mone.hive.mcp.spec.McpSchema;
-
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.micrometer.common.util.StringUtils;
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import run.mone.hive.mcp.spec.McpSchema;
 
 /**
  * @author shanwb
@@ -33,7 +38,7 @@ public class TrigerTradeProFunction implements Function<Map<String, Object>, Mcp
                 "properties": {
                     "command": {
                         "type": "string",
-                        "enum": ["searchAndOpenStock", "captureAppWindow", "maximizeAppWindow", "clickOptionsChain", "sellPutOption"],
+                        "enum": ["searchAndOpenStock", "captureAppWindow", "maximizeAppWindow", "clickOptionsChain", "sellPutOption", "buyPutOption"],
                         "description": "The operation type to perform"
                     },
                     "stockNameOrCode": {
@@ -83,6 +88,40 @@ public class TrigerTradeProFunction implements Function<Map<String, Object>, Mcp
                         escapeString(stockNameOrCode));
                     break;
                     
+                case "buyPutOption":
+                    stockNameOrCode = (String) args.get("stockNameOrCode");
+                    String quantity = (String) args.get("quantity");
+                    if (StringUtils.isBlank(quantity)) {
+                        quantity = "1";
+                    }
+                    
+                    // First, search and open the stock
+                    String searchLuaCode = String.format("return searchStock('%s')", escapeString(stockNameOrCode));
+                    McpSchema.CallToolResult searchResult = executeHammerspoonCommand(searchLuaCode);
+                    if (searchResult.isError()) {
+                        return searchResult;
+                    }
+                    
+                    // Then click on the options chain
+                    String optionsChainLuaCode = "return clickOptionsChain()";
+                    McpSchema.CallToolResult optionsChainResult = executeHammerspoonCommand(optionsChainLuaCode);
+                    if (optionsChainResult.isError()) {
+                        return optionsChainResult;
+                    }
+                    
+                    // Finally, sell put option (which is actually buying a put from the user's perspective)
+                    String sellPutLuaCode = String.format("return sellPutOption('%s')", escapeString(quantity));
+                    McpSchema.CallToolResult sellPutResult = executeHammerspoonCommand(sellPutLuaCode);
+                    
+                    // Return a combined result
+                    return new McpSchema.CallToolResult(
+                        List.of(new McpSchema.TextContent(
+                            String.format("Buy put option process completed for %s with quantity %s", 
+                                stockNameOrCode, quantity)
+                        )),
+                        sellPutResult.isError()
+                    );
+                    
                 case "captureAppWindow":
                     luaCode = String.format("return captureAppWindow('%s')",
                             escapeString("老虎国际"));
@@ -105,7 +144,7 @@ public class TrigerTradeProFunction implements Function<Map<String, Object>, Mcp
 
                     break;
                 case "sellPutOption":
-                    String quantity = (String) args.get("quantity");
+                    quantity = (String) args.get("quantity");
                     if (StringUtils.isBlank(quantity)) {
                         quantity = "1";
                     }
