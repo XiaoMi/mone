@@ -6,7 +6,7 @@ local TIGER_APP_NAME = "Tiger Trade"
 
 -- 参考屏幕分辨率 (16英寸MacBook Pro的标准分辨率)
 local TIGER_BOX_DETAIL_W = 1728
-local TIGER_BOX_DETAIL_H = 1117
+local TIGER_BOX_DETAIL_H = 983
 
 -- 获取当前Mac的屏幕信息（尺寸与型号）
 function M.getMacScreenInfo()
