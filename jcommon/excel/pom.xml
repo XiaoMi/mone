@@ -8,7 +8,7 @@
     <version>1.6.0-jdk21-SNAPSHOT</version>
   </parent>
   <artifactId>excel</artifactId>
-  <version>${submodule-release.version}</version>
+  <version>1.5.1-jdk21</version>
   <properties>
     <maven.compiler.source>21</maven.compiler.source>
     <maven.compiler.target>21</maven.compiler.target>
@@ -17,27 +17,8 @@
     <dependency>
       <groupId>org.apache.poi</groupId>
       <artifactId>poi</artifactId>
-      <version>3.14</version>
+      <version>5.4.0</version>
     </dependency>
-    <dependency>
-      <groupId>org.apache.poi</groupId>
-      <artifactId>poi-ooxml</artifactId>
-      <version>3.14</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.poi</groupId>
-      <artifactId>poi-contrib</artifactId>
-      <version>3.6</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.poi</groupId>
-      <artifactId>poi-ooxml-schemas</artifactId>
-      <version>3.17</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.poi</groupId>
-      <artifactId>poi-scratchpad</artifactId>
-      <version>3.17</version>
-    </dependency>
+
   </dependencies>
 </project>
