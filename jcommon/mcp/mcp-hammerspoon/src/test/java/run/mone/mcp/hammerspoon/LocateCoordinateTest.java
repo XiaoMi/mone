@@ -43,7 +43,7 @@ public class LocateCoordinateTest {
         LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build();
         LLM llm = new LLM(config);
 
-        String imageBase64 = getImageAsBase64("/opt/workspace_all/workspace_mi/mone_opensource/mone_original/jcommon/mcp/mcp-hammerspoon/src/test/resources/test.png");
+        String imageBase64 = getImageAsBase64("/Users/zhangzhiyong/eee.png");
         String mimeType = "image/png";
         String objectDesc = "图中内容为期权‘看跌’的数据，请你找到排名第二的成交价格的坐标";
 
