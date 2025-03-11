@@ -1,14 +1,19 @@
 package run.mone.mcp.idea.function;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
-import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.mcp.idea.service.IdeaService;
-
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.springframework.stereotype.Component;
+
+import com.google.gson.JsonObject;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.mcp.idea.service.IdeaService;
+
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class MethodRenameFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
@@ -16,11 +21,11 @@ public class MethodRenameFunction implements Function<Map<String, Object>, McpSc
     private final IdeaService ideaService;
 
     public String getName() {
-        return "renameMethod";
+        return "generateMethodName";
     }
 
     public String getDesc() {
-        return "IDEA operations including rename selected method";
+        return "Generate a new meaningful name for the given method based on its code implementation";
     }
 
     public String getToolScheme() {
@@ -33,7 +38,7 @@ public class MethodRenameFunction implements Function<Map<String, Object>, McpSc
                 "properties": {
                     "code": {
                         "type": "string",
-                        "description": "The source code that needs to be reviewed"
+                        "description": "The source code of the method that needs a new name"
                     }
                 },
                 "required": ["code"]
@@ -44,7 +49,17 @@ public class MethodRenameFunction implements Function<Map<String, Object>, McpSc
     public McpSchema.CallToolResult apply(Map<String, Object> arguments) {
         try {
             String result = ideaService.methodRename((String) arguments.get("code"));
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false);
+            String newName = ideaService.extractContent(result, "methodName");
+            String name = ideaService.extractContent(result, "old");
+
+            JsonObject data = new JsonObject();
+            data.addProperty("type", "rename");
+            data.addProperty("methodName", name);
+            data.addProperty("newName", newName);
+
+            log.info("data:{}", data);
+
+            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result, data.toString())), false);
         } catch (Exception e) {
             return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true);
         }

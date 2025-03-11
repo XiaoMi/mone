@@ -1,6 +1,8 @@
 package run.mone.mcp.idea.function;
 
+import com.google.gson.JsonObject;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.idea.service.IdeaService;
@@ -11,6 +13,7 @@ import java.util.function.Function;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class GitPushFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
 
     private final IdeaService ideaService;
@@ -20,7 +23,7 @@ public class GitPushFunction implements Function<Map<String, Object>, McpSchema.
     }
 
     public String getDesc() {
-        return "一健提交代码";
+        return "一健提交代码(git push)";
     }
 
     public String getToolScheme() {
@@ -31,16 +34,9 @@ public class GitPushFunction implements Function<Map<String, Object>, McpSchema.
             {
                 "type": "object",
                 "properties": {
-                    "projectName": {
-                        "type": "string",
-                        "description":"需要生成测试的项目"
-                    },
-                    "code": {
-                        "type": "string",
-                        "description": "The source code that needs to be reviewed"
-                    }
+                    
                 },
-                "required": ["code"]
+                "required": []
             }
             """;
 
@@ -48,7 +44,14 @@ public class GitPushFunction implements Function<Map<String, Object>, McpSchema.
     public McpSchema.CallToolResult apply(Map<String, Object> arguments) {
         try {
             String result = ideaService.gitPush((String) arguments.get("code"));
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false);
+            String commit = ideaService.extractContent(result, "commit");
+            JsonObject data = new JsonObject();
+            data.addProperty("type", getName());
+            data.addProperty("commit", commit);
+
+            log.info("data:{}", data);
+
+            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(data.toString(), data.toString())), false);
         } catch (Exception e) {
             return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true);
         }

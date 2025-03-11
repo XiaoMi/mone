@@ -10,7 +10,7 @@ import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.mcp.writer.function.WriterFunction;
-
+import run.mone.hive.mcp.server.McpServer.ToolStreamRegistration;
 @Component
 public class WriterMcpServer {
 
@@ -32,12 +32,18 @@ public class WriterMcpServer {
                         .build())
                 .sync();
 
-        var toolRegistration = new McpServer.ToolRegistration(
-                new Tool(writerFunction.getName(), writerFunction.getDesc(), writerFunction.getToolScheme()),
-                writerFunction
+        // var toolRegistration = new McpServer.ToolRegistration(
+        //         new Tool(writerFunction.getName(), writerFunction.getDesc(), writerFunction.getToolScheme()),
+        //         writerFunction
+        // );
+
+        // syncServer.addTool(toolRegistration);
+
+        var toolStreamRegistration = new ToolStreamRegistration(
+                new Tool(writerFunction.getName(), writerFunction.getDesc(), writerFunction.getToolScheme()), writerFunction
         );
 
-        syncServer.addTool(toolRegistration);
+        syncServer.addStreamTool(toolStreamRegistration);
 
         return syncServer;
     }

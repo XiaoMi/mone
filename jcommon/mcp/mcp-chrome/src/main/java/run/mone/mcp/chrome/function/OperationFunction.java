@@ -58,9 +58,13 @@ public class OperationFunction implements Function<Map<String, Object>, McpSchem
                                 "tabId": {
                                     "type": "string",
                                     "description": "标签页ID"
+                                },
+                                "waiting": {
+                                    "type": "boolean",
+                                    "description": "是否需要接收回调信息,通常为true,除非显式指定"
                                 }
                             },
-                            "required": ["type", "name", "elementId", "tabId"]
+                            "required": ["type", "name", "elementId", "tabId", "waiting"]
                         }
                     }
                 },

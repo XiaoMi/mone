@@ -72,15 +72,22 @@ public class LLM {
         return chatCompletion(getToken(), msgList, llmProvider.getDefaultModel(), "", config);
     }
 
-    public String getApiUrl(String apiKey) {
+    public String getApiUrl(String apiKey, boolean stream) {
         String key = "";
         if (this.llmProvider == LLMProvider.GOOGLE_2 && StringUtils.isEmpty(config.getUrl())) {
             key = apiKey;
         }
         if (null != this.config && StringUtils.isNotEmpty(this.config.getUrl())) {
+            if (stream && StringUtils.isNotEmpty(this.config.getStreamUrl())) {
+                return this.config.getStreamUrl() + key;
+            }
             return this.config.getUrl() + key;
         }
         return llmProvider.getUrl() + key;
+    }
+
+    public String getApiUrl(String apiKey) {
+        return getApiUrl(apiKey, false);
     }
 
 
@@ -116,7 +123,7 @@ public class LLM {
         OkHttpClient client = new OkHttpClient.Builder()
                 .connectTimeout(30, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)
-                .readTimeout(30, TimeUnit.SECONDS)
+                .readTimeout(200, TimeUnit.SECONDS)
                 .build();
 
         JsonObject requestBody = new JsonObject();
@@ -168,7 +175,10 @@ public class LLM {
 
         for (AiMessage message : messages) {
             //使用openrouter,并且使用多模态
-            if ((this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.MOONSHOT) && null != message.getJsonContent()) {
+            if ((this.llmProvider == LLMProvider.OPENROUTER
+                    || this.llmProvider == LLMProvider.MOONSHOT
+                    || this.llmProvider == LLMProvider.DOUBAO
+            ) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
                 msgArray.add(createMessageObjectForGoogle(message));
@@ -402,7 +412,7 @@ public class LLM {
         }
 
         //使用的cloudflare
-        String url = getCloudFlareUrl(apiKey, model, rb);
+        String url = getCloudFlareUrl(apiKey, model, rb, true);
 
         Request request = rb
                 .url(url)
@@ -510,15 +520,20 @@ public class LLM {
         });
     }
 
-    private String getCloudFlareUrl(String apiKey, String model, Request.Builder rb) {
+    private String getCloudFlareUrl(String apiKey, String model, Request.Builder rb, boolean stream) {
         if (this.llmProvider == LLMProvider.GOOGLE_2 && StringUtils.isNotEmpty(config.getUrl())) {
             rb.addHeader("x-goog-api-key", apiKey);
         }
-        String url = getApiUrl(apiKey);
+        String url = getApiUrl(apiKey, stream);
+        //使用google的需要把模型拼进去
         if (this.llmProvider == LLMProvider.GOOGLE_2) {
             url = url.formatted(model);
         }
         return url;
+    }
+
+    private String getCloudFlareUrl(String apiKey, String model, Request.Builder rb) {
+        return getCloudFlareUrl(apiKey, model, rb, false);
     }
 
 

@@ -16,6 +16,7 @@
         <module>mcp-mysql</module>
         <module>mcp-mongo</module>
         <module>mcp-redis</module>
+        <module>mcp-moon</module>
         <module>mcp-shell</module>
         <module>mcp-docker</module>
         <module>mcp-neo4j</module>
@@ -28,6 +29,7 @@
         <module>mcp-prettier</module>
         <module>mcp-writer</module>
         <module>mcp-fetch</module>
+        <module>mcp-gateway</module>
         <module>mcp-coder</module>
         <module>mcp-excel</module>
         <module>mcp-song</module>
@@ -35,6 +37,7 @@
         <module>mcp-git</module>
         <module>mcp-hammerspoon</module>
         <module>mcp-idea</module>
+        <module>mcp-nacosconfig</module>
         <module>mcp-terminal</module>
         <module>mcp-feishu</module>
         <module>mcp-chrome</module>
@@ -43,6 +46,15 @@
         <module>mcp-time</module>
         <module>mcp-xmind</module>
         <module>mcp-hera-log</module>
+        <module>mcp-chaos</module>
+        <module>mcp-nacosservice</module>
+        <module>mcp-ali-email</module>
+        <module>mcp-pty4j</module>
+        <module>mcp-linux-agent</module>
+        <module>mcp-idea-composer</module>
+        <module>mcp-ipinfo</module>
+        <module>mcp-novel</module>
+        <module>mcp-miapi</module>
     </modules>
 
     <properties>
@@ -179,7 +191,6 @@
             <artifactId>spring-boot-starter-websocket</artifactId>
             <version>3.4.1</version>
         </dependency>
-
     </dependencies>
 
 </project>

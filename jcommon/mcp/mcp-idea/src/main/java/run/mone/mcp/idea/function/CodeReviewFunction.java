@@ -1,8 +1,10 @@
 package run.mone.mcp.idea.function;
 
+import com.google.gson.JsonObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.idea.service.IdeaService;
 
@@ -10,15 +12,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+/**
+ * review code
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class CodeReviewFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+public class CodeReviewFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
 
     private final IdeaService ideaService;
 
     public String getName() {
-        return "codeReview";
+        return "stream_codeReview";
     }
 
     public String getDesc() {
@@ -43,14 +48,15 @@ public class CodeReviewFunction implements Function<Map<String, Object>, McpSche
             """;
 
     @Override
-    public McpSchema.CallToolResult apply(Map<String, Object> arguments) {
+    public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         log.info("CodeReviewFunction:{}", arguments);
         try {
-            String result = ideaService.reviewCode((String) arguments.get("code"));
-            log.info("result:{}", result);
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false);
+            Flux<String> result = ideaService.reviewCode((String) arguments.get("code"));
+            JsonObject type = new JsonObject();
+            type.addProperty("type","codeReview");
+            return result.map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
         } catch (Exception e) {
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true);
+            return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true));
         }
     }
 
