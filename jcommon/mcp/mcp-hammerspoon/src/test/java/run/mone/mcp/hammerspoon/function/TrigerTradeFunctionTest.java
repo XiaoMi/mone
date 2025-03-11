@@ -21,6 +21,7 @@ import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.mcp.hammerspoon.function.trigertrade.SellPutOptionDecisionFunction;
 import run.mone.mcp.hammerspoon.function.trigertrade.TigerTradeSdkUtil;
 import run.mone.mcp.hammerspoon.function.trigertrade.dto.OptionDetailBO;
 
@@ -32,10 +33,14 @@ class TrigerTradeFunctionTest {
 
     private TrigerTradeProFunction trigerTradeProFunction;
 
+    private SellPutOptionDecisionFunction sellPutOptionDecisionFunction;
+
     @BeforeEach
     void setUp() {
         trigerTradeProFunction = new TrigerTradeProFunction();
         trigerTradeProFunction.setLlm(llm);
+
+        sellPutOptionDecisionFunction = new SellPutOptionDecisionFunction();
     }
 
     @Test
@@ -144,5 +149,14 @@ class TrigerTradeFunctionTest {
         assertTrue(result.isError());
         String content = ((McpSchema.TextContent)result.content().get(0)).text();
         assertEquals("No options chain text provided", content);
+    }
+
+    @Test
+    void testAiSellPut() {
+        Map<String, Object> args = new HashMap<>();
+        args.put("command", "sellPutOptionDecisionAndClick");
+        args.put("stockNameOrCode", "TSLA");
+
+        sellPutOptionDecisionFunction.apply(args);
     }
 }

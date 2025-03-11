@@ -3,6 +3,7 @@ package run.mone.mcp.hammerspoon.function.trigertrade;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.SQLOutput;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +26,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
+import org.springframework.stereotype.Component;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
@@ -34,15 +36,18 @@ import run.mone.mcp.hammerspoon.function.LocateCoordinates;
 import run.mone.mcp.hammerspoon.function.TrigerTradeProFunction;
 import run.mone.mcp.hammerspoon.function.trigertrade.dto.OptionDetailBO;
 
+import javax.swing.*;
+
 /**
  * @author shanwb
  * @date 2025-03-09
  */
 @Data
 @Slf4j
+@Component
 public class SellPutOptionDecisionFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
-    private String name = "sellPutOptionDecision";
-    private String desc = "triger trade app sell put options decision";
+    private String name = "sellPutOptionDecisionAndClick";
+    private String desc = "老虎国际app智能选择并点击最合适的sell put期权";
     private static final String HAMMERSPOON_URL = "http://localhost:27123/execute";
 
     private static Gson gson = new Gson();
@@ -77,9 +82,7 @@ public class SellPutOptionDecisionFunction implements Function<Map<String, Objec
                 .build();
         this.objectMapper = new ObjectMapper();
 
-
         trigerTradeProFunction = new TrigerTradeProFunction();
-        //trigerTradeProFunction.setLlm();
     }
 
     @Override
@@ -90,7 +93,7 @@ public class SellPutOptionDecisionFunction implements Function<Map<String, Objec
 
             if (name.equalsIgnoreCase(command)) {
                 String luaCode = String.format("return captureAppWindow('%s')",
-                        escapeString("老虎国际"));
+                        escapeString(TtConstant.APP_NAME));
 
                 McpSchema.CallToolResult result = executeHammerspoonCommand(luaCode);
                 McpSchema.ImageContent imageContent = (McpSchema.ImageContent) result.content().get(0);
@@ -107,14 +110,15 @@ public class SellPutOptionDecisionFunction implements Function<Map<String, Objec
                 params.put("base64Image", testBase64Image);
 
                 // Execute the function
-                McpSchema.CallToolResult image = trigerTradeProFunction.apply(args);
+                McpSchema.CallToolResult image = trigerTradeProFunction.apply(params);
                 McpSchema.TextContent markdown = (McpSchema.TextContent) image.content().get(0);
-                String markdownStr = markdown.data();
+                String markdownStr = markdown.text();
+                System.out.println("markdownStr:" + markdownStr);
 
                 // llm call to analyze markdown
-                LLM aLLM = new LLM(LLMConfig.builder().llmProvider(LLMProvider.DEEPSEEK).build());
+                LLM aLLM = new LLM(LLMConfig.builder().llmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3).build());
                 String prompt = """
-                        作为一位专业的期权卖方策略分析师，您的任务是基于期权链数据，分析并找出推荐最佳的卖出看跌期权(PUT)交易机会。
+                        作为一位专业的期权卖方策略分析师，您的任务是严格基于期权链数据，分析并从推荐的期权链中找出最佳的卖出看跌期权(PUT)交易机会。
                         
                         ## 分析流程
                         基于上述信息，请执行以下分析:
@@ -146,7 +150,7 @@ public class SellPutOptionDecisionFunction implements Function<Map<String, Objec
                         - 分析盈亏平衡点
                         
                         ## 输出格式
-                        请以json形式返回，格式如下：
+                        请以json形式返回（请不要带```或```json修饰），格式如下：
                         
                         {
                           "identifier":"请严格从我给你的期权链数据中选取",
@@ -162,35 +166,51 @@ public class SellPutOptionDecisionFunction implements Function<Map<String, Objec
                         - 考虑当前市场环境和波动率情况
                         - 评估期权的流动性(未平仓合约数量和bid-ask差价)
                         - 考虑任何即将到来的可能影响标的资产价格的事件
-                        
+                        - 请严格从给你的期权链中选取推荐的期权机会，严禁乱造
                         
                         需要的信息如下：
                         %s
                         """.formatted(markdownStr);
                 String aRes = aLLM.chat(List.of(new AiMessage("user", prompt)));
-                String bidPrice = null;
+                String strike = null;
                 try {
                     JsonObject jsonResponse = gson.fromJson(aRes, JsonObject.class);
-                    bidPrice = jsonResponse.get("bidPrice").getAsString();
-                    System.out.println("Extracted bidPrice: " + bidPrice);
+                    strike = jsonResponse.get("strike").getAsString();
+                    System.out.println("Extracted strike: " + strike);
                 } catch (Exception e) {
                     System.out.println("Error parsing LLM response: " + e.getMessage());
                     e.printStackTrace();
                 }
 
 
-
                 LLM vllm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build());
                 LocateCoordinates locateCoordinates = new LocateCoordinates();
                 locateCoordinates.setLlm(vllm);
 
-                locateCoordinates.locateCoordinates("", base64);
+                // {"x":100, "y":90}
+                String location = locateCoordinates.locateCoordinates("行权价为"+strike, base64);
+                JsonObject jsonObject2 = gson.fromJson(location, JsonObject.class);
+//                String x = String.valueOf(jsonObject2.get("x").getAsDouble() + 80);
+//                String y = jsonObject2.get("y").getAsString();
 
+                String x = "172";
+                String y = "350";
 
+                System.out.println("location:"+ location);
+                String luaCode2 = String.format("return moveToAppAndClick('%s',%s,%s)", escapeString(TtConstant.APP_NAME), x, y);
+                System.out.println("luaCode2:" + luaCode2);
+                executeHammerspoonCommand(luaCode2);
+
+                return new McpSchema.CallToolResult(
+                        List.of(new McpSchema.TextContent("Operation completed successfully, location:"+ location)),
+                        true
+                );
             }
 
-            return null;
-            //return executeHammerspoonCommand(luaCode);
+            return new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("Operation completed successfully")),
+                    true
+            );
         } catch (Exception e) {
             log.error("Error executing Hammerspoon command", e);
             return new McpSchema.CallToolResult(
@@ -235,6 +255,7 @@ public class SellPutOptionDecisionFunction implements Function<Map<String, Objec
 
                     if (luaCode.contains("captureAppWindow")) {
                         try {
+                            System.out.println("图片地址:" + result);
                             Path path = Paths.get(result);
                             if (Files.exists(path) && Files.isRegularFile(path)) {
                                 byte[] fileBytes = Files.readAllBytes(path);

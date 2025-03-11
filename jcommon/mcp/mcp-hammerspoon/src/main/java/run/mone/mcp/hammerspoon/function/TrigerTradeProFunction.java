@@ -150,7 +150,7 @@ public class TrigerTradeProFunction implements Function<Map<String, Object>, Mcp
 
                         JsonObject obj1 = new JsonObject();
                         obj1.addProperty("type", "text");
-                        obj1.addProperty("text", " 帮我提取期权链数据 thx");
+                        obj1.addProperty("text", " 帮我提取 期权链 数据(返回里边的数据,用markdown格式,我不需要你告诉我怎么做,你只需要提取数据) thx");
                         array.add(obj1);
 
                         JsonObject obj2 = new JsonObject();
@@ -161,7 +161,7 @@ public class TrigerTradeProFunction implements Function<Map<String, Object>, Mcp
                         array.add(obj2);
                         req.add("content", array);
 
-                        LLM vllm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.DOUBAO).build());
+                        LLM vllm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build());
                         String res = vllm.chat(Lists.newArrayList(AiMessage.builder().role("user").jsonContent(req).build()));
                         System.out.println(res);
                         content = res;
