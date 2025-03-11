@@ -62,16 +62,16 @@ public class HammerspoonMcpServer {
                 syncServer.addTool(toolRegistration);
 
                 // 注册locateCoordinatesFunction
-                syncServer.addTool(new McpServer.ToolRegistration(
-                    new Tool(locateCoordinatesFunction.getName(), locateCoordinatesFunction.getDesc(), locateCoordinatesFunction.getToolScheme()),
-                    locateCoordinatesFunction
-                ));
-
-                //注册期权选择
-                syncServer.addTool(new McpServer.ToolRegistration(
-                        new Tool(sellPutOptionDecisionFunction.getName(), sellPutOptionDecisionFunction.getDesc(), sellPutOptionDecisionFunction.getToolScheme()),
-                        sellPutOptionDecisionFunction
-                ));
+//                syncServer.addTool(new McpServer.ToolRegistration(
+//                    new Tool(locateCoordinatesFunction.getName(), locateCoordinatesFunction.getDesc(), locateCoordinatesFunction.getToolScheme()),
+//                    locateCoordinatesFunction
+//                ));
+//
+//                //注册期权选择
+//                syncServer.addTool(new McpServer.ToolRegistration(
+//                        new Tool(sellPutOptionDecisionFunction.getName(), sellPutOptionDecisionFunction.getDesc(), sellPutOptionDecisionFunction.getToolScheme()),
+//                        sellPutOptionDecisionFunction
+//                ));
 
 
                 log.info("Successfully registered trigertrade tool");

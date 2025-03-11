@@ -51,8 +51,8 @@ public class TrigerTradeProFunction implements Function<Map<String, Object>, Mcp
                 "properties": {
                     "command": {
                         "type": "string",
-                        "enum": ["searchAndOpenStock", "captureAppWindow", "maximizeAppWindow", "clickOptionsChain", "sellPutOption", "sellPutOptionFlow", "analyzeOptionsChain", "analyzeOptionsChainText"],
-                        "description": "The operation type to perform  example:帮我买一手小米put 会调用:sellPutOptionFlow"
+                        "enum": ["searchAndOpenStock", "clickOptionsChain", "sellPutOption"],
+                        "description": "The operation type to perform"
                     },
                     "stockNameOrCode": {
                         "type": "string",
