@@ -133,7 +133,7 @@ public class HeraFileMonitor {
                             } else {
                                 log.info("ENTRY_CREATE filePath:{},fileKey:{}", filePath, k);
                                 HeraFile hf = HeraFile.builder().file(file).fileKey(k).fileName(filePath).build();
-                                map.putIfAbsent(k, hf);
+                                map.put(k, hf);
                                 fileMap.put(filePath, hf);
 
                                 listener.onEvent(FileEvent.builder().type(EventType.create).fileKey(k).fileName(file.getPath()).build());
@@ -168,10 +168,10 @@ public class HeraFileMonitor {
                 HeraFile hf = HeraFile.builder().file(it).fileKey(fileKey).fileName(it.getPath()).build();
                 FileInfo fi = FileInfoCache.ins().get(fileKey.toString());
                 long pointer = 0L;
-                if (null != fi) {
+                if (null != fi && Objects.equals(it.getPath(), fi.getFileName())) {
                     pointer = fi.getPointer();
                 }
-                log.info("initFile fileName:{},fileKey:{}", name, fileKey);
+                log.info("initFile fileName:{},fileKey:{},fi:{},pointer:{}", name, fileKey, fi, pointer);
                 map.put(hf.getFileKey(), hf);
                 fileMap.put(hf.getFileName(), hf);
                 log.info("initFile hf:{},map size:{},fileMap size:{}", hf, map.size(), fileMap.size());

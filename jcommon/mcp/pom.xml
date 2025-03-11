@@ -42,6 +42,7 @@
         <module>mcp-email</module>
         <module>mcp-time</module>
         <module>mcp-xmind</module>
+        <module>mcp-hera-log</module>
     </modules>
 
     <properties>
