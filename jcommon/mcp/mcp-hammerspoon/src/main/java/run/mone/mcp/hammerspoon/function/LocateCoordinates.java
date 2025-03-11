@@ -2,6 +2,7 @@ package run.mone.mcp.hammerspoon.function;
 
 import java.util.List;
 
+import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -11,6 +12,7 @@ import run.mone.hive.schema.AiMessage;
 
 @Slf4j
 @Service
+@Data
 public class LocateCoordinates {
 
     @Autowired
