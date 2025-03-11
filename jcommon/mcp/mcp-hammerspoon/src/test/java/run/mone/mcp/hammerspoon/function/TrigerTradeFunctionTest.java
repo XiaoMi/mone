@@ -1,19 +1,28 @@
 package run.mone.mcp.hammerspoon.function;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import com.google.gson.Gson;
+import com.tigerbrokers.stock.openapi.client.https.domain.option.model.OptionChainModel;
+import com.tigerbrokers.stock.openapi.client.struct.enums.TimeZoneId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.mcp.hammerspoon.function.trigertrade.TigerTradeSdkUtil;
+import run.mone.mcp.hammerspoon.function.trigertrade.dto.OptionDetailBO;
 
 @SpringBootTest
 class TrigerTradeFunctionTest {
@@ -45,6 +54,32 @@ class TrigerTradeFunctionTest {
         // Verify results
         assertNotNull(result);
     }
+
+    @Test
+    void testAnalyzeOptionsChainWithApi() {
+        OptionChainModel basicModel = new OptionChainModel("TSLA", "2025-03-14", TimeZoneId.NewYork);
+        List<OptionDetailBO> optionDetailBOList = TigerTradeSdkUtil.getOptionChainDetail(basicModel, "put");
+        System.out.println("111111111");
+        System.out.println(new Gson().toJson(optionDetailBOList));
+
+        String c = "基于以下期权链数据，请分析并推荐最佳的行权价。\n" +
+                "请考虑以下因素：" +
+                "1. 当前股价 " +
+                "2. 隐含波动率 " +
+                "3. 成交量 " +
+                "4. 未平仓量。" +
+                "给出你的分析理由。" +
+                "期权链数据如下：\n" + new Gson().toJson(optionDetailBOList);
+
+
+        System.out.println("length:" + c.length());
+
+        LLM vllm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3).build());
+        String res = vllm.chat(c);
+
+        System.out.println(res);
+    }
+
 
     @Test
     void testAnalyzeOptionsChainText() {

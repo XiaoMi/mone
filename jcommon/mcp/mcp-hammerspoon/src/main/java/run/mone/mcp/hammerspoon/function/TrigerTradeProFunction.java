@@ -174,7 +174,7 @@ public class TrigerTradeProFunction implements Function<Map<String, Object>, Mcp
                 case "analyzeOptionsChainText":
                     String optionsChainText = (String) args.get("optionsChainText");
                     if (StringUtils.isNotEmpty(optionsChainText)) {
-
+                        optionsChainText = "hi";
                         String c = "基于以下期权链数据，请分析并推荐最佳的行权价。请考虑以下因素：1. 当前股价 2. 隐含波动率 3. 成交量 4. 未平仓量。给出你的分析理由。期权链数据如下：\n" + optionsChainText;
 
                         LLM vllm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3).build());
