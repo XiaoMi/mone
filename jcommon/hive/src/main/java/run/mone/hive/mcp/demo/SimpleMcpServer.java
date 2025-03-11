@@ -7,6 +7,7 @@ import run.mone.hive.mcp.demo.function.CalculatorFunction;
 import run.mone.hive.mcp.demo.function.FileOperationFunction;
 import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.server.McpServer.ToolRegistration;
+import run.mone.hive.mcp.server.McpServer.ToolStreamRegistration;
 import run.mone.hive.mcp.server.McpSyncServer;
 import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
@@ -31,13 +32,19 @@ public class SimpleMcpServer {
                         .build())
                 .sync();
 
-//        CalculatorFunction function = new CalculatorFunction();
-        FileOperationFunction function = new FileOperationFunction();
-        var toolRegistration = new ToolRegistration(
+        CalculatorFunction function = new CalculatorFunction();
+        // FileOperationFunction function = new FileOperationFunction();
+        // var toolRegistration = new ToolRegistration(
+        //         new Tool(function.getName(), function.getDesc(), function.getToolScheme()), function
+        // );
+
+        // syncServer.addTool(toolRegistration);
+
+        var toolStreamRegistration = new ToolStreamRegistration(
                 new Tool(function.getName(), function.getDesc(), function.getToolScheme()), function
         );
 
-        syncServer.addTool(toolRegistration);
+        syncServer.addStreamTool(toolStreamRegistration);
 
         return syncServer;
     }
