@@ -37,7 +37,7 @@ public class OpenTabFunction implements Function<Map<String, Object>, McpSchema.
                             },
                             "auto": {
                                 "type": "boolean",
-                                "description": "是否自动执行"
+                                "description": "是否自动执行,通常为true,除非显式指定"
                             },
                             "desc": {
                                 "type": "string",

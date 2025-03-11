@@ -1,6 +1,8 @@
 package run.mone.mcp.idea.function;
 
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
+
 import org.springframework.stereotype.Component;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.idea.service.IdeaService;
@@ -8,15 +10,25 @@ import run.mone.mcp.idea.service.IdeaService;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import com.google.gson.JsonObject;
+import org.springframework.stereotype.Component;
 
+import lombok.RequiredArgsConstructor;
+import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.mcp.idea.service.IdeaService;
+
+
+/**
+ * 生成注释
+ */
 @Component
 @RequiredArgsConstructor
-public class CreateCommentFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+public class CreateCommentFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
 
     private final IdeaService ideaService;
 
     public String getName() {
-        return "createComment";
+        return "stream_CreateComment";
     }
 
     public String getDesc() {
@@ -41,13 +53,15 @@ public class CreateCommentFunction implements Function<Map<String, Object>, McpS
             """;
 
     @Override
-    public McpSchema.CallToolResult apply(Map<String, Object> arguments) {
-
+    public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         try {
-            String result = ideaService.createComment((String) arguments.get("code"));
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false);
+            String code = (String) arguments.get("code");
+            JsonObject type = new JsonObject();
+            type.addProperty("type", "comment");
+            Flux<String> result = ideaService.createComment(code);
+            return result.map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
         } catch (Exception e) {
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true);
+            return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true));
         }
     }
 }

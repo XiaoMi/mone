@@ -1,6 +1,7 @@
 package run.mone.hive.mcp.server;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -12,12 +13,15 @@ import java.util.function.Consumer;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import run.mone.hive.mcp.server.McpServer.PromptRegistration;
 import run.mone.hive.mcp.server.McpServer.ResourceRegistration;
 import run.mone.hive.mcp.server.McpServer.ToolRegistration;
+import run.mone.hive.mcp.server.McpServer.ToolStreamRegistration;
 import run.mone.hive.mcp.spec.DefaultMcpSession;
 import run.mone.hive.mcp.spec.DefaultMcpSession.NotificationHandler;
 import run.mone.hive.mcp.spec.McpError;
@@ -63,6 +67,8 @@ public class McpAsyncServer {
 	 */
 	private final CopyOnWriteArrayList<ToolRegistration> tools;
 
+	private final CopyOnWriteArrayList<ToolStreamRegistration> streamTools;
+
 	private final CopyOnWriteArrayList<McpSchema.ResourceTemplate> resourceTemplates;
 
 	private final ConcurrentHashMap<String, ResourceRegistration> resources;
@@ -90,6 +96,7 @@ public class McpAsyncServer {
 
 		this.serverInfo = serverInfo;
 		this.tools = new CopyOnWriteArrayList<>(tools != null ? tools : List.of());
+		this.streamTools = new CopyOnWriteArrayList<>();
 		this.resources = !Utils.isEmpty(resources) ? new ConcurrentHashMap<>(resources) : new ConcurrentHashMap<>();
 		this.resourceTemplates = !Utils.isEmpty(resourceTemplates) ? new CopyOnWriteArrayList<>(resourceTemplates)
 				: new CopyOnWriteArrayList<>();
@@ -105,7 +112,7 @@ public class McpAsyncServer {
 				!Utils.isEmpty(this.tools) ? new McpSchema.ServerCapabilities.ToolCapabilities(false) : null);
 
 		Map<String, DefaultMcpSession.RequestHandler> requestHandlers = new HashMap<>();
-
+		
 		// Initialize request handlers for standard MCP methods
 		requestHandlers.put(McpSchema.METHOD_INITIALIZE, initializeRequestHandler());
 
@@ -140,6 +147,10 @@ public class McpAsyncServer {
 			requestHandlers.put(McpSchema.METHOD_LOGGING_SET_LEVEL, setLoggerRequestHandler());
 		}
 
+		Map<String, DefaultMcpSession.StreamRequestHandler> streamRequestHandlers = new HashMap<>();
+
+		streamRequestHandlers.put(McpSchema.METHOD_TOOLS_STREAM, toolsStreamRequestHandler());
+
 		Map<String, NotificationHandler> notificationHandlers = new HashMap<>();
 
 		notificationHandlers.put(McpSchema.METHOD_NOTIFICATION_INITIALIZED, (params) -> Mono.empty());
@@ -153,7 +164,7 @@ public class McpAsyncServer {
 
 		this.transport = mcpTransport;
 		this.mcpSession = new DefaultMcpSession(Duration.ofSeconds(10), mcpTransport, requestHandlers,
-				notificationHandlers);
+				streamRequestHandlers, notificationHandlers);
 	}
 
 	// ---------------------------------------
@@ -303,6 +314,34 @@ public class McpAsyncServer {
 		return Mono.empty();
 	}
 
+	public Mono<Void> addStreamTool(ToolStreamRegistration toolRegistration) {
+		if (toolRegistration == null) {
+			return Mono.error(new McpError("Tool registration must not be null"));
+		}
+		if (toolRegistration.tool() == null) {
+			return Mono.error(new McpError("Tool must not be null"));
+		}
+		if (toolRegistration.call() == null) {
+			return Mono.error(new McpError("Tool call handler must not be null"));
+		}
+		if (this.serverCapabilities.tools() == null) {
+			return Mono.error(new McpError("Server must be configured with tool capabilities"));
+		}
+
+		// Check for duplicate tool names
+		if (this.streamTools.stream().anyMatch(th -> th.tool().name().equals(toolRegistration.tool().name()))) {
+			return Mono.error(new McpError("Tool with name '" + toolRegistration.tool().name() + "' already exists"));
+		}
+
+		this.streamTools.add(toolRegistration);
+		logger.info("Added tool handler: {}", toolRegistration.tool().name());
+		if (this.serverCapabilities.tools().listChanged()) {
+			return notifyToolsListChanged();
+		}
+		return Mono.empty();
+	}
+	
+
 	/**
 	 * Remove a tool handler at runtime.
 	 * @param toolName The name of the tool handler to remove
@@ -338,15 +377,25 @@ public class McpAsyncServer {
 	private DefaultMcpSession.RequestHandler toolsListRequestHandler() {
 		return params -> {
 
+			List<Tool> toolsRes = new ArrayList<>();
+
 			List<Tool> tools = this.tools.stream().map(toolRegistration -> {
 				return toolRegistration.tool();
 			}).toList();
 
-			return Mono.just(new McpSchema.ListToolsResult(tools, null));
+			List<Tool> streamTools = this.streamTools.stream().map(toolRegistration -> {
+				return toolRegistration.tool();
+			}).toList();
+
+			toolsRes.addAll(tools);
+			toolsRes.addAll(streamTools);
+
+			return Mono.just(new McpSchema.ListToolsResult(toolsRes, null));
 		};
 	}
 
 	private DefaultMcpSession.RequestHandler toolsCallRequestHandler() {
+		// TODO: handle tool call request
 		return params -> {
 			McpSchema.CallToolRequest callToolRequest = transport.unmarshalFrom(params,
 					new TypeReference<McpSchema.CallToolRequest>() {
@@ -363,6 +412,32 @@ public class McpAsyncServer {
 			return Mono.fromCallable(() -> toolRegistration.get().call().apply(callToolRequest.arguments()))
 				.map(result -> (Object) result)
 				.subscribeOn(Schedulers.boundedElastic());
+		};
+	}
+
+	private DefaultMcpSession.StreamRequestHandler toolsStreamRequestHandler() {
+		return params -> {
+			logger.info("Received tools stream request: {}", params);
+			// this is where we handle tools stream request
+			McpSchema.CallToolRequest callToolRequest = transport.unmarshalFrom(params,
+					new TypeReference<McpSchema.CallToolRequest>() {
+					});
+			
+			Optional<ToolStreamRegistration> toolRegistration = this.streamTools.stream()
+				.filter(tr -> callToolRequest.name().equals(tr.tool().name()))
+				.findAny();
+
+			if (toolRegistration.isEmpty()) {
+				return Flux.error(new McpError("Tool not found: " + callToolRequest.name()));
+			}	
+
+			ToolStreamRegistration tool = toolRegistration.get();
+
+			logger.info("Handling tools stream request with tool: {}", tool);
+
+			return Flux.from(tool.call()
+				.apply(callToolRequest.arguments())
+				.subscribeOn(Schedulers.boundedElastic()));
 		};
 	}
 
