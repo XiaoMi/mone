@@ -105,4 +105,133 @@ public class CodePrompt {
              \n
             """;
 
+    public static final String SR_DIFF_PROMPT = """
+            + IMPORTANT:如果使用 write_to_file ，内容中务必包含完整的代码内容
+            + IMPORTANT:如果使用 replace_in_file ，内容中务必包含一个或多个"SEARCH/REPLACE"。格式如下：
+                                ```
+                                <<<<<<< SEARCH
+                                [exact content to find]
+                                =======
+                                [new content to replace with]
+                                >>>>>>> REPLACE
+                                ```
+                    Critical rules:
+                        - SEARCH content must match the associated file section to find EXACTLY:
+                            * Match character-for-character including whitespace, indentation, line endings
+                            * Include all comments, docstrings, etc.
+                        - SEARCH/REPLACE blocks will ONLY replace the first match occurrence.
+                            * Including multiple unique SEARCH/REPLACE blocks if you need to make multiple changes.
+                            * Include *just* enough lines in each SEARCH section to uniquely match each set of lines that need to change.
+                            * When using multiple SEARCH/REPLACE blocks, list them in the order they appear in the file.
+                        - Keep SEARCH/REPLACE blocks concise:
+                            * Break large SEARCH/REPLACE blocks into a series of smaller blocks that each change a small portion of the file.
+                            * Include just the changing lines, and a few surrounding lines if needed for uniqueness.
+                            * Do not include long runs of unchanging lines in SEARCH/REPLACE blocks.
+                            * Each line must be complete. Never truncate lines mid-way through as this can cause matching failures.
+                        - Special operations:
+                            * To move code: Use two SEARCH/REPLACE blocks (one to delete from original + one to insert at new location)
+                            * To delete code: Use empty REPLACE section
+            IMPORTANT: 多个"SEARCH/REPLACE"操作请放在一个boltAction中执行，不要拆分成多个boltAction。例如：
+                                <example>
+                                    <user_query>******</user_query> \s
+                                    <assistant_response> \s
+                                    <<<<<<< SEARCH
+                                    import React from 'react';
+                                    =======
+                                    import React, { useState } from 'react';
+                                    >>>>>>> REPLACE
+                                    
+                                    <<<<<<< SEARCH
+                                    function handleSubmit() {
+                                      saveData();
+                                      setLoading(false);
+                                    }
+                                    
+                                    =======
+                                    >>>>>>> REPLACE
+                                    
+                                    <<<<<<< SEARCH
+                                    return (
+                                      <div>
+                                    =======
+                                    function handleSubmit() {
+                                      saveData();
+                                      setLoading(false);
+                                    }
+                                    
+                                    return (
+                                      <div>
+                                    >>>>>>> REPLACE
+                                    </boltAction> \s
+                                    </boltArtifact> \s
+                                    </assistant_response> \s
+                                </example>
+                更多例子：
+                <examples>
+                    <example>
+                        <user_query>在User类中添加一个新的getFullName方法</user_query> \s
+                        
+                        <assistant_response> \s
+                        我来帮你添加getFullName方法。 \s
+                        
+                        <boltArtifact id="add-user-method" title="Add getFullName method to User class"> \s
+                        <boltAction type="replace_in_file" filePath="src/User.js"> \s
+                        <<<<<<< SEARCH
+                        class User { \s
+                          constructor(firstName, lastName) { \s
+                            this.firstName = firstName; \s
+                            this.lastName = lastName; \s
+                          } \s
+                        =======
+                        class User { \s
+                          constructor(firstName, lastName) { \s
+                            this.firstName = firstName; \s
+                            this.lastName = lastName; \s
+                          } \s
+                          getFullName() { \s
+                            return `${this.firstName} ${this.lastName}`; \s
+                          } \s
+                        >>>>>>> REPLACE
+                        </boltAction> \s
+                        </boltArtifact> \s
+                        </assistant_response> \s
+                    </example>
+                        
+                    <example>
+                        <user_query>创建一个新的Product类</user_query> \s
+                        
+                        <assistant_response> \s
+                        好的,我来创建Product类。 \s
+                        
+                        <boltArtifact id="create-product" title="Create Product class"> \s
+                        <boltAction type="write_to_file" filePath="src/Product.js"> \s
+                        class Product { \s
+                          constructor(id, name, price) { \s
+                            this.id = id; \s
+                            this.name = name; \s
+                            this.price = price; \s
+                          } \s
+                        
+                          getFormattedPrice() { \s
+                            return `$${this.price.toFixed(2)}`; \s
+                          } \s
+                        
+                          updatePrice(newPrice) { \s
+                            this.price = newPrice; \s
+                          } \s
+                        } \s
+                        
+                        export default Product; \s
+                        </boltAction> \s
+                        </boltArtifact> \s
+                        </assistant_response>
+                    </example>
+                        
+                </examples>
+            """;
+
+    public static final String SR_FULL_PROMPT = """
+            + IMPORTANT:本次代码变动请全部使用 write_to_file 完成
+            """;
+
 }
