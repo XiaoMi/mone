@@ -46,19 +46,15 @@ public class LocateCoordinateTest {
         String imageBase64 = getImageAsBase64("/Users/zhangzhiyong/eee.png");
         String mimeType = "image/png";
 //        String objectDesc = "图中内容为期权‘看跌’的数据，请你找到排名第二的成交价格的坐标 ";
-//        String objectDesc = "帮我找到卖出按钮的坐标";
-        String objectDesc = "帮我查找<新股>的坐标(x,y)";
+        String objectDesc = "图中内容为 <个股资料> 这个tab的坐标";
 
         String prompt = """
-            你需要注意的点:
-            1.我的屏幕的分辨率是:1496*967
-            2.这张图片是截取的整个屏幕
+            1.左上角是0,0
+            2.图片像素:1496*967
+            3.尽量返回元素中心的坐标
             
-            请帮我完成:
             请从图片中找到如下对象的位置: %s.
-            请定位到对象的中心位置. 请返回包含'x','y'两个key的json格式结果. 比如: {"x": 100, "y": 200}.
-            如果有任何异常情况，比如找不到对象，或描述有歧义，无法定位到唯一结果，请返回包含'error' key的json结果, 例如: {"error":"你的反馈"}.
-            请注意返回json即可，不要返回解释性的内容，不然会有不好的事情发生.
+
         """.formatted(objectDesc);
 
         JsonObject jsonObject = new JsonObject();
