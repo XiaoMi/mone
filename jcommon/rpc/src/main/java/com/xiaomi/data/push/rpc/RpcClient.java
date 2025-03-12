@@ -188,7 +188,7 @@ public class RpcClient implements Service {
      * 需要二次注册的时候
      */
     public void registerProcessor() {
-        processorList.stream().forEach(it -> client.registerProcessor(it.getObject1(), it.getObject2(), defaultPool));
+        processorList.forEach(it -> client.registerProcessor(it.getObject1(), it.getObject2(), defaultPool));
     }
 
 

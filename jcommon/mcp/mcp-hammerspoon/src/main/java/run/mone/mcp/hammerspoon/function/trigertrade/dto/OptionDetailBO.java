@@ -19,10 +19,10 @@ public class OptionDetailBO implements Serializable {
 
     private String strike;
     private String right;
-    private double bidPrice;
-    private int bidSize;
-    private double askPrice;
-    private int askSize;
+    private Double bidPrice;
+    private Integer bidSize;
+    private Double askPrice;
+    private Integer askSize;
     private int volume;
     private double latestPrice;
     private double preClose;

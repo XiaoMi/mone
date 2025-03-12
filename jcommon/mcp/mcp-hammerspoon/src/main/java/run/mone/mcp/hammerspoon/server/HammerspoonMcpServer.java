@@ -15,6 +15,7 @@ import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.mcp.hammerspoon.function.DingTalkFunction;
 import run.mone.mcp.hammerspoon.function.LocateCoordinatesFunction;
 import run.mone.mcp.hammerspoon.function.TrigerTradeProFunction;
+import run.mone.mcp.hammerspoon.function.trigertrade.SellPutOptionDecisionFunction;
 
 
 @Slf4j
@@ -26,14 +27,16 @@ public class HammerspoonMcpServer {
 
     private final ServerMcpTransport transport;
     private final LocateCoordinatesFunction locateCoordinatesFunction;
+    private final SellPutOptionDecisionFunction sellPutOptionDecisionFunction;
     private McpSyncServer syncServer;
 
     @Resource
     private LLM llm;
 
-    public HammerspoonMcpServer(ServerMcpTransport transport, LocateCoordinatesFunction locateCoordinatesFunction) {
+    public HammerspoonMcpServer(ServerMcpTransport transport, LocateCoordinatesFunction locateCoordinatesFunction, SellPutOptionDecisionFunction sellPutOptionDecisionFunction) {
         this.transport = transport;
         this.locateCoordinatesFunction = locateCoordinatesFunction;
+        this.sellPutOptionDecisionFunction = sellPutOptionDecisionFunction;
     }
 
     public McpSyncServer start() {
@@ -59,10 +62,18 @@ public class HammerspoonMcpServer {
                 syncServer.addTool(toolRegistration);
 
                 // 注册locateCoordinatesFunction
-                syncServer.addTool(new McpServer.ToolRegistration(
-                    new Tool(locateCoordinatesFunction.getName(), locateCoordinatesFunction.getDesc(), locateCoordinatesFunction.getToolScheme()),
-                    locateCoordinatesFunction
-                ));
+//                syncServer.addTool(new McpServer.ToolRegistration(
+//                    new Tool(locateCoordinatesFunction.getName(), locateCoordinatesFunction.getDesc(), locateCoordinatesFunction.getToolScheme()),
+//                    locateCoordinatesFunction
+//                ));
+//
+//                //注册期权选择
+//                syncServer.addTool(new McpServer.ToolRegistration(
+//                        new Tool(sellPutOptionDecisionFunction.getName(), sellPutOptionDecisionFunction.getDesc(), sellPutOptionDecisionFunction.getToolScheme()),
+//                        sellPutOptionDecisionFunction
+//                ));
+
+
                 log.info("Successfully registered trigertrade tool");
             } else {
                 DingTalkFunction function = new DingTalkFunction();
