@@ -199,23 +199,6 @@ public class TigerTradeSdkUtil {
         return response.isSuccess();
     }
 
-    /**
-     * 获取指定市场的期权symbol列表
-     *
-     * @param market
-     * @return
-     */
-    public static List<OptionSymbolBO> getOptionSymbolList(Market market) {
-        OptionSymbolRequest request = OptionSymbolRequest.newRequest(market, Language.en_US);
-
-        OptionSymbolResponse response = client.execute(request);
-
-        List<OptionSymbolBO> optionSymbolBOS = parseOptionSymbolResponse(response);
-        System.out.println(gson.toJson(optionSymbolBOS));
-
-        return optionSymbolBOS;
-    }
-
     private static List<OptionSymbolBO> parseOptionSymbolResponse(OptionSymbolResponse response) {
         List<OptionSymbolBO> result = new ArrayList<>();
 
@@ -234,13 +217,29 @@ public class TigerTradeSdkUtil {
         return result;
     }
 
+    /**
+     * 获取指定市场的期权symbol列表
+     * @param market
+     * @return
+     */
+    public static List<OptionSymbolBO> getOptionSymbolList (Market market) {
+        OptionSymbolRequest request = OptionSymbolRequest.newRequest(market, Language.en_US);
+
+        OptionSymbolResponse response = client.execute(request);
+
+        List<OptionSymbolBO> optionSymbolBOS = parseOptionSymbolResponse(response);
+        System.out.println(gson.toJson(optionSymbolBOS));
+
+        return optionSymbolBOS;
+    }
+
     public static List<OptionDetailBO> getOptionChainDetail(OptionChainModel optionChainModel, String optionType) {
         return getOptionChainDetail(optionChainModel, optionType, Market.US);
     }
 
     public static List<OptionDetailBO> getOptionChainDetail(OptionChainModel optionChainModel, String optionType, Market market) {
         OptionChainFilterModel filterModel = new OptionChainFilterModel()
-                //.inTheMoney(false)
+                .inTheMoney(false)
                 //.impliedVolatility(0.01, 0.99)
                 //.openInterest(10, 50000)
                 ;
@@ -250,6 +249,8 @@ public class TigerTradeSdkUtil {
 
         List<OptionDetailBO> optionDetailBOList = parseOptionChainResponse(response);
         System.out.println(new Gson().toJson(optionDetailBOList));
+        System.out.println("total option size:" + optionDetailBOList.size());
+        //System.out.println(new Gson().toJson(optionDetailBOList));
 
         if (null != optionType) {
             return optionDetailBOList.stream().filter(o -> optionType.equalsIgnoreCase(o.getOptionType())).toList();
