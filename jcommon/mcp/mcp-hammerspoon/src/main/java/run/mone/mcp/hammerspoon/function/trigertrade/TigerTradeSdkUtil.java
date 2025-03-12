@@ -1,5 +1,6 @@
 package run.mone.mcp.hammerspoon.function.trigertrade;
 
+import com.alibaba.fastjson.JSONObject;
 import com.google.gson.Gson;
 import com.tigerbrokers.stock.openapi.client.config.ClientConfig;
 import com.tigerbrokers.stock.openapi.client.https.client.TigerHttpClient;
@@ -8,11 +9,17 @@ import com.tigerbrokers.stock.openapi.client.https.domain.option.item.OptionReal
 import com.tigerbrokers.stock.openapi.client.https.domain.option.item.OptionRealTimeQuoteGroup;
 import com.tigerbrokers.stock.openapi.client.https.domain.option.model.OptionChainFilterModel;
 import com.tigerbrokers.stock.openapi.client.https.domain.option.model.OptionChainModel;
-import com.tigerbrokers.stock.openapi.client.https.request.TigerRequest;
 import com.tigerbrokers.stock.openapi.client.https.request.option.OptionChainQueryV3Request;
-import com.tigerbrokers.stock.openapi.client.https.response.TigerResponse;
+import com.tigerbrokers.stock.openapi.client.https.request.quote.QuoteDelayRequest;
+import com.tigerbrokers.stock.openapi.client.https.request.quote.QuoteMarketRequest;
+import com.tigerbrokers.stock.openapi.client.https.request.quote.QuoteRealTimeQuoteRequest;
+import com.tigerbrokers.stock.openapi.client.https.request.trade.PositionsRequest;
+import com.tigerbrokers.stock.openapi.client.https.request.trade.PrimeAssetRequest;
 import com.tigerbrokers.stock.openapi.client.https.response.option.OptionChainResponse;
 import com.tigerbrokers.stock.openapi.client.struct.enums.Market;
+import com.tigerbrokers.stock.openapi.client.struct.enums.SecType;
+import com.tigerbrokers.stock.openapi.client.util.builder.AccountParamBuilder;
+import lombok.extern.slf4j.Slf4j;
 import run.mone.mcp.hammerspoon.function.trigertrade.dto.OptionDetailBO;
 
 import java.text.SimpleDateFormat;
@@ -22,10 +29,12 @@ import java.util.List;
 
 /**
  * Parser for option chain data from Tiger Brokers API
- * 
+ *
  * @author shanwb
+ * @author goodjava@qq.com
  * @date 2025-03-10
  */
+@Slf4j
 public class TigerTradeSdkUtil {
 
     private static ClientConfig clientConfig = ClientConfig.DEFAULT_CONFIG;
@@ -40,14 +49,80 @@ public class TigerTradeSdkUtil {
         client = TigerHttpClient.getInstance().clientConfig(clientConfig);
     }
 
-    public static <T extends TigerResponse> T execute(TigerRequest<T> request) {
-        return client.execute(request);
+
+    private static String account = "21549496269944832";
+
+    //账户持仓
+    public static String positionsRequest() {
+        PositionsRequest request = new PositionsRequest();
+
+        String bizContent = AccountParamBuilder.instance()
+                .account("21549496269944832")
+                .secType(SecType.OPT)
+                .buildJson();
+//        request.setTigerId("20155232");
+        request.setBizContent(bizContent);
+
+        PositionsResponse response = client.execute(request);
+        System.out.println(response);
+        return "";
     }
+
+    //综合/模拟账号获取资产
+    public static PrimeAssetItem.CurrencyAssets getAssetByCurrency(Currency currency) {
+        PrimeAssetRequest assetRequest = PrimeAssetRequest.buildPrimeAssetRequest(account, currency);
+        assetRequest.setConsolidated(Boolean.TRUE);
+        PrimeAssetResponse primeAssetResponse = client.execute(assetRequest);
+        //查询证券相关资产信息
+        PrimeAssetItem.Segment segment = primeAssetResponse.getSegment(Category.S);
+        log.info("segment: " + JSONObject.toJSONString(segment));
+        //查询账号中美元相关资产信息
+        if (segment != null) {
+            PrimeAssetItem.CurrencyAssets assetByCurrency = segment.getAssetByCurrency(Currency.USD);
+            log.info("assetByCurrency: " + JSONObject.toJSONString(assetByCurrency));
+            return assetByCurrency;
+        }
+        return null;
+    }
+
+    //QuoteMarketRequest (获取市场状态)
+    public static QuoteMarketResponse quoteMarketRequest(Market market) {
+        TigerHttpClient client = TigerHttpClient.getInstance().clientConfig(
+                ClientConfig.DEFAULT_CONFIG);
+        QuoteMarketResponse response = client.execute(QuoteMarketRequest.newRequest(market));
+        if (response.isSuccess()) {
+            log.info(Arrays.toString(response.getMarketItems().toArray()));
+        } else {
+            log.error("response error:" + response.getMessage());
+        }
+        return response;
+    }
+
+    //QuoteDelayRequest 获取股票延时行情(只支持美股)
+    public static QuoteDelayResponse quoteDelayRequest(List<String> symbols) {
+//        symbols.add("MIU.HK");
+        QuoteDelayRequest delayRequest = QuoteDelayRequest.newRequest(symbols);
+        QuoteDelayResponse response = client.execute(delayRequest);
+        log.info("quoteDelayRequest {}", response);
+        return response;
+    }
+
+    //获取实时行情 QuoteRealTimeQuoteRequest
+    public static QuoteRealTimeQuoteResponse quoteRealTimeQuoteRequest(List<String> symbols) {
+        QuoteRealTimeQuoteResponse response = client.execute(QuoteRealTimeQuoteRequest.newRequest(symbols, true));
+        if (response.isSuccess()) {
+            log.info(Arrays.toString(response.getRealTimeQuoteItems().toArray()));
+        } else {
+            log.error("response error:" + response.getMessage());
+        }
+        return response;
+    }
+
 
     public static List<OptionDetailBO> getOptionChainDetail(OptionChainModel optionChainModel, String optionType) {
         OptionChainFilterModel filterModel = new OptionChainFilterModel()
-                .inTheMoney(false)
-                //.impliedVolatility(0.01, 0.99)
+                .inTheMoney(true)
+                .impliedVolatility(0.1537, 0.8282)
                 .openInterest(10, 50000)
                 ;
         OptionChainQueryV3Request request = OptionChainQueryV3Request.of(optionChainModel, filterModel, Market.US);
@@ -66,6 +141,7 @@ public class TigerTradeSdkUtil {
 
     /**
      * Parse the OptionChainResponse into a list of OptionDetailBO objects
+     *
      * @param response The response from the API
      * @return List of OptionDetailBO objects
      */
