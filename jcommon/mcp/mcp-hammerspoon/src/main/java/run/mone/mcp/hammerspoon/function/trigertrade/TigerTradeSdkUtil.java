@@ -1,8 +1,10 @@
 package run.mone.mcp.hammerspoon.function.trigertrade;
 
 import com.google.gson.Gson;
+import com.tigerbrokers.stock.openapi.client.TigerApiException;
 import com.tigerbrokers.stock.openapi.client.config.ClientConfig;
 import com.tigerbrokers.stock.openapi.client.https.client.TigerHttpClient;
+import com.tigerbrokers.stock.openapi.client.https.domain.contract.item.ContractItem;
 import com.tigerbrokers.stock.openapi.client.https.domain.option.item.OptionChainItem;
 import com.tigerbrokers.stock.openapi.client.https.domain.option.item.OptionRealTimeQuote;
 import com.tigerbrokers.stock.openapi.client.https.domain.option.item.OptionRealTimeQuoteGroup;
@@ -10,10 +12,20 @@ import com.tigerbrokers.stock.openapi.client.https.domain.option.model.OptionCha
 import com.tigerbrokers.stock.openapi.client.https.domain.option.model.OptionChainModel;
 import com.tigerbrokers.stock.openapi.client.https.request.TigerRequest;
 import com.tigerbrokers.stock.openapi.client.https.request.option.OptionChainQueryV3Request;
+import com.tigerbrokers.stock.openapi.client.https.request.option.OptionSymbolRequest;
+import com.tigerbrokers.stock.openapi.client.https.request.trade.QueryOrderRequest;
+import com.tigerbrokers.stock.openapi.client.https.request.trade.TradeOrderRequest;
 import com.tigerbrokers.stock.openapi.client.https.response.TigerResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.option.OptionChainResponse;
-import com.tigerbrokers.stock.openapi.client.struct.enums.Market;
+import com.tigerbrokers.stock.openapi.client.https.response.option.OptionSymbolResponse;
+import com.tigerbrokers.stock.openapi.client.https.response.trade.BatchOrderResponse;
+import com.tigerbrokers.stock.openapi.client.https.response.trade.TradeOrderResponse;
+import com.tigerbrokers.stock.openapi.client.struct.enums.*;
+import com.tigerbrokers.stock.openapi.client.util.builder.AccountParamBuilder;
+import lombok.extern.slf4j.Slf4j;
 import run.mone.mcp.hammerspoon.function.trigertrade.dto.OptionDetailBO;
+import run.mone.mcp.hammerspoon.function.trigertrade.dto.OptionSymbolBO;
+import run.mone.mcp.hammerspoon.function.trigertrade.dto.OptionSymbolResponseWrapper;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -26,6 +38,7 @@ import java.util.List;
  * @author shanwb
  * @date 2025-03-10
  */
+@Slf4j
 public class TigerTradeSdkUtil {
 
     private static ClientConfig clientConfig = ClientConfig.DEFAULT_CONFIG;
@@ -44,17 +57,122 @@ public class TigerTradeSdkUtil {
         return client.execute(request);
     }
 
+    public static BatchOrderResponse queryOptionOrders(SecType secType, String startDate, String endDate, String account) {
+        log.info("queryOptionOrders secType:{}, startDate:{}, endDate:{}", secType, startDate, endDate);
+        //todo 确认枚举含义
+        QueryOrderRequest request = new QueryOrderRequest(MethodName.FILLED_ORDERS);
+        
+        AccountParamBuilder builder = AccountParamBuilder.instance();
+        
+        // Apply account if provided
+        if (account != null && !account.isEmpty()) {
+            builder.account(account);
+        }
+        
+        // Apply security type, default to OPT if not specified
+        builder.secType(secType != null ? secType : SecType.OPT);
+        
+        // Apply date range
+        if (startDate != null) {
+            builder.startDate(startDate);
+        }
+        
+        if (endDate != null) {
+            builder.endDate(endDate);
+        }
+        
+        String bizContent = builder.buildJson();
+        request.setBizContent(bizContent);
+        
+        return TigerTradeSdkUtil.execute(request);
+    }
+
+
+    public static BatchOrderResponse queryOptionOrdersLast24Hours() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        
+        // Current time for end date
+        String endDate = sdf.format(new Date());
+        // 24 hours ago for start date
+        Date startDateTime = new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000);
+        String startDate = sdf.format(startDateTime);
+
+        BatchOrderResponse response = queryOptionOrders(SecType.OPT, startDate, endDate, null);
+
+        System.out.println(gson.toJson(response));
+
+        return response;
+    }
+
+
+    public static Boolean sellPutOption(OptionDetailBO optionDetailBO, int quantity) {
+        ContractItem contract = null;
+        try {
+            contract = ContractItem.buildOptionContract(optionDetailBO.getIdentifier());
+        } catch (TigerApiException e) {
+            throw new RuntimeException(e);
+        }
+        //contract.setAccount("");
+
+        //TradeOrderRequest request = TradeOrderRequest.buildLimitOrder(contract, ActionType.SELL, quantity, optionDetailBO.getBidPrice());
+        TradeOrderRequest request = TradeOrderRequest.buildMarketOrder(contract, ActionType.SELL, 1);
+        TradeOrderResponse response = TigerTradeSdkUtil.execute(request);
+        System.out.println("response:" + new Gson().toJson(response));
+
+        return response.isSuccess();
+    }
+
+    /**
+     * 获取指定市场的期权symbol列表
+     * @param market
+     * @return
+     */
+    public static List<OptionSymbolBO> getOptionSymbolList (Market market) {
+        OptionSymbolRequest request = OptionSymbolRequest.newRequest(market, Language.en_US);
+
+        OptionSymbolResponse response = client.execute(request);
+
+        List<OptionSymbolBO> optionSymbolBOS = parseOptionSymbolResponse(response);
+        System.out.println(gson.toJson(optionSymbolBOS));
+
+        return optionSymbolBOS;
+    }
+
+    private static List<OptionSymbolBO> parseOptionSymbolResponse(OptionSymbolResponse response) {
+        List<OptionSymbolBO> result = new ArrayList<>();
+
+        if (response == null || !response.isSuccess()) {
+            return result;
+        }
+
+        // Get the raw JSON response and parse it manually
+        String jsonResponse = gson.toJson(response);
+        OptionSymbolResponseWrapper wrapper = gson.fromJson(jsonResponse, OptionSymbolResponseWrapper.class);
+
+        if (wrapper != null && wrapper.getSymbolItems() != null) {
+            return wrapper.getSymbolItems();
+        }
+
+        return result;
+    }
+
+
     public static List<OptionDetailBO> getOptionChainDetail(OptionChainModel optionChainModel, String optionType) {
+        return getOptionChainDetail(optionChainModel, optionType, Market.US);
+    }
+
+    public static List<OptionDetailBO> getOptionChainDetail(OptionChainModel optionChainModel, String optionType, Market market) {
         OptionChainFilterModel filterModel = new OptionChainFilterModel()
-                .inTheMoney(false)
+                //.inTheMoney(false)
                 //.impliedVolatility(0.01, 0.99)
-                .openInterest(10, 50000)
+                //.openInterest(10, 50000)
                 ;
-        OptionChainQueryV3Request request = OptionChainQueryV3Request.of(optionChainModel, filterModel, Market.US);
+        OptionChainQueryV3Request request = OptionChainQueryV3Request.of(optionChainModel, filterModel, market);
 
         OptionChainResponse response = client.execute(request);
 
         List<OptionDetailBO> optionDetailBOList = parseOptionChainResponse(response);
+        System.out.println(new Gson().toJson(optionDetailBOList));
 
         if (null != optionType) {
             return optionDetailBOList.stream().filter(o -> optionType.equalsIgnoreCase(o.getOptionType())).toList();

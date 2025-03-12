@@ -66,7 +66,7 @@ public class TrigerTradeApiTest {
     public void testSellPutOptionOrder() {
         // 1. Get option chain details to find a suitable put option
         OptionChainModel basicModel = new OptionChainModel("TSLA", "2025-03-14", TimeZoneId.NewYork);
-        List<OptionDetailBO> putOptions = TigerTradeSdkUtil.getOptionChainDetail(basicModel, "put");
+        List<OptionDetailBO> putOptions = TigerTradeSdkUtil.getOptionChainDetail(basicModel, "put", Market.US);
 
         if (putOptions == null || putOptions.isEmpty()) {
             System.out.println("No put options available for the specified date");

@@ -8,10 +8,7 @@ import com.tigerbrokers.stock.openapi.client.https.request.trade.QueryOrderReque
 import com.tigerbrokers.stock.openapi.client.https.request.trade.TradeOrderRequest;
 import com.tigerbrokers.stock.openapi.client.https.response.trade.BatchOrderResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.trade.TradeOrderResponse;
-import com.tigerbrokers.stock.openapi.client.struct.enums.ActionType;
-import com.tigerbrokers.stock.openapi.client.struct.enums.MethodName;
-import com.tigerbrokers.stock.openapi.client.struct.enums.SecType;
-import com.tigerbrokers.stock.openapi.client.struct.enums.TimeZoneId;
+import com.tigerbrokers.stock.openapi.client.struct.enums.*;
 import com.tigerbrokers.stock.openapi.client.util.builder.AccountParamBuilder;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
@@ -33,7 +30,7 @@ public class SellOptionByApi {
     public static void main(String[] args) {
         // 1. Get option chain details to find a suitable put option
         OptionChainModel basicModel = new OptionChainModel("TSLA", "2025-03-14", TimeZoneId.NewYork);
-        List<OptionDetailBO> putOptions = TigerTradeSdkUtil.getOptionChainDetail(basicModel, "put");
+        List<OptionDetailBO> putOptions = TigerTradeSdkUtil.getOptionChainDetail(basicModel, "put", Market.US);
 
         if (putOptions == null || putOptions.isEmpty()) {
             System.out.println("No put options available for the specified date");
