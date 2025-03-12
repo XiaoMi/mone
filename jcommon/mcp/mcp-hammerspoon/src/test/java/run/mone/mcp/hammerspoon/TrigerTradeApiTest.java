@@ -1,5 +1,6 @@
 package run.mone.mcp.hammerspoon;
 
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.tigerbrokers.stock.openapi.client.config.ClientConfig;
@@ -16,6 +17,9 @@ import com.tigerbrokers.stock.openapi.client.https.request.trade.TradeOrderReque
 import com.tigerbrokers.stock.openapi.client.https.response.contract.ContractResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.option.OptionChainResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.option.OptionExpirationResponse;
+import com.tigerbrokers.stock.openapi.client.struct.enums.Currency;
+import com.tigerbrokers.stock.openapi.client.struct.enums.Market;
+import com.tigerbrokers.stock.openapi.client.struct.enums.TimeZoneId;
 import com.tigerbrokers.stock.openapi.client.https.response.trade.BatchOrderResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.trade.TradeOrderResponse;
 import com.tigerbrokers.stock.openapi.client.struct.enums.*;
@@ -60,6 +64,26 @@ public class TrigerTradeApiTest {
         List<OptionDetailBO> optionDetailBOList = TigerTradeSdkUtil.getOptionChainDetail(basicModel, "put");
 
         System.out.println(gson.toJson(optionDetailBOList));
+    }
+
+    @Test
+    public void testGetAssetByCurrency() {
+        TigerTradeSdkUtil.getAssetByCurrency(Currency.USD);
+    }
+
+    @Test
+    public void testQuoteMarketRequest() {
+        TigerTradeSdkUtil.quoteMarketRequest(Market.HK);
+    }
+
+    @Test
+    public void testQuoteDelayRequest() {
+        TigerTradeSdkUtil.quoteDelayRequest(Lists.newArrayList("AAPL"));
+    }
+
+    @Test
+    public void testQuoteRealTimeQuoteRequest() {
+        TigerTradeSdkUtil.quoteRealTimeQuoteRequest(Lists.newArrayList("AAPL"));
     }
 
     @Test
