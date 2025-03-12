@@ -3,24 +3,18 @@ package run.mone.mcp.hammerspoon;
 import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.tigerbrokers.stock.openapi.client.config.ClientConfig;
-import com.tigerbrokers.stock.openapi.client.https.client.TigerHttpClient;
 import com.tigerbrokers.stock.openapi.client.https.domain.contract.item.ContractItem;
-import com.tigerbrokers.stock.openapi.client.https.domain.contract.model.ContractModel;
-import com.tigerbrokers.stock.openapi.client.https.domain.option.model.OptionChainFilterModel;
 import com.tigerbrokers.stock.openapi.client.https.domain.option.model.OptionChainModel;
-import com.tigerbrokers.stock.openapi.client.https.domain.quote.item.QuoteDelayItem;
 import com.tigerbrokers.stock.openapi.client.https.domain.trade.item.PrimeAssetItem;
-import com.tigerbrokers.stock.openapi.client.https.request.contract.ContractRequest;
-import com.tigerbrokers.stock.openapi.client.https.request.option.OptionChainQueryV3Request;
+import com.tigerbrokers.stock.openapi.client.https.domain.quote.item.QuoteDelayItem;
 import com.tigerbrokers.stock.openapi.client.https.request.option.OptionExpirationQueryRequest;
 import com.tigerbrokers.stock.openapi.client.https.request.trade.QueryOrderRequest;
 import com.tigerbrokers.stock.openapi.client.https.request.trade.TradeOrderRequest;
-import com.tigerbrokers.stock.openapi.client.https.response.contract.ContractResponse;
-import com.tigerbrokers.stock.openapi.client.https.response.option.OptionChainResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.option.OptionExpirationResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.quote.QuoteDelayResponse;
+import com.tigerbrokers.stock.openapi.client.https.response.quote.QuoteMarketResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.quote.QuoteRealTimeQuoteResponse;
+import com.tigerbrokers.stock.openapi.client.https.response.trade.PositionsResponse;
 import com.tigerbrokers.stock.openapi.client.struct.enums.Currency;
 import com.tigerbrokers.stock.openapi.client.struct.enums.Market;
 import com.tigerbrokers.stock.openapi.client.struct.enums.TimeZoneId;
@@ -29,10 +23,10 @@ import com.tigerbrokers.stock.openapi.client.https.response.trade.TradeOrderResp
 import com.tigerbrokers.stock.openapi.client.struct.enums.*;
 import com.tigerbrokers.stock.openapi.client.util.builder.AccountParamBuilder;
 import org.junit.Test;
-import org.springframework.util.CollectionUtils;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
+import org.springframework.util.CollectionUtils;
 import run.mone.mcp.hammerspoon.function.trigertrade.dto.OptionDetailBO;
 import run.mone.mcp.hammerspoon.function.trigertrade.TigerTradeSdkUtil;
 import run.mone.mcp.hammerspoon.function.trigertrade.utils.PromptFileUtils;
@@ -52,7 +46,6 @@ public class TrigerTradeApiTest {
 
     @Test
     public void testGetOptions() {
-
         List<String> symbols = new ArrayList<>();
         symbols.add("TSLA");
         OptionExpirationResponse response = TigerTradeSdkUtil.execute(
@@ -67,30 +60,38 @@ public class TrigerTradeApiTest {
     @Test
     public void testGetOptionsChain() {
         OptionChainModel basicModel = new OptionChainModel("TSLA", "2025-03-14", TimeZoneId.NewYork);
-
         List<OptionDetailBO> optionDetailBOList = TigerTradeSdkUtil.getOptionChainDetail(basicModel, "put");
-
         System.out.println(gson.toJson(optionDetailBOList));
     }
 
     @Test
+    public void testPositionsRequest() {
+        PositionsResponse res = TigerTradeSdkUtil.positionsRequest(SecType.STK);
+        System.out.println(res);
+    }
+
+    @Test
     public void testGetAssetByCurrency() {
-        TigerTradeSdkUtil.getAssetByCurrency(Currency.USD);
+        PrimeAssetItem.CurrencyAssets res = TigerTradeSdkUtil.getAssetByCurrency(Currency.USD);
+        System.out.println(res);
     }
 
     @Test
     public void testQuoteMarketRequest() {
-        TigerTradeSdkUtil.quoteMarketRequest(Market.HK);
+        QuoteMarketResponse res = TigerTradeSdkUtil.quoteMarketRequest(Market.HK);
+        System.out.println(res);
     }
 
     @Test
     public void testQuoteDelayRequest() {
-        TigerTradeSdkUtil.quoteDelayRequest(Lists.newArrayList("AAPL"));
+        QuoteDelayResponse res = TigerTradeSdkUtil.quoteDelayRequest(Lists.newArrayList("AAPL"));
+        System.out.println(res);
     }
 
     @Test
     public void testQuoteRealTimeQuoteRequest() {
-        TigerTradeSdkUtil.quoteRealTimeQuoteRequest(Lists.newArrayList("AAPL"));
+        QuoteRealTimeQuoteResponse res = TigerTradeSdkUtil.quoteRealTimeQuoteRequest(Lists.newArrayList("AAPL"));
+        System.out.println(res);
     }
 
     @Test
