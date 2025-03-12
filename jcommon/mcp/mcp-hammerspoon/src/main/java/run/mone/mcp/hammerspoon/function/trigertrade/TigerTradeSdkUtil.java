@@ -72,18 +72,15 @@ public class TigerTradeSdkUtil {
     }
 
     //账户持仓
-    public static String positionsRequest() {
+    public static PositionsResponse positionsRequest(SecType secType) {
         PositionsRequest request = new PositionsRequest();
-
         String bizContent = AccountParamBuilder.instance()
-                .secType(SecType.OPT)
+                .secType(secType)
                 .buildJson();
-//        request.setTigerId("20155232");
         request.setBizContent(bizContent);
-
         PositionsResponse response = client.execute(request);
-        System.out.println(response);
-        return "";
+        log.info("{}", response);
+        return response;
     }
 
     //综合/模拟账号获取资产
@@ -204,10 +201,11 @@ public class TigerTradeSdkUtil {
 
     /**
      * 获取指定市场的期权symbol列表
+     *
      * @param market
      * @return
      */
-    public static List<OptionSymbolBO> getOptionSymbolList (Market market) {
+    public static List<OptionSymbolBO> getOptionSymbolList(Market market) {
         OptionSymbolRequest request = OptionSymbolRequest.newRequest(market, Language.en_US);
 
         OptionSymbolResponse response = client.execute(request);
@@ -263,22 +261,23 @@ public class TigerTradeSdkUtil {
 
     /**
      * Parse the OptionChainResponse into a list of OptionDetailBO objects
+     *
      * @param response The response from the API
      * @return List of OptionDetailBO objects
      */
     private static List<OptionDetailBO> parseOptionChainResponse(OptionChainResponse response) {
         List<OptionDetailBO> result = new ArrayList<>();
-        
+
         if (response == null || !response.isSuccess() || response.getOptionChainItems() == null) {
             return result;
         }
-        
+
         for (OptionChainItem chainItem : response.getOptionChainItems()) {
             String symbol = chainItem.getSymbol();
             // Convert timestamp to date string (yyyy-MM-dd)
             String expiry = new SimpleDateFormat("yyyy-MM-dd")
                     .format(new Date(chainItem.getExpiry()));
-            
+
             if (chainItem.getItems() != null) {
                 for (OptionRealTimeQuoteGroup item : chainItem.getItems()) {
                     // Process call options
@@ -286,7 +285,7 @@ public class TigerTradeSdkUtil {
                         OptionDetailBO callOption = createOptionDetailBO(item.getCall(), "call", expiry);
                         result.add(callOption);
                     }
-                    
+
                     // Process put options
                     if (item.getPut() != null) {
                         OptionDetailBO putOption = createOptionDetailBO(item.getPut(), "put", expiry);
@@ -295,20 +294,21 @@ public class TigerTradeSdkUtil {
                 }
             }
         }
-        
+
         return result;
     }
 
     /**
      * Create an OptionDetailBO from an option item
-     * @param option The option item from the response
+     *
+     * @param option     The option item from the response
      * @param optionType The type of option (call or put)
-     * @param expiry The expiry date
+     * @param expiry     The expiry date
      * @return An OptionDetailBO object
      */
     private static OptionDetailBO createOptionDetailBO(OptionRealTimeQuote option, String optionType, String expiry) {
         OptionDetailBO detailBO = new OptionDetailBO();
-        
+
         detailBO.setIdentifier(option.getIdentifier());
         detailBO.setOptionType(optionType);
         detailBO.setExpiry(expiry);
@@ -330,7 +330,7 @@ public class TigerTradeSdkUtil {
         detailBO.setTheta(option.getTheta());
         detailBO.setVega(option.getVega());
         detailBO.setRho(option.getRho());
-        
+
         return detailBO;
     }
 } 

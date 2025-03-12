@@ -21,6 +21,7 @@ import com.tigerbrokers.stock.openapi.client.https.response.option.OptionExpirat
 import com.tigerbrokers.stock.openapi.client.https.response.quote.QuoteDelayResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.quote.QuoteMarketResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.quote.QuoteRealTimeQuoteResponse;
+import com.tigerbrokers.stock.openapi.client.https.response.trade.PositionsResponse;
 import com.tigerbrokers.stock.openapi.client.struct.enums.Currency;
 import com.tigerbrokers.stock.openapi.client.struct.enums.Market;
 import com.tigerbrokers.stock.openapi.client.struct.enums.TimeZoneId;
@@ -63,10 +64,14 @@ public class TrigerTradeApiTest {
     @Test
     public void testGetOptionsChain() {
         OptionChainModel basicModel = new OptionChainModel("TSLA", "2025-03-14", TimeZoneId.NewYork);
-
         List<OptionDetailBO> optionDetailBOList = TigerTradeSdkUtil.getOptionChainDetail(basicModel, "put");
-
         System.out.println(gson.toJson(optionDetailBOList));
+    }
+
+    @Test
+    public void testPositionsRequest() {
+        PositionsResponse res = TigerTradeSdkUtil.positionsRequest(SecType.STK);
+        System.out.println(res);
     }
 
     @Test
