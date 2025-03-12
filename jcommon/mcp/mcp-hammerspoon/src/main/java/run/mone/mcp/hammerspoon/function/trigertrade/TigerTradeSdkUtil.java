@@ -242,7 +242,7 @@ public class TigerTradeSdkUtil {
 
     public static List<OptionDetailBO> getOptionChainDetail(OptionChainModel optionChainModel, String optionType, Market market) {
         OptionChainFilterModel filterModel = new OptionChainFilterModel()
-                //.inTheMoney(false)
+                .inTheMoney(false)
                 //.impliedVolatility(0.01, 0.99)
                 //.openInterest(10, 50000)
                 ;
@@ -251,7 +251,8 @@ public class TigerTradeSdkUtil {
         OptionChainResponse response = client.execute(request);
 
         List<OptionDetailBO> optionDetailBOList = parseOptionChainResponse(response);
-        System.out.println(new Gson().toJson(optionDetailBOList));
+        System.out.println("total option size:" + optionDetailBOList.size());
+        //System.out.println(new Gson().toJson(optionDetailBOList));
 
         if (null != optionType) {
             return optionDetailBOList.stream().filter(o -> optionType.equalsIgnoreCase(o.getOptionType())).toList();

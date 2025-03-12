@@ -9,6 +9,8 @@ import com.tigerbrokers.stock.openapi.client.https.domain.contract.item.Contract
 import com.tigerbrokers.stock.openapi.client.https.domain.contract.model.ContractModel;
 import com.tigerbrokers.stock.openapi.client.https.domain.option.model.OptionChainFilterModel;
 import com.tigerbrokers.stock.openapi.client.https.domain.option.model.OptionChainModel;
+import com.tigerbrokers.stock.openapi.client.https.domain.quote.item.QuoteDelayItem;
+import com.tigerbrokers.stock.openapi.client.https.domain.trade.item.PrimeAssetItem;
 import com.tigerbrokers.stock.openapi.client.https.request.contract.ContractRequest;
 import com.tigerbrokers.stock.openapi.client.https.request.option.OptionChainQueryV3Request;
 import com.tigerbrokers.stock.openapi.client.https.request.option.OptionExpirationQueryRequest;
@@ -17,6 +19,8 @@ import com.tigerbrokers.stock.openapi.client.https.request.trade.TradeOrderReque
 import com.tigerbrokers.stock.openapi.client.https.response.contract.ContractResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.option.OptionChainResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.option.OptionExpirationResponse;
+import com.tigerbrokers.stock.openapi.client.https.response.quote.QuoteDelayResponse;
+import com.tigerbrokers.stock.openapi.client.https.response.quote.QuoteRealTimeQuoteResponse;
 import com.tigerbrokers.stock.openapi.client.struct.enums.Currency;
 import com.tigerbrokers.stock.openapi.client.struct.enums.Market;
 import com.tigerbrokers.stock.openapi.client.struct.enums.TimeZoneId;
@@ -25,14 +29,17 @@ import com.tigerbrokers.stock.openapi.client.https.response.trade.TradeOrderResp
 import com.tigerbrokers.stock.openapi.client.struct.enums.*;
 import com.tigerbrokers.stock.openapi.client.util.builder.AccountParamBuilder;
 import org.junit.Test;
+import org.springframework.util.CollectionUtils;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.mcp.hammerspoon.function.trigertrade.dto.OptionDetailBO;
 import run.mone.mcp.hammerspoon.function.trigertrade.TigerTradeSdkUtil;
+import run.mone.mcp.hammerspoon.function.trigertrade.utils.PromptFileUtils;
+import run.mone.mcp.hammerspoon.function.trigertrade.utils.TemplateUtils;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * @author shanwb
@@ -87,7 +94,101 @@ public class TrigerTradeApiTest {
     }
 
     @Test
+    public void testSellPutOptionOrderV2() throws IOException {
+        String symbol = "TSLA";
+
+        // 1. Get option chain details to find a suitable put option
+        OptionChainModel basicModel = new OptionChainModel("TSLA", "2025-03-14", TimeZoneId.NewYork);
+        List<OptionDetailBO> putOptions = TigerTradeSdkUtil.getOptionChainDetail(basicModel, "put", Market.US);
+        System.out.println(gson.toJson(putOptions));
+        if (putOptions == null || putOptions.isEmpty()) {
+            System.out.println("No put options available for the specified date");
+            return;
+        }
+
+        Map<String, Object> optionChains = new HashMap<>();
+        optionChains.put("optionChains", putOptions);
+
+        String optionChainPromptTemplate = PromptFileUtils.readPromptFile(PromptFileUtils.OPTION_CHAIN_PROMPT);
+        String optionChainPrompt = TemplateUtils.processTemplateContent(optionChainPromptTemplate, optionChains);
+        System.out.println("optionChainPrompt:" + optionChainPrompt);
+
+
+        //todo 是否换成实时行情
+        QuoteDelayResponse quoteDelayResponse = TigerTradeSdkUtil.quoteDelayRequest(Arrays.asList(symbol));
+        System.out.println("quoteDelayResponse:" + gson.toJson(quoteDelayResponse));
+        QuoteDelayItem quoteDelayItem;
+        String stockQuotePrompt = null;
+        List<QuoteDelayItem> quoteDelayItemList = quoteDelayResponse.getQuoteDelayItems();
+        if (!CollectionUtils.isEmpty(quoteDelayItemList)) {
+            quoteDelayItem = quoteDelayItemList.get(0);
+
+            String stockQuotePromptTemplate = PromptFileUtils.readPromptFile(PromptFileUtils.STOCK_QUOTE_PROMPT);
+            stockQuotePrompt = TemplateUtils.processTemplateContent(stockQuotePromptTemplate, quoteDelayItem);
+            System.out.println("stockQuotePrompt:" + stockQuotePrompt);
+        }
+
+
+        Map<String, Object> sellPutPromptParams = new HashMap<>();
+        sellPutPromptParams.put("stockQuote", stockQuotePrompt);
+        sellPutPromptParams.put("optionChain", optionChainPrompt);
+        String sellPutPromptTemplate = PromptFileUtils.readPromptFile(PromptFileUtils.SELL_PUT_STRATEGY_PROMPT);
+        String sellPutPrompt = TemplateUtils.processTemplateContent(sellPutPromptTemplate, sellPutPromptParams);
+
+        System.out.println("sellPutPrompt:" + sellPutPrompt);
+        LLM vllm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3).build());
+        String res = vllm.chat(sellPutPrompt);
+        System.out.println("sell put llm res:" + res);
+
+        // Extract identifier from LLM response
+        String identifier = null;
+        try {
+            JsonObject jsonResponse = gson.fromJson(res, JsonObject.class);
+            identifier = jsonResponse.get("identifier").getAsString();
+            System.out.println("Extracted identifier: " + identifier);
+        } catch (Exception e) {
+            System.out.println("Error parsing LLM response: " + e.getMessage());
+            e.printStackTrace();
+            return;
+        }
+
+        // Find the selected option in the list based on the identifier
+        OptionDetailBO selectedOption = null;
+        for (OptionDetailBO option : putOptions) {
+            if (option.getIdentifier().equals(identifier)) {
+                selectedOption = option;
+                break;
+            }
+        }
+
+        if (selectedOption == null) {
+            System.out.println("Could not find option with identifier: " + identifier);
+            return;
+        }
+
+        System.out.println("Selected put option: " + gson.toJson(selectedOption));
+
+        // 3. Create an order to sell 1 contract of the selected put option
+        try {
+            ContractItem contract = ContractItem.buildOptionContract(selectedOption.getIdentifier());
+            System.out.println("goto build order ...........");
+            //TradeOrderRequest request = TradeOrderRequest.buildLimitOrder(contract, ActionType.SELL, 1, selectedOption.getBidPrice());
+            TradeOrderRequest request = TradeOrderRequest.buildMarketOrder(contract, ActionType.SELL, 1);
+            TradeOrderResponse response = TigerTradeSdkUtil.execute(request);
+            System.out.println("response:" + new Gson().toJson(response));
+            System.out.println("end.....identifier:" + selectedOption.getIdentifier() + ", price:" + selectedOption.getBidPrice());
+
+        } catch (Exception e) {
+            System.out.println("Error preparing option order: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+    }
+
+
+    @Test
     public void testSellPutOptionOrder() {
+
         // 1. Get option chain details to find a suitable put option
         OptionChainModel basicModel = new OptionChainModel("TSLA", "2025-03-14", TimeZoneId.NewYork);
         List<OptionDetailBO> putOptions = TigerTradeSdkUtil.getOptionChainDetail(basicModel, "put", Market.US);
@@ -204,7 +305,6 @@ public class TrigerTradeApiTest {
         // 3. Create an order to sell 1 contract of the selected put option
         try {
             ContractItem contract = ContractItem.buildOptionContract(selectedOption.getIdentifier());
-            contract.setAccount("21549496269944832");
 
             TradeOrderRequest request = TradeOrderRequest.buildLimitOrder(contract, ActionType.SELL, 1, selectedOption.getBidPrice());
             //TradeOrderRequest request = TradeOrderRequest.buildMarketOrder(contract, ActionType.SELL, 1);
