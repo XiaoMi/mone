@@ -1,12 +1,5 @@
 package run.mone.mcp.hammerspoon.function;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-import okhttp3.*;
-import run.mone.hive.mcp.spec.McpSchema;
-
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -16,6 +9,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.MediaType;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.mcp.hammerspoon.common.StringUtils;
 
 /**
  * @author shanwb
@@ -62,7 +68,7 @@ public class ChatViewFunction implements Function<Map<String, Object>, McpSchema
             if (dingTalkContactName.endsWith("...")) {
                 dingTalkContactName = dingTalkContactName.substring(0, dingTalkContactName.length() - 3);
             }
-            luaCode.add(String.format("return searchDingTalkContact('%s')", escapeString(dingTalkContactName)));
+            luaCode.add(String.format("return searchDingTalkContact('%s')", StringUtils.escapeWxUserName(dingTalkContactName)));
             luaCode.add("return captureAppWindow(\"企业微信\")");
 
             McpSchema.CallToolResult res = new McpSchema.CallToolResult(new ArrayList<>(), false);
@@ -144,12 +150,5 @@ public class ChatViewFunction implements Function<Map<String, Object>, McpSchema
                     true
             );
         }
-    }
-
-    private String escapeString(String input) {
-        if (input == null) return "";
-        return input.replace("'", "\\'")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r");
     }
 }
