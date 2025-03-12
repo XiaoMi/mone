@@ -46,7 +46,6 @@ public class TrigerTradeApiTest {
 
     @Test
     public void testGetOptions() {
-
         List<String> symbols = new ArrayList<>();
         symbols.add("TSLA");
         OptionExpirationResponse response = TigerTradeSdkUtil.execute(
