@@ -9,6 +9,7 @@ import com.tigerbrokers.stock.openapi.client.https.domain.contract.item.Contract
 import com.tigerbrokers.stock.openapi.client.https.domain.contract.model.ContractModel;
 import com.tigerbrokers.stock.openapi.client.https.domain.option.model.OptionChainFilterModel;
 import com.tigerbrokers.stock.openapi.client.https.domain.option.model.OptionChainModel;
+import com.tigerbrokers.stock.openapi.client.https.domain.trade.item.PrimeAssetItem;
 import com.tigerbrokers.stock.openapi.client.https.request.contract.ContractRequest;
 import com.tigerbrokers.stock.openapi.client.https.request.option.OptionChainQueryV3Request;
 import com.tigerbrokers.stock.openapi.client.https.request.option.OptionExpirationQueryRequest;
@@ -17,6 +18,8 @@ import com.tigerbrokers.stock.openapi.client.https.request.trade.TradeOrderReque
 import com.tigerbrokers.stock.openapi.client.https.response.contract.ContractResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.option.OptionChainResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.option.OptionExpirationResponse;
+import com.tigerbrokers.stock.openapi.client.https.response.quote.QuoteDelayResponse;
+import com.tigerbrokers.stock.openapi.client.https.response.quote.QuoteMarketResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.quote.QuoteRealTimeQuoteResponse;
 import com.tigerbrokers.stock.openapi.client.struct.enums.Currency;
 import com.tigerbrokers.stock.openapi.client.struct.enums.Market;
@@ -68,17 +71,20 @@ public class TrigerTradeApiTest {
 
     @Test
     public void testGetAssetByCurrency() {
-        TigerTradeSdkUtil.getAssetByCurrency(Currency.USD);
+        PrimeAssetItem.CurrencyAssets res = TigerTradeSdkUtil.getAssetByCurrency(Currency.USD);
+        System.out.println(res);
     }
 
     @Test
     public void testQuoteMarketRequest() {
-        TigerTradeSdkUtil.quoteMarketRequest(Market.HK);
+        QuoteMarketResponse res = TigerTradeSdkUtil.quoteMarketRequest(Market.HK);
+        System.out.println(res);
     }
 
     @Test
     public void testQuoteDelayRequest() {
-        TigerTradeSdkUtil.quoteDelayRequest(Lists.newArrayList("AAPL"));
+        QuoteDelayResponse res = TigerTradeSdkUtil.quoteDelayRequest(Lists.newArrayList("AAPL"));
+        System.out.println(res);
     }
 
     @Test
