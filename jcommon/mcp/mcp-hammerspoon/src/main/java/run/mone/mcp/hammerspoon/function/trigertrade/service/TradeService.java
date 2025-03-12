@@ -53,11 +53,12 @@ public class TradeService {
     }
 
 
-    public TradeOrderResponse sellPutOption(OptionChainModel optionChainModel, Market market, String optionDate, FluxSink<String> sink) {
+
+	public TradeOrderResponse sellPutOption(OptionChainModel optionChainModel, Market market, String optionDate, FluxSink<String> sink) {
         try {
-            sink.next("开始卖put  信息: " + optionChainModel + " market:" + market);
+            sink.next("\n开始卖put  信息: " + optionChainModel + " market:" + market + "\n");
             //1.查询期权链
-            sink.next("查询期权链");
+            sink.next("\n查询期权链");
             List<OptionDetailBO> putOptions = TigerTradeSdkUtil.getOptionChainDetail(optionChainModel, "put", market);
             Preconditions.checkArgument(!CollectionUtils.isEmpty(putOptions), String.format("No put options available for the specified date:%s", optionDate));
 
@@ -68,10 +69,14 @@ public class TradeService {
             String optionChainPrompt = TemplateUtils.processTemplateContent(optionChainPromptTemplate, optionChains);
             log.info("optionChainPrompt:{}", optionChainPrompt);
 
-            sink.next("查询股票行情");
+            sink.next("\n查询股票行情");
             //3.查询股票行情
             QuoteDelayResponse quoteDelayResponse = TigerTradeSdkUtil.quoteDelayRequest(Arrays.asList(optionChainModel.getSymbol()));
-            log.info("quoteDelayResponse:{}", gson.toJson(quoteDelayResponse));
+            String quoteDelayResponseStr = gson.toJson(quoteDelayResponse);
+            log.info("quoteDelayResponse:{}", quoteDelayResponseStr);
+
+            sink.next("\n股票信息:" + quoteDelayResponseStr);
+
             QuoteDelayItem quoteDelayItem;
             String stockQuotePrompt = null;
             List<QuoteDelayItem> quoteDelayItemList = quoteDelayResponse.getQuoteDelayItems();
@@ -82,12 +87,12 @@ public class TradeService {
                 log.info("stockQuotePrompt:{}", stockQuotePrompt);
             }
 
-            sink.next("ai决策 选期权");
+            sink.next("\nai决策 选期权");
             //4.ai决策 选期权
             OptionDetailBO selectedOption = selectOptionByAi(stockQuotePrompt, optionChainPrompt, putOptions);
 
             //5.下单
-            sink.next("下单");
+            sink.next("\n下单:" + selectedOption.getIdentifier());
             ContractItem contract = ContractItem.buildOptionContract(selectedOption.getIdentifier());
             log.info("goto build order ...........");
             //TradeOrderRequest request = TradeOrderRequest.buildLimitOrder(contract, ActionType.SELL, 1, selectedOption.getBidPrice());
@@ -96,7 +101,7 @@ public class TradeService {
             log.info("response:{}", new Gson().toJson(response));
             log.info("end.....identifier:{}, price:{}", selectedOption.getIdentifier(), selectedOption.getBidPrice());
 
-            sink.next("下单结束");
+            sink.next("\n下单结束");
             return response;
         } catch (IOException | TigerApiException e) {
             log.error("sellPutOption exception:", e);
