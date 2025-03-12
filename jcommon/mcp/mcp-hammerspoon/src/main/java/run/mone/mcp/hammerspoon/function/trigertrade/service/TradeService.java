@@ -1,5 +1,14 @@
 package run.mone.mcp.hammerspoon.function.trigertrade.service;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
+
 import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -12,9 +21,10 @@ import com.tigerbrokers.stock.openapi.client.https.response.quote.QuoteDelayResp
 import com.tigerbrokers.stock.openapi.client.https.response.trade.TradeOrderResponse;
 import com.tigerbrokers.stock.openapi.client.struct.enums.ActionType;
 import com.tigerbrokers.stock.openapi.client.struct.enums.Market;
+
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
@@ -23,26 +33,30 @@ import run.mone.mcp.hammerspoon.function.trigertrade.dto.OptionDetailBO;
 import run.mone.mcp.hammerspoon.function.trigertrade.utils.PromptFileUtils;
 import run.mone.mcp.hammerspoon.function.trigertrade.utils.TemplateUtils;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * @author shanwb
+ * @author goodjava@qq.com
  * @date 2025-03-12
  */
 @Component
 @Slf4j
 public class TradeService {
 
-    private static Gson gson  = new Gson();
+    private static Gson gson = new Gson();
 
-    public TradeOrderResponse sellPutOption(OptionChainModel optionChainModel, Market market, String optionDate) {
+    public Flux<String> sellPutOption(OptionChainModel optionChainModel, Market market, String optionDate) {
+        return Flux.create(sink -> {
+            sellPutOption(optionChainModel, market, optionDate, sink);
+            //结束
+            sink.complete();
+        });
+    }
+
+
+    public TradeOrderResponse sellPutOption(OptionChainModel optionChainModel, Market market, String optionDate, FluxSink<String> sink) {
         try {
-
             //1.查询期权链
+            sink.next("查询期权链");
             List<OptionDetailBO> putOptions = TigerTradeSdkUtil.getOptionChainDetail(optionChainModel, "put", market);
             Preconditions.checkArgument(!CollectionUtils.isEmpty(putOptions), String.format("No put options available for the specified date:%s", optionDate));
 
@@ -53,6 +67,7 @@ public class TradeService {
             String optionChainPrompt = TemplateUtils.processTemplateContent(optionChainPromptTemplate, optionChains);
             log.info("optionChainPrompt:{}", optionChainPrompt);
 
+            sink.next("查询股票行情");
             //3.查询股票行情
             QuoteDelayResponse quoteDelayResponse = TigerTradeSdkUtil.quoteDelayRequest(Arrays.asList(optionChainModel.getSymbol()));
             log.info("quoteDelayResponse:{}", gson.toJson(quoteDelayResponse));
@@ -66,10 +81,12 @@ public class TradeService {
                 log.info("stockQuotePrompt:{}", stockQuotePrompt);
             }
 
+            sink.next("ai决策 选期权");
             //4.ai决策 选期权
             OptionDetailBO selectedOption = selectOptionByAi(stockQuotePrompt, optionChainPrompt, putOptions);
 
             //5.下单
+            sink.next("下单");
             ContractItem contract = ContractItem.buildOptionContract(selectedOption.getIdentifier());
             log.info("goto build order ...........");
             //TradeOrderRequest request = TradeOrderRequest.buildLimitOrder(contract, ActionType.SELL, 1, selectedOption.getBidPrice());
@@ -78,6 +95,7 @@ public class TradeService {
             log.info("response:{}", new Gson().toJson(response));
             log.info("end.....identifier:{}, price:{}", selectedOption.getIdentifier(), selectedOption.getBidPrice());
 
+            sink.next("下单结束");
             return response;
         } catch (IOException | TigerApiException e) {
             log.error("sellPutOption exception:", e);
