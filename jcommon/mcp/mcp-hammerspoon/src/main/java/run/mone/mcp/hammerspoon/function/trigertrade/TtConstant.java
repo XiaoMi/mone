@@ -6,6 +6,6 @@ package run.mone.mcp.hammerspoon.function.trigertrade;
  */
 public class TtConstant {
 
-    public static final String APP_NAME = "老虎国际";
+    public static final String APP_NAME = "老虎国际Pro";
 
 }

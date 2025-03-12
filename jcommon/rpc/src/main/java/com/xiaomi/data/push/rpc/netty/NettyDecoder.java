@@ -33,7 +33,7 @@ import java.nio.ByteBuffer;
  */
 public class NettyDecoder extends LengthFieldBasedFrameDecoder {
     private static final Logger log = LoggerFactory.getLogger(RemotingHelper.RemotingLogName);
-    private static final int FRAME_MAX_LENGTH = 16777216;
+    private static final int FRAME_MAX_LENGTH = 32 * 1024 * 1024;
 
     public NettyDecoder() {
         super(FRAME_MAX_LENGTH, 0, 4, 0, 4);
