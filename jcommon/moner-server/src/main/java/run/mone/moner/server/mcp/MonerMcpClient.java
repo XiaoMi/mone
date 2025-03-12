@@ -16,14 +16,7 @@ import run.mone.moner.server.common.Safe;
 @Slf4j
 public class MonerMcpClient {
 
-    // TODO:
-    // 1. mcp相关prompt管理与拼接 done
-    // 2. 模型配置管理 done to be tested
-    // 3. 增加websocketHandler处理来自athena的本地调用 todo
-    // 4. 历史消息管理 done
-    // 5. chrome athena observer 实现 done
-
-    public static void mcpCall(List<Result> list, FromType from, MutableObject<String> toolResMsg, AtomicBoolean completion) {
+    public static void mcpCall(List<Result> list, FromType from, MutableObject<Content> callToolResult, AtomicBoolean completion) {
         Safe.run(() -> {
             list.forEach(it -> {
                 if (it.getTag().equals("use_mcp_tool")) {
@@ -33,10 +26,12 @@ public class MonerMcpClient {
                             Map.class);
                     McpSchema.CallToolResult toolRes = McpHubHolder.get(from.getValue()).callTool(serviceName, toolName,
                             toolArguments);
-                    log.info("toolRes:{}", toolRes);
-                    // 返回信息到前台
-                    McpSchema.TextContent textContent = (McpSchema.TextContent) toolRes.content().get(0);
-                    toolResMsg.setValue("执行 %s %s\n结果:%s".formatted(serviceName, toolName, textContent));
+                    log.info("执行{} 的 工具{}, toolRes:{}", serviceName, toolName, toolRes);
+                    
+                    // toolResMsg.setValue("执行 %s %s\n结果:%s".formatted(
+                    //     serviceName, toolName, resultBuilder.toString().trim()));
+
+                    callToolResult.setValue(toolRes.content().get(0));
                 }
 
                 if (it.getTag().equals("attempt_completion") || it.getTag().equals("ask_followup_question")) {
@@ -44,6 +39,16 @@ public class MonerMcpClient {
                 }
             });
         });
+    }
+
+    public static String parseContent(McpSchema.Content content) {
+        if (content instanceof McpSchema.TextContent) {
+            return ((McpSchema.TextContent) content).text();
+        } else if (content instanceof McpSchema.ImageContent) {
+            McpSchema.ImageContent imageContent = (McpSchema.ImageContent) content;
+            return imageContent.data();
+        } 
+        return "不支持的内容类型";
     }
 
 }
