@@ -40,7 +40,7 @@ public class DefaultMonitorListener implements EventListener {
     @Override
     public void onEvent(FileEvent event) {
         if (event.getType().equals(EventType.init)) {
-            log.info("log file:{}", event.getFileName());
+            log.info("log file:{},{}", event.getFileName(), event.getFileKey());
             LogFile2 logFile = new LogFile2(event.getFileName());
             OzHeraReadListener ozHeraReadListener = new OzHeraReadListener(monitor, logFile, consumer);
             readListenerMap.put(event.getFileKey(), ozHeraReadListener);
@@ -51,13 +51,14 @@ public class DefaultMonitorListener implements EventListener {
         }
 
         if (event.getType().equals(EventType.rename)) {
-            log.info("rename:{} {}", event.getFileKey(), event.getFileName());
+            log.info("rename:{} {},{}", event.getFileKey(), event.getFileName(), event.getFileKey());
             monitor.getMap().remove(event.getFileKey());
         }
 
         if (event.getType().equals(EventType.delete)) {
-            log.info("delete:{}", event.getFileName());
+            log.info("delete:{},{}", event.getFileName(), event.getFileKey());
             readListenerMap.remove(event.getFileKey());
+            monitor.getMap().remove(event.getFileKey());
         }
 
         if (event.getType().equals(EventType.empty)) {
@@ -66,7 +67,7 @@ public class DefaultMonitorListener implements EventListener {
         }
 
         if (event.getType().equals(EventType.create)) {
-            log.info("create:{}", event.getFileName());
+            log.info("create:{},{}", event.getFileName(), event.getFileKey());
 
 //            LogFile2 logFile = new LogFile2(event.getFileName());
             LogFile2 logFile = new LogFile2(event.getFileName(), 0, 0);

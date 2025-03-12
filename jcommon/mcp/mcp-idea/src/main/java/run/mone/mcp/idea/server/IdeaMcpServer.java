@@ -1,24 +1,25 @@
-
 package run.mone.mcp.idea.server;
+
+import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.server.McpServer.ToolRegistration;
+import run.mone.hive.mcp.server.McpServer.ToolStreamRegistration;
 import run.mone.hive.mcp.server.McpSyncServer;
 import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.mcp.idea.config.Const;
+import run.mone.mcp.idea.function.CodeReviewFunction;
 import run.mone.mcp.idea.function.CreateCommentFunction;
-import run.mone.mcp.idea.function.GenerateBizCodeFunction;
+import run.mone.mcp.idea.function.CreateMethodFunction;
 import run.mone.mcp.idea.function.GitPushFunction;
 import run.mone.mcp.idea.function.IdeaFunctions;
-import run.mone.mcp.idea.function.*;
+import run.mone.mcp.idea.function.MethodRenameFunction;
+import run.mone.mcp.idea.function.OpenClassFunction;
 
 @Slf4j
 @Component
@@ -34,18 +35,22 @@ public class IdeaMcpServer {
 
     private MethodRenameFunction methodRenameFunction;
 
+    private CreateMethodFunction createMethodFunction;
+
     private McpSyncServer syncServer;
 
     public IdeaMcpServer(ServerMcpTransport transport,
                          CodeReviewFunction codeReviewFunction,
                          CreateCommentFunction createCommentFunction,
                          GitPushFunction gitPushFunction,
-                         MethodRenameFunction methodRenameFunction) {
+                         MethodRenameFunction methodRenameFunction,
+                         CreateMethodFunction createMethodFunction) {
         this.transport = transport;
         this.codeReviewFunction = codeReviewFunction;
         this.createCommentFunction = createCommentFunction;
         this.gitPushFunction = gitPushFunction;
         this.methodRenameFunction = methodRenameFunction;
+        this.createMethodFunction = createMethodFunction;
     }
 
     public McpSyncServer start() {
@@ -61,7 +66,6 @@ public class IdeaMcpServer {
 
         IdeaFunctions.IdeaOperationFunction function = new IdeaFunctions.IdeaOperationFunction(ideaPort);
         IdeaFunctions.TestGenerationFunction createUnitTestFunc = new IdeaFunctions.TestGenerationFunction(ideaPort);
-        GenerateBizCodeFunction generateBizCodeFunc = new GenerateBizCodeFunction(ideaPort);
         OpenClassFunction openClassFunc = new OpenClassFunction(ideaPort);
 
         var toolRegistration = new ToolRegistration(
@@ -70,30 +74,39 @@ public class IdeaMcpServer {
         var toolRegistrationCreateUnitTest = new ToolRegistration(
                 new Tool(createUnitTestFunc.getName(), createUnitTestFunc.getDesc(), createUnitTestFunc.getToolScheme()), createUnitTestFunc
         );
-        var toolRegistrationCreateComment = new ToolRegistration(
-                new Tool(createCommentFunction.getName(), createCommentFunction.getDesc(), createCommentFunction.getToolScheme()), createCommentFunction
-        );
         var toolRegistrationGitPush = new ToolRegistration(
                 new Tool(gitPushFunction.getName(), gitPushFunction.getDesc(), gitPushFunction.getToolScheme()), gitPushFunction
         );
-        var toolRegistrationGenerateBizCode = new ToolRegistration(new Tool(generateBizCodeFunc.getName(), generateBizCodeFunc.getDesc(), generateBizCodeFunc.getToolScheme()), generateBizCodeFunc);
         var toolRegistrationOpenClass = new ToolRegistration(new Tool(openClassFunc.getName(), openClassFunc.getDesc(), openClassFunc.getToolScheme()), openClassFunc);
 
         syncServer.addTool(toolRegistration);
         syncServer.addTool(toolRegistrationCreateUnitTest);
-        syncServer.addTool(toolRegistrationCreateComment);
         syncServer.addTool(toolRegistrationGitPush);
-        syncServer.addTool(toolRegistrationGenerateBizCode);
         syncServer.addTool(toolRegistrationOpenClass);
 
-        syncServer.addTool(new ToolRegistration(
-                new Tool(codeReviewFunction.getName(), codeReviewFunction.getDesc(), codeReviewFunction.getToolScheme())
-                , codeReviewFunction
-        ));
+
+        //代码review
+        var toolStreamRegistration = new ToolStreamRegistration(
+                new Tool(codeReviewFunction.getName(), codeReviewFunction.getDesc(), codeReviewFunction.getToolScheme()), codeReviewFunction
+        );
+        syncServer.addStreamTool(toolStreamRegistration);
+
         syncServer.addTool(new ToolRegistration(
                 new Tool(methodRenameFunction.getName(), methodRenameFunction.getDesc(), methodRenameFunction.getToolScheme())
                 , methodRenameFunction
         ));
+
+        //创建注释
+        var toolRegistrationCreateComment = new ToolStreamRegistration(
+                new Tool(createCommentFunction.getName(), createCommentFunction.getDesc(), createCommentFunction.getToolScheme()), createCommentFunction
+        );
+        syncServer.addStreamTool(toolRegistrationCreateComment);
+
+        //创建方法
+        var toolRegistrationCreateMethod = new ToolStreamRegistration(
+                new Tool(createMethodFunction.getName(), createMethodFunction.getDesc(), createMethodFunction.getToolScheme()), createMethodFunction
+        );
+        syncServer.addStreamTool(toolRegistrationCreateMethod);
 
         return syncServer;
     }
