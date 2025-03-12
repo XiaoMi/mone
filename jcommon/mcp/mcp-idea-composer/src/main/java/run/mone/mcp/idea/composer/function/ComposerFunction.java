@@ -66,13 +66,17 @@ public class ComposerFunction implements Function<Map<String, Object>, Flux<McpS
             req.addProperty("imageType", (String) arguments.get("imageType"));
             req.addProperty("imageBase64", (String) arguments.get("imageBase64"));
             req.addProperty("methodCode", (String) arguments.get("methodCode"));
+
+            // retry
+            String isFull = (String) arguments.get("retryIsFull");
+
             req.addProperty("athenaPluginHost", Const.IP + ideaPort);
 
             return Flux.<String>create(fluxSink -> {
                 BotChainCall call = new BotChainCall();
                 BotChainCallContext context = BotChainCallContext.of("", fluxSink);
                 completeBotContext(context, req);
-                call.executeProjectBotChain(context, req);
+                call.executeProjectBotChain(context, req, isFull);
             }).map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
         } catch (Exception e) {
             return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true));

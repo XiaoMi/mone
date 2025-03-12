@@ -8,7 +8,9 @@ import com.tigerbrokers.stock.openapi.client.https.domain.option.item.OptionReal
 import com.tigerbrokers.stock.openapi.client.https.domain.option.item.OptionRealTimeQuoteGroup;
 import com.tigerbrokers.stock.openapi.client.https.domain.option.model.OptionChainFilterModel;
 import com.tigerbrokers.stock.openapi.client.https.domain.option.model.OptionChainModel;
+import com.tigerbrokers.stock.openapi.client.https.request.TigerRequest;
 import com.tigerbrokers.stock.openapi.client.https.request.option.OptionChainQueryV3Request;
+import com.tigerbrokers.stock.openapi.client.https.response.TigerResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.option.OptionChainResponse;
 import com.tigerbrokers.stock.openapi.client.struct.enums.Market;
 import run.mone.mcp.hammerspoon.function.trigertrade.dto.OptionDetailBO;
@@ -38,10 +40,14 @@ public class TigerTradeSdkUtil {
         client = TigerHttpClient.getInstance().clientConfig(clientConfig);
     }
 
+    public static <T extends TigerResponse> T execute(TigerRequest<T> request) {
+        return client.execute(request);
+    }
+
     public static List<OptionDetailBO> getOptionChainDetail(OptionChainModel optionChainModel, String optionType) {
         OptionChainFilterModel filterModel = new OptionChainFilterModel()
-                .inTheMoney(true)
-                .impliedVolatility(0.1537, 0.8282)
+                .inTheMoney(false)
+                //.impliedVolatility(0.01, 0.99)
                 .openInterest(10, 50000)
                 ;
         OptionChainQueryV3Request request = OptionChainQueryV3Request.of(optionChainModel, filterModel, Market.US);
