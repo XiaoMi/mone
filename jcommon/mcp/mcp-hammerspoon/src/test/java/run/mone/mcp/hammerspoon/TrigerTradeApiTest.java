@@ -17,6 +17,7 @@ import com.tigerbrokers.stock.openapi.client.https.request.trade.TradeOrderReque
 import com.tigerbrokers.stock.openapi.client.https.response.contract.ContractResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.option.OptionChainResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.option.OptionExpirationResponse;
+import com.tigerbrokers.stock.openapi.client.https.response.quote.QuoteRealTimeQuoteResponse;
 import com.tigerbrokers.stock.openapi.client.struct.enums.Currency;
 import com.tigerbrokers.stock.openapi.client.struct.enums.Market;
 import com.tigerbrokers.stock.openapi.client.struct.enums.TimeZoneId;
@@ -83,7 +84,8 @@ public class TrigerTradeApiTest {
 
     @Test
     public void testQuoteRealTimeQuoteRequest() {
-        TigerTradeSdkUtil.quoteRealTimeQuoteRequest(Lists.newArrayList("AAPL"));
+        QuoteRealTimeQuoteResponse res = TigerTradeSdkUtil.quoteRealTimeQuoteRequest(Lists.newArrayList("AAPL"));
+        System.out.println(res);
     }
 
     @Test
