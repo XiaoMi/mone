@@ -182,7 +182,7 @@ public final class McpSchema {
 			@JsonProperty("params") Map<String, Object> params) implements JSONRPCMessage {
 	} // @formatter:on
 
-	@JsonIgnoreProperties(ignoreUnknown = true)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_ABSENT)
     public record JSONRPCResponse( // @formatter:off
 			@JsonProperty("jsonrpc") String jsonrpc,

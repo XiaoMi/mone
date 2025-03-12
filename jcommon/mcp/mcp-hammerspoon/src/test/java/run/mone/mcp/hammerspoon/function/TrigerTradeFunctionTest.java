@@ -46,7 +46,7 @@ class TrigerTradeFunctionTest {
     @Test
     void testAnalyzeOptionsChain() {
         // Prepare test data
-        String testBase64Image = "data:image/png;base64,"+llm.imageToBase64("/tmp/abcd.png", "png");
+        String testBase64Image = "data:image/png;base64,"+llm.imageToBase64("/Users/zhangzhiyong/eee.png", "png");
 
         // Prepare function arguments
         Map<String, Object> args = new HashMap<>();
@@ -55,6 +55,8 @@ class TrigerTradeFunctionTest {
 
         // Execute the function
         McpSchema.CallToolResult result = trigerTradeProFunction.apply(args);
+
+        System.out.println(result.content());
 
         // Verify results
         assertNotNull(result);

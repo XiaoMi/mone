@@ -2,7 +2,10 @@ package run.mone.excel;
 
 import org.apache.poi.hssf.usermodel.*;
 import org.apache.poi.ss.formula.functions.T;
+import org.apache.poi.ss.usermodel.BorderStyle;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.apache.poi.ss.util.CellRangeAddress;
 
 import java.io.IOException;
@@ -59,7 +62,7 @@ public class ExportExcel {
 
     public static HSSFWorkbook HSSFWorkbook4Map(List<Map<String, Object>> list, String title) throws IOException {
         HSSFWorkbook workbook = new HSSFWorkbook();
-        HSSFSheet sheet = workbook.createSheet();// 不传name 默认为sheet1
+        HSSFSheet sheet = workbook.createSheet();
         // title
         if (title != null && !"".equals(title)) {
             HSSFRow titleRow = sheet.createRow(0);
@@ -67,13 +70,13 @@ public class ExportExcel {
             cell.setCellValue(title);
 
             HSSFCellStyle titleStyle = workbook.createCellStyle();
-            titleStyle.setAlignment(HSSFCellStyle.ALIGN_CENTER);
-            titleStyle.setVerticalAlignment(HSSFCellStyle.VERTICAL_CENTER);
+            titleStyle.setAlignment(HorizontalAlignment.CENTER);
+            titleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
             HSSFFont titleFont = workbook.createFont();
-            titleFont.setBoldweight(HSSFFont.BOLDWEIGHT_BOLD);
+            titleFont.setBold(true);
             titleStyle.setFont(titleFont);
             cell.setCellStyle(titleStyle);
-            titleRow.setHeight((short)450);
+            titleRow.setHeight((short) 450);
 
             int endMergeCellIndex = list == null || list.isEmpty() ? 5 : list.get(0).size() - 1;
             sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, endMergeCellIndex));
@@ -83,9 +86,9 @@ public class ExportExcel {
         }
         // header
         HSSFCellStyle headerStyle = workbook.createCellStyle();
-        headerStyle.setAlignment(HSSFCellStyle.ALIGN_CENTER);
-        headerStyle.setBorderBottom(HSSFCellStyle.BORDER_MEDIUM);
-        headerStyle.setBorderTop(HSSFCellStyle.BORDER_MEDIUM);
+        headerStyle.setAlignment(HorizontalAlignment.CENTER);
+        headerStyle.setBorderBottom(BorderStyle.MEDIUM);
+        headerStyle.setBorderTop(BorderStyle.MEDIUM_DASHED);
         int headRowIndex = title == null || "".equals(title) ? 0 : 1;
         HSSFRow headRow = sheet.createRow(headRowIndex);
         int i = 0;
