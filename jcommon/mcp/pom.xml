@@ -55,6 +55,7 @@
         <module>mcp-ipinfo</module>
         <module>mcp-novel</module>
         <module>mcp-miapi</module>
+        <module>mcp-dayu</module>
     </modules>
 
     <properties>
