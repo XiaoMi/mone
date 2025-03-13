@@ -8,7 +8,7 @@
   - 启动hammerspoon
 - IDE 配置该mcp，mcp就可以与hammerspoon联动，进行本机app的操作
 - 
-  "hammerspoon_mcp": {
+  "tigertrade_mcp": {
   "command": "java",
   "type": "sse",
   "url": "http://localhost:8080",

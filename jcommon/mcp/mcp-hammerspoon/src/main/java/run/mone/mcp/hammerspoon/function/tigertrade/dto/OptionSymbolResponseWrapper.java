@@ -1,4 +1,4 @@
-package run.mone.mcp.hammerspoon.function.trigertrade.dto;
+package run.mone.mcp.hammerspoon.function.tigertrade.dto;
 
 import lombok.Data;
 

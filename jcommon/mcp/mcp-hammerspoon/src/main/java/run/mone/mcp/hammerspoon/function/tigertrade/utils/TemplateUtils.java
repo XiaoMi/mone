@@ -1,4 +1,4 @@
-package run.mone.mcp.hammerspoon.function.trigertrade.utils;
+package run.mone.mcp.hammerspoon.function.tigertrade.utils;
 
 import freemarker.template.Configuration;
 import freemarker.template.Template;

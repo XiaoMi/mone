@@ -21,9 +21,9 @@ import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.mcp.hammerspoon.function.trigertrade.SellPutOptionDecisionFunction;
-import run.mone.mcp.hammerspoon.function.trigertrade.TigerTradeSdkUtil;
-import run.mone.mcp.hammerspoon.function.trigertrade.dto.OptionDetailBO;
+import run.mone.mcp.hammerspoon.function.tigertrade.SellPutOptionDecisionFunction;
+import run.mone.mcp.hammerspoon.function.tigertrade.TigerTradeSdkUtil;
+import run.mone.mcp.hammerspoon.function.tigertrade.dto.OptionDetailBO;
 
 @SpringBootTest
 class TrigerTradeFunctionTest {
