@@ -6,6 +6,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.tigerbrokers.stock.openapi.client.https.domain.trade.item.PrimeAssetItem;
+import com.tigerbrokers.stock.openapi.client.struct.enums.Currency;
+import org.springframework.cglib.beans.BeanMap;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -47,48 +50,50 @@ public class TradeService {
 
     public Flux<String> sellPutOption(OptionChainModel optionChainModel, Market market, String optionDate) {
         return Flux.create(sink -> {
-            sellPutOption(optionChainModel, market, optionDate, sink);
+            sellPutOption(optionChainModel, market, optionDate, sink, 1);
             //结束
             sink.complete();
         });
     }
 
 
-    public TradeOrderResponse sellPutOption(OptionChainModel optionChainModel, Market market, String optionDate, FluxSink<String> sink) {
+    public TradeOrderResponse sellPutOption(OptionChainModel optionChainModel, Market market, String optionDate, FluxSink<String> sink, int quantity) {
         try {
             MessageUtils.sendMessage(sink, "开始卖put  信息: " + optionChainModel + " market:" + market);
+
+            Map<String, Object> templateParams = new HashMap<>();
+            PrimeAssetItem.CurrencyAssets currencyAssets = TigerTradeSdkUtil.getAssetByCurrency(Currency.USD);
+            log.info("currencyAssets:{}", gson.toJson(currencyAssets));
+
+
             //1.查询期权链
             MessageUtils.sendMessage(sink, "查询期权链");
             List<OptionDetailBO> putOptions = TigerTradeSdkUtil.getOptionChainDetail(optionChainModel, "put", market);
             Preconditions.checkArgument(!CollectionUtils.isEmpty(putOptions), String.format("No put options available for the specified date:%s", optionDate));
 
-            //2.期权链 to markdown Prompt
-            Map<String, Object> optionChains = new HashMap<>();
-            optionChains.put("optionChains", putOptions);
-            String optionChainPromptTemplate = PromptFileUtils.readPromptFile(PromptFileUtils.OPTION_CHAIN_PROMPT);
-            String optionChainPrompt = TemplateUtils.processTemplateContent(optionChainPromptTemplate, optionChains);
-            log.info("optionChainPrompt:{}", optionChainPrompt);
-
             MessageUtils.sendMessage(sink, "查询股票行情");
-            //3.查询股票行情
+            //2.查询股票行情
             QuoteDelayResponse quoteDelayResponse = TigerTradeSdkUtil.quoteDelayRequest(Arrays.asList(optionChainModel.getSymbol()));
             String quoteDelayResponseStr = gson.toJson(quoteDelayResponse);
             log.info("quoteDelayResponse:{}", quoteDelayResponseStr);
             MessageUtils.sendMessage(sink, "股票信息:" + quoteDelayResponseStr);
 
-            QuoteDelayItem quoteDelayItem;
-            String stockQuotePrompt = null;
+            QuoteDelayItem quoteDelayItem = null;
+//            String stockQuotePrompt = null;
             List<QuoteDelayItem> quoteDelayItemList = quoteDelayResponse.getQuoteDelayItems();
             if (!CollectionUtils.isEmpty(quoteDelayItemList)) {
                 quoteDelayItem = quoteDelayItemList.getFirst();
-                String stockQuotePromptTemplate = PromptFileUtils.readPromptFile(PromptFileUtils.STOCK_QUOTE_PROMPT);
-                stockQuotePrompt = TemplateUtils.processTemplateContent(stockQuotePromptTemplate, quoteDelayItem);
-                log.info("stockQuotePrompt:{}", stockQuotePrompt);
+//                String stockQuotePromptTemplate = PromptFileUtils.readPromptFile(PromptFileUtils.STOCK_QUOTE_PROMPT);
+//                stockQuotePrompt = TemplateUtils.processTemplateContent(stockQuotePromptTemplate, quoteDelayItem);
+//                log.info("stockQuotePrompt:{}", stockQuotePrompt);
             }
+
+            transTemplateParams(templateParams, currencyAssets, putOptions, quoteDelayItem);
 
             MessageUtils.sendMessage(sink, "ai决策 选期权");
             //4.ai决策 选期权
-            OptionDetailBO selectedOption = selectOptionByAi(stockQuotePrompt, optionChainPrompt, putOptions);
+            OptionDetailBO selectedOption = selectOptionByAi(templateParams, putOptions);
+            Preconditions.checkArgument(null != selectedOption, "ai select option is null, break");
 
             //5.下单
             MessageUtils.sendMessage(sink, "下单:" + selectedOption.getIdentifier());
@@ -96,7 +101,7 @@ public class TradeService {
             ContractItem contract = ContractItem.buildOptionContract(selectedOption.getIdentifier());
             log.info("goto build order ...........");
             //TradeOrderRequest request = TradeOrderRequest.buildLimitOrder(contract, ActionType.SELL, 1, selectedOption.getBidPrice());
-            TradeOrderRequest request = TradeOrderRequest.buildMarketOrder(contract, ActionType.SELL, 1);
+            TradeOrderRequest request = TradeOrderRequest.buildMarketOrder(contract, ActionType.SELL, quantity);
             TradeOrderResponse response = TigerTradeSdkUtil.execute(request);
             log.info("response:{}", new Gson().toJson(response));
 
@@ -109,12 +114,23 @@ public class TradeService {
         }
     }
 
-    private static OptionDetailBO selectOptionByAi(String stockQuotePrompt, String optionChainPrompt, List<OptionDetailBO> putOptions) throws IOException {
-        Map<String, Object> sellPutPromptParams = new HashMap<>();
-        sellPutPromptParams.put("stockQuote", stockQuotePrompt);
-        sellPutPromptParams.put("optionChain", optionChainPrompt);
+    private void transTemplateParams(final Map<String, Object> templateParams,
+                                     PrimeAssetItem.CurrencyAssets currencyAssets,
+                                     List<OptionDetailBO> putOptions,
+                                     QuoteDelayItem quoteDelayItem) {
+        BeanMap currencyAssetsMap = BeanMap.create(currencyAssets);
+        BeanMap quoteDelayItemMap = BeanMap.create(quoteDelayItem);
+
+        templateParams.put("optionChains", putOptions);
+        templateParams.putAll(currencyAssetsMap);
+
+        templateParams.put("stock", quoteDelayItem.getSymbol());
+        templateParams.putAll(quoteDelayItemMap);
+    }
+
+    private static OptionDetailBO selectOptionByAi(Map<String, Object> templateParams, List<OptionDetailBO> putOptions) throws IOException {
         String sellPutPromptTemplate = PromptFileUtils.readPromptFile(PromptFileUtils.SELL_PUT_STRATEGY_PROMPT);
-        String sellPutPrompt = TemplateUtils.processTemplateContent(sellPutPromptTemplate, sellPutPromptParams);
+        String sellPutPrompt = TemplateUtils.processTemplateContent(sellPutPromptTemplate, templateParams);
 
         log.info("final sell put prompt:{}", sellPutPrompt);
         LLM vllm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3).build());
