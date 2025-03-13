@@ -23,6 +23,7 @@ import com.tigerbrokers.stock.openapi.client.struct.enums.*;
 import com.tigerbrokers.stock.openapi.client.util.builder.AccountParamBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
+import reactor.core.publisher.Flux;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
@@ -96,8 +97,13 @@ public class TrigerTradeApiTest {
     public void testSellPutOptionOrderV2() throws IOException {
         OptionChainModel basicModel = new OptionChainModel("TSLA", "2025-03-14", TimeZoneId.NewYork);
         TradeService tradeService = new TradeService();
-        TradeOrderResponse tradeOrderResponse = tradeService.sellPutOption(basicModel, Market.US, "2025-03-14",null, 1);
-        log.info("tradeOrderResponse:{}", tradeOrderResponse);
+        Flux<String> flux = tradeService.sellPutOption(basicModel, Market.US, "2025-03-14");
+
+        flux.subscribe(
+                value -> log.info("Received: " + value),
+                error -> log.error("Error: " + error),
+                () -> log.info("Completed!")
+        );
     }
 
     @Test
