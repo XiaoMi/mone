@@ -30,6 +30,7 @@ import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.mcp.hammerspoon.function.trigertrade.TigerTradeSdkUtil;
 import run.mone.mcp.hammerspoon.function.trigertrade.dto.OptionDetailBO;
+import run.mone.mcp.hammerspoon.function.trigertrade.utils.MessageUtils;
 import run.mone.mcp.hammerspoon.function.trigertrade.utils.PromptFileUtils;
 import run.mone.mcp.hammerspoon.function.trigertrade.utils.TemplateUtils;
 
@@ -53,12 +54,11 @@ public class TradeService {
     }
 
 
-
-	public TradeOrderResponse sellPutOption(OptionChainModel optionChainModel, Market market, String optionDate, FluxSink<String> sink) {
+    public TradeOrderResponse sellPutOption(OptionChainModel optionChainModel, Market market, String optionDate, FluxSink<String> sink) {
         try {
-            sink.next("\n开始卖put  信息: " + optionChainModel + " market:" + market + "\n");
+            MessageUtils.sendMessage(sink, "开始卖put  信息: \" + optionChainModel + \" market:\" + marke");
             //1.查询期权链
-            sink.next("\n查询期权链");
+            MessageUtils.sendMessage(sink, "查询期权链");
             List<OptionDetailBO> putOptions = TigerTradeSdkUtil.getOptionChainDetail(optionChainModel, "put", market);
             Preconditions.checkArgument(!CollectionUtils.isEmpty(putOptions), String.format("No put options available for the specified date:%s", optionDate));
 
@@ -69,13 +69,12 @@ public class TradeService {
             String optionChainPrompt = TemplateUtils.processTemplateContent(optionChainPromptTemplate, optionChains);
             log.info("optionChainPrompt:{}", optionChainPrompt);
 
-            sink.next("\n查询股票行情");
+            MessageUtils.sendMessage(sink, "查询股票行情");
             //3.查询股票行情
             QuoteDelayResponse quoteDelayResponse = TigerTradeSdkUtil.quoteDelayRequest(Arrays.asList(optionChainModel.getSymbol()));
             String quoteDelayResponseStr = gson.toJson(quoteDelayResponse);
             log.info("quoteDelayResponse:{}", quoteDelayResponseStr);
-
-            sink.next("\n股票信息:" + quoteDelayResponseStr);
+            MessageUtils.sendMessage(sink, "股票信息:" + quoteDelayResponseStr);
 
             QuoteDelayItem quoteDelayItem;
             String stockQuotePrompt = null;
@@ -87,21 +86,22 @@ public class TradeService {
                 log.info("stockQuotePrompt:{}", stockQuotePrompt);
             }
 
-            sink.next("\nai决策 选期权");
+            MessageUtils.sendMessage(sink, "ai决策 选期权");
             //4.ai决策 选期权
             OptionDetailBO selectedOption = selectOptionByAi(stockQuotePrompt, optionChainPrompt, putOptions);
 
             //5.下单
-            sink.next("\n下单:" + selectedOption.getIdentifier());
+            MessageUtils.sendMessage(sink, "下单:" + selectedOption.getIdentifier());
+
             ContractItem contract = ContractItem.buildOptionContract(selectedOption.getIdentifier());
             log.info("goto build order ...........");
             //TradeOrderRequest request = TradeOrderRequest.buildLimitOrder(contract, ActionType.SELL, 1, selectedOption.getBidPrice());
             TradeOrderRequest request = TradeOrderRequest.buildMarketOrder(contract, ActionType.SELL, 1);
             TradeOrderResponse response = TigerTradeSdkUtil.execute(request);
             log.info("response:{}", new Gson().toJson(response));
-            log.info("end.....identifier:{}, price:{}", selectedOption.getIdentifier(), selectedOption.getBidPrice());
 
-            sink.next("\n下单结束");
+            log.info("end.....identifier:{}, price:{}", selectedOption.getIdentifier(), selectedOption.getBidPrice());
+            MessageUtils.sendMessage(sink, "下单结束 identifier:" + selectedOption.getIdentifier() + ", price:" + selectedOption.getBidPrice());
             return response;
         } catch (IOException | TigerApiException e) {
             log.error("sellPutOption exception:", e);

@@ -3,8 +3,6 @@ package run.mone.mcp.hammerspoon.function.trigertrade.function;
 import com.tigerbrokers.stock.openapi.client.https.domain.option.model.OptionChainModel;
 import com.tigerbrokers.stock.openapi.client.struct.enums.Market;
 import com.tigerbrokers.stock.openapi.client.struct.enums.TimeZoneId;
-import freemarker.template.SimpleDate;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -59,7 +57,6 @@ public class SellPutOptionFunction implements Function<Map<String, Object>, Flux
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         String expiryDate = new SimpleDateFormat().format("yyyy-MM-dd");
         Market market = Market.US;
-
         OptionChainModel optionChainModel = new OptionChainModel("TSLA", expiryDate, TimeZoneId.NewYork);
 
         return tradeService.sellPutOption(optionChainModel, market, expiryDate)
