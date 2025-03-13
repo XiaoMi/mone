@@ -1,5 +1,14 @@
 package run.mone.mcp.hammerspoon.function.trigertrade.service;
 
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
+
 import com.google.common.base.Preconditions;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -14,7 +23,10 @@ import com.tigerbrokers.stock.openapi.client.https.response.trade.TradeOrderResp
 import com.tigerbrokers.stock.openapi.client.struct.enums.ActionType;
 import com.tigerbrokers.stock.openapi.client.struct.enums.Currency;
 import com.tigerbrokers.stock.openapi.client.struct.enums.Market;
+
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import org.springframework.cglib.beans.BeanMap;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -26,24 +38,30 @@ import run.mone.mcp.hammerspoon.function.trigertrade.dto.OptionDetailBO;
 import run.mone.mcp.hammerspoon.function.trigertrade.utils.PromptFileUtils;
 import run.mone.mcp.hammerspoon.function.trigertrade.utils.TemplateUtils;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 /**
  * @author shanwb
+ * @author goodjava@qq.com
  * @date 2025-03-12
  */
 @Component
 @Slf4j
 public class TradeService {
 
-    private static Gson gson  = new Gson();
+    private static Gson gson = new Gson();
 
-    public TradeOrderResponse sellPutOption(OptionChainModel optionChainModel, Market market, String optionDate, int quantity) {
+    public Flux<String> sellPutOption(OptionChainModel optionChainModel, Market market, String optionDate, int quantity) {
+        return Flux.create(sink -> {
+            sellPutOption(optionChainModel, market, optionDate, sink, quantity);
+            //结束
+            sink.complete();
+        });
+    }
+
+
+
+	public TradeOrderResponse sellPutOption(OptionChainModel optionChainModel, Market market, String optionDate, FluxSink<String> sink, int quantity) {
         try {
+            sink.next("\n开始卖put  信息: " + optionChainModel + " market:" + market + "\n");
             log.info("sellPutOption optionChainModel:{}, market:{}, optionDate:{}, quantity:{}", gson.toJson(optionDate), market, optionDate, quantity);
 
             Map<String, Object> templateParams = new HashMap<>();
@@ -51,12 +69,19 @@ public class TradeService {
             log.info("currencyAssets:{}", gson.toJson(currencyAssets));
 
             //1.查询期权链
+            sink.next("\n查询期权链");
             List<OptionDetailBO> putOptions = TigerTradeSdkUtil.getOptionChainDetail(optionChainModel, "put", market);
             Preconditions.checkArgument(!CollectionUtils.isEmpty(putOptions), String.format("No put options available for the specified date:%s", optionDate));
 
+            sink.next("\n查询股票行情");
+            //3.查询股票行情
             //2.查询股票行情
             QuoteDelayResponse quoteDelayResponse = TigerTradeSdkUtil.quoteDelayRequest(Arrays.asList(optionChainModel.getSymbol()));
-            log.info("quoteDelayResponse:{}", gson.toJson(quoteDelayResponse));
+            String quoteDelayResponseStr = gson.toJson(quoteDelayResponse);
+            log.info("quoteDelayResponse:{}", quoteDelayResponseStr);
+
+            sink.next("\n股票信息:" + quoteDelayResponseStr);
+
             QuoteDelayItem quoteDelayItem = null;
 //            String stockQuotePrompt = null;
             List<QuoteDelayItem> quoteDelayItemList = quoteDelayResponse.getQuoteDelayItems();
@@ -69,11 +94,13 @@ public class TradeService {
 
             transTemplateParams(templateParams, currencyAssets, putOptions, quoteDelayItem);
 
+            sink.next("\nai决策 选期权");
             //4.ai决策 选期权
             OptionDetailBO selectedOption = selectOptionByAi(templateParams, putOptions);
             Preconditions.checkArgument(null != selectedOption, "ai select option is null, break");
 
             //5.下单
+            sink.next("\n下单:" + selectedOption.getIdentifier());
             ContractItem contract = ContractItem.buildOptionContract(selectedOption.getIdentifier());
             log.info("goto build order ...........");
             //TradeOrderRequest request = TradeOrderRequest.buildLimitOrder(contract, ActionType.SELL, 1, selectedOption.getBidPrice());
@@ -82,6 +109,7 @@ public class TradeService {
             log.info("response:{}", new Gson().toJson(response));
             log.info("end.....identifier:{}, price:{}", selectedOption.getIdentifier(), selectedOption.getBidPrice());
 
+            sink.next("\n下单结束");
             return response;
         } catch (IOException | TigerApiException e) {
             log.error("sellPutOption exception:", e);
@@ -101,12 +129,6 @@ public class TradeService {
 
         templateParams.put("stock", quoteDelayItem.getSymbol());
         templateParams.putAll(quoteDelayItemMap);
-    }
-
-
-
-    public TradeOrderResponse sellPutOption(OptionChainModel optionChainModel, Market market, String optionDate) {
-        return this.sellPutOption(optionChainModel, market, optionDate, 1);
     }
 
     private static OptionDetailBO selectOptionByAi(Map<String, Object> templateParams, List<OptionDetailBO> putOptions) throws IOException {

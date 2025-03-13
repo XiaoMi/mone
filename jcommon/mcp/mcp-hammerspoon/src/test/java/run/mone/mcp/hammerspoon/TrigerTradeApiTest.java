@@ -99,9 +99,8 @@ public class TrigerTradeApiTest {
     @Test
     public void testSellPutOptionOrderV2() throws IOException {
         OptionChainModel basicModel = new OptionChainModel("TSLA", "2025-03-14", TimeZoneId.NewYork);
-
         TradeService tradeService = new TradeService();
-        TradeOrderResponse tradeOrderResponse = tradeService.sellPutOption(basicModel, Market.US, "2025-03-14");
+        TradeOrderResponse tradeOrderResponse = tradeService.sellPutOption(basicModel, Market.US, "2025-03-14",null);
         log.info("tradeOrderResponse:{}", tradeOrderResponse);
     }
 

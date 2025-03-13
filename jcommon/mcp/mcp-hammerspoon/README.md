@@ -10,9 +10,9 @@
 - 
   "hammerspoon_mcp": {
   "command": "java",
-- "type": "sse",
+  "type": "sse",
   "url": "http://localhost:8080",
-- "sseRemote": false,
+  "sseRemote": false,
   "args": [
   "-jar",
   "/opt/workspace_all/workspace_mi/mone-all/mone/jcommon/mcp/mcp-hammerspoon/target/app.jar"
