@@ -9,7 +9,7 @@
         <version>1.6.1-jdk21-SNAPSHOT</version>
     </parent>
 
-    <groupId>io.seata.samples.tcc.dubbo</groupId>
+    <groupId>run.mone.mcp</groupId>
     <artifactId>mcp-nacosconfig</artifactId>
 
     <properties>
