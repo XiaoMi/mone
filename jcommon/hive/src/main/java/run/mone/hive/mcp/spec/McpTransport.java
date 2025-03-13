@@ -47,6 +47,11 @@ public interface McpTransport {
 	 */
 	Mono<Void> connect(Function<Mono<JSONRPCMessage>, Mono<JSONRPCMessage>> handler);
 
+
+	default String getClientId() {
+		return "";
+	}
+
 	/**
 	 * Closes the transport connection and releases any associated resources.
 	 *
