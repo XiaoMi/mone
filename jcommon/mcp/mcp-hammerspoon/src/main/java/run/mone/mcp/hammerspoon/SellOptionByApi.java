@@ -1,121 +1,30 @@
 package run.mone.mcp.hammerspoon;
 
-import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.tigerbrokers.stock.openapi.client.https.domain.contract.item.ContractItem;
 import com.tigerbrokers.stock.openapi.client.https.domain.option.model.OptionChainModel;
-import com.tigerbrokers.stock.openapi.client.https.domain.trade.item.PrimeAssetItem;
-import com.tigerbrokers.stock.openapi.client.https.request.option.OptionExpirationQueryRequest;
-import com.tigerbrokers.stock.openapi.client.https.request.trade.QueryOrderRequest;
 import com.tigerbrokers.stock.openapi.client.https.request.trade.TradeOrderRequest;
-import com.tigerbrokers.stock.openapi.client.https.response.option.OptionExpirationResponse;
-import com.tigerbrokers.stock.openapi.client.https.response.quote.QuoteDelayResponse;
-import com.tigerbrokers.stock.openapi.client.https.response.quote.QuoteMarketResponse;
-import com.tigerbrokers.stock.openapi.client.https.response.quote.QuoteRealTimeQuoteResponse;
-import com.tigerbrokers.stock.openapi.client.https.response.trade.PositionsResponse;
-import com.tigerbrokers.stock.openapi.client.struct.enums.Currency;
-import com.tigerbrokers.stock.openapi.client.struct.enums.Market;
-import com.tigerbrokers.stock.openapi.client.struct.enums.TimeZoneId;
-import com.tigerbrokers.stock.openapi.client.https.response.trade.BatchOrderResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.trade.TradeOrderResponse;
 import com.tigerbrokers.stock.openapi.client.struct.enums.*;
-import com.tigerbrokers.stock.openapi.client.util.builder.AccountParamBuilder;
-import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
-import reactor.core.publisher.Flux;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
-import run.mone.mcp.hammerspoon.function.tigertrade.dto.OptionDetailBO;
 import run.mone.mcp.hammerspoon.function.tigertrade.TigerTradeSdkUtil;
-import run.mone.mcp.hammerspoon.function.tigertrade.service.TradeService;
+import run.mone.mcp.hammerspoon.function.tigertrade.dto.OptionDetailBO;
 
-import java.io.IOException;
-import java.util.*;
+import java.util.List;
 
 /**
  * @author shanwb
- * @date 2025-03-10
+ * @date 2025-03-11
  */
-@Slf4j
-public class TrigerTradeApiTest {
+public class SellOptionByApi {
 
-    private static Gson gson = new Gson();
-
-    @Test
-    public void testGetOptions() {
-        List<String> symbols = new ArrayList<>();
-        symbols.add("TSLA");
-        OptionExpirationResponse response = TigerTradeSdkUtil.execute(
-                new OptionExpirationQueryRequest(symbols, Market.US));
-        if (response.isSuccess()) {
-            System.out.println(new Gson().toJson(response));
-        } else {
-            System.out.println("response error:" + response.getMessage());
-        }
-    }
-
-    @Test
-    public void testGetOptionsChain() {
-        OptionChainModel basicModel = new OptionChainModel("TSLA", "2025-03-14", TimeZoneId.NewYork);
-        List<OptionDetailBO> optionDetailBOList = TigerTradeSdkUtil.getOptionChainDetail(basicModel, "put");
-        System.out.println(gson.toJson(optionDetailBOList));
-    }
-
-    @Test
-    public void testPositionsRequest() {
-        PositionsResponse res = TigerTradeSdkUtil.positionsRequest(SecType.STK);
-        System.out.println(res);
-    }
-
-    @Test
-    public void testGetAssetByCurrency() {
-        PrimeAssetItem.CurrencyAssets res = TigerTradeSdkUtil.getAssetByCurrency(Currency.USD);
-        System.out.println(res);
-    }
-
-    @Test
-    public void testQuoteMarketRequest() {
-        QuoteMarketResponse res = TigerTradeSdkUtil.quoteMarketRequest(Market.HK);
-        System.out.println(res);
-    }
-
-    @Test
-    public void testQuoteDelayRequest() {
-        QuoteDelayResponse res = TigerTradeSdkUtil.quoteDelayRequest(Lists.newArrayList("AAPL"));
-        System.out.println(res);
-    }
-
-    @Test
-    public void testQuoteRealTimeQuoteRequest() {
-        QuoteRealTimeQuoteResponse res = TigerTradeSdkUtil.quoteRealTimeQuoteRequest(Lists.newArrayList("AAPL"));
-        System.out.println(res);
-    }
-
-    @Test
-    public void testSellPutOptionOrderV2() throws IOException {
-        OptionChainModel basicModel = new OptionChainModel("TSLA", "2025-03-14", TimeZoneId.NewYork);
-        TradeService tradeService = new TradeService();
-        Flux<String> flux = tradeService.sellPutOption(basicModel, Market.US, "2025-03-14");
-
-        flux.subscribe(
-                value -> log.info("Received: " + value),
-                error -> log.error("Error: " + error),
-                () -> log.info("Completed!")
-        );
-    }
-
-    @Test
-    public void testQueryOrder() {
-        BatchOrderResponse batchOrderResponse = TigerTradeSdkUtil.queryOptionOrdersLastNHours(100L);
-        log.info(gson.toJson(batchOrderResponse));
-    }
+    public static Gson gson = new Gson();
 
 
-    @Test
-    public void testSellPutOptionOrder() {
-
+    public static void main(String[] args) {
         // 1. Get option chain details to find a suitable put option
         OptionChainModel basicModel = new OptionChainModel("TSLA", "2025-03-14", TimeZoneId.NewYork);
         List<OptionDetailBO> putOptions = TigerTradeSdkUtil.getOptionChainDetail(basicModel, "put", Market.US);
@@ -125,7 +34,28 @@ public class TrigerTradeApiTest {
             return;
         }
 
-        String c = "作为一位专业的期权卖方策略分析师，您的任务是帮助我分析当前的期权链数据，并为我推荐最佳的卖出看跌期权(PUT)交易机会。\n" +
+        /**
+         * 特斯拉、meta、苹果、谷歌、英伟达
+         *
+         * prompt要点：
+         * - 前提分析（本质:多少钱打算挣多少）
+         *      - 先考虑年化收益率
+         *          银行1.8%
+         *      - 本金（60~80w最佳操作）
+         *
+         * - 只看周的
+         * - 分析支撑位
+         *   如果离的很近
+         *   如果离的很远，可以往上靠的
+         * - 分析大盘趋势
+         *   如果大盘向下走：多给一些安全垫
+         *   如果大盘向上走：
+         * - 参考账户余额
+         *
+         */
+
+
+        String prompt = "作为一位专业的期权卖方策略分析师，您的任务是帮助我分析当前的期权链数据，并为我推荐最佳的卖出看跌期权(PUT)交易机会。\n" +
                 "\n" +
                 "## 您需要的信息\n" +
                 "1. 标的资产当前价格\n" +
@@ -192,14 +122,13 @@ public class TrigerTradeApiTest {
                 "1.标的资产当前价格:%s\n" +
                 "2.期权链数据:%s \n" +
                 "请按上面的要求，返回json结果.";
+        prompt = String.format(prompt, "222.15", gson.toJson(putOptions));
 
-        c = String.format(c, "222.15", gson.toJson(putOptions));
-
-        System.out.println("length:" + c.length() + "\n" + c);
+        System.out.println("AI 分析 prompt:" + prompt);
 
         LLM vllm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3).build());
-        String res = vllm.chat(c);
-        System.out.println("llm res:" + res);
+        String res = vllm.chat(prompt);
+        System.out.println("AI 分析 结果:" + res);
 
         // Extract identifier from LLM response
         String identifier = null;
@@ -209,7 +138,6 @@ public class TrigerTradeApiTest {
             System.out.println("Extracted identifier: " + identifier);
         } catch (Exception e) {
             System.out.println("Error parsing LLM response: " + e.getMessage());
-            e.printStackTrace();
             return;
         }
 
@@ -232,41 +160,32 @@ public class TrigerTradeApiTest {
         // 3. Create an order to sell 1 contract of the selected put option
         try {
             ContractItem contract = ContractItem.buildOptionContract(selectedOption.getIdentifier());
+            contract.setAccount("21549496269944832");
 
             TradeOrderRequest request = TradeOrderRequest.buildLimitOrder(contract, ActionType.SELL, 1, selectedOption.getBidPrice());
             //TradeOrderRequest request = TradeOrderRequest.buildMarketOrder(contract, ActionType.SELL, 1);
             TradeOrderResponse response = TigerTradeSdkUtil.execute(request);
-            System.out.println("response:" + new Gson().toJson(response));
+            System.out.println("sell put response:" + new Gson().toJson(response));
             System.out.println("end.....identifier:" + selectedOption.getIdentifier() + ", price:" + selectedOption.getBidPrice());
-
 
             // For testing purposes, we're just printing the order details without actually placing it
             //System.out.println("This is a test - no actual order was placed");
 
-            System.out.println("订单情况：");
-            QueryOrderRequest request1 = new QueryOrderRequest(MethodName.FILLED_ORDERS);
-
-            String bizContent = AccountParamBuilder.instance()
-                    .account("21549496269944832")
-                    .secType(SecType.OPT)
-                    .startDate("2025-03-09 22:34:30")
-                    .endDate("2025-03-11 22:50:31")
-                    .buildJson();
-
-            request1.setBizContent(bizContent);
-            BatchOrderResponse response1 = TigerTradeSdkUtil.execute(request1);
-            System.out.println(new Gson().toJson(response1));
-
-            System.out.println("------------------");
-
-            // get contract(use default account)
-//            ContractRequest contractRequest = ContractRequest.newRequest(new ContractModel("AAPL"));
-//            ContractResponse contractResponse = TigerTradeSdkUtil.execute(contractRequest);
-//            ContractItem contract3 = contractResponse.getItem();
-//            // market order(use default account)
-//            TradeOrderRequest request3 = TradeOrderRequest.buildMarketOrder(contract3, ActionType.BUY, 10);
-//            TradeOrderResponse response3 = TigerTradeSdkUtil.execute(request3);
-//            System.out.println(new Gson().toJson(response3));
+//            System.out.println("订单情况：");
+//            QueryOrderRequest request1 = new QueryOrderRequest(MethodName.FILLED_ORDERS);
+//
+//            String bizContent = AccountParamBuilder.instance()
+//                    .account("21549496269944832")
+//                    .secType(SecType.OPT)
+//                    .startDate("2025-03-09 22:34:30")
+//                    .endDate("2025-03-11 22:50:31")
+//                    .buildJson();
+//
+//            request1.setBizContent(bizContent);
+//            BatchOrderResponse response1 = TigerTradeSdkUtil.execute(request1);
+//            System.out.println(new Gson().toJson(response1));
+//
+//            System.out.println("------------------");
 
         } catch (Exception e) {
             System.out.println("Error preparing option order: " + e.getMessage());
