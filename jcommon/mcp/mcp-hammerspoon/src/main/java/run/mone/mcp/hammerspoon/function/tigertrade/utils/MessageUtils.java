@@ -9,7 +9,7 @@ import reactor.core.publisher.FluxSink;
 public class MessageUtils {
 
     public static void sendMessage(FluxSink<String> sink, String message) {
-        sink.next("\n" + message + "\n");
+        sink.next("\n<step>" + message + "</step>\n");
     }
 
 }
