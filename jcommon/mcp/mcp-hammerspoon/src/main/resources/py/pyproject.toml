@@ -1,0 +1,14 @@
+[project]
+name = "agent"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115.11",
+    "pillow>=11.1.0",
+    "pyautogui>=0.9.54",
+    "pyperclip>=1.9.0",
+    "pywin32>=309",
+    "uvicorn>=0.34.0",
+]
