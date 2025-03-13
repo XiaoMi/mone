@@ -56,7 +56,7 @@ public class TradeService {
 
     public TradeOrderResponse sellPutOption(OptionChainModel optionChainModel, Market market, String optionDate, FluxSink<String> sink) {
         try {
-            MessageUtils.sendMessage(sink, "开始卖put  信息: \" + optionChainModel + \" market:\" + marke");
+            MessageUtils.sendMessage(sink, "开始卖put  信息: " + optionChainModel + " market:" + market);
             //1.查询期权链
             MessageUtils.sendMessage(sink, "查询期权链");
             List<OptionDetailBO> putOptions = TigerTradeSdkUtil.getOptionChainDetail(optionChainModel, "put", market);
