@@ -4,12 +4,6 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.mcp.spec.McpSchema;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -29,7 +23,7 @@ import com.fasterxml.jackson.databind.JsonNode;
  */
 @Data
 @Slf4j
-public class HammerspoonFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+public class DingTalkFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
     private String name = "hammerspoonOperation";
     private String desc = "Hammerspoon operations including DingTalk(钉钉)、 messaging and window operations";
     private static final String HAMMERSPOON_URL = "http://localhost:27123/execute";
@@ -71,7 +65,7 @@ public class HammerspoonFunction implements Function<Map<String, Object>, McpSch
             }
             """;
 
-    public HammerspoonFunction() {
+    public DingTalkFunction() {
         this.client = new OkHttpClient.Builder()
             .connectTimeout(10, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)

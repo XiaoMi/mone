@@ -132,13 +132,14 @@ public final class McpSchema {
 
     /**
      * Deserializes a JSON string into a JSONRPCMessage object.
+     *
      * @param objectMapper The ObjectMapper instance to use for deserialization
-     * @param jsonText The JSON string to deserialize
+     * @param jsonText     The JSON string to deserialize
      * @return A JSONRPCMessage instance using either the {@link JSONRPCRequest},
      * {@link JSONRPCNotification}, or {@link JSONRPCResponse} classes.
-     * @throws IOException If there's an error during deserialization
+     * @throws IOException              If there's an error during deserialization
      * @throws IllegalArgumentException If the JSON structure doesn't match any known
-     * message type
+     *                                  message type
      */
     public static JSONRPCMessage deserializeJsonRpcMessage(ObjectMapper objectMapper, String jsonText)
             throws IOException {
@@ -181,6 +182,7 @@ public final class McpSchema {
 			@JsonProperty("params") Map<String, Object> params) implements JSONRPCMessage {
 	} // @formatter:on
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @JsonInclude(JsonInclude.Include.NON_ABSENT)
     public record JSONRPCResponse( // @formatter:off
 			@JsonProperty("jsonrpc") String jsonrpc,
@@ -190,7 +192,7 @@ public final class McpSchema {
             @JsonProperty("complete") Boolean complete) implements JSONRPCMessage {
 
         public JSONRPCResponse(String jsonrpc, Object id, Object result, JSONRPCError error) {
-            this(jsonrpc, id, result, error, false);
+            this(jsonrpc, id, result, error, null);
         }
 
 		@JsonInclude(JsonInclude.Include.NON_ABSENT)
@@ -961,9 +963,12 @@ public final class McpSchema {
 		@JsonProperty("audience") List<Role> audience,
 		@JsonProperty("priority") Double priority,
 		@JsonProperty("type") String type,
-		@JsonProperty("text") String text) implements Content { // @formatter:on
+		@JsonProperty("text") String text,
+		@JsonProperty("data") String data
+	) implements Content { // @formatter:on
 
         public TextContent {
+            type = "text";
         }
 
         public String type() {
@@ -971,11 +976,12 @@ public final class McpSchema {
         }
 
         public TextContent(String content) {
-            this(null, null, "text", content);
+            this(null, null, null, content, "");
         }
 
-        public TextContent(String type, String content) {
-            this(null, null, type, content);
+
+        public TextContent(String content, String data) {
+            this(null, null, null, content, data);
         }
     }
 

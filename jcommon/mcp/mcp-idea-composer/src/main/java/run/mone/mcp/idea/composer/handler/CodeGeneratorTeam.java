@@ -14,7 +14,6 @@ import run.mone.hive.roles.Design;
 import run.mone.hive.roles.Engineer;
 import run.mone.hive.schema.Message;
 import run.mone.mcp.idea.composer.handler.biz.BotChainCallContext;
-import run.mone.mcp.idea.composer.service.ComposerService;
 
 import java.util.List;
 
@@ -40,12 +39,12 @@ public class CodeGeneratorTeam {
         //设计者
         Design design = new Design();
         WriteDesign writeDesign = new WriteDesign();
-        setActions(prompt, botChainCallContext, conversationContext, writeDesign, promptResult, design);
+        setActions(botChainCallContext, conversationContext, writeDesign, promptResult, design);
 
         //工程师
         Engineer engineer = new Engineer();
         WriteCode writeCode = new WriteCode();
-        setActions(prompt, botChainCallContext, conversationContext, writeCode, promptResult, engineer);
+        setActions(botChainCallContext, conversationContext, writeCode, promptResult, engineer);
 
         team.hire(architect, design, engineer);
 
@@ -66,14 +65,14 @@ public class CodeGeneratorTeam {
         team.publishMessage(message);
     }
 
-    private static void setActions(String prompt, BotChainCallContext botChainCallContext, ConversationContext conversationContext, WriteCode writeCode, PromptResult promptResult, Engineer engineer) {
-        writeCode.setFunction((req, action, context) -> Message.builder().content(new CodeGenerationHandler(botChainCallContext).getBotResponse(prompt, promptResult, conversationContext)).role(engineer.getName()).build());
+    private static void setActions(BotChainCallContext botChainCallContext, ConversationContext conversationContext, WriteCode writeCode, PromptResult promptResult, Engineer engineer) {
+        writeCode.setFunction((req, action, context) -> Message.builder().content(new CodeGenerationHandler(botChainCallContext).getBotResponse(conversationContext.getUserQuery(), promptResult, conversationContext)).role(engineer.getName()).build());
         engineer.setActions(Lists.newArrayList(writeCode));
     }
 
-    private static void setActions(String prompt, BotChainCallContext botChainCallContext, ConversationContext conversationContext, WriteDesign writeDesign, PromptResult promptResult, Design design) {
+    private static void setActions(BotChainCallContext botChainCallContext, ConversationContext conversationContext, WriteDesign writeDesign, PromptResult promptResult, Design design) {
         writeDesign.setFunction((req, action, context) -> {
-            String res = new FunctionalAnalysisHandler(botChainCallContext).getAnalysisResponse(prompt, promptResult, conversationContext);
+            String res = new FunctionalAnalysisHandler(botChainCallContext).getAnalysisResponse(conversationContext.getUserQuery(), promptResult, conversationContext);
             promptResult.setContent(res);
             return Message.builder().content(res).role(design.getName()).build();
         });

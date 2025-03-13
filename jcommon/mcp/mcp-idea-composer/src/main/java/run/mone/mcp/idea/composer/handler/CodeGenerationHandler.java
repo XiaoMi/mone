@@ -37,9 +37,10 @@ public class CodeGenerationHandler extends AbstractBotHandler {
 
     public String getBotResponse(String prompt, PromptResult previousResult, ConversationContext context) {
         String enhancedPrompt = buildCodePrompt(prompt, previousResult, context);
+        CodeGeneratePromptHolder.lastPrompt = enhancedPrompt;
         String displayPrompt = getDisplayPrompt(prompt);
         addAiChatMessage(displayPrompt, enhancedPrompt, Role.user, context);
-        String response = botChainCallContext.getBotClient().sendPrompt(enhancedPrompt, Prompt.CODE_GENERATE_SYSTEM_PROMPT, buildComposerImagePo());
+        String response = botChainCallContext.getBotClient().sendPrompt(enhancedPrompt, Prompt.CODE_GENERATE_SYSTEM_PROMPT, buildComposerImagePo(), true);
         return response;
     }
 
@@ -69,7 +70,7 @@ public class CodeGenerationHandler extends AbstractBotHandler {
 
         String shellPrompt = "";
 
-        String systemPrompt = CodePrompt.PROMPT;
+        String systemPrompt = CodePrompt.SR_DIFF_PROMPT;
 
         promptBuilder.append("\n").append(shellPrompt).append("\n").append(systemPrompt).append("\n\n<user_query>").append(prompt).append("</user_query>\n");
         return promptBuilder.toString();
