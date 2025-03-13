@@ -3,6 +3,7 @@ package run.mone.mcp.hammerspoon.function.tigertrade.function;
 import com.tigerbrokers.stock.openapi.client.https.domain.option.model.OptionChainModel;
 import com.tigerbrokers.stock.openapi.client.struct.enums.Market;
 import com.tigerbrokers.stock.openapi.client.struct.enums.TimeZoneId;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -11,6 +12,11 @@ import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.hammerspoon.function.tigertrade.service.TradeService;
 
 import java.text.SimpleDateFormat;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAdjusters;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -55,7 +61,7 @@ public class SellPutOptionFunction implements Function<Map<String, Object>, Flux
 
     @Override
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
-        String expiryDate = new SimpleDateFormat().format("yyyy-MM-dd");
+        String expiryDate = getFridayOfCurrentWeek();
         Market market = Market.US;
         OptionChainModel optionChainModel = new OptionChainModel("TSLA", expiryDate, TimeZoneId.NewYork);
 
@@ -71,5 +77,12 @@ public class SellPutOptionFunction implements Function<Map<String, Object>, Flux
                             true
                     ));
                 });
+    }
+
+    //帮我写一个函数,给当前Date 计算 这周周五的时间 (yyyy-MM-dd) (class)
+    public String getFridayOfCurrentWeek() {
+        LocalDate now = LocalDate.now();
+        LocalDate friday = now.with(TemporalAdjusters.nextOrSame(DayOfWeek.FRIDAY));
+        return friday.format(DateTimeFormatter.ofPattern("yyyy-MM-dd"));
     }
 } 
