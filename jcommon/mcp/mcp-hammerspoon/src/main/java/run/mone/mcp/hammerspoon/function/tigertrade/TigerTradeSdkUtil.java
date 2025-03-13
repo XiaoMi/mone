@@ -1,4 +1,4 @@
-package run.mone.mcp.hammerspoon.function.trigertrade;
+package run.mone.mcp.hammerspoon.function.tigertrade;
 
 import com.alibaba.fastjson.JSONObject;
 import com.google.gson.Gson;
@@ -35,9 +35,9 @@ import com.tigerbrokers.stock.openapi.client.https.response.trade.TradeOrderResp
 import com.tigerbrokers.stock.openapi.client.struct.enums.*;
 import com.tigerbrokers.stock.openapi.client.util.builder.AccountParamBuilder;
 import lombok.extern.slf4j.Slf4j;
-import run.mone.mcp.hammerspoon.function.trigertrade.dto.OptionDetailBO;
-import run.mone.mcp.hammerspoon.function.trigertrade.dto.OptionSymbolBO;
-import run.mone.mcp.hammerspoon.function.trigertrade.dto.OptionSymbolResponseWrapper;
+import run.mone.mcp.hammerspoon.function.tigertrade.dto.OptionDetailBO;
+import run.mone.mcp.hammerspoon.function.tigertrade.dto.OptionSymbolBO;
+import run.mone.mcp.hammerspoon.function.tigertrade.dto.OptionSymbolResponseWrapper;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;

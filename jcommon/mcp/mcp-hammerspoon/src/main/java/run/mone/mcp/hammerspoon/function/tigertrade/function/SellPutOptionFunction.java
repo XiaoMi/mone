@@ -1,4 +1,4 @@
-package run.mone.mcp.hammerspoon.function.trigertrade.function;
+package run.mone.mcp.hammerspoon.function.tigertrade.function;
 
 import com.tigerbrokers.stock.openapi.client.https.domain.option.model.OptionChainModel;
 import com.tigerbrokers.stock.openapi.client.struct.enums.Market;
@@ -8,7 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.mcp.hammerspoon.function.trigertrade.service.TradeService;
+import run.mone.mcp.hammerspoon.function.tigertrade.service.TradeService;
 
 import java.text.SimpleDateFormat;
 import java.util.List;

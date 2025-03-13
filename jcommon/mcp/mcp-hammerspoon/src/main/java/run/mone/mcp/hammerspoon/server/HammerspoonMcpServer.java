@@ -14,9 +14,9 @@ import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.mcp.hammerspoon.function.DingTalkFunction;
 import run.mone.mcp.hammerspoon.function.LocateCoordinatesFunction;
-import run.mone.mcp.hammerspoon.function.TrigerTradeProFunction;
-import run.mone.mcp.hammerspoon.function.trigertrade.SellPutOptionDecisionFunction;
-import run.mone.mcp.hammerspoon.function.trigertrade.function.SellPutOptionFunction;
+import run.mone.mcp.hammerspoon.function.tigertrade.SellPutOptionDecisionFunction;
+import run.mone.mcp.hammerspoon.function.tigertrade.dto.Version;
+import run.mone.mcp.hammerspoon.function.tigertrade.function.SellPutOptionFunction;
 
 
 @Slf4j
@@ -46,7 +46,7 @@ public class HammerspoonMcpServer {
     public McpSyncServer start() {
         log.info("Starting SongMcpServer...");
         McpSyncServer syncServer = McpServer.using(transport)
-                .serverInfo("hammerspoon_mcp", "0.0.1")
+                .serverInfo("tigertrade_mcp", new Version().toString())
                 .capabilities(ServerCapabilities.builder()
                         .tools(true)
                         .logging()
@@ -76,8 +76,8 @@ public class HammerspoonMcpServer {
                 DingTalkFunction function = new DingTalkFunction();
 
                 var toolRegistration = new McpServer.ToolRegistration(
-                        new Tool(function.getName(), function.getDesc(), function.getToolScheme()),function
-                        );
+                        new Tool(function.getName(), function.getDesc(), function.getToolScheme()), function
+                );
                 syncServer.addTool(toolRegistration);
                 log.info("Successfully registered DingTalk tool");
             }
