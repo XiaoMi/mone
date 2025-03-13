@@ -106,6 +106,13 @@ public class TrigerTradeApiTest {
     }
 
     @Test
+    public void testQueryOrder() {
+        BatchOrderResponse batchOrderResponse = TigerTradeSdkUtil.queryOptionOrdersLastNHours(100L);
+        log.info(gson.toJson(batchOrderResponse));
+    }
+
+
+    @Test
     public void testSellPutOptionOrder() {
 
         // 1. Get option chain details to find a suitable put option

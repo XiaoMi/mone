@@ -91,10 +91,16 @@ public class TigerTradeSdkUtil {
         //查询证券相关资产信息
         PrimeAssetItem.Segment segment = primeAssetResponse.getSegment(Category.S);
         log.info("segment: " + JSONObject.toJSONString(segment));
+        Double totalCashAvailableForTrade = segment.getCashAvailableForTrade();
         //查询账号中美元相关资产信息
         if (segment != null) {
             PrimeAssetItem.CurrencyAssets assetByCurrency = segment.getAssetByCurrency(Currency.USD);
             log.info("assetByCurrency: " + JSONObject.toJSONString(assetByCurrency));
+
+            //取最小的剩余流动性
+            Double cashAvailableForTrade = assetByCurrency.getCashAvailableForTrade();
+            assetByCurrency.setCashAvailableForTrade(Math.min(totalCashAvailableForTrade, cashAvailableForTrade));
+
             return assetByCurrency;
         }
         return null;
@@ -137,7 +143,7 @@ public class TigerTradeSdkUtil {
     public static BatchOrderResponse queryOptionOrders(SecType secType, String startDate, String endDate, String account) {
         log.info("queryOptionOrders secType:{}, startDate:{}, endDate:{}", secType, startDate, endDate);
         //todo 确认枚举含义
-        QueryOrderRequest request = new QueryOrderRequest(MethodName.FILLED_ORDERS);
+        QueryOrderRequest request = new QueryOrderRequest(MethodName.ORDERS);
 
         AccountParamBuilder builder = AccountParamBuilder.instance();
 
@@ -165,13 +171,15 @@ public class TigerTradeSdkUtil {
     }
 
 
-    public static BatchOrderResponse queryOptionOrdersLast24Hours() {
+    public static BatchOrderResponse queryOptionOrdersLastNHours(long hours) {
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
+        if (0l == hours) {
+            hours = 1l;
+        }
         // Current time for end date
         String endDate = sdf.format(new Date());
-        // 24 hours ago for start date
-        Date startDateTime = new Date(System.currentTimeMillis() - 24 * 60 * 60 * 1000);
+        // n hours ago for start date
+        Date startDateTime = new Date(System.currentTimeMillis() - hours * 60 * 60 * 1000);
         String startDate = sdf.format(startDateTime);
 
         BatchOrderResponse response = queryOptionOrders(SecType.OPT, startDate, endDate, null);
