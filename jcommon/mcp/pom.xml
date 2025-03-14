@@ -54,6 +54,7 @@
         <module>mcp-ipinfo</module>
         <module>mcp-novel</module>
         <module>mcp-miapi</module>
+        <module>mcp-high-risk-element</module>
     </modules>
 
     <properties>
