@@ -1,4 +1,4 @@
-package run.mone.mcp.hammerspoon.function.trigertrade;
+package run.mone.mcp.hammerspoon.function.tigertrade;
 
 /**
  * @author shanwb

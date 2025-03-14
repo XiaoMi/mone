@@ -1,10 +1,7 @@
 package run.mone.hive.mcp.client;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -17,6 +14,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import run.mone.hive.mcp.client.transport.HttpClientSseClientTransport;
 import run.mone.hive.mcp.spec.ClientMcpTransport;
 import run.mone.hive.mcp.spec.DefaultMcpSession;
 import run.mone.hive.mcp.spec.DefaultMcpSession.NotificationHandler;
@@ -105,6 +103,8 @@ public class McpAsyncClient {
 	 */
 	private final McpTransport transport;
 
+	private String clientId;
+
 	/**
 	 * Create a new McpAsyncClient with the given transport and session request-response
 	 * timeout.
@@ -132,12 +132,18 @@ public class McpAsyncClient {
 		Assert.notNull(clientInfo, "Client info must not be null");
 
 		this.clientInfo = clientInfo;
+		this.clientId = UUID.randomUUID().toString();
 
 		this.clientCapabilities = (clientCapabilities != null) ? clientCapabilities
 				: new McpSchema.ClientCapabilities(null, !Utils.isEmpty(roots) ? new RootCapabilities(false) : null,
 						samplingHandler != null ? new Sampling() : null);
 
 		this.transport = transport;
+
+		//需要唯一的id
+		if (this.transport instanceof HttpClientSseClientTransport hcct){
+			hcct.setClientId(this.clientId);
+		}
 
 		this.roots = roots != null ? new ConcurrentHashMap<>(roots) : new ConcurrentHashMap<>();
 

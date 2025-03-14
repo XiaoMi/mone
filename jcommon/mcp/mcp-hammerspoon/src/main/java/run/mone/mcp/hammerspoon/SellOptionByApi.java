@@ -4,20 +4,14 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.tigerbrokers.stock.openapi.client.https.domain.contract.item.ContractItem;
 import com.tigerbrokers.stock.openapi.client.https.domain.option.model.OptionChainModel;
-import com.tigerbrokers.stock.openapi.client.https.request.trade.QueryOrderRequest;
 import com.tigerbrokers.stock.openapi.client.https.request.trade.TradeOrderRequest;
-import com.tigerbrokers.stock.openapi.client.https.response.trade.BatchOrderResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.trade.TradeOrderResponse;
-import com.tigerbrokers.stock.openapi.client.struct.enums.ActionType;
-import com.tigerbrokers.stock.openapi.client.struct.enums.MethodName;
-import com.tigerbrokers.stock.openapi.client.struct.enums.SecType;
-import com.tigerbrokers.stock.openapi.client.struct.enums.TimeZoneId;
-import com.tigerbrokers.stock.openapi.client.util.builder.AccountParamBuilder;
+import com.tigerbrokers.stock.openapi.client.struct.enums.*;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
-import run.mone.mcp.hammerspoon.function.trigertrade.TigerTradeSdkUtil;
-import run.mone.mcp.hammerspoon.function.trigertrade.dto.OptionDetailBO;
+import run.mone.mcp.hammerspoon.function.tigertrade.TigerTradeSdkUtil;
+import run.mone.mcp.hammerspoon.function.tigertrade.dto.OptionDetailBO;
 
 import java.util.List;
 
@@ -33,7 +27,7 @@ public class SellOptionByApi {
     public static void main(String[] args) {
         // 1. Get option chain details to find a suitable put option
         OptionChainModel basicModel = new OptionChainModel("TSLA", "2025-03-14", TimeZoneId.NewYork);
-        List<OptionDetailBO> putOptions = TigerTradeSdkUtil.getOptionChainDetail(basicModel, "put");
+        List<OptionDetailBO> putOptions = TigerTradeSdkUtil.getOptionChainDetail(basicModel, "put", Market.US);
 
         if (putOptions == null || putOptions.isEmpty()) {
             System.out.println("No put options available for the specified date");
