@@ -7,8 +7,12 @@
   - 将本工程 resources/init.lua脚本 及resources/modules目录 放到 ~/.hammerspoon 目录下
   - 启动hammerspoon
 - IDE 配置该mcp，mcp就可以与hammerspoon联动，进行本机app的操作
-  "hammerspoon_mcp": {
+- 
+  "tigertrade_mcp": {
   "command": "java",
+  "type": "sse",
+  "url": "http://localhost:8080",
+  "sseRemote": false,
   "args": [
   "-jar",
   "/opt/workspace_all/workspace_mi/mone-all/mone/jcommon/mcp/mcp-hammerspoon/target/app.jar"

@@ -14,7 +14,9 @@ import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.mcp.hammerspoon.function.DingTalkFunction;
 import run.mone.mcp.hammerspoon.function.LocateCoordinatesFunction;
-import run.mone.mcp.hammerspoon.function.TrigerTradeProFunction;
+import run.mone.mcp.hammerspoon.function.tigertrade.SellPutOptionDecisionFunction;
+import run.mone.mcp.hammerspoon.function.tigertrade.dto.Version;
+import run.mone.mcp.hammerspoon.function.tigertrade.function.SellPutOptionFunction;
 
 
 @Slf4j
@@ -26,20 +28,25 @@ public class HammerspoonMcpServer {
 
     private final ServerMcpTransport transport;
     private final LocateCoordinatesFunction locateCoordinatesFunction;
+    private final SellPutOptionDecisionFunction sellPutOptionDecisionFunction;
     private McpSyncServer syncServer;
 
     @Resource
     private LLM llm;
 
-    public HammerspoonMcpServer(ServerMcpTransport transport, LocateCoordinatesFunction locateCoordinatesFunction) {
+    @Resource
+    private SellPutOptionFunction sellPutOptionFunction;
+
+    public HammerspoonMcpServer(ServerMcpTransport transport, LocateCoordinatesFunction locateCoordinatesFunction, SellPutOptionDecisionFunction sellPutOptionDecisionFunction) {
         this.transport = transport;
         this.locateCoordinatesFunction = locateCoordinatesFunction;
+        this.sellPutOptionDecisionFunction = sellPutOptionDecisionFunction;
     }
 
     public McpSyncServer start() {
         log.info("Starting SongMcpServer...");
         McpSyncServer syncServer = McpServer.using(transport)
-                .serverInfo("hammerspoon_mcp", "0.0.1")
+                .serverInfo("tigertrade_mcp", new Version().toString())
                 .capabilities(ServerCapabilities.builder()
                         .tools(true)
                         .logging()
@@ -50,26 +57,27 @@ public class HammerspoonMcpServer {
         log.info("Registering song tool...");
         try {
             if ("trigertrade".equalsIgnoreCase(functionType)) {
-                TrigerTradeProFunction function = new TrigerTradeProFunction();
-                function.setLlm(llm);
+//                TrigerTradeProFunction function = new TrigerTradeProFunction();
 
-                var toolRegistration = new McpServer.ToolRegistration(
-                        new Tool(function.getName(), function.getDesc(), function.getToolScheme()),function
-                        );
-                syncServer.addTool(toolRegistration);
+//                function.setLlm(llm);
+//                var toolRegistration = new McpServer.ToolRegistration(
+//                        new Tool(function.getName(), function.getDesc(), function.getToolScheme()),function
+//                        );
+//                syncServer.addTool(toolRegistration);
 
-                // 注册locateCoordinatesFunction
-                syncServer.addTool(new McpServer.ToolRegistration(
-                    new Tool(locateCoordinatesFunction.getName(), locateCoordinatesFunction.getDesc(), locateCoordinatesFunction.getToolScheme()),
-                    locateCoordinatesFunction
-                ));
+                var sellPutOptionStreamRegistration = new McpServer.ToolStreamRegistration(
+                        new Tool(sellPutOptionFunction.getName(), sellPutOptionFunction.getDesc(), sellPutOptionFunction.getToolScheme()), sellPutOptionFunction
+                );
+                syncServer.addStreamTool(sellPutOptionStreamRegistration);
+
+
                 log.info("Successfully registered trigertrade tool");
             } else {
                 DingTalkFunction function = new DingTalkFunction();
 
                 var toolRegistration = new McpServer.ToolRegistration(
-                        new Tool(function.getName(), function.getDesc(), function.getToolScheme()),function
-                        );
+                        new Tool(function.getName(), function.getDesc(), function.getToolScheme()), function
+                );
                 syncServer.addTool(toolRegistration);
                 log.info("Successfully registered DingTalk tool");
             }

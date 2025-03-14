@@ -220,7 +220,7 @@ function M.moveToAppAndClick(appName, x, y)
     -- if M.moveToApp(appName, x, y) then
     if M.moveToAppAbsolutely(appName, x, y) then
         -- Wait a moment to ensure mouse is positioned
-        hs.timer.usleep(100000)  -- 100ms
+        hs.timer.usleep(500000)  -- 500ms
         
         -- Perform the click at current position
         local pos = hs.mouse.absolutePosition()

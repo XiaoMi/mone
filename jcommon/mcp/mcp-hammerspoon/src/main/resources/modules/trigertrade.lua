@@ -1,12 +1,12 @@
 local M = {}
 
 -- 老虎证券应用名称和搜索框信息
--- local TIGER_APP_NAME = "老虎国际Pro"
-local TIGER_APP_NAME = "Tiger Trade"
+local TIGER_APP_NAME = "老虎国际Pro"
+-- local TIGER_APP_NAME = "Tiger Trade"
 
 -- 参考屏幕分辨率 (16英寸MacBook Pro的标准分辨率)
 local TIGER_BOX_DETAIL_W = 1728
-local TIGER_BOX_DETAIL_H = 983
+local TIGER_BOX_DETAIL_H = 1117
 
 -- 获取当前Mac的屏幕信息（尺寸与型号）
 function M.getMacScreenInfo()
@@ -282,7 +282,7 @@ function M.clickOptionsChain()
 
     -- 4. 点击期权链按钮 (基于16英寸Mac的坐标: 280, 95)
     print("正在点击期权链按钮...")
-    local scaledX, scaledY = M.scaleCoordinate(280, 95)
+    local scaledX, scaledY = 280, 95
     print("点击期权链按钮坐标: " .. scaledX .. ", " .. scaledY)
     local success = mouse.moveToAppAndClick(TIGER_APP_NAME, scaledX, scaledY)
 
@@ -337,11 +337,11 @@ function M.sellPutOption(quantity)
     tigerApp:activate()
 
     -- 等待窗口激活
-    hs.timer.usleep(500000) -- 500ms
+    hs.timer.usleep(1200000) -- 1200ms
 
     -- 4. 点击目标PUT期权 (基于16英寸Mac的坐标: 160, 320)
     print("正在选择目标PUT期权...")
-    local scaledX1, scaledY1 = M.scaleCoordinate(160, 320)
+    local scaledX1, scaledY1 = 160, 320
     print("选择目标PUT期权坐标: " .. scaledX1 .. ", " .. scaledY1)
     local success = mouse.moveToAppAndClick(TIGER_APP_NAME, scaledX1, scaledY1)
     if not success then
@@ -354,7 +354,7 @@ function M.sellPutOption(quantity)
 
     -- 5. 点击数量输入框 (基于16英寸Mac的坐标: 1500, 765)
     print("正在点击数量输入框...")
-    local scaledX2, scaledY2 = M.scaleCoordinate(1500, 765)
+    local scaledX2, scaledY2 = 1500, 710
     success = mouse.moveToAppAndClick(TIGER_APP_NAME, scaledX2, scaledY2)
     if not success then
         print("点击数量输入框失败")
@@ -362,7 +362,7 @@ function M.sellPutOption(quantity)
     end
 
     -- 等待输入框激活
-    hs.timer.usleep(500000) -- 500ms
+    hs.timer.usleep(1200000) -- 1200ms
 
     -- 6. 清空输入框并输入数量
     print("正在清空输入框...")
@@ -383,7 +383,7 @@ function M.sellPutOption(quantity)
 
     -- 7. 点击卖出按钮 (基于16英寸Mac的坐标: 1550, 958)
     print("正在点击卖出按钮...")
-    local scaledX3, scaledY3 = M.scaleCoordinate(1550, 958)
+    local scaledX3, scaledY3 = 1550, 958
     success = mouse.moveToAppAndClick(TIGER_APP_NAME, scaledX3, scaledY3)
     if not success then
         print("点击卖出按钮失败")

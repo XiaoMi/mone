@@ -4,23 +4,24 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
+import org.springframework.web.servlet.function.RouterFunction;
+import org.springframework.web.servlet.function.ServerResponse;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
-import run.mone.hive.mcp.server.transport.StdioServerTransport;
+import run.mone.hive.mcp.transport.webmvcsse.WebMvcSseServerTransport;
 
 @Configuration
-@ConditionalOnProperty(name = "stdio.enabled", havingValue = "true")
 class McpStdioTransportConfig {
-    /**
-     * stdio 通信
-     * @param mapper
-     * @return
-     */
+
     @Bean
-    StdioServerTransport stdioServerTransport(ObjectMapper mapper) {
-        return new StdioServerTransport(mapper);
+    WebMvcSseServerTransport webMvcSseServerTransport(ObjectMapper mapper) {
+        return new WebMvcSseServerTransport(mapper, "/mcp/message");
+    }
+
+    @Bean
+    RouterFunction<ServerResponse> mcpRouterFunction(WebMvcSseServerTransport transport) {
+        return transport.getRouterFunction();
     }
 
     @Bean
