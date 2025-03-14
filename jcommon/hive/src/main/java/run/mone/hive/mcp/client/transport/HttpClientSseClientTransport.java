@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.SneakyThrows;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -193,11 +194,24 @@ public class HttpClientSseClientTransport implements ClientMcpTransport {
                 }
             }
 
+            @SneakyThrows
             @Override
             public void onError(Throwable error) {
                 if (!isClosing) {
                     logger.error("SSE connection error", error);
                     future.completeExceptionally(error);
+                    TimeUnit.SECONDS.sleep(5);
+                    for (; ; ) {
+                        logger.info("reconnect");
+                        //从新连接 (这样有问题的,其实这个Mono已经传递出去了,先这样)
+                        try {
+                            connect(handler).block();
+                            break;
+                        } catch (Throwable ex) {
+                            TimeUnit.SECONDS.sleep(5);
+                            logger.error("SSE connection error:" + ex.getMessage());
+                        }
+                    }
                 }
             }
         }, this.clientId);
