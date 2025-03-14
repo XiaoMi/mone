@@ -34,7 +34,6 @@ import java.util.function.Function;
  * ORIGINAL CODE IS FROM SPRING AI!!!
  * <p>
  * Server-Sent Events (SSE) implementation of the
- * {@link org.springframework.ai.mcp.spec.McpTransport} that follows the MCP HTTP with SSE
  * transport specification, using Java's HttpClient.
  *
  * <p>
@@ -149,33 +148,13 @@ public class HttpClientSseClientTransport implements ClientMcpTransport {
         this.sseClient = new FlowSseClient(this.httpClient);
     }
 
-    /**
-     * Establishes the SSE connection with the server and sets up message handling.
-     *
-     * <p>
-     * This method:
-     * <ul>
-     * <li>Initiates the SSE connection</li>
-     * <li>Handles endpoint discovery events</li>
-     * <li>Processes incoming JSON-RPC messages</li>
-     * </ul>
-     *
-     * @param handler the function to process received JSON-RPC messages
-     * @return a Mono that completes when the connection is established
-     * <p>
-     * 连接到的是sse,用来返回结果的流
-     */
-    @Override
-    public Mono<Void> connect(Function<Mono<JSONRPCMessage>, Mono<JSONRPCMessage>> handler) {
-        CompletableFuture<Void> future = new CompletableFuture<>();
-        connectionFuture.set(future);
-        sseClient.subscribe(this.baseUri + SSE_ENDPOINT, new FlowSseClient.SseEventHandler() {
+    public FlowSseClient.SseEventHandler sseEventHandler(String url, CompletableFuture<Void> future, Function<Mono<JSONRPCMessage>, Mono<JSONRPCMessage>> handler) {
+        return new FlowSseClient.SseEventHandler() {
             @Override
             public void onEvent(SseEvent event) {
                 if (isClosing) {
                     return;
                 }
-
                 try {
                     if (ENDPOINT_EVENT_TYPE.equals(event.type())) {
                         String endpoint = event.data();
@@ -200,22 +179,33 @@ public class HttpClientSseClientTransport implements ClientMcpTransport {
                 if (!isClosing) {
                     logger.error("SSE connection error", error);
                     future.completeExceptionally(error);
-                    TimeUnit.SECONDS.sleep(5);
-                    for (; ; ) {
-                        logger.info("reconnect");
-                        //从新连接 (这样有问题的,其实这个Mono已经传递出去了,先这样)
-                        try {
-                            connect(handler).block();
-                            break;
-                        } catch (Throwable ex) {
-                            TimeUnit.SECONDS.sleep(5);
-                            logger.error("SSE connection error:" + ex.getMessage());
-                        }
-                    }
                 }
             }
-        }, this.clientId);
+        };
+    }
 
+    /**
+     * Establishes the SSE connection with the server and sets up message handling.
+     *
+     * <p>
+     * This method:
+     * <ul>
+     * <li>Initiates the SSE connection</li>
+     * <li>Handles endpoint discovery events</li>
+     * <li>Processes incoming JSON-RPC messages</li>
+     * </ul>
+     *
+     * @param handler the function to process received JSON-RPC messages
+     * @return a Mono that completes when the connection is established
+     * <p>
+     * 连接到的是sse,用来返回结果的流
+     */
+    @Override
+    public Mono<Void> connect(Function<Mono<JSONRPCMessage>, Mono<JSONRPCMessage>> handler) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        connectionFuture.set(future);
+        String url = this.baseUri + SSE_ENDPOINT;
+        sseClient.subscribe(url, sseEventHandler(url, future, handler), this.clientId);
         return Mono.fromFuture(future);
     }
 
@@ -286,9 +276,12 @@ public class HttpClientSseClientTransport implements ClientMcpTransport {
     public Mono<Void> closeGracefully() {
         return Mono.fromRunnable(() -> {
             isClosing = true;
-            CompletableFuture<Void> future = connectionFuture.get();
-            if (future != null && !future.isDone()) {
-                future.cancel(true);
+            try {
+                if (null != this.sseClient) {
+                    this.sseClient.close();
+                }
+            } catch (Throwable ex) {
+                logger.error(ex.getMessage(), ex);
             }
         });
     }

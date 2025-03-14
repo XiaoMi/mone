@@ -4,7 +4,9 @@
  */
 package run.mone.hive.mcp.client.transport;
 
+import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.configs.Const;
+import run.mone.hive.mcp.client.transport.exception.CloseException;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -13,6 +15,7 @@ import java.net.http.HttpResponse;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Flow;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.regex.Pattern;
@@ -38,9 +41,12 @@ import java.util.regex.Pattern;
  * @see SseEventHandler
  * @see SseEvent
  */
+@Slf4j
 public class FlowSseClient {
 
     private final HttpClient httpClient;
+
+    private volatile boolean close;
 
     /**
      * Pattern to extract the data content from SSE data field lines. Matches lines
@@ -101,6 +107,10 @@ public class FlowSseClient {
         this.httpClient = httpClient;
     }
 
+    public void close() {
+        close = true;
+    }
+
     /**
      * Subscribes to an SSE endpoint and processes the event stream.
      *
@@ -116,89 +126,104 @@ public class FlowSseClient {
      * @throws RuntimeException if the connection fails with a non-200 status code
      */
     public void subscribe(String url, SseEventHandler eventHandler, String clientId) {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .header("Accept", "text/event-stream")
-                .header("Cache-Control", "no-cache")
-                .header(Const.MC_CLIENT_ID, clientId)
-                .GET()
-                .build();
-
-        StringBuilder eventBuilder = new StringBuilder();
-        AtomicReference<String> currentEventId = new AtomicReference<>();
-        AtomicReference<String> currentEventType = new AtomicReference<>("message");
-
-        //这是连接到sse,用来接受数据并处理
-        Flow.Subscriber<String> lineSubscriber = new Flow.Subscriber<>() {
-            private Flow.Subscription subscription;
-
-            @Override
-            public void onSubscribe(Flow.Subscription subscription) {
-                this.subscription = subscription;
-                subscription.request(Long.MAX_VALUE);
-            }
-
-            @Override
-            public void onNext(String line) {
-                if (line.isEmpty()) {
-                    // Empty line means end of event
-                    if (eventBuilder.length() > 0) {
-                        String eventData = eventBuilder.toString();
-                        SseEvent event = new SseEvent(currentEventId.get(), currentEventType.get(), eventData.trim());
-                        eventHandler.onEvent(event);
-                        eventBuilder.setLength(0);
-                    }
-                } else {
-                    if (line.startsWith("data:")) {
-                        var matcher = EVENT_DATA_PATTERN.matcher(line);
-                        if (matcher.find()) {
-                            eventBuilder.append(matcher.group(1).trim()).append("\n");
-                        }
-                    } else if (line.startsWith("id:")) {
-                        var matcher = EVENT_ID_PATTERN.matcher(line);
-                        if (matcher.find()) {
-                            currentEventId.set(matcher.group(1).trim());
-                        }
-                    } else if (line.startsWith("event:")) {
-                        var matcher = EVENT_TYPE_PATTERN.matcher(line);
-                        if (matcher.find()) {
-                            currentEventType.set(matcher.group(1).trim());
-                        }
-                    }
+        new Thread(() -> {
+            for (; ; ) {
+                log.info("connect:{}", url);
+                if (close) {
+                    break;
                 }
-                subscription.request(1);
-            }
+                try {
+                    HttpRequest request = HttpRequest.newBuilder()
+                            .uri(URI.create(url))
+                            .header("Accept", "text/event-stream")
+                            .header("Cache-Control", "no-cache")
+                            .header(Const.MC_CLIENT_ID, clientId)
+                            .GET()
+                            .build();
 
-            @Override
-            public void onError(Throwable throwable) {
-                eventHandler.onError(throwable);
-            }
+                    StringBuilder eventBuilder = new StringBuilder();
+                    AtomicReference<String> currentEventId = new AtomicReference<>();
+                    AtomicReference<String> currentEventType = new AtomicReference<>("message");
 
-            @Override
-            public void onComplete() {
-                // Handle any remaining event data
-                if (eventBuilder.length() > 0) {
-                    String eventData = eventBuilder.toString();
-                    SseEvent event = new SseEvent(currentEventId.get(), currentEventType.get(), eventData.trim());
-                    eventHandler.onEvent(event);
+                    //这是连接到sse,用来接受数据并处理
+                    Flow.Subscriber<String> lineSubscriber = new Flow.Subscriber<>() {
+                        private Flow.Subscription subscription;
+
+                        @Override
+                        public void onSubscribe(Flow.Subscription subscription) {
+                            this.subscription = subscription;
+                            subscription.request(Long.MAX_VALUE);
+                        }
+
+                        @Override
+                        public void onNext(String line) {
+                            if (close) {
+                                throw new CloseException();
+                            }
+                            if (line.isEmpty()) {
+                                // Empty line means end of event
+                                if (eventBuilder.length() > 0) {
+                                    String eventData = eventBuilder.toString();
+                                    SseEvent event = new SseEvent(currentEventId.get(), currentEventType.get(), eventData.trim());
+                                    eventHandler.onEvent(event);
+                                    eventBuilder.setLength(0);
+                                }
+                            } else {
+                                if (line.startsWith("data:")) {
+                                    var matcher = EVENT_DATA_PATTERN.matcher(line);
+                                    if (matcher.find()) {
+                                        eventBuilder.append(matcher.group(1).trim()).append("\n");
+                                    }
+                                } else if (line.startsWith("id:")) {
+                                    var matcher = EVENT_ID_PATTERN.matcher(line);
+                                    if (matcher.find()) {
+                                        currentEventId.set(matcher.group(1).trim());
+                                    }
+                                } else if (line.startsWith("event:")) {
+                                    var matcher = EVENT_TYPE_PATTERN.matcher(line);
+                                    if (matcher.find()) {
+                                        currentEventType.set(matcher.group(1).trim());
+                                    }
+                                }
+                            }
+                            subscription.request(1);
+                        }
+
+                        @Override
+                        public void onError(Throwable throwable) {
+                            eventHandler.onError(throwable);
+                        }
+
+                        @Override
+                        public void onComplete() {
+                            // Handle any remaining event data
+                            if (eventBuilder.length() > 0) {
+                                String eventData = eventBuilder.toString();
+                                SseEvent event = new SseEvent(currentEventId.get(), currentEventType.get(), eventData.trim());
+                                eventHandler.onEvent(event);
+                            }
+                        }
+                    };
+
+                    Function<Flow.Subscriber<String>, HttpResponse.BodySubscriber<Void>> subscriberFactory = subscriber -> HttpResponse.BodySubscribers
+                            .fromLineSubscriber(subscriber);
+
+                    this.httpClient.send(request,
+                            info -> subscriberFactory.apply(lineSubscriber));
+
+                } catch (CloseException closeException) {
+                    log.info("close!!!");
+                } catch (Throwable ex) {
+                    log.error(ex.getMessage(), ex);
+                }
+                try {
+                    TimeUnit.SECONDS.sleep(5);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
                 }
             }
-        };
+        }).start();
 
-        Function<Flow.Subscriber<String>, HttpResponse.BodySubscriber<Void>> subscriberFactory = subscriber -> HttpResponse.BodySubscribers
-                .fromLineSubscriber(subscriber);
-
-        CompletableFuture<HttpResponse<Void>> future = this.httpClient.sendAsync(request,
-                info -> subscriberFactory.apply(lineSubscriber));
-
-        future.thenAccept(response -> {
-            if (response.statusCode() != 200) {
-                throw new RuntimeException("Failed to connect to SSE stream: " + response.statusCode());
-            }
-        }).exceptionally(throwable -> {
-            eventHandler.onError(throwable);
-            return null;
-        });
     }
 
 
