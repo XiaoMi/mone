@@ -189,11 +189,17 @@ public final class McpSchema {
 			@JsonProperty("id") Object id,
 			@JsonProperty("result") Object result,
 			@JsonProperty("error") JSONRPCError error,
-            @JsonProperty("complete") Boolean complete) implements JSONRPCMessage {
+            @JsonProperty("complete") Boolean complete,
+								   @JsonProperty("clientId") String clientId
+								   ) implements JSONRPCMessage {
 
         public JSONRPCResponse(String jsonrpc, Object id, Object result, JSONRPCError error) {
-            this(jsonrpc, id, result, error, null);
+            this(jsonrpc, id, result, error, null,null);
         }
+
+		public JSONRPCResponse(String jsonrpc, Object id, Object result, JSONRPCError error, Boolean complete) {
+			this(jsonrpc, id, result, error, complete,null);
+		}
 
 		@JsonInclude(JsonInclude.Include.NON_ABSENT)
 		public record JSONRPCError(

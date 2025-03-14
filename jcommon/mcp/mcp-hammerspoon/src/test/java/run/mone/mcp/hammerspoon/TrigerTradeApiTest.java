@@ -1,47 +1,50 @@
 package run.mone.mcp.hammerspoon;
 
+import com.google.common.collect.Lists;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.tigerbrokers.stock.openapi.client.config.ClientConfig;
-import com.tigerbrokers.stock.openapi.client.https.client.TigerHttpClient;
 import com.tigerbrokers.stock.openapi.client.https.domain.contract.item.ContractItem;
-import com.tigerbrokers.stock.openapi.client.https.domain.contract.model.ContractModel;
-import com.tigerbrokers.stock.openapi.client.https.domain.option.model.OptionChainFilterModel;
 import com.tigerbrokers.stock.openapi.client.https.domain.option.model.OptionChainModel;
-import com.tigerbrokers.stock.openapi.client.https.request.contract.ContractRequest;
-import com.tigerbrokers.stock.openapi.client.https.request.option.OptionChainQueryV3Request;
+import com.tigerbrokers.stock.openapi.client.https.domain.trade.item.PrimeAssetItem;
 import com.tigerbrokers.stock.openapi.client.https.request.option.OptionExpirationQueryRequest;
 import com.tigerbrokers.stock.openapi.client.https.request.trade.QueryOrderRequest;
 import com.tigerbrokers.stock.openapi.client.https.request.trade.TradeOrderRequest;
-import com.tigerbrokers.stock.openapi.client.https.response.contract.ContractResponse;
-import com.tigerbrokers.stock.openapi.client.https.response.option.OptionChainResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.option.OptionExpirationResponse;
+import com.tigerbrokers.stock.openapi.client.https.response.quote.QuoteDelayResponse;
+import com.tigerbrokers.stock.openapi.client.https.response.quote.QuoteMarketResponse;
+import com.tigerbrokers.stock.openapi.client.https.response.quote.QuoteRealTimeQuoteResponse;
+import com.tigerbrokers.stock.openapi.client.https.response.trade.PositionsResponse;
+import com.tigerbrokers.stock.openapi.client.struct.enums.Currency;
+import com.tigerbrokers.stock.openapi.client.struct.enums.Market;
+import com.tigerbrokers.stock.openapi.client.struct.enums.TimeZoneId;
 import com.tigerbrokers.stock.openapi.client.https.response.trade.BatchOrderResponse;
 import com.tigerbrokers.stock.openapi.client.https.response.trade.TradeOrderResponse;
 import com.tigerbrokers.stock.openapi.client.struct.enums.*;
 import com.tigerbrokers.stock.openapi.client.util.builder.AccountParamBuilder;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
+import reactor.core.publisher.Flux;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
-import run.mone.mcp.hammerspoon.function.trigertrade.dto.OptionDetailBO;
-import run.mone.mcp.hammerspoon.function.trigertrade.TigerTradeSdkUtil;
+import run.mone.mcp.hammerspoon.function.tigertrade.dto.OptionDetailBO;
+import run.mone.mcp.hammerspoon.function.tigertrade.TigerTradeSdkUtil;
+import run.mone.mcp.hammerspoon.function.tigertrade.service.TradeService;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * @author shanwb
  * @date 2025-03-10
  */
+@Slf4j
 public class TrigerTradeApiTest {
-
 
     private static Gson gson = new Gson();
 
     @Test
     public void testGetOptions() {
-
         List<String> symbols = new ArrayList<>();
         symbols.add("TSLA");
         OptionExpirationResponse response = TigerTradeSdkUtil.execute(
@@ -56,17 +59,66 @@ public class TrigerTradeApiTest {
     @Test
     public void testGetOptionsChain() {
         OptionChainModel basicModel = new OptionChainModel("TSLA", "2025-03-14", TimeZoneId.NewYork);
-
         List<OptionDetailBO> optionDetailBOList = TigerTradeSdkUtil.getOptionChainDetail(basicModel, "put");
-
         System.out.println(gson.toJson(optionDetailBOList));
     }
 
     @Test
+    public void testPositionsRequest() {
+        PositionsResponse res = TigerTradeSdkUtil.positionsRequest(SecType.STK);
+        System.out.println(res);
+    }
+
+    @Test
+    public void testGetAssetByCurrency() {
+        PrimeAssetItem.CurrencyAssets res = TigerTradeSdkUtil.getAssetByCurrency(Currency.USD);
+        System.out.println(res);
+    }
+
+    @Test
+    public void testQuoteMarketRequest() {
+        QuoteMarketResponse res = TigerTradeSdkUtil.quoteMarketRequest(Market.HK);
+        System.out.println(res);
+    }
+
+    @Test
+    public void testQuoteDelayRequest() {
+        QuoteDelayResponse res = TigerTradeSdkUtil.quoteDelayRequest(Lists.newArrayList("AAPL"));
+        System.out.println(res);
+    }
+
+    @Test
+    public void testQuoteRealTimeQuoteRequest() {
+        QuoteRealTimeQuoteResponse res = TigerTradeSdkUtil.quoteRealTimeQuoteRequest(Lists.newArrayList("AAPL"));
+        System.out.println(res);
+    }
+
+    @Test
+    public void testSellPutOptionOrderV2() throws IOException {
+        OptionChainModel basicModel = new OptionChainModel("TSLA", "2025-03-14", TimeZoneId.NewYork);
+        TradeService tradeService = new TradeService();
+        Flux<String> flux = tradeService.sellPutOption(basicModel, Market.US, "2025-03-14");
+
+        flux.subscribe(
+                value -> log.info("Received: " + value),
+                error -> log.error("Error: " + error),
+                () -> log.info("Completed!")
+        );
+    }
+
+    @Test
+    public void testQueryOrder() {
+        BatchOrderResponse batchOrderResponse = TigerTradeSdkUtil.queryOptionOrdersLastNHours(100L);
+        log.info(gson.toJson(batchOrderResponse));
+    }
+
+
+    @Test
     public void testSellPutOptionOrder() {
+
         // 1. Get option chain details to find a suitable put option
         OptionChainModel basicModel = new OptionChainModel("TSLA", "2025-03-14", TimeZoneId.NewYork);
-        List<OptionDetailBO> putOptions = TigerTradeSdkUtil.getOptionChainDetail(basicModel, "put");
+        List<OptionDetailBO> putOptions = TigerTradeSdkUtil.getOptionChainDetail(basicModel, "put", Market.US);
 
         if (putOptions == null || putOptions.isEmpty()) {
             System.out.println("No put options available for the specified date");
@@ -180,7 +232,6 @@ public class TrigerTradeApiTest {
         // 3. Create an order to sell 1 contract of the selected put option
         try {
             ContractItem contract = ContractItem.buildOptionContract(selectedOption.getIdentifier());
-            contract.setAccount("21549496269944832");
 
             TradeOrderRequest request = TradeOrderRequest.buildLimitOrder(contract, ActionType.SELL, 1, selectedOption.getBidPrice());
             //TradeOrderRequest request = TradeOrderRequest.buildMarketOrder(contract, ActionType.SELL, 1);

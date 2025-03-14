@@ -65,8 +65,9 @@ import run.mone.hive.mcp.spec.ServerMcpTransport;
  * @author Christian Tzolov
  * @see ServerMcpTransport
  * @see HttpServlet
+ *
+ * 这个现在并没有被使用
  */
-
 @WebServlet(asyncSupported = true)
 public class HttpServletSseServerTransport extends HttpServlet implements ServerMcpTransport {
 

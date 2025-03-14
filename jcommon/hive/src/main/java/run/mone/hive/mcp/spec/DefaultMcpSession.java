@@ -148,6 +148,7 @@ public class DefaultMcpSession implements McpSession {
 		// Observation associated with the individual message - it can be used to
 		// create child Observation and emit it together with the message to the
 		// consumer
+		//这是一个sse的连接,并且处理返回的信息
 		this.connection = this.transport.connect(mono -> mono.doOnNext(message -> {
 			if (message instanceof McpSchema.JSONRPCResponse response) {
 				logger.info("Received Response: {}", response);
