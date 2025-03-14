@@ -243,7 +243,8 @@ public class LLMService {
             }
         }
         LLMConfig config = configBuilder.llmProvider(provider).build();
-        if (config.getLlmProvider() == LLMProvider.GOOGLE_2) {
+        if (config.getLlmProvider() == LLMProvider.GOOGLE_2
+                && StringUtils.isNotEmpty(System.getenv("GOOGLE_AI_GATEWAY"))) {
             config.setUrl(System.getenv("GOOGLE_AI_GATEWAY") + "streamGenerateContent?alt=sse");
         }
 
