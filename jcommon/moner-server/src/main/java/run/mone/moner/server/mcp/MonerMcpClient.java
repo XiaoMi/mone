@@ -9,6 +9,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.hive.mcp.spec.McpSchema.Content;
 import run.mone.moner.server.common.GsonUtils;
 import run.mone.moner.server.common.Result;
 import run.mone.moner.server.common.Safe;
