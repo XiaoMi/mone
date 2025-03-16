@@ -19,6 +19,7 @@ package run.mone.hive.mcp.transport.webmvcsse;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -305,7 +306,7 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
         try {
             String body = request.body(String.class);
 
-            //客户端id(每次客户端都会是一个新的post,但clientId并不会发生变化)
+            //客户端id(每次客户端都会是一个新的post,但clientId并不会发生变化),每次本质就是一个Post请求过来
             String clientId = clientId(request);
 
             McpSchema.JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(objectMapper, body);
@@ -315,6 +316,8 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
                 logger.info("WebMvcSseServerTransport, Handling tools stream request: {}", req);
                 // handle tools stream request
                 if (streamHandler != null) {
+                    //获取projectName,用来二次分发
+                    String projectName = getProjectName(req);
                     streamHandler.apply(req)
                             .log()
                             .subscribe(
@@ -325,7 +328,8 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
                                                 response.result(),
                                                 response.error(),
                                                 response.complete(),
-                                                clientId
+                                                clientId,
+                                                projectName
                                         );
                                         sendMessage(res).subscribe();
                                     },
@@ -333,7 +337,7 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
                                         logger.error("Error handling tools stream request: {}", error.getMessage());
                                         sendMessage(new McpSchema.JSONRPCResponse(
                                                 McpSchema.JSONRPC_VERSION, req.id(), null, new McpSchema.JSONRPCResponse.JSONRPCError(500, error.getMessage(), null
-                                        ), true, clientId
+                                        ), true, clientId, projectName
                                         )).subscribe();
                                     }
 
@@ -356,6 +360,15 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
             logger.error("Error handling message: {}", e.getMessage());
             return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).body(new McpError(e.getMessage()));
         }
+    }
+
+    private static String getProjectName(McpSchema.JSONRPCRequest req) {
+        if (null != req.params() && req.params() instanceof Map map) {
+            if (map.containsKey(Const.PROJECT_NAME)) {
+                return map.get(Const.PROJECT_NAME).toString();
+            }
+        }
+        return "";
     }
 
     /**
