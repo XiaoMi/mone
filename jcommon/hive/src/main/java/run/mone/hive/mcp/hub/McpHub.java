@@ -3,6 +3,7 @@ package run.mone.hive.mcp.hub;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
+import run.mone.hive.common.Safe;
 import run.mone.hive.mcp.client.McpClient;
 import run.mone.hive.mcp.client.McpSyncClient;
 import run.mone.hive.mcp.hub.McpType;
@@ -17,6 +18,7 @@ import java.nio.file.*;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -33,6 +35,10 @@ public class McpHub {
         this.watchService = FileSystems.getDefault().newWatchService();
         initializeWatcher();
         initializeMcpServers();
+
+        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
+            Safe.run(() -> this.connections.forEach((key, value) -> Safe.run(() -> value.getClient().ping())));
+        }, 5, 5, TimeUnit.SECONDS);
     }
 
     // 局部刷新
@@ -188,7 +194,7 @@ public class McpHub {
             case "sse":
                 if (!config.isSseRemote()) {
                     startSseServer(config);
-                } 
+                }
                 transport = new HttpClientSseClientTransport(config.getUrl());
                 break;
             default:

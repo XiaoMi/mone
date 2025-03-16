@@ -205,6 +205,7 @@ public class HttpClientSseClientTransport implements ClientMcpTransport {
         CompletableFuture<Void> future = new CompletableFuture<>();
         connectionFuture.set(future);
         String url = this.baseUri + SSE_ENDPOINT;
+        //订阅,然后通过sse推送信息给client(他其实通过sse 实现了 Stream)
         sseClient.subscribe(url, sseEventHandler(url, future, handler), this.clientId);
         return Mono.fromFuture(future);
     }
@@ -225,7 +226,6 @@ public class HttpClientSseClientTransport implements ClientMcpTransport {
         if (isClosing) {
             return Mono.empty();
         }
-
         try {
             if (!closeLatch.await(10, TimeUnit.SECONDS)) {
                 return Mono.error(new McpError("Failed to wait for the message endpoint"));
@@ -244,6 +244,7 @@ public class HttpClientSseClientTransport implements ClientMcpTransport {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(this.baseUri + endpoint))
                     .header("Content-Type", "application/json")
+                    //sse 的时候能找到这个clientId
                     .header(Const.MC_CLIENT_ID, this.clientId)
                     .POST(HttpRequest.BodyPublishers.ofString(jsonText))
                     .build();

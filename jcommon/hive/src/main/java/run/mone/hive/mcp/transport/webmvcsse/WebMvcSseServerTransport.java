@@ -19,12 +19,16 @@ package run.mone.hive.mcp.transport.webmvcsse;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +37,7 @@ import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.spec.McpError;
 import run.mone.hive.mcp.spec.McpSchema;
@@ -142,6 +147,16 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
                 .GET(SSE_ENDPOINT, this::handleSseConnection)
                 .POST(messageEndpoint, this::handleMessage)
                 .build();
+
+        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
+            long now = System.currentTimeMillis();
+            Safe.run(() -> sessions.entrySet().forEach(it -> {
+                if (now - it.getValue().getUpdateTime() > TimeUnit.SECONDS.toMillis(15)) {
+                    logger.info("offline:{}", it.getKey());
+                    sessions.remove(it.getKey());
+                }
+            }));
+        }, 15, 15, TimeUnit.SECONDS);
     }
 
     /**
@@ -305,16 +320,29 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
         try {
             String body = request.body(String.class);
 
-            //客户端id(每次客户端都会是一个新的post,但clientId并不会发生变化)
+            //客户端id(每次客户端都会是一个新的post,但clientId并不会发生变化),每次本质就是一个Post请求过来
             String clientId = clientId(request);
 
             McpSchema.JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(objectMapper, body);
+
+            //发过来的ping请求
+            if (message instanceof McpSchema.JSONRPCRequest req && req.method().equals("ping")) {
+                if (StringUtils.isNotEmpty(clientId)) {
+                    sessions.computeIfPresent(clientId, (k, v) -> {
+                        v.setUpdateTime(System.currentTimeMillis());
+                        return v;
+                    });
+                }
+            }
+
             // Handle tools stream requests
             if (message instanceof McpSchema.JSONRPCRequest req
                     && req.method().equals(McpSchema.METHOD_TOOLS_STREAM)) {
                 logger.info("WebMvcSseServerTransport, Handling tools stream request: {}", req);
                 // handle tools stream request
                 if (streamHandler != null) {
+                    //获取projectName,用来二次分发
+                    String projectName = getProjectName(req);
                     streamHandler.apply(req)
                             .log()
                             .subscribe(
@@ -325,7 +353,8 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
                                                 response.result(),
                                                 response.error(),
                                                 response.complete(),
-                                                clientId
+                                                clientId,
+                                                projectName
                                         );
                                         sendMessage(res).subscribe();
                                     },
@@ -333,7 +362,7 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
                                         logger.error("Error handling tools stream request: {}", error.getMessage());
                                         sendMessage(new McpSchema.JSONRPCResponse(
                                                 McpSchema.JSONRPC_VERSION, req.id(), null, new McpSchema.JSONRPCResponse.JSONRPCError(500, error.getMessage(), null
-                                        ), true, clientId
+                                        ), true, clientId, projectName
                                         )).subscribe();
                                     }
 
@@ -358,6 +387,15 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
         }
     }
 
+    private static String getProjectName(McpSchema.JSONRPCRequest req) {
+        if (null != req.params() && req.params() instanceof Map map) {
+            if (map.containsKey(Const.PROJECT_NAME)) {
+                return map.get(Const.PROJECT_NAME).toString();
+            }
+        }
+        return "";
+    }
+
     /**
      * Represents an active client session with its associated SSE connection. Each
      * session maintains:
@@ -367,11 +405,14 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
      * <li>Logging of session lifecycle events</li>
      * </ul>
      */
+    @Data
     private static class ClientSession {
 
         private final String id;
 
         private final SseBuilder sseBuilder;
+
+        private volatile long updateTime = System.currentTimeMillis();
 
         /**
          * Creates a new client session with the specified ID and SSE builder.
