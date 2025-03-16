@@ -15,6 +15,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import run.mone.hive.mcp.client.transport.HttpClientSseClientTransport;
+import run.mone.hive.mcp.hub.McpConfig;
 import run.mone.hive.mcp.spec.ClientMcpTransport;
 import run.mone.hive.mcp.spec.DefaultMcpSession;
 import run.mone.hive.mcp.spec.DefaultMcpSession.NotificationHandler;
@@ -132,7 +133,7 @@ public class McpAsyncClient {
 		Assert.notNull(clientInfo, "Client info must not be null");
 
 		this.clientInfo = clientInfo;
-		this.clientId = UUID.randomUUID().toString();
+		this.clientId = McpConfig.ins().getClientId();
 
 		this.clientCapabilities = (clientCapabilities != null) ? clientCapabilities
 				: new McpSchema.ClientCapabilities(null, !Utils.isEmpty(roots) ? new RootCapabilities(false) : null,

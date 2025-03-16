@@ -172,7 +172,14 @@ public final class McpSchema {
 			@JsonProperty("jsonrpc") String jsonrpc,
 			@JsonProperty("method") String method,
 			@JsonProperty("id") Object id,
-			@JsonProperty("params") Object params) implements JSONRPCMessage {
+			@JsonProperty("params") Object params,
+			 @JsonProperty("clientId") String clientId
+								  ) implements JSONRPCMessage {
+
+		public JSONRPCRequest(String jsonrpc,String method,Object id,Object params) {
+			this(jsonrpc,method,id,params,null);
+		}
+
 	} // @formatter:on
 
     @JsonInclude(JsonInclude.Include.NON_ABSENT)
