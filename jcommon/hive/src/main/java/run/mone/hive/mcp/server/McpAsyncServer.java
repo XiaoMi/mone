@@ -117,7 +117,7 @@ public class McpAsyncServer {
 		requestHandlers.put(McpSchema.METHOD_INITIALIZE, initializeRequestHandler());
 
 		// Ping MUST respond with an empty data, but not NULL response.
-		requestHandlers.put(McpSchema.METHOD_PING, (params) -> Mono.<Object>just(""));
+		requestHandlers.put(McpSchema.METHOD_PING, (params) -> Mono.<Object>just("pong"));
 
 		// Add tools API handlers if the tool capability is enabled
 		if (this.serverCapabilities.tools() != null) {
