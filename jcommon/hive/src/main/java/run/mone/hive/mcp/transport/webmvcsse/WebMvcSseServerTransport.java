@@ -150,9 +150,10 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
 
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
             long now = System.currentTimeMillis();
-            Safe.run(() -> sessions.entrySet().forEach(it -> {
+            Safe.run(() -> sessions.entrySet().stream().forEach(it -> {
                 if (now - it.getValue().getUpdateTime() > TimeUnit.SECONDS.toMillis(15)) {
                     logger.info("offline:{}", it.getKey());
+                    it.getValue().close();
                     sessions.remove(it.getKey());
                 }
             }));
@@ -196,14 +197,12 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
     public Mono<Void> sendMessage(McpSchema.JSONRPCMessage message) {
         return Mono.fromRunnable(() -> {
             if (sessions.isEmpty()) {
-                logger.debug("No active sessions to broadcast message to");
+                logger.warn("No active sessions to broadcast message to");
                 return;
             }
 
             try {
                 String jsonText = objectMapper.writeValueAsString(message);
-                // TODO: log level should be DEBUG
-                logger.info("Attempting to broadcast message to {} active sessions", sessions.size());
 
                 String clientId = "";
                 if (message instanceof McpSchema.JSONRPCResponse jrc) {
@@ -212,9 +211,9 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
                     }
                 }
 
-                //如果clientId 不为空,则传递给相应的client
+                //如果clientId 不为空,则传递给相应的client(等于指定client了)
                 if (StringUtils.isNotEmpty(clientId)) {
-                    logger.info("send message to :{}", clientId);
+                    logger.info("send message to :{} msg:{}", clientId, jsonText);
                     ClientSession session = sessions.get(clientId);
                     if (null != session) {
                         sendMessageToSession(session, jsonText);
@@ -222,11 +221,11 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
                     return;
                 }
 
+                logger.info("Attempting to broadcast message to {} active sessions", sessions.size());
+
                 sessions.values().forEach(session -> {
                     sendMessageToSession(session, jsonText);
                 });
-
-
             } catch (IOException e) {
                 logger.error("Failed to serialize message: {}", e.getMessage());
             }
@@ -328,6 +327,7 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
             //发过来的ping请求
             if (message instanceof McpSchema.JSONRPCRequest req && req.method().equals("ping")) {
                 if (StringUtils.isNotEmpty(clientId)) {
+                    logger.info("ping:{}", clientId);
                     sessions.computeIfPresent(clientId, (k, v) -> {
                         v.setUpdateTime(System.currentTimeMillis());
                         return v;
