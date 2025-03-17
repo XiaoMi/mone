@@ -37,16 +37,16 @@ public class ChaosMcpServer {
             ChaosFunction chaosFunction = new ChaosFunction();
             CreateChaosFunction createChaosFunction = new CreateChaosFunction();
 
-            var toolRegistration = new McpServer.ToolRegistration(
+            var toolRegistration = new McpServer.ToolStreamRegistration(
                     new McpSchema.Tool(chaosFunction.getName(), chaosFunction.getDesc(), chaosFunction.getChaosToolSchema()), chaosFunction
             );
 
-            var createChaosRegistration = new McpServer.ToolRegistration(
+            var createChaosRegistration = new McpServer.ToolStreamRegistration(
                     new McpSchema.Tool(createChaosFunction.getName(), createChaosFunction.getDesc(), createChaosFunction.getChaosToolSchema()), createChaosFunction
             );
 
-            syncServer.addTool(toolRegistration);
-            syncServer.addTool(createChaosRegistration);
+            syncServer.addStreamTool(toolRegistration);
+            syncServer.addStreamTool(createChaosRegistration);
 
             log.info("Successfully registered git tool");
         } catch (Exception e) {

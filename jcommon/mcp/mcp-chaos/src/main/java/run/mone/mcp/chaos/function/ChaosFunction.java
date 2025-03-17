@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.chaos.http.HttpClient;
 
@@ -15,9 +16,9 @@ import java.util.function.Function;
 
 @Data
 @Slf4j
-public class ChaosFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+public class ChaosFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
 
-    private String name = "chaos_executor";
+    private String name = "stream_chaos_executor";
 
     private String desc = "负责混沌故障平台的基本操作";
 
@@ -64,7 +65,7 @@ public class ChaosFunction implements Function<Map<String, Object>, McpSchema.Ca
     }
 
     @Override
-    public McpSchema.CallToolResult apply(Map<String, Object> args) {
+    public Flux<McpSchema.CallToolResult>  apply(Map<String, Object> args) {
         String type = (String) args.get("type");
 
         String host = System.getenv().getOrDefault("CHAOS_HOST", "");
@@ -74,33 +75,57 @@ public class ChaosFunction implements Function<Map<String, Object>, McpSchema.Ca
             return switch (type.toLowerCase()) {
                 case "get_my_project" -> {
                     String projectsResult = getProjects(host, userName);
-                    yield new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(projectsResult)), false);
+                    yield Flux.<String>create(fluxSink -> {
+                        fluxSink.next(projectsResult);
+                        fluxSink.next("[DONE]");
+                        fluxSink.complete();
+                    }).map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
                 }
                 case "get_pipeline" -> {
                     String pipelineResult = getPipeline(host, userName, (String) args.get("projectId"));
-                    yield new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(pipelineResult)), false);
+                    yield Flux.<String>create(fluxSink -> {
+                        fluxSink.next(pipelineResult);
+                        fluxSink.next("[DONE]");
+                        fluxSink.complete();
+                    }).map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
                 }
                 case "get_chaos_list" -> {
                     String chaosListResult = getChaosList(host, userName, (String) args.get("projectId"));
-                    yield new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(chaosListResult)), false);
+                    yield Flux.<String>create(fluxSink -> {
+                        fluxSink.next(chaosListResult);
+                        fluxSink.next("[DONE]");
+                        fluxSink.complete();
+                    }).map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
                 }
                 case "get_chaos_detail" -> {
                     String chaosDetailResult = getChaosDetail(host, userName, (String) args.get("taskId"));
-                    yield new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(chaosDetailResult)), false);
+                    yield Flux.<String>create(fluxSink -> {
+                        fluxSink.next(chaosDetailResult);
+                        fluxSink.next("[DONE]");
+                        fluxSink.complete();
+                    }).map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
                 }
                 case "recover_chaos" -> {
                     String recoverResult = recoverChaos(host, userName, (String) args.get("taskId"));
-                    yield new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(recoverResult)), false);
+                    yield Flux.<String>create(fluxSink -> {
+                        fluxSink.next(recoverResult);
+                        fluxSink.next("[DONE]");
+                        fluxSink.complete();
+                    }).map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
                 }
                 case "execute_chaos" -> {
                     String executeResult = executeChaos(host, userName, (String) args.get("taskId"));
-                    yield new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(executeResult)), false);
+                    yield Flux.<String>create(fluxSink -> {
+                        fluxSink.next(executeResult);
+                        fluxSink.next("[DONE]");
+                        fluxSink.complete();
+                    }).map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
                 }
-                default -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("不支持的操作")), true);
+                default -> Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("不支持的操作")), true));
             };
         } catch (Exception e) {
             log.error("执行混沌操作失败", e);
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("操作失败：" + e.getMessage())), true);
+            return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("操作失败：" + e.getMessage())), true));
         }
     }
 
