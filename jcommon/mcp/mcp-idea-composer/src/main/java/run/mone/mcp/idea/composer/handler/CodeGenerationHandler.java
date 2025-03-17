@@ -56,7 +56,11 @@ public class CodeGenerationHandler extends AbstractBotHandler {
     private String buildCodePrompt(String prompt, PromptResult previousResult, ConversationContext context) {
         StringBuilder promptBuilder = new StringBuilder();
         promptBuilder.append("项目报告: \n");
-        String projectReport = context.getMessagesByHandler(ProjectReportHandler.name).stream().filter(it -> it.getRole().equals(Role.assistant.name())).findFirst().get().getContent();
+        String projectReport = context.getMessagesByHandler(ProjectReportHandler.name).stream()
+                .filter(it -> it.getRole().equals(Role.assistant.name()))
+                .findFirst()
+                .get()
+                .getContent();
         promptBuilder.append(projectReport).append("\n");
 
         if (previousResult != null) {
@@ -72,7 +76,10 @@ public class CodeGenerationHandler extends AbstractBotHandler {
 
         String systemPrompt = CodePrompt.SR_DIFF_PROMPT;
 
-        promptBuilder.append("\n").append(shellPrompt).append("\n").append(systemPrompt).append("\n\n<user_query>").append(prompt).append("</user_query>\n");
+        promptBuilder.append("\n")
+                .append(shellPrompt).append("\n")
+                .append(systemPrompt).append("\n\n<user_query>")
+                .append(prompt).append("</user_query>\n");
         return promptBuilder.toString();
     }
 

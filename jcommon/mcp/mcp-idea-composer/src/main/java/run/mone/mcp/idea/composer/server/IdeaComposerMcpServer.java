@@ -31,7 +31,7 @@ public class IdeaComposerMcpServer {
         String ideaPort = System.getenv().getOrDefault("IDEA_PORT", "30000");
         log.info(ideaPort);
         McpSyncServer syncServer = McpServer.using(transport)
-                .serverInfo("writer_mcp", "0.0.2")
+                .serverInfo("idea_composer_mcp", "0.0.2")
                 .capabilities(ServerCapabilities.builder()
                         .tools(true)
                         .logging()
