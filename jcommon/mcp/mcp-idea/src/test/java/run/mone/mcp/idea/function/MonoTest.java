@@ -7,6 +7,7 @@ import org.reactivestreams.Subscription;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 import java.util.Objects;
@@ -183,6 +184,13 @@ public class MonoTest {
         });
 
 
+    }
+
+    @SneakyThrows
+    @Test
+    public void test10() {
+        Mono.fromRunnable(()-> System.out.println("123")).subscribeOn(Schedulers.boundedElastic()).then().subscribe();
+        System.in.read();
     }
 
 }
