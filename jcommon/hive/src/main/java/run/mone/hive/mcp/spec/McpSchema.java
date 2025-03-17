@@ -172,7 +172,14 @@ public final class McpSchema {
 			@JsonProperty("jsonrpc") String jsonrpc,
 			@JsonProperty("method") String method,
 			@JsonProperty("id") Object id,
-			@JsonProperty("params") Object params) implements JSONRPCMessage {
+			@JsonProperty("params") Object params,
+			 @JsonProperty("clientId") String clientId
+								  ) implements JSONRPCMessage {
+
+		public JSONRPCRequest(String jsonrpc,String method,Object id,Object params) {
+			this(jsonrpc,method,id,params,null);
+		}
+
 	} // @formatter:on
 
     @JsonInclude(JsonInclude.Include.NON_ABSENT)
@@ -190,15 +197,16 @@ public final class McpSchema {
 			@JsonProperty("result") Object result,
 			@JsonProperty("error") JSONRPCError error,
             @JsonProperty("complete") Boolean complete,
-								   @JsonProperty("clientId") String clientId
+								   @JsonProperty("clientId") String clientId,
+								   @JsonProperty("project") String project
 								   ) implements JSONRPCMessage {
 
         public JSONRPCResponse(String jsonrpc, Object id, Object result, JSONRPCError error) {
-            this(jsonrpc, id, result, error, null,null);
+            this(jsonrpc, id, result, error, null,null,null);
         }
 
 		public JSONRPCResponse(String jsonrpc, Object id, Object result, JSONRPCError error, Boolean complete) {
-			this(jsonrpc, id, result, error, complete,null);
+			this(jsonrpc, id, result, error, complete,null,null);
 		}
 
 		@JsonInclude(JsonInclude.Include.NON_ABSENT)

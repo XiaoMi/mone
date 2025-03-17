@@ -3,6 +3,7 @@ package run.mone.hive.mcp.hub;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
+import run.mone.hive.common.Safe;
 import run.mone.hive.mcp.client.McpClient;
 import run.mone.hive.mcp.client.McpSyncClient;
 import run.mone.hive.mcp.hub.McpType;
@@ -17,7 +18,9 @@ import java.nio.file.*;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 @Data
@@ -28,11 +31,24 @@ public class McpHub {
     private WatchService watchService;
     private volatile boolean isConnecting = false;
 
+    private Consumer<Object> msgConsumer = msg -> {
+    };
+
+
     public McpHub(Path settingsPath) throws IOException {
+        this(settingsPath,msg->{});
+    }
+
+    public McpHub(Path settingsPath,Consumer<Object> msgConsumer) throws IOException {
         this.settingsPath = settingsPath;
         this.watchService = FileSystems.getDefault().newWatchService();
+        this.msgConsumer = msgConsumer;
         initializeWatcher();
         initializeMcpServers();
+
+        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
+            Safe.run(() -> this.connections.forEach((key, value) -> Safe.run(() -> value.getClient().ping())));
+        }, 5, 5, TimeUnit.SECONDS);
     }
 
     // 局部刷新
@@ -188,7 +204,7 @@ public class McpHub {
             case "sse":
                 if (!config.isSseRemote()) {
                     startSseServer(config);
-                } 
+                }
                 transport = new HttpClientSseClientTransport(config.getUrl());
                 break;
             default:
@@ -196,6 +212,7 @@ public class McpHub {
         }
         McpSyncClient client = McpClient.using(transport)
                 .requestTimeout(Duration.ofSeconds(15))
+                .msgConsumer(msgConsumer)
                 .capabilities(McpSchema.ClientCapabilities.builder()
                         .roots(true)
                         .build())

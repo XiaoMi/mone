@@ -8,4 +8,6 @@ public class Const {
 
     public static String MC_CLIENT_ID = "MC_CLIENT_ID";
 
+    public static String PROJECT_NAME = "__PROJECT__";
+
 }
