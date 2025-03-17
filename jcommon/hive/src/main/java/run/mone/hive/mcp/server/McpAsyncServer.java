@@ -1,23 +1,12 @@
 package run.mone.hive.mcp.server;
 
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Consumer;
-
 import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-
 import run.mone.hive.mcp.server.McpServer.PromptRegistration;
 import run.mone.hive.mcp.server.McpServer.ResourceRegistration;
 import run.mone.hive.mcp.server.McpServer.ToolRegistration;
@@ -26,13 +15,18 @@ import run.mone.hive.mcp.spec.DefaultMcpSession;
 import run.mone.hive.mcp.spec.DefaultMcpSession.NotificationHandler;
 import run.mone.hive.mcp.spec.McpError;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.hive.mcp.spec.McpSchema.CallToolResult;
 import run.mone.hive.mcp.spec.McpSchema.ClientCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.LoggingLevel;
 import run.mone.hive.mcp.spec.McpSchema.LoggingMessageNotification;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.hive.mcp.util.Utils;
+
+import java.time.Duration;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Consumer;
 
 /**
  * 
@@ -50,6 +44,7 @@ public class McpAsyncServer {
 	 * The MCP session implementation that manages bidirectional JSON-RPC communication
 	 * between clients and servers.
 	 */
+	@Getter
 	private final DefaultMcpSession mcpSession;
 
 	private final ServerMcpTransport transport;

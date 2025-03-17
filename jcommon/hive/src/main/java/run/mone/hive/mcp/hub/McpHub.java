@@ -20,6 +20,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 @Data
@@ -30,9 +31,18 @@ public class McpHub {
     private WatchService watchService;
     private volatile boolean isConnecting = false;
 
+    private Consumer<Object> msgConsumer = msg -> {
+    };
+
+
     public McpHub(Path settingsPath) throws IOException {
+        this(settingsPath,msg->{});
+    }
+
+    public McpHub(Path settingsPath,Consumer<Object> msgConsumer) throws IOException {
         this.settingsPath = settingsPath;
         this.watchService = FileSystems.getDefault().newWatchService();
+        this.msgConsumer = msgConsumer;
         initializeWatcher();
         initializeMcpServers();
 
@@ -202,6 +212,7 @@ public class McpHub {
         }
         McpSyncClient client = McpClient.using(transport)
                 .requestTimeout(Duration.ofSeconds(15))
+                .msgConsumer(msgConsumer)
                 .capabilities(McpSchema.ClientCapabilities.builder()
                         .roots(true)
                         .build())
