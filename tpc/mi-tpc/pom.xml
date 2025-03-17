@@ -9,6 +9,17 @@
     <artifactId>mi-tpc</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
+    <name>${project.artifactId}</name>
+    <description>The parent project of mi-tpc</description>
+    <url>https://github.com/XiaoMi/mone</url>
+    <inceptionYear>2020</inceptionYear>
+    <licenses>
+        <license>
+            <name>Apache License, Version 2.0</name>
+            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
 
     <modules>
         <module>mi-tpc-api</module>
@@ -176,7 +187,7 @@
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
-                    <fork>true</fork>
+                    <fork>false</fork>
                     <verbose>true</verbose>
                     <encoding>UTF-8</encoding>
                     <compilerArguments>

@@ -8,6 +8,7 @@ import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * @project: mi-tpc
@@ -31,6 +32,7 @@ public class NodeAddParam extends BaseParam implements Serializable {
     private Integer envFlag;
     private boolean createDefEnv;
     private String code;
+    private Map<String,String> env;
 
     @Override
     public boolean argCheck() {

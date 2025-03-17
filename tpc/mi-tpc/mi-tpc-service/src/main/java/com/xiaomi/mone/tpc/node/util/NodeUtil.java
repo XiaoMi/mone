@@ -1,13 +1,17 @@
 package com.xiaomi.mone.tpc.node.util;
 
+import com.google.gson.reflect.TypeToken;
+import com.xiaomi.mone.tpc.common.util.GsonUtil;
 import com.xiaomi.mone.tpc.dao.entity.NodeEntity;
 import com.xiaomi.mone.tpc.common.vo.NodeVo;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @project: mi-tpc
@@ -37,6 +41,9 @@ public class NodeUtil {
         if (entity.getUpdateTime() != null) {
             vo.setUpdateTime(entity.getUpdateTime().getTime());
         }
+        if (StringUtils.isNotBlank(entity.getEnv())) {
+            vo.setEnv(GsonUtil.gsonToBean(entity.getEnv(), new TypeToken<Map<String,String>>(){}));
+        }
         return vo;
     }
 
@@ -51,6 +58,9 @@ public class NodeUtil {
         }
         if (vo.getUpdateTime() != null) {
             entity.setUpdateTime(new Date(vo.getUpdateTime()));
+        }
+        if (vo.getEnv() != null) {
+            entity.setEnv(GsonUtil.gsonString(vo.getEnv()));
         }
         return entity;
     }

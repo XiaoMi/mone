@@ -6,6 +6,7 @@ import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * @project: mi-tpc
@@ -23,6 +24,7 @@ public class NodeEditParam extends BaseParam implements Serializable {
     private String desc;
     private OrgInfoParam orgParam;
     private String code;
+    private Map<String,String> env;
 
     @Override
     public boolean argCheck() {

@@ -1,5 +1,6 @@
 package com.xiaomi.mone.tpc.node;
 
+import com.alibaba.nacos.api.config.annotation.NacosValue;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.gson.reflect.TypeToken;
@@ -32,7 +33,6 @@ import org.springframework.util.CollectionUtils;
 import javax.annotation.Resource;
 import java.util.*;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.stream.Collectors;
 
 /**
  * @project: mi-tpc
@@ -72,9 +72,19 @@ public class NodeService implements NodeHelper{
     @Resource
     private ProNodeChangeHelper proNodeChangeHelper;
 
+    @NacosValue("${node.env:}")
+    private String env;
+
     public NodeVo getById(Long nodeId) {
         NodeEntity nodeEntity = nodeDao.getById(nodeId, NodeEntity.class);
         return NodeUtil.toVo(nodeEntity);
+    }
+
+    public ResultVo<List<String>> env(NullParam param) {
+        if (StringUtils.isBlank(env)) {
+            return ResponseCode.SUCCESS.build(Lists.newArrayList());
+        }
+        return ResponseCode.SUCCESS.build(Arrays.asList(env.split(",")));
     }
 
     /**
@@ -554,6 +564,9 @@ public class NodeService implements NodeHelper{
     @Override
     public NodeEntity buildCurNode(NodeAddParam param, NodeEntity parentNode, List<Long> allParentIds) {
         NodeEntity entity = new NodeEntity();
+        if (param.getEnv() != null) {
+            entity.setEnv(GsonUtil.gsonString(param.getEnv()));
+        }
         entity.setEnvFlag(param.getEnvFlag());
         entity.setOutId(param.getOutId() == null ? 0L : param.getOutId());
         entity.setOutIdType(param.getOutIdType() == null ? 0 : param.getOutIdType());
@@ -616,6 +629,9 @@ public class NodeService implements NodeHelper{
         curNode.setUpdaterAcc(param.getAccount());
         curNode.setUpdaterType(param.getUserType());
         curNode.setCode(param.getCode());
+        if (param.getEnv() != null) {
+            curNode.setEnv(GsonUtil.gsonString(param.getEnv()));
+        }
         Key key = null;
         try {
             if (StringUtils.isNotEmpty(param.getCode())) {
