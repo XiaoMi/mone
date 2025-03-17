@@ -57,6 +57,9 @@
                 <span class="custom-tree-text truncate w-[200px]">{{ node.label }}</span>
               </el-tooltip>
             </span>
+            <!-- <el-icon :size="16" class="mr-[6px]">
+              <Edit @click="editTable(node)" />
+            </el-icon> -->
           </div>
         </template></el-tree
       >
@@ -67,6 +70,12 @@
     <v-contextmenu-item @click="editDatabase">编辑数据库</v-contextmenu-item>
   </v-contextmenu>
   <Database v-model="databaseVisible" :databaseData="databaseData"></Database>
+  <!-- <NewTable
+    v-if="dbTableVisible"
+    v-model="dbTableVisible"
+    :database-id="connectionId"
+    :table-name="tableName"
+  ></NewTable> -->
 </template>
 
 <script setup lang="ts">
@@ -77,6 +86,7 @@ import { t } from '@/locales'
 import type Node from 'element-plus/es/components/tree/src/model/node'
 import { useDataSourceStore } from '@/stores/data-source'
 import NewDataSource from './NewDataSource.vue'
+// import NewTable from './NewTable.vue'
 import { ElMessage } from 'element-plus'
 import Database from './Database.vue'
 import { useRoute } from 'vue-router'
@@ -109,7 +119,17 @@ const connectionId = computed({
   }
 })
 
+// const tableName = computed({
+//   get() {
+//     return dataSourceStore.activeTableName
+//   },
+//   set(value: string) {
+//     setActiveTableName(value)
+//   }
+// })
+
 const dialogVisible = ref(false)
+// const dbTableVisible = ref(false)
 const initForm = ref()
 const databaseVisible = ref(false)
 const databaseData = ref()
@@ -120,6 +140,13 @@ const editDataBase = (data: any) => {
   initForm.value = { ...data }
   dialogVisible.value = true
 }
+
+// const editTable = (node: Node) => {
+//   console.log(node)
+//   tableName.value = node.data.tableName
+//   connectionId.value = String(node.parent.data.id)
+//   dbTableVisible.value = true
+// }
 
 const submit = async () => {
   emits('updateTreeData')

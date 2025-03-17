@@ -1,3 +1,4 @@
+// import dark theme
 @use './reset.scss';
 @use './chat/highlight.scss';
 @use './chat/github-markdown.scss';
@@ -6,6 +7,9 @@
 html,
 body {
   height: 100%;
+}
+html {
+  touch-action: none;
 }
 
 #app {
@@ -21,6 +25,14 @@ body {
   -moz-osx-font-smoothing: grayscale;
   margin: 0;
   background: linear-gradient(to bottom, #f8f9fa 0%, #e9ecef 50%, #dee2e6 100%);
+  // background: linear-gradient(to bottom, #d5dee7 0%, #e8ebf2 50%, #e2e7ed 100%),
+  //   linear-gradient(
+  //     to bottom,
+  //     rgba(0, 0, 0, 0.02) 50%,
+  //     rgba(255, 255, 255, 0.02) 61%,
+  //     rgba(0, 0, 0, 0.02) 73%
+  //   ),
+  //   linear-gradient(33deg, rgba(255, 255, 255, 0.2) 0%, rgba(0, 0, 0, 0.2) 100%);
   background-blend-mode: normal, color-burn;
 }
 
@@ -45,6 +57,13 @@ a,
 .oz-popper.is-dark {
   color: #fff;
 }
+
+// code {
+//   border-radius: 2px;
+//   padding: 2px 4px;
+//   background-color: var(--oz-color-primary-light-9);
+//   color: var(--oz-color-primary);
+// }
 
 // 超过一行，省略号展示，父级要加overflow:hidden
 @mixin text-ellipsis {
@@ -93,4 +112,13 @@ a,
 .oz-input .oz-input__count,
 .oz-textarea .oz-input__count {
   color: rgba(0, 0, 0, 0.3);
+}
+.label-tips {
+  display: flex;
+  align-items: center;
+  .tooltip {
+    &:hover {
+      color: #666;
+    }
+  }
 }
