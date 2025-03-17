@@ -26,7 +26,7 @@ public class ChaosMcpServer {
     public McpSyncServer start() {
         log.info("Starting ChaosMcpServer...");
         McpSyncServer syncServer = McpServer.using(transport)
-                .serverInfo("chaos_mcp", "1.0.2")
+                .serverInfo("chaos_mcp", "1.0.3")
                 .capabilities(McpSchema.ServerCapabilities.builder()
                         .tools(true)
                         .logging()
