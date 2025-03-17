@@ -4,6 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.chaos.http.HttpClient;
 
@@ -15,9 +16,9 @@ import java.util.function.Function;
 
 @Data
 @Slf4j
-public class ChaosFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+public class ChaosFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
 
-    private String name = "chaos_executor";
+    private String name = "stream_chaos_executor";
 
     private String desc = "负责混沌故障平台的基本操作";
 
@@ -64,44 +65,58 @@ public class ChaosFunction implements Function<Map<String, Object>, McpSchema.Ca
     }
 
     @Override
-    public McpSchema.CallToolResult apply(Map<String, Object> args) {
-        String type = (String) args.get("type");
-
-        String host = System.getenv().getOrDefault("CHAOS_HOST", "");
-        String userName = (String) args.get("userName");
-
-        try {
-            return switch (type.toLowerCase()) {
-                case "get_my_project" -> {
-                    String projectsResult = getProjects(host, userName);
-                    yield new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(projectsResult)), false);
+    public Flux<McpSchema.CallToolResult> apply(Map<String, Object> args) {
+        return Flux.defer(() -> {
+            try {
+                String type = getStringParam(args, "type");
+                String host = System.getenv().getOrDefault("CHAOS_HOST", "");
+                String userName = getStringParam(args, "userName");
+                
+                if (host.isEmpty()) {
+                    log.warn("CHAOS_HOST 环境变量未设置，使用默认空值");
                 }
-                case "get_pipeline" -> {
-                    String pipelineResult = getPipeline(host, userName, (String) args.get("projectId"));
-                    yield new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(pipelineResult)), false);
-                }
-                case "get_chaos_list" -> {
-                    String chaosListResult = getChaosList(host, userName, (String) args.get("projectId"));
-                    yield new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(chaosListResult)), false);
-                }
-                case "get_chaos_detail" -> {
-                    String chaosDetailResult = getChaosDetail(host, userName, (String) args.get("taskId"));
-                    yield new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(chaosDetailResult)), false);
-                }
-                case "recover_chaos" -> {
-                    String recoverResult = recoverChaos(host, userName, (String) args.get("taskId"));
-                    yield new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(recoverResult)), false);
-                }
-                case "execute_chaos" -> {
-                    String executeResult = executeChaos(host, userName, (String) args.get("taskId"));
-                    yield new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(executeResult)), false);
-                }
-                default -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("不支持的操作")), true);
-            };
-        } catch (Exception e) {
-            log.error("执行混沌操作失败", e);
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("操作失败：" + e.getMessage())), true);
-        }
+                
+                String result = switch (type.toLowerCase()) {
+                    case "get_my_project" -> getProjects(host, userName);
+                    case "get_pipeline" -> getPipeline(host, userName, getStringParam(args, "projectId"));
+                    case "get_chaos_list" -> getChaosList(host, userName, getStringParam(args, "projectId"));
+                    case "get_chaos_detail" -> getChaosDetail(host, userName, getStringParam(args, "taskId"));
+                    case "recover_chaos" -> recoverChaos(host, userName, getStringParam(args, "taskId"));
+                    case "execute_chaos" -> executeChaos(host, userName, getStringParam(args, "taskId"));
+                    default -> throw new IllegalArgumentException("不支持的操作类型: " + type);
+                };
+                
+                log.info("执行混沌操作成功: {}", type);
+                return createSuccessFlux(result);
+            } catch (Exception e) {
+                log.error("执行混沌操作失败", e);
+                return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("操作失败：" + e.getMessage())), true));
+            }
+        });
+    }
+    
+    /**
+     * 创建成功响应的Flux
+     * @param result 操作结果
+     * @return 包含结果和完成标记的Flux
+     */
+    private Flux<McpSchema.CallToolResult> createSuccessFlux(String result) {
+        return Flux.just(
+            new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false),
+            new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("[DONE]")), false)
+        );
+    }
+    
+    /**
+     * 安全地从参数映射中获取字符串参数
+     * @param params 参数映射
+     * @param key 参数键
+     * @return 字符串参数值，如果不存在则返回空字符串
+     */
+    private String getStringParam(Map<String, Object> params, String key) {
+        Object value = params.get(key);
+        return value != null ? value.toString() : "";
     }
 
     // 获取我有权限的项目
