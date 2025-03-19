@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -15,14 +16,15 @@ import run.mone.mcp.store.data.service.StoreDataService;
 
 @Data
 @Component
+@Slf4j
 public class StockFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
 
     @Autowired
     private StoreDataService storeDataService;
 
-    private String name = "stock";
+    private String name = "store_data_stock";
 
-    private String desc = "根据商品skuId和门店ID获取库存信息";
+    private String desc = "根据商品skuId获取商品库存信息";
 
     private String ideaPort;
 
@@ -33,13 +35,9 @@ public class StockFunction implements Function<Map<String, Object>, McpSchema.Ca
                     "skuId": {
                         "type": "string",
                         "description":"商品的skuId"
-                    },
-                    "storeId": {
-                        "type": "string",
-                        "description":"门店ID"
                     }
                 },
-                "required": ["skuId", "storeId"]
+                "required": ["skuId"]
             }
             """;
 
@@ -49,7 +47,7 @@ public class StockFunction implements Function<Map<String, Object>, McpSchema.Ca
             String skuId = (String) arguments.get("skuId");
             String storeId = (String) arguments.get("storeId");
 
-            System.out.println("StockFunction skuId : " + skuId + " storeId : " + storeId);
+            log.info("StockFunction skuId : " + skuId + " storeId : " + storeId);
 
             Stock stock = storeDataService.getStock(skuId, storeId);
 

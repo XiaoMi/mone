@@ -21,7 +21,7 @@ public class SkuFunction implements Function<Map<String, Object>, McpSchema.Call
     @Autowired
     private StoreDataService storeDataService;
 
-    private String name = "sku";
+    private String name = "store_data_sku";
 
     private String desc = "根据文字描述获取小米商品sku。注意这里只需要从聊天会话中获取小米产品型号即可，比如小米15";
 
