@@ -66,7 +66,11 @@ public class CodeGeneratorTeam {
     }
 
     private static void setActions(BotChainCallContext botChainCallContext, ConversationContext conversationContext, WriteCode writeCode, PromptResult promptResult, Engineer engineer) {
-        writeCode.setFunction((req, action, context) -> Message.builder().content(new CodeGenerationHandler(botChainCallContext).getBotResponse(conversationContext.getUserQuery(), promptResult, conversationContext)).role(engineer.getName()).build());
+        writeCode.setFunction((req, action, context) -> Message.builder()
+                        .content(new CodeGenerationHandler(botChainCallContext).getBotResponse(conversationContext.getUserQuery(), promptResult, conversationContext))
+                        .role(engineer.getName())
+                        .build()
+        );
         engineer.setActions(Lists.newArrayList(writeCode));
     }
 
