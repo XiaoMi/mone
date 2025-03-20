@@ -32,6 +32,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static run.mone.hive.llm.ClaudeProxy.getClaude35Name;
 import static run.mone.hive.llm.ClaudeProxy.getClaudeKey;
 
 @Data
@@ -435,7 +436,7 @@ public class LLM {
 
         if (this.llmProvider != LLMProvider.GOOGLE_2) {
             if (this.llmProvider == LLMProvider.CLAUDE35_COMPANY) {
-                rb.addHeader("Authorization", "Bearer " + getClaudeKey("Claude-3.5-Sonnet-company-inner"));
+                rb.addHeader("Authorization", "Bearer " + getClaudeKey(getClaude35Name()));
             } else {
                 rb.addHeader("Authorization", "Bearer " + apiKey);
             }
