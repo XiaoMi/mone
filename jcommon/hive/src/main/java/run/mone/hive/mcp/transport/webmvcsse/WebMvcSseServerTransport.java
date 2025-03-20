@@ -29,6 +29,7 @@ import java.util.function.Function;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
+import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,6 +120,9 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
      * Flag indicating if the transport is shutting down.
      */
     private volatile boolean isClosing = false;
+
+    @Setter
+    private Function<String, Boolean> authFunction = token -> true;
 
     /**
      * The function to process incoming JSON-RPC messages and produce responses.
@@ -266,15 +270,22 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
 
         //本质是clientId
         List<String> clientList = request.headers().header(Const.MC_CLIENT_ID);
-        String sessionId = CollectionUtils.isEmpty(clientList) ? UUID.randomUUID().toString() : clientList.get(0);
-        logger.debug("Creating new SSE connection for session: {}", sessionId);
+        String clientId = CollectionUtils.isEmpty(clientList) ? UUID.randomUUID().toString() : clientList.get(0);
+
+        if (!authFunction.apply(clientId)) {
+            return ServerResponse.status(HttpStatus.UNAUTHORIZED)
+                    .body("Authentication failed");
+        }
+
+
+        logger.debug("Creating new SSE connection for session: {}", clientId);
 
         // Send initial endpoint event
         try {
             return ServerResponse.sse(sseBuilder -> {
 
-                ClientSession session = new ClientSession(sessionId, sseBuilder);
-                this.sessions.put(sessionId, session);
+                ClientSession session = new ClientSession(clientId, sseBuilder);
+                this.sessions.put(clientId, session);
 
                 try {
                     session.sseBuilder.id(session.id).event(ENDPOINT_EVENT_TYPE).data(messageEndpoint);
@@ -284,8 +295,8 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
                 }
             }, Duration.ZERO);
         } catch (Exception e) {
-            logger.error("Failed to send initial endpoint event to session {}: {}", sessionId, e.getMessage());
-            sessions.remove(sessionId);
+            logger.error("Failed to send initial endpoint event to session {}: {}", clientId, e.getMessage());
+            sessions.remove(clientId);
             return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -321,6 +332,11 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
 
             //客户端id(每次客户端都会是一个新的post,但clientId并不会发生变化),每次本质就是一个Post请求过来
             String clientId = clientId(request);
+
+            if (!authFunction.apply(clientId)) {
+                return ServerResponse.status(HttpStatus.UNAUTHORIZED)
+                        .body("Authentication failed");
+            }
 
             McpSchema.JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(objectMapper, body);
 
