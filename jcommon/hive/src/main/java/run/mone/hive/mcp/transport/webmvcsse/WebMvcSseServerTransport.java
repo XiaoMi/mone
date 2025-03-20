@@ -310,6 +310,24 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
         return clientId;
     }
 
+
+    public McpSchema.JSONRPCRequest getReq(McpSchema.JSONRPCRequest req, String clientId) {
+        if (StringUtils.isNotEmpty(clientId) && clientId.contains("_")) {
+            String[] array = clientId.split("_");
+            String userName = array[0];
+            if (req.params() instanceof Map map) {
+                if (map.containsKey("arguments") && map.get("arguments") instanceof Map args) {
+                    args.put("_user", userName);
+                }
+                return new McpSchema.JSONRPCRequest(req.jsonrpc(), req.method(), req.id(), req.params(), clientId);
+            }
+            return req;
+        } else {
+            return req;
+        }
+    }
+
+
     /**
      * Handles incoming JSON-RPC messages from clients. This method:
      * <ul>
@@ -359,7 +377,8 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
                 if (streamHandler != null) {
                     //获取projectName,用来二次分发
                     String projectName = getProjectName(req);
-                    streamHandler.apply(req)
+
+                    streamHandler.apply(getReq(req, clientId))
                             .log()
                             .subscribe(
                                     response -> {
