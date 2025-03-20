@@ -117,7 +117,7 @@ public class EsClient {
 
         return RestClient.builder(new HttpHost(host, port, "http"))
                 .setDefaultHeaders(defaultHeaders)
-                .setFailureListener(sniffOnFailureListener)
+                .setFailureListener(startedSniffer ? sniffOnFailureListener : new RestClient.FailureListener())
                 .setHttpClientConfigCallback(x -> x.setMaxConnPerRoute(MAX_CONN_PER_ROUTE)
                         .setMaxConnTotal(MAX_CONN_TOTAL)
                         .setDefaultRequestConfig(RequestConfig.custom()
@@ -171,8 +171,7 @@ public class EsClient {
     private RestClientBuilder createRestClientBuilder(List<HttpHost> hosts, Header[] headers) {
         return RestClient.builder(hosts.toArray(new HttpHost[0]))
                 .setDefaultHeaders(headers)
-                .setFailureListener(sniffOnFailureListener)
-                .setFailureListener(sniffOnFailureListener)
+                .setFailureListener(startedSniffer ? sniffOnFailureListener : new RestClient.FailureListener())
                 .setHttpClientConfigCallback(x -> x.setMaxConnPerRoute(MAX_CONN_PER_ROUTE)
                         .setMaxConnTotal(MAX_CONN_TOTAL)
                         .setDefaultRequestConfig(RequestConfig.custom()
