@@ -1,10 +1,7 @@
 package run.mone.hive.mcp.client;
 
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -17,6 +14,8 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import run.mone.hive.mcp.client.transport.HttpClientSseClientTransport;
+import run.mone.hive.mcp.hub.McpConfig;
 import run.mone.hive.mcp.spec.ClientMcpTransport;
 import run.mone.hive.mcp.spec.DefaultMcpSession;
 import run.mone.hive.mcp.spec.DefaultMcpSession.NotificationHandler;
@@ -105,6 +104,8 @@ public class McpAsyncClient {
 	 */
 	private final McpTransport transport;
 
+	private String clientId;
+
 	/**
 	 * Create a new McpAsyncClient with the given transport and session request-response
 	 * timeout.
@@ -125,19 +126,25 @@ public class McpAsyncClient {
 			List<Consumer<List<McpSchema.Resource>>> resourcesChangeConsumers,
 			List<Consumer<List<McpSchema.Prompt>>> promptsChangeConsumers,
 			List<Consumer<McpSchema.LoggingMessageNotification>> loggingConsumers,
-			Function<CreateMessageRequest, CreateMessageResult> samplingHandler) {
+			Function<CreateMessageRequest, CreateMessageResult> samplingHandler,List<Consumer<Object>> msgConsumer) {
 
 		Assert.notNull(transport, "Transport must not be null");
 		Assert.notNull(requestTimeout, "Request timeout must not be null");
 		Assert.notNull(clientInfo, "Client info must not be null");
 
 		this.clientInfo = clientInfo;
+		this.clientId = McpConfig.ins().getClientId();
 
 		this.clientCapabilities = (clientCapabilities != null) ? clientCapabilities
 				: new McpSchema.ClientCapabilities(null, !Utils.isEmpty(roots) ? new RootCapabilities(false) : null,
 						samplingHandler != null ? new Sampling() : null);
 
 		this.transport = transport;
+
+		//需要唯一的id
+		if (this.transport instanceof HttpClientSseClientTransport hcct){
+			hcct.setClientId(this.clientId);
+		}
 
 		this.roots = roots != null ? new ConcurrentHashMap<>(roots) : new ConcurrentHashMap<>();
 
@@ -170,6 +177,12 @@ public class McpAsyncClient {
 		}
 		notificationHandlers.put(McpSchema.METHOD_NOTIFICATION_TOOLS_LIST_CHANGED,
 				toolsChangeNotificationHandler(toolsChangeConsumersFinal));
+
+
+		notificationHandlers.put("msg", params -> {
+            Mono.fromRunnable(()-> msgConsumer.forEach(it-> it.accept(params))).subscribeOn(Schedulers.boundedElastic()).subscribe();
+            return Mono.empty();
+        });
 
 		// Resources Change Notification
 		List<Consumer<List<McpSchema.Resource>>> resourcesChangeConsumersFinal = new ArrayList<>();

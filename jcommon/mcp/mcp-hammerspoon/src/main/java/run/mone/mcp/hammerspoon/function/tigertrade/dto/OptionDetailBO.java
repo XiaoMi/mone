@@ -1,4 +1,4 @@
-package run.mone.mcp.hammerspoon.function.trigertrade.dto;
+package run.mone.mcp.hammerspoon.function.tigertrade.dto;
 
 import lombok.Data;
 
@@ -24,8 +24,8 @@ public class OptionDetailBO implements Serializable {
     private Double askPrice;
     private Integer askSize;
     private int volume;
-    private double latestPrice;
-    private double preClose;
+    private Double latestPrice;
+    private Double preClose;
     private int openInterest;
     private int multiplier;
     private long lastTimestamp;

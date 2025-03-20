@@ -348,21 +348,39 @@ public class LLM {
 
 
     public void chat(List<AiMessage> messages, BiConsumer<String, JsonObject> messageHandlerr) {
-        chatCompletionStream(System.getenv(llmProvider.getEnvName()), messages, llmProvider.getDefaultModel(), messageHandlerr, line -> {
-        }, "");
+        chatCompletionStream(System.getenv(llmProvider.getEnvName()),
+                messages,
+                llmProvider.getDefaultModel(),
+                messageHandlerr,
+                line -> {
+                },
+                "");
     }
 
     public void chat(List<AiMessage> messages, BiConsumer<String, JsonObject> messageHandlerr, String systemPrompt) {
-        chatCompletionStream(System.getenv(llmProvider.getEnvName()), messages, llmProvider.getDefaultModel(), messageHandlerr, line -> {
-        }, systemPrompt);
+        chatCompletionStream(System.getenv(llmProvider.getEnvName()),
+                messages,
+                llmProvider.getDefaultModel(),
+                messageHandlerr,
+                line -> {
+                },
+                systemPrompt
+        );
     }
 
 
     public void chatCompletionStream(String apiKey, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt) {
         JsonObject requestBody = new JsonObject();
 
-        if (this.llmProvider != LLMProvider.GOOGLE_2) {
+        if (this.llmProvider != LLMProvider.GOOGLE_2
+                && this.llmProvider != LLMProvider.CLAUDE35_COMPANY) {
             requestBody.addProperty("model", model);
+            requestBody.addProperty("stream", true);
+        }
+
+        if (this.llmProvider == LLMProvider.CLAUDE35_COMPANY) {
+            requestBody.addProperty("anthropic_version", this.config.getVersion());
+            requestBody.addProperty("max_tokens", this.config.getMaxTokens());
             requestBody.addProperty("stream", true);
         }
 
@@ -438,7 +456,7 @@ public class LLM {
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(Call call, Response response) {
                 try (ResponseBody responseBody = response.body()) {
                     if (!response.isSuccessful()) {
                         throw new IOException("Unexpected response code: " + response);
@@ -471,6 +489,37 @@ public class LLM {
                                     finishRes.addProperty("type", "finish");
                                     finishRes.addProperty("content", candidate.get("finishReason").getAsString());
                                     messageHandler.accept("[DONE]", finishRes);
+                                }
+                            }
+                        } else if (llmProvider == LLMProvider.CLAUDE35_COMPANY) {
+                            if (line.startsWith("data: ")) {
+                                String data = line.substring(6);
+                                JsonObject jsonResponse = gson.fromJson(data, JsonObject.class);
+                                if ("message_start".equals(jsonResponse.get("type").getAsString())
+                                        || "ping".equals(jsonResponse.get("type").getAsString())
+                                        || "content_block_start".equals(jsonResponse.get("type").getAsString())) {
+                                    continue;
+                                }
+
+                                if ("content_block_stop".equals(jsonResponse.get("type").getAsString())) {
+                                    JsonObject jsonRes = new JsonObject();
+                                    jsonRes.addProperty("type", "finish");
+                                    jsonRes.addProperty("content", "[DONE]");
+                                    messageHandler.accept("[DONE]", jsonRes);
+                                    break;
+                                }
+
+                                if ("content_block_delta".equals(jsonResponse.get("type").getAsString())) {
+                                    String content = "";
+                                    try {
+                                        JsonObject delta = jsonResponse.getAsJsonObject("delta");
+                                        content = delta.get("text").getAsString();
+                                    } catch (Throwable ex) {
+                                        log.error(ex.getMessage());
+                                    }
+                                    jsonResponse.addProperty("type", "event");
+                                    jsonResponse.addProperty("content", content);
+                                    messageHandler.accept(content, jsonResponse);
                                 }
                             }
                         } else {
