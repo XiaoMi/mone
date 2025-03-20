@@ -167,6 +167,19 @@
 			<version>6.1.0</version>
 			<scope>provided</scope>
 		</dependency>
+
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>google</artifactId>
+            <version>1.5-jdk8-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>m78</artifactId>
+            <version>1.4-jdk20-SNAPSHOT</version>
+        </dependency>
+
     </dependencies>
 
     <build>

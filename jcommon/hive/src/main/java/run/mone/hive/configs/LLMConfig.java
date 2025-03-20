@@ -10,6 +10,7 @@ import run.mone.hive.llm.LLMProvider;
 @Builder
 public class LLMConfig {
     private String model;
+    private String version;
     private Double temperature;
     private Integer maxTokens;
     private boolean debug;
