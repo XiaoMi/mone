@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import static run.mone.hive.llm.ClaudeProxy.*;
+
 /**
  * @author goodjava@qq.com
  * @date 2024/11/24 11:01
@@ -31,7 +33,14 @@ public class BotClient {
     private StringBuffer sb = new StringBuffer();
 
     public BotClient(FluxSink<String> fluxSink) {
-        llm = new LLM(LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build());
+//        LLMConfig config = LLMConfig.builder()
+//                .llmProvider(LLMProvider.CLAUDE35_COMPANY)
+//                .url(getClaude35Url())
+//                .version(getClaude35Version())
+//                .maxTokens(getClaude35MaxToekns())
+//                .build();
+        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build();
+        llm = new LLM(config);
         this.fluxSink = fluxSink;
     }
 

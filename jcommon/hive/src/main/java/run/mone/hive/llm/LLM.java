@@ -32,6 +32,9 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static run.mone.hive.llm.ClaudeProxy.getClaude35Name;
+import static run.mone.hive.llm.ClaudeProxy.getClaudeKey;
+
 @Data
 @Slf4j
 public class LLM {
@@ -386,7 +389,8 @@ public class LLM {
 
         JsonArray msgArray = new JsonArray();
 
-        if (this.llmProvider != LLMProvider.GOOGLE_2) {
+        if (this.llmProvider != LLMProvider.GOOGLE_2
+                && this.llmProvider != LLMProvider.CLAUDE35_COMPANY) {
             if (this.config.isJson()) {
                 String jsonSystemPrompt = """
                          返回结果请用JSON返回(如果用户没有指定json格式,则直接返回{"content":$res}),thx
@@ -400,6 +404,11 @@ public class LLM {
                     msgArray.add(createMessageObject("system", systemPrompt));
                 }
             }
+        }
+
+        //claude的系统提示词
+        if (llmProvider == LLMProvider.CLAUDE35_COMPANY && StringUtils.isNotEmpty(systemPrompt)) {
+            requestBody.addProperty("system", systemPrompt);
         }
 
         //gemini的系统提示词
@@ -426,7 +435,11 @@ public class LLM {
         Request.Builder rb = new Request.Builder();
 
         if (this.llmProvider != LLMProvider.GOOGLE_2) {
-            rb.addHeader("Authorization", "Bearer " + apiKey);
+            if (this.llmProvider == LLMProvider.CLAUDE35_COMPANY) {
+                rb.addHeader("Authorization", "Bearer " + getClaudeKey(getClaude35Name()));
+            } else {
+                rb.addHeader("Authorization", "Bearer " + apiKey);
+            }
         }
 
         //使用的cloudflare
@@ -459,6 +472,7 @@ public class LLM {
             public void onResponse(Call call, Response response) {
                 try (ResponseBody responseBody = response.body()) {
                     if (!response.isSuccessful()) {
+                        log.error("Unexpected response code: " + response);
                         throw new IOException("Unexpected response code: " + response);
                     }
                     SSEReader reader = new SSEReader(responseBody.source());

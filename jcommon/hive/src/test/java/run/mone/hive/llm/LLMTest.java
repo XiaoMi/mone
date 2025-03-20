@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.concurrent.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static run.mone.hive.llm.ClaudeProxy.getClaudeKey;
 
 @Slf4j
 class LLMTest {
@@ -214,7 +215,7 @@ class LLMTest {
         String result = claudeProxy.callGCP35("Claude-3.5-Sonnet-company-inner", msgs);
         System.out.println(result);
 
-        String apiKey = claudeProxy.getClaudeKey("Claude-3.5-Sonnet-company-inner");
+        String apiKey = getClaudeKey("Claude-3.5-Sonnet-company-inner");
 
         StringBuilder responseBuilder = new StringBuilder();
         List<JsonObject> jsonResponses = new ArrayList<>();

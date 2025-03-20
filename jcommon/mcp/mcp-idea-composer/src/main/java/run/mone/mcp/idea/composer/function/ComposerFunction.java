@@ -73,10 +73,14 @@ public class ComposerFunction implements Function<Map<String, Object>, Flux<McpS
             req.addProperty("athenaPluginHost", Const.IP + ideaPort);
 
             return Flux.<String>create(fluxSink -> {
-                BotChainCall call = new BotChainCall();
-                BotChainCallContext context = BotChainCallContext.of("", fluxSink);
-                completeBotContext(context, req);
-                call.executeProjectBotChain(context, req, isFull);
+                try {
+                    BotChainCall call = new BotChainCall();
+                    BotChainCallContext context = BotChainCallContext.of("", fluxSink);
+                    completeBotContext(context, req);
+                    call.executeProjectBotChain(context, req, isFull);
+                } catch (Throwable a) {
+                    System.out.println("ERROR create Flux");
+                }
             }).map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
         } catch (Exception e) {
             return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true));
