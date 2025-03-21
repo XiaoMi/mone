@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import run.mone.mcp.idea.composer.handler.biz.BotChainCallContext;
 import run.mone.mcp.idea.composer.handler.biz.ComposerImagePo;
 import run.mone.mcp.idea.composer.handler.biz.Const;
+import run.mone.mcp.idea.composer.handler.prompt.CodePrompt;
 import run.mone.mcp.idea.composer.handler.prompt.Prompt;
 import run.mone.mcp.idea.composer.handler.xml.StreamingXmlModifier;
 import run.mone.mcp.idea.composer.handler.xml.XmlParserCallback;
