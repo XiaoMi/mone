@@ -1,4 +1,4 @@
-package run.mone.mcp.idea.composer.handler;
+package run.mone.mcp.idea.composer.handler.prompt;
 
 /**
  * @author goodjava@qq.com

@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import run.mone.mcp.idea.composer.handler.CodeGeneratePromptHolder;
 import run.mone.mcp.idea.composer.handler.CodeGeneratorTeam;
-import run.mone.mcp.idea.composer.handler.CodePrompt;
+import run.mone.mcp.idea.composer.handler.prompt.CodePrompt;
 import run.mone.mcp.idea.composer.handler.ConversationContext;
 import run.mone.mcp.idea.composer.handler.prompt.Prompt;
 

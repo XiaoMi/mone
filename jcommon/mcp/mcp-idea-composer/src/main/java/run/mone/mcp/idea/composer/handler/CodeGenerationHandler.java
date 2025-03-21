@@ -4,6 +4,7 @@ package run.mone.mcp.idea.composer.handler;
 import run.mone.mcp.idea.composer.handler.biz.BotChainCallContext;
 import run.mone.mcp.idea.composer.handler.biz.ComposerImagePo;
 import run.mone.mcp.idea.composer.handler.biz.Const;
+import run.mone.mcp.idea.composer.handler.prompt.CodePrompt;
 import run.mone.mcp.idea.composer.handler.prompt.Prompt;
 
 import java.util.concurrent.CompletableFuture;
