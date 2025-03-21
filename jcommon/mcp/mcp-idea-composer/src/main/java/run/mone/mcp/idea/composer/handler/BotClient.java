@@ -125,6 +125,28 @@ public class BotClient {
 
             req.add("content", array);
         }
+
+        if(llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE35_COMPANY){
+            req.addProperty("role", "user");
+            JsonArray contentJsons = new JsonArray();
+
+            JsonObject obj1 = new JsonObject();
+            obj1.addProperty("type", "text");
+            obj1.addProperty("text", text);
+            contentJsons.add(obj1);
+
+            if (StringUtils.isNotEmpty(imgText)) {
+                JsonObject obj2 = new JsonObject();
+                obj2.addProperty("type", "image");
+                JsonObject source = new JsonObject();
+                source.addProperty("type", "base64");
+                source.addProperty("media_type", "image/jpeg");
+                source.addProperty("data", imgText);
+                obj2.add("source", source);
+                contentJsons.add(obj2);
+            }
+            req.add("content", contentJsons);
+        }
         return req;
     }
 }
