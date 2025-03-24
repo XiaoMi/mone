@@ -34,11 +34,17 @@ public class ClaudeProxy {
 
     public static ConcurrentMap<String, String> claudeToken = new ConcurrentHashMap<>();
 
-    public String getClaudeKey(String modelName) {
-        return claudeToken.get(modelName);
+    public static String getClaudeKey(String modelName) {
+
+        String token = claudeToken.get(modelName);
+        if (StringUtils.isEmpty(token)) {
+            initGCPClude35(modelName);
+            return claudeToken.get(modelName);
+        }
+        return token;
     }
 
-    public void initGCPClude35(String modelName) {
+    public static void initGCPClude35(String modelName) {
         String token = getClaude35Toekn();
 
         SafeRun.run(() -> Files.write(Paths.get("/tmp/key-" + getClaude35Name() + ".json"), token.getBytes()));
@@ -108,19 +114,27 @@ public class ClaudeProxy {
     }
 
 
-    private String getClaude35Toekn() {
+    public static String getClaude35Toekn() {
         return System.getenv("CLAUDE35_TOKEN");
     }
 
-    private String getClaude35Name() {
+    public static Integer getClaude35MaxToekns() {
+        String tokens = System.getenv("CLAUDE35_MAX_TOKENS");
+        if (StringUtils.isNotEmpty(tokens)) {
+            return Integer.valueOf(tokens);
+        }
+        return 8192;
+    }
+
+    public static String getClaude35Name() {
         return System.getenv("CLAUDE35_NAME");
     }
 
-    private String getClaude35Url() {
+    public static String getClaude35Url() {
         return System.getenv("CLAUDE35_URL");
     }
 
-    private String getClaude35Version() {
+    public static String getClaude35Version() {
         return System.getenv("CLAUDE35_VERSION");
     }
 
