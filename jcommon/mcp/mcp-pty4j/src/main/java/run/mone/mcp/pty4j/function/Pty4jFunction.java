@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.mcp.spec.McpSchema;
 import jakarta.annotation.PostConstruct;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -34,7 +35,14 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
 
     private String name = "pty4j";
 
-    private String desc = "Terminal operations including executing commands, managing interactive sessions, and handling terminal I/O. When you get the result, you must wrap it with <terminal></terminal> tags and format it to look like a simulated terminal. If there are no subsequent operations expected, you should remind the user whether to close the terminal connection. The terminal session will be automatically closed after 3 minutes of inactivity.If subsequent tools need to use this result, be sure not to discard the <terminal></terminal> tags.";
+    private String desc = "终端操作包括执行命令、管理交互式会话和处理终端 I/O。使用流程：\n" +
+            "1. 首先使用操作 'create' 创建终端会话，该操作将返回一个 sessionId\n" +
+            "2. 将此 sessionId 用于此终端中的所有后续操作\n" +
+            "3. 在每个操作之前，您应该使用 'getProcess' 来验证终端会话是否仍然存在\n" +
+            "4. 终端会话将在 3 分钟不活动后自动关闭\n" +
+            "5. 仅在用户明确请求时使用 'close' 操作关闭终端\n" +
+            "6. 如果用户没有明确请求关闭终端，则保持终端会话处于活动状态\n" +
+            " 获取整体结果后，您必须用\\n<terminal>\\n \\n/terminal>\\n 标签包装它，并将其格式化为模拟终端的样子。";
 
     private String toolScheme = """
             {
@@ -42,7 +50,7 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
                 "properties": {
                     "action": {
                         "type": "string",
-                        "description": "Action type for terminal operations:\\n1. execute: Execute a command\\n2. input: Send input to terminal\\n3. resize: Resize terminal window\\n4. getOutput: Get terminal output\\n5. close: Close terminal session"
+                        "description": "Action type for terminal operations:\\n1. create: Create a new terminal session\\n2. execute: Execute a command\\n3. input: Send input to terminal\\n4. resize: Resize terminal window\\n5. getOutput: Get terminal output \\n7. getProcess: Get PTY process information"
                     },
                     "command": {
                         "type": "string",
@@ -65,7 +73,7 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
                         "description": "Number of rows for terminal window"
                     }
                 },
-                "required": ["action", "sessionId"]
+                "required": ["action"]
             }
             """;
 
@@ -95,16 +103,22 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
     @Override
     public McpSchema.CallToolResult apply(Map<String, Object> params) {
         String action = (String) params.get("action");
-        String sessionId = (String) params.get("sessionId");
-        
+
         if (action == null) {
-            return errorResult(sessionId, "Action must be specified");
+            return errorResult(null, "Action must be specified");
+        }
+
+        if ("create".equals(action)) {
+            return createTerminal(params);
+        }
+
+        String sessionId = (String) params.get("sessionId");
+        if (sessionId == null || sessionId.trim().isEmpty()) {
+            return errorResult(null, "Session ID cannot be empty");
         }
 
         // 更新最后访问时间
-        if (sessionId != null) {
-            lastAccessTimeMap.put(sessionId, System.currentTimeMillis());
-        }
+        lastAccessTimeMap.put(sessionId, System.currentTimeMillis());
 
         try {
             return switch (action) {
@@ -112,7 +126,8 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
                 case "input" -> sendInput(params);
                 case "resize" -> resizeTerminal(params);
                 case "getOutput" -> getOutput(params);
-                case "close" -> closeTerminal(params);
+//                case "close" -> closeTerminal(params);
+                case "getProcess" -> getPtyProcess(params);
                 default -> errorResult(sessionId, "Unknown action: " + action);
             };
         } catch (Exception e) {
@@ -135,9 +150,31 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
         return env;
     }
 
+    private String[] getDefaultShell() {
+        String osName = System.getProperty("os.name").toLowerCase();
+        if (osName.contains("windows")) {
+            return new String[]{"cmd.exe"};
+        } else {
+            // 对于 Unix-like 系统，优先使用 SHELL 环境变量
+            String userShell = System.getenv("SHELL");
+            if (userShell != null && !userShell.isEmpty()) {
+                return new String[]{userShell};
+            }
+            // 如果没有设置 SHELL 环境变量，则按优先级尝试
+            if (new File("/bin/zsh").exists()) {
+                return new String[]{"/bin/zsh"};
+            } else if (new File("/bin/bash").exists()) {
+                return new String[]{"/bin/bash"};
+            } else {
+                return new String[]{"/bin/sh"};
+            }
+        }
+    }
+
     private PtyProcess startProcess(String command, boolean isInteractive) throws IOException {
         String[] commandLine;
-        if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+        String osName = System.getProperty("os.name").toLowerCase();
+        if (osName.contains("windows")) {
             commandLine = new String[]{"cmd.exe", "/c", command};
         } else {
             if (isInteractive && command.startsWith("vim")) {
@@ -146,10 +183,10 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
                         " --cmd 'set noswapfile'" +
                         " --cmd 'set noruler'" +
                         " --cmd 'set laststatus=0'";
-                commandLine = new String[]{"/bin/bash", "-c", command};
+                commandLine = new String[]{getDefaultShell()[0], "-c", command};
             } else {
                 commandLine = isInteractive ? command.split("\\s+") :
-                        new String[]{"/bin/bash", "-c", command};
+                        new String[]{getDefaultShell()[0], "-c", command};
             }
         }
 
@@ -191,7 +228,7 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
 
     private String formatOutput(String content, boolean isInteractive) {
         if (!isInteractive) {
-            return "<terminal>" +  content + "</terminal>";
+            return "<terminal>" + content + "</terminal>";
         }
 
         // 移除 ANSI 转义序列和其他特殊序列
@@ -228,6 +265,43 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
         return "<terminal>" + content.trim() + "</terminal>";
     }
 
+    private McpSchema.CallToolResult createTerminal(Map<String, Object> params) {
+        try {
+            String sessionId = UUID.randomUUID().toString();
+
+            // 创建一个基础的终端，使用系统默认shell
+            PtyProcess process = new PtyProcessBuilder()
+                    .setCommand(getDefaultShell())
+                    .setEnvironment(prepareEnvironment())
+                    .setInitialColumns(120)
+                    .setInitialRows(30)
+                    .setRedirectErrorStream(true)
+                    .start();
+
+            processMap.put(sessionId, process);
+            startOutputReader(sessionId, process, true);
+
+            // 等待终端初始化
+            Thread.sleep(500);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("sessionId", sessionId);
+            response.put("message", "Terminal created successfully");
+            response.put("terminalSize", Map.of(
+                    "columns", 120,
+                    "rows", 30
+            ));
+
+            return new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent(new Gson().toJson(response))),
+                    false
+            );
+        } catch (Exception e) {
+            log.error("Failed to create terminal", e);
+            return errorResult(null, "Failed to create terminal: " + e.getMessage());
+        }
+    }
+
     private McpSchema.CallToolResult executeTerminal(Map<String, Object> params) {
         String command = (String) params.get("command");
         String sessionId = (String) params.get("sessionId");
@@ -235,27 +309,30 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
         if (command == null || command.trim().isEmpty()) {
             return errorResult(sessionId, "Command cannot be empty");
         }
-        if (sessionId == null || sessionId.trim().isEmpty()) {
-            return errorResult(null, "Session ID cannot be empty");
+
+        // 检查终端是否存在且活跃
+        PtyProcess process = processMap.get(sessionId);
+        if (process == null || !process.isAlive()) {
+            return errorResult(sessionId, "Terminal session not found or inactive");
         }
 
         try {
-            boolean isInteractive = isInteractiveCommand(command);
-            PtyProcess process = startProcess(command, isInteractive);
-            processMap.put(sessionId, process);
+            // 在现有终端中执行命令
+            OutputStream output = process.getOutputStream();
+            output.write((command + "\n").getBytes(StandardCharsets.UTF_8));
+            output.flush();
 
-            startOutputReader(sessionId, process, isInteractive);
+            // 等待命令执行
+            Thread.sleep(500);
 
-            // 等待初始输出
-            Thread.sleep(isInteractive ? 1000 : 500);
-
-            String output = outputBuffers.get(sessionId).toString();
+            // 获取输出
+            String result = outputBuffers.get(sessionId).toString();
             Map<String, Object> response = new HashMap<>();
             response.put("sessionId", sessionId);
-            response.put("output", output.isEmpty() ? "Command started successfully" : output);
+            response.put("output", result.isEmpty() ? "Command executed successfully" : result);
             return new McpSchema.CallToolResult(
-                List.of(new McpSchema.TextContent(new Gson().toJson(response))),
-                false
+                    List.of(new McpSchema.TextContent(new Gson().toJson(response))),
+                    false
             );
         } catch (Exception e) {
             return errorResult(sessionId, "Failed to execute command: " + e.getMessage());
@@ -312,8 +389,8 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
         response.put("sessionId", sessionId);
         response.put("output", formattedOutput);
         return new McpSchema.CallToolResult(
-            List.of(new McpSchema.TextContent(new Gson().toJson(response))),
-            false
+                List.of(new McpSchema.TextContent(new Gson().toJson(response))),
+                false
         );
     }
 
@@ -332,6 +409,36 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
             return successResult(sessionId, "Terminal closed successfully");
         } catch (Exception e) {
             return errorResult(sessionId, "Failed to close terminal: " + e.getMessage());
+        }
+    }
+
+    private McpSchema.CallToolResult getPtyProcess(Map<String, Object> params) {
+        String sessionId = (String) params.get("sessionId");
+        PtyProcess process = processMap.get(sessionId);
+
+        if (process == null) {
+            return errorResult(sessionId, "No process found for session: " + sessionId);
+        }
+
+        try {
+            Map<String, Object> processInfo = new HashMap<>();
+            processInfo.put("sessionId", sessionId);
+            processInfo.put("isAlive", process.isAlive());
+            processInfo.put("exitValue", process.isAlive() ? -1 : process.exitValue());
+
+            WinSize winSize = process.getWinSize();
+            Map<String, Integer> terminalSize = new HashMap<>();
+            terminalSize.put("columns", winSize.getColumns());
+            terminalSize.put("rows", winSize.getRows());
+            processInfo.put("terminalSize", terminalSize);
+
+            return new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent(new Gson().toJson(processInfo))),
+                    false
+            );
+        } catch (IOException e) {
+            log.error("Error getting process information for session: " + sessionId, e);
+            return errorResult(sessionId, "Error getting process information: " + e.getMessage());
         }
     }
 
