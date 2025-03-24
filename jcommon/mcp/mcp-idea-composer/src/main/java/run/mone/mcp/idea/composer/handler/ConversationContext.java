@@ -19,6 +19,7 @@ public class ConversationContext {
     private String userQuery;
 
 
+
     public ConversationContext() {
         this.conversationId = UUID.randomUUID().toString();
         this.messages = Collections.synchronizedList(new ArrayList<>());

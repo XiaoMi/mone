@@ -66,6 +66,7 @@ public class ComposerFunction implements Function<Map<String, Object>, Flux<McpS
             req.addProperty("imageType", (String) arguments.get("imageType"));
             req.addProperty("imageBase64", (String) arguments.get("imageBase64"));
             req.addProperty("methodCode", (String) arguments.get("methodCode"));
+            req.addProperty("rules", (String) arguments.get("rules"));
 
             // retry
             String isFull = (String) arguments.get("retryIsFull");
