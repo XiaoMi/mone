@@ -7,10 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import okhttp3.*;
 import run.mone.hive.mcp.spec.McpSchema;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -24,9 +20,9 @@ import java.util.function.Function;
 @Data
 @Slf4j
 public class ScreenFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
-    private String name = "captureDingTalkWindow";
-    private String desc = "查看DingTalk(钉钉)软件截图";
-    private static final String HAMMERSPOON_URL = "http://localhost:27123/execute";
+    private String name = "captureWeComWindow";
+    private String desc = "查看企业微信软件截图";
+    private static final String PYTHON_SERVER_URL_ENV = "PYTHON_SERVER_URL";
 
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
@@ -34,9 +30,7 @@ public class ScreenFunction implements Function<Map<String, Object>, McpSchema.C
     private String toolScheme = """
             {
                 "type": "object",
-                "properties": {
-            
-                },
+                "properties": {},
                 "required": []
             }
             """;
@@ -50,45 +44,26 @@ public class ScreenFunction implements Function<Map<String, Object>, McpSchema.C
         this.objectMapper = new ObjectMapper();
     }
 
+    private String getPythonServerUrl() {
+        String url = System.getenv(PYTHON_SERVER_URL_ENV);
+        if (url == null || url.isEmpty()) {
+            throw new RuntimeException(PYTHON_SERVER_URL_ENV + " 环境变量未设置");
+        }
+        return url;
+    }
+
     @Override
     public McpSchema.CallToolResult apply(Map<String, Object> args) {
         try {
+            String pythonServerUrl = getPythonServerUrl();
 
-            List<String> luaCode = new ArrayList<>();
-
-
-            luaCode.add("return captureAppWindow(\"企业微信\")");
-
-            McpSchema.CallToolResult res = new McpSchema.CallToolResult(new ArrayList<>(), false);
-            for (String code : luaCode) {
-                res = executeHammerspoonCommand(code);
-            }
-            return res;
-        } catch (Exception e) {
-            log.error("Error executing Hammerspoon command", e);
-            return new McpSchema.CallToolResult(
-                    List.of(new McpSchema.TextContent("Error: " + e.getMessage())),
-                    true
-            );
-        }
-    }
-
-    private McpSchema.CallToolResult executeHammerspoonCommand(String luaCode) {
-        try {
-            Map<String, String> requestBody = Map.of("code", luaCode);
-            String jsonBody = objectMapper.writeValueAsString(requestBody);
-            log.info("jsonBody:{}", jsonBody);
-
-            RequestBody body = RequestBody.create(
-                    jsonBody,
-                    MediaType.parse("application/json; charset=utf-8")
-            );
-
+            // 构建请求
             Request request = new Request.Builder()
-                    .url(HAMMERSPOON_URL)
-                    .post(body)
+                    .url(pythonServerUrl + "/capture_window")
+                    .get()
                     .build();
 
+            // 发送请求
             try (Response response = client.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
                     return new McpSchema.CallToolResult(
@@ -97,53 +72,32 @@ public class ScreenFunction implements Function<Map<String, Object>, McpSchema.C
                     );
                 }
 
+                // 处理响应
                 String responseBody = response.body() != null ? response.body().string() : "{}";
+                log.info("responseBody:{}",responseBody);
                 JsonNode jsonResponse = objectMapper.readTree(responseBody);
 
-                log.info("jsonResponse:{}", jsonResponse);
-
-                boolean success = jsonResponse.get("success").asBoolean();
-                if (jsonResponse.has("result")) {
-                    String result = jsonResponse.get("result").asText();
-
-                    try {
-                        Path path = Paths.get(result);
-                        if (Files.exists(path) && Files.isRegularFile(path)) {
-                            byte[] fileBytes = Files.readAllBytes(path);
-                            result = Base64.getEncoder().encodeToString(fileBytes);
-                            return new McpSchema.CallToolResult(
-                                    List.of(new McpSchema.ImageContent(null, null, "image", result, "image/jpeg")),
-                                    !success
-                            );
-                        }
-                    } catch (Exception e) {
-                        log.info("it is not a file path:{}", result);
-                    }
-
+                if (jsonResponse.has("image") && jsonResponse.has("mimetype")) {
+                    String imageBase64 = jsonResponse.get("image").asText();
+                    String mimeType = jsonResponse.get("mimetype").asText();
                     return new McpSchema.CallToolResult(
-                            List.of(new McpSchema.TextContent(result)),
-                            !success
+                            List.of(new McpSchema.ImageContent(null, null, "image", imageBase64, mimeType)),
+                            false
                     );
                 } else {
                     return new McpSchema.CallToolResult(
-                            List.of(new McpSchema.TextContent("Operation completed successfully")),
-                            !success
-                    );
+                            List.of(new McpSchema.TextContent("Invalid response format")),
+                            true
+                        );
                 }
+
             }
         } catch (Exception e) {
-            log.error("Error calling Hammerspoon HTTP server", e);
+            log.error("Error calling Python server", e);
             return new McpSchema.CallToolResult(
                     List.of(new McpSchema.TextContent("Error: " + e.getMessage())),
                     true
             );
         }
-    }
-
-    private String escapeString(String input) {
-        if (input == null) return "";
-        return input.replace("'", "\\'")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r");
     }
 }
