@@ -102,7 +102,7 @@ public class LLM {
             if (StringUtils.isNotEmpty(this.config.getModel())) {
                 model = this.config.getModel();
             }
-            return CompletableFuture.completedFuture(chatCompletion(System.getenv(getToken()), prompt, model));
+            return CompletableFuture.completedFuture(chatCompletion(getToken(), prompt, model));
         }
     }
 
