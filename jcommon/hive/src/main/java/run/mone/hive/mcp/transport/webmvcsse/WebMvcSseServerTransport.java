@@ -29,6 +29,7 @@ import java.util.function.Function;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
+import lombok.Getter;
 import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -114,6 +115,7 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
     /**
      * Map of active client sessions, keyed by session ID.
      */
+    @Getter
     private final ConcurrentHashMap<String, ClientSession> sessions = new ConcurrentHashMap<>();
 
     /**

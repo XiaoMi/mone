@@ -33,13 +33,14 @@ public class BotClient {
     private StringBuffer sb = new StringBuffer();
 
     public BotClient(FluxSink<String> fluxSink) {
-//        LLMConfig config = LLMConfig.builder()
-//                .llmProvider(LLMProvider.CLAUDE35_COMPANY)
-//                .url(getClaude35Url())
-//                .version(getClaude35Version())
-//                .maxTokens(getClaude35MaxToekns())
-//                .build();
-        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build();
+        LLMConfig config = LLMConfig.builder()
+                .llmProvider(LLMProvider.CLAUDE35_COMPANY)
+                .url(getClaude35Url())
+                .version(getClaude35Version())
+                .maxTokens(getClaude35MaxToekns())
+                .build();
+//        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build();
+//        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.DEEPSEEK).build();
         llm = new LLM(config);
         this.fluxSink = fluxSink;
     }
