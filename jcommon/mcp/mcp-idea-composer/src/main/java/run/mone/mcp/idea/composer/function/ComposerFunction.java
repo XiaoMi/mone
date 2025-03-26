@@ -67,11 +67,12 @@ public class ComposerFunction implements Function<Map<String, Object>, Flux<McpS
             req.addProperty("imageBase64", (String) arguments.get("imageBase64"));
             req.addProperty("methodCode", (String) arguments.get("methodCode"));
             req.addProperty("rules", (String) arguments.get("rules"));
+            String athenaPluginIp = StringUtils.isEmpty((String) arguments.get("athenaPluginIp")) ? Const.IP : (String) arguments.get("athenaPluginIp");
+            req.addProperty("athenaPluginIp", athenaPluginIp);
+            req.addProperty("athenaPluginHost", athenaPluginIp + ":" + ideaPort);
 
             // retry
             String isFull = (String) arguments.get("retryIsFull");
-
-            req.addProperty("athenaPluginHost", Const.IP + ideaPort);
 
             return Flux.<String>create(fluxSink -> {
                 try {
