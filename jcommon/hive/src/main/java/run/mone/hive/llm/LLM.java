@@ -32,7 +32,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static run.mone.hive.llm.ClaudeProxy.getClaude35Name;
+import static run.mone.hive.llm.ClaudeProxy.getClaudeName;
 import static run.mone.hive.llm.ClaudeProxy.getClaudeKey;
 
 @Data
@@ -376,12 +376,12 @@ public class LLM {
         JsonObject requestBody = new JsonObject();
 
         if (this.llmProvider != LLMProvider.GOOGLE_2
-                && this.llmProvider != LLMProvider.CLAUDE35_COMPANY) {
+                && this.llmProvider != LLMProvider.CLAUDE_COMPANY) {
             requestBody.addProperty("model", model);
             requestBody.addProperty("stream", true);
         }
 
-        if (this.llmProvider == LLMProvider.CLAUDE35_COMPANY) {
+        if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
             requestBody.addProperty("anthropic_version", this.config.getVersion());
             requestBody.addProperty("max_tokens", this.config.getMaxTokens());
             requestBody.addProperty("stream", true);
@@ -390,7 +390,7 @@ public class LLM {
         JsonArray msgArray = new JsonArray();
 
         if (this.llmProvider != LLMProvider.GOOGLE_2
-                && this.llmProvider != LLMProvider.CLAUDE35_COMPANY) {
+                && this.llmProvider != LLMProvider.CLAUDE_COMPANY) {
             if (this.config.isJson()) {
                 String jsonSystemPrompt = """
                          返回结果请用JSON返回(如果用户没有指定json格式,则直接返回{"content":$res}),thx
@@ -407,7 +407,7 @@ public class LLM {
         }
 
         //claude的系统提示词
-        if (llmProvider == LLMProvider.CLAUDE35_COMPANY && StringUtils.isNotEmpty(systemPrompt)) {
+        if (llmProvider == LLMProvider.CLAUDE_COMPANY && StringUtils.isNotEmpty(systemPrompt)) {
             requestBody.addProperty("system", systemPrompt);
         }
 
@@ -422,7 +422,7 @@ public class LLM {
 
         for (AiMessage message : messages) {
             //使用openrouter,并且使用多模态
-            if ((this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.MOONSHOT || this.llmProvider == LLMProvider.CLAUDE35_COMPANY) && null != message.getJsonContent()) {
+            if ((this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.MOONSHOT || this.llmProvider == LLMProvider.CLAUDE_COMPANY) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
                 msgArray.add(createMessageObjectForGoogle(message, message.getRole(), message.getContent()));
@@ -435,8 +435,8 @@ public class LLM {
         Request.Builder rb = new Request.Builder();
 
         if (this.llmProvider != LLMProvider.GOOGLE_2) {
-            if (this.llmProvider == LLMProvider.CLAUDE35_COMPANY) {
-                rb.addHeader("Authorization", "Bearer " + getClaudeKey(getClaude35Name()));
+            if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
+                rb.addHeader("Authorization", "Bearer " + getClaudeKey(getClaudeName()));
             } else {
                 rb.addHeader("Authorization", "Bearer " + apiKey);
             }
@@ -505,7 +505,7 @@ public class LLM {
                                     messageHandler.accept("[DONE]", finishRes);
                                 }
                             }
-                        } else if (llmProvider == LLMProvider.CLAUDE35_COMPANY) {
+                        } else if (llmProvider == LLMProvider.CLAUDE_COMPANY) {
                             if (line.startsWith("data: ")) {
                                 String data = line.substring(6);
                                 JsonObject jsonResponse = gson.fromJson(data, JsonObject.class);

@@ -8,7 +8,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.configs.LLMConfig;
-import run.mone.hive.roles.Teacher;
 import run.mone.hive.schema.AiMessage;
 
 import java.util.ArrayList;
@@ -208,11 +207,11 @@ class LLMTest {
     @Test
     public void testClaude35() {
         ClaudeProxy claudeProxy = new ClaudeProxy();
-        claudeProxy.initGCPClude35("Claude-3.5-Sonnet-company-inner");
+        claudeProxy.initGCPClaude("Claude-3.5-Sonnet-company-inner");
 
         List<AiMessage> msgs = Lists.newArrayList(AiMessage.builder().role("user").content("你好").build());
 
-        String result = claudeProxy.callGCP35("Claude-3.5-Sonnet-company-inner", msgs);
+        String result = claudeProxy.callGCP("Claude-3.5-Sonnet-company-inner", msgs);
         System.out.println(result);
 
         String apiKey = getClaudeKey("Claude-3.5-Sonnet-company-inner");
@@ -221,7 +220,7 @@ class LLMTest {
         List<JsonObject> jsonResponses = new ArrayList<>();
         CountDownLatch latch = new CountDownLatch(1);
 
-        llm.setLlmProvider(LLMProvider.CLAUDE35_COMPANY);
+        llm.setLlmProvider(LLMProvider.CLAUDE_COMPANY);
         llm.config.setStream(true);
         llm.config.setVersion("vertex-2023-10-16");
         llm.config.setMaxTokens(8192);
