@@ -14,3 +14,15 @@
   "/opt/workspace_all/workspace_mi/mone-all/mone/jcommon/mcp/mcp-hammerspoon/target/app.jar"
   ]
   }
+
+- windows
+"hammerspoon_mcp": {
+    "command": "java",
+    "args": [
+    "-jar",
+    "/opt/workspace_all/workspace_mi/mone-all/mone/jcommon/mcp/mcp-hammerspoon/target/app.jar"
+    ],
+  "env": {
+  "PYTHON_SERVER_URL": "http://xxxx"
+  }
+}
