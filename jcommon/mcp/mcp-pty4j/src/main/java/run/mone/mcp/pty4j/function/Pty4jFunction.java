@@ -260,7 +260,9 @@ public class Pty4jFunction implements Function<Map<String, Object>, McpSchema.Ca
                 .replaceAll("^\\s*\\n+", "")
                 .replaceAll("\\n+\\s*$", "")
                 // 移除行尾空格
-                .replaceAll("(?m)\\s+$", "");
+                .replaceAll("(?m)\\s+$", "")
+                // 保留top命令的动态更新效果
+                .replaceAll("(?m)^(top -.*|Tasks:.*|%Cpu.*|KiB.*|PID.*USER.*|\\s+PID\\s+.*|\\d+\\s+\\w+\\s+.*$)", "$1\n");
 
         return "<terminal>" + content.trim() + "</terminal>";
     }
