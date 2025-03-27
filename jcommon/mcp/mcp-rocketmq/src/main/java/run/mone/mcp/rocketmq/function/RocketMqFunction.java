@@ -91,7 +91,7 @@ public class RocketMqFunction implements Function<Map<String, Object>, Flux<McpS
         try {
             Message msg = new Message(topic, message.getBytes(RemotingHelper.DEFAULT_CHARSET));
             SendResult sendResult = producer.send(msg);
-            if (sendResult == null && sendResult.getSendStatus() != SendStatus.SEND_OK) {
+            if (sendResult == null || sendResult.getSendStatus() != SendStatus.SEND_OK) {
                 log.error("send message fail, result:{}", sendResult);
                 throw new Exception("msg send fail");
             }

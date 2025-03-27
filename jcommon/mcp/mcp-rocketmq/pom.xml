@@ -24,12 +24,12 @@
         <dependency>
             <groupId>org.apache.rocketmq</groupId>
             <artifactId>rocketmq-client</artifactId>
-            <version>4.9.7</version>  <!-- 建议使用最新稳定版本 -->
+            <version>4.9.7</version>
         </dependency>
         <dependency>
             <groupId>org.apache.rocketmq</groupId>
             <artifactId>rocketmq-acl</artifactId>
-            <version>4.9.7</version> <!-- 需与 Broker 版本一致 -->
+            <version>4.9.7</version>
         </dependency>
     </dependencies>
 
