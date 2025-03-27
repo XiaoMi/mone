@@ -47,7 +47,7 @@ public class RocketMqFunction implements Function<Map<String, Object>, McpSchema
                          "description": "the message to send"
                     }
                 },
-                "required": ["topic",", "message"]
+                "required": ["topic", "message"]
             }
             """;
     private DefaultMQProducer producer;

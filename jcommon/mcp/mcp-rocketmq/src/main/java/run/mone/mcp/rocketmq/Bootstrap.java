@@ -8,6 +8,6 @@ import org.springframework.context.annotation.ComponentScan;
 @ComponentScan("run.mone.mcp.rocketmq")
 public class Bootstrap {
     public static void main(String[] args) {
-        SpringApplication.run(run.mone.mcp.rocketmq.Bootstrap.class, args);
+        SpringApplication.run(Bootstrap.class, args);
     }
 }

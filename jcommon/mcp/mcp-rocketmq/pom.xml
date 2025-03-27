@@ -58,7 +58,7 @@
                 <version>2.7.14</version>
                 <configuration>
                     <mainClass>run.mone.mcp.rocketmq.Bootstrap</mainClass>
-                    <finalName>rocketmq-sender</finalName>
+                    <finalName>app</finalName>
                 </configuration>
                 <executions>
                     <execution>

@@ -55,13 +55,13 @@ public class RocketMqMcpServer {
 
         log.info("Registering rocketmq-sender tool...");
         try {
-            String nameSrvAddress = System.getenv().getOrDefault("namesrv_addr", "");
-            String group = System.getenv().getOrDefault("group", "defaultGroup");
-            String accessKey = System.getenv().getOrDefault("access_key", "");
-            String secureKey = System.getenv().getOrDefault("secure_key", "");
-            if (StringUtils.isEmpty(nameSrvAddress) || StringUtils.isEmpty(group) || StringUtils.isEmpty(accessKey) || StringUtils.isEmpty(secureKey)) {
-                throw new Exception("mvp config invalid");
-            }
+            String nameSrvAddress = System.getenv().getOrDefault("NAMESRV_ADDR", "");
+            String group = System.getenv().getOrDefault("GROUP", "defaultGroup");
+            String accessKey = System.getenv().getOrDefault("ACCESS_KEY", "");
+            String secureKey = System.getenv().getOrDefault("SECURE_KEY", "");
+//            if (StringUtils.isEmpty(nameSrvAddress) || StringUtils.isEmpty(group) || StringUtils.isEmpty(accessKey) || StringUtils.isEmpty(secureKey)) {
+//                throw new Exception("mvp config invalid");
+//            }
             rocketMqFunction = new RocketMqFunction(nameSrvAddress, group, accessKey, secureKey);
             var rocketMqToolRegistration = new ToolRegistration(
                     new Tool(rocketMqFunction.getName(), rocketMqFunction.getDesc(), rocketMqFunction.getSqlToolSchema()), rocketMqFunction
