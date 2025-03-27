@@ -1,9 +1,5 @@
-"database-mcp": {
-"command": "java",
-"args": [
-"-jar",
-"-Dmysql.db=test",
-"-Dmysql.password=123456",
-"/Users/zhengjinqiu/xiaomi/code/mone/jcommon/mcp/mcp-rocketmq/target/app.jar"
-]
-}
+启动服务的时候设置环境变量
+NAMESRV_ADDR=xxxx 
+GROUP=xx
+ACCESS_KEY=xx
+SECURE_KEY=xx
