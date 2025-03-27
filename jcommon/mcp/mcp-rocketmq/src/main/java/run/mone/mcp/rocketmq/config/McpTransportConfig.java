@@ -10,7 +10,7 @@ import run.mone.hive.mcp.transport.webmvcsse.WebMvcSseServerTransport;
 
 @Configuration
 @ConditionalOnProperty(name = "sse.enabled", havingValue = "true")
-public class McpSseTransportConfig {
+public class McpTransportConfig {
 
     @Bean
     WebMvcSseServerTransport webMvcSseServerTransport(ObjectMapper mapper) {

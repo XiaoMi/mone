@@ -4,15 +4,11 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.server.McpSyncServer;
-import run.mone.hive.mcp.spec.McpSchema.Tool;
+import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
-import run.mone.hive.mcp.server.McpServer.ToolRegistration;
-import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.mcp.rocketmq.function.RocketMqFunction;
 
 @Slf4j
@@ -25,18 +21,6 @@ public class RocketMqMcpServer {
 
     private RocketMqFunction rocketMqFunction;
 
-//    @Value("${rocketmq.nameSrvAddress}")
-//    private String nameSrvAddress;
-//
-//    @Value("${rocketmq.group}")
-//    private String group;
-//
-//    @Value("${rocketmq.accessKey}")
-//    private String accessKey;
-//
-//    @Value("${rocketmq.secureKey}")
-//    private String secureKey;
-
     public RocketMqMcpServer(ServerMcpTransport transport) {
         this.transport = transport;
         log.info("RocketMqMcpServer initialized with transport: {}", transport);
@@ -47,29 +31,23 @@ public class RocketMqMcpServer {
         log.info("Starting RocketMqMcpServer...");
         McpSyncServer syncServer = McpServer.using(transport)
                 .serverInfo("rocket_mcp", "1.0.0")
-                .capabilities(ServerCapabilities.builder()
+                .capabilities(McpSchema.ServerCapabilities.builder()
                         .tools(true)
                         .logging()
                         .build())
                 .sync();
 
-        log.info("Registering rocketmq-sender tool...");
+        log.info("Registering stream_rocketmq_sender tool...");
+
         try {
-            String nameSrvAddress = System.getenv().getOrDefault("NAMESRV_ADDR", "");
-            String group = System.getenv().getOrDefault("GROUP", "defaultGroup");
-            String accessKey = System.getenv().getOrDefault("ACCESS_KEY", "");
-            String secureKey = System.getenv().getOrDefault("SECURE_KEY", "");
-//            if (StringUtils.isEmpty(nameSrvAddress) || StringUtils.isEmpty(group) || StringUtils.isEmpty(accessKey) || StringUtils.isEmpty(secureKey)) {
-//                throw new Exception("mvp config invalid");
-//            }
-            rocketMqFunction = new RocketMqFunction(nameSrvAddress, group, accessKey, secureKey);
-            var rocketMqToolRegistration = new ToolRegistration(
-                    new Tool(rocketMqFunction.getName(), rocketMqFunction.getDesc(), rocketMqFunction.getSqlToolSchema()), rocketMqFunction
+            rocketMqFunction = new RocketMqFunction();
+            var rocketMqToolRegistration = new McpServer.ToolStreamRegistration(
+                    new McpSchema.Tool(rocketMqFunction.getName(), rocketMqFunction.getDesc(), rocketMqFunction.getSqlToolSchema()), rocketMqFunction
             );
-            syncServer.addTool(rocketMqToolRegistration);
-            log.info("Successfully registered rocketmq-sender tool");
+            syncServer.addStreamTool(rocketMqToolRegistration);
+            log.info("Successfully registered stream_rocketmq_sender tool");
         } catch (Exception e) {
-            log.error("Failed to register rocketmq-sender tool", e);
+            log.error("Failed to register tool", e);
             throw e;
         }
 
@@ -83,9 +61,6 @@ public class RocketMqMcpServer {
 
     @PreDestroy
     public void stop() {
-        if (rocketMqFunction != null) {
-            log.info("rocketMqFunction is not null, {}", rocketMqFunction);
-        }
         if (this.syncServer != null) {
             log.info("Stopping RocketMqMcpServer...");
             this.syncServer.closeGracefully();
