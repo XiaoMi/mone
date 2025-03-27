@@ -269,9 +269,9 @@ public class LLM {
 
 
     public String getToken() {
-        String token = System.getenv(llmProvider.getEnvName());
+        String token = System.getProperty(llmProvider.getEnvName());
         if (StringUtils.isEmpty(token)) {
-            return System.getProperty(llmProvider.getEnvName());
+            return System.getenv(llmProvider.getEnvName());
         }
         return token;
     }
