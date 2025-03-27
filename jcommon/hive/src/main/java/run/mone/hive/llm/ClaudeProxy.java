@@ -15,6 +15,7 @@ import run.mone.hive.utils.SafeRun;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
@@ -27,7 +28,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class ClaudeProxy {
 
-
     public static ConcurrentMap<String, CloudeClient> client = new ConcurrentHashMap<>();
 
     public static ConcurrentMap<String, AtomicBoolean> init = new ConcurrentHashMap<>();
@@ -38,37 +38,37 @@ public class ClaudeProxy {
 
         String token = claudeToken.get(modelName);
         if (StringUtils.isEmpty(token)) {
-            initGCPClude35(modelName);
+            initGCPClaude(modelName);
             return claudeToken.get(modelName);
         }
         return token;
     }
 
-    public static void initGCPClude35(String modelName) {
-        String token = getClaude35Toekn();
+    public static void initGCPClaude(String modelName) {
+        String token = getClaudeToekn();
 
-        SafeRun.run(() -> Files.write(Paths.get("/tmp/key-" + getClaude35Name() + ".json"), token.getBytes()));
+        SafeRun.run(() -> Files.write(Paths.get("/tmp/key-" + getClaudeName() + ".json"), token.getBytes()));
 
         JsonObject obj = JsonParser.parseString(token).getAsJsonObject();
         String projectId = obj.get("project_id").getAsString();
 
         if (client.get(modelName) == null) {
             CloudeClient cloudeClient = new CloudeClient();
-            cloudeClient.setUrl(getClaude35Url());
-            cloudeClient.setModel(getClaude35Version());
+            cloudeClient.setUrl(getClaudeUrl());
+            cloudeClient.setModel(getClaudeVersion());
             cloudeClient.setProjectId(projectId);
-            client.put(getClaude35Name(), cloudeClient);
+            client.put(getClaudeName(), cloudeClient);
 
             AtomicBoolean atomicBoolean = new AtomicBoolean();
             atomicBoolean.compareAndSet(false, true);
 
-            init.put(getClaude35Name(), atomicBoolean);
+            init.put(getClaudeName(), atomicBoolean);
         }
 
         SafeRun.run(() -> {
             //存储token
             String t = client.get(modelName).token(modelName);
-            claudeToken.put(getClaude35Name(), t);
+            claudeToken.put(getClaudeName(), t);
             log.info("google token:{}", t);
         });
 
@@ -76,24 +76,24 @@ public class ClaudeProxy {
             log.info("get google token");
             SafeRun.run(() -> {
                 String t = client.get(modelName).token(modelName);
-                claudeToken.put(getClaude35Name(), t);
+                claudeToken.put(getClaudeName(), t);
                 log.info("google token:{}", t);
             });
         }, 0, 1, TimeUnit.MINUTES);
 
     }
 
-    public String callGCP35(String model, List<AiMessage> msgs) {
-        return callGCP35(model, msgs, "");
+    public String callGCP(String model, List<AiMessage> msgs) {
+        return callGCP(model, msgs, "");
     }
 
 
-    public String callGCP35(String model, List<AiMessage> msgs, String prefix) {
+    public String callGCP(String model, List<AiMessage> msgs, String prefix) {
         if (prefix != null) {
             prefix = prefix.trim();
         }
         if (init.get(model) == null || !init.get(model).get()) {
-            initGCPClude35(model);
+            initGCPClaude(model);
         }
 
         List<Message> messages = msgs.stream().map(it -> {
@@ -106,36 +106,71 @@ public class ClaudeProxy {
 
         RequestPayload payload = builder.build();
 
-        ResponsePayload res = client.get(model).call(getClaude35Url(), client.get(model).getToken(), payload);
+        ResponsePayload res = client.get(model).call(getClaudeUrl(), client.get(model).getToken(), payload);
         if ("max_tokens".equals(res.getStopReason())) {
-            return callGCP35(model, msgs, prefix + res.getContent().get(0).getText());
+            return callGCP(model, msgs, prefix + res.getContent().get(0).getText());
         }
         return prefix + res.getContent().get(0).getText();
     }
 
 
-    public static String getClaude35Toekn() {
+    public static String getClaudeToekn() {
+        switch (selectedClaude()) {
+            case "CLAUDE35": return System.getenv("CLAUDE35_TOKEN");
+            case "CLAUDE37": return System.getenv("CLAUDE37_TOKEN");
+        }
         return System.getenv("CLAUDE35_TOKEN");
     }
 
-    public static Integer getClaude35MaxToekns() {
-        String tokens = System.getenv("CLAUDE35_MAX_TOKENS");
+    public static Integer getClaudeMaxToekns() {
+        String tokens = "";
+        switch (selectedClaude()) {
+            case "CLAUDE35": {
+                tokens = System.getenv("CLAUDE35_MAX_TOKENS");
+                break;
+            }
+            case "CLAUDE37": {
+                tokens = System.getenv("CLAUDE37_MAX_TOKENS");
+                break;
+            }
+        }
+
         if (StringUtils.isNotEmpty(tokens)) {
             return Integer.valueOf(tokens);
         }
         return 8192;
+
     }
 
-    public static String getClaude35Name() {
+    public static String getClaudeName() {
+        switch (selectedClaude()) {
+            case "CLAUDE35": return System.getenv("CLAUDE35_NAME");
+            case "CLAUDE37": return System.getenv("CLAUDE37_NAME");
+        }
         return System.getenv("CLAUDE35_NAME");
     }
 
-    public static String getClaude35Url() {
+    public static String getClaudeUrl() {
+        switch (selectedClaude()) {
+            case "CLAUDE35": return System.getenv("CLAUDE35_URL");
+            case "CLAUDE37": return System.getenv("CLAUDE37_URL");
+        }
         return System.getenv("CLAUDE35_URL");
     }
 
-    public static String getClaude35Version() {
+    public static String getClaudeVersion() {
+        switch (selectedClaude()) {
+            case "CLAUDE35": return System.getenv("CLAUDE35_VERSION");
+            case "CLAUDE37": return System.getenv("CLAUDE37_VERSION");
+        }
         return System.getenv("CLAUDE35_VERSION");
+    }
+
+    //目前支持CLAUDE35，CLAUDE37
+    private static String selectedClaude() {
+        return Optional.ofNullable(System.getenv("CLAUDE_SELECTED"))
+                .filter(StringUtils::isNotEmpty)
+                .orElse("CLAUDE35");
     }
 
 }

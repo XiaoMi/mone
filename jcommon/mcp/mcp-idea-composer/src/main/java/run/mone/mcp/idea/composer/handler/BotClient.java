@@ -33,13 +33,14 @@ public class BotClient {
     private StringBuffer sb = new StringBuffer();
 
     public BotClient(FluxSink<String> fluxSink) {
-//        LLMConfig config = LLMConfig.builder()
-//                .llmProvider(LLMProvider.CLAUDE35_COMPANY)
-//                .url(getClaude35Url())
-//                .version(getClaude35Version())
-//                .maxTokens(getClaude35MaxToekns())
-//                .build();
-        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build();
+        LLMConfig config = LLMConfig.builder()
+                .llmProvider(LLMProvider.CLAUDE_COMPANY)
+                .url(getClaudeUrl())
+                .version(getClaudeVersion())
+                .maxTokens(getClaudeMaxToekns())
+                .build();
+//        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.OPENROUTER).build();
+//        LLMConfig config = LLMConfig.builder().llmProvider(LLMProvider.DEEPSEEK).build();
         llm = new LLM(config);
         this.fluxSink = fluxSink;
     }
@@ -126,7 +127,7 @@ public class BotClient {
             req.add("content", array);
         }
 
-        if(llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE35_COMPANY){
+        if(llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY){
             req.addProperty("role", "user");
             JsonArray contentJsons = new JsonArray();
 
