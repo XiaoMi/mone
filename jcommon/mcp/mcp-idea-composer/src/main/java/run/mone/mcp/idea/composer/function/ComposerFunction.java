@@ -1,12 +1,13 @@
 package run.mone.mcp.idea.composer.function;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.m78.client.util.GsonUtils;
 import run.mone.mcp.idea.composer.config.Const;
 import run.mone.mcp.idea.composer.handler.biz.BotChainCall;
 import run.mone.mcp.idea.composer.handler.biz.BotChainCallContext;
@@ -16,6 +17,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 @Data
+@Slf4j
 public class ComposerFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
 
     public ComposerFunction(String port) {
@@ -66,17 +68,24 @@ public class ComposerFunction implements Function<Map<String, Object>, Flux<McpS
             req.addProperty("imageType", (String) arguments.get("imageType"));
             req.addProperty("imageBase64", (String) arguments.get("imageBase64"));
             req.addProperty("methodCode", (String) arguments.get("methodCode"));
+            req.addProperty("rules", (String) arguments.get("rules"));
+            String athenaPluginIp = StringUtils.isEmpty((String) arguments.get("athenaPluginIp")) ? Const.IP : (String) arguments.get("athenaPluginIp");
+            req.addProperty("athenaPluginIp", athenaPluginIp);
+            req.addProperty("athenaPluginHost", athenaPluginIp + ":" + ideaPort);
 
             // retry
             String isFull = (String) arguments.get("retryIsFull");
 
-            req.addProperty("athenaPluginHost", Const.IP + ideaPort);
-
             return Flux.<String>create(fluxSink -> {
-                BotChainCall call = new BotChainCall();
-                BotChainCallContext context = BotChainCallContext.of("", fluxSink);
-                completeBotContext(context, req);
-                call.executeProjectBotChain(context, req, isFull);
+                try {
+                    BotChainCall call = new BotChainCall();
+                    BotChainCallContext context = BotChainCallContext.of("", fluxSink);
+                    completeBotContext(context, req);
+                    call.executeProjectBotChain(context, req, isFull);
+                } catch (Throwable a) {
+                    log.error("ERROR create Flux, e: ", a);
+                    System.out.println("ERROR create Flux, msg: " + a.getMessage());
+                }
             }).map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
         } catch (Exception e) {
             return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true));
@@ -84,11 +93,11 @@ public class ComposerFunction implements Function<Map<String, Object>, Flux<McpS
     }
 
     private void completeBotContext(BotChainCallContext context, JsonObject req) {
-        boolean bizJar = GsonUtils.get(req, "bizJar", false);
-        boolean bugfix = GsonUtils.get(req, "bugfix", false);
-        boolean knowledgeBase = GsonUtils.get(req, "knowledgeBase", false);
-        String imageBase64 = GsonUtils.get(req, "imageBase64", "");
-        String requirement = GsonUtils.get(req, "requirement", "");
+        boolean bizJar = get(req, "bizJar", false);
+        boolean bugfix = get(req, "bugfix", false);
+        boolean knowledgeBase = get(req, "knowledgeBase", false);
+        String imageBase64 = get(req, "imageBase64", "");
+        String requirement = get(req, "requirement", "");
         if (bugfix) {
             context.addParam(run.mone.mcp.idea.composer.handler.biz.Const.BOT_CHAIN_TYPE, run.mone.mcp.idea.composer.handler.biz.Const.FIX_BUG_BOT_CHAIN);
             context.addParam(run.mone.mcp.idea.composer.handler.biz.Const.FIX_BUG_CODE_CONTEXT, requirement);
@@ -107,6 +116,24 @@ public class ComposerFunction implements Function<Map<String, Object>, Flux<McpS
             context.addParam(run.mone.mcp.idea.composer.handler.biz.Const.KNOWLEDGE_BASE, true);
         }
 
+    }
+
+    private boolean get(JsonObject obj, String key, boolean defaultValue) {
+        if (obj.has(key)) {
+            if(!(obj.get(key) instanceof JsonNull)) {
+                return Boolean.valueOf(obj.get(key).getAsString());
+            }
+        }
+        return defaultValue;
+    }
+
+    private String get(JsonObject obj, String key, String defaultValue) {
+        if (obj.has(key)) {
+            if(!(obj.get(key) instanceof JsonNull)) {
+                return obj.get(key).getAsString();
+            }
+        }
+        return defaultValue;
     }
 
 }

@@ -2,6 +2,7 @@ package run.mone.mcp.chaos.function;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.chaos.http.HttpClient;
 
@@ -15,9 +16,9 @@ import com.google.gson.JsonObject;
 // 处理不同种类型的混沌故障演练
 @Data
 @Slf4j
-public class CreateChaosFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+public class CreateChaosFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
 
-    private String name = "chaos_creator";
+    private String name = "stream_chaos_creator";
 
     private String desc = "负责创建不同种类的混沌故障类型";
 
@@ -71,43 +72,73 @@ public class CreateChaosFunction implements Function<Map<String, Object>, McpSch
             """;
 
     @Override
-    public McpSchema.CallToolResult apply(Map<String, Object> params) {
-        try {
-            // 获取环境变量
-            String host = System.getenv().getOrDefault("CHAOS_HOST", "");
-            String userName = (String) params.get("userName");
+    public Flux<McpSchema.CallToolResult> apply(Map<String, Object> params) {
+        return Flux.defer(() -> {
+            try {
+                // 获取环境变量
+                String host = System.getenv().getOrDefault("CHAOS_HOST", "");
+                if (host.isEmpty()) {
+                    log.warn("CHAOS_HOST 环境变量未设置，使用默认空值");
+                }
+                
+                // 构建请求参数
+                Map<String, String> queryParams = buildQueryParams(params);
+                log.debug("构建的请求参数: {}", queryParams);
+                
+                // 发送请求
+                Map<String, String> headerMap = Map.of("Content-Type", "application/json");
+                JsonObject jsonObject = new HttpClient().post(host + createTaskPath, queryParams, headerMap);
 
-            // 构建请求参数
-            Map<String, String> queryParams = new HashMap<>();
-
-            String taskType = (String) params.get("taskType");
-            String depth = (String) params.get("depth");
-            String operateParam = getOperateParam(taskType, depth);
-
-            queryParams.put("taskType", getFinalType(taskType));
-            queryParams.put("experimentName", (String) params.get("experimentName"));
-            queryParams.put("projectId", (String) params.get("projectId"));
-            queryParams.put("pipelineId", (String) params.get("pipelineId"));
-            queryParams.put("mode", (String) params.get("mode"));
-            queryParams.put("projectName", "chaos-mcp");
-            queryParams.put("duration", (String) params.get("duration"));
-            queryParams.put("containerName", "main");
-            queryParams.put("createUser",userName);
-            queryParams.put("containerNum",(String) params.get("containerNum"));
-            queryParams.put("operateParam", operateParam);
-
-            // 发送请求
-            Map<String, String> headerMap = new HashMap<>();
-            headerMap.put("Content-Type", "application/json");
-            JsonObject jsonObject = new HttpClient().post(host + createTaskPath, queryParams, headerMap);
-
-            log.info("创建混沌实验成功: {}", jsonObject);
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(jsonObject.toString())), false);
-        } catch (Exception e) {
-            log.error("创建混沌实验失败", e);
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("创建混沌实验失败: " + e.getMessage())),
-                    true);
-        }
+                log.info("创建混沌实验成功: {}", jsonObject);
+                
+                // 返回结果流
+                return Flux.just(
+                    jsonObject.toString(),
+                    "[DONE]"
+                ).map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
+            } catch (Exception e) {
+                log.error("创建混沌实验失败", e);
+                return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("创建混沌实验失败: " + e.getMessage())), true));
+            }
+        });
+    }
+    
+    /**
+     * 从参数映射中构建请求参数
+     * @param params 输入参数
+     * @return 构建的请求参数映射
+     */
+    private Map<String, String> buildQueryParams(Map<String, Object> params) {
+        String taskType = getStringParam(params, "taskType");
+        String depth = getStringParam(params, "depth");
+        String operateParam = getOperateParam(taskType, depth);
+        
+        Map<String, String> queryParams = new HashMap<>();
+        queryParams.put("taskType", getFinalType(taskType));
+        queryParams.put("experimentName", getStringParam(params, "experimentName"));
+        queryParams.put("projectId", getStringParam(params, "projectId"));
+        queryParams.put("pipelineId", getStringParam(params, "pipelineId"));
+        queryParams.put("mode", getStringParam(params, "mode"));
+        queryParams.put("projectName", "chaos-mcp");
+        queryParams.put("duration", getStringParam(params, "duration"));
+        queryParams.put("containerName", "main");
+        queryParams.put("createUser", getStringParam(params, "userName"));
+        queryParams.put("containerNum", getStringParam(params, "containerNum"));
+        queryParams.put("operateParam", operateParam);
+        
+        return queryParams;
+    }
+    
+    /**
+     * 安全地从参数映射中获取字符串参数
+     * @param params 参数映射
+     * @param key 参数键
+     * @return 字符串参数值，如果不存在则返回空字符串
+     */
+    private String getStringParam(Map<String, Object> params, String key) {
+        Object value = params.get(key);
+        return value != null ? value.toString() : "";
     }
 
     private String getOperateParam(String chaosType,String depth) {

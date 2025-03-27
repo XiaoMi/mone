@@ -5,6 +5,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.chaos.function.ChaosFunction;
 import run.mone.mcp.chaos.function.CreateChaosFunction;
@@ -50,16 +51,15 @@ public class ChaosTest {
     public void testCreateChaos() {
         CreateChaosFunction createChaosFunction = new CreateChaosFunction();
         Map<String, Object> params = new HashMap<>();
-        params.put("taskType", 1);
-        params.put("experimentName", "test-mcp-chaos");
-        params.put("projectId", "666");
-        params.put("duration", "666");
-        params.put("pipelineId", "666");
-        params.put("mode", "666");
-        params.put("depth", "666");
-        params.put("containerNum", "666");
-        params.put("userName", "xxx");
-        McpSchema.CallToolResult result = createChaosFunction.apply(params);
-        System.out.println(result);
+        params.put("taskType", "1");
+        params.put("experimentName", "1");
+        params.put("projectId", "1");
+        params.put("duration", "1");
+        params.put("pipelineId", "1");
+        params.put("mode", "1");
+        params.put("depth", "1");
+        params.put("containerNum", "1");
+        params.put("userName", "1");
+        Flux<McpSchema.CallToolResult> result = createChaosFunction.apply(params);
     }
 }

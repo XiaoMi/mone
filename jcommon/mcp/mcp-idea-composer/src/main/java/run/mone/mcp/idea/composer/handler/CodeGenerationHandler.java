@@ -1,9 +1,11 @@
 package run.mone.mcp.idea.composer.handler;
 
 
+import org.apache.commons.lang3.StringUtils;
 import run.mone.mcp.idea.composer.handler.biz.BotChainCallContext;
 import run.mone.mcp.idea.composer.handler.biz.ComposerImagePo;
 import run.mone.mcp.idea.composer.handler.biz.Const;
+import run.mone.mcp.idea.composer.handler.prompt.CodePrompt;
 import run.mone.mcp.idea.composer.handler.prompt.Prompt;
 
 import java.util.concurrent.CompletableFuture;
@@ -27,7 +29,7 @@ public class CodeGenerationHandler extends AbstractBotHandler {
     public CompletableFuture<PromptResult> process(String prompt, PromptResult previousResult, ConversationContext context) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                String response = getBotResponse(prompt, previousResult, context);
+                String response = getBotResponse(prompt, "", previousResult, context);
                 return new PromptResult(formatCodeResponse(response));
             } catch (Exception e) {
                 return new PromptResult("Code generation failed: " + e.getMessage(), false);
@@ -35,8 +37,8 @@ public class CodeGenerationHandler extends AbstractBotHandler {
         });
     }
 
-    public String getBotResponse(String prompt, PromptResult previousResult, ConversationContext context) {
-        String enhancedPrompt = buildCodePrompt(prompt, previousResult, context);
+    public String getBotResponse(String prompt, String rules, PromptResult previousResult, ConversationContext context) {
+        String enhancedPrompt = buildCodePrompt(prompt, rules, previousResult, context);
         CodeGeneratePromptHolder.lastPrompt = enhancedPrompt;
         String displayPrompt = getDisplayPrompt(prompt);
         addAiChatMessage(displayPrompt, enhancedPrompt, Role.user, context);
@@ -53,14 +55,22 @@ public class CodeGenerationHandler extends AbstractBotHandler {
         return botChainCallContext.bugfix() ? "Try fixing the bug:" + error : "Start implementing this feature:" + prompt;
     }
 
-    private String buildCodePrompt(String prompt, PromptResult previousResult, ConversationContext context) {
+    private String buildCodePrompt(String prompt, String rules, PromptResult previousResult, ConversationContext context) {
         StringBuilder promptBuilder = new StringBuilder();
         promptBuilder.append("项目报告: \n");
-        String projectReport = context.getMessagesByHandler(ProjectReportHandler.name).stream().filter(it -> it.getRole().equals(Role.assistant.name())).findFirst().get().getContent();
+        String projectReport = context.getMessagesByHandler(ProjectReportHandler.name).stream()
+                .filter(it -> it.getRole().equals(Role.assistant.name()))
+                .findFirst()
+                .get()
+                .getContent();
         promptBuilder.append(projectReport).append("\n");
 
         if (previousResult != null) {
             promptBuilder.append("\n修改分析: \n").append(previousResult.getContent());
+        }
+
+        if (StringUtils.isNotEmpty(rules)) {
+            promptBuilder.append("\n\n用户规则（必须遵守）: \n").append(rules);
         }
 
         if (botChainCallContext.bugfix()) {
@@ -72,7 +82,10 @@ public class CodeGenerationHandler extends AbstractBotHandler {
 
         String systemPrompt = CodePrompt.SR_DIFF_PROMPT;
 
-        promptBuilder.append("\n").append(shellPrompt).append("\n").append(systemPrompt).append("\n\n<user_query>").append(prompt).append("</user_query>\n");
+        promptBuilder.append("\n")
+                .append(shellPrompt).append("\n")
+                .append(systemPrompt).append("\n\n<user_query>")
+                .append(prompt).append("</user_query>\n");
         return promptBuilder.toString();
     }
 

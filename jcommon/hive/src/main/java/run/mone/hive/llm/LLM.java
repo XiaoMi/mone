@@ -32,6 +32,9 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import static run.mone.hive.llm.ClaudeProxy.getClaudeName;
+import static run.mone.hive.llm.ClaudeProxy.getClaudeKey;
+
 @Data
 @Slf4j
 public class LLM {
@@ -99,7 +102,7 @@ public class LLM {
             if (StringUtils.isNotEmpty(this.config.getModel())) {
                 model = this.config.getModel();
             }
-            return CompletableFuture.completedFuture(chatCompletion(System.getenv(llmProvider.getEnvName()), prompt, model));
+            return CompletableFuture.completedFuture(chatCompletion(getToken(), prompt, model));
         }
     }
 
@@ -348,27 +351,46 @@ public class LLM {
 
 
     public void chat(List<AiMessage> messages, BiConsumer<String, JsonObject> messageHandlerr) {
-        chatCompletionStream(System.getenv(llmProvider.getEnvName()), messages, llmProvider.getDefaultModel(), messageHandlerr, line -> {
-        }, "");
+        chatCompletionStream(System.getenv(llmProvider.getEnvName()),
+                messages,
+                llmProvider.getDefaultModel(),
+                messageHandlerr,
+                line -> {
+                },
+                "");
     }
 
     public void chat(List<AiMessage> messages, BiConsumer<String, JsonObject> messageHandlerr, String systemPrompt) {
-        chatCompletionStream(System.getenv(llmProvider.getEnvName()), messages, llmProvider.getDefaultModel(), messageHandlerr, line -> {
-        }, systemPrompt);
+        chatCompletionStream(System.getenv(llmProvider.getEnvName()),
+                messages,
+                llmProvider.getDefaultModel(),
+                messageHandlerr,
+                line -> {
+                },
+                systemPrompt
+        );
     }
 
 
     public void chatCompletionStream(String apiKey, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt) {
         JsonObject requestBody = new JsonObject();
 
-        if (this.llmProvider != LLMProvider.GOOGLE_2) {
+        if (this.llmProvider != LLMProvider.GOOGLE_2
+                && this.llmProvider != LLMProvider.CLAUDE_COMPANY) {
             requestBody.addProperty("model", model);
+            requestBody.addProperty("stream", true);
+        }
+
+        if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
+            requestBody.addProperty("anthropic_version", this.config.getVersion());
+            requestBody.addProperty("max_tokens", this.config.getMaxTokens());
             requestBody.addProperty("stream", true);
         }
 
         JsonArray msgArray = new JsonArray();
 
-        if (this.llmProvider != LLMProvider.GOOGLE_2) {
+        if (this.llmProvider != LLMProvider.GOOGLE_2
+                && this.llmProvider != LLMProvider.CLAUDE_COMPANY) {
             if (this.config.isJson()) {
                 String jsonSystemPrompt = """
                          返回结果请用JSON返回(如果用户没有指定json格式,则直接返回{"content":$res}),thx
@@ -384,6 +406,11 @@ public class LLM {
             }
         }
 
+        //claude的系统提示词
+        if (llmProvider == LLMProvider.CLAUDE_COMPANY && StringUtils.isNotEmpty(systemPrompt)) {
+            requestBody.addProperty("system", systemPrompt);
+        }
+
         //gemini的系统提示词
         if (llmProvider == LLMProvider.GOOGLE_2 && StringUtils.isNotEmpty(systemPrompt)) {
             JsonObject system_instruction = new JsonObject();
@@ -395,7 +422,7 @@ public class LLM {
 
         for (AiMessage message : messages) {
             //使用openrouter,并且使用多模态
-            if ((this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.MOONSHOT) && null != message.getJsonContent()) {
+            if ((this.llmProvider == LLMProvider.OPENROUTER || this.llmProvider == LLMProvider.MOONSHOT || this.llmProvider == LLMProvider.CLAUDE_COMPANY) && null != message.getJsonContent()) {
                 msgArray.add(message.getJsonContent());
             } else if (this.llmProvider == LLMProvider.GOOGLE_2) {
                 msgArray.add(createMessageObjectForGoogle(message, message.getRole(), message.getContent()));
@@ -408,7 +435,11 @@ public class LLM {
         Request.Builder rb = new Request.Builder();
 
         if (this.llmProvider != LLMProvider.GOOGLE_2) {
-            rb.addHeader("Authorization", "Bearer " + apiKey);
+            if (this.llmProvider == LLMProvider.CLAUDE_COMPANY) {
+                rb.addHeader("Authorization", "Bearer " + getClaudeKey(getClaudeName()));
+            } else {
+                rb.addHeader("Authorization", "Bearer " + apiKey);
+            }
         }
 
         //使用的cloudflare
@@ -438,9 +469,10 @@ public class LLM {
             }
 
             @Override
-            public void onResponse(Call call, Response response) throws IOException {
+            public void onResponse(Call call, Response response) {
                 try (ResponseBody responseBody = response.body()) {
                     if (!response.isSuccessful()) {
+                        log.error("Unexpected response code: " + response);
                         throw new IOException("Unexpected response code: " + response);
                     }
                     SSEReader reader = new SSEReader(responseBody.source());
@@ -471,6 +503,37 @@ public class LLM {
                                     finishRes.addProperty("type", "finish");
                                     finishRes.addProperty("content", candidate.get("finishReason").getAsString());
                                     messageHandler.accept("[DONE]", finishRes);
+                                }
+                            }
+                        } else if (llmProvider == LLMProvider.CLAUDE_COMPANY) {
+                            if (line.startsWith("data: ")) {
+                                String data = line.substring(6);
+                                JsonObject jsonResponse = gson.fromJson(data, JsonObject.class);
+                                if ("message_start".equals(jsonResponse.get("type").getAsString())
+                                        || "ping".equals(jsonResponse.get("type").getAsString())
+                                        || "content_block_start".equals(jsonResponse.get("type").getAsString())) {
+                                    continue;
+                                }
+
+                                if ("content_block_stop".equals(jsonResponse.get("type").getAsString())) {
+                                    JsonObject jsonRes = new JsonObject();
+                                    jsonRes.addProperty("type", "finish");
+                                    jsonRes.addProperty("content", "[DONE]");
+                                    messageHandler.accept("[DONE]", jsonRes);
+                                    break;
+                                }
+
+                                if ("content_block_delta".equals(jsonResponse.get("type").getAsString())) {
+                                    String content = "";
+                                    try {
+                                        JsonObject delta = jsonResponse.getAsJsonObject("delta");
+                                        content = delta.get("text").getAsString();
+                                    } catch (Throwable ex) {
+                                        log.error(ex.getMessage());
+                                    }
+                                    jsonResponse.addProperty("type", "event");
+                                    jsonResponse.addProperty("content", content);
+                                    messageHandler.accept(content, jsonResponse);
                                 }
                             }
                         } else {

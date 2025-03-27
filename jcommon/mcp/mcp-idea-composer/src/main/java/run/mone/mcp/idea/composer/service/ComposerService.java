@@ -16,6 +16,7 @@
 package run.mone.mcp.idea.composer.service;
 
 import com.google.gson.JsonObject;
+import io.micrometer.common.util.StringUtils;
 import lombok.SneakyThrows;
 import run.mone.mcp.idea.composer.config.Const;
 import run.mone.mcp.idea.composer.http.HttpClient;
@@ -27,7 +28,7 @@ public class ComposerService {
     @SneakyThrows
     public static JsonObject getProjectReportAndUserQuery(JsonObject jsonObject) {
         jsonObject.addProperty("cmd", "getProjectReport");
-        JsonObject post = new HttpClient().post("http://" + Const.IP + IDEA_PORT + "/tianye", jsonObject);
+        JsonObject post = new HttpClient().post("http://" + jsonObject.get("athenaPluginHost").getAsString() + "/tianye", jsonObject);
         return post.get("content").getAsJsonObject();
     }
 
@@ -36,7 +37,7 @@ public class ComposerService {
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("filePath", filePath);
         jsonObject.addProperty("cmd", "read_code");
-        JsonObject post = new HttpClient().post("http://" + Const.IP + IDEA_PORT + "/tianye", jsonObject);
+        JsonObject post = new HttpClient().post("http://" + Const.IP + ":" + IDEA_PORT + "/tianye", jsonObject);
         return post.get("fileContent").getAsString();
     }
 
@@ -45,7 +46,7 @@ public class ComposerService {
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("filePath", filePath);
         jsonObject.addProperty("cmd", "file_exist");
-        JsonObject post = new HttpClient().post("http://" + Const.IP + IDEA_PORT + "/tianye", jsonObject);
+        JsonObject post = new HttpClient().post("http://" + Const.IP + ":" + IDEA_PORT + "/tianye", jsonObject);
         return post.get("result").getAsBoolean();
     }
 }

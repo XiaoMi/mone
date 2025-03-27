@@ -196,6 +196,7 @@ public class FlowSseClient {
 
                         @Override
                         public void onComplete() {
+                            log.info("onComplete");
                             // Handle any remaining event data
                             if (eventBuilder.length() > 0) {
                                 String eventData = eventBuilder.toString();
@@ -211,6 +212,7 @@ public class FlowSseClient {
                     this.httpClient.send(request,
                             info -> subscriberFactory.apply(lineSubscriber));
 
+                    log.info("flow sseClient finish");
                 } catch (CloseException closeException) {
                     log.info("close!!!");
                 } catch (Throwable ex) {
