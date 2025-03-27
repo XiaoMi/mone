@@ -11,6 +11,7 @@ import com.google.gson.Gson;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.text2sql.model.ColumnInfo;
 import run.mone.mcp.text2sql.model.ForeignKey;
@@ -19,15 +20,15 @@ import run.mone.mcp.text2sql.model.TableSchema;
 
 @Data
 @Slf4j
-public class Text2SqlFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+public class Text2SqlFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
 
     private static final Gson gson = new Gson();
 
     private Connection connection;
 
-    private String name = "db_executor";
+    private String name = "stream_query_schema_executor";
 
-    private String desc = "Querying the schema information of a table";;
+    private String desc = "查询数据库表的schema信息";
 
     private String defaultGroupName = "your-default-GroupName";
 
@@ -41,7 +42,7 @@ public class Text2SqlFunction implements Function<Map<String, Object>, McpSchema
                 "type": {
                     "type": "string",
                     "enum": ["search_table_schema_info"],
-                    "description": "search table's echema info"
+                    "description": "search table's schema info"
                  },
                 "database_url": {
                      "type": "string",
@@ -50,9 +51,9 @@ public class Text2SqlFunction implements Function<Map<String, Object>, McpSchema
                 "tables": {
                     "type": "array",
                     "items": {
-                        "type": "string",
-                        "description": "tableName"
-                    }
+                        "type": "string"
+                    },
+                    "description": "tableName, 字段非必需，若没有提供，则查询全部表的schema信息"
                 }
             },
             "required": ["type", "database_url", "tables"]
@@ -62,27 +63,32 @@ public class Text2SqlFunction implements Function<Map<String, Object>, McpSchema
     public Text2SqlFunction() {}
 
     @Override
-    public McpSchema.CallToolResult apply(Map<String, Object> args) {
-        String type = (String)args.get("type");
-        String databaseUrl = (String)args.get("database_url");
-        if (databaseUrl == null || databaseUrl.trim().isEmpty()) {
-            log.error("Empty databaseUrl provided");
-            throw new IllegalArgumentException("databaseUrl is required");
-        }
-        log.info("Executing {} operation: {}", type, databaseUrl);
-        try {
-            switch (type.toLowerCase()) {
-                case "search_table_schema_info":
-                    return executeSearchSchema(args, databaseUrl);
-                default:
+    public Flux<McpSchema.CallToolResult> apply(Map<String, Object> args) {
+        return Flux.defer(() -> {
+            try {
+                String type = (String)args.get("type");
+                String databaseUrl = (String)args.get("database_url");
+                if (databaseUrl == null || databaseUrl.trim().isEmpty()) {
+                    log.error("Empty databaseUrl provided");
+                    throw new IllegalArgumentException("databaseUrl is required");
+                }
+                log.info("Executing {} operation: {}", type, databaseUrl);
+                try {
+                    if ("search_table_schema_info".equals(type)) {
+                        return executeSearchSchema(args, databaseUrl);
+                    }
                     throw new IllegalArgumentException("Unsupported operation type: " + type);
+                } catch (Throwable ex) {
+                    throw new RuntimeException(ex.getMessage());
+                }
+            } catch (Exception exception) {
+                return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent("操作失败：" + exception.getMessage())), true));
             }
-        } catch (Throwable ex) {
-            throw new RuntimeException(ex.getMessage());
-        }
+        });
     }
 
-    private McpSchema.CallToolResult executeSearchSchema(Map<String, Object> args, String databaseUrl)
+    private Flux<McpSchema.CallToolResult> executeSearchSchema(Map<String, Object> args, String databaseUrl)
         throws SQLException {
         String user = System.getenv().getOrDefault("DB_USER", "root");
         String password = System.getenv().getOrDefault("DB_PW", "123456");
@@ -101,7 +107,8 @@ public class Text2SqlFunction implements Function<Map<String, Object>, McpSchema
             log.info("Successfully executed query");
         }
         String toolResponse = formatAsJson(schema);
-        return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(toolResponse)), false);
+        return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(toolResponse)), false),
+            new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("[DONE]")), false));
     }
 
     private List<TableSchema> getTable(DatabaseMetaData meta, String tabelNamePattern) throws SQLException {

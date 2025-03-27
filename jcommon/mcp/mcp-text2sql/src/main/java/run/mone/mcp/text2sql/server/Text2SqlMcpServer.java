@@ -31,9 +31,11 @@ public class Text2SqlMcpServer {
 
         try {
             Text2SqlFunction text2SqlLabFunction = new Text2SqlFunction();
-            var toolRegistration = new McpServer.ToolRegistration(new McpSchema.Tool(text2SqlLabFunction.getName(),
-                text2SqlLabFunction.getDesc(), text2SqlLabFunction.getToolSchema()), text2SqlLabFunction);
-            syncServer.addTool(toolRegistration);
+
+            var toolRegistration =
+                new McpServer.ToolStreamRegistration(new McpSchema.Tool(text2SqlLabFunction.getName(),
+                    text2SqlLabFunction.getDesc(), text2SqlLabFunction.getToolSchema()), text2SqlLabFunction);
+            syncServer.addStreamTool(toolRegistration);
 
             log.info("Successfully registered text2sql tool");
         } catch (Exception e) {

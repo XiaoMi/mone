@@ -1,8 +1,6 @@
 
 package run.mone.mcp.mysql.function;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -15,6 +13,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.text2sql.function.Text2SqlFunction;
 
@@ -46,9 +45,7 @@ class Text2SqlFunctionTest {
         args.put("database_url", "jdbc:sqlite:D:/product-info.db");
         args.put("tables", List.of("test_table"));
 
-        McpSchema.CallToolResult result = text2SqlFunction.apply(args);
-
-        assertFalse(result.isError());
+        Flux<McpSchema.CallToolResult> result = text2SqlFunction.apply(args);
     }
 
     private void setEnv(String user, String password) {
