@@ -43,6 +43,9 @@ public class LLM {
 
     private LLMProvider llmProvider;
 
+    //可以外部设置进来
+    private Function<LLMProvider, LLMConfig> configFunction;
+
     private BotBridge botBridge;
 
     private Gson gson = new Gson();
@@ -269,6 +272,11 @@ public class LLM {
 
 
     public String getToken() {
+        //直接获取token
+        if (null != this.configFunction) {
+            return this.configFunction.apply(this.llmProvider).getToken();
+        }
+        //从环境变量里获取
         String token = System.getProperty(llmProvider.getEnvName());
         if (StringUtils.isEmpty(token)) {
             return System.getenv(llmProvider.getEnvName());
