@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -42,6 +43,9 @@ public class LLM {
     protected LLMConfig config;
 
     private LLMProvider llmProvider;
+
+    //可以外部设置进来
+    private Function<LLMProvider, Optional<LLMConfig>> configFunction;
 
     private BotBridge botBridge;
 
@@ -269,9 +273,17 @@ public class LLM {
 
 
     public String getToken() {
-        String token = System.getenv(llmProvider.getEnvName());
+        //直接获取token
+        if (null != this.configFunction) {
+            Optional<LLMConfig> optional = this.configFunction.apply(this.llmProvider);
+            if (optional.isPresent()) {
+                return optional.get().getToken();
+            }
+        }
+        //从环境变量里获取
+        String token = System.getProperty(llmProvider.getEnvName());
         if (StringUtils.isEmpty(token)) {
-            return System.getProperty(llmProvider.getEnvName());
+            return System.getenv(llmProvider.getEnvName());
         }
         return token;
     }
