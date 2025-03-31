@@ -57,6 +57,7 @@
         <module>mcp-miapi</module>
         <module>mcp-high-risk-element</module>
         <module>mcp-store-data</module>
+        <module>mcp-knowledge-base</module>
     </modules>
 
     <properties>

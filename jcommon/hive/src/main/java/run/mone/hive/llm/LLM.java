@@ -1,29 +1,12 @@
 package run.mone.hive.llm;
 
-import com.google.common.base.Stopwatch;
-import com.google.common.collect.Lists;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import lombok.Data;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import okhttp3.*;
-import okio.BufferedSource;
-import org.apache.commons.lang3.StringUtils;
-import run.mone.hive.configs.LLMConfig;
-import run.mone.hive.roles.Role;
-import run.mone.hive.schema.AiMessage;
-import run.mone.hive.schema.Message;
-
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
@@ -32,8 +15,36 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static run.mone.hive.llm.ClaudeProxy.getClaudeName;
+import javax.imageio.ImageIO;
+
+import org.apache.commons.lang3.StringUtils;
+
+import com.google.common.base.Stopwatch;
+import com.google.common.collect.Lists;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
+import lombok.Data;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+import okio.BufferedSource;
+import run.mone.hive.configs.LLMConfig;
 import static run.mone.hive.llm.ClaudeProxy.getClaudeKey;
+import static run.mone.hive.llm.ClaudeProxy.getClaudeName;
+import run.mone.hive.roles.Role;
+import run.mone.hive.schema.AiMessage;
+import run.mone.hive.schema.Message;
 
 @Data
 @Slf4j
@@ -42,6 +53,9 @@ public class LLM {
     protected LLMConfig config;
 
     private LLMProvider llmProvider;
+
+    //可以外部设置进来
+    private Function<LLMProvider, Optional<LLMConfig>> configFunction;
 
     private BotBridge botBridge;
 
@@ -80,11 +94,19 @@ public class LLM {
         if (this.llmProvider == LLMProvider.GOOGLE_2 && StringUtils.isEmpty(config.getUrl())) {
             key = apiKey;
         }
+
         if (null != this.config && StringUtils.isNotEmpty(this.config.getUrl())) {
+            String urlToUse;
             if (stream && StringUtils.isNotEmpty(this.config.getStreamUrl())) {
-                return this.config.getStreamUrl() + key;
+                // 处理多个流式URL的情况
+                String[] streamUrls = this.config.getStreamUrl().split(",");
+                urlToUse = getRandomUrl(streamUrls);
+            } else {
+                // 处理多个普通URL的情况
+                String[] urls = this.config.getUrl().split(",");
+                urlToUse = getRandomUrl(urls);
             }
-            return this.config.getUrl() + key;
+            return urlToUse + key;
         }
         return llmProvider.getUrl() + key;
     }
@@ -269,9 +291,17 @@ public class LLM {
 
 
     public String getToken() {
-        String token = System.getenv(llmProvider.getEnvName());
+        //直接获取token
+        if (null != this.configFunction) {
+            Optional<LLMConfig> optional = this.configFunction.apply(this.llmProvider);
+            if (optional.isPresent()) {
+                return optional.get().getToken();
+            }
+        }
+        //从环境变量里获取
+        String token = System.getProperty(llmProvider.getEnvName());
         if (StringUtils.isEmpty(token)) {
-            return System.getProperty(llmProvider.getEnvName());
+            return System.getenv(llmProvider.getEnvName());
         }
         return token;
     }
@@ -762,6 +792,16 @@ public class LLM {
                 }
             }
         }
+    }
+
+    // 添加一个新方法，用于从多个URL中随机选择一个
+    private String getRandomUrl(String[] urls) {
+        if (urls == null || urls.length == 0) {
+            return "";
+        }
+        // 随机选择一个URL
+        int randomIndex = (int) (Math.random() * urls.length);
+        return urls[randomIndex].trim(); // 去除可能的空白字符
     }
 
 }
