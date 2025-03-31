@@ -12,6 +12,8 @@ import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.mcp.idea.composer.function.ComposerFunction;
 import run.mone.hive.mcp.server.McpServer.ToolStreamRegistration;
+import run.mone.mcp.idea.composer.function.GitPushFunction;
+import run.mone.mcp.idea.composer.service.IdeaService;
 
 
 @Slf4j
@@ -23,8 +25,12 @@ public class IdeaComposerMcpServer {
 
     private McpSyncServer syncServer;
 
-    public IdeaComposerMcpServer(ServerMcpTransport transport) {
+    private IdeaService ideaService;
+
+    public IdeaComposerMcpServer(ServerMcpTransport transport,
+                                 IdeaService ideaService) {
         this.transport = transport;
+        this.ideaService = ideaService;
     }
 
     public McpSyncServer start() {
@@ -39,10 +45,13 @@ public class IdeaComposerMcpServer {
                 .sync();
 
         ComposerFunction generateBizCodeFunc = new ComposerFunction(ideaPort);
+        GitPushFunction gitPushFunction = new GitPushFunction(ideaService);
 
         var toolStreamRegistration = new ToolStreamRegistration(new Tool(generateBizCodeFunc.getName(), generateBizCodeFunc.getDesc(), generateBizCodeFunc.getToolScheme()), generateBizCodeFunc);
+        var toolRegistration = new McpServer.ToolRegistration(new Tool(gitPushFunction.getName(), gitPushFunction.getDesc(), gitPushFunction.getToolScheme()), gitPushFunction);
 
         syncServer.addStreamTool(toolStreamRegistration);
+        syncServer.addTool(toolRegistration);
 
         return syncServer;
     }

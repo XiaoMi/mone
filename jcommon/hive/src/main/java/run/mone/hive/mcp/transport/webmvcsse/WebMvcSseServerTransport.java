@@ -39,6 +39,7 @@ import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import run.mone.hive.common.HiveConst;
 import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.spec.McpError;
@@ -209,6 +210,21 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
 
             try {
                 String jsonText = objectMapper.writeValueAsString(message);
+
+                //通知也支持单独发
+                if (message instanceof McpSchema.JSONRPCNotification notification) {
+                    Map<String, Object> params = notification.params();
+                    if (null != params && params.containsKey(HiveConst.CLIENT_ID)) {
+                        String clientId = params.get(HiveConst.CLIENT_ID).toString();
+                        ClientSession session = sessions.get(clientId);
+                        if (null != session) {
+                            logger.info("notify:{} msg:{}", clientId, jsonText);
+                            sendMessageToSession(session, jsonText);
+                        }
+                        return;
+                    }
+                }
+
 
                 String clientId = "";
                 if (message instanceof McpSchema.JSONRPCResponse jrc) {
