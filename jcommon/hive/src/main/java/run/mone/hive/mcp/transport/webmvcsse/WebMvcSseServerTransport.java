@@ -29,6 +29,8 @@ import java.util.function.Function;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +39,7 @@ import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import run.mone.hive.common.HiveConst;
 import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.spec.McpError;
@@ -113,12 +116,16 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
     /**
      * Map of active client sessions, keyed by session ID.
      */
+    @Getter
     private final ConcurrentHashMap<String, ClientSession> sessions = new ConcurrentHashMap<>();
 
     /**
      * Flag indicating if the transport is shutting down.
      */
     private volatile boolean isClosing = false;
+
+    @Setter
+    private Function<String, Boolean> authFunction = token -> true;
 
     /**
      * The function to process incoming JSON-RPC messages and produce responses.
@@ -204,6 +211,21 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
             try {
                 String jsonText = objectMapper.writeValueAsString(message);
 
+                //通知也支持单独发
+                if (message instanceof McpSchema.JSONRPCNotification notification) {
+                    Map<String, Object> params = notification.params();
+                    if (null != params && params.containsKey(HiveConst.CLIENT_ID)) {
+                        String clientId = params.get(HiveConst.CLIENT_ID).toString();
+                        ClientSession session = sessions.get(clientId);
+                        if (null != session) {
+                            logger.info("notify:{} msg:{}", clientId, jsonText);
+                            sendMessageToSession(session, jsonText);
+                        }
+                        return;
+                    }
+                }
+
+
                 String clientId = "";
                 if (message instanceof McpSchema.JSONRPCResponse jrc) {
                     if (StringUtils.isNotEmpty(jrc.clientId())) {
@@ -266,15 +288,22 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
 
         //本质是clientId
         List<String> clientList = request.headers().header(Const.MC_CLIENT_ID);
-        String sessionId = CollectionUtils.isEmpty(clientList) ? UUID.randomUUID().toString() : clientList.get(0);
-        logger.debug("Creating new SSE connection for session: {}", sessionId);
+        String clientId = CollectionUtils.isEmpty(clientList) ? UUID.randomUUID().toString() : clientList.get(0);
+
+        if (!authFunction.apply(clientId)) {
+            return ServerResponse.status(HttpStatus.UNAUTHORIZED)
+                    .body("Authentication failed");
+        }
+
+
+        logger.debug("Creating new SSE connection for session: {}", clientId);
 
         // Send initial endpoint event
         try {
             return ServerResponse.sse(sseBuilder -> {
 
-                ClientSession session = new ClientSession(sessionId, sseBuilder);
-                this.sessions.put(sessionId, session);
+                ClientSession session = new ClientSession(clientId, sseBuilder);
+                this.sessions.put(clientId, session);
 
                 try {
                     session.sseBuilder.id(session.id).event(ENDPOINT_EVENT_TYPE).data(messageEndpoint);
@@ -284,8 +313,8 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
                 }
             }, Duration.ZERO);
         } catch (Exception e) {
-            logger.error("Failed to send initial endpoint event to session {}: {}", sessionId, e.getMessage());
-            sessions.remove(sessionId);
+            logger.error("Failed to send initial endpoint event to session {}: {}", clientId, e.getMessage());
+            sessions.remove(clientId);
             return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
@@ -298,6 +327,24 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
         }
         return clientId;
     }
+
+
+    public McpSchema.JSONRPCRequest getReq(McpSchema.JSONRPCRequest req, String clientId) {
+        if (StringUtils.isNotEmpty(clientId) && clientId.contains("_")) {
+            String[] array = clientId.split("_");
+            String userName = array[0];
+            if (req.params() instanceof Map map) {
+                if (map.containsKey("arguments") && map.get("arguments") instanceof Map args) {
+                    args.put("_user", userName);
+                }
+                return new McpSchema.JSONRPCRequest(req.jsonrpc(), req.method(), req.id(), req.params(), clientId);
+            }
+            return req;
+        } else {
+            return req;
+        }
+    }
+
 
     /**
      * Handles incoming JSON-RPC messages from clients. This method:
@@ -322,6 +369,11 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
             //客户端id(每次客户端都会是一个新的post,但clientId并不会发生变化),每次本质就是一个Post请求过来
             String clientId = clientId(request);
 
+            if (!authFunction.apply(clientId)) {
+                return ServerResponse.status(HttpStatus.UNAUTHORIZED)
+                        .body("Authentication failed");
+            }
+
             McpSchema.JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(objectMapper, body);
 
             //发过来的ping请求
@@ -343,7 +395,8 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
                 if (streamHandler != null) {
                     //获取projectName,用来二次分发
                     String projectName = getProjectName(req);
-                    streamHandler.apply(req)
+
+                    streamHandler.apply(getReq(req, clientId))
                             .log()
                             .subscribe(
                                     response -> {

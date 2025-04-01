@@ -1,6 +1,7 @@
 package run.mone.mcp.idea.composer.handler;
 
 import com.google.common.collect.Lists;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import run.mone.hive.Team;
 import run.mone.hive.actions.AnalyzeArchitecture;
@@ -66,7 +67,25 @@ public class CodeGeneratorTeam {
     }
 
     private static void setActions(BotChainCallContext botChainCallContext, ConversationContext conversationContext, WriteCode writeCode, PromptResult promptResult, Engineer engineer) {
-        writeCode.setFunction((req, action, context) -> Message.builder().content(new CodeGenerationHandler(botChainCallContext).getBotResponse(conversationContext.getUserQuery(), promptResult, conversationContext)).role(engineer.getName()).build());
+        writeCode.setFunction((req, action, context) -> {
+            String rules = "";
+            Object additionalData = conversationContext.getAdditionalData();
+            if (additionalData != null) {
+                JsonElement element = ((JsonObject) conversationContext.getAdditionalData()).get("rules");
+                if (element != null) {
+                    rules = element.getAsString();
+                }
+            }
+            return Message.builder()
+                    .content(new CodeGenerationHandler(botChainCallContext).getBotResponse(
+                            conversationContext.getUserQuery(),
+                            rules,
+                            promptResult,
+                            conversationContext)
+                    )
+                    .role(engineer.getName())
+                    .build();
+        });
         engineer.setActions(Lists.newArrayList(writeCode));
     }
 
