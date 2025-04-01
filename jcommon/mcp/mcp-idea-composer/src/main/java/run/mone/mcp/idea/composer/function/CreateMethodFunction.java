@@ -1,18 +1,16 @@
-package run.mone.mcp.idea.function;
+package run.mone.mcp.idea.composer.function;
+
+import com.google.gson.JsonObject;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
+import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.mcp.idea.composer.service.IdeaService;
 
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-
-import org.springframework.stereotype.Component;
-
-import com.google.gson.JsonObject;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import reactor.core.publisher.Flux;
-import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.mcp.idea.service.IdeaService;
 
 /**
  * Create method based on requirements
@@ -22,7 +20,11 @@ import run.mone.mcp.idea.service.IdeaService;
 @Slf4j
 public class CreateMethodFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
 
-    private final IdeaService ideaService;
+    private IdeaService ideaService;
+
+    public CreateMethodFunction(IdeaService ideaService) {
+        this.ideaService = ideaService;
+    }
 
     public String getName() {
         return "stream_createMethod";
