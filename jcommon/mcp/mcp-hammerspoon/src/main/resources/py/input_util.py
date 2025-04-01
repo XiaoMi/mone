@@ -75,6 +75,13 @@ def searchAndSendWeComMessage(contactName, message):
     sendWeComMessage(message)
 
 
+def switchToNextUnreadMessage():
+    """
+    模拟按下快捷键 "win+alt+下箭头" 切换到下一个未读消息。
+    """
+    pyautogui.hotkey('win', 'alt', 'down')
+
+
 if __name__ == "__main__":
     # 测试代码
     contact_name = "rikaaa0928"  # 请替换为你的企业微信联系人姓名
