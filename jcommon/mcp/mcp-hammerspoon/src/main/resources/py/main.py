@@ -38,6 +38,14 @@ async def search_wecom_contact(contact: Contact):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/next_unread_message")
+async def next_unread_message():
+    try:
+        input_util.switchToNextUnreadMessage()
+        return {"message": "Switched to next unread message successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 def main():
     uvicorn.run(app, host="0.0.0.0", port=8000)
 

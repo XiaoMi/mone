@@ -10,9 +10,7 @@ import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.mcp.hammerspoon.function.ChatToFunction;
-import run.mone.mcp.hammerspoon.function.ChatViewFunction;
-import run.mone.mcp.hammerspoon.function.HammerspoonFunction;
-import run.mone.mcp.hammerspoon.function.ScreenFunction;
+import run.mone.mcp.hammerspoon.function.*;
 
 @Slf4j
 @Component
@@ -58,7 +56,15 @@ public class HammerspoonMcpServer {
                     function2
             );
             syncServer.addTool(toolRegistration2);
-            log.info("Successfully registered song tool");
+
+            NextUnreadMessageFunction function3 = new NextUnreadMessageFunction();
+            var toolRegistration3 = new McpServer.ToolRegistration(
+                    new Tool(function3.getName(), function3.getDesc(), function3.getToolScheme()),
+                    function3
+            );
+            syncServer.addTool(toolRegistration3);
+
+            log.info("Successfully registered tools");
         } catch (Exception e) {
             log.error("Failed to register song tool", e);
             throw e;
@@ -78,4 +84,4 @@ public class HammerspoonMcpServer {
             this.syncServer.closeGracefully();
         }
     }
-} 
+}
