@@ -27,8 +27,8 @@ public class GrpcTest {
     @Test
     public void testServer() {
         CopyOnWriteArrayList<McpServer.ToolRegistration> tools = new CopyOnWriteArrayList<>();
+
         tools.add(new McpServer.ToolRegistration(new McpSchema.Tool("a", "a", "{}"), (a) -> {
-            System.out.println("a");
             McpSchema.TextContent tc = new McpSchema.TextContent("a","data:data");
             return new McpSchema.CallToolResult(com.google.common.collect.Lists.newArrayList(tc), false);
         }));
@@ -48,35 +48,27 @@ public class GrpcTest {
 
 
     @Test
-    public void testClient() {
+    public void testClientTransport() {
         GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", SimpleMcpGrpcServer.GRPC_PORT);
-        client.connect(a -> {
-            return null;
-        }).subscribe();
+        client.connect(a -> null).subscribe();
 
         McpSchema.CallToolRequest r = new McpSchema.CallToolRequest("a", ImmutableMap.of("k", "v", "k1", "v1"));
         //tools/call
         McpSchema.JSONRPCRequest req = new McpSchema.JSONRPCRequest("", "a", UUID.randomUUID().toString(), r, "");
-        client.sendMessage(req).subscribe(it -> {
-            System.out.println(it);
-        });
+        client.sendMessage(req).subscribe(System.out::println);
 
     }
 
     @SneakyThrows
     @Test
-    public void testStreamClient() {
+    public void testStreamClientTransport() {
         GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", SimpleMcpGrpcServer.GRPC_PORT);
-        client.connect(a -> {
-            return null;
-        }).subscribe();
+        client.connect(a -> null).subscribe();
 
         McpSchema.CallToolRequest r = new McpSchema.CallToolRequest("s", ImmutableMap.of("sk", "v", "sk1", "v1"));
         //tools/call
         McpSchema.JSONRPCRequest req = new McpSchema.JSONRPCRequest("", "s", UUID.randomUUID().toString(), r, "");
-        client.sendStreamMessage(req).subscribe(it->{
-            System.out.println(it);
-        });
+        client.sendStreamMessage(req).subscribe(System.out::println);
 
         System.in.read();
 
@@ -100,9 +92,7 @@ public class GrpcTest {
         McpSyncClient mc = McpClient.using(client).sync();
         McpSchema.CallToolRequest req = new McpSchema.CallToolRequest("s", ImmutableMap.of("k", "v", "k1", "v1"));
 
-        mc.callToolStream(req).subscribe(it->{
-            System.out.println(it);
-        });
+        mc.callToolStream(req).subscribe(System.out::println);
 
         System.in.read();
     }
