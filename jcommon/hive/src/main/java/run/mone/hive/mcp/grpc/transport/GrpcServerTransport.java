@@ -67,7 +67,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
     }
 
     @Override
-    public Mono<Void> sendMessage(JSONRPCMessage message) {
+    public Mono<Object> sendMessage(JSONRPCMessage message) {
 
         return Mono.empty();
     }

@@ -34,7 +34,7 @@ public class SimpleMcpGrpcServer {
 
     private McpSyncServer syncServer;
 
-    private static final int GRPC_PORT = 50051;
+    public static final int GRPC_PORT = 50051;
 
 
     private final CopyOnWriteArrayList<McpServer.ToolRegistration> tools;

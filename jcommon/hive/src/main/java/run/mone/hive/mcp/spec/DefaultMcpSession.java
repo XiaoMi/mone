@@ -339,8 +339,8 @@ public class DefaultMcpSession implements McpSession {
             McpSchema.JSONRPCRequest jsonrpcRequest = new McpSchema.JSONRPCRequest(McpSchema.JSONRPC_VERSION, method,
                     requestId, requestParams, McpConfig.ins().getClientId());
             this.transport.sendMessage(jsonrpcRequest)
-                    // TODO: It's most efficient to create a dedicated Subscriber here
                     .subscribe(v -> {
+
                     }, error -> {
                         this.pendingResponses.remove(requestId);
                         sink.error(error);
@@ -401,7 +401,7 @@ public class DefaultMcpSession implements McpSession {
     public Mono<Void> sendNotification(String method, Map<String, Object> params) {
         McpSchema.JSONRPCNotification jsonrpcNotification = new McpSchema.JSONRPCNotification(McpSchema.JSONRPC_VERSION,
                 method, params);
-        return this.transport.sendMessage(jsonrpcNotification);
+        return this.transport.sendMessage(jsonrpcNotification).then();
     }
 
     /**

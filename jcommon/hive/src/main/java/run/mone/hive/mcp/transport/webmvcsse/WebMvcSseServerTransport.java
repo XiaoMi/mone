@@ -201,7 +201,7 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
      * @return A Mono that completes when the broadcast attempt is finished
      */
     @Override
-    public Mono<Void> sendMessage(McpSchema.JSONRPCMessage message) {
+    public Mono<Object> sendMessage(McpSchema.JSONRPCMessage message) {
         return Mono.fromRunnable(() -> {
             if (sessions.isEmpty()) {
                 logger.warn("No active sessions to broadcast message to");
