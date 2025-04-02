@@ -124,6 +124,8 @@ message JsonSchema {
 message CallToolRequest {
   string name = 1;
   map<string, string> arguments = 2;
+  optional string method = 3;
+  optional string clientId = 4;
 }
 
 message CallToolResponse {

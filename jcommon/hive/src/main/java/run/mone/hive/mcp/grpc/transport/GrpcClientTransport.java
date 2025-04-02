@@ -114,6 +114,8 @@ public class GrpcClientTransport implements ClientMcpTransport {
 
         CallToolRequest grpcRequest = CallToolRequest.newBuilder()
                 .setName(name)
+                .setMethod(request.method())
+                .setClientId(request.clientId())
                 .putAllArguments(grpcArgs)
                 .build();
 
@@ -123,9 +125,11 @@ public class GrpcClientTransport implements ClientMcpTransport {
     }
 
     private void handleToolStreamCall(run.mone.hive.mcp.spec.McpSchema.JSONRPCRequest request, FluxSink sink) {
-        Map<String,String> arguments = new HashMap<>();
-        arguments.putAll((Map<? extends String, ? extends String>) request.params());
-        CallToolRequest req = CallToolRequest.newBuilder().putAllArguments(arguments).build();
+        Map<String, String> arguments = new HashMap<>();
+        if (request.params() instanceof Map m) {
+            arguments.putAll(m);
+        }
+        CallToolRequest req = CallToolRequest.newBuilder().putAllArguments(arguments).setMethod(request.method()).setClientId(request.clientId()).build();
         this.asyncStub.callToolStream(req, new StreamObserver<>() {
             @Override
             public void onNext(CallToolResponse callToolResponse) {

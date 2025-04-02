@@ -39,7 +39,9 @@ public class GrpcTest {
         });
         Map<String,String> params = new HashMap<>();
         McpSchema.JSONRPCRequest req = new McpSchema.JSONRPCRequest("", "tools/call", null, params);
-        client.sendMessage(req);
+        client.sendMessage(req).subscribe(it->{
+            System.out.println(it);
+        });
 
     }
 
