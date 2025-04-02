@@ -11,6 +11,9 @@ service McpService {
   // 初始化连接
   rpc Initialize(InitializeRequest) returns (InitializeResponse) {}
   
+  // Ping 服务
+  rpc Ping(PingRequest) returns (PingResponse) {}
+  
   // 工具相关方法
   rpc ListTools(ListToolsRequest) returns (ListToolsResponse) {}
   rpc CallTool(CallToolRequest) returns (CallToolResponse) {}
@@ -36,7 +39,7 @@ service McpService {
   // 采样相关方法
   rpc CreateMessage(CreateMessageRequest) returns (CreateMessageResponse) {}
 
-  // 双向流式RPC方法定义
+  // 双向流式RPC方法定义(方便回推信息)
   rpc BidirectionalToolStream(stream StreamRequest) returns (stream StreamResponse) {}
 }
 
@@ -371,4 +374,14 @@ enum LoggingLevel {
   CRITICAL = 5;
   ALERT = 6;
   EMERGENCY = 7;
+}
+
+// Ping 相关消息
+message PingRequest {
+  string message = 1;
+}
+
+message PingResponse {
+  string message = 1;
+  int64 timestamp = 2;
 } 

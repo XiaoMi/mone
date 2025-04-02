@@ -75,7 +75,7 @@ public class GrpcTest {
     }
 
     @Test
-    public void testClient3() {
+    public void testClient() {
         McpConfig.ins().setClientId("1212");
         GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", SimpleMcpGrpcServer.GRPC_PORT);
         McpSyncClient mc = McpClient.using(client).sync();
@@ -86,15 +86,22 @@ public class GrpcTest {
 
     @SneakyThrows
     @Test
-    public void testClient4() {
+    public void testStreamClient() {
         McpConfig.ins().setClientId("1212");
         GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", SimpleMcpGrpcServer.GRPC_PORT);
         McpSyncClient mc = McpClient.using(client).sync();
         McpSchema.CallToolRequest req = new McpSchema.CallToolRequest("s", ImmutableMap.of("k", "v", "k1", "v1"));
-
         mc.callToolStream(req).subscribe(System.out::println);
-
         System.in.read();
+    }
+
+    @Test
+    public void testPing() {
+        McpConfig.ins().setClientId("1212");
+        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", SimpleMcpGrpcServer.GRPC_PORT);
+        McpSyncClient mc = McpClient.using(client).sync();
+        Object res = mc.ping();
+        System.out.println(res);
     }
 
 }

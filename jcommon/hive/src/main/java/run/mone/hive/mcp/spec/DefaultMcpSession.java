@@ -17,6 +17,7 @@ import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import run.mone.hive.mcp.grpc.CallToolResponse;
+import run.mone.hive.mcp.grpc.PingRequest;
 import run.mone.hive.mcp.grpc.transport.GrpcClientTransport;
 import run.mone.hive.mcp.hub.McpConfig;
 import run.mone.hive.mcp.spec.McpSchema.CallToolResult;
@@ -336,6 +337,16 @@ public class DefaultMcpSession implements McpSession {
     @Override
     public <T> Mono<T> sendRequest(String method, Object requestParams, TypeReference<T> typeRef) {
         String requestId = this.generateRequestId();
+
+        //使用grpc
+        if (this.transport instanceof GrpcClientTransport gct) {
+            switch (method) {
+                case McpSchema.METHOD_PING: {
+                    return Mono.just(gct.ping(PingRequest.newBuilder().setMessage("ping").build())).map(it -> this.transport.unmarshalFrom(it, typeRef));
+                }
+            }
+        }
+
         return Mono.<McpSchema.JSONRPCResponse>create(sink -> {
             this.pendingResponses.put(requestId, sink);
             McpSchema.JSONRPCRequest jsonrpcRequest = new McpSchema.JSONRPCRequest(McpSchema.JSONRPC_VERSION, method,
@@ -377,7 +388,7 @@ public class DefaultMcpSession implements McpSession {
         //grpc 直接就是flux,直接返回即可
         if (this.transport instanceof GrpcClientTransport gct) {
             McpSchema.JSONRPCRequest jsonrpcRequest = new McpSchema.JSONRPCRequest(McpSchema.JSONRPC_VERSION, method,
-                    requestId, requestParams,McpConfig.ins().getClientId());
+                    requestId, requestParams, McpConfig.ins().getClientId());
             return gct.sendStreamMessage(jsonrpcRequest).map(it -> {
                 return this.transport.unmarshalFrom(it, typeRef);
             });

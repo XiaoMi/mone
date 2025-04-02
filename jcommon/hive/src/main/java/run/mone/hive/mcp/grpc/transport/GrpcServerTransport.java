@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 import static run.mone.hive.mcp.spec.McpSchema.METHOD_TOOLS_CALL;
 import static run.mone.hive.mcp.spec.McpSchema.METHOD_TOOLS_STREAM;
@@ -46,7 +45,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
     private final ConcurrentHashMap<String, StreamObserver<StreamResponse>> userConnections = new ConcurrentHashMap<>();
 
 
-    private SimpleMcpGrpcServer simpleMcpGrpcServer;
+    private SimpleMcpGrpcServer grpcServer;
 
 
     /**
@@ -57,7 +56,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
     public GrpcServerTransport(int port, SimpleMcpGrpcServer simpleMcpGrpcServer) {
         this.port = port;
         this.objectMapper = new ObjectMapper();
-        this.simpleMcpGrpcServer = simpleMcpGrpcServer;
+        this.grpcServer = simpleMcpGrpcServer;
     }
 
     @Override
@@ -111,6 +110,13 @@ public class GrpcServerTransport implements ServerMcpTransport {
      * MCP 服务的 gRPC 实现
      */
     private class McpServiceImpl extends McpServiceGrpc.McpServiceImplBase {
+
+        //用户发过来的ping信息
+        @Override
+        public void ping(PingRequest request, StreamObserver<PingResponse> responseObserver) {
+            responseObserver.onNext(PingResponse.newBuilder().setMessage("pong").setTimestamp(System.currentTimeMillis()).build());
+            responseObserver.onCompleted();
+        }
 
         //clientId 上来就先连接过来,同时持有这个 reponseObserver,合适的时候给用户回复信息
         @Override
@@ -181,7 +187,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
 
             //请求进来的
             if (name.equals(METHOD_TOOLS_CALL)) {
-                DefaultMcpSession.RequestHandler rh = simpleMcpGrpcServer.getMcpSession().getRequestHandlers().get(name);
+                DefaultMcpSession.RequestHandler rh = grpcServer.getMcpSession().getRequestHandlers().get(name);
                 Object res = rh.handle(request).block();
 
                 //目前只支持一个Content
@@ -204,7 +210,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
             String name = request.getName();
             //请求进来的
             if (name.equals(METHOD_TOOLS_STREAM)) {
-                DefaultMcpSession.StreamRequestHandler rh = simpleMcpGrpcServer.getMcpSession().getStreamRequestHandlers().get(name);
+                DefaultMcpSession.StreamRequestHandler rh = grpcServer.getMcpSession().getStreamRequestHandlers().get(name);
                 rh.handle(request).subscribe(it -> {
 
                     List<Content> contentList = new ArrayList<>();

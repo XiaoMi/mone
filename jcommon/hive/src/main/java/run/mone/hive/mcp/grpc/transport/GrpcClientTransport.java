@@ -9,9 +9,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
-import run.mone.hive.mcp.grpc.CallToolRequest;
-import run.mone.hive.mcp.grpc.CallToolResponse;
-import run.mone.hive.mcp.grpc.McpServiceGrpc;
+import run.mone.hive.mcp.grpc.*;
 import run.mone.hive.mcp.spec.ClientMcpTransport;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.JSONRPCMessage;
@@ -99,6 +97,11 @@ public class GrpcClientTransport implements ClientMcpTransport {
         });
     }
 
+    //发送ping消息到服务端
+    public PingResponse ping(PingRequest request) {
+        return blockingStub.ping(request);
+    }
+
     @SuppressWarnings("unchecked")
     private void handleToolCall(run.mone.hive.mcp.spec.McpSchema.JSONRPCRequest request, MonoSink sink) {
         McpSchema.CallToolRequest re = (McpSchema.CallToolRequest) request.params();
@@ -169,11 +172,16 @@ public class GrpcClientTransport implements ClientMcpTransport {
 
     }
 
+    //grpc 的返回结果,需要手动转换下
     @Override
     public <T> T unmarshalFrom(Object data, TypeReference<T> typeRef) {
         try {
             if (data instanceof CallToolResponse ctr) {
                 return (T) new McpSchema.CallToolResult(ctr.getContentList().stream().map(it -> new McpSchema.TextContent(it.getText().getText(), it.getText().getData())).collect(Collectors.toUnmodifiableList()), false);
+            }
+
+            if (data instanceof PingResponse pr) {
+                return (T) pr;
             }
 
             if (data instanceof String) {
