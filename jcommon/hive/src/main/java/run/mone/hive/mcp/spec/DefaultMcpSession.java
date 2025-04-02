@@ -7,6 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,8 +72,10 @@ public class DefaultMcpSession implements McpSession {
     /**
      * Map of request handlers keyed by method name
      */
+    @Getter
     private final ConcurrentHashMap<String, RequestHandler> requestHandlers = new ConcurrentHashMap<>();
 
+    @Getter
     private final ConcurrentHashMap<String, StreamRequestHandler> streamRequestHandlers = new ConcurrentHashMap<>();
 
     /**
