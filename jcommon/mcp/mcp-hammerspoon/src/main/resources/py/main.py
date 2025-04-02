@@ -4,7 +4,7 @@ import window_util
 import input_util
 import uvicorn
 from typing import Optional
-
+import input
 app = FastAPI()
 
 class Message(BaseModel):
@@ -41,7 +41,7 @@ async def search_wecom_contact(contact: Contact):
 @app.post("/next_unread_message")
 async def next_unread_message():
     try:
-        input_util.switchToNextUnreadMessage()
+        input.switchToNextUnreadMessage()
         return {"message": "Switched to next unread message successfully"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
