@@ -6,6 +6,7 @@ import com.google.protobuf.ByteString;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import run.mone.hive.configs.Const;
@@ -21,11 +22,15 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+import static run.mone.hive.mcp.spec.McpSchema.METHOD_TOOLS_CALL;
+import static run.mone.hive.mcp.spec.McpSchema.METHOD_TOOLS_STREAM;
+
 /**
  * goodjava@qq.com
  * gRPC 服务器端传输层实现
  */
 @Slf4j
+@Data
 public class GrpcServerTransport implements ServerMcpTransport {
 
     private final int port;
@@ -46,14 +51,36 @@ public class GrpcServerTransport implements ServerMcpTransport {
      *
      * @param port 监听端口
      */
-    public GrpcServerTransport(int port) {
+    public GrpcServerTransport(int port, SimpleMcpGrpcServer simpleMcpGrpcServer) {
         this.port = port;
         this.objectMapper = new ObjectMapper();
+        this.simpleMcpGrpcServer = simpleMcpGrpcServer;
     }
 
     @Override
     public Mono<Void> connect(Function<Mono<JSONRPCMessage>, Mono<JSONRPCMessage>> handler) {
         return Mono.fromRunnable(() -> {
+            try {
+                // 创建 gRPC 服务实现
+                McpServiceImpl serviceImpl = new McpServiceImpl();
+
+                // 启动 gRPC 服务器
+                server = ServerBuilder.forPort(port)
+                        .addService(serviceImpl)
+                        .build()
+                        .start();
+
+                log.info("gRPC Server started, listening on port " + port);
+
+                // 添加关闭钩子
+                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                    System.out.println("Shutting down gRPC server");
+                    GrpcServerTransport.this.close();
+                }));
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to start gRPC server", e);
+            }
+
         });
     }
 
@@ -68,7 +95,6 @@ public class GrpcServerTransport implements ServerMcpTransport {
 
     @Override
     public Mono<Object> sendMessage(JSONRPCMessage message) {
-
         return Mono.empty();
     }
 
@@ -151,10 +177,9 @@ public class GrpcServerTransport implements ServerMcpTransport {
             TextContent.Builder builder = TextContent.newBuilder();
 
             //请求进来的
-            if (name.equals("callTool")) {
-                String method = request.getArgumentsMap().getOrDefault("_method", "");
-                DefaultMcpSession.RequestHandler rh = simpleMcpGrpcServer.getMcpSession().getRequestHandlers().get(method);
-                Object res = rh.handle(request.getArgumentsMap()).block();
+            if (name.equals(METHOD_TOOLS_CALL)) {
+                DefaultMcpSession.RequestHandler rh = simpleMcpGrpcServer.getMcpSession().getRequestHandlers().get(name);
+                Object res = rh.handle(request).block();
                 builder.setText(res.toString());
             }
 
@@ -167,10 +192,9 @@ public class GrpcServerTransport implements ServerMcpTransport {
         public void callToolStream(CallToolRequest request, StreamObserver<CallToolResponse> responseObserver) {
             String name = request.getName();
             //请求进来的
-            if (name.equals("callToolStream")) {
-                String method = request.getArgumentsMap().getOrDefault("_method", "");
-                DefaultMcpSession.StreamRequestHandler rh = simpleMcpGrpcServer.getMcpSession().getStreamRequestHandlers().get(method);
-                rh.handle(request.getArgumentsMap()).subscribe(it -> {
+            if (name.equals(METHOD_TOOLS_STREAM)) {
+                DefaultMcpSession.StreamRequestHandler rh = simpleMcpGrpcServer.getMcpSession().getStreamRequestHandlers().get(name);
+                rh.handle(request).subscribe(it -> {
                     TextContent.Builder builder = TextContent.newBuilder();
                     if (it instanceof McpSchema.CallToolResult ctr) {
                         List<McpSchema.Content> list = ctr.content();

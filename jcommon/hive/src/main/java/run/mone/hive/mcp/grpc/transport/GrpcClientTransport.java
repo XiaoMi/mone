@@ -14,13 +14,20 @@ import run.mone.hive.mcp.grpc.CallToolRequest;
 import run.mone.hive.mcp.grpc.CallToolResponse;
 import run.mone.hive.mcp.grpc.McpServiceGrpc;
 import run.mone.hive.mcp.spec.ClientMcpTransport;
+import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.JSONRPCMessage;
+import run.mone.m78.client.util.GsonUtils;
 
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static run.mone.hive.mcp.spec.McpSchema.METHOD_TOOLS_CALL;
+import static run.mone.hive.mcp.spec.McpSchema.METHOD_TOOLS_STREAM;
 
 /**
  * gRPC 客户端传输层实现
@@ -77,12 +84,8 @@ public class GrpcClientTransport implements ClientMcpTransport {
     public Mono<Object> sendMessage(JSONRPCMessage message) {
         return Mono.create((sink) -> {
             try {
-                // 根据消息类型和内容，调用不同的 gRPC 方法
-                // 这里只实现了工具调用的例子，实际需要处理所有消息类型
                 if (message instanceof run.mone.hive.mcp.spec.McpSchema.JSONRPCRequest request) {
-                    if ("tools/call".equals(request.method())) {
-                        handleToolCall(request, sink);
-                    }
+                    handleToolCall(request, sink);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -101,22 +104,21 @@ public class GrpcClientTransport implements ClientMcpTransport {
 
     @SuppressWarnings("unchecked")
     private void handleToolCall(run.mone.hive.mcp.spec.McpSchema.JSONRPCRequest request, MonoSink sink) throws JsonProcessingException {
-        Map<String, Object> params = objectMapper.convertValue(request.params(), Map.class);
-        String name = (String) params.get("name");
-        Map<String, Object> arguments = (Map<String, Object>) params.get("arguments");
+        McpSchema.CallToolRequest re = (McpSchema.CallToolRequest) request.params();
+        Map<String, Object> objectMap = re.arguments();
 
-        // 转换为 gRPC 请求格式
-        Map<String, String> grpcArgs = new HashMap<>();
-        for (Map.Entry<String, Object> entry : arguments.entrySet()) {
-            byte[] argBytes = objectMapper.writeValueAsBytes(entry.getValue());
-            grpcArgs.put(entry.getKey(), new String(argBytes));
-        }
+        Map<String, String> stringMap = objectMap.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> Objects.toString(e.getValue(), null)
+                ));
+
 
         CallToolRequest grpcRequest = CallToolRequest.newBuilder()
-                .setName(name)
+                .setName(METHOD_TOOLS_CALL)
                 .setMethod(request.method())
                 .setClientId(request.clientId())
-                .putAllArguments(grpcArgs)
+                .putAllArguments(stringMap)
                 .build();
 
         // 发送请求并处理响应
@@ -125,11 +127,21 @@ public class GrpcClientTransport implements ClientMcpTransport {
     }
 
     private void handleToolStreamCall(run.mone.hive.mcp.spec.McpSchema.JSONRPCRequest request, FluxSink sink) {
-        Map<String, String> arguments = new HashMap<>();
-        if (request.params() instanceof Map m) {
-            arguments.putAll(m);
-        }
-        CallToolRequest req = CallToolRequest.newBuilder().putAllArguments(arguments).setMethod(request.method()).setClientId(request.clientId()).build();
+        McpSchema.CallToolRequest re = (McpSchema.CallToolRequest) request.params();
+        Map<String, Object> objectMap = re.arguments();
+
+        Map<String, String> stringMap = objectMap.entrySet().stream()
+                .collect(Collectors.toMap(
+                        Map.Entry::getKey,
+                        e -> Objects.toString(e.getValue(), null)
+                ));
+
+        //protobuf map 只能是 <string,string>
+        CallToolRequest req = CallToolRequest.newBuilder()
+                .setName(METHOD_TOOLS_STREAM)
+                .putAllArguments(stringMap)
+                .setMethod(request.method())
+                .setClientId(request.clientId()).build();
         this.asyncStub.callToolStream(req, new StreamObserver<>() {
             @Override
             public void onNext(CallToolResponse callToolResponse) {

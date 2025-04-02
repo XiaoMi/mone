@@ -6,9 +6,11 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import run.mone.hive.mcp.demo.function.CalculatorFunction;
+import run.mone.hive.mcp.grpc.CallToolRequest;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.server.McpSyncServer;
@@ -23,6 +25,7 @@ import run.mone.hive.mcp.util.Utils;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.stream.Collectors;
 
 /**
  * 简单的 gRPC MCP 服务器示例
@@ -51,8 +54,7 @@ public class SimpleMcpGrpcServer {
         this.tools = tools;
         this.streamTools = streamTools;
         // 创建 gRPC 传输层
-        this.transport = new GrpcServerTransport(GRPC_PORT);
-
+        this.transport = new GrpcServerTransport(GRPC_PORT, this);
 
         this.serverCapabilities = (serverCapabilities != null) ? serverCapabilities : new McpSchema.ServerCapabilities(
                 null, // experimental
@@ -70,30 +72,69 @@ public class SimpleMcpGrpcServer {
         }
 
         Map<String, DefaultMcpSession.StreamRequestHandler> streamRequestHandlers = new HashMap<>();
+        streamRequestHandlers.put(McpSchema.METHOD_TOOLS_STREAM, toolsStreamRequestHandler());
+
 
         this.mcpSession = new DefaultMcpSession(Duration.ofSeconds(10), this.transport, requestHandlers,
                 streamRequestHandlers, Maps.newHashMap());
 
     }
 
-    private DefaultMcpSession.RequestHandler toolsCallRequestHandler() {
-        // TODO: handle tool call request
+
+    private DefaultMcpSession.StreamRequestHandler toolsStreamRequestHandler() {
         return params -> {
-            McpSchema.CallToolRequest callToolRequest = transport.unmarshalFrom(params,
-                    new TypeReference<McpSchema.CallToolRequest>() {
-                    });
+            log.info("Received tools stream request: {}", params);
+            if (params instanceof CallToolRequest ctr) {
+                Optional<McpServer.ToolStreamRegistration> toolRegistration = this.streamTools.stream()
+                        .filter(tr -> ctr.getMethod().equals(tr.tool().name()))
+                        .findAny();
 
-            Optional<McpServer.ToolRegistration> toolRegistration = this.tools.stream()
-                    .filter(tr -> callToolRequest.name().equals(tr.tool().name()))
-                    .findAny();
+                if (toolRegistration.isEmpty()) {
+                    return Flux.error(new McpError("Tool not found: " + ctr.getMethod()));
+                }
 
-            if (toolRegistration.isEmpty()) {
-                return Mono.<Object>error(new McpError("Tool not found: " + callToolRequest.name()));
+                McpServer.ToolStreamRegistration tool = toolRegistration.get();
+
+                log.info("Handling tools stream request with tool: {}", tool);
+
+                Map<String, Object> objectMap = ctr.getArgumentsMap().entrySet().stream()
+                        .collect(Collectors.toMap(
+                                Map.Entry::getKey,
+                                Map.Entry::getValue
+                        ));
+
+                return Flux.from(tool.call()
+                        .apply(objectMap)
+                        .subscribeOn(Schedulers.boundedElastic()));
             }
+            return Flux.empty();
+        };
 
-            return Mono.fromCallable(() -> toolRegistration.get().call().apply(callToolRequest.arguments()))
-                    .map(result -> (Object) result)
-                    .subscribeOn(Schedulers.boundedElastic());
+    }
+
+
+    private DefaultMcpSession.RequestHandler toolsCallRequestHandler() {
+        return params -> {
+            if (params instanceof CallToolRequest ctr) {
+                Optional<McpServer.ToolRegistration> toolRegistration = this.tools.stream()
+                        .filter(tr -> ctr.getMethod().equals(tr.tool().name()))
+                        .findAny();
+
+                if (toolRegistration.isEmpty()) {
+                    return Mono.error(new McpError("Tool not found: " + ctr.getName()));
+                }
+
+                Map<String, Object> objectMap = ctr.getArgumentsMap().entrySet().stream()
+                        .collect(Collectors.toMap(
+                                Map.Entry::getKey,
+                                Map.Entry::getValue
+                        ));
+
+                return Mono.fromCallable(() -> toolRegistration.get().call().apply(objectMap))
+                        .map(result -> (Object) result)
+                        .subscribeOn(Schedulers.boundedElastic());
+            }
+            return Mono.error(new McpError("Tool not found"));
         };
     }
 
@@ -140,7 +181,6 @@ public class SimpleMcpGrpcServer {
 
     @PostConstruct
     public void init() {
-        this.syncServer = start();
     }
 
     @PreDestroy
@@ -178,9 +218,7 @@ public class SimpleMcpGrpcServer {
     }
 
 
-
-
     public Mono<Void> notifyToolsListChanged() {
-       return Mono.empty();
+        return Mono.empty();
     }
 } 
