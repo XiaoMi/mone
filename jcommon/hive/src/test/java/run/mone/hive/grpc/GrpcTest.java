@@ -6,7 +6,6 @@ import io.grpc.stub.StreamObserver;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
-import run.mone.hive.common.Safe;
 import run.mone.hive.mcp.client.McpClient;
 import run.mone.hive.mcp.client.McpSyncClient;
 import run.mone.hive.mcp.grpc.StreamRequest;
@@ -19,8 +18,6 @@ import run.mone.hive.mcp.spec.McpSchema;
 
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
