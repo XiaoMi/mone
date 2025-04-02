@@ -390,7 +390,6 @@ public class DefaultMcpSession implements McpSession {
 
                     this.transport.sendMessage(jsonrpcRequest)
                             .subscribe(v -> {
-                                System.out.println(v);
                             }, error -> {
                                 sink.error(error);
                             });

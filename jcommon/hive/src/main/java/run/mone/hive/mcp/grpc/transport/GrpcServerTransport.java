@@ -183,10 +183,18 @@ public class GrpcServerTransport implements ServerMcpTransport {
             if (name.equals(METHOD_TOOLS_CALL)) {
                 DefaultMcpSession.RequestHandler rh = simpleMcpGrpcServer.getMcpSession().getRequestHandlers().get(name);
                 Object res = rh.handle(request).block();
-                builder.setText(res.toString());
+
+                //目前只支持一个Content
+                if (res instanceof McpSchema.CallToolResult ctr) {
+                    List<McpSchema.Content> list = ctr.content();
+                    if (!list.isEmpty() && list.get(0) instanceof McpSchema.TextContent tc) {
+                        builder.setData(tc.data());
+                        builder.setText(tc.text());
+                    }
+                }
             }
 
-            responseObserver.onNext(CallToolResponse.newBuilder().addContent(Content.newBuilder().setText(builder.build()).build()).build());
+            responseObserver.onNext(CallToolResponse.newBuilder().addContent(Content.newBuilder().setText(builder).build()).build());
             responseObserver.onCompleted();
         }
 
@@ -203,7 +211,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
                     if (it instanceof McpSchema.CallToolResult ctr) {
                         List<McpSchema.Content> list = ctr.content();
 
-                        contentList.addAll(list.stream().map(it2->{
+                        contentList.addAll(list.stream().map(it2 -> {
                             if (it2 instanceof McpSchema.TextContent tc) {
                                 return Content.newBuilder().setText(TextContent.newBuilder().setData(tc.data()).setText(tc.text()).build()).build();
                             }

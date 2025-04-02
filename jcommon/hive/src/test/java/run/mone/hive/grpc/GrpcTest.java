@@ -2,11 +2,9 @@ package run.mone.hive.grpc;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
-import run.mone.hive.context.Context;
 import run.mone.hive.mcp.client.McpClient;
 import run.mone.hive.mcp.client.McpSyncClient;
 import run.mone.hive.mcp.grpc.demo.SimpleMcpGrpcServer;
@@ -14,10 +12,7 @@ import run.mone.hive.mcp.grpc.transport.GrpcClientTransport;
 import run.mone.hive.mcp.hub.McpConfig;
 import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.m78.client.util.GsonUtils;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -34,19 +29,17 @@ public class GrpcTest {
         CopyOnWriteArrayList<McpServer.ToolRegistration> tools = new CopyOnWriteArrayList<>();
         tools.add(new McpServer.ToolRegistration(new McpSchema.Tool("a", "a", "{}"), (a) -> {
             System.out.println("a");
-            McpSchema.TextContent tc = new McpSchema.TextContent("a");
+            McpSchema.TextContent tc = new McpSchema.TextContent("a","data:data");
             return new McpSchema.CallToolResult(com.google.common.collect.Lists.newArrayList(tc), false);
         }));
 
         CopyOnWriteArrayList<McpServer.ToolStreamRegistration> streamTools = new CopyOnWriteArrayList<>();
-        streamTools.add(new McpServer.ToolStreamRegistration(new McpSchema.Tool("s","s","{}"),(a)->{
-            return Flux.create(sink->{
-                McpSchema.TextContent tc = new McpSchema.TextContent("stream");
-                sink.next(new McpSchema.CallToolResult(Lists.newArrayList(tc),false));
-                sink.next(new McpSchema.CallToolResult(Lists.newArrayList(tc),false));
-                sink.complete();
-            });
-        }));
+        streamTools.add(new McpServer.ToolStreamRegistration(new McpSchema.Tool("s","s","{}"),(a)-> Flux.create(sink->{
+            McpSchema.TextContent tc = new McpSchema.TextContent("stream","data:data");
+            sink.next(new McpSchema.CallToolResult(Lists.newArrayList(tc),false));
+            sink.next(new McpSchema.CallToolResult(Lists.newArrayList(tc),false));
+            sink.complete();
+        })));
 
         SimpleMcpGrpcServer server = new SimpleMcpGrpcServer(null, tools, streamTools);
         server.init();

@@ -173,9 +173,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
     public <T> T unmarshalFrom(Object data, TypeReference<T> typeRef) {
         try {
             if (data instanceof CallToolResponse ctr) {
-                return (T) new McpSchema.CallToolResult(ctr.getContentList().stream().map(it -> {
-                    return new McpSchema.TextContent(it.getText().getText());
-                }).collect(Collectors.toUnmodifiableList()), false);
+                return (T) new McpSchema.CallToolResult(ctr.getContentList().stream().map(it -> new McpSchema.TextContent(it.getText().getText(), it.getText().getData())).collect(Collectors.toUnmodifiableList()), false);
             }
 
             if (data instanceof String) {
