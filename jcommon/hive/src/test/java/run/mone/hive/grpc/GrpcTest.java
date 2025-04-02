@@ -7,8 +7,11 @@ import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 import run.mone.hive.context.Context;
+import run.mone.hive.mcp.client.McpClient;
+import run.mone.hive.mcp.client.McpSyncClient;
 import run.mone.hive.mcp.grpc.demo.SimpleMcpGrpcServer;
 import run.mone.hive.mcp.grpc.transport.GrpcClientTransport;
+import run.mone.hive.mcp.hub.McpConfig;
 import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.m78.client.util.GsonUtils;
@@ -84,6 +87,16 @@ public class GrpcTest {
 
         System.in.read();
 
+    }
+
+    @Test
+    public void testClient3() {
+        McpConfig.ins().setClientId("1212");
+        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", SimpleMcpGrpcServer.GRPC_PORT);
+        McpSyncClient mc = McpClient.using(client).sync();
+        McpSchema.CallToolRequest req = new McpSchema.CallToolRequest("a", ImmutableMap.of("k", "v", "k1", "v1"));
+        McpSchema.CallToolResult res = mc.callTool(req);
+        System.out.println(res);
     }
 
 }

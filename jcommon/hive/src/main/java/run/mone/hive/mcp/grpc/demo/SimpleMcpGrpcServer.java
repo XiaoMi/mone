@@ -1,6 +1,5 @@
 package run.mone.hive.mcp.grpc.demo;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.Maps;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;

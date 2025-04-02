@@ -16,6 +16,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
+import run.mone.hive.mcp.grpc.CallToolResponse;
 import run.mone.hive.mcp.hub.McpConfig;
 import run.mone.hive.mcp.spec.McpSchema.CallToolResult;
 import run.mone.hive.mcp.spec.McpSchema.Content;
@@ -276,7 +277,7 @@ public class DefaultMcpSession implements McpSession {
                     .onErrorResume(error -> Mono.just(new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION,
                             request.id(),
                             null, new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INTERNAL_ERROR,
-                            error.getMessage(), null),true,clientId,null))); // TODO: add error message through the data field
+                            error.getMessage(), null), true, clientId, null))); // TODO: add error message through the data field
         });
     }
 
@@ -340,7 +341,9 @@ public class DefaultMcpSession implements McpSession {
                     requestId, requestParams, McpConfig.ins().getClientId());
             this.transport.sendMessage(jsonrpcRequest)
                     .subscribe(v -> {
-
+                        if (null != v && v instanceof CallToolResponse tr) {
+                            sink.success(new McpSchema.JSONRPCResponse("", "", v, null));
+                        }
                     }, error -> {
                         this.pendingResponses.remove(requestId);
                         sink.error(error);

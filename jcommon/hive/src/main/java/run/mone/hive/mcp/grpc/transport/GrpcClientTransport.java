@@ -16,10 +16,8 @@ import run.mone.hive.mcp.grpc.McpServiceGrpc;
 import run.mone.hive.mcp.spec.ClientMcpTransport;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.JSONRPCMessage;
-import run.mone.m78.client.util.GsonUtils;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -113,10 +111,15 @@ public class GrpcClientTransport implements ClientMcpTransport {
                         e -> Objects.toString(e.getValue(), null)
                 ));
 
+        String methodName = "";
+        if (request.params() instanceof McpSchema.CallToolRequest ctr) {
+            methodName = ctr.name();
+        }
+
 
         CallToolRequest grpcRequest = CallToolRequest.newBuilder()
                 .setName(METHOD_TOOLS_CALL)
-                .setMethod(request.method())
+                .setMethod(methodName)
                 .setClientId(request.clientId())
                 .putAllArguments(stringMap)
                 .build();
@@ -164,6 +167,12 @@ public class GrpcClientTransport implements ClientMcpTransport {
     @Override
     public <T> T unmarshalFrom(Object data, TypeReference<T> typeRef) {
         try {
+            if (data instanceof CallToolResponse ctr) {
+                return (T)new McpSchema.CallToolResult(ctr.getContentList().stream().map(it->{
+                    return new McpSchema.TextContent(it.getText().getText());
+                }).collect(Collectors.toUnmodifiableList()), false);
+            }
+
             if (data instanceof String) {
                 return objectMapper.readValue((String) data, typeRef);
             } else {
