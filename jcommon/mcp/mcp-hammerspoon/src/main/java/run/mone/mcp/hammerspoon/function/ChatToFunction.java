@@ -120,6 +120,8 @@ public class ChatToFunction implements Function<Map<String, Object>, McpSchema.C
 
             }
 
+            Thread.sleep(1000);
+
             //截图
             Request captureRequest = new Request.Builder()
                     .url(pythonServerUrl + "/capture_window")
