@@ -18,9 +18,12 @@ import run.mone.hive.mcp.spec.McpSchema.JSONRPCMessage;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static run.mone.hive.mcp.spec.McpSchema.METHOD_TOOLS_CALL;
 import static run.mone.hive.mcp.spec.McpSchema.METHOD_TOOLS_STREAM;
@@ -195,17 +198,20 @@ public class GrpcServerTransport implements ServerMcpTransport {
             if (name.equals(METHOD_TOOLS_STREAM)) {
                 DefaultMcpSession.StreamRequestHandler rh = simpleMcpGrpcServer.getMcpSession().getStreamRequestHandlers().get(name);
                 rh.handle(request).subscribe(it -> {
-                    TextContent.Builder builder = TextContent.newBuilder();
+
+                    List<Content> contentList = new ArrayList<>();
                     if (it instanceof McpSchema.CallToolResult ctr) {
                         List<McpSchema.Content> list = ctr.content();
-                        if (list.size() > 0) {
-                            if (list.get(0) instanceof McpSchema.TextContent tc) {
-                                builder.setText(tc.text());
-                                builder.setData(tc.data());
+
+                        contentList.addAll(list.stream().map(it2->{
+                            if (it2 instanceof McpSchema.TextContent tc) {
+                                return Content.newBuilder().setText(TextContent.newBuilder().setData(tc.data()).setText(tc.text()).build()).build();
                             }
-                        }
+                            return null;
+                        }).filter(Objects::nonNull).toList());
                     }
-                    responseObserver.onNext(CallToolResponse.newBuilder().addContent(Content.newBuilder().setText(builder).build()).build());
+
+                    responseObserver.onNext(CallToolResponse.newBuilder().addAllContent(contentList).build());
                 }, responseObserver::onError, responseObserver::onCompleted);
             }
         }
