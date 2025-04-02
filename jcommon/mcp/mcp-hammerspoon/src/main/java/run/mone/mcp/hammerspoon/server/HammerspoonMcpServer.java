@@ -38,7 +38,7 @@ public class HammerspoonMcpServer {
         try {
             ScreenFunction function = new ScreenFunction();
             var toolRegistration = new McpServer.ToolRegistration(
-                    new Tool(function.getName(), function.getDesc(), function.getToolScheme()), 
+                    new Tool(function.getName(), function.getDesc(), function.getToolScheme()),
                     function
             );
             syncServer.addTool(toolRegistration);
@@ -62,6 +62,21 @@ public class HammerspoonMcpServer {
                     new Tool(function3.getName(), function3.getDesc(), function3.getToolScheme()),
                     function3
             );
+
+            ViewChatContentUpwardFunction function4 = new ViewChatContentUpwardFunction();
+            var toolRegistration4 = new McpServer.ToolRegistration(
+                    new Tool(function4.getName(), function4.getDesc(), function4.getToolScheme()),
+                    function4
+            );
+            syncServer.addTool(toolRegistration4);
+
+            ViewChatContentBelowFunction function5 = new ViewChatContentBelowFunction();
+            var toolRegistration5 = new McpServer.ToolRegistration(
+                    new Tool(function5.getName(), function5.getDesc(), function5.getToolScheme()),
+                    function5
+            );
+            syncServer.addTool(toolRegistration5);
+
             syncServer.addTool(toolRegistration3);
 
             log.info("Successfully registered tools");
