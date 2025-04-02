@@ -54,26 +54,6 @@ public class GrpcServerTransport implements ServerMcpTransport {
     @Override
     public Mono<Void> connect(Function<Mono<JSONRPCMessage>, Mono<JSONRPCMessage>> handler) {
         return Mono.fromRunnable(() -> {
-            try {
-                // 创建 gRPC 服务实现
-                McpServiceImpl serviceImpl = new McpServiceImpl();
-
-                // 启动 gRPC 服务器
-                server = ServerBuilder.forPort(port)
-                        .addService(serviceImpl)
-                        .build()
-                        .start();
-
-                log.info("gRPC Server started, listening on port " + port);
-
-                // 添加关闭钩子
-                Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                    System.out.println("Shutting down gRPC server");
-                    GrpcServerTransport.this.close();
-                }));
-            } catch (IOException e) {
-                throw new RuntimeException("Failed to start gRPC server", e);
-            }
         });
     }
 

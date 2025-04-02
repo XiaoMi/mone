@@ -134,7 +134,7 @@ public class SimpleMcpGrpcServer {
 
         syncServer.addStreamTool(toolStreamRegistration);
 
-        System.out.println("gRPC MCP Server started on port: " + GRPC_PORT);
+        log.info("gRPC MCP Server started on port: " + GRPC_PORT);
         return syncServer;
     }
 
@@ -148,15 +148,6 @@ public class SimpleMcpGrpcServer {
         if (this.syncServer != null) {
             this.syncServer.closeGracefully();
         }
-    }
-
-    // 独立运行的主方法，用于不依赖 Spring 启动的场景
-    public static void main(String[] args) throws InterruptedException {
-        SimpleMcpGrpcServer server = new SimpleMcpGrpcServer(null, new CopyOnWriteArrayList<>(), new CopyOnWriteArrayList<>());
-        server.init();
-
-        // 保持服务运行
-        Thread.currentThread().join();
     }
 
     public Mono<Void> addTool(McpServer.ToolRegistration toolRegistration) {
