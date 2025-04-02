@@ -199,8 +199,10 @@ public class GrpcServerTransport implements ServerMcpTransport {
                     if (it instanceof McpSchema.CallToolResult ctr) {
                         List<McpSchema.Content> list = ctr.content();
                         if (list.size() > 0) {
-                            if (list.get(0) instanceof McpSchema.TextContent tc)
-                            builder.setText(tc.data());
+                            if (list.get(0) instanceof McpSchema.TextContent tc) {
+                                builder.setText(tc.text());
+                                builder.setData(tc.data());
+                            }
                         }
                     }
                     responseObserver.onNext(CallToolResponse.newBuilder().addContent(Content.newBuilder().setText(builder).build()).build());

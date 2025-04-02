@@ -99,4 +99,19 @@ public class GrpcTest {
         System.out.println(res);
     }
 
+    @SneakyThrows
+    @Test
+    public void testClient4() {
+        McpConfig.ins().setClientId("1212");
+        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", SimpleMcpGrpcServer.GRPC_PORT);
+        McpSyncClient mc = McpClient.using(client).sync();
+        McpSchema.CallToolRequest req = new McpSchema.CallToolRequest("s", ImmutableMap.of("k", "v", "k1", "v1"));
+
+        mc.callToolStream(req).subscribe(it->{
+            System.out.println(it);
+        });
+
+        System.in.read();
+    }
+
 }

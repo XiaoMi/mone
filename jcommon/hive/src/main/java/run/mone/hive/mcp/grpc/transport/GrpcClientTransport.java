@@ -101,7 +101,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
     }
 
     @SuppressWarnings("unchecked")
-    private void handleToolCall(run.mone.hive.mcp.spec.McpSchema.JSONRPCRequest request, MonoSink sink) throws JsonProcessingException {
+    private void handleToolCall(run.mone.hive.mcp.spec.McpSchema.JSONRPCRequest request, MonoSink sink) {
         McpSchema.CallToolRequest re = (McpSchema.CallToolRequest) request.params();
         Map<String, Object> objectMap = re.arguments();
 
@@ -111,11 +111,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
                         e -> Objects.toString(e.getValue(), null)
                 ));
 
-        String methodName = "";
-        if (request.params() instanceof McpSchema.CallToolRequest ctr) {
-            methodName = ctr.name();
-        }
-
+        String methodName = getMethodName(request);
 
         CallToolRequest grpcRequest = CallToolRequest.newBuilder()
                 .setName(METHOD_TOOLS_CALL)
@@ -129,6 +125,14 @@ public class GrpcClientTransport implements ClientMcpTransport {
         sink.success(response);
     }
 
+    private static String getMethodName(McpSchema.JSONRPCRequest request) {
+        String methodName = "";
+        if (request.params() instanceof McpSchema.CallToolRequest ctr) {
+            methodName = ctr.name();
+        }
+        return methodName;
+    }
+
     private void handleToolStreamCall(run.mone.hive.mcp.spec.McpSchema.JSONRPCRequest request, FluxSink sink) {
         McpSchema.CallToolRequest re = (McpSchema.CallToolRequest) request.params();
         Map<String, Object> objectMap = re.arguments();
@@ -139,11 +143,13 @@ public class GrpcClientTransport implements ClientMcpTransport {
                         e -> Objects.toString(e.getValue(), null)
                 ));
 
+        String methodName = getMethodName(request);
+
         //protobuf map 只能是 <string,string>
         CallToolRequest req = CallToolRequest.newBuilder()
                 .setName(METHOD_TOOLS_STREAM)
                 .putAllArguments(stringMap)
-                .setMethod(request.method())
+                .setMethod(methodName)
                 .setClientId(request.clientId()).build();
         this.asyncStub.callToolStream(req, new StreamObserver<>() {
             @Override
@@ -168,7 +174,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
     public <T> T unmarshalFrom(Object data, TypeReference<T> typeRef) {
         try {
             if (data instanceof CallToolResponse ctr) {
-                return (T)new McpSchema.CallToolResult(ctr.getContentList().stream().map(it->{
+                return (T) new McpSchema.CallToolResult(ctr.getContentList().stream().map(it -> {
                     return new McpSchema.TextContent(it.getText().getText());
                 }).collect(Collectors.toUnmodifiableList()), false);
             }

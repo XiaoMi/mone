@@ -17,6 +17,7 @@ import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import run.mone.hive.mcp.grpc.CallToolResponse;
+import run.mone.hive.mcp.grpc.transport.GrpcClientTransport;
 import run.mone.hive.mcp.hub.McpConfig;
 import run.mone.hive.mcp.spec.McpSchema.CallToolResult;
 import run.mone.hive.mcp.spec.McpSchema.Content;
@@ -373,6 +374,14 @@ public class DefaultMcpSession implements McpSession {
     @Override
     public <T> Flux<T> sendRequestStream(String method, Object requestParams, TypeReference<T> typeRef) {
         String requestId = this.generateRequestId();
+        //grpc 直接就是flux,直接返回即可
+        if (this.transport instanceof GrpcClientTransport gct) {
+            McpSchema.JSONRPCRequest jsonrpcRequest = new McpSchema.JSONRPCRequest(McpSchema.JSONRPC_VERSION, method,
+                    requestId, requestParams,McpConfig.ins().getClientId());
+            return gct.sendStreamMessage(jsonrpcRequest).map(it -> {
+                return this.transport.unmarshalFrom(it, typeRef);
+            });
+        }
 
         return Flux.<McpSchema.JSONRPCResponse>create(sink -> {
                     this.pendingStreamResponses.put(requestId, sink);
@@ -381,11 +390,12 @@ public class DefaultMcpSession implements McpSession {
 
                     this.transport.sendMessage(jsonrpcRequest)
                             .subscribe(v -> {
-                                // 预期很快到这里, 因为stream是异步的
+                                System.out.println(v);
                             }, error -> {
-                                // 处理错误
                                 sink.error(error);
                             });
+
+
                 }).map(response -> this.transport.unmarshalFrom(response.result(), typeRef))
                 .doOnCancel(() -> {
                     // 处理取消逻辑
