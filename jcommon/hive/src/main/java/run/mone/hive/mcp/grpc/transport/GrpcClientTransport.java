@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
@@ -25,8 +26,10 @@ import static run.mone.hive.mcp.spec.McpSchema.METHOD_TOOLS_CALL;
 import static run.mone.hive.mcp.spec.McpSchema.METHOD_TOOLS_STREAM;
 
 /**
+ * goodjava@qq.com
  * gRPC 客户端传输层实现
  */
+@Slf4j
 public class GrpcClientTransport implements ClientMcpTransport {
 
     private final String host;
@@ -56,6 +59,27 @@ public class GrpcClientTransport implements ClientMcpTransport {
             this.messageHandler = handler;
             this.channel = ManagedChannelBuilder.forAddress(host, port)
                     .usePlaintext()
+                    // 启用自动重连
+                    .enableRetry()
+                    // 设置重连参数
+//                    .defaultServiceConfig(Map.of(
+//                            "methodConfig", List.of(Map.of(
+//                                    "name", List.of(Map.of(
+//                                            "service", "yourservice.YourService"  // 替换为您的服务名
+//                                    )),
+//                                    "retryPolicy", Map.of(
+//                                            "maxAttempts", 5.0,
+//                                            "initialBackoff", "1s",
+//                                            "maxBackoff", "30s",
+//                                            "backoffMultiplier", 2.0,
+//                                            "retryableStatusCodes", List.of(
+//                                                    "UNAVAILABLE",
+//                                                    "UNKNOWN"
+//                                            )
+//                                    )
+//                            ))
+//                    ))
+
                     .build();
             this.blockingStub = McpServiceGrpc.newBlockingStub(channel);
             this.asyncStub = McpServiceGrpc.newStub(channel);
@@ -100,6 +124,42 @@ public class GrpcClientTransport implements ClientMcpTransport {
     //发送ping消息到服务端
     public PingResponse ping(PingRequest request) {
         return blockingStub.ping(request);
+    }
+
+    public StreamObserver<StreamRequest> observer(StreamObserver<StreamResponse> observer, String clientId) {
+        // 创建带重连功能的包装观察者
+        StreamObserver<StreamResponse> reconnectingObserver = new StreamObserver<StreamResponse>() {
+            @Override
+            public void onNext(StreamResponse response) {
+                // 直接转发响应
+                observer.onNext(response);
+            }
+
+            @Override
+            public void onError(Throwable t) {
+                log.error("连接错误: " + t.getMessage() + "，5秒后重连...");
+
+                // 5秒后重连
+                try {
+                    Thread.sleep(5000);
+                    log.info("正在重新连接...");
+                    observer(observer, clientId);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    observer.onError(e);
+                }
+            }
+
+            @Override
+            public void onCompleted() {
+                observer.onCompleted();
+            }
+        };
+
+
+        StreamObserver<StreamRequest> req = asyncStub.bidirectionalToolStream(reconnectingObserver);
+        req.onNext(StreamRequest.newBuilder().setName("observer").setClientId(clientId).build());
+        return req;
     }
 
     @SuppressWarnings("unchecked")

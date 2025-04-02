@@ -2,11 +2,15 @@ package run.mone.hive.grpc;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import io.grpc.stub.StreamObserver;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
+import run.mone.hive.common.Safe;
 import run.mone.hive.mcp.client.McpClient;
 import run.mone.hive.mcp.client.McpSyncClient;
+import run.mone.hive.mcp.grpc.StreamRequest;
+import run.mone.hive.mcp.grpc.StreamResponse;
 import run.mone.hive.mcp.grpc.demo.SimpleMcpGrpcServer;
 import run.mone.hive.mcp.grpc.transport.GrpcClientTransport;
 import run.mone.hive.mcp.hub.McpConfig;
@@ -15,6 +19,10 @@ import run.mone.hive.mcp.spec.McpSchema;
 
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 
 /**
  * @author goodjava@qq.com
@@ -29,15 +37,15 @@ public class GrpcTest {
         CopyOnWriteArrayList<McpServer.ToolRegistration> tools = new CopyOnWriteArrayList<>();
 
         tools.add(new McpServer.ToolRegistration(new McpSchema.Tool("a", "a", "{}"), (a) -> {
-            McpSchema.TextContent tc = new McpSchema.TextContent("a","data:data");
+            McpSchema.TextContent tc = new McpSchema.TextContent("a", "data:data");
             return new McpSchema.CallToolResult(com.google.common.collect.Lists.newArrayList(tc), false);
         }));
 
         CopyOnWriteArrayList<McpServer.ToolStreamRegistration> streamTools = new CopyOnWriteArrayList<>();
-        streamTools.add(new McpServer.ToolStreamRegistration(new McpSchema.Tool("s","s","{}"),(a)-> Flux.create(sink->{
-            McpSchema.TextContent tc = new McpSchema.TextContent("stream","data:data");
-            sink.next(new McpSchema.CallToolResult(Lists.newArrayList(tc),false));
-            sink.next(new McpSchema.CallToolResult(Lists.newArrayList(tc),false));
+        streamTools.add(new McpServer.ToolStreamRegistration(new McpSchema.Tool("s", "s", "{}"), (a) -> Flux.create(sink -> {
+            McpSchema.TextContent tc = new McpSchema.TextContent("stream", "data:data");
+            sink.next(new McpSchema.CallToolResult(Lists.newArrayList(tc), false));
+            sink.next(new McpSchema.CallToolResult(Lists.newArrayList(tc), false));
             sink.complete();
         })));
 
@@ -100,8 +108,46 @@ public class GrpcTest {
         McpConfig.ins().setClientId("1212");
         GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", SimpleMcpGrpcServer.GRPC_PORT);
         McpSyncClient mc = McpClient.using(client).sync();
-        Object res = mc.ping();
-        System.out.println(res);
+        IntStream.range(0, 100).forEach(it -> {
+            try {
+                Object res = mc.ping();
+                System.out.println(res);
+            } catch (Throwable ex) {
+                ex.printStackTrace();
+            }
+            try {
+                TimeUnit.SECONDS.sleep(3);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+
+    @SneakyThrows
+    @Test
+    public void testConsumer() {
+        McpConfig.ins().setClientId("abc");
+        GrpcClientTransport transport = new GrpcClientTransport("127.0.0.1", SimpleMcpGrpcServer.GRPC_PORT);
+        transport.connect((it) -> null).subscribe();
+        StreamObserver<StreamRequest> req = transport.observer(new StreamObserver<StreamResponse>() {
+            @Override
+            public void onNext(StreamResponse streamResponse) {
+                System.out.println(streamResponse);
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+                throwable.printStackTrace();
+            }
+
+            @Override
+            public void onCompleted() {
+
+            }
+        }, "abc");
+
+        System.in.read();
     }
 
 }

@@ -2,14 +2,13 @@ package run.mone.hive.mcp.grpc.transport;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.protobuf.ByteString;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
-import run.mone.hive.configs.Const;
+import run.mone.hive.common.Safe;
 import run.mone.hive.mcp.grpc.*;
 import run.mone.hive.mcp.grpc.demo.SimpleMcpGrpcServer;
 import run.mone.hive.mcp.spec.DefaultMcpSession;
@@ -22,6 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 
 import static run.mone.hive.mcp.spec.McpSchema.METHOD_TOOLS_CALL;
@@ -76,7 +77,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
 
                 // 添加关闭钩子
                 Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-                    System.out.println("Shutting down gRPC server");
+                    log.info("Shutting down gRPC server");
                     GrpcServerTransport.this.close();
                 }));
             } catch (IOException e) {
@@ -111,6 +112,16 @@ public class GrpcServerTransport implements ServerMcpTransport {
      */
     private class McpServiceImpl extends McpServiceGrpc.McpServiceImplBase {
 
+        public McpServiceImpl() {
+            Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
+                Safe.run(() -> {
+                    userConnections.forEach((k, v) -> {
+                        v.onNext(StreamResponse.newBuilder().setData("data:" + k).build());
+                    });
+                });
+            }, 5, 5, TimeUnit.SECONDS);
+        }
+
         //用户发过来的ping信息
         @Override
         public void ping(PingRequest request, StreamObserver<PingResponse> responseObserver) {
@@ -129,14 +140,19 @@ public class GrpcServerTransport implements ServerMcpTransport {
                 public void onNext(StreamRequest streamRequest) {
                     String name = streamRequest.getName();
                     log.info("call name:{}", name);
+
                     if (name.equals("login")) {
-                        ByteString userIdBytes = streamRequest.getArgumentsMap().get(Const.MC_CLIENT_ID);
-                        userId = userIdBytes.toStringUtf8();
+                        userId = streamRequest.getClientId();
                         userConnections.put(userId, responseObserver);
                         TextContent content = TextContent.newBuilder().setText("success").build();
                         responseObserver.onNext(StreamResponse.newBuilder().addContent(Content.newBuilder().setText(content).build()).build());
                     }
 
+                    //连接过来,随时可以通过服务器推回去信息
+                    if (name.equals("observer")) {
+                        userId = streamRequest.getClientId();
+                        userConnections.putIfAbsent(userId, responseObserver);
+                    }
 
                 }
 

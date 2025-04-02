@@ -141,6 +141,7 @@ message StreamRequest {
   string name = 1;
   map<string, bytes> arguments = 2;
   string request_id = 3;  // 可选：用于关联请求和响应
+  string clientId = 4;
 }
 
 // 响应消息定义
@@ -149,6 +150,7 @@ message StreamResponse {
   bool is_error = 2;
   string request_id = 3;  // 可选：用于关联请求和响应
   int32 sequence = 4;     // 可选：用于消息排序
+  string data = 5;
 }
 
 // 资源相关消息
