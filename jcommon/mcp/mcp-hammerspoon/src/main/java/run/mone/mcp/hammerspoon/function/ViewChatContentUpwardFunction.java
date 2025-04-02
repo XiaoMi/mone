@@ -4,7 +4,10 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import okhttp3.*;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 import run.mone.hive.mcp.spec.McpSchema;
 
 import java.util.List;
@@ -18,9 +21,9 @@ import java.util.function.Function;
  */
 @Data
 @Slf4j
-public class NextUnreadMessageFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
-    private String name = "next_unread_message";
-    private String desc = "切换到下一个未读消息";
+public class ViewChatContentUpwardFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+    private String name = "view_chat_content_upward";
+    private String desc = "聊天记录向上滚动一页";
     private static final String PYTHON_SERVER_URL_ENV = "PYTHON_SERVER_URL";
 
     private final OkHttpClient client;
@@ -35,7 +38,7 @@ public class NextUnreadMessageFunction implements Function<Map<String, Object>, 
             }
             """;
 
-    public NextUnreadMessageFunction() {
+    public ViewChatContentUpwardFunction() {
         this.client = new OkHttpClient.Builder()
                 .connectTimeout(10, TimeUnit.SECONDS)
                 .readTimeout(30, TimeUnit.SECONDS)
@@ -61,17 +64,17 @@ public class NextUnreadMessageFunction implements Function<Map<String, Object>, 
             // 构建请求 - 空的 RequestBody 因为 Python 端不需要参数
             RequestBody body = RequestBody.create(new byte[0], null);
             Request request = new Request.Builder()
-                    .url(pythonServerUrl + "/next_unread_message")
+                    .url(pythonServerUrl + "/viewChatContentUpward")
                     .post(body) // 使用 POST 方法
                     .build();
 
             // 发送请求
             try (Response response = client.newCall(request).execute()) {
                 String responseBody = response.body() != null ? response.body().string() : "{}";
-                log.info("Response from /next_unread_message: {}", responseBody);
+                log.info("Response from /viewChatContentUpward: {}", responseBody);
 
                 if (!response.isSuccessful()) {
-                     log.error("HTTP Error calling /next_unread_message: {} - {}", response.code(), responseBody);
+                     log.error("HTTP Error calling /viewChatContentUpward: {} - {}", response.code(), responseBody);
                     return new McpSchema.CallToolResult(
                             List.of(new McpSchema.TextContent("HTTP Error: " + response.code() + " - " + responseBody)),
                             true
@@ -80,7 +83,7 @@ public class NextUnreadMessageFunction implements Function<Map<String, Object>, 
 
                 Thread.sleep(500);
 
-                // 成功切换后，进行截图
+                // 成功翻页后，进行截图
                 Request captureRequest = new Request.Builder()
                         .url(pythonServerUrl + "/capture_window")
                         .get()
@@ -115,7 +118,7 @@ public class NextUnreadMessageFunction implements Function<Map<String, Object>, 
 
             }
         } catch (Exception e) {
-            log.error("Error in NextUnreadMessageFunction", e);
+            log.error("Error in ViewChatContentBelowFunction", e);
             return new McpSchema.CallToolResult(
                     List.of(new McpSchema.TextContent("Error: " + e.getMessage())),
                     true
