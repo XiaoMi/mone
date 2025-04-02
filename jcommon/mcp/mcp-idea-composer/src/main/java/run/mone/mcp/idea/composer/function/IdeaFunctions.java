@@ -1,5 +1,5 @@
 
-package run.mone.mcp.idea.function;
+package run.mone.mcp.idea.composer.function;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -7,8 +7,8 @@ import lombok.Data;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.mcp.idea.config.Const;
-import run.mone.mcp.idea.http.HttpClient;
+import run.mone.mcp.idea.composer.config.Const;
+import run.mone.mcp.idea.composer.http.HttpClient;
 
 import java.util.List;
 import java.util.Map;
@@ -185,6 +185,6 @@ public class IdeaFunctions {
 
     @SneakyThrows
     public static JsonObject callAthena(String ideaPort, JsonObject req) {
-        return new HttpClient().post("http://" + Const.IP + ideaPort + "/tianye", req);
+        return new HttpClient().post("http://" + Const.IP + ":" + ideaPort + "/tianye", req);
     }
 }

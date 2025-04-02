@@ -1,24 +1,26 @@
-package run.mone.mcp.idea.function;
+package run.mone.mcp.idea.composer.function;
+
+import com.google.gson.JsonObject;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.mcp.idea.composer.service.IdeaService;
 
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
-
-import org.springframework.stereotype.Component;
-
-import com.google.gson.JsonObject;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.mcp.idea.service.IdeaService;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class MethodRenameFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
 
-    private final IdeaService ideaService;
+    private IdeaService ideaService;
+
+    public MethodRenameFunction(IdeaService ideaService) {
+        this.ideaService = ideaService;
+    }
 
     public String getName() {
         return "generateMethodName";
