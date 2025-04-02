@@ -1,0 +1,389 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "run.mone.hive.mcp.grpc";
+option java_outer_classname = "McpProto";
+
+package mcp;
+
+// MCP 服务定义
+service McpService {
+  // 初始化连接
+  rpc Initialize(InitializeRequest) returns (InitializeResponse) {}
+  
+  // Ping 服务
+  rpc Ping(PingRequest) returns (PingResponse) {}
+  
+  // 工具相关方法
+  rpc ListTools(ListToolsRequest) returns (ListToolsResponse) {}
+  rpc CallTool(CallToolRequest) returns (CallToolResponse) {}
+  rpc CallToolStream(CallToolRequest) returns (stream CallToolResponse) {}
+  
+  // 资源相关方法
+  rpc ListResources(ListResourcesRequest) returns (ListResourcesResponse) {}
+  rpc ReadResource(ReadResourceRequest) returns (ReadResourceResponse) {}
+  rpc ListResourceTemplates(ListResourceTemplatesRequest) returns (ListResourceTemplatesResponse) {}
+  rpc SubscribeResource(SubscribeRequest) returns (SubscribeResponse) {}
+  rpc UnsubscribeResource(UnsubscribeRequest) returns (UnsubscribeResponse) {}
+  
+  // 提示相关方法
+  rpc ListPrompts(ListPromptsRequest) returns (ListPromptsResponse) {}
+  rpc GetPrompt(GetPromptRequest) returns (GetPromptResponse) {}
+  
+  // 日志相关方法
+  rpc SetLogLevel(SetLogLevelRequest) returns (SetLogLevelResponse) {}
+  
+  // 根目录相关方法
+  rpc ListRoots(ListRootsRequest) returns (ListRootsResponse) {}
+  
+  // 采样相关方法
+  rpc CreateMessage(CreateMessageRequest) returns (CreateMessageResponse) {}
+
+  // 双向流式RPC方法定义(方便回推信息)
+  rpc BidirectionalToolStream(stream StreamRequest) returns (stream StreamResponse) {}
+}
+
+// 通用消息结构
+message InitializeRequest {
+  string protocol_version = 1;
+  ClientCapabilities capabilities = 2;
+  Implementation client_info = 3;
+}
+
+message InitializeResponse {
+  string protocol_version = 1;
+  ServerCapabilities capabilities = 2;
+  Implementation server_info = 3;
+  string instructions = 4;
+}
+
+message ClientCapabilities {
+  map<string, string> experimental = 1;
+  RootCapabilities roots = 2;
+  Sampling sampling = 3;
+}
+
+message RootCapabilities {
+  bool list_changed = 1;
+}
+
+message Sampling {
+  // 无字段
+}
+
+message ServerCapabilities {
+  map<string, string> experimental = 1;
+  LoggingCapabilities logging = 2;
+  PromptCapabilities prompts = 3;
+  ResourceCapabilities resources = 4;
+  ToolCapabilities tools = 5;
+}
+
+message LoggingCapabilities {
+  // 无字段
+}
+
+message PromptCapabilities {
+  bool list_changed = 1;
+}
+
+message ResourceCapabilities {
+  bool subscribe = 1;
+  bool list_changed = 2;
+}
+
+message ToolCapabilities {
+  bool list_changed = 1;
+}
+
+message Implementation {
+  string name = 1;
+  string version = 2;
+}
+
+// 工具相关消息
+message ListToolsRequest {
+  string cursor = 1;
+}
+
+message ListToolsResponse {
+  repeated Tool tools = 1;
+  string next_cursor = 2;
+}
+
+message Tool {
+  string name = 1;
+  string description = 2;
+  JsonSchema input_schema = 3;
+}
+
+message JsonSchema {
+  string type = 1;
+  map<string, bytes> properties = 2;
+  repeated string required = 3;
+  bool additional_properties = 4;
+}
+
+message CallToolRequest {
+  string name = 1;
+  map<string, string> arguments = 2;
+  optional string method = 3;
+  optional string clientId = 4;
+}
+
+message CallToolResponse {
+  repeated Content content = 1;
+  bool is_error = 2;
+}
+
+// 请求消息定义
+message StreamRequest {
+  string name = 1;
+  map<string, bytes> arguments = 2;
+  string request_id = 3;  // 可选：用于关联请求和响应
+  string clientId = 4;
+}
+
+// 响应消息定义
+message StreamResponse {
+  repeated Content content = 1;
+  bool is_error = 2;
+  string request_id = 3;  // 可选：用于关联请求和响应
+  int32 sequence = 4;     // 可选：用于消息排序
+  string data = 5;
+}
+
+// 资源相关消息
+message ListResourcesRequest {
+  string cursor = 1;
+}
+
+message ListResourcesResponse {
+  repeated Resource resources = 1;
+  string next_cursor = 2;
+}
+
+message Resource {
+  string uri = 1;
+  string name = 2;
+  string description = 3;
+  string mime_type = 4;
+  Annotations annotations = 5;
+}
+
+message ReadResourceRequest {
+  string uri = 1;
+}
+
+message ReadResourceResponse {
+  repeated ResourceContents contents = 1;
+}
+
+message ResourceContents {
+  string uri = 1;
+  string mime_type = 2;
+  oneof content {
+    string text = 3;
+    bytes blob = 4;
+  }
+}
+
+message ListResourceTemplatesRequest {
+  string cursor = 1;
+}
+
+message ListResourceTemplatesResponse {
+  repeated ResourceTemplate resource_templates = 1;
+  string next_cursor = 2;
+}
+
+message ResourceTemplate {
+  string uri_template = 1;
+  string name = 2;
+  string description = 3;
+  string mime_type = 4;
+  Annotations annotations = 5;
+}
+
+message SubscribeRequest {
+  string uri = 1;
+}
+
+message SubscribeResponse {
+  bool success = 1;
+}
+
+message UnsubscribeRequest {
+  string uri = 1;
+}
+
+message UnsubscribeResponse {
+  bool success = 1;
+}
+
+// 提示相关消息
+message ListPromptsRequest {
+  string cursor = 1;
+}
+
+message ListPromptsResponse {
+  repeated Prompt prompts = 1;
+  string next_cursor = 2;
+}
+
+message Prompt {
+  string name = 1;
+  string description = 2;
+  repeated PromptArgument arguments = 3;
+}
+
+message PromptArgument {
+  string name = 1;
+  string description = 2;
+  bool required = 3;
+}
+
+message GetPromptRequest {
+  string name = 1;
+  map<string, bytes> arguments = 2;
+}
+
+message GetPromptResponse {
+  string description = 1;
+  repeated PromptMessage messages = 2;
+}
+
+message PromptMessage {
+  Role role = 1;
+  Content content = 2;
+}
+
+// 日志相关消息
+message SetLogLevelRequest {
+  LoggingLevel level = 1;
+}
+
+message SetLogLevelResponse {
+  bool success = 1;
+}
+
+// 根目录相关消息
+message ListRootsRequest {
+  // 无字段
+}
+
+message ListRootsResponse {
+  repeated Root roots = 1;
+}
+
+message Root {
+  string uri = 1;
+  string name = 2;
+}
+
+// 采样相关消息
+message CreateMessageRequest {
+  repeated SamplingMessage messages = 1;
+  ModelPreferences model_preferences = 2;
+  string system_prompt = 3;
+  ContextInclusionStrategy include_context = 4;
+  double temperature = 5;
+  int32 max_tokens = 6;
+  repeated string stop_sequences = 7;
+  map<string, bytes> metadata = 8;
+  
+  enum ContextInclusionStrategy {
+    NONE = 0;
+    THIS_SERVER = 1;
+    ALL_SERVERS = 2;
+  }
+}
+
+message SamplingMessage {
+  Role role = 1;
+  Content content = 2;
+}
+
+message CreateMessageResponse {
+  Role role = 1;
+  Content content = 2;
+  string model = 3;
+  StopReason stop_reason = 4;
+  
+  enum StopReason {
+    END_TURN = 0;
+    STOP_SEQUENCE = 1;
+    MAX_TOKENS = 2;
+  }
+}
+
+message ModelPreferences {
+  repeated ModelHint hints = 1;
+  double cost_priority = 2;
+  double speed_priority = 3;
+  double intelligence_priority = 4;
+}
+
+message ModelHint {
+  string name = 1;
+}
+
+// 通用类型
+enum Role {
+  USER = 0;
+  ASSISTANT = 1;
+}
+
+message Content {
+  oneof content_type {
+    TextContent text = 1;
+    ImageContent image = 2;
+    EmbeddedResource resource = 3;
+  }
+}
+
+message TextContent {
+  repeated Role audience = 1;
+  double priority = 2;
+  string text = 3;
+  string data = 4;
+}
+
+message ImageContent {
+  repeated Role audience = 1;
+  double priority = 2;
+  string data = 3;
+  string mime_type = 4;
+}
+
+message EmbeddedResource {
+  repeated Role audience = 1;
+  double priority = 2;
+  ResourceContents resource = 3;
+}
+
+message Annotations {
+  repeated Role audience = 1;
+  double priority = 2;
+}
+
+enum LoggingLevel {
+  DEBUG = 0;
+  INFO = 1;
+  NOTICE = 2;
+  WARNING = 3;
+  ERROR = 4;
+  CRITICAL = 5;
+  ALERT = 6;
+  EMERGENCY = 7;
+}
+
+// Ping 相关消息
+message PingRequest {
+  string message = 1;
+}
+
+message PingResponse {
+  string message = 1;
+  int64 timestamp = 2;
+} 
