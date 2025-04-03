@@ -114,7 +114,7 @@ message ListToolsResponse {
 message Tool {
   string name = 1;
   string description = 2;
-  JsonSchema input_schema = 3;
+  string input_schema = 3;
 }
 
 message JsonSchema {

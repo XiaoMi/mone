@@ -10,7 +10,7 @@ import run.mone.hive.mcp.client.McpClient;
 import run.mone.hive.mcp.client.McpSyncClient;
 import run.mone.hive.mcp.grpc.StreamRequest;
 import run.mone.hive.mcp.grpc.StreamResponse;
-import run.mone.hive.mcp.grpc.demo.SimpleMcpGrpcServer;
+import run.mone.hive.mcp.grpc.server.SimpleMcpGrpcServer;
 import run.mone.hive.mcp.grpc.transport.GrpcClientTransport;
 import run.mone.hive.mcp.hub.McpConfig;
 import run.mone.hive.mcp.server.McpServer;
@@ -32,7 +32,6 @@ public class GrpcTest {
     @Test
     public void testServer() {
         CopyOnWriteArrayList<McpServer.ToolRegistration> tools = new CopyOnWriteArrayList<>();
-
         tools.add(new McpServer.ToolRegistration(new McpSchema.Tool("a", "a", "{}"), (a) -> {
             McpSchema.TextContent tc = new McpSchema.TextContent("a", "data:data");
             return new McpSchema.CallToolResult(com.google.common.collect.Lists.newArrayList(tc), false);
@@ -145,6 +144,15 @@ public class GrpcTest {
         }, "abc");
 
         System.in.read();
+    }
+
+    @Test
+    public void testListTools() {
+        McpConfig.ins().setClientId("1212");
+        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", SimpleMcpGrpcServer.GRPC_PORT);
+        McpSyncClient mc = McpClient.using(client).sync();
+        McpSchema.ListToolsResult tools = mc.listTools();
+        System.out.println(tools);
     }
 
 }

@@ -16,6 +16,7 @@ import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.JSONRPCMessage;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -121,9 +122,20 @@ public class GrpcClientTransport implements ClientMcpTransport {
         });
     }
 
+
+    //获取初始化信息(主要是拿到Tools)
+    public InitializeResponse initialize(InitializeRequest request) {
+        return blockingStub.initialize(request);
+    }
+
     //发送ping消息到服务端
     public PingResponse ping(PingRequest request) {
         return blockingStub.ping(request);
+    }
+
+    //列出所有可使用的工具
+    public ListToolsResponse listTools(ListToolsRequest request) {
+        return blockingStub.listTools(request);
     }
 
     public StreamObserver<StreamRequest> observer(StreamObserver<StreamResponse> observer, String clientId) {
@@ -242,6 +254,16 @@ public class GrpcClientTransport implements ClientMcpTransport {
 
             if (data instanceof PingResponse pr) {
                 return (T) pr;
+            }
+
+            if (data instanceof ListToolsResponse ltr) {
+                List<McpSchema.Tool> tools = ltr.getToolsList().stream().map(it -> new McpSchema.Tool(it.getName(), it.getDescription(), it.getInputSchema())).toList();
+                return (T) new McpSchema.ListToolsResult(tools, ltr.getNextCursor());
+            }
+
+            if (data instanceof McpSchema.InitializeResult ir) {
+                McpSchema.Implementation implementation = new McpSchema.Implementation(ir.serverInfo().name(), ir.serverInfo().version());
+                return (T) new McpSchema.InitializeResult(ir.protocolVersion(), null, implementation, ir.instructions());
             }
 
             if (data instanceof String) {

@@ -17,6 +17,8 @@ import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import run.mone.hive.mcp.grpc.CallToolResponse;
+import run.mone.hive.mcp.grpc.InitializeRequest;
+import run.mone.hive.mcp.grpc.ListToolsRequest;
 import run.mone.hive.mcp.grpc.PingRequest;
 import run.mone.hive.mcp.grpc.transport.GrpcClientTransport;
 import run.mone.hive.mcp.hub.McpConfig;
@@ -341,8 +343,17 @@ public class DefaultMcpSession implements McpSession {
         //使用grpc
         if (this.transport instanceof GrpcClientTransport gct) {
             switch (method) {
+                //发送ping信息
                 case McpSchema.METHOD_PING: {
                     return Mono.just(gct.ping(PingRequest.newBuilder().setMessage("ping").build())).map(it -> this.transport.unmarshalFrom(it, typeRef));
+                }
+                //初始化(主要获取到tools信息)
+                case McpSchema.METHOD_INITIALIZE: {
+                    return Mono.just(gct.initialize(InitializeRequest.newBuilder().build())).map(it -> this.transport.unmarshalFrom(it, typeRef));
+                }
+                //列出所有可使用的工具
+                case McpSchema.METHOD_TOOLS_LIST:{
+                    return Mono.just(gct.listTools(ListToolsRequest.newBuilder().build())).map(it -> this.transport.unmarshalFrom(it, typeRef));
                 }
             }
         }

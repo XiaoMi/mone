@@ -374,13 +374,8 @@ public class McpAsyncServer {
 
 			List<Tool> toolsRes = new ArrayList<>();
 
-			List<Tool> tools = this.tools.stream().map(toolRegistration -> {
-				return toolRegistration.tool();
-			}).toList();
-
-			List<Tool> streamTools = this.streamTools.stream().map(toolRegistration -> {
-				return toolRegistration.tool();
-			}).toList();
+			List<Tool> tools = this.tools.stream().map(toolRegistration -> toolRegistration.tool()).toList();
+			List<Tool> streamTools = this.streamTools.stream().map(toolRegistration -> toolRegistration.tool()).toList();
 
 			toolsRes.addAll(tools);
 			toolsRes.addAll(streamTools);

@@ -1,4 +1,4 @@
-package run.mone.hive.mcp.grpc.demo;
+package run.mone.hive.mcp.grpc.server;
 
 import com.google.common.collect.Maps;
 import jakarta.annotation.PostConstruct;
@@ -38,9 +38,10 @@ public class SimpleMcpGrpcServer {
 
     public static final int GRPC_PORT = 50051;
 
-
+    @Getter
     private final CopyOnWriteArrayList<McpServer.ToolRegistration> tools;
 
+    @Getter
     private final CopyOnWriteArrayList<McpServer.ToolStreamRegistration> streamTools;
 
     private final McpSchema.ServerCapabilities serverCapabilities;
@@ -215,6 +216,35 @@ public class SimpleMcpGrpcServer {
         }
         return Mono.empty();
     }
+
+
+    public Mono<Void> addStreamTool(McpServer.ToolStreamRegistration toolRegistration) {
+        if (toolRegistration == null) {
+            return Mono.error(new McpError("Tool registration must not be null"));
+        }
+        if (toolRegistration.tool() == null) {
+            return Mono.error(new McpError("Tool must not be null"));
+        }
+        if (toolRegistration.call() == null) {
+            return Mono.error(new McpError("Tool call handler must not be null"));
+        }
+        if (this.serverCapabilities.tools() == null) {
+            return Mono.error(new McpError("Server must be configured with tool capabilities"));
+        }
+
+        // Check for duplicate tool names
+        if (this.streamTools.stream().anyMatch(th -> th.tool().name().equals(toolRegistration.tool().name()))) {
+            return Mono.error(new McpError("Tool with name '" + toolRegistration.tool().name() + "' already exists"));
+        }
+
+        this.streamTools.add(toolRegistration);
+        log.info("Added tool handler: {}", toolRegistration.tool().name());
+        if (this.serverCapabilities.tools().listChanged()) {
+            return notifyToolsListChanged();
+        }
+        return Mono.empty();
+    }
+
 
 
     public Mono<Void> notifyToolsListChanged() {

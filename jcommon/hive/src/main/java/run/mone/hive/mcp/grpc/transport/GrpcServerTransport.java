@@ -10,11 +10,13 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import run.mone.hive.common.Safe;
 import run.mone.hive.mcp.grpc.*;
-import run.mone.hive.mcp.grpc.demo.SimpleMcpGrpcServer;
+import run.mone.hive.mcp.grpc.server.SimpleMcpGrpcServer;
+import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.spec.DefaultMcpSession;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.JSONRPCMessage;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
+import run.mone.m78.client.util.GsonUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -122,6 +124,10 @@ public class GrpcServerTransport implements ServerMcpTransport {
             }, 5, 5, TimeUnit.SECONDS);
         }
 
+
+
+
+
         //用户发过来的ping信息
         @Override
         public void ping(PingRequest request, StreamObserver<PingResponse> responseObserver) {
@@ -178,6 +184,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
             // 简化的示例实现
             InitializeResponse response = InitializeResponse.newBuilder()
                     .setProtocolVersion("2024-11-05")
+                    .setCapabilities(ServerCapabilities.newBuilder().setTools(ToolCapabilities.newBuilder().build()).build())
                     .setServerInfo(Implementation.newBuilder()
                             .setName("gRPC-MCP-Server")
                             .setVersion("1.0.0")
@@ -191,7 +198,28 @@ public class GrpcServerTransport implements ServerMcpTransport {
         //返回工具列表
         @Override
         public void listTools(ListToolsRequest request, StreamObserver<ListToolsResponse> responseObserver) {
-            responseObserver.onNext(ListToolsResponse.newBuilder().build());
+            List<Tool> tools = new ArrayList<>();
+            grpcServer.getStreamTools().forEach(it->{
+                McpSchema.JsonSchema inputSchema = it.tool().inputSchema();
+                String inputSchemaStr = GsonUtils.GSON.toJson(inputSchema);
+                Tool tool = Tool.newBuilder()
+                        .setName(it.tool().name()).setDescription(it.tool().description())
+                        .setInputSchema(inputSchemaStr)
+                        .build();
+                tools.add(tool);
+            });
+
+            grpcServer.getTools().forEach(it->{
+                McpSchema.JsonSchema inputSchema = it.tool().inputSchema();
+                String inputSchemaStr = GsonUtils.GSON.toJson(inputSchema);
+                Tool tool = Tool.newBuilder()
+                        .setName(it.tool().name()).setDescription(it.tool().description())
+                        .setInputSchema(inputSchemaStr)
+                        .build();
+                tools.add(tool);
+            });
+
+            responseObserver.onNext(ListToolsResponse.newBuilder().addAllTools(tools).build());
             responseObserver.onCompleted();
         }
 

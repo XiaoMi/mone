@@ -146,16 +146,16 @@ public class McpHub {
                     connectToServer(name, config);
                 } catch (Exception e) {
                     log.error("Failed to connect to new MCP server: {}", name, e);
-                    System.err.println("Failed to connect to new MCP server " + name + ": " + e.getMessage());
+                    log.error("Failed to connect to new MCP server " + name + ": " + e.getMessage());
                 }
             } else if (!currentConnection.getServer().getConfig().equals(config.toString())) {
                 // Existing server with changed config
                 try {
                     deleteConnection(name);
                     connectToServer(name, config);
-                    System.out.println("Reconnected MCP server with updated config: " + name);
+                    log.info("Reconnected MCP server with updated config: " + name);
                 } catch (Exception e) {
-                    System.err.println("Failed to reconnect MCP server " + name + ": " + e.getMessage());
+                    log.error("Failed to reconnect MCP server " + name + ": " + e.getMessage());
                 }
             }
         }
@@ -185,9 +185,9 @@ public class McpHub {
                 try {
                     deleteConnection(name);
                     connectToServer(name, config);
-                    System.out.println("Reconnected MCP server with updated config: " + name);
+                    log.info("Reconnected MCP server with updated config: " + name);
                 } catch (Exception e) {
-                    System.err.println("Failed to reconnect MCP server " + name + ": " + e.getMessage());
+                    log.error("Failed to reconnect MCP server " + name + ": " + e.getMessage());
                 }
             }
         }
