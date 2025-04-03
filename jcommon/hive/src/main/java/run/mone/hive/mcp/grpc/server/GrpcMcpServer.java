@@ -198,6 +198,8 @@ public class GrpcMcpServer {
         }
 
         this.streamTools.add(toolRegistration);
+
+
         log.info("Added tool handler: {}", toolRegistration.tool().name());
         if (this.serverCapabilities.tools().listChanged()) {
             return notifyToolsListChanged();

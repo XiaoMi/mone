@@ -1,6 +1,7 @@
 
 package run.mone.mcp.writer.server;
 
+import com.google.common.collect.Maps;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,10 +11,13 @@ import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.server.McpServer.ToolStreamRegistration;
 import run.mone.hive.mcp.server.McpSyncServer;
+import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.mcp.writer.function.WriterFunction;
+
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Component
 public class WriterMcpServer {
@@ -33,7 +37,8 @@ public class WriterMcpServer {
     public void start() {
         if (transportType.equals("grpc")) {
             //session->connect 直接就会拉起来grpc
-            GrpcMcpServer server = new GrpcMcpServer(transport,null,null,null);
+            McpSchema.ServerCapabilities serverCapabilities = new ServerCapabilities(Maps.newHashMap(), new ServerCapabilities.LoggingCapabilities(), new ServerCapabilities.PromptCapabilities(false), new ServerCapabilities.ResourceCapabilities(false, false), new ServerCapabilities.ToolCapabilities(true));
+            GrpcMcpServer server = new GrpcMcpServer(transport, serverCapabilities, new CopyOnWriteArrayList<>(), new CopyOnWriteArrayList<>());
             if (this.transport instanceof GrpcServerTransport gst) {
                 gst.setGrpcServer(server);
             }
