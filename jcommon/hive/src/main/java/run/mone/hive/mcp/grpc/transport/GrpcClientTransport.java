@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import run.mone.hive.mcp.client.transport.ServerParameters;
 import run.mone.hive.mcp.grpc.*;
-import run.mone.hive.mcp.grpc.server.SimpleMcpGrpcServer;
+import run.mone.hive.mcp.grpc.server.GrpcMcpServer;
 import run.mone.hive.mcp.spec.ClientMcpTransport;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.JSONRPCMessage;
@@ -57,7 +57,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
     }
 
     public GrpcClientTransport(ServerParameters config) {
-        this(config.getEnv().getOrDefault("host", "127.0.0.1"), Integer.valueOf(config.getEnv().getOrDefault("port", SimpleMcpGrpcServer.GRPC_PORT + "")));
+        this(config.getEnv().getOrDefault("host", "127.0.0.1"), Integer.valueOf(config.getEnv().getOrDefault("port", GrpcMcpServer.GRPC_PORT + "")));
     }
 
     @Override

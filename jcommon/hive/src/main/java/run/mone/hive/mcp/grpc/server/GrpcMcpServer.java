@@ -1,22 +1,16 @@
 package run.mone.hive.mcp.grpc.server;
 
 import com.google.common.collect.Maps;
-import jakarta.annotation.PostConstruct;
-import jakarta.annotation.PreDestroy;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
-import run.mone.hive.mcp.demo.function.CalculatorFunction;
 import run.mone.hive.mcp.grpc.CallToolRequest;
-import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.server.McpServer;
-import run.mone.hive.mcp.server.McpSyncServer;
 import run.mone.hive.mcp.spec.DefaultMcpSession;
 import run.mone.hive.mcp.spec.McpError;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.hive.mcp.util.Utils;
@@ -30,11 +24,9 @@ import java.util.stream.Collectors;
  * 简单的 gRPC MCP 服务器示例
  */
 @Slf4j
-public class SimpleMcpGrpcServer {
+public class GrpcMcpServer {
 
     private ServerMcpTransport transport;
-
-    private McpSyncServer syncServer;
 
     public static final int GRPC_PORT = 50051;
 
@@ -50,11 +42,11 @@ public class SimpleMcpGrpcServer {
     private final DefaultMcpSession mcpSession;
 
 
-    public SimpleMcpGrpcServer(McpSchema.ServerCapabilities serverCapabilities, CopyOnWriteArrayList<McpServer.ToolRegistration> tools, CopyOnWriteArrayList<McpServer.ToolStreamRegistration> streamTools) {
+    public GrpcMcpServer(ServerMcpTransport transport, McpSchema.ServerCapabilities serverCapabilities, CopyOnWriteArrayList<McpServer.ToolRegistration> tools, CopyOnWriteArrayList<McpServer.ToolStreamRegistration> streamTools) {
         this.tools = tools;
         this.streamTools = streamTools;
         // 创建 gRPC 传输层
-        this.transport = new GrpcServerTransport(GRPC_PORT, this);
+        this.transport = transport;
 
         this.serverCapabilities = (serverCapabilities != null) ? serverCapabilities : new McpSchema.ServerCapabilities(
                 null, // experimental
@@ -156,38 +148,6 @@ public class SimpleMcpGrpcServer {
 
             return Mono.just(new McpSchema.ListToolsResult(toolsRes, null));
         };
-    }
-
-    public McpSyncServer start() {
-        McpSyncServer syncServer = McpServer.using(transport)
-                .serverInfo("grpc-mcp-server", "1.0.0")
-                .capabilities(ServerCapabilities.builder()
-                        .tools(true)
-                        .logging()
-                        .build())
-                .sync();
-
-        // 注册计算器工具
-        CalculatorFunction function = new CalculatorFunction();
-        var toolStreamRegistration = new McpServer.ToolStreamRegistration(
-                new Tool(function.getName(), function.getDesc(), function.getToolScheme()), function
-        );
-
-        syncServer.addStreamTool(toolStreamRegistration);
-
-        log.info("gRPC MCP Server started on port: " + GRPC_PORT);
-        return syncServer;
-    }
-
-    @PostConstruct
-    public void init() {
-    }
-
-    @PreDestroy
-    public void stop() {
-        if (this.syncServer != null) {
-            this.syncServer.closeGracefully();
-        }
     }
 
     public Mono<Void> addTool(McpServer.ToolRegistration toolRegistration) {

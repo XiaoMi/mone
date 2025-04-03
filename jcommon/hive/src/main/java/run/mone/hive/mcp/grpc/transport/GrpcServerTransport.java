@@ -10,8 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import run.mone.hive.common.Safe;
 import run.mone.hive.mcp.grpc.*;
-import run.mone.hive.mcp.grpc.server.SimpleMcpGrpcServer;
-import run.mone.hive.mcp.server.McpServer;
+import run.mone.hive.mcp.grpc.server.GrpcMcpServer;
 import run.mone.hive.mcp.spec.DefaultMcpSession;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.JSONRPCMessage;
@@ -48,7 +47,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
     private final ConcurrentHashMap<String, StreamObserver<StreamResponse>> userConnections = new ConcurrentHashMap<>();
 
 
-    private SimpleMcpGrpcServer grpcServer;
+    private GrpcMcpServer grpcServer;
 
 
     /**
@@ -56,10 +55,15 @@ public class GrpcServerTransport implements ServerMcpTransport {
      *
      * @param port 监听端口
      */
-    public GrpcServerTransport(int port, SimpleMcpGrpcServer simpleMcpGrpcServer) {
+    public GrpcServerTransport(int port, GrpcMcpServer simpleMcpGrpcServer) {
         this.port = port;
         this.objectMapper = new ObjectMapper();
         this.grpcServer = simpleMcpGrpcServer;
+    }
+
+    public GrpcServerTransport(int port) {
+        this.port = port;
+        this.objectMapper = new ObjectMapper();
     }
 
     @Override

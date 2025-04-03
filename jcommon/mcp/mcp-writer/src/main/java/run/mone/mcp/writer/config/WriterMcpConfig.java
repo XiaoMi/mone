@@ -11,26 +11,12 @@ import org.springframework.web.servlet.function.ServerResponse;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.configs.LLMConfig;
-import run.mone.hive.mcp.server.transport.StdioServerTransport;
+import run.mone.hive.mcp.grpc.server.GrpcMcpServer;
+import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.transport.webmvcsse.WebMvcSseServerTransport;
 
-// @Configuration
-// @ConditionalOnProperty(name = "stdio.enabled", havingValue = "true")
-// public class WriterMcpConfig {
-
-//     @Bean
-//     public LLM llm() {
-//         return new LLM(LLMConfig.builder().build());
-//     }
-
-//     @Bean
-//     StdioServerTransport stdioServerTransport(ObjectMapper mapper) {
-//         return new StdioServerTransport(mapper);
-//     }
-// }
 
 @Configuration
-@ConditionalOnProperty(name = "sse.enabled", havingValue = "true")
 public class WriterMcpConfig {
 
     @Bean
@@ -41,8 +27,15 @@ public class WriterMcpConfig {
     }
 
     @Bean
+    @ConditionalOnProperty(name = "mcp.transport.type", havingValue = "sse", matchIfMissing = true)
     WebMvcSseServerTransport webMvcSseServerTransport(ObjectMapper mapper) {
         return new WebMvcSseServerTransport(mapper, "/mcp/message");
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "mcp.transport.type", havingValue = "grpc")
+    GrpcServerTransport grpcServerTransport() {
+        return new GrpcServerTransport(GrpcMcpServer.GRPC_PORT);
     }
 
     @Bean
