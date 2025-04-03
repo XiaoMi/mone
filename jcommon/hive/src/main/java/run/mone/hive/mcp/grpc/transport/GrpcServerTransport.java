@@ -125,13 +125,16 @@ public class GrpcServerTransport implements ServerMcpTransport {
         }
 
 
-
-
-
         //用户发过来的ping信息
         @Override
         public void ping(PingRequest request, StreamObserver<PingResponse> responseObserver) {
             responseObserver.onNext(PingResponse.newBuilder().setMessage("pong").setTimestamp(System.currentTimeMillis()).build());
+            responseObserver.onCompleted();
+        }
+
+        @Override
+        public void methodNotificationInitialized(NotificationInitializedRequest request, StreamObserver<NotificationInitializedResponse> responseObserver) {
+            responseObserver.onNext(NotificationInitializedResponse.newBuilder().build());
             responseObserver.onCompleted();
         }
 
@@ -199,7 +202,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
         @Override
         public void listTools(ListToolsRequest request, StreamObserver<ListToolsResponse> responseObserver) {
             List<Tool> tools = new ArrayList<>();
-            grpcServer.getStreamTools().forEach(it->{
+            grpcServer.getStreamTools().forEach(it -> {
                 McpSchema.JsonSchema inputSchema = it.tool().inputSchema();
                 String inputSchemaStr = GsonUtils.GSON.toJson(inputSchema);
                 Tool tool = Tool.newBuilder()
@@ -209,7 +212,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
                 tools.add(tool);
             });
 
-            grpcServer.getTools().forEach(it->{
+            grpcServer.getTools().forEach(it -> {
                 McpSchema.JsonSchema inputSchema = it.tool().inputSchema();
                 String inputSchemaStr = GsonUtils.GSON.toJson(inputSchema);
                 Tool tool = Tool.newBuilder()

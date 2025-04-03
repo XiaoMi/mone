@@ -138,6 +138,11 @@ public class GrpcClientTransport implements ClientMcpTransport {
         return blockingStub.listTools(request);
     }
 
+    //METHOD_NOTIFICATION_INITIALIZED
+    public NotificationInitializedResponse methodNotificationInitialized() {
+        return blockingStub.methodNotificationInitialized(NotificationInitializedRequest.newBuilder().build());
+    }
+
     public StreamObserver<StreamRequest> observer(StreamObserver<StreamResponse> observer, String clientId) {
         // 创建带重连功能的包装观察者
         StreamObserver<StreamResponse> reconnectingObserver = new StreamObserver<StreamResponse>() {
@@ -261,9 +266,13 @@ public class GrpcClientTransport implements ClientMcpTransport {
                 return (T) new McpSchema.ListToolsResult(tools, ltr.getNextCursor());
             }
 
-            if (data instanceof McpSchema.InitializeResult ir) {
-                McpSchema.Implementation implementation = new McpSchema.Implementation(ir.serverInfo().name(), ir.serverInfo().version());
-                return (T) new McpSchema.InitializeResult(ir.protocolVersion(), null, implementation, ir.instructions());
+            if (data instanceof InitializeResponse ir) {
+                McpSchema.Implementation implementation = new McpSchema.Implementation(ir.getServerInfo().getName(), ir.getServerInfo().getVersion());
+                return (T) new McpSchema.InitializeResult(ir.getProtocolVersion(), null, implementation, ir.getInstructions());
+            }
+
+            if (data instanceof NotificationInitializedResponse nir) {
+                return (T) nir;
             }
 
             if (data instanceof String) {

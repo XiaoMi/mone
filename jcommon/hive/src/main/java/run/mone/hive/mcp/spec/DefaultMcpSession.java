@@ -352,9 +352,10 @@ public class DefaultMcpSession implements McpSession {
                     return Mono.just(gct.initialize(InitializeRequest.newBuilder().build())).map(it -> this.transport.unmarshalFrom(it, typeRef));
                 }
                 //列出所有可使用的工具
-                case McpSchema.METHOD_TOOLS_LIST:{
+                case McpSchema.METHOD_TOOLS_LIST: {
                     return Mono.just(gct.listTools(ListToolsRequest.newBuilder().build())).map(it -> this.transport.unmarshalFrom(it, typeRef));
                 }
+
             }
         }
 
@@ -433,6 +434,16 @@ public class DefaultMcpSession implements McpSession {
      */
     @Override
     public Mono<Void> sendNotification(String method, Map<String, Object> params) {
+        if (this.transport instanceof GrpcClientTransport gct) {
+           switch (method) {
+               //通知mcp服务器我已经初始化完毕了
+               case McpSchema.METHOD_NOTIFICATION_INITIALIZED: {
+                   gct.methodNotificationInitialized();
+                   return Mono.empty();
+               }
+           }
+        }
+
         McpSchema.JSONRPCNotification jsonrpcNotification = new McpSchema.JSONRPCNotification(McpSchema.JSONRPC_VERSION,
                 method, params);
         return this.transport.sendMessage(jsonrpcNotification).then();

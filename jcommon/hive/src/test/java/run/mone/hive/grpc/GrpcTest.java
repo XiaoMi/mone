@@ -155,4 +155,14 @@ public class GrpcTest {
         System.out.println(tools);
     }
 
+    @Test
+    public void testInitialize() {
+        McpConfig.ins().setClientId("1212");
+        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", SimpleMcpGrpcServer.GRPC_PORT);
+        McpSyncClient mc = McpClient.using(client).sync();
+        McpSchema.InitializeResult res = mc.initialize();
+        System.out.println(res);
+        System.out.println("finish");
+    }
+
 }
