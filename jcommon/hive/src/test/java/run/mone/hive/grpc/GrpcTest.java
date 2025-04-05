@@ -29,6 +29,7 @@ import java.util.stream.IntStream;
 public class GrpcTest {
 
 
+    //启动一个server
     @SneakyThrows
     @Test
     public void testServer() {
