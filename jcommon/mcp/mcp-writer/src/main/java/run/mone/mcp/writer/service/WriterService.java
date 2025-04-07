@@ -197,8 +197,8 @@ public class WriterService {
         });
     }
 
-    public Flux<String> createMetaphorsAndAnalogies(String concept, int count) {
-        String prompt = String.format("请为'%s'这个概念创建%d个生动的比喻和类比，帮助读者更好地理解：", concept, count);
+    public Flux<String> createMetaphorsAndAnalogies(String concept, String count) {
+        String prompt = String.format("请为'%s'这个概念创建%s个生动的比喻和类比，帮助读者更好地理解：", concept, count);
         return Flux.create(sink -> {
             llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
                 sink.next(content);

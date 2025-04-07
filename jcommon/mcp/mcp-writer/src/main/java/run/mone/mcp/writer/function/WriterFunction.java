@@ -82,7 +82,7 @@ public class WriterFunction implements Function<Map<String, Object>, Flux<McpSch
                         "description": "Scenario for dialogue generation"
                     },
                     "numberOfExchanges": {
-                        "type": "integer",
+                        "type": "string",
                         "description": "Number of dialogue exchanges to generate"
                     },
                     "concept": {
@@ -90,7 +90,7 @@ public class WriterFunction implements Function<Map<String, Object>, Flux<McpSch
                         "description": "Concept for creating metaphors and analogies"
                     },
                     "count": {
-                        "type": "integer",
+                        "type": "string",
                         "description": "Number of metaphors/analogies to generate"
                     },
                     "jokeType": {
@@ -134,7 +134,7 @@ public class WriterFunction implements Function<Map<String, Object>, Flux<McpSch
                             ((Number) arguments.get("numberOfExchanges")).intValue());
                     case "createMetaphorsAndAnalogies" -> writerService.createMetaphorsAndAnalogies(
                             (String) arguments.get("concept"), 
-                            ((Number) arguments.get("count")).intValue());
+                            ((String) arguments.get("count")));
                     case "tellJoke" -> writerService.tellJoke((String) arguments.get("jokeType"));
                     default -> throw new IllegalArgumentException("Unknown operation: " + operation);
                 };
