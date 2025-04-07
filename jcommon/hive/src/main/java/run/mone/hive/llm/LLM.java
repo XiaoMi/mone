@@ -39,9 +39,13 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 import okio.BufferedSource;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import run.mone.hive.configs.LLMConfig;
+
 import static run.mone.hive.llm.ClaudeProxy.getClaudeKey;
 import static run.mone.hive.llm.ClaudeProxy.getClaudeName;
+
 import run.mone.hive.roles.Role;
 import run.mone.hive.schema.AiMessage;
 import run.mone.hive.schema.Message;
@@ -381,7 +385,7 @@ public class LLM {
 
 
     public void chat(List<AiMessage> messages, BiConsumer<String, JsonObject> messageHandlerr) {
-        chatCompletionStream(System.getenv(llmProvider.getEnvName()),
+        chatCompletionStream(getToken(),
                 messages,
                 llmProvider.getDefaultModel(),
                 messageHandlerr,
@@ -401,8 +405,23 @@ public class LLM {
         );
     }
 
+    public Flux<String> call(List<AiMessage> messages) {
+        return Flux.create(sink -> chatCompletionStream(getToken(), messages, llmProvider.getDefaultModel(), (a, b) -> {
+        }, (a) -> {
+        }, "", sink));
+    }
+
+
+    public Flux<String> chat(String apiKey, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt) {
+        return Flux.create(sink -> chatCompletionStream(apiKey, messages, model, messageHandler, lineConsumer, systemPrompt, sink));
+    }
+
 
     public void chatCompletionStream(String apiKey, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt) {
+        chatCompletionStream(apiKey, messages, model, messageHandler, lineConsumer, systemPrompt, null);
+    }
+
+    public void chatCompletionStream(String apiKey, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt, FluxSink<String> sink) {
         JsonObject requestBody = new JsonObject();
 
         if (this.llmProvider != LLMProvider.GOOGLE_2
@@ -496,6 +515,9 @@ public class LLM {
                 jsonResponse.addProperty("type", "failure");
                 jsonResponse.addProperty("content", e.getMessage());
                 messageHandler.accept(e.getMessage(), jsonResponse);
+                if (null != sink) {
+                    sink.error(e);
+                }
             }
 
             @Override
@@ -533,6 +555,11 @@ public class LLM {
                                     finishRes.addProperty("type", "finish");
                                     finishRes.addProperty("content", candidate.get("finishReason").getAsString());
                                     messageHandler.accept("[DONE]", finishRes);
+
+                                    if (null != sink) {
+                                        sink.complete();
+                                    }
+
                                 }
                             }
                         } else if (llmProvider == LLMProvider.CLAUDE_COMPANY) {
@@ -550,6 +577,9 @@ public class LLM {
                                     jsonRes.addProperty("type", "finish");
                                     jsonRes.addProperty("content", "[DONE]");
                                     messageHandler.accept("[DONE]", jsonRes);
+                                    if (null != sink) {
+                                        sink.complete();
+                                    }
                                     break;
                                 }
 
@@ -564,6 +594,9 @@ public class LLM {
                                     jsonResponse.addProperty("type", "event");
                                     jsonResponse.addProperty("content", content);
                                     messageHandler.accept(content, jsonResponse);
+                                    if (null != sink) {
+                                        sink.next(content);
+                                    }
                                 }
                             }
                         } else {
@@ -574,6 +607,9 @@ public class LLM {
                                     jsonResponse.addProperty("type", "finish");
                                     jsonResponse.addProperty("content", "[DONE]");
                                     messageHandler.accept("[DONE]", jsonResponse);
+                                    if (null != sink) {
+                                        sink.complete();
+                                    }
                                     break;
                                 }
                                 JsonObject jsonResponse = gson.fromJson(data, JsonObject.class);
@@ -584,9 +620,9 @@ public class LLM {
                                             .getAsJsonObject("delta");
 
                                     JsonElement c = delta.get("content");
-                                    if (c.isJsonNull() || (c.isJsonPrimitive() && StringUtils.isEmpty(c.getAsString()))) {
+                                    if ((c.isJsonPrimitive() && StringUtils.isEmpty(c.getAsString())) || c.isJsonNull()) {
                                         JsonElement rc = delta.get("reasoning_content");
-                                        if (!rc.isJsonNull()) {
+                                        if (null != rc && !rc.isJsonNull()) {
                                             content = rc.getAsString();
                                         }
                                     } else {
@@ -599,15 +635,21 @@ public class LLM {
                                 jsonResponse.addProperty("type", "event");
                                 jsonResponse.addProperty("content", content);
                                 messageHandler.accept(content, jsonResponse);
+                                if (null != sink) {
+                                    sink.next(content);
+                                }
                             }
                         }
                     }
-                    System.out.println("FINISH");
+                    log.info("FINISH");
                 } catch (Throwable ex) {
                     JsonObject jsonResponse = new JsonObject();
                     jsonResponse.addProperty("type", "failure");
                     jsonResponse.addProperty("content", ex.getMessage());
                     messageHandler.accept(ex.getMessage(), jsonResponse);
+                    if (null != sink) {
+                        sink.error(ex);
+                    }
                 }
             }
         });
