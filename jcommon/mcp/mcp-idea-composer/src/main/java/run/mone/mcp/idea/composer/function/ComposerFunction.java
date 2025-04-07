@@ -3,6 +3,7 @@ package run.mone.mcp.idea.composer.function;
 import com.google.gson.Gson;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -58,7 +59,7 @@ public class ComposerFunction implements Function<Map<String, Object>, Flux<McpS
             req.addProperty("from", "idea_mcp");
             req.addProperty("requirement", (String) arguments.get("requirement"));
             req.addProperty("projectName", (String) arguments.get("projectName"));
-            req.addProperty("fileLists", (String)arguments.get("fileLists"));
+            req.add("fileLists", JsonParser.parseString((String) arguments.get("fileLists")));
             req.addProperty("folder", (String) arguments.get("folder"));
             req.addProperty("codebase", (Boolean) arguments.get("codebase"));
             req.addProperty("analyze", (Boolean) arguments.get("analyze"));
