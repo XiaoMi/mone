@@ -58,7 +58,7 @@ public class ComposerFunction implements Function<Map<String, Object>, Flux<McpS
             req.addProperty("from", "idea_mcp");
             req.addProperty("requirement", (String) arguments.get("requirement"));
             req.addProperty("projectName", (String) arguments.get("projectName"));
-            req.add("fileLists", new Gson().toJsonTree(arguments.get("fileLists")));
+            req.addProperty("fileLists", (String)arguments.get("fileLists"));
             req.addProperty("folder", (String) arguments.get("folder"));
             req.addProperty("codebase", (Boolean) arguments.get("codebase"));
             req.addProperty("analyze", (Boolean) arguments.get("analyze"));
