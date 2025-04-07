@@ -149,9 +149,10 @@ public class GrpcClientTransport implements ClientMcpTransport {
         return blockingStub.methodNotificationInitialized(NotificationInitializedRequest.newBuilder().build());
     }
 
+    //连接到服务端,然后等待服务端推送消息回来(支持断线重连)
     public StreamObserver<StreamRequest> observer(StreamObserver<StreamResponse> observer, String clientId) {
         // 创建带重连功能的包装观察者
-        StreamObserver<StreamResponse> reconnectingObserver = new StreamObserver<StreamResponse>() {
+        StreamObserver<StreamResponse> reconnectingObserver = new StreamObserver<>() {
             @Override
             public void onNext(StreamResponse response) {
                 // 直接转发响应
