@@ -6,19 +6,19 @@ import io.grpc.stub.StreamObserver;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
+import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.client.McpClient;
 import run.mone.hive.mcp.client.McpSyncClient;
 import run.mone.hive.mcp.grpc.StreamRequest;
 import run.mone.hive.mcp.grpc.StreamResponse;
-import run.mone.hive.mcp.grpc.server.GrpcMcpServer;
 import run.mone.hive.mcp.grpc.transport.GrpcClientTransport;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.hub.McpConfig;
+import run.mone.hive.mcp.server.McpAsyncServer;
 import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.spec.McpSchema;
 
 import java.util.UUID;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
@@ -29,33 +29,31 @@ import java.util.stream.IntStream;
 public class GrpcTest {
 
 
-    //启动一个server
+
     @SneakyThrows
     @Test
-    public void testServer() {
-        CopyOnWriteArrayList<McpServer.ToolRegistration> tools = new CopyOnWriteArrayList<>();
-        tools.add(new McpServer.ToolRegistration(new McpSchema.Tool("a", "a", "{}"), (a) -> {
+    public void testServer2() {
+        GrpcServerTransport transport = new GrpcServerTransport(Const.GRPC_PORT);
+        McpAsyncServer server = McpServer.using(transport).capabilities(McpSchema.ServerCapabilities.builder().tools(true).build()).async();
+
+        server.addTool(new McpServer.ToolRegistration(new McpSchema.Tool("a", "a", "{}"), (a) -> {
             McpSchema.TextContent tc = new McpSchema.TextContent("a", "data:data");
             return new McpSchema.CallToolResult(com.google.common.collect.Lists.newArrayList(tc), false);
         }));
-
-        CopyOnWriteArrayList<McpServer.ToolStreamRegistration> streamTools = new CopyOnWriteArrayList<>();
-        streamTools.add(new McpServer.ToolStreamRegistration(new McpSchema.Tool("s", "s", "{}"), (a) -> Flux.create(sink -> {
+        //stream
+        server.addStreamTool(new McpServer.ToolStreamRegistration(new McpSchema.Tool("s", "s", "{}"), (a) -> Flux.create(sink -> {
             McpSchema.TextContent tc = new McpSchema.TextContent("stream", "data:data");
             sink.next(new McpSchema.CallToolResult(Lists.newArrayList(tc), false));
             sink.next(new McpSchema.CallToolResult(Lists.newArrayList(tc), false));
             sink.complete();
         })));
-        GrpcServerTransport transport = new GrpcServerTransport(GrpcMcpServer.GRPC_PORT);
-        GrpcMcpServer server = new GrpcMcpServer(transport, null, tools, streamTools);
-        transport.setGrpcServer(server);
         System.in.read();
     }
 
 
     @Test
     public void testClientTransport() {
-        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", GrpcMcpServer.GRPC_PORT);
+        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
         client.connect(a -> null).subscribe();
 
         McpSchema.CallToolRequest r = new McpSchema.CallToolRequest("a", ImmutableMap.of("k", "v", "k1", "v1"));
@@ -68,7 +66,7 @@ public class GrpcTest {
     @SneakyThrows
     @Test
     public void testStreamClientTransport() {
-        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", GrpcMcpServer.GRPC_PORT);
+        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
         client.connect(a -> null).subscribe();
 
         McpSchema.CallToolRequest r = new McpSchema.CallToolRequest("s", ImmutableMap.of("sk", "v", "sk1", "v1"));
@@ -83,7 +81,7 @@ public class GrpcTest {
     @Test
     public void testClient() {
         McpConfig.ins().setClientId("1212");
-        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", GrpcMcpServer.GRPC_PORT);
+        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
         McpSyncClient mc = McpClient.using(client).sync();
         McpSchema.CallToolRequest req = new McpSchema.CallToolRequest("a", ImmutableMap.of("k", "v", "k1", "v1"));
         McpSchema.CallToolResult res = mc.callTool(req);
@@ -94,7 +92,7 @@ public class GrpcTest {
     @Test
     public void testStreamClient() {
         McpConfig.ins().setClientId("1212");
-        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", GrpcMcpServer.GRPC_PORT);
+        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
         McpSyncClient mc = McpClient.using(client).sync();
         McpSchema.CallToolRequest req = new McpSchema.CallToolRequest("s", ImmutableMap.of("k", "v", "k1", "v1"));
         mc.callToolStream(req).subscribe(System.out::println);
@@ -104,7 +102,7 @@ public class GrpcTest {
     @Test
     public void testPing() {
         McpConfig.ins().setClientId("1212");
-        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", GrpcMcpServer.GRPC_PORT);
+        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
         McpSyncClient mc = McpClient.using(client).sync();
         IntStream.range(0, 100).forEach(it -> {
             try {
@@ -126,7 +124,7 @@ public class GrpcTest {
     @Test
     public void testConsumer() {
         McpConfig.ins().setClientId("abc");
-        GrpcClientTransport transport = new GrpcClientTransport("127.0.0.1", GrpcMcpServer.GRPC_PORT);
+        GrpcClientTransport transport = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
         transport.connect((it) -> null).subscribe();
         StreamObserver<StreamRequest> req = transport.observer(new StreamObserver<StreamResponse>() {
             @Override
@@ -151,7 +149,7 @@ public class GrpcTest {
     @Test
     public void testListTools() {
         McpConfig.ins().setClientId("1212");
-        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", GrpcMcpServer.GRPC_PORT);
+        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
         McpSyncClient mc = McpClient.using(client).sync();
         McpSchema.ListToolsResult tools = mc.listTools();
         System.out.println(tools);
@@ -160,7 +158,7 @@ public class GrpcTest {
     @Test
     public void testInitialize() {
         McpConfig.ins().setClientId("1212");
-        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", GrpcMcpServer.GRPC_PORT);
+        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
         McpSyncClient mc = McpClient.using(client).sync();
         McpSchema.InitializeResult res = mc.initialize();
         System.out.println(res);

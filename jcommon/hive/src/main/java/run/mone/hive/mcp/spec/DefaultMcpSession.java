@@ -173,8 +173,6 @@ public class DefaultMcpSession implements McpSession {
         this.streamRequestHandlers.putAll(streamRequestHandlers);
         this.notificationHandlers.putAll(notificationHandlers);
 
-        // TODO: consider mono.transformDeferredContextual where the Context contains
-        // the
         // Observation associated with the individual message - it can be used to
         // create child Observation and emit it together with the message to the
         // consumer
