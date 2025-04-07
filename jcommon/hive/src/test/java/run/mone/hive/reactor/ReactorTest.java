@@ -55,44 +55,35 @@ public class ReactorTest {
             sink.next(1);
             sink.next(2);
             sink.next(3);
+            sink.complete();
         }).publishOn(Schedulers.fromExecutor(Executors.newFixedThreadPool(5))).map(it -> {
             System.out.println(Thread.currentThread().getName() + " " + it);
             return it + 1;
-        }).subscribe(it -> {
-            System.out.println(it);
-        });
+        }).subscribe(System.out::println);
     }
 
     @Test
     public void testDoOnNext() {
         Flux.fromIterable(Lists.newArrayList(1, 2, 3, 4)).doOnNext(it -> {
             System.out.println("it:" + it);
-        }).subscribe(it -> {
-            System.out.println(it);
-        });
+        }).subscribe(System.out::println);
     }
 
     @Test
     public void testLog() {
-        Flux.fromStream(Lists.newArrayList(1, 2, 3).stream()).log().subscribe(it -> {
-            System.out.println(it);
-        });
+        Flux.fromStream(Lists.newArrayList(1, 2, 3).stream()).log().subscribe(System.out::println);
     }
 
     @Test
     public void testCollect() {
-        List<Integer> list = Flux.fromIterable(Lists.newArrayList(1, 2, 3)).collectSortedList().block();
+        List<Integer> list = Flux.fromIterable(Lists.newArrayList(1, 2, 3)).collectList().block();
         System.out.println(list);
     }
 
 
     @Test
     public void testSubscribeOn() {
-        Mono.fromFuture(CompletableFuture.supplyAsync(() -> {
-            return "abc";
-        })).subscribeOn(Schedulers.boundedElastic()).subscribe(it -> {
-            System.out.println(it);
-        });
+        Mono.fromFuture(CompletableFuture.supplyAsync(() -> "abc")).subscribeOn(Schedulers.boundedElastic()).subscribe(System.out::println);
         System.out.println("finish");
     }
 
