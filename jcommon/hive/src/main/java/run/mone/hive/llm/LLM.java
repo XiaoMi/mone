@@ -549,7 +549,9 @@ public class LLM {
                                 jsonResponse.addProperty("type", "event");
                                 jsonResponse.addProperty("content", text);
                                 messageHandler.accept(text, jsonResponse);
-
+                                if (null != sink) {
+                                    sink.next(text);
+                                }
                                 if (candidate.has("finishReason")) {
                                     JsonObject finishRes = new JsonObject();
                                     finishRes.addProperty("type", "finish");
