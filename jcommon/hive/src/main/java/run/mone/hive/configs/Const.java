@@ -10,4 +10,6 @@ public class Const {
 
     public static String PROJECT_NAME = "__PROJECT__";
 
+    public static int GRPC_PORT = 50051;
+
 }

@@ -10,11 +10,12 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import run.mone.hive.common.Safe;
 import run.mone.hive.mcp.grpc.*;
-import run.mone.hive.mcp.grpc.demo.SimpleMcpGrpcServer;
+import run.mone.hive.mcp.server.McpAsyncServer;
 import run.mone.hive.mcp.spec.DefaultMcpSession;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.JSONRPCMessage;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
+import run.mone.m78.client.util.GsonUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,18 +47,12 @@ public class GrpcServerTransport implements ServerMcpTransport {
     private final ConcurrentHashMap<String, StreamObserver<StreamResponse>> userConnections = new ConcurrentHashMap<>();
 
 
-    private SimpleMcpGrpcServer grpcServer;
+    private McpAsyncServer mcpServer;
 
 
-    /**
-     * 创建 gRPC 服务器端传输层
-     *
-     * @param port 监听端口
-     */
-    public GrpcServerTransport(int port, SimpleMcpGrpcServer simpleMcpGrpcServer) {
+    public GrpcServerTransport(int port) {
         this.port = port;
         this.objectMapper = new ObjectMapper();
-        this.grpcServer = simpleMcpGrpcServer;
     }
 
     @Override
@@ -122,10 +117,17 @@ public class GrpcServerTransport implements ServerMcpTransport {
             }, 5, 5, TimeUnit.SECONDS);
         }
 
+
         //用户发过来的ping信息
         @Override
         public void ping(PingRequest request, StreamObserver<PingResponse> responseObserver) {
             responseObserver.onNext(PingResponse.newBuilder().setMessage("pong").setTimestamp(System.currentTimeMillis()).build());
+            responseObserver.onCompleted();
+        }
+
+        @Override
+        public void methodNotificationInitialized(NotificationInitializedRequest request, StreamObserver<NotificationInitializedResponse> responseObserver) {
+            responseObserver.onNext(NotificationInitializedResponse.newBuilder().build());
             responseObserver.onCompleted();
         }
 
@@ -178,6 +180,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
             // 简化的示例实现
             InitializeResponse response = InitializeResponse.newBuilder()
                     .setProtocolVersion("2024-11-05")
+                    .setCapabilities(ServerCapabilities.newBuilder().setTools(ToolCapabilities.newBuilder().build()).build())
                     .setServerInfo(Implementation.newBuilder()
                             .setName("gRPC-MCP-Server")
                             .setVersion("1.0.0")
@@ -191,7 +194,28 @@ public class GrpcServerTransport implements ServerMcpTransport {
         //返回工具列表
         @Override
         public void listTools(ListToolsRequest request, StreamObserver<ListToolsResponse> responseObserver) {
-            responseObserver.onNext(ListToolsResponse.newBuilder().build());
+            List<Tool> tools = new ArrayList<>();
+            mcpServer.getStreamTools().forEach(it -> {
+                McpSchema.JsonSchema inputSchema = it.tool().inputSchema();
+                String inputSchemaStr = GsonUtils.GSON.toJson(inputSchema);
+                Tool tool = Tool.newBuilder()
+                        .setName(it.tool().name()).setDescription(it.tool().description())
+                        .setInputSchema(inputSchemaStr)
+                        .build();
+                tools.add(tool);
+            });
+
+            mcpServer.getTools().forEach(it -> {
+                McpSchema.JsonSchema inputSchema = it.tool().inputSchema();
+                String inputSchemaStr = GsonUtils.GSON.toJson(inputSchema);
+                Tool tool = Tool.newBuilder()
+                        .setName(it.tool().name()).setDescription(it.tool().description())
+                        .setInputSchema(inputSchemaStr)
+                        .build();
+                tools.add(tool);
+            });
+
+            responseObserver.onNext(ListToolsResponse.newBuilder().addAllTools(tools).build());
             responseObserver.onCompleted();
         }
 
@@ -203,7 +227,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
 
             //请求进来的
             if (name.equals(METHOD_TOOLS_CALL)) {
-                DefaultMcpSession.RequestHandler rh = grpcServer.getMcpSession().getRequestHandlers().get(name);
+                DefaultMcpSession.RequestHandler rh = mcpServer.getMcpSession().getRequestHandlers().get(name);
                 Object res = rh.handle(request).block();
 
                 //目前只支持一个Content
@@ -226,7 +250,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
             String name = request.getName();
             //请求进来的
             if (name.equals(METHOD_TOOLS_STREAM)) {
-                DefaultMcpSession.StreamRequestHandler rh = grpcServer.getMcpSession().getStreamRequestHandlers().get(name);
+                DefaultMcpSession.StreamRequestHandler rh = mcpServer.getMcpSession().getStreamRequestHandlers().get(name);
                 rh.handle(request).subscribe(it -> {
 
                     List<Content> contentList = new ArrayList<>();

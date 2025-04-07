@@ -41,6 +41,9 @@ service McpService {
 
   // 双向流式RPC方法定义(方便回推信息)
   rpc BidirectionalToolStream(stream StreamRequest) returns (stream StreamResponse) {}
+
+  // 通知初始化方法
+  rpc methodNotificationInitialized(NotificationInitializedRequest) returns (NotificationInitializedResponse) {}
 }
 
 // 通用消息结构
@@ -114,7 +117,7 @@ message ListToolsResponse {
 message Tool {
   string name = 1;
   string description = 2;
-  JsonSchema input_schema = 3;
+  string input_schema = 3;
 }
 
 message JsonSchema {
@@ -386,4 +389,15 @@ message PingRequest {
 message PingResponse {
   string message = 1;
   int64 timestamp = 2;
+}
+
+// 通知初始化相关消息
+message NotificationInitializedRequest {
+  string client_id = 1;
+  map<string, string> capabilities = 2;
+}
+
+message NotificationInitializedResponse {
+  bool success = 1;
+  string message = 2;
 } 

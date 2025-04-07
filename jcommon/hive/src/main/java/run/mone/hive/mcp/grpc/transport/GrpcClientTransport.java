@@ -10,12 +10,15 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
+import run.mone.hive.configs.Const;
+import run.mone.hive.mcp.client.transport.ServerParameters;
 import run.mone.hive.mcp.grpc.*;
 import run.mone.hive.mcp.spec.ClientMcpTransport;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.JSONRPCMessage;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -51,6 +54,10 @@ public class GrpcClientTransport implements ClientMcpTransport {
         this.host = host;
         this.port = port;
         this.objectMapper = new ObjectMapper();
+    }
+
+    public GrpcClientTransport(ServerParameters config) {
+        this(config.getEnv().getOrDefault("host", "127.0.0.1"), Integer.valueOf(config.getEnv().getOrDefault("port", Const.GRPC_PORT + "")));
     }
 
     @Override
@@ -121,9 +128,25 @@ public class GrpcClientTransport implements ClientMcpTransport {
         });
     }
 
+
+    //获取初始化信息(主要是拿到Tools)
+    public InitializeResponse initialize(InitializeRequest request) {
+        return blockingStub.initialize(request);
+    }
+
     //发送ping消息到服务端
     public PingResponse ping(PingRequest request) {
         return blockingStub.ping(request);
+    }
+
+    //列出所有可使用的工具
+    public ListToolsResponse listTools(ListToolsRequest request) {
+        return blockingStub.listTools(request);
+    }
+
+    //METHOD_NOTIFICATION_INITIALIZED
+    public NotificationInitializedResponse methodNotificationInitialized() {
+        return blockingStub.methodNotificationInitialized(NotificationInitializedRequest.newBuilder().build());
     }
 
     public StreamObserver<StreamRequest> observer(StreamObserver<StreamResponse> observer, String clientId) {
@@ -242,6 +265,20 @@ public class GrpcClientTransport implements ClientMcpTransport {
 
             if (data instanceof PingResponse pr) {
                 return (T) pr;
+            }
+
+            if (data instanceof ListToolsResponse ltr) {
+                List<McpSchema.Tool> tools = ltr.getToolsList().stream().map(it -> new McpSchema.Tool(it.getName(), it.getDescription(), it.getInputSchema())).toList();
+                return (T) new McpSchema.ListToolsResult(tools, ltr.getNextCursor());
+            }
+
+            if (data instanceof InitializeResponse ir) {
+                McpSchema.Implementation implementation = new McpSchema.Implementation(ir.getServerInfo().getName(), ir.getServerInfo().getVersion());
+                return (T) new McpSchema.InitializeResult(ir.getProtocolVersion(), null, implementation, ir.getInstructions());
+            }
+
+            if (data instanceof NotificationInitializedResponse nir) {
+                return (T) nir;
             }
 
             if (data instanceof String) {
