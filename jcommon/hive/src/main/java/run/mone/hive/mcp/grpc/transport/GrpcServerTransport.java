@@ -7,7 +7,9 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Mono;
+import run.mone.hive.common.HiveConst;
 import run.mone.hive.common.Safe;
 import run.mone.hive.mcp.grpc.*;
 import run.mone.hive.mcp.server.McpAsyncServer;
@@ -18,12 +20,11 @@ import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.m78.client.util.GsonUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import static run.mone.hive.mcp.spec.McpSchema.METHOD_TOOLS_CALL;
@@ -46,13 +47,28 @@ public class GrpcServerTransport implements ServerMcpTransport {
     // 存储用户ID与其连接的映射
     private final ConcurrentHashMap<String, StreamObserver<StreamResponse>> userConnections = new ConcurrentHashMap<>();
 
+    private final ConcurrentHashMap<String, Long> clientMap = new ConcurrentHashMap<>();
 
     private McpAsyncServer mcpServer;
 
+    private BiFunction<String, String, Boolean> authFunction = (id, token) -> true;
+
+    private boolean openAuth = false;
 
     public GrpcServerTransport(int port) {
         this.port = port;
         this.objectMapper = new ObjectMapper();
+
+        Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
+            Safe.run(() -> {
+                long now = System.currentTimeMillis();
+                Set<String> keys = new HashSet<>(clientMap.keySet());
+                for (String key : keys) {
+                    clientMap.computeIfPresent(key, (k, v) ->
+                            now - v >= TimeUnit.MINUTES.toMillis(5) ? null : v);
+                }
+            });
+        }, 1, 1, TimeUnit.MINUTES);
     }
 
     @Override
@@ -91,8 +107,21 @@ public class GrpcServerTransport implements ServerMcpTransport {
         });
     }
 
+
+    //允许通知到client
     @Override
     public Mono<Object> sendMessage(JSONRPCMessage message) {
+        if (message instanceof McpSchema.JSONRPCNotification notification) {
+            Map<String, Object> params = notification.params();
+            if (null != params && params.containsKey(HiveConst.CLIENT_ID)) {
+                String clientId = params.get(HiveConst.CLIENT_ID).toString();
+                StreamObserver<StreamResponse> observer = userConnections.get(clientId);
+                //直接通知到client
+                if (null != observer) {
+                    observer.onNext(StreamResponse.newBuilder().setData(GsonUtils.GSON.toJson(params)).build());
+                }
+            }
+        }
         return Mono.empty();
     }
 
@@ -111,7 +140,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
             Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
                 Safe.run(() -> {
                     userConnections.forEach((k, v) -> {
-                        v.onNext(StreamResponse.newBuilder().setData("data:" + k).build());
+                        v.onNext(StreamResponse.newBuilder().setData("server ping :" + k).build());
                     });
                 });
             }, 5, 5, TimeUnit.SECONDS);
@@ -121,10 +150,16 @@ public class GrpcServerTransport implements ServerMcpTransport {
         //用户发过来的ping信息
         @Override
         public void ping(PingRequest request, StreamObserver<PingResponse> responseObserver) {
+            if (openAuth) {
+                String clientId = request.getClientId();
+                clientMap.computeIfPresent(clientId, (k, v) -> System.currentTimeMillis());
+            }
+
             responseObserver.onNext(PingResponse.newBuilder().setMessage("pong").setTimestamp(System.currentTimeMillis()).build());
             responseObserver.onCompleted();
         }
 
+        //通知回来,mcpclient 已经初始化完毕了
         @Override
         public void methodNotificationInitialized(NotificationInitializedRequest request, StreamObserver<NotificationInitializedResponse> responseObserver) {
             responseObserver.onNext(NotificationInitializedResponse.newBuilder().build());
@@ -136,24 +171,20 @@ public class GrpcServerTransport implements ServerMcpTransport {
         public StreamObserver<StreamRequest> bidirectionalToolStream(StreamObserver<StreamResponse> responseObserver) {
             return new StreamObserver<>() {
 
-                private String userId = null;
+                private String clientId = null;
 
                 @Override
                 public void onNext(StreamRequest streamRequest) {
                     String name = streamRequest.getName();
-                    log.info("call name:{}", name);
-
-                    if (name.equals("login")) {
-                        userId = streamRequest.getClientId();
-                        userConnections.put(userId, responseObserver);
-                        TextContent content = TextContent.newBuilder().setText("success").build();
-                        responseObserver.onNext(StreamResponse.newBuilder().addContent(Content.newBuilder().setText(content).build()).build());
-                    }
-
+                    log.info("bidirectionalToolStream name:{}", name);
                     //连接过来,随时可以通过服务器推回去信息
                     if (name.equals("observer")) {
-                        userId = streamRequest.getClientId();
-                        userConnections.putIfAbsent(userId, responseObserver);
+                        clientId = streamRequest.getClientId();
+                        //验证权限
+                        if (openAuth && !authFunction.apply(clientId, streamRequest.getToken())) {
+                            throw new RuntimeException("auth error");
+                        }
+                        userConnections.putIfAbsent(clientId, responseObserver);
                     }
 
                 }
@@ -162,8 +193,8 @@ public class GrpcServerTransport implements ServerMcpTransport {
                 public void onError(Throwable throwable) {
                     log.error(throwable.getMessage(), throwable);
                     responseObserver.onError(throwable);
-                    if (null != userId) {
-                        userConnections.remove(userId);
+                    if (null != clientId) {
+                        userConnections.remove(clientId);
                     }
                 }
 
@@ -175,6 +206,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
 
         }
 
+        //初始化过来
         @Override
         public void initialize(InitializeRequest request, StreamObserver<InitializeResponse> responseObserver) {
             // 简化的示例实现
@@ -186,9 +218,17 @@ public class GrpcServerTransport implements ServerMcpTransport {
                             .setVersion("1.0.0")
                             .build())
                     .build();
+            //权限校验
+            if (openAuth && !authFunction.apply(request.getClientId(), request.getToken())) {
+                responseObserver.onError(new RuntimeException("auth error"));
+            } else {
+                if (StringUtils.isNotEmpty(request.getClientId())) {
+                    clientMap.putIfAbsent(request.getClientId(), System.currentTimeMillis());
+                }
+                responseObserver.onNext(response);
+                responseObserver.onCompleted();
+            }
 
-            responseObserver.onNext(response);
-            responseObserver.onCompleted();
         }
 
         //返回工具列表
@@ -225,6 +265,9 @@ public class GrpcServerTransport implements ServerMcpTransport {
             String name = request.getName();
             TextContent.Builder builder = TextContent.newBuilder();
 
+            //验证下权限
+            auth(request);
+
             //请求进来的
             if (name.equals(METHOD_TOOLS_CALL)) {
                 DefaultMcpSession.RequestHandler rh = mcpServer.getMcpSession().getRequestHandlers().get(name);
@@ -248,6 +291,10 @@ public class GrpcServerTransport implements ServerMcpTransport {
         @Override
         public void callToolStream(CallToolRequest request, StreamObserver<CallToolResponse> responseObserver) {
             String name = request.getName();
+
+            //验证下权限
+            auth(request);
+
             //请求进来的
             if (name.equals(METHOD_TOOLS_STREAM)) {
                 DefaultMcpSession.StreamRequestHandler rh = mcpServer.getMcpSession().getStreamRequestHandlers().get(name);
@@ -270,5 +317,19 @@ public class GrpcServerTransport implements ServerMcpTransport {
             }
         }
 
+    }
+
+    private void auth(CallToolRequest request) {
+        if (openAuth) {
+            String clientId = request.getClientId();
+            String token = request.getToken();
+            if (!clientMap.containsKey(clientId)) {
+                if (!authFunction.apply(clientId, token)) {
+                    throw new RuntimeException("call tool (auth error)");
+                } else {
+                    clientMap.putIfAbsent(clientId, System.currentTimeMillis());
+                }
+            }
+        }
     }
 } 

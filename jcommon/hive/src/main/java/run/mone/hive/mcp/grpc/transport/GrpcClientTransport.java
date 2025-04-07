@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.stub.StreamObserver;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -35,6 +37,7 @@ import static run.mone.hive.mcp.spec.McpSchema.METHOD_TOOLS_STREAM;
  * gRPC 客户端传输层实现
  */
 @Slf4j
+@Data
 public class GrpcClientTransport implements ClientMcpTransport {
 
     private final String host;
@@ -44,7 +47,8 @@ public class GrpcClientTransport implements ClientMcpTransport {
     private McpServiceGrpc.McpServiceBlockingStub blockingStub;
     private McpServiceGrpc.McpServiceStub asyncStub;
 
-    private Function<Mono<JSONRPCMessage>, Mono<JSONRPCMessage>> messageHandler;
+    private Consumer<String> consumer = (msg) -> {
+    };
 
     /**
      * 创建 gRPC 客户端传输层
@@ -65,7 +69,6 @@ public class GrpcClientTransport implements ClientMcpTransport {
     @Override
     public Mono<Void> connect(Function<Mono<JSONRPCMessage>, Mono<JSONRPCMessage>> handler) {
         return Mono.fromRunnable(() -> {
-            this.messageHandler = handler;
             this.channel = ManagedChannelBuilder.forAddress(host, port)
                     .usePlaintext()
                     // 启用自动重连
@@ -151,12 +154,15 @@ public class GrpcClientTransport implements ClientMcpTransport {
         return blockingStub.methodNotificationInitialized(NotificationInitializedRequest.newBuilder().build());
     }
 
+    //连接到服务端,然后等待服务端推送消息回来(支持断线重连)
     public StreamObserver<StreamRequest> observer(StreamObserver<StreamResponse> observer, String clientId) {
         // 创建带重连功能的包装观察者
-        StreamObserver<StreamResponse> reconnectingObserver = new StreamObserver<StreamResponse>() {
+        StreamObserver<StreamResponse> reconnectingObserver = new StreamObserver<>() {
             @Override
             public void onNext(StreamResponse response) {
                 // 直接转发响应
+                String data = response.getData();
+                consumer.accept(data);
                 observer.onNext(response);
             }
 
