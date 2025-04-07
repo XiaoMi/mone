@@ -112,8 +112,9 @@ public class WriterService {
         });
     }
 
-    public Flux<String> generateCreativeIdeas(String topic, int numberOfIdeas) {
-        String prompt = String.format("请为主题'%s'提供%d个创意写作构思，包括可能的角度、故事情节或独特观点：", topic, numberOfIdeas);
+    public Flux<String> generateCreativeIdeas(String topic, Object numberOfIdeasObj) {
+        String numberOfIdeas = numberOfIdeasObj+"";
+        String prompt = String.format("请为主题'%s'提供%s个创意写作构思，包括可能的角度、故事情节或独特观点：", topic, numberOfIdeas);
         return Flux.create(sink -> {
             llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
                 sink.next(content);

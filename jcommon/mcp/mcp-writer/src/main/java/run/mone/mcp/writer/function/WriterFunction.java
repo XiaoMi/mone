@@ -119,7 +119,7 @@ public class WriterFunction implements Function<Map<String, Object>, Flux<McpSch
                     case "translateText" -> writerService.translateText((String) arguments.get("text"), (String) arguments.get("targetLanguage"));
                     case "generateCreativeIdeas" -> writerService.generateCreativeIdeas(
                             (String) arguments.get("topic"), 
-                            ((Number) arguments.get("numberOfIdeas")).intValue());
+                            arguments.get("numberOfIdeas"));
                     case "createCharacterProfile" -> writerService.createCharacterProfile((String) arguments.get("characterDescription"));
                     case "analyzeWritingStyle" -> writerService.analyzeWritingStyle((String) arguments.get("text"));
                     case "generateSeoContent" -> writerService.generateSeoContent(
