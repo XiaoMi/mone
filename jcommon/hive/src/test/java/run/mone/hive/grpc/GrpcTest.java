@@ -6,9 +6,12 @@ import io.grpc.stub.StreamObserver;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
+import run.mone.hive.common.HiveConst;
+import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.client.McpClient;
 import run.mone.hive.mcp.client.McpSyncClient;
+import run.mone.hive.mcp.grpc.InitializeRequest;
 import run.mone.hive.mcp.grpc.StreamRequest;
 import run.mone.hive.mcp.grpc.StreamResponse;
 import run.mone.hive.mcp.grpc.transport.GrpcClientTransport;
@@ -19,6 +22,7 @@ import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.spec.McpSchema;
 
 import java.util.UUID;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
@@ -28,6 +32,7 @@ import java.util.stream.IntStream;
  */
 public class GrpcTest {
 
+    private String clientId = "abc";
 
 
     @SneakyThrows
@@ -47,6 +52,44 @@ public class GrpcTest {
             sink.next(new McpSchema.CallToolResult(Lists.newArrayList(tc), false));
             sink.complete();
         })));
+
+
+        //发送消息给123
+        Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
+            Safe.run(() -> {
+                transport.sendMessage(new McpSchema.JSONRPCNotification("", "", ImmutableMap.of("1", "2", HiveConst.CLIENT_ID, clientId)));
+            });
+        }, 10, 10, TimeUnit.SECONDS);
+
+        System.in.read();
+    }
+
+
+    @SneakyThrows
+    @Test
+    public void testNotification() {
+        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
+        client.connect(a -> null).subscribe();
+
+        client.initialize(InitializeRequest.newBuilder().setClientId(clientId).build());
+        client.observer(new StreamObserver<>() {
+            @Override
+            public void onNext(StreamResponse streamResponse) {
+                System.out.println(streamResponse.getData());
+            }
+
+            @Override
+            public void onError(Throwable throwable) {
+
+            }
+
+            @Override
+            public void onCompleted() {
+
+            }
+        }, "abc");
+
+
         System.in.read();
     }
 

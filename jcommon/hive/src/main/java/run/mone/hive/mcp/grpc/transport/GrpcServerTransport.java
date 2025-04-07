@@ -7,7 +7,9 @@ import io.grpc.ServerBuilder;
 import io.grpc.stub.StreamObserver;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Mono;
+import run.mone.hive.common.HiveConst;
 import run.mone.hive.common.Safe;
 import run.mone.hive.mcp.grpc.*;
 import run.mone.hive.mcp.server.McpAsyncServer;
@@ -105,8 +107,21 @@ public class GrpcServerTransport implements ServerMcpTransport {
         });
     }
 
+
+    //允许通知到client
     @Override
     public Mono<Object> sendMessage(JSONRPCMessage message) {
+        if (message instanceof McpSchema.JSONRPCNotification notification) {
+            Map<String, Object> params = notification.params();
+            if (null != params && params.containsKey(HiveConst.CLIENT_ID)) {
+                String clientId = params.get(HiveConst.CLIENT_ID).toString();
+                StreamObserver<StreamResponse> observer = userConnections.get(clientId);
+                //直接通知到client
+                if (null != observer) {
+                    observer.onNext(StreamResponse.newBuilder().setData(GsonUtils.GSON.toJson(params)).build());
+                }
+            }
+        }
         return Mono.empty();
     }
 
@@ -125,7 +140,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
             Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
                 Safe.run(() -> {
                     userConnections.forEach((k, v) -> {
-                        v.onNext(StreamResponse.newBuilder().setData("data:" + k).build());
+                        v.onNext(StreamResponse.newBuilder().setData("server ping :" + k).build());
                     });
                 });
             }, 5, 5, TimeUnit.SECONDS);
@@ -207,7 +222,9 @@ public class GrpcServerTransport implements ServerMcpTransport {
             if (openAuth && !authFunction.apply(request.getClientId(), request.getToken())) {
                 responseObserver.onError(new RuntimeException("auth error"));
             } else {
-                clientMap.putIfAbsent(request.getClientId(), System.currentTimeMillis());
+                if (StringUtils.isNotEmpty(request.getClientId())) {
+                    clientMap.putIfAbsent(request.getClientId(), System.currentTimeMillis());
+                }
                 responseObserver.onNext(response);
                 responseObserver.onCompleted();
             }
