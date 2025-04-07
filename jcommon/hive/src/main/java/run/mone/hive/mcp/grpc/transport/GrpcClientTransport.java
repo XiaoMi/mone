@@ -1,5 +1,6 @@
 package run.mone.hive.mcp.grpc.transport;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.grpc.ManagedChannel;
@@ -19,6 +20,7 @@ import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.JSONRPCMessage;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -199,7 +201,26 @@ public class GrpcClientTransport implements ClientMcpTransport {
         Map<String, String> stringMap = objectMap.entrySet().stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
-                        e -> Objects.toString(e.getValue(), null)
+                        e -> {
+                            Object value = e.getValue();
+                            if (value == null) {
+                                return null;
+                            }
+                            // 检查是否是复杂类型
+                            if (value instanceof Collection<?> ||    // List, Set等集合
+                                    value.getClass().isArray() ||        // 数组
+                                    value instanceof Map<?, ?> ||        // Map
+                                    !value.getClass().isPrimitive() &&   // 不是基本类型
+                                            !value.getClass().equals(String.class)) {  // 不是字符串
+                                try {
+                                    return objectMapper.writeValueAsString(value);
+                                } catch (JsonProcessingException ex) {
+                                    throw new RuntimeException("Failed to serialize value", ex);
+                                }
+                            }
+                            return Objects.toString(value, null);
+
+                        }
                 ));
 
         String methodName = getMethodName(request);
