@@ -1,23 +1,5 @@
 package run.mone.hive.llm;
 
-import com.google.common.base.Stopwatch;
-import com.google.common.collect.Lists;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import lombok.Data;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import okhttp3.*;
-import okio.BufferedSource;
-import org.apache.commons.lang3.StringUtils;
-import run.mone.hive.configs.LLMConfig;
-import run.mone.hive.roles.Role;
-import run.mone.hive.schema.AiMessage;
-import run.mone.hive.schema.Message;
-
-import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -33,8 +15,40 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import static run.mone.hive.llm.ClaudeProxy.getClaudeName;
+import javax.imageio.ImageIO;
+
+import org.apache.commons.lang3.StringUtils;
+
+import com.google.common.base.Stopwatch;
+import com.google.common.collect.Lists;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+
+import lombok.Data;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+import okio.BufferedSource;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
+import run.mone.hive.configs.LLMConfig;
+
 import static run.mone.hive.llm.ClaudeProxy.getClaudeKey;
+import static run.mone.hive.llm.ClaudeProxy.getClaudeName;
+
+import run.mone.hive.roles.Role;
+import run.mone.hive.schema.AiMessage;
+import run.mone.hive.schema.Message;
 
 @Data
 @Slf4j
@@ -84,11 +98,19 @@ public class LLM {
         if (this.llmProvider == LLMProvider.GOOGLE_2 && StringUtils.isEmpty(config.getUrl())) {
             key = apiKey;
         }
+
         if (null != this.config && StringUtils.isNotEmpty(this.config.getUrl())) {
+            String urlToUse;
             if (stream && StringUtils.isNotEmpty(this.config.getStreamUrl())) {
-                return this.config.getStreamUrl() + key;
+                // 处理多个流式URL的情况
+                String[] streamUrls = this.config.getStreamUrl().split(",");
+                urlToUse = getRandomUrl(streamUrls);
+            } else {
+                // 处理多个普通URL的情况
+                String[] urls = this.config.getUrl().split(",");
+                urlToUse = getRandomUrl(urls);
             }
-            return this.config.getUrl() + key;
+            return urlToUse + key;
         }
         return llmProvider.getUrl() + key;
     }
@@ -363,7 +385,7 @@ public class LLM {
 
 
     public void chat(List<AiMessage> messages, BiConsumer<String, JsonObject> messageHandlerr) {
-        chatCompletionStream(System.getenv(llmProvider.getEnvName()),
+        chatCompletionStream(getToken(),
                 messages,
                 llmProvider.getDefaultModel(),
                 messageHandlerr,
@@ -383,8 +405,23 @@ public class LLM {
         );
     }
 
+    public Flux<String> call(List<AiMessage> messages) {
+        return Flux.create(sink -> chatCompletionStream(getToken(), messages, llmProvider.getDefaultModel(), (a, b) -> {
+        }, (a) -> {
+        }, "", sink));
+    }
+
+
+    public Flux<String> chat(String apiKey, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt) {
+        return Flux.create(sink -> chatCompletionStream(apiKey, messages, model, messageHandler, lineConsumer, systemPrompt, sink));
+    }
+
 
     public void chatCompletionStream(String apiKey, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt) {
+        chatCompletionStream(apiKey, messages, model, messageHandler, lineConsumer, systemPrompt, null);
+    }
+
+    public void chatCompletionStream(String apiKey, List<AiMessage> messages, String model, BiConsumer<String, JsonObject> messageHandler, Consumer<String> lineConsumer, String systemPrompt, FluxSink<String> sink) {
         JsonObject requestBody = new JsonObject();
 
         if (this.llmProvider != LLMProvider.GOOGLE_2
@@ -478,6 +515,9 @@ public class LLM {
                 jsonResponse.addProperty("type", "failure");
                 jsonResponse.addProperty("content", e.getMessage());
                 messageHandler.accept(e.getMessage(), jsonResponse);
+                if (null != sink) {
+                    sink.error(e);
+                }
             }
 
             @Override
@@ -509,12 +549,19 @@ public class LLM {
                                 jsonResponse.addProperty("type", "event");
                                 jsonResponse.addProperty("content", text);
                                 messageHandler.accept(text, jsonResponse);
-
+                                if (null != sink) {
+                                    sink.next(text);
+                                }
                                 if (candidate.has("finishReason")) {
                                     JsonObject finishRes = new JsonObject();
                                     finishRes.addProperty("type", "finish");
                                     finishRes.addProperty("content", candidate.get("finishReason").getAsString());
                                     messageHandler.accept("[DONE]", finishRes);
+
+                                    if (null != sink) {
+                                        sink.complete();
+                                    }
+
                                 }
                             }
                         } else if (llmProvider == LLMProvider.CLAUDE_COMPANY) {
@@ -532,6 +579,9 @@ public class LLM {
                                     jsonRes.addProperty("type", "finish");
                                     jsonRes.addProperty("content", "[DONE]");
                                     messageHandler.accept("[DONE]", jsonRes);
+                                    if (null != sink) {
+                                        sink.complete();
+                                    }
                                     break;
                                 }
 
@@ -546,6 +596,9 @@ public class LLM {
                                     jsonResponse.addProperty("type", "event");
                                     jsonResponse.addProperty("content", content);
                                     messageHandler.accept(content, jsonResponse);
+                                    if (null != sink) {
+                                        sink.next(content);
+                                    }
                                 }
                             }
                         } else {
@@ -556,6 +609,9 @@ public class LLM {
                                     jsonResponse.addProperty("type", "finish");
                                     jsonResponse.addProperty("content", "[DONE]");
                                     messageHandler.accept("[DONE]", jsonResponse);
+                                    if (null != sink) {
+                                        sink.complete();
+                                    }
                                     break;
                                 }
                                 JsonObject jsonResponse = gson.fromJson(data, JsonObject.class);
@@ -566,9 +622,9 @@ public class LLM {
                                             .getAsJsonObject("delta");
 
                                     JsonElement c = delta.get("content");
-                                    if (c.isJsonNull() || (c.isJsonPrimitive() && StringUtils.isEmpty(c.getAsString()))) {
+                                    if ((c.isJsonPrimitive() && StringUtils.isEmpty(c.getAsString())) || c.isJsonNull()) {
                                         JsonElement rc = delta.get("reasoning_content");
-                                        if (!rc.isJsonNull()) {
+                                        if (null != rc && !rc.isJsonNull()) {
                                             content = rc.getAsString();
                                         }
                                     } else {
@@ -581,15 +637,21 @@ public class LLM {
                                 jsonResponse.addProperty("type", "event");
                                 jsonResponse.addProperty("content", content);
                                 messageHandler.accept(content, jsonResponse);
+                                if (null != sink) {
+                                    sink.next(content);
+                                }
                             }
                         }
                     }
-                    System.out.println("FINISH");
+                    log.info("FINISH");
                 } catch (Throwable ex) {
                     JsonObject jsonResponse = new JsonObject();
                     jsonResponse.addProperty("type", "failure");
                     jsonResponse.addProperty("content", ex.getMessage());
                     messageHandler.accept(ex.getMessage(), jsonResponse);
+                    if (null != sink) {
+                        sink.error(ex);
+                    }
                 }
             }
         });
@@ -774,6 +836,16 @@ public class LLM {
                 }
             }
         }
+    }
+
+    // 添加一个新方法，用于从多个URL中随机选择一个
+    private String getRandomUrl(String[] urls) {
+        if (urls == null || urls.length == 0) {
+            return "";
+        }
+        // 随机选择一个URL
+        int randomIndex = (int) (Math.random() * urls.length);
+        return urls[randomIndex].trim(); // 去除可能的空白字符
     }
 
 }
