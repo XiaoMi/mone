@@ -32,7 +32,7 @@ public class GrpcTest {
 
     @SneakyThrows
     @Test
-    public void testServer2() {
+    public void testServer() {
         GrpcServerTransport transport = new GrpcServerTransport(Const.GRPC_PORT);
         McpAsyncServer server = McpServer.using(transport).capabilities(McpSchema.ServerCapabilities.builder().tools(true).build()).async();
 
