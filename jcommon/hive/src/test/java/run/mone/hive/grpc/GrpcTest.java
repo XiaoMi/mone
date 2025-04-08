@@ -133,6 +133,7 @@ public class GrpcTest {
         McpConfig.ins().setClientId("1212");
         GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
         McpSyncClient mc = McpClient.using(client).sync();
+        client.setClientAuth(clientId, token);
         McpSchema.CallToolRequest req = new McpSchema.CallToolRequest("a", ImmutableMap.of("k", "v", "k1", "v1"));
         McpSchema.CallToolResult res = mc.callTool(req);
         System.out.println(res);
@@ -151,8 +152,9 @@ public class GrpcTest {
 
     @Test
     public void testPing() {
-        McpConfig.ins().setClientId("1212");
+        McpConfig.ins().setClientId(clientId);
         GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
+        client.setClientAuth(clientId, token);
         McpSyncClient mc = McpClient.using(client).sync();
         IntStream.range(0, 100).forEach(it -> {
             try {
@@ -217,17 +219,17 @@ public class GrpcTest {
 
     @Test
     public void testMap() {
-        ConcurrentHashMap<String,Map> m = new ConcurrentHashMap<String, Map>();
-        m.compute("a",(k,v)->{
+        ConcurrentHashMap<String, Map> m = new ConcurrentHashMap<String, Map>();
+        m.compute("a", (k, v) -> {
             if (v == null) {
-                return ImmutableMap.of("a","b");
+                return ImmutableMap.of("a", "b");
             }
             return v;
         });
 
-        m.compute("a",(k,v)->{
+        m.compute("a", (k, v) -> {
             if (v != null) {
-                return ImmutableMap.of("k","v");
+                return ImmutableMap.of("k", "v");
             }
             return v;
         });
