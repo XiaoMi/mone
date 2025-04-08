@@ -10,5 +10,6 @@ dependencies = [
     "pyautogui>=0.9.54",
     "pyperclip>=1.9.0",
     "pywin32>=309",
+    "pywinauto>=0.6.9",
     "uvicorn>=0.34.0",
 ]

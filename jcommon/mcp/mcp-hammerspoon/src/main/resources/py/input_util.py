@@ -72,11 +72,16 @@ def searchAndSendWeComMessage(contactName, message):
     """
     搜索企业微信联系人并发送消息。
     """
-    searchWeComContact(contactName)
+    # searchWeComContact(contactName)
     sendWeComMessage(message)
 
 
 def switchToNextUnreadMessage():
+    try:
+        window_util.set_window_topmost("企业微信")
+        print("设置窗口置顶成功")
+    except Exception as e:
+        print("设置窗口置顶失败:", str(e))
     """
     模拟按下快捷键 "win+alt+下箭头" 切换到下一个未读消息。
     """
