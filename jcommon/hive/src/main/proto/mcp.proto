@@ -152,6 +152,8 @@ message StreamResponse {
   string request_id = 3;  // 可选：用于关联请求和响应
   int32 sequence = 4;     // 可选：用于消息排序
   string data = 5;
+  map<string,string> mapData = 6;
+  string cmd = 7;
 }
 
 // 资源相关消息

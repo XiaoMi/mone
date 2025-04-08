@@ -150,7 +150,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
                 StreamObserver<StreamResponse> observer = userConnections.get(clientId);
                 //直接通知到client
                 if (null != observer) {
-                    observer.onNext(StreamResponse.newBuilder().setData(GsonUtils.GSON.toJson(params)).build());
+                    observer.onNext(StreamResponse.newBuilder().setCmd(Const.NOTIFY_MSG).setData(GsonUtils.GSON.toJson(params)).build());
                 }
             }
         }
