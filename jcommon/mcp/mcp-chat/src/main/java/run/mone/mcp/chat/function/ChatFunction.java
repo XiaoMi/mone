@@ -2,6 +2,7 @@ package run.mone.mcp.chat.function;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 import reactor.core.publisher.Flux;
 
 import org.springframework.stereotype.Component;
@@ -28,19 +29,7 @@ public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchem
                         "description": "The message content from user"
                     },
                     "context": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "role": {
-                                    "type": "string",
-                                    "enum": ["user", "assistant"]
-                                },
-                                "content": {
-                                    "type": "string"
-                                }
-                            }
-                        },
+                        "type": "string",
                         "description": "Previous chat history"
                     }
                 },
@@ -51,21 +40,20 @@ public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchem
     @Override
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         String message = (String) arguments.get("message");
-        @SuppressWarnings("unchecked")
-        List<Map<String, String>> context = (List<Map<String, String>>) arguments.get("context");
-
-        return Flux.defer(() -> {
-            try {
-                Flux<String> result = chatService.chat(message, context);
-                return result.map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
-            } catch (Exception e) {
-                return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true));
-            }
-        });
+        String context = (String) arguments.get("context");
+        if (StringUtils.isEmpty(context)) {
+            context = "";
+        }
+        try {
+            Flux<String> result = chatService.chat(message, context);
+            return result.map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
+        } catch (Exception e) {
+            return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true));
+        }
     }
 
     public String getName() {
-        return "xiaobao_chat";
+        return "stream_xiaobao_chat";
     }
 
     public String getDesc() {

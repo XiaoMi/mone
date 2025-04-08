@@ -36,18 +36,7 @@ class ChatFunctionTest {
         // Prepare test data
         Map<String, Object> arguments = new HashMap<>();
         arguments.put("message", "你好，请介绍下你自己");
-        
-        // Add some context messages (optional)
-        List<Map<String, String>> context = new ArrayList<>();
-        Map<String, String> userMessage = new HashMap<>();
-        userMessage.put("role", "user");
-        userMessage.put("content", "我想了解更多关于AI的知识");
-        Map<String, String> assistantMessage = new HashMap<>();
-        assistantMessage.put("role", "assistant");
-        assistantMessage.put("content", "我很乐意为您介绍AI相关知识。您有什么具体想了解的方面吗？");
-        context.add(userMessage);
-        context.add(assistantMessage);
-        arguments.put("context", context);
+        arguments.put("context", "");
 
         // Call the function
         Flux<McpSchema.CallToolResult> result = chatFunction.apply(arguments);
