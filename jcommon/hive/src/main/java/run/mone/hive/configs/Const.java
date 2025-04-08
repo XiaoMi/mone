@@ -12,4 +12,12 @@ public class Const {
 
     public static int GRPC_PORT = 50051;
 
+    public static final String CLIENT_ID = "clientId";
+
+    public static final String TOKEN = "token";
+
+    public static final String HIVE_VERSION = "2025-03-28:0.0.1";
+
+    public static final String NOTIFY_MSG = "msg";
+
 }

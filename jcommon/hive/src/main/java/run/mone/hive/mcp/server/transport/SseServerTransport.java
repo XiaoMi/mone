@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package run.mone.hive.mcp.transport.webmvcsse;
+package run.mone.hive.mcp.server.transport;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -39,7 +39,6 @@ import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import run.mone.hive.common.HiveConst;
 import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.spec.McpError;
@@ -88,9 +87,9 @@ import org.springframework.web.servlet.function.ServerResponse.SseBuilder;
  * @see ServerMcpTransport
  * @see RouterFunction
  */
-public class WebMvcSseServerTransport implements ServerMcpTransport {
+public class SseServerTransport implements ServerMcpTransport {
 
-    private final static Logger logger = LoggerFactory.getLogger(WebMvcSseServerTransport.class);
+    private final static Logger logger = LoggerFactory.getLogger(SseServerTransport.class);
 
     /**
      * Event type for JSON-RPC messages sent through the SSE connection.
@@ -144,7 +143,7 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
      *                        SSE connection's initial endpoint event.
      * @throws IllegalArgumentException if either objectMapper or messageEndpoint is null
      */
-    public WebMvcSseServerTransport(ObjectMapper objectMapper, String messageEndpoint) {
+    public SseServerTransport(ObjectMapper objectMapper, String messageEndpoint) {
         Assert.notNull(objectMapper, "ObjectMapper must not be null");
         Assert.notNull(messageEndpoint, "Message endpoint must not be null");
 
@@ -214,8 +213,8 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
                 //通知也支持单独发
                 if (message instanceof McpSchema.JSONRPCNotification notification) {
                     Map<String, Object> params = notification.params();
-                    if (null != params && params.containsKey(HiveConst.CLIENT_ID)) {
-                        String clientId = params.get(HiveConst.CLIENT_ID).toString();
+                    if (null != params && params.containsKey(Const.CLIENT_ID)) {
+                        String clientId = params.get(Const.CLIENT_ID).toString();
                         ClientSession session = sessions.get(clientId);
                         if (null != session) {
                             logger.info("notify:{} msg:{}", clientId, jsonText);
@@ -245,6 +244,7 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
 
                 logger.info("Attempting to broadcast message to {} active sessions", sessions.size());
 
+                //广播给所有
                 sessions.values().forEach(session -> {
                     sendMessageToSession(session, jsonText);
                 });

@@ -8,7 +8,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.Getter;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
@@ -22,10 +21,9 @@ import run.mone.hive.mcp.grpc.ListToolsRequest;
 import run.mone.hive.mcp.grpc.PingRequest;
 import run.mone.hive.mcp.grpc.transport.GrpcClientTransport;
 import run.mone.hive.mcp.hub.McpConfig;
-import run.mone.hive.mcp.spec.McpSchema.CallToolResult;
 import run.mone.hive.mcp.spec.McpSchema.Content;
 import run.mone.hive.mcp.spec.McpSchema.TextContent;
-import run.mone.hive.mcp.transport.webmvcsse.WebMvcSseServerTransport;
+import run.mone.hive.mcp.server.transport.SseServerTransport;
 import run.mone.hive.mcp.util.Assert;
 
 /**
@@ -217,8 +215,8 @@ public class DefaultMcpSession implements McpSession {
             }
         })).subscribe();
 
-        if (this.transport instanceof WebMvcSseServerTransport) {
-            ((WebMvcSseServerTransport) this.transport).connectStream(req -> {
+        if (this.transport instanceof SseServerTransport) {
+            ((SseServerTransport) this.transport).connectStream(req -> {
                 return handleToolsStreamRequest(req);
             });
         }
