@@ -18,7 +18,6 @@ import java.util.function.Function;
 public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
 
     private final ChatService chatService;
-    private final ObjectMapper objectMapper;
 
     private static final String TOOL_SCHEMA = """
             {
@@ -53,11 +52,11 @@ public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchem
     }
 
     public String getName() {
-        return "stream_xiaobao_chat";
+        return "stream_minzai_chat";
     }
 
     public String getDesc() {
-        return "和小包聊天，问问小包问题。支持各种形式如：'问问小包'、'请小包告诉我'、'让小包帮我看看'、'小包你知道吗'等。支持上下文连续对话。";
+        return "和minzai聊天，问问minzai问题。支持各种形式如：'minzai'、'请minzai告诉我'、'让minzai帮我看看'、'minzai你知道吗'等。支持上下文连续对话。";
     }
 
     public String getToolScheme() {
