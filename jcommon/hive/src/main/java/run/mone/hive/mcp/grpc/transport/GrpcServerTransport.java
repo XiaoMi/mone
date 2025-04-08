@@ -98,7 +98,16 @@ public class GrpcServerTransport implements ServerMcpTransport {
 
             // 将元数据存储到Context中
             Context context = Context.current().withValue(METADATA_CONTEXT_KEY, headers);
-            return Contexts.interceptCall(context, call, headers, next);
+            // 3. 使用装饰器模式包装原始的 ServerCall.Listener，以便拦截请求参数
+            ServerCall.Listener<ReqT> originalListener = Contexts.interceptCall(context, call, headers, next);
+
+            return new ForwardingServerCallListener.SimpleForwardingServerCallListener<ReqT>(originalListener) {
+                @Override
+                public void onMessage(ReqT message) {
+                    // 继续原有的处理流程
+                    super.onMessage(message);
+                }
+            };
         }
     }
 
