@@ -145,7 +145,6 @@ public class McpHub {
                 try {
                     connectToServer(name, config);
                 } catch (Exception e) {
-                    log.error("Failed to connect to new MCP server: {}", name, e);
                     log.error("Failed to connect to new MCP server " + name + ": " + e.getMessage());
                 }
             } else if (!currentConnection.getServer().getConfig().equals(config.toString())) {
