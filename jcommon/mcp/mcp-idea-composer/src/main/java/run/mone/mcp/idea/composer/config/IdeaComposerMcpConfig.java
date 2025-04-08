@@ -10,7 +10,7 @@ import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.ServerResponse;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.server.transport.StdioServerTransport;
-import run.mone.hive.mcp.transport.webmvcsse.WebMvcSseServerTransport;
+import run.mone.hive.mcp.server.transport.SseServerTransport;
 
 @Configuration
 public class IdeaComposerMcpConfig {
@@ -26,13 +26,13 @@ public class IdeaComposerMcpConfig {
 
     @Bean
     @ConditionalOnProperty(name = "mcp.transport.type", havingValue = "sse", matchIfMissing = true)
-    WebMvcSseServerTransport webMvcSseServerTransport(ObjectMapper mapper) {
-        return new WebMvcSseServerTransport(mapper, "/mcp/message");
+    SseServerTransport webMvcSseServerTransport(ObjectMapper mapper) {
+        return new SseServerTransport(mapper, "/mcp/message");
     }
 
     @Bean
     @ConditionalOnProperty(name = "mcp.transport.type", havingValue = "sse", matchIfMissing = true)
-    RouterFunction<ServerResponse> mcpRouterFunction(WebMvcSseServerTransport transport) {
+    RouterFunction<ServerResponse> mcpRouterFunction(SseServerTransport transport) {
         return transport.getRouterFunction();
     }
 

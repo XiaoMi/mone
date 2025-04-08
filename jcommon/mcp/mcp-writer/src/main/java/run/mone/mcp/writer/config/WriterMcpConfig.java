@@ -12,7 +12,7 @@ import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
-import run.mone.hive.mcp.transport.webmvcsse.WebMvcSseServerTransport;
+import run.mone.hive.mcp.server.transport.SseServerTransport;
 
 
 @Configuration
@@ -31,8 +31,8 @@ public class WriterMcpConfig {
 
     @Bean
     @ConditionalOnProperty(name = "mcp.transport.type", havingValue = "sse", matchIfMissing = true)
-    WebMvcSseServerTransport webMvcSseServerTransport(ObjectMapper mapper) {
-        return new WebMvcSseServerTransport(mapper, "/mcp/message");
+    SseServerTransport webMvcSseServerTransport(ObjectMapper mapper) {
+        return new SseServerTransport(mapper, "/mcp/message");
     }
 
     @Bean
@@ -43,7 +43,7 @@ public class WriterMcpConfig {
 
     @ConditionalOnProperty(name = "mcp.transport.type", havingValue = "sse", matchIfMissing = true)
     @Bean
-    RouterFunction<ServerResponse> mcpRouterFunction(WebMvcSseServerTransport transport) {
+    RouterFunction<ServerResponse> mcpRouterFunction(SseServerTransport transport) {
         return transport.getRouterFunction();
     }
 }

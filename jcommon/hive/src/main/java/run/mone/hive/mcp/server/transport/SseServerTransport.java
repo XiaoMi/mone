@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package run.mone.hive.mcp.transport.webmvcsse;
+package run.mone.hive.mcp.server.transport;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -87,9 +87,9 @@ import org.springframework.web.servlet.function.ServerResponse.SseBuilder;
  * @see ServerMcpTransport
  * @see RouterFunction
  */
-public class WebMvcSseServerTransport implements ServerMcpTransport {
+public class SseServerTransport implements ServerMcpTransport {
 
-    private final static Logger logger = LoggerFactory.getLogger(WebMvcSseServerTransport.class);
+    private final static Logger logger = LoggerFactory.getLogger(SseServerTransport.class);
 
     /**
      * Event type for JSON-RPC messages sent through the SSE connection.
@@ -143,7 +143,7 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
      *                        SSE connection's initial endpoint event.
      * @throws IllegalArgumentException if either objectMapper or messageEndpoint is null
      */
-    public WebMvcSseServerTransport(ObjectMapper objectMapper, String messageEndpoint) {
+    public SseServerTransport(ObjectMapper objectMapper, String messageEndpoint) {
         Assert.notNull(objectMapper, "ObjectMapper must not be null");
         Assert.notNull(messageEndpoint, "Message endpoint must not be null");
 
@@ -244,6 +244,7 @@ public class WebMvcSseServerTransport implements ServerMcpTransport {
 
                 logger.info("Attempting to broadcast message to {} active sessions", sessions.size());
 
+                //广播给所有
                 sessions.values().forEach(session -> {
                     sendMessageToSession(session, jsonText);
                 });
