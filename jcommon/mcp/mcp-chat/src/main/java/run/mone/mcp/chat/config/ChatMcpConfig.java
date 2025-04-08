@@ -2,6 +2,7 @@
 package run.mone.mcp.chat.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,12 +12,15 @@ import org.springframework.web.servlet.function.ServerResponse;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLMProvider;
 import run.mone.hive.configs.LLMConfig;
-import run.mone.hive.mcp.transport.webmvcsse.WebMvcSseServerTransport;
+import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
+import run.mone.hive.mcp.server.transport.SseServerTransport;
 
 
 @Configuration
-@ConditionalOnProperty(name = "sse.enabled", havingValue = "true")
 public class ChatMcpConfig {
+
+    @Value("${mcp.grpc.port:9999}")
+    private int grpcPort;
 
     @Bean
     LLM llm() {
@@ -26,12 +30,20 @@ public class ChatMcpConfig {
     }
 
     @Bean
-    WebMvcSseServerTransport webMvcSseServerTransport(ObjectMapper mapper) {
-        return new WebMvcSseServerTransport(mapper, "/mcp/message");
+    @ConditionalOnProperty(name = "mcp.transport.type", havingValue = "grpc")
+    GrpcServerTransport grpcServerTransport() {
+        return new GrpcServerTransport(grpcPort);
     }
 
     @Bean
-    RouterFunction<ServerResponse> mcpRouterFunction(WebMvcSseServerTransport transport) {
+    @ConditionalOnProperty(name = "mcp.transport.type", havingValue = "sse", matchIfMissing = true)
+    SseServerTransport webMvcSseServerTransport(ObjectMapper mapper) {
+        return new SseServerTransport(mapper, "/mcp/message");
+    }
+
+    @Bean
+    @ConditionalOnProperty(name = "mcp.transport.type", havingValue = "sse", matchIfMissing = true)
+    RouterFunction<ServerResponse> mcpRouterFunction(SseServerTransport transport) {
         return transport.getRouterFunction();
     }
 }
