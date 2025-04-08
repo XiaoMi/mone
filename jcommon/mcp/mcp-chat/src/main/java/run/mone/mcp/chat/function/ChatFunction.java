@@ -1,16 +1,16 @@
 package run.mone.mcp.chat.function;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
-import reactor.core.publisher.Flux;
-
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.chat.service.ChatService;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 
 @Component
@@ -18,6 +18,7 @@ import java.util.function.Function;
 public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
 
     private final ChatService chatService;
+    private final List<Message> history = new CopyOnWriteArrayList<>();
 
     private static final String TOOL_SCHEMA = """
             {
@@ -43,11 +44,18 @@ public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchem
         if (StringUtils.isEmpty(context)) {
             context = "";
         }
+        
+        // Add user message to history
+        history.add(new Message("user", message));
+        
         try {
+            StringBuilder sb = new StringBuilder();
             Flux<String> result = chatService.chat(message, context);
-            return result.map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
+            return result.doOnNext(sb::append).map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false)).doOnComplete(()-> history.add(new Message("assistant", sb.toString())));
         } catch (Exception e) {
-            return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true));
+            String errorMessage = "Error: " + e.getMessage();
+            history.add(new Message("assistant", errorMessage));
+            return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(errorMessage)), true));
         }
     }
 
@@ -61,5 +69,9 @@ public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchem
 
     public String getToolScheme() {
         return TOOL_SCHEMA;
+    }
+    
+    public List<Message> getHistory() {
+        return history;
     }
 }
