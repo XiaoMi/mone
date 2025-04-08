@@ -1,25 +1,7 @@
 package run.mone.mcp.hammerspoon.function;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.ArrayList;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
-import okhttp3.*;
-import run.mone.hive.mcp.spec.McpSchema;
-
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
@@ -29,6 +11,11 @@ import okhttp3.RequestBody;
 import okhttp3.Response;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.hammerspoon.common.StringUtils;
+
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 /**
  * @author shanwb
@@ -119,6 +106,8 @@ public class ChatToFunction implements Function<Map<String, Object>, McpSchema.C
                 log.info("responseBody:{}",responseBody);
 
             }
+
+            Thread.sleep(2000);
 
             //截图
             Request captureRequest = new Request.Builder()
