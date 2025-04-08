@@ -11,6 +11,9 @@ service McpService {
   // 初始化连接
   rpc Initialize(InitializeRequest) returns (InitializeResponse) {}
   
+  // Ping 服务
+  rpc Ping(PingRequest) returns (PingResponse) {}
+  
   // 工具相关方法
   rpc ListTools(ListToolsRequest) returns (ListToolsResponse) {}
   rpc CallTool(CallToolRequest) returns (CallToolResponse) {}
@@ -36,8 +39,11 @@ service McpService {
   // 采样相关方法
   rpc CreateMessage(CreateMessageRequest) returns (CreateMessageResponse) {}
 
-  // 双向流式RPC方法定义
+  // 双向流式RPC方法定义(方便回推信息)
   rpc BidirectionalToolStream(stream StreamRequest) returns (stream StreamResponse) {}
+
+  // 通知初始化方法
+  rpc methodNotificationInitialized(NotificationInitializedRequest) returns (NotificationInitializedResponse) {}
 }
 
 // 通用消息结构
@@ -111,7 +117,7 @@ message ListToolsResponse {
 message Tool {
   string name = 1;
   string description = 2;
-  JsonSchema input_schema = 3;
+  string input_schema = 3;
 }
 
 message JsonSchema {
@@ -124,6 +130,7 @@ message JsonSchema {
 message CallToolRequest {
   string name = 1;
   map<string, string> arguments = 2;
+  optional string method = 3;
 }
 
 message CallToolResponse {
@@ -144,6 +151,7 @@ message StreamResponse {
   bool is_error = 2;
   string request_id = 3;  // 可选：用于关联请求和响应
   int32 sequence = 4;     // 可选：用于消息排序
+  string data = 5;
 }
 
 // 资源相关消息
@@ -369,4 +377,25 @@ enum LoggingLevel {
   CRITICAL = 5;
   ALERT = 6;
   EMERGENCY = 7;
+}
+
+// Ping 相关消息
+message PingRequest {
+  string message = 1;
+}
+
+message PingResponse {
+  string message = 1;
+  int64 timestamp = 2;
+}
+
+// 通知初始化相关消息
+message NotificationInitializedRequest {
+  string client_id = 1;
+  map<string, string> capabilities = 2;
+}
+
+message NotificationInitializedResponse {
+  bool success = 1;
+  string message = 2;
 } 

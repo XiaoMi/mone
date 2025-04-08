@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import run.mone.hive.mcp.grpc.CallToolRequest;
 import run.mone.hive.mcp.server.McpServer.PromptRegistration;
 import run.mone.hive.mcp.server.McpServer.ResourceRegistration;
 import run.mone.hive.mcp.server.McpServer.ToolRegistration;
@@ -27,6 +28,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * 
@@ -60,8 +62,10 @@ public class McpAsyncServer {
 	/**
 	 * Thread-safe list of tool handlers that can be modified at runtime.
 	 */
+	@Getter
 	private final CopyOnWriteArrayList<ToolRegistration> tools;
 
+	@Getter
 	private final CopyOnWriteArrayList<ToolStreamRegistration> streamTools;
 
 	private final CopyOnWriteArrayList<McpSchema.ResourceTemplate> resourceTemplates;
@@ -374,13 +378,8 @@ public class McpAsyncServer {
 
 			List<Tool> toolsRes = new ArrayList<>();
 
-			List<Tool> tools = this.tools.stream().map(toolRegistration -> {
-				return toolRegistration.tool();
-			}).toList();
-
-			List<Tool> streamTools = this.streamTools.stream().map(toolRegistration -> {
-				return toolRegistration.tool();
-			}).toList();
+			List<Tool> tools = this.tools.stream().map(toolRegistration -> toolRegistration.tool()).toList();
+			List<Tool> streamTools = this.streamTools.stream().map(toolRegistration -> toolRegistration.tool()).toList();
 
 			toolsRes.addAll(tools);
 			toolsRes.addAll(streamTools);
@@ -392,6 +391,28 @@ public class McpAsyncServer {
 	private DefaultMcpSession.RequestHandler toolsCallRequestHandler() {
 		// TODO: handle tool call request
 		return params -> {
+			//grpc
+			if (params instanceof CallToolRequest ctr) {
+				Optional<McpServer.ToolRegistration> toolRegistration = this.tools.stream()
+						.filter(tr -> ctr.getMethod().equals(tr.tool().name()))
+						.findAny();
+
+				if (toolRegistration.isEmpty()) {
+					return Mono.error(new McpError("Tool not found: " + ctr.getName()));
+				}
+
+				Map<String, Object> objectMap = ctr.getArgumentsMap().entrySet().stream()
+						.collect(Collectors.toMap(
+								Map.Entry::getKey,
+								Map.Entry::getValue
+						));
+
+				return Mono.fromCallable(() -> toolRegistration.get().call().apply(objectMap))
+						.map(result -> (Object) result)
+						.subscribeOn(Schedulers.boundedElastic());
+			}
+
+			//sse stido
 			McpSchema.CallToolRequest callToolRequest = transport.unmarshalFrom(params,
 					new TypeReference<McpSchema.CallToolRequest>() {
 					});
@@ -413,6 +434,33 @@ public class McpAsyncServer {
 	private DefaultMcpSession.StreamRequestHandler toolsStreamRequestHandler() {
 		return params -> {
 			logger.info("Received tools stream request: {}", params);
+
+			//grpc
+			if (params instanceof CallToolRequest ctr) {
+				Optional<McpServer.ToolStreamRegistration> toolRegistration = this.streamTools.stream()
+						.filter(tr -> ctr.getMethod().equals(tr.tool().name()))
+						.findAny();
+
+				if (toolRegistration.isEmpty()) {
+					return Flux.error(new McpError("Tool not found: " + ctr.getMethod()));
+				}
+
+				McpServer.ToolStreamRegistration tool = toolRegistration.get();
+
+				logger.info("Handling tools stream request with tool: {}", tool);
+
+				Map<String, Object> objectMap = ctr.getArgumentsMap().entrySet().stream()
+						.collect(Collectors.toMap(
+								Map.Entry::getKey,
+								Map.Entry::getValue
+						));
+
+				return Flux.from(tool.call()
+						.apply(objectMap)
+						.subscribeOn(Schedulers.boundedElastic()));
+			}
+
+			//sse
 			// this is where we handle tools stream request
 			McpSchema.CallToolRequest callToolRequest = transport.unmarshalFrom(params,
 					new TypeReference<McpSchema.CallToolRequest>() {
