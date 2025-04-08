@@ -90,7 +90,8 @@ public class GrpcServerTransport implements ServerMcpTransport {
                 ServerCallHandler<ReqT, RespT> next) {
 
             // 提取元数据
-            String clientId = headers.get(CLIENT_ID_KEY);
+            String clientId = headers.get(CLIENT_ID_KEY) == null ? "default" : headers.get(CLIENT_ID_KEY);
+
             String token = headers.get(TOKEN_KEY);
 
             //统一验证权限
@@ -104,6 +105,16 @@ public class GrpcServerTransport implements ServerMcpTransport {
             return new ForwardingServerCallListener.SimpleForwardingServerCallListener<ReqT>(originalListener) {
                 @Override
                 public void onMessage(ReqT message) {
+                    if (message instanceof CallToolRequest req) {
+                        CallToolRequest newReq = CallToolRequest.newBuilder().setName(req.getName())
+                                .setMethod(req.getMethod())
+                                .putAllArguments(req.getArgumentsMap())
+                                //存入clientId
+                                .putArguments(Const.CLIENT_ID, clientId)
+                                .build();
+                        super.onMessage((ReqT) newReq);
+                        return;
+                    }
                     // 继续原有的处理流程
                     super.onMessage(message);
                 }
