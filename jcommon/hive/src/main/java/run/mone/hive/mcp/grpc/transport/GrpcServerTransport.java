@@ -57,9 +57,9 @@ public class GrpcServerTransport implements ServerMcpTransport {
 
     // 定义元数据键
     private static final Metadata.Key<String> CLIENT_ID_KEY =
-            Metadata.Key.of("clientId", Metadata.ASCII_STRING_MARSHALLER);
+            Metadata.Key.of(Const.CLIENT_ID, Metadata.ASCII_STRING_MARSHALLER);
     private static final Metadata.Key<String> TOKEN_KEY =
-            Metadata.Key.of("token", Metadata.ASCII_STRING_MARSHALLER);
+            Metadata.Key.of(Const.TOKEN, Metadata.ASCII_STRING_MARSHALLER);
     // 为元数据定义Context键
     private static final Context.Key<Metadata> METADATA_CONTEXT_KEY = Context.key("metadata");
 
