@@ -1,5 +1,25 @@
 package run.mone.hive.llm;
 
+import com.google.common.base.Stopwatch;
+import com.google.common.collect.Lists;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import lombok.Data;
+import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
+import okhttp3.*;
+import okio.BufferedSource;
+import org.apache.commons.lang3.StringUtils;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
+import run.mone.hive.configs.LLMConfig;
+import run.mone.hive.roles.Role;
+import run.mone.hive.schema.AiMessage;
+import run.mone.hive.schema.Message;
+
+import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -15,40 +35,8 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-import javax.imageio.ImageIO;
-
-import org.apache.commons.lang3.StringUtils;
-
-import com.google.common.base.Stopwatch;
-import com.google.common.collect.Lists;
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-
-import lombok.Data;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
-import okhttp3.Call;
-import okhttp3.Callback;
-import okhttp3.MediaType;
-import okhttp3.MultipartBody;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.RequestBody;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
-import okio.BufferedSource;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
-import run.mone.hive.configs.LLMConfig;
-
 import static run.mone.hive.llm.ClaudeProxy.getClaudeKey;
 import static run.mone.hive.llm.ClaudeProxy.getClaudeName;
-
-import run.mone.hive.roles.Role;
-import run.mone.hive.schema.AiMessage;
-import run.mone.hive.schema.Message;
 
 @Data
 @Slf4j
@@ -406,9 +394,16 @@ public class LLM {
     }
 
     public Flux<String> call(List<AiMessage> messages) {
-        return Flux.create(sink -> chatCompletionStream(getToken(), messages, llmProvider.getDefaultModel(), (a, b) -> {
-        }, (a) -> {
-        }, "", sink));
+        return Flux.create(sink -> chatCompletionStream(getToken(),
+                messages,
+                llmProvider.getDefaultModel(),
+                (a, b) -> {
+                },
+                (a) -> {
+                },
+                "",
+                sink)
+        );
     }
 
 
