@@ -39,6 +39,7 @@ public class GrpcTest {
     @Test
     public void testServer() {
         GrpcServerTransport transport = new GrpcServerTransport(Const.GRPC_PORT);
+        transport.setOpenAuth(true);
         McpAsyncServer server = McpServer.using(transport).capabilities(McpSchema.ServerCapabilities.builder().tools(true).build()).async();
 
         server.addTool(new McpServer.ToolRegistration(new McpSchema.Tool("a", "a", "{}"), (a) -> {
@@ -97,6 +98,8 @@ public class GrpcTest {
     @Test
     public void testClientTransport() {
         GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
+        //支持meta信息
+        client.setMetaData(HiveConst.CLIENT_ID, "zzy");
         client.connect(a -> null).subscribe();
 
         McpSchema.CallToolRequest r = new McpSchema.CallToolRequest("a", ImmutableMap.of("k", "v", "k1", "v1"));
