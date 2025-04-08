@@ -42,14 +42,7 @@ public class WriterService {
 
     public Flux<String> writeNewArticle(String topic) {
         String prompt = "请以'" + topic + "'为主题，写一篇详细的文章，包括引言、主要论点、结论等部分。";
-        return Flux.create(sink -> {
-            llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
-                sink.next(content);
-                if ("[DONE]".equals(content.trim())) {
-                    sink.complete();
-                }
-            });
-        });
+        return llm.call(List.of(new AiMessage("user", prompt)));
     }
 
     public Flux<String> polishArticle(String article) {
@@ -112,8 +105,9 @@ public class WriterService {
         });
     }
 
-    public Flux<String> generateCreativeIdeas(String topic, int numberOfIdeas) {
-        String prompt = String.format("请为主题'%s'提供%d个创意写作构思，包括可能的角度、故事情节或独特观点：", topic, numberOfIdeas);
+    public Flux<String> generateCreativeIdeas(String topic, Object numberOfIdeasObj) {
+        String numberOfIdeas = numberOfIdeasObj + "";
+        String prompt = String.format("请为主题'%s'提供%s个创意写作构思，包括可能的角度、故事情节或独特观点：", topic, numberOfIdeas);
         return Flux.create(sink -> {
             llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
                 sink.next(content);
@@ -196,8 +190,8 @@ public class WriterService {
         });
     }
 
-    public Flux<String> createMetaphorsAndAnalogies(String concept, int count) {
-        String prompt = String.format("请为'%s'这个概念创建%d个生动的比喻和类比，帮助读者更好地理解：", concept, count);
+    public Flux<String> createMetaphorsAndAnalogies(String concept, String count) {
+        String prompt = String.format("请为'%s'这个概念创建%s个生动的比喻和类比，帮助读者更好地理解：", concept, count);
         return Flux.create(sink -> {
             llm.chat(List.of(new AiMessage("user", prompt)), (content, jsonResponse) -> {
                 sink.next(content);

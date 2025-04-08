@@ -4,6 +4,7 @@ package run.mone.hive.llm;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -173,6 +174,13 @@ class LLMTest {
 
         String res = llm.chat(prompt);
         System.out.println(res);
+    }
+
+    @SneakyThrows
+    @Test
+    public void testCall() {
+        llm.call(Lists.newArrayList(AiMessage.builder().role("user").content("hi").build())).subscribe(System.out::println);
+        System.in.read();
     }
 
     //调用doubao 多模态

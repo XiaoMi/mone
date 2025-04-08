@@ -82,7 +82,7 @@ public class WriterFunction implements Function<Map<String, Object>, Flux<McpSch
                         "description": "Scenario for dialogue generation"
                     },
                     "numberOfExchanges": {
-                        "type": "integer",
+                        "type": "string",
                         "description": "Number of dialogue exchanges to generate"
                     },
                     "concept": {
@@ -90,7 +90,7 @@ public class WriterFunction implements Function<Map<String, Object>, Flux<McpSch
                         "description": "Concept for creating metaphors and analogies"
                     },
                     "count": {
-                        "type": "integer",
+                        "type": "string",
                         "description": "Number of metaphors/analogies to generate"
                     },
                     "jokeType": {
@@ -119,7 +119,7 @@ public class WriterFunction implements Function<Map<String, Object>, Flux<McpSch
                     case "translateText" -> writerService.translateText((String) arguments.get("text"), (String) arguments.get("targetLanguage"));
                     case "generateCreativeIdeas" -> writerService.generateCreativeIdeas(
                             (String) arguments.get("topic"), 
-                            ((Number) arguments.get("numberOfIdeas")).intValue());
+                            arguments.get("numberOfIdeas"));
                     case "createCharacterProfile" -> writerService.createCharacterProfile((String) arguments.get("characterDescription"));
                     case "analyzeWritingStyle" -> writerService.analyzeWritingStyle((String) arguments.get("text"));
                     case "generateSeoContent" -> writerService.generateSeoContent(
@@ -134,7 +134,7 @@ public class WriterFunction implements Function<Map<String, Object>, Flux<McpSch
                             ((Number) arguments.get("numberOfExchanges")).intValue());
                     case "createMetaphorsAndAnalogies" -> writerService.createMetaphorsAndAnalogies(
                             (String) arguments.get("concept"), 
-                            ((Number) arguments.get("count")).intValue());
+                            ((String) arguments.get("count")));
                     case "tellJoke" -> writerService.tellJoke((String) arguments.get("jokeType"));
                     default -> throw new IllegalArgumentException("Unknown operation: " + operation);
                 };

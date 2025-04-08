@@ -17,6 +17,8 @@ import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
 import run.mone.hive.mcp.grpc.CallToolResponse;
+import run.mone.hive.mcp.grpc.InitializeRequest;
+import run.mone.hive.mcp.grpc.ListToolsRequest;
 import run.mone.hive.mcp.grpc.PingRequest;
 import run.mone.hive.mcp.grpc.transport.GrpcClientTransport;
 import run.mone.hive.mcp.hub.McpConfig;
@@ -171,12 +173,10 @@ public class DefaultMcpSession implements McpSession {
         this.streamRequestHandlers.putAll(streamRequestHandlers);
         this.notificationHandlers.putAll(notificationHandlers);
 
-        // TODO: consider mono.transformDeferredContextual where the Context contains
-        // the
         // Observation associated with the individual message - it can be used to
         // create child Observation and emit it together with the message to the
         // consumer
-        //这是一个sse的连接,并且处理返回的信息
+        //这是一个sse的连接,并且处理返回的信息 (grpc的server则直接拉起来这个server)
         this.connection = this.transport.connect(mono -> mono.doOnNext(message -> {
             if (message instanceof McpSchema.JSONRPCResponse response) {
                 logger.info("Received Response: {}", response);
@@ -341,9 +341,19 @@ public class DefaultMcpSession implements McpSession {
         //使用grpc
         if (this.transport instanceof GrpcClientTransport gct) {
             switch (method) {
+                //发送ping信息
                 case McpSchema.METHOD_PING: {
                     return Mono.just(gct.ping(PingRequest.newBuilder().setMessage("ping").build())).map(it -> this.transport.unmarshalFrom(it, typeRef));
                 }
+                //初始化(主要获取到tools信息)
+                case McpSchema.METHOD_INITIALIZE: {
+                    return Mono.just(gct.initialize(InitializeRequest.newBuilder().build())).map(it -> this.transport.unmarshalFrom(it, typeRef));
+                }
+                //列出所有可使用的工具
+                case McpSchema.METHOD_TOOLS_LIST: {
+                    return Mono.just(gct.listTools(ListToolsRequest.newBuilder().build())).map(it -> this.transport.unmarshalFrom(it, typeRef));
+                }
+
             }
         }
 
@@ -422,6 +432,16 @@ public class DefaultMcpSession implements McpSession {
      */
     @Override
     public Mono<Void> sendNotification(String method, Map<String, Object> params) {
+        if (this.transport instanceof GrpcClientTransport gct) {
+           switch (method) {
+               //通知mcp服务器我已经初始化完毕了
+               case McpSchema.METHOD_NOTIFICATION_INITIALIZED: {
+                   gct.methodNotificationInitialized();
+                   return Mono.empty();
+               }
+           }
+        }
+
         McpSchema.JSONRPCNotification jsonrpcNotification = new McpSchema.JSONRPCNotification(McpSchema.JSONRPC_VERSION,
                 method, params);
         return this.transport.sendMessage(jsonrpcNotification).then();
