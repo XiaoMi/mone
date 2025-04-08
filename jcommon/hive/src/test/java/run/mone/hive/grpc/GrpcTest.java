@@ -42,7 +42,7 @@ public class GrpcTest {
     @Test
     public void testServer() {
         GrpcServerTransport transport = new GrpcServerTransport(Const.GRPC_PORT);
-        transport.setOpenAuth(true);
+//        transport.setOpenAuth(true);
         McpAsyncServer server = McpServer.using(transport).capabilities(McpSchema.ServerCapabilities.builder().tools(true).build()).async();
 
         server.addTool(new McpServer.ToolRegistration(new McpSchema.Tool("a", "a", "{}"), (a) -> {

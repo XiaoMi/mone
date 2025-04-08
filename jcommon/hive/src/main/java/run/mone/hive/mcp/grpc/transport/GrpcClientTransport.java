@@ -84,6 +84,10 @@ public class GrpcClientTransport implements ClientMcpTransport {
 
     public GrpcClientTransport(ServerParameters config) {
         this(config.getEnv().getOrDefault("host", "127.0.0.1"), Integer.parseInt(config.getEnv().getOrDefault("port", Const.GRPC_PORT + "")));
+        Map<String, String> env = config.getEnv();
+        if (env.containsKey(Const.CLIENT_ID) && env.containsKey(Const.TOKEN)) {
+            setClientAuth(env.get(Const.CLIENT_ID), env.get(Const.TOKEN));
+        }
     }
 
     /**
