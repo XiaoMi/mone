@@ -6,7 +6,6 @@ import io.grpc.stub.StreamObserver;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
-import run.mone.hive.common.HiveConst;
 import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.client.McpClient;
@@ -21,7 +20,9 @@ import run.mone.hive.mcp.server.McpAsyncServer;
 import run.mone.hive.mcp.server.McpServer;
 import run.mone.hive.mcp.spec.McpSchema;
 
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
@@ -33,6 +34,8 @@ import java.util.stream.IntStream;
 public class GrpcTest {
 
     private String clientId = "abc";
+
+    private String token = "token";
 
 
     @SneakyThrows
@@ -70,9 +73,10 @@ public class GrpcTest {
     @Test
     public void testNotification() {
         GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
+        client.setClientAuth(clientId, token);
         client.connect(a -> null).subscribe();
 
-        client.initialize(InitializeRequest.newBuilder().setClientId(clientId).build());
+        client.initialize(InitializeRequest.newBuilder().build());
         client.observer(new StreamObserver<>() {
             @Override
             public void onNext(StreamResponse streamResponse) {
@@ -99,7 +103,7 @@ public class GrpcTest {
     public void testClientTransport() {
         GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
         //支持meta信息
-        client.setMetaData(Const.CLIENT_ID, "zzy");
+        client.setClientAuth(clientId, token);
         client.connect(a -> null).subscribe();
 
         McpSchema.CallToolRequest r = new McpSchema.CallToolRequest("a", ImmutableMap.of("k", "v", "k1", "v1"));
@@ -209,6 +213,25 @@ public class GrpcTest {
         McpSchema.InitializeResult res = mc.initialize();
         System.out.println(res);
         System.out.println("finish");
+    }
+
+    @Test
+    public void testMap() {
+        ConcurrentHashMap<String,Map> m = new ConcurrentHashMap<String, Map>();
+        m.compute("a",(k,v)->{
+            if (v == null) {
+                return ImmutableMap.of("a","b");
+            }
+            return v;
+        });
+
+        m.compute("a",(k,v)->{
+            if (v != null) {
+                return ImmutableMap.of("k","v");
+            }
+            return v;
+        });
+        System.out.println(m);
     }
 
 }

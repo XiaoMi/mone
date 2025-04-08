@@ -51,8 +51,6 @@ message InitializeRequest {
   string protocol_version = 1;
   ClientCapabilities capabilities = 2;
   Implementation client_info = 3;
-  string clientId = 4;
-  string token = 5;
 }
 
 message InitializeResponse {
@@ -133,8 +131,6 @@ message CallToolRequest {
   string name = 1;
   map<string, string> arguments = 2;
   optional string method = 3;
-  optional string clientId = 4;
-  optional string token = 5;
 }
 
 message CallToolResponse {
@@ -147,8 +143,6 @@ message StreamRequest {
   string name = 1;
   map<string, bytes> arguments = 2;
   string request_id = 3;  // 可选：用于关联请求和响应
-  string clientId = 4;
-  string token = 5;
 }
 
 // 响应消息定义
@@ -388,7 +382,6 @@ enum LoggingLevel {
 // Ping 相关消息
 message PingRequest {
   string message = 1;
-  string clientId = 2;
 }
 
 message PingResponse {

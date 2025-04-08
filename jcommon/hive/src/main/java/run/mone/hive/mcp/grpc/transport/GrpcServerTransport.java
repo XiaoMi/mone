@@ -33,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
 import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
+import run.mone.hive.mcp.common.ClientMeta;
 import run.mone.hive.mcp.grpc.CallToolRequest;
 import run.mone.hive.mcp.grpc.CallToolResponse;
 import run.mone.hive.mcp.grpc.Content;
@@ -56,8 +57,10 @@ import run.mone.hive.mcp.server.McpAsyncServer;
 import run.mone.hive.mcp.spec.DefaultMcpSession;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.JSONRPCMessage;
+
 import static run.mone.hive.mcp.spec.McpSchema.METHOD_TOOLS_CALL;
 import static run.mone.hive.mcp.spec.McpSchema.METHOD_TOOLS_STREAM;
+
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.m78.client.util.GsonUtils;
 
@@ -78,21 +81,19 @@ public class GrpcServerTransport implements ServerMcpTransport {
     // 存储用户ID与其连接的映射
     private final ConcurrentHashMap<String, StreamObserver<StreamResponse>> userConnections = new ConcurrentHashMap<>();
 
-    private final ConcurrentHashMap<String, Long> clientMap = new ConcurrentHashMap<>();
-    
     // 存储会话元数据的Map
-    private final ConcurrentHashMap<String, Map<String, String>> sessionMetadata = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ClientMeta> sessionMetadata = new ConcurrentHashMap<>();
 
     private McpAsyncServer mcpServer;
 
     private BiFunction<String, String, Boolean> authFunction = (id, token) -> true;
 
     private boolean openAuth = false;
-    
+
     // 定义元数据键
-    private static final Metadata.Key<String> CLIENT_ID_KEY = 
+    private static final Metadata.Key<String> CLIENT_ID_KEY =
             Metadata.Key.of("clientId", Metadata.ASCII_STRING_MARSHALLER);
-    private static final Metadata.Key<String> TOKEN_KEY = 
+    private static final Metadata.Key<String> TOKEN_KEY =
             Metadata.Key.of("token", Metadata.ASCII_STRING_MARSHALLER);
     // 为元数据定义Context键
     private static final Context.Key<Metadata> METADATA_CONTEXT_KEY = Context.key("metadata");
@@ -104,48 +105,32 @@ public class GrpcServerTransport implements ServerMcpTransport {
         Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
             Safe.run(() -> {
                 long now = System.currentTimeMillis();
-                Set<String> keys = new HashSet<>(clientMap.keySet());
+                Set<String> keys = new HashSet<>(sessionMetadata.keySet());
                 for (String key : keys) {
-                    clientMap.computeIfPresent(key, (k, v) ->
-                            now - v >= TimeUnit.MINUTES.toMillis(5) ? null : v);
+                    sessionMetadata.computeIfPresent(key, (k, v) ->
+                            now - v.getTime() >= TimeUnit.MINUTES.toMillis(5) ? null : v);
                 }
             });
         }, 1, 1, TimeUnit.MINUTES);
     }
-    
+
     /**
      * 元数据拦截器，用于从请求中提取元数据
      */
     private class MetadataInterceptor implements ServerInterceptor {
         @Override
         public <ReqT, RespT> ServerCall.Listener<ReqT> interceptCall(
-                ServerCall<ReqT, RespT> call, 
-                Metadata headers, 
+                ServerCall<ReqT, RespT> call,
+                Metadata headers,
                 ServerCallHandler<ReqT, RespT> next) {
-                
+
             // 提取元数据
             String clientId = headers.get(CLIENT_ID_KEY);
             String token = headers.get(TOKEN_KEY);
-            
-            if (clientId != null) {
-                // 存储提取的元数据
-                Map<String, String> metadata = new HashMap<>();
-                if (token != null) {
-                    metadata.put("token", token);
-                }
-                sessionMetadata.put(clientId, metadata);
-                
-                // 如果开启了认证，则进行认证
-                if (openAuth && token != null) {
-                    if (authFunction.apply(clientId, token)) {
-                        clientMap.putIfAbsent(clientId, System.currentTimeMillis());
-                        log.info("Client {} authenticated via metadata", clientId);
-                    } else {
-                        log.warn("Authentication failed for client {} via metadata", clientId);
-                    }
-                }
-            }
-            
+
+            //统一验证权限
+            auth(clientId, token);
+
             // 将元数据存储到Context中
             Context context = Context.current().withValue(METADATA_CONTEXT_KEY, headers);
             return Contexts.interceptCall(context, call, headers, next);
@@ -211,14 +196,13 @@ public class GrpcServerTransport implements ServerMcpTransport {
     public <T> T unmarshalFrom(Object data, TypeReference<T> typeRef) {
         return objectMapper.convertValue(data, typeRef);
     }
-    
+
     /**
      * 从请求或元数据中获取客户端ID
-     * 
-     * @param requestClientId 请求中的客户端ID
+     *
      * @return 客户端ID
      */
-    private String getClientIdFromContext(String requestClientId) {
+    private String getClientIdFromContext() {
         // 从当前上下文获取元数据
         Metadata metadata = METADATA_CONTEXT_KEY.get();
         if (metadata != null) {
@@ -227,17 +211,15 @@ public class GrpcServerTransport implements ServerMcpTransport {
                 return metadataClientId;
             }
         }
-        return requestClientId;
+        return "";
     }
-    
+
     /**
      * 从请求或元数据中获取令牌
-     * 
-     * @param requestToken 请求中的令牌
-     * @param clientId 客户端ID
+     *
      * @return 令牌
      */
-    private String getTokenFromContext(String requestToken, String clientId) {
+    private String getTokenFromContext() {
         // 首先尝试从当前上下文获取
         Metadata metadata = METADATA_CONTEXT_KEY.get();
         if (metadata != null) {
@@ -246,14 +228,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
                 return metadataToken;
             }
         }
-        
-        // 如果上下文中没有，从会话元数据中获取
-        Map<String, String> clientMetadata = sessionMetadata.get(clientId);
-        if (clientMetadata != null && clientMetadata.containsKey("token")) {
-            return clientMetadata.get("token");
-        }
-        
-        return requestToken;
+        return "";
     }
 
 
@@ -276,11 +251,6 @@ public class GrpcServerTransport implements ServerMcpTransport {
         //用户发过来的ping信息
         @Override
         public void ping(PingRequest request, StreamObserver<PingResponse> responseObserver) {
-            if (openAuth) {
-                String clientId = getClientIdFromContext(request.getClientId());
-                clientMap.computeIfPresent(clientId, (k, v) -> System.currentTimeMillis());
-            }
-
             responseObserver.onNext(PingResponse.newBuilder().setMessage("pong").setTimestamp(System.currentTimeMillis()).build());
             responseObserver.onCompleted();
         }
@@ -306,22 +276,9 @@ public class GrpcServerTransport implements ServerMcpTransport {
                     //连接过来,随时可以通过服务器推回去信息
                     if (name.equals("observer")) {
                         // 尝试从元数据获取ClientId，如果没有则使用请求中的
-                        clientId = getClientIdFromContext(streamRequest.getClientId());
-                        
+                        clientId = getClientIdFromContext();
                         // 尝试从元数据获取token，如果没有则使用请求中的
-                        String token = getTokenFromContext(streamRequest.getToken(), clientId);
-                        
-                        //验证权限
-                        if (openAuth && !authFunction.apply(clientId, token)) {
-                            throw new RuntimeException("auth error");
-                        }
                         userConnections.putIfAbsent(clientId, responseObserver);
-                        
-                        // 保存元数据
-                        Map<String, String> metadata = sessionMetadata.computeIfAbsent(clientId, k -> new HashMap<>());
-                        if (token != null) {
-                            metadata.put("token", token);
-                        }
                     }
 
                 }
@@ -355,28 +312,8 @@ public class GrpcServerTransport implements ServerMcpTransport {
                             .setVersion("1.0.0")
                             .build())
                     .build();
-                    
-            // 从元数据或请求中获取客户端ID和令牌
-            String clientId = getClientIdFromContext(request.getClientId());
-            String token = getTokenFromContext(request.getToken(), clientId);
-            
-            //权限校验
-            if (openAuth && !authFunction.apply(clientId, token)) {
-                responseObserver.onError(new RuntimeException("auth error"));
-            } else {
-                if (StringUtils.isNotEmpty(clientId)) {
-                    clientMap.putIfAbsent(clientId, System.currentTimeMillis());
-                    
-                    // 保存令牌到会话元数据
-                    if (token != null) {
-                        Map<String, String> metadata = sessionMetadata.computeIfAbsent(clientId, k -> new HashMap<>());
-                        metadata.put("token", token);
-                    }
-                }
-                responseObserver.onNext(response);
-                responseObserver.onCompleted();
-            }
-
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
         }
 
         //返回工具列表
@@ -412,10 +349,6 @@ public class GrpcServerTransport implements ServerMcpTransport {
         public void callTool(CallToolRequest request, StreamObserver<CallToolResponse> responseObserver) {
             String name = request.getName();
             TextContent.Builder builder = TextContent.newBuilder();
-
-            //验证下权限
-            auth(request);
-
             //请求进来的
             if (name.equals(METHOD_TOOLS_CALL)) {
                 DefaultMcpSession.RequestHandler rh = mcpServer.getMcpSession().getRequestHandlers().get(name);
@@ -439,10 +372,6 @@ public class GrpcServerTransport implements ServerMcpTransport {
         @Override
         public void callToolStream(CallToolRequest request, StreamObserver<CallToolResponse> responseObserver) {
             String name = request.getName();
-
-            //验证下权限
-            auth(request);
-
             //请求进来的
             if (name.equals(METHOD_TOOLS_STREAM)) {
                 DefaultMcpSession.StreamRequestHandler rh = mcpServer.getMcpSession().getStreamRequestHandlers().get(name);
@@ -467,25 +396,39 @@ public class GrpcServerTransport implements ServerMcpTransport {
 
     }
 
-    private void auth(CallToolRequest request) {
+    private void auth() {
         if (openAuth) {
             // 从元数据或请求中获取客户端ID和令牌
-            String clientId = getClientIdFromContext(request.getClientId());
-            String token = getTokenFromContext(request.getToken(), clientId);
-            
-            if (!clientMap.containsKey(clientId)) {
+            String clientId = getClientIdFromContext();
+            String token = getTokenFromContext();
+            auth(clientId, token);
+        }
+    }
+
+    private void auth(String clientId, String token) {
+        if (openAuth) {
+            // 从元数据或请求中获取客户端ID和令牌
+            long now = System.currentTimeMillis();
+
+            if (!sessionMetadata.containsKey(clientId)) {
                 if (!authFunction.apply(clientId, token)) {
                     throw new RuntimeException("call tool (auth error)");
                 } else {
-                    clientMap.putIfAbsent(clientId, System.currentTimeMillis());
-                    
-                    // 保存令牌到会话元数据
-                    if (token != null) {
-                        Map<String, String> metadata = sessionMetadata.computeIfAbsent(clientId, k -> new HashMap<>());
-                        metadata.put("token", token);
-                    }
+                    sessionMetadata.compute(clientId, (k, v) -> {
+                        if (v == null) {
+                            return ClientMeta.builder().time(now).token(token).build();
+                        }
+                        v.setTime(now);
+                        return v;
+                    });
                 }
+            } else {
+                if (!sessionMetadata.get(clientId).getToken().equals(token)) {
+                    throw new RuntimeException("auth error clientId:" + clientId);
+                }
+                sessionMetadata.get(clientId).setTime(now);
             }
         }
     }
+
 } 
