@@ -16,3 +16,6 @@
   }  
 ```
 + 方便杀死进程:  jps -l|grep app.jar|awk -F '' '{print $1}'|xargs kill -9
++ grpc 支持通过headers 传递信息(clientId token)
++ 支持权限验证
++ 支持server push 信息回来
