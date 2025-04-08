@@ -1,5 +1,5 @@
-+ 借鉴自MetaGpt (https://github.com/geekan/MetaGPT)
-+ mcp代码借鉴子Spring Ai 和 Cline(https://github.com/cline/cline)
++ agent代码借鉴自MetaGpt (https://github.com/geekan/MetaGPT)
++ mcp代码借鉴自Spring Ai 和 Cline(https://github.com/cline/cline)
 + 有 team role action
 + 主要的思考路径:think->act->think->act
 + 蜜蜂很傻,但一群蜜蜂很聪明

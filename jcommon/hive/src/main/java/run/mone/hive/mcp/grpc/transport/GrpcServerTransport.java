@@ -31,8 +31,8 @@ import io.grpc.stub.StreamObserver;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.Mono;
-import run.mone.hive.common.HiveConst;
 import run.mone.hive.common.Safe;
+import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.grpc.CallToolRequest;
 import run.mone.hive.mcp.grpc.CallToolResponse;
 import run.mone.hive.mcp.grpc.Content;
@@ -195,8 +195,8 @@ public class GrpcServerTransport implements ServerMcpTransport {
     public Mono<Object> sendMessage(JSONRPCMessage message) {
         if (message instanceof McpSchema.JSONRPCNotification notification) {
             Map<String, Object> params = notification.params();
-            if (null != params && params.containsKey(HiveConst.CLIENT_ID)) {
-                String clientId = params.get(HiveConst.CLIENT_ID).toString();
+            if (null != params && params.containsKey(Const.CLIENT_ID)) {
+                String clientId = params.get(Const.CLIENT_ID).toString();
                 StreamObserver<StreamResponse> observer = userConnections.get(clientId);
                 //直接通知到client
                 if (null != observer) {

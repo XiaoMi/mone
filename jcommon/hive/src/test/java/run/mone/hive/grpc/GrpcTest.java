@@ -58,7 +58,7 @@ public class GrpcTest {
         //发送消息给123
         Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
             Safe.run(() -> {
-                transport.sendMessage(new McpSchema.JSONRPCNotification("", "", ImmutableMap.of("1", "2", HiveConst.CLIENT_ID, clientId)));
+                transport.sendMessage(new McpSchema.JSONRPCNotification("", "", ImmutableMap.of("1", "2", Const.CLIENT_ID, clientId)));
             });
         }, 10, 10, TimeUnit.SECONDS);
 
@@ -99,7 +99,7 @@ public class GrpcTest {
     public void testClientTransport() {
         GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
         //支持meta信息
-        client.setMetaData(HiveConst.CLIENT_ID, "zzy");
+        client.setMetaData(Const.CLIENT_ID, "zzy");
         client.connect(a -> null).subscribe();
 
         McpSchema.CallToolRequest r = new McpSchema.CallToolRequest("a", ImmutableMap.of("k", "v", "k1", "v1"));
