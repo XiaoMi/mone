@@ -10,6 +10,7 @@ import run.mone.hive.Environment;
 import run.mone.hive.common.*;
 import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
+import run.mone.hive.llm.LLM.LLMCompoundMsg;
 import run.mone.hive.mcp.client.MonerMcpClient;
 import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.spec.McpSchema;
@@ -17,9 +18,9 @@ import run.mone.hive.prompt.MonerSystemPrompt;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
-import run.mone.hive.service.LLMService;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -126,12 +127,18 @@ public class ReactorRole extends Role {
             Message msg = this.rc.news.poll();
             //直接调用的大模型
             String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":\n" + it.getContent()).collect(Collectors.joining("\n"));
-            LLMService llmService = new LLMService();
             String customRulesReplaced = AiTemplate.renderTemplate(customRules, ImmutableMap.of("name", this.name));
-
             String userPrompt = buildUserPrompt(msg, history, customRulesReplaced);
             log.info("userPrompt:{}", userPrompt);
-            String res = llmService.callStream(this, this.llm, userPrompt, msg.getImages(), getSystemPrompt());
+            String res = llm.callStream(this, LLMCompoundMsg.builder()
+                    .content(userPrompt)
+                    .parts(msg.getImages() == null 
+                        ? new ArrayList<>() 
+                        : msg.getImages()
+                            .stream()
+                            .map(it -> LLM.LLMPart.builder().type(LLM.TYPE_IMAGE).data(it).mimeType("image/jpeg").build())
+                            .collect(Collectors.toList())).build(),
+                 getSystemPrompt());
             // 解析工具调用
             List<Result> tools = new MultiXmlParser().parse(res);
             MutableObject<McpResult> toolResMsg = new MutableObject<>(null);
