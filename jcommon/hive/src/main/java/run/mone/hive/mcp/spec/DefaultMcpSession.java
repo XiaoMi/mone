@@ -351,7 +351,6 @@ public class DefaultMcpSession implements McpSession {
                 case McpSchema.METHOD_TOOLS_LIST: {
                     return Mono.just(gct.listTools(ListToolsRequest.newBuilder().build())).map(it -> this.transport.unmarshalFrom(it, typeRef));
                 }
-
             }
         }
 

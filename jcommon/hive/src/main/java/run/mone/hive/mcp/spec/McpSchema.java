@@ -1011,6 +1011,10 @@ public final class McpSchema {
             type = "image";
         }
 
+        public ImageContent(String data, String mimeType) {
+            this(null, null, null, data, mimeType);
+        }
+
         public String type() {
             return type;
         }
