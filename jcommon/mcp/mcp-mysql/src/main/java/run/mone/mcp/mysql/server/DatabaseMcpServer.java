@@ -47,14 +47,16 @@ public class DatabaseMcpServer {
         log.info("Registering execute_sql tool...");
         try {
             MysqlFunction mysqlFunction = new MysqlFunction(this.mysqlDb, this.mysqlPassword);
-            var sqlToolRegistration = new ToolRegistration(
+            var sqlToolRegistration = new McpServer.ToolStreamRegistration(
                     new Tool(mysqlFunction.getName(), mysqlFunction.getDesc(), mysqlFunction.getSqlToolSchema()), mysqlFunction
             );
-            syncServer.addTool(sqlToolRegistration);
+            syncServer.addStreamTool(sqlToolRegistration);
 
             SqliteFunction sqliteFunction = new SqliteFunction();
-            var sqliteToolRegistration = new ToolRegistration(new Tool(sqliteFunction.getName(), sqliteFunction.getDesc(), sqliteFunction.getSqlToolSchema()), sqliteFunction);
-            syncServer.addTool(sqliteToolRegistration);
+            var sqliteToolRegistration = new McpServer.ToolStreamRegistration(
+                    new Tool(sqliteFunction.getName(), sqliteFunction.getDesc(), sqliteFunction.getSqlToolSchema()), sqliteFunction
+            );
+            syncServer.addStreamTool(sqliteToolRegistration);
 
             log.info("Successfully registered execute_sql tool");
         } catch (Exception e) {
