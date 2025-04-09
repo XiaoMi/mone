@@ -102,7 +102,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
             // 3. 使用装饰器模式包装原始的 ServerCall.Listener，以便拦截请求参数
             ServerCall.Listener<ReqT> originalListener = Contexts.interceptCall(context, call, headers, next);
 
-            return new ForwardingServerCallListener.SimpleForwardingServerCallListener<ReqT>(originalListener) {
+            return new ForwardingServerCallListener.SimpleForwardingServerCallListener<>(originalListener) {
                 @Override
                 public void onMessage(ReqT message) {
                     if (message instanceof CallToolRequest req) {
@@ -128,14 +128,12 @@ public class GrpcServerTransport implements ServerMcpTransport {
             try {
                 // 创建 gRPC 服务实现
                 McpServiceImpl serviceImpl = new McpServiceImpl();
-
                 // 启动 gRPC 服务器，添加元数据拦截器
                 server = ServerBuilder.forPort(port)
                         .addService(serviceImpl)
                         .intercept(new MetadataInterceptor())  // 添加元数据拦截器
                         .build()
                         .start();
-
                 log.info("gRPC Server started, listening on port " + port);
 
                 // 添加关闭钩子
@@ -160,7 +158,7 @@ public class GrpcServerTransport implements ServerMcpTransport {
     }
 
 
-    //允许通知到client
+    //通知到client
     @Override
     public Mono<Object> sendMessage(JSONRPCMessage message) {
         if (message instanceof McpSchema.JSONRPCNotification notification) {
@@ -333,23 +331,35 @@ public class GrpcServerTransport implements ServerMcpTransport {
         @Override
         public void callTool(CallToolRequest request, StreamObserver<CallToolResponse> responseObserver) {
             String name = request.getName();
-            TextContent.Builder builder = TextContent.newBuilder();
+
+            CallToolResponse.Builder resBuilder = CallToolResponse.newBuilder();
+
             //请求进来的
             if (name.equals(METHOD_TOOLS_CALL)) {
                 DefaultMcpSession.RequestHandler rh = mcpServer.getMcpSession().getRequestHandlers().get(name);
                 Object res = rh.handle(request).block();
 
-                //目前只支持一个Content
+                //支持image 和 text
                 if (res instanceof McpSchema.CallToolResult ctr) {
                     List<McpSchema.Content> list = ctr.content();
-                    if (!list.isEmpty() && list.get(0) instanceof McpSchema.TextContent tc) {
-                        builder.setData(tc.data());
-                        builder.setText(tc.text());
-                    }
+                    list.forEach(it -> {
+                        if (it instanceof McpSchema.TextContent tc) {
+                            TextContent.Builder builder = TextContent.newBuilder();
+                            builder.setData(tc.data());
+                            builder.setText(tc.text());
+                            resBuilder.addContent(Content.newBuilder().setText(builder).build());
+                        }
+                        if (it instanceof McpSchema.ImageContent ic) {
+                            ImageContent.Builder builder = ImageContent.newBuilder();
+                            builder.setData(ic.data());
+                            builder.setMimeType(ic.mimeType());
+                            resBuilder.addContent(Content.newBuilder().setImage(builder).build());
+                        }
+                    });
                 }
             }
 
-            responseObserver.onNext(CallToolResponse.newBuilder().addContent(Content.newBuilder().setText(builder).build()).build());
+            responseObserver.onNext(resBuilder.build());
             responseObserver.onCompleted();
         }
 
@@ -361,19 +371,19 @@ public class GrpcServerTransport implements ServerMcpTransport {
             if (name.equals(METHOD_TOOLS_STREAM)) {
                 DefaultMcpSession.StreamRequestHandler rh = mcpServer.getMcpSession().getStreamRequestHandlers().get(name);
                 rh.handle(request).subscribe(it -> {
-
                     List<Content> contentList = new ArrayList<>();
                     if (it instanceof McpSchema.CallToolResult ctr) {
                         List<McpSchema.Content> list = ctr.content();
-
-                        contentList.addAll(list.stream().map(it2 -> {
-                            if (it2 instanceof McpSchema.TextContent tc) {
+                        contentList.addAll(list.stream().map(content -> {
+                            if (content instanceof McpSchema.TextContent tc) {
                                 return Content.newBuilder().setText(TextContent.newBuilder().setData(tc.data()).setText(tc.text()).build()).build();
+                            }
+                            if (content instanceof McpSchema.ImageContent ic) {
+                                return Content.newBuilder().setImage(ImageContent.newBuilder().setData(ic.data()).setMimeType(ic.mimeType()).build()).build();
                             }
                             return null;
                         }).filter(Objects::nonNull).toList());
                     }
-
                     responseObserver.onNext(CallToolResponse.newBuilder().addAllContent(contentList).build());
                 }, responseObserver::onError, responseObserver::onCompleted);
             }
