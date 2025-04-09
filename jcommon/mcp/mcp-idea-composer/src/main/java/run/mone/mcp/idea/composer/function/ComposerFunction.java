@@ -27,7 +27,7 @@ public class ComposerFunction implements Function<Map<String, Object>, Flux<McpS
 
     private String name = "stream_composer";
 
-    private String desc = "根据需求或者需求图片，生成业务代码或者单元测试等一切涉及项目的改动，支持创建新文件、修改现有代码、重构代码结构、添加注释文档、修复bug、更新配置文件（如pom.xml）、生成API接口、编写数据库操作逻辑等。可以处理项目中的任何文件类型，包括但不限于Java、XML、YAML、JSON、SQL等。如果有图片，无需知道图片内容，只按要求返回即可";
+    private String desc = "根据需求或者需求图片，生成业务代码或者单元测试等一切涉及项目的改动，支持创建新文件、修改现有代码、重构代码结构、添加注释文档、修复bug、添加高危元素注解、更新配置文件（如pom.xml）、生成API接口、编写数据库操作逻辑等。可以处理项目中的任何文件类型，包括但不限于Java、XML、YAML、JSON、SQL等。如果有图片，无需知道图片内容，只按要求返回即可";
 
     private String ideaPort;
 
