@@ -8,11 +8,10 @@
 ]
 }
 
-# grpc
 "database-mcp": {
 "type": "grpc",
 "env": {
-"host": "10.38.216.204",
+"host": "127.0.0.1",
 "port": "9786"
 }
 }
