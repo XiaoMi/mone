@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import com.google.gson.reflect.TypeToken;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.grpc.Metadata;
@@ -33,8 +34,10 @@ import run.mone.hive.mcp.grpc.StreamResponse;
 import run.mone.hive.mcp.spec.ClientMcpTransport;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.JSONRPCMessage;
+import run.mone.m78.client.util.GsonUtils;
 
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -67,7 +70,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
     // 存储元数据的 Map
     private Map<String, String> metaData = new HashMap<>();
 
-    private Consumer<String> consumer = (msg) -> {
+    private Consumer<Object> consumer = (msg) -> {
     };
 
     /**
@@ -157,25 +160,6 @@ public class GrpcClientTransport implements ClientMcpTransport {
                     .usePlaintext()
                     // 启用自动重连
                     .enableRetry()
-                    // 设置重连参数
-//                    .defaultServiceConfig(Map.of(
-//                            "methodConfig", List.of(Map.of(
-//                                    "name", List.of(Map.of(
-//                                            "service", "yourservice.YourService"  // 替换为您的服务名
-//                                    )),
-//                                    "retryPolicy", Map.of(
-//                                            "maxAttempts", 5.0,
-//                                            "initialBackoff", "1s",
-//                                            "maxBackoff", "30s",
-//                                            "backoffMultiplier", 2.0,
-//                                            "retryableStatusCodes", List.of(
-//                                                    "UNAVAILABLE",
-//                                                    "UNKNOWN"
-//                                            )
-//                                    )
-//                            ))
-//                    ))
-
                     .build();
             this.blockingStub = McpServiceGrpc.newBlockingStub(channel);
             this.asyncStub = McpServiceGrpc.newStub(channel);
@@ -235,11 +219,18 @@ public class GrpcClientTransport implements ClientMcpTransport {
     }
 
     //连接到服务端,然后等待服务端推送消息回来(支持断线重连)
-    public StreamObserver<StreamRequest> observer(StreamObserver<StreamResponse> observer, String clientId) {
+    public StreamObserver<StreamRequest> observer(StreamObserver<StreamResponse> observer) {
         // 创建带重连功能的包装观察者
         StreamObserver<StreamResponse> reconnectingObserver = new StreamObserver<>() {
             @Override
             public void onNext(StreamResponse response) {
+                if (response.getCmd().equals(Const.NOTIFY_MSG)) {
+                    String data = response.getData();
+                    Type typeOfT = new TypeToken<Map<String, String>>() {
+                    }.getType();
+                    Map map = GsonUtils.GSON.fromJson(data, typeOfT);
+                    consumer.accept(map);
+                }
                 // 直接转发响应
                 String data = response.getData();
                 consumer.accept(data);
@@ -254,7 +245,7 @@ public class GrpcClientTransport implements ClientMcpTransport {
                 try {
                     Thread.sleep(5000);
                     log.info("正在重新连接...");
-                    observer(observer, clientId);
+                    observer(observer);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     observer.onError(e);
@@ -266,14 +257,6 @@ public class GrpcClientTransport implements ClientMcpTransport {
                 observer.onCompleted();
             }
         };
-
-        // 首先尝试从元数据中获取 clientId
-        String finalClientId = metaData.getOrDefault("clientId", clientId);
-
-        // 如果提供了新的 clientId，将其添加到元数据中
-        if (!finalClientId.equals(metaData.get("clientId"))) {
-            setMetaData("clientId", finalClientId);
-        }
 
         StreamObserver<StreamRequest> req = getMetadataAsyncStub().bidirectionalToolStream(reconnectingObserver);
 
@@ -380,7 +363,15 @@ public class GrpcClientTransport implements ClientMcpTransport {
     public <T> T unmarshalFrom(Object data, TypeReference<T> typeRef) {
         try {
             if (data instanceof CallToolResponse ctr) {
-                return (T) new McpSchema.CallToolResult(ctr.getContentList().stream().map(it -> new McpSchema.TextContent(it.getText().getText(), it.getText().getData())).collect(Collectors.toUnmodifiableList()), false);
+                return (T) new McpSchema.CallToolResult(ctr.getContentList().stream().map(it -> {
+                    if (it.hasText()) {
+                        return new McpSchema.TextContent(it.getText().getText(), it.getText().getData());
+                    }
+                    if (it.hasImage()) {
+                        return new McpSchema.ImageContent(it.getImage().getData(),it.getImage().getMimeType());
+                    }
+                    return null;
+                }).collect(Collectors.toUnmodifiableList()), false);
             }
 
             if (data instanceof PingResponse pr) {

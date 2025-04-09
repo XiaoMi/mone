@@ -1,4 +1,3 @@
-
 package run.mone.mcp.mysql.function;
 
 import org.junit.jupiter.api.*;
@@ -46,7 +45,7 @@ class SqliteFunctionTest {
         args.put("type", "query");
         args.put("sql", "SELECT * FROM test_table");
 
-        McpSchema.CallToolResult result = sqliteFunction.apply(args);
+        McpSchema.CallToolResult result = sqliteFunction.apply(args).blockFirst();
 
         assertFalse(result.isError());
     }
@@ -57,7 +56,7 @@ class SqliteFunctionTest {
         args.put("type", "update");
         args.put("sql", "UPDATE test_table SET name = 'Updated Name' WHERE id = 1");
 
-        McpSchema.CallToolResult result = sqliteFunction.apply(args);
+        McpSchema.CallToolResult result = sqliteFunction.apply(args).blockFirst();
 
         assertFalse(result.isError());
     }
@@ -68,7 +67,7 @@ class SqliteFunctionTest {
         args.put("type", "ddl");
         args.put("sql", "CREATE TABLE new_table (id INTEGER PRIMARY KEY, value TEXT)");
 
-        McpSchema.CallToolResult result = sqliteFunction.apply(args);
+        McpSchema.CallToolResult result = sqliteFunction.apply(args).blockFirst();
 
         assertFalse(result.isError());
     }

@@ -14,6 +14,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.client.transport.HttpClientSseClientTransport;
 import run.mone.hive.mcp.hub.McpConfig;
 import run.mone.hive.mcp.spec.ClientMcpTransport;
@@ -178,8 +179,8 @@ public class McpAsyncClient {
 		notificationHandlers.put(McpSchema.METHOD_NOTIFICATION_TOOLS_LIST_CHANGED,
 				toolsChangeNotificationHandler(toolsChangeConsumersFinal));
 
-
-		notificationHandlers.put("msg", params -> {
+		//接收通知(服务端推送过来的)
+		notificationHandlers.put(Const.NOTIFY_MSG, params -> {
             Mono.fromRunnable(()-> msgConsumer.forEach(it-> it.accept(params))).subscribeOn(Schedulers.boundedElastic()).subscribe();
             return Mono.empty();
         });

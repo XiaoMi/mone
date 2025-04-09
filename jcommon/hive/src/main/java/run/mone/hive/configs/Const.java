@@ -18,4 +18,8 @@ public class Const {
 
     public static final String HIVE_VERSION = "2025-03-28:0.0.1";
 
+    public static final String NOTIFY_MSG = "msg";
+
+    public static final String ROLE_EXIT = "___exit___";
+
 }
