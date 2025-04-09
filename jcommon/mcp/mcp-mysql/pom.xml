@@ -32,6 +32,18 @@
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.42.0.0</version>
         </dependency>
+
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>m78</artifactId>
+            <version>1.4-jdk20-SNAPSHOT</version>
+        </dependency>
+
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>hive</artifactId>
+            <version>1.6.2-jdk21-SNAPSHOT</version>
+        </dependency>
     </dependencies>
 
 
