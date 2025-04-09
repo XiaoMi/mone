@@ -214,7 +214,7 @@ public class McpHub {
         }
 
         McpSyncClient client = McpClient.using(transport)
-                .requestTimeout(Duration.ofSeconds(15))
+                .requestTimeout(Duration.ofSeconds(120))
                 .msgConsumer(msgConsumer)
                 .capabilities(McpSchema.ClientCapabilities.builder()
                         .roots(true)
