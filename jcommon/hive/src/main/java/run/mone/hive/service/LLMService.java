@@ -49,9 +49,7 @@ public class LLMService {
 
     public String callStream(Role role, LLM llm, String text, List<String> imgTexts, String systemPrompt) {
         JsonObject req = getReq(llm, text, imgTexts);
-
         List<AiMessage> messages = new ArrayList<>();
-
         messages.add(AiMessage.builder().jsonContent(req).build());
         String result = llm.syncChat(role, messages, systemPrompt);
         log.info("{}", result);
@@ -89,7 +87,9 @@ public class LLMService {
         }
 
         if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER
-                || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT) {
+                || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT
+                || llm.getConfig().getLlmProvider() == LLMProvider.DEEPSEEK
+        ) {
             req.addProperty("role", "user");
             JsonArray array = new JsonArray();
 

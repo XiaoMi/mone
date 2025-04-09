@@ -19,6 +19,7 @@ import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 
 /**
@@ -26,6 +27,18 @@ import java.util.List;
  * @date 2024/12/29 16:17
  */
 public class RoleTest {
+
+    @SneakyThrows
+    @Test
+    public void testReactorRole() {
+        LLM llm = new LLM(LLMConfig.builder().debug(false).build());
+        CountDownLatch latch = new CountDownLatch(1);
+        ReactorRole role = new ReactorRole("minzai", latch, llm);
+        role.run();
+        String msg = "1+1=?";
+        role.getRc().getNews().put(Message.builder().content(msg).data(msg).build());
+        latch.await();
+    }
 
 
     @SneakyThrows

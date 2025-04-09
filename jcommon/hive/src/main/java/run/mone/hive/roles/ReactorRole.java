@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
  * @author wangyingjie
  * @author goodjava@qq.com
  * @date 2025/4/9 10:26
+ * 会自己决策
  */
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
@@ -42,9 +43,8 @@ public class ReactorRole extends Role {
 
     private LLM llm;
 
-
     private String customRules = """
-            你是${staffName},是一名优秀的私人顾问.
+            你是${name},是一名优秀的私人顾问.
             """;
 
     private String userPrompt = """
@@ -62,11 +62,12 @@ public class ReactorRole extends Role {
             """;
 
 
-    public ReactorRole(String name,CountDownLatch countDownLatch) {
+    public ReactorRole(String name, CountDownLatch countDownLatch, LLM llm) {
         super(name);
         this.setEnvironment(new Environment());
         this.rc.setReactMode(RoleContext.ReactMode.REACT);
         this.countDownLatch = countDownLatch;
+        this.llm = llm;
     }
 
     @Override
@@ -126,7 +127,7 @@ public class ReactorRole extends Role {
             //直接调用的大模型
             String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":\n" + it.getContent()).collect(Collectors.joining("\n"));
             LLMService llmService = new LLMService();
-            String customRulesReplaced = AiTemplate.renderTemplate(customRules, ImmutableMap.of("staffName", this.name));
+            String customRulesReplaced = AiTemplate.renderTemplate(customRules, ImmutableMap.of("name", this.name));
 
             String userPrompt = buildUserPrompt(msg, history, customRulesReplaced);
             log.info("userPrompt:{}", userPrompt);
