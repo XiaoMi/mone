@@ -37,6 +37,7 @@ public class RoleService {
 
     private ReactorRole minzai = null;
 
+
     @PostConstruct
     public void init() {
         minzai = new ReactorRole("minzai", new CountDownLatch(1), llm);
@@ -46,9 +47,14 @@ public class RoleService {
             if (!messageList.isEmpty()) {
                 String id = UUID.randomUUID().toString();
                 Message lastMsg = messageList.get(messageList.size() - 1);
+                if (lastMsg.getSentFrom().equals("schedule")) {
+                    return;
+                }
+
                 if (now - lastMsg.getCreateTime() > TimeUnit.MINUTES.toMillis(1)) {
                     Flux.create(sink -> {
-                                role.putMessage(Message.builder().role(RoleType.assistant.name()).content("用户好久没说话了,和用户随便聊聊吧").sink(sink).build());
+                                //给用户发送消息
+                                role.putMessage(Message.builder().sentFrom("schedule").id(id).role(RoleType.assistant.name()).content("用户好久没说话了,和用户随便聊聊吧(根据之前的聊天历史)").sink(sink).build());
                             }).doFirst(() -> {
                                 sendMessage(Message.builder().id(id).type(StreamMessageType.BOT_STREAM_BEGIN).build());
                             }).doOnNext(it -> {

@@ -12,6 +12,7 @@ import run.mone.hive.mcp.spec.McpSchema.ServerCapabilities;
 import run.mone.hive.mcp.spec.McpSchema.Tool;
 import run.mone.hive.mcp.spec.ServerMcpTransport;
 import run.mone.mcp.chat.function.ChatFunction;
+
 @Component
 public class ChatMcpServer {
 
