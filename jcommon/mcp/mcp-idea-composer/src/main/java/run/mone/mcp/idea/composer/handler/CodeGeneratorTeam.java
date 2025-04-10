@@ -10,11 +10,11 @@ import run.mone.hive.actions.programmer.WriteCode;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.context.Context;
 import run.mone.hive.llm.LLM;
-import run.mone.hive.roles.Architect;
-import run.mone.hive.roles.Design;
-import run.mone.hive.roles.Engineer;
 import run.mone.hive.schema.Message;
 import run.mone.mcp.idea.composer.handler.biz.BotChainCallContext;
+import run.mone.mcp.idea.composer.handler.role.Architect;
+import run.mone.mcp.idea.composer.handler.role.Design;
+import run.mone.mcp.idea.composer.handler.role.Engineer;
 
 import java.util.List;
 
