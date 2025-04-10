@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
  * @author wangyingjie
  * @author goodjava@qq.com
  * @date 2025/4/9 10:26
- * 会自己决策
+ * 会自己决策的Role
  */
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
@@ -132,23 +132,13 @@ public class ReactorRole extends Role {
         try {
             log.info("auto act");
             Message msg = this.rc.news.poll();
-            //直接调用的大模型
             String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":\n" + it.getContent()).collect(Collectors.joining("\n"));
             String customRulesReplaced = AiTemplate.renderTemplate(customRules, ImmutableMap.of("name", this.name));
             String userPrompt = buildUserPrompt(msg, history, customRulesReplaced);
             log.info("userPrompt:{}", userPrompt);
 
-            LLMCompoundMsg compoundMsg = LLMCompoundMsg.builder()
-                    .content(userPrompt)
-                    .parts(msg.getImages() == null
-                            ? new ArrayList<>()
-                            : msg.getImages()
-                            .stream()
-                            .map(it -> LLM.LLMPart.builder().type(LLM.TYPE_IMAGE).data(it).mimeType("image/jpeg").build())
-                            .collect(Collectors.toList())).build();
-
+            LLMCompoundMsg compoundMsg = getLlmCompoundMsg(userPrompt, msg);
             CountDownLatch latch = new CountDownLatch(1);
-
             StringBuilder sb = new StringBuilder();
             llm.compoundMsgCall(compoundMsg, getSystemPrompt())
                     .doOnNext(sb::append)
@@ -193,6 +183,18 @@ public class ReactorRole extends Role {
             log.error("ReactorRole act error", e);
         }
         return CompletableFuture.completedFuture(Message.builder().build());
+    }
+
+    private static LLMCompoundMsg getLlmCompoundMsg(String userPrompt, Message msg) {
+        LLMCompoundMsg compoundMsg = LLMCompoundMsg.builder()
+                .content(userPrompt)
+                .parts(msg.getImages() == null
+                        ? new ArrayList<>()
+                        : msg.getImages()
+                        .stream()
+                        .map(it -> LLM.LLMPart.builder().type(LLM.TYPE_IMAGE).data(it).mimeType("image/jpeg").build())
+                        .collect(Collectors.toList())).build();
+        return compoundMsg;
     }
 
     public void sendMsg(McpSchema.Content content, String toolName) {
