@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.spec.McpSchema;
+import run.mone.mcp.chat.server.RoleService;
 import run.mone.mcp.chat.service.ChatService;
 
 import java.util.ArrayList;
@@ -19,7 +20,10 @@ import java.util.function.Function;
 public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
 
     private final ChatService chatService;
+
     private final ConcurrentHashMap<String, List<Message>> history = new ConcurrentHashMap<>();
+
+    private final RoleService roleService;
 
     private static final String TOOL_SCHEMA = """
             {
@@ -55,6 +59,10 @@ public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchem
         clientHistory.add(new Message("user", message));
         
         try {
+
+            roleService.receiveMsg(run.mone.hive.schema.Message.builder().build());
+
+
             StringBuilder sb = new StringBuilder();
             Flux<String> result = chatService.chat(message, context);
             return result.doOnNext(sb::append).map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false)).doOnComplete(()-> clientHistory.add(new Message("assistant", sb.toString())));
