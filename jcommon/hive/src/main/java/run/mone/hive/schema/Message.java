@@ -31,9 +31,11 @@ public class Message implements Serializable {
     @Builder.Default
     private String type = "string";
 
-    private FluxSink<String> sink;
+    private FluxSink sink;
 
     private Map<MetaKey, MetaValue> meta = new HashMap<>();
+
+    private long createTime;
 
     public Message(String content) {
         this(content, "user", null, null);

@@ -1,13 +1,33 @@
 package run.mone.hive.roles;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.mutable.MutableObject;
+
 import com.google.common.collect.ImmutableMap;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.mutable.MutableObject;
+import reactor.core.publisher.FluxSink;
 import run.mone.hive.Environment;
-import run.mone.hive.common.*;
+import run.mone.hive.common.AiTemplate;
+import run.mone.hive.common.McpResult;
+import run.mone.hive.common.MultiXmlParser;
+import run.mone.hive.common.Result;
+import run.mone.hive.common.Safe;
 import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLM.LLMCompoundMsg;
@@ -19,15 +39,6 @@ import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 /**
  * @author wangyingjie
@@ -49,6 +60,12 @@ public class ReactorRole extends Role {
     private String customInstructions = "";
 
     private List<ITool> tools = new ArrayList<>();
+
+    private Consumer<Role> scheduledTaskHandler;
+
+    private ScheduledExecutorService scheduler;
+
+    private AtomicReference<RoleState> state = new AtomicReference<>(RoleState.think);
 
     private String customRules = """
             你是${name},是一名优秀的私人顾问.
@@ -75,11 +92,24 @@ public class ReactorRole extends Role {
         this.rc.setReactMode(RoleContext.ReactMode.REACT);
         this.countDownLatch = countDownLatch;
         this.llm = llm;
+        this.scheduledTaskHandler = message -> log.info("Processing scheduled message: {}", this);
+
+        // Initialize scheduler with a single thread
+        this.scheduler = Executors.newSingleThreadScheduledExecutor();
+
+        // Schedule task to run every 20 seconds
+        this.scheduler.scheduleAtFixedRate(() -> {
+            if (scheduledTaskHandler != null && this.state.get().equals(RoleState.observe)) {
+                scheduledTaskHandler.accept(this);
+            }
+            log.info("Scheduled task executed at: {}", System.currentTimeMillis());
+        }, 0, 20, TimeUnit.SECONDS);
     }
 
     @Override
     protected int think() {
         log.info("auto think");
+        this.state.set(RoleState.think);
         return observe();
     }
 
@@ -88,20 +118,22 @@ public class ReactorRole extends Role {
     @Override
     protected int observe() {
         log.info("auto observe");
+        this.state.set(RoleState.observe);
         Message msg = this.rc.getNews().poll(300, TimeUnit.MINUTES);
         if (null == msg) {
             return -1;
         }
 
         // 收到特殊指令直接退出
-        if (msg.getData().equals(Const.ROLE_EXIT)) {
+        if (null != msg.getData() && msg.getData().equals(Const.ROLE_EXIT)) {
             log.info(Const.ROLE_EXIT);
+            shutdownScheduler();
             return -1;
         }
 
         //再次给加回去
         if (firstMsg) {
-            msg.setRole("user");
+            firstMsg = false;
             this.getRc().getMemory().add(msg);
         }
 
@@ -114,9 +146,6 @@ public class ReactorRole extends Role {
         int attemptCompletion = tools.stream().anyMatch(it ->
                 it.getTag().trim().equals("attempt_completion")
         ) ? -1 : 1;
-        if (firstMsg) {
-            firstMsg = false;
-        }
         if (attemptCompletion == 1) {
             this.getRc().getNews().add(msg);
         }
@@ -126,11 +155,27 @@ public class ReactorRole extends Role {
         return attemptCompletion;
     }
 
+    private void shutdownScheduler() {
+        // Shutdown the scheduler when exiting
+        if (scheduler != null && !scheduler.isShutdown()) {
+            scheduler.shutdown();
+            try {
+                if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
+                    scheduler.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                scheduler.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
     @SneakyThrows
     @Override
     protected CompletableFuture<Message> act(ActionContext context) {
         try {
             log.info("auto act");
+            this.state.set(RoleState.act);
             Message msg = this.rc.news.poll();
             String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":\n" + it.getContent()).collect(Collectors.joining("\n"));
             String customRulesReplaced = AiTemplate.renderTemplate(customRules, ImmutableMap.of("name", this.name));
@@ -146,7 +191,7 @@ public class ReactorRole extends Role {
                     .subscribe(
                             it -> Optional.ofNullable(msg.getSink()).ifPresent(s -> s.next(it)),
                             error -> Optional.ofNullable(msg.getSink()).ifPresent(s -> s.error(error)),
-                            () -> Optional.ofNullable(msg.getSink()).ifPresent(s -> s.complete()));
+                            () -> Optional.ofNullable(msg.getSink()).ifPresent(FluxSink::complete));
             latch.await();
 
             String res = sb.toString();
@@ -162,9 +207,6 @@ public class ReactorRole extends Role {
                 tools.forEach(it -> {
                     if (it.getTag().equals("attempt_completion")) {
                         this.getRc().getNews().add(Message.builder().data(res).content(res).build());
-                    }
-                    if (it.getTag().equals("chat")) {
-                        this.getRc().getMemory().add(Message.builder().role("assistant").content(it.getKeyValuePairs().get("message")).build());
                     }
                 });
             } else {
@@ -186,7 +228,7 @@ public class ReactorRole extends Role {
     }
 
     private static LLMCompoundMsg getLlmCompoundMsg(String userPrompt, Message msg) {
-        LLMCompoundMsg compoundMsg = LLMCompoundMsg.builder()
+        return LLMCompoundMsg.builder()
                 .content(userPrompt)
                 .parts(msg.getImages() == null
                         ? new ArrayList<>()
@@ -194,7 +236,6 @@ public class ReactorRole extends Role {
                         .stream()
                         .map(it -> LLM.LLMPart.builder().type(LLM.TYPE_IMAGE).data(it).mimeType("image/jpeg").build())
                         .collect(Collectors.toList())).build();
-        return compoundMsg;
     }
 
     public void sendMsg(McpSchema.Content content, String toolName) {
@@ -209,12 +250,10 @@ public class ReactorRole extends Role {
     }
 
     public String buildUserPrompt(Message msg, String history, String customRulesReplaced) {
-
         return AiTemplate.renderTemplate(this.userPrompt, ImmutableMap.of(
                 "rules", customRulesReplaced,
                 "history", history,
                 "question", msg.getContent()));
     }
-
 
 }
