@@ -90,9 +90,8 @@ public class GrpcServerTransport implements ServerMcpTransport {
                 ServerCallHandler<ReqT, RespT> next) {
 
             // 提取元数据
-            String clientId = headers.get(CLIENT_ID_KEY) == null ? "default" : headers.get(CLIENT_ID_KEY);
-
-            String token = headers.get(TOKEN_KEY);
+            String clientId = Optional.ofNullable(headers.get(CLIENT_ID_KEY)).orElse("default");
+            String token = Optional.ofNullable(headers.get(TOKEN_KEY)).orElse("");
 
             //统一验证权限
             auth(clientId, token);
