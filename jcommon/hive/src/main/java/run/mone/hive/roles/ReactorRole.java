@@ -23,11 +23,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import reactor.core.publisher.FluxSink;
 import run.mone.hive.Environment;
-import run.mone.hive.common.AiTemplate;
-import run.mone.hive.common.McpResult;
-import run.mone.hive.common.MultiXmlParser;
-import run.mone.hive.common.Result;
-import run.mone.hive.common.Safe;
+import run.mone.hive.common.*;
 import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.LLM.LLMCompoundMsg;
@@ -50,8 +46,6 @@ import run.mone.hive.schema.RoleContext;
 @Slf4j
 @Data
 public class ReactorRole extends Role {
-
-    private boolean firstMsg = true;
 
     private CountDownLatch countDownLatch;
 
@@ -131,11 +125,7 @@ public class ReactorRole extends Role {
             return -1;
         }
 
-        //再次给加回去
-        if (firstMsg) {
-            firstMsg = false;
-            this.getRc().getMemory().add(msg);
-        }
+        this.putMemory(msg);
 
         // 获取memory中最后一条消息
         Message lastMsg = this.getRc().getMemory().getStorage().get(this.getRc().getMemory().getStorage().size() - 1);
@@ -147,7 +137,7 @@ public class ReactorRole extends Role {
                 it.getTag().trim().equals("attempt_completion")
         ) ? -1 : 1;
         if (attemptCompletion == 1) {
-            this.getRc().getNews().add(msg);
+            this.putMessage(msg);
         }
         if (countDownLatch != null && attemptCompletion == -1) {
             countDownLatch.countDown();
@@ -177,6 +167,8 @@ public class ReactorRole extends Role {
             log.info("auto act");
             this.state.set(RoleState.act);
             Message msg = this.rc.news.poll();
+
+
             String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":\n" + it.getContent()).collect(Collectors.joining("\n"));
             String customRulesReplaced = AiTemplate.renderTemplate(customRules, ImmutableMap.of("name", this.name));
             String userPrompt = buildUserPrompt(msg, history, customRulesReplaced);
@@ -202,7 +194,7 @@ public class ReactorRole extends Role {
             AtomicBoolean completion = new AtomicBoolean(false);
             Safe.run(() -> MonerMcpClient.mcpCall(tools, "", toolResMsg, completion, new MonerMcpInterceptor()));
             log.info("res:{}", res);
-            this.getRc().getMemory().add(Message.builder().role("assistant").content(res).build());
+            this.putMemory(Message.builder().role(RoleType.assistant.name()).content(res).build());
             if (completion.get()) {
                 tools.forEach(it -> {
                     if (it.getTag().equals("attempt_completion")) {
