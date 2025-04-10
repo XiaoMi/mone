@@ -53,23 +53,22 @@ public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchem
         if (StringUtils.isEmpty(context)) {
             context = "";
         }
-        
+
         // Get or create history list for this client
         List<Message> clientHistory = history.computeIfAbsent(clientId, k -> new ArrayList<>());
-        
+
         // Add user message to client history
         clientHistory.add(new Message("user", message));
-        
+
         try {
             //使用agent 模式
             if (useAgent) {
-                roleService.receiveMsg(run.mone.hive.schema.Message.builder().role("user").content(message).data(message).build());
-                return Flux.empty();
+                return roleService.receiveMsg(run.mone.hive.schema.Message.builder().role("user").content(message).data(message).build()).map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
             }
 
             StringBuilder sb = new StringBuilder();
             Flux<String> result = chatService.chat(message, context);
-            return result.doOnNext(sb::append).map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false)).doOnComplete(()-> clientHistory.add(new Message("assistant", sb.toString())));
+            return result.doOnNext(sb::append).map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false)).doOnComplete(() -> clientHistory.add(new Message("assistant", sb.toString())));
         } catch (Exception e) {
             String errorMessage = "Error: " + e.getMessage();
             clientHistory.add(new Message("assistant", errorMessage));
@@ -88,11 +87,11 @@ public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchem
     public String getToolScheme() {
         return TOOL_SCHEMA;
     }
-    
+
     public List<Message> getClientHistory(String clientId) {
         return history.getOrDefault(clientId, new ArrayList<>());
     }
-    
+
     public Map<String, List<Message>> getAllHistory() {
         return history;
     }
