@@ -62,6 +62,7 @@ public class RoleService {
                 grpcServerTransport.sendMessage(new McpSchema.JSONRPCNotification("", "msg", params));
             }
         };
+        minzai.setCustomRules("");
 
         minzai.run();
     }

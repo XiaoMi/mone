@@ -6,7 +6,7 @@ package run.mone.hive.roles.tool;
  */
 public interface ITool {
 
-    String name();
+    String getName();
 
     String description();
 
