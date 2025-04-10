@@ -43,7 +43,7 @@ public class ChatScheduler {
 
     @Scheduled(fixedRate = 5000)
     public void scheduledTask() {
-        logger.info("Scheduled task running at: {}", System.currentTimeMillis());
+        logger.debug("Scheduled task running at: {}", System.currentTimeMillis());
         Map<String, List<Message>> allHistory = function.getAllHistory();
         System.out.println(allHistory);
 

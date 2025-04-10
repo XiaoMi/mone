@@ -15,6 +15,7 @@ import run.mone.hive.mcp.client.MonerMcpClient;
 import run.mone.hive.mcp.client.MonerMcpInterceptor;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.prompt.MonerSystemPrompt;
+import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
@@ -43,6 +44,10 @@ public class ReactorRole extends Role {
     private CountDownLatch countDownLatch;
 
     private LLM llm;
+
+    private String customInstructions = "";
+
+    private List<ITool> tools = new ArrayList<>();
 
     private String customRules = """
             你是${name},是一名优秀的私人顾问.
@@ -82,7 +87,7 @@ public class ReactorRole extends Role {
     @Override
     protected int observe() {
         log.info("auto observe");
-        Message msg = this.rc.getNews().poll(3, TimeUnit.MINUTES);
+        Message msg = this.rc.getNews().poll(300, TimeUnit.MINUTES);
         if (null == msg) {
             return -1;
         }
@@ -131,14 +136,14 @@ public class ReactorRole extends Role {
             String userPrompt = buildUserPrompt(msg, history, customRulesReplaced);
             log.info("userPrompt:{}", userPrompt);
             String res = llm.callStream(this, LLMCompoundMsg.builder()
-                    .content(userPrompt)
-                    .parts(msg.getImages() == null 
-                        ? new ArrayList<>() 
-                        : msg.getImages()
-                            .stream()
-                            .map(it -> LLM.LLMPart.builder().type(LLM.TYPE_IMAGE).data(it).mimeType("image/jpeg").build())
-                            .collect(Collectors.toList())).build(),
-                 getSystemPrompt());
+                            .content(userPrompt)
+                            .parts(msg.getImages() == null
+                                    ? new ArrayList<>()
+                                    : msg.getImages()
+                                    .stream()
+                                    .map(it -> LLM.LLMPart.builder().type(LLM.TYPE_IMAGE).data(it).mimeType("image/jpeg").build())
+                                    .collect(Collectors.toList())).build(),
+                    getSystemPrompt());
             // 解析工具调用
             List<Result> tools = new MultiXmlParser().parse(res);
             MutableObject<McpResult> toolResMsg = new MutableObject<>(null);
@@ -176,7 +181,7 @@ public class ReactorRole extends Role {
 
 
     private String getSystemPrompt() {
-        String prompt = MonerSystemPrompt.mcpPrompt("default");
+        String prompt = MonerSystemPrompt.mcpPrompt("default", this.name, this.customInstructions, this.tools);
         log.debug("system prompt:{}", prompt);
         return prompt;
     }

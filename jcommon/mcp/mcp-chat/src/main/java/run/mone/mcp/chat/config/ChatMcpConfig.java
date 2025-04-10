@@ -32,7 +32,9 @@ public class ChatMcpConfig {
     @Bean
     @ConditionalOnProperty(name = "mcp.transport.type", havingValue = "grpc")
     GrpcServerTransport grpcServerTransport() {
-        return new GrpcServerTransport(grpcPort);
+        GrpcServerTransport transport = new GrpcServerTransport(grpcPort);
+        transport.setOpenAuth(true);
+        return transport;
     }
 
     @Bean
