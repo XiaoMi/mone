@@ -10,7 +10,7 @@ import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.server.transport.StdioServerTransport;
 
 @Configuration
-public class McpStdioTransportConfig {
+public class McpTransportConfig {
 
     @Value("${mcp.grpc.port:9999}")
     private int grpcPort;
