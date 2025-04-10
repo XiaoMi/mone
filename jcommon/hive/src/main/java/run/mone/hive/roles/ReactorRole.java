@@ -21,6 +21,7 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.FluxSink;
 import run.mone.hive.Environment;
 import run.mone.hive.common.AiTemplate;
 import run.mone.hive.common.McpResult;
@@ -124,7 +125,7 @@ public class ReactorRole extends Role {
         }
 
         // 收到特殊指令直接退出
-        if (msg.getData().equals(Const.ROLE_EXIT)) {
+        if (null != msg.getData() && msg.getData().equals(Const.ROLE_EXIT)) {
             log.info(Const.ROLE_EXIT);
             shutdownScheduler();
             return -1;
@@ -132,8 +133,8 @@ public class ReactorRole extends Role {
 
         //再次给加回去
         if (firstMsg) {
-            msg.setRole("user");
-            this.putMessage(msg);
+            firstMsg = false;
+            this.getRc().getMemory().add(msg);
         }
 
         // 获取memory中最后一条消息
@@ -145,9 +146,6 @@ public class ReactorRole extends Role {
         int attemptCompletion = tools.stream().anyMatch(it ->
                 it.getTag().trim().equals("attempt_completion")
         ) ? -1 : 1;
-        if (firstMsg) {
-            firstMsg = false;
-        }
         if (attemptCompletion == 1) {
             this.getRc().getNews().add(msg);
         }
@@ -193,7 +191,7 @@ public class ReactorRole extends Role {
                     .subscribe(
                             it -> Optional.ofNullable(msg.getSink()).ifPresent(s -> s.next(it)),
                             error -> Optional.ofNullable(msg.getSink()).ifPresent(s -> s.error(error)),
-                            () -> Optional.ofNullable(msg.getSink()).ifPresent(s -> s.complete()));
+                            () -> Optional.ofNullable(msg.getSink()).ifPresent(FluxSink::complete));
             latch.await();
 
             String res = sb.toString();
@@ -209,9 +207,6 @@ public class ReactorRole extends Role {
                 tools.forEach(it -> {
                     if (it.getTag().equals("attempt_completion")) {
                         this.getRc().getNews().add(Message.builder().data(res).content(res).build());
-                    }
-                    if (it.getTag().equals("chat")) {
-                        this.putMessage(Message.builder().role("assistant").content(it.getKeyValuePairs().get("message")).build());
                     }
                 });
             } else {

@@ -422,6 +422,13 @@ public class Role {
         this.rc.news.offer(message);
     }
 
+    public void putMemory(Message message) {
+        if (0 == message.getCreateTime()) {
+            message.setCreateTime(System.currentTimeMillis());
+        }
+        this.rc.getMemory().add(message);
+    }
+
     @Override
     public String toString() {
         return "Role{" +
