@@ -6,3 +6,13 @@
 "/Users/dingpei/workspace/kaiyuan/mone/jcommon/mcp/mcp-terminal/target/app.jar"
 ]
 }
+
+
+# grpc
+"terminal_mcp": {
+"type": "grpc",
+"env": {
+"host": "127.0.0.1",
+"port": "9786"
+}
+}
