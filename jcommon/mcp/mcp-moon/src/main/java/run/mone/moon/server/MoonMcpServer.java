@@ -55,21 +55,18 @@ public class MoonMcpServer {
         try {
             // 创建
             MoonCreateFunction createMoonFunction = new MoonCreateFunction(applicationConfig, registryConfig, group);
-            var createMoonTool = new ToolRegistration(
-                    new Tool(createMoonFunction.getName(), createMoonFunction.getDesc(), createMoonFunction.getTaskToolSchema()), createMoonFunction
-            );
+            Tool createTool = new Tool(createMoonFunction.getName(), createMoonFunction.getDesc(), createMoonFunction.getTaskToolSchema());
+            var createMoonTool = new McpServer.ToolRegistration(createTool, createMoonFunction);
 
             // 查询
             MoonQueryFunction queryMoonFunction = new MoonQueryFunction(applicationConfig, registryConfig, group);
-            var queryMoonTool = new ToolRegistration(
-                    new Tool(queryMoonFunction.getName(), queryMoonFunction.getDesc(), queryMoonFunction.getTaskQuerySchema()), queryMoonFunction
-            );
+            Tool queryTool = new Tool(queryMoonFunction.getName(), queryMoonFunction.getDesc(), queryMoonFunction.getTaskQuerySchema());
+            var queryMoonTool = new McpServer.ToolRegistration(queryTool, queryMoonFunction);
 
             // id查询
             MoonGetFunction queryIdFunction = new MoonGetFunction(applicationConfig, registryConfig, group);
-            var queryIdMoonTool = new ToolRegistration(
-                    new Tool(queryIdFunction.getName(), queryIdFunction.getDesc(), queryIdFunction.getTaskQuerySchema()), queryIdFunction
-            );
+            Tool queryIdTool = new Tool(queryIdFunction.getName(), queryIdFunction.getDesc(), queryIdFunction.getTaskQuerySchema());
+            var queryIdMoonTool = new McpServer.ToolRegistration(queryIdTool, queryIdFunction);
 
             // 添加工具类
             syncServer.addTool(createMoonTool);
