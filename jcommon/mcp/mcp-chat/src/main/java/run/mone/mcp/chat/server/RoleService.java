@@ -2,20 +2,17 @@ package run.mone.mcp.chat.server;
 
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
-import run.mone.hive.configs.Const;
+import run.mone.hive.common.RoleType;
 import run.mone.hive.llm.LLM;
-import run.mone.hive.llm.StreamMessageType;
-import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
-import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ChatTool;
 import run.mone.hive.schema.Message;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author goodjava@qq.com
@@ -27,57 +24,32 @@ public class RoleService {
     @Resource
     private LLM llm;
 
-    @Resource
-    private GrpcServerTransport grpcServerTransport;
-
     private ReactorRole minzai = null;
 
     @PostConstruct
     public void init() {
-        minzai = new ReactorRole("minzai", new CountDownLatch(1), llm) {
-
-            //发到athena
-            @Override
-            public void sendMessage(Message msg) {
-                switch (msg.getType()) {
-                    case StreamMessageType.BOT_STREAM_BEGIN: {
-                        sendMsgToAthena("[BEGIN]", msg);
-                        break;
-                    }
-                    case StreamMessageType.BOT_STREAM_EVENT: {
-                        sendMsgToAthena(msg.getContent(), msg);
-                        break;
-                    }
-                    case StreamMessageType.BOT_STREAM_END: {
-                        sendMsgToAthena("[DONE]", msg);
-                        break;
-                    }
+        minzai = new ReactorRole("minzai", new CountDownLatch(1), llm);
+        minzai.setScheduledTaskHandler(role -> {
+            long now = System.currentTimeMillis();
+            List<Message> messageList = role.getRc().getMessageList();
+            if (!messageList.isEmpty()) {
+                Message lastMsg = messageList.get(messageList.size() - 1);
+                if (now - lastMsg.getCreateTime() > TimeUnit.MINUTES.toMillis(1)) {
+                    role.putMessage(Message.builder().role(RoleType.assistant.name()).content("用户好久没说话了,和用户随便聊聊吧").build());
                 }
             }
-
-            private void sendMsgToAthena(String value, Message msg) {
-                Map<String, Object> params = new HashMap<>();
-                params.put(Const.CLIENT_ID, "min");
-                params.put("cmd", "notify_athena");
-                params.put("data", value);
-                params.put("id", msg.getId());
-                grpcServerTransport.sendMessage(new McpSchema.JSONRPCNotification("", "msg", params));
-            }
-        };
+        });
         //支持使用聊天工具
         minzai.getTools().add(new ChatTool());
 
+        //一直执行不会停下来
         minzai.run();
     }
 
     public Flux<String> receiveMsg(Message message) {
         return Flux.create(sink -> {
-            try {
-                message.setSink(sink);
-                minzai.getRc().getNews().put(message);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
+            message.setSink(sink);
+            minzai.putMessage(message);
         });
     }
 

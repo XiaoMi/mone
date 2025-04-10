@@ -35,6 +35,8 @@ public class Message implements Serializable {
 
     private Map<MetaKey, MetaValue> meta = new HashMap<>();
 
+    private long createTime;
+
     public Message(String content) {
         this(content, "user", null, null);
     }

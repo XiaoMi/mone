@@ -416,6 +416,9 @@ public class Role {
     }
 
     public void putMessage(Message message) {
+        if (0 == message.getCreateTime()) {
+            message.setCreateTime(System.currentTimeMillis());
+        }
         this.rc.news.offer(message);
     }
 
