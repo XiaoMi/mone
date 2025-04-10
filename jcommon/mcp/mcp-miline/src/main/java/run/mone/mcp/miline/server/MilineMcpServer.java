@@ -32,11 +32,11 @@ public class MilineMcpServer {
                 .sync();
 
         MilineFunction function = new MilineFunction();
-        var toolRegistration = new ToolRegistration(
+        var toolRegistration = new McpServer.ToolStreamRegistration(
                 new Tool(function.getName(), function.getDesc(), function.getToolSchema()), function
         );
 
-        syncServer.addTool(toolRegistration);
+        syncServer.addStreamTool(toolRegistration);
 
         return syncServer;
     }
