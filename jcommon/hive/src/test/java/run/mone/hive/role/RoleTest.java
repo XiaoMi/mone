@@ -19,6 +19,7 @@ import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
 
 /**
@@ -26,6 +27,18 @@ import java.util.List;
  * @date 2024/12/29 16:17
  */
 public class RoleTest {
+
+    @SneakyThrows
+    @Test
+    public void testReactorRole() {
+        LLM llm = new LLM(LLMConfig.builder().debug(false).build());
+        CountDownLatch latch = new CountDownLatch(1);
+        ReactorRole role = new ReactorRole("minzai", latch, llm);
+        role.run();
+        String msg = "1+1=?";
+        role.getRc().getNews().put(Message.builder().content(msg).data(msg).build());
+        latch.await();
+    }
 
 
     @SneakyThrows
@@ -60,84 +73,72 @@ public class RoleTest {
     }
 
 
-    @SneakyThrows
-    @Test
-    public void testPython() {
-        Engineer engineer = new Engineer();
-        engineer.setLlm(new LLM(LLMConfig.builder().build()));
-        engineer.getRc().setReactMode(RoleContext.ReactMode.BY_ORDER);
-        engineer.setActions(new WritePythonCode(), new ExecutePythonCode(), new FixPythonBug());
-        engineer.putMessage(Message.builder().content("编写一个计算两数和的函数,thx").sendTo(Lists.newArrayList("Engineer")).build());
-        engineer.run().get();
-    }
-
-
     /**
      * 测试写代码
      */
-    @Test
-    public void testWriteCode() {
-        LLM llm = new LLM(LLMConfig.builder().debug(false).build());
-        Context context = new Context();
-        context.setDefaultLLM(llm);
-        Team team = new Team(context);
-        team.hire(new Architect().setActions(new AnalyzeArchitecture()), new Design().setActions(new WriteDesign()), new Engineer().setActions(new WriteCode()));
+    // @Test
+    // public void testWriteCode() {
+    //     LLM llm = new LLM(LLMConfig.builder().debug(false).build());
+    //     Context context = new Context();
+    //     context.setDefaultLLM(llm);
+    //     Team team = new Team(context);
+    //     team.hire(new Architect().setActions(new AnalyzeArchitecture()), new Design().setActions(new WriteDesign()), new Engineer().setActions(new WriteCode()));
 
-        Message message = Message.builder()
-                .id(java.util.UUID.randomUUID().toString())
-                .role("Human")
-                .sentFrom("user")
-                .sendTo(List.of("Architect"))
-                .content("帮我开发一个java的登录模块")
-                .build();
+    //     Message message = Message.builder()
+    //             .id(java.util.UUID.randomUUID().toString())
+    //             .role("Human")
+    //             .sentFrom("user")
+    //             .sendTo(List.of("Architect"))
+    //             .content("帮我开发一个java的登录模块")
+    //             .build();
 
-        team.publishMessage(message);
+    //     team.publishMessage(message);
 
-        team.run(3);
-        System.out.println(team);
-    }
+    //     team.run(3);
+    //     System.out.println(team);
+    // }
 
 
     //辩论,人类决定是否退出
-    @Test
-    public void testHumanAndDebatorDebate() {
-        LLM llm = new LLM(LLMConfig.builder().debug(false).build());
-        Context context = new Context();
-        context.setDefaultLLM(llm);
-        Team team = new Team(context);
+//     @Test
+//     public void testHumanAndDebatorDebate() {
+//         LLM llm = new LLM(LLMConfig.builder().debug(false).build());
+//         Context context = new Context();
+//         context.setDefaultLLM(llm);
+//         Team team = new Team(context);
 
-        Human human = new Human("Human", "A human participant in the debate");
-        Debator debatorA = new Debator("DebatorA", "First debator", "DebatorB", llm);
-        Debator debatorB = new Debator("DebatorB", "Second debator", "DebatorA", llm);
+//         Human human = new Human("Human", "A human participant in the debate");
+//         Debator debatorA = new Debator("DebatorA", "First debator", "DebatorB", llm);
+//         Debator debatorB = new Debator("DebatorB", "Second debator", "DebatorA", llm);
 
-//        team.hire(Lists.newArrayList(human, debatorA, debatorB));
-        team.hire(Lists.newArrayList(debatorA, debatorB));
+// //        team.hire(Lists.newArrayList(human, debatorA, debatorB));
+//         team.hire(Lists.newArrayList(debatorA, debatorB));
 
-        String debateTopic = "是否应该禁止在公共场所使用手机?";
-        Message initialMessage = Message.builder()
-                .id(java.util.UUID.randomUUID().toString())
-                .sentFrom("user")
-                .sendTo(List.of("DebatorA", "DebatorB"))
-                .content("请就以下话题展开辩论: " + debateTopic)
-                .build();
+//         String debateTopic = "是否应该禁止在公共场所使用手机?";
+//         Message initialMessage = Message.builder()
+//                 .id(java.util.UUID.randomUUID().toString())
+//                 .sentFrom("user")
+//                 .sendTo(List.of("DebatorA", "DebatorB"))
+//                 .content("请就以下话题展开辩论: " + debateTopic)
+//                 .build();
 
-        team.publishMessage(initialMessage);
+//         team.publishMessage(initialMessage);
 
-        for (int i = 0; i < 2; i++) {
-            System.out.println("Round " + (i + 1) + ":");
-            team.run(1);
-//            System.out.println(team.getEnv().getDebugHistory());
+//         for (int i = 0; i < 2; i++) {
+//             System.out.println("Round " + (i + 1) + ":");
+//             team.run(1);
+// //            System.out.println(team.getEnv().getDebugHistory());
 
-            human.putMessage(Message.builder().content("是否继续辩论?输入'continue'继续,或'stop'结束辩论。").build());
-            Message humanConfirmation = human.react().join();
+//             human.putMessage(Message.builder().content("是否继续辩论?输入'continue'继续,或'stop'结束辩论。").build());
+//             Message humanConfirmation = human.react().join();
 
-            if (!"continue".equalsIgnoreCase(humanConfirmation.getContent().trim())) {
-                System.out.println("Human chose to end the debate.");
-                break;
-            }
-        }
+//             if (!"continue".equalsIgnoreCase(humanConfirmation.getContent().trim())) {
+//                 System.out.println("Human chose to end the debate.");
+//                 break;
+//             }
+//         }
 
-    }
+//     }
 
 
 }

@@ -20,4 +20,6 @@ public class Const {
 
     public static final String NOTIFY_MSG = "msg";
 
+    public static final String ROLE_EXIT = "___exit___";
+
 }

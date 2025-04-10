@@ -33,16 +33,16 @@ import java.util.stream.IntStream;
  */
 public class GrpcTest {
 
-    private String clientId = "abc";
+    private String clientId = "jinjiding";
 
-    private String token = "token";
+    private String token = "minzai";
 
 
     @SneakyThrows
     @Test
     public void testServer() {
         GrpcServerTransport transport = new GrpcServerTransport(Const.GRPC_PORT);
-//        transport.setOpenAuth(true);
+        transport.setOpenAuth(true);
         McpAsyncServer server = McpServer.using(transport).capabilities(McpSchema.ServerCapabilities.builder().tools(true).build()).async();
 
         server.addTool(new McpServer.ToolRegistration(new McpSchema.Tool("a", "a", "{}"), (a) -> {
@@ -71,6 +71,21 @@ public class GrpcTest {
 
     @SneakyThrows
     @Test
+    public void testClientConsumer() {
+        McpConfig.ins().setClientId(clientId);
+        GrpcClientTransport transport = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
+        transport.setClientAuth(clientId, token);
+
+        McpClient.using(transport).msgConsumer(msg -> {
+            System.out.println("----->" + msg);
+        }).sync();
+
+        System.in.read();
+    }
+
+
+    @SneakyThrows
+    @Test
     public void testNotification() {
         GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
         client.setClientAuth(clientId, token);
@@ -92,7 +107,7 @@ public class GrpcTest {
             public void onCompleted() {
 
             }
-        }, "abc");
+        });
 
 
         System.in.read();
@@ -101,15 +116,15 @@ public class GrpcTest {
 
     @Test
     public void testClientTransport() {
-        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
+        GrpcClientTransport transport = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
         //支持meta信息
-        client.setClientAuth(clientId, token);
-        client.connect(a -> null).subscribe();
+        transport.setClientAuth(clientId, token);
+        transport.connect(a -> null).subscribe();
 
         McpSchema.CallToolRequest r = new McpSchema.CallToolRequest("a", ImmutableMap.of("k", "v", "k1", "v1"));
         //tools/call
         McpSchema.JSONRPCRequest req = new McpSchema.JSONRPCRequest("", "a", UUID.randomUUID().toString(), r, "");
-        client.sendMessage(req).subscribe(System.out::println);
+        transport.sendMessage(req).subscribe(System.out::println);
 
     }
 
@@ -131,9 +146,9 @@ public class GrpcTest {
     @Test
     public void testClient() {
         McpConfig.ins().setClientId("1212");
-        GrpcClientTransport client = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
-        McpSyncClient mc = McpClient.using(client).sync();
-        client.setClientAuth(clientId, token);
+        GrpcClientTransport transport = new GrpcClientTransport("127.0.0.1", Const.GRPC_PORT);
+        McpSyncClient mc = McpClient.using(transport).sync();
+        transport.setClientAuth(clientId, token);
         McpSchema.CallToolRequest req = new McpSchema.CallToolRequest("a", ImmutableMap.of("k", "v", "k1", "v1"));
         McpSchema.CallToolResult res = mc.callTool(req);
         System.out.println(res);
@@ -193,7 +208,7 @@ public class GrpcTest {
             public void onCompleted() {
 
             }
-        }, "abc");
+        });
 
         System.in.read();
     }
