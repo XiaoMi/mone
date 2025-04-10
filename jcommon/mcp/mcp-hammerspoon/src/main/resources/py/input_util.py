@@ -62,10 +62,22 @@ def searchWeComContact(contactName):
 def sendWeComMessage(message):
     """
     在当前企业微信聊天窗口中发送消息。
+    如果消息中包含 :·: 分隔符，则会分割消息并逐条发送，每条消息之间间隔2秒。
     """
-    keyboard_input_string(message)
-    time.sleep(0.5)
-    pyautogui.press('enter')
+    if ":·:" in message:
+        # 分割消息并逐条发送
+        message_parts = message.split(":·:")
+        for part in message_parts:
+            if part.strip():  # 跳过空消息
+                keyboard_input_string(part)
+                time.sleep(0.5)
+                pyautogui.press('enter')
+                time.sleep(2)  # 每条消息之间间隔2秒
+    else:
+        # 发送单条消息
+        keyboard_input_string(message)
+        time.sleep(0.5)
+        pyautogui.press('enter')
 
 
 def searchAndSendWeComMessage(contactName, message):
