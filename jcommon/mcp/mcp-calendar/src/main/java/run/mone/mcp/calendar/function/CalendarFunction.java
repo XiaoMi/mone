@@ -2,6 +2,7 @@ package run.mone.mcp.calendar.function;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.spec.McpSchema;
 
 import java.io.BufferedReader;
@@ -16,8 +17,8 @@ import java.util.function.Function;
 
 @Data
 @Slf4j
-public class CalendarFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
-    private String name = "calendarOperation";
+public class CalendarFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
+    private String name = "stream_calendarOperation";
     private String desc = "Mac Calendar operations including create, list, delete events";
 
     private String toolScheme = """
@@ -59,7 +60,7 @@ public class CalendarFunction implements Function<Map<String, Object>, McpSchema
             """;
 
     @Override
-    public McpSchema.CallToolResult apply(Map<String, Object> args) {
+    public Flux<McpSchema.CallToolResult> apply(Map<String, Object> args) {
         try {
             String command = (String) args.get("command");
             switch (command) {
@@ -70,17 +71,17 @@ public class CalendarFunction implements Function<Map<String, Object>, McpSchema
                 case "delete":
                     return deleteEvent(args);
                 default:
-                    return new McpSchema.CallToolResult(
+                    return Flux.just(new McpSchema.CallToolResult(
                             List.of(new McpSchema.TextContent("Unknown command: " + command)),
                             true
-                    );
+                    ));
             }
         } catch (Exception e) {
             log.error("Error executing calendar command", e);
-            return new McpSchema.CallToolResult(
+            return Flux.just(new McpSchema.CallToolResult(
                     List.of(new McpSchema.TextContent("Error: " + e.getMessage())),
                     true
-            );
+            ));
         }
     }
 
@@ -105,7 +106,7 @@ public class CalendarFunction implements Function<Map<String, Object>, McpSchema
         return Arrays.asList(result.split(",\\s*"));
     }
 
-    private McpSchema.CallToolResult createEvent(Map<String, Object> args) throws Exception {
+    private Flux<McpSchema.CallToolResult> createEvent(Map<String, Object> args) throws Exception {
         // 先获取可用的日历列表
         List<String> availableCalendars = getAvailableCalendars();
         String defaultCalendar = availableCalendars.isEmpty() ? "Calendar" : availableCalendars.get(0);
@@ -119,10 +120,10 @@ public class CalendarFunction implements Function<Map<String, Object>, McpSchema
 
         // 检查日历是否存在
         if (!availableCalendars.contains(calendar)) {
-            return new McpSchema.CallToolResult(
+            return Flux.just(new McpSchema.CallToolResult(
                 List.of(new McpSchema.TextContent("Error: Calendar '" + calendar + "' not found. Available calendars: " + availableCalendars)),
                 true
-            );
+            ));
         }
 
         String formattedStartDate = formatDateForAppleScript(startDate);
@@ -138,27 +139,27 @@ public class CalendarFunction implements Function<Map<String, Object>, McpSchema
 
         executeAppleScript(script);
 
-        return new McpSchema.CallToolResult(
+        return Flux.just(new McpSchema.CallToolResult(
             List.of(new McpSchema.TextContent("Successfully created event: " + title)),
             false
-        );
+        ));
     }
 
-    private McpSchema.CallToolResult listEvents(Map<String, Object> args) throws Exception {
+    private Flux<McpSchema.CallToolResult> listEvents(Map<String, Object> args) throws Exception {
         List<String> availableCalendars = getAvailableCalendars();
         if (availableCalendars.isEmpty()) {
-            return new McpSchema.CallToolResult(
+            return Flux.just(new McpSchema.CallToolResult(
                 List.of(new McpSchema.TextContent("No calendars found")),
                 true
-            );
+            ));
         }
 
         String calendar = (String) args.getOrDefault("calendar", availableCalendars.get(0));
         if (!availableCalendars.contains(calendar)) {
-            return new McpSchema.CallToolResult(
+            return Flux.just(new McpSchema.CallToolResult(
                 List.of(new McpSchema.TextContent("Calendar '" + calendar + "' not found. Available calendars: " + availableCalendars)),
                 true
-            );
+            ));
         }
 
         String startDate = (String) args.getOrDefault("startDate", "");
@@ -216,20 +217,20 @@ public class CalendarFunction implements Function<Map<String, Object>, McpSchema
             }
         }
 
-        return new McpSchema.CallToolResult(
+        return Flux.just(new McpSchema.CallToolResult(
             List.of(new McpSchema.TextContent(formattedResult.toString())),
             false
-        );
+        ));
     }
 
-    private McpSchema.CallToolResult deleteEvent(Map<String, Object> args) throws Exception {
+    private Flux<McpSchema.CallToolResult> deleteEvent(Map<String, Object> args) throws Exception {
         // 先获取可用的日历列表
         List<String> availableCalendars = getAvailableCalendars();
         if (availableCalendars.isEmpty()) {
-            return new McpSchema.CallToolResult(
+            return Flux.just(new McpSchema.CallToolResult(
                 List.of(new McpSchema.TextContent("No calendars found")),
                 true
-            );
+            ));
         }
 
         String title = (String) args.get("title");
@@ -237,10 +238,10 @@ public class CalendarFunction implements Function<Map<String, Object>, McpSchema
 
         // 检查日历是否存在
         if (!availableCalendars.contains(calendar)) {
-            return new McpSchema.CallToolResult(
+            return Flux.just(new McpSchema.CallToolResult(
                 List.of(new McpSchema.TextContent("Calendar '" + calendar + "' not found. Available calendars: " + availableCalendars)),
                 true
-            );
+            ));
         }
 
         String script = String.format("""
@@ -253,10 +254,10 @@ public class CalendarFunction implements Function<Map<String, Object>, McpSchema
 
         executeAppleScript(script);
 
-        return new McpSchema.CallToolResult(
+        return Flux.just(new McpSchema.CallToolResult(
             List.of(new McpSchema.TextContent("Successfully deleted event: " + title)),
             false
-        );
+        ));
     }
 
     protected String executeAppleScript(String script) throws Exception {

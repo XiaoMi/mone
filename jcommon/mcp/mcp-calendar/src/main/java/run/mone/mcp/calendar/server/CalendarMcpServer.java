@@ -32,11 +32,11 @@ public class CalendarMcpServer {
                 .sync();
 
         CalendarFunction function = new CalendarFunction();
-        var toolRegistration = new ToolRegistration(
+        var toolRegistration = new McpServer.ToolStreamRegistration(
                 new Tool(function.getName(), function.getDesc(), function.getToolScheme()), function
         );
 
-        syncServer.addTool(toolRegistration);
+        syncServer.addStreamTool(toolRegistration);
 
         return syncServer;
     }
