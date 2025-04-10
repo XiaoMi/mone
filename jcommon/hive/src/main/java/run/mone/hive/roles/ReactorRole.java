@@ -82,7 +82,7 @@ public class ReactorRole extends Role {
     @Override
     protected int observe() {
         log.info("auto observe");
-        Message msg = this.rc.getNews().poll(3, TimeUnit.MINUTES);
+        Message msg = this.rc.getNews().poll(300, TimeUnit.MINUTES);
         if (null == msg) {
             return -1;
         }
