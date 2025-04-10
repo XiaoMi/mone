@@ -63,12 +63,12 @@ public class HammerspoonMcpServer {
                     function3
             );
 
-            ViewChatContentUpwardFunction function4 = new ViewChatContentUpwardFunction();
-            var toolRegistration4 = new McpServer.ToolRegistration(
-                    new Tool(function4.getName(), function4.getDesc(), function4.getToolScheme()),
-                    function4
-            );
-            syncServer.addTool(toolRegistration4);
+//            ViewChatContentUpwardFunction function4 = new ViewChatContentUpwardFunction();
+//            var toolRegistration4 = new McpServer.ToolRegistration(
+//                    new Tool(function4.getName(), function4.getDesc(), function4.getToolScheme()),
+//                    function4
+//            );
+//            syncServer.addTool(toolRegistration4);
 
             ViewChatContentBelowFunction function5 = new ViewChatContentBelowFunction();
             var toolRegistration5 = new McpServer.ToolRegistration(
