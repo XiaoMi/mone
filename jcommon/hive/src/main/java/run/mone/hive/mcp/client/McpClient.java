@@ -8,6 +8,9 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+import io.grpc.stub.StreamObserver;
+import run.mone.hive.mcp.grpc.StreamResponse;
+import run.mone.hive.mcp.grpc.transport.GrpcClientTransport;
 import run.mone.hive.mcp.spec.ClientMcpTransport;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.mcp.spec.McpSchema.ClientCapabilities;
@@ -353,8 +356,32 @@ public interface McpClient {
          * settings
          */
         public McpAsyncClient async() {
-            return new McpAsyncClient(transport, requestTimeout, clientInfo, capabilities, roots, toolsChangeConsumers,
+            McpAsyncClient client = new McpAsyncClient(transport, requestTimeout, clientInfo, capabilities, roots, toolsChangeConsumers,
                     resourcesChangeConsumers, promptsChangeConsumers, loggingConsumers, samplingHandler, msgConsumers);
+            //grpc transport 也支持消费 服务器推过来的信息
+            if (transport instanceof GrpcClientTransport gct) {
+                if (!msgConsumers.isEmpty()) {
+                    gct.setConsumer(msgConsumers.get(0));
+                }
+
+                gct.observer(new StreamObserver<>() {
+                    @Override
+                    public void onNext(StreamResponse streamResponse) {
+
+                    }
+
+                    @Override
+                    public void onError(Throwable throwable) {
+
+                    }
+
+                    @Override
+                    public void onCompleted() {
+
+                    }
+                });
+            }
+            return client;
         }
 
     }

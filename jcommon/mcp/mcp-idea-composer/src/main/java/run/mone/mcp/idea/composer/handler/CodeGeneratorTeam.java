@@ -1,6 +1,7 @@
 package run.mone.mcp.idea.composer.handler;
 
 import com.google.common.collect.Lists;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import run.mone.hive.Team;
 import run.mone.hive.actions.AnalyzeArchitecture;
@@ -9,11 +10,11 @@ import run.mone.hive.actions.programmer.WriteCode;
 import run.mone.hive.configs.LLMConfig;
 import run.mone.hive.context.Context;
 import run.mone.hive.llm.LLM;
-import run.mone.hive.roles.Architect;
-import run.mone.hive.roles.Design;
-import run.mone.hive.roles.Engineer;
 import run.mone.hive.schema.Message;
 import run.mone.mcp.idea.composer.handler.biz.BotChainCallContext;
+import run.mone.mcp.idea.composer.handler.role.Architect;
+import run.mone.mcp.idea.composer.handler.role.Design;
+import run.mone.mcp.idea.composer.handler.role.Engineer;
 
 import java.util.List;
 
@@ -66,7 +67,25 @@ public class CodeGeneratorTeam {
     }
 
     private static void setActions(BotChainCallContext botChainCallContext, ConversationContext conversationContext, WriteCode writeCode, PromptResult promptResult, Engineer engineer) {
-        writeCode.setFunction((req, action, context) -> Message.builder().content(new CodeGenerationHandler(botChainCallContext).getBotResponse(conversationContext.getUserQuery(), promptResult, conversationContext)).role(engineer.getName()).build());
+        writeCode.setFunction((req, action, context) -> {
+            String rules = "";
+            Object additionalData = conversationContext.getAdditionalData();
+            if (additionalData != null) {
+                JsonElement element = ((JsonObject) conversationContext.getAdditionalData()).get("rules");
+                if (element != null) {
+                    rules = element.getAsString();
+                }
+            }
+            return Message.builder()
+                    .content(new CodeGenerationHandler(botChainCallContext).getBotResponse(
+                            conversationContext.getUserQuery(),
+                            rules,
+                            promptResult,
+                            conversationContext)
+                    )
+                    .role(engineer.getName())
+                    .build();
+        });
         engineer.setActions(Lists.newArrayList(writeCode));
     }
 

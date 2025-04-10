@@ -4,20 +4,19 @@ package run.mone.hive.llm;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import run.mone.hive.configs.LLMConfig;
-import run.mone.hive.roles.Teacher;
 import run.mone.hive.schema.AiMessage;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.*;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static run.mone.hive.llm.ClaudeProxy.getClaudeKey;
 
 @Slf4j
 class LLMTest {
@@ -177,6 +176,13 @@ class LLMTest {
         System.out.println(res);
     }
 
+    @SneakyThrows
+    @Test
+    public void testCall() {
+        llm.call(Lists.newArrayList(AiMessage.builder().role("user").content("hi").build())).subscribe(System.out::println);
+        System.in.read();
+    }
+
     //调用doubao 多模态
     @Test
     public void test1() {
@@ -204,6 +210,54 @@ class LLMTest {
 
         String res = llm.chat(Lists.newArrayList(AiMessage.builder().role("user").jsonContent(req).build()));
         System.out.println(res);
+    }
+
+    @Test
+    public void testClaude35() {
+        ClaudeProxy claudeProxy = new ClaudeProxy();
+        claudeProxy.initGCPClaude("Claude-3.5-Sonnet-company-inner");
+
+        List<AiMessage> msgs = Lists.newArrayList(AiMessage.builder().role("user").content("你好").build());
+
+        String result = claudeProxy.callGCP("Claude-3.5-Sonnet-company-inner", msgs);
+        System.out.println(result);
+
+        String apiKey = getClaudeKey("Claude-3.5-Sonnet-company-inner");
+
+        StringBuilder responseBuilder = new StringBuilder();
+        List<JsonObject> jsonResponses = new ArrayList<>();
+        CountDownLatch latch = new CountDownLatch(1);
+
+        llm.setLlmProvider(LLMProvider.CLAUDE_COMPANY);
+        llm.config.setStream(true);
+        llm.config.setVersion("vertex-2023-10-16");
+        llm.config.setMaxTokens(8192);
+        llm.chatCompletionStream(
+                apiKey,
+                msgs,
+                "Claude-3.5-Sonnet-company-inner",
+                (content, jsonResponse) -> {
+                    if ("[DONE]".equals(content)) {
+                        latch.countDown();
+                    } else {
+                        System.out.println(content);
+                        responseBuilder.append(content);
+                        jsonResponses.add(jsonResponse);
+                    }
+                },
+                line -> System.out.println("Received line: " + line)
+                , "");
+
+        try {
+            // 等待完成或超时
+            if (!latch.await(60, TimeUnit.SECONDS)) {
+                log.info("180s");
+            }
+        } catch (Exception e) {
+
+        }
+
+        System.out.println("ok");
     }
 
     @Test
@@ -644,34 +698,34 @@ class LLMTest {
         assertFalse(jsonResponses.isEmpty(), "Should have received JSON responses");
     }
 
-    @Test
-    public void testChatWithBot() {
-        // 初始化LLM并配置Bot桥接
-        llm.setBotBridge(new BotHttpBridge(
-                "xxxxxxxxxx",
-                "xxxxxxxxx",
-                "xxxxxx",
-                "xxxxxxx"
-        ));
-
-        Teacher aaa = new Teacher("aaa");
-
-        // 简单调用
-        String simple = llm.chatWithBot(aaa, "你好");
-        System.out.println("simple call : " + simple);
-
-        // 带参数调用
-        JsonObject params = new JsonObject();
-        params.addProperty("key", "value");
-        String withParam = llm.chatWithBot(aaa, "你好", params);
-        System.out.println("with param : " + withParam);
-
-        // 自定义响应处理
-        String response = llm.chatWithBot(aaa, "你好", params, res -> {
-            // 自定义处理逻辑
-            System.out.println("function call : " + res);
-            return res;
-        });
-    }
+//    @Test
+//    public void testChatWithBot() {
+//        // 初始化LLM并配置Bot桥接
+//        llm.setBotBridge(new BotHttpBridge(
+//                "xxxxxxxxxx",
+//                "xxxxxxxxx",
+//                "xxxxxx",
+//                "xxxxxxx"
+//        ));
+//
+//        Teacher aaa = new Teacher("aaa");
+//
+//        // 简单调用
+//        String simple = llm.chatWithBot(aaa, "你好");
+//        System.out.println("simple call : " + simple);
+//
+//        // 带参数调用
+//        JsonObject params = new JsonObject();
+//        params.addProperty("key", "value");
+//        String withParam = llm.chatWithBot(aaa, "你好", params);
+//        System.out.println("with param : " + withParam);
+//
+//        // 自定义响应处理
+//        String response = llm.chatWithBot(aaa, "你好", params, res -> {
+//            // 自定义处理逻辑
+//            System.out.println("function call : " + res);
+//            return res;
+//        });
+//    }
 }
 

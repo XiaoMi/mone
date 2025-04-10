@@ -3,7 +3,6 @@ package run.mone.hive.actions;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import run.mone.hive.memory.Memory;
-import run.mone.hive.roles.Debator;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.ActionReq;
 import run.mone.hive.schema.Message;
@@ -36,10 +35,11 @@ public class SpeakAloud extends Action {
     @Override
     public CompletableFuture<Message> run(ActionReq req, ActionContext context) {
         String opponentName = "";
-        if (this.getRole() instanceof Debator debator) {
-            opponentName = debator.getOpponentName();
-        }
+        // if (this.getRole() instanceof Debator debator) {
+        //     opponentName = debator.getOpponentName();
+        // }
 
+        opponentName = "用户";
         String previous = "";
         Memory memory = req.getMemory();
         previous = memory.getStorage().stream().map(it -> it.getSentFrom() + ":" + it.getContent()).collect(Collectors.joining("\n\n"));

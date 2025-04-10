@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.apache.commons.lang3.StringUtils;
+import lombok.Getter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.Disposable;
@@ -15,11 +15,15 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.MonoSink;
+import run.mone.hive.mcp.grpc.CallToolResponse;
+import run.mone.hive.mcp.grpc.InitializeRequest;
+import run.mone.hive.mcp.grpc.ListToolsRequest;
+import run.mone.hive.mcp.grpc.PingRequest;
+import run.mone.hive.mcp.grpc.transport.GrpcClientTransport;
 import run.mone.hive.mcp.hub.McpConfig;
-import run.mone.hive.mcp.spec.McpSchema.CallToolResult;
 import run.mone.hive.mcp.spec.McpSchema.Content;
 import run.mone.hive.mcp.spec.McpSchema.TextContent;
-import run.mone.hive.mcp.transport.webmvcsse.WebMvcSseServerTransport;
+import run.mone.hive.mcp.server.transport.SseServerTransport;
 import run.mone.hive.mcp.util.Assert;
 
 /**
@@ -71,8 +75,10 @@ public class DefaultMcpSession implements McpSession {
     /**
      * Map of request handlers keyed by method name
      */
+    @Getter
     private final ConcurrentHashMap<String, RequestHandler> requestHandlers = new ConcurrentHashMap<>();
 
+    @Getter
     private final ConcurrentHashMap<String, StreamRequestHandler> streamRequestHandlers = new ConcurrentHashMap<>();
 
     /**
@@ -165,12 +171,10 @@ public class DefaultMcpSession implements McpSession {
         this.streamRequestHandlers.putAll(streamRequestHandlers);
         this.notificationHandlers.putAll(notificationHandlers);
 
-        // TODO: consider mono.transformDeferredContextual where the Context contains
-        // the
         // Observation associated with the individual message - it can be used to
         // create child Observation and emit it together with the message to the
         // consumer
-        //这是一个sse的连接,并且处理返回的信息
+        //这是一个sse的连接,并且处理返回的信息 (grpc的server则直接拉起来这个server)
         this.connection = this.transport.connect(mono -> mono.doOnNext(message -> {
             if (message instanceof McpSchema.JSONRPCResponse response) {
                 logger.info("Received Response: {}", response);
@@ -211,8 +215,8 @@ public class DefaultMcpSession implements McpSession {
             }
         })).subscribe();
 
-        if (this.transport instanceof WebMvcSseServerTransport) {
-            ((WebMvcSseServerTransport) this.transport).connectStream(req -> {
+        if (this.transport instanceof SseServerTransport) {
+            ((SseServerTransport) this.transport).connectStream(req -> {
                 return handleToolsStreamRequest(req);
             });
         }
@@ -273,7 +277,7 @@ public class DefaultMcpSession implements McpSession {
                     .onErrorResume(error -> Mono.just(new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION,
                             request.id(),
                             null, new McpSchema.JSONRPCResponse.JSONRPCError(McpSchema.ErrorCodes.INTERNAL_ERROR,
-                            error.getMessage(), null),true,clientId,null))); // TODO: add error message through the data field
+                            error.getMessage(), null), true, clientId, null))); // TODO: add error message through the data field
         });
     }
 
@@ -331,13 +335,34 @@ public class DefaultMcpSession implements McpSession {
     @Override
     public <T> Mono<T> sendRequest(String method, Object requestParams, TypeReference<T> typeRef) {
         String requestId = this.generateRequestId();
+
+        //使用grpc
+        if (this.transport instanceof GrpcClientTransport gct) {
+            switch (method) {
+                //发送ping信息
+                case McpSchema.METHOD_PING: {
+                    return Mono.just(gct.ping(PingRequest.newBuilder().setMessage("ping").build())).map(it -> this.transport.unmarshalFrom(it, typeRef));
+                }
+                //初始化(主要获取到tools信息)
+                case McpSchema.METHOD_INITIALIZE: {
+                    return Mono.just(gct.initialize(InitializeRequest.newBuilder().build())).map(it -> this.transport.unmarshalFrom(it, typeRef));
+                }
+                //列出所有可使用的工具
+                case McpSchema.METHOD_TOOLS_LIST: {
+                    return Mono.just(gct.listTools(ListToolsRequest.newBuilder().build())).map(it -> this.transport.unmarshalFrom(it, typeRef));
+                }
+            }
+        }
+
         return Mono.<McpSchema.JSONRPCResponse>create(sink -> {
             this.pendingResponses.put(requestId, sink);
             McpSchema.JSONRPCRequest jsonrpcRequest = new McpSchema.JSONRPCRequest(McpSchema.JSONRPC_VERSION, method,
                     requestId, requestParams, McpConfig.ins().getClientId());
             this.transport.sendMessage(jsonrpcRequest)
-                    // TODO: It's most efficient to create a dedicated Subscriber here
                     .subscribe(v -> {
+                        if (null != v && v instanceof CallToolResponse tr) {
+                            sink.success(new McpSchema.JSONRPCResponse("", "", v, null));
+                        }
                     }, error -> {
                         this.pendingResponses.remove(requestId);
                         sink.error(error);
@@ -367,6 +392,14 @@ public class DefaultMcpSession implements McpSession {
     @Override
     public <T> Flux<T> sendRequestStream(String method, Object requestParams, TypeReference<T> typeRef) {
         String requestId = this.generateRequestId();
+        //grpc 直接就是flux,直接返回即可
+        if (this.transport instanceof GrpcClientTransport gct) {
+            McpSchema.JSONRPCRequest jsonrpcRequest = new McpSchema.JSONRPCRequest(McpSchema.JSONRPC_VERSION, method,
+                    requestId, requestParams, McpConfig.ins().getClientId());
+            return gct.sendStreamMessage(jsonrpcRequest).map(it -> {
+                return this.transport.unmarshalFrom(it, typeRef);
+            });
+        }
 
         return Flux.<McpSchema.JSONRPCResponse>create(sink -> {
                     this.pendingStreamResponses.put(requestId, sink);
@@ -375,11 +408,11 @@ public class DefaultMcpSession implements McpSession {
 
                     this.transport.sendMessage(jsonrpcRequest)
                             .subscribe(v -> {
-                                // 预期很快到这里, 因为stream是异步的
                             }, error -> {
-                                // 处理错误
                                 sink.error(error);
                             });
+
+
                 }).map(response -> this.transport.unmarshalFrom(response.result(), typeRef))
                 .doOnCancel(() -> {
                     // 处理取消逻辑
@@ -396,9 +429,19 @@ public class DefaultMcpSession implements McpSession {
      */
     @Override
     public Mono<Void> sendNotification(String method, Map<String, Object> params) {
+        if (this.transport instanceof GrpcClientTransport gct) {
+           switch (method) {
+               //通知mcp服务器我已经初始化完毕了
+               case McpSchema.METHOD_NOTIFICATION_INITIALIZED: {
+                   gct.methodNotificationInitialized();
+                   return Mono.empty();
+               }
+           }
+        }
+
         McpSchema.JSONRPCNotification jsonrpcNotification = new McpSchema.JSONRPCNotification(McpSchema.JSONRPC_VERSION,
                 method, params);
-        return this.transport.sendMessage(jsonrpcNotification);
+        return this.transport.sendMessage(jsonrpcNotification).then();
     }
 
     /**

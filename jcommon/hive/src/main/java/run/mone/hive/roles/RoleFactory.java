@@ -7,7 +7,6 @@ public class RoleFactory {
     
     public static Role createRole(String roleType, LLM llm) {
         return switch (roleType.toLowerCase()) {
-            case "engineer" -> new Engineer();
             // case "productmanager" -> new ProductManager();
             case "architect" -> new Architect();
             // case "qaengineer" -> new QaEngineer();

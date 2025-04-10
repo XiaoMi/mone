@@ -222,7 +222,7 @@ public class HttpClientSseClientTransport implements ClientMcpTransport {
      * @throws McpError if the message endpoint is not available or the wait times out
      */
     @Override
-    public Mono<Void> sendMessage(JSONRPCMessage message) {
+    public Mono<Object> sendMessage(JSONRPCMessage message) {
         if (isClosing) {
             return Mono.empty();
         }
