@@ -20,8 +20,9 @@ import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +33,7 @@ import java.util.stream.Collectors;
  * @author wangyingjie
  * @author goodjava@qq.com
  * @date 2025/4/9 10:26
- * 会自己决策
+ * 会自己决策的Role
  */
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
@@ -98,9 +99,10 @@ public class ReactorRole extends Role {
             return -1;
         }
 
+        //再次给加回去
         if (firstMsg) {
-            String firstMsg = msg.getContent();
-            this.getRc().getMemory().add(Message.builder().role("user").content(firstMsg).build());
+            msg.setRole("user");
+            this.getRc().getMemory().add(msg);
         }
 
         // 获取memory中最后一条消息
@@ -130,20 +132,25 @@ public class ReactorRole extends Role {
         try {
             log.info("auto act");
             Message msg = this.rc.news.poll();
-            //直接调用的大模型
             String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":\n" + it.getContent()).collect(Collectors.joining("\n"));
             String customRulesReplaced = AiTemplate.renderTemplate(customRules, ImmutableMap.of("name", this.name));
             String userPrompt = buildUserPrompt(msg, history, customRulesReplaced);
             log.info("userPrompt:{}", userPrompt);
-            String res = llm.callStream(this, LLMCompoundMsg.builder()
-                            .content(userPrompt)
-                            .parts(msg.getImages() == null
-                                    ? new ArrayList<>()
-                                    : msg.getImages()
-                                    .stream()
-                                    .map(it -> LLM.LLMPart.builder().type(LLM.TYPE_IMAGE).data(it).mimeType("image/jpeg").build())
-                                    .collect(Collectors.toList())).build(),
-                    getSystemPrompt());
+
+            LLMCompoundMsg compoundMsg = getLlmCompoundMsg(userPrompt, msg);
+            CountDownLatch latch = new CountDownLatch(1);
+            StringBuilder sb = new StringBuilder();
+            llm.compoundMsgCall(compoundMsg, getSystemPrompt())
+                    .doOnNext(sb::append)
+                    .doOnComplete(latch::countDown)
+                    .subscribe(
+                            it -> Optional.ofNullable(msg.getSink()).ifPresent(s -> s.next(it)),
+                            error -> Optional.ofNullable(msg.getSink()).ifPresent(s -> s.error(error)),
+                            () -> Optional.ofNullable(msg.getSink()).ifPresent(s -> s.complete()));
+            latch.await();
+
+            String res = sb.toString();
+
             // 解析工具调用
             List<Result> tools = new MultiXmlParser().parse(res);
             MutableObject<McpResult> toolResMsg = new MutableObject<>(null);
@@ -155,6 +162,9 @@ public class ReactorRole extends Role {
                 tools.forEach(it -> {
                     if (it.getTag().equals("attempt_completion")) {
                         this.getRc().getNews().add(Message.builder().data(res).content(res).build());
+                    }
+                    if (it.getTag().equals("chat")) {
+                        this.getRc().getMemory().add(Message.builder().role("assistant").content(it.getKeyValuePairs().get("message")).build());
                     }
                 });
             } else {
@@ -170,9 +180,21 @@ public class ReactorRole extends Role {
             }
         } catch (Exception e) {
             this.getRc().getNews().add(Message.builder().data("\n请重试上一个步骤").content("\n请重试上一个步骤").build());
-            log.error("WxAutoReactor act error", e);
+            log.error("ReactorRole act error", e);
         }
         return CompletableFuture.completedFuture(Message.builder().build());
+    }
+
+    private static LLMCompoundMsg getLlmCompoundMsg(String userPrompt, Message msg) {
+        LLMCompoundMsg compoundMsg = LLMCompoundMsg.builder()
+                .content(userPrompt)
+                .parts(msg.getImages() == null
+                        ? new ArrayList<>()
+                        : msg.getImages()
+                        .stream()
+                        .map(it -> LLM.LLMPart.builder().type(LLM.TYPE_IMAGE).data(it).mimeType("image/jpeg").build())
+                        .collect(Collectors.toList())).build();
+        return compoundMsg;
     }
 
     public void sendMsg(McpSchema.Content content, String toolName) {

@@ -1,6 +1,7 @@
 package run.mone.hive.schema;
 
 import lombok.*;
+import reactor.core.publisher.FluxSink;
 
 import java.io.Serializable;
 import java.util.*;
@@ -29,6 +30,8 @@ public class Message implements Serializable {
 
     @Builder.Default
     private String type = "string";
+
+    private FluxSink<String> sink;
 
     private Map<MetaKey, MetaValue> meta = new HashMap<>();
 

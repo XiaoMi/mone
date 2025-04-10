@@ -1,12 +1,14 @@
 package run.mone.mcp.chat.server;
 
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.StreamMessageType;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
+import run.mone.hive.roles.tool.ChatTool;
 import run.mone.hive.schema.Message;
 
 import javax.annotation.PostConstruct;
@@ -62,13 +64,21 @@ public class RoleService {
                 grpcServerTransport.sendMessage(new McpSchema.JSONRPCNotification("", "msg", params));
             }
         };
-        minzai.setCustomRules("");
+        //支持使用聊天工具
+        minzai.getTools().add(new ChatTool());
 
         minzai.run();
     }
 
-    public void receiveMsg(Message message) throws InterruptedException {
-        minzai.getRc().getNews().put(message);
+    public Flux<String> receiveMsg(Message message) {
+        return Flux.create(sink -> {
+            try {
+                message.setSink(sink);
+                minzai.getRc().getNews().put(message);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        });
     }
 
 
