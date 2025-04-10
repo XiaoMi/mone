@@ -2,6 +2,7 @@ package run.mone.mcp.terminal.function;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.spec.McpSchema;
 
 import java.io.*;
@@ -13,7 +14,7 @@ import java.util.function.Function;
 
 @Data
 @Slf4j
-public class TerminalFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+public class TerminalFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
 
     private String name = "terminalOperation";
     private String desc = "Terminal operations include opening the terminal, running commands, closing the terminal, and simulating key operations";
@@ -86,7 +87,7 @@ public class TerminalFunction implements Function<Map<String, Object>, McpSchema
 
 
     @Override
-    public McpSchema.CallToolResult apply(Map<String, Object> arguments) {
+    public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
         String operation = (String)arguments.get("operation");
         try{
             String result = switch (operation){
@@ -96,10 +97,10 @@ public class TerminalFunction implements Function<Map<String, Object>, McpSchema
                 case "close" -> closeTerminal((String) arguments.get("windowId"));
                 default -> throw new IllegalArgumentException("Unknown operation: " + operation);
             };
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false);
+            return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(result)), false));
 
         }catch (Exception e){
-            return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true);
+            return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent("Error: " + e.getMessage())), true));
         }
     }
 
