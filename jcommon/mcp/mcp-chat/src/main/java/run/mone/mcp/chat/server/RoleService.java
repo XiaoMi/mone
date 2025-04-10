@@ -26,7 +26,7 @@ public class RoleService {
     private LLM llm;
 
     @Resource
-    private GrpcServerTransport serverTransport;
+    private GrpcServerTransport grpcServerTransport;
 
     private ReactorRole minzai = null;
 
@@ -39,30 +39,31 @@ public class RoleService {
             public void sendMessage(Message msg) {
                 switch (msg.getType()) {
                     case StreamMessageType.BOT_STREAM_BEGIN: {
-                        extracted("[BEGIN]", msg);
+                        sendMsgToAthena("[BEGIN]", msg);
                         break;
                     }
                     case StreamMessageType.BOT_STREAM_EVENT: {
-                        extracted(msg.getContent(), msg);
+                        sendMsgToAthena(msg.getContent(), msg);
                         break;
                     }
                     case StreamMessageType.BOT_STREAM_END: {
-                        extracted("[DONE]", msg);
+                        sendMsgToAthena("[DONE]", msg);
                         break;
                     }
                 }
-
             }
 
-            private void extracted(String value, Message msg) {
+            private void sendMsgToAthena(String value, Message msg) {
                 Map<String, Object> params = new HashMap<>();
                 params.put(Const.CLIENT_ID, "min");
                 params.put("cmd", "notify_athena");
                 params.put("data", value);
                 params.put("id", msg.getId());
-                serverTransport.sendMessage(new McpSchema.JSONRPCNotification("", "msg", params));
+                grpcServerTransport.sendMessage(new McpSchema.JSONRPCNotification("", "msg", params));
             }
         };
+
+        minzai.run();
     }
 
     public void receiveMsg(Message message) throws InterruptedException {

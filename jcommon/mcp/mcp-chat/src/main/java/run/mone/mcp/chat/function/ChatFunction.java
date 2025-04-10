@@ -25,6 +25,8 @@ public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchem
 
     private final RoleService roleService;
 
+    private boolean useAgent = true;
+
     private static final String TOOL_SCHEMA = """
             {
                 "type": "object",
@@ -59,9 +61,11 @@ public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchem
         clientHistory.add(new Message("user", message));
         
         try {
-
-            roleService.receiveMsg(run.mone.hive.schema.Message.builder().build());
-
+            //使用agent 模式
+            if (useAgent) {
+                roleService.receiveMsg(run.mone.hive.schema.Message.builder().role("user").content(message).data(message).build());
+                return Flux.empty();
+            }
 
             StringBuilder sb = new StringBuilder();
             Flux<String> result = chatService.chat(message, context);
