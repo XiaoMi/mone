@@ -2,6 +2,7 @@ package run.mone.mcp.miline.function;
 
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
 import run.mone.hive.mcp.spec.McpSchema;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
@@ -14,10 +15,10 @@ import java.util.ArrayList;
 
 @Data
 @Slf4j
-public class MilineFunction implements Function<Map<String, Object>, McpSchema.CallToolResult> {
+public class MilineFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
 
-    private String name = "miline_executor";
-    private String desc = "Miline CICD platform operations including managing project members";
+    private String name = "stream_miline_executor";
+    private String desc = "Miline CICD platform operations including managing project members and running pipelines";
 
     private String toolSchema = """
             {
@@ -25,16 +26,20 @@ public class MilineFunction implements Function<Map<String, Object>, McpSchema.C
                 "properties": {
                     "command": {
                         "type": "string",
-                        "enum": ["addMember", "removeMember", "listMembers"],
+                        "enum": ["addMember", "removeMember", "listMembers", "runPipeline"],
                         "description": "The operation type for Miline project management"
                     },
                     "projectId": {
-                        "type": "integer",
+                        "type": "string",
                         "description": "The ID of the target project"
                     },
                     "username": {
                         "type": "string",
                         "description": "Username of the member to add/remove"
+                    },
+                    "pipelineId": {
+                        "type": "string",
+                        "description": "The ID of the pipeline to run"
                     }
                 },
                 "required": ["command", "projectId"]
@@ -44,6 +49,7 @@ public class MilineFunction implements Function<Map<String, Object>, McpSchema.C
     private static final String BASE_URL = "http://XX/mtop/miline";
     private static final String GET_MEMBERS_URL = BASE_URL + "/getProjectMembers";
     private static final String MODIFY_MEMBERS_URL = BASE_URL + "/modifyMember";
+    private static final String RUN_PIPELINE_URL = BASE_URL + "/startPipelineWithLatestCommit";
     
     private final OkHttpClient client;
     private final ObjectMapper objectMapper;
@@ -171,7 +177,7 @@ public class MilineFunction implements Function<Map<String, Object>, McpSchema.C
     }
 
     @Override
-    public McpSchema.CallToolResult apply(Map<String, Object> args) {
+    public Flux<McpSchema.CallToolResult> apply(Map<String, Object> args) {
         try {
             String command = (String) args.get("command");
             switch (command) {
@@ -181,30 +187,32 @@ public class MilineFunction implements Function<Map<String, Object>, McpSchema.C
                     return removeProjectMember(args);
                 case "listMembers":
                     return listProjectMembers(args);
+                case "runPipeline":
+                    return runPipeline(args);
                 default:
-                    return new McpSchema.CallToolResult(
+                    return Flux.just(new McpSchema.CallToolResult(
                             List.of(new McpSchema.TextContent("Unknown command: " + command)),
                             true
-                    );
+                    ));
             }
         } catch (Exception e) {
             log.error("Error executing miline command", e);
-            return new McpSchema.CallToolResult(
+            return Flux.just(new McpSchema.CallToolResult(
                     List.of(new McpSchema.TextContent("Error: " + e.getMessage())),
                     true
-            );
+            ));
         }
     }
 
-    private McpSchema.CallToolResult addProjectMember(Map<String, Object> args) {
+    private Flux<McpSchema.CallToolResult> addProjectMember(Map<String, Object> args) {
         try {
-            Integer projectId = (Integer) args.get("projectId");
+            Integer projectId = Integer.parseInt((String) args.get("projectId"));
             String username = (String) args.get("username");
             if (username == null || username.isEmpty()) {
-                return new McpSchema.CallToolResult(
+                return Flux.just(new McpSchema.CallToolResult(
                     List.of(new McpSchema.TextContent("Username is required for adding member")),
                     true
-                );
+                ));
             }
 
             // 1. 获取当前项目成员
@@ -215,10 +223,10 @@ public class MilineFunction implements Function<Map<String, Object>, McpSchema.C
                 .anyMatch(member -> member.getAccount().equals(username));
             
             if (memberExists) {
-                return new McpSchema.CallToolResult(
+                return Flux.just(new McpSchema.CallToolResult(
                     List.of(new McpSchema.TextContent("Member " + username + " already exists in project")),
                     true
-                );
+                ));
             }
 
             // 3. 构建新的成员列表
@@ -248,39 +256,100 @@ public class MilineFunction implements Function<Map<String, Object>, McpSchema.C
             boolean success = modifyProjectMembers(request);
             
             if (success) {
-                return new McpSchema.CallToolResult(
+                return Flux.just(new McpSchema.CallToolResult(
                     List.of(new McpSchema.TextContent("Successfully added member " + username + " to project " + projectId)),
                     false
-                );
+                ));
             } else {
-                return new McpSchema.CallToolResult(
+                return Flux.just(new McpSchema.CallToolResult(
                     List.of(new McpSchema.TextContent("Failed to add member " + username)),
                     true
-                );
+                ));
             }
 
         } catch (Exception e) {
             log.error("Error adding project member", e);
-            return new McpSchema.CallToolResult(
+            return Flux.just(new McpSchema.CallToolResult(
                 List.of(new McpSchema.TextContent("Error: " + e.getMessage())),
                 true
-            );
+            ));
         }
     }
 
-    private McpSchema.CallToolResult removeProjectMember(Map<String, Object> args) {
+    private Flux<McpSchema.CallToolResult> removeProjectMember(Map<String, Object> args) {
         // TODO: Implement remove member logic
-        return new McpSchema.CallToolResult(
+        return Flux.just(new McpSchema.CallToolResult(
             List.of(new McpSchema.TextContent("Remove member function not implemented yet")),
             true
-        );
+        ));
     }
 
-    private McpSchema.CallToolResult listProjectMembers(Map<String, Object> args) {
+    private Flux<McpSchema.CallToolResult> listProjectMembers(Map<String, Object> args) {
         // TODO: Implement list members logic
-        return new McpSchema.CallToolResult(
+        return Flux.just(new McpSchema.CallToolResult(
             List.of(new McpSchema.TextContent("List members function not implemented yet")),
             true
-        );
+        ));
+    }
+
+    private Flux<McpSchema.CallToolResult> runPipeline(Map<String, Object> args) {
+        try {
+            // 修改类型转换逻辑
+            Integer projectId = Integer.parseInt((String) args.get("projectId"));
+            Integer pipelineId = Integer.parseInt((String) args.get("pipelineId"));
+            
+            // 修改请求体格式
+            Map<String, String> userMap = Map.of("baseUserName", "wangmin17");
+            List<Object> requestBody = List.of(userMap, projectId, pipelineId);
+            String requestBodyStr = objectMapper.writeValueAsString(requestBody);
+            log.info("runPipeline request: {}", requestBodyStr);
+
+            RequestBody body = RequestBody.create(
+                requestBodyStr,
+                MediaType.parse("application/json; charset=utf-8")
+            );
+
+            Request request = new Request.Builder()
+                .url(RUN_PIPELINE_URL)
+                .post(body)
+                .build();
+
+            OkHttpClient pipelineClient = client.newBuilder()
+                .connectTimeout(3, TimeUnit.SECONDS)
+                .readTimeout(3, TimeUnit.SECONDS)
+                .writeTimeout(3, TimeUnit.SECONDS)
+                .build();
+
+            try (Response response = pipelineClient.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    throw new IOException("Unexpected response code: " + response);
+                }
+
+                String responseBody = response.body().string();
+                log.info("runPipeline response: {}", responseBody);
+
+                ApiResponse<Integer> apiResponse = objectMapper.readValue(
+                    responseBody,
+                    objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, Integer.class)
+                );
+
+                if (apiResponse.getCode() != 0) {
+                    throw new Exception("API error: " + apiResponse.getMessage());
+                }
+
+                return Flux.just(new McpSchema.CallToolResult(
+                    List.of(new McpSchema.TextContent(
+                        String.format("Successfully started pipeline. Execution ID: %d", apiResponse.getData())
+                    )),
+                    false
+                ));
+            }
+        } catch (Exception e) {
+            log.error("Error running pipeline", e);
+            return Flux.just(new McpSchema.CallToolResult(
+                List.of(new McpSchema.TextContent("Error: " + e.getMessage())),
+                true
+            ));
+        }
     }
 }

@@ -28,11 +28,12 @@ public class TerminalMcpServer {
                 .sync();
 
         TerminalFunction function = new TerminalFunction();
-        var toolRegistration = new McpServer.ToolRegistration(
-                new McpSchema.Tool(function.getName(), function.getDesc(), function.getToolScheme()), function
+        var toolRegistration = new McpServer.ToolStreamRegistration(
+                new McpSchema.Tool(function.getName(), function.getDesc(), function.getToolScheme()), 
+                function
         );
 
-        syncServer.addTool(toolRegistration);
+        syncServer.addStreamTool(toolRegistration);
 
         return syncServer;
     }

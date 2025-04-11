@@ -398,7 +398,18 @@ public class LLM {
         );
     }
 
+    public Flux<String> compoundMsgCall(LLMCompoundMsg msg, String systemPrompt) {
+        JsonObject req = getReq(this, msg);
+        List<AiMessage> messages = new ArrayList<>();
+        messages.add(AiMessage.builder().jsonContent(req).build());
+        return call(messages, systemPrompt);
+    }
+
     public Flux<String> call(List<AiMessage> messages) {
+        return call(messages, "");
+    }
+
+    public Flux<String> call(List<AiMessage> messages, String systemPrompt) {
         return Flux.create(sink -> chatCompletionStream(getToken(),
                 messages,
                 llmProvider.getDefaultModel(),
@@ -406,7 +417,7 @@ public class LLM {
                 },
                 (a) -> {
                 },
-                "",
+                systemPrompt,
                 sink)
         );
     }
@@ -877,9 +888,9 @@ public class LLM {
 
     /**
      * 同步调用LLM，发送文本和图像输入，并返回结果
-     * 
-     * @param llm LLM实例
-     * @param msg 消息
+     *
+     * @param llm       LLM实例
+     * @param msg       消息
      * @param sysPrompt 系统提示
      * @return 结果字符串
      */
@@ -896,10 +907,7 @@ public class LLM {
 
     /**
      * 同步调用LLM，发送文本和图像输入，并返回结果
-     * 
-     * @param llm LLM实例
-     * @param text 文本输入
-     * @param imgTexts 图像输入列表, base64编码
+     *
      * @param sysPrompt 系统提示
      * @return 结果字符串
      */
@@ -916,19 +924,14 @@ public class LLM {
 
     /**
      * 流式调用LLM，发送文本和图像输入，并返回结果
-     * 
-     * @param role 角色实例
-     * @param llm LLM实例
-     * @param text 文本输入
-     * @param imgTexts 图像输入列表, base64编码
+     *
+     * @param role         角色实例
      * @param systemPrompt 系统提示
      * @return 结果字符串
      */
     public String callStream(Role role, LLMCompoundMsg msg, String systemPrompt) {
         JsonObject req = getReq(this, msg);
-
         List<AiMessage> messages = new ArrayList<>();
-
         messages.add(AiMessage.builder().jsonContent(req).build());
         String result = this.syncChat(role, messages, systemPrompt);
         log.info("{}", result);
@@ -944,13 +947,11 @@ public class LLM {
 
     /**
      * 获取LLM请求对象
-     * 
+     *
      * @param llm LLM实例
-     * @param text 文本输入
-     * @param msgs 图像输入列表, base64编码
      * @return 请求对象
      */
-    private JsonObject getReq(LLM llm, LLMCompoundMsg msg) {
+    public JsonObject getReq(LLM llm, LLMCompoundMsg msg) {
         JsonObject req = new JsonObject();
 
         if (llm.getConfig().getLlmProvider() == LLMProvider.GOOGLE_2) {
@@ -1000,7 +1001,7 @@ public class LLM {
             req.add("content", array);
         }
 
-        if (llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY){
+        if (llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY) {
             req.addProperty("role", "user");
             JsonArray contentJsons = new JsonArray();
 
@@ -1034,7 +1035,7 @@ public class LLM {
             JsonObject obj = new JsonObject();
             obj.addProperty("text", llmPart.getText());
             parts.add(obj);
-            
+
             if (TYPE_IMAGE.equals(llmPart.getType()) && StringUtils.isNotEmpty(llmPart.getData())) {
                 JsonObject obj2 = new JsonObject();
                 JsonObject objImg = new JsonObject();
@@ -1069,7 +1070,7 @@ public class LLM {
             req.add("content", array);
         }
 
-        if(llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY){
+        if (llm.getConfig().getLlmProvider() == LLMProvider.CLAUDE_COMPANY) {
             req.addProperty("role", "user");
             JsonArray contentJsons = new JsonArray();
 
