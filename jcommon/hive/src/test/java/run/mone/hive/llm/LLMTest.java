@@ -119,7 +119,7 @@ class LLMTest {
         config.setDebug(false);
         config.setJson(false);
 //        config.setLlmProvider(LLMProvider.DOUBAO);
-        config.setLlmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3);
+//        config.setLlmProvider(LLMProvider.DOUBAO_DEEPSEEK_V3);
 //        config.setLlmProvider(LLMProvider.GOOGLE);
         //使用代理的
 //        config.setLlmProvider(LLMProvider.GOOGLE_2);
@@ -134,7 +134,7 @@ class LLMTest {
 //        config.setLlmProvider(LLMProvider.QWEN);
 //        config.setModel("deepseek-v3");
 //        config.setModel("deepseek-r1");
-
+        config.setLlmProvider(LLMProvider.GROK);
 
 //        config.setLlmProvider(LLMProvider.MOONSHOT);
 //        config.setModel("moonshot-v1-128k-vision-preview");
@@ -147,6 +147,10 @@ class LLMTest {
         //openrouter 也需要使用代理
         if (config.getLlmProvider() == LLMProvider.OPENROUTER) {
             config.setUrl(System.getenv("OPENROUTER_AI_GATEWAY"));
+        }
+        //grok 也需要使用代理
+        if (config.getLlmProvider() == LLMProvider.GROK) {
+            config.setUrl(System.getenv("X_AI_GATEWAY"));
         }
 
         llm = new LLM(config);
@@ -310,8 +314,8 @@ class LLMTest {
             parts.add(obj2);
             req.add("parts", parts);
         }
-
-        if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT) {
+        // test grok-3-beta. The model does not support image input but some images are present in the request.
+        if (llm.getConfig().getLlmProvider() == LLMProvider.OPENROUTER || llm.getConfig().getLlmProvider() == LLMProvider.MOONSHOT || llm.getConfig().getLlmProvider() == LLMProvider.GROK) {
             req.addProperty("role", "user");
             JsonArray array = new JsonArray();
 

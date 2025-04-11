@@ -1,31 +1,21 @@
 package run.mone.mcp.chat.function;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.mcp.chat.server.RoleService;
-import run.mone.mcp.chat.service.ChatService;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 @Component
 @RequiredArgsConstructor
 public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchema.CallToolResult>> {
 
-    private final ChatService chatService;
-
-    private final ConcurrentHashMap<String, List<Message>> history = new ConcurrentHashMap<>();
-
     private final RoleService roleService;
-
-    private boolean useAgent = true;
 
     private static final String TOOL_SCHEMA = """
             {
@@ -46,33 +36,20 @@ public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchem
 
     @Override
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
+        String ownerId = arguments.get(Const.OWNER_ID).toString();
         String clientId = arguments.get(Const.CLIENT_ID).toString();
-
         String message = (String) arguments.get("message");
-        String context = (String) arguments.get("context");
-        if (StringUtils.isEmpty(context)) {
-            context = "";
-        }
-        
-        // Get or create history list for this client
-        List<Message> clientHistory = history.computeIfAbsent(clientId, k -> new ArrayList<>());
-        
-        // Add user message to client history
-        clientHistory.add(new Message("user", message));
-        
         try {
-            //使用agent 模式
-            if (useAgent) {
-                roleService.receiveMsg(run.mone.hive.schema.Message.builder().role("user").content(message).data(message).build());
-                return Flux.empty();
-            }
-
-            StringBuilder sb = new StringBuilder();
-            Flux<String> result = chatService.chat(message, context);
-            return result.doOnNext(sb::append).map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false)).doOnComplete(()-> clientHistory.add(new Message("assistant", sb.toString())));
+            return roleService.receiveMsg(run.mone.hive.schema.Message.builder()
+                            .clientId(clientId)
+                            .role("user")
+                            .sentFrom(ownerId)
+                            .content(message)
+                            .data(message)
+                            .build())
+                    .map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
         } catch (Exception e) {
             String errorMessage = "Error: " + e.getMessage();
-            clientHistory.add(new Message("assistant", errorMessage));
             return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(errorMessage)), true));
         }
     }
@@ -88,12 +65,5 @@ public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchem
     public String getToolScheme() {
         return TOOL_SCHEMA;
     }
-    
-    public List<Message> getClientHistory(String clientId) {
-        return history.getOrDefault(clientId, new ArrayList<>());
-    }
-    
-    public Map<String, List<Message>> getAllHistory() {
-        return history;
-    }
+
 }
