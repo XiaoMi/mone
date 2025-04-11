@@ -97,7 +97,7 @@ public class ReactorRole extends Role {
 
         // Schedule task to run every 20 seconds
         this.scheduler.scheduleAtFixedRate(() -> {
-            Safe.run(()->{
+            Safe.run(() -> {
                 if (scheduledTaskHandler != null && this.state.get().equals(RoleState.observe)) {
                     scheduledTaskHandler.accept(this);
                 }
@@ -181,16 +181,28 @@ public class ReactorRole extends Role {
             log.info("userPrompt:{}", userPrompt);
 
             LLMCompoundMsg compoundMsg = getLlmCompoundMsg(userPrompt, msg);
+
             CountDownLatch latch = new CountDownLatch(1);
             StringBuilder sb = new StringBuilder();
+            AtomicBoolean hasError = new AtomicBoolean(false);
             llm.compoundMsgCall(compoundMsg, getSystemPrompt())
                     .doOnNext(sb::append)
                     .doOnComplete(latch::countDown)
                     .subscribe(
                             it -> Optional.ofNullable(msg.getSink()).ifPresent(s -> s.next(it)),
-                            error -> Optional.ofNullable(msg.getSink()).ifPresent(s -> s.error(error)),
+                            error -> {
+                                Optional.ofNullable(msg.getSink()).ifPresent(s -> s.error(error));
+                                sb.append(error.getMessage());
+                                log.error(error.getMessage(), error);
+                                hasError.set(true);
+                                latch.countDown();
+                            },
                             () -> Optional.ofNullable(msg.getSink()).ifPresent(FluxSink::complete));
             latch.await();
+
+            if (hasError.get()) {
+                return CompletableFuture.completedFuture(Message.builder().build());
+            }
 
             String res = sb.toString();
 
@@ -219,7 +231,7 @@ public class ReactorRole extends Role {
                 sendMsg(content, toolName);
             }
         } catch (Exception e) {
-            this.getRc().getNews().add(Message.builder().data("\n请重试上一个步骤").content("\n请重试上一个步骤").build());
+//            this.getRc().getNews().add(Message.builder().data("\n请重试上一个步骤").content("\n请重试上一个步骤").build());
             log.error("ReactorRole act error", e);
         }
         return CompletableFuture.completedFuture(Message.builder().build());
