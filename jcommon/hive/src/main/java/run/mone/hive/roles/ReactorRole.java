@@ -55,11 +55,15 @@ public class ReactorRole extends Role {
 
     private List<ITool> tools = new ArrayList<>();
 
-    private Consumer<Role> scheduledTaskHandler;
+    private Consumer<ReactorRole> scheduledTaskHandler;
 
     private ScheduledExecutorService scheduler;
 
     private AtomicReference<RoleState> state = new AtomicReference<>(RoleState.think);
+
+    private String owner;
+
+    private String clientId;
 
     private String customRules = """
             你是${name},是一名优秀的私人顾问.
@@ -93,10 +97,12 @@ public class ReactorRole extends Role {
 
         // Schedule task to run every 20 seconds
         this.scheduler.scheduleAtFixedRate(() -> {
-            if (scheduledTaskHandler != null && this.state.get().equals(RoleState.observe)) {
-                scheduledTaskHandler.accept(this);
-            }
-            log.info("Scheduled task executed at: {}", System.currentTimeMillis());
+            Safe.run(()->{
+                if (scheduledTaskHandler != null && this.state.get().equals(RoleState.observe)) {
+                    scheduledTaskHandler.accept(this);
+                }
+                log.info("Scheduled task executed at: {}", System.currentTimeMillis());
+            });
         }, 0, 20, TimeUnit.SECONDS);
     }
 
