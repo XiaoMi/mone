@@ -119,7 +119,7 @@ public class ReactorRole extends Role {
     protected int observe() {
         log.info("auto observe");
         this.state.set(RoleState.observe);
-        Message msg = this.rc.getNews().poll();
+        Message msg = this.rc.getNews().poll(300, TimeUnit.MINUTES);
         if (null == msg) {
             return -1;
         }
