@@ -182,21 +182,21 @@ public class ReactorRole extends Role {
 
             LLMCompoundMsg compoundMsg = getLlmCompoundMsg(userPrompt, msg);
 
-            CountDownLatch latch = new CountDownLatch(1);
             StringBuilder sb = new StringBuilder();
             AtomicBoolean hasError = new AtomicBoolean(false);
             llm.compoundMsgCall(compoundMsg, getSystemPrompt())
-                    .doOnNext(sb::append)
+                    .doOnNext(it->{
+                        sb.append(it);
+                        Optional.ofNullable(msg.getSink()).ifPresent(s -> s.next(it));
+                    })
                     .doOnError(error -> {
                         Optional.ofNullable(msg.getSink()).ifPresent(s -> s.error(error));
                         sb.append(error.getMessage());
                         log.error(error.getMessage(), error);
                         hasError.set(true);
                     })
-                    .doOnComplete(() -> {
-                        Optional.ofNullable(msg.getSink()).ifPresent(FluxSink::complete);
-                    })
-                    .doOnComplete(latch::countDown).blockLast();
+                    .doOnComplete(() -> Optional.ofNullable(msg.getSink()).ifPresent(FluxSink::complete))
+                    .blockLast();
 
             if (hasError.get()) {
                 return CompletableFuture.completedFuture(Message.builder().build());
