@@ -14,6 +14,9 @@ public class Const {
 
     public static final String CLIENT_ID = "clientId";
 
+    //有这个agent的拥有者
+    public static final String OWNER_ID = "__owner_id__";
+
     public static final String TOKEN = "token";
 
     public static final String HIVE_VERSION = "2025-03-28:0.0.1";
