@@ -1,7 +1,9 @@
 package run.mone.hive.mcp.client;
 
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.mutable.MutableObject;
+import reactor.core.publisher.FluxSink;
 import run.mone.hive.common.GsonUtils;
 import run.mone.hive.common.McpResult;
 import run.mone.hive.common.Result;
@@ -11,28 +13,49 @@ import run.mone.hive.mcp.spec.McpSchema;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 public class MonerMcpClient {
 
-    public static void mcpCall(List<Result> list, String from, MutableObject<McpResult> callToolResult, AtomicBoolean completion, MonerMcpInterceptor monerMcpInterceptor) {
+    public static void mcpCall(List<Result> list, String from, MutableObject<McpResult> callToolResult, AtomicBoolean completion, MonerMcpInterceptor monerMcpInterceptor, FluxSink sink) {
         Safe.run(() -> {
             for(Result it : list) {
                 if (it.getTag().equals("use_mcp_tool")) {
                     String serviceName = it.getKeyValuePairs().get("server_name");
                     String toolName = it.getKeyValuePairs().get("tool_name");
                     String arguments = it.getKeyValuePairs().get("arguments");
-//                    arguments = cleanJsonString(arguments);
                     Map<String, Object> toolArguments = GsonUtils.gson.fromJson(arguments, Map.class);
 
                     // 调用before方法并检查返回值
                     boolean shouldProceed = monerMcpInterceptor.before(toolName, toolArguments);
 
                     if (shouldProceed) {
-                        // 只有当before返回true时才调用工具
-                        McpSchema.CallToolResult toolRes = McpHubHolder.get(from).callTool(serviceName, toolName,
-                                toolArguments);
+
+                        McpSchema.CallToolResult toolRes = null;
+
+                        if (toolName.startsWith("stream")) {
+                            StringBuilder sb = new StringBuilder();
+                            McpHubHolder.get(from)
+                                    .callToolStream(serviceName,toolName,toolArguments)
+                                    .doOnNext(tr->{
+                                        Optional.ofNullable(sink).ifPresent(s->{
+                                            if (tr.content().get(0) instanceof McpSchema.TextContent tc) {
+                                                s.next(tc.text());
+                                                sb.append(tc.text());
+                                            }
+                                        });
+                                    })
+                                    .blockLast();
+                            toolRes = new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent(sb.toString())),false);
+                        } else {
+                            // 只有当before返回true时才调用工具
+                            toolRes = McpHubHolder.get(from).callTool(serviceName, toolName,
+                                    toolArguments);
+
+                        }
+
 
                         monerMcpInterceptor.after(toolName, toolRes);
 

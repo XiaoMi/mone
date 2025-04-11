@@ -5,7 +5,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.mcp.chat.server.RoleService;
+import run.mone.mcp.chat.service.RoleService;
 
 import java.util.List;
 import java.util.Map;

@@ -285,6 +285,9 @@ public class Role {
         return CompletableFuture.completedFuture(res);
     }
 
+
+    private int doReactNum = 15;
+
     /**
      * react实际执行的逻辑， 可以重写
      * @param ac
@@ -292,7 +295,7 @@ public class Role {
     protected void doReact(ActionContext ac) {
         // 默认最多执行15次, 可以重写这里的逻辑
         int i = 0;
-        while (this.think() > 0 && i++ < 15) {
+        while (this.think() > 0 && i++ < doReactNum) {
             this.act(ac).join();
         }
     }

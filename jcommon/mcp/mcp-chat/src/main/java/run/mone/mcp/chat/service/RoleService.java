@@ -1,5 +1,8 @@
-package run.mone.mcp.chat.server;
+package run.mone.mcp.chat.service;
 
+import lombok.SneakyThrows;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import run.mone.hive.common.RoleType;
@@ -7,13 +10,18 @@ import run.mone.hive.configs.Const;
 import run.mone.hive.llm.LLM;
 import run.mone.hive.llm.StreamMessageType;
 import run.mone.hive.mcp.grpc.transport.GrpcServerTransport;
+import run.mone.hive.mcp.hub.McpHub;
+import run.mone.hive.mcp.hub.McpHubHolder;
 import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
+import run.mone.hive.roles.tool.AttemptCompletionTool;
 import run.mone.hive.roles.tool.ChatTool;
 import run.mone.hive.schema.Message;
 import run.mone.mcp.chat.tool.DocumentProcessingTool;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,9 +43,19 @@ public class RoleService {
     @Resource
     private GrpcServerTransport grpcServerTransport;
 
+    @Value("${mcp.hub.path:}")
+    private String mcpPath;
 
     private ConcurrentHashMap<String, ReactorRole> roleMap = new ConcurrentHashMap<>();
 
+    @PostConstruct
+    @SneakyThrows
+    public void init() {
+        //启用mcp
+        if (StringUtils.isNotEmpty(mcpPath)) {
+            McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath)));
+        }
+    }
 
     public ReactorRole createRole(String owner, String clientId) {
         ReactorRole minzai = new ReactorRole("minzai", new CountDownLatch(1), llm);
@@ -67,6 +85,7 @@ public class RoleService {
         });
         //支持使用聊天工具
         minzai.getTools().add(new ChatTool());
+        minzai.getTools().add(new AttemptCompletionTool());
         minzai.getTools().add(new DocumentProcessingTool());
         minzai.setOwner(owner);
         minzai.setClientId(clientId);
