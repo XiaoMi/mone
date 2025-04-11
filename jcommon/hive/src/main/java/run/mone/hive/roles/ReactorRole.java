@@ -108,7 +108,7 @@ public class ReactorRole extends Role {
 
     @Override
     protected int think() {
-        log.info("auto think");
+        log.info("think");
         this.state.set(RoleState.think);
         return observe();
     }
@@ -117,7 +117,7 @@ public class ReactorRole extends Role {
     @SneakyThrows
     @Override
     protected int observe() {
-        log.info("auto observe");
+        log.info("observe");
         this.state.set(RoleState.observe);
         Message msg = this.rc.getNews().poll(300, TimeUnit.MINUTES);
         if (null == msg) {
@@ -171,7 +171,7 @@ public class ReactorRole extends Role {
     @Override
     protected CompletableFuture<Message> act(ActionContext context) {
         try {
-            log.info("auto act");
+            log.info("act");
             this.state.set(RoleState.act);
             Message msg = this.rc.news.poll();
 
@@ -187,18 +187,16 @@ public class ReactorRole extends Role {
             AtomicBoolean hasError = new AtomicBoolean(false);
             llm.compoundMsgCall(compoundMsg, getSystemPrompt())
                     .doOnNext(sb::append)
-                    .doOnComplete(latch::countDown)
-                    .subscribe(
-                            it -> Optional.ofNullable(msg.getSink()).ifPresent(s -> s.next(it)),
-                            error -> {
-                                Optional.ofNullable(msg.getSink()).ifPresent(s -> s.error(error));
-                                sb.append(error.getMessage());
-                                log.error(error.getMessage(), error);
-                                hasError.set(true);
-                                latch.countDown();
-                            },
-                            () -> Optional.ofNullable(msg.getSink()).ifPresent(FluxSink::complete));
-            latch.await();
+                    .doOnError(error -> {
+                        Optional.ofNullable(msg.getSink()).ifPresent(s -> s.error(error));
+                        sb.append(error.getMessage());
+                        log.error(error.getMessage(), error);
+                        hasError.set(true);
+                    })
+                    .doOnComplete(() -> {
+                        Optional.ofNullable(msg.getSink()).ifPresent(FluxSink::complete);
+                    })
+                    .doOnComplete(latch::countDown).blockLast();
 
             if (hasError.get()) {
                 return CompletableFuture.completedFuture(Message.builder().build());
@@ -232,7 +230,7 @@ public class ReactorRole extends Role {
             }
         } catch (Exception e) {
 //            this.getRc().getNews().add(Message.builder().data("\n请重试上一个步骤").content("\n请重试上一个步骤").build());
-            log.error("ReactorRole act error", e);
+            log.error("ReactorRole act error:" + e.getMessage(), e);
         }
         return CompletableFuture.completedFuture(Message.builder().build());
     }
