@@ -42,8 +42,4 @@ public class ChatTool implements ITool{
             """;
     }
 
-    @Override
-    public String toString() {
-        return "abc";
-    }
 }

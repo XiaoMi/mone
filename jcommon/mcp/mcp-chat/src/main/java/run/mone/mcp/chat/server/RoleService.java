@@ -11,8 +11,8 @@ import run.mone.hive.mcp.spec.McpSchema;
 import run.mone.hive.roles.ReactorRole;
 import run.mone.hive.roles.tool.ChatTool;
 import run.mone.hive.schema.Message;
+import run.mone.mcp.chat.tool.DocumentProcessingTool;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.util.HashMap;
 import java.util.List;
@@ -67,6 +67,7 @@ public class RoleService {
         });
         //支持使用聊天工具
         minzai.getTools().add(new ChatTool());
+        minzai.getTools().add(new DocumentProcessingTool());
         minzai.setOwner(owner);
         minzai.setClientId(clientId);
         //一直执行不会停下来

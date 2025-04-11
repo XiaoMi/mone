@@ -119,7 +119,7 @@ public class ReactorRole extends Role {
     protected int observe() {
         log.info("auto observe");
         this.state.set(RoleState.observe);
-        Message msg = this.rc.getNews().poll(300, TimeUnit.MINUTES);
+        Message msg = this.rc.getNews().poll();
         if (null == msg) {
             return -1;
         }
@@ -131,6 +131,7 @@ public class ReactorRole extends Role {
             return -1;
         }
 
+        //放到记忆中
         this.putMemory(msg);
 
         // 获取memory中最后一条消息
@@ -138,7 +139,7 @@ public class ReactorRole extends Role {
         String lastMsgContent = lastMsg.getContent();
 
         List<Result> tools = new MultiXmlParser().parse(lastMsgContent);
-        //结束 或者 ai有问题 都需要退出整个的执行，
+        //结束
         int attemptCompletion = tools.stream().anyMatch(it ->
                 it.getTag().trim().equals("attempt_completion")
         ) ? -1 : 1;
@@ -173,7 +174,6 @@ public class ReactorRole extends Role {
             log.info("auto act");
             this.state.set(RoleState.act);
             Message msg = this.rc.news.poll();
-
 
             String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":\n" + it.getContent()).collect(Collectors.joining("\n"));
             String customRulesReplaced = AiTemplate.renderTemplate(customRules, ImmutableMap.of("name", this.name));
