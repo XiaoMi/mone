@@ -141,8 +141,10 @@ public class ReactorRole extends Role {
 
         List<Result> tools = new MultiXmlParser().parse(lastMsgContent);
         //结束
-        int attemptCompletion = tools.stream().anyMatch(it ->
-                it.getTag().trim().equals("attempt_completion") || it.getTag().trim().equals("chat")
+        int attemptCompletion = tools.stream().anyMatch(it -> {
+                    String tag = it.getTag().trim();
+                    return tag.equals("attempt_completion") || tag.equals("chat") || tag.equals("ask_followup_question");
+                }
         ) ? -1 : 1;
 
 
@@ -178,6 +180,9 @@ public class ReactorRole extends Role {
         this.state.set(RoleState.act);
         Message msg = this.rc.news.poll();
         FluxSink sink = msg.getSink();
+
+        AtomicBoolean complete = new AtomicBoolean(false);
+
         try {
             String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":\n" + it.getContent()).collect(Collectors.joining("\n"));
             String customRulesReplaced = AiTemplate.renderTemplate(customRules, ImmutableMap.of("name", this.name));
@@ -220,10 +225,12 @@ public class ReactorRole extends Role {
             this.putMemory(Message.builder().role(RoleType.assistant.name()).content(res).build());
             if (completion.get()) {
                 tools.forEach(it -> {
-                    if (it.getTag().equals("attempt_completion") || it.getTag().equals("chat")) {
+                    String tag = it.getTag().trim();
+                    if (tag.equals("attempt_completion") || tag.equals("chat") || tag.equals("ask_followup_question")) {
                         this.getRc().getNews().add(Message.builder().data(res).content(res).sink(sink).build());
                         if (sink != null) {
                             sink.complete();
+                            complete.set(true);
                         }
                     }
                 });
@@ -242,6 +249,10 @@ public class ReactorRole extends Role {
             }
 //            this.getRc().getNews().add(Message.builder().data("\n请重试上一个步骤").content("\n请重试上一个步骤").build());
             log.error("ReactorRole act error:" + e.getMessage(), e);
+        } finally {
+            if (!complete.get() && null != sink) {
+                sink.complete();
+            }
         }
         return CompletableFuture.completedFuture(Message.builder().build());
     }
