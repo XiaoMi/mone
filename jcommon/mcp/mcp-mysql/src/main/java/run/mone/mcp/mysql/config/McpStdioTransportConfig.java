@@ -14,11 +14,6 @@ public class McpStdioTransportConfig {
     @Value("${mcp.grpc.port:9999}")
     private int grpcPort;
 
-    /**
-     * stdio 通信
-     * @param mapper
-     * @return
-     */
     @Bean
     @ConditionalOnProperty(name = "stdio.enabled", havingValue = "true")
     StdioServerTransport stdioServerTransport(ObjectMapper mapper) {

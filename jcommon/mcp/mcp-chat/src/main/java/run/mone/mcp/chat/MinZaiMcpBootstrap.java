@@ -8,9 +8,9 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @SpringBootApplication
 @ComponentScan("run.mone.mcp.chat")
 @EnableScheduling
-public class ChatMcpBootstrap {
+public class MinZaiMcpBootstrap {
 
     public static void main(String[] args) {
-        SpringApplication.run(ChatMcpBootstrap.class, args);
+        SpringApplication.run(MinZaiMcpBootstrap.class, args);
     }
 }
