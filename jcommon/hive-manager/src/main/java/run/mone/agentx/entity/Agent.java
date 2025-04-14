@@ -1,8 +1,9 @@
 package run.mone.agentx.entity;
 
+import org.springframework.data.relational.core.mapping.Table;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.springframework.data.relational.core.mapping.Table;
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -12,4 +13,5 @@ public class Agent extends BaseEntity {
     private String description;
     private String agentUrl;
     private Long createdBy;
+    private Boolean isPublic;
 }

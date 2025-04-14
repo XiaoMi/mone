@@ -33,23 +33,40 @@ public class AgentController {
 
     @GetMapping
     public Mono<ApiResponse<List<Agent>>> getAgents(@AuthenticationPrincipal User user) {
-        return agentService.findByCreatedBy(user.getId()).collectList().map(ApiResponse::success);
+        return agentService.findAccessibleAgents(user.getId()).collectList().map(ApiResponse::success);
     }
 
     @GetMapping("/{id}")
     public Mono<ApiResponse<Agent>> getAgent(@AuthenticationPrincipal User user, @PathVariable Long id) {
-        return agentService.findById(id).map(ApiResponse::success);
+        return agentService.hasAccess(id, user.getId())
+            .flatMap(hasAccess -> {
+                if (Boolean.TRUE.equals(hasAccess)) {
+                    return agentService.findById(id).map(ApiResponse::success);
+                } else {
+                    return Mono.just(ApiResponse.<Agent>error(403, "Unauthorized access to agent"));
+                }
+            });
     }
 
     @PutMapping("/{id}")
     public Mono<ApiResponse<Agent>> updateAgent(@AuthenticationPrincipal User user, @PathVariable Long id, @RequestBody Agent agent) {
-        agent.setId(id);
-        agent.setCreatedBy(user.getId());
-        return agentService.updateAgent(agent).map(ApiResponse::success);
+        return agentService.findById(id)
+                .filter(existingAgent -> existingAgent.getCreatedBy().equals(user.getId()))
+                .flatMap(existingAgent -> {
+                    agent.setId(id);
+                    agent.setCreatedBy(user.getId());
+                    return agentService.updateAgent(agent);
+                })
+                .map(ApiResponse::success)
+                .defaultIfEmpty(ApiResponse.<Agent>error(403, "Unauthorized or agent not found"));
     }
 
     @DeleteMapping("/{id}")
     public Mono<ApiResponse<Void>> deleteAgent(@AuthenticationPrincipal User user, @PathVariable Long id) {
-        return agentService.deleteAgent(id).thenReturn(ApiResponse.success(null));
+        return agentService.findById(id)
+                .filter(existingAgent -> existingAgent.getCreatedBy().equals(user.getId()))
+                .flatMap(existingAgent -> agentService.deleteAgent(id))
+                .thenReturn(ApiResponse.<Void>success(null))
+                .defaultIfEmpty(ApiResponse.<Void>error(403, "Unauthorized or agent not found"));
     }
 }
