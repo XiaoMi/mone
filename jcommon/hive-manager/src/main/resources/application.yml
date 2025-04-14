@@ -1,6 +1,12 @@
 server:
   port: 8080
 
+mcp:
+  transport:
+    type: grpc
+  grpc:
+    port: 9286
+
 spring:
   profiles:
     active: dev

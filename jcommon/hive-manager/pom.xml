@@ -114,6 +114,14 @@
             <scope>runtime</scope>
         </dependency>
 
+
+        <dependency>
+            <groupId>run.mone</groupId>
+            <artifactId>hive</artifactId>
+            <version>1.6.2-jdk21-SNAPSHOT</version>
+        </dependency>
+
+
         <!-- Utils -->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -136,6 +144,9 @@
             <version>3.4.34</version>
             <scope>test</scope>
         </dependency>
+
+
+
 
 
     </dependencies>
