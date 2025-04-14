@@ -5,8 +5,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import run.mone.hive.configs.Const;
 import run.mone.hive.mcp.spec.McpSchema;
-import run.mone.mcp.chat.server.RoleService;
-import run.mone.mcp.chat.service.ChatService;
+import run.mone.mcp.chat.service.RoleService;
 
 import java.util.List;
 import java.util.Map;
@@ -37,10 +36,18 @@ public class ChatFunction implements Function<Map<String, Object>, Flux<McpSchem
 
     @Override
     public Flux<McpSchema.CallToolResult> apply(Map<String, Object> arguments) {
+        String ownerId = arguments.get(Const.OWNER_ID).toString();
         String clientId = arguments.get(Const.CLIENT_ID).toString();
         String message = (String) arguments.get("message");
         try {
-            return roleService.receiveMsg(run.mone.hive.schema.Message.builder().role("user").content(message).data(message).build()).map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
+            return roleService.receiveMsg(run.mone.hive.schema.Message.builder()
+                            .clientId(clientId)
+                            .role("user")
+                            .sentFrom(ownerId)
+                            .content(message)
+                            .data(message)
+                            .build())
+                    .map(res -> new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(res)), false));
         } catch (Exception e) {
             String errorMessage = "Error: " + e.getMessage();
             return Flux.just(new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(errorMessage)), true));
