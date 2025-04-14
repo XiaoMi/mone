@@ -80,6 +80,11 @@ public class ReactorRole extends Role {
             """;
 
 
+    public ReactorRole(String name, LLM llm) {
+        this(name, null, llm);
+    }
+
+
     @SneakyThrows
     public ReactorRole(String name, CountDownLatch countDownLatch, LLM llm) {
         super(name);
