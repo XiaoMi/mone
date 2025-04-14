@@ -6,8 +6,8 @@ import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
 @ComponentScan("run.mone.mcp.mysql")
-public class Bootstrap {
+public class DatabaseMcpBootstrap {
     public static void main(String[] args) {
-        SpringApplication.run(Bootstrap.class, args);
+        SpringApplication.run(DatabaseMcpBootstrap.class, args);
     }
 }

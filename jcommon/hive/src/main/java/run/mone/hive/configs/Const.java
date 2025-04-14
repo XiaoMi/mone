@@ -25,4 +25,6 @@ public class Const {
 
     public static final String ROLE_EXIT = "___exit___";
 
+    public static final String DEFAULT = "default";
+
 }

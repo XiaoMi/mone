@@ -22,10 +22,10 @@ public class DatabaseMcpServer {
 
     private McpSyncServer syncServer;
 
-    @Value("${mysql.db}")
+    @Value("${mysql.db:}")
     private String mysqlDb;
 
-    @Value("${mysql.password}")
+    @Value("${mysql.password:}")
     private String mysqlPassword;
 
     public DatabaseMcpServer(ServerMcpTransport transport) {

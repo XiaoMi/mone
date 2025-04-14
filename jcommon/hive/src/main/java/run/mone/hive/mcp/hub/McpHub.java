@@ -99,7 +99,6 @@ public class McpHub {
             updateServerConnections(config);
         } catch (IOException e) {
             log.error("Failed to initialize MCP servers: ", e);
-            System.err.println("Failed to initialize MCP servers: " + e.getMessage());
         }
     }
 

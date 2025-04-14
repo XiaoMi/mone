@@ -41,7 +41,7 @@ public class MonerSystemPrompt {
         return System.getProperty("user.home");
     }
 
-    public static final String mcpPrompt(String from, String name, String customInstructions, List<ITool> tools) {
+    public static String mcpPrompt(String from, String name, String customInstructions, List<ITool> tools) {
         Map<String, Object> data = new HashMap<>();
         data.put("config", "");
         data.put("name", name);
