@@ -25,7 +25,7 @@ public class HiveManagerAgentService {
     private ConcurrentHashMap<String, ReactorRole> roleMap = new ConcurrentHashMap<>();
 
     public ReactorRole createRole(String owner, String clientId) {
-        ReactorRole role = new ReactorRole("AgentManager", llm);
+        ReactorRole role = new ReactorRole("AgentManager", null, llm);
         role.getTools().add(new ChatTool());
         role.getTools().add(new AskTool());
         role.getTools().add(new AttemptCompletionTool());
