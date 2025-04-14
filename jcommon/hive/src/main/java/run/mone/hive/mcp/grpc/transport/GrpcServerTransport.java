@@ -254,15 +254,13 @@ public class GrpcServerTransport implements ServerMcpTransport {
                 @Override
                 public void onNext(StreamRequest streamRequest) {
                     String name = streamRequest.getName();
-                    log.info("bidirectionalToolStream name:{}", name);
+                    clientId = getClientIdFromContext();
+                    log.info("bidirectionalToolStream name:{} clientId:{}", name, clientId);
                     //连接过来,随时可以通过服务器推回去信息
                     if (name.equals("observer")) {
-                        // 尝试从元数据获取ClientId，如果没有则使用请求中的
-                        clientId = getClientIdFromContext();
                         // 尝试从元数据获取token，如果没有则使用请求中的
                         userConnections.putIfAbsent(clientId, responseObserver);
                     }
-
                 }
 
                 @Override

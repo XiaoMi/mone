@@ -1,26 +1,11 @@
 package run.mone.hive.roles;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.mutable.MutableObject;
-
 import com.google.common.collect.ImmutableMap;
-
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.mutable.MutableObject;
 import reactor.core.publisher.FluxSink;
 import run.mone.hive.Environment;
 import run.mone.hive.common.*;
@@ -35,6 +20,15 @@ import run.mone.hive.roles.tool.ITool;
 import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 /**
  * @author wangyingjie
@@ -65,6 +59,8 @@ public class ReactorRole extends Role {
 
     private String clientId;
 
+    private MonerMcpInterceptor mcpInterceptor = new MonerMcpInterceptor();
+
     private String customRules = """
             你是${name},是一名优秀的私人顾问.
             """;
@@ -84,6 +80,7 @@ public class ReactorRole extends Role {
             """;
 
 
+    @SneakyThrows
     public ReactorRole(String name, CountDownLatch countDownLatch, LLM llm) {
         super(name);
         this.setEnvironment(new Environment());
@@ -97,7 +94,7 @@ public class ReactorRole extends Role {
 
         // Schedule task to run every 20 seconds
         this.scheduler.scheduleAtFixedRate(() -> {
-            Safe.run(()->{
+            Safe.run(() -> {
                 if (scheduledTaskHandler != null && this.state.get().equals(RoleState.observe)) {
                     scheduledTaskHandler.accept(this);
                 }
@@ -106,18 +103,24 @@ public class ReactorRole extends Role {
         }, 0, 20, TimeUnit.SECONDS);
     }
 
+    //tink -> observe -> act
     @Override
     protected int think() {
-        log.info("auto think");
+        log.info("think");
         this.state.set(RoleState.think);
-        return observe();
+        int value = observe();
+        if (value == -1) {
+            return observe();
+        } else {
+            return value;
+        }
     }
 
 
     @SneakyThrows
     @Override
     protected int observe() {
-        log.info("auto observe");
+        log.info("observe");
         this.state.set(RoleState.observe);
         Message msg = this.rc.getNews().poll(300, TimeUnit.MINUTES);
         if (null == msg) {
@@ -128,9 +131,10 @@ public class ReactorRole extends Role {
         if (null != msg.getData() && msg.getData().equals(Const.ROLE_EXIT)) {
             log.info(Const.ROLE_EXIT);
             shutdownScheduler();
-            return -1;
+            return -2;
         }
 
+        //放到记忆中
         this.putMemory(msg);
 
         // 获取memory中最后一条消息
@@ -138,13 +142,18 @@ public class ReactorRole extends Role {
         String lastMsgContent = lastMsg.getContent();
 
         List<Result> tools = new MultiXmlParser().parse(lastMsgContent);
-        //结束 或者 ai有问题 都需要退出整个的执行，
-        int attemptCompletion = tools.stream().anyMatch(it ->
-                it.getTag().trim().equals("attempt_completion")
+        //结束
+        int attemptCompletion = tools.stream().anyMatch(it -> {
+                    String tag = it.getTag().trim();
+                    return tag.equals("attempt_completion") || tag.equals("chat") || tag.equals("ask_followup_question");
+                }
         ) ? -1 : 1;
+
+
         if (attemptCompletion == 1) {
             this.putMessage(msg);
         }
+
         if (countDownLatch != null && attemptCompletion == -1) {
             countDownLatch.countDown();
         }
@@ -169,58 +178,83 @@ public class ReactorRole extends Role {
     @SneakyThrows
     @Override
     protected CompletableFuture<Message> act(ActionContext context) {
+        log.info("act");
+        this.state.set(RoleState.act);
+        Message msg = this.rc.news.poll();
+        FluxSink sink = msg.getSink();
+
+        AtomicBoolean complete = new AtomicBoolean(false);
+
         try {
-            log.info("auto act");
-            this.state.set(RoleState.act);
-            Message msg = this.rc.news.poll();
-
-
             String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":\n" + it.getContent()).collect(Collectors.joining("\n"));
             String customRulesReplaced = AiTemplate.renderTemplate(customRules, ImmutableMap.of("name", this.name));
             String userPrompt = buildUserPrompt(msg, history, customRulesReplaced);
             log.info("userPrompt:{}", userPrompt);
 
             LLMCompoundMsg compoundMsg = getLlmCompoundMsg(userPrompt, msg);
-            CountDownLatch latch = new CountDownLatch(1);
+
             StringBuilder sb = new StringBuilder();
+            AtomicBoolean hasError = new AtomicBoolean(false);
             llm.compoundMsgCall(compoundMsg, getSystemPrompt())
-                    .doOnNext(sb::append)
-                    .doOnComplete(latch::countDown)
-                    .subscribe(
-                            it -> Optional.ofNullable(msg.getSink()).ifPresent(s -> s.next(it)),
-                            error -> Optional.ofNullable(msg.getSink()).ifPresent(s -> s.error(error)),
-                            () -> Optional.ofNullable(msg.getSink()).ifPresent(FluxSink::complete));
-            latch.await();
+                    .doOnNext(it -> {
+                        sb.append(it);
+                        Optional.ofNullable(sink).ifPresent(s -> s.next(it));
+                    })
+                    .doOnError(error -> {
+                        Optional.ofNullable(sink).ifPresent(s -> s.error(error));
+                        sb.append(error.getMessage());
+                        log.error(error.getMessage(), error);
+                        hasError.set(true);
+                    })
+                    .doOnComplete(() -> {
+                    })
+                    .blockLast();
+
+            if (hasError.get()) {
+                return CompletableFuture.completedFuture(Message.builder().build());
+            }
 
             String res = sb.toString();
+            log.info("res\n:{}", res);
 
             // 解析工具调用
             List<Result> tools = new MultiXmlParser().parse(res);
             MutableObject<McpResult> toolResMsg = new MutableObject<>(null);
             AtomicBoolean completion = new AtomicBoolean(false);
-            Safe.run(() -> MonerMcpClient.mcpCall(tools, "", toolResMsg, completion, new MonerMcpInterceptor()));
-            log.info("res:{}", res);
+            //调用mcp
+            Safe.run(() -> MonerMcpClient.mcpCall(tools, Const.DEFAULT, toolResMsg, completion, this.mcpInterceptor, sink));
+            log.info("call mcp res:{}", toolResMsg.getValue());
             this.putMemory(Message.builder().role(RoleType.assistant.name()).content(res).build());
             if (completion.get()) {
                 tools.forEach(it -> {
-                    if (it.getTag().equals("attempt_completion")) {
-                        this.getRc().getNews().add(Message.builder().data(res).content(res).build());
+                    String tag = it.getTag().trim();
+                    if (tag.equals("attempt_completion") || tag.equals("chat") || tag.equals("ask_followup_question")) {
+                        this.getRc().getNews().add(Message.builder().data(res).content(res).sink(sink).build());
+                        if (sink != null) {
+                            sink.complete();
+                            complete.set(true);
+                        }
                     }
                 });
             } else {
                 McpResult result = toolResMsg.getValue();
-                String toolName = result.getToolName();
                 McpSchema.Content content = result.getContent();
                 if (content instanceof McpSchema.TextContent textContent) {
-                    this.getRc().getNews().add(Message.builder().data(textContent.text()).content(textContent.text() + "\n" + "; 请继续").build());
+                    this.putMessage(Message.builder().role(RoleType.assistant.name()).data(textContent.text()).sink(sink).content("调用Tool的结果:" + textContent.text() + "\n" + "; 请继续").build());
                 } else if (content instanceof McpSchema.ImageContent imageContent) {
-                    this.getRc().getNews().add(Message.builder().data("图片占位符").images(List.of(imageContent.data())).content("图片占位符" + "\n" + "; 请继续").build());
+                    this.putMessage(Message.builder().role(RoleType.assistant.name()).data("图片占位符").sink(sink).images(List.of(imageContent.data())).content("图片占位符" + "\n" + "; 请继续").build());
                 }
-                sendMsg(content, toolName);
             }
         } catch (Exception e) {
-            this.getRc().getNews().add(Message.builder().data("\n请重试上一个步骤").content("\n请重试上一个步骤").build());
-            log.error("ReactorRole act error", e);
+            if (null != sink) {
+                sink.complete();
+            }
+//            this.getRc().getNews().add(Message.builder().data("\n请重试上一个步骤").content("\n请重试上一个步骤").build());
+            log.error("ReactorRole act error:" + e.getMessage(), e);
+        } finally {
+            if (!complete.get() && null != sink) {
+                sink.complete();
+            }
         }
         return CompletableFuture.completedFuture(Message.builder().build());
     }
