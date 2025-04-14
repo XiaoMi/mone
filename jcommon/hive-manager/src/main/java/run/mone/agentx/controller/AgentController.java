@@ -1,0 +1,55 @@
+package run.mone.agentx.controller;
+
+import java.util.List;
+
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Mono;
+import run.mone.agentx.common.ApiResponse;
+import run.mone.agentx.entity.Agent;
+import run.mone.agentx.entity.User;
+import run.mone.agentx.service.AgentService;
+
+@RestController
+@RequestMapping("/api/v1/agents")
+@RequiredArgsConstructor
+public class AgentController {
+    private final AgentService agentService;
+
+    @PostMapping
+    public Mono<ApiResponse<Agent>> createAgent(@AuthenticationPrincipal User user, @RequestBody Agent agent) {
+        agent.setCreatedBy(user.getId());
+        return agentService.createAgent(agent).map(ApiResponse::success);
+    }
+
+    @GetMapping
+    public Mono<ApiResponse<List<Agent>>> getAgents(@AuthenticationPrincipal User user) {
+        return agentService.findByCreatedBy(user.getId()).collectList().map(ApiResponse::success);
+    }
+
+    @GetMapping("/{id}")
+    public Mono<ApiResponse<Agent>> getAgent(@AuthenticationPrincipal User user, @PathVariable Long id) {
+        return agentService.findById(id).map(ApiResponse::success);
+    }
+
+    @PutMapping("/{id}")
+    public Mono<ApiResponse<Agent>> updateAgent(@AuthenticationPrincipal User user, @PathVariable Long id, @RequestBody Agent agent) {
+        agent.setId(id);
+        agent.setCreatedBy(user.getId());
+        return agentService.updateAgent(agent).map(ApiResponse::success);
+    }
+
+    @DeleteMapping("/{id}")
+    public Mono<ApiResponse<Void>> deleteAgent(@AuthenticationPrincipal User user, @PathVariable Long id) {
+        return agentService.deleteAgent(id).thenReturn(ApiResponse.success(null));
+    }
+}
