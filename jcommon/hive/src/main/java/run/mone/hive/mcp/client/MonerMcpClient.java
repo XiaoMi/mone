@@ -19,9 +19,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Slf4j
 public class MonerMcpClient {
 
-    public static void mcpCall(List<Result> list, String from, MutableObject<McpResult> callToolResult, AtomicBoolean completion, MonerMcpInterceptor monerMcpInterceptor, FluxSink sink) {
+    public static void mcpCall( List<Result> list, String from, MutableObject<McpResult> callToolResult, AtomicBoolean completion, MonerMcpInterceptor monerMcpInterceptor, FluxSink sink) {
         Safe.run(() -> {
-            for(Result it : list) {
+            for (Result it : list) {
                 if (it.getTag().equals("use_mcp_tool")) {
                     String serviceName = it.getKeyValuePairs().get("server_name");
                     String toolName = it.getKeyValuePairs().get("tool_name");
@@ -35,20 +35,20 @@ public class MonerMcpClient {
 
                         McpSchema.CallToolResult toolRes = null;
 
+                        //流式调用
                         if (toolName.startsWith("stream")) {
                             StringBuilder sb = new StringBuilder();
                             McpHubHolder.get(from)
-                                    .callToolStream(serviceName,toolName,toolArguments)
-                                    .doOnNext(tr->{
-                                        Optional.ofNullable(sink).ifPresent(s->{
-                                            if (tr.content().get(0) instanceof McpSchema.TextContent tc) {
-                                                s.next(tc.text());
-                                                sb.append(tc.text());
-                                            }
-                                        });
-                                    })
+                                    .callToolStream(serviceName, toolName, toolArguments)
+                                    .doOnNext(tr -> Optional.ofNullable(sink).ifPresent(s -> {
+                                        if (tr.content().get(0) instanceof McpSchema.TextContent tc) {
+                                            //直接返回给前端
+                                            s.next(tc.text());
+                                            sb.append(tc.text());
+                                        }
+                                    }))
                                     .blockLast();
-                            toolRes = new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent(sb.toString())),false);
+                            toolRes = new McpSchema.CallToolResult(Lists.newArrayList(new McpSchema.TextContent(sb.toString())), false);
                         } else {
                             // 只有当before返回true时才调用工具
                             toolRes = McpHubHolder.get(from).callTool(serviceName, toolName,
@@ -69,7 +69,7 @@ public class MonerMcpClient {
                     }
                     // 确保只执行一个use_mcp_tool
                     return;
-                }else if (it.getTag().equals("attempt_completion") || it.getTag().equals("ask_followup_question") || it.getTag().equals("chat")) {
+                } else if (it.getTag().equals("attempt_completion") || it.getTag().equals("ask_followup_question") || it.getTag().equals("chat")) {
                     completion.set(true);
                     return;
                 }
@@ -83,7 +83,7 @@ public class MonerMcpClient {
         } else if (content instanceof McpSchema.ImageContent) {
             McpSchema.ImageContent imageContent = (McpSchema.ImageContent) content;
             return imageContent.data();
-        } 
+        }
         return "不支持的内容类型";
     }
 
@@ -91,16 +91,16 @@ public class MonerMcpClient {
         if (json == null) {
             return "{}";
         }
-        
+
         // 移除所有控制字符
         json = json.replaceAll("[\\x00-\\x1F\\x7F]", "");
-        
+
         // 移除零宽字符
         json = json.replaceAll("[\\u200B-\\u200D\\uFEFF]", "");
-        
+
         // 移除其他可能导致问题的特殊字符
         json = json.replaceAll("[\\u2028\\u2029]", "");
-        
+
         // 确保字符串是有效的 JSON 格式
         if (!json.trim().startsWith("{")) {
             json = "{" + json;
@@ -108,7 +108,7 @@ public class MonerMcpClient {
         if (!json.trim().endsWith("}")) {
             json = json + "}";
         }
-        
+
         return json;
     }
 

@@ -59,6 +59,8 @@ public class ReactorRole extends Role {
 
     private String clientId;
 
+    private MonerMcpInterceptor mcpInterceptor = new MonerMcpInterceptor();
+
     private String customRules = """
             你是${name},是一名优秀的私人顾问.
             """;
@@ -220,7 +222,7 @@ public class ReactorRole extends Role {
             MutableObject<McpResult> toolResMsg = new MutableObject<>(null);
             AtomicBoolean completion = new AtomicBoolean(false);
             //调用mcp
-            Safe.run(() -> MonerMcpClient.mcpCall(tools, Const.DEFAULT, toolResMsg, completion, new MonerMcpInterceptor(), sink));
+            Safe.run(() -> MonerMcpClient.mcpCall(tools, Const.DEFAULT, toolResMsg, completion, this.mcpInterceptor, sink));
             log.info("call mcp res:{}", toolResMsg.getValue());
             this.putMemory(Message.builder().role(RoleType.assistant.name()).content(res).build());
             if (completion.get()) {
