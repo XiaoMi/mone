@@ -160,13 +160,15 @@ public class ReactorRole extends Role {
         Message lastMsg = this.getRc().getMemory().getStorage().get(this.getRc().getMemory().getStorage().size() - 1);
         String lastMsgContent = lastMsg.getContent();
 
+        //其实只会有一个
         List<Result> tools = new MultiXmlParser().parse(lastMsgContent);
+
         //结束
-        int attemptCompletion = tools.stream().anyMatch(it -> {
-                    String tag = it.getTag().trim();
-                    return tag.equals("attempt_completion") || tag.equals("chat") || tag.equals("ask_followup_question");
-                }
-        ) ? -1 : 1;
+        int attemptCompletion = tools.stream().filter(it -> {
+                    String name = it.getTag();
+                    return toolMap.containsKey(name);
+                }).map(it -> toolMap.get(it.getTag()))
+                .anyMatch(ITool::completed) ? -1 : 1;
 
         if (attemptCompletion == -1) {
             if (null != lastMsg.getSink()) {

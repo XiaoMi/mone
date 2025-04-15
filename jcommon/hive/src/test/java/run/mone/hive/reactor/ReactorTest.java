@@ -1,7 +1,6 @@
 package run.mone.hive.reactor;
 
 import com.google.common.collect.Lists;
-import com.google.gson.JsonSyntaxException;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;

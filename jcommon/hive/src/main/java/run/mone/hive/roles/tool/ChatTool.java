@@ -9,6 +9,11 @@ public class ChatTool implements ITool{
     public static final String name = "chat";
 
     @Override
+    public boolean completed() {
+        return true;
+    }
+
+    @Override
     public String getName() {
         return name;
     }

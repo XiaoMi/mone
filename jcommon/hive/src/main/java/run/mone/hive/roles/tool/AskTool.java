@@ -7,6 +7,11 @@ package run.mone.hive.roles.tool;
 public class AskTool implements ITool{
 
     @Override
+    public boolean completed() {
+        return true;
+    }
+
+    @Override
     public String getName() {
         return "ask_followup_question";
     }
