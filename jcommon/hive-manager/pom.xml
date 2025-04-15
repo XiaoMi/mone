@@ -88,12 +88,6 @@
             <version>0.8.2.RELEASE</version>
         </dependency>
 
-        <dependency>
-            <groupId>io.r2dbc</groupId>
-            <artifactId>r2dbc-pool</artifactId>
-            <version>0.8.13.RELEASE</version>
-        </dependency>
-
         <!-- Database -->
         <dependency>
             <groupId>mysql</groupId>
