@@ -31,8 +31,12 @@ export const useUserStore = defineStore('user', () => {
   function initUser() {
     const storedToken = localStorage.getItem('token')
     const storedUser = localStorage.getItem('user')
-    if (storedToken) token.value = storedToken
-    if (storedUser) user.value = JSON.parse(storedUser)
+    if (storedToken && storedUser) {
+      token.value = storedToken
+      user.value = JSON.parse(storedUser)
+      return true
+    }
+    return false
   }
 
   return {

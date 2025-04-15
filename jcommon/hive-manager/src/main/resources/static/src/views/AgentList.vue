@@ -39,6 +39,12 @@
         <el-form-item label="描述">
           <el-input v-model="agentForm.description" type="textarea" />
         </el-form-item>
+        <el-form-item label="Agent URL">
+          <el-input v-model="agentForm.agentUrl" />
+        </el-form-item>
+        <el-form-item label="公开">
+          <el-switch v-model="agentForm.isPublic" />
+        </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
@@ -60,6 +66,8 @@ interface Agent {
   name: string
   description: string
   createdAt: string
+  agentUrl: string
+  isPublic: boolean
 }
 
 const agentList = ref<Agent[]>([])
@@ -69,15 +77,17 @@ const dialogType = ref<'create' | 'edit'>('create')
 const agentForm = ref({
   id: 0,
   name: '',
-  description: ''
+  description: '',
+  agentUrl: '',
+  isPublic: false
 })
 
 const fetchAgents = async () => {
   loading.value = true
   try {
-    const response = await Service.get('/api/v1/agents')
+    const response = await Service.get('/v1/agents')
     agentList.value = response.data
-  } catch (error) {
+  } catch {
     ElMessage.error('获取Agent列表失败')
   } finally {
     loading.value = false
@@ -89,7 +99,9 @@ const handleCreate = () => {
   agentForm.value = {
     id: 0,
     name: '',
-    description: ''
+    description: '',
+    agentUrl: '',
+    isPublic: false
   }
   dialogVisible.value = true
 }
@@ -105,7 +117,7 @@ const handleDelete = async (row: Agent) => {
     await ElMessageBox.confirm('确定要删除这个Agent吗？', '提示', {
       type: 'warning'
     })
-    await Service.delete(`/api/v1/agents/${row.id}`)
+    await Service.delete(`/v1/agents/${row.id}`)
     ElMessage.success('删除成功')
     fetchAgents()
   } catch (error) {
@@ -118,15 +130,20 @@ const handleDelete = async (row: Agent) => {
 const handleSubmit = async () => {
   try {
     if (dialogType.value === 'create') {
-      await Service.post('/api/v1/agents', agentForm.value)
+      await Service.post('/v1/agents', {
+        name: agentForm.value.name,
+        description: agentForm.value.description,
+        agentUrl: agentForm.value.agentUrl,
+        isPublic: agentForm.value.isPublic
+      })
       ElMessage.success('创建成功')
     } else {
-      await Service.put(`/api/v1/agents/${agentForm.value.id}`, agentForm.value)
+      await Service.put(`/v1/agents/update/${agentForm.value.id}`, agentForm.value)
       ElMessage.success('更新成功')
     }
     dialogVisible.value = false
     fetchAgents()
-  } catch (error) {
+  } catch {
     ElMessage.error(dialogType.value === 'create' ? '创建失败' : '更新失败')
   }
 }
