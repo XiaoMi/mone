@@ -14,7 +14,6 @@ export default defineConfig({
   plugins: [
     vue(),
     vueJsx(),
-    vueDevTools(),
   ],
   resolve: {
     alias: {
@@ -26,7 +25,7 @@ export default defineConfig({
     port: 5175,
     proxy: {
       "/api": {
-        target: "http://localhost:8080",
+        target: "http://10.38.219.242:8080",
         ws: true, // 启用websocket代理
         changeOrigin: true,
       },
