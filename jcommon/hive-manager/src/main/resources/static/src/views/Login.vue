@@ -32,7 +32,7 @@
             show-password
           />
         </el-form-item>
-        <el-form-item  class="btn-item">
+        <el-form-item class="btn-item">
           <el-button
             type="primary"
             native-type="submit"
@@ -199,19 +199,42 @@ const toggleForm = () => {
 </script>
 
 <style scoped>
+:deep(.el-form-item__error) {
+  color: #333 !important;
+}
 .login-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  background: linear-gradient(135deg, var(--el-color-primary-light-3) 0%, var(--el-color-primary) 100%);
+  min-height: 100vh;
+  background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+  background-size: 400% 400%;
+  animation: gradient 15s ease infinite;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .login-box {
-  width: 400px;
+  width: 100%;
+  max-width: 400px;
   border-radius: var(--el-border-radius-base);
-  box-shadow: var(--el-box-shadow-light);
-  background-color: var(--el-bg-color);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+  background-color: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  padding: 20px;
+  box-sizing: border-box;
 }
 
 .card-header {
@@ -220,14 +243,25 @@ const toggleForm = () => {
 
 h2 {
   margin: 0;
-  color: var(--el-text-color-primary);
+  color: white;
   font-size: var(--el-font-size-extra-large);
   font-weight: var(--el-font-weight-primary);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 .login-button {
   width: 100%;
   margin-top: var(--el-component-size-large);
+  background-color: white;
+  color: #e73c7e;
+  border-radius: 50px;
+  font-weight: 600;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  border: none;
+}
+
+.login-button:hover {
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
 :deep(.el-card__header) {
@@ -237,7 +271,7 @@ h2 {
 
 :deep(.el-form-item__label) {
   font-weight: var(--el-font-weight-primary);
-  color: var(--el-text-color-regular);
+  color: rgba(255, 255, 255, 0.7);
 }
 
 :deep(.el-input__wrapper) {
@@ -256,9 +290,14 @@ h2 {
   text-align: center;
   margin-top: 8px;
 }
+.register-link a {
+  color: #333 !important;
+}
+
 .btn-item {
   margin: 0;
 }
+
 .btn-item .el-button {
   margin: 12px 0 0 0;
 }
