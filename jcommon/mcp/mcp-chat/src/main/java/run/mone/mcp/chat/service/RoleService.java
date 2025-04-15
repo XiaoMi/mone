@@ -17,12 +17,12 @@ import run.mone.hive.roles.tool.ChatTool;
 import run.mone.hive.schema.Message;
 import run.mone.mcp.chat.task.MinZaiTask;
 import run.mone.mcp.chat.tool.DocumentProcessingTool;
+import run.mone.mcp.chat.tool.SystemInfoTool;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.nio.file.Paths;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CountDownLatch;
 
 /**
  * @author goodjava@qq.com
@@ -45,20 +45,22 @@ public class RoleService {
     @PostConstruct
     @SneakyThrows
     public void init() {
-        //启用mcp
+        //启用mcp (这个Agent也可以使用mcp)
         if (StringUtils.isNotEmpty(mcpPath)) {
             McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath)));
         }
     }
 
     public ReactorRole createRole(String owner, String clientId) {
-        ReactorRole minzai = new ReactorRole("minzai", new CountDownLatch(1), llm);
-        minzai.setScheduledTaskHandler(role -> new MinZaiTask(minzai,grpcServerTransport).run());
-        //支持使用聊天工具
-        minzai.getTools().add(new ChatTool());
-        minzai.getTools().add(new AskTool());
-        minzai.getTools().add(new AttemptCompletionTool());
-        minzai.getTools().add(new DocumentProcessingTool());
+        ReactorRole minzai = new ReactorRole("minzai", llm);
+        minzai.setScheduledTaskHandler(role -> new MinZaiTask(minzai, grpcServerTransport).run());
+        //支持使用聊天工具(聊天工具是比mcp要轻量级的存在,如果tool能支持,优先使用tool)
+        minzai.addTool(new ChatTool());
+        minzai.addTool(new AskTool());
+        minzai.addTool(new AttemptCompletionTool());
+        minzai.addTool(new DocumentProcessingTool());
+        minzai.addTool(new SystemInfoTool());
+
         minzai.setOwner(owner);
         minzai.setClientId(clientId);
         //一直执行不会停下来
@@ -79,9 +81,6 @@ public class RoleService {
             minzai.putMessage(message);
         });
     }
-
-
-
 
 
 }

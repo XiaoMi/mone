@@ -23,7 +23,11 @@ public class Const {
 
     public static final String NOTIFY_MSG = "msg";
 
+    //退出agent
     public static final String ROLE_EXIT = "___exit___";
+
+    //清空agent记忆
+    public static final String CLEAR_HISTORY = "___clear_history___";
 
     public static final String DEFAULT = "default";
 

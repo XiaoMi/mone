@@ -6,9 +6,11 @@ package run.mone.hive.roles.tool;
  */
 public class ChatTool implements ITool{
 
+    public static final String name = "chat";
+
     @Override
     public String getName() {
-        return "chat";
+        return name;
     }
 
     @Override
