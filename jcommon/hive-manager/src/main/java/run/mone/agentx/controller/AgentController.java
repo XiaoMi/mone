@@ -25,13 +25,13 @@ import run.mone.agentx.service.AgentService;
 public class AgentController {
     private final AgentService agentService;
 
-    @PostMapping
+    @PostMapping("/create")
     public Mono<ApiResponse<Agent>> createAgent(@AuthenticationPrincipal User user, @RequestBody Agent agent) {
         agent.setCreatedBy(user.getId());
         return agentService.createAgent(agent).map(ApiResponse::success);
     }
 
-    @GetMapping
+    @GetMapping("/list")
     public Mono<ApiResponse<List<Agent>>> getAgents(@AuthenticationPrincipal User user) {
         return agentService.findAccessibleAgents(user.getId()).collectList().map(ApiResponse::success);
     }
