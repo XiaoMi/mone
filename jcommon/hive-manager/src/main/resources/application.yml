@@ -18,8 +18,10 @@ spring:
     init:
       mode: always
       continue-on-error: true
+  web:
+    resources:
+      static-locations: classpath:/static/dist/
 
-  
   jpa:
     hibernate:
       ddl-auto: update
