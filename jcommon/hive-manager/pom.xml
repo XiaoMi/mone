@@ -88,6 +88,12 @@
             <version>0.8.2.RELEASE</version>
         </dependency>
 
+        <dependency>
+            <groupId>io.r2dbc</groupId>
+            <artifactId>r2dbc-pool</artifactId>
+            <version>0.8.13.RELEASE</version>
+        </dependency>
+
         <!-- Database -->
         <dependency>
             <groupId>mysql</groupId>
@@ -145,9 +151,23 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>4.1.107.Final</version>
+        </dependency>
 
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-resolver-dns</artifactId>
+            <version>4.1.107.Final</version>
+        </dependency>
 
-
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-transport</artifactId>
+            <version>4.1.107.Final</version>
+        </dependency>
 
     </dependencies>
 
