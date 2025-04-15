@@ -1,15 +1,15 @@
 <template>
-  <div class="agent-list-container">
+  <div class="task-list-container">
     <el-card class="box-card custom-card">
       <template #header>
         <div class="card-header">
-          <span>Agent列表</span>
+          <span>任务列表</span>
           <el-button 
             class="create-btn custom-btn" 
             type="primary" 
             @click="handleCreate"
           >
-            创建Agent
+            创建任务
           </el-button>
         </div>
       </template>
@@ -19,8 +19,9 @@
           <div class="header-cell" style="width: 80px">ID</div>
           <div class="header-cell flex-1">名称</div>
           <div class="header-cell flex-1">描述</div>
+          <div class="header-cell" style="width: 120px">状态</div>
           <div class="header-cell" style="width: 180px">创建时间</div>
-          <div class="header-cell" style="width: 200px">操作</div>
+          <!-- <div class="header-cell" style="width: 200px">操作</div> -->
         </div>
         
         <TransitionGroup 
@@ -29,222 +30,132 @@
           class="table-body"
         >
           <div 
-            v-if="agentList.length === 0" 
+            v-if="taskList.length === 0" 
             :key="'empty'" 
             class="empty-state"
           >
             <div class="empty-content">
-              <span class="empty-text">暂无Agent数据</span>
-              <el-button 
-                class="custom-btn create-btn" 
-                @click="handleCreate"
-              >
-                创建Agent
-              </el-button>
+              <span class="empty-text">暂无任务数据</span>
             </div>
           </div>
           <div 
-            v-for="agent in agentList" 
-            :key="agent.id" 
+            v-for="task in taskList" 
+            :key="task.id" 
             class="table-row"
             :class="{'hover-effect': true}"
           >
             <div class="cell" style="width: 80px">
-              <div class="id-badge">{{agent.id}}</div>
+              <div class="id-badge">{{task.id}}</div>
             </div>
             <div class="cell flex-1">
               <div class="name-container">
                 <span 
-                  class="agent-name"
-                  @click="handleShowDetail(agent)"
+                  class="task-name"
+                  @click="handleShowDetail(task)"
                 >
-                  {{agent.name}}
+                  {{task.title}}
                 </span>
               </div>
             </div>
-            <div class="cell flex-1">{{agent.description}}</div>
-            <div class="cell" style="width: 180px">
-              {{formatDate(agent.ctime)}}
+            <div class="cell flex-1">{{task.description}}</div>
+            <div class="cell" style="width: 120px">
+              <el-tag type="primary">
+                {{task.status}}
+              </el-tag>
             </div>
-            <div class="cell actions" style="width: 200px">
+            <div class="cell" style="width: 180px">
+              {{formatDate(task.ctime)}}
+            </div>
+            <!-- <div class="cell actions" style="width: 200px">
               <el-button 
                 class="custom-btn edit"
-                @click="handleEdit(agent)"
+                @click="handleShowDetail(task)"
               >
-                编辑
+                详情
               </el-button>
-              <el-button 
-                class="custom-btn delete"
-                @click="handleDelete(agent)"
-              >
-                删除
-              </el-button>
-              <el-button 
-                class="custom-btn task-btn"
-                @click="handleTask(agent)"
-              >
-                任务
-              </el-button>
-            </div>
+            </div> -->
           </div>
         </TransitionGroup>
       </div>
     </el-card>
 
-    <!-- 创建/编辑对话框 -->
-    <el-dialog
-      v-model="dialogVisible"
-      :title="dialogType === 'create' ? '创建Agent' : '编辑Agent'"
-      width="500px"
-    >
-      <el-form :model="agentForm" label-width="80px">
-        <el-form-item label="名称">
-          <el-input 
-            v-model="agentForm.name" 
-            placeholder="请输入Agent名称"
-          />
-        </el-form-item>
-        <el-form-item label="描述">
-          <el-input 
-            v-model="agentForm.description" 
-            type="textarea" 
-            placeholder="请输入Agent描述信息"
-          />
-        </el-form-item>
-        <el-form-item label="Agent URL">
-          <el-input 
-            v-model="agentForm.agentUrl" 
-            placeholder="请输入Agent的URL地址"
-          />
-        </el-form-item>
-        <el-form-item label="公开">
-          <el-switch v-model="agentForm.isPublic" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSubmit">确定</el-button>
-        </span>
-      </template>
-    </el-dialog>
-
-    <agent-detail-drawer
+    <!-- 任务详情抽屉 -->
+    <task-detail-drawer
       v-model="drawerVisible"
-      :agent="selectedAgent"
+      :task="selectedTask"
+    />
+
+    <!-- 替换原有的el-dialog -->
+    <create-task-dialog
+      v-model="dialogVisible"
+      @submit="handleSubmit"
     />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { getAgentList, createAgent, updateAgent, deleteAgent } from '@/api/agent'
-import type { Agent } from '@/api/agent'
-import AgentDetailDrawer from '@/components/AgentDetailDrawer.vue'
-import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { getTaskById, createTask, getTaskList } from '@/api/task'
+import type { Task, CreateTaskRequest } from '@/api/task'
+import TaskDetailDrawer from '@/components/TaskDetailDrawer.vue'
+import CreateTaskDialog from '@/components/CreateTaskDialog.vue'
+import { useRoute } from 'vue-router'
 
-const agentList = ref<Agent[]>([])
+const taskList = ref<Task[]>([])
 const loading = ref(false)
-const dialogVisible = ref(false)
-const dialogType = ref<'create' | 'edit'>('create')
-const agentForm = ref({
-  id: 0,
-  name: '',
-  description: '',
-  agentUrl: '',
-  isPublic: false
-})
 const drawerVisible = ref(false)
-const selectedAgent = ref<Agent | null>(null)
-const router = useRouter()
+const selectedTask = ref<Task | null>(null)
+const dialogVisible = ref(false)
+const route = useRoute()
 
-const fetchAgents = async () => {
+// 获取任务列表
+const fetchTasks = async () => {
   loading.value = true
   try {
-    const response = await getAgentList() 
+    const response = await getTaskList(Number(route.query.serverAgentId))
     if (response.data.code === 200) {
-      agentList.value = response.data.data || []
+      taskList.value = response.data.data || []
     } else {
       ElMessage.error(response.data.message)
     }
   } catch {
-    ElMessage.error('获取Agent列表失败')
+    ElMessage.error('获取任务列表失败')
   } finally {
     loading.value = false
   }
 }
 
-const handleCreate = () => {
-  dialogType.value = 'create'
-  agentForm.value = {
-    id: 0,
-    name: '',
-    description: '',
-    agentUrl: '',
-    isPublic: false
-  }
-  dialogVisible.value = true
-}
-
-const handleEdit = (row: Agent) => {
-  dialogType.value = 'edit'
-  agentForm.value = { ...row }
-  dialogVisible.value = true
-}
-
-const handleDelete = async (row: Agent) => {
+const handleShowDetail = async (task: Task) => {
   try {
-    await ElMessageBox.confirm('确定要删除这个Agent吗？', '提示', {
-      type: 'warning'
-    })
-    const response = await deleteAgent(row.id)
+    const response = await getTaskById(task.taskUuid)
     if (response.data.code === 200) {
-      ElMessage.success('删除成功')
-      fetchAgents()
+      selectedTask.value = response.data.data || null
+      drawerVisible.value = true
     } else {
-      ElMessage.error('删除失败')
+      ElMessage.error(response.data.message)
     }
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败')
-    }
+  } catch {
+    ElMessage.error('获取任务详情失败')
   }
 }
 
-const handleSubmit = async () => {
+const handleCreate = () => {
+  dialogVisible.value = true
+}
+
+const handleSubmit = async (form: CreateTaskRequest) => {
   try {
-    if (dialogType.value === 'create') {
-      const response = await createAgent({
-        name: agentForm.value.name,
-        description: agentForm.value.description,
-        agentUrl: agentForm.value.agentUrl,
-        isPublic: agentForm.value.isPublic
-      })
-      if (response.data.code === 200) {
-        ElMessage.success('创建成功')
-        fetchAgents()
-      } else {
-        ElMessage.error('创建失败')
-      }
+    const response = await createTask(form)
+    if (response.data.code === 200) {
+      ElMessage.success('创建成功')
+      dialogVisible.value = false
+      fetchTasks()
     } else {
-      const response = await updateAgent(agentForm.value.id, {
-        name: agentForm.value.name,
-        description: agentForm.value.description,
-        agentUrl: agentForm.value.agentUrl,
-        isPublic: agentForm.value.isPublic
-      })
-      if (response.data.code === 200) {
-        ElMessage.success('更新成功')
-        fetchAgents()
-      } else {
-        ElMessage.error('更新失败')
-      }
+      ElMessage.error(response.data.message)
     }
-    dialogVisible.value = false
-    fetchAgents()
   } catch {
-    ElMessage.error(dialogType.value === 'create' ? '创建失败' : '更新失败')
+    ElMessage.error('创建任务失败')
   }
 }
 
@@ -252,35 +163,33 @@ const formatDate = (date: string) => {
   return new Date(date).toLocaleString()
 }
 
-const handleShowDetail = (agent: Agent) => {
-  selectedAgent.value = agent
-  drawerVisible.value = true
-}
-
-const handleTask = (agent: Agent) => {
-  router.push({
-    path: '/tasks',
-    query: { serverAgentId: agent.id }
-  })
+const getStatusType = (status: string) => {
+  const statusMap: Record<string, string> = {
+    'running': 'primary',
+    'completed': 'success',
+    'failed': 'danger',
+    'pending': 'warning'
+  }
+  return statusMap[status] || 'info'
 }
 
 onMounted(() => {
-  fetchAgents()
+  fetchTasks()
 })
 </script>
 
 <style scoped>
-
-.agent-list-container {
+/* 更新任务列表容器样式 */
+.task-list-container {
   padding: 20px;
-  background: linear-gradient(135deg, #23a6d5 0%, #23d5ab 100%);  /* 更深的黑色背景 */
+  background: linear-gradient(135deg, #23a6d5 0%, #23d5ab 100%);
   min-height: 100vh;
   position: relative;
   overflow: hidden;
 }
 
-/* 更暗的网格背景 */
-.agent-list-container::before {
+/* 添加网格背景 */
+.task-list-container::before {
   content: '';
   position: absolute;
   top: 0;
@@ -294,6 +203,7 @@ onMounted(() => {
   pointer-events: none;
 }
 
+/* 更新卡片样式 */
 .custom-card {
   background: rgba(13, 17, 23, 0.5);
   backdrop-filter: blur(20px);
@@ -311,6 +221,43 @@ onMounted(() => {
   text-shadow: 0 0 10px rgba(88, 166, 255, 0.3);
 }
 
+/* 更新抽屉样式 */
+:deep(.el-drawer) {
+  background: rgba(13, 17, 23, 0.7);
+  backdrop-filter: blur(20px);
+  border-left: 1px solid rgba(48, 54, 61, 0.2);
+}
+
+:deep(.el-drawer__header) {
+  color: #ffffff;
+  margin-bottom: 20px;
+  border-bottom: 1px solid rgba(48, 54, 61, 0.2);
+  padding-bottom: 20px;
+}
+
+/* 更新任务详情样式 */
+.task-detail {
+  padding: 20px;
+  color: #ffffff;
+}
+
+.detail-item {
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+}
+
+.detail-item label {
+  width: 120px;
+  color: #31e8f9;
+  font-weight: 500;
+}
+
+.detail-item span {
+  color: #ffffff;
+}
+
+/* 更新表格样式 */
 .future-table {
   background: rgba(13, 17, 23, 0.4);
   border-radius: 12px;
@@ -319,6 +266,7 @@ onMounted(() => {
   position: relative;
 }
 
+/* 添加扫描线动画 */
 .future-table::before {
   content: '';
   position: absolute;
@@ -361,6 +309,7 @@ onMounted(() => {
   color: #ffffff;
 }
 
+/* 表格行悬停效果 */
 .table-row::before {
   content: '';
   position: absolute;
@@ -398,13 +347,68 @@ onMounted(() => {
   flex: 1;
 }
 
-.name-container {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #ffffff;
+/* 更新任务名称样式 */
+.task-name {
+  cursor: pointer;
+  color: #31e8f9;
+  transition: all 0.3s ease;
 }
 
+.task-name:hover {
+  text-shadow: 0 0 10px rgba(49, 232, 249, 0.5);
+  text-decoration: underline;
+}
+
+/* 空状态样式 */
+.empty-state {
+  padding: 60px 0;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.empty-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.empty-text {
+  color: #ffffff;
+  font-size: 16px;
+  text-shadow: 0 0 10px rgba(49, 232, 249, 0.3);
+}
+
+/* 动画关键帧 */
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* 列表动画 */
+.list-enter-active {
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.list-leave-active {
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  position: absolute;
+  width: 100%;
+}
+
+.list-enter-from {
+  opacity: 0;
+  transform: translateX(-50px) scale(0.9);
+}
+
+.list-leave-to {
+  opacity: 0;
+  transform: translateX(50px) scale(0.9);
+}
+
+/* 修改操作按钮样式 */
 .custom-btn {
   border: none;
   padding: 8px 20px;
@@ -436,64 +440,7 @@ onMounted(() => {
   background: linear-gradient(135deg, #238636 0%, #1b6b2c 100%);
 }
 
-.delete {
-  background: linear-gradient(135deg, #da3633 0%, #b62824 100%);
-  margin-left: 12px;
-}
-
-.task-btn {
-  background: linear-gradient(135deg, #23a6d5 0%, #23d5ab 100%);
-  margin-left: 12px;
-}
-
-/* 添加新的动画关键帧 */
-@keyframes scanline {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100vh); }
-}
-
-@keyframes rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* 优化列表动画 */
-.list-enter-active {
-  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.list-leave-active {
-  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  position: absolute;
-  width: 100%;
-}
-
-.list-enter-from {
-  opacity: 0;
-  transform: translateX(-50px) scale(0.9);
-}
-
-.list-leave-to {
-  opacity: 0;
-  transform: translateX(50px) scale(0.9);
-}
-
-@keyframes pulse {
-  0% {
-    transform: scale(1);
-    opacity: 0.8;
-  }
-  50% {
-    transform: scale(1.8);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 0;
-  }
-}
-
-/* 修改创建按钮样式 */
+/* 创建按钮样式 */
 .create-btn {
   background: linear-gradient(135deg, #23a6d5 0%, #23d5ab 100%) !important;
   border: none !important;
@@ -528,7 +475,7 @@ onMounted(() => {
   transform: translate(-50%, -50%) rotate(45deg) scale(1);
 }
 
-/* 添加自定义对话框样式 */
+/* 对话框样式 */
 :deep(.el-dialog) {
   background: rgba(13, 17, 23, 0.7);
   backdrop-filter: blur(20px);
@@ -596,19 +543,6 @@ onMounted(() => {
   box-shadow: 0 0 20px rgba(49, 232, 249, 0.3);
 }
 
-:deep(.el-dialog__footer) {
-  border-top: 1px solid rgba(48, 54, 61, 0.2);
-  padding: 20px;
-}
-
-:deep(.el-switch__core) {
-  border-color: rgba(48, 54, 61, 0.4);
-  background: rgba(22, 27, 34, 0.4);
-}
-
-:deep(.el-switch.is-checked .el-switch__core) {
-  background: linear-gradient(135deg, #23a6d5 0%, #23d5ab 100%);
-}
 
 /* 弹窗按钮样式 */
 :deep(.el-dialog__footer .el-button) {
@@ -658,38 +592,5 @@ onMounted(() => {
 
 :deep(.el-dialog__footer .el-button:hover::before) {
   transform: translate(-50%, -50%) rotate(45deg) scale(1);
-}
-
-.agent-name {
-  cursor: pointer;
-  color: #31e8f9;
-  transition: all 0.3s ease;
-  
-  &:hover {
-    text-shadow: 0 0 10px rgba(49, 232, 249, 0.5);
-    text-decoration: underline;
-  }
-}
-
-/* 空状态样式 */
-.empty-state {
-  padding: 60px 0;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.empty-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-}
-
-.empty-text {
-  color: #ffffff;
-  font-size: 16px;
-  text-shadow: 0 0 10px rgba(49, 232, 249, 0.3);
 }
 </style>

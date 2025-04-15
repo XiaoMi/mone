@@ -45,7 +45,7 @@ public class RoleService {
     @PostConstruct
     @SneakyThrows
     public void init() {
-        //启用mcp
+        //启用mcp (这个Agent也可以使用mcp)
         if (StringUtils.isNotEmpty(mcpPath)) {
             McpHubHolder.put(Const.DEFAULT, new McpHub(Paths.get(mcpPath)));
         }
@@ -88,7 +88,5 @@ public class RoleService {
             minzai.clearMemory();
         }
     }
-
-
 
 }

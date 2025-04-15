@@ -44,6 +44,10 @@ Service.interceptors.request.use((config) => {
   if ((config.headers['Content-Type'] as string).indexOf('application/x-www-form-urlencoded') >= 0) {
     config.data = qs.stringify(config.data)
   }
+  const storedToken = localStorage.getItem('token')
+  if (storedToken) {
+    config.headers['Authorization'] = `Bearer ${storedToken}`
+  }
   return config
 },
 (error: AxiosError): Promise<AxiosError> => Promise.reject(error)
@@ -55,7 +59,7 @@ Service.interceptors.response.use((response:AxiosResponse):AxiosResponse<IRespon
     // hideLoading()
   } catch (error) {}
   if (handleCode(response.data)) {
-    return response.data
+    return response
   }
   return Promise.reject()
 }, (error: AxiosError<{

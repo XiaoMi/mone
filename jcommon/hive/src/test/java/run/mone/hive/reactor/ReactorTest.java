@@ -1,7 +1,6 @@
 package run.mone.hive.reactor;
 
 import com.google.common.collect.Lists;
-import com.google.gson.JsonSyntaxException;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import org.reactivestreams.Subscription;
@@ -20,6 +19,20 @@ import java.util.concurrent.TimeUnit;
  * @date 2025/4/5 21:16
  */
 public class ReactorTest {
+
+
+    @SneakyThrows
+    @Test
+    public void test2() {
+        Flux.create(sink->{
+            sink.complete();
+            sink.complete();
+            System.out.println("complete");
+        }).subscribe();
+
+        System.in.read();
+    }
+
 
     @Test
     public void testMono() {
