@@ -13,11 +13,11 @@ import java.util.Map;
 public class MonerMcpInterceptor {
 
     public boolean before(String toolName, Map<String, Object> toolArguments) {
-        log.info("call tool:{} params:{}", toolName, toolArguments);
+        log.info("call mcp tool:{} params:{}", toolName, toolArguments);
         return true;
     }
 
     public void after(String toolName, McpSchema.CallToolResult toolRes) {
-        log.info("call tool:{} finish res:{}", toolName, toolRes);
+        log.info("call mcp tool:{} finish res:{}", toolName, toolRes);
     }
 }

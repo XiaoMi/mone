@@ -1,11 +1,11 @@
 package run.mone.hive.roles;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.gson.JsonObject;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.mutable.MutableObject;
 import reactor.core.publisher.FluxSink;
 import run.mone.hive.Environment;
 import run.mone.hive.common.*;
@@ -21,9 +21,7 @@ import run.mone.hive.schema.ActionContext;
 import run.mone.hive.schema.Message;
 import run.mone.hive.schema.RoleContext;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -34,7 +32,7 @@ import java.util.stream.Collectors;
  * @author wangyingjie
  * @author goodjava@qq.com
  * @date 2025/4/9 10:26
- * 会自己决策的Role
+ * 会自己决策和行动的Role(Agent)
  */
 @EqualsAndHashCode(callSuper = true)
 @Slf4j
@@ -49,6 +47,8 @@ public class ReactorRole extends Role {
 
     private List<ITool> tools = new ArrayList<>();
 
+    private Map<String, ITool> toolMap = new HashMap<>();
+
     private Consumer<ReactorRole> scheduledTaskHandler;
 
     private ScheduledExecutorService scheduler;
@@ -61,23 +61,36 @@ public class ReactorRole extends Role {
 
     private MonerMcpInterceptor mcpInterceptor = new MonerMcpInterceptor();
 
+    public void addTool(ITool tool) {
+        this.tools.add(tool);
+        this.toolMap.put(tool.getName(), tool);
+    }
+
     private String customRules = """
             你是${name},是一名优秀的私人顾问.
             """;
 
     private String userPrompt = """
             ===========
-            Rules you must follow:
+            Rules:
             ${rules}
             
             ===========
-            Think and Execute history:
+            History:
             ${history}
             
             ===========
             Latest Questions:
             ${question}
-            """;
+            
+            """ + "\n" +
+            MonerSystemPrompt.TOOL_USE_INFO + "\n" +
+            "请选择你要使用的Tool:\n";
+
+
+    public ReactorRole(String name, LLM llm) {
+        this(name, null, llm);
+    }
 
 
     @SneakyThrows
@@ -134,6 +147,12 @@ public class ReactorRole extends Role {
             return -2;
         }
 
+        //清空历史记录(不会退出)
+        if (null != msg.getData() && msg.getData().equals(Const.CLEAR_HISTORY)) {
+            this.rc.getMemory().clear();
+            return -1;
+        }
+
         //放到记忆中
         this.putMemory(msg);
 
@@ -141,14 +160,21 @@ public class ReactorRole extends Role {
         Message lastMsg = this.getRc().getMemory().getStorage().get(this.getRc().getMemory().getStorage().size() - 1);
         String lastMsgContent = lastMsg.getContent();
 
+        //其实只会有一个
         List<Result> tools = new MultiXmlParser().parse(lastMsgContent);
-        //结束
-        int attemptCompletion = tools.stream().anyMatch(it -> {
-                    String tag = it.getTag().trim();
-                    return tag.equals("attempt_completion") || tag.equals("chat") || tag.equals("ask_followup_question");
-                }
-        ) ? -1 : 1;
 
+        //结束
+        int attemptCompletion = tools.stream().filter(it -> {
+                    String name = it.getTag();
+                    return toolMap.containsKey(name);
+                }).map(it -> toolMap.get(it.getTag()))
+                .anyMatch(ITool::completed) ? -1 : 1;
+
+        if (attemptCompletion == -1) {
+            if (null != lastMsg.getSink()) {
+                lastMsg.getSink().complete();
+            }
+        }
 
         if (attemptCompletion == 1) {
             this.putMessage(msg);
@@ -183,8 +209,6 @@ public class ReactorRole extends Role {
         Message msg = this.rc.news.poll();
         FluxSink sink = msg.getSink();
 
-        AtomicBoolean complete = new AtomicBoolean(false);
-
         try {
             String history = this.getRc().getMemory().getStorage().stream().map(it -> it.getRole() + ":\n" + it.getContent()).collect(Collectors.joining("\n"));
             String customRulesReplaced = AiTemplate.renderTemplate(customRules, ImmutableMap.of("name", this.name));
@@ -195,20 +219,9 @@ public class ReactorRole extends Role {
 
             StringBuilder sb = new StringBuilder();
             AtomicBoolean hasError = new AtomicBoolean(false);
-            llm.compoundMsgCall(compoundMsg, getSystemPrompt())
-                    .doOnNext(it -> {
-                        sb.append(it);
-                        Optional.ofNullable(sink).ifPresent(s -> s.next(it));
-                    })
-                    .doOnError(error -> {
-                        Optional.ofNullable(sink).ifPresent(s -> s.error(error));
-                        sb.append(error.getMessage());
-                        log.error(error.getMessage(), error);
-                        hasError.set(true);
-                    })
-                    .doOnComplete(() -> {
-                    })
-                    .blockLast();
+
+            //调用大模型
+            callLlm(compoundMsg, sb, sink, hasError);
 
             if (hasError.get()) {
                 return CompletableFuture.completedFuture(Message.builder().build());
@@ -217,46 +230,72 @@ public class ReactorRole extends Role {
             String res = sb.toString();
             log.info("res\n:{}", res);
 
-            // 解析工具调用
+            // 解析工具调用(有可能是tool也可能是mcp)
             List<Result> tools = new MultiXmlParser().parse(res);
-            MutableObject<McpResult> toolResMsg = new MutableObject<>(null);
-            AtomicBoolean completion = new AtomicBoolean(false);
-            //调用mcp
-            Safe.run(() -> MonerMcpClient.mcpCall(tools, Const.DEFAULT, toolResMsg, completion, this.mcpInterceptor, sink));
-            log.info("call mcp res:{}", toolResMsg.getValue());
-            this.putMemory(Message.builder().role(RoleType.assistant.name()).content(res).build());
-            if (completion.get()) {
-                tools.forEach(it -> {
-                    String tag = it.getTag().trim();
-                    if (tag.equals("attempt_completion") || tag.equals("chat") || tag.equals("ask_followup_question")) {
-                        this.getRc().getNews().add(Message.builder().data(res).content(res).sink(sink).build());
-                        if (sink != null) {
-                            sink.complete();
-                            complete.set(true);
-                        }
-                    }
-                });
+
+            log.info("tools num:{}", tools.size());
+
+            //直接使用最后一个工具(每次只会返回一个)
+            Result it = tools.get(tools.size() - 1);
+
+            String name = it.getTag();
+            if (this.toolMap.containsKey(name)) {// 执行tool
+                callTool(name, it, res, sink);
+            } else if (name.equals("use_mcp_tool")) {//执行mcp
+                callMcp(it, sink);
             } else {
-                McpResult result = toolResMsg.getValue();
-                McpSchema.Content content = result.getContent();
-                if (content instanceof McpSchema.TextContent textContent) {
-                    this.putMessage(Message.builder().role(RoleType.assistant.name()).data(textContent.text()).sink(sink).content("调用Tool的结果:" + textContent.text() + "\n" + "; 请继续").build());
-                } else if (content instanceof McpSchema.ImageContent imageContent) {
-                    this.putMessage(Message.builder().role(RoleType.assistant.name()).data("图片占位符").sink(sink).images(List.of(imageContent.data())).content("图片占位符" + "\n" + "; 请继续").build());
-                }
+                log.warn("不支持的工具 tool:{}", name);
             }
         } catch (Exception e) {
             if (null != sink) {
-                sink.complete();
+                sink.error(e);
             }
-//            this.getRc().getNews().add(Message.builder().data("\n请重试上一个步骤").content("\n请重试上一个步骤").build());
             log.error("ReactorRole act error:" + e.getMessage(), e);
-        } finally {
-            if (!complete.get() && null != sink) {
+        }
+        return CompletableFuture.completedFuture(Message.builder().build());
+    }
+
+    private void callMcp(Result it, FluxSink sink) {
+        McpResult result = MonerMcpClient.mcpCall(it, Const.DEFAULT, this.mcpInterceptor, sink);
+        McpSchema.Content content = result.getContent();
+        if (content instanceof McpSchema.TextContent textContent) {
+            this.putMessage(Message.builder().role(RoleType.assistant.name()).data(textContent.text()).sink(sink).content("调用Tool的结果:" + textContent.text() + "\n" + "; 请继续").build());
+        } else if (content instanceof McpSchema.ImageContent imageContent) {
+            this.putMessage(Message.builder().role(RoleType.assistant.name()).data("图片占位符").sink(sink).images(List.of(imageContent.data())).content("图片占位符" + "\n" + "; 请继续").build());
+        }
+    }
+
+    private void callTool(String name, Result it, String res, FluxSink sink) {
+        ITool tool = this.toolMap.get(name);
+        if (tool.needExecute()) {
+            Map<String, String> map = it.getKeyValuePairs();
+            JsonObject params = GsonUtils.gson.toJsonTree(map).getAsJsonObject();
+            JsonObject toolRes = this.toolMap.get(name).execute(params);
+            res = "执行 tool:" + res + " \n 执行工具结果:\n" + toolRes.toString();
+            if (null != sink && tool.show()) {
+                sink.next(res);
+            }
+        }
+        if (tool.completed()) {
+            if (null != sink) {
                 sink.complete();
             }
         }
-        return CompletableFuture.completedFuture(Message.builder().build());
+        this.putMessage(Message.builder().role(RoleType.assistant.name()).data(res).content(res).sink(sink).build());
+    }
+
+    private void callLlm(LLMCompoundMsg compoundMsg, StringBuilder sb, FluxSink sink, AtomicBoolean hasError) {
+        llm.compoundMsgCall(compoundMsg, getSystemPrompt())
+                .doOnNext(it -> {
+                    sb.append(it);
+                    Optional.ofNullable(sink).ifPresent(s -> s.next(it));
+                })
+                .doOnError(error -> {
+                    Optional.ofNullable(sink).ifPresent(s -> s.error(error));
+                    sb.append(error.getMessage());
+                    log.error(error.getMessage(), error);
+                    hasError.set(true);
+                }).blockLast();
     }
 
     private static LLMCompoundMsg getLlmCompoundMsg(String userPrompt, Message msg) {
