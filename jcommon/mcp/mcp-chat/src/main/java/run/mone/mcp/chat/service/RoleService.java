@@ -17,6 +17,7 @@ import run.mone.hive.roles.tool.ChatTool;
 import run.mone.hive.schema.Message;
 import run.mone.mcp.chat.task.MinZaiTask;
 import run.mone.mcp.chat.tool.DocumentProcessingTool;
+import run.mone.mcp.chat.tool.SystemInfoTool;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
@@ -59,6 +60,7 @@ public class RoleService {
         minzai.getTools().add(new AskTool());
         minzai.getTools().add(new AttemptCompletionTool());
         minzai.getTools().add(new DocumentProcessingTool());
+        minzai.getTools().add(new SystemInfoTool());
         minzai.setOwner(owner);
         minzai.setClientId(clientId);
         //一直执行不会停下来
