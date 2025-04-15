@@ -23,6 +23,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import java.nio.file.Paths;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * @author goodjava@qq.com
@@ -52,15 +53,14 @@ public class RoleService {
     }
 
     public ReactorRole createRole(String owner, String clientId) {
-        ReactorRole minzai = new ReactorRole("minzai", llm);
-        minzai.setScheduledTaskHandler(role -> new MinZaiTask(minzai, grpcServerTransport).run());
-        //支持使用聊天工具(聊天工具是比mcp要轻量级的存在,如果tool能支持,优先使用tool)
-        minzai.addTool(new ChatTool());
-        minzai.addTool(new AskTool());
-        minzai.addTool(new AttemptCompletionTool());
-        minzai.addTool(new DocumentProcessingTool());
-        minzai.addTool(new SystemInfoTool());
-
+        ReactorRole minzai = new ReactorRole("minzai", new CountDownLatch(1), llm);
+        minzai.setScheduledTaskHandler(role -> new MinZaiTask(minzai,grpcServerTransport).run());
+        //支持使用聊天工具
+        minzai.getTools().add(new ChatTool());
+        minzai.getTools().add(new AskTool());
+        minzai.getTools().add(new AttemptCompletionTool());
+        minzai.getTools().add(new DocumentProcessingTool());
+        minzai.getTools().add(new SystemInfoTool());
         minzai.setOwner(owner);
         minzai.setClientId(clientId);
         //一直执行不会停下来
@@ -82,5 +82,13 @@ public class RoleService {
         });
     }
 
+    public void clearHistory(Message message) {
+        // Clear the role's memory
+        String from = message.getSentFrom().toString();
+        if (roleMap.containsKey(from)) {
+            ReactorRole minzai = roleMap.get(from);
+            minzai.clearMemory();
+        }
+    }
 
 }
