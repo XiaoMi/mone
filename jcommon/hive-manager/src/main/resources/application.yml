@@ -14,6 +14,10 @@ spring:
     url: r2dbc:mysql://localhost:3306/mone_agentx
     username: root
     password: 123456
+  sql:
+    init:
+      mode: always
+      continue-on-error: true
 
   
   jpa:
@@ -36,3 +40,5 @@ logging:
   level:
     org.springframework.security: DEBUG
     run.mone.agentx: DEBUG
+    org.springframework.r2dbc: DEBUG
+    io.r2dbc.mysql: DEBUG
