@@ -1,6 +1,7 @@
 package run.mone.hive.common;
 
 import lombok.extern.slf4j.Slf4j;
+import run.mone.hive.utils.SafeRun;
 
 import java.util.concurrent.Callable;
 
@@ -11,7 +12,12 @@ import java.util.concurrent.Callable;
 @Slf4j
 public class Safe {
 
-    public static void run(Runnable runnable) {
+
+    public interface ExRunnable {
+        void run() throws Throwable;
+    }
+
+    public static void run(ExRunnable runnable) {
         try {
             runnable.run();
         } catch (Throwable ex) {
