@@ -21,6 +21,20 @@ import java.util.concurrent.TimeUnit;
  */
 public class ReactorTest {
 
+
+    @SneakyThrows
+    @Test
+    public void test2() {
+        Flux.create(sink->{
+            sink.complete();
+            sink.complete();
+            System.out.println("complete");
+        }).subscribe();
+
+        System.in.read();
+    }
+
+
     @Test
     public void testMono() {
         Mono.just("abc").subscribe(System.out::println);

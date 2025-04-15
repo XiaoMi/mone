@@ -168,6 +168,11 @@ public class ReactorRole extends Role {
                 }
         ) ? -1 : 1;
 
+        if (attemptCompletion == -1) {
+            if (null != lastMsg.getSink()) {
+                lastMsg.getSink().complete();
+            }
+        }
 
         if (attemptCompletion == 1) {
             this.putMessage(msg);
