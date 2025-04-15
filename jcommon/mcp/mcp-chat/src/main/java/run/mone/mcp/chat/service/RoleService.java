@@ -80,7 +80,14 @@ public class RoleService {
         });
     }
 
-
+    public void clearHistory(Message message) {
+        // Clear the role's memory
+        String from = message.getSentFrom().toString();
+        if (roleMap.containsKey(from)) {
+            ReactorRole minzai = roleMap.get(from);
+            minzai.clearMemory();
+        }
+    }
 
 
 
