@@ -28,6 +28,8 @@ public class SecurityConfig {
                 .antMatchers("/a2a/v1/healthz").permitAll()
                 .antMatchers("/ping").permitAll()
                 .antMatchers("/error").permitAll()
+                .antMatchers("/page/**").permitAll()
+                .antMatchers("/static/**").permitAll()
                 .anyRequest().authenticated()
                 .and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
